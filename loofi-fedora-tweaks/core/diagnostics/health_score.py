@@ -10,7 +10,6 @@ from typing import List
 
 from services.hardware import DiskManager
 from services.system import SystemManager
-
 from utils.monitor import SystemMonitor
 
 logger = logging.getLogger(__name__)
@@ -134,11 +133,7 @@ class HealthScoreManager:
                     timeout=30,
                 )
                 if result.returncode == 0 and "AvailableUpdate" in result.stdout:
-                    lines = [
-                        line
-                        for line in result.stdout.strip().splitlines()
-                        if line.strip()
-                    ]
+                    lines = [line for line in result.stdout.strip().splitlines() if line.strip()]
                     count = len(lines)
                     if count > 50:
                         score = 40
@@ -168,11 +163,7 @@ class HealthScoreManager:
                 if result.returncode == 0:
                     return 100, None  # No updates pending
                 elif result.returncode == 100:
-                    lines = [
-                        line
-                        for line in result.stdout.strip().splitlines()
-                        if line.strip() and not line.startswith("Last")
-                    ]
+                    lines = [line for line in result.stdout.strip().splitlines() if line.strip() and not line.startswith("Last")]
                     count = len(lines)
                     if count > 50:
                         score = 40

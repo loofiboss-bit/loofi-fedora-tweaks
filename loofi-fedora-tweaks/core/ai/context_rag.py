@@ -187,10 +187,7 @@ class ContextRAGManager:
                 try:
                     for dirpath, dirnames, filenames in os.walk(expanded):
                         # Skip hidden subdirectories that look like caches
-                        dirnames[:] = [
-                            d for d in dirnames
-                            if not d.startswith("__") and d != "Cache" and d != "cache"
-                        ]
+                        dirnames[:] = [d for d in dirnames if not d.startswith("__") and d != "Cache" and d != "cache"]
                         for fname in filenames:
                             if ContextRAGManager._is_sensitive_filename(fname):
                                 continue
@@ -223,31 +220,26 @@ class ContextRAGManager:
             expanded = os.path.expanduser(raw_path)
 
             if os.path.isfile(expanded):
-                results.append(
-                    ContextRAGManager._file_info(expanded)
-                )
+                results.append(ContextRAGManager._file_info(expanded))
             elif os.path.isdir(expanded):
                 try:
                     for dirpath, dirnames, filenames in os.walk(expanded):
-                        dirnames[:] = [
-                            d for d in dirnames
-                            if not d.startswith("__") and d != "Cache" and d != "cache"
-                        ]
+                        dirnames[:] = [d for d in dirnames if not d.startswith("__") and d != "Cache" and d != "cache"]
                         for fname in filenames:
                             fpath = os.path.join(dirpath, fname)
-                            results.append(
-                                ContextRAGManager._file_info(fpath)
-                            )
+                            results.append(ContextRAGManager._file_info(fpath))
                 except (OSError, PermissionError):
                     continue
             else:
                 # Path does not exist
-                results.append({
-                    "path": expanded,
-                    "size": 0,
-                    "last_modified": 0,
-                    "indexable": False,
-                })
+                results.append(
+                    {
+                        "path": expanded,
+                        "size": 0,
+                        "last_modified": 0,
+                        "indexable": False,
+                    }
+                )
 
         return results
 
@@ -268,9 +260,7 @@ class ContextRAGManager:
 
         basename = os.path.basename(file_path)
         indexable = (
-            not ContextRAGManager._is_sensitive_filename(basename)
-            and size <= MAX_FILE_SIZE
-            and not ContextRAGManager._is_binary_file(file_path)
+            not ContextRAGManager._is_sensitive_filename(basename) and size <= MAX_FILE_SIZE and not ContextRAGManager._is_binary_file(file_path)
         )
 
         return {
@@ -430,11 +420,13 @@ class ContextRAGManager:
                     score += tf * idf
 
             if score > 0:
-                scored.append({
-                    "file_path": chunk_entry["file_path"],
-                    "chunk": chunk_entry["text"],
-                    "relevance_score": round(score, 4),
-                })
+                scored.append(
+                    {
+                        "file_path": chunk_entry["file_path"],
+                        "chunk": chunk_entry["text"],
+                        "relevance_score": round(score, 4),
+                    }
+                )
 
         # Sort by score descending and return top results
         scored.sort(key=lambda x: x["relevance_score"], reverse=True)

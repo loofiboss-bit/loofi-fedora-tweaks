@@ -8,11 +8,14 @@ Provides:
 - Automatic publishing of agent.{agent_id}.success and agent.{agent_id}.failure events
 - Thread-safe agent execution with structured results
 """
+
 from __future__ import annotations
 
 import logging
 import time
 from typing import Any, Callable, Dict, Optional
+
+from utils.event_bus import Event, EventBus
 
 from core.agents.agents import (
     AgentConfig,
@@ -20,7 +23,6 @@ from core.agents.agents import (
     AgentResult,
     AgentStatus,
 )
-from utils.event_bus import Event, EventBus
 
 logger = logging.getLogger(__name__)
 
@@ -52,11 +54,7 @@ class AgentScheduler:
         for agent in agents:
             if agent.subscriptions:
                 self._subscribe_agent(agent)
-                logger.info(
-                    "Agent '%s' subscribed to topics: %s",
-                    agent.name,
-                    ", ".join(agent.subscriptions)
-                )
+                logger.info("Agent '%s' subscribed to topics: %s", agent.name, ", ".join(agent.subscriptions))
 
     def _subscribe_agent(self, agent: AgentConfig) -> None:
         """
@@ -67,11 +65,7 @@ class AgentScheduler:
         """
         for topic in agent.subscriptions:
             callback = self._create_agent_callback(agent)
-            self._event_bus.subscribe(
-                topic=topic,
-                callback=callback,
-                subscriber_id=agent.agent_id
-            )
+            self._event_bus.subscribe(topic=topic, callback=callback, subscriber_id=agent.agent_id)
 
         self._subscribed_agents[agent.agent_id] = agent
 
@@ -85,13 +79,10 @@ class AgentScheduler:
         Returns:
             Callback function that executes agent actions
         """
+
         def callback(event: Event) -> None:
             """Event callback that executes agent actions."""
-            logger.debug(
-                "Agent '%s' triggered by event: %s",
-                agent.name,
-                event.topic
-            )
+            logger.debug("Agent '%s' triggered by event: %s", agent.name, event.topic)
             self._execute_agent(agent, event)
 
         return callback
@@ -108,11 +99,7 @@ class AgentScheduler:
 
         # Check if agent can act (rate limiting)
         if not state.can_act(agent.max_actions_per_hour):
-            logger.warning(
-                "Agent '%s' rate limited (max %d actions/hour)",
-                agent.name,
-                agent.max_actions_per_hour
-            )
+            logger.warning("Agent '%s' rate limited (max %d actions/hour)", agent.name, agent.max_actions_per_hour)
             return
 
         # Check if agent is already running
@@ -136,12 +123,7 @@ class AgentScheduler:
 
                 # Stop on first failure if not in dry_run mode
                 if not result.success and not agent.dry_run:
-                    logger.warning(
-                        "Agent '%s' action '%s' failed: %s",
-                        agent.name,
-                        action.name,
-                        result.message
-                    )
+                    logger.warning("Agent '%s' action '%s' failed: %s", agent.name, action.name, result.message)
                     break
 
             # Determine overall success (all actions succeeded)
@@ -155,12 +137,7 @@ class AgentScheduler:
             self._publish_agent_event(agent, overall_success, results)
 
         except (RuntimeError, ValueError, TypeError, OSError) as exc:
-            logger.error(
-                "Agent '%s' execution failed: %s",
-                agent.name,
-                exc,
-                exc_info=True
-            )
+            logger.error("Agent '%s' execution failed: %s", agent.name, exc, exc_info=True)
             state.status = AgentStatus.ERROR
             self._registry.save()
 
@@ -173,12 +150,7 @@ class AgentScheduler:
             )
             self._publish_agent_event(agent, False, [failure_result])
 
-    def _execute_action(
-        self,
-        agent: AgentConfig,
-        action: Any,
-        triggering_event: Event
-    ) -> AgentResult:
+    def _execute_action(self, agent: AgentConfig, action: Any, triggering_event: Event) -> AgentResult:
         """
         Execute a single agent action.
 
@@ -192,12 +164,7 @@ class AgentScheduler:
         """
         from core.executor.action_executor import ActionExecutor
 
-        logger.info(
-            "Executing agent '%s' action '%s' (triggered by: %s)",
-            agent.name,
-            action.name,
-            triggering_event.topic
-        )
+        logger.info("Executing agent '%s' action '%s' (triggered by: %s)", agent.name, action.name, triggering_event.topic)
 
         # Handle dry-run mode
         if agent.dry_run:
@@ -206,7 +173,7 @@ class AgentScheduler:
                 message=f"[DRY RUN] Would execute: {action.name}",
                 action_id=action.action_id,
                 timestamp=time.time(),
-                data={"dry_run": True, "trigger_event": triggering_event.topic}
+                data={"dry_run": True, "trigger_event": triggering_event.topic},
             )
 
         # Execute via ActionExecutor if command is specified
@@ -231,22 +198,19 @@ class AgentScheduler:
                     "exit_code": exec_result.exit_code,
                     "stdout": exec_result.stdout[:500] if exec_result.stdout else "",
                     "stderr": exec_result.stderr[:500] if exec_result.stderr else "",
-                }
+                },
             )
 
         # If only operation is specified (no command), return placeholder
         # In production, this would dispatch to operation handlers
         if action.operation:
-            logger.info(
-                "Action references operation '%s' (not yet implemented)",
-                action.operation
-            )
+            logger.info("Action references operation '%s' (not yet implemented)", action.operation)
             return AgentResult(
                 success=True,
                 message=f"Operation '{action.operation}' executed (stub)",
                 action_id=action.action_id,
                 timestamp=time.time(),
-                data={"trigger_event": triggering_event.topic, "operation": action.operation}
+                data={"trigger_event": triggering_event.topic, "operation": action.operation},
             )
 
         # No command or operation specified
@@ -255,15 +219,10 @@ class AgentScheduler:
             message="Action has no command or operation specified",
             action_id=action.action_id,
             timestamp=time.time(),
-            data={"trigger_event": triggering_event.topic}
+            data={"trigger_event": triggering_event.topic},
         )
 
-    def _publish_agent_event(
-        self,
-        agent: AgentConfig,
-        success: bool,
-        results: list
-    ) -> None:
+    def _publish_agent_event(self, agent: AgentConfig, success: bool, results: list) -> None:
         """
         Publish agent completion event to EventBus.
 
@@ -282,18 +241,9 @@ class AgentScheduler:
             "timestamp": time.time(),
         }
 
-        self._event_bus.publish(
-            topic=event_topic,
-            data=event_data,
-            source=f"AgentScheduler.{agent.agent_id}"
-        )
+        self._event_bus.publish(topic=event_topic, data=event_data, source=f"AgentScheduler.{agent.agent_id}")
 
-        logger.info(
-            "Published agent event: %s (success=%s, actions=%d)",
-            event_topic,
-            success,
-            len(results)
-        )
+        logger.info("Published agent event: %s (success=%s, actions=%d)", event_topic, success, len(results))
 
     def register_agent(self, agent: AgentConfig) -> None:
         """
@@ -304,11 +254,7 @@ class AgentScheduler:
         """
         if agent.enabled and agent.subscriptions:
             self._subscribe_agent(agent)
-            logger.info(
-                "Registered agent '%s' with subscriptions: %s",
-                agent.name,
-                ", ".join(agent.subscriptions)
-            )
+            logger.info("Registered agent '%s' with subscriptions: %s", agent.name, ", ".join(agent.subscriptions))
 
     def unregister_agent(self, agent_id: str) -> bool:
         """
@@ -330,11 +276,7 @@ class AgentScheduler:
             # Note: EventBus.unsubscribe requires the exact callback,
             # which we don't store. For cleanup, we rely on EventBus
             # internal handling or agent restart.
-            logger.debug(
-                "Agent '%s' unsubscribed from topic: %s",
-                agent.name,
-                topic
-            )
+            logger.debug("Agent '%s' unsubscribed from topic: %s", agent.name, topic)
 
         del self._subscribed_agents[agent_id]
         logger.info("Unregistered agent: %s", agent.name)

@@ -29,6 +29,7 @@ AGENT_ID_LENGTH = 8
 
 class AgentType(Enum):
     """Types of system agents."""
+
     SYSTEM_MONITOR = "system_monitor"
     SECURITY_GUARD = "security_guard"
     UPDATE_WATCHER = "update_watcher"
@@ -39,6 +40,7 @@ class AgentType(Enum):
 
 class AgentStatus(Enum):
     """Current status of an agent."""
+
     IDLE = "idle"
     RUNNING = "running"
     PAUSED = "paused"
@@ -48,25 +50,28 @@ class AgentStatus(Enum):
 
 class TriggerType(Enum):
     """What triggers an agent to act."""
-    SCHEDULE = "schedule"          # Cron-like schedule
-    EVENT = "event"                # System event (power, network, etc.)
-    THRESHOLD = "threshold"        # Metric crosses a threshold
-    MANUAL = "manual"              # User-initiated only
-    INTERVAL = "interval"          # Every N seconds
+
+    SCHEDULE = "schedule"  # Cron-like schedule
+    EVENT = "event"  # System event (power, network, etc.)
+    THRESHOLD = "threshold"  # Metric crosses a threshold
+    MANUAL = "manual"  # User-initiated only
+    INTERVAL = "interval"  # Every N seconds
 
 
 class ActionSeverity(Enum):
     """How impactful an action is."""
-    INFO = "info"                  # Logging/notification only
-    LOW = "low"                    # Safe automatic action
-    MEDIUM = "medium"              # Needs confirmation in strict mode
-    HIGH = "high"                  # Always needs confirmation
-    CRITICAL = "critical"          # Privileged operation
+
+    INFO = "info"  # Logging/notification only
+    LOW = "low"  # Safe automatic action
+    MEDIUM = "medium"  # Needs confirmation in strict mode
+    HIGH = "high"  # Always needs confirmation
+    CRITICAL = "critical"  # Privileged operation
 
 
 @dataclass
 class AgentTrigger:
     """Defines when an agent should activate."""
+
     trigger_type: TriggerType
     config: Dict[str, Any] = field(default_factory=dict)
     # For INTERVAL: {"seconds": 300}
@@ -91,6 +96,7 @@ class AgentTrigger:
 @dataclass
 class AgentAction:
     """An action that an agent can perform."""
+
     action_id: str
     name: str
     description: str
@@ -126,6 +132,7 @@ class AgentAction:
 @dataclass
 class AgentResult:
     """Result of an agent action execution."""
+
     success: bool
     message: str
     action_id: str = ""
@@ -149,6 +156,7 @@ class AgentResult:
 @dataclass
 class AgentConfig:
     """Configuration for a single agent instance."""
+
     agent_id: str
     name: str
     agent_type: AgentType
@@ -213,6 +221,7 @@ class AgentConfig:
 @dataclass
 class AgentState:
     """Runtime state of an agent."""
+
     agent_id: str
     status: AgentStatus = AgentStatus.IDLE
     last_run: float = 0.0
@@ -250,13 +259,15 @@ class AgentState:
             )
         history = []
         for h in data.get("history", []):
-            history.append(AgentResult(
-                success=h["success"],
-                message=h["message"],
-                action_id=h.get("action_id", ""),
-                timestamp=h.get("timestamp", 0.0),
-                data=h.get("data"),
-            ))
+            history.append(
+                AgentResult(
+                    success=h["success"],
+                    message=h["message"],
+                    action_id=h.get("action_id", ""),
+                    timestamp=h.get("timestamp", 0.0),
+                    data=h.get("data"),
+                )
+            )
         return cls(
             agent_id=data["agent_id"],
             status=AgentStatus(data.get("status", "idle")),
@@ -483,6 +494,7 @@ class AgentRegistry:
     Manages agent configurations and state.
     Singleton pattern — use AgentRegistry.instance().
     """
+
     _instance: Optional["AgentRegistry"] = None
     _CONFIG_DIR = os.path.expanduser("~/.config/loofi-fedora-tweaks/agents")
 
@@ -650,14 +662,16 @@ class AgentRegistry:
         for agent in self._agents.values():
             state = self.get_state(agent.agent_id)
             for result in state.history:
-                activity.append({
-                    "agent_id": agent.agent_id,
-                    "agent_name": agent.name,
-                    "action_id": result.action_id,
-                    "success": result.success,
-                    "message": result.message,
-                    "timestamp": result.timestamp,
-                })
+                activity.append(
+                    {
+                        "agent_id": agent.agent_id,
+                        "agent_name": agent.name,
+                        "action_id": result.action_id,
+                        "success": result.success,
+                        "message": result.message,
+                        "timestamp": result.timestamp,
+                    }
+                )
         # Sort by timestamp descending
         activity.sort(key=lambda x: float(x["timestamp"]), reverse=True)
         return activity[:limit]
@@ -725,17 +739,10 @@ class AgentRegistry:
 
                 # Create state if doesn't exist
                 if agent_config.agent_id not in self._states:
-                    self._states[agent_config.agent_id] = AgentState(
-                        agent_id=agent_config.agent_id
-                    )
+                    self._states[agent_config.agent_id] = AgentState(agent_id=agent_config.agent_id)
 
                 loaded_count += 1
-                logger.info(
-                    "Loaded agent '%s' (%s) from %s",
-                    agent_config.name,
-                    agent_config.agent_id,
-                    filename
-                )
+                logger.info("Loaded agent '%s' (%s) from %s", agent_config.name, agent_config.agent_id, filename)
 
             except (json.JSONDecodeError, OSError, KeyError, TypeError) as exc:
                 logger.error("Failed to load agent from %s: %s", filepath, exc)

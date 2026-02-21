@@ -29,6 +29,7 @@ logger = logging.getLogger(__name__)
 @dataclass
 class PlanStep:
     """A single step in an agent plan."""
+
     step_number: int
     description: str
     operation: str
@@ -46,6 +47,7 @@ class PlanStep:
 @dataclass
 class AgentPlan:
     """A generated plan for an agent from a natural language goal."""
+
     goal: str
     agent_name: str
     description: str
@@ -59,13 +61,15 @@ class AgentPlan:
         """Convert this plan into an AgentConfig."""
         actions = []
         for step in self.steps:
-            actions.append(AgentAction(
-                action_id=f"step_{step.step_number}",
-                name=step.description[:60],
-                description=step.description,
-                severity=step.severity,
-                operation=step.operation,
-            ))
+            actions.append(
+                AgentAction(
+                    action_id=f"step_{step.step_number}",
+                    name=step.description[:60],
+                    description=step.description,
+                    severity=step.severity,
+                    operation=step.operation,
+                )
+            )
 
         return AgentConfig(
             agent_id="",  # Will be auto-generated
@@ -90,6 +94,7 @@ class AgentPlan:
             "settings": self.settings,
             "confidence": self.confidence,
         }
+
 
 # ==================== Goal Templates ====================
 
@@ -256,24 +261,55 @@ class AgentPlanner:
 
         keyword_map = {
             "keep_system_healthy": [
-                "health", "healthy", "monitor", "watch system", "system status",
-                "cpu", "memory", "ram", "temperature", "temp",
+                "health",
+                "healthy",
+                "monitor",
+                "watch system",
+                "system status",
+                "cpu",
+                "memory",
+                "ram",
+                "temperature",
+                "temp",
             ],
             "watch_security": [
-                "security", "secure", "firewall", "ports", "login",
-                "intrusion", "protect", "guard", "threat",
+                "security",
+                "secure",
+                "firewall",
+                "ports",
+                "login",
+                "intrusion",
+                "protect",
+                "guard",
+                "threat",
             ],
             "notify_updates": [
-                "update", "upgrade", "patch", "new version",
-                "dnf update", "flatpak update",
+                "update",
+                "upgrade",
+                "patch",
+                "new version",
+                "dnf update",
+                "flatpak update",
             ],
             "auto_cleanup": [
-                "clean", "cleanup", "cache", "journal", "temp",
-                "free space", "disk space", "garbage",
+                "clean",
+                "cleanup",
+                "cache",
+                "journal",
+                "temp",
+                "free space",
+                "disk space",
+                "garbage",
             ],
             "optimize_performance": [
-                "performance", "optimize", "fast", "speed",
-                "governor", "tuning", "slow", "workload",
+                "performance",
+                "optimize",
+                "fast",
+                "speed",
+                "governor",
+                "tuning",
+                "slow",
+                "workload",
             ],
         }
 
@@ -311,16 +347,13 @@ class AgentPlanner:
             return None
 
         # Build the prompt
-        ops_desc = "\n".join(
-            f"  - {op['op']}: {op['desc']} (severity: {op['severity']})"
-            for op in cls.OPERATION_CATALOG
-        )
+        ops_desc = "\n".join(f"  - {op['op']}: {op['desc']} (severity: {op['severity']})" for op in cls.OPERATION_CATALOG)
 
         prompt = (
             "You are a system administration agent planner. "
             "Given a user's goal, select the most relevant operations and create a plan.\n\n"
             f"Available operations:\n{ops_desc}\n\n"
-            f"User's goal: \"{goal}\"\n\n"
+            f'User\'s goal: "{goal}"\n\n'
             "Respond with ONLY a JSON object (no markdown) with these fields:\n"
             "{\n"
             '  "agent_name": "short name",\n'
@@ -369,12 +402,14 @@ class AgentPlanner:
             for i, op in enumerate(operations, 1):
                 op_info = next((o for o in cls.OPERATION_CATALOG if o["op"] == op), None)
                 if op_info:
-                    steps.append(PlanStep(
-                        step_number=i,
-                        description=op_info["desc"],
-                        operation=op,
-                        severity=ActionSeverity(op_info["severity"]),
-                    ))
+                    steps.append(
+                        PlanStep(
+                            step_number=i,
+                            description=op_info["desc"],
+                            operation=op,
+                            severity=ActionSeverity(op_info["severity"]),
+                        )
+                    )
 
             interval = max(30, min(86400, data.get("interval_seconds", 300)))
 

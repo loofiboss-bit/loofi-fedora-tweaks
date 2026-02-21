@@ -48,9 +48,7 @@ class ReportExporter:
             Stripped stdout, or None on failure.
         """
         try:
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=timeout
-            )
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=timeout)
             if result.returncode == 0:
                 return result.stdout.strip()
             return None
@@ -116,10 +114,7 @@ class ReportExporter:
 
         bat_cap = ReportExporter._read_file("/sys/class/power_supply/BAT0/capacity")
         if bat_cap is not None:
-            bat_status = (
-                ReportExporter._read_file("/sys/class/power_supply/BAT0/status")
-                or "Unknown"
-            )
+            bat_status = ReportExporter._read_file("/sys/class/power_supply/BAT0/status") or "Unknown"
             info["battery"] = f"{bat_cap}% ({bat_status})"
         else:
             info["battery"] = "No battery detected"

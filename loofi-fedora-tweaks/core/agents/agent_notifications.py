@@ -33,6 +33,7 @@ SEVERITY_RANKS = {"info": 0, "low": 1, "medium": 2, "high": 3, "critical": 4}
 @dataclass
 class AgentNotificationConfig:
     """Per-agent notification settings."""
+
     enabled: bool = False
     channels: List[str] = field(default_factory=lambda: ["desktop", "in_app"])
     min_severity: str = DEFAULT_MIN_SEVERITY
@@ -167,13 +168,12 @@ class AgentNotifier:
         """Send desktop notification via existing NotificationManager."""
         try:
             from utils.notifications import NotificationManager
+
             icon = "dialog-warning" if not result.success else "dialog-information"
             urgency = "critical" if not result.success else "normal"
             title = f"Agent: {agent_name}"
             body = result.message[:200]
-            return NotificationManager.send(
-                title=title, body=body, icon=icon, urgency=urgency
-            )
+            return NotificationManager.send(title=title, body=body, icon=icon, urgency=urgency)
         except (ImportError, AttributeError, OSError) as exc:
             logger.debug("Desktop notification failed: %s", exc)
             return False
@@ -183,6 +183,7 @@ class AgentNotifier:
         """Add to in-app NotificationCenter."""
         try:
             from utils.notification_center import NotificationCenter
+
             nc = NotificationCenter()
             category = "security" if "security" in agent_name.lower() else "system"
             nc.add(

@@ -14,7 +14,6 @@ from pathlib import Path
 from typing import Optional
 
 from services.system import SystemManager
-
 from utils.log import get_logger
 
 logger = get_logger(__name__)
@@ -92,9 +91,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
     def _get_keyboard_layout(cls) -> str:
         """Get current keyboard layout."""
         try:
-            result = subprocess.run(
-                ["localectl", "status"], capture_output=True, text=True, timeout=5
-            )
+            result = subprocess.run(["localectl", "status"], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 for line in result.stdout.split("\n"):
                     if "X11 Layout" in line:
@@ -154,11 +151,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
                             "coreutils",
                             "fedora-",
                         )
-                        return [
-                            p
-                            for p in packages
-                            if not any(p.startswith(x) for x in excluded)
-                        ]
+                        return [p for p in packages if not any(p.startswith(x) for x in excluded)]
                 return []
             else:
                 package_manager = SystemManager.get_package_manager()
@@ -169,11 +162,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
                     timeout=60,
                 )
                 if result.returncode == 0:
-                    packages = [
-                        p.strip()
-                        for p in result.stdout.strip().split("\n")
-                        if p.strip()
-                    ]
+                    packages = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
                     excluded = (
                         "kernel",
                         "glibc",
@@ -182,11 +171,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
                         "coreutils",
                         "fedora-",
                     )
-                    return [
-                        p
-                        for p in packages
-                        if not any(p.startswith(x) for x in excluded)
-                    ]
+                    return [p for p in packages if not any(p.startswith(x) for x in excluded)]
                 return []
         except (subprocess.SubprocessError, OSError, ValueError) as e:
             logger.debug("Failed to get user-installed packages: %s", e)
@@ -206,9 +191,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
                 timeout=30,
             )
             if result.returncode == 0:
-                return [
-                    a.strip() for a in result.stdout.strip().split("\n") if a.strip()
-                ]
+                return [a.strip() for a in result.stdout.strip().split("\n") if a.strip()]
             return []
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get Flatpak apps: %s", e)
@@ -246,9 +229,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
         flatpak_commands = ""
         if include_flatpaks:
             apps = cls._get_flatpak_apps()
-            flatpak_commands = "\n".join(
-                f"flatpak install -y flathub {app}" for app in apps
-            )
+            flatpak_commands = "\n".join(f"flatpak install -y flathub {app}" for app in apps)
 
         post_commands = custom_post or "# Add your custom commands here"
 
@@ -308,9 +289,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
             return Result(True, "ksvalidator not installed - unable to validate")
 
         try:
-            result = subprocess.run(
-                ["ksvalidator", str(path)], capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(["ksvalidator", str(path)], capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
                 return Result(True, "Kickstart file is valid")

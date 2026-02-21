@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 from services.system import SystemManager
-
 from utils.log import get_logger
 
 logger = get_logger(__name__)
@@ -63,11 +62,7 @@ class AnsibleExporter:
                             "rpm",
                             "fedora-",
                         )
-                        return [
-                            p
-                            for p in packages
-                            if not any(p.startswith(x) for x in excluded_prefixes)
-                        ]
+                        return [p for p in packages if not any(p.startswith(x) for x in excluded_prefixes)]
                 return []
             else:
                 package_manager = SystemManager.get_package_manager()
@@ -78,11 +73,7 @@ class AnsibleExporter:
                     timeout=60,
                 )
                 if result.returncode == 0:
-                    packages = [
-                        p.strip()
-                        for p in result.stdout.strip().split("\n")
-                        if p.strip()
-                    ]
+                    packages = [p.strip() for p in result.stdout.strip().split("\n") if p.strip()]
                     excluded_prefixes = (
                         "kernel",
                         "glibc",
@@ -91,11 +82,7 @@ class AnsibleExporter:
                         "rpm",
                         "fedora-",
                     )
-                    return [
-                        p
-                        for p in packages
-                        if not any(p.startswith(x) for x in excluded_prefixes)
-                    ]
+                    return [p for p in packages if not any(p.startswith(x) for x in excluded_prefixes)]
                 return []
         except (subprocess.SubprocessError, OSError, json.JSONDecodeError) as e:
             logger.debug("Failed to get installed packages: %s", e)
@@ -115,9 +102,7 @@ class AnsibleExporter:
                 timeout=30,
             )
             if result.returncode == 0:
-                return [
-                    a.strip() for a in result.stdout.strip().split("\n") if a.strip()
-                ]
+                return [a.strip() for a in result.stdout.strip().split("\n") if a.strip()]
             return []
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get Flatpak apps: %s", e)
@@ -395,9 +380,7 @@ Edit `site.yml` to add or remove packages, apps, or settings before running.
             try:
                 import yaml
             except ImportError:
-                return Result(
-                    True, "Unable to validate (yaml/ansible-lint not available)"
-                )
+                return Result(True, "Unable to validate (yaml/ansible-lint not available)")
             try:
                 with open(path) as f:
                     yaml.safe_load(f)
@@ -406,9 +389,7 @@ Edit `site.yml` to add or remove packages, apps, or settings before running.
                 return Result(False, f"YAML syntax error: {e}")
 
         try:
-            result = subprocess.run(
-                ["ansible-lint", str(path)], capture_output=True, text=True, timeout=60
-            )
+            result = subprocess.run(["ansible-lint", str(path)], capture_output=True, text=True, timeout=60)
 
             if result.returncode == 0:
                 return Result(True, "Playbook passed ansible-lint validation")

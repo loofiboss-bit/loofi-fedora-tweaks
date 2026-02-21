@@ -99,9 +99,7 @@ class OllamaManager:
             logger.debug("Failed to check Ollama service status via systemctl: %s", e)
             # Check if process is running
             try:
-                result = subprocess.run(
-                    ["pgrep", "-x", "ollama"], capture_output=True, text=True, timeout=5
-                )
+                result = subprocess.run(["pgrep", "-x", "ollama"], capture_output=True, text=True, timeout=5)
                 return result.returncode == 0
             except (subprocess.SubprocessError, OSError) as e:
                 logger.debug("Failed to check Ollama process via pgrep: %s", e)
@@ -196,9 +194,7 @@ class OllamaManager:
             return []
 
         try:
-            result = subprocess.run(
-                ["ollama", "list"], capture_output=True, text=True, timeout=10
-            )
+            result = subprocess.run(["ollama", "list"], capture_output=True, text=True, timeout=10)
 
             if result.returncode != 0:
                 return []
@@ -266,9 +262,7 @@ class OllamaManager:
             return Result(False, "Ollama is not installed")
 
         try:
-            result = subprocess.run(
-                ["ollama", "rm", model_name], capture_output=True, text=True, timeout=30
-            )
+            result = subprocess.run(["ollama", "rm", model_name], capture_output=True, text=True, timeout=30)
 
             if result.returncode == 0:
                 return Result(True, f"Model '{model_name}' deleted")
@@ -302,9 +296,7 @@ class OllamaManager:
             )
 
             if result.returncode == 0:
-                return Result(
-                    True, "Response generated", {"response": result.stdout.strip()}
-                )
+                return Result(True, "Response generated", {"response": result.stdout.strip()})
             else:
                 return Result(False, f"Generation failed: {result.stderr}")
         except subprocess.TimeoutExpired:
@@ -398,8 +390,7 @@ class AIConfigManager:
             False,
             "CUDA toolkit not found. Install with:\n"
             "%s cuda-toolkit\n"
-            "Or enable RPM Fusion and install: %s nvidia-driver-cuda"
-            % (install_cmd, install_cmd),
+            "Or enable RPM Fusion and install: %s nvidia-driver-cuda" % (install_cmd, install_cmd),
         )
 
     @classmethod
@@ -410,9 +401,7 @@ class AIConfigManager:
         if not shutil.which("rocminfo"):
             # Check if AMD GPU exists
             try:
-                result = subprocess.run(
-                    ["lspci"], capture_output=True, text=True, timeout=10
-                )
+                result = subprocess.run(["lspci"], capture_output=True, text=True, timeout=10)
                 if "AMD" not in result.stdout or "VGA" not in result.stdout:
                     return Result(False, "AMD GPU not detected")
             except (subprocess.SubprocessError, OSError) as e:
@@ -421,8 +410,7 @@ class AIConfigManager:
             pm = SystemManager.get_package_manager()
             return Result(
                 False,
-                "ROCm not installed. Install with:\n"
-                "pkexec %s install rocm-hip rocm-runtime rocm-smi" % pm,
+                "ROCm not installed. Install with:\npkexec %s install rocm-hip rocm-runtime rocm-smi" % pm,
             )
 
         return Result(True, "ROCm is configured and ready")

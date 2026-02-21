@@ -18,8 +18,8 @@ import time
 from typing import Any, Callable, Dict, List, Optional
 
 from services.system import SystemManager
+from utils.arbitrator import AgentRequest, Arbitrator, Priority
 
-from core.executor.action_executor import ActionExecutor as CentralExecutor
 from core.agents.agents import (
     ActionSeverity,
     AgentAction,
@@ -30,7 +30,7 @@ from core.agents.agents import (
     AgentStatus,
     TriggerType,
 )
-from utils.arbitrator import AgentRequest, Arbitrator, Priority
+from core.executor.action_executor import ActionExecutor as CentralExecutor
 
 logger = logging.getLogger(__name__)
 
@@ -107,9 +107,7 @@ class AgentExecutor:
         # Route to appropriate handler
         try:
             if action.operation:
-                result = AgentExecutor._execute_operation(
-                    action.operation, agent.settings
-                )
+                result = AgentExecutor._execute_operation(action.operation, agent.settings)
             elif action.command:
                 result = AgentExecutor._execute_command(action.command, action.args)
             else:
@@ -166,7 +164,7 @@ class AgentExecutor:
         if push_index == -1:
             return False, ""
 
-        tail = args[push_index + 1:]
+        tail = args[push_index + 1 :]
         if not tail:
             if AgentExecutor._is_on_protected_branch():
                 return (
@@ -193,9 +191,7 @@ class AgentExecutor:
         # Handle `git push --delete origin master` / `git push -d origin master`.
         has_delete = "--delete" in filtered or "-d" in filtered
 
-        non_options = [
-            a for a in filtered if not a.startswith("-") and a != "--"
-        ]
+        non_options = [a for a in filtered if not a.startswith("-") and a != "--"]
         # With only remote provided (`git push origin`), destination is implicit.
         if len(non_options) <= 1:
             return AgentExecutor._is_on_protected_branch()
@@ -535,11 +531,7 @@ class AgentExecutor:
                     timeout=60,
                 )
                 if result.returncode == 0 and "AvailableUpdate" in result.stdout:
-                    lines = [
-                        line
-                        for line in result.stdout.strip().split("\n")
-                        if line.strip()
-                    ]
+                    lines = [line for line in result.stdout.strip().split("\n") if line.strip()]
                     count = len(lines)
                     return AgentResult(
                         success=True,
@@ -567,11 +559,7 @@ class AgentExecutor:
                 )
                 # Exit code 100 = updates available, 0 = no updates
                 if result.returncode == 100:
-                    lines = [
-                        line
-                        for line in result.stdout.strip().split("\n")
-                        if line.strip() and not line.startswith("Last")
-                    ]
+                    lines = [line for line in result.stdout.strip().split("\n") if line.strip() and not line.startswith("Last")]
                     count = len(lines)
                     return AgentResult(
                         success=True,
@@ -597,9 +585,7 @@ class AgentExecutor:
                 timeout=30,
             )
             if result.returncode == 0:
-                lines = [
-                    line for line in result.stdout.strip().split("\n") if line.strip()
-                ]
+                lines = [line for line in result.stdout.strip().split("\n") if line.strip()]
                 count = len(lines)
                 return AgentResult(
                     success=True,
@@ -633,11 +619,7 @@ class AgentExecutor:
                 text=True,
                 timeout=10,
             )
-            size = (
-                result.stdout.strip().split("\t")[0]
-                if result.returncode == 0
-                else "unknown"
-            )
+            size = result.stdout.strip().split("\t")[0] if result.returncode == 0 else "unknown"
             return AgentResult(
                 success=True,
                 message=f"DNF cache size: {size} (use Maintenance tab to clean)",
@@ -735,9 +717,7 @@ class AgentExecutor:
                 },
             )
         except OSError as exc:
-            return AgentResult(
-                success=False, message=f"Workload detection failed: {exc}"
-            )
+            return AgentResult(success=False, message=f"Workload detection failed: {exc}")
 
     @staticmethod
     def _op_apply_tuning(settings: Dict[str, Any]) -> AgentResult:
@@ -776,9 +756,7 @@ class AgentScheduler:
         if not self._stop_event.is_set() and self._thread and self._thread.is_alive():
             return
         self._stop_event.clear()
-        self._thread = threading.Thread(
-            target=self._run_loop, daemon=True, name="AgentScheduler"
-        )
+        self._thread = threading.Thread(target=self._run_loop, daemon=True, name="AgentScheduler")
         self._thread.start()
         logger.info("Agent scheduler started")
 
@@ -791,11 +769,7 @@ class AgentScheduler:
 
     @property
     def is_running(self) -> bool:
-        return (
-            not self._stop_event.is_set()
-            and self._thread is not None
-            and self._thread.is_alive()
-        )
+        return not self._stop_event.is_set() and self._thread is not None and self._thread.is_alive()
 
     def _run_loop(self):
         """Main scheduler loop."""

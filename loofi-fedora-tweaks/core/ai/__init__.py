@@ -2,10 +2,10 @@
 
 from core.ai.ai import AIConfigManager, LlamaCppManager, OllamaManager, Result  # noqa: F401
 from core.ai.ai_models import (  # noqa: F401
-    AIModelManager,
-    RECOMMENDED_MODELS,
     _PARAM_BASE_MB,
     _QUANT_RAM_MULTIPLIERS,
+    RECOMMENDED_MODELS,
+    AIModelManager,
 )
 from core.ai.context_rag import ContextRAGManager  # noqa: F401
 

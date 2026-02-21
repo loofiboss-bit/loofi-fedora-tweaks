@@ -123,8 +123,7 @@ class HealthTimeline:
             conn = self._get_conn()
             try:
                 conn.execute(
-                    "INSERT INTO metrics (timestamp, metric_type, value, unit, metadata) "
-                    "VALUES (?, ?, ?, ?, ?)",
+                    "INSERT INTO metrics (timestamp, metric_type, value, unit, metadata) VALUES (?, ?, ?, ?, ?)",
                     (ts, metric_type, value, unit, meta_str),
                 )
                 conn.commit()
@@ -234,13 +233,15 @@ class HealthTimeline:
                         meta_dict = json.loads(meta) if meta else {}
                     except json.JSONDecodeError:
                         meta_dict = {}
-                    rows.append({
-                        "id": row["id"],
-                        "timestamp": row["timestamp"],
-                        "value": row["value"],
-                        "unit": row["unit"],
-                        "metadata": meta_dict,
-                    })
+                    rows.append(
+                        {
+                            "id": row["id"],
+                            "timestamp": row["timestamp"],
+                            "value": row["value"],
+                            "unit": row["unit"],
+                            "metadata": meta_dict,
+                        }
+                    )
                 return rows
             finally:
                 self._close_conn(conn)
@@ -308,9 +309,7 @@ class HealthTimeline:
         try:
             conn = self._get_conn()
             try:
-                cursor = conn.execute(
-                    "DELETE FROM metrics WHERE timestamp < ?", (cutoff,)
-                )
+                cursor = conn.execute("DELETE FROM metrics WHERE timestamp < ?", (cutoff,))
                 deleted = cursor.rowcount
                 conn.commit()
             finally:
@@ -339,10 +338,7 @@ class HealthTimeline:
             conn = self._get_conn()
             conn.row_factory = sqlite3.Row
             try:
-                cursor = conn.execute(
-                    "SELECT id, timestamp, metric_type, value, unit, metadata "
-                    "FROM metrics ORDER BY timestamp ASC"
-                )
+                cursor = conn.execute("SELECT id, timestamp, metric_type, value, unit, metadata FROM metrics ORDER BY timestamp ASC")
                 rows = [dict(row) for row in cursor]
             finally:
                 self._close_conn(conn)
@@ -403,14 +399,16 @@ class HealthTimeline:
         for m in metrics:
             deviation = abs(m["value"] - mean)
             if deviation > threshold:
-                anomalies.append({
-                    "id": m["id"],
-                    "timestamp": m["timestamp"],
-                    "value": m["value"],
-                    "deviation": round(deviation / stdev, 2),
-                    "mean": round(mean, 2),
-                    "stdev": round(stdev, 2),
-                })
+                anomalies.append(
+                    {
+                        "id": m["id"],
+                        "timestamp": m["timestamp"],
+                        "value": m["value"],
+                        "deviation": round(deviation / stdev, 2),
+                        "mean": round(mean, 2),
+                        "stdev": round(stdev, 2),
+                    }
+                )
 
         return anomalies
 
@@ -450,7 +448,9 @@ class HealthTimeline:
             try:
                 result = subprocess.run(
                     ["sensors"],
-                    capture_output=True, text=True, timeout=5,
+                    capture_output=True,
+                    text=True,
+                    timeout=5,
                 )
                 if result.returncode == 0:
                     for line in result.stdout.split("\n"):

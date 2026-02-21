@@ -1,5 +1,27 @@
 """core/agents/ — Agent orchestration logic."""
 
+from core.agents.agent_notifications import (
+    DEFAULT_MIN_SEVERITY,
+    NOTIFICATION_COOLDOWN_SECONDS,
+    SEVERITY_RANKS,
+    WEBHOOK_TIMEOUT_SECONDS,
+    AgentNotificationConfig,
+    AgentNotifier,
+)
+from core.agents.agent_planner import (
+    GOAL_TEMPLATES,
+    AgentPlan,
+    AgentPlanner,
+    PlanStep,
+)
+from core.agents.agent_runner import (
+    COMMAND_TIMEOUT_SECONDS,
+    GIT_BRANCH_TIMEOUT_SECONDS,
+    PROTECTED_GIT_BRANCHES,
+    SCHEDULER_POLL_SECONDS,
+    AgentExecutor,
+    AgentScheduler,
+)
 from core.agents.agents import (
     AGENT_ID_LENGTH,
     BUILTIN_AGENTS,
@@ -15,28 +37,6 @@ from core.agents.agents import (
     AgentTrigger,
     AgentType,
     TriggerType,
-)
-from core.agents.agent_notifications import (
-    AgentNotificationConfig,
-    AgentNotifier,
-    DEFAULT_MIN_SEVERITY,
-    NOTIFICATION_COOLDOWN_SECONDS,
-    SEVERITY_RANKS,
-    WEBHOOK_TIMEOUT_SECONDS,
-)
-from core.agents.agent_planner import (
-    AgentPlan,
-    AgentPlanner,
-    GOAL_TEMPLATES,
-    PlanStep,
-)
-from core.agents.agent_runner import (
-    AgentExecutor,
-    AgentScheduler,
-    COMMAND_TIMEOUT_SECONDS,
-    GIT_BRANCH_TIMEOUT_SECONDS,
-    PROTECTED_GIT_BRANCHES,
-    SCHEDULER_POLL_SECONDS,
 )
 
 __all__ = [

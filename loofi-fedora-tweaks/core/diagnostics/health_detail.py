@@ -8,8 +8,9 @@ with navigation targets. Extends HealthScoreManager with drill-down capability.
 from dataclasses import dataclass
 from typing import Dict, List, Optional
 
-from core.diagnostics.health_score import HealthScoreManager
 from utils.log import get_logger
+
+from core.diagnostics.health_score import HealthScoreManager
 
 logger = get_logger(__name__)
 
@@ -17,6 +18,7 @@ logger = get_logger(__name__)
 @dataclass
 class ComponentScore:
     """Individual health component score with context."""
+
     name: str
     key: str
     score: int
@@ -29,6 +31,7 @@ class ComponentScore:
 @dataclass
 class HealthFix:
     """Actionable fix suggestion with navigation target."""
+
     title: str
     description: str
     tab_id: str
@@ -137,12 +140,14 @@ class HealthDetailManager:
                     description = rec
                     break
 
-            fixes.append(HealthFix(
-                title=f"Improve {name}",
-                description=description,
-                tab_id=tab_id,
-                severity=severity,
-            ))
+            fixes.append(
+                HealthFix(
+                    title=f"Improve {name}",
+                    description=description,
+                    tab_id=tab_id,
+                    severity=severity,
+                )
+            )
 
         severity_order = {"high": 0, "medium": 1, "low": 2}
         fixes.sort(key=lambda f: severity_order.get(f.severity, 2))
