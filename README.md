@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v1.0.0 "Foundation"
+# Loofi Fedora Tweaks v2.0.0 "Evolution"
 
 <p align="center">
   <img src="loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png" alt="Loofi Fedora Tweaks Logo" width="128"/>
@@ -10,13 +10,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofitheboss/loofi-fedora-tweaks/releases/tag/v1.0.0">
-    <img src="https://img.shields.io/badge/Release-v1.0.0-blue?style=for-the-badge&logo=github" alt="Release v1.0.0"/>
+  <a href="https://github.com/loofitheboss/loofi-fedora-tweaks/releases/tag/v2.0.0">
+    <img src="https://img.shields.io/badge/Release-v2.0.0-blue?style=for-the-badge&logo=github" alt="Release v2.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43-blue?style=for-the-badge&logo=fedora" alt="Fedora 43"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
-  <img src="https://img.shields.io/badge/Coverage-82%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 82%"/>
+  <img src="https://img.shields.io/badge/Coverage-81%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 81%"/>
   <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
     <img src="https://img.shields.io/badge/COPR-loofitheboss%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
   </a>
@@ -39,108 +39,24 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What Is New in v50.0.0?
+## What Is New in v2.0.0?
 
-`v50.0.0 "Forge"` is a pure quality hardening release across four pillars:
+`v2.0.0 "Evolution"` is a structural refactoring release that reorganizes the codebase from a flat `utils/` namespace into domain-specific `services/` and `core/` layers. No user-facing behavior changes — all 6383 tests pass.
 
-- **Test coverage expansion** — 91 new test methods across 5 previously untested modules (`action_result`, `errors`, `event_simulator`, `presets`, `remote_config`).
-- **Exception narrowing** — Replaced 6 broad `except Exception` handlers in `error_handler`, `event_bus`, `daemon`, and `lazy_widget` with specific exception types.
-- **Module docstrings** — Added Google-style module-level docstrings to 9 utils modules.
-- **Coverage push** — All new tests contribute to the 80% CI coverage threshold.
+- **22 modules migrated** from `utils/` to `services/` across 6 domains (security, software, desktop, storage, network, virtualization).
+- **14 modules migrated** from `utils/` to `core/` across 4 domains (agents, ai, diagnostics, export).
+- **Backward-compatible deprecation shims** in `utils/` — existing imports continue to work with `DeprecationWarning`.
+- **3 legacy deprecated shims removed** (`process.py`, `battery.py`, `action_executor.py`).
+- **All UI/CLI/API/plugin imports updated** to new service/core paths.
+- **6383 tests passing**, 81%+ coverage, 0 new failures.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v50.0.0.md`](docs/releases/RELEASE-NOTES-v50.0.0.md)
-
----
-
-## What Is New in v49.0.0?
-
-`v49.0.0 "Shield"` expands test coverage for the four lowest-covered modules:
-
-- **`utils/formatting.py`** — 26 new tests covering `bytes_to_human`, `seconds_to_human`, `percent_bar`, `truncate` (was 0% coverage).
-- **`services/hardware/battery.py`** — 13 tests for `BatteryManager.set_limit` with all failure paths (was 24% coverage).
-- **`utils/update_manager.py`** — Enhanced with proper `shutil.which` + `SystemManager` mocking, deduplicated stale tests (28 tests total, was 27% coverage).
-- **`core/plugins/adapter.py`** — Expanded with lifecycle, slugify, version compat, CLI commands, check_compat manifest/permissions (53 tests total, was 30% coverage).
-- All subprocess mocks include `timeout` enforcement verification.
-- Covers both `dnf` and `rpm-ostree` paths where applicable.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v49.0.0.md`](docs/releases/RELEASE-NOTES-v49.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v2.0.0.md`](docs/releases/RELEASE-NOTES-v2.0.0.md)
 
 ---
 
-## What Is New in v48.0.0?
+## What Was New in v1.0.0?
 
-`v48.0.0 "Sidebar Index"` restructures the sidebar architecture with O(1) ID-based lookups.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v48.0.0.md`](docs/releases/RELEASE-NOTES-v48.0.0.md)
-
----
-
-## What Is New in v47.0.0?
-
-`v47.0.0 "Experience"` is a UX-focused release making Loofi accessible to beginners while keeping power for advanced users:
-
-- **Experience Level System** — Beginner/Intermediate/Advanced modes that filter sidebar tabs to reduce overwhelm. Configurable in Settings and during first-run wizard.
-- **Guided Tour** — Step-by-step spotlight overlay for first-time users introducing the sidebar, dashboard, command palette, settings, and help.
-- **Health Score Drill-Down** — Clickable health gauge on dashboard opens a modal with per-component scores, progress bars, and "Fix it →" navigation buttons.
-- **Toast Notifications** — Non-intrusive success/error/info toasts on command completion across all tabs (BaseTab integration).
-- **Quick Command Registry** — 10 built-in quick commands (system update, cleanup, etc.) accessible from the command palette with ⚡ prefix.
-- **Dashboard Undo Card** — Recent actions card with one-click undo capability powered by HistoryManager.
-- **Wizard Enhancements** — 6-step wizard with progress bar, experience level selection, and apply feedback.
-- **Settings UX** — Help text in all settings sub-tabs and experience level selector in Behavior tab.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v47.0.0.md`](docs/releases/RELEASE-NOTES-v47.0.0.md)
-
----
-
-## What Is New in v46.0.0?
-
-`v46.0.0 "Navigator"` is a navigation-clarity release focused on discoverability and taxonomy consistency:
-
-- **Category reorganization** — standardized technical categories across sidebar navigation.
-- **Metadata alignment** — tab metadata categories/orders are fully aligned with registry definitions.
-- **Command palette consistency** — category labels match sidebar taxonomy.
-- **Icon system polish** — semantic icon pack with theme-aware tinting and selection-aware sidebar icon contrast.
-- **Release pipeline hardening** — v46 workflow specs and race-lock alignment fixed release gate failures.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v46.0.0.md`](docs/releases/RELEASE-NOTES-v46.0.0.md)
-
----
-
-## What Is New in v43.0.0?
-
-`v43.0.0 "Stabilization-Only"` is a strict hardening release focused on policy enforcement and regression-proofing:
-
-- **Stabilization policy checker added** — AST gate enforces timeout usage, UI subprocess ban, hardcoded executable `dnf` bans, and explicit broad-exception allowlist boundaries.
-- **CI/release hardening gate enabled** — checker now runs in `ci.yml`, `auto-release.yml`, and `coverage-gate.yml`.
-- **Coverage gates normalized to 80%** across all workflow files.
-- **Wizard health checks extracted to utils** — `ui/wizard.py` no longer runs subprocess directly.
-- **Remaining executable hardcoded `dnf` invocations removed** from package/update/health/export stacks.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v43.0.0.md`](docs/releases/RELEASE-NOTES-v43.0.0.md)
-
----
-
-## What Is New in v41.0.0?
-
-`v41.0.0 "Coverage"` is a pure test and CI release — coverage raised from 74% to 80%+, 23 test files created/expanded.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v41.0.0.md`](docs/releases/RELEASE-NOTES-v41.0.0.md)
-
----
-
-## What Is New in v40.0.0?
-
-`v40.0.0 "Foundation"` is a security hardening release — subprocess timeout enforcement, shell injection elimination, and privilege escalation cleanup.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v40.0.0.md`](docs/releases/RELEASE-NOTES-v40.0.0.md)
-
----
-
-## What Is New in v39.0.0?
-
-`v39.0.0 "Prism"` completes the services layer migration — zero deprecated imports, zero inline styles, zero DeprecationWarnings.
-
-Full notes: [`docs/releases/RELEASE-NOTES-v39.0.0.md`](docs/releases/RELEASE-NOTES-v39.0.0.md)
+`v1.0.0 "Foundation"` reset the version numbering and established the project baseline with all prior features consolidated under a clean semantic version.
 
 ---
 
@@ -338,7 +254,7 @@ Optional features may require extra packages (for example: virtualization tools,
 Run tests:
 
 ```bash
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v  # 5895 tests collected
+PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v  # 6383 tests collected
 ```
 
 Lint:
