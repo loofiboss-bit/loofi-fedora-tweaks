@@ -950,6 +950,11 @@ def _install_stubs():
     desk_mod.DesktopUtils.detect_color_scheme = MagicMock(return_value="dark")
     sys.modules["utils.desktop_utils"] = desk_mod
 
+    # -- services.desktop (canonical path for DesktopUtils) --
+    svc_desk_mod = types.ModuleType("services.desktop")
+    svc_desk_mod.DesktopUtils = desk_mod.DesktopUtils
+    sys.modules["services.desktop"] = svc_desk_mod
+
     # -- utils.notification_center --
     nc_mod = types.ModuleType("utils.notification_center")
     nc_mod.NotificationCenter = MagicMock
@@ -1005,6 +1010,7 @@ _MODULE_KEYS = [
     "utils.log",
     "utils.pulse",
     "utils.desktop_utils",
+    "services.desktop",
     "utils.notification_center",
     "utils.update_checker",
     "services",
@@ -1773,7 +1779,7 @@ class TestDetectSystemTheme(unittest.TestCase):
     def test_detect_dark(self):
         """detect_system_theme returns 'dark' when system prefers dark."""
         mod = _get_module()
-        desk = sys.modules["utils.desktop_utils"]
+        desk = sys.modules["services.desktop"]
         desk.DesktopUtils.detect_color_scheme = MagicMock(return_value="dark")
         result = mod.MainWindow.detect_system_theme()
         self.assertEqual(result, "dark")
@@ -1781,7 +1787,7 @@ class TestDetectSystemTheme(unittest.TestCase):
     def test_detect_light(self):
         """detect_system_theme returns 'light' when system prefers light."""
         mod = _get_module()
-        desk = sys.modules["utils.desktop_utils"]
+        desk = sys.modules["services.desktop"]
         desk.DesktopUtils.detect_color_scheme = MagicMock(return_value="light")
         result = mod.MainWindow.detect_system_theme()
         self.assertEqual(result, "light")

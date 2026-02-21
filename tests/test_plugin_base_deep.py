@@ -404,14 +404,14 @@ class TestCheckForUpdates(unittest.TestCase):
         mock_resp = MagicMock()
         mock_resp.__enter__ = MagicMock(return_value=mock_resp)
         mock_resp.__exit__ = MagicMock(return_value=False)
-        mock_resp.read.return_value = json.dumps({"version": "2.0.0"}).encode()
+        mock_resp.read.return_value = json.dumps({"version": "2.0.0"}).encode()  # fixture-version
         mock_urlopen.return_value = mock_resp
 
         with patch("utils.plugin_base.APP_VERSION", "99.0.0"):
             results = self.loader.check_for_updates("updatable")
             self.assertEqual(len(results), 1)
             self.assertTrue(results[0]["update_available"])
-            self.assertEqual(results[0]["latest_version"], "2.0.0")
+            self.assertEqual(results[0]["latest_version"], "2.0.0")  # fixture-version
 
     @patch("urllib.request.urlopen", side_effect=urllib.error.URLError("network fail"))
     def test_network_error(self, _):
