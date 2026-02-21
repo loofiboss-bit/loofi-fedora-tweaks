@@ -167,8 +167,13 @@ class TestPresetCommand(unittest.TestCase):
         manager.load_preset.return_value = {'foo': 'bar'}
         mock_manager_cls.return_value = manager
 
-        with tempfile.NamedTemporaryFile(delete=True) as tf:
+        # Windows locks NamedTemporaryFile while open — close before writing
+        tf = tempfile.NamedTemporaryFile(delete=False, suffix='.json')
+        tf.close()
+        try:
             rc = cmd_preset(argparse.Namespace(action='export', name='gaming', path=tf.name))
+        finally:
+            os.unlink(tf.name)
 
         self.assertEqual(rc, 0)
 

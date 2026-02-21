@@ -14,6 +14,8 @@ from typing import List, Optional
 
 logger = logging.getLogger(__name__)
 
+from core.diagnostics import HealthTimeline  # noqa: E402
+from core.executor.operations import AdvancedOps, CleanupOps, NetworkOps, TweakOps  # noqa: E402
 from services.hardware import (
     BluetoothManager,  # noqa: E402
     DiskManager,  # noqa: E402
@@ -23,16 +25,14 @@ from services.network import (
     NetworkMonitor,  # noqa: E402
     PortAuditor,  # noqa: E402
 )
+from services.security import FirewallManager  # noqa: E402
 from services.system import (
     ProcessManager,  # noqa: E402
     SystemManager,  # noqa: E402
 )
-from services.security import FirewallManager  # noqa: E402
 from utils.focus_mode import FocusMode  # noqa: E402
-from core.diagnostics import HealthTimeline  # noqa: E402
 from utils.journal import JournalManager  # noqa: E402
 from utils.monitor import SystemMonitor  # noqa: E402
-from utils.operations import AdvancedOps, CleanupOps, NetworkOps, TweakOps  # noqa: E402
 from utils.package_explorer import PackageExplorer  # noqa: E402
 from utils.plugin_base import PluginLoader  # noqa: E402
 from utils.plugin_installer import PluginInstaller  # noqa: E402
@@ -2755,7 +2755,7 @@ def cmd_extension(args):
 
 def cmd_flatpak_manage(args):
     """Handle Flatpak management subcommand."""
-    from utils.flatpak_manager import FlatpakManager
+    from services.software import FlatpakManager
 
     if args.action == "sizes":
         sizes = FlatpakManager.get_flatpak_sizes()

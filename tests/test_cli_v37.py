@@ -154,8 +154,8 @@ class TestCmdFlatpakManage(unittest.TestCase):
         cli_main._json_output = False
         cli_main._dry_run = False
 
-    @patch('utils.flatpak_manager.FlatpakManager.get_total_size')
-    @patch('utils.flatpak_manager.FlatpakManager.get_flatpak_sizes')
+    @patch('services.software.flatpak.FlatpakManager.get_total_size')
+    @patch('services.software.flatpak.FlatpakManager.get_flatpak_sizes')
     def test_sizes(self, mock_sizes, mock_total):
         entry = MagicMock()
         entry.app_id = "org.example.App"
@@ -166,14 +166,14 @@ class TestCmdFlatpakManage(unittest.TestCase):
         code = cli_main.cmd_flatpak_manage(args)
         self.assertEqual(code, 0)
 
-    @patch('utils.flatpak_manager.FlatpakManager.get_all_permissions')
+    @patch('services.software.flatpak.FlatpakManager.get_all_permissions')
     def test_permissions(self, mock_perms):
         mock_perms.return_value = []
         args = argparse.Namespace(action="permissions")
         code = cli_main.cmd_flatpak_manage(args)
         self.assertEqual(code, 0)
 
-    @patch('utils.flatpak_manager.FlatpakManager.find_orphan_runtimes')
+    @patch('services.software.flatpak.FlatpakManager.find_orphan_runtimes')
     def test_orphans(self, mock_orphans):
         mock_orphans.return_value = ["org.old.Runtime"]
         args = argparse.Namespace(action="orphans")
@@ -181,7 +181,7 @@ class TestCmdFlatpakManage(unittest.TestCase):
         self.assertEqual(code, 0)
 
     @patch('cli.main.run_operation')
-    @patch('utils.flatpak_manager.FlatpakManager.cleanup_unused')
+    @patch('services.software.flatpak.FlatpakManager.cleanup_unused')
     def test_cleanup(self, mock_cleanup, mock_run):
         mock_cleanup.return_value = ("flatpak", ["uninstall", "--unused"], "Cleanup")
         mock_run.return_value = True
@@ -251,7 +251,7 @@ class TestCmdDisplay(unittest.TestCase):
         cli_main._json_output = False
         cli_main._dry_run = False
 
-    @patch('utils.wayland_display.WaylandDisplayManager.get_displays')
+    @patch('services.desktop.display.WaylandDisplayManager.get_displays')
     def test_list(self, mock_displays):
         d = MagicMock()
         d.name = "eDP-1"
@@ -264,7 +264,7 @@ class TestCmdDisplay(unittest.TestCase):
         code = cli_main.cmd_display(args)
         self.assertEqual(code, 0)
 
-    @patch('utils.wayland_display.WaylandDisplayManager.get_session_info')
+    @patch('services.desktop.display.WaylandDisplayManager.get_session_info')
     def test_session(self, mock_session):
         mock_session.return_value = {"type": "wayland", "desktop": "GNOME"}
         args = argparse.Namespace(action="session")
@@ -272,7 +272,7 @@ class TestCmdDisplay(unittest.TestCase):
         self.assertEqual(code, 0)
 
     @patch('cli.main.run_operation')
-    @patch('utils.wayland_display.WaylandDisplayManager.enable_fractional_scaling')
+    @patch('services.desktop.display.WaylandDisplayManager.enable_fractional_scaling')
     def test_fractional_on(self, mock_enable, mock_run):
         mock_enable.return_value = ("gsettings", ["set", "..."], "Enable")
         mock_run.return_value = True
@@ -281,7 +281,7 @@ class TestCmdDisplay(unittest.TestCase):
         self.assertEqual(code, 0)
 
     @patch('cli.main.run_operation')
-    @patch('utils.wayland_display.WaylandDisplayManager.disable_fractional_scaling')
+    @patch('services.desktop.display.WaylandDisplayManager.disable_fractional_scaling')
     def test_fractional_off(self, mock_disable, mock_run):
         mock_disable.return_value = ("gsettings", ["set", "..."], "Disable")
         mock_run.return_value = True
