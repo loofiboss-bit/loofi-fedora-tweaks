@@ -41,11 +41,11 @@
 | v49.0   | Shield                          | DONE    | Test coverage expansion for lowest-covered modules                                |
 | v50.0   | Forge                           | DONE    | Quality hardening, exception narrowing, docstrings, coverage push                 |
 | 1.0.0   | Foundation (SemVer)             | DONE    | Version renormalization to SemVer 1.0.0                                           |
-| 2.0.0   | Evolution                       | ACTIVE  | Service layer migration, core domain extraction                                   |
+| 2.0.0   | Evolution                       | DONE    | Service layer migration, core domain extraction                                   |
 
 ---
 
-## [ACTIVE] v2.0.0 "Evolution" — Service Layer Migration
+## [DONE] v2.0.0 "Evolution" — Service Layer Migration
 
 ### Scope
 
@@ -65,8 +65,8 @@ remain in `utils/` for external consumers. All UI, CLI, API, and plugin imports 
 - [x] Remove 3 legacy deprecated shims (process.py, battery.py, action_executor.py)
 - [x] Populate `core/agents/`, `core/ai/`, `core/diagnostics/`, `core/export/` with extracted logic (14 modules)
 - [x] Update all UI/CLI/API/plugin imports to new service/core paths
-- [ ] Update documentation (ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md)
-- [ ] Full verification (tests, lint, coverage gate)
+- [x] Update documentation (ARCHITECTURE.md, CHANGELOG.md, ROADMAP.md)
+- [x] Full verification (tests, lint, coverage gate)
 
 ### Agent Assignment
 
