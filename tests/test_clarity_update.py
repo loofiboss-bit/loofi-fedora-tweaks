@@ -4,12 +4,11 @@ Covers: centralized version, logging module, command_runner rename,
 AI stop_service, and backward-compat shim.
 """
 
-import unittest
-from unittest.mock import patch, MagicMock
-import sys
-import os
 import logging
-import warnings
+import os
+import sys
+import unittest
+from unittest.mock import MagicMock, patch
 
 # Add source path to sys.path
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))

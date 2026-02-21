@@ -14,13 +14,12 @@ This ensures the architecture refactor didn't break imports.
 
 import os
 import sys
+
 import pytest
 
 # Add project paths
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
-sys.path.insert(
-    0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks")
-)
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
 
 class TestCoreExecutorImports:
@@ -117,10 +116,10 @@ class TestServicesSystemImports:
     def test_service_types_import(self):
         """Service-related types should be importable."""
         from services.system import (
+            Result,
             ServiceUnit,
             UnitScope,
             UnitState,
-            Result,
         )
 
         assert ServiceUnit is not None
@@ -191,9 +190,9 @@ class TestServicesHardwareImports:
     def test_bluetooth_manager_import(self):
         """BluetoothManager should be importable from services.hardware."""
         from services.hardware import (
-            BluetoothManager,
             BluetoothDevice,
             BluetoothDeviceType,
+            BluetoothManager,
             BluetoothResult,
             BluetoothStatus,
         )
@@ -209,8 +208,8 @@ class TestServicesHardwareImports:
         from services.hardware import (
             PROFILES,
             detect_hardware_profile,
-            get_profile_label,
             get_all_profiles,
+            get_profile_label,
         )
 
         assert PROFILES is not None
@@ -342,8 +341,8 @@ class TestCrossModuleCompatibility:
 
     def test_action_result_identity(self):
         """ActionResult from core.executor submodule and package should be identical."""
-        from core.executor.action_result import ActionResult
         from core.executor import ActionResult as CoreActionResult
+        from core.executor.action_result import ActionResult
 
         assert ActionResult is CoreActionResult
 
@@ -354,8 +353,8 @@ class TestCrossModuleCompatibility:
 
     def test_action_executor_identity(self):
         """ActionExecutor from core.executor submodule and package should be identical."""
-        from core.executor.action_executor import ActionExecutor
         from core.executor import ActionExecutor as CoreExecutor
+        from core.executor.action_executor import ActionExecutor
 
         assert ActionExecutor is CoreExecutor
 
@@ -368,11 +367,7 @@ class TestPublicAPIStability:
         from core.executor import ActionExecutor
 
         expected_methods = {"run", "preview", "execute"}
-        actual_methods = {
-            m
-            for m in dir(ActionExecutor)
-            if not m.startswith("_") and callable(getattr(ActionExecutor, m, None))
-        }
+        actual_methods = {m for m in dir(ActionExecutor) if not m.startswith("_") and callable(getattr(ActionExecutor, m, None))}
         # Verify expected methods exist (may have additional helper methods)
         assert expected_methods.issubset(actual_methods)
 
