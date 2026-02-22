@@ -1,9 +1,43 @@
 #!/bin/bash
-# Pre-push hook: when pushing a v* tag, ensure workflow reports exist.
+# Pre-push hook: run CI-equivalent checks before pushing to catch failures early.
 # Install: cp scripts/hooks/pre-push .git/hooks/pre-push && chmod +x .git/hooks/pre-push
 
+set -e
+
+FAILED=0
+
+echo "[pre-push] Running pre-push checks..."
+
+# 1. Stats consistency (catches test file count drift, tab count drift, etc.)
+echo "[pre-push] Checking project stats consistency..."
+if ! python3 scripts/project_stats.py --check; then
+    echo ""
+    echo "[pre-push] ERROR: Project stats are inconsistent!"
+    echo "[pre-push] Fix: python3 scripts/project_stats.py --save-prev && python3 scripts/sync_ai_adapters.py --refresh"
+    echo "[pre-push] Then: git add -A && git commit -m 'chore: sync project stats'"
+    FAILED=1
+fi
+
+# 2. Adapter drift (catches template/rendered file mismatches)
+echo "[pre-push] Checking adapter drift..."
+if ! python3 scripts/sync_ai_adapters.py --check; then
+    echo ""
+    echo "[pre-push] ERROR: Adapter files are out of sync!"
+    echo "[pre-push] Fix: python3 scripts/sync_ai_adapters.py --render"
+    echo "[pre-push] Then: git add -A && git commit -m 'chore: sync adapter files'"
+    FAILED=1
+fi
+
+if ! python3 scripts/sync_ai_adapters.py --render --check; then
+    echo ""
+    echo "[pre-push] ERROR: Rendered adapter files are out of date!"
+    echo "[pre-push] Fix: python3 scripts/sync_ai_adapters.py --render"
+    echo "[pre-push] Then: git add -A && git commit -m 'chore: render adapter files'"
+    FAILED=1
+fi
+
+# 3. Tag-specific: workflow reports (only on version tag pushes)
 while read local_ref local_sha remote_ref remote_sha; do
-    # Only check when pushing a version tag
     if [[ "$remote_ref" == refs/tags/v* ]]; then
         echo "[pre-push] Detected version tag push: ${remote_ref#refs/tags/}"
         echo "[pre-push] Checking workflow reports..."
@@ -13,12 +47,16 @@ while read local_ref local_sha remote_ref remote_sha; do
             echo "[pre-push] ERROR: Workflow reports missing!"
             echo "[pre-push] Run: python3 scripts/generate_workflow_reports.py"
             echo "[pre-push] Then: git add .workflow/reports/ && git commit --amend --no-edit"
-            echo "[pre-push] Then retry the push."
-            exit 1
+            FAILED=1
         fi
-
-        echo "[pre-push] Workflow reports OK"
     fi
 done
 
+if [ "$FAILED" -eq 1 ]; then
+    echo ""
+    echo "[pre-push] BLOCKED: Fix the errors above, then retry the push."
+    exit 1
+fi
+
+echo "[pre-push] All checks passed."
 exit 0
