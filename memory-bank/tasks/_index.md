@@ -22,6 +22,11 @@
 - [TASK-010] Update UI/CLI imports — Completed on 2026-02-21
 - [TASK-011] Update documentation — Completed on 2026-02-22
 - [TASK-012] Full verification — Completed on 2026-02-22
+- [TASK-013] Start v2.1.0 continuity cycle — Completed on 2026-02-22
+- [TASK-014] Reconcile memory-bank + self-maintaining trackers for v2.1.0 — Completed on 2026-02-22
+- [TASK-015] Implement adapter sync smart re-render in sync_ai_adapters.py — Completed on 2026-02-22
+- [TASK-016] Integrate stats snapshot/render cascade in bump_version.py — Completed on 2026-02-22
+- [TASK-017] Harden CI drift gates for stats/adapter consistency — Completed on 2026-02-22
 
 ## Abandoned
 

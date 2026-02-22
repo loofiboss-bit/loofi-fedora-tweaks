@@ -42,6 +42,7 @@
 | v50.0   | Forge                           | DONE    | Quality hardening, exception narrowing, docstrings, coverage push                 |
 | 1.0.0   | Foundation (SemVer)             | DONE    | Version renormalization to SemVer 1.0.0                                           |
 | 2.0.0   | Evolution                       | DONE    | Service layer migration, core domain extraction                                   |
+| 2.1.0   | Continuity                      | DONE    | Workflow realignment, tracker consistency, automation hardening                   |
 
 ---
 
@@ -81,6 +82,40 @@ remain in `utils/` for external consumers. All UI, CLI, API, and plugin imports 
 
 - v50.0 Forge (quality baseline)
 - 1.0.0 Foundation (SemVer renormalization)
+
+---
+
+## [DONE] v2.1.0 "Continuity" — Workflow Realignment & Drift Closure
+
+### Scope
+
+Incremental continuation release focused on making post-v2.0 execution explicit,
+keeping workflow artifacts authoritative, and closing automation drift so future
+feature work starts from a clean and verifiable state.
+
+### Planned Deliverables
+
+- [x] Activate v2.1.0 workflow cycle (`ROADMAP.md`, `.race-lock.json`, v2.1 specs)
+- [x] Sync memory-bank state to the active v2.1.0 continuation context
+- [x] Create v2.1.0 implementation task contract set (IDs, dependencies, acceptance, tests)
+- [x] Add v2.1.0 architecture blueprint with layer-safe implementation guidance
+- [x] Reconcile `.self-maintaining-progress.md` with workflow authority and current release state
+- [x] Complete adapter-sync hardening tasks (smart re-render + version bump cascade updates)
+- [x] Verify consistency with tests/lint and workflow checks before moving to feature expansion
+
+### Agent Assignment
+
+| Agent               | Task                                                            |
+| ------------------- | --------------------------------------------------------------- |
+| project-coordinator | Scope definition, dependency ordering, workflow state alignment |
+| code-implementer    | Workflow artifact updates, tracker reconciliation               |
+| backend-builder     | Adapter sync and automation hardening implementation            |
+| test-writer         | Regression tests for sync and workflow consistency paths        |
+| release-planner     | Documentation and release-state traceability                    |
+
+### Dependencies
+
+- v2.0.0 Evolution (service-layer baseline)
 
 ---
 

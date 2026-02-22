@@ -1,5 +1,5 @@
 ---
-name: validate
+name: fedora-validate
 description: Check release readiness — version alignment, tests, lint, docs, packaging.
 ---
 

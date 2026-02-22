@@ -1,6 +1,7 @@
 """Tests for scripts/sync_ai_adapters.py helper functions."""
 
 import importlib.util
+import json
 import sys
 from pathlib import Path
 
@@ -50,3 +51,76 @@ def test_sync_directory_detects_stale_files_in_check_mode(tmp_path):
 
     assert any("stale adapter file" in item for item in diffs)
     assert (target_dir / "obsolete.md").exists()
+
+
+def test_refresh_rendered_stats_replaces_old_values(tmp_path):
+    module = _load_module("sync_ai_adapters_refresh_test", Path("scripts/sync_ai_adapters.py"))
+
+    stats_file = tmp_path / ".project-stats.json"
+    prev_file = tmp_path / ".project-stats.prev.json"
+    renderable = tmp_path / "agent.md"
+
+    stats_file.write_text(
+        json.dumps({"version": "2.1.0", "coverage": "81", "tab_count": 30}),
+        encoding="utf-8",
+    )
+    prev_file.write_text(
+        json.dumps({"version": "2.0.0", "coverage": "80", "tab_count": 28}),
+        encoding="utf-8",
+    )
+    renderable.write_text(
+        'Current release is v2.0.0 and has 28 tabs with 80% coverage.\n',
+        encoding="utf-8",
+    )
+
+    module.STATS_FILE = stats_file
+    module.PREV_STATS_FILE = prev_file
+    module.ROOT = tmp_path
+    module.RENDERABLE_FILES = ["agent.md"]
+
+    diffs = module.refresh_rendered_stats(check=False)
+
+    assert diffs
+    updated = renderable.read_text(encoding="utf-8")
+    assert "v2.1.0" in updated
+    assert "30 tabs" in updated
+    assert "81% coverage" in updated
+    assert "v2.0.0" not in updated
+
+
+def test_refresh_rendered_stats_check_mode_does_not_write(tmp_path):
+    module = _load_module(
+        "sync_ai_adapters_refresh_check_test", Path("scripts/sync_ai_adapters.py")
+    )
+
+    stats_file = tmp_path / ".project-stats.json"
+    prev_file = tmp_path / ".project-stats.prev.json"
+    renderable = tmp_path / "agent.md"
+
+    stats_file.write_text(json.dumps({"version": "2.1.0"}), encoding="utf-8")
+    prev_file.write_text(json.dumps({"version": "2.0.0"}), encoding="utf-8")
+    original = "Current release is v2.0.0.\n"
+    renderable.write_text(original, encoding="utf-8")
+
+    module.STATS_FILE = stats_file
+    module.PREV_STATS_FILE = prev_file
+    module.ROOT = tmp_path
+    module.RENDERABLE_FILES = ["agent.md"]
+
+    diffs = module.refresh_rendered_stats(check=True)
+
+    assert diffs
+    assert renderable.read_text(encoding="utf-8") == original
+
+
+def test_refresh_rendered_stats_missing_prev_file_reports_skip(tmp_path):
+    module = _load_module(
+        "sync_ai_adapters_refresh_missing_prev_test",
+        Path("scripts/sync_ai_adapters.py"),
+    )
+
+    module.PREV_STATS_FILE = tmp_path / ".project-stats.prev.json"
+
+    diffs = module.refresh_rendered_stats(check=True)
+
+    assert diffs == ["refresh: no .project-stats.prev.json — skipping (first run?)"]

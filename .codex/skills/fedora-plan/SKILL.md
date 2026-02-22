@@ -1,5 +1,5 @@
 ---
-name: plan
+name: fedora-plan
 description: Decompose an ACTIVE version from ROADMAP.md into atomic tasks with dependencies.
 ---
 

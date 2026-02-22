@@ -1,5 +1,5 @@
 ---
-name: doc
+name: fedora-doc
 description: Update documentation (CHANGELOG, README, release notes) for the current version.
 ---
 

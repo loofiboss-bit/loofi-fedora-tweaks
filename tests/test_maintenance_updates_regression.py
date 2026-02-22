@@ -34,13 +34,59 @@ def _install_maintenance_import_stubs():
 
     qt_core = types.ModuleType("PyQt6.QtCore")
     qt_core.Qt = types.SimpleNamespace(GlobalColor=types.SimpleNamespace(darkGray=0))
+    qt_core.QProcess = _Dummy
+    qt_core.pyqtSignal = lambda *a, **kw: MagicMock()
+    qt_core.QObject = _Dummy
+
+    class _StubQTimer(_Dummy):
+        singleShot = staticmethod(lambda ms, fn: fn())
+
+    qt_core.QTimer = _StubQTimer
+
+    qt_gui = types.ModuleType("PyQt6.QtGui")
+    qt_gui.QColor = _Dummy
 
     pyqt = types.ModuleType("PyQt6")
     pyqt.QtWidgets = qt_widgets
     pyqt.QtCore = qt_core
+    pyqt.QtGui = qt_gui
 
     base_tab_module = types.ModuleType("ui.base_tab")
-    base_tab_module.BaseTab = _Dummy
+
+    class _StubBaseTab(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.output_area = MagicMock()
+            self.runner = _Dummy()
+            self.runner.output_received = MagicMock()
+            self.runner.output_received.connect = MagicMock()
+            self.runner.finished = MagicMock()
+            self.runner.finished.connect = MagicMock()
+            self.runner.error_occurred = MagicMock()
+            self.runner.error_occurred.connect = MagicMock()
+            self.runner.progress_update = MagicMock()
+            self.runner.progress_update.connect = MagicMock()
+            self.runner.run_command = MagicMock()
+
+        def run_command(self, cmd, args, description=""):
+            self.output_area.clear()
+            if description:
+                self.append_output(f"{description}\n")
+            self.runner.run_command(cmd, args)
+
+        def append_output(self, text):
+            self.output_area.insertPlainText(text)
+
+        def on_command_finished(self, exit_code):
+            pass
+
+        def show_success(self, message):
+            pass
+
+        def show_error(self, message):
+            pass
+
+    base_tab_module.BaseTab = _StubBaseTab
 
     tab_utils_module = types.ModuleType("ui.tab_utils")
     tab_utils_module.configure_top_tabs = lambda *args, **kwargs: None
@@ -72,6 +118,7 @@ def _install_maintenance_import_stubs():
     sys.modules["PyQt6"] = pyqt
     sys.modules["PyQt6.QtWidgets"] = qt_widgets
     sys.modules["PyQt6.QtCore"] = qt_core
+    sys.modules["PyQt6.QtGui"] = qt_gui
     sys.modules["ui.base_tab"] = base_tab_module
     sys.modules["ui.tab_utils"] = tab_utils_module
     sys.modules["utils.command_runner"] = command_runner_module
@@ -87,6 +134,7 @@ class TestMaintenanceUpdatesRegression(unittest.TestCase):
             "PyQt6",
             "PyQt6.QtWidgets",
             "PyQt6.QtCore",
+            "PyQt6.QtGui",
             "ui.base_tab",
             "ui.tab_utils",
             "utils.command_runner",

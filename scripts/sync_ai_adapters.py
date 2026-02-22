@@ -254,8 +254,18 @@ def load_stats() -> dict[str, str]:
         sys.exit(1)
 
     raw = json.loads(STATS_FILE.read_text(encoding="utf-8"))
-    # Flatten all values to strings for template substitution
+    return _flatten_stats(raw)
+
+
+def _flatten_stats(raw: dict[str, object]) -> dict[str, str]:
+    """Flatten stats payload values into strings for substitution/refresh flows."""
     return {k: str(v) for k, v in raw.items() if not isinstance(v, list)}
+
+
+def _load_stats_file(path: Path) -> dict[str, str]:
+    """Load and flatten a stats JSON file."""
+    raw = json.loads(path.read_text(encoding="utf-8"))
+    return _flatten_stats(raw)
 
 
 def render_templates(check: bool) -> list[str]:
@@ -305,11 +315,7 @@ def refresh_rendered_stats(check: bool) -> list[str]:
     if not PREV_STATS_FILE.exists():
         return ["refresh: no .project-stats.prev.json — skipping (first run?)"]
 
-    old_stats = {
-        k: str(v)
-        for k, v in json.loads(PREV_STATS_FILE.read_text(encoding="utf-8")).items()
-        if not isinstance(v, list)
-    }
+    old_stats = _load_stats_file(PREV_STATS_FILE)
     new_stats = load_stats()
     diffs: list[str] = []
 

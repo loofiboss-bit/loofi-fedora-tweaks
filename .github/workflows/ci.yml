@@ -191,7 +191,6 @@ jobs:
   package_flatpak:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true
     steps:
       - uses: actions/checkout@v4
       - run: sudo apt-get update

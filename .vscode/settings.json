@@ -36,6 +36,11 @@
   "chatgpt.openOnStartup": false,
   "claudeCode.allowDangerouslySkipPermissions": true,
   "github.copilot.chat.claudeAgent.allowDangerouslySkipPermissions": true,
+  "chat.tools.global.autoApprove": true,
+  "chat.agent.autoApprove": true,
+  "github.copilot.chat.agent.autoApprove": true,
+  "github.copilot.chat.terminalCommand.autoApprove": true,
+  "github.copilot.chat.agent.runInTerminal.autoApprove": true,
   "chat.agentSkillsLocations": {
     ".codex/skills": true,
     "~/.codex/skills": true

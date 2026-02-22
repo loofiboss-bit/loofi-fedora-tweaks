@@ -1,5 +1,5 @@
 ---
-name: verify
+name: fedora-verify
 description: Run full verification suite (lint, typecheck, tests, coverage) before committing. Use this before any commit or PR.
 ---
 

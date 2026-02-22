@@ -20,6 +20,21 @@ def test_ci_workflow_has_required_fedora_review_gate():
     assert "python3 scripts/check_fedora_review.py" in text
 
 
+def test_ci_workflow_adapter_drift_checks_sync_and_render():
+    text = _read_text(CI_WORKFLOW)
+
+    assert "adapter_drift:" in text
+    assert "python3 scripts/sync_ai_adapters.py --check" in text
+    assert "python3 scripts/sync_ai_adapters.py --render --check" in text
+
+
+def test_ci_workflow_flatpak_job_is_blocking():
+    text = _read_text(CI_WORKFLOW)
+
+    assert "package_flatpak:" in text
+    assert "continue-on-error: true" not in text
+
+
 def test_auto_release_workflow_has_required_fedora_review_gate():
     text = _read_text(AUTO_RELEASE_WORKFLOW)
 

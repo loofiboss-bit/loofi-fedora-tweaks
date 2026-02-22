@@ -10,6 +10,7 @@ The Overlays sub-tab is only shown on Atomic (rpm-ostree) systems.
 import shutil
 
 from core.plugins.metadata import PluginMetadata
+from PyQt6.QtCore import QTimer
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFrame,
@@ -119,17 +120,12 @@ class _UpdatesSubTab(BaseTab):
         self.progress_bar.setFormat("%p% - %v")
         layout.addWidget(self.progress_bar)
 
-        # Output Area
-        self.output_area = QTextEdit()
-        self.output_area.setReadOnly(True)
+        # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Update output"))
+        self.output_area.setMaximumHeight(16777215)
         layout.addWidget(self.output_area)
 
-        # Command runner
-        self.runner = CommandRunner()
-        self.runner.output_received.connect(self.append_output)
         self.runner.progress_update.connect(self.update_progress)
-        self.runner.finished.connect(self.command_finished)
 
         self.update_queue = []
         self.current_update_index = 0
@@ -232,12 +228,7 @@ class _UpdatesSubTab(BaseTab):
         self.btn_fw.setEnabled(False)
         self.btn_update_all.setEnabled(False)
 
-    def append_output(self, text):
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-        self.output_area.insertPlainText(text)
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-
-    def command_finished(self, exit_code):
+    def on_command_finished(self, exit_code):
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
 
         # Handle sequential update-all queue
@@ -292,15 +283,8 @@ class _CleanupSubTab(BaseTab):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        # Output Area (Shared)
-        self.output_area = QTextEdit()
-        self.output_area.setReadOnly(True)
-        self.output_area.setMaximumHeight(200)
+        # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Cleanup output"))
-
-        self.runner = CommandRunner()
-        self.runner.output_received.connect(self.append_output)
-        self.runner.finished.connect(self.command_finished)
 
         # Cleanup Group
         cleanup_group = QGroupBox(self.tr("Cleanup"))
@@ -381,17 +365,7 @@ class _CleanupSubTab(BaseTab):
                 *PrivilegedCommand.dnf("autoremove"),
             )
 
-    def run_command(self, cmd, args, description):
-        self.output_area.clear()
-        self.append_output(f"{description}\n")
-        self.runner.run_command(cmd, args)
-
-    def append_output(self, text):
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-        self.output_area.insertPlainText(text)
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-
-    def command_finished(self, exit_code):
+    def on_command_finished(self, exit_code):
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
         if exit_code == 0:
             self.show_success(self.tr("Cleanup completed successfully"))
@@ -422,7 +396,7 @@ class _OverlaysSubTab(QWidget):
         self.pkg_manager = PackageManager()
         self.reboot_runner = CommandRunner()
         self.init_ui()
-        self.refresh_list()
+        QTimer.singleShot(0, self.refresh_list)
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -756,11 +730,38 @@ class MaintenanceTab(BaseTab):
 
         self.tabs = QTabWidget()
         configure_top_tabs(self.tabs)
-        self.tabs.addTab(_UpdatesSubTab(), self.tr("Updates"))
-        self.tabs.addTab(_CleanupSubTab(), self.tr("Cleanup"))
-        self.tabs.addTab(_SmartUpdatesSubTab(), self.tr("Smart Updates"))
+
+        self._sub_tab_factories = [
+            (self.tr("Updates"), _UpdatesSubTab),
+            (self.tr("Cleanup"), _CleanupSubTab),
+            (self.tr("Smart Updates"), _SmartUpdatesSubTab),
+        ]
 
         if SystemManager.is_atomic():
-            self.tabs.addTab(_OverlaysSubTab(), self.tr("Overlays"))
+            self._sub_tab_factories.append((self.tr("Overlays"), _OverlaysSubTab))
+
+        self._loaded_tabs = {}
+
+        for label, _ in self._sub_tab_factories:
+            placeholder = QWidget()
+            self.tabs.addTab(placeholder, label)
+
+        self.tabs.currentChanged.connect(self._lazy_load_sub_tab)
+        self._lazy_load_sub_tab(0)
 
         layout.addWidget(self.tabs)
+
+    def _lazy_load_sub_tab(self, index):
+        """Instantiate sub-tab on first visit to avoid eager construction."""
+        if index in self._loaded_tabs:
+            return
+
+        if index < len(self._sub_tab_factories):
+            label, factory = self._sub_tab_factories[index]
+            widget = factory()
+            self._loaded_tabs[index] = widget
+            self.tabs.blockSignals(True)
+            self.tabs.removeTab(index)
+            self.tabs.insertTab(index, widget, label)
+            self.tabs.setCurrentIndex(index)
+            self.tabs.blockSignals(False)

@@ -1,5 +1,5 @@
 ---
-name: package
+name: fedora-package
 description: Build and verify distribution packages (RPM, Flatpak, AppImage, sdist) for the current version.
 ---
 

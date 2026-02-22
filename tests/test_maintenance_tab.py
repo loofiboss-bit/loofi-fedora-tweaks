@@ -103,7 +103,12 @@ def _install_stubs():
     qt_core.QProcess = _Dummy
     qt_core.pyqtSignal = lambda *a, **kw: MagicMock()
     qt_core.QObject = _Dummy
-    qt_core.QTimer = _Dummy
+
+    class _StubQTimer(_Dummy):
+        """QTimer stub with singleShot as a static/class method."""
+        singleShot = staticmethod(lambda ms, fn: fn())
+
+    qt_core.QTimer = _StubQTimer
 
     # --- QtGui ---
     qt_gui = types.ModuleType("PyQt6.QtGui")
@@ -114,14 +119,6 @@ def _install_stubs():
     pyqt.QtWidgets = qt_widgets
     pyqt.QtCore = qt_core
     pyqt.QtGui = qt_gui
-
-    # --- ui.base_tab ---
-    base_tab_mod = types.ModuleType("ui.base_tab")
-    base_tab_mod.BaseTab = _Dummy
-
-    # --- ui.tab_utils ---
-    tab_utils_mod = types.ModuleType("ui.tab_utils")
-    tab_utils_mod.configure_top_tabs = lambda *a, **kw: None
 
     # --- utils.command_runner ---
     class _StubCommandRunner:
@@ -137,6 +134,45 @@ def _install_stubs():
 
     cmd_runner_mod = types.ModuleType("utils.command_runner")
     cmd_runner_mod.CommandRunner = _StubCommandRunner
+
+    # --- ui.base_tab ---
+    class _StubBaseTab(_Dummy):
+        """BaseTab stub with real method implementations for testing."""
+
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.output_area = MagicMock()
+            self.runner = _StubCommandRunner()
+            self.runner.output_received.connect = MagicMock()
+            self.runner.finished.connect = MagicMock()
+            self.runner.error_occurred.connect = MagicMock()
+            self.runner.progress_update.connect = MagicMock()
+
+        def run_command(self, cmd, args, description=""):
+            self.output_area.clear()
+            if description:
+                self.append_output(f"{description}\n")
+            self.runner.run_command(cmd, args)
+
+        def append_output(self, text):
+            self.output_area.moveCursor(MagicMock())
+            self.output_area.insertPlainText(text)
+
+        def on_command_finished(self, exit_code):
+            pass
+
+        def show_success(self, message):
+            pass
+
+        def show_error(self, message):
+            pass
+
+    base_tab_mod = types.ModuleType("ui.base_tab")
+    base_tab_mod.BaseTab = _StubBaseTab
+
+    # --- ui.tab_utils ---
+    tab_utils_mod = types.ModuleType("ui.tab_utils")
+    tab_utils_mod.configure_top_tabs = lambda *a, **kw: None
 
     # --- services.system ---
     services_system_mod = types.ModuleType("services.system")
@@ -576,10 +612,10 @@ class TestUpdatesSubTabInstance(unittest.TestCase):
         self.assertEqual(fw_step[0], "pkexec")
         self.assertIn("fwupdmgr", fw_step[1])
 
-    # -- command_finished --
+    # -- on_command_finished --
 
-    def test_command_finished_mid_queue_advances(self):
-        """command_finished() advances to next command when queue is active."""
+    def test_on_command_finished_mid_queue_advances(self):
+        """on_command_finished() advances to next command when queue is active."""
         self.tab.update_queue = [
             ("pkexec", ["dnf", "update", "-y"], "DNF Update"),
             ("flatpak", ["update", "-y"], "Flatpak Update"),
@@ -587,12 +623,12 @@ class TestUpdatesSubTabInstance(unittest.TestCase):
         ]
         self.tab.current_update_index = 0
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.assertEqual(self.tab.current_update_index, 1)
         self.tab.runner.run_command.assert_called_once_with("flatpak", ["update", "-y"])
 
-    def test_command_finished_mid_queue_second_to_third(self):
-        """command_finished() advances from index 1 to 2."""
+    def test_on_command_finished_mid_queue_second_to_third(self):
+        """on_command_finished() advances from index 1 to 2."""
         self.tab.update_queue = [
             ("pkexec", ["dnf", "update", "-y"], "DNF Update"),
             ("flatpak", ["update", "-y"], "Flatpak Update"),
@@ -600,74 +636,74 @@ class TestUpdatesSubTabInstance(unittest.TestCase):
         ]
         self.tab.current_update_index = 1
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.assertEqual(self.tab.current_update_index, 2)
         self.tab.runner.run_command.assert_called_once_with("pkexec", ["fwupdmgr", "update", "-y"])
 
-    def test_command_finished_end_of_queue_re_enables(self):
-        """command_finished() re-enables buttons at end of queue."""
+    def test_on_command_finished_end_of_queue_re_enables(self):
+        """on_command_finished() re-enables buttons at end of queue."""
         self.tab.update_queue = [
             ("pkexec", ["dnf", "update", "-y"], "DNF Update"),
         ]
         self.tab.current_update_index = 0
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.tab.btn_dnf.setEnabled.assert_called_with(True)
         self.tab.btn_flatpak.setEnabled.assert_called_with(True)
         self.tab.btn_fw.setEnabled.assert_called_with(True)
         self.tab.btn_update_all.setEnabled.assert_called_with(True)
 
-    def test_command_finished_end_of_queue_sets_100(self):
-        """command_finished() sets progress to 100% at end of queue."""
+    def test_on_command_finished_end_of_queue_sets_100(self):
+        """on_command_finished() sets progress to 100% at end of queue."""
         self.tab.update_queue = [
             ("pkexec", ["dnf", "update", "-y"], "DNF Update"),
         ]
         self.tab.current_update_index = 0
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.tab.progress_bar.setValue.assert_called_with(100)
 
-    def test_command_finished_clears_queue(self):
-        """command_finished() clears queue after last command."""
+    def test_on_command_finished_clears_queue(self):
+        """on_command_finished() clears queue after last command."""
         self.tab.update_queue = [
             ("pkexec", ["dnf", "update", "-y"], "DNF Update"),
         ]
         self.tab.current_update_index = 0
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.assertEqual(self.tab.update_queue, [])
         self.assertEqual(self.tab.current_update_index, 0)
 
-    def test_command_finished_no_queue_re_enables(self):
-        """command_finished() re-enables buttons when no queue is set."""
+    def test_on_command_finished_no_queue_re_enables(self):
+        """on_command_finished() re-enables buttons when no queue is set."""
         self.tab.update_queue = []
         self.tab.current_update_index = 0
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.tab.btn_dnf.setEnabled.assert_called_with(True)
 
-    def test_command_finished_appends_exit_code(self):
-        """command_finished() appends exit code to output."""
+    def test_on_command_finished_appends_exit_code(self):
+        """on_command_finished() appends exit code to output."""
         self.tab.update_queue = []
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(42)
+        self.tab.on_command_finished(42)
         call_args = self.tab.append_output.call_args[0][0]
         self.assertIn("42", call_args)
 
-    def test_command_finished_success_calls_show_success(self):
-        """command_finished() calls show_success on exit code 0 (regression: AttributeError)."""
+    def test_on_command_finished_success_calls_show_success(self):
+        """on_command_finished() calls show_success on exit code 0 (regression: AttributeError)."""
         self.tab.update_queue = []
         self.tab.append_output = MagicMock()
         self.tab.show_success = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.tab.show_success.assert_called_once()
 
-    def test_command_finished_failure_calls_show_error(self):
-        """command_finished() calls show_error on nonzero exit code (regression: AttributeError)."""
+    def test_on_command_finished_failure_calls_show_error(self):
+        """on_command_finished() calls show_error on nonzero exit code (regression: AttributeError)."""
         self.tab.update_queue = []
         self.tab.append_output = MagicMock()
         self.tab.show_error = MagicMock()
-        self.tab.command_finished(1)
+        self.tab.on_command_finished(1)
         self.tab.show_error.assert_called_once()
 
     def test_show_success_no_attribute_error(self):
@@ -710,19 +746,19 @@ class TestCleanupSubTab(unittest.TestCase):
         self.tab.append_output("cleaning...")
         self.tab.output_area.insertPlainText.assert_called_with("cleaning...")
 
-    # -- command_finished --
+    # -- on_command_finished --
 
-    def test_command_finished_appends_exit_code(self):
-        """command_finished() appends exit code message."""
+    def test_on_command_finished_appends_exit_code(self):
+        """on_command_finished() appends exit code message."""
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         call_args = self.tab.append_output.call_args[0][0]
         self.assertIn("0", call_args)
 
-    def test_command_finished_nonzero_exit(self):
-        """command_finished() shows nonzero exit code."""
+    def test_on_command_finished_nonzero_exit(self):
+        """on_command_finished() shows nonzero exit code."""
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(1)
+        self.tab.on_command_finished(1)
         call_args = self.tab.append_output.call_args[0][0]
         self.assertIn("1", call_args)
 
@@ -794,18 +830,18 @@ class TestCleanupSubTab(unittest.TestCase):
         self.assertEqual(args[0], "pkexec")
         self.assertIn("autoremove", args[1])
 
-    def test_command_finished_success_calls_show_success(self):
-        """command_finished() calls show_success on exit code 0 (regression: AttributeError)."""
+    def test_on_command_finished_success_calls_show_success(self):
+        """on_command_finished() calls show_success on exit code 0 (regression: AttributeError)."""
         self.tab.append_output = MagicMock()
         self.tab.show_success = MagicMock()
-        self.tab.command_finished(0)
+        self.tab.on_command_finished(0)
         self.tab.show_success.assert_called_once()
 
-    def test_command_finished_failure_calls_show_error(self):
-        """command_finished() calls show_error on nonzero exit code (regression: AttributeError)."""
+    def test_on_command_finished_failure_calls_show_error(self):
+        """on_command_finished() calls show_error on nonzero exit code (regression: AttributeError)."""
         self.tab.append_output = MagicMock()
         self.tab.show_error = MagicMock()
-        self.tab.command_finished(1)
+        self.tab.on_command_finished(1)
         self.tab.show_error.assert_called_once()
 
     def test_show_success_no_attribute_error(self):
@@ -1335,12 +1371,12 @@ class TestUpdatesProgressEdgeCases(unittest.TestCase):
         self.tab.update_progress(-1, "Still working...")
         self.tab.progress_bar.setRange.assert_not_called()
 
-    def test_command_finished_nonzero_exit_still_re_enables(self):
-        """command_finished(1) still re-enables buttons when queue ends."""
+    def test_on_command_finished_nonzero_exit_still_re_enables(self):
+        """on_command_finished(1) still re-enables buttons when queue ends."""
         self.tab.update_queue = []
         self.tab.current_update_index = 0
         self.tab.append_output = MagicMock()
-        self.tab.command_finished(1)
+        self.tab.on_command_finished(1)
         self.tab.btn_dnf.setEnabled.assert_called_with(True)
 
 

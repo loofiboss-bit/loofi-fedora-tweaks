@@ -1,5 +1,5 @@
 ---
-name: test
+name: fedora-test
 description: Write and run tests for all changed files in the current version.
 ---
 

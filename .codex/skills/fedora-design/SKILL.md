@@ -1,5 +1,5 @@
 ---
-name: design
+name: fedora-design
 description: Create or update architecture specs for the ACTIVE version before implementation.
 ---
 

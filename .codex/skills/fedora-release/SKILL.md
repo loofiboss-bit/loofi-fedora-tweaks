@@ -1,5 +1,5 @@
 ---
-name: release
+name: fedora-release
 description: Execute documentation, packaging, and release phases (P5-P7) for a version.
 ---
 

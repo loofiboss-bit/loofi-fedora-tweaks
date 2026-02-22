@@ -333,6 +333,11 @@ class DashboardTab(QWidget, PluginInterface):
             logger.debug("Skipping reboot button icon setup: %s", e)
         rb_layout.addWidget(reboot_btn)
         self._inner.addWidget(self.reboot_banner)
+        self.reboot_banner.setVisible(False)
+        QTimer.singleShot(0, self._check_pending_deployment)
+
+    def _check_pending_deployment(self):
+        """Check for pending deployment off the constructor hot path."""
         self.reboot_banner.setVisible(SystemManager.has_pending_deployment())
 
     # ==================================================================

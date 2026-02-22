@@ -30,34 +30,39 @@
 
 ### Version History Summary
 
-| Era | Versions | Theme |
-|-----|----------|-------|
-| Legacy (integer) | v21–v50 | UX, architecture, plugins, stabilization, hardening |
-| SemVer | v1.0.0 | Version renormalization |
-| SemVer | v2.0.0 "Evolution" | Service layer migration |
+| Era              | Versions           | Theme                                               |
+| ---------------- | ------------------ | --------------------------------------------------- |
+| Legacy (integer) | v21–v50            | UX, architecture, plugins, stabilization, hardening |
+| SemVer           | v1.0.0             | Version renormalization                             |
+| SemVer           | v2.0.0 "Evolution" | Service layer migration                             |
 
 52 total versions shipped.
 
 ## What's Left to Build
 
-### Immediate (Release Closure)
+### Active (v2.1.0 Continuity)
 
-- [ ] Fix v2.0.0 tag conflict (old pre-SemVer tag vs new release)
-- [ ] Update race-lock status from `active` → `done`
+- [x] Activate v2.1.0 cycle in roadmap and workflow specs
+- [ ] Reconcile memory-bank and self-maintaining trackers with canonical workflow state
+- [ ] Implement smart adapter re-render in `scripts/sync_ai_adapters.py`
+- [ ] Integrate prev-stats snapshot and render cascade in `scripts/bump_version.py`
+- [ ] Enforce blocking adapter/stats drift checks in CI
 
-### Planning Required
+### Upcoming (Post-Continuity)
 
-- [ ] Define next version scope in ROADMAP.md (v2.1.0 or v3.0.0)
-- [ ] Identify remaining stabilization gaps or new feature candidates
+- [ ] Define next feature-focused scope after continuity tasks are complete
+- [ ] Prioritize candidate enhancements using v2.1 outcome as baseline
 
 ## Current Status
 
 **v2.0.0 "Evolution"**: ✅ COMPLETE — all 12 tasks done, codebase clean, tests passing.
 
-**Project state**: Stable baseline, between releases. All stabilization phases complete — new features are now unblocked.
+**v2.1.0 "Continuity"**: 🚧 ACTIVE — workflow and automation continuity tasks in progress.
+
+**Project state**: Stable baseline with active continuity cycle. All stabilization phases remain complete.
 
 ## Known Issues
 
-1. **Tag conflict**: Old pre-SemVer `v2.0.0` tag points to legacy commit `4933073`, not the current Evolution release
-2. **Race-lock stale**: `.workflow/specs/.race-lock.json` still shows `active` for v2.0.0 despite completion
-3. **No next version**: ROADMAP.md has no planned work after v2.0.0
+1. **Tracker drift**: `.self-maintaining-progress.md` contains legacy path/phase context that must match v2.1 canonical workflow
+2. **Automation gap**: Adapter sync smart re-render is defined but not yet implemented
+3. **Pipeline coupling gap**: Stats snapshot and adapter render are not yet fully integrated in version bump flow
