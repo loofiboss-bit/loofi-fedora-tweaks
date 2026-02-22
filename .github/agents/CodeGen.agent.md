@@ -1,5 +1,6 @@
 ---
 name: CodeGen
+model: claude-sonnet-4
 description: General-purpose code implementation agent for Loofi Fedora Tweaks v2.0.0. Implements features, fixes bugs, and makes code changes following project architecture.
 argument-hint: A coding task to implement (e.g., "Add CPU temperature monitoring to hardware tab" or "Fix DNF lock handling in maintenance")
 tools: ['vscode', 'read', 'edit', 'execute', 'search']

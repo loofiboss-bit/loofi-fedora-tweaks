@@ -1,5 +1,6 @@
 ---
 name: Test
+model: claude-sonnet-4
 description: Testing specialist for Loofi Fedora Tweaks v2.0.0. Creates comprehensive unit tests following project conventions with proper mocking of system calls.
 argument-hint: Code or feature that needs tests (e.g., "Create tests for utils/vm_manager.py" or "Add test coverage for health timeline feature")
 tools: ['vscode', 'read', 'edit', 'execute', 'search']

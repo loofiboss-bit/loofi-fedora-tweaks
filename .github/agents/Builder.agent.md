@@ -1,5 +1,6 @@
 ---
 name: Builder
+model: claude-sonnet-4
 description: Backend implementation specialist for Loofi Fedora Tweaks v2.0.0. Builds utils/ business logic modules with proper dataclasses, error handling, and system integration.
 argument-hint: A utils module to implement (e.g., "Build utils/auto_tuner.py" or "Implement SnapshotManager backend detection")
 tools: ['vscode', 'read', 'edit', 'execute', 'search']

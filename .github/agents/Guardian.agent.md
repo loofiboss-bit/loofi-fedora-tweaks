@@ -1,5 +1,6 @@
 ---
 name: Guardian
+model: claude-sonnet-4
 description: Quality assurance and testing specialist for Loofi Fedora Tweaks v2.0.0. Creates comprehensive test suites, validates code quality, and ensures all features are properly tested.
 argument-hint: A module or feature that needs testing (e.g., "Test utils/auto_tuner.py" or "Verify all tests pass")
 tools: ['vscode', 'read', 'edit', 'execute', 'search']

@@ -12,10 +12,7 @@
   "ruff.organizeImports": true,
 
   // Mypy — static type checking
-  "mypy-type-checker.args": [
-    "--ignore-missing-imports",
-    "--warn-return-any"
-  ],
+  "mypy-type-checker.args": ["--ignore-missing-imports", "--warn-return-any"],
 
   // Pylint — deep analysis
   "pylint.args": [
@@ -36,11 +33,19 @@
   "chatgpt.openOnStartup": false,
   "claudeCode.allowDangerouslySkipPermissions": true,
   "github.copilot.chat.claudeAgent.allowDangerouslySkipPermissions": true,
+  "chat.tools.autoApprove": true,
   "chat.tools.global.autoApprove": true,
+  "chat.tools.shell.enable": true,
+  "chat.tools.filesystem.enable": true,
   "chat.agent.autoApprove": true,
+  "chat.agent.maxRequests": 999,
+  "chat.agent.allowBackgroundExecution": true,
   "github.copilot.chat.agent.autoApprove": true,
   "github.copilot.chat.terminalCommand.autoApprove": true,
   "github.copilot.chat.agent.runInTerminal.autoApprove": true,
+  "terminal.integrated.defaultProfile.windows": "PowerShell",
+  "security.workspace.trust.enabled": true,
+  "security.workspace.trust.untrustedFiles": "open",
   "chat.agentSkillsLocations": {
     ".codex/skills": true,
     "~/.codex/skills": true
@@ -91,6 +96,34 @@
         "copilot/gpt-4.1",
         "copilot/gpt-4o",
         "copilot/gpt-5-mini",
+        "copilot/gpt-5.1",
+        "copilot/gpt-5.1-codex",
+        "copilot/gpt-5.1-codex-max",
+        "copilot/gpt-5.1-codex-mini",
+        "copilot/gpt-5.2",
+        "copilot/gpt-5.2-codex",
+        "copilot/gpt-5.3-codex",
+        "copilot/grok-code-fast-1",
+        "copilot/oswe-vscode-prime",
+        "copilot/gemini-3.1-pro-preview"
+      ]
+    },
+    "Fedora Tweaks/.vscode/mcp.json: loofi-agent-sync": {
+      "allowedModels": [
+        "copilot/gpt-5-mini",
+        "copilot/auto",
+        "copilot/claude-haiku-4.5",
+        "copilot/claude-opus-4.5",
+        "copilot/claude-opus-4.6",
+        "copilot/claude-sonnet-4",
+        "copilot/claude-sonnet-4.5",
+        "copilot/claude-sonnet-4.6",
+        "copilot/gemini-2.5-pro",
+        "copilot/gemini-3-flash-preview",
+        "copilot/gemini-3-pro-preview",
+        "copilot/gemini-3.1-pro-preview",
+        "copilot/gpt-4.1",
+        "copilot/gpt-4o",
         "copilot/gpt-5.1",
         "copilot/gpt-5.1-codex",
         "copilot/gpt-5.1-codex-max",

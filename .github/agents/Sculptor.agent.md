@@ -1,5 +1,6 @@
 ---
 name: Sculptor
+model: claude-sonnet-4
 description: Frontend and integration specialist for Loofi Fedora Tweaks v2.0.0. Builds UI tabs, CLI commands, and wires utils/ modules into user-facing layers.
 argument-hint: A UI or CLI feature to implement (e.g., "Add tuner section to Hardware tab" or "Add snapshot CLI commands")
 tools: ['vscode', 'read', 'edit', 'execute', 'search']
