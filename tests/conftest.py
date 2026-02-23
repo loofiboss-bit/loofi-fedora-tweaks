@@ -64,6 +64,11 @@ def _clear_lru_caches():
         _cached_keyboard_layout.cache_clear()
     except ImportError:
         pass
+    try:
+        from services.security.firewall import FirewallManager
+        FirewallManager._available_cached = None
+    except ImportError:
+        pass
     yield
     # Clear again after test so the next test starts clean
     try:
@@ -79,6 +84,11 @@ def _clear_lru_caches():
     try:
         from core.export.kickstart import _cached_keyboard_layout
         _cached_keyboard_layout.cache_clear()
+    except ImportError:
+        pass
+    try:
+        from services.security.firewall import FirewallManager
+        FirewallManager._available_cached = None
     except ImportError:
         pass
 

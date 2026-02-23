@@ -4,6 +4,13 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.2.1] - 2026-02-23 "Velocity" (patch)
+
+### Fixed
+
+- Corrected `@patch` targets in 5 test files broken by the v2.2.0 `cached_which` migration: `test_ai_models.py`, `test_ai_polish.py`, `test_ai.py`, `test_agent_planner_dedicated.py`, `test_ansible_export.py`
+- Added `FirewallManager._available_cached = None` reset in `conftest.py` `_clear_lru_caches` fixture to prevent test isolation failures
+
 ## [2.2.0] - 2026-02-23 "Velocity" (Performance & Stability)
 
 ### Performance
