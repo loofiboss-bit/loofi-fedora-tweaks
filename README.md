@@ -10,8 +10,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofitheboss/loofi-fedora-tweaks/releases/tag/v2.0.0">
-    <img src="https://img.shields.io/badge/Release-v2.0.0-blue?style=for-the-badge&logo=github" alt="Release v2.0.0"/>
+  <a href="https://github.com/loofitheboss/loofi-fedora-tweaks/releases/tag/v2.3.0">
+    <img src="https://img.shields.io/badge/Release-v2.3.0-blue?style=for-the-badge&logo=github" alt="Release v2.3.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43-blue?style=for-the-badge&logo=fedora" alt="Fedora 43"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>

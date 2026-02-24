@@ -2,43 +2,42 @@
 
 ## Current State
 
-**Version**: v2.1.0 "Continuity" — **ACTIVE**
-**Date**: 2026-02-22
+**Version**: v2.3.0 "Insight" — **DONE**
+**Date**: 2026-02-24
 
-The repository has opened the v2.1.0 continuation cycle after completing v2.0.0.
-This cycle focuses on workflow/tracker consistency and automation hardening before
-starting broader feature expansion.
+v2.3.0 is complete. All six planned deliverables shipped: five diagnostic gather methods,
+`gather_all_diagnostics()`, updated `export_markdown()`/`export_html()`/`save_report()`,
+HTML CSS improvements, and 33 unit tests (all passing). Race-lock closed.
 
 ## Recent Changes
 
-- Activated v2.1.0 in `ROADMAP.md` as ACTIVE
-- Updated `.workflow/specs/.race-lock.json` to active `v2.1.0`
-- Created `.workflow/specs/tasks-v2.1.0.md`
-- Created `.workflow/specs/arch-v2.1.0.md`
+- Released v2.3.0 "Insight" — enhanced diagnostics: 5 new report sections
+- Added `gather_services_info()`, `gather_journal_errors()`, `gather_updates_info()`,
+  `gather_selinux_info()`, `gather_network_info()` to `ReportExporter`
+- `save_report()` now defaults to `comprehensive=True`; all export methods accept `diagnostics=`
+- Replaced `tests/test_report_exporter.py` with 33-test suite (9 classes) — all passing
+- Closed v2.3.0 race-lock as completed
+- Updated CHANGELOG.md, ROADMAP.md (version index + detailed section), tasks-v2.3.0.md
 
 ## Current Work Focus
 
-**Workflow realignment and drift closure**:
+**No active version** — v2.3.0 is done. Awaiting v2.4.0 planning.
 
-1. Reconcile supporting trackers with canonical workflow state
-2. Implement adapter sync smart re-render
-3. Integrate stats snapshot/render into version bump pipeline
-4. Harden CI drift gates
+Candidates for v2.4.0:
+
+- New Fedora-specific feature tabs
+- Coverage push toward 85%+
+- Improved AI agent / scheduling capabilities
+- UI/UX polish pass
 
 ## Open Items
 
-1. Align `memory-bank/progress.md` and `memory-bank/tasks/_index.md` to v2.1.0 workstream
-2. Reconcile `.self-maintaining-progress.md` with current repo path and release state
-3. Implement v2.1 TASK-004 through TASK-006 in `.workflow/specs/tasks-v2.1.0.md`
-
-## Next Steps
-
-1. Complete tracker reconciliation tasks (documentation state)
-2. Begin `scripts/sync_ai_adapters.py` smart re-render implementation
-3. Add/extend tests for adapter sync and bump pipeline changes
+1. Plan and activate v2.4.0 scope in ROADMAP.md
+2. Update `.workflow/specs/.race-lock.json` to new active version
+3. Create `.workflow/specs/tasks-v2.4.0.md` and `arch-v2.4.0.md`
 
 ## Active Decisions
 
 - **Canonical authority**: `ROADMAP.md` + `.workflow/specs/*`
-- **Supporting context**: `memory-bank/*` and `.self-maintaining-progress.md` must mirror canonical state
-- **Incremental scope**: v2.1.0 prioritizes continuity and deterministic automation over major feature additions
+- **Stabilization gate**: All 6 phases complete — feature expansion is unblocked
+- **Coverage**: Baseline at 77–81% (CI gate at 77%)

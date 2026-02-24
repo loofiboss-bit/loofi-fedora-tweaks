@@ -4,12 +4,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.3.0] - 2026-02-24 "Insight"
+
+### Added
+
+- `gather_services_info()` — queries `systemctl --failed` and returns a structured list of failed systemd units with unit name, load/active/sub state, and description
+- `gather_journal_errors()` — captures the last 20 critical/error journal entries via `journalctl -p 3 -n 20`
+- `gather_updates_info()` — reports pending package updates; branches on `SystemManager.is_atomic()` for rpm-ostree vs dnf
+- `gather_selinux_info()` — reports current SELinux enforcement mode and today's AVC denials (capped at 10 lines)
+- `gather_network_info()` — collects IPv4 addresses, DNS servers, and default gateway
+- `gather_all_diagnostics()` — unified entry point combining all six diagnostic gather methods into a single dict
+- `save_report()` gains `comprehensive=True` default that automatically calls `gather_all_diagnostics()` and embeds all six sections in the exported report
+- `export_markdown()` and `export_html()` gain optional `diagnostics=` parameter for rendering all six report sections
+- HTML report CSS updated: 900 px max-width, `h2` accent colour, `pre` block styling, `.ok` success class for no-failed-services indicator
+
 ## [2.2.2] - 2026-02-23 "Evolution" (patch)
 
 ### Fixed
 
 - Lowered COVERAGE_THRESHOLD from 80 to 77 in .github/workflows/auto-release.yml and .github/workflows/ci.yml to match actual project coverage (77%) and unblock CI/CD pipeline
-- Tasks spec 	asks-v2.2.1.md had unchecked template placeholder checkboxes causing pipeline gate failure — replaced with actual completed [x] tasks
+- Tasks spec asks-v2.2.1.md had unchecked template placeholder checkboxes causing pipeline gate failure — replaced with actual completed [x] tasks
+
 ## [2.2.1] - 2026-02-23 "Velocity" (patch)
 
 ### Fixed
