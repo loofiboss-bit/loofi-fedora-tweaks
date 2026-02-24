@@ -7,43 +7,77 @@
 
 ## Version Index
 
-| Version | Codename                        | Status  | Theme                                                                             |
-| ------- | ------------------------------- | ------- | --------------------------------------------------------------------------------- |
-| v21.0   | UX Stabilization                | DONE    | Layout integrity, QSS scoping                                                     |
-| v22.0   | Usability                       | SKIPPED | Search, status indicators, preferences                                            |
-| v23.0   | Architecture Hardening          | DONE    | Service layer, executor, imports                                                  |
-| v24.0   | Power Features                  | DONE    | Profiles, export, log panel, snapshots                                            |
-| v25.0   | Plugin Architecture             | DONE    | Plugin system, UI redesign, API                                                   |
-| v25.0.3 | Maintenance Update Crash Hotfix | DONE    | Stabilize Maintenance update actions                                              |
-| v26.0   | Plugin Marketplace              | DONE    | External plugins, marketplace, sandboxing                                         |
-| v27.0   | Marketplace Enhancement         | DONE    | CDN index, ratings/reviews, badges, analytics, hot-reload, stronger sandbox       |
-| v28.0   | Workflow Contract Reset         | DONE    | Clean-slate workflow state, runner-compatible planning artifacts, kickoff handoff |
-| v29.0   | Usability & Polish              | DONE    | UX polish, skipped v22 scope, error handling, accessibility, CORS                 |
-| v30.0   | Distribution & Reliability      | DONE    | Flatpak, AppImage, auto-update, CI hardening, coverage 75%                        |
-| v31.0   | Smart UX                        | DONE    | Health score, i18n, batch ops, export report, plugin template                     |
-| v32.0   | Abyss                           | DONE    | Full visual redesign, activity-based categories, Abyss theme                      |
-| v33.0   | Bastion                         | DONE    | Testing & type safety debt, CI pipeline hardening                                 |
-| v34.0   | Citadel                         | DONE    | Light theme fix, stability hardening, accessibility polish                        |
-| v35.0   | Fortress                        | DONE    | Subprocess timeout enforcement, audit logging, privilege hardening                |
-| v36.0   | Horizon                         | DONE    | UX safety, performance optimization, navigation polish                            |
-| v37.0   | Pinnacle                        | DONE    | Smart features, ecosystem expansion, user-requested enhancements                  |
-| v38.0   | Clarity                         | DONE    | UX polish, theme correctness, stability improvements                              |
-| v39.0   | Prism                           | DONE    | Deprecated import migration, inline style elimination                             |
-| v40.0   | Foundation                      | DONE    | Correctness & safety hardening, zero shell injection                              |
-| v41.0   | Coverage                        | DONE    | Test coverage 80%+, CI pipeline hardening                                         |
-| v42.0   | Sentinel                        | DONE    | Exception narrowing, hardcoded dnf elimination, UX polish                         |
-| v43.0   | Stabilization-Only              | DONE    | Policy enforcement, runtime hardening, CI gate tightening                         |
-| v44.0   | Review Gate                     | DONE    | Fedora review prerequisite enforcement for workflow and CI pipelines              |
-| v45.0   | Housekeeping                    | DONE    | Stability fixes, safe guidance cleanup, reliability UX consistency                |
-| v46.0   | Navigator                       | DONE    | Category clarity, navigation consistency, release packaging alignment             |
-| v47.0   | Experience                      | DONE    | UX experience levels, actionable feedback, health drill-down, guided tour         |
-| v48.0   | Sidebar Index                   | DONE    | Tab/sidebar restructure with O(1) ID-based lookups                                |
-| v49.0   | Shield                          | DONE    | Test coverage expansion for lowest-covered modules                                |
-| v50.0   | Forge                           | DONE    | Quality hardening, exception narrowing, docstrings, coverage push                 |
-| 1.0.0   | Foundation (SemVer)             | DONE    | Version renormalization to SemVer 1.0.0                                           |
-| 2.0.0   | Evolution                       | DONE    | Service layer migration, core domain extraction                                   |
-| 2.1.0   | Continuity                      | DONE    | Workflow realignment, tracker consistency, automation hardening                   |
-| 2.2.0   | Velocity                        | DONE    | Performance caching, subprocess safety, service-layer test coverage               |
+| Version | Codename                        | Status  | Theme                                                                                      |
+| ------- | ------------------------------- | ------- | ------------------------------------------------------------------------------------------ |
+| v21.0   | UX Stabilization                | DONE    | Layout integrity, QSS scoping                                                              |
+| v22.0   | Usability                       | SKIPPED | Search, status indicators, preferences                                                     |
+| v23.0   | Architecture Hardening          | DONE    | Service layer, executor, imports                                                           |
+| v24.0   | Power Features                  | DONE    | Profiles, export, log panel, snapshots                                                     |
+| v25.0   | Plugin Architecture             | DONE    | Plugin system, UI redesign, API                                                            |
+| v25.0.3 | Maintenance Update Crash Hotfix | DONE    | Stabilize Maintenance update actions                                                       |
+| v26.0   | Plugin Marketplace              | DONE    | External plugins, marketplace, sandboxing                                                  |
+| v27.0   | Marketplace Enhancement         | DONE    | CDN index, ratings/reviews, badges, analytics, hot-reload, stronger sandbox                |
+| v28.0   | Workflow Contract Reset         | DONE    | Clean-slate workflow state, runner-compatible planning artifacts, kickoff handoff          |
+| v29.0   | Usability & Polish              | DONE    | UX polish, skipped v22 scope, error handling, accessibility, CORS                          |
+| v30.0   | Distribution & Reliability      | DONE    | Flatpak, AppImage, auto-update, CI hardening, coverage 75%                                 |
+| v31.0   | Smart UX                        | DONE    | Health score, i18n, batch ops, export report, plugin template                              |
+| v32.0   | Abyss                           | DONE    | Full visual redesign, activity-based categories, Abyss theme                               |
+| v33.0   | Bastion                         | DONE    | Testing & type safety debt, CI pipeline hardening                                          |
+| v34.0   | Citadel                         | DONE    | Light theme fix, stability hardening, accessibility polish                                 |
+| v35.0   | Fortress                        | DONE    | Subprocess timeout enforcement, audit logging, privilege hardening                         |
+| v36.0   | Horizon                         | DONE    | UX safety, performance optimization, navigation polish                                     |
+| v37.0   | Pinnacle                        | DONE    | Smart features, ecosystem expansion, user-requested enhancements                           |
+| v38.0   | Clarity                         | DONE    | UX polish, theme correctness, stability improvements                                       |
+| v39.0   | Prism                           | DONE    | Deprecated import migration, inline style elimination                                      |
+| v40.0   | Foundation                      | DONE    | Correctness & safety hardening, zero shell injection                                       |
+| v41.0   | Coverage                        | DONE    | Test coverage 80%+, CI pipeline hardening                                                  |
+| v42.0   | Sentinel                        | DONE    | Exception narrowing, hardcoded dnf elimination, UX polish                                  |
+| v43.0   | Stabilization-Only              | DONE    | Policy enforcement, runtime hardening, CI gate tightening                                  |
+| v44.0   | Review Gate                     | DONE    | Fedora review prerequisite enforcement for workflow and CI pipelines                       |
+| v45.0   | Housekeeping                    | DONE    | Stability fixes, safe guidance cleanup, reliability UX consistency                         |
+| v46.0   | Navigator                       | DONE    | Category clarity, navigation consistency, release packaging alignment                      |
+| v47.0   | Experience                      | DONE    | UX experience levels, actionable feedback, health drill-down, guided tour                  |
+| v48.0   | Sidebar Index                   | DONE    | Tab/sidebar restructure with O(1) ID-based lookups                                         |
+| v49.0   | Shield                          | DONE    | Test coverage expansion for lowest-covered modules                                         |
+| v50.0   | Forge                           | DONE    | Quality hardening, exception narrowing, docstrings, coverage push                          |
+| 1.0.0   | Foundation (SemVer)             | DONE    | Version renormalization to SemVer 1.0.0                                                    |
+| 2.0.0   | Evolution                       | DONE    | Service layer migration, core domain extraction                                            |
+| 2.1.0   | Continuity                      | DONE    | Workflow realignment, tracker consistency, automation hardening                            |
+| 2.2.0   | Velocity                        | DONE    | Performance caching, subprocess safety, service-layer test coverage                        |
+| 2.2.1   | Velocity (patch)                | DONE    | CI stability: @patch target corrections for test reliability                               |
+| 2.2.2   | Velocity (patch)                | DONE    | CI: lower coverage threshold to 77%, fix tasks spec gate                                   |
+| 2.3.0   | Insight                         | DONE    | Enhanced diagnostics: 5 new report sections (services, journal, updates, SELinux, network) |
+
+---
+
+## [DONE] v2.3.0 "Insight" — Enhanced Diagnostics
+
+### Scope
+
+Enriches the HTML/Markdown system report generated by `ReportExporter` with five new diagnostic
+sections: failed systemd services, recent journal errors, pending package updates, SELinux enforcement
+status, and network overview. All diagnostics are collected gracefully with subprocess timeouts and
+fallbacks. Atomic Fedora (rpm-ostree) is fully supported in the updates section.
+
+### Planned Deliverables
+
+- [x] `gather_services_info()` — failed systemd units list
+- [x] `gather_journal_errors()` — last 20 critical journal entries
+- [x] `gather_updates_info()` — pending dnf/rpm-ostree packages
+- [x] `gather_selinux_info()` — SELinux mode + today's AVC denials
+- [x] `gather_network_info()` — IPv4 addresses, DNS servers, default gateway
+- [x] `gather_all_diagnostics()` — unified entry point returning all six sections
+- [x] `export_markdown()` and `export_html()` updated with optional `diagnostics=` param
+- [x] `save_report()` updated with `comprehensive=True` default
+- [x] Comprehensive test suite (`tests/test_report_exporter.py`, 33 tests)
+- [x] CHANGELOG and ROADMAP updated
+
+### Agent Assignment
+
+| Agent           | Task                                                          |
+| --------------- | ------------------------------------------------------------- |
+| backend-builder | Five gather methods + gather_all_diagnostics + export updates |
+| test-writer     | test_report_exporter.py comprehensive suite                   |
 
 ---
 
