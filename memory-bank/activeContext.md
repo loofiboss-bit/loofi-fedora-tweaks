@@ -2,42 +2,41 @@
 
 ## Current State
 
-**Version**: v2.3.0 "Insight" — **DONE**
-**Date**: 2026-02-24
+**Version**: v2.6.0 "API Migration Slice 2 (Packages)" — **IN PROGRESS**
+**Date**: 2026-02-25
 
-v2.3.0 is complete. All six planned deliverables shipped: five diagnostic gather methods,
-`gather_all_diagnostics()`, updated `export_markdown()`/`export_html()`/`save_report()`,
-HTML CSS improvements, and 33 unit tests (all passing). Race-lock closed.
+v2.6.0 is the active workflow slice focused on package API migration. The workflow
+lock and architecture/task specs are active, and implementation has completed through
+TASK005 (handler foundation, package service migration, IPC hardening, focused tests).
 
 ## Recent Changes
 
-- Released v2.3.0 "Insight" — enhanced diagnostics: 5 new report sections
-- Added `gather_services_info()`, `gather_journal_errors()`, `gather_updates_info()`,
-  `gather_selinux_info()`, `gather_network_info()` to `ReportExporter`
-- `save_report()` now defaults to `comprehensive=True`; all export methods accept `diagnostics=`
-- Replaced `tests/test_report_exporter.py` with 33-test suite (9 classes) — all passing
-- Closed v2.3.0 race-lock as completed
-- Updated CHANGELOG.md, ROADMAP.md (version index + detailed section), tasks-v2.3.0.md
+- Activated v2.6.0 workflow artifacts (`.workflow/specs/.race-lock.json`, `.workflow/specs/arch-v2.6.0.md`, `.workflow/specs/tasks-v2.6.0.md`, `.workflow/reports/run-manifest-v2.6.0.json`)
+- Implemented package daemon handler foundation (`TASK002`)
+- Implemented package service daemon-first migration with local fallbacks (`TASK003`)
+- Implemented IPC payload hardening for package methods (`TASK004`)
+- Added focused tests for daemon payload validity and fallback behavior (`TASK005`)
 
 ## Current Work Focus
 
-**No active version** — v2.3.0 is done. Awaiting v2.4.0 planning.
+**Active task**: `TASK006 — Planning artifact cleanup sync`
 
-Candidates for v2.4.0:
+Current objective is to keep memory-bank and workflow sources aligned with active
+v2.6.0 state while preserving clear history of completed slices.
 
-- New Fedora-specific feature tabs
-- Coverage push toward 85%+
-- Improved AI agent / scheduling capabilities
-- UI/UX polish pass
+Next queued task after cleanup:
+
+- `TASK007 — Validation and progress sync` (`ROADMAP.md`, run manifest updates)
 
 ## Open Items
 
-1. Plan and activate v2.4.0 scope in ROADMAP.md
-2. Update `.workflow/specs/.race-lock.json` to new active version
-3. Create `.workflow/specs/tasks-v2.4.0.md` and `arch-v2.4.0.md`
+1. Complete workflow metadata sync (`TASK007`)
+2. Execute packaging/release phases for active cycle after validation
+3. Keep memory-bank task index synchronized with workflow progress
 
 ## Active Decisions
 
 - **Canonical authority**: `ROADMAP.md` + `.workflow/specs/*`
-- **Stabilization gate**: All 6 phases complete — feature expansion is unblocked
-- **Coverage**: Baseline at 77–81% (CI gate at 77%)
+- **Slice scope**: v2.6.0 is package migration only (no broad systemctl/polkit expansion)
+- **IPC policy**: strict payload validation with safe preferred-mode fallback
+- **Coverage**: CI gate remains 77%

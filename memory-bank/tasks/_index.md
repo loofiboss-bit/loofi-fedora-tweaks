@@ -2,7 +2,7 @@
 
 ## In Progress
 
-(none)
+- [TASK-018] v2.6.0 package API migration slice — TASK001-005 complete, TASK006 in progress
 
 ## Pending
 
@@ -27,6 +27,11 @@
 - [TASK-015] Implement adapter sync smart re-render in sync_ai_adapters.py — Completed on 2026-02-22
 - [TASK-016] Integrate stats snapshot/render cascade in bump_version.py — Completed on 2026-02-22
 - [TASK-017] Harden CI drift gates for stats/adapter consistency — Completed on 2026-02-22
+- [TASK-019] Activate v2.6.0 workflow cycle — Completed on 2026-02-25
+- [TASK-020] Package daemon handler foundation — Completed on 2026-02-25
+- [TASK-021] Package service API migration slice — Completed on 2026-02-25
+- [TASK-022] IPC behavior and compatibility hardening (packages) — Completed on 2026-02-25
+- [TASK-023] Test updates for slice-2 package migration — Completed on 2026-02-25
 
 ## Abandoned
 

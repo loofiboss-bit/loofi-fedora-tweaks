@@ -245,6 +245,44 @@ vim-common.x86_64 : Common files for vim
 
         self.assertFalse(installed)
 
+    @patch('services.package.service.daemon_client.call_json')
+    def test_install_uses_daemon_action_result_when_valid(self, mock_call, mock_worker_class):
+        """install() should short-circuit when daemon returns valid ActionResult payload."""
+        mock_call.return_value = {
+            "success": True,
+            "message": "daemon ok",
+            "exit_code": 0,
+            "stdout": "",
+            "stderr": "",
+            "data": None,
+            "preview": False,
+            "needs_reboot": False,
+            "timestamp": 0.0,
+            "action_id": "",
+        }
+
+        service = DnfPackageService()
+        result = service.install(["vim"])
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "daemon ok")
+        mock_worker_class.assert_not_called()
+
+    @patch('services.package.service.daemon_client.call_json')
+    def test_install_falls_back_when_daemon_payload_malformed(self, mock_call, mock_worker_class):
+        """install() should fall back to local worker when daemon payload is invalid."""
+        mock_call.return_value = {"value": 42}
+        mock_worker = MagicMock()
+        mock_worker_class.return_value = mock_worker
+        mock_worker.get_result.return_value = ActionResult(success=True, message="local ok", exit_code=0)
+
+        service = DnfPackageService()
+        result = service.install(["vim"])
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "local ok")
+        mock_worker_class.assert_called_once()
+
 
 @patch('services.package.service.CommandWorker')
 class TestRpmOstreePackageService(unittest.TestCase):
@@ -345,6 +383,17 @@ class TestRpmOstreePackageService(unittest.TestCase):
         self.assertEqual(call_args, "rpm")
 
         self.assertTrue(installed)
+
+    @patch('services.package.service.daemon_client.call_json')
+    def test_is_installed_uses_daemon_boolean_when_available(self, mock_call, mock_worker_class):
+        """is_installed() should use daemon bool payload without local worker."""
+        mock_call.return_value = True
+
+        service = RpmOstreePackageService()
+        installed = service.is_installed("vim")
+
+        self.assertTrue(installed)
+        mock_worker_class.assert_not_called()
 
 
 if __name__ == '__main__':

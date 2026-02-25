@@ -48,11 +48,40 @@
 | 2.2.2   | Velocity (patch)                | DONE    | CI: lower coverage threshold to 77%, fix tasks spec gate                                   |
 | 2.3.0   | Insight                         | DONE    | Enhanced diagnostics: 5 new report sections (services, journal, updates, SELinux, network) |
 | 2.4.0   | Daemon Foundation               | DONE    | Daemonized network/firewall execution boundary via D-Bus with fallback                      |
-| 2.5.0   | API Migration Slice 1           | ACTIVE  | Network/firewall API-first hardening with strict IPC compatibility and fallback safeguards   |
+| 2.5.0   | API Migration Slice 1           | DONE    | Network/firewall API-first hardening with strict IPC compatibility and fallback safeguards   |
+| 2.6.0   | API Migration Slice 2           | ACTIVE  | Package API-first migration with strict IPC payload validation and fallback safeguards       |
 
 ---
 
-## [ACTIVE] v2.5.0 "API Migration Slice 1" — Phase 2 Daemon-Service Hardening
+## [ACTIVE] v2.6.0 "API Migration Slice 2" — Phase 2 Package Migration
+
+### Scope
+
+Extend daemon-first service pathways into package management while preserving
+caller-compatible signatures, strict IPC envelopes, and `LOOFI_IPC_MODE=preferred`
+fallback semantics.
+
+### Status snapshot (2026-02-25)
+
+- [x] v2.6.0 workflow cycle activated (`.race-lock`, tasks, arch, manifest)
+- [x] Package daemon handler foundation implemented
+- [x] Package service daemon-first migration completed with local fallback parity
+- [x] IPC payload hardening implemented for package daemon methods
+- [x] Focused verification passed (`test_daemon_client.py`, `test_ipc_fallback_modes.py`, `test_package_service.py`)
+- [x] Memory-bank planning artifact sync completed
+
+### Agent Assignment
+
+| Agent                      | Task                                                               |
+| -------------------------- | ------------------------------------------------------------------ |
+| project-coordinator        | v2.6.0 scope/task contracts                                        |
+| backend-builder            | package handler, package service migration, IPC hardening          |
+| test-writer                | focused package/IPC fallback regression validation                 |
+| release-planner            | roadmap/workflow progress metadata sync                            |
+
+---
+
+## [DONE] v2.5.0 "API Migration Slice 1" — Phase 2 Daemon-Service Hardening
 
 ### Scope
 

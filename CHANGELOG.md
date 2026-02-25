@@ -4,6 +4,23 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Package daemon handler foundation in `daemon/handlers/package_handler.py` with structured package operation routing
+- Package IPC payload contract validator in `services/ipc/types.py` (`is_package_payload`) and daemon client payload guardrails
+
+### Changed
+
+- Package services now prefer daemon-backed execution with explicit local fallback methods for DNF and rpm-ostree paths
+- Workflow and memory-bank artifacts synchronized to active v2.6.0 package migration slice
+
+### Fixed
+
+- Linux RPM `%prep` failures from Windows CRLF checkouts by normalizing spec line endings in `scripts/build_rpm.sh`
+- CI `dependency_audit` job setup by installing `pkg-config` and `libdbus-1-dev` before Python dependency resolution
+
 ## [2.4.0] - 2026-02-25 "Daemon Foundation"
 
 ### Added

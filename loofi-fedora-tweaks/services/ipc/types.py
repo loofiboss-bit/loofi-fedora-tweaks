@@ -21,3 +21,30 @@ class DaemonResponse:
     ok: bool
     data: Any = None
     error: DaemonError | None = None
+
+
+def is_action_result_payload(payload: Any) -> bool:
+    """Return True when payload resembles ActionResult serialized dictionary."""
+    if not isinstance(payload, dict):
+        return False
+    success = payload.get("success")
+    message = payload.get("message")
+    return isinstance(success, bool) and isinstance(message, str)
+
+
+def is_package_payload(method: str, payload: Any) -> bool:
+    """Validate daemon payload shape for package-related IPC methods."""
+    if method in {
+        "PackageInstall",
+        "PackageRemove",
+        "PackageUpdate",
+        "PackageSearch",
+        "PackageInfo",
+        "PackageListInstalled",
+    }:
+        return is_action_result_payload(payload)
+
+    if method == "PackageIsInstalled":
+        return isinstance(payload, bool)
+
+    return True

@@ -28,6 +28,10 @@ tar -czf "$BUILD_DIR"/rpmbuild/SOURCES/loofi-fedora-tweaks-$VERSION.tar.gz -C "$
 # Copy spec file
 cp loofi-fedora-tweaks.spec "$BUILD_DIR"/rpmbuild/SPECS/
 
+# Normalize spec line endings to avoid %prep failures on Linux when working tree files
+# were checked out with CRLF on Windows.
+sed -i 's/\r$//' "$BUILD_DIR"/rpmbuild/SPECS/loofi-fedora-tweaks.spec
+
 # Build RPM
 rpmbuild --define "_topdir $BUILD_DIR/rpmbuild" -ba "$BUILD_DIR"/rpmbuild/SPECS/loofi-fedora-tweaks.spec
 

@@ -7,6 +7,7 @@ from unittest.mock import patch
 from services.ipc.daemon_client import DaemonClient
 from services.ipc.errors import DaemonRequiredModeError
 from services.network.network import NetworkUtils
+from services.package.service import DnfPackageService
 
 
 class TestIPCFallbackModes(unittest.TestCase):
@@ -37,3 +38,31 @@ class TestIPCFallbackModes(unittest.TestCase):
         client = DaemonClient()
         with self.assertRaises(DaemonRequiredModeError):
             client.call_json("Ping")
+
+    @patch.dict(os.environ, {"LOOFI_IPC_MODE": "preferred"})
+    @patch("services.package.service.daemon_client.call_json")
+    @patch("services.package.service.CommandWorker")
+    def test_preferred_package_install_falls_back_to_local(self, mock_worker_class, mock_call):
+        mock_call.return_value = None
+        mock_worker = mock_worker_class.return_value
+        mock_worker.get_result.return_value.success = True
+        mock_worker.get_result.return_value.message = "ok"
+
+        result = DnfPackageService().install(["vim"])
+
+        self.assertTrue(result.success)
+        mock_worker_class.assert_called_once()
+
+    @patch.dict(os.environ, {"LOOFI_IPC_MODE": "disabled"})
+    @patch("services.package.service.daemon_client.call_json")
+    @patch("services.package.service.CommandWorker")
+    def test_disabled_package_install_uses_local_path(self, mock_worker_class, mock_call):
+        mock_call.return_value = None
+        mock_worker = mock_worker_class.return_value
+        mock_worker.get_result.return_value.success = True
+        mock_worker.get_result.return_value.message = "ok"
+
+        result = DnfPackageService().install(["git"])
+
+        self.assertTrue(result.success)
+        mock_worker_class.assert_called_once()

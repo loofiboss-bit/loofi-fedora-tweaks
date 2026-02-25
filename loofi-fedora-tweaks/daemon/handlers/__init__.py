@@ -2,5 +2,6 @@
 
 from daemon.handlers.firewall_handler import FirewallHandler
 from daemon.handlers.network_handler import NetworkHandler
+from daemon.handlers.package_handler import PackageHandler
 
-__all__ = ["FirewallHandler", "NetworkHandler"]
+__all__ = ["FirewallHandler", "NetworkHandler", "PackageHandler"]

@@ -30,38 +30,41 @@
 
 ### Version History Summary
 
-| Era              | Versions            | Theme                                                 |
-| ---------------- | ------------------- | ----------------------------------------------------- |
-| Legacy (integer) | v21–v50             | UX, architecture, plugins, stabilization, hardening   |
-| SemVer           | v1.0.0              | Version renormalization                               |
-| SemVer           | v2.0.0 "Evolution"  | Service layer migration                               |
-| SemVer           | v2.1.0 "Continuity" | Workflow realignment, adapter sync, CI drift gates    |
-| SemVer           | v2.2.0 "Velocity"   | Performance caching, subprocess safety, service tests |
-| SemVer           | v2.2.1 (patch)      | CI stability: @patch target fixes                     |
-| SemVer           | v2.2.2 (patch)      | CI: coverage threshold 77%, tasks spec gate           |
-| SemVer           | v2.3.0 "Insight"    | Enhanced diagnostics: 5 new report sections           |
+- Legacy (integer): v21–v50 — UX, architecture, plugins, stabilization, hardening
+- SemVer: v1.0.0 — version renormalization
+- SemVer: v2.0.0 "Evolution" — service layer migration
+- SemVer: v2.1.0 "Continuity" — workflow realignment and adapter sync
+- SemVer: v2.2.0 "Velocity" — performance caching and subprocess safety
+- SemVer: v2.2.1 (patch) — CI @patch target corrections
+- SemVer: v2.2.2 (patch) — CI coverage threshold and tasks spec gate
+- SemVer: v2.3.0 "Insight" — diagnostics expansion
+- SemVer: v2.4.0 "Evolution" — daemon foundation + IPC fallback alignment
+- SemVer: v2.5.0 "API Slice 1" — network/firewall API migration
+- SemVer: v2.6.0 "API Slice 2" — package API migration (active)
 
-56 total versions shipped.
+Current active semantic cycle: v2.6.0.
 
 ## What's Left to Build
 
-### Upcoming (v2.4.0 — unplanned)
+### Active (v2.6.0 — in progress)
 
-- [ ] Define next version scope and activate in ROADMAP.md
-- [ ] Candidate areas: new Fedora-specific feature tabs, coverage push to 85%+
-- [ ] Create workflow specs (tasks-v2.4.0.md, arch-v2.4.0.md)
-- [ ] Update race-lock to new active version
+- [x] TASK001 Activate v2.6.0 workflow cycle
+- [x] TASK002 Package daemon handler foundation
+- [x] TASK003 Package service API migration slice
+- [x] TASK004 IPC behavior and compatibility hardening (packages)
+- [x] TASK005 Test updates for slice-2 package migration
+- [ ] TASK006 Planning artifact cleanup sync
+- [ ] TASK007 Validation and progress sync
 
 ## Current Status
 
-**v2.3.0 "Insight"**: ✅ COMPLETE — enhanced diagnostics: 5 gather methods + 33 tests.
-**v2.2.2 (patch)**: ✅ COMPLETE — CI stability fix (coverage threshold 77%, tasks spec gate).
-**v2.2.1 (patch)**: ✅ COMPLETE — @patch target corrections for CI stability.
-**v2.2.0 "Velocity"**: ✅ COMPLETE — performance caching, subprocess safety, service-layer tests.
-**v2.1.0 "Continuity"**: ✅ COMPLETE — workflow realignment, adapter sync, CI drift gates in place.
+**v2.6.0 "API Migration Slice 2 (Packages)"**: 🚧 IN PROGRESS — implementation through TASK005 completed.
+**v2.5.0 "API Migration Slice 1"**: ✅ COMPLETE — network/firewall daemon-first migration.
+**v2.4.0 "Evolution"**: ✅ COMPLETE — daemon foundation and hardening alignment.
+**v2.3.0 "Insight"**: ✅ COMPLETE — diagnostics expansion.
 
-**Project state**: Clean, stable, all stabilization phases complete. Awaiting v2.3.0 planning.
+**Project state**: Stable and actively executing v2.6.0 workflow.
 
 ## Known Issues
 
-(none)
+- Local pytest may warn about unknown `timeout` option when `pytest-timeout` plugin is unavailable in the current environment.
