@@ -122,7 +122,7 @@ class TestSystemMonitor(unittest.TestCase):
         result = SystemMonitor.get_memory_info()
         self.assertIsNone(result)
 
-    @patch('os.getloadavg', return_value=(1.5, 1.2, 0.9))
+    @patch('utils.monitor.os.getloadavg', return_value=(1.5, 1.2, 0.9), create=True)
     @patch('os.cpu_count', return_value=4)
     def test_get_cpu_info(self, mock_count, mock_load):
         result = SystemMonitor.get_cpu_info()
@@ -139,8 +139,9 @@ class TestSystemMonitor(unittest.TestCase):
         self.assertIn("1 hour", result)
 
     @patch('builtins.open', side_effect=FileNotFoundError)
-    @patch('subprocess.getoutput', return_value="testhost")
-    def test_get_hostname_fallback(self, mock_output, mock_file):
+    @patch('utils.monitor.subprocess.run')
+    def test_get_hostname_fallback(self, mock_run, mock_file):
+        mock_run.return_value = MagicMock(returncode=0, stdout="testhost\n")
         result = SystemMonitor.get_hostname()
         self.assertEqual(result, "testhost")
 
@@ -208,7 +209,9 @@ class TestCLICommands(unittest.TestCase):
         result = cli_main(["disk"])
         self.assertEqual(result, 0)
 
-    def test_cli_health_command_runs(self):
+    @patch('utils.monitor.os.getloadavg', return_value=(1.0, 0.8, 0.5), create=True)
+    @patch('utils.monitor.os.cpu_count', return_value=4)
+    def test_cli_health_command_runs(self, _mock_cpu_count, _mock_getloadavg):
         from cli.main import main as cli_main
         result = cli_main(["health"])
         self.assertEqual(result, 0)

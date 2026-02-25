@@ -4,6 +4,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.4.0] - 2026-02-25 "Daemon Foundation"
+
+### Added
+
+- New `daemon/` package with D-Bus IPC host (`daemon/server.py`, `daemon/runtime.py`) and shared response contracts (`daemon/contracts.py`)
+- Strict daemon request validation for connection names, zones, ports, and protocols in `daemon/validators.py`
+- New daemon handlers for network and firewall/port-audit operations (`daemon/handlers/network_handler.py`, `daemon/handlers/firewall_handler.py`)
+- New IPC client layer under `services/ipc/` with mode-aware behavior via `LOOFI_IPC_MODE` (`disabled`, `preferred`, `required`)
+
+### Changed
+
+- `main.py --daemon` now boots the new daemon runtime (`daemon.runtime.run_daemon`) with fallback to legacy daemon loop when D-Bus/GLib bindings are unavailable
+- `services/network/network.py` now uses daemon-first calls with local fallback for Wi-Fi scan, VPN list, DNS detection, active connection lookup, hostname privacy, and reactivation
+- `services/security/firewall.py` now uses daemon-first calls with local fallback for status, ports/services listing, and start/stop/open/close operations
+- `services/network/ports.py` now uses daemon-first calls with local fallback for port scan, firewall state/status, allow/block, and security score
+- `ui/security_tab.py` firewall controls now route through `FirewallManager` instead of direct `systemctl` invocations
+
+### Packaging
+
+- Added `dbus-python` dependency in `pyproject.toml` and `requirements.txt`
+- Added `python3-dbus` runtime requirement in RPM spec
+- Added `LOOFI_IPC_MODE=preferred` environment default in user service unit
+
 ## [2.3.0] - 2026-02-24 "Insight"
 
 ### Added

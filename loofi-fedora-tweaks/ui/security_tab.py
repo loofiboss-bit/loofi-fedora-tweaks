@@ -34,6 +34,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from services.network import PortAuditor
+from services.security import FirewallManager
 from services.system import SystemManager
 from utils.command_runner import CommandRunner
 from utils.commands import PrivilegedCommand
@@ -511,38 +512,36 @@ class SecurityTab(QWidget, PluginInterface):
 
         btn_fw_status = QPushButton(self.tr("Check Status"))
         btn_fw_status.setAccessibleName(self.tr("Check Firewall Status"))
-        btn_fw_status.clicked.connect(
-            lambda: self._run_privacy_command(
-                "systemctl",
-                ["status", "firewalld"],
-                self.tr("Checking Firewall Status..."),
-            )
-        )
+        btn_fw_status.clicked.connect(self._check_firewall_status)
         fw_layout.addWidget(btn_fw_status)
 
         btn_fw_enable = QPushButton(self.tr("Enable Firewall"))
         btn_fw_enable.setAccessibleName(self.tr("Enable Firewall"))
-        btn_fw_enable.clicked.connect(
-            lambda: self._run_privacy_command(
-                "pkexec",
-                ["systemctl", "enable", "--now", "firewalld"],
-                self.tr("Enabling Firewall..."),
-            )
-        )
+        btn_fw_enable.clicked.connect(self._enable_firewall)
         fw_layout.addWidget(btn_fw_enable)
 
         btn_fw_disable = QPushButton(self.tr("Disable Firewall"))
         btn_fw_disable.setAccessibleName(self.tr("Disable Firewall"))
-        btn_fw_disable.clicked.connect(
-            lambda: self._run_privacy_command(
-                "pkexec",
-                ["systemctl", "disable", "--now", "firewalld"],
-                self.tr("Disabling Firewall..."),
-            )
-        )
+        btn_fw_disable.clicked.connect(self._disable_firewall)
         fw_layout.addWidget(btn_fw_disable)
 
         return group
+
+    def _check_firewall_status(self):
+        """Log current firewall status using service layer."""
+        status = FirewallManager.get_status()
+        self.log(f"Firewall running: {status.running}")
+        self.log(f"Default zone: {status.default_zone or 'unknown'}")
+
+    def _enable_firewall(self):
+        """Enable firewalld via service layer."""
+        result = FirewallManager.start_firewall()
+        self.log(result.message)
+
+    def _disable_firewall(self):
+        """Disable firewalld via service layer."""
+        result = FirewallManager.stop_firewall()
+        self.log(result.message)
 
     # ==================== TELEMETRY (from Privacy tab) ====================
 

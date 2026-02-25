@@ -135,7 +135,7 @@ class TestProcessManager(unittest.TestCase):
 
     @patch('services.system.processes.time.monotonic', return_value=1000.0)
     @patch('os.listdir', return_value=["1", "42", "self", "cpuinfo"])
-    @patch('os.sysconf', return_value=4096)
+    @patch('services.system.processes.os.sysconf', return_value=4096, create=True)
     @patch('os.cpu_count', return_value=4)
     @patch.object(ProcessManager, '_get_uid_user_map',
                   return_value={0: "root", 1000: "testuser"})

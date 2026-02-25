@@ -1,0 +1,39 @@
+"""Tests for IPC mode fallback semantics."""
+
+import os
+import unittest
+from unittest.mock import patch
+
+from services.ipc.daemon_client import DaemonClient
+from services.ipc.errors import DaemonRequiredModeError
+from services.network.network import NetworkUtils
+
+
+class TestIPCFallbackModes(unittest.TestCase):
+    """Validate disabled/preferred/required behavior."""
+
+    @patch.dict(os.environ, {"LOOFI_IPC_MODE": "preferred"})
+    @patch("services.network.network.daemon_client.call_json")
+    @patch("services.network.network.NetworkUtils.scan_wifi_local")
+    def test_preferred_falls_back_to_local(self, mock_local, mock_call):
+        mock_call.return_value = None
+        mock_local.return_value = [("ssid", "80%", "WPA2", "Connected")]
+        rows = NetworkUtils.scan_wifi()
+        self.assertEqual(rows, [("ssid", "80%", "WPA2", "Connected")])
+
+    @patch.dict(os.environ, {"LOOFI_IPC_MODE": "disabled"})
+    @patch("services.network.network.daemon_client.call_json")
+    @patch("services.network.network.NetworkUtils.scan_wifi_local")
+    def test_disabled_uses_local_only(self, mock_local, mock_call):
+        mock_call.return_value = None
+        mock_local.return_value = [("ssid2", "50%", "Open", "")]
+        rows = NetworkUtils.scan_wifi()
+        self.assertEqual(rows[0][0], "ssid2")
+
+    @patch.dict(os.environ, {"LOOFI_IPC_MODE": "required"})
+    @patch("services.ipc.daemon_client.DaemonClient._call_raw")
+    def test_required_mode_raises_on_transport_error(self, mock_raw):
+        mock_raw.side_effect = RuntimeError("no bus")
+        client = DaemonClient()
+        with self.assertRaises(DaemonRequiredModeError):
+            client.call_json("Ping")

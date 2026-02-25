@@ -551,15 +551,15 @@ class NetworkTab(BaseTab):
                 self.tr("Cannot connect to a hidden network from here."),
             )
             return
-        self.run_command(
-            "nmcli",
-            ["device", "wifi", "connect", ssid],
-            self.tr("Connecting to {}...").format(ssid),
-        )
+        self.append_output(self.tr("Connecting to {}...").format(ssid))
+        success = NetworkUtils.connect_wifi(ssid)
+        self.append_output(self.tr("Connected.\n") if success else self.tr("Connection failed.\n"))
 
     def _disconnect_wifi(self):
         """Disconnect WiFi."""
-        self.run_command("nmcli", ["device", "disconnect", "wlan0"], self.tr("Disconnecting WiFi..."))
+        self.append_output(self.tr("Disconnecting WiFi..."))
+        success = NetworkUtils.disconnect_wifi("wlan0")
+        self.append_output(self.tr("Disconnected.\n") if success else self.tr("Disconnect failed.\n"))
 
     def _load_vpn(self):
         """Load VPN connections from NetworkManager."""
@@ -605,36 +605,10 @@ class NetworkTab(BaseTab):
             )
             return
 
-        if dns_servers == "auto":
-            self.run_command(
-                "nmcli",
-                [
-                    "con",
-                    "mod",
-                    conn_name,
-                    "ipv4.ignore-auto-dns",
-                    "no",
-                    "ipv6.ignore-auto-dns",
-                    "no",
-                    "ipv4.dns",
-                    "",
-                ],
-                self.tr("Resetting DNS to DHCP default..."),
-            )
-        else:
-            self.run_command(
-                "nmcli",
-                [
-                    "con",
-                    "mod",
-                    conn_name,
-                    "ipv4.dns",
-                    dns_servers,
-                    "ipv4.ignore-auto-dns",
-                    "yes",
-                ],
-                self.tr("Applying DNS: {}").format(dns_servers),
-            )
+        message = self.tr("Resetting DNS to DHCP default...") if dns_servers == "auto" else self.tr("Applying DNS: {}").format(dns_servers)
+        self.append_output(message)
+        success = NetworkUtils.apply_dns(conn_name, dns_servers)
+        self.append_output(self.tr("DNS updated.\n") if success else self.tr("DNS update failed.\n"))
 
         # Reapply connection in background
         NetworkUtils.reactivate_connection(conn_name)
@@ -739,18 +713,9 @@ class NetworkTab(BaseTab):
             QMessageBox.warning(self, self.tr("Error"), self.tr("No active connection found."))
             return
 
-        value = "no" if hide else "yes"
-        self.run_command(
-            "nmcli",
-            [
-                "connection",
-                "modify",
-                conn,
-                "ipv4.dhcp-send-hostname",
-                value,
-            ],
-            self.tr("Setting hostname visibility to {}...").format("hidden" if hide else "visible"),
-        )
+        self.append_output(self.tr("Setting hostname visibility to {}...").format("hidden" if hide else "visible"))
+        success = NetworkUtils.set_hostname_privacy(conn, hide)
+        self.append_output(self.tr("Hostname privacy updated.\n") if success else self.tr("Hostname privacy update failed.\n"))
 
         action = self.tr("Hidden hostname from DHCP") if hide else self.tr("Restored hostname to DHCP")
         undo_value = "yes" if hide else "no"

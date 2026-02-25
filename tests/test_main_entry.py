@@ -83,7 +83,7 @@ class TestMainDaemon(unittest.TestCase):
     """Tests for main() --daemon mode."""
 
     @patch("sys.argv", ["loofi-fedora-tweaks", "--daemon"])
-    @patch("utils.daemon.Daemon.run")
+    @patch("daemon.runtime.run_daemon")
     def test_daemon_mode(self, mock_run):
         from main import main
         main()
@@ -136,6 +136,18 @@ class TestMainGUI(unittest.TestCase):
             # The real import will fail so main catches it
             pass
         # Just verify the function path without actual GUI
+
+    def test_gui_startup_catches_type_and_attribute_errors(self):
+        """Startup catch block includes TypeError/AttributeError regressions."""
+        filepath = os.path.join(
+            os.path.dirname(__file__), '..', 'loofi-fedora-tweaks', 'main.py'
+        )
+        with open(filepath, 'r', encoding='utf-8') as f:
+            source = f.read()
+        self.assertIn(
+            "except (OSError, RuntimeError, ValueError, ImportError, TypeError, AttributeError) as exc:",
+            source,
+        )
 
 
 if __name__ == '__main__':

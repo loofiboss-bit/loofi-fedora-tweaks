@@ -153,17 +153,19 @@ class TestUpdateManagerCheckUpdates(unittest.TestCase):
 class TestUpdateManagerConflicts(unittest.TestCase):
     """Tests for UpdateManager.preview_conflicts()."""
 
+    @patch("utils.update_manager.cached_which", return_value="/usr/bin/dnf")
     @patch("utils.update_manager.SystemManager.is_atomic", return_value=False)
     @patch("utils.update_manager.subprocess.run")
-    def test_preview_no_conflicts(self, mock_run, mock_atomic):
+    def test_preview_no_conflicts(self, mock_run, mock_atomic, _mock_which):
         """No conflicts returns empty list."""
         mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
         result = UpdateManager.preview_conflicts()
         self.assertEqual(len(result), 0)
 
+    @patch("utils.update_manager.cached_which", return_value="/usr/bin/dnf")
     @patch("utils.update_manager.SystemManager.is_atomic", return_value=False)
     @patch("utils.update_manager.subprocess.run")
-    def test_preview_with_conflicts(self, mock_run, mock_atomic):
+    def test_preview_with_conflicts(self, mock_run, mock_atomic, _mock_which):
         """Conflict lines in stderr are captured."""
         mock_run.return_value = MagicMock(
             returncode=1,
@@ -272,9 +274,10 @@ class TestUpdateManagerRollback(unittest.TestCase):
 class TestUpdateManagerHistory(unittest.TestCase):
     """Tests for UpdateManager.get_update_history()."""
 
+    @patch("utils.update_manager.cached_which", return_value="/usr/bin/dnf")
     @patch("utils.update_manager.SystemManager.is_atomic", return_value=False)
     @patch("utils.update_manager.subprocess.run")
-    def test_history_dnf(self, mock_run, mock_atomic):
+    def test_history_dnf(self, mock_run, mock_atomic, _mock_which):
         """DNF history parsing."""
         mock_run.return_value = MagicMock(
             returncode=0,
@@ -327,9 +330,10 @@ class TestUpdateManagerHistory(unittest.TestCase):
         result = UpdateManager.get_update_history()
         self.assertEqual(len(result), 0)
 
+    @patch("utils.update_manager.cached_which", return_value="/usr/bin/dnf")
     @patch("utils.update_manager.SystemManager.is_atomic", return_value=False)
     @patch("utils.update_manager.subprocess.run")
-    def test_history_timeout(self, mock_run, mock_atomic):
+    def test_history_timeout(self, mock_run, mock_atomic, _mock_which):
         """History timeout returns empty list."""
         import subprocess
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="dnf", timeout=30)

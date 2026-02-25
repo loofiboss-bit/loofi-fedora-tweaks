@@ -13,6 +13,7 @@ import subprocess
 from dataclasses import dataclass
 from typing import Optional
 
+from services.ipc import daemon_client
 from services.system.system import cached_which
 
 logger = logging.getLogger(__name__)
@@ -68,10 +69,30 @@ class PortAuditor:
 
     @classmethod
     def scan_ports(cls) -> list[OpenPort]:
-        """
-        Scan all open listening ports.
-        Uses ss (socket statistics) for accuracy.
-        """
+        """Scan all open listening ports."""
+        data = daemon_client.call_json("PortAuditScan")
+        if isinstance(data, list):
+            result: list[OpenPort] = []
+            for row in data:
+                if not isinstance(row, dict):
+                    continue
+                result.append(
+                    OpenPort(
+                        protocol=str(row.get("protocol", "")),
+                        port=int(row.get("port", 0) or 0),
+                        address=str(row.get("address", "")),
+                        process=str(row.get("process", "")),
+                        pid=int(row.get("pid", 0) or 0),
+                        is_risky=bool(row.get("is_risky", False)),
+                        risk_reason=str(row.get("risk_reason", "")),
+                    )
+                )
+            return result
+        return cls.scan_ports_local()
+
+    @classmethod
+    def scan_ports_local(cls) -> list[OpenPort]:
+        """Local scan via ss."""
         ports = []
 
         try:
@@ -187,6 +208,14 @@ class PortAuditor:
     @classmethod
     def is_firewalld_running(cls) -> bool:
         """Check if firewalld is running."""
+        status = daemon_client.call_json("FirewallGetStatus")
+        if isinstance(status, dict):
+            return bool(status.get("running", False))
+        return cls.is_firewalld_running_local()
+
+    @classmethod
+    def is_firewalld_running_local(cls) -> bool:
+        """Local firewalld state check."""
         try:
             result = subprocess.run(["systemctl", "is-active", "firewalld"], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
@@ -203,10 +232,18 @@ class PortAuditor:
             port: Port number to block
             protocol: tcp or udp
         """
+        data = daemon_client.call_json("FirewallClosePort", str(port), protocol, "", True)
+        if isinstance(data, dict):
+            return Result(bool(data.get("success", False)), str(data.get("message", "")))
+        return cls.block_port_local(port, protocol)
+
+    @classmethod
+    def block_port_local(cls, port: int, protocol: str = "tcp") -> Result:
+        """Local fallback for blocking a port."""
         if not cached_which("firewall-cmd"):
             return Result(False, "firewall-cmd not found")
 
-        if not cls.is_firewalld_running():
+        if not cls.is_firewalld_running_local():
             return Result(False, "firewalld is not running")
 
         try:
@@ -232,10 +269,18 @@ class PortAuditor:
             port: Port number to allow
             protocol: tcp or udp
         """
+        data = daemon_client.call_json("FirewallOpenPort", str(port), protocol, "", True)
+        if isinstance(data, dict):
+            return Result(bool(data.get("success", False)), str(data.get("message", "")))
+        return cls.allow_port_local(port, protocol)
+
+    @classmethod
+    def allow_port_local(cls, port: int, protocol: str = "tcp") -> Result:
+        """Local fallback for allowing a port."""
         if not cached_which("firewall-cmd"):
             return Result(False, "firewall-cmd not found")
 
-        if not cls.is_firewalld_running():
+        if not cls.is_firewalld_running_local():
             return Result(False, "firewalld is not running")
 
         try:
@@ -257,9 +302,22 @@ class PortAuditor:
     @classmethod
     def get_firewall_status(cls) -> dict:
         """Get firewall status and open ports."""
+        status = daemon_client.call_json("FirewallGetStatus")
+        if isinstance(status, dict):
+            return {
+                "running": bool(status.get("running", False)),
+                "default_zone": str(status.get("default_zone", "unknown")),
+                "allowed_ports": [str(x) for x in status.get("ports", [])],
+                "allowed_services": [str(x) for x in status.get("services", [])],
+            }
+        return cls.get_firewall_status_local()
+
+    @classmethod
+    def get_firewall_status_local(cls) -> dict:
+        """Local fallback for firewall status."""
         status = {"running": False, "default_zone": "unknown", "allowed_ports": [], "allowed_services": []}
 
-        if not cls.is_firewalld_running():
+        if not cls.is_firewalld_running_local():
             return status
 
         status["running"] = True
@@ -292,7 +350,15 @@ class PortAuditor:
 
         Returns score from 0-100 and recommendations.
         """
-        ports = cls.scan_ports()
+        data = daemon_client.call_json("PortAuditSecurityScore")
+        if isinstance(data, dict):
+            return data
+        return cls.get_security_score_local()
+
+    @classmethod
+    def get_security_score_local(cls) -> dict:
+        """Local fallback for security score."""
+        ports = cls.scan_ports_local()
         risky = [p for p in ports if p.is_risky]
 
         # Start with 100, deduct for issues

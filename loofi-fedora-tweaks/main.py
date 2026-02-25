@@ -92,9 +92,9 @@ def main():
 
     if args.daemon:
         # Run in daemon mode
-        from utils.daemon import Daemon
+        from daemon.runtime import run_daemon
 
-        Daemon.run()
+        run_daemon()
     elif args.web:
         from utils.api_server import APIServer
 
@@ -170,7 +170,7 @@ def main():
             _log.info("MainWindow shown successfully")
             sys.exit(app.exec())
 
-        except (OSError, RuntimeError, ValueError, ImportError) as exc:
+        except (OSError, RuntimeError, ValueError, ImportError, TypeError, AttributeError) as exc:
             _log.critical("GUI startup crashed: %s", exc, exc_info=True)
             # Try to show a Qt error dialog if QApplication exists
             try:
@@ -180,7 +180,7 @@ def main():
                         "Loofi Fedora Tweaks — Startup Error",
                         f"The application failed to start:\n\n{exc}\n\nCheck the log at:\n{LOG_FILE}",
                     )
-            except (RuntimeError, OSError, ValueError) as e:
+            except (RuntimeError, OSError, ValueError, TypeError, AttributeError) as e:
                 _log.debug("Failed to show Qt error dialog: %s", e)
             _notify_error("Loofi — Startup Crash", str(exc))
             print(f"FATAL: {exc}", file=sys.stderr)

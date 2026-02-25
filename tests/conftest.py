@@ -12,26 +12,10 @@ import subprocess
 import tempfile
 import shutil
 
-# ── Skip broken test files that fail at import time ────────────────────
-# These files have unresolved import errors (missing PyQt6 symbols,
-# missing service classes, etc.) and must be excluded from collection
-# until the underlying modules are fixed.
-collect_ignore = [
-    "test_plugin_adapter.py",
-    "test_plugin_compat.py",
-    "test_plugin_integration.py",
-    "test_plugin_marketplace_phase2.py",
-    "test_plugin_marketplace_phase3.py",
-    "test_plugin_registry.py",
-    "test_pulse_features.py",
-    "test_services.py",
-    "test_update_manager.py",
-    "test_utils.py",
-    "test_health_score.py",
-    "test_new_features.py",
-    "test_v10_features.py",
-    "test_v17_cli.py",
-]
+# ── Skip currently failing legacy test modules ──────────────────────────
+# These files are temporarily excluded while their mocks/expectations are
+# being aligned with the current services/core architecture.
+collect_ignore = []
 
 # Force offscreen Qt rendering in CI (must be set before any PyQt6 import)
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")

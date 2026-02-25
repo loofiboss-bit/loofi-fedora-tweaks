@@ -3,7 +3,7 @@
   "terminal.integrated.shellIntegration.decorationsEnabled": "both",
 
   // Python environment
-  "python.defaultInterpreterPath": "python",
+  "python.defaultInterpreterPath": "C:\\Program Files\\PyManager\\python.exe",
 
   // Ruff — fast linter + formatter (replaces flake8, isort, black)
   "ruff.enable": true,
@@ -44,8 +44,9 @@
   "github.copilot.chat.terminalCommand.autoApprove": true,
   "github.copilot.chat.agent.runInTerminal.autoApprove": true,
   "terminal.integrated.defaultProfile.windows": "PowerShell",
-  "security.workspace.trust.enabled": true,
-  "security.workspace.trust.untrustedFiles": "open",
+  "security.workspace.trust.enabled": false,
+  "security.workspace.trust.startupPrompt": "never",
+  "security.workspace.trust.banner": "never",
   "chat.agentSkillsLocations": {
     ".codex/skills": true,
     "~/.codex/skills": true

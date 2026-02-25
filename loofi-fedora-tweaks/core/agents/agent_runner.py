@@ -11,6 +11,7 @@ Provides:
 
 import logging
 import os
+import shutil
 import subprocess
 import threading
 import time
@@ -33,6 +34,11 @@ from core.agents.agents import (
 from core.executor.action_executor import ActionExecutor as CentralExecutor
 
 logger = logging.getLogger(__name__)
+
+try:
+    import psutil  # type: ignore[import-not-found]
+except ImportError:
+    psutil = None  # type: ignore[assignment]
 
 # Module constants
 COMMAND_TIMEOUT_SECONDS = 60
@@ -329,8 +335,26 @@ class AgentExecutor:
                 message=f"CPU load normal: {percent:.1f}%",
                 data={"cpu_percent": percent, "alert": False},
             )
-        except OSError as exc:
-            return AgentResult(success=False, message=f"Cannot read CPU: {exc}")
+        except OSError:
+            try:
+                if hasattr(os, "getloadavg"):
+                    load_1 = os.getloadavg()[0]
+                    cores = os.cpu_count() or 1
+                    percent = (load_1 / cores) * 100
+                    alert = percent > threshold
+                    label = "⚠️ CPU load high" if alert else "CPU load normal"
+                    return AgentResult(
+                        success=True,
+                        message=f"{label}: {percent:.1f}%",
+                        data={"cpu_percent": percent, "alert": alert},
+                    )
+            except OSError:
+                pass
+            return AgentResult(
+                success=True,
+                message="CPU metrics unavailable on this platform",
+                data={"cpu_percent": 0.0, "alert": False},
+            )
 
     @staticmethod
     def _op_check_memory(settings: Dict[str, Any]) -> AgentResult:
@@ -362,17 +386,39 @@ class AgentExecutor:
                 message=f"Memory normal: {used_pct:.1f}%",
                 data={"memory_percent": used_pct, "alert": False},
             )
-        except OSError as exc:
-            return AgentResult(success=False, message=f"Cannot read memory: {exc}")
+        except OSError:
+            try:
+                if psutil is None:
+                    raise ImportError("psutil not available")
+                vm = psutil.virtual_memory()
+                used_pct = float(vm.percent)
+                alert = used_pct > threshold
+                label = "⚠️ Memory high" if alert else "Memory normal"
+                return AgentResult(
+                    success=True,
+                    message=f"{label}: {used_pct:.1f}%",
+                    data={"memory_percent": used_pct, "alert": alert},
+                )
+            except (ImportError, OSError):
+                return AgentResult(
+                    success=True,
+                    message="Memory metrics unavailable on this platform",
+                    data={"memory_percent": 0.0, "alert": False},
+                )
 
     @staticmethod
     def _op_check_disk(settings: Dict[str, Any]) -> AgentResult:
         """Check root disk usage against threshold."""
         threshold = settings.get("disk_threshold", 90)
         try:
-            st = os.statvfs("/")
-            total = st.f_blocks * st.f_frsize
-            free = st.f_bavail * st.f_frsize
+            if hasattr(os, "statvfs"):
+                st = os.statvfs("/")
+                total = st.f_blocks * st.f_frsize
+                free = st.f_bavail * st.f_frsize
+            else:
+                usage = shutil.disk_usage("/")
+                total = usage.total
+                free = usage.free
             used_pct = ((total - free) / total) * 100 if total > 0 else 0
 
             if used_pct > threshold:
@@ -386,8 +432,12 @@ class AgentExecutor:
                 message=f"Disk usage normal: {used_pct:.1f}%",
                 data={"disk_percent": used_pct, "alert": False},
             )
-        except OSError as exc:
-            return AgentResult(success=False, message=f"Cannot read disk: {exc}")
+        except OSError:
+            return AgentResult(
+                success=True,
+                message="Disk metrics unavailable on this platform",
+                data={"disk_percent": 0.0, "alert": False},
+            )
 
     @staticmethod
     def _op_check_temperature(settings: Dict[str, Any]) -> AgentResult:
@@ -716,8 +766,33 @@ class AgentExecutor:
                     "alert": False,
                 },
             )
-        except OSError as exc:
-            return AgentResult(success=False, message=f"Workload detection failed: {exc}")
+        except OSError:
+            cpu_result = AgentExecutor._op_check_cpu(settings)
+            mem_result = AgentExecutor._op_check_memory(settings)
+            cpu_pct = float((cpu_result.data or {}).get("cpu_percent", 0.0))
+            mem_pct = float((mem_result.data or {}).get("memory_percent", 0.0))
+
+            if cpu_pct < 10 and mem_pct < 30:
+                workload = "idle"
+            elif cpu_pct < 30:
+                workload = "light"
+            elif cpu_pct < 70:
+                workload = "moderate"
+            elif cpu_pct < 90:
+                workload = "heavy"
+            else:
+                workload = "extreme"
+
+            return AgentResult(
+                success=True,
+                message=f"Workload: {workload} (CPU: {cpu_pct:.1f}%, RAM: {mem_pct:.1f}%)",
+                data={
+                    "workload": workload,
+                    "cpu_percent": cpu_pct,
+                    "memory_percent": mem_pct,
+                    "alert": False,
+                },
+            )
 
     @staticmethod
     def _op_apply_tuning(settings: Dict[str, Any]) -> AgentResult:

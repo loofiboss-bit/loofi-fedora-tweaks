@@ -157,6 +157,45 @@
       "problemMatcher": []
     },
     {
+      "label": "Dev: Run Tests (Linux Auto: Docker→WSL)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "scripts/run_linux_tests.ps1",
+        "-Backend",
+        "auto"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Run Tests (Linux WSL)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "scripts/run_linux_tests.ps1",
+        "-Backend",
+        "wsl"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Run Tests (Linux Docker, Primary)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "scripts/run_linux_tests.ps1",
+        "-Backend",
+        "docker"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
       "label": "Dev: Lint",
       "type": "shell",
       "command": "flake8",

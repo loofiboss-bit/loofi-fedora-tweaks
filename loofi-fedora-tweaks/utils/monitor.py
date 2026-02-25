@@ -146,7 +146,7 @@ class SystemMonitor:
                 load_15min=round(load_15, 2),
                 core_count=core_count,
             )
-        except OSError as e:
+        except (OSError, AttributeError) as e:
             logger.debug("Failed to get CPU load averages: %s", e)
             return None
 

@@ -9,6 +9,7 @@ build/
 
 # Virtual environments
 .venv/
+.venv-linux-tests/
 .env
 env/
 venv/

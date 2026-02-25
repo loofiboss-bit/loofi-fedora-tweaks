@@ -493,7 +493,8 @@ class TestContextRAGManager(unittest.TestCase):
 
     def test_build_index_no_files(self):
         """build_index reports failure when no indexable files found."""
-        result = ContextRAGManager.build_index(paths=["/nonexistent/path"])
+        missing_path = os.path.join(self.test_dir, "definitely-missing", "path")
+        result = ContextRAGManager.build_index(paths=[missing_path])
         self.assertFalse(result.success)
 
     def test_get_index_stats_no_index(self):

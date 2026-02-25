@@ -177,16 +177,20 @@ class TestHealthScoreManager(unittest.TestCase):
         score, rec = HealthScoreManager._score_uptime()
         self.assertEqual(score, 50)
 
+    @patch('core.diagnostics.health_score.cached_which', return_value='/usr/bin/dnf')
+    @patch('core.diagnostics.health_score.SystemManager.is_atomic', return_value=False)
     @patch('subprocess.run')
-    def test_score_updates_none_pending(self, mock_run):
+    def test_score_updates_none_pending(self, mock_run, _mock_is_atomic, _mock_cached_which):
         """No updates pending scores 100."""
         mock_run.return_value = MagicMock(returncode=0)
         score, rec = HealthScoreManager._score_updates()
         self.assertEqual(score, 100)
         self.assertIsNone(rec)
 
+    @patch('core.diagnostics.health_score.cached_which', return_value='/usr/bin/dnf')
+    @patch('core.diagnostics.health_score.SystemManager.is_atomic', return_value=False)
     @patch('subprocess.run')
-    def test_score_updates_many_pending(self, mock_run):
+    def test_score_updates_many_pending(self, mock_run, _mock_is_atomic, _mock_cached_which):
         """Many updates pending lowers score."""
         lines = "\n".join([f"package-{i}  1.0  updates" for i in range(60)])
         mock_run.return_value = MagicMock(returncode=100, stdout=lines)
@@ -194,8 +198,10 @@ class TestHealthScoreManager(unittest.TestCase):
         self.assertEqual(score, 40)
         self.assertIn("60", rec)
 
+    @patch('core.diagnostics.health_score.cached_which', return_value='/usr/bin/dnf')
+    @patch('core.diagnostics.health_score.SystemManager.is_atomic', return_value=False)
     @patch('subprocess.run')
-    def test_score_updates_few_pending(self, mock_run):
+    def test_score_updates_few_pending(self, mock_run, _mock_is_atomic, _mock_cached_which):
         """Few updates pending scores high."""
         lines = "\n".join([f"package-{i}  1.0  updates" for i in range(3)])
         mock_run.return_value = MagicMock(returncode=100, stdout=lines)

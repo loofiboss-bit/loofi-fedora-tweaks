@@ -274,6 +274,28 @@ Run tests:
 PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v  # 6383 tests collected
 ```
 
+### Windows developers: run tests in Linux (Docker-first primary path)
+
+Some tests rely on Linux-specific APIs (`/proc`, `statvfs`, `getloadavg`, `system tools`) and can fail on native Windows runs.
+Use the Linux-backed runner instead:
+
+```bash
+# Auto: try Docker first, fallback to WSL
+just test-linux
+
+# Force Docker backend
+just test-linux-docker
+
+# Force WSL backend
+just test-linux-wsl
+```
+
+VS Code tasks are also available:
+
+- `Dev: Run Tests (Linux Auto: Docker→WSL)`
+- `Dev: Run Tests (Linux WSL)`
+- `Dev: Run Tests (Linux Docker, Primary)`
+
 Lint:
 
 ```bash
@@ -312,7 +334,7 @@ Every push to `master` and every pull request runs through two pipelines:
 
 ### Auto Release Flow
 
-```
+```text
 push to master
   → validate (version alignment, packaging scripts)
   → adapter_drift, lint, typecheck, test, security, docs_gate, fedora_review (parallel)

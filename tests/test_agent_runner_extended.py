@@ -358,12 +358,13 @@ class TestAgentExecutorExtended(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertFalse(result.data.get("alert"))
 
+    @patch("core.agents.agent_runner.os.getloadavg", side_effect=OSError("no getloadavg"))
     @patch("builtins.open", side_effect=OSError("no such file"))
-    def test_op_check_cpu_oserror(self, mock_open):
-        """CPU check OSError returns failure result."""
+    def test_op_check_cpu_oserror(self, mock_open, mock_getloadavg):
+        """CPU check OSError with all fallbacks exhausted returns unavailable."""
         result = AgentExecutor._op_check_cpu({})
-        self.assertFalse(result.success)
-        self.assertIn("Cannot read CPU", result.message)
+        self.assertTrue(result.success)
+        self.assertIn("unavailable", result.message.lower())
 
     # ==================== _op_check_memory ====================
 
@@ -397,12 +398,13 @@ class TestAgentExecutorExtended(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertFalse(result.data.get("alert"))
 
+    @patch("core.agents.agent_runner.psutil", new=None)
     @patch("builtins.open", side_effect=OSError("no meminfo"))
     def test_op_check_memory_oserror(self, mock_open):
-        """Memory check OSError returns failure result."""
+        """Memory check OSError with all fallbacks exhausted returns unavailable."""
         result = AgentExecutor._op_check_memory({})
-        self.assertFalse(result.success)
-        self.assertIn("Cannot read memory", result.message)
+        self.assertTrue(result.success)
+        self.assertIn("unavailable", result.message.lower())
 
     # ==================== _op_check_disk ====================
 
@@ -430,12 +432,13 @@ class TestAgentExecutorExtended(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertFalse(result.data.get("alert"))
 
+    @patch("core.agents.agent_runner.shutil.disk_usage", side_effect=OSError("disk error"))
     @patch("core.agents.agent_runner.os.statvfs", side_effect=OSError("disk error"))
-    def test_op_check_disk_oserror(self, mock_statvfs):
-        """Disk check OSError returns failure result."""
+    def test_op_check_disk_oserror(self, mock_statvfs, mock_disk_usage):
+        """Disk check OSError with all fallbacks exhausted returns unavailable."""
         result = AgentExecutor._op_check_disk({})
-        self.assertFalse(result.success)
-        self.assertIn("Cannot read disk", result.message)
+        self.assertTrue(result.success)
+        self.assertIn("unavailable", result.message.lower())
 
     # ==================== _op_check_temperature ====================
 
@@ -865,12 +868,14 @@ class TestAgentExecutorExtended(unittest.TestCase):
         self.assertTrue(result.success)
         self.assertEqual(result.data.get("workload"), "extreme")
 
+    @patch("core.agents.agent_runner.psutil", new=None)
+    @patch("core.agents.agent_runner.os.getloadavg", side_effect=OSError("no getloadavg"))
     @patch("builtins.open", side_effect=OSError("no loadavg"))
-    def test_op_detect_workload_oserror(self, mock_open):
-        """Workload detection OSError returns failure result."""
+    def test_op_detect_workload_oserror(self, mock_open, mock_getloadavg):
+        """Workload detection OSError with fallbacks returns idle workload."""
         result = AgentExecutor._op_detect_workload({})
-        self.assertFalse(result.success)
-        self.assertIn("Workload detection failed", result.message)
+        self.assertTrue(result.success)
+        self.assertIn("Workload", result.message)
 
     # ==================== _op_apply_tuning ====================
 

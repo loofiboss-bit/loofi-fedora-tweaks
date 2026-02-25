@@ -47,6 +47,40 @@
 | 2.2.1   | Velocity (patch)                | DONE    | CI stability: @patch target corrections for test reliability                               |
 | 2.2.2   | Velocity (patch)                | DONE    | CI: lower coverage threshold to 77%, fix tasks spec gate                                   |
 | 2.3.0   | Insight                         | DONE    | Enhanced diagnostics: 5 new report sections (services, journal, updates, SELinux, network) |
+| 2.4.0   | Daemon Foundation               | ACTIVE  | Daemonized network/firewall execution boundary via D-Bus with fallback                      |
+
+---
+
+## [ACTIVE] v2.4.0 "Daemon Foundation" — Phase 1 Daemonization
+
+### Scope
+
+Introduce a standalone daemon IPC boundary for network and firewall operations using D-Bus.
+Phase 1 focuses on execution-path decoupling (GUI + CLI to daemon-backed services) with
+strangler fallback behavior (`LOOFI_IPC_MODE=preferred`) to preserve stability.
+
+### Planned Deliverables
+
+- [ ] Add `daemon/` package with D-Bus host, contracts, validators, and handlers
+- [ ] Add `services/ipc/` daemon client with `disabled|preferred|required` modes
+- [ ] Migrate `services/network/network.py` to daemon-first calls with local fallback
+- [ ] Migrate `services/security/firewall.py` to daemon-first calls with local fallback
+- [ ] Migrate `services/network/ports.py` to daemon-first calls with local fallback
+- [ ] Route security firewall UI actions through service layer (no direct systemctl commands)
+- [ ] Wire `--daemon` entrypoint to new daemon runtime
+- [ ] Update packaging metadata for daemon IPC dependency/runtime
+- [ ] Add IPC tests (`test_daemon_client.py`, `test_ipc_fallback_modes.py`, `test_daemon_dbus.py`)
+- [ ] Update CHANGELOG, ARCHITECTURE, and workflow task spec for v2.4.0
+
+### Agent Assignment
+
+| Agent                      | Task                                                               |
+| -------------------------- | ------------------------------------------------------------------ |
+| project-coordinator        | v2.4.0 scope/task contracts                                        |
+| backend-builder            | daemon host, validators, handlers, service migrations              |
+| frontend-integration-builder | UI/CLI callsite migration to service layer                       |
+| test-writer                | IPC and fallback-mode tests                                        |
+| release-planner            | docs/version/packaging updates                                     |
 
 ---
 
