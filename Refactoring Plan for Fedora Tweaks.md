@@ -61,3 +61,26 @@ Goal: Reduce technical debt by removing peripheral functionality from the core a
 
 \---  
 \*\*Instructions for AI:\*\* Acknowledge that you have read and understood this plan. Ask me which phase we should begin with before generating any code.  
+
+## Refactor Progress Snapshot (2026-02-25)
+
+Current position in plan:
+
+- Phase 1 (Architectural Separation / Daemonization): **Completed** in v2.4.0 Phase 1 scope.
+- Phase 2 (Replace CLI scraping with APIs): **Not started** (planned next major increment).
+- Phase 3 (Polkit security hardening): **Partially addressed** via daemon validators; policy audit remains.
+- Phase 4 (Version and environment guardrails): **Not started**.
+- Phase 5 (Scope reduction / optionalization): **Not started**.
+
+What was completed for Phase 1:
+
+- Added daemon package and runtime entrypoint (`--daemon`) with D-Bus host and contracts.
+- Added strict request validators and structured error envelope handling.
+- Added IPC client layer with `disabled|preferred|required` mode semantics.
+- Migrated network/firewall/ports services to daemon-first with fallback (`LOOFI_IPC_MODE=preferred`).
+- Routed security UI firewall actions through service layer.
+- Added/updated IPC tests and packaging/runtime docs for v2.4.0.
+
+Immediate next step:
+
+- Begin Phase 2 by replacing remaining CLI-scraping network/firewall/systemctl paths with direct D-Bus/API-backed implementations behind existing service interfaces.

@@ -27,6 +27,12 @@ All notable changes to this project will be documented in this file.
 - Added `python3-dbus` runtime requirement in RPM spec
 - Added `LOOFI_IPC_MODE=preferred` environment default in user service unit
 
+### Documentation
+
+- Updated v2.4.0 task spec status to complete (`.workflow/specs/tasks-v2.4.0.md`)
+- Updated v2.4.0 roadmap deliverables checklist to reflect completed Phase 1 daemonization scope
+- Added explicit Phase 1 progress snapshot in `ROADMAP.md` for refactor tracking clarity
+
 ## [2.3.0] - 2026-02-24 "Insight"
 
 ### Added

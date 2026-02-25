@@ -1,7 +1,7 @@
 # Tasks — v2.4.0 "Daemon Foundation"
 
 **Date**: 2026-02-25  
-**Status**: In Progress  
+**Status**: Complete  
 **Arch Spec**: `arch-v2.4.0.md`
 
 ## Task List
@@ -67,7 +67,7 @@
 ### TASK005 — Tests and verification
 
 **ID**: TASK005  
-**Status**: In Progress  
+**Status**: Complete  
 **Files**: `tests/test_daemon_client.py`, `tests/test_ipc_fallback_modes.py`, `tests/test_daemon_dbus.py`, updates to existing network/firewall tests  
 **Dep**: TASK004  
 **Agent**: test-writer  
@@ -89,4 +89,3 @@
 **Acceptance**: Version and codename aligned; roadmap/changelog updated with v2.4.0 scope.  
 **Docs**: CHANGELOG/ROADMAP/ARCHITECTURE  
 **Tests**: TASK005
-

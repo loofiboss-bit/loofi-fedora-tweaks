@@ -61,16 +61,18 @@ strangler fallback behavior (`LOOFI_IPC_MODE=preferred`) to preserve stability.
 
 ### Planned Deliverables
 
-- [ ] Add `daemon/` package with D-Bus host, contracts, validators, and handlers
-- [ ] Add `services/ipc/` daemon client with `disabled|preferred|required` modes
-- [ ] Migrate `services/network/network.py` to daemon-first calls with local fallback
-- [ ] Migrate `services/security/firewall.py` to daemon-first calls with local fallback
-- [ ] Migrate `services/network/ports.py` to daemon-first calls with local fallback
-- [ ] Route security firewall UI actions through service layer (no direct systemctl commands)
-- [ ] Wire `--daemon` entrypoint to new daemon runtime
-- [ ] Update packaging metadata for daemon IPC dependency/runtime
-- [ ] Add IPC tests (`test_daemon_client.py`, `test_ipc_fallback_modes.py`, `test_daemon_dbus.py`)
-- [ ] Update CHANGELOG, ARCHITECTURE, and workflow task spec for v2.4.0
+Status snapshot (2026-02-25): Phase 1 implementation is complete in `v2.4.0`; remaining refactor phases are tracked in the longer-term refactoring plan.
+
+- [x] Add `daemon/` package with D-Bus host, contracts, validators, and handlers
+- [x] Add `services/ipc/` daemon client with `disabled|preferred|required` modes
+- [x] Migrate `services/network/network.py` to daemon-first calls with local fallback
+- [x] Migrate `services/security/firewall.py` to daemon-first calls with local fallback
+- [x] Migrate `services/network/ports.py` to daemon-first calls with local fallback
+- [x] Route security firewall UI actions through service layer (no direct systemctl commands)
+- [x] Wire `--daemon` entrypoint to new daemon runtime
+- [x] Update packaging metadata for daemon IPC dependency/runtime
+- [x] Add IPC tests (`test_daemon_client.py`, `test_ipc_fallback_modes.py`, `test_daemon_dbus.py`)
+- [x] Update CHANGELOG, ARCHITECTURE, and workflow task spec for v2.4.0
 
 ### Agent Assignment
 
