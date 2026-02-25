@@ -4,7 +4,7 @@
 
 All notable changes to this project will be documented in this file.
 
-## [Unreleased]
+## [2.6.0] - 2026-02-25 "API Migration Slice 2"
 
 ### Added
 
