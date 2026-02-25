@@ -358,7 +358,7 @@ class PortAuditor:
     @classmethod
     def get_security_score_local(cls) -> dict:
         """Local fallback for security score."""
-        ports = cls.scan_ports_local()
+        ports = cls.scan_ports()
         risky = [p for p in ports if p.is_risky]
 
         # Start with 100, deduct for issues
