@@ -131,6 +131,45 @@ class TestFirewallManagerInfo(unittest.TestCase):
         self.assertEqual(result, [])
 
 
+class TestFirewallManagerCommandBuilders(unittest.TestCase):
+    """Test PrivilegedCommand integration (v2.11.0 TASK-005)."""
+
+    def test_firewall_cmd_builder_returns_tuple(self):
+        """firewall_cmd() returns CommandTuple with correct structure."""
+        from utils.commands import PrivilegedCommand
+        result = PrivilegedCommand.firewall_cmd("--list-all")
+
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 3)
+        binary, args, desc = result
+        self.assertEqual(binary, "pkexec")
+        self.assertIn("firewall-cmd", args)
+        self.assertIn("--list-all", args)
+        self.assertIsInstance(desc, str)
+
+    def test_firewall_reload_builder_returns_tuple(self):
+        """firewall_reload() returns CommandTuple with correct structure."""
+        from utils.commands import PrivilegedCommand
+        result = PrivilegedCommand.firewall_reload()
+
+        self.assertIsInstance(result, tuple)
+        self.assertEqual(len(result), 3)
+        binary, args, desc = result
+        self.assertEqual(binary, "pkexec")
+        self.assertIn("firewall-cmd", args)
+        self.assertIn("--reload", args)
+        self.assertIn("reload", desc.lower())
+
+    def test_firewall_cmd_never_uses_shell_true(self):
+        """firewall_cmd returns argument list, not shell string."""
+        from utils.commands import PrivilegedCommand
+        _, args, _ = PrivilegedCommand.firewall_cmd("--add-port=80/tcp")
+
+        self.assertIsInstance(args, list)
+        self.assertGreater(len(args), 0)
+        self.assertEqual(args[0], "firewall-cmd")
+
+
 class TestFirewallManagerOperations(unittest.TestCase):
     """Test FirewallManager port/service operations."""
 
@@ -138,7 +177,7 @@ class TestFirewallManagerOperations(unittest.TestCase):
     @patch('services.security.firewall.subprocess.run')
     def test_open_port_success(self, mock_run, mock_reload):
         """Open port succeeds and reloads firewall."""
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.return_value = MagicMock(returncode=0, stderr="")
         mock_reload.return_value = True
         result = FirewallManager.open_port("8080", "tcp", permanent=True)
         self.assertTrue(result.success)
@@ -158,7 +197,7 @@ class TestFirewallManagerOperations(unittest.TestCase):
     @patch('services.security.firewall.subprocess.run')
     def test_add_service_success(self, mock_run, mock_reload):
         """Add service succeeds."""
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.return_value = MagicMock(returncode=0, stderr="")
         mock_reload.return_value = True
         result = FirewallManager.add_service("http", permanent=True)
         self.assertTrue(result.success)

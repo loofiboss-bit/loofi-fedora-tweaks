@@ -98,12 +98,12 @@ and explicit daemon/local read-path contracts without expanding privilege scope.
 
 ### Planned Deliverables
 
-- [ ] Reconcile metadata for v2.11 activation (`ROADMAP`, race-lock, manifests)
-- [ ] Harden residual network local write-path return semantics
-- [ ] Tighten active-connection parsing for deterministic classification
-- [ ] Normalize firewall mutator command construction to project standards
-- [ ] Define/implement daemon-vs-local classification for targeted system read paths
-- [ ] Add focused regression coverage for network/firewall/system parity changes
+- [x] Reconcile metadata for v2.11 activation (`ROADMAP`, race-lock, manifests)
+- [x] Harden residual network local write-path return semantics
+- [x] Tighten active-connection parsing for deterministic classification
+- [x] Normalize firewall mutator command construction to project standards
+- [x] Define/implement daemon-vs-local classification for targeted system read paths
+- [x] Add focused regression coverage for network/firewall/system parity changes
 - [ ] Publish v2.11 docs and release notes after verification
 
 ### Agent Assignment

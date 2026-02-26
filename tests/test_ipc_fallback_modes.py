@@ -32,6 +32,30 @@ class TestIPCFallbackModes(unittest.TestCase):
         rows = NetworkUtils.scan_wifi()
         self.assertEqual(rows[0][0], "ssid2")
 
+    @patch.dict(os.environ, {"LOOFI_IPC_MODE": "preferred"})
+    @patch("services.network.network.daemon_client.call_json")
+    @patch("services.network.network.NetworkUtils.get_active_connection_local")
+    def test_preferred_active_connection_falls_back_to_local(self, mock_local, mock_call):
+        mock_call.return_value = None
+        mock_local.return_value = "Home"
+
+        conn = NetworkUtils.get_active_connection()
+
+        self.assertEqual(conn, "Home")
+        mock_local.assert_called_once_with()
+
+    @patch.dict(os.environ, {"LOOFI_IPC_MODE": "preferred"})
+    @patch("services.network.network.daemon_client.call_json")
+    @patch("services.network.network.NetworkUtils.get_active_connection_local")
+    def test_preferred_active_connection_local_none_stays_none(self, mock_local, mock_call):
+        mock_call.return_value = None
+        mock_local.return_value = None
+
+        conn = NetworkUtils.get_active_connection()
+
+        self.assertIsNone(conn)
+        mock_local.assert_called_once_with()
+
     @patch.dict(os.environ, {"LOOFI_IPC_MODE": "required"})
     @patch("services.ipc.daemon_client.DaemonClient._call_raw")
     def test_required_mode_raises_on_transport_error(self, mock_raw):

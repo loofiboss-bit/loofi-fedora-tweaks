@@ -379,6 +379,93 @@ class TestSystemServiceDaemonDelegation(unittest.TestCase):
         mock_system_manager.get_package_manager.assert_called_once()
 
 
+@patch('services.system.system.os.path.exists')
+@patch('services.system.system.subprocess.run')
+class TestSystemManagerAtomicReadPaths(unittest.TestCase):
+    """Tests for SystemManager intentional local-read paths (v2.11.0 TASK-006)."""
+
+    def test_has_pending_deployment_on_atomic_true(self, mock_run, mock_exists):
+        """has_pending_deployment returns True when unbooted deployment exists."""
+        mock_exists.return_value = True  # is_atomic
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='{"deployments": [{"booted": false}, {"booted": true}]}'
+        )
+
+        from services.system.system import SystemManager
+        result = SystemManager.has_pending_deployment()
+
+        self.assertTrue(result)
+        mock_run.assert_called_once()
+
+    def test_has_pending_deployment_on_atomic_false(self, mock_run, mock_exists):
+        """has_pending_deployment returns False when first deployment is booted."""
+        mock_exists.return_value = True
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='{"deployments": [{"booted": true}]}'
+        )
+
+        from services.system.system import SystemManager
+        result = SystemManager.has_pending_deployment()
+
+        self.assertFalse(result)
+
+    def test_has_pending_deployment_on_traditional(self, mock_run, mock_exists):
+        """has_pending_deployment returns False on traditional Fedora."""
+        mock_exists.return_value = False  # not atomic
+
+        from services.system.system import SystemManager
+        result = SystemManager.has_pending_deployment()
+
+        self.assertFalse(result)
+        mock_run.assert_not_called()
+
+    def test_has_pending_deployment_handles_failure(self, mock_run, mock_exists):
+        """has_pending_deployment returns False on command failure."""
+        mock_exists.return_value = True
+        mock_run.return_value = MagicMock(returncode=1, stdout="")
+
+        from services.system.system import SystemManager
+        result = SystemManager.has_pending_deployment()
+
+        self.assertFalse(result)
+
+    def test_get_layered_packages_success(self, mock_run, mock_exists):
+        """get_layered_packages returns package list on atomic system."""
+        mock_exists.return_value = True
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout='{"deployments": [{"booted": true, "requested-packages": ["vim", "htop"]}]}'
+        )
+
+        from services.system.system import SystemManager
+        packages = SystemManager.get_layered_packages()
+
+        self.assertIn("vim", packages)
+        self.assertIn("htop", packages)
+
+    def test_get_layered_packages_on_traditional(self, mock_run, mock_exists):
+        """get_layered_packages returns empty list on traditional Fedora."""
+        mock_exists.return_value = False
+
+        from services.system.system import SystemManager
+        packages = SystemManager.get_layered_packages()
+
+        self.assertEqual(packages, [])
+        mock_run.assert_not_called()
+
+    def test_get_layered_packages_handles_failure(self, mock_run, mock_exists):
+        """get_layered_packages returns empty list on command failure."""
+        mock_exists.return_value = True
+        mock_run.return_value = MagicMock(returncode=1, stdout="")
+
+        from services.system.system import SystemManager
+        packages = SystemManager.get_layered_packages()
+
+        self.assertEqual(packages, [])
+
+
 if __name__ == '__main__':
     if not _SKIP_QT:
         import sys

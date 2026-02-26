@@ -246,6 +246,16 @@ class FirewallManager:
 
     @classmethod
     def get_available_services(cls) -> List[str]:
+        """List all known firewall services.
+
+        Behavior contract (v2.11.0 TASK-006):
+        - Intentional local-read: unprivileged firewall-cmd query.
+        - No daemon expansion needed; service list is static reference data.
+        - Returns empty list on error (safe fallback).
+
+        Returns:
+            Sorted list of service names, or empty list on failure.
+        """
         try:
             result = subprocess.run(
                 ["firewall-cmd", "--get-services"], capture_output=True, text=True, timeout=5)
@@ -265,21 +275,25 @@ class FirewallManager:
 
     @classmethod
     def open_port_local(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         port_spec = f"{port}/{protocol}"
         try:
-            cmd = ["pkexec", "firewall-cmd", f"--add-port={port_spec}"]
+            args = [f"--add-port={port_spec}"]
             if zone:
-                cmd.extend(["--zone", zone])
+                args.extend(["--zone", zone])
             if permanent:
-                cmd.append("--permanent")
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=15)
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, f"Opened port {port_spec}")
-            return FirewallResult(False, f"Failed to open {port_spec}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = f"Failed to open {port_spec}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     @classmethod
@@ -292,21 +306,25 @@ class FirewallManager:
 
     @classmethod
     def close_port_local(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         port_spec = f"{port}/{protocol}"
         try:
-            cmd = ["pkexec", "firewall-cmd", f"--remove-port={port_spec}"]
+            args = [f"--remove-port={port_spec}"]
             if zone:
-                cmd.extend(["--zone", zone])
+                args.extend(["--zone", zone])
             if permanent:
-                cmd.append("--permanent")
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=15)
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, f"Closed port {port_spec}")
-            return FirewallResult(False, f"Failed to close {port_spec}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = f"Failed to close {port_spec}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     @classmethod
@@ -319,20 +337,24 @@ class FirewallManager:
 
     @classmethod
     def add_service_local(cls, service: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            cmd = ["pkexec", "firewall-cmd", f"--add-service={service}"]
+            args = [f"--add-service={service}"]
             if zone:
-                cmd.extend(["--zone", zone])
+                args.extend(["--zone", zone])
             if permanent:
-                cmd.append("--permanent")
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=15)
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, f"Added service {service}")
-            return FirewallResult(False, f"Failed to add {service}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = f"Failed to add {service}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     @classmethod
@@ -345,20 +367,24 @@ class FirewallManager:
 
     @classmethod
     def remove_service_local(cls, service: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            cmd = ["pkexec", "firewall-cmd", f"--remove-service={service}"]
+            args = [f"--remove-service={service}"]
             if zone:
-                cmd.extend(["--zone", zone])
+                args.extend(["--zone", zone])
             if permanent:
-                cmd.append("--permanent")
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=15)
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, f"Removed service {service}")
-            return FirewallResult(False, f"Failed to remove {service}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = f"Failed to remove {service}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     @classmethod
@@ -429,13 +455,18 @@ class FirewallManager:
 
     @classmethod
     def set_default_zone_local(cls, zone: str) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            result = subprocess.run(
-                ["pkexec", "firewall-cmd", f"--set-default-zone={zone}"], capture_output=True, text=True, timeout=15)
+            arg = f"--set-default-zone={zone}"
+            cmd_tuple = PrivilegedCommand.firewall_cmd(arg)
+            result = PrivilegedCommand.execute_and_log(
+                cmd_tuple, timeout=15
+            )
             if result.returncode == 0:
                 return FirewallResult(True, f"Default zone set to {zone}")
             return FirewallResult(False, f"Failed: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     @classmethod
@@ -448,20 +479,24 @@ class FirewallManager:
 
     @classmethod
     def add_rich_rule_local(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            cmd = ["pkexec", "firewall-cmd", f"--add-rich-rule={rule}"]
+            args = [f"--add-rich-rule={rule}"]
             if zone:
-                cmd.extend(["--zone", zone])
+                args.extend(["--zone", zone])
             if permanent:
-                cmd.append("--permanent")
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=15)
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, "Added rich rule")
-            return FirewallResult(False, f"Failed to add rich rule: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = "Failed to add rich rule: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     @classmethod
@@ -474,20 +509,24 @@ class FirewallManager:
 
     @classmethod
     def remove_rich_rule_local(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            cmd = ["pkexec", "firewall-cmd", f"--remove-rich-rule={rule}"]
+            args = [f"--remove-rich-rule={rule}"]
             if zone:
-                cmd.extend(["--zone", zone])
+                args.extend(["--zone", zone])
             if permanent:
-                cmd.append("--permanent")
-            result = subprocess.run(
-                cmd, capture_output=True, text=True, timeout=15)
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, "Removed rich rule")
-            return FirewallResult(False, f"Failed to remove rich rule: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = "Failed to remove rich rule: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     # CLI compatibility aliases
@@ -520,11 +559,13 @@ class FirewallManager:
 
     @classmethod
     def _reload(cls) -> bool:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            result = subprocess.run(
-                ["pkexec", "firewall-cmd", "--reload"], capture_output=True, text=True, timeout=15)
+            cmd_tuple = PrivilegedCommand.firewall_reload()
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             return result.returncode == 0
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, CommandTimeoutError):
             return False
 
     @classmethod

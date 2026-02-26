@@ -3,6 +3,7 @@ Tests for utils/firewall_manager.py
 """
 from services.security.firewall import FirewallInfo, FirewallManager, FirewallResult
 import os
+import subprocess
 import sys
 import unittest
 from unittest.mock import MagicMock, patch
@@ -392,6 +393,24 @@ class TestFirewallManagerServices(unittest.TestCase):
         self.assertIn("ssh", services)
         self.assertGreater(len(services), 5)
 
+    @patch('services.security.firewall.subprocess.run')
+    def test_get_available_services_failure(self, mock_run):
+        """Returns empty list on firewall-cmd failure (v2.11.0 TASK-006 contract)."""
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="Error")
+
+        services = FirewallManager.get_available_services()
+
+        self.assertEqual(services, [])
+
+    @patch('services.security.firewall.subprocess.run')
+    def test_get_available_services_timeout(self, mock_run):
+        """Returns empty list on timeout (v2.11.0 TASK-006 contract)."""
+        mock_run.side_effect = subprocess.TimeoutExpired("firewall-cmd", 5)
+
+        services = FirewallManager.get_available_services()
+
+        self.assertEqual(services, [])
+
     @patch('services.security.firewall.FirewallManager._reload')
     @patch('services.security.firewall.subprocess.run')
     def test_add_service_success(self, mock_run, mock_reload):
@@ -583,14 +602,14 @@ class TestFirewallManagerReload(unittest.TestCase):
     @patch('services.security.firewall.subprocess.run')
     def test_reload_success(self, mock_run):
         """Reload returns True on success."""
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.return_value = MagicMock(returncode=0, stderr="")
 
         self.assertTrue(FirewallManager._reload())
 
     @patch('services.security.firewall.subprocess.run')
     def test_reload_failure(self, mock_run):
         """Reload returns False on failure."""
-        mock_run.return_value = MagicMock(returncode=1)
+        mock_run.return_value = MagicMock(returncode=1, stderr="Failed")
 
         self.assertFalse(FirewallManager._reload())
 
@@ -642,6 +661,188 @@ class TestFirewallDaemonFirstReads(unittest.TestCase):
         self.assertEqual(rules, ['rule family="ipv4" accept'])
         mock_call_json.assert_called_once_with("FirewallListRichRules", "")
         mock_run.assert_not_called()
+
+
+class TestFirewallCommandConstruction(unittest.TestCase):
+    """Tests for PrivilegedCommand integration in firewall local
+    mutators (v2.11.0 TASK-005/008).
+    """
+
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_cmd')
+    def test_set_default_zone_local_uses_privileged_command(
+        self, mock_firewall_cmd, mock_execute
+    ):
+        """set_default_zone_local uses PrivilegedCommand.firewall_cmd
+        builder.
+        """
+        mock_firewall_cmd.return_value = (
+            "pkexec",
+            ["firewall-cmd", "--set-default-zone=public"],
+            "Setting zone..."
+        )
+        mock_execute.return_value = MagicMock(returncode=0, stderr="")
+
+        result = FirewallManager.set_default_zone_local("public")
+
+        mock_firewall_cmd.assert_called_once_with(
+            "--set-default-zone=public"
+        )
+        mock_execute.assert_called_once()
+        self.assertTrue(result.success)
+
+    @patch('services.security.firewall.FirewallManager._reload')
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_cmd')
+    def test_add_rich_rule_local_uses_privileged_command(
+        self, mock_firewall_cmd, mock_execute, mock_reload
+    ):
+        """add_rich_rule_local uses PrivilegedCommand.firewall_cmd
+        builder.
+        """
+        rule = 'rule family="ipv4" accept'
+        mock_firewall_cmd.return_value = (
+            "pkexec",
+            ["firewall-cmd", f"--add-rich-rule={rule}", "--permanent"],
+            "Adding rule..."
+        )
+        mock_execute.return_value = MagicMock(returncode=0, stderr="")
+        mock_reload.return_value = True
+
+        result = FirewallManager.add_rich_rule_local(rule, permanent=True)
+
+        # Verify firewall_cmd was called with correct args
+        call_args = mock_firewall_cmd.call_args[0]
+        self.assertIn(f"--add-rich-rule={rule}", call_args)
+        self.assertIn("--permanent", call_args)
+        mock_execute.assert_called_once()
+        self.assertTrue(result.success)
+
+    @patch('services.security.firewall.FirewallManager._reload')
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_cmd')
+    def test_remove_rich_rule_local_uses_privileged_command(
+        self, mock_firewall_cmd, mock_execute, mock_reload
+    ):
+        """remove_rich_rule_local uses PrivilegedCommand.firewall_cmd
+        builder.
+        """
+        rule = 'rule family="ipv4" accept'
+        mock_firewall_cmd.return_value = (
+            "pkexec",
+            ["firewall-cmd", f"--remove-rich-rule={rule}", "--permanent"],
+            "Removing rule..."
+        )
+        mock_execute.return_value = MagicMock(returncode=0, stderr="")
+        mock_reload.return_value = True
+
+        result = FirewallManager.remove_rich_rule_local(
+            rule, permanent=True
+        )
+
+        # Verify firewall_cmd was called with correct args
+        call_args = mock_firewall_cmd.call_args[0]
+        self.assertIn(f"--remove-rich-rule={rule}", call_args)
+        self.assertIn("--permanent", call_args)
+        mock_execute.assert_called_once()
+        self.assertTrue(result.success)
+
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_reload')
+    def test_reload_uses_privileged_command_firewall_reload(
+        self, mock_firewall_reload, mock_execute
+    ):
+        """_reload uses PrivilegedCommand.firewall_reload builder."""
+        mock_firewall_reload.return_value = (
+            "pkexec", ["firewall-cmd", "--reload"], "Reloading..."
+        )
+        mock_execute.return_value = MagicMock(returncode=0, stderr="")
+
+        result = FirewallManager._reload()  # noqa
+
+        mock_firewall_reload.assert_called_once()
+        mock_execute.assert_called_once()
+        self.assertTrue(result)
+
+
+class TestFirewallTimeoutBehavior(unittest.TestCase):
+    """Tests for timeout parameter enforcement in firewall operations
+    (v2.11.0 TASK-005/008).
+    """
+
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_cmd')
+    def test_set_default_zone_local_passes_timeout(
+        self, mock_firewall_cmd, mock_execute
+    ):
+        """set_default_zone_local passes timeout=15 to execute_and_log."""
+        mock_firewall_cmd.return_value = (
+            "pkexec",
+            ["firewall-cmd", "--set-default-zone=public"],
+            "desc"
+        )
+        mock_execute.return_value = MagicMock(returncode=0, stderr="")
+
+        FirewallManager.set_default_zone_local("public")
+
+        mock_execute.assert_called_once()
+        call_kwargs = mock_execute.call_args[1]
+        self.assertEqual(call_kwargs.get('timeout'), 15)
+
+    @patch('services.security.firewall.FirewallManager._reload')
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_cmd')
+    def test_add_rich_rule_local_passes_timeout(
+        self, mock_firewall_cmd, mock_execute, mock_reload
+    ):
+        """add_rich_rule_local passes timeout=15 to execute_and_log."""
+        mock_firewall_cmd.return_value = (
+            "pkexec", ["firewall-cmd"], "desc"
+        )
+        mock_execute.return_value = MagicMock(returncode=0, stderr="")
+        mock_reload.return_value = True
+
+        FirewallManager.add_rich_rule_local('rule family="ipv4" accept')
+
+        mock_execute.assert_called_once()
+        call_kwargs = mock_execute.call_args[1]
+        self.assertEqual(call_kwargs.get('timeout'), 15)
+
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_reload')
+    def test_reload_passes_timeout(
+        self, mock_firewall_reload, mock_execute
+    ):
+        """_reload passes timeout=15 to execute_and_log."""
+        mock_firewall_reload.return_value = (
+            "pkexec", ["firewall-cmd", "--reload"], "desc"
+        )
+        mock_execute.return_value = MagicMock(returncode=0, stderr="")
+
+        FirewallManager._reload()  # noqa
+
+        mock_execute.assert_called_once()
+        call_kwargs = mock_execute.call_args[1]
+        self.assertEqual(call_kwargs.get('timeout'), 15)
+
+    @patch('services.security.firewall.PrivilegedCommand.execute_and_log')
+    @patch('services.security.firewall.PrivilegedCommand.firewall_cmd')
+    def test_set_default_zone_local_handles_timeout_error(
+        self, mock_firewall_cmd, mock_execute
+    ):
+        """set_default_zone_local handles CommandTimeoutError."""
+        from utils.errors import CommandTimeoutError
+        mock_firewall_cmd.return_value = (
+            "pkexec", ["firewall-cmd"], "desc"
+        )
+        mock_execute.side_effect = CommandTimeoutError(
+            cmd="firewall-cmd", timeout=15
+        )
+
+        result = FirewallManager.set_default_zone_local("public")
+
+        self.assertFalse(result.success)
+        self.assertIn("Error", result.message)
 
 
 class TestFirewallDaemonFirstWrites(unittest.TestCase):

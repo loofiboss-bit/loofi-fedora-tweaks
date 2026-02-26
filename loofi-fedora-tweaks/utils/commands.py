@@ -410,3 +410,32 @@ class PrivilegedCommand:
     def rpm_rebuild() -> CommandTuple:
         """Build an RPM database rebuild command tuple."""
         return ("pkexec", ["rpm", "--rebuilddb"], "Rebuilding RPM database...")
+
+    @staticmethod
+    def firewall_cmd(*args: str) -> CommandTuple:
+        """Build a firewall-cmd command tuple.
+
+        Args:
+            *args: Arguments to pass to firewall-cmd
+                   (e.g., '--add-port=80/tcp', '--zone=public').
+
+        Returns:
+            CommandTuple: (binary, args, description)
+                          for firewall-cmd operation.
+        """
+        desc = f"Firewall operation: {' '.join(args)}"
+        return ("pkexec", ["firewall-cmd"] + list(args), desc)
+
+    @staticmethod
+    def firewall_reload() -> CommandTuple:
+        """Build a firewall reload command tuple.
+
+        Returns:
+            CommandTuple: (binary, args, description)
+                          for firewall reload.
+        """
+        return (
+            "pkexec",
+            ["firewall-cmd", "--reload"],
+            "Reloading firewall..."
+        )

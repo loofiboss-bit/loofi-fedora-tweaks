@@ -5,8 +5,9 @@ from __future__ import annotations
 import subprocess
 from typing import List, Optional, Tuple
 
-from services.ipc import daemon_client
 from utils.log import get_logger
+
+from services.ipc import daemon_client
 
 logger = get_logger(__name__)
 
@@ -38,7 +39,8 @@ class NetworkUtils:
         """Local fallback for scanning Wi-Fi networks."""
         try:
             result = subprocess.run(
-                ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,ACTIVE", "device", "wifi", "list", "--rescan", "yes"],
+                ["nmcli", "-t", "-f", "SSID,SIGNAL,SECURITY,ACTIVE",
+                    "device", "wifi", "list", "--rescan", "yes"],
                 capture_output=True,
                 text=True,
                 timeout=15,
@@ -81,7 +83,8 @@ class NetworkUtils:
     def load_vpn_connections_local() -> List[Tuple[str, str, str]]:
         """Local fallback for VPN listing."""
         try:
-            result = subprocess.run(["nmcli", "-t", "-f", "NAME,TYPE,ACTIVE", "connection", "show"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(["nmcli", "-t", "-f", "NAME,TYPE,ACTIVE",
+                                    "connection", "show"], capture_output=True, text=True, timeout=5)
             rows: List[Tuple[str, str, str]] = []
             for line in result.stdout.strip().splitlines():
                 lower = line.lower()
@@ -108,7 +111,8 @@ class NetworkUtils:
     def detect_current_dns_local() -> str:
         """Local fallback for DNS detection."""
         try:
-            result = subprocess.run(["nmcli", "-t", "-f", "IP4.DNS", "device", "show"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["nmcli", "-t", "-f", "IP4.DNS", "device", "show"], capture_output=True, text=True, timeout=5)
             dns_servers = set()
             for line in result.stdout.splitlines():
                 if ":" in line:
@@ -133,17 +137,27 @@ class NetworkUtils:
     def get_active_connection_local() -> Optional[str]:
         """Local fallback for active connection lookup."""
         try:
-            res = subprocess.run(["nmcli", "-t", "-f", "NAME,TYPE", "connection", "show", "--active"], capture_output=True, text=True, timeout=5)
-            for line in res.stdout.splitlines():
-                if "wifi" in line or "ethernet" in line:
-                    return line.split(":")[0]
+            res = subprocess.run(["nmcli", "-t", "-f", "NAME,TYPE", "connection",
+                                 "show", "--active"], capture_output=True, text=True, check=False, timeout=5)
+            for raw_line in res.stdout.splitlines():
+                line = raw_line.strip()
+                if not line:
+                    continue
+                parts = line.split(":")
+                if len(parts) != 2:
+                    continue
+                name = parts[0].strip()
+                conn_type = parts[1].strip().lower()
+                if name and conn_type in {"wifi", "ethernet"}:
+                    return name
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get active connection: %s", e)
         return None
 
     @staticmethod
     def check_hostname_privacy(connection_name: str) -> Optional[bool]:
-        data = daemon_client.call_json("NetworkCheckHostnamePrivacy", connection_name)
+        data = daemon_client.call_json(
+            "NetworkCheckHostnamePrivacy", connection_name)
         if isinstance(data, bool):
             return data
         return NetworkUtils.check_hostname_privacy_local(connection_name)
@@ -155,7 +169,8 @@ class NetworkUtils:
             result = subprocess.run(
                 ["nmcli", "-t", "-f", "ipv4.dhcp-send-hostname", "connection", "show", connection_name], capture_output=True, text=True, timeout=5
             )
-            val = result.stdout.strip().split(":")[-1].strip() if result.stdout.strip() else ""
+            val = result.stdout.strip().split(
+                ":")[-1].strip() if result.stdout.strip() else ""
             return val == "no"
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to check hostname privacy: %s", e)
@@ -163,7 +178,8 @@ class NetworkUtils:
 
     @staticmethod
     def reactivate_connection(connection_name: str) -> bool:
-        data = daemon_client.call_json("NetworkReactivateConnection", connection_name)
+        data = daemon_client.call_json(
+            "NetworkReactivateConnection", connection_name)
         if isinstance(data, bool):
             return data
         return NetworkUtils.reactivate_connection_local(connection_name)
@@ -231,7 +247,8 @@ class NetworkUtils:
 
     @staticmethod
     def apply_dns(connection_name: str, dns_servers: str) -> bool:
-        data = daemon_client.call_json("NetworkApplyDns", connection_name, dns_servers)
+        data = daemon_client.call_json(
+            "NetworkApplyDns", connection_name, dns_servers)
         if isinstance(data, bool):
             return data
         return NetworkUtils.apply_dns_local(connection_name, dns_servers)
@@ -278,7 +295,8 @@ class NetworkUtils:
 
     @staticmethod
     def set_hostname_privacy(connection_name: str, hide: bool) -> bool:
-        data = daemon_client.call_json("NetworkSetHostnamePrivacy", connection_name, bool(hide))
+        data = daemon_client.call_json(
+            "NetworkSetHostnamePrivacy", connection_name, bool(hide))
         if isinstance(data, bool):
             return data
         return NetworkUtils.set_hostname_privacy_local(connection_name, hide)
@@ -289,7 +307,8 @@ class NetworkUtils:
         try:
             value = "no" if hide else "yes"
             result = subprocess.run(
-                ["nmcli", "connection", "modify", connection_name, "ipv4.dhcp-send-hostname", value],
+                ["nmcli", "connection", "modify", connection_name,
+                    "ipv4.dhcp-send-hostname", value],
                 capture_output=True,
                 text=True,
                 check=False,

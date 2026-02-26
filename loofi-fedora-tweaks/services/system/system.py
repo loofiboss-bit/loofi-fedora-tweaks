@@ -82,8 +82,12 @@ class SystemManager:
 
     @classmethod
     def has_pending_deployment(cls) -> bool:
-        """
-        Check if there's a pending rpm-ostree deployment waiting for reboot.
+        """Check if there's a pending rpm-ostree deployment waiting for reboot.
+
+        Behavior contract (v2.11.0 TASK-006):
+        - Intentional local-read: rpm-ostree status --json parse.
+        - No daemon expansion; deployment state is session-local.
+        - Returns False on non-atomic systems or parse errors (safe fallback).
 
         Returns:
             True if reboot is needed to apply changes, False otherwise.
@@ -114,8 +118,12 @@ class SystemManager:
 
     @classmethod
     def get_layered_packages(cls) -> list:
-        """
-        Get list of layered (overlayed) packages on Atomic systems.
+        """Get list of layered (overlayed) packages on Atomic systems.
+
+        Behavior contract (v2.11.0 TASK-006):
+        - Intentional local-read: rpm-ostree status --json parse.
+        - No daemon expansion; package list is session-local query.
+        - Returns empty list on non-atomic systems or parse errors (safe fallback).
 
         Returns:
             List of package names layered on top of the base image.

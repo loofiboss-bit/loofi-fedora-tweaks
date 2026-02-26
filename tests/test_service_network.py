@@ -4,20 +4,21 @@ Covers:
 - services/network/network.py — NetworkUtils
 """
 
+from services.network.network import NetworkUtils
 import os
 import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
 # Add source path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
-
-from services.network.network import NetworkUtils
+sys.path.insert(0, os.path.join(os.path.dirname(
+    __file__), '..', 'loofi-fedora-tweaks'))
 
 
 # ===========================================================================
 # NetworkUtils tests
 # ===========================================================================
+
 
 class TestNetworkUtilsScanWifi(unittest.TestCase):
     """Test WiFi scanning."""
@@ -84,7 +85,8 @@ class TestNetworkUtilsVPN(unittest.TestCase):
     @patch('services.network.network.subprocess.run')
     def test_load_vpn_connections_openvpn(self, mock_run):
         """Load VPN connections detects OpenVPN."""
-        mock_run.return_value = MagicMock(stdout="Server:openvpn:yes\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="Server:openvpn:yes\n", returncode=0)
         result = NetworkUtils.load_vpn_connections()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0], ("Server", "openvpn", "🟢 Active"))
@@ -92,7 +94,8 @@ class TestNetworkUtilsVPN(unittest.TestCase):
     @patch('services.network.network.subprocess.run')
     def test_load_vpn_connections_empty(self, mock_run):
         """Load VPN connections returns empty when no VPNs."""
-        mock_run.return_value = MagicMock(stdout="Ethernet:ethernet:yes\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="Ethernet:ethernet:yes\n", returncode=0)
         result = NetworkUtils.load_vpn_connections()
         self.assertEqual(result, [])
 
@@ -140,14 +143,16 @@ class TestNetworkUtilsConnection(unittest.TestCase):
     @patch('services.network.network.subprocess.run')
     def test_get_active_connection_wifi(self, mock_run):
         """Get active connection returns WiFi name."""
-        mock_run.return_value = MagicMock(stdout="MyNetwork:wifi\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="MyNetwork:wifi\n", returncode=0)
         result = NetworkUtils.get_active_connection()
         self.assertEqual(result, "MyNetwork")
 
     @patch('services.network.network.subprocess.run')
     def test_get_active_connection_ethernet(self, mock_run):
         """Get active connection returns Ethernet name."""
-        mock_run.return_value = MagicMock(stdout="Wired connection 1:ethernet\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="Wired connection 1:ethernet\n", returncode=0)
         result = NetworkUtils.get_active_connection()
         self.assertEqual(result, "Wired connection 1")
 
@@ -172,21 +177,24 @@ class TestNetworkUtilsPrivacy(unittest.TestCase):
     @patch('services.network.network.subprocess.run')
     def test_check_hostname_privacy_hidden(self, mock_run):
         """Check hostname privacy detects hidden hostname."""
-        mock_run.return_value = MagicMock(stdout="ipv4.dhcp-send-hostname:no\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="ipv4.dhcp-send-hostname:no\n", returncode=0)
         result = NetworkUtils.check_hostname_privacy("MyConnection")
         self.assertTrue(result)
 
     @patch('services.network.network.subprocess.run')
     def test_check_hostname_privacy_visible(self, mock_run):
         """Check hostname privacy detects visible hostname."""
-        mock_run.return_value = MagicMock(stdout="ipv4.dhcp-send-hostname:yes\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="ipv4.dhcp-send-hostname:yes\n", returncode=0)
         result = NetworkUtils.check_hostname_privacy("MyConnection")
         self.assertFalse(result)
 
     @patch('services.network.network.subprocess.run')
     def test_check_hostname_privacy_default_visible(self, mock_run):
         """Check hostname privacy defaults to visible (False) on parse error."""
-        mock_run.return_value = MagicMock(stdout="invalid:data\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="invalid:data\n", returncode=0)
         result = NetworkUtils.check_hostname_privacy("MyConnection")
         self.assertFalse(result)
 
