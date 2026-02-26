@@ -66,6 +66,10 @@ Thumbs.db
 .project-stats.md
 .self-maintaining-progress.md
 
+# Test output artifacts
+test-results.xml
+test_output.txt
+
 # Claude Code temp directories
 tmpclaude-*
 .tmp-*.log
