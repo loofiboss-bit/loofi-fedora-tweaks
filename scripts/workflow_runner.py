@@ -75,7 +75,20 @@ def normalize_version_tag(version: str) -> str:
     version = version.strip()
     if not version:
         raise ValueError("target version cannot be empty")
-    return version if version.startswith("v") else f"v{version}"
+    raw = version[1:] if version.startswith("v") else version
+    parts = [item for item in raw.split(".") if item != ""]
+    if any(not part.isdigit() for part in parts):
+        raise ValueError(
+            "target version must contain numeric components only (for example: 2.10.0)"
+        )
+    if len(parts) == 1:
+        parts.extend(["0", "0"])
+    elif len(parts) == 2:
+        parts.append("0")
+    elif len(parts) > 3:
+        raise ValueError(
+            "target version must have at most three numeric components")
+    return f"v{parts[0]}.{parts[1]}.{parts[2]}"
 
 
 def get_timestamp() -> str:
@@ -93,26 +106,8 @@ def artifact_paths(version_tag: str) -> dict[str, Path]:
 
 
 def version_tag_variants(version_tag: str) -> list[str]:
-    """Return accepted version tag variants for artifact reads.
-
-    Keeps backward compatibility for reports generated with either vX.Y or
-    vX.Y.Z naming conventions.
-    """
-    normalized = normalize_version_tag(version_tag)
-    raw = normalized[1:]
-    parts = raw.split(".")
-
-    variants = [normalized]
-    if len(parts) >= 3:
-        variants.append(f"v{parts[0]}.{parts[1]}")
-    elif len(parts) == 2:
-        variants.append(f"{normalized}.0")
-
-    unique: list[str] = []
-    for item in variants:
-        if item not in unique:
-            unique.append(item)
-    return unique
+    """Return canonical version tag for artifact reads (vX.Y.Z only)."""
+    return [normalize_version_tag(version_tag)]
 
 
 def artifact_read_candidates(version_tag: str, key: str) -> list[Path]:
@@ -390,7 +385,8 @@ def build_phase_status(version_tag: str) -> dict[str, Any]:
             try:
                 index = PHASE_ORDER.index(last)
                 current_phase = (
-                    PHASE_ORDER[index + 1] if index + 1 < len(PHASE_ORDER) else "complete"
+                    PHASE_ORDER[index + 1] if index +
+                    1 < len(PHASE_ORDER) else "complete"
                 )
             except ValueError:
                 current_phase = "unknown"
@@ -858,7 +854,8 @@ def run_phase(
         phase_ok, phase_reason = validate_phase_ordering(phase, version_tag)
         if not phase_ok:
             return 1, {"phase": phase, "status": "blocked", "error": phase_reason, "timestamp": isoformat_utc()}
-        prereq_ok, prereq_reason = validate_phase_prerequisites(phase, version_tag)
+        prereq_ok, prereq_reason = validate_phase_prerequisites(
+            phase, version_tag)
         if not prereq_ok:
             return 1, {"phase": phase, "status": "blocked", "error": prereq_reason, "timestamp": isoformat_utc()}
 
@@ -1087,7 +1084,8 @@ def main() -> int:
             lock = load_lock()
             status_target = lock.get("version") if lock else None
         if not status_target:
-            parser.error("--target-version is required with --status when no active race lock exists")
+            parser.error(
+                "--target-version is required with --status when no active race lock exists")
         try:
             version_tag = normalize_version_tag(status_target)
         except ValueError as exc:

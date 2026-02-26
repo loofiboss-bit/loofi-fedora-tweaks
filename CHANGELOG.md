@@ -4,6 +4,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.10.0] - 2026-02-26 "API Migration Slice 6"
+
+### Added
+
+- Added v2.10 workflow contracts (`tasks-v2.10.0.md`, `arch-v2.10.0.md`) and initialized `run-manifest-v2.10.0.json` for the new slice.
+- Added canonical `test-results-v2.10.0.json` artifact for focused workflow regression verification.
+- Added method-level bounded residual migration target inventory for Slice 6 across network, firewall, and system service layers.
+
+### Changed
+
+- Standardized workflow/report tag handling to canonical `vX.Y.Z` naming in `scripts/workflow_runner.py`, `scripts/check_release_docs.py`, and `scripts/generate_workflow_reports.py`.
+- Updated workflow-focused regression tests to align with canonical tag behavior and reject short-tag-only artifact assumptions.
+- Transitioned workflow state from v2.9.0 closure to v2.10.0 active progression (`P1 PLAN` through `P5 DOC` alignment artifacts).
+
+### Fixed
+
+- Eliminated recurring short-vs-patch artifact mismatch scenarios that previously caused blocked workflow/doc checks.
+- Stabilized focused workflow test execution on Windows by documenting/using local temp-path override behavior for constrained environments.
+
 ## [2.9.0] - 2026-02-26 "API Migration Slice 5"
 
 ### Added

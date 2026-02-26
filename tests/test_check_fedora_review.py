@@ -21,7 +21,8 @@ def _load_module(name: str, path: Path):
 @patch("subprocess.run")
 @patch("shutil.which", return_value="/usr/bin/fedora-review")
 def test_check_fedora_review_success(mock_which, mock_run):
-    module = _load_module("check_fedora_review_success", Path("scripts/check_fedora_review.py"))
+    module = _load_module("check_fedora_review_success",
+                          Path("scripts/check_fedora_review.py"))
     mock_run.side_effect = [
         subprocess.CompletedProcess(
             args=["fedora-review", "-V"],
@@ -53,7 +54,8 @@ def test_check_fedora_review_success(mock_which, mock_run):
 @patch("subprocess.run")
 @patch("shutil.which", return_value=None)
 def test_check_fedora_review_binary_missing(mock_which, mock_run):
-    module = _load_module("check_fedora_review_missing", Path("scripts/check_fedora_review.py"))
+    module = _load_module("check_fedora_review_missing",
+                          Path("scripts/check_fedora_review.py"))
 
     ok, errors = module.check_fedora_review()
 
@@ -67,7 +69,8 @@ def test_check_fedora_review_binary_missing(mock_which, mock_run):
 @patch("subprocess.run")
 @patch("shutil.which", return_value="/usr/bin/fedora-review")
 def test_check_fedora_review_command_failure(mock_which, mock_run):
-    module = _load_module("check_fedora_review_failure", Path("scripts/check_fedora_review.py"))
+    module = _load_module("check_fedora_review_failure",
+                          Path("scripts/check_fedora_review.py"))
     mock_run.side_effect = [
         subprocess.CompletedProcess(
             args=["fedora-review", "-V"],
@@ -94,7 +97,8 @@ def test_check_fedora_review_command_failure(mock_which, mock_run):
 @patch("subprocess.run")
 @patch("shutil.which", return_value="/usr/bin/fedora-review")
 def test_check_fedora_review_timeout(mock_which, mock_run):
-    module = _load_module("check_fedora_review_timeout", Path("scripts/check_fedora_review.py"))
+    module = _load_module("check_fedora_review_timeout",
+                          Path("scripts/check_fedora_review.py"))
     mock_run.side_effect = [
         subprocess.CompletedProcess(
             args=["fedora-review", "-V"],
@@ -119,7 +123,8 @@ def test_check_fedora_review_timeout(mock_which, mock_run):
 @patch("subprocess.run")
 @patch("shutil.which", return_value=None)
 def test_check_fedora_review_local_override_skips_gate(mock_which, mock_run):
-    module = _load_module("check_fedora_review_override_local", Path("scripts/check_fedora_review.py"))
+    module = _load_module("check_fedora_review_override_local",
+                          Path("scripts/check_fedora_review.py"))
 
     ok, messages = module.check_fedora_review()
 
@@ -137,7 +142,8 @@ def test_check_fedora_review_local_override_skips_gate(mock_which, mock_run):
 @patch("subprocess.run")
 @patch("shutil.which", return_value=None)
 def test_check_fedora_review_override_blocked_in_ci(mock_which, mock_run):
-    module = _load_module("check_fedora_review_override_ci", Path("scripts/check_fedora_review.py"))
+    module = _load_module("check_fedora_review_override_ci",
+                          Path("scripts/check_fedora_review.py"))
 
     ok, messages = module.check_fedora_review()
 
@@ -151,7 +157,8 @@ def test_check_fedora_review_override_blocked_in_ci(mock_which, mock_run):
 @patch("subprocess.run")
 @patch("shutil.which", return_value=None)
 def test_check_fedora_review_without_override_uses_binary_lookup(mock_which, mock_run):
-    module = _load_module("check_fedora_review_without_override", Path("scripts/check_fedora_review.py"))
+    module = _load_module("check_fedora_review_without_override", Path(
+        "scripts/check_fedora_review.py"))
 
     ok, errors = module.check_fedora_review()
 

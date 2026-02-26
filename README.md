@@ -56,6 +56,10 @@ Full notes: [`docs/releases/RELEASE-NOTES-v2.9.0.md`](docs/releases/RELEASE-NOTE
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
+Current active cycle is **v2.10.0 "API Migration Slice 6"**, focused on canonical workflow artifact normalization (`vX.Y.Z`) and bounded residual daemon/API migration planning.
+
+Slice notes: [`docs/releases/RELEASE-NOTES-v2.10.0.md`](docs/releases/RELEASE-NOTES-v2.10.0.md)
+
 ---
 
 ## What Was New in v1.0.0?

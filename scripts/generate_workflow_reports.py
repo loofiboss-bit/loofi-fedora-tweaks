@@ -2,8 +2,8 @@
 """Generate workflow report artifacts required by check_release_docs.py --require-logs.
 
 Creates:
-  .workflow/reports/test-results-v{MAJOR}.{MINOR}.json
-  .workflow/reports/run-manifest-v{MAJOR}.{MINOR}.json
+    .workflow/reports/test-results-v{MAJOR}.{MINOR}.{PATCH}.json
+    .workflow/reports/run-manifest-v{MAJOR}.{MINOR}.{PATCH}.json
 
 Usage:
   python3 scripts/generate_workflow_reports.py          # auto-detect version
@@ -46,29 +46,18 @@ def extract_version() -> str:
 
 
 def workflow_tag(version: str) -> str:
-    """Convert '29.0.0' -> 'v29.0'."""
+    """Convert '29.0.0' -> 'v29.0.0'."""
     parts = version.split(".")
-    return f"v{parts[0]}.{parts[1]}" if len(parts) >= 2 else f"v{version}"
+    if len(parts) >= 3:
+        return f"v{parts[0]}.{parts[1]}.{parts[2]}"
+    if len(parts) == 2:
+        return f"v{parts[0]}.{parts[1]}.0"
+    return f"v{parts[0]}.0.0"
 
 
 def workflow_tags(version: str) -> list[str]:
-    """Return accepted report tag variants for compatibility checks."""
-    parts = version.split(".")
-    tags: list[str] = []
-    if len(parts) >= 2:
-        tags.append(f"v{parts[0]}.{parts[1]}")
-        if len(parts) >= 3:
-            tags.append(f"v{parts[0]}.{parts[1]}.{parts[2]}")
-        else:
-            tags.append(f"v{parts[0]}.{parts[1]}.0")
-    else:
-        tags.append(f"v{version}")
-
-    unique: list[str] = []
-    for item in tags:
-        if item not in unique:
-            unique.append(item)
-    return unique
+    """Return canonical report tag list (vX.Y.Z only)."""
+    return [workflow_tag(version)]
 
 
 def report_paths(version: str) -> tuple[Path, Path]:
@@ -82,8 +71,10 @@ def report_paths(version: str) -> tuple[Path, Path]:
 def report_path_candidates(version: str) -> tuple[list[Path], list[Path]]:
     """Return accepted test/manifest report candidates for --check mode."""
     tags = workflow_tags(version)
-    test_candidates = [REPORTS_DIR / f"test-results-{tag}.json" for tag in tags]
-    manifest_candidates = [REPORTS_DIR / f"run-manifest-{tag}.json" for tag in tags]
+    test_candidates = [REPORTS_DIR /
+                       f"test-results-{tag}.json" for tag in tags]
+    manifest_candidates = [REPORTS_DIR /
+                           f"run-manifest-{tag}.json" for tag in tags]
     return test_candidates, manifest_candidates
 
 
@@ -111,7 +102,8 @@ def run_tests() -> dict:
     elapsed = round(time.monotonic() - start, 2)
 
     # Parse last non-empty line for counts: "2322 passed, 20 skipped ..."
-    lines = [l.strip() for l in result.stdout.strip().splitlines() if l.strip()]
+    lines = [l.strip()
+             for l in result.stdout.strip().splitlines() if l.strip()]
     summary_line = lines[-1] if lines else ""
     passed = _extract_count(summary_line, "passed")
     failed = _extract_count(summary_line, "failed")
@@ -206,7 +198,7 @@ def generate_run_manifest(version: str) -> dict:
              "timestamp": now, "artifacts": [f".workflow/reports/test-results-{tag}.json"]},
             {"phase": "document", "phase_name": "P5 DOCUMENT", "status": "success",
              "timestamp": now, "artifacts": ["CHANGELOG.md", "README.md",
-                                              f"docs/releases/RELEASE-NOTES-v{version}.md"]},
+                                             f"docs/releases/RELEASE-NOTES-v{version}.md"]},
             {"phase": "package", "phase_name": "P6 PACKAGE", "status": "success",
              "timestamp": now, "artifacts": ["loofi-fedora-tweaks.spec"]},
             {"phase": "release", "phase_name": "P7 RELEASE", "status": "success",
@@ -238,9 +230,12 @@ def check_only(version: str) -> int:
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate workflow report artifacts for release")
-    parser.add_argument("--check", action="store_true", help="Only verify reports exist (no write)")
-    parser.add_argument("--skip-tests", action="store_true", help="Skip running pytest (use placeholder data)")
+    parser = argparse.ArgumentParser(
+        description="Generate workflow report artifacts for release")
+    parser.add_argument("--check", action="store_true",
+                        help="Only verify reports exist (no write)")
+    parser.add_argument("--skip-tests", action="store_true",
+                        help="Skip running pytest (use placeholder data)")
     args = parser.parse_args()
 
     version = extract_version()
@@ -265,16 +260,19 @@ def main() -> int:
         test_data = run_tests()
         print(f"[workflow-reports] {test_data['summary_line']}")
         if test_data["failed"] > 0 or test_data["errors"] > 0:
-            print("[workflow-reports] WARNING: tests have failures — reports still generated")
+            print(
+                "[workflow-reports] WARNING: tests have failures — reports still generated")
 
     # Write test results
     test_payload = generate_test_results(version, test_data)
-    test_path.write_text(json.dumps(test_payload, indent=2) + "\n", encoding="utf-8")
+    test_path.write_text(json.dumps(
+        test_payload, indent=2) + "\n", encoding="utf-8")
     print(f"[workflow-reports] wrote {test_path.relative_to(ROOT)}")
 
     # Write run manifest
     manifest_payload = generate_run_manifest(version)
-    manifest_path.write_text(json.dumps(manifest_payload, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(json.dumps(
+        manifest_payload, indent=2) + "\n", encoding="utf-8")
     print(f"[workflow-reports] wrote {manifest_path.relative_to(ROOT)}")
 
     print("[workflow-reports] OK — remember to git add these files before tagging!")

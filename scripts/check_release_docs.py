@@ -70,34 +70,16 @@ def extract_pyproject_version() -> str | None:
 
 def workflow_version_tag(version: str) -> str:
     parts = version.split(".")
-    if len(parts) >= 2:
-        return f"v{parts[0]}.{parts[1]}"
-    return f"v{version}"
+    if len(parts) >= 3:
+        return f"v{parts[0]}.{parts[1]}.{parts[2]}"
+    if len(parts) == 2:
+        return f"v{parts[0]}.{parts[1]}.0"
+    return f"v{parts[0]}.0.0"
 
 
 def workflow_version_tags(version: str) -> List[str]:
-    """Return accepted workflow tag variants for report lookup.
-
-    Supports both short form (vX.Y) and patch form (vX.Y.Z) to avoid
-    intermittent CI/doc-gate failures when different producers emit
-    different filenames.
-    """
-    parts = version.split(".")
-    tags: List[str] = []
-    if len(parts) >= 2:
-        tags.append(f"v{parts[0]}.{parts[1]}")
-        if len(parts) >= 3:
-            tags.append(f"v{parts[0]}.{parts[1]}.{parts[2]}")
-        else:
-            tags.append(f"v{parts[0]}.{parts[1]}.0")
-    else:
-        tags.append(f"v{version}")
-
-    unique: List[str] = []
-    for item in tags:
-        if item not in unique:
-            unique.append(item)
-    return unique
+    """Return canonical workflow tag for report lookup (vX.Y.Z only)."""
+    return [workflow_version_tag(version)]
 
 
 def workflow_report_candidates(root: Path, version: str, prefix: str) -> List[Path]:
@@ -184,7 +166,8 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
 
     # --- Version sync: version.py vs .spec ---
     if py_version != spec_version:
-        errors.append(f"version mismatch: version.py={py_version} spec={spec_version}")
+        errors.append(
+            f"version mismatch: version.py={py_version} spec={spec_version}")
 
     # --- Version sync: version.py vs pyproject.toml ---
     pyproject_version = extract_pyproject_version()
@@ -224,9 +207,11 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
         )
 
         if test_report is None:
-            errors.append(f"missing workflow test report: {test_candidates[0]}")
+            errors.append(
+                f"missing workflow test report: {test_candidates[0]}")
         if run_manifest is None:
-            errors.append(f"missing workflow run manifest: {manifest_candidates[0]}")
+            errors.append(
+                f"missing workflow run manifest: {manifest_candidates[0]}")
 
         if run_manifest is not None and run_manifest.exists():
             try:
@@ -236,7 +221,8 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
             else:
                 phases = payload.get("phases")
                 if not isinstance(phases, list) or not phases:
-                    errors.append(f"run manifest has no phase entries: {run_manifest}")
+                    errors.append(
+                        f"run manifest has no phase entries: {run_manifest}")
 
     # --- Stale version tests ---
     codename = _extract_codename()

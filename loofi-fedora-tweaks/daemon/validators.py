@@ -3,10 +3,9 @@
 from __future__ import annotations
 
 import ast
-from pathlib import Path
 import re
 import xml.etree.ElementTree as ET
-
+from pathlib import Path
 
 _CONNECTION_RE = re.compile(r"^[A-Za-z0-9_.:@\-\s]{1,128}$")
 _ZONE_RE = re.compile(r"^[A-Za-z0-9_.\-]{0,64}$")
@@ -15,7 +14,8 @@ _INTERFACE_RE = re.compile(r"^[A-Za-z0-9_.:@\-]{1,32}$")
 _FIREWALL_SERVICE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.\-]{0,63}$")
 _UNIT_NAME_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9@_.\-]{0,127}$")
 _PACKAGE_RE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+_.:@\-]{0,127}$")
-_HOSTNAME_RE = re.compile(r"^(?=.{1,253}$)(?!-)[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?(?:\.(?!-)[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?)*$")
+_HOSTNAME_RE = re.compile(
+    r"^(?=.{1,253}$)(?!-)[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?(?:\.(?!-)[A-Za-z0-9](?:[A-Za-z0-9\-]{0,61}[A-Za-z0-9])?)*$")
 _DNS_RE = re.compile(r"^[A-Za-z0-9:.\-,\s]{1,256}$")
 _PROTOCOLS = {"tcp", "udp"}
 _UNIT_SCOPES = {"user", "system"}
@@ -311,7 +311,8 @@ def _extract_handler_method_coverage(handler_path: Path) -> list[dict[str, objec
 
             parameters = [arg.arg for arg in method.args.args]
             validator_calls, validated_parameters = _collect_validators(method)
-            unvalidated_parameters = [p for p in parameters if p not in validated_parameters]
+            unvalidated_parameters = [
+                p for p in parameters if p not in validated_parameters]
 
             rows.append(
                 {

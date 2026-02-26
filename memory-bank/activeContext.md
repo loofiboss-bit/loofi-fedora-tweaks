@@ -2,11 +2,12 @@
 
 ## Current State
 
-**Version**: v2.9.0 "API Migration Slice 5 (Residual Privileged Path Migration)" — **ACTIVE**
+**Version**: v2.10.0 "API Migration Slice 6 (Canonical Workflow + Next Migration Kickoff)" — **ACTIVE**
 **Date**: 2026-02-26
 
-v2.9.0 has been activated after v2.8.0 release closure to continue daemon/API-first
-migration for residual privileged pathways under a bounded, compatibility-focused scope.
+v2.9.0 has been closed and v2.10.0 is now active. This slice starts with
+workflow canonicalization (`vX.Y.Z` artifacts only), metadata reconciliation,
+and bounded planning for the next daemon/API-first residual migration targets.
 
 ## Recent Changes
 
@@ -47,19 +48,21 @@ migration for residual privileged pathways under a bounded, compatibility-focuse
 
 ## Current Work Focus
 
-**Active workflow phase**: `P5 DOC` complete for `v2.9.0` focused migration scope.
+**Active workflow phase**: v2.10.0 kickoff (plan/design contracts + workflow normalization).
 
-Current objective is to prepare next workflow transition after v2.9 migration/documentation closure.
+Current objective is to enforce canonical workflow artifact naming and keep
+roadmap/race-lock/memory state synchronized before starting the next migration slice.
 
 ## Open Items
 
-1. Decide whether to continue with package/release phases for v2.9.0 or activate the next bounded slice
-2. Keep roadmap/race-lock alignment synchronized with chosen next phase
+1. Complete v2.10.0 TASK001 workflow-script/test normalization work
+2. Finish v2.10.0 metadata synchronization across roadmap/workflow/memory artifacts
+3. Lock bounded Slice 6 service-method migration targets in architecture/tasks contracts
 
 ## Active Decisions
 
 - **Canonical authority**: `ROADMAP.md` + `.workflow/specs/*`
 - **Slice scope**: v2.9.0 targets residual privileged daemon/API migration only (no privilege expansion)
-- **Contract status**: `TASK001`–`TASK006` complete; `tasks-v2.9.0.md` marked complete
+- **Contract status**: `v2.9.0` tasks complete and closed; `v2.10.0` contracts initialized
 - **Migration strategy**: inventory-first, then bounded handler/validator/service updates with strict fallback parity
 - **IPC policy**: strict payload validation with safe preferred-mode fallback remains mandatory

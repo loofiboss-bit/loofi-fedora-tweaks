@@ -35,6 +35,7 @@
 - [TASK-024] v2.7.0 system-service API migration slice — Completed on 2026-02-25
 - [TASK-025] v2.8.0 policy inventory + validator hardening slice — Completed on 2026-02-26 (targeted hardening coverage: 91%)
 - [TASK-026] v2.9.0 residual privileged daemon/API migration slice — Completed on 2026-02-26 (focused migration verification: 248 passed)
+- [TASK-027] v2.10.0 workflow canonicalization and kickoff — Completed on 2026-02-26 (workflow normalization + metadata sync)
 
 ## Abandoned
 

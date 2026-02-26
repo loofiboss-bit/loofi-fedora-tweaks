@@ -44,7 +44,7 @@
 - SemVer: v2.7.0 "API Slice 3" — system-service API migration + Phase 3 prep
 - SemVer: v2.8.0 "API Slice 4" — policy inventory execution + validator hardening (released)
 
-Current active semantic cycle: v2.9.0 (active).
+Current active semantic cycle: v2.10.0 (active).
 
 ## What's Left to Build
 
@@ -80,7 +80,9 @@ Current active semantic cycle: v2.9.0 (active).
 
 ## Current Status
 
-**v2.9.0 "API Migration Slice 5 (Residual Privileged Path Migration)"**: 🔄 ACTIVE — workflow contracts activated (`ROADMAP`, race-lock, tasks/arch specs, memory sync).
+**v2.10.0 "API Migration Slice 6 (Canonical Workflow + Next Migration Kickoff)"**: 🔄 ACTIVE — canonical workflow tag normalization + next migration target planning.
+
+**v2.9.0 "API Migration Slice 5 (Residual Privileged Path Migration)"**: ✅ COMPLETE — workflow tasks and release phases complete; metadata moved to DONE state.
 
 ### v2.9.0 Implementation Snapshot (2026-02-26)
 
@@ -102,7 +104,7 @@ Current active semantic cycle: v2.9.0 (active).
 **v2.4.0 "Evolution"**: ✅ COMPLETE — daemon foundation and hardening alignment.
 **v2.3.0 "Insight"**: ✅ COMPLETE — diagnostics expansion.
 
-**Project state**: Stable with v2.8.0 closed and v2.9.0 active for bounded daemon/API migration continuation.
+**Project state**: Stable with v2.9.0 closed and v2.10.0 active for bounded workflow normalization and next migration planning.
 
 ### v2.8.0 Verification Snapshot (2026-02-26)
 

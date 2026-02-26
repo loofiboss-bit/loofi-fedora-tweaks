@@ -73,3 +73,6 @@ test_output.txt
 # Claude Code temp directories
 tmpclaude-*
 .tmp-*.log
+
+# Local scratch temp
+.tmp/

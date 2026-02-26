@@ -52,11 +52,41 @@
 | 2.6.0   | API Migration Slice 2           | DONE    | Package API-first migration with strict IPC payload validation and fallback safeguards       |
 | 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                      |
 | 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                   |
-| 2.9.0   | API Migration Slice 5           | ACTIVE  | Residual privileged daemon/API migration + compatibility hardening                            |
+| 2.9.0   | API Migration Slice 5           | DONE    | Residual privileged daemon/API migration + compatibility hardening                            |
+| 2.10.0  | API Migration Slice 6           | ACTIVE  | Canonical workflow normalization + next daemon/API migration planning                         |
 
 ---
 
-## [ACTIVE] v2.9.0 "API Migration Slice 5" — Residual Privileged Path Migration
+## [ACTIVE] v2.10.0 "API Migration Slice 6" — Canonical Workflow + Next Migration Kickoff
+
+### Scope
+
+Start the next bounded slice after v2.9.0 closure by standardizing workflow
+artifacts on canonical `vX.Y.Z` tags, reconciling workflow metadata state,
+and preparing a fresh migration target list for the next daemon/API-first
+residual pathways.
+
+### Planned Deliverables
+
+- [ ] Close v2.9.0 metadata state (`ROADMAP`, race-lock transition, memory-bank sync)
+- [ ] Standardize workflow scripts and tests to canonical `vX.Y.Z` artifact naming only
+- [ ] Remove duplicate short-tag (`vX.Y`) artifacts for active release lines
+- [ ] Create v2.10.0 workflow task and architecture contracts
+- [ ] Define bounded daemon/API migration targets for Slice 6
+- [ ] Add focused regression coverage for any script/contract behavior changes
+
+### Agent Assignment
+
+| Agent                      | Task                                                               |
+| -------------------------- | ------------------------------------------------------------------ |
+| project-coordinator        | v2.10.0 scope/task contracts + activation                          |
+| backend-builder            | workflow script normalization + daemon/API migration prep          |
+| test-writer                | focused regression updates for workflow/tag canonicalization       |
+| release-planner            | roadmap/workflow/memory metadata synchronization                   |
+
+---
+
+## [DONE] v2.9.0 "API Migration Slice 5" — Residual Privileged Path Migration
 
 ### Scope
 

@@ -39,4 +39,4 @@
 
 ## Current Version
 
-**v2.8.0 "API Migration Slice 4"** — Policy inventory execution + validator hardening (SemVer)
+**v2.10.0 "API Migration Slice 6"** — Canonical workflow normalization + next daemon/API migration kickoff (SemVer)

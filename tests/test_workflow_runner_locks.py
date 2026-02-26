@@ -20,7 +20,8 @@ def _load_module(name: str, path: Path):
 
 
 def test_writer_lock_denies_concurrent_owner(tmp_path):
-    module = _load_module("workflow_runner_lock_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_lock_test",
+                          Path("scripts/workflow_runner.py"))
     module.WRITER_LOCK_FILE = tmp_path / ".writer-lock.json"
 
     now = module.utc_now()
@@ -48,7 +49,8 @@ def test_writer_lock_denies_concurrent_owner(tmp_path):
 
 
 def test_model_router_toml_overrides_defaults(tmp_path):
-    module = _load_module("workflow_runner_router_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_router_test",
+                          Path("scripts/workflow_runner.py"))
     router_file = tmp_path / "model-router.toml"
     router_file.write_text(
         """
@@ -74,7 +76,8 @@ release = "gpt-4o-mini"
 
 
 def test_task_contract_validation_fails_for_missing_fields(tmp_path):
-    module = _load_module("workflow_runner_contract_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_contract_test",
+                          Path("scripts/workflow_runner.py"))
     tasks_file = tmp_path / "tasks-v26.0.md"
     tasks_file.write_text(
         """
@@ -91,7 +94,8 @@ def test_task_contract_validation_fails_for_missing_fields(tmp_path):
 
 
 def test_task_contract_validation_accepts_valid_entries(tmp_path):
-    module = _load_module("workflow_runner_contract_valid_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_contract_valid_test",
+                          Path("scripts/workflow_runner.py"))
     tasks_file = tmp_path / "tasks-v28.0.0.md"
     tasks_file.write_text(
         """
@@ -110,7 +114,8 @@ def test_task_contract_validation_accepts_valid_entries(tmp_path):
 
 
 def test_validate_race_returns_blocked_when_lock_missing(tmp_path):
-    module = _load_module("workflow_runner_race_missing_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_race_missing_test",
+                          Path("scripts/workflow_runner.py"))
     module.LOCK_FILE = tmp_path / ".race-lock.json"
 
     ok, reason = module.validate_race("v28.0.0")
@@ -120,7 +125,8 @@ def test_validate_race_returns_blocked_when_lock_missing(tmp_path):
 
 
 def test_validate_race_detects_version_mismatch(tmp_path):
-    module = _load_module("workflow_runner_race_mismatch_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_race_mismatch_test",
+                          Path("scripts/workflow_runner.py"))
     module.LOCK_FILE = tmp_path / ".race-lock.json"
     module.LOCK_FILE.write_text(
         json.dumps(
@@ -140,7 +146,8 @@ def test_validate_race_detects_version_mismatch(tmp_path):
 
 
 def test_validate_race_passes_for_matching_version(tmp_path):
-    module = _load_module("workflow_runner_race_ok_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_race_ok_test",
+                          Path("scripts/workflow_runner.py"))
     module.LOCK_FILE = tmp_path / ".race-lock.json"
     module.LOCK_FILE.write_text(
         json.dumps(
@@ -160,7 +167,8 @@ def test_validate_race_passes_for_matching_version(tmp_path):
 
 
 def test_task_contract_validation_fails_for_missing_artifact(tmp_path):
-    module = _load_module("workflow_runner_contract_missing_artifact_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_contract_missing_artifact_test", Path(
+        "scripts/workflow_runner.py"))
     missing_file = tmp_path / "tasks-v28.0.0.md"
 
     issues = module.validate_task_contract(missing_file)
@@ -169,7 +177,8 @@ def test_task_contract_validation_fails_for_missing_artifact(tmp_path):
 
 
 def test_task_contract_validation_fails_when_no_task_entries(tmp_path):
-    module = _load_module("workflow_runner_contract_no_entries_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_contract_no_entries_test", Path(
+        "scripts/workflow_runner.py"))
     tasks_file = tmp_path / "tasks-v28.0.0.md"
     tasks_file.write_text("# Tasks\n", encoding="utf-8")
 
@@ -180,7 +189,8 @@ def test_task_contract_validation_fails_when_no_task_entries(tmp_path):
 
 @patch("shutil.which", return_value=None)
 def test_run_agent_fails_when_codex_missing(mock_which, tmp_path):
-    module = _load_module("workflow_runner_run_agent_missing_codex_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_run_agent_missing_codex_test", Path(
+        "scripts/workflow_runner.py"))
     prompt_file = tmp_path / "prompt.md"
     prompt_file.write_text("Prompt body", encoding="utf-8")
     input_file = tmp_path / "input.md"
@@ -207,7 +217,8 @@ def test_run_agent_fails_when_codex_missing(mock_which, tmp_path):
 @patch("subprocess.run")
 @patch("shutil.which", return_value="/usr/bin/codex")
 def test_run_agent_review_mode_writes_report(mock_which, mock_run, tmp_path):
-    module = _load_module("workflow_runner_run_agent_review_test", Path("scripts/workflow_runner.py"))
+    module = _load_module("workflow_runner_run_agent_review_test", Path(
+        "scripts/workflow_runner.py"))
     prompt_file = tmp_path / "prompt.md"
     prompt_file.write_text("Prompt body", encoding="utf-8")
     input_file = tmp_path / "input.md"
@@ -366,7 +377,7 @@ def test_run_phase_review_mode_skips_fedora_review_gate():
     assert gate_calls["count"] == 0
 
 
-def test_test_report_has_zero_failures_accepts_short_tag_for_patch_version(tmp_path):
+def test_test_report_has_zero_failures_rejects_short_tag_only_report(tmp_path):
     module = _load_module(
         "workflow_runner_test_report_short_tag_test",
         Path("scripts/workflow_runner.py"),
@@ -380,11 +391,11 @@ def test_test_report_has_zero_failures_accepts_short_tag_for_patch_version(tmp_p
 
     ok, reason = module.test_report_has_zero_failures("v28.0.0")
 
-    assert ok
-    assert reason == "ok"
+    assert not ok
+    assert "missing or invalid test report" in reason
 
 
-def test_phase_completed_in_manifest_accepts_patch_tag_for_short_version(tmp_path):
+def test_phase_completed_in_manifest_accepts_normalized_short_input(tmp_path):
     module = _load_module(
         "workflow_runner_manifest_patch_tag_test",
         Path("scripts/workflow_runner.py"),
