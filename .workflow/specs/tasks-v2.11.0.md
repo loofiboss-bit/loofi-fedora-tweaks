@@ -1,16 +1,16 @@
 # Tasks — v2.11.0
 
-- [ ] ID: TASK-001 | Files: `ROADMAP.md, .workflow/specs/.race-lock.json, .workflow/reports/run-manifest-v2.10.0.json, .workflow/reports/run-manifest-v2.11.0.json` | Dep: - | Agent: project-coordinator | Description: Reconcile workflow metadata so v2.11.0 is the single active target and v2.10.0 is closed with canonical `vX.Y.Z` artifact naming.
+- [x] ID: TASK-001 | Files: `ROADMAP.md, .workflow/specs/.race-lock.json, .workflow/reports/run-manifest-v2.10.0.json, .workflow/reports/run-manifest-v2.11.0.json` | Dep: - | Agent: project-coordinator | Description: Reconcile workflow metadata so v2.11.0 is the single active target and v2.10.0 is closed with canonical `vX.Y.Z` artifact naming.
   Acceptance: `ROADMAP.md` has exactly one ACTIVE version (v2.11.0), v2.10.0 is marked DONE, and both run manifests reflect the transition without short-tag artifacts.
   Docs: none
   Tests: `tests/test_workflow_runner_locks.py, tests/test_generate_workflow_reports.py`
 
-- [ ] ID: TASK-002 | Files: `.workflow/specs/arch-v2.11.0.md` | Dep: TASK-001 | Agent: architecture-advisor | Description: Produce the v2.11.0 architecture contract that converts the v2.10 residual inventory into bounded implementation slices for network, firewall, and system services.
+- [x] ID: TASK-002 | Files: `.workflow/specs/arch-v2.11.0.md` | Dep: TASK-001 | Agent: architecture-advisor | Description: Produce the v2.11.0 architecture contract that converts the v2.10 residual inventory into bounded implementation slices for network, firewall, and system services.
   Acceptance: Architecture spec defines method-level scope, non-goals, security constraints (pkexec-only, no `shell=True`, timeout enforcement), and dependency-safe sequencing for all implementation tasks.
   Docs: none
   Tests: none
 
-- [ ] ID: TASK-003 | Files: `loofi-fedora-tweaks/services/network/network.py` | Dep: TASK-002 | Agent: backend-builder | Description: Harden network local write paths (`reactivate_connection_local`, `connect_wifi_local`, `disconnect_wifi_local`, `apply_dns_local`, `set_hostname_privacy_local`) to return strict success/failure from subprocess results.
+- [x] ID: TASK-003 | Files: `loofi-fedora-tweaks/services/network/network.py` | Dep: TASK-002 | Agent: backend-builder | Description: Harden network local write paths (`reactivate_connection_local`, `connect_wifi_local`, `disconnect_wifi_local`, `apply_dns_local`, `set_hostname_privacy_local`) to return strict success/failure from subprocess results.
   Acceptance: All five local write-path methods return `False` on non-zero command outcomes, preserve daemon-first call flow, and keep explicit subprocess `timeout` usage.
   Docs: none
   Tests: `tests/test_network_utils.py, tests/test_service_network.py`

@@ -298,7 +298,9 @@ class TestReactivateConnection(unittest.TestCase):
         self.assertTrue(result)
         mock_run.assert_called_once_with(
             ["nmcli", "con", "up", "MyConn"],
-            capture_output=True, timeout=10
+            capture_output=True,
+            check=False,
+            timeout=10,
         )
 
     @patch('services.network.network.subprocess.run')
@@ -344,6 +346,7 @@ class TestDaemonFirstNetworkMutations(unittest.TestCase):
             ["nmcli", "device", "wifi", "connect", "MyWiFi"],
             capture_output=True,
             text=True,
+            check=False,
             timeout=30,
         )
 
@@ -364,6 +367,50 @@ class TestDaemonFirstNetworkMutations(unittest.TestCase):
         self.assertTrue(result)
         mock_call_json.assert_called_once_with("NetworkSetHostnamePrivacy", "Home", True)
         mock_run.assert_not_called()
+
+
+class TestNetworkLocalWriteReturnCodes(unittest.TestCase):
+    """Tests strict local return semantics for network write paths."""
+
+    @patch('services.network.network.subprocess.run')
+    def test_connect_wifi_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=10)
+
+        result = NetworkUtils.connect_wifi_local("MyWiFi")
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_disconnect_wifi_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=4)
+
+        result = NetworkUtils.disconnect_wifi_local("wlan0")
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_apply_dns_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=2)
+
+        result = NetworkUtils.apply_dns_local("Home", "1.1.1.1")
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_set_hostname_privacy_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=5)
+
+        result = NetworkUtils.set_hostname_privacy_local("Home", True)
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_reactivate_connection_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=1)
+
+        result = NetworkUtils.reactivate_connection_local("Home")
+
+        self.assertFalse(result)
 
 
 if __name__ == '__main__':

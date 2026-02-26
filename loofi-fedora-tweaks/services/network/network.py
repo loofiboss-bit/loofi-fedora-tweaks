@@ -172,8 +172,13 @@ class NetworkUtils:
     def reactivate_connection_local(connection_name: str) -> bool:
         """Local fallback for connection reactivation."""
         try:
-            subprocess.run(["nmcli", "con", "up", connection_name], capture_output=True, timeout=10)
-            return True
+            result = subprocess.run(
+                ["nmcli", "con", "up", connection_name],
+                capture_output=True,
+                check=False,
+                timeout=10,
+            )
+            return result.returncode == 0
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to reactivate connection: %s", e)
             return False
@@ -189,8 +194,14 @@ class NetworkUtils:
     def connect_wifi_local(ssid: str) -> bool:
         """Local fallback for connecting to Wi-Fi by SSID."""
         try:
-            subprocess.run(["nmcli", "device", "wifi", "connect", ssid], capture_output=True, text=True, timeout=30)
-            return True
+            result = subprocess.run(
+                ["nmcli", "device", "wifi", "connect", ssid],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=30,
+            )
+            return result.returncode == 0
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to connect WiFi: %s", e)
             return False
@@ -206,8 +217,14 @@ class NetworkUtils:
     def disconnect_wifi_local(interface_name: str = "wlan0") -> bool:
         """Local fallback for disconnecting Wi-Fi interface."""
         try:
-            subprocess.run(["nmcli", "device", "disconnect", interface_name], capture_output=True, text=True, timeout=20)
-            return True
+            result = subprocess.run(
+                ["nmcli", "device", "disconnect", interface_name],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=20,
+            )
+            return result.returncode == 0
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to disconnect WiFi: %s", e)
             return False
@@ -247,8 +264,14 @@ class NetworkUtils:
                     "ipv4.ignore-auto-dns",
                     "yes",
                 ]
-            subprocess.run(cmd, capture_output=True, text=True, timeout=20)
-            return True
+            result = subprocess.run(
+                cmd,
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=20,
+            )
+            return result.returncode == 0
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to apply DNS: %s", e)
             return False
@@ -265,13 +288,14 @@ class NetworkUtils:
         """Local fallback for setting DHCP hostname privacy."""
         try:
             value = "no" if hide else "yes"
-            subprocess.run(
+            result = subprocess.run(
                 ["nmcli", "connection", "modify", connection_name, "ipv4.dhcp-send-hostname", value],
                 capture_output=True,
                 text=True,
+                check=False,
                 timeout=20,
             )
-            return True
+            return result.returncode == 0
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to set hostname privacy: %s", e)
             return False

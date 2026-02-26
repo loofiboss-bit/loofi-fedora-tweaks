@@ -210,7 +210,8 @@ class TestNetworkUtilsReactivate(unittest.TestCase):
         mock_run.assert_called_once_with(
             ["nmcli", "con", "up", "MyConnection"],
             capture_output=True,
-            timeout=10
+            check=False,
+            timeout=10,
         )
 
     @patch('services.network.network.subprocess.run')
@@ -219,6 +220,26 @@ class TestNetworkUtilsReactivate(unittest.TestCase):
         mock_run.side_effect = OSError()
         result = NetworkUtils.reactivate_connection("MyConnection")
         self.assertFalse(result)
+
+
+class TestNetworkUtilsDaemonFallbackReturnCodes(unittest.TestCase):
+    """Test daemon fallback semantics for non-zero local command results."""
+
+    @patch('services.network.network.subprocess.run')
+    @patch('services.network.network.daemon_client.call_json')
+    def test_connect_wifi_fallback_non_zero_returns_false(
+        self,
+        mock_call_json,
+        mock_run,
+    ):
+        """connect_wifi returns False when fallback command has non-zero rc."""
+        mock_call_json.return_value = None
+        mock_run.return_value = MagicMock(returncode=8)
+
+        result = NetworkUtils.connect_wifi("MyWiFi")
+
+        self.assertFalse(result)
+        mock_call_json.assert_called_once_with("NetworkConnectWifi", "MyWiFi")
 
 
 if __name__ == '__main__':
