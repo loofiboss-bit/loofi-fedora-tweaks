@@ -75,6 +75,50 @@ def workflow_version_tag(version: str) -> str:
     return f"v{version}"
 
 
+def workflow_version_tags(version: str) -> List[str]:
+    """Return accepted workflow tag variants for report lookup.
+
+    Supports both short form (vX.Y) and patch form (vX.Y.Z) to avoid
+    intermittent CI/doc-gate failures when different producers emit
+    different filenames.
+    """
+    parts = version.split(".")
+    tags: List[str] = []
+    if len(parts) >= 2:
+        tags.append(f"v{parts[0]}.{parts[1]}")
+        if len(parts) >= 3:
+            tags.append(f"v{parts[0]}.{parts[1]}.{parts[2]}")
+        else:
+            tags.append(f"v{parts[0]}.{parts[1]}.0")
+    else:
+        tags.append(f"v{version}")
+
+    unique: List[str] = []
+    for item in tags:
+        if item not in unique:
+            unique.append(item)
+    return unique
+
+
+def workflow_report_candidates(root: Path, version: str, prefix: str) -> List[Path]:
+    """Return all accepted report path candidates for a version."""
+    reports_root = root / ".workflow" / "reports"
+    return [reports_root / f"{prefix}-{tag}.json" for tag in workflow_version_tags(version)]
+
+
+def resolve_existing_workflow_report(
+    root: Path,
+    version: str,
+    prefix: str,
+) -> tuple[Path | None, List[Path]]:
+    """Return first existing report path and all candidates."""
+    candidates = workflow_report_candidates(root, version, prefix)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate, candidates
+    return None, candidates
+
+
 def release_notes_candidates(root: Path, version: str) -> List[Path]:
     name = f"RELEASE-NOTES-v{version}.md"
     return [root / "docs" / "releases" / name, root / name]
@@ -168,16 +212,23 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
 
     # --- Workflow artifacts (optional) ---
     if require_logs:
-        wf_tag = workflow_version_tag(py_version)
-        test_report = root / ".workflow" / "reports" / f"test-results-{wf_tag}.json"
-        run_manifest = root / ".workflow" / "reports" / f"run-manifest-{wf_tag}.json"
+        test_report, test_candidates = resolve_existing_workflow_report(
+            root,
+            py_version,
+            "test-results",
+        )
+        run_manifest, manifest_candidates = resolve_existing_workflow_report(
+            root,
+            py_version,
+            "run-manifest",
+        )
 
-        if not test_report.exists():
-            errors.append(f"missing workflow test report: {test_report}")
-        if not run_manifest.exists():
-            errors.append(f"missing workflow run manifest: {run_manifest}")
+        if test_report is None:
+            errors.append(f"missing workflow test report: {test_candidates[0]}")
+        if run_manifest is None:
+            errors.append(f"missing workflow run manifest: {manifest_candidates[0]}")
 
-        if run_manifest.exists():
+        if run_manifest is not None and run_manifest.exists():
             try:
                 payload = json.loads(run_manifest.read_text(encoding="utf-8"))
             except json.JSONDecodeError:

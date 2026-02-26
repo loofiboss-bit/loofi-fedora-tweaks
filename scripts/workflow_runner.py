@@ -92,6 +92,51 @@ def artifact_paths(version_tag: str) -> dict[str, Path]:
     }
 
 
+def version_tag_variants(version_tag: str) -> list[str]:
+    """Return accepted version tag variants for artifact reads.
+
+    Keeps backward compatibility for reports generated with either vX.Y or
+    vX.Y.Z naming conventions.
+    """
+    normalized = normalize_version_tag(version_tag)
+    raw = normalized[1:]
+    parts = raw.split(".")
+
+    variants = [normalized]
+    if len(parts) >= 3:
+        variants.append(f"v{parts[0]}.{parts[1]}")
+    elif len(parts) == 2:
+        variants.append(f"{normalized}.0")
+
+    unique: list[str] = []
+    for item in variants:
+        if item not in unique:
+            unique.append(item)
+    return unique
+
+
+def artifact_read_candidates(version_tag: str, key: str) -> list[Path]:
+    """Return candidate artifact paths for tolerant read operations."""
+    if key not in {"test_report", "run_manifest"}:
+        return [artifact_paths(version_tag)[key]]
+
+    candidates: list[Path] = []
+    for tag in version_tag_variants(version_tag):
+        candidate = artifact_paths(tag)[key]
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
+
+
+def resolve_artifact_for_read(version_tag: str, key: str) -> Path:
+    """Resolve an existing artifact path, tolerating version-tag variants."""
+    candidates = artifact_read_candidates(version_tag, key)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
+
+
 def review_output_path(version_tag: str, assistant: str, phase: str) -> Path:
     safe_version = version_tag.replace("/", "-")
     return REVIEWS_DIR / assistant / f"{safe_version}-{phase}.md"
@@ -327,7 +372,7 @@ def release_writer_lock(assistant: str, owner: str, dry_run: bool, force: bool) 
 
 def build_phase_status(version_tag: str) -> dict[str, Any]:
     """Build current phase status snapshot for a version."""
-    manifest_path = artifact_paths(version_tag)["run_manifest"]
+    manifest_path = resolve_artifact_for_read(version_tag, "run_manifest")
     manifest = load_json_file(manifest_path)
 
     completed: list[str] = []
@@ -644,7 +689,7 @@ def validate_phase_ordering(phase: str, version_tag: str) -> tuple[bool, str]:
     if phase == "plan":
         return True, "ok"  # plan is always allowed
 
-    manifest_path = artifact_paths(version_tag)["run_manifest"]
+    manifest_path = resolve_artifact_for_read(version_tag, "run_manifest")
     manifest = load_json_file(manifest_path)
 
     completed_phases: set[str] = set()
@@ -670,7 +715,7 @@ def validate_phase_ordering(phase: str, version_tag: str) -> tuple[bool, str]:
 
 def phase_completed_in_manifest(version_tag: str, phase: str) -> bool:
     """Return True when the phase has a successful manifest entry."""
-    manifest_path = artifact_paths(version_tag)["run_manifest"]
+    manifest_path = resolve_artifact_for_read(version_tag, "run_manifest")
     manifest = load_json_file(manifest_path)
     if not manifest or not isinstance(manifest.get("phases"), list):
         return False
@@ -685,7 +730,7 @@ def phase_completed_in_manifest(version_tag: str, phase: str) -> bool:
 
 def test_report_has_zero_failures(version_tag: str) -> tuple[bool, str]:
     """Validate test report exists and indicates zero failures."""
-    report_path = artifact_paths(version_tag)["test_report"]
+    report_path = resolve_artifact_for_read(version_tag, "test_report")
     report = load_json_file(report_path)
     if not report:
         return False, f"missing or invalid test report: {report_path}"

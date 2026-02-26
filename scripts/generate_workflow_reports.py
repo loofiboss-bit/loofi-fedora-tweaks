@@ -51,12 +51,47 @@ def workflow_tag(version: str) -> str:
     return f"v{parts[0]}.{parts[1]}" if len(parts) >= 2 else f"v{version}"
 
 
+def workflow_tags(version: str) -> list[str]:
+    """Return accepted report tag variants for compatibility checks."""
+    parts = version.split(".")
+    tags: list[str] = []
+    if len(parts) >= 2:
+        tags.append(f"v{parts[0]}.{parts[1]}")
+        if len(parts) >= 3:
+            tags.append(f"v{parts[0]}.{parts[1]}.{parts[2]}")
+        else:
+            tags.append(f"v{parts[0]}.{parts[1]}.0")
+    else:
+        tags.append(f"v{version}")
+
+    unique: list[str] = []
+    for item in tags:
+        if item not in unique:
+            unique.append(item)
+    return unique
+
+
 def report_paths(version: str) -> tuple[Path, Path]:
     tag = workflow_tag(version)
     return (
         REPORTS_DIR / f"test-results-{tag}.json",
         REPORTS_DIR / f"run-manifest-{tag}.json",
     )
+
+
+def report_path_candidates(version: str) -> tuple[list[Path], list[Path]]:
+    """Return accepted test/manifest report candidates for --check mode."""
+    tags = workflow_tags(version)
+    test_candidates = [REPORTS_DIR / f"test-results-{tag}.json" for tag in tags]
+    manifest_candidates = [REPORTS_DIR / f"run-manifest-{tag}.json" for tag in tags]
+    return test_candidates, manifest_candidates
+
+
+def _resolve_existing(candidates: list[Path]) -> Path | None:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
 
 
 def run_tests() -> dict:
@@ -182,14 +217,23 @@ def generate_run_manifest(version: str) -> dict:
 
 def check_only(version: str) -> int:
     """Return 0 if both reports exist, 1 otherwise."""
-    test_path, manifest_path = report_paths(version)
+    test_candidates, manifest_candidates = report_path_candidates(version)
+    test_path = _resolve_existing(test_candidates)
+    manifest_path = _resolve_existing(manifest_candidates)
     ok = True
-    for p in (test_path, manifest_path):
-        if p.exists():
-            print(f"  [OK] {p.relative_to(ROOT)}")
-        else:
-            print(f"  [MISSING] {p.relative_to(ROOT)}")
-            ok = False
+
+    if test_path is not None:
+        print(f"  [OK] {test_path.relative_to(ROOT)}")
+    else:
+        print(f"  [MISSING] {test_candidates[0].relative_to(ROOT)}")
+        ok = False
+
+    if manifest_path is not None:
+        print(f"  [OK] {manifest_path.relative_to(ROOT)}")
+    else:
+        print(f"  [MISSING] {manifest_candidates[0].relative_to(ROOT)}")
+        ok = False
+
     return 0 if ok else 1
 
 

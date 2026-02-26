@@ -97,6 +97,52 @@ def test_release_doc_check_require_logs_flags_missing_artifacts(tmp_path):
     assert any("missing workflow run manifest" in item for item in issues)
 
 
+def test_release_doc_check_require_logs_accepts_patch_tag_artifacts(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_logs_patch_tag",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+
+    reports = tmp_path / ".workflow" / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "test-results-v26.0.1.json").write_text(
+        '{"failed": 0}',
+        encoding="utf-8",
+    )
+    (reports / "run-manifest-v26.0.1.json").write_text(
+        '{"phases": [{"phase": "plan", "status": "success"}]}',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=True)
+    assert issues == []
+
+
+def test_release_doc_check_require_logs_accepts_short_tag_artifacts(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_logs_short_tag",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+
+    reports = tmp_path / ".workflow" / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "test-results-v26.0.json").write_text(
+        '{"failed": 0}',
+        encoding="utf-8",
+    )
+    (reports / "run-manifest-v26.0.json").write_text(
+        '{"phases": [{"phase": "plan", "status": "success"}]}',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=True)
+    assert issues == []
+
+
 def test_release_doc_check_catches_pyproject_version_mismatch(tmp_path):
     """pyproject.toml version != version.py should be flagged."""
     module = _load_module(

@@ -364,3 +364,44 @@ def test_run_phase_review_mode_skips_fedora_review_gate():
     assert code == 0
     assert entry["phase"] == "package"
     assert gate_calls["count"] == 0
+
+
+def test_test_report_has_zero_failures_accepts_short_tag_for_patch_version(tmp_path):
+    module = _load_module(
+        "workflow_runner_test_report_short_tag_test",
+        Path("scripts/workflow_runner.py"),
+    )
+    module.REPORTS_DIR = tmp_path / "reports"
+    module.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    (module.REPORTS_DIR / "test-results-v28.0.json").write_text(
+        '{"failed": 0}',
+        encoding="utf-8",
+    )
+
+    ok, reason = module.test_report_has_zero_failures("v28.0.0")
+
+    assert ok
+    assert reason == "ok"
+
+
+def test_phase_completed_in_manifest_accepts_patch_tag_for_short_version(tmp_path):
+    module = _load_module(
+        "workflow_runner_manifest_patch_tag_test",
+        Path("scripts/workflow_runner.py"),
+    )
+    module.REPORTS_DIR = tmp_path / "reports"
+    module.REPORTS_DIR.mkdir(parents=True, exist_ok=True)
+    (module.REPORTS_DIR / "run-manifest-v28.0.0.json").write_text(
+        json.dumps(
+            {
+                "phases": [
+                    {"phase": "build", "status": "success"},
+                ]
+            }
+        ),
+        encoding="utf-8",
+    )
+
+    completed = module.phase_completed_in_manifest("v28.0", "build")
+
+    assert completed
