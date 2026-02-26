@@ -5,30 +5,27 @@ Covers:
 - services/security/secureboot.py — SecureBootManager
 """
 
+from services.security.secureboot import (
+    SecureBootManager,
+)
+from services.security.firewall import (
+    FirewallManager,
+)
 import os
 import sys
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock, mock_open, patch
+from unittest.mock import MagicMock, patch
 
 # Add source path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
-
-from services.security.firewall import (
-    FirewallInfo,
-    FirewallManager,
-    FirewallResult,
-)
-from services.security.secureboot import (
-    SecureBootManager,
-    SecureBootResult,
-    SecureBootStatus,
-)
+sys.path.insert(0, os.path.join(os.path.dirname(
+    __file__), '..', 'loofi-fedora-tweaks'))
 
 
 # ===========================================================================
 # FirewallManager tests
 # ===========================================================================
+
 
 class TestFirewallManagerAvailability(unittest.TestCase):
     """Test FirewallManager availability checking."""
@@ -102,7 +99,8 @@ class TestFirewallManagerInfo(unittest.TestCase):
     @patch('services.security.firewall.subprocess.run')
     def test_get_zones_success(self, mock_run):
         """List all zones returns list of zone names."""
-        mock_run.return_value = MagicMock(stdout="block dmz drop home public\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="block dmz drop home public\n", returncode=0)
         result = FirewallManager.get_zones()
         self.assertEqual(result, ["block", "dmz", "drop", "home", "public"])
 
@@ -114,12 +112,14 @@ class TestFirewallManagerInfo(unittest.TestCase):
             returncode=0
         )
         result = FirewallManager.get_active_zones()
-        self.assertEqual(result, {"public": ["eth0", "wlan0"], "work": ["vpn0"]})
+        self.assertEqual(
+            result, {"public": ["eth0", "wlan0"], "work": ["vpn0"]})
 
     @patch('services.security.firewall.subprocess.run')
     def test_list_ports_success(self, mock_run):
         """List ports returns port/protocol list."""
-        mock_run.return_value = MagicMock(stdout="80/tcp 443/tcp 8080/tcp\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="80/tcp 443/tcp 8080/tcp\n", returncode=0)
         result = FirewallManager.list_ports()
         self.assertEqual(result, ["80/tcp", "443/tcp", "8080/tcp"])
 
@@ -148,7 +148,8 @@ class TestFirewallManagerOperations(unittest.TestCase):
     @patch('services.security.firewall.subprocess.run')
     def test_open_port_failure(self, mock_run):
         """Open port handles failure."""
-        mock_run.return_value = MagicMock(returncode=1, stderr="Error: port in use")
+        mock_run.return_value = MagicMock(
+            returncode=1, stderr="Error: port in use")
         result = FirewallManager.open_port("8080", "tcp")
         self.assertFalse(result.success)
         self.assertIn("Failed", result.message)
@@ -166,7 +167,8 @@ class TestFirewallManagerOperations(unittest.TestCase):
     @patch('services.security.firewall.subprocess.run')
     def test_list_services_success(self, mock_run):
         """List services returns sorted service names."""
-        mock_run.return_value = MagicMock(stdout="ssh http https\n", returncode=0)
+        mock_run.return_value = MagicMock(
+            stdout="ssh http https\n", returncode=0)
         result = FirewallManager.list_services()
         self.assertEqual(result, ["http", "https", "ssh"])
 
@@ -174,20 +176,17 @@ class TestFirewallManagerOperations(unittest.TestCase):
 class TestFirewallManagerStatus(unittest.TestCase):
     """Test comprehensive status gathering."""
 
-    @patch('services.security.firewall.FirewallManager.list_rich_rules')
-    @patch('services.security.firewall.FirewallManager.list_services')
-    @patch('services.security.firewall.FirewallManager.list_ports')
-    @patch('services.security.firewall.FirewallManager.get_active_zones')
-    @patch('services.security.firewall.FirewallManager.get_default_zone')
-    @patch('services.security.firewall.FirewallManager.is_running')
-    def test_get_status_running(self, mock_running, mock_zone, mock_zones, mock_ports, mock_services, mock_rules):
-        """Get status gathers all firewall info when running."""
-        mock_running.return_value = True
-        mock_zone.return_value = "public"
-        mock_zones.return_value = {"public": ["eth0"]}
-        mock_ports.return_value = ["80/tcp"]
-        mock_services.return_value = ["ssh"]
-        mock_rules.return_value = []
+    @patch('services.security.firewall.daemon_client.call_json')
+    def test_get_status_running(self, mock_call_json):
+        """Get status from daemon payload when available."""
+        mock_call_json.return_value = {
+            "running": True,
+            "default_zone": "public",
+            "active_zones": {"public": ["eth0"]},
+            "ports": ["80/tcp"],
+            "services": ["ssh"],
+            "rich_rules": [],
+        }
 
         status = FirewallManager.get_status()
 
@@ -196,14 +195,16 @@ class TestFirewallManagerStatus(unittest.TestCase):
         self.assertEqual(status.active_zones, {"public": ["eth0"]})
         self.assertEqual(status.ports, ["80/tcp"])
         self.assertEqual(status.services, ["ssh"])
+        mock_call_json.assert_called_once_with("FirewallGetStatus")
 
-    @patch('services.security.firewall.FirewallManager.is_running')
-    def test_get_status_not_running(self, mock_running):
-        """Get status returns minimal info when firewall not running."""
-        mock_running.return_value = False
+    @patch('services.security.firewall.daemon_client.call_json')
+    def test_get_status_not_running(self, mock_call_json):
+        """Get minimal info when daemon reports firewall stopped."""
+        mock_call_json.return_value = {"running": False}
         status = FirewallManager.get_status()
         self.assertFalse(status.running)
         self.assertEqual(status.default_zone, "")
+        mock_call_json.assert_called_once_with("FirewallGetStatus")
 
 
 # ===========================================================================

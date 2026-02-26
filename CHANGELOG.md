@@ -4,6 +4,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [2.9.0] - 2026-02-26 "API Migration Slice 5"
+
+### Added
+
+- Service daemon method wrappers for `mask_unit`, `unmask_unit`, and `get_unit_status` in `daemon/handlers/service_handler.py`
+- Focused regression cases for daemon/client fallback, service-handler method forwarding, and ports input fail-closed validation
+
+### Changed
+
+- Extended daemon D-Bus method exposure for selected `Package*`, `System*`, and `Service*` operations in `daemon/server.py`
+- Migrated selected residual privileged pathways to daemon-first execution with preferred-mode fallback parity in `services/system/services.py`, `services/security/firewall.py`, and `services/network/ports.py`
+- Synchronized v2.9 workflow artifacts across task contracts, run manifest, and memory-bank progress state
+
+### Fixed
+
+- Recursion-prone local firewall status pathways by routing daemon-aware reads through local-safe helpers
+- Invalid `PortAuditor` fallback inputs by enforcing normalized `port` range and `protocol` allowlist validation before execution
+
 ## [2.8.0] - 2026-02-26 "API Migration Slice 4"
 
 ### Added

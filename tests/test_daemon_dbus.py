@@ -61,13 +61,15 @@ class TestServiceHandler(unittest.TestCase):
     @patch("daemon.handlers.service_handler.SystemService")
     def test_reboot_serializes_action_result(self, mock_system_service):
         instance = mock_system_service.return_value
-        instance.reboot_local.return_value = ActionResult(success=True, message="ok", exit_code=0)
+        instance.reboot_local.return_value = ActionResult(
+            success=True, message="ok", exit_code=0)
 
         payload = ServiceHandler.reboot(description="reboot", delay_seconds=5)
 
         self.assertTrue(payload["success"])
         self.assertEqual(payload["message"], "ok")
-        instance.reboot_local.assert_called_once_with(description="reboot", delay_seconds=5)
+        instance.reboot_local.assert_called_once_with(
+            description="reboot", delay_seconds=5)
 
     @patch("daemon.handlers.service_handler.ServiceManager")
     def test_list_units_maps_units_to_dicts(self, mock_service_manager):
@@ -91,13 +93,56 @@ class TestServiceHandler(unittest.TestCase):
 
     @patch("daemon.handlers.service_handler.ServiceManager")
     def test_start_unit_uses_system_scope_when_requested(self, mock_service_manager):
-        mock_service_manager.start_unit.return_value = MagicMock(success=True, message="Started sshd")
+        mock_service_manager.start_unit.return_value = MagicMock(
+            success=True, message="Started sshd")
 
         payload = ServiceHandler.start_unit("sshd", scope="system")
 
         self.assertTrue(payload["success"])
         self.assertEqual(payload["message"], "Started sshd")
-        mock_service_manager.start_unit.assert_called_once_with("sshd", UnitScope.SYSTEM)
+        mock_service_manager.start_unit.assert_called_once_with(
+            "sshd", UnitScope.SYSTEM)
+
+    @patch("daemon.handlers.service_handler.ServiceManager")
+    def test_mask_unit_uses_user_scope_by_default(self, mock_service_manager):
+        mock_service_manager.mask_unit.return_value = MagicMock(
+            success=True,
+            message="Masked gamemoded",
+        )
+
+        payload = ServiceHandler.mask_unit("gamemoded")
+
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["message"], "Masked gamemoded")
+        mock_service_manager.mask_unit.assert_called_once_with(
+            "gamemoded", UnitScope.USER
+        )
+
+    @patch("daemon.handlers.service_handler.ServiceManager")
+    def test_unmask_unit_uses_system_scope_when_requested(self, mock_service_manager):
+        mock_service_manager.unmask_unit.return_value = MagicMock(
+            success=True,
+            message="Unmasked sshd",
+        )
+
+        payload = ServiceHandler.unmask_unit("sshd", scope="system")
+
+        self.assertTrue(payload["success"])
+        self.assertEqual(payload["message"], "Unmasked sshd")
+        mock_service_manager.unmask_unit.assert_called_once_with(
+            "sshd", UnitScope.SYSTEM
+        )
+
+    @patch("daemon.handlers.service_handler.ServiceManager")
+    def test_get_unit_status_forwards_to_service_manager(self, mock_service_manager):
+        mock_service_manager.get_unit_status.return_value = "active"
+
+        payload = ServiceHandler.get_unit_status("sshd", scope="system")
+
+        self.assertEqual(payload, "active")
+        mock_service_manager.get_unit_status.assert_called_once_with(
+            "sshd", UnitScope.SYSTEM
+        )
 
     def test_reboot_rejects_negative_delay(self):
         with self.assertRaises(ValidationError):
@@ -125,7 +170,8 @@ class TestHandlerValidatorTightening(unittest.TestCase):
 
     def test_firewall_add_rich_rule_rejects_newline_payload(self):
         with self.assertRaises(ValidationError):
-            FirewallHandler.add_rich_rule("rule family=ipv4\nsource address=1.2.3.4")
+            FirewallHandler.add_rich_rule(
+                "rule family=ipv4\nsource address=1.2.3.4")
 
     def test_package_install_rejects_empty_package_list(self):
         with self.assertRaises(ValidationError):
@@ -146,9 +192,11 @@ class TestPolicyInventory(unittest.TestCase):
         action_ids = {entry["action_id"] for entry in entries}
         self.assertIn("org.loofi.fedora-tweaks.service-manage", action_ids)
 
-        service_entry = next(entry for entry in entries if entry["action_id"] == "org.loofi.fedora-tweaks.service-manage")
+        service_entry = next(
+            entry for entry in entries if entry["action_id"] == "org.loofi.fedora-tweaks.service-manage")
         self.assertEqual(service_entry["allow_active"], "auth_admin")
-        self.assertEqual(service_entry["policy_file"], "org.loofi.fedora-tweaks.service-manage.policy")
+        self.assertEqual(
+            service_entry["policy_file"], "org.loofi.fedora-tweaks.service-manage.policy")
 
     def test_build_policy_inventory_skips_invalid_xml(self):
         with tempfile.TemporaryDirectory() as temp_dir:
@@ -199,17 +247,3 @@ class TestValidatorCoverageMap(unittest.TestCase):
 
         self.assertIn("validate_ssid", connect_wifi["validator_calls"])
         self.assertNotIn("ssid", connect_wifi["unvalidated_parameters"])
-
-
-
-
-
-
-
-
-
-
-
-
-
-

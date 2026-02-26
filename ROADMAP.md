@@ -52,6 +52,36 @@
 | 2.6.0   | API Migration Slice 2           | DONE    | Package API-first migration with strict IPC payload validation and fallback safeguards       |
 | 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                      |
 | 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                   |
+| 2.9.0   | API Migration Slice 5           | ACTIVE  | Residual privileged daemon/API migration + compatibility hardening                            |
+
+---
+
+## [ACTIVE] v2.9.0 "API Migration Slice 5" — Residual Privileged Path Migration
+
+### Scope
+
+Continue daemon/API-first migration by targeting remaining privileged pathways
+that still rely on local execution fallbacks across `services/system/`,
+`services/security/`, and `services/network/` while preserving strict IPC
+envelope compatibility and fail-closed validator behavior.
+
+### Planned Deliverables
+
+- [ ] Activate v2.9.0 workflow contracts (`ROADMAP`, race-lock, tasks/arch specs)
+- [ ] Inventory residual privileged pathways and prioritize bounded migration targets
+- [ ] Extend daemon handler + validator coverage for selected v2.9 methods
+- [ ] Migrate prioritized service call paths to daemon-first with preferred-mode fallback parity
+- [ ] Add focused daemon/client/fallback regression coverage for migrated pathways
+- [ ] Synchronize roadmap/workflow/memory metadata after verification
+
+### Agent Assignment
+
+| Agent                      | Task                                                               |
+| -------------------------- | ------------------------------------------------------------------ |
+| project-coordinator        | v2.9.0 scope/task contracts + activation                           |
+| backend-builder            | daemon handler/validator extension + service migration slices      |
+| test-writer                | focused daemon/client/fallback regression coverage                 |
+| release-planner            | workflow/roadmap/memory metadata synchronization                   |
 
 ---
 

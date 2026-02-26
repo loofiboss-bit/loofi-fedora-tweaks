@@ -44,7 +44,7 @@
 - SemVer: v2.7.0 "API Slice 3" — system-service API migration + Phase 3 prep
 - SemVer: v2.8.0 "API Slice 4" — policy inventory execution + validator hardening (released)
 
-Current active semantic cycle: closed at v2.8.0.
+Current active semantic cycle: v2.9.0 (active).
 
 ## What's Left to Build
 
@@ -80,6 +80,20 @@ Current active semantic cycle: closed at v2.8.0.
 
 ## Current Status
 
+**v2.9.0 "API Migration Slice 5 (Residual Privileged Path Migration)"**: 🔄 ACTIVE — workflow contracts activated (`ROADMAP`, race-lock, tasks/arch specs, memory sync).
+
+### v2.9.0 Implementation Snapshot (2026-02-26)
+
+- `TASK002` inventory completed with residual migration targets and implementation priority.
+- Daemon interface expanded in `daemon/server.py` with `Package*`, `System*`, and `Service*` method exposure.
+- `ServiceHandler` expanded with `mask_unit`, `unmask_unit`, and `get_unit_status` wrapper methods.
+- `ServiceManager` daemon-first migration started for list/start/stop/restart/mask/unmask/status pathways.
+- `FirewallManager.is_running()` migrated to daemon-first mode with local-safe fallback behavior.
+- `PortAuditor` local fallback paths now validate/normalize `port` + `protocol` inputs before daemon/local execution.
+- `TASK003` and `TASK004` completed for selected residual migration targets with daemon handler/service parity in place.
+- Focused regression verification passed (`248 passed`, `0 failed`) across daemon client/fallback/firewall/ports/system focused suites.
+- Documentation synchronization completed (`CHANGELOG`, `README`, `RELEASE-NOTES-v2.9.0`) and release-doc validation passed.
+
 **v2.8.0 "API Migration Slice 4 (Policy & Validator Hardening)"**: ✅ COMPLETE — plan/design/build/test/document/package/release phases complete.
 
 **v2.7.0 "API Migration Slice 3 (System Services)"**: ✅ COMPLETE — plan, design, build, test, document, package, and release phases complete.
@@ -88,7 +102,7 @@ Current active semantic cycle: closed at v2.8.0.
 **v2.4.0 "Evolution"**: ✅ COMPLETE — daemon foundation and hardening alignment.
 **v2.3.0 "Insight"**: ✅ COMPLETE — diagnostics expansion.
 
-**Project state**: Stable with v2.8.0 closed and ready for next active cycle.
+**Project state**: Stable with v2.8.0 closed and v2.9.0 active for bounded daemon/API migration continuation.
 
 ### v2.8.0 Verification Snapshot (2026-02-26)
 

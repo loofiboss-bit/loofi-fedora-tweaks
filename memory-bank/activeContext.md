@@ -2,12 +2,11 @@
 
 ## Current State
 
-**Version**: v2.8.0 "API Migration Slice 4 (Policy & Validator Hardening)" — **COMPLETED**
+**Version**: v2.9.0 "API Migration Slice 5 (Residual Privileged Path Migration)" — **ACTIVE**
 **Date**: 2026-02-26
 
-v2.8.0 executed the full workflow lifecycle from planning through release closure
-for the bounded policy-inventory and validator-hardening scope identified during
-v2.7.0.
+v2.9.0 has been activated after v2.8.0 release closure to continue daemon/API-first
+migration for residual privileged pathways under a bounded, compatibility-focused scope.
 
 ## Recent Changes
 
@@ -33,25 +32,34 @@ v2.7.0.
 - Generated workflow/report outputs via `scripts/generate_workflow_reports.py` and `scripts/project_stats.py`
 - Added explicit P6 unblock metadata in `run-manifest-v2.8.0.json` (`blocking_prereqs`, `rerun_checklist`, `last_attempt`)
 - Marked `P7 RELEASE` complete in `run-manifest-v2.8.0.json` and synchronized roadmap/memory closure state
+- Activated v2.9.0 contracts (`ROADMAP`, `.race-lock`, `tasks-v2.9.0.md`, `arch-v2.9.0.md`, `run-manifest-v2.9.0.json`)
+- Completed v2.9 TASK002 inventory with concrete residual-path targets and implementation priority in `arch-v2.9.0.md`
+- Exposed daemon-side `Package*`, `System*`, and `Service*` methods in `daemon/server.py` for existing handlers
+- Extended `daemon/handlers/service_handler.py` with `mask_unit`, `unmask_unit`, and `get_unit_status`
+- Started daemon-first migration in `services/system/services.py` for list/start/stop/restart/mask/unmask/status methods with preferred-mode fallback
+- Ran focused regression verification: `test_daemon_client.py`, `test_daemon_dbus.py`, `test_package_service.py`, `test_services_system_extended.py` (154 passed, 24 skipped)
+- Migrated `FirewallManager.is_running()` to daemon-first with local-safe fallback behavior and recursion-safe local status pathways
+- Added focused daemon-first regression cases in `tests/test_firewall_manager.py` and `tests/test_ports.py`
+- Re-ran focused regression verification: `test_firewall_manager.py`, `test_ports.py`, `test_daemon_dbus.py`, `test_services_system_extended.py` (221 passed, 1 warning)
+- Hardened `PortAuditor` local fallback by validating/normalizing `port` and `protocol` inputs before daemon/local execution
+- Added focused fail-closed validation tests for ports invalid input paths
+- Re-ran focused regression verification: `test_ports.py`, `test_firewall_manager.py`, `test_daemon_dbus.py`, `test_services_system_extended.py` (223 passed, 1 warning)
 
 ## Current Work Focus
 
-**Active workflow phase**: `P7 RELEASE` completed for `v2.8.0`
+**Active workflow phase**: `P5 DOC` complete for `v2.9.0` focused migration scope.
 
-Current objective is to prepare the next version cycle after completed v2.8.0 closure.
+Current objective is to prepare next workflow transition after v2.9 migration/documentation closure.
 
 ## Open Items
 
-1. Activate next roadmap/workflow slice after v2.8.0 completion
-2. Maintain alignment across roadmap/workflow/memory for the next active version
+1. Decide whether to continue with package/release phases for v2.9.0 or activate the next bounded slice
+2. Keep roadmap/race-lock alignment synchronized with chosen next phase
 
 ## Active Decisions
 
 - **Canonical authority**: `ROADMAP.md` + `.workflow/specs/*`
-- **Slice scope**: v2.8.0 is policy inventory + validator hardening only (no privilege expansion)
-- **Contract status**: v2.8.0 planning/design contracts are complete; build/test/document complete
-- **Build/Test status**: TASK002–TASK006 complete; focused hardening suite expanded to 98 passing tests
-- **Package status**: P6 completed successfully in containerized Fedora build environment
-- **Release status**: P7 marked complete in workflow metadata
-- **IPC policy**: strict payload validation with safe preferred-mode fallback
-- **Coverage**: targeted hardening coverage 91% across validator/handler/IPC modules
+- **Slice scope**: v2.9.0 targets residual privileged daemon/API migration only (no privilege expansion)
+- **Contract status**: `TASK001`–`TASK006` complete; `tasks-v2.9.0.md` marked complete
+- **Migration strategy**: inventory-first, then bounded handler/validator/service updates with strict fallback parity
+- **IPC policy**: strict payload validation with safe preferred-mode fallback remains mandatory

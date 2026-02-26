@@ -6,7 +6,7 @@ import logging
 from typing import Any, Callable, TypeVar
 
 from daemon.contracts import error_response, ok_response
-from daemon.handlers import FirewallHandler, NetworkHandler
+from daemon.handlers import FirewallHandler, NetworkHandler, PackageHandler, ServiceHandler
 from daemon.interfaces import INTERFACE, OBJECT_PATH
 from daemon.validators import ValidationError
 
@@ -99,8 +99,124 @@ class DaemonService(_DbusObjectBase):  # type: ignore[misc,valid-type]
                     "stop_firewall",
                 ],
                 "ports": ["scan_ports", "security_score"],
+                "package": [
+                    "install",
+                    "remove",
+                    "update",
+                    "search",
+                    "info",
+                    "list_installed",
+                    "is_installed",
+                ],
+                "system": [
+                    "reboot",
+                    "shutdown",
+                    "suspend",
+                    "update_grub",
+                    "set_hostname",
+                    "has_pending_reboot",
+                    "get_package_manager",
+                    "get_variant_name",
+                ],
+                "service": [
+                    "list_units",
+                    "start_unit",
+                    "stop_unit",
+                    "restart_unit",
+                    "mask_unit",
+                    "unmask_unit",
+                    "get_unit_status",
+                ],
             }
         )
+
+    @_dbus_method(INTERFACE, in_signature="as", out_signature="s")
+    def PackageInstall(self, packages: list[str]) -> str:  # noqa: N802
+        return self._safe_call(PackageHandler.install, packages)
+
+    @_dbus_method(INTERFACE, in_signature="as", out_signature="s")
+    def PackageRemove(self, packages: list[str]) -> str:  # noqa: N802
+        return self._safe_call(PackageHandler.remove, packages)
+
+    @_dbus_method(INTERFACE, in_signature="as", out_signature="s")
+    def PackageUpdate(self, packages: list[str]) -> str:  # noqa: N802
+        return self._safe_call(PackageHandler.update, packages)
+
+    @_dbus_method(INTERFACE, in_signature="si", out_signature="s")
+    def PackageSearch(self, query: str, limit: int) -> str:  # noqa: N802
+        return self._safe_call(PackageHandler.search, query, limit)
+
+    @_dbus_method(INTERFACE, in_signature="s", out_signature="s")
+    def PackageInfo(self, package: str) -> str:  # noqa: N802
+        return self._safe_call(PackageHandler.info, package)
+
+    @_dbus_method(INTERFACE, in_signature="", out_signature="s")
+    def PackageListInstalled(self) -> str:  # noqa: N802
+        return self._safe_call(PackageHandler.list_installed)
+
+    @_dbus_method(INTERFACE, in_signature="s", out_signature="s")
+    def PackageIsInstalled(self, package: str) -> str:  # noqa: N802
+        return self._safe_call(PackageHandler.is_installed, package)
+
+    @_dbus_method(INTERFACE, in_signature="si", out_signature="s")
+    def SystemReboot(self, description: str, delay_seconds: int) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.reboot, description, delay_seconds)
+
+    @_dbus_method(INTERFACE, in_signature="si", out_signature="s")
+    def SystemShutdown(self, description: str, delay_seconds: int) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.shutdown, description, delay_seconds)
+
+    @_dbus_method(INTERFACE, in_signature="s", out_signature="s")
+    def SystemSuspend(self, description: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.suspend, description)
+
+    @_dbus_method(INTERFACE, in_signature="s", out_signature="s")
+    def SystemUpdateGrub(self, description: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.update_grub, description)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def SystemSetHostname(self, hostname: str, description: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.set_hostname, hostname, description)
+
+    @_dbus_method(INTERFACE, in_signature="", out_signature="s")
+    def SystemHasPendingReboot(self) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.has_pending_reboot)
+
+    @_dbus_method(INTERFACE, in_signature="", out_signature="s")
+    def SystemGetPackageManager(self) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.get_package_manager)
+
+    @_dbus_method(INTERFACE, in_signature="", out_signature="s")
+    def SystemGetVariantName(self) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.get_variant_name)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def ServiceListUnits(self, scope: str, filter_type: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.list_units, scope, filter_type)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def ServiceStartUnit(self, name: str, scope: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.start_unit, name, scope)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def ServiceStopUnit(self, name: str, scope: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.stop_unit, name, scope)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def ServiceRestartUnit(self, name: str, scope: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.restart_unit, name, scope)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def ServiceMaskUnit(self, name: str, scope: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.mask_unit, name, scope)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def ServiceUnmaskUnit(self, name: str, scope: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.unmask_unit, name, scope)
+
+    @_dbus_method(INTERFACE, in_signature="ss", out_signature="s")
+    def ServiceGetUnitStatus(self, name: str, scope: str) -> str:  # noqa: N802
+        return self._safe_call(ServiceHandler.get_unit_status, name, scope)
 
     @_dbus_method(INTERFACE, in_signature="", out_signature="s")
     def NetworkScanWifi(self) -> str:  # noqa: N802

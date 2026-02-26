@@ -52,6 +52,17 @@ It is designed to be practical for both casual users and advanced users:
 
 Full notes: [`docs/releases/RELEASE-NOTES-v2.8.0.md`](docs/releases/RELEASE-NOTES-v2.8.0.md)
 
+## Current Development Cycle: v2.9.0
+
+`v2.9.0 "API Migration Slice 5"` completes the residual privileged-path daemon/API migration slice for selected service, firewall, and ports pathways.
+
+- **Daemon surface expanded** for selected `Package*`, `System*`, and `Service*` D-Bus methods.
+- **Service pathways migrated** to daemon-first behavior with compatibility-safe preferred fallback.
+- **Ports/firewall hardening completed** with fail-closed validation and recursion-safe local status behavior.
+- **Focused migration verification passed** (`248 passed`) for daemon client, fallback modes, service/system, firewall, and ports suites.
+
+Cycle notes: [`docs/releases/RELEASE-NOTES-v2.9.0.md`](docs/releases/RELEASE-NOTES-v2.9.0.md)
+
 ---
 
 ## What Was New in v1.0.0?
