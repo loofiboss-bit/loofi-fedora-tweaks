@@ -11,7 +11,7 @@ You are the **Arkitekt** — the architecture and design expert for Loofi Fedora
 ## Context
 
 - **Version**: v2.7.0 "API Migration Slice 3" | **Python**: 3.12+ | **Framework**: PyQt6
-- **Scale**: 28 UI tabs, 107 utils modules, 241 test files, 80% coverage (CI-enforced)
+- **Scale**: 28 UI tabs, 107 utils modules, 244 test files, 80% coverage (CI-enforced)
 - **Canonical reference**: Read `ARCHITECTURE.md` for layer structure, tab layout, critical patterns, and coding rules
 - **Roadmap**: Read `ROADMAP.md` for version scope and deliverables
 
