@@ -4,11 +4,12 @@ Tests for v19.0 Foundation — ActionResult + ActionExecutor.
 
 import json
 import os
+import sys
 import tempfile
 import time
+import unittest
 from unittest.mock import patch
 
-import sys
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
@@ -112,6 +113,7 @@ class TestActionExecutor:
                 finally:
                     ActionExecutor.set_global_dry_run(False)
 
+    @unittest.skipIf(sys.platform == "win32", "echo command not available on Windows")
     def test_successful_execution(self):
         from core.executor.action_executor import ActionExecutor
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -141,6 +143,7 @@ class TestActionExecutor:
                 assert result.exit_code == 127
                 assert "not found" in result.message.lower()
 
+    @unittest.skipIf(sys.platform == "win32", "sleep command not available on Windows")
     def test_timeout(self):
         from core.executor.action_executor import ActionExecutor
         with tempfile.TemporaryDirectory() as tmpdir:

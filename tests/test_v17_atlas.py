@@ -180,7 +180,7 @@ class TestNetworkTabOverhaul(unittest.TestCase):
         """Verify NetworkTab class declaration uses BaseTab."""
         # Read the source code directly
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "network_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("class NetworkTab(BaseTab)", source)
         self.assertIn("from ui.base_tab import BaseTab", source)
@@ -188,7 +188,7 @@ class TestNetworkTabOverhaul(unittest.TestCase):
     def test_network_tab_has_sub_tabs(self):
         """Verify NetworkTab has Connections, DNS, Privacy, Monitoring."""
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "network_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("_build_connections_tab", source)
         self.assertIn("_build_dns_tab", source)
@@ -198,7 +198,7 @@ class TestNetworkTabOverhaul(unittest.TestCase):
     def test_network_tab_uses_network_monitor(self):
         """Verify NetworkTab uses NetworkMonitor for monitoring."""
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "network_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("from services.network import NetworkMonitor", source)
 
@@ -208,14 +208,14 @@ class TestGamingTabNormalization(unittest.TestCase):
 
     def test_gaming_tab_inherits_base_tab(self):
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "gaming_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("class GamingTab(BaseTab)", source)
         self.assertIn("from ui.base_tab import BaseTab", source)
 
     def test_gaming_tab_uses_privileged_command(self):
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "gaming_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("from utils.commands import PrivilegedCommand", source)
         self.assertIn("PrivilegedCommand.dnf(", source)
@@ -223,7 +223,7 @@ class TestGamingTabNormalization(unittest.TestCase):
     def test_gaming_tab_no_hardcoded_dnf(self):
         """Ensure no raw pkexec dnf commands remain."""
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "gaming_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         # Should not have raw pkexec dnf strings (the old pattern)
         self.assertNotIn('"pkexec", ["dnf"', source)
@@ -235,7 +235,7 @@ class TestStorageTabStructure(unittest.TestCase):
 
     def test_storage_tab_inherits_base_tab(self):
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "storage_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("class StorageTab(BaseTab)", source)
         self.assertIn("from ui.base_tab import BaseTab", source)
@@ -247,7 +247,7 @@ class TestHardwareTabBluetooth(unittest.TestCase):
 
     def test_hardware_tab_imports_bluetooth(self):
         filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "hardware_tab.py")
-        with open(filepath, "r") as f:
+        with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("from services.hardware import BluetoothManager", source)
         self.assertIn("create_bluetooth_card", source)

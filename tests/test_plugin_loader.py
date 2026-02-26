@@ -235,7 +235,8 @@ class TestPluginLoaderLoadExternal:
 
         mock_scanner_cls.assert_called_once()
         scanner_arg = mock_scanner_cls.call_args[0][0]
-        assert str(scanner_arg).endswith("/tmp/plugins")
+        # Normalize path separators for cross-platform comparison
+        assert str(scanner_arg).replace("\\", "/").endswith("/tmp/plugins")
 
 
 class TestPluginLoaderDefaultDependencies:

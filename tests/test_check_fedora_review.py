@@ -1,6 +1,7 @@
 """Tests for scripts/check_fedora_review.py."""
 
 import importlib.util
+import os
 import subprocess
 import sys
 from pathlib import Path
@@ -112,3 +113,49 @@ def test_check_fedora_review_timeout(mock_which, mock_run):
     assert mock_which.called
     assert not ok
     assert any("timed out" in error for error in errors)
+
+
+@patch.dict(os.environ, {"LOOFI_SKIP_FEDORA_REVIEW_GATE": "1"}, clear=False)
+@patch("subprocess.run")
+@patch("shutil.which", return_value=None)
+def test_check_fedora_review_local_override_skips_gate(mock_which, mock_run):
+    module = _load_module("check_fedora_review_override_local", Path("scripts/check_fedora_review.py"))
+
+    ok, messages = module.check_fedora_review()
+
+    assert ok
+    assert any("gate skipped" in message for message in messages)
+    mock_which.assert_not_called()
+    mock_run.assert_not_called()
+
+
+@patch.dict(
+    os.environ,
+    {"LOOFI_SKIP_FEDORA_REVIEW_GATE": "1", "CI": "true"},
+    clear=False,
+)
+@patch("subprocess.run")
+@patch("shutil.which", return_value=None)
+def test_check_fedora_review_override_blocked_in_ci(mock_which, mock_run):
+    module = _load_module("check_fedora_review_override_ci", Path("scripts/check_fedora_review.py"))
+
+    ok, messages = module.check_fedora_review()
+
+    assert not ok
+    assert any("override disabled" in message for message in messages)
+    mock_which.assert_not_called()
+    mock_run.assert_not_called()
+
+
+@patch.dict(os.environ, {}, clear=True)
+@patch("subprocess.run")
+@patch("shutil.which", return_value=None)
+def test_check_fedora_review_without_override_uses_binary_lookup(mock_which, mock_run):
+    module = _load_module("check_fedora_review_without_override", Path("scripts/check_fedora_review.py"))
+
+    ok, errors = module.check_fedora_review()
+
+    assert not ok
+    assert any("not found in PATH" in error for error in errors)
+    assert mock_which.called
+    mock_run.assert_not_called()

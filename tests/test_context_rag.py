@@ -266,8 +266,10 @@ class TestResolvePaths(unittest.TestCase):
     ):
         """Directories are walked recursively, Cache subdirs excluded."""
         result = ContextRAGManager._resolve_paths(["~/.config/"])
-        self.assertIn("/home/test/.config/settings.conf", result)
-        self.assertIn("/home/test/.config/app/config.ini", result)
+        # Normalize separators for cross-platform comparison
+        result_normalized = [p.replace("\\", "/") for p in result]
+        self.assertIn("/home/test/.config/settings.conf", result_normalized)
+        self.assertIn("/home/test/.config/app/config.ini", result_normalized)
 
     @patch("utils.context_rag.os.walk", side_effect=PermissionError("denied"))
     @patch("utils.context_rag.os.path.isdir", return_value=True)

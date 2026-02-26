@@ -127,6 +127,7 @@ class TestIOMMUGroups(unittest.TestCase):
     @patch("services.virtualization.virtualization.VirtualizationManager._read_sysfs")
     @patch("os.listdir")
     @patch("os.path.isdir")
+    @unittest.skipIf(sys.platform == "win32", "IOMMU groups are Linux-specific (requires /sys/kernel/iommu_groups)")
     def test_get_iommu_groups_single(self, mock_isdir, mock_listdir, mock_sysfs, mock_islink, mock_readlink, mock_lspci):
         # Simulate: iommu_groups dir exists, has group "1", which has device "0000:01:00.0"
         def isdir_side(path):

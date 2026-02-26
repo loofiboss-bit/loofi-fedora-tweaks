@@ -4,6 +4,8 @@ import os
 import re
 import stat
 import subprocess
+import sys
+import unittest
 from pathlib import Path
 from shutil import copy2
 
@@ -29,6 +31,7 @@ def _extract_version(version_file: Path) -> str:
     return match.group(1)
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_flatpak_missing_dependency(tmp_path):
     env = _base_env(tmp_path)
     (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
@@ -51,6 +54,7 @@ def test_build_flatpak_missing_dependency(tmp_path):
     assert output.strip()
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_flatpak_success_with_stub_tools(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -94,6 +98,7 @@ def test_build_flatpak_success_with_stub_tools(tmp_path):
     assert expected_bundle.exists()
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_flatpak_missing_manifest(tmp_path):
     project_root = tmp_path / "project"
     (project_root / "scripts").mkdir(parents=True, exist_ok=True)
@@ -126,6 +131,7 @@ def test_build_flatpak_missing_manifest(tmp_path):
     assert "Flatpak manifest not found" in (result.stderr + result.stdout)
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_flatpak_version_parse_failure(tmp_path):
     project_root = tmp_path / "project"
     (project_root / "scripts").mkdir(parents=True, exist_ok=True)
@@ -160,6 +166,7 @@ def test_build_flatpak_version_parse_failure(tmp_path):
     assert "Failed to parse version" in (result.stderr + result.stdout)
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_appimage_missing_dependency(tmp_path):
     env = _base_env(tmp_path)
     (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
@@ -177,6 +184,7 @@ def test_build_appimage_missing_dependency(tmp_path):
     assert "Missing required tool" in (result.stderr + result.stdout)
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_appimage_success_with_stub_tools(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -213,6 +221,7 @@ def test_build_appimage_success_with_stub_tools(tmp_path):
     assert expected_appimage.exists()
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_appimage_linuxdeploy_from_env_var(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -236,6 +245,7 @@ def test_build_appimage_linuxdeploy_from_env_var(tmp_path):
     assert result.returncode == 0
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_appimage_missing_desktop_file(tmp_path):
     project_root = tmp_path / "project"
     (project_root / "scripts").mkdir(parents=True, exist_ok=True)
@@ -270,6 +280,7 @@ def test_build_appimage_missing_desktop_file(tmp_path):
     assert "Missing desktop file" in (result.stderr + result.stdout)
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_sdist_missing_build_module(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
@@ -298,6 +309,7 @@ def test_build_sdist_missing_build_module(tmp_path):
         result.stderr + result.stdout)
 
 
+@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_sdist_success_with_stub_python(tmp_path):
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
