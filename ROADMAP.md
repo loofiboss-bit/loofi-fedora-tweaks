@@ -53,11 +53,12 @@
 | 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                      |
 | 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                   |
 | 2.9.0   | API Migration Slice 5           | DONE    | Residual privileged daemon/API migration + compatibility hardening                            |
-| 2.10.0  | API Migration Slice 6           | ACTIVE  | Canonical workflow normalization + next daemon/API migration planning                         |
+| 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                         |
+| 2.11.0  | API Migration Slice 7           | ACTIVE  | Network/firewall/system residual hardening and daemon/local parity refinement                 |
 
 ---
 
-## [ACTIVE] v2.10.0 "API Migration Slice 6" — Canonical Workflow + Next Migration Kickoff
+## [DONE] v2.10.0 "API Migration Slice 6" — Canonical Workflow + Next Migration Kickoff
 
 ### Scope
 
@@ -83,6 +84,36 @@ residual pathways.
 | backend-builder            | workflow script normalization + daemon/API migration prep          |
 | test-writer                | focused regression updates for workflow/tag canonicalization       |
 | release-planner            | roadmap/workflow/memory metadata synchronization                   |
+
+---
+
+## [ACTIVE] v2.11.0 "API Migration Slice 7" — Residual Service Hardening
+
+### Scope
+
+Continue daemon/API migration hardening by tightening residual network, firewall,
+and system service pathways identified in v2.10 planning artifacts. This slice
+focuses on deterministic local fallback behavior, command construction consistency,
+and explicit daemon/local read-path contracts without expanding privilege scope.
+
+### Planned Deliverables
+
+- [ ] Reconcile metadata for v2.11 activation (`ROADMAP`, race-lock, manifests)
+- [ ] Harden residual network local write-path return semantics
+- [ ] Tighten active-connection parsing for deterministic classification
+- [ ] Normalize firewall mutator command construction to project standards
+- [ ] Define/implement daemon-vs-local classification for targeted system read paths
+- [ ] Add focused regression coverage for network/firewall/system parity changes
+- [ ] Publish v2.11 docs and release notes after verification
+
+### Agent Assignment
+
+| Agent                      | Task                                                               |
+| -------------------------- | ------------------------------------------------------------------ |
+| project-coordinator        | v2.11 scope/task contracts + activation metadata                   |
+| backend-builder            | network/firewall/system residual hardening                         |
+| test-writer                | focused regression coverage for daemon/local parity                |
+| release-planner            | changelog/roadmap/release-note synchronization                     |
 
 ---
 

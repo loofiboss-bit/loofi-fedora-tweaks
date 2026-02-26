@@ -484,7 +484,7 @@ def resolve_model_for_assistant(assistant: str, model: str) -> str:
         return model
 
     copilot_models = {
-        "gpt-5.3-codex": "gpt-5",
+        "gpt-5.3-codex": "gpt-5.3-codex",
         "gpt-4o": "gpt-4.1",
         "gpt-4o-mini": "gpt-4.1",
     }

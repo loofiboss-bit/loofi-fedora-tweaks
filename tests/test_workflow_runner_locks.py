@@ -75,6 +75,17 @@ release = "gpt-4o-mini"
     assert models["release"] == "gpt-4o-mini"
 
 
+def test_resolve_model_for_copilot_preserves_gpt53_codex():
+    module = _load_module(
+        "workflow_runner_model_resolution_test",
+        Path("scripts/workflow_runner.py"),
+    )
+
+    resolved = module.resolve_model_for_assistant("copilot", "gpt-5.3-codex")
+
+    assert resolved == "gpt-5.3-codex"
+
+
 def test_task_contract_validation_fails_for_missing_fields(tmp_path):
     module = _load_module("workflow_runner_contract_test",
                           Path("scripts/workflow_runner.py"))
