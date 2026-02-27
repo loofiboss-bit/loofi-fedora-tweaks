@@ -5,7 +5,7 @@
   Docs: none
   Tests: `tests/test_workflow_runner_locks.py`
 
-- [ ] ID: TASK-002 | Files: `loofi-fedora-tweaks/services/system/system.py, loofi-fedora-tweaks/services/package/package.py, loofi-fedora-tweaks/services/ipc/client.py` | Dep: TASK-001 | Agent: backend-builder | Description: Audit residual service methods and classify each as daemon-first or intentional-local-read with explicit inline contracts.
+- [x] ID: TASK-002 | Files: `loofi-fedora-tweaks/services/system/system.py, loofi-fedora-tweaks/services/package/service.py, loofi-fedora-tweaks/services/ipc/daemon_client.py` | Dep: TASK-001 | Agent: backend-builder | Description: Audit residual service methods and classify each as daemon-first or intentional-local-read with explicit inline contracts.
   Acceptance: Targeted methods document deterministic classification, maintain existing signatures, and preserve fallback compatibility semantics.
   Docs: none
   Tests: `tests/test_system_service.py, tests/test_package_service.py, tests/test_ipc_fallback_modes.py`

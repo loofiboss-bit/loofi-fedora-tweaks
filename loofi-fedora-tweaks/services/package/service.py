@@ -25,6 +25,11 @@ class DnfPackageService(BasePackageService):
     Package service implementation for DNF (traditional Fedora).
 
     Delegates to DNF package manager for traditional Fedora installations.
+
+    Behavior contract (v2.12.0 TASK-002):
+    - All public methods are daemon-first via ``daemon_client.call_json``.
+    - Local methods are compatibility fallback paths only.
+    - No method in this class is intentional-local-read only.
     """
 
     @staticmethod
@@ -284,6 +289,11 @@ class RpmOstreePackageService(BasePackageService):
     Package service implementation for rpm-ostree (Atomic Fedora).
 
     Delegates to rpm-ostree for Silverblue, Kinoite, and other OSTree variants.
+
+    Behavior contract (v2.12.0 TASK-002):
+    - All public methods are daemon-first via ``daemon_client.call_json``.
+    - Local methods are compatibility fallback paths only.
+    - No method in this class is intentional-local-read only.
     """
 
     @staticmethod
