@@ -28,28 +28,11 @@ ROOT = Path(__file__).resolve().parent.parent
 VERSION_FILE = ROOT / "loofi-fedora-tweaks" / "version.py"
 REPORTS_DIR = ROOT / ".workflow" / "reports"
 
-# Minimal pytest command base (no dependency on pytest-json plugin)
-PYTEST_CMD_BASE = [
+# Minimal pytest JSON plugin output format (no dependency on pytest-json)
+PYTEST_CMD = [
     sys.executable, "-m", "pytest", "tests/",
     "--tb=no", "-p", "no:faulthandler", "-q",
 ]
-
-
-def normalize_version(version: str) -> str:
-    """Normalize CLI version inputs into X.Y.Z format."""
-    raw = version.strip()
-    if raw.startswith("v"):
-        raw = raw[1:]
-    parts = [p for p in raw.split(".") if p]
-    if len(parts) == 1:
-        parts.extend(["0", "0"])
-    elif len(parts) == 2:
-        parts.append("0")
-    if len(parts) != 3 or any(not p.isdigit() for p in parts):
-        raise ValueError(
-            "version must be numeric components like 2.12.0"
-        )
-    return f"{parts[0]}.{parts[1]}.{parts[2]}"
 
 
 def extract_version() -> str:
@@ -102,23 +85,14 @@ def _resolve_existing(candidates: list[Path]) -> Path | None:
     return None
 
 
-def build_pytest_cmd(test_targets: list[str] | None = None) -> list[str]:
-    """Build pytest command with optional explicit target list."""
-    cmd = list(PYTEST_CMD_BASE)
-    if test_targets:
-        cmd[3:4] = test_targets
-    return cmd
-
-
-def run_tests(test_targets: list[str] | None = None) -> dict:
+def run_tests() -> dict:
     """Execute pytest and parse the summary line."""
     env = os.environ.copy()
     env["PYTHONPATH"] = str(ROOT / "loofi-fedora-tweaks")
     env["QT_QPA_PLATFORM"] = "offscreen"
-    pytest_cmd = build_pytest_cmd(test_targets)
     start = time.monotonic()
     result = subprocess.run(
-        pytest_cmd,
+        PYTEST_CMD,
         capture_output=True, text=True, cwd=str(ROOT), env=env,
     )
     elapsed = round(time.monotonic() - start, 2)
@@ -137,7 +111,6 @@ def run_tests(test_targets: list[str] | None = None) -> dict:
     errors = _extract_count(summary_line, "error")
 
     return {
-        "pytest_cmd": pytest_cmd,
         "returncode": result.returncode,
         "passed": passed,
         "failed": failed,
@@ -182,7 +155,7 @@ def generate_test_results(version: str, test_data: dict) -> dict:
         "phase": "P4_TEST",
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
         "generated_at": now,
-        "scope": f"v{version} test suite",
+        "scope": f"v{version} full test suite",
         "status": status,
         "summary": {
             "total_tests": total,
@@ -195,7 +168,7 @@ def generate_test_results(version: str, test_data: dict) -> dict:
         },
         "commands": [
             {
-                "cmd": " ".join(test_data.get("pytest_cmd", PYTEST_CMD_BASE)),
+                "cmd": " ".join(PYTEST_CMD),
                 "result": "passed" if status == "pass" else "failed",
                 "passed": test_data["passed"],
                 "failed": test_data["failed"],
@@ -274,23 +247,9 @@ def main() -> int:
                         help="Only verify reports exist (no write)")
     parser.add_argument("--skip-tests", action="store_true",
                         help="Skip running pytest (use placeholder data)")
-    parser.add_argument(
-        "--version",
-        default=None,
-        help="Override report version (X.Y.Z or vX.Y.Z)",
-    )
-    parser.add_argument(
-        "--tests",
-        nargs="+",
-        default=None,
-        help="Optional pytest targets (files, dirs, or node ids)",
-    )
     args = parser.parse_args()
 
-    if args.version:
-        version = normalize_version(args.version)
-    else:
-        version = extract_version()
+    version = extract_version()
     print(f"[workflow-reports] version: {version}")
 
     if args.check:
@@ -303,14 +262,13 @@ def main() -> int:
     if args.skip_tests:
         print("[workflow-reports] skipping tests (placeholder data)")
         test_data = {
-            "pytest_cmd": build_pytest_cmd(args.tests),
             "returncode": 0, "passed": 0, "failed": 0, "skipped": 0,
             "errors": 0, "total": 0, "duration_seconds": 0,
             "summary_line": "skipped (--skip-tests)",
         }
     else:
         print("[workflow-reports] running test suite...")
-        test_data = run_tests(args.tests)
+        test_data = run_tests()
         returncode_raw = test_data.get("returncode")
         failed_raw = test_data.get("failed")
         errors_raw = test_data.get("errors")

@@ -207,7 +207,8 @@ class DnfPackageService(BasePackageService):
         if result and result.success:
             # Parse stdout to extract package names (simplified)
             lines = result.stdout.split('\n')
-            matches = [line.split('.')[0].strip() for line in lines if '.x86_64' in line or '.noarch' in line]
+            matches = [line.split('.')[0].strip(
+            ) for line in lines if '.x86_64' in line or '.noarch' in line]
             result.data = {"matches": matches[:limit], "total": len(matches)}
 
         return result if result else ActionResult(success=False, message="Search failed")
@@ -262,7 +263,8 @@ class DnfPackageService(BasePackageService):
 
         if result and result.success:
             lines = result.stdout.split('\n')
-            packages = [line.split('.')[0].strip() for line in lines if '.x86_64' in line or '.noarch' in line]
+            packages = [line.split('.')[0].strip(
+            ) for line in lines if '.x86_64' in line or '.noarch' in line]
             result.data = {"packages": packages, "count": len(packages)}
 
         return result if result else ActionResult(success=False, message="List failed")
@@ -277,7 +279,8 @@ class DnfPackageService(BasePackageService):
 
     def is_installed_local(self, package: str) -> bool:
         """Local fallback for checking installed package status with DNF."""
-        worker = CommandWorker("rpm", ["-q", package], description=f"Checking if '{package}' is installed")
+        worker = CommandWorker(
+            "rpm", ["-q", package], description=f"Checking if '{package}' is installed")
         worker.start()
         worker.wait()
         result = worker.get_result()
@@ -349,7 +352,8 @@ class RpmOstreePackageService(BasePackageService):
 
         if result and result.exit_code != 0 and "cannot apply" in result.stdout.lower():
             # Fallback to regular install (requires reboot)
-            logger.info("--apply-live not available, falling back to regular install")
+            logger.info(
+                "--apply-live not available, falling back to regular install")
             worker = CommandWorker(
                 "pkexec",
                 ["rpm-ostree", "install"] + packages,
@@ -439,7 +443,8 @@ class RpmOstreePackageService(BasePackageService):
             )
 
         desc = description or "Upgrading system with rpm-ostree"
-        worker = CommandWorker("pkexec", ["rpm-ostree", "upgrade"], description=desc)
+        worker = CommandWorker(
+            "pkexec", ["rpm-ostree", "upgrade"], description=desc)
 
         if callback:
             worker.progress.connect(lambda msg, pct: callback(msg, pct))
@@ -480,7 +485,8 @@ class RpmOstreePackageService(BasePackageService):
 
     def info_local(self, package: str) -> ActionResult:
         """Local fallback for package info using rpm."""
-        worker = CommandWorker("rpm", ["-qi", package], description=f"Getting info for '{package}'")
+        worker = CommandWorker(
+            "rpm", ["-qi", package], description=f"Getting info for '{package}'")
         worker.start()
         worker.wait()
         result = worker.get_result()
@@ -501,13 +507,15 @@ class RpmOstreePackageService(BasePackageService):
 
     def list_installed_local(self) -> ActionResult:
         """Local fallback for listing installed packages using rpm."""
-        worker = CommandWorker("rpm", ["-qa"], description="Listing installed packages")
+        worker = CommandWorker(
+            "rpm", ["-qa"], description="Listing installed packages")
         worker.start()
         worker.wait()
         result = worker.get_result()
 
         if result and result.success:
-            packages = [line.strip() for line in result.stdout.split('\n') if line.strip()]
+            packages = [line.strip()
+                        for line in result.stdout.split('\n') if line.strip()]
             result.data = {"packages": packages, "count": len(packages)}
 
         return result if result else ActionResult(success=False, message="List failed")
@@ -522,7 +530,8 @@ class RpmOstreePackageService(BasePackageService):
 
     def is_installed_local(self, package: str) -> bool:
         """Local fallback for checking installed package status with rpm."""
-        worker = CommandWorker("rpm", ["-q", package], description=f"Checking if '{package}' is installed")
+        worker = CommandWorker(
+            "rpm", ["-q", package], description=f"Checking if '{package}' is installed")
         worker.start()
         worker.wait()
         result = worker.get_result()

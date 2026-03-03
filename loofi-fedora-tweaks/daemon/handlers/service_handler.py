@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from core.executor.action_result import ActionResult
 from services.system.service import SystemService
-from services.system.system import SystemManager
 from services.system.services import ServiceManager, UnitScope
+from services.system.system import SystemManager
 
 from daemon.validators import (
     validate_delay_seconds,

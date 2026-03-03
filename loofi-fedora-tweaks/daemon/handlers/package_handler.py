@@ -3,8 +3,8 @@
 from __future__ import annotations
 
 from core.executor.action_result import ActionResult
-
 from services.package.service import get_package_service
+
 from daemon.validators import validate_package_list, validate_package_name, validate_search_limit, validate_search_query
 
 
@@ -64,7 +64,8 @@ class PackageHandler:
     @staticmethod
     def update(packages: list[str] | None = None) -> dict:
         service = get_package_service()
-        cleaned = validate_package_list(packages) if packages is not None else []
+        cleaned = validate_package_list(
+            packages) if packages is not None else []
         result = PackageHandler._execute_action(
             service,
             "update_local",
