@@ -47,15 +47,48 @@
 | 2.2.1   | Velocity (patch)                | DONE    | CI stability: @patch target corrections for test reliability                               |
 | 2.2.2   | Velocity (patch)                | DONE    | CI: lower coverage threshold to 77%, fix tasks spec gate                                   |
 | 2.3.0   | Insight                         | DONE    | Enhanced diagnostics: 5 new report sections (services, journal, updates, SELinux, network) |
-| 2.4.0   | Daemon Foundation               | DONE    | Daemonized network/firewall execution boundary via D-Bus with fallback                      |
-| 2.5.0   | API Migration Slice 1           | DONE    | Network/firewall API-first hardening with strict IPC compatibility and fallback safeguards   |
-| 2.6.0   | API Migration Slice 2           | DONE    | Package API-first migration with strict IPC payload validation and fallback safeguards       |
-| 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                      |
-| 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                   |
-| 2.9.0   | API Migration Slice 5           | DONE    | Residual privileged daemon/API migration + compatibility hardening                            |
-| 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                         |
-| 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement                 |
-| 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening                |
+| 2.4.0   | Daemon Foundation               | DONE    | Daemonized network/firewall execution boundary via D-Bus with fallback                     |
+| 2.5.0   | API Migration Slice 1           | DONE    | Network/firewall API-first hardening with strict IPC compatibility and fallback safeguards |
+| 2.6.0   | API Migration Slice 2           | DONE    | Package API-first migration with strict IPC payload validation and fallback safeguards     |
+| 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                    |
+| 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                |
+| 2.9.0   | API Migration Slice 5           | DONE    | Residual privileged daemon/API migration + compatibility hardening                         |
+| 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                      |
+| 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement              |
+| 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening             |
+| 3.0.0   | Aegis                           | ACTIVE  | API security, Safe Mode defaults, plugin update safety, and version consistency cleanup    |
+
+---
+
+## [ACTIVE] v3.0.0 "Aegis" — API Security & UX Safety
+
+### Scope
+
+First post-migration major release focused on stabilization phases 3–6 from the
+hardening guide. The goal is to keep the existing daemon/API architecture while
+closing trust-boundary gaps around API exposure, auth/bootstrap storage, Safe Mode,
+plugin auto-update safety, and version consistency.
+
+### Planned Deliverables
+
+- [ ] Activate v3.0.0 workflow metadata and restore a canonical Phase 3 planning baseline
+- [ ] Enforce loopback-only API startup unless `--unsafe-expose` is explicitly supplied
+- [ ] Harden auth/bootstrap storage and constrain `/api/key` + `/api/token` bootstrap behavior
+- [ ] Add route-aware API throttling and explicit read-only versus privileged endpoint policy buckets
+- [ ] Introduce Safe Mode as a default-on mutation guard with persisted user control
+- [ ] Surface registry-backed risk and revert guidance through shared confirmation flows
+- [ ] Formalize plugin auto-update as an explicit default-off setting in daemon/runtime behavior
+- [ ] Remove version drift by aligning runtime, packaging, and release documentation on `3.0.0`
+
+### Agent Assignment
+
+| Agent                        | Task                                                               |
+| ---------------------------- | ------------------------------------------------------------------ |
+| project-coordinator          | v3.0.0 activation, metadata reconciliation, baseline recovery      |
+| backend-builder              | API exposure/auth/rate-limit hardening + Safe Mode service work    |
+| frontend-integration-builder | Settings + confirmation-flow integration for Safe Mode and risk UX |
+| test-writer                  | Focused API and UX safety regression coverage                      |
+| release-planner              | SECURITY/docs/version-consistency closure                          |
 
 ---
 
@@ -77,12 +110,12 @@ no privilege-scope expansion, no UI feature expansion, and strict fallback compa
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.12 scope/task contracts + activation metadata                   |
-| backend-builder            | residual service migration + fallback hardening                    |
-| test-writer                | focused daemon/local parity regression coverage                    |
-| release-planner            | roadmap/changelog/release-note synchronization                     |
+| Agent               | Task                                             |
+| ------------------- | ------------------------------------------------ |
+| project-coordinator | v2.12 scope/task contracts + activation metadata |
+| backend-builder     | residual service migration + fallback hardening  |
+| test-writer         | focused daemon/local parity regression coverage  |
+| release-planner     | roadmap/changelog/release-note synchronization   |
 
 ---
 
@@ -106,12 +139,12 @@ residual pathways.
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.10.0 scope/task contracts + activation                          |
-| backend-builder            | workflow script normalization + daemon/API migration prep          |
-| test-writer                | focused regression updates for workflow/tag canonicalization       |
-| release-planner            | roadmap/workflow/memory metadata synchronization                   |
+| Agent               | Task                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| project-coordinator | v2.10.0 scope/task contracts + activation                    |
+| backend-builder     | workflow script normalization + daemon/API migration prep    |
+| test-writer         | focused regression updates for workflow/tag canonicalization |
+| release-planner     | roadmap/workflow/memory metadata synchronization             |
 
 ---
 
@@ -136,12 +169,12 @@ and explicit daemon/local read-path contracts without expanding privilege scope.
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.11 scope/task contracts + activation metadata                   |
-| backend-builder            | network/firewall/system residual hardening                         |
-| test-writer                | focused regression coverage for daemon/local parity                |
-| release-planner            | changelog/roadmap/release-note synchronization                     |
+| Agent               | Task                                                |
+| ------------------- | --------------------------------------------------- |
+| project-coordinator | v2.11 scope/task contracts + activation metadata    |
+| backend-builder     | network/firewall/system residual hardening          |
+| test-writer         | focused regression coverage for daemon/local parity |
+| release-planner     | changelog/roadmap/release-note synchronization      |
 
 ---
 
@@ -165,12 +198,12 @@ envelope compatibility and fail-closed validator behavior.
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.9.0 scope/task contracts + activation                           |
-| backend-builder            | daemon handler/validator extension + service migration slices      |
-| test-writer                | focused daemon/client/fallback regression coverage                 |
-| release-planner            | workflow/roadmap/memory metadata synchronization                   |
+| Agent               | Task                                                          |
+| ------------------- | ------------------------------------------------------------- |
+| project-coordinator | v2.9.0 scope/task contracts + activation                      |
+| backend-builder     | daemon handler/validator extension + service migration slices |
+| test-writer         | focused daemon/client/fallback regression coverage            |
+| release-planner     | workflow/roadmap/memory metadata synchronization              |
 
 ---
 
@@ -201,12 +234,12 @@ broadening, and no UI feature scope unrelated to hardening.
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.8.0 scope/task contracts                                        |
-| backend-builder            | validator hardening + policy mapping utilities                     |
-| test-writer                | privileged validation regression coverage                          |
-| release-planner            | workflow/roadmap/memory metadata synchronization                   |
+| Agent               | Task                                             |
+| ------------------- | ------------------------------------------------ |
+| project-coordinator | v2.8.0 scope/task contracts                      |
+| backend-builder     | validator hardening + policy mapping utilities   |
+| test-writer         | privileged validation regression coverage        |
+| release-planner     | workflow/roadmap/memory metadata synchronization |
 
 ---
 
@@ -229,12 +262,12 @@ fallback semantics.
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.6.0 scope/task contracts                                        |
-| backend-builder            | package handler, package service migration, IPC hardening          |
-| test-writer                | focused package/IPC fallback regression validation                 |
-| release-planner            | roadmap/workflow progress metadata sync                            |
+| Agent               | Task                                                      |
+| ------------------- | --------------------------------------------------------- |
+| project-coordinator | v2.6.0 scope/task contracts                               |
+| backend-builder     | package handler, package service migration, IPC hardening |
+| test-writer         | focused package/IPC fallback regression validation        |
+| release-planner     | roadmap/workflow progress metadata sync                   |
 
 ---
 
@@ -267,12 +300,12 @@ policy-audit inventory and validator-tightening tasks without expanding privileg
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.7.0 scope/task contracts                                        |
-| backend-builder            | service handler + service API migration + IPC compatibility        |
-| test-writer                | daemon/service fallback regression validation                      |
-| release-planner            | planning artifact and roadmap/workflow metadata synchronization    |
+| Agent               | Task                                                            |
+| ------------------- | --------------------------------------------------------------- |
+| project-coordinator | v2.7.0 scope/task contracts                                     |
+| backend-builder     | service handler + service API migration + IPC compatibility     |
+| test-writer         | daemon/service fallback regression validation                   |
+| release-planner     | planning artifact and roadmap/workflow metadata synchronization |
 
 ---
 
@@ -292,12 +325,12 @@ contracts, strict envelope handling, and `LOOFI_IPC_MODE=preferred` fallback sem
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.5.0 scope/task contracts                                        |
-| backend-builder            | network/firewall API migration + IPC compatibility hardening       |
-| test-writer                | focused IPC/network/firewall regression validation                 |
-| release-planner            | roadmap/workflow progress metadata sync                            |
+| Agent               | Task                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| project-coordinator | v2.5.0 scope/task contracts                                  |
+| backend-builder     | network/firewall API migration + IPC compatibility hardening |
+| test-writer         | focused IPC/network/firewall regression validation           |
+| release-planner     | roadmap/workflow progress metadata sync                      |
 
 ---
 
@@ -326,13 +359,13 @@ Status snapshot (2026-02-25): Phase 1 implementation is complete in `v2.4.0`; re
 
 ### Agent Assignment
 
-| Agent                      | Task                                                               |
-| -------------------------- | ------------------------------------------------------------------ |
-| project-coordinator        | v2.4.0 scope/task contracts                                        |
-| backend-builder            | daemon host, validators, handlers, service migrations              |
-| frontend-integration-builder | UI/CLI callsite migration to service layer                       |
-| test-writer                | IPC and fallback-mode tests                                        |
-| release-planner            | docs/version/packaging updates                                     |
+| Agent                        | Task                                                  |
+| ---------------------------- | ----------------------------------------------------- |
+| project-coordinator          | v2.4.0 scope/task contracts                           |
+| backend-builder              | daemon host, validators, handlers, service migrations |
+| frontend-integration-builder | UI/CLI callsite migration to service layer            |
+| test-writer                  | IPC and fallback-mode tests                           |
+| release-planner              | docs/version/packaging updates                        |
 
 ---
 

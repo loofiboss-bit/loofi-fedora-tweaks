@@ -2,6 +2,7 @@
 
 import os
 import threading
+import ipaddress
 from pathlib import Path
 from typing import Optional
 
@@ -20,9 +21,11 @@ from utils.auth import AuthManager
 class APIServer:
     """FastAPI server wrapper to run in a background thread."""
 
-    def __init__(self, host: str = "127.0.0.1", port: int = 8000):
+    def __init__(self, host: str = "127.0.0.1", port: int = 8000, allow_expose: bool = False):
         self.host = host
         self.port = port
+        self.allow_expose = allow_expose
+        self._validate_bind_host()
         self.app = self._create_app()
         self._thread: Optional[threading.Thread] = None
 
@@ -76,3 +79,26 @@ class APIServer:
 
     def _run(self) -> None:
         uvicorn.run(self.app, host=self.host, port=self.port, log_level="info")
+
+    def _validate_bind_host(self) -> None:
+        """Refuse non-loopback binds unless explicitly allowed."""
+        normalized_host = str(self.host).strip().lower()
+
+        if normalized_host == "localhost":
+            return
+
+        try:
+            parsed_host = ipaddress.ip_address(normalized_host)
+        except ValueError:
+            parsed_host = None
+
+        if parsed_host is not None and parsed_host.is_loopback:
+            return
+
+        if self.allow_expose:
+            return
+
+        raise ValueError(
+            "Refusing to bind Loofi Web API to non-loopback host "
+            f"'{self.host}' without --unsafe-expose."
+        )

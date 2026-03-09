@@ -86,6 +86,11 @@ def main():
         help="Run in command-line mode (pass remaining args to CLI)",
     )
     parser.add_argument("--web", action="store_true", help="Run headless Loofi Web API server")
+    parser.add_argument(
+        "--unsafe-expose",
+        action="store_true",
+        help="Allow the Web API to bind to non-loopback addresses (unsafe)",
+    )
     parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
 
     args, remaining = parser.parse_known_args()
@@ -104,7 +109,16 @@ def main():
         except ValueError:
             _log.warning("Invalid LOOFI_API_PORT; falling back to 8000")
             api_port = 8000
-        server = APIServer(host=api_host, port=api_port)
+        try:
+            server = APIServer(
+                host=api_host,
+                port=api_port,
+                allow_expose=args.unsafe_expose,
+            )
+        except ValueError as exc:
+            _log.error("Refusing to start Web API: %s", exc)
+            print(f"ERROR: {exc}", file=sys.stderr)
+            sys.exit(1)
         server.start()
         _log.info("Loofi Web API started on %s:%s", server.host, server.port)
         try:

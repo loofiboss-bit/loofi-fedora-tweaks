@@ -4,6 +4,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [Unreleased]
+
+### Added
+
+- Add focused regression coverage for loopback-only Web API startup, explicit `--unsafe-expose` opt-in, and non-loopback refusal behavior
+
+### Changed
+
+- Require explicit `--unsafe-expose` before the headless Web API will honor non-loopback `LOOFI_API_HOST` values
+
+### Fixed
+
+- Fix silent Web API trust-boundary expansion by failing closed when non-loopback binds are requested without opt-in
+
 ## [2.12.0] - 2026-02-27 "API Migration Slice 8"
 
 ### Added

@@ -57,9 +57,11 @@ Full notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOT
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-Current release is **v2.11.0 "API Migration Slice 7"**, focused on network/firewall/system residual hardening and daemon/local parity refinement.
+Current stable release is **v2.11.0 "API Migration Slice 7"**.
 
-Slice notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOTES-v2.11.0.md)
+Active development is tracking **v3.0.0 "Aegis"** in [`ROADMAP.md`](ROADMAP.md), focused on API exposure control, auth/bootstrap hardening, Safe Mode defaults, plugin update safety, and version consistency cleanup.
+
+Latest shipped slice notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOTES-v2.11.0.md)
 
 ---
 
@@ -131,8 +133,10 @@ Example for LAN host `192.168.1.3`:
 export LOOFI_API_HOST=0.0.0.0
 export LOOFI_API_PORT=18001
 export LOOFI_CORS_ORIGINS="http://192.168.1.3:18001"
-loofi-fedora-tweaks --web
+loofi-fedora-tweaks --web --unsafe-expose
 ```
+
+`--unsafe-expose` is required for any non-loopback bind. Without it, the Web API refuses startup instead of silently widening network exposure.
 
 Optional shell alias for convenience:
 
