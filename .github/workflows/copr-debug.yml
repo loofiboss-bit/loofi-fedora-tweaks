@@ -1,0 +1,84 @@
+name: COPR Debug
+
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+env:
+  COPR_OWNER: "loofitheboss"
+  COPR_PROJECT: "loofi-fedora-tweaks"
+  COPR_PACKAGE: "loofi-fedora-tweaks"
+  SCM_CLONE_URL: "https://github.com/multidraxter-bit/loofi-fedora-tweaks.git"
+  SCM_COMMIT: "master"
+  SCM_SPEC: "loofi-fedora-tweaks.spec"
+
+jobs:
+  debug:
+    runs-on: ubuntu-latest
+    container: fedora:43
+    timeout-minutes: 20
+    steps:
+      - name: Install dependencies
+        run: dnf install -y copr-cli
+
+      - name: Check COPR secret presence
+        run: |
+          missing=0
+          for pair in \
+            "COPR_LOGIN:${{ secrets.COPR_LOGIN }}" \
+            "COPR_USERNAME:${{ secrets.COPR_USERNAME }}" \
+            "COPR_TOKEN:${{ secrets.COPR_TOKEN }}"; do
+            name="${pair%%:*}"
+            value="${pair#*:}"
+            if [ -n "$value" ]; then
+              echo "::notice::${name}=present"
+            else
+              echo "::error::${name}=missing"
+              missing=1
+            fi
+          done
+          [ "$missing" -eq 0 ]
+
+      - name: Configure copr-cli
+        run: |
+          mkdir -p ~/.config
+          cat > ~/.config/copr <<EOF
+          [copr-cli]
+          copr_url = https://copr.fedorainfracloud.org
+          login = ${{ secrets.COPR_LOGIN }}
+          username = ${{ secrets.COPR_USERNAME }}
+          token = ${{ secrets.COPR_TOKEN }}
+          EOF
+          chmod 600 ~/.config/copr
+
+      - name: Inspect package
+        run: |
+          PROJECT="${COPR_OWNER}/${COPR_PROJECT}"
+          copr-cli --debug get-package "${PROJECT}" "${COPR_PACKAGE}"
+
+      - name: Configure SCM source
+        run: |
+          PROJECT="${COPR_OWNER}/${COPR_PROJECT}"
+          set +e
+          copr-cli --debug edit-package-scm "${PROJECT}" \
+            --name "${COPR_PACKAGE}" \
+            --clone-url "${SCM_CLONE_URL}" \
+            --commit "${SCM_COMMIT}" \
+            --spec "${SCM_SPEC}"
+          status=$?
+          set -e
+          if [ "$status" -ne 0 ]; then
+            echo "::warning::edit-package-scm failed; trying add-package-scm"
+            copr-cli --debug add-package-scm "${PROJECT}" \
+              --name "${COPR_PACKAGE}" \
+              --clone-url "${SCM_CLONE_URL}" \
+              --commit "${SCM_COMMIT}" \
+              --spec "${SCM_SPEC}"
+          fi
+
+      - name: Re-inspect package
+        run: |
+          PROJECT="${COPR_OWNER}/${COPR_PROJECT}"
+          copr-cli --debug get-package "${PROJECT}" "${COPR_PACKAGE}"
