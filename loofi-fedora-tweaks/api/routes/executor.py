@@ -14,11 +14,13 @@ from core.executor.action_result import ActionResult
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from services.security import AuditLogger
+from services.security.safety import SafetyManager
 from utils.auth import AuthManager
 
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
+MUTATING_ROUTE_PATHS: FrozenSet[str] = frozenset({"/execute"})
 
 # Allowlist of executables the API may invoke.
 # Matches the commands exposed by PrivilegedCommand builders and common
@@ -122,6 +124,28 @@ def execute_action(
         pkexec=payload.pkexec,
         action_id=payload.action_id,
     )
+
+    block_reason = SafetyManager.api_mutation_block_reason(
+        payload.command,
+        preview=payload.preview,
+        pkexec=payload.pkexec,
+    )
+    if block_reason:
+        audit.log(
+            "api.execute.blocked.safe_mode",
+            params={
+                "command": payload.command,
+                "args": payload.args,
+                "pkexec": payload.pkexec,
+                "action_id": payload.action_id,
+                "reason": "safe_mode_enabled",
+            },
+            exit_code=None,
+        )
+        raise HTTPException(
+            status_code=status.HTTP_403_FORBIDDEN,
+            detail=block_reason,
+        )
 
     if not payload.preview:
         result = ActionExecutor.run(

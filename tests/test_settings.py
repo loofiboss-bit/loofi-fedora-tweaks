@@ -54,6 +54,9 @@ class TestDefaults(unittest.TestCase):
     def test_default_log_level_is_info(self):
         self.assertEqual(AppSettings().log_level, "INFO")
 
+    def test_default_plugin_auto_update_is_disabled(self):
+        self.assertFalse(AppSettings().plugin_auto_update)
+
     def test_default_plugin_analytics_is_disabled(self):
         self.assertFalse(AppSettings().plugin_analytics_enabled)
 
@@ -192,6 +195,17 @@ class TestSaveLoad(unittest.TestCase):
             mgr2 = SettingsManager(settings_path=path)
             self.assertTrue(mgr2.get("plugin_analytics_enabled"))
             self.assertEqual(mgr2.get("plugin_analytics_anonymous_id"), "anon-001")
+
+    def test_plugin_auto_update_toggle_persists(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "settings.json"
+            mgr1 = SettingsManager(settings_path=path)
+            mgr1.set("plugin_auto_update", True)
+            mgr1.save()
+
+            mgr2 = SettingsManager(settings_path=path)
+            self.assertTrue(mgr2.get("plugin_auto_update"))
+            self.assertTrue(mgr2.is_explicitly_set("plugin_auto_update"))
 
 
 # ---------------------------------------------------------------------------

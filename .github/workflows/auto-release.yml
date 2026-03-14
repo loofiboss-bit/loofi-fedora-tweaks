@@ -611,8 +611,10 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:43
     timeout-minutes: 20
+    continue-on-error: true
     needs: [validate, release]
     env:
+      COPR_OWNER: "loofitheboss"
       COPR_PROJECT: "loofi-fedora-tweaks"
       COPR_CHROOTS: "fedora-43-x86_64"
     steps:
@@ -650,14 +652,21 @@ jobs:
         run: |
           SRPM=$(ls rpmbuild/SRPMS/*.src.rpm | head -1)
           VER="${{ needs.validate.outputs.version }}"
-          echo "Submitting ${SRPM} (v${VER}) to COPR project ${COPR_PROJECT}"
+          COPR_TARGET="${COPR_OWNER}/${COPR_PROJECT}"
+          echo "Submitting ${SRPM} (v${VER}) to COPR project ${COPR_TARGET}"
           CHROOT_ARGS=""
           for chroot in ${COPR_CHROOTS}; do
             CHROOT_ARGS="${CHROOT_ARGS} --chroot ${chroot}"
           done
           echo "Target chroots:${CHROOT_ARGS}"
+          set +e
           # shellcheck disable=SC2086
-          copr-cli build "${COPR_PROJECT}" "${SRPM}" --nowait ${CHROOT_ARGS}
+          copr-cli build "${COPR_TARGET}" "${SRPM}" --nowait ${CHROOT_ARGS}
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::warning::COPR submission failed for ${COPR_TARGET}; GitHub release assets are still published successfully."
+          fi
 
       - name: COPR build summary
         if: always()
@@ -666,4 +675,4 @@ jobs:
           echo "::notice::COPR build submitted for loofi-fedora-tweaks v${VER}"
           echo "::notice::Target chroots: ${COPR_CHROOTS}"
           echo "Track build status at:"
-          echo "  https://copr.fedorainfracloud.org/coprs/${{ secrets.COPR_USERNAME }}/${COPR_PROJECT}/builds/"
+          echo "  https://copr.fedorainfracloud.org/coprs/${COPR_OWNER}/${COPR_PROJECT}/builds/"

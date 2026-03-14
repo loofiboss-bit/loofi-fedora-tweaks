@@ -18,10 +18,19 @@ pytestmark = pytest.mark.skipif(not _HAS_FASTAPI, reason="fastapi not installed"
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
 if _HAS_FASTAPI:
-    from utils.api_server import APIServer
+    from utils.api_server import APIServer, RouteRateLimitPolicy
     from utils.auth import AuthManager
     from utils.containers import Result
 else:
+    class RouteRateLimitPolicy:  # type: ignore[no-redef]
+        def __init__(self, rate=0.0, capacity=0, retry_guidance=""):
+            self.rate = rate
+            self.capacity = capacity
+            self.retry_guidance = retry_guidance
+
+    class APIServer:  # type: ignore[no-redef]
+        _RATE_LIMIT_CONFIG = {}
+
     # Dummy so @patch return_value=Result(...) doesn't crash at collection
     class Result:  # type: ignore[no-redef]
         def __init__(self, success=True, message="", data=None):
@@ -34,10 +43,14 @@ class TestAPIProfiles(unittest.TestCase):
     """Profile endpoint coverage with auth override."""
 
     @classmethod
-    def setUpClass(cls):
+    def _build_client(cls):
         server = APIServer()
         server.app.dependency_overrides[AuthManager.verify_bearer_token] = lambda: "test-token"
-        cls.client = TestClient(server.app)
+        return TestClient(server.app)
+
+    @classmethod
+    def setUpClass(cls):
+        cls.client = cls._build_client()
 
     @patch("api.routes.profiles.ProfileManager.get_active_profile", return_value="gaming")
     @patch("api.routes.profiles.ProfileManager.list_profiles", return_value=[{"key": "gaming", "builtin": True}])
@@ -94,6 +107,85 @@ class TestAPIProfiles(unittest.TestCase):
         payload = resp.json()
         self.assertFalse(payload["success"])
         self.assertEqual(payload["data"]["errors"][0]["key"], "x")
+
+    @patch.object(
+        APIServer,
+        "_RATE_LIMIT_CONFIG",
+        new={
+            "auth": RouteRateLimitPolicy(
+                rate=10.0,
+                capacity=50,
+                retry_guidance="Wait before retrying auth endpoints.",
+            ),
+            "read": RouteRateLimitPolicy(
+                rate=0.0,
+                capacity=2,
+                retry_guidance="Reduce read polling before retrying.",
+            ),
+            "mutation": RouteRateLimitPolicy(
+                rate=0.0,
+                capacity=1,
+                retry_guidance="Retry mutations after the backoff window.",
+            ),
+        },
+    )
+    @patch("api.routes.profiles.ProfileManager.apply_profile", return_value=Result(True, "ok", {"warnings": []}))
+    @patch("api.routes.profiles.ProfileManager.get_active_profile", return_value="gaming")
+    @patch("api.routes.profiles.ProfileManager.list_profiles", return_value=[{"key": "gaming", "builtin": True}])
+    def test_mutation_routes_are_stricter_than_read_only(self, mock_list, mock_active, mock_apply):
+        client = self._build_client()
+
+        read_one = client.get("/api/profiles")
+        read_two = client.get("/api/profiles")
+        mutate_one = client.post("/api/profiles/apply", json={"name": "gaming", "create_snapshot": False})
+        mutate_two = client.post("/api/profiles/apply", json={"name": "gaming", "create_snapshot": False})
+
+        self.assertEqual(read_one.status_code, 200)
+        self.assertEqual(read_two.status_code, 200)
+        self.assertEqual(read_one.headers["X-Loofi-Route-Policy"], "read")
+        self.assertEqual(mutate_one.status_code, 200)
+        self.assertEqual(mutate_one.headers["X-Loofi-Route-Policy"], "mutation")
+        self.assertEqual(mutate_two.status_code, 429)
+
+        payload = mutate_two.json()
+        self.assertEqual(payload["route_policy"], "mutation")
+        self.assertGreaterEqual(payload["retry_after_seconds"], 1)
+        self.assertIn("Retry after", payload["detail"])
+
+    @patch.object(
+        APIServer,
+        "_RATE_LIMIT_CONFIG",
+        new={
+            "auth": RouteRateLimitPolicy(
+                rate=10.0,
+                capacity=50,
+                retry_guidance="Wait before retrying auth endpoints.",
+            ),
+            "read": RouteRateLimitPolicy(
+                rate=0.0,
+                capacity=1,
+                retry_guidance="Reduce read polling before retrying.",
+            ),
+            "mutation": RouteRateLimitPolicy(
+                rate=10.0,
+                capacity=50,
+                retry_guidance="Retry mutations after the backoff window.",
+            ),
+        },
+    )
+    @patch("api.routes.profiles.ProfileManager.export_profile_data", return_value={"key": "gaming"})
+    def test_profile_export_route_uses_read_rate_policy(self, mock_export):
+        client = self._build_client()
+
+        first = client.get("/api/profiles/gaming/export")
+        second = client.get("/api/profiles/gaming/export")
+
+        self.assertEqual(first.status_code, 200)
+        self.assertEqual(first.headers["X-Loofi-Route-Policy"], "read")
+        self.assertEqual(second.status_code, 429)
+        payload = second.json()
+        self.assertEqual(payload["route_policy"], "read")
+        self.assertIn("Retry after", payload["detail"])
 
 
 if __name__ == "__main__":

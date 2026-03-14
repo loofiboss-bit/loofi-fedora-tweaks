@@ -8,6 +8,8 @@ import logging
 import subprocess
 from typing import Optional
 
+from services.security.risk import RiskRegistry
+from services.security.safe_mode import SafeModeManager
 from services.system.system import cached_which
 
 logger = logging.getLogger(__name__)
@@ -15,6 +17,28 @@ logger = logging.getLogger(__name__)
 
 class SafetyManager:
     """Pre-action safety checks and snapshot management."""
+
+    @staticmethod
+    def api_mutation_block_reason(
+        command: str,
+        *,
+        preview: bool,
+        pkexec: bool = False,
+    ) -> Optional[str]:
+        """Return a refusal message when Safe Mode blocks execution."""
+        if SafeModeManager.allow_api_execution(
+            command,
+            preview=preview,
+            pkexec=pkexec,
+        ):
+            return None
+
+        return SafeModeManager.mutation_refusal_message(command)
+
+    @staticmethod
+    def _resolve_action_id(description: str, action_id: Optional[str] = None) -> Optional[str]:
+        """Resolve a risk action ID from an explicit value or human-readable label."""
+        return action_id or RiskRegistry.resolve_action_id(description)
 
     @staticmethod
     def check_dnf_lock() -> bool:
@@ -100,7 +124,7 @@ class SafetyManager:
             return False
 
     @staticmethod
-    def confirm_action(parent, description: str) -> bool:
+    def confirm_action(parent, description: str, action_id: Optional[str] = None) -> bool:
         """
         Prompt the user to confirm an action, offering to take a snapshot first.
 
@@ -115,37 +139,29 @@ class SafetyManager:
             True if the action should proceed, False otherwise.
         """
         from PyQt6.QtWidgets import QMessageBox
+        from ui.confirm_dialog import ConfirmActionDialog
 
         tool = SafetyManager.check_snapshot_tool()
+        resolved_action_id = SafetyManager._resolve_action_id(description, action_id)
+        risk_entry = RiskRegistry.get_risk(resolved_action_id) if resolved_action_id else None
+        detail = "It is recommended to create a system snapshot before proceeding."
+        if risk_entry:
+            detail = f"{risk_entry.description}. {detail}"
 
-        msg = QMessageBox(parent)
-        msg.setWindowTitle("Safety Check")
-        msg.setText(f"You are about to: {description}")
-        msg.setInformativeText("It is recommended to create a system snapshot before proceeding.")
-        msg.setIcon(QMessageBox.Icon.Warning)
+        dialog = ConfirmActionDialog(
+            parent=parent,
+            action=description,
+            description=detail,
+            undo_hint=RiskRegistry.get_revert_instructions(resolved_action_id or "") or "",
+            offer_snapshot=bool(tool),
+            risk_level=risk_entry.level.value if risk_entry else "",
+            action_key=resolved_action_id or "",
+        )
 
-        # Standard Buttons
-        msg.addButton("Continue Without Snapshot", QMessageBox.ButtonRole.ActionRole)
-        btn_cancel = msg.addButton(QMessageBox.StandardButton.Cancel)
-
-        btn_snapshot = None
-        if tool:
-            btn_snapshot = msg.addButton(
-                f"Create {tool.capitalize()} Snapshot & Continue",
-                QMessageBox.ButtonRole.ActionRole,
-            )
-            msg.setDefaultButton(btn_snapshot)
-        else:
-            msg.setDefaultButton(btn_cancel)
-
-        msg.exec()
-
-        clicked = msg.clickedButton()
-
-        if clicked == btn_cancel:
+        if dialog.exec() != dialog.DialogCode.Accepted:
             return False
 
-        if tool and clicked == btn_snapshot:
+        if tool and dialog.snapshot_requested:
             # Show a progress message while snapshot runs
             parent.setDisabled(True)
 

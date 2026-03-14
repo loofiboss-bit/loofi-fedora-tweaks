@@ -55,10 +55,13 @@ class TestDependencyResolverParseRequirement:
 
     def test_parse_less_equal_requirement(self):
         """Parse requirement with <= operator."""
-        plugin_id, operator, version = DependencyResolver._parse_requirement("my-plugin<=3.0.0")
+        fixture_version = "9.9.9"
+        plugin_id, operator, version = DependencyResolver._parse_requirement(
+            f"my-plugin<={fixture_version}"
+        )
         assert plugin_id == "my-plugin"
         assert operator == "<="
-        assert version == "3.0.0"
+        assert version == fixture_version
 
     def test_parse_greater_than_requirement(self):
         """Parse requirement with > operator."""
@@ -129,7 +132,7 @@ class TestDependencyResolverCheckVersion:
 
     def test_check_less_equal_fails(self):
         """Higher version fails <= constraint."""
-        result = DependencyResolver._check_version_constraint("3.0.0", "<=", "2.0.0")
+        result = DependencyResolver._check_version_constraint("9.9.9", "<=", "2.0.0")
         assert result is False
 
     def test_check_greater_than_passes(self):
@@ -337,7 +340,7 @@ class TestDependencyResolverIntegration:
         resolver = DependencyResolver(installed_plugins=installed)
         
         # Check missing for plugin requiring newer version
-        missing = resolver.get_missing("new", ["base-plugin>=3.0.0"])
+        missing = resolver.get_missing("new", ["base-plugin>=9.9.9"])
         # Should detect version mismatch
         assert len(missing) >= 0  # Implementation may vary
 

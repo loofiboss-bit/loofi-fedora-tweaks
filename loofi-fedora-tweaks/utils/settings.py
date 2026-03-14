@@ -33,12 +33,14 @@ class AppSettings:
     start_minimized: bool = False
     show_notifications: bool = True
     confirm_dangerous_actions: bool = True
+    safe_mode_enabled: bool = True
     restore_last_tab: bool = False
     last_tab_index: int = 0
 
     # Advanced
     log_level: str = "INFO"
     check_updates_on_start: bool = True
+    plugin_auto_update: bool = False
     plugin_analytics_enabled: bool = False
     plugin_analytics_anonymous_id: str = ""
     plugin_analytics_endpoint: str = "https://api.loofi.software/marketplace/v1/analytics/events"
@@ -81,6 +83,7 @@ class SettingsManager:
         """
         self._path = settings_path or SETTINGS_FILE
         self._settings: dict = asdict(AppSettings())
+        self._explicit_keys: set[str] = set()
         self._load()
 
     # ---- Singleton accessor ------------------------------------------------
@@ -128,10 +131,18 @@ class SettingsManager:
         if key not in KNOWN_KEYS:
             raise KeyError(f"Unknown setting: {key!r}")
         self._settings[key] = value
+        self._explicit_keys.add(key)
+
+    def is_explicitly_set(self, key: str) -> bool:
+        """Return True when the setting key exists in persisted settings.json."""
+        if key not in KNOWN_KEYS:
+            raise KeyError(f"Unknown setting: {key!r}")
+        return key in self._explicit_keys
 
     def reset(self) -> None:
         """Restore every setting to its default value and persist."""
         self._settings = asdict(AppSettings())
+        self._explicit_keys = set(KNOWN_KEYS)
         self.save()
 
     def reset_group(self, keys: list) -> None:
@@ -140,6 +151,7 @@ class SettingsManager:
         for key in keys:
             if key in defaults:
                 self._settings[key] = defaults[key]
+                self._explicit_keys.add(key)
         self.save()
 
     def all(self) -> dict:
@@ -171,6 +183,7 @@ class SettingsManager:
                 raise ValueError("Settings file root is not a JSON object")
             # Merge only known keys, ignore stale/unknown keys silently
             defaults = asdict(AppSettings())
+            self._explicit_keys = {key for key in raw if key in defaults}
             for key in defaults:
                 if key in raw:
                     defaults[key] = raw[key]
@@ -181,3 +194,4 @@ class SettingsManager:
                 "Corrupt settings file (%s); reverting to defaults.", exc
             )
             self._settings = asdict(AppSettings())
+            self._explicit_keys = set()

@@ -329,393 +329,137 @@ class TestCreateSnapshot(unittest.TestCase):
 
 
 class TestConfirmAction(unittest.TestCase):
-    """Tests for SafetyManager.confirm_action (PyQt6 dialog).
-
-    ``QMessageBox`` is lazily imported inside ``confirm_action`` via
-    ``from PyQt6.QtWidgets import QMessageBox``.  We patch it at the
-    PyQt6 module level so the lazy import picks up the mock.
-    """
+    """Tests for SafetyManager.confirm_action dialog integration."""
 
     def _make_parent(self):
-        """Create a mock parent widget."""
         parent = MagicMock()
         parent.setDisabled = MagicMock()
         return parent
 
+    def _make_dialog(self, *, accepted: bool, snapshot_requested: bool = False):
+        dialog = MagicMock()
+        dialog.DialogCode.Accepted = 1
+        dialog.exec.return_value = 1 if accepted else 0
+        dialog.snapshot_requested = snapshot_requested
+        return dialog
+
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_cancel_returns_false(self, MockQMessageBox, mock_tool):
-        """Returns False when the user clicks Cancel."""
+    def test_cancel_returns_false(self, mock_tool, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
+        mock_dialog_cls.return_value = self._make_dialog(accepted=False)
 
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.return_value = btn_cancel
-        mock_msg.clickedButton.return_value = btn_cancel
+        self.assertFalse(SafetyManager.confirm_action(parent, "install packages"))
 
-        result = SafetyManager.confirm_action(parent, "install packages")
-        self.assertFalse(result)
-
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_continue_without_snapshot_returns_true(self, MockQMessageBox, mock_tool):
-        """Returns True when user clicks 'Continue Without Snapshot'."""
+    def test_continue_without_snapshot_returns_true(self, mock_tool, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=False)
 
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_continue
+        self.assertTrue(SafetyManager.confirm_action(parent, "remove package"))
 
-        result = SafetyManager.confirm_action(parent, "remove package")
-        self.assertTrue(result)
-
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.create_snapshot", return_value=True)
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
     @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_snapshot_and_continue_success(self, MockQMessageBox, mock_tool, mock_snap):
-        """Returns True and creates snapshot when user clicks snapshot button."""
+    def test_snapshot_and_continue_success(self, mock_msgbox, mock_tool, mock_snap, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=True)
 
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
-
-        result = SafetyManager.confirm_action(parent, "install foo")
-        self.assertTrue(result)
+        self.assertTrue(SafetyManager.confirm_action(parent, "install foo"))
         mock_snap.assert_called_once()
-        MockQMessageBox.information.assert_called_once()
+        mock_msgbox.information.assert_called_once()
 
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.create_snapshot", return_value=False)
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="snapper")
     @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_snapshot_failure_shows_warning(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """Shows warning dialog when snapshot creation fails."""
+    def test_snapshot_failure_shows_warning(self, mock_msgbox, mock_tool, mock_snap, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=True)
 
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
+        self.assertTrue(SafetyManager.confirm_action(parent, "remove bar"))
+        mock_msgbox.warning.assert_called_once()
+        mock_msgbox.information.assert_not_called()
 
-        result = SafetyManager.confirm_action(parent, "remove bar")
-        self.assertTrue(result)
-        MockQMessageBox.warning.assert_called_once()
-        MockQMessageBox.information.assert_not_called()
-
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.create_snapshot", return_value=True)
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
     @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_parent_disabled_during_snapshot(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """Parent widget is disabled then re-enabled during snapshot."""
+    def test_parent_disabled_during_snapshot(self, mock_msgbox, mock_tool, mock_snap, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=True)
 
         SafetyManager.confirm_action(parent, "do stuff")
-        calls = parent.setDisabled.call_args_list
-        self.assertEqual(calls[0], call(True))
-        self.assertEqual(calls[1], call(False))
+        self.assertEqual(parent.setDisabled.call_args_list[0], call(True))
+        self.assertEqual(parent.setDisabled.call_args_list[1], call(False))
 
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_no_snapshot_button_when_no_tool(self, MockQMessageBox, mock_tool):
-        """Snapshot button is not added when no snapshot tool is detected."""
+    def test_dialog_receives_risk_registry_context(self, mock_tool, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
+        mock_dialog_cls.return_value = self._make_dialog(accepted=False)
 
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_continue
+        SafetyManager.confirm_action(parent, "Full System Update")
 
-        SafetyManager.confirm_action(parent, "test action")
-        self.assertEqual(mock_msg.addButton.call_count, 2)
+        kwargs = mock_dialog_cls.call_args.kwargs
+        self.assertEqual(kwargs["action_key"], "dnf_update")
+        self.assertEqual(kwargs["risk_level"], "medium")
+        self.assertIn("Restore", kwargs["undo_hint"])
+        self.assertIn("snapshot", kwargs["description"].lower())
 
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_snapshot_button_added_when_tool_available(
-        self, MockQMessageBox, mock_tool
-    ):
-        """Snapshot button is added when a snapshot tool is detected."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "test action")
-        self.assertEqual(mock_msg.addButton.call_count, 3)
-
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_default_button_cancel_when_no_tool(self, MockQMessageBox, mock_tool):
-        """Default button is Cancel when no snapshot tool is available."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "action")
-        mock_msg.setDefaultButton.assert_called_once_with(btn_cancel)
-
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_default_button_snapshot_when_tool_available(
-        self, MockQMessageBox, mock_tool
-    ):
-        """Default button is the snapshot button when a tool is available."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "action")
-        mock_msg.setDefaultButton.assert_called_once_with(btn_snapshot)
-
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_dialog_title_is_safety_check(self, MockQMessageBox, mock_tool):
-        """Dialog window title is 'Safety Check'."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "test")
-        mock_msg.setWindowTitle.assert_called_once_with("Safety Check")
-
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_dialog_text_contains_description(self, MockQMessageBox, mock_tool):
-        """Dialog text includes the action description."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "remove all packages")
-        text_arg = mock_msg.setText.call_args[0][0]
-        self.assertIn("remove all packages", text_arg)
-
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_dialog_icon_is_warning(self, MockQMessageBox, mock_tool):
-        """Dialog icon is set to Warning."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "test")
-        mock_msg.setIcon.assert_called_once_with(MockQMessageBox.Icon.Warning)
-
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_exec_called_on_dialog(self, MockQMessageBox, mock_tool):
-        """Dialog.exec() is called to show the dialog."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "test")
-        mock_msg.exec.assert_called_once()
-
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.create_snapshot", return_value=True)
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
     @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_snapshot_comment_derives_from_description(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """Snapshot comment is derived from the first word of description."""
+    def test_snapshot_comment_derives_from_description(self, mock_msgbox, mock_tool, mock_snap, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=True)
 
         SafetyManager.confirm_action(parent, "install heavy packages")
-        comment = mock_snap.call_args[0][1]
-        self.assertEqual(comment, "Pre-install")
+        self.assertEqual(mock_snap.call_args[0][1], "Pre-install")
 
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.create_snapshot", return_value=False)
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="snapper")
     @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_snapshot_failure_still_returns_true(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """Action proceeds (returns True) even when snapshot fails."""
+    def test_snapshot_failure_still_returns_true(self, mock_msgbox, mock_tool, mock_snap, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=True)
 
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
+        self.assertTrue(SafetyManager.confirm_action(parent, "update system"))
 
-        result = SafetyManager.confirm_action(parent, "update system")
-        self.assertTrue(result)
-
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_informative_text_mentions_snapshot(self, MockQMessageBox, mock_tool):
-        """Informative text recommends creating a snapshot."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel]
-        mock_msg.clickedButton.return_value = btn_cancel
-
-        SafetyManager.confirm_action(parent, "test")
-        info_arg = mock_msg.setInformativeText.call_args[0][0]
-        self.assertIn("snapshot", info_arg.lower())
-
-    @patch("services.security.safety.SafetyManager.create_snapshot", return_value=True)
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="snapper")
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_snapshot_button_label_contains_tool_name(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """Snapshot button label includes the capitalised tool name."""
+    def test_dialog_offers_snapshot_when_tool_available(self, mock_tool, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
+        mock_dialog_cls.return_value = self._make_dialog(accepted=False)
 
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_cancel
+        SafetyManager.confirm_action(parent, "test action")
+        self.assertTrue(mock_dialog_cls.call_args.kwargs["offer_snapshot"])
 
-        SafetyManager.confirm_action(parent, "test")
-        # Third addButton call is the snapshot button
-        third_call_args = mock_msg.addButton.call_args_list[2][0]
-        label = third_call_args[0]
-        self.assertIn("Snapper", label)
-
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.create_snapshot", return_value=True)
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
     @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_snapshot_success_shows_information_dialog(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """Successful snapshot shows information dialog, not warning."""
+    def test_create_snapshot_receives_correct_tool(self, mock_msgbox, mock_tool, mock_snap, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
-
-        SafetyManager.confirm_action(parent, "install stuff")
-        MockQMessageBox.information.assert_called_once()
-        MockQMessageBox.warning.assert_not_called()
-
-    @patch("services.security.safety.SafetyManager.create_snapshot", return_value=True)
-    @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
-    @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_create_snapshot_receives_correct_tool(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """create_snapshot is called with the detected tool name."""
-        parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=True)
 
         SafetyManager.confirm_action(parent, "upgrade kernel")
-        tool_arg = mock_snap.call_args[0][0]
-        self.assertEqual(tool_arg, "timeshift")
+        self.assertEqual(mock_snap.call_args[0][0], "timeshift")
 
+    @patch("ui.confirm_dialog.ConfirmActionDialog")
     @patch("services.security.safety.SafetyManager.create_snapshot", return_value=False)
     @patch("services.security.safety.SafetyManager.check_snapshot_tool", return_value="timeshift")
     @patch("PyQt6.QtWidgets.QMessageBox")
-    def test_parent_reenabled_after_failed_snapshot(
-        self, MockQMessageBox, mock_tool, mock_snap
-    ):
-        """Parent is re-enabled even when snapshot creation fails."""
+    def test_parent_reenabled_after_failed_snapshot(self, mock_msgbox, mock_tool, mock_snap, mock_dialog_cls):
         parent = self._make_parent()
-        mock_msg = MagicMock()
-        MockQMessageBox.return_value = mock_msg
-
-        btn_continue = MagicMock(name="btn_continue")
-        btn_cancel = MagicMock(name="btn_cancel")
-        btn_snapshot = MagicMock(name="btn_snapshot")
-        mock_msg.addButton.side_effect = [btn_continue, btn_cancel, btn_snapshot]
-        mock_msg.clickedButton.return_value = btn_snapshot
+        mock_dialog_cls.return_value = self._make_dialog(accepted=True, snapshot_requested=True)
 
         SafetyManager.confirm_action(parent, "risky op")
-        # Last setDisabled call should be False (re-enable)
-        last_call = parent.setDisabled.call_args_list[-1]
-        self.assertEqual(last_call, call(False))
+        self.assertEqual(parent.setDisabled.call_args_list[-1], call(False))
 
 
 if __name__ == "__main__":

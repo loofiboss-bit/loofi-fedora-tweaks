@@ -1,8 +1,10 @@
 """Loofi Web API server (FastAPI + Uvicorn)."""
 
+import math
+import ipaddress
 import os
 import threading
-import ipaddress
+from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
 
@@ -10,24 +12,133 @@ import uvicorn
 from api.routes import executor as executor_routes
 from api.routes import profiles as profiles_routes
 from api.routes import system as system_routes
-from fastapi import FastAPI, Form, HTTPException
+from fastapi import Depends, FastAPI, Form, HTTPException, Request, status
+from fastapi.security import HTTPAuthorizationCredentials
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
 
 from utils.auth import AuthManager
+from utils.rate_limiter import TokenBucketRateLimiter
+
+
+@dataclass(frozen=True)
+class RouteRateLimitPolicy:
+    """Rate-limit configuration for an API route policy bucket."""
+
+    rate: float
+    capacity: int
+    retry_guidance: str
+
+
+class RoutePolicyLimiter:
+    """Track per-client token buckets for API route policy buckets."""
+
+    def __init__(self, config: dict[str, RouteRateLimitPolicy]):
+        self._config = config
+        self._limiters: dict[tuple[str, str], TokenBucketRateLimiter] = {}
+        self._lock = threading.Lock()
+
+    def _get_limiter(self, bucket: str, client_key: str) -> TokenBucketRateLimiter:
+        key = (bucket, client_key)
+        with self._lock:
+            limiter = self._limiters.get(key)
+            if limiter is None:
+                policy = self._config[bucket]
+                limiter = TokenBucketRateLimiter(
+                    rate=policy.rate,
+                    capacity=policy.capacity,
+                )
+                self._limiters[key] = limiter
+            return limiter
+
+    def allow(self, bucket: str, client_key: str) -> tuple[bool, int]:
+        limiter = self._get_limiter(bucket, client_key)
+        if limiter.acquire():
+            return True, 0
+
+        policy = self._config[bucket]
+        if policy.rate <= 0:
+            retry_after = 60
+        else:
+            available_tokens = limiter.available_tokens
+            retry_after = max(
+                1,
+                math.ceil(max(0.0, 1.0 - available_tokens) / policy.rate),
+            )
+
+        return False, retry_after
 
 
 class APIServer:
     """FastAPI server wrapper to run in a background thread."""
+
+    _AUTH_ROUTE_PATHS = frozenset({"/key", "/token"})
+    _RATE_LIMIT_CONFIG: dict[str, RouteRateLimitPolicy] = {
+        "auth": RouteRateLimitPolicy(
+            rate=0.2,
+            capacity=6,
+            retry_guidance="Retry after the backoff window before attempting bootstrap or token issuance again.",
+        ),
+        "read": RouteRateLimitPolicy(
+            rate=2.0,
+            capacity=30,
+            retry_guidance="Retry after the backoff window or reduce polling frequency for read-only endpoints.",
+        ),
+        "mutation": RouteRateLimitPolicy(
+            rate=0.5,
+            capacity=10,
+            retry_guidance="Retry after the backoff window and avoid replaying repeated mutation requests in a tight loop.",
+        ),
+    }
 
     def __init__(self, host: str = "127.0.0.1", port: int = 8000, allow_expose: bool = False):
         self.host = host
         self.port = port
         self.allow_expose = allow_expose
         self._validate_bind_host()
+        self._policy_limiter = RoutePolicyLimiter(self._RATE_LIMIT_CONFIG)
         self.app = self._create_app()
         self._thread: Optional[threading.Thread] = None
+
+    def _normalize_policy_path(self, path: str) -> str:
+        if path.startswith("/api"):
+            normalized = path[4:]
+            return normalized or "/"
+        return path
+
+    def _resolve_route_policy(self, method: str, path: str) -> str:
+        normalized_path = self._normalize_policy_path(path)
+        normalized_method = method.upper()
+
+        if normalized_path in system_routes.PUBLIC_ROUTE_PATHS:
+            return "public"
+
+        if normalized_path in self._AUTH_ROUTE_PATHS:
+            return "auth"
+
+        if normalized_path in executor_routes.MUTATING_ROUTE_PATHS:
+            return "mutation"
+
+        if normalized_path in profiles_routes.MUTATING_ROUTE_PATHS:
+            return "mutation"
+
+        if normalized_path in system_routes.READ_ONLY_ROUTE_PATHS:
+            return "read"
+
+        if profiles_routes.is_read_only_route_path(normalized_path):
+            return "read"
+
+        if normalized_method == "GET":
+            return "read"
+
+        return "mutation"
+
+    def _client_key(self, request: Request) -> str:
+        if request.client and request.client.host:
+            return request.client.host
+        return "unknown"
 
     def _create_app(self) -> FastAPI:
         app = FastAPI(title="Loofi Web API", version="20.0.0")
@@ -40,23 +151,84 @@ class APIServer:
         allowed_origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()] or default_origins
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
+        @app.middleware("http")
+        async def enforce_route_policy(request: Request, call_next):
+            policy_bucket = self._resolve_route_policy(request.method, request.url.path)
+
+            if policy_bucket != "public":
+                allowed, retry_after = self._policy_limiter.allow(
+                    policy_bucket,
+                    self._client_key(request),
+                )
+                if not allowed:
+                    guidance = self._RATE_LIMIT_CONFIG[policy_bucket].retry_guidance
+                    return JSONResponse(
+                        status_code=status.HTTP_429_TOO_MANY_REQUESTS,
+                        content={
+                            "detail": f"Too many {policy_bucket} requests. Retry after {retry_after} seconds. {guidance}",
+                            "retry_after_seconds": retry_after,
+                            "route_policy": policy_bucket,
+                        },
+                        headers={
+                            "Retry-After": str(retry_after),
+                            "X-Loofi-Route-Policy": policy_bucket,
+                        },
+                    )
+
+            response = await call_next(request)
+            response.headers.setdefault("X-Loofi-Route-Policy", policy_bucket)
+            return response
+
         # API routes
         app.include_router(system_routes.router, prefix="/api")
         app.include_router(executor_routes.router, prefix="/api")
         app.include_router(profiles_routes.router, prefix="/api")
 
+        def auth_storage_error_to_http(error: Exception) -> HTTPException:
+            if isinstance(error, PermissionError):
+                detail = "Stored API auth data has unsafe permissions"
+            else:
+                detail = "Stored API auth data is invalid"
+
+            return HTTPException(
+                status_code=status.HTTP_503_SERVICE_UNAVAILABLE,
+                detail=detail,
+            )
+
         @app.post("/api/token")
         def issue_token(api_key: str = Form(...)):
             """Issue JWT token for valid API key (form-urlencoded)."""
             try:
+                if AuthManager.bootstrap_pending():
+                    raise HTTPException(
+                        status_code=status.HTTP_409_CONFLICT,
+                        detail="Bootstrap API key required before requesting tokens",
+                    )
+
                 token = AuthManager.issue_token(api_key)
                 return {"access_token": token, "token_type": "bearer"}
-            except (RuntimeError, ValueError, OSError) as e:
-                raise HTTPException(status_code=401, detail=str(e))
+            except HTTPException:
+                raise
+            except (RuntimeError, ValueError, OSError, PermissionError) as e:
+                raise auth_storage_error_to_http(e)
 
         @app.post("/api/key")
-        def generate_key():
-            api_key = AuthManager.generate_api_key()
+        def generate_key(
+            credentials: Optional[HTTPAuthorizationCredentials] = Depends(AuthManager.security),
+        ):
+            try:
+                bootstrap_pending = AuthManager.bootstrap_pending()
+            except (RuntimeError, ValueError, OSError, PermissionError) as e:
+                raise auth_storage_error_to_http(e)
+
+            if not bootstrap_pending:
+                AuthManager.verify_bearer_token(credentials)
+
+            try:
+                api_key = AuthManager.generate_api_key()
+            except (RuntimeError, ValueError, OSError, PermissionError) as e:
+                raise auth_storage_error_to_http(e)
+
             return {"api_key": api_key}
 
         # Static file serving

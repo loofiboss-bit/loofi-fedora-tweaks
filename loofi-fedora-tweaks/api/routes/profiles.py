@@ -1,6 +1,6 @@
 """Profile management API routes (v24.0)."""
 
-from typing import Any, Dict
+from typing import Any, Dict, FrozenSet
 
 from fastapi import APIRouter, Depends, status
 from pydantic import BaseModel, Field
@@ -8,6 +8,18 @@ from utils.auth import AuthManager
 from utils.profiles import ProfileManager
 
 router = APIRouter()
+READ_ONLY_ROUTE_PATHS: FrozenSet[str] = frozenset({"/profiles", "/profiles/export-all"})
+MUTATING_ROUTE_PATHS: FrozenSet[str] = frozenset(
+    {"/profiles/apply", "/profiles/import-all", "/profiles/import"}
+)
+
+
+def is_read_only_route_path(path: str) -> bool:
+    """Return True when the profile API path is read-only."""
+    if path in READ_ONLY_ROUTE_PATHS:
+        return True
+
+    return path.startswith("/profiles/") and path.endswith("/export")
 
 
 class ProfileApplyPayload(BaseModel):

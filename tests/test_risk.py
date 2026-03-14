@@ -75,6 +75,15 @@ class TestRiskRegistry(unittest.TestCase):
         revert = RiskRegistry.get_revert_instructions("nonexistent_xyz")
         self.assertIsNone(revert)
 
+    def test_resolve_action_id_from_description(self):
+        self.assertEqual(
+            RiskRegistry.resolve_action_id("Full System Update"),
+            "dnf_update",
+        )
+
+    def test_resolve_action_id_unknown_description(self):
+        self.assertIsNone(RiskRegistry.resolve_action_id("Firmware Update"))
+
     def test_get_all_actions(self):
         actions = RiskRegistry.get_all_actions()
         self.assertIsInstance(actions, dict)

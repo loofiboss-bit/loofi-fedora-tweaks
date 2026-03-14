@@ -601,6 +601,42 @@ class PluginInstaller:
                 error=f"Check update error: {exc}"
             )
 
+    def update_if_available(
+        self,
+        plugin_id: str,
+        update_data: Optional[Dict[str, Any]] = None,
+    ) -> InstallerResult:
+        """Update a plugin only when an update is available.
+
+        This helper preserves the existing update() safety path, including
+        checksum verification during install and backup/rollback behavior if
+        the replacement install fails.
+        """
+        check_result = self.check_update(plugin_id) if update_data is None else InstallerResult(
+            success=True,
+            plugin_id=plugin_id,
+            data=update_data,
+        )
+
+        if not check_result.success:
+            return check_result
+
+        update_payload = check_result.data or {}
+        if not update_payload.get("update_available"):
+            current_version = update_payload.get("current_version")
+            return InstallerResult(
+                success=True,
+                plugin_id=plugin_id,
+                version=current_version,
+                data={
+                    "update_available": False,
+                    "current_version": current_version,
+                    "new_version": update_payload.get("new_version", current_version),
+                },
+            )
+
+        return self.update(plugin_id, version=update_payload.get("new_version"))
+
     def list_installed(self) -> InstallerResult:
         """
         List all installed plugins.

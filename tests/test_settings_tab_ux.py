@@ -83,5 +83,34 @@ class TestSettingsExperienceLevelEdgeCases(unittest.TestCase):
             mock_set.assert_called_once_with(ExperienceLevel.BEGINNER)
 
 
+class TestSettingsBehaviorReset(unittest.TestCase):
+    """Behavior tab reset should include new safety toggles."""
+
+    def test_reset_behavior_restores_safe_mode_checkbox(self):
+        from ui.settings_tab import SettingsTab
+
+        tab = SettingsTab.__new__(SettingsTab)
+        tab._mgr = MagicMock()
+        tab._mgr.get.side_effect = lambda key: {
+            'start_minimized': False,
+            'show_notifications': True,
+            'confirm_dangerous_actions': True,
+            'safe_mode_enabled': True,
+            'restore_last_tab': False,
+        }[key]
+        tab.start_minimized_cb = MagicMock()
+        tab.notifications_cb = MagicMock()
+        tab.confirm_cb = MagicMock()
+        tab.safe_mode_cb = MagicMock()
+        tab.restore_tab_cb = MagicMock()
+
+        tab._reset_behavior()
+
+        tab._mgr.reset_group.assert_called_once()
+        reset_keys = tab._mgr.reset_group.call_args[0][0]
+        self.assertIn('safe_mode_enabled', reset_keys)
+        tab.safe_mode_cb.setChecked.assert_called_once_with(True)
+
+
 if __name__ == '__main__':
     unittest.main()

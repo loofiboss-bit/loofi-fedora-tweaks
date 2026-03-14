@@ -5,6 +5,7 @@ Handles backup and restore of all app settings.
 
 import json
 import logging
+import os
 import platform
 import subprocess
 from datetime import datetime
@@ -295,7 +296,7 @@ class ConfigManager:
         """Save current runtime config."""
         cls.ensure_dirs()
         try:
-            with open(cls.CONFIG_FILE, "w") as f:
+            with open(cls.CONFIG_FILE, "w", encoding="utf-8") as f:
                 json.dump(config, f, indent=2)
             return True
         except (OSError, json.JSONDecodeError) as e:
@@ -306,9 +307,53 @@ class ConfigManager:
     def load_config(cls) -> Optional[dict]:
         """Load saved config."""
         try:
-            with open(cls.CONFIG_FILE, "r") as f:
+            with open(cls.CONFIG_FILE, "r", encoding="utf-8") as f:
                 config: dict = json.load(f)
                 return config
         except (OSError, json.JSONDecodeError) as e:
             logger.debug("Failed to load config: %s", e)
             return None
+
+    @classmethod
+    def load_json_file(cls, path: Path) -> Optional[dict]:
+        """Load a JSON object from an arbitrary file path."""
+        try:
+            with open(path, "r", encoding="utf-8") as f:
+                data = json.load(f)
+        except (OSError, json.JSONDecodeError) as e:
+            logger.debug("Failed to load JSON file %s: %s", path, e)
+            return None
+
+        if not isinstance(data, dict):
+            logger.debug("Rejected JSON file %s because it does not contain an object", path)
+            return None
+
+        return data
+
+    @classmethod
+    def save_json_file(
+        cls, path: Path, data: dict, *, permissions: int | None = None
+    ) -> bool:
+        """Save a JSON object to an arbitrary file path."""
+        cls.ensure_dirs()
+        temp_path = path.with_suffix(f"{path.suffix}.tmp")
+
+        try:
+            with open(temp_path, "w", encoding="utf-8") as f:
+                json.dump(data, f, indent=2, sort_keys=True)
+                f.write("\n")
+
+            os.replace(temp_path, path)
+
+            if permissions is not None and os.name != "nt":
+                os.chmod(path, permissions)
+
+            return True
+        except (OSError, TypeError, ValueError) as e:
+            logger.debug("Failed to save JSON file %s: %s", path, e)
+            try:
+                if temp_path.exists():
+                    temp_path.unlink()
+            except OSError:
+                logger.debug("Failed to clean up temp JSON file %s", temp_path)
+            return False

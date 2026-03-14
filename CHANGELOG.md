@@ -6,17 +6,27 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.0.0] - 2026-03-14 "Aegis"
+
 ### Added
 
-- Add focused regression coverage for loopback-only Web API startup, explicit `--unsafe-expose` opt-in, and non-loopback refusal behavior
+- Add Safe Mode as a persisted, default-on guard that blocks mutating API execution until explicitly disabled
+- Add route-aware API throttling with public, auth, read, and mutation policy buckets plus `Retry-After` guidance
+- Add dialog-backed risk badges and revert hints for dangerous actions in shared confirmation flows
+- Add focused regression coverage for Safe Mode, daemon plugin-update safety, loopback-only API binds, auth bootstrap/storage failures, and route-policy behavior
 
 ### Changed
 
-- Require explicit `--unsafe-expose` before the headless Web API will honor non-loopback `LOOFI_API_HOST` values
+- Require explicit `--unsafe-expose` before the Web API honors non-loopback `LOOFI_API_HOST` values
+- Promote `plugin_auto_update` to a first-class persisted setting with an explicit default of `false`
+- Prefer explicit Settings values over legacy config fallback for daemon-driven plugin auto-updates
+- Align release/runtime/package metadata on `3.0.0` and codename `Aegis`
 
 ### Fixed
 
-- Fix silent Web API trust-boundary expansion by failing closed when non-loopback binds are requested without opt-in
+- Fix silent API trust-boundary expansion by failing closed on unsafe bind requests without opt-in
+- Fix persisted API auth handling to reject invalid or unsafe permission states instead of widening bootstrap trust implicitly
+- Fix plugin auto-update flow to retain integrity verification and rollback guarantees while defaulting to no auto-install behavior
 
 ## [2.12.0] - 2026-02-27 "API Migration Slice 8"
 

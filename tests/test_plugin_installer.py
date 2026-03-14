@@ -22,7 +22,7 @@ def _create_test_archive(tmpdir: Path, plugin_id: str) -> Path:
     archive_path = tmpdir / f"{plugin_id}.loofi-plugin"
     plugin_dir = tmpdir / plugin_id
     plugin_dir.mkdir()
-    
+
     manifest = {
         "id": plugin_id,
         "name": plugin_id.title(),
@@ -31,13 +31,13 @@ def _create_test_archive(tmpdir: Path, plugin_id: str) -> Path:
         "author": "Test Author",
         "entrypoint": "plugin.py"
     }
-    
+
     (plugin_dir / "manifest.json").write_text(json.dumps(manifest))
     (plugin_dir / "plugin.py").write_text("# Plugin code")
-    
+
     with tarfile.open(archive_path, "w:gz") as tar:
         tar.add(plugin_dir, arcname=plugin_id)
-    
+
     return archive_path
 
 
@@ -112,10 +112,10 @@ class TestPluginInstallerExtractArchive:
             tmpdir = Path(tmpdir)
             archive = _create_test_archive(tmpdir, "test-plugin")
             dest = tmpdir / "extracted"
-            
+
             installer = PluginInstaller()
             result = installer._extract_archive(archive, dest)
-            
+
             assert result is True
             assert (dest / "test-plugin" / "manifest.json").exists()
             assert (dest / "test-plugin" / "plugin.py").exists()
@@ -126,10 +126,10 @@ class TestPluginInstallerExtractArchive:
             tmpdir = Path(tmpdir)
             archive = _create_test_archive(tmpdir, "test-plugin")
             dest = tmpdir / "does-not-exist"
-            
+
             installer = PluginInstaller()
             result = installer._extract_archive(archive, dest)
-            
+
             assert result is True
             assert dest.exists()
 
@@ -138,17 +138,17 @@ class TestPluginInstallerExtractArchive:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
             archive_path = tmpdir / "malicious.tar.gz"
-            
+
             # Create malicious archive with ../
             with tarfile.open(archive_path, "w:gz") as tar:
                 info = tarfile.TarInfo(name="../etc/passwd")
                 info.size = 0
                 tar.addfile(info)
-            
+
             dest = tmpdir / "dest"
             installer = PluginInstaller()
             result = installer._extract_archive(archive_path, dest)
-            
+
             assert result is False
 
     def test_extract_handles_corrupted_archive(self):
@@ -157,11 +157,11 @@ class TestPluginInstallerExtractArchive:
             tmpdir = Path(tmpdir)
             corrupted = tmpdir / "corrupted.tar.gz"
             corrupted.write_text("not a valid archive")
-            
+
             dest = tmpdir / "dest"
             installer = PluginInstaller()
             result = installer._extract_archive(corrupted, dest)
-            
+
             assert result is False
 
 
@@ -173,7 +173,7 @@ class TestPluginInstallerValidateManifest:
         with tempfile.TemporaryDirectory() as tmpdir:
             plugin_dir = Path(tmpdir) / "test-plugin"
             plugin_dir.mkdir()
-            
+
             manifest_data = {
                 "id": "test-plugin",
                 "name": "Test Plugin",
@@ -183,10 +183,10 @@ class TestPluginInstallerValidateManifest:
                 "entrypoint": "plugin.py"
             }
             (plugin_dir / "manifest.json").write_text(json.dumps(manifest_data))
-            
+
             installer = PluginInstaller()
             manifest = installer._validate_manifest(plugin_dir)
-            
+
             assert manifest is not None
             assert manifest.id == "test-plugin"
 
@@ -195,10 +195,10 @@ class TestPluginInstallerValidateManifest:
         with tempfile.TemporaryDirectory() as tmpdir:
             plugin_dir = Path(tmpdir) / "no-manifest"
             plugin_dir.mkdir()
-            
+
             installer = PluginInstaller()
             manifest = installer._validate_manifest(plugin_dir)
-            
+
             assert manifest is None
 
     def test_validate_rejects_incomplete_manifest(self):
@@ -206,17 +206,17 @@ class TestPluginInstallerValidateManifest:
         with tempfile.TemporaryDirectory() as tmpdir:
             plugin_dir = Path(tmpdir) / "incomplete"
             plugin_dir.mkdir()
-            
+
             incomplete = {
                 "id": "incomplete",
                 "name": "Name"
                 # Missing version, description, author, entrypoint
             }
             (plugin_dir / "manifest.json").write_text(json.dumps(incomplete))
-            
+
             installer = PluginInstaller()
             manifest = installer._validate_manifest(plugin_dir)
-            
+
             assert manifest is None
 
     def test_validate_handles_malformed_json(self):
@@ -225,10 +225,10 @@ class TestPluginInstallerValidateManifest:
             plugin_dir = Path(tmpdir) / "bad-json"
             plugin_dir.mkdir()
             (plugin_dir / "manifest.json").write_text("{ invalid json ")
-            
+
             installer = PluginInstaller()
             manifest = installer._validate_manifest(plugin_dir)
-            
+
             assert manifest is None
 
 
@@ -249,10 +249,10 @@ class TestPluginInstallerStateManagement:
             state_file = plugins_dir / "state.json"
             state_data = {"plugin-1": {"enabled": True, "version": "1.0"}}
             state_file.write_text(json.dumps(state_data))
-            
+
             installer = PluginInstaller(plugins_dir=plugins_dir)
             state = installer._load_state()
-            
+
             assert state == state_data
 
     def test_save_state_writes_json(self):
@@ -260,12 +260,12 @@ class TestPluginInstallerStateManagement:
         with tempfile.TemporaryDirectory() as tmpdir:
             installer = PluginInstaller(plugins_dir=Path(tmpdir))
             state = {"plugin-1": {"enabled": True}}
-            
+
             result = installer._save_state(state)
-            
+
             assert result is True
             assert installer.state_file.exists()
-            
+
             saved = json.loads(installer.state_file.read_text())
             assert saved == state
 
@@ -279,29 +279,29 @@ class TestPluginInstallerInstall:
         """install() downloads, verifies, and extracts plugin."""
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
-            
+
             # Create test archive
             archive = _create_test_archive(tmpdir, "test-plugin")
             archive_bytes = archive.read_bytes()
-            
+
             # Mock download
             mock_response = MagicMock()
             mock_response.read.return_value = archive_bytes
             mock_response.__enter__.return_value = mock_response
             mock_urlopen.return_value = mock_response
-            
+
             # Mock marketplace
             mock_marketplace = MagicMock()
             mock_marketplace_class.return_value = mock_marketplace
-            
+
             # Mock verifier
             installer = PluginInstaller(plugins_dir=tmpdir / "plugins")
             installer.verifier = MagicMock()
             installer.verifier.verify_checksum.return_value = VerificationResult(success=True)
-            
+
             metadata = _make_plugin_metadata("test-plugin")
             result = installer.install(metadata)
-            
+
             assert result.success is True
             assert result.plugin_id == "test-plugin"
 
@@ -314,16 +314,16 @@ class TestPluginInstallerInstall:
                 success=False,
                 error="Checksum mismatch"
             )
-            
+
             with patch('urllib.request.urlopen') as mock_urlopen:
                 mock_response = MagicMock()
                 mock_response.read.return_value = b"fake archive data"
                 mock_response.__enter__.return_value = mock_response
                 mock_urlopen.return_value = mock_response
-                
+
                 metadata = _make_plugin_metadata()
                 result = installer.install(metadata)
-                
+
                 assert result.success is False
                 assert "Checksum" in result.error or "verify" in result.error.lower()
 
@@ -336,14 +336,14 @@ class TestPluginInstallerUninstall:
         with tempfile.TemporaryDirectory() as tmpdir:
             plugins_dir = Path(tmpdir) / "plugins"
             plugins_dir.mkdir()
-            
+
             plugin_dir = plugins_dir / "test-plugin"
             plugin_dir.mkdir()
             (plugin_dir / "manifest.json").write_text("{}")
-            
+
             installer = PluginInstaller(plugins_dir=plugins_dir)
             result = installer.uninstall("test-plugin")
-            
+
             assert result.success is True
             assert not plugin_dir.exists()
 
@@ -352,14 +352,14 @@ class TestPluginInstallerUninstall:
         with tempfile.TemporaryDirectory() as tmpdir:
             plugins_dir = Path(tmpdir) / "plugins"
             plugins_dir.mkdir()
-            
+
             plugin_dir = plugins_dir / "test-plugin"
             plugin_dir.mkdir()
             (plugin_dir / "test.txt").write_text("data")
-            
+
             installer = PluginInstaller(plugins_dir=plugins_dir)
             result = installer.uninstall("test-plugin", create_backup=True)
-            
+
             assert result.success is True
             assert result.backup_path is not None
             assert result.backup_path.exists()
@@ -369,7 +369,7 @@ class TestPluginInstallerUninstall:
         with tempfile.TemporaryDirectory() as tmpdir:
             installer = PluginInstaller(plugins_dir=Path(tmpdir))
             result = installer.uninstall("nonexistent-plugin")
-            
+
             assert result.success is False
             assert "not found" in result.error.lower() or "exist" in result.error.lower()
 
@@ -382,7 +382,7 @@ class TestPluginInstallerListInstalled:
         with tempfile.TemporaryDirectory() as tmpdir:
             installer = PluginInstaller(plugins_dir=Path(tmpdir))
             result = installer.list_installed()
-            
+
             assert result.success is True
             assert result.data == []
 
@@ -390,7 +390,7 @@ class TestPluginInstallerListInstalled:
         """list_installed() finds all installed plugins."""
         with tempfile.TemporaryDirectory() as tmpdir:
             plugins_dir = Path(tmpdir)
-            
+
             for i in range(3):
                 plugin_dir = plugins_dir / f"plugin-{i}"
                 plugin_dir.mkdir()
@@ -403,10 +403,10 @@ class TestPluginInstallerListInstalled:
                     "entrypoint": "plugin.py"
                 }
                 (plugin_dir / "manifest.json").write_text(json.dumps(manifest))
-            
+
             installer = PluginInstaller(plugins_dir=plugins_dir)
             result = installer.list_installed()
-            
+
             assert result.success is True
             assert len(result.data) == 3
 
@@ -420,29 +420,105 @@ class TestPluginInstallerIntegration:
         with tempfile.TemporaryDirectory() as tmpdir:
             tmpdir = Path(tmpdir)
             plugins_dir = tmpdir / "plugins"
-            
+
             # Create archive
             archive = _create_test_archive(tmpdir, "lifecycle-plugin")
-            
+
             # Mock download
             mock_response = MagicMock()
             mock_response.read.return_value = archive.read_bytes()
             mock_response.__enter__.return_value = mock_response
             mock_urlopen.return_value = mock_response
-            
+
             installer = PluginInstaller(plugins_dir=plugins_dir)
             installer.verifier = MagicMock()
             installer.verifier.verify_checksum.return_value = VerificationResult(success=True)
-            
+
             # Install
             metadata = _make_plugin_metadata("lifecycle-plugin")
             install_result = installer.install(metadata)
             assert install_result.success is True
-            
+
             # List
             list_result = installer.list_installed()
             assert len(list_result.data) == 1
-            
+
             # Uninstall
             uninstall_result = installer.uninstall("lifecycle-plugin")
             assert uninstall_result.success is True
+
+
+class TestPluginInstallerAutoUpdate:
+    """Tests for guarded auto-update behavior."""
+
+    @patch.object(PluginInstaller, 'check_update')
+    @patch.object(PluginInstaller, 'update')
+    def test_update_if_available_updates_when_new_version_exists(self, mock_update, mock_check_update):
+        installer = PluginInstaller(plugins_dir=Path(tempfile.mkdtemp()) / 'plugins')
+        mock_check_update.return_value = installer.check_update.return_value = MagicMock(
+            success=True,
+            plugin_id='demo-plugin',
+            data={
+                'update_available': True,
+                'current_version': '1.0.0',
+                'new_version': '1.1.0',
+            },
+        )
+        mock_update.return_value = MagicMock(success=True, plugin_id='demo-plugin', version='1.1.0')
+
+        result = installer.update_if_available('demo-plugin')
+
+        assert result.success is True
+        mock_update.assert_called_once_with('demo-plugin', version='1.1.0')
+
+    @patch.object(PluginInstaller, 'check_update')
+    @patch.object(PluginInstaller, 'update')
+    def test_update_if_available_returns_noop_when_current(self, mock_update, mock_check_update):
+        installer = PluginInstaller(plugins_dir=Path(tempfile.mkdtemp()) / 'plugins')
+        mock_check_update.return_value = MagicMock(
+            success=True,
+            plugin_id='demo-plugin',
+            data={
+                'update_available': False,
+                'current_version': '1.0.0',
+                'new_version': '1.0.0',
+            },
+        )
+
+        result = installer.update_if_available('demo-plugin')
+
+        assert result.success is True
+        assert result.data['update_available'] is False
+        mock_update.assert_not_called()
+
+    @patch.object(PluginInstaller, 'install')
+    def test_update_restores_backup_when_install_fails(self, mock_install):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            plugins_dir = Path(tmpdir) / 'plugins'
+            plugin_dir = plugins_dir / 'demo-plugin'
+            plugin_dir.mkdir(parents=True)
+            manifest = {
+                'id': 'demo-plugin',
+                'name': 'Demo Plugin',
+                'version': '1.0.0',
+                'description': 'Test plugin',
+                'author': 'Tester',
+                'entrypoint': 'plugin.py',
+            }
+            (plugin_dir / 'manifest.json').write_text(json.dumps(manifest))
+            (plugin_dir / 'plugin.py').write_text('# original plugin')
+
+            installer = PluginInstaller(plugins_dir=plugins_dir)
+            mock_install.return_value = MagicMock(
+                success=False,
+                plugin_id='demo-plugin',
+                error='checksum mismatch',
+            )
+
+            result = installer.update('demo-plugin')
+
+            assert result.success is False
+            assert result.backup_path is not None
+            assert result.backup_path.exists()
+            assert 'Update failed' in result.error
+            assert (plugin_dir / 'plugin.py').read_text() == '# original plugin'

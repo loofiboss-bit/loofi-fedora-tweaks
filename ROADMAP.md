@@ -56,11 +56,11 @@
 | 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                      |
 | 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement              |
 | 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening             |
-| 3.0.0   | Aegis                           | ACTIVE  | API security, Safe Mode defaults, plugin update safety, and version consistency cleanup    |
+| 3.0.0   | Aegis                           | DONE    | API security, Safe Mode defaults, plugin update safety, and version consistency cleanup    |
 
 ---
 
-## [ACTIVE] v3.0.0 "Aegis" — API Security & UX Safety
+## [DONE] v3.0.0 "Aegis" — API Security & UX Safety
 
 ### Scope
 
@@ -71,14 +71,14 @@ plugin auto-update safety, and version consistency.
 
 ### Planned Deliverables
 
-- [ ] Activate v3.0.0 workflow metadata and restore a canonical Phase 3 planning baseline
-- [ ] Enforce loopback-only API startup unless `--unsafe-expose` is explicitly supplied
-- [ ] Harden auth/bootstrap storage and constrain `/api/key` + `/api/token` bootstrap behavior
-- [ ] Add route-aware API throttling and explicit read-only versus privileged endpoint policy buckets
-- [ ] Introduce Safe Mode as a default-on mutation guard with persisted user control
-- [ ] Surface registry-backed risk and revert guidance through shared confirmation flows
-- [ ] Formalize plugin auto-update as an explicit default-off setting in daemon/runtime behavior
-- [ ] Remove version drift by aligning runtime, packaging, and release documentation on `3.0.0`
+- [x] Activate v3.0.0 workflow metadata and restore a canonical Phase 3 planning baseline
+- [x] Enforce loopback-only API startup unless `--unsafe-expose` is explicitly supplied
+- [x] Harden auth/bootstrap storage and constrain `/api/key` + `/api/token` bootstrap behavior
+- [x] Add route-aware API throttling and explicit read-only versus privileged endpoint policy buckets
+- [x] Introduce Safe Mode as a default-on mutation guard with persisted user control
+- [x] Surface registry-backed risk and revert guidance through shared confirmation flows
+- [x] Formalize plugin auto-update as an explicit default-off setting in daemon/runtime behavior
+- [x] Remove version drift by aligning runtime, packaging, and release documentation on `3.0.0`
 
 ### Agent Assignment
 

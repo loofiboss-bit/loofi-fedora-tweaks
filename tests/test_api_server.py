@@ -14,20 +14,50 @@ pytestmark = pytest.mark.skipif(not _HAS_FASTAPI, reason="fastapi not installed"
 
 if _HAS_FASTAPI:
     from core.executor.action_result import ActionResult
-    from utils.api_server import APIServer
+    from utils.config_manager import ConfigManager
+    from utils.api_server import APIServer, RouteRateLimitPolicy
     from utils.auth import AuthManager
+else:
+    class RouteRateLimitPolicy:  # type: ignore[no-redef]
+        def __init__(self, rate=0.0, capacity=0, retry_guidance=""):
+            self.rate = rate
+            self.capacity = capacity
+            self.retry_guidance = retry_guidance
+
+    class APIServer:  # type: ignore[no-redef]
+        _RATE_LIMIT_CONFIG = {}
 
 
 @pytest.fixture
-def test_client():
+def isolated_config_dir(tmp_path):
+    """Redirect config storage to a temporary directory for API tests."""
+    original_dir = ConfigManager.CONFIG_DIR
+    original_file = ConfigManager.CONFIG_FILE
+    original_presets = ConfigManager.PRESETS_DIR
+
+    ConfigManager.CONFIG_DIR = tmp_path / "config"
+    ConfigManager.CONFIG_FILE = ConfigManager.CONFIG_DIR / "config.json"
+    ConfigManager.PRESETS_DIR = ConfigManager.CONFIG_DIR / "presets"
+
+    try:
+        yield ConfigManager.CONFIG_DIR
+    finally:
+        ConfigManager.CONFIG_DIR = original_dir
+        ConfigManager.CONFIG_FILE = original_file
+        ConfigManager.PRESETS_DIR = original_presets
+
+
+@pytest.fixture
+def test_client(isolated_config_dir):
     """Provide a FastAPI test client for the API server."""
     server = APIServer()
     return TestClient(server.app)
 
 
 @pytest.fixture
-def valid_api_key():
+def valid_api_key(isolated_config_dir):
     """Generate and return a valid API key."""
+    del isolated_config_dir
     return AuthManager.generate_api_key()
 
 
@@ -71,6 +101,14 @@ def test_health_endpoint(test_client):
     assert "codename" not in payload
 
 
+def test_health_endpoint_uses_public_route_policy(test_client):
+    """Public health checks should advertise the public route policy bucket."""
+    response = test_client.get("/api/health")
+
+    assert response.status_code == 200
+    assert response.headers["X-Loofi-Route-Policy"] == "public"
+
+
 def test_token_flow(test_client, valid_api_key, mock_action_executor):
     """Test complete token generation and execution flow."""
     token_resp = test_client.post("/api/token", data={"api_key": valid_api_key})
@@ -86,6 +124,113 @@ def test_token_flow(test_client, valid_api_key, mock_action_executor):
     assert exec_resp.status_code == 200
     data = exec_resp.json()
     assert data["preview"]["preview"] is True
+
+
+def test_api_key_bootstrap_allowed_without_auth(test_client):
+    """Initial API key bootstrap should remain available without bearer auth."""
+    response = test_client.post("/api/key")
+
+    assert response.status_code == 200
+    payload = response.json()
+    assert isinstance(payload["api_key"], str)
+    assert payload["api_key"]
+
+
+def test_api_key_rotation_requires_auth_after_bootstrap(test_client):
+    """Unauthenticated key rotation should be rejected after bootstrap completes."""
+    first_response = test_client.post("/api/key")
+    assert first_response.status_code == 200
+
+    second_response = test_client.post("/api/key")
+
+    assert second_response.status_code == 401
+    assert "Missing bearer token" in second_response.json()["detail"]
+
+
+def test_api_key_rotation_allows_authenticated_caller(test_client):
+    """Authenticated callers should be able to rotate the stored API key."""
+    first_key = test_client.post("/api/key").json()["api_key"]
+    token_response = test_client.post("/api/token", data={"api_key": first_key})
+    assert token_response.status_code == 200
+    token = token_response.json()["access_token"]
+
+    rotate_response = test_client.post(
+        "/api/key",
+        headers={"Authorization": f"Bearer {token}"},
+    )
+
+    assert rotate_response.status_code == 200
+    assert rotate_response.json()["api_key"] != first_key
+
+
+def test_token_generation_requires_bootstrap_key(test_client):
+    """Token requests should fail clearly until bootstrap has provisioned an API key."""
+    response = test_client.post("/api/token", data={"api_key": "missing-key"})
+
+    assert response.status_code == 409
+    assert "Bootstrap API key required" in response.json()["detail"]
+
+
+@patch("utils.api_server.AuthManager.bootstrap_pending", side_effect=PermissionError("unsafe perms"))
+def test_api_key_rejects_unsafe_auth_storage(mock_bootstrap_pending, test_client):
+    """Bootstrap should fail closed when auth storage permissions are unsafe."""
+    response = test_client.post("/api/key")
+
+    assert response.status_code == 503
+    assert "unsafe permissions" in response.json()["detail"]
+
+
+@patch("utils.api_server.AuthManager.issue_token", side_effect=ValueError("bad auth blob"))
+@patch("utils.api_server.AuthManager.bootstrap_pending", return_value=False)
+def test_api_token_rejects_invalid_auth_storage(mock_bootstrap_pending, mock_issue_token, test_client):
+    """Token issuance should fail closed when persisted auth storage is invalid."""
+    response = test_client.post("/api/token", data={"api_key": "candidate-key"})
+
+    assert response.status_code == 503
+    assert "invalid" in response.json()["detail"].lower()
+
+
+@patch.object(
+    APIServer,
+    "_RATE_LIMIT_CONFIG",
+    new={
+        "auth": RouteRateLimitPolicy(
+            rate=0.0,
+            capacity=2,
+            retry_guidance="Wait before retrying auth endpoints.",
+        ),
+        "read": RouteRateLimitPolicy(
+            rate=10.0,
+            capacity=50,
+            retry_guidance="Slow read polling.",
+        ),
+        "mutation": RouteRateLimitPolicy(
+            rate=10.0,
+            capacity=50,
+            retry_guidance="Slow mutation retries.",
+        ),
+    },
+)
+def test_auth_routes_rate_limited_with_retry_guidance(isolated_config_dir):
+    """Auth/bootstrap routes should emit explicit 429 retry guidance when throttled."""
+    del isolated_config_dir
+
+    server = APIServer()
+    client = TestClient(server.app)
+
+    api_key = client.post("/api/key").json()["api_key"]
+    ok_response = client.post("/api/token", data={"api_key": api_key})
+    limited_response = client.post("/api/token", data={"api_key": api_key})
+
+    assert ok_response.status_code == 200
+    assert limited_response.status_code == 429
+    assert limited_response.headers["X-Loofi-Route-Policy"] == "auth"
+    assert int(limited_response.headers["Retry-After"]) >= 1
+
+    payload = limited_response.json()
+    assert payload["route_policy"] == "auth"
+    assert payload["retry_after_seconds"] >= 1
+    assert "Retry after" in payload["detail"]
 
 
 def test_api_server_rejects_non_loopback_bind_without_allow_expose():
@@ -105,6 +250,65 @@ def test_api_server_allows_ipv6_loopback_without_unsafe_expose():
     """Loopback IPv6 should remain a safe default bind target."""
     server = APIServer(host="::1", port=8000)
     assert server.host == "::1"
+
+
+def test_api_server_allows_localhost_without_unsafe_expose():
+    """The localhost hostname should remain an allowed default bind target."""
+    server = APIServer(host="localhost", port=8000)
+    assert server.host == "localhost"
+
+
+@patch.object(
+    APIServer,
+    "_RATE_LIMIT_CONFIG",
+    new={
+        "auth": RouteRateLimitPolicy(
+            rate=10.0,
+            capacity=50,
+            retry_guidance="Wait before retrying auth endpoints.",
+        ),
+        "read": RouteRateLimitPolicy(
+            rate=0.0,
+            capacity=1,
+            retry_guidance="Reduce read polling before retrying.",
+        ),
+        "mutation": RouteRateLimitPolicy(
+            rate=10.0,
+            capacity=50,
+            retry_guidance="Slow mutation retries.",
+        ),
+    },
+)
+@patch("utils.monitor.SystemMonitor.get_system_health")
+def test_read_only_routes_rate_limited_with_guidance(mock_health, isolated_config_dir):
+    """Authenticated read-only routes should throttle independently from mutations."""
+    del isolated_config_dir
+
+    mock_health.return_value = MagicMock(
+        hostname="test-host",
+        uptime=12345,
+        memory=MagicMock(used_human="1GB", total_human="8GB", percent_used=12.5),
+        cpu=MagicMock(load_1min=0.5, load_5min=0.6, load_15min=0.7, core_count=4, load_percent=15.0),
+        memory_status="good",
+        cpu_status="good",
+    )
+
+    client = TestClient(APIServer().app)
+    api_key = client.post("/api/key").json()["api_key"]
+    token = client.post("/api/token", data={"api_key": api_key}).json()["access_token"]
+    headers = {"Authorization": f"Bearer {token}"}
+
+    ok_response = client.get("/api/info", headers=headers)
+    limited_response = client.get("/api/info", headers=headers)
+
+    assert ok_response.status_code == 200
+    assert ok_response.headers["X-Loofi-Route-Policy"] == "read"
+    assert limited_response.status_code == 429
+    assert limited_response.headers["X-Loofi-Route-Policy"] == "read"
+    assert int(limited_response.headers["Retry-After"]) >= 1
+    payload = limited_response.json()
+    assert payload["route_policy"] == "read"
+    assert "Retry after" in payload["detail"]
 
 # ============================================================================
 # Authentication Security Tests
@@ -163,6 +367,8 @@ class TestAuthenticationSecurity:
 
     def test_token_generation_with_wrong_api_key(self, test_client):
         """Token generation with invalid API key should return 401."""
+        assert test_client.post("/api/key").status_code == 200
+
         response = test_client.post(
             "/api/token",
             data={"api_key": "wrong-api-key-12345"},
@@ -172,6 +378,8 @@ class TestAuthenticationSecurity:
 
     def test_token_generation_without_api_key(self, test_client):
         """Token generation without API key should return 422 validation error."""
+        assert test_client.post("/api/key").status_code == 200
+
         response = test_client.post("/api/token", data={})
         assert response.status_code == 422  # FastAPI validation error for missing required field
 

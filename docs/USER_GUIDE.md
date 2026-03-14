@@ -35,7 +35,9 @@ sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
 sudo dnf install loofi-fedora-tweaks
 ```
 
-Or download the RPM from the [Releases](https://github.com/loofitheboss/loofi-fedora-tweaks/releases) page:
+The GitHub repository now lives under [`multidraxter-bit/loofi-fedora-tweaks`](https://github.com/multidraxter-bit/loofi-fedora-tweaks), while the current COPR namespace remains `loofitheboss/loofi-fedora-tweaks`.
+
+Or download the RPM from the [Releases](https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases) page:
 
 ```bash
 sudo dnf install ./loofi-fedora-tweaks-*.noarch.rpm
@@ -270,7 +272,7 @@ If opening an issue, include:
 4. Reproduction steps
 5. Support bundle path
 
-Issue tracker: <https://github.com/loofitheboss/loofi-fedora-tweaks/issues>
+Issue tracker: <https://github.com/multidraxter-bit/loofi-fedora-tweaks/issues>
 
 ---
 

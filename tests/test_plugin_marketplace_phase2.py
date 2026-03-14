@@ -332,15 +332,20 @@ class TestPermissionConsentDialog(unittest.TestCase):
 class TestDaemonAutoUpdate(unittest.TestCase):
     """Test daemon auto-update functionality."""
 
+    @patch('utils.daemon.SettingsManager')
     @patch('utils.daemon.PluginInstaller')
     @patch('utils.daemon.PluginLoader')
     @patch('utils.daemon.ConfigManager')
-    def test_check_plugin_updates(self, mock_config, mock_loader_cls, mock_installer_cls):
+    def test_check_plugin_updates(self, mock_config, mock_loader_cls, mock_installer_cls, mock_settings_cls):
         """Test daemon checks for plugin updates."""
         from utils.daemon import Daemon
 
         # Mock config
         mock_config.load_config = Mock(return_value={"plugin_auto_update": True})
+        mock_settings = Mock()
+        mock_settings.is_explicitly_set.return_value = False
+        mock_settings.get.return_value = False
+        mock_settings_cls.instance.return_value = mock_settings
 
         # Mock loader
         mock_loader = Mock()
@@ -361,7 +366,7 @@ class TestDaemonAutoUpdate(unittest.TestCase):
                 "new_version": "1.1.0"
             }
         ))
-        mock_installer.update = Mock(return_value=InstallerResult(
+        mock_installer.update_if_available = Mock(return_value=InstallerResult(
             success=True,
             plugin_id="test-plugin",
             version="1.1.0"
@@ -373,17 +378,29 @@ class TestDaemonAutoUpdate(unittest.TestCase):
 
         # Verify update was called
         mock_installer.check_update.assert_called_once_with("test-plugin")
-        mock_installer.update.assert_called_once_with("test-plugin")
+        mock_installer.update_if_available.assert_called_once_with(
+            "test-plugin",
+            update_data={
+                "update_available": True,
+                "current_version": "1.0.0",
+                "new_version": "1.1.0"
+            },
+        )
 
+    @patch('utils.daemon.SettingsManager')
     @patch('utils.daemon.PluginInstaller')
     @patch('utils.daemon.PluginLoader')
     @patch('utils.daemon.ConfigManager')
-    def test_auto_update_disabled(self, mock_config, mock_loader_cls, mock_installer_cls):
+    def test_auto_update_disabled(self, mock_config, mock_loader_cls, mock_installer_cls, mock_settings_cls):
         """Test daemon respects auto-update disabled setting."""
         from utils.daemon import Daemon
 
         # Mock config with auto-update disabled
         mock_config.load_config = Mock(return_value={"plugin_auto_update": False})
+        mock_settings = Mock()
+        mock_settings.is_explicitly_set.return_value = False
+        mock_settings.get.return_value = False
+        mock_settings_cls.instance.return_value = mock_settings
 
         mock_installer = Mock()
         mock_installer_cls.return_value = mock_installer
@@ -394,14 +411,19 @@ class TestDaemonAutoUpdate(unittest.TestCase):
         # Verify no update check was performed
         mock_installer.check_update.assert_not_called()
 
+    @patch('utils.daemon.SettingsManager')
     @patch('utils.daemon.PluginInstaller')
     @patch('utils.daemon.PluginLoader')
     @patch('utils.daemon.ConfigManager')
-    def test_skip_disabled_plugins(self, mock_config, mock_loader_cls, mock_installer_cls):
+    def test_skip_disabled_plugins(self, mock_config, mock_loader_cls, mock_installer_cls, mock_settings_cls):
         """Test daemon skips disabled plugins."""
         from utils.daemon import Daemon
 
         mock_config.load_config = Mock(return_value={"plugin_auto_update": True})
+        mock_settings = Mock()
+        mock_settings.is_explicitly_set.return_value = False
+        mock_settings.get.return_value = False
+        mock_settings_cls.instance.return_value = mock_settings
 
         # Mock loader with disabled plugin
         mock_loader = Mock()

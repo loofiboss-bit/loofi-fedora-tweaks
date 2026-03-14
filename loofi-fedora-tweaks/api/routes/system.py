@@ -5,6 +5,8 @@ Security:
 - /info and /agents require Bearer JWT authentication.
 """
 
+from typing import FrozenSet
+
 from core.agents import AgentRegistry
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
@@ -13,6 +15,8 @@ from utils.auth import AuthManager
 from utils.monitor import SystemMonitor
 
 router = APIRouter()
+PUBLIC_ROUTE_PATHS: FrozenSet[str] = frozenset({"/health"})
+READ_ONLY_ROUTE_PATHS: FrozenSet[str] = frozenset({"/info", "/agents"})
 
 
 class HealthResponse(BaseModel):
