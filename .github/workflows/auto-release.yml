@@ -659,8 +659,14 @@ jobs:
             CHROOT_ARGS="${CHROOT_ARGS} --chroot ${chroot}"
           done
           echo "Target chroots:${CHROOT_ARGS}"
+          set +e
           # shellcheck disable=SC2086
           copr-cli build "${COPR_TARGET}" "${SRPM}" --nowait ${CHROOT_ARGS}
+          STATUS=$?
+          set -e
+          if [ "$STATUS" -ne 0 ]; then
+            echo "::warning::COPR submission failed for ${COPR_TARGET}; GitHub release assets are still published successfully."
+          fi
 
       - name: COPR build summary
         if: always()
