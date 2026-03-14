@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v2.11.0 "API Migration Slice 7"
+# Loofi Fedora Tweaks v3.0.0 "Aegis"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofitheboss/loofi-fedora-tweaks/releases/tag/v2.11.0">
-    <img src="https://img.shields.io/badge/Release-v2.11.0-blue?style=for-the-badge&logo=github" alt="Release v2.11.0"/>
+  <a href="https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases/tag/v3.0.0">
+    <img src="https://img.shields.io/badge/Release-v3.0.0-blue?style=for-the-badge&logo=github" alt="Release v3.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43-blue?style=for-the-badge&logo=fedora" alt="Fedora 43"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -41,27 +41,27 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What Is New in v2.11.0?
+## What Is New in v3.0.0?
 
-`v2.11.0 "API Migration Slice 7"` focuses on hardening network, firewall, and system service local execution paths.
+`v3.0.0 "Aegis"` ships the stabilization and safety defaults that close the current API and plugin-update hardening line.
 
-- Network write paths now enforce strict success/failure based on subprocess exit codes.
-- Active-connection detection is deterministic, preventing substring misclassification.
-- Firewall mutator commands are normalized to `pkexec` patterns with explicit timeout enforcement.
-- Daemon/local parity is finalized for firewall and system service read paths.
-- All privileged actions require audit logging and explicit timeout; no `sudo` or `shell=True` usage.
+- The Web API now defaults to loopback-only binding and refuses non-loopback startup unless `--unsafe-expose` is provided explicitly.
+- Auth bootstrap and token issuance are hardened around owner-only auth storage, deterministic bootstrap behavior, and route-aware throttling.
+- Safe Mode is enabled by default for API mutations and must be explicitly disabled before mutating `/api/execute` requests are allowed.
+- Dangerous actions now surface registry-backed risk badges and revert hints in the shared confirmation flow.
+- Plugin auto-update is formalized as a persisted setting, defaults to off, and still preserves integrity verification plus rollback behavior when enabled.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOTES-v2.11.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v3.0.0.md`](docs/releases/RELEASE-NOTES-v3.0.0.md)
 
 ## Current Development Cycle
 
-Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
+Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and next implementation slice.
 
-Current stable release is **v2.11.0 "API Migration Slice 7"**.
+Current stable release is **v3.0.0 "Aegis"**.
 
-Active development is tracking **v3.0.0 "Aegis"** in [`ROADMAP.md`](ROADMAP.md), focused on API exposure control, auth/bootstrap hardening, Safe Mode defaults, plugin update safety, and version consistency cleanup.
+`Aegis` completes the current API exposure, bootstrap/auth, Safe Mode, plugin-update safety, and version-consistency stabilization tranche.
 
-Latest shipped slice notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOTES-v2.11.0.md)
+Latest shipped notes: [`docs/releases/RELEASE-NOTES-v3.0.0.md`](docs/releases/RELEASE-NOTES-v3.0.0.md)
 
 ---
 
@@ -77,6 +77,8 @@ Latest shipped slice notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/rele
 
 The package is published on [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/). This gives you automatic updates via `dnf`.
 
+The GitHub repository now lives under [`multidraxter-bit/loofi-fedora-tweaks`](https://github.com/multidraxter-bit/loofi-fedora-tweaks), but the current COPR namespace remains `loofitheboss/loofi-fedora-tweaks`.
+
 ```bash
 sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
 sudo dnf install loofi-fedora-tweaks
@@ -91,7 +93,7 @@ sudo dnf copr remove loofitheboss/loofi-fedora-tweaks
 
 ### Install from a Release RPM
 
-Download the `.noarch.rpm` from the [Releases](https://github.com/loofitheboss/loofi-fedora-tweaks/releases) page:
+Download the `.noarch.rpm` from the [Releases](https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases) page:
 
 ```bash
 sudo dnf install ./loofi-fedora-tweaks-*.noarch.rpm
@@ -100,7 +102,7 @@ sudo dnf install ./loofi-fedora-tweaks-*.noarch.rpm
 ### Run from Source
 
 ```bash
-git clone https://github.com/loofitheboss/loofi-fedora-tweaks.git
+git clone https://github.com/multidraxter-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
 python3 -m venv .venv
 source .venv/bin/activate
@@ -137,6 +139,12 @@ loofi-fedora-tweaks --web --unsafe-expose
 ```
 
 `--unsafe-expose` is required for any non-loopback bind. Without it, the Web API refuses startup instead of silently widening network exposure.
+
+Additional API safety defaults in `v3.0.0`:
+
+- `POST /api/key` is unauthenticated only during first-run bootstrap; later rotations require a Bearer token.
+- `POST /api/token`, authenticated read routes, and mutation routes each have separate rate-limit buckets with retry guidance.
+- Safe Mode defaults to enabled and blocks mutating `/api/execute` requests until you disable it in **Settings → Behavior**.
 
 Optional shell alias for convenience:
 

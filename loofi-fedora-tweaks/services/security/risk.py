@@ -35,12 +35,27 @@ class RiskRegistry:
 
     _instance: Optional["RiskRegistry"] = None
     _registry: Dict[str, RiskEntry] = {}
+    _description_aliases: Dict[str, str] = {}
 
     def __new__(cls):
         if cls._instance is None:
             cls._instance = super().__new__(cls)
             cls._registry = cls._build_registry()
+            cls._description_aliases = cls._build_description_aliases()
         return cls._instance
+
+    @staticmethod
+    def _normalize_action_text(value: str) -> str:
+        return " ".join(value.lower().strip().split())
+
+    @classmethod
+    def _build_description_aliases(cls) -> Dict[str, str]:
+        return {
+            cls._normalize_action_text("System Update (DNF)"): "dnf_update",
+            cls._normalize_action_text("Full System Update"): "dnf_update",
+            cls._normalize_action_text("Remove Unused Packages (Risky)"): "dnf_remove",
+            cls._normalize_action_text("Clean DNF Cache"): "dnf_clean",
+        }
 
     @classmethod
     def _build_registry(cls) -> Dict[str, RiskEntry]:
@@ -221,6 +236,16 @@ class RiskRegistry:
         if entry and entry.revert_description:
             return entry.revert_description
         return None
+
+    @staticmethod
+    def resolve_action_id(action: str) -> Optional[str]:
+        """Resolve a human-readable action label to a registered action ID."""
+        if not action:
+            return None
+
+        registry = RiskRegistry()
+        normalized = registry._normalize_action_text(action)
+        return registry._description_aliases.get(normalized)
 
     @staticmethod
     def get_all_actions() -> Dict[str, RiskEntry]:

@@ -135,6 +135,36 @@ class TestConfirmStaticMethod(unittest.TestCase):
                 )
                 self.assertTrue(result)
 
+    def test_resolve_risk_context_uses_registry_defaults(self):
+        from ui.confirm_dialog import ConfirmActionDialog
+
+        action_key, undo_hint, risk_level = ConfirmActionDialog._resolve_risk_context(
+            action="Full System Update",
+            action_key="",
+            undo_hint="",
+            risk_level="",
+        )
+
+        self.assertEqual(action_key, "dnf_update")
+        self.assertIn("Restore", undo_hint)
+        self.assertEqual(risk_level, "medium")
+
+    @patch('ui.confirm_dialog.SettingsManager')
+    def test_confirm_honors_per_action_suppression(self, mock_settings_cls):
+        mock_mgr = MagicMock()
+        mock_mgr.get.side_effect = lambda key: ["dnf_update"] if key == "suppressed_confirmations" else True
+        mock_settings_cls.instance.return_value = mock_mgr
+
+        from ui.confirm_dialog import ConfirmActionDialog
+
+        result = ConfirmActionDialog.confirm(
+            parent=None,
+            action="Full System Update",
+            action_key="dnf_update",
+        )
+
+        self.assertTrue(result)
+
 
 class TestOnConfirm(unittest.TestCase):
     """_on_confirm handler behaviour."""
@@ -223,6 +253,27 @@ class TestOnConfirm(unittest.TestCase):
 
         self.assertFalse(dialog._snapshot_requested)
         dialog.accept.assert_called_once()
+
+    @patch('ui.confirm_dialog.SettingsManager')
+    def test_on_confirm_saves_per_action_suppression(self, mock_settings_cls):
+        mock_mgr = MagicMock()
+        mock_mgr.get.return_value = []
+        mock_settings_cls.instance.return_value = mock_mgr
+
+        from ui.confirm_dialog import ConfirmActionDialog
+
+        dialog = MagicMock(spec=ConfirmActionDialog)
+        dialog.dont_ask_cb = MagicMock()
+        dialog.dont_ask_cb.isChecked.return_value = True
+        dialog._action_key = "dnf_update"
+        dialog.snapshot_cb = None
+        dialog._snapshot_requested = False
+        dialog.accept = MagicMock()
+
+        ConfirmActionDialog._on_confirm(dialog)
+
+        mock_mgr.set.assert_called_once_with("suppressed_confirmations", ["dnf_update"])
+        mock_mgr.save.assert_called_once()
 
 
 if __name__ == '__main__':

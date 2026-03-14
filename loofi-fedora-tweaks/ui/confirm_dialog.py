@@ -30,6 +30,7 @@ from PyQt6.QtWidgets import (
     QTextEdit,
     QVBoxLayout,
 )
+from services.security.risk import RiskRegistry
 from utils.log import get_logger
 from utils.settings import SettingsManager
 
@@ -56,12 +57,18 @@ class ConfirmActionDialog(QDialog):
         action_key: str = "",
     ):
         super().__init__(parent)
+        resolved_action_key, resolved_undo_hint, resolved_risk_level = self._resolve_risk_context(
+            action=action,
+            action_key=action_key,
+            undo_hint=undo_hint,
+            risk_level=risk_level,
+        )
         self.setWindowTitle(self.tr("Confirm Action"))
         self.setMinimumWidth(440)
         self.setMaximumWidth(600)
         self._snapshot_requested = False
         self._command_preview = command_preview
-        self._action_key = action_key  # For per-action "don't ask again"
+        self._action_key = resolved_action_key  # For per-action "don't ask again"
 
         layout = QVBoxLayout(self)
         layout.setSpacing(16)
@@ -79,15 +86,15 @@ class ConfirmActionDialog(QDialog):
         header_row.addWidget(action_label, 1)
 
         # Risk level badge (v38.0)
-        if risk_level:
+        if resolved_risk_level:
             badge_text = {
                 self.RISK_LOW: self.tr("LOW"),
                 self.RISK_MEDIUM: self.tr("MEDIUM"),
                 self.RISK_HIGH: self.tr("HIGH"),
-            }.get(risk_level, risk_level.upper())
+            }.get(resolved_risk_level, resolved_risk_level.upper())
             risk_badge = QLabel(badge_text)
             risk_badge.setObjectName("riskBadge")
-            risk_badge.setProperty("level", risk_level)
+            risk_badge.setProperty("level", resolved_risk_level)
             header_row.addWidget(risk_badge)
 
         layout.addLayout(header_row)
@@ -106,7 +113,7 @@ class ConfirmActionDialog(QDialog):
             layout.addWidget(desc_label)
 
         # Undo hint
-        if undo_hint:
+        if resolved_undo_hint:
             undo_frame = QFrame()
             undo_frame.setObjectName("confirmUndoFrame")
             undo_layout = QHBoxLayout(undo_frame)
@@ -114,7 +121,7 @@ class ConfirmActionDialog(QDialog):
             undo_icon = QLabel("💡")
             undo_icon.setObjectName("confirmIcon")
             undo_layout.addWidget(undo_icon)
-            undo_text = QLabel(undo_hint)
+            undo_text = QLabel(resolved_undo_hint)
             undo_text.setWordWrap(True)
             undo_text.setObjectName("confirmUndoText")
             undo_layout.addWidget(undo_text, 1)
@@ -208,6 +215,27 @@ class ConfirmActionDialog(QDialog):
         return self._snapshot_requested
 
     @staticmethod
+    def _resolve_risk_context(
+        *,
+        action: str,
+        action_key: str,
+        undo_hint: str,
+        risk_level: str,
+    ) -> tuple[str, str, str]:
+        """Fill missing risk context from the registry using action_key or action label."""
+        resolved_action_key = action_key or RiskRegistry.resolve_action_id(action) or ""
+        if not resolved_action_key:
+            return action_key, undo_hint, risk_level
+
+        entry = RiskRegistry.get_risk(resolved_action_key)
+        if not entry:
+            return resolved_action_key, undo_hint, risk_level
+
+        resolved_undo_hint = undo_hint or (entry.revert_description or "")
+        resolved_risk_level = risk_level or entry.level.value
+        return resolved_action_key, resolved_undo_hint, resolved_risk_level
+
+    @staticmethod
     def confirm(
         parent=None,
         action: str = "",
@@ -229,13 +257,19 @@ class ConfirmActionDialog(QDialog):
         ``risk_level`` (v38.0): "low", "medium", or "high" to show risk badge.
         ``action_key`` (v38.0): unique key for per-action "don't ask again".
         """
+        resolved_action_key, _resolved_undo_hint, _resolved_risk_level = ConfirmActionDialog._resolve_risk_context(
+            action=action,
+            action_key=action_key,
+            undo_hint=undo_hint,
+            risk_level=risk_level,
+        )
         if not force:
             try:
                 mgr = SettingsManager.instance()
                 # Check per-action suppression first (v38.0)
-                if action_key:
+                if resolved_action_key:
                     suppressed = mgr.get("suppressed_confirmations") or []
-                    if action_key in suppressed:
+                    if resolved_action_key in suppressed:
                         return True
                 if not mgr.get("confirm_dangerous_actions"):
                     return True
@@ -250,6 +284,6 @@ class ConfirmActionDialog(QDialog):
             offer_snapshot=offer_snapshot,
             command_preview=command_preview,
             risk_level=risk_level,
-            action_key=action_key,
+            action_key=resolved_action_key,
         )
         return dialog.exec() == QDialog.DialogCode.Accepted

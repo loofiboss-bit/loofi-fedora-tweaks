@@ -11,6 +11,8 @@
 
 ## 1. Publish RPM to Fedora COPR
 
+> GitHub ownership moved to `multidraxter-bit`, but the COPR namespace in the commands below remains `loofitheboss/loofi-fedora-tweaks` until the COPR project itself is migrated.
+
 ### Prerequisites
 
 ```bash
@@ -134,7 +136,7 @@ pkexec firewall-cmd --reload
 
 ### Fedora Discussion
 
-- **Forum**: https://discussion.fedoraproject.org/c/desktop/gnome/19
+- **Forum**: [Fedora Discussion / GNOME](https://discussion.fedoraproject.org/c/desktop/gnome/19)
 - **Title**: "Loofi Fedora Tweaks v41.0.0 'Coverage' - 80% Test Coverage Milestone"
 - **Content**: Use `docs/releases/RELEASE-ANNOUNCEMENT.md`
 
@@ -146,7 +148,7 @@ pkexec firewall-cmd --reload
 
 ### GitHub
 
-- [ ] Publish: https://github.com/loofitheboss/loofi-fedora-tweaks/releases/tag/v41.0.0
+- [ ] Publish: [v41.0.0 release page](https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases/tag/v41.0.0)
 
 ---
 
@@ -198,8 +200,8 @@ pkexec systemctl start loofi-fedora-tweaks
 
 ### Emergency Contact
 
-- **GitHub Issues**: https://github.com/loofitheboss/loofi-fedora-tweaks/issues
-- **Maintainer**: @loofitheboss
+- **GitHub Issues**: [Issue tracker](https://github.com/multidraxter-bit/loofi-fedora-tweaks/issues)
+- **Maintainer**: @multidraxter-bit
 
 ---
 

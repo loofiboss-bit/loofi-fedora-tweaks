@@ -50,6 +50,7 @@ from utils.config_manager import ConfigManager
 from utils.log import get_logger
 from utils.plugin_base import PluginLoader
 from utils.plugin_installer import PluginInstaller
+from utils.settings import SettingsManager
 
 logger = get_logger(__name__)
 
@@ -169,9 +170,7 @@ class Daemon:
     @classmethod
     def check_plugin_updates(cls):
         """Check for plugin updates and auto-update if enabled."""
-        # Check if auto-update is enabled in config
-        config = ConfigManager.load_config()
-        if not config.get("plugin_auto_update", False):
+        if not cls._plugin_auto_update_enabled():
             return
 
         logger.info("Checking for plugin updates...")
@@ -198,8 +197,8 @@ class Daemon:
                     new_version = result.data.get("new_version")
                     logger.info("Update available for %s: %s", plugin_name, new_version)
 
-                    # Auto-update the plugin
-                    update_result = installer.update(plugin_name)
+                    # Auto-update the plugin while preserving installer rollback guarantees.
+                    update_result = installer.update_if_available(plugin_name, update_data=result.data)
 
                     if update_result.success:
                         logger.info(
@@ -212,6 +211,21 @@ class Daemon:
 
         except (ImportError, AttributeError, OSError) as e:
             logger.error("Error checking plugin updates: %s", e, exc_info=True)
+
+    @classmethod
+    def _plugin_auto_update_enabled(cls) -> bool:
+        """Return whether daemon-driven plugin auto-updates are explicitly enabled."""
+        try:
+            settings = SettingsManager.instance()
+            if settings.is_explicitly_set("plugin_auto_update"):
+                return bool(settings.get("plugin_auto_update"))
+            settings_default = bool(settings.get("plugin_auto_update"))
+        except (RuntimeError, OSError, ValueError, TypeError, KeyError) as e:
+            logger.debug("Failed to read plugin auto-update setting: %s", e)
+            settings_default = False
+
+        legacy_config = ConfigManager.load_config() or {}
+        return bool(legacy_config.get("plugin_auto_update", settings_default))
 
     @classmethod
     def run(cls):

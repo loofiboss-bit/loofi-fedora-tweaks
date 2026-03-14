@@ -132,7 +132,7 @@ class SettingsTab(QWidget, PluginInterface):
         # Follow system theme
         self.follow_system_cb = QCheckBox(self.tr("Follow system theme"))
         self.follow_system_cb.setAccessibleName(self.tr("Follow system theme"))
-        self.follow_system_cb.setChecked(self._mgr.get("follow_system_theme"))
+        self.follow_system_cb.setChecked(self._get_bool_setting("follow_system_theme"))
         self.follow_system_cb.toggled.connect(self._on_follow_system_toggled)
         form.addRow("", self.follow_system_cb)
 
@@ -170,7 +170,7 @@ class SettingsTab(QWidget, PluginInterface):
 
         self.start_minimized_cb = QCheckBox(self.tr("Start minimized to tray"))
         self.start_minimized_cb.setAccessibleName(self.tr("Start minimized to tray"))
-        self.start_minimized_cb.setChecked(self._mgr.get("start_minimized"))
+        self.start_minimized_cb.setChecked(self._get_bool_setting("start_minimized"))
         self.start_minimized_cb.toggled.connect(
             lambda v: self._toggle_setting("start_minimized", v)
         )
@@ -178,7 +178,7 @@ class SettingsTab(QWidget, PluginInterface):
 
         self.notifications_cb = QCheckBox(self.tr("Show desktop notifications"))
         self.notifications_cb.setAccessibleName(self.tr("Show desktop notifications"))
-        self.notifications_cb.setChecked(self._mgr.get("show_notifications"))
+        self.notifications_cb.setChecked(self._get_bool_setting("show_notifications"))
         self.notifications_cb.toggled.connect(
             lambda v: self._toggle_setting("show_notifications", v)
         )
@@ -186,15 +186,26 @@ class SettingsTab(QWidget, PluginInterface):
 
         self.confirm_cb = QCheckBox(self.tr("Confirm dangerous actions"))
         self.confirm_cb.setAccessibleName(self.tr("Confirm dangerous actions"))
-        self.confirm_cb.setChecked(self._mgr.get("confirm_dangerous_actions"))
+        self.confirm_cb.setChecked(self._get_bool_setting("confirm_dangerous_actions"))
         self.confirm_cb.toggled.connect(
             lambda v: self._toggle_setting("confirm_dangerous_actions", v)
         )
         form.addRow("", self.confirm_cb)
 
+        self.safe_mode_cb = QCheckBox(self.tr("Keep Safe Mode enabled for API mutations"))
+        self.safe_mode_cb.setAccessibleName(self.tr("Safe Mode for API mutations"))
+        self.safe_mode_cb.setAccessibleDescription(
+            self.tr("Prevents mutating API actions until you explicitly disable Safe Mode.")
+        )
+        self.safe_mode_cb.setChecked(self._get_bool_setting("safe_mode_enabled", default=True))
+        self.safe_mode_cb.toggled.connect(
+            lambda v: self._toggle_setting("safe_mode_enabled", v)
+        )
+        form.addRow("", self.safe_mode_cb)
+
         self.restore_tab_cb = QCheckBox(self.tr("Restore last active tab on start"))
         self.restore_tab_cb.setAccessibleName(self.tr("Restore last active tab on start"))
-        self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
+        self.restore_tab_cb.setChecked(self._get_bool_setting("restore_last_tab"))
         self.restore_tab_cb.toggled.connect(
             lambda v: self._toggle_setting("restore_last_tab", v)
         )
@@ -239,7 +250,7 @@ class SettingsTab(QWidget, PluginInterface):
         # Update checking
         self.updates_cb = QCheckBox(self.tr("Check for updates on start"))
         self.updates_cb.setAccessibleName(self.tr("Check for updates on start"))
-        self.updates_cb.setChecked(self._mgr.get("check_updates_on_start"))
+        self.updates_cb.setChecked(self._get_bool_setting("check_updates_on_start", default=True))
         self.updates_cb.toggled.connect(
             lambda v: self._toggle_setting("check_updates_on_start", v)
         )
@@ -301,6 +312,32 @@ class SettingsTab(QWidget, PluginInterface):
         self._mgr.set(key, value)
         self._mgr.save()
 
+    @staticmethod
+    def _coerce_bool(value, default: bool = False) -> bool:
+        """Coerce persisted settings values into a strict bool for checkbox usage."""
+        if isinstance(value, bool):
+            return value
+        if value is None:
+            return default
+        if isinstance(value, str):
+            normalized = value.strip().lower()
+            if normalized in {"1", "true", "yes", "on"}:
+                return True
+            if normalized in {"0", "false", "no", "off", ""}:
+                return False
+            return default
+        if isinstance(value, (int, float)):
+            return bool(value)
+        return default
+
+    def _get_bool_setting(self, key: str, default: bool = False) -> bool:
+        """Read a setting defensively so legacy/malformed values do not break the UI."""
+        try:
+            value = self._mgr.get(key)
+        except (KeyError, TypeError, AttributeError):
+            value = default
+        return self._coerce_bool(value, default=default)
+
     def _on_log_level_changed(self, level: str):
         self._mgr.set("log_level", level)
         self._mgr.save()
@@ -321,13 +358,14 @@ class SettingsTab(QWidget, PluginInterface):
 
         # Refresh widgets to reflect defaults
         self.theme_combo.setCurrentText(self._mgr.get("theme"))
-        self.follow_system_cb.setChecked(self._mgr.get("follow_system_theme"))
-        self.start_minimized_cb.setChecked(self._mgr.get("start_minimized"))
-        self.notifications_cb.setChecked(self._mgr.get("show_notifications"))
-        self.confirm_cb.setChecked(self._mgr.get("confirm_dangerous_actions"))
-        self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
+        self.follow_system_cb.setChecked(self._get_bool_setting("follow_system_theme"))
+        self.start_minimized_cb.setChecked(self._get_bool_setting("start_minimized"))
+        self.notifications_cb.setChecked(self._get_bool_setting("show_notifications", default=True))
+        self.confirm_cb.setChecked(self._get_bool_setting("confirm_dangerous_actions", default=True))
+        self.safe_mode_cb.setChecked(self._get_bool_setting("safe_mode_enabled", default=True))
+        self.restore_tab_cb.setChecked(self._get_bool_setting("restore_last_tab"))
         self.log_combo.setCurrentText(self._mgr.get("log_level"))
-        self.updates_cb.setChecked(self._mgr.get("check_updates_on_start"))
+        self.updates_cb.setChecked(self._get_bool_setting("check_updates_on_start", default=True))
 
         if self._main_window and hasattr(self._main_window, "load_theme"):
             self._main_window.load_theme(self._mgr.get("theme"))
@@ -338,7 +376,7 @@ class SettingsTab(QWidget, PluginInterface):
         """Reset appearance settings to defaults."""
         self._mgr.reset_group(["theme", "follow_system_theme"])
         self.theme_combo.setCurrentText(self._mgr.get("theme"))
-        self.follow_system_cb.setChecked(self._mgr.get("follow_system_theme"))
+        self.follow_system_cb.setChecked(self._get_bool_setting("follow_system_theme"))
         if self._main_window and hasattr(self._main_window, "load_theme"):
             self._main_window.load_theme(self._mgr.get("theme"))
 
@@ -346,9 +384,10 @@ class SettingsTab(QWidget, PluginInterface):
         """Reset behavior settings to defaults."""
         self._mgr.reset_group([
             "start_minimized", "show_notifications",
-            "confirm_dangerous_actions", "restore_last_tab", "last_tab_index",
+            "confirm_dangerous_actions", "safe_mode_enabled", "restore_last_tab", "last_tab_index",
         ])
-        self.start_minimized_cb.setChecked(self._mgr.get("start_minimized"))
-        self.notifications_cb.setChecked(self._mgr.get("show_notifications"))
-        self.confirm_cb.setChecked(self._mgr.get("confirm_dangerous_actions"))
-        self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
+        self.start_minimized_cb.setChecked(self._get_bool_setting("start_minimized"))
+        self.notifications_cb.setChecked(self._get_bool_setting("show_notifications", default=True))
+        self.confirm_cb.setChecked(self._get_bool_setting("confirm_dangerous_actions", default=True))
+        self.safe_mode_cb.setChecked(self._get_bool_setting("safe_mode_enabled", default=True))
+        self.restore_tab_cb.setChecked(self._get_bool_setting("restore_last_tab"))

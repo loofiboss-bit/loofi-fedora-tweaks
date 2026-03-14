@@ -294,6 +294,70 @@ class TestDaemonConstants(unittest.TestCase):
         self.assertEqual(Daemon.POWER_CHECK_INTERVAL, 30)
 
 
+class TestPluginAutoUpdateSafety(unittest.TestCase):
+    """Tests for daemon-driven plugin auto-update safety."""
+
+    @patch('utils.daemon.ConfigManager')
+    @patch('utils.daemon.SettingsManager')
+    def test_plugin_auto_update_prefers_explicit_setting(self, mock_settings_cls, mock_config):
+        mock_settings = MagicMock()
+        mock_settings.is_explicitly_set.return_value = True
+        mock_settings.get.return_value = False
+        mock_settings_cls.instance.return_value = mock_settings
+        mock_config.load_config.return_value = {'plugin_auto_update': True}
+
+        self.assertFalse(Daemon._plugin_auto_update_enabled())
+
+    @patch('utils.daemon.ConfigManager')
+    @patch('utils.daemon.SettingsManager')
+    def test_plugin_auto_update_falls_back_to_legacy_config(self, mock_settings_cls, mock_config):
+        mock_settings = MagicMock()
+        mock_settings.is_explicitly_set.return_value = False
+        mock_settings.get.return_value = False
+        mock_settings_cls.instance.return_value = mock_settings
+        mock_config.load_config.return_value = {'plugin_auto_update': True}
+
+        self.assertTrue(Daemon._plugin_auto_update_enabled())
+
+    @patch('utils.daemon.PluginInstaller')
+    @patch('utils.daemon.PluginLoader')
+    @patch.object(Daemon, '_plugin_auto_update_enabled', return_value=False)
+    def test_check_plugin_updates_skips_when_disabled(self, mock_enabled, mock_loader_cls, mock_installer_cls):
+        Daemon.check_plugin_updates()
+        mock_loader_cls.assert_not_called()
+        mock_installer_cls.assert_not_called()
+
+    @patch('utils.daemon.PluginInstaller')
+    @patch('utils.daemon.PluginLoader')
+    @patch.object(Daemon, '_plugin_auto_update_enabled', return_value=True)
+    def test_check_plugin_updates_uses_update_if_available(self, mock_enabled, mock_loader_cls, mock_installer_cls):
+        mock_loader = MagicMock()
+        mock_loader.list_plugins.return_value = [{'name': 'test-plugin', 'enabled': True}]
+        mock_loader_cls.return_value = mock_loader
+
+        mock_installer = MagicMock()
+        mock_installer.check_update.return_value.success = True
+        mock_installer.check_update.return_value.data = {
+            'update_available': True,
+            'current_version': '1.0.0',
+            'new_version': '1.1.0',
+        }
+        mock_installer.update_if_available.return_value.success = True
+        mock_installer_cls.return_value = mock_installer
+
+        Daemon.check_plugin_updates()
+
+        mock_installer.check_update.assert_called_once_with('test-plugin')
+        mock_installer.update_if_available.assert_called_once_with(
+            'test-plugin',
+            update_data={
+                'update_available': True,
+                'current_version': '1.0.0',
+                'new_version': '1.1.0',
+            },
+        )
+
+
 class TestDaemonMain(unittest.TestCase):
     """Tests for daemon main entry point."""
 

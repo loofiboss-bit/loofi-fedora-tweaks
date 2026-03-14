@@ -1,7 +1,9 @@
 """Authentication utilities for Loofi Web API."""
 
 import logging
+import os
 import secrets
+import time
 from pathlib import Path
 from typing import Optional
 
@@ -21,7 +23,9 @@ class AuthManager:
     _ALGORITHM = "HS256"
     _CONFIG_KEY = "api_auth"
     _CONFIG_FILE = "api_auth.json"
+    _SCHEMA_VERSION = 1
     _TOKEN_LIFETIME_SECONDS = 3600
+    _PRIVATE_FILE_MODE = 0o600
 
     security = HTTPBearer(auto_error=False)
 
@@ -36,21 +40,84 @@ class AuthManager:
         return data
 
     @classmethod
+    def _normalize_auth_data(cls, data: object) -> dict:
+        if not isinstance(data, dict):
+            raise ValueError("Stored API auth data is invalid")
+
+        normalized: dict[str, str | int] = {"schema_version": cls._SCHEMA_VERSION}
+
+        jwt_secret = data.get("jwt_secret")
+        if jwt_secret is not None:
+            if not isinstance(jwt_secret, str) or not jwt_secret.strip():
+                raise ValueError("Stored API auth secret is invalid")
+            normalized["jwt_secret"] = jwt_secret
+
+        api_key_hash = data.get("api_key_hash")
+        if api_key_hash is not None:
+            if not isinstance(api_key_hash, str) or not api_key_hash.strip():
+                raise ValueError("Stored API key hash is invalid")
+            normalized["api_key_hash"] = api_key_hash
+
+        return cls._ensure_secret(normalized)
+
+    @classmethod
+    def _validate_auth_permissions(cls, path: Path) -> None:
+        if os.name == "nt" or not path.exists():
+            return
+
+        try:
+            mode = path.stat().st_mode & 0o777
+        except OSError as e:
+            raise RuntimeError("Failed to inspect API auth storage permissions") from e
+
+        if mode & 0o077:
+            raise PermissionError("API auth storage must use owner-only permissions")
+
+    @classmethod
+    def _load_legacy_auth_data(cls) -> Optional[dict]:
+        config = ConfigManager.load_config() or {}
+        legacy_data = config.get(cls._CONFIG_KEY)
+        if legacy_data is None:
+            return None
+
+        return cls._normalize_auth_data(legacy_data)
+
+    @classmethod
     def _load_auth_data(cls) -> dict:
         ConfigManager.ensure_dirs()
-        config = ConfigManager.load_config() or {}
-        return cls._ensure_secret(config.get(cls._CONFIG_KEY, {}))
+        auth_path = cls._auth_path()
+        stored_data = ConfigManager.load_json_file(auth_path)
+
+        if stored_data is not None:
+            cls._validate_auth_permissions(auth_path)
+            return cls._normalize_auth_data(stored_data)
+
+        if auth_path.exists():
+            raise ValueError("Stored API auth data is invalid")
+
+        legacy_data = cls._load_legacy_auth_data()
+        if legacy_data is not None:
+            cls._save_auth_data(legacy_data)
+            return legacy_data
+
+        return cls._ensure_secret({"schema_version": cls._SCHEMA_VERSION})
 
     @classmethod
     def _save_auth_data(cls, data: dict) -> None:
         ConfigManager.ensure_dirs()
+        normalized = cls._normalize_auth_data(data)
+        auth_path = cls._auth_path()
+
+        if not ConfigManager.save_json_file(
+            auth_path,
+            normalized,
+            permissions=cls._PRIVATE_FILE_MODE,
+        ):
+            raise OSError("Failed to persist API auth data")
+
         config = ConfigManager.load_config() or {}
-        config[cls._CONFIG_KEY] = data
-        ConfigManager.save_config(config)
-        try:
-            cls._auth_path().write_text("1")
-        except (OSError, IOError) as e:
-            logger.debug("Failed to write auth marker file: %s", e)
+        if config.pop(cls._CONFIG_KEY, None) is not None:
+            ConfigManager.save_config(config)
 
     @classmethod
     def _hash_key(cls, api_key: str) -> str:
@@ -80,9 +147,15 @@ class AuthManager:
             )
         payload = {
             "sub": "loofi-api",
-            "exp": int(__import__("time").time()) + cls._TOKEN_LIFETIME_SECONDS,
+            "exp": int(time.time()) + cls._TOKEN_LIFETIME_SECONDS,
         }
         return str(jwt.encode(payload, data["jwt_secret"], algorithm=cls._ALGORITHM))
+
+    @classmethod
+    def bootstrap_pending(cls) -> bool:
+        """Return True when no API key has been provisioned yet."""
+        data = cls._load_auth_data()
+        return not bool(data.get("api_key_hash"))
 
     @classmethod
     def verify_token(cls, token: str) -> None:
