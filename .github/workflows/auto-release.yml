@@ -611,6 +611,7 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:43
     timeout-minutes: 20
+    continue-on-error: true
     needs: [validate, release]
     env:
       COPR_OWNER: "loofitheboss"
