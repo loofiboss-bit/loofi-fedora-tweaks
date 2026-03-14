@@ -4,6 +4,8 @@
 > Python 3.12+ | 28 feature tabs | 245 test files | 80% coverage (CI-enforced) | 107 utils modules
 > Canonical references: `ARCHITECTURE.md` (structure), `ROADMAP.md` (scope), `.github/copilot-instructions.md` (patterns)
 
+Current roadmap line: **v3.0.0 "Aegis"** — API security, Safe Mode defaults, plugin update safety, and version consistency cleanup.
+
 ## Build, Lint, Test Commands
 
 ```bash
@@ -34,7 +36,7 @@ bash scripts/build_rpm.sh
 
 ## Project Layout
 
-```
+```text
 loofi-fedora-tweaks/          # Source root (set as PYTHONPATH)
 ├── ui/*_tab.py               # PyQt6 tabs (inherit BaseTab)
 ├── ui/base_tab.py            # BaseTab: shared CommandRunner, output_area
@@ -55,7 +57,9 @@ scripts/                      # build_rpm.sh, MCP servers, workflow tools
 ## Code Style
 
 ### Imports
+
 Ordered: stdlib, blank line, third-party, blank line, local. Alphabetical within groups.
+
 ```python
 import logging
 import subprocess
@@ -68,6 +72,7 @@ from utils.errors import LoofiError
 ```
 
 ### Logging
+
 ```python
 from utils.log import get_logger       # preferred (in utils/)
 logger = get_logger(__name__)
@@ -75,16 +80,20 @@ logger = get_logger(__name__)
 import logging                          # acceptable (in ui/)
 logger = logging.getLogger(__name__)
 ```
+
 Use `%s` formatting in log calls, never f-strings: `logger.debug("Failed: %s", e)`
 
 ### Type Hints
+
 - Inline annotations on all public methods (PEP 484)
 - `Tuple[str, List[str], str]` for operations tuples (aliased as `CommandTuple`)
 - `Optional[X]` or `X | None` (both accepted, PEP 604 preferred for new code)
 - Return type on every public function
 
 ### Docstrings
+
 Google-style. Module-level docstring on every file.
+
 ```python
 """One-line summary.
 
@@ -97,21 +106,23 @@ Returns:
 ```
 
 ### Naming Conventions
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Files | `snake_case.py` | `network_utils.py` |
-| Tab files | `*_tab.py` | `hardware_tab.py` |
-| Test files | `test_*.py` | `test_commands.py` |
-| Classes | `PascalCase` | `NetworkUtils`, `BaseTab` |
-| Exceptions | `PascalCase` + `Error` | `DnfLockedError` |
-| Methods | `snake_case` | `scan_wifi()` |
-| Private | `_leading_underscore` | `_derive_action_name()` |
-| Constants | `UPPER_SNAKE_CASE` | `POLKIT_MAP` |
-| Type aliases | `PascalCase` | `CommandTuple` |
-| Test classes | `Test` + `PascalCase` | `TestScanWifi` |
-| Test methods | `test_what_scenario` | `test_dnf_install` |
+
+| Element      | Convention             | Example                   |
+| ------------ | ---------------------- | ------------------------- |
+| Files        | `snake_case.py`        | `network_utils.py`        |
+| Tab files    | `*_tab.py`             | `hardware_tab.py`         |
+| Test files   | `test_*.py`            | `test_commands.py`        |
+| Classes      | `PascalCase`           | `NetworkUtils`, `BaseTab` |
+| Exceptions   | `PascalCase` + `Error` | `DnfLockedError`          |
+| Methods      | `snake_case`           | `scan_wifi()`             |
+| Private      | `_leading_underscore`  | `_derive_action_name()`   |
+| Constants    | `UPPER_SNAKE_CASE`     | `POLKIT_MAP`              |
+| Type aliases | `PascalCase`           | `CommandTuple`            |
+| Test classes | `Test` + `PascalCase`  | `TestScanWifi`            |
+| Test methods | `test_what_scenario`   | `test_dnf_install`        |
 
 ### Error Handling
+
 ```python
 try:
     result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
@@ -119,6 +130,7 @@ except (subprocess.SubprocessError, OSError) as e:
     logger.debug("Descriptive msg: %s", e)
     return []  # safe default: [], "", None, False
 ```
+
 Use typed exceptions from `utils/errors.py`. Each has `code`, `hint`, `recoverable`.
 
 ## Critical Rules (Never Violate)
@@ -200,6 +212,7 @@ class TestManager(unittest.TestCase):
 ## Agent System
 
 For complex multi-step tasks, delegate to agents in `.github/claude-agents/`:
+
 - **project-coordinator** — task decomposition, dependency ordering
 - **architecture-advisor** — design, module structure
 - **backend-builder** — utils/ modules, system integration
@@ -213,6 +226,7 @@ VS Code equivalents in `.github/agents/`: Arkitekt, Builder, CodeGen, Guardian, 
 ## Stabilization Directive
 
 See `.github/instructions/system_hardening_and_stabilization_guide.md`:
+
 - No new major features until Phase 1-2 hardening complete
 - Refactor before expanding. Safety over velocity.
 - Never expand root-level capability without: validation, audit log, rollback strategy
