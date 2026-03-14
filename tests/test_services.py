@@ -105,7 +105,7 @@ class TestListUnits(unittest.TestCase):
         units = ServiceManager.list_units()
         self.assertEqual(units, [])
 
-    @patch('services.system.services.subprocess.run', side_effect=Exception("systemctl not found"))
+    @patch('services.system.services.subprocess.run', side_effect=OSError("systemctl not found"))
     def test_list_units_exception(self, mock_run):
         """list_units returns empty list on exception."""
         units = ServiceManager.list_units()
@@ -154,7 +154,7 @@ class TestStartStopRestart(unittest.TestCase):
         result = ServiceManager.start_unit("nonexistent")
         self.assertFalse(result.success)
 
-    @patch('services.system.services.subprocess.run', side_effect=Exception("timeout"))
+    @patch('services.system.services.subprocess.run', side_effect=OSError("timeout"))
     def test_start_unit_exception(self, mock_run):
         """start_unit handles exception gracefully."""
         result = ServiceManager.start_unit("test")
@@ -204,7 +204,7 @@ class TestGetUnitStatus(unittest.TestCase):
         status = ServiceManager.get_unit_status("gamemoded")
         self.assertIn("active", status)
 
-    @patch('services.system.services.subprocess.run', side_effect=Exception("fail"))
+    @patch('services.system.services.subprocess.run', side_effect=OSError("fail"))
     def test_get_unit_status_handles_exception(self, mock_run):
         """get_unit_status returns empty string on exception."""
         status = ServiceManager.get_unit_status("bad")

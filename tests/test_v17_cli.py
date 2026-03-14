@@ -267,7 +267,7 @@ class TestCLIArgparse(unittest.TestCase):
         filepath = os.path.join(
             os.path.dirname(__file__), '..', 'loofi-fedora-tweaks', 'cli', 'main.py'
         )
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             source = f.read()
         self.assertIn('"bluetooth": cmd_bluetooth', source)
         self.assertIn('subparsers.add_parser("bluetooth"', source)
@@ -277,7 +277,7 @@ class TestCLIArgparse(unittest.TestCase):
         filepath = os.path.join(
             os.path.dirname(__file__), '..', 'loofi-fedora-tweaks', 'cli', 'main.py'
         )
-        with open(filepath, 'r') as f:
+        with open(filepath, 'r', encoding='utf-8') as f:
             source = f.read()
         self.assertIn('"storage": cmd_storage', source)
         self.assertIn('"storage"', source)

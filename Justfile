@@ -55,6 +55,18 @@ test-coverage:
         --cov-report=term-missing \
         --cov-fail-under={{coverage_min}}
 
+# Run tests in Linux via WSL (optional alternative backend)
+test-linux-wsl *ARGS:
+    pwsh -File scripts/run_linux_tests.ps1 -Backend wsl -TestArgs "{{ARGS}}"
+
+# Run tests in Linux via Docker (primary backend)
+test-linux-docker *ARGS:
+    pwsh -File scripts/run_linux_tests.ps1 -Backend docker -TestArgs "{{ARGS}}"
+
+# Auto-select Docker first, WSL fallback
+test-linux *ARGS:
+    pwsh -File scripts/run_linux_tests.ps1 -Backend auto -TestArgs "{{ARGS}}"
+
 # Run tests and output JUnit XML (for CI)
 test-ci:
     PYTHONPATH={{src_root}} python -m pytest {{test_dir}}/ -v --tb=short \

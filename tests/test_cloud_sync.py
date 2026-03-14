@@ -97,6 +97,7 @@ class TestGistTokenManagement(unittest.TestCase):
         retrieved = CloudSyncManager.get_gist_token()
         self.assertEqual(retrieved, token)
 
+    @unittest.skipIf(sys.platform == "win32", "File permissions not supported on Windows")
     def test_save_gist_token_sets_permissions(self):
         """save_gist_token sets restrictive file permissions."""
         CloudSyncManager.save_gist_token("test_token")

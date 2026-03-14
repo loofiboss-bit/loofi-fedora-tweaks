@@ -17,7 +17,6 @@ import getpass
 from collections import deque
 
 from core.diagnostics import HealthScoreManager
-from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import QSize, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor, QLinearGradient, QPainter, QPainterPath, QPen
@@ -44,6 +43,7 @@ from utils.quick_actions_config import QuickActionsConfig
 
 from ui.icon_pack import get_qicon
 from ui.tooltips import DASH_FOCUS_MODE, DASH_HEALTH_SCORE, DASH_QUICK_ACTIONS, DASH_SYSTEM_OVERVIEW
+from ui.base_tab import BaseTab
 
 logger = get_logger(__name__)
 
@@ -215,7 +215,7 @@ class HealthScoreWidget(QWidget):
 # ---------------------------------------------------------------------------
 
 
-class DashboardTab(QWidget, PluginInterface):
+class DashboardTab(BaseTab):
     """Overhauled dashboard with live graphs and richer information."""
 
     _METADATA = PluginMetadata(
@@ -240,6 +240,8 @@ class DashboardTab(QWidget, PluginInterface):
     def __init__(self, main_window=None):
         super().__init__()
         self.main_window = main_window
+        self._fast_interval_ms = 2000
+        self._slow_interval_ms = 10000
 
         # Data for network speed calculation
         self._prev_rx = 0
@@ -273,15 +275,38 @@ class DashboardTab(QWidget, PluginInterface):
         # Timers
         self._fast_timer = QTimer(self)
         self._fast_timer.timeout.connect(self._tick_fast)
-        self._fast_timer.start(2000)
+        self._fast_timer.start(self._fast_interval_ms)
 
         self._slow_timer = QTimer(self)
         self._slow_timer.timeout.connect(self._tick_slow)
-        self._slow_timer.start(10000)
+        self._slow_timer.start(self._slow_interval_ms)
 
         # Initial data load
         self._tick_fast()
         self._tick_slow()
+
+    def _set_live_updates_enabled(self, enabled: bool) -> None:
+        """Enable or disable periodic dashboard refresh timers."""
+        if enabled:
+            if hasattr(self, "_fast_timer") and not self._fast_timer.isActive():
+                self._fast_timer.start(self._fast_interval_ms)
+            if hasattr(self, "_slow_timer") and not self._slow_timer.isActive():
+                self._slow_timer.start(self._slow_interval_ms)
+        else:
+            if hasattr(self, "_fast_timer") and self._fast_timer.isActive():
+                self._fast_timer.stop()
+            if hasattr(self, "_slow_timer") and self._slow_timer.isActive():
+                self._slow_timer.stop()
+
+    def showEvent(self, event):
+        """Resume live updates when dashboard becomes visible."""
+        self._set_live_updates_enabled(True)
+        super().showEvent(event)
+
+    def hideEvent(self, event):
+        """Pause live updates while dashboard is not visible."""
+        self._set_live_updates_enabled(False)
+        super().hideEvent(event)
 
     # ==================================================================
     # Header

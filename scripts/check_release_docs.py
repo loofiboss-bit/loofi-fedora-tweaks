@@ -70,9 +70,35 @@ def extract_pyproject_version() -> str | None:
 
 def workflow_version_tag(version: str) -> str:
     parts = version.split(".")
-    if len(parts) >= 2:
-        return f"v{parts[0]}.{parts[1]}"
-    return f"v{version}"
+    if len(parts) >= 3:
+        return f"v{parts[0]}.{parts[1]}.{parts[2]}"
+    if len(parts) == 2:
+        return f"v{parts[0]}.{parts[1]}.0"
+    return f"v{parts[0]}.0.0"
+
+
+def workflow_version_tags(version: str) -> List[str]:
+    """Return canonical workflow tag for report lookup (vX.Y.Z only)."""
+    return [workflow_version_tag(version)]
+
+
+def workflow_report_candidates(root: Path, version: str, prefix: str) -> List[Path]:
+    """Return all accepted report path candidates for a version."""
+    reports_root = root / ".workflow" / "reports"
+    return [reports_root / f"{prefix}-{tag}.json" for tag in workflow_version_tags(version)]
+
+
+def resolve_existing_workflow_report(
+    root: Path,
+    version: str,
+    prefix: str,
+) -> tuple[Path | None, List[Path]]:
+    """Return first existing report path and all candidates."""
+    candidates = workflow_report_candidates(root, version, prefix)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate, candidates
+    return None, candidates
 
 
 def release_notes_candidates(root: Path, version: str) -> List[Path]:
@@ -129,6 +155,26 @@ def _extract_codename() -> str | None:
     return match.group(1) if match else None
 
 
+def _metric_from_report(report: dict, key: str) -> int | None:
+    """Return integer metric from summary first, then top-level fallback."""
+    summary = report.get("summary")
+    if isinstance(summary, dict):
+        value = summary.get(key)
+        if isinstance(value, int):
+            return value
+
+    aliases = {
+        "total_tests": ("total_tests", "total"),
+        "failed": ("failed", "failures", "failed_tests", "tests_failed"),
+        "errors": ("errors",),
+    }
+    for alias in aliases.get(key, (key,)):
+        value = report.get(alias)
+        if isinstance(value, int):
+            return value
+    return None
+
+
 def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
     errors: List[str] = []
 
@@ -140,7 +186,8 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
 
     # --- Version sync: version.py vs .spec ---
     if py_version != spec_version:
-        errors.append(f"version mismatch: version.py={py_version} spec={spec_version}")
+        errors.append(
+            f"version mismatch: version.py={py_version} spec={spec_version}")
 
     # --- Version sync: version.py vs pyproject.toml ---
     pyproject_version = extract_pyproject_version()
@@ -168,16 +215,25 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
 
     # --- Workflow artifacts (optional) ---
     if require_logs:
-        wf_tag = workflow_version_tag(py_version)
-        test_report = root / ".workflow" / "reports" / f"test-results-{wf_tag}.json"
-        run_manifest = root / ".workflow" / "reports" / f"run-manifest-{wf_tag}.json"
+        test_report, test_candidates = resolve_existing_workflow_report(
+            root,
+            py_version,
+            "test-results",
+        )
+        run_manifest, manifest_candidates = resolve_existing_workflow_report(
+            root,
+            py_version,
+            "run-manifest",
+        )
 
-        if not test_report.exists():
-            errors.append(f"missing workflow test report: {test_report}")
-        if not run_manifest.exists():
-            errors.append(f"missing workflow run manifest: {run_manifest}")
+        if test_report is None:
+            errors.append(
+                f"missing workflow test report: {test_candidates[0]}")
+        if run_manifest is None:
+            errors.append(
+                f"missing workflow run manifest: {manifest_candidates[0]}")
 
-        if run_manifest.exists():
+        if run_manifest is not None and run_manifest.exists():
             try:
                 payload = json.loads(run_manifest.read_text(encoding="utf-8"))
             except json.JSONDecodeError:
@@ -185,7 +241,56 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
             else:
                 phases = payload.get("phases")
                 if not isinstance(phases, list) or not phases:
-                    errors.append(f"run manifest has no phase entries: {run_manifest}")
+                    errors.append(
+                        f"run manifest has no phase entries: {run_manifest}")
+
+        if test_report is not None and test_report.exists():
+            try:
+                payload = json.loads(test_report.read_text(encoding="utf-8"))
+            except json.JSONDecodeError:
+                errors.append(f"invalid JSON test report: {test_report}")
+            else:
+                if not isinstance(payload, dict):
+                    errors.append(
+                        f"invalid test report payload: {test_report}")
+                else:
+                    total_tests = _metric_from_report(payload, "total_tests")
+                    failed = _metric_from_report(payload, "failed")
+                    report_errors = _metric_from_report(payload, "errors")
+                    status = payload.get("status")
+
+                    if total_tests is None:
+                        errors.append(
+                            "workflow test report missing total_tests metric"
+                        )
+                    elif total_tests <= 0:
+                        errors.append(
+                            "workflow test report has zero executed tests"
+                        )
+
+                    if failed is None:
+                        errors.append(
+                            "workflow test report missing failed metric"
+                        )
+                    elif failed != 0:
+                        errors.append(
+                            f"workflow test report indicates failed={failed}"
+                        )
+
+                    if report_errors is None:
+                        errors.append(
+                            "workflow test report missing errors metric"
+                        )
+                    elif report_errors != 0:
+                        errors.append(
+                            "workflow test report indicates errors="
+                            f"{report_errors}"
+                        )
+
+                    if status != "pass":
+                        errors.append(
+                            "workflow test report status must be 'pass'"
+                        )
 
     # --- Stale version tests ---
     codename = _extract_codename()

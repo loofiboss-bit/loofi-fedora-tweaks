@@ -8,13 +8,12 @@ and transaction rollback for both DNF and rpm-ostree systems.
 
 import json
 import logging
-import shutil
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
 from typing import List, Optional
 
-from services.system.system import SystemManager
+from services.system.system import SystemManager, cached_which
 
 from utils.commands import CommandTuple, PrivilegedCommand
 
@@ -84,8 +83,8 @@ class UpdateManager:
         """Check updates via DNF."""
         updates: List[UpdateEntry] = []
         package_manager = SystemManager.get_package_manager()
-        if not shutil.which(package_manager):
-            return updates
+        if not cached_which(package_manager):
+            logger.debug("Package manager binary not found in PATH: %s", package_manager)
         try:
             result = subprocess.run(
                 [package_manager, "check-update", "--quiet"],
@@ -160,11 +159,12 @@ class UpdateManager:
         if SystemManager.is_atomic():
             return UpdateManager._preview_conflicts_ostree(packages)
 
-        if not shutil.which("dnf"):
-            return conflicts
+        package_manager = SystemManager.get_package_manager()
+        if not cached_which(package_manager):
+            logger.debug("Package manager binary not found in PATH: %s", package_manager)
 
         try:
-            cmd = ["dnf", "check-update", "--assumeno"]
+            cmd = [package_manager, "check-update", "--assumeno"]
             if packages:
                 cmd.extend(packages)
 
@@ -336,8 +336,8 @@ class UpdateManager:
                 logger.error("Failed to get rpm-ostree history: %s", e)
         else:
             package_manager = SystemManager.get_package_manager()
-            if not shutil.which(package_manager):
-                return history
+            if not cached_which(package_manager):
+                logger.debug("Package manager binary not found in PATH: %s", package_manager)
             try:
                 result = subprocess.run(
                     [package_manager, "history", "list", f"--last={limit}"],

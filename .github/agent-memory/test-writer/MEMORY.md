@@ -6,6 +6,45 @@
 - Test runner: pytest with `-v` flag for verbose output
 - No root/sudo required — all tests mock system calls
 
+## Windows Cross-Platform Test Patterns (v2.7.0)
+
+**VERIFIED COMPLETE**: 24 failures → 0 failures on Windows
+- **Before**: 24 failed, 7071 passed, 102 skipped
+- **After**: 0 failed, 7081 passed (+10), 116 skipped (+14)
+- **Resolution**: 10 tests fixed to PASS (path/encoding), 14 tests fixed to SKIP (platform-specific)
+
+### Tests Skipped on Windows (14 tests)
+- **Action Executor**: `test_successful_execution`, `test_timeout` - Linux commands (echo, sleep) not on Windows
+- **File Permissions**: `test_save_gist_token_sets_permissions` - Unix chmod not supported on Windows
+- **IOMMU Groups**: `test_get_iommu_groups_single` - Linux `/sys/kernel/iommu_groups` doesn't exist on Windows
+- **Bash Scripts**: All 10 tests in `test_packaging_scripts.py` - require bash shell and Linux packaging tools
+
+### Path Normalization Patterns (2 tests fixed to PASS)
+- Use `replace("\\", "/")` for cross-platform path comparison
+- Example: `test_walks_directories` in `test_context_rag.py`
+- Example: `test_load_external_uses_custom_directory` in `test_plugin_loader.py`
+
+### UTF-8 Encoding Fix (8 tests fixed to PASS)
+- Always use `encoding="utf-8"` when opening source files for reading
+- Windows default codec (cp1252) can't decode non-ASCII chars in source files
+- Fixed in `test_v17_atlas.py` for 8 tests reading tab source files
+
+### Pattern Template for Platform-Specific Tests
+```python
+@unittest.skipIf(sys.platform == "win32", "Reason: Linux-specific feature")
+def test_linux_only_feature(self):
+    ...
+```
+
+**Files Modified**:
+1. tests/test_action_executor.py — Added unittest import + 2 skip decorators
+2. tests/test_cloud_sync.py — Added 1 skip decorator
+3. tests/test_context_rag.py — Path normalization fix
+4. tests/test_plugin_loader.py — Path normalization fix
+5. tests/test_packaging_scripts.py — Added sys/unittest imports + 10 skip decorators
+6. tests/test_v17_atlas.py — Added encoding="utf-8" to 8 file operations
+7. tests/test_virtualization.py — Added 1 skip decorator
+
 ## Mocking Patterns
 
 ### ActionExecutor Mocking

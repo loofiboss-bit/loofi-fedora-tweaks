@@ -32,7 +32,8 @@ def _write_release_files(
         (root / "pyproject.toml").write_text(
             '[project]\nname = "test"\nversion = "26.0.1"\n', encoding="utf-8"
         )
-    (root / "CHANGELOG.md").write_text("## [26.0.1] - 2026-02-11\n", encoding="utf-8")
+    (root /
+     "CHANGELOG.md").write_text("## [26.0.1] - 2026-02-11\n", encoding="utf-8")
     (root / "README.md").write_text("Loofi\n", encoding="utf-8")
     notes_root = root if use_legacy_root_notes else root / "docs" / "releases"
     notes_root.mkdir(parents=True, exist_ok=True)
@@ -64,7 +65,8 @@ def test_release_doc_check_passes_when_required_files_exist(tmp_path):
 
 def test_release_doc_check_requires_release_notes(tmp_path):
     module = _load_module(
-        "check_release_docs_test_missing", Path("scripts/check_release_docs.py")
+        "check_release_docs_test_missing", Path(
+            "scripts/check_release_docs.py")
     )
     _write_release_files(tmp_path)
     (tmp_path / "docs" / "releases" / "RELEASE-NOTES-v26.0.1.md").unlink()
@@ -94,6 +96,85 @@ def test_release_doc_check_require_logs_flags_missing_artifacts(tmp_path):
     _set_module_paths(module, tmp_path)
 
     issues = module.validate_release_docs(tmp_path, require_logs=True)
+    assert any("missing workflow run manifest" in item for item in issues)
+
+
+def test_release_doc_check_require_logs_accepts_patch_tag_artifacts(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_logs_patch_tag",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+
+    reports = tmp_path / ".workflow" / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "test-results-v26.0.1.json").write_text(
+        (
+            '{"status": "pass", "summary": '
+            '{"total_tests": 12, "passed": 12, "failed": 0, "errors": 0}}'
+        ),
+        encoding="utf-8",
+    )
+    (reports / "run-manifest-v26.0.1.json").write_text(
+        '{"phases": [{"phase": "plan", "status": "success"}]}',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=True)
+    assert issues == []
+
+
+def test_release_doc_check_require_logs_rejects_zero_test_pass_report(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_logs_zero_total",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+
+    reports = tmp_path / ".workflow" / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "test-results-v26.0.1.json").write_text(
+        (
+            '{"status": "pass", "summary": '
+            '{"total_tests": 0, "passed": 0, "failed": 0, "errors": 0}}'
+        ),
+        encoding="utf-8",
+    )
+    (reports / "run-manifest-v26.0.1.json").write_text(
+        '{"phases": [{"phase": "plan", "status": "success"}]}',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=True)
+    assert any("zero executed tests" in item for item in issues)
+
+
+def test_release_doc_check_require_logs_rejects_short_tag_only_artifacts(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_logs_short_tag",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+
+    reports = tmp_path / ".workflow" / "reports"
+    reports.mkdir(parents=True, exist_ok=True)
+    (reports / "test-results-v26.0.json").write_text(
+        (
+            '{"status": "pass", "summary": '
+            '{"total_tests": 4, "passed": 4, "failed": 0, "errors": 0}}'
+        ),
+        encoding="utf-8",
+    )
+    (reports / "run-manifest-v26.0.json").write_text(
+        '{"phases": [{"phase": "plan", "status": "success"}]}',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=True)
+    assert any("missing workflow test report" in item for item in issues)
     assert any("missing workflow run manifest" in item for item in issues)
 
 

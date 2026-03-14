@@ -39,4 +39,4 @@
 
 ## Current Version
 
-**v2.0.0 "Evolution"** — Service layer migration and core domain extraction (SemVer)
+**v2.10.0 "API Migration Slice 6"** — Canonical workflow normalization + next daemon/API migration kickoff (SemVer)

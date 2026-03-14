@@ -75,7 +75,20 @@ def normalize_version_tag(version: str) -> str:
     version = version.strip()
     if not version:
         raise ValueError("target version cannot be empty")
-    return version if version.startswith("v") else f"v{version}"
+    raw = version[1:] if version.startswith("v") else version
+    parts = [item for item in raw.split(".") if item != ""]
+    if any(not part.isdigit() for part in parts):
+        raise ValueError(
+            "target version must contain numeric components only (for example: 2.10.0)"
+        )
+    if len(parts) == 1:
+        parts.extend(["0", "0"])
+    elif len(parts) == 2:
+        parts.append("0")
+    elif len(parts) > 3:
+        raise ValueError(
+            "target version must have at most three numeric components")
+    return f"v{parts[0]}.{parts[1]}.{parts[2]}"
 
 
 def get_timestamp() -> str:
@@ -90,6 +103,33 @@ def artifact_paths(version_tag: str) -> dict[str, Path]:
         "test_report": REPORTS_DIR / f"test-results-{version_tag}.json",
         "run_manifest": REPORTS_DIR / f"run-manifest-{version_tag}.json",
     }
+
+
+def version_tag_variants(version_tag: str) -> list[str]:
+    """Return canonical version tag for artifact reads (vX.Y.Z only)."""
+    return [normalize_version_tag(version_tag)]
+
+
+def artifact_read_candidates(version_tag: str, key: str) -> list[Path]:
+    """Return candidate artifact paths for tolerant read operations."""
+    if key not in {"test_report", "run_manifest"}:
+        return [artifact_paths(version_tag)[key]]
+
+    candidates: list[Path] = []
+    for tag in version_tag_variants(version_tag):
+        candidate = artifact_paths(tag)[key]
+        if candidate not in candidates:
+            candidates.append(candidate)
+    return candidates
+
+
+def resolve_artifact_for_read(version_tag: str, key: str) -> Path:
+    """Resolve an existing artifact path, tolerating version-tag variants."""
+    candidates = artifact_read_candidates(version_tag, key)
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return candidates[0]
 
 
 def review_output_path(version_tag: str, assistant: str, phase: str) -> Path:
@@ -327,7 +367,7 @@ def release_writer_lock(assistant: str, owner: str, dry_run: bool, force: bool) 
 
 def build_phase_status(version_tag: str) -> dict[str, Any]:
     """Build current phase status snapshot for a version."""
-    manifest_path = artifact_paths(version_tag)["run_manifest"]
+    manifest_path = resolve_artifact_for_read(version_tag, "run_manifest")
     manifest = load_json_file(manifest_path)
 
     completed: list[str] = []
@@ -345,7 +385,8 @@ def build_phase_status(version_tag: str) -> dict[str, Any]:
             try:
                 index = PHASE_ORDER.index(last)
                 current_phase = (
-                    PHASE_ORDER[index + 1] if index + 1 < len(PHASE_ORDER) else "complete"
+                    PHASE_ORDER[index + 1] if index +
+                    1 < len(PHASE_ORDER) else "complete"
                 )
             except ValueError:
                 current_phase = "unknown"
@@ -443,7 +484,7 @@ def resolve_model_for_assistant(assistant: str, model: str) -> str:
         return model
 
     copilot_models = {
-        "gpt-5.3-codex": "gpt-5",
+        "gpt-5.3-codex": "gpt-5.3-codex",
         "gpt-4o": "gpt-4.1",
         "gpt-4o-mini": "gpt-4.1",
     }
@@ -644,7 +685,7 @@ def validate_phase_ordering(phase: str, version_tag: str) -> tuple[bool, str]:
     if phase == "plan":
         return True, "ok"  # plan is always allowed
 
-    manifest_path = artifact_paths(version_tag)["run_manifest"]
+    manifest_path = resolve_artifact_for_read(version_tag, "run_manifest")
     manifest = load_json_file(manifest_path)
 
     completed_phases: set[str] = set()
@@ -670,7 +711,7 @@ def validate_phase_ordering(phase: str, version_tag: str) -> tuple[bool, str]:
 
 def phase_completed_in_manifest(version_tag: str, phase: str) -> bool:
     """Return True when the phase has a successful manifest entry."""
-    manifest_path = artifact_paths(version_tag)["run_manifest"]
+    manifest_path = resolve_artifact_for_read(version_tag, "run_manifest")
     manifest = load_json_file(manifest_path)
     if not manifest or not isinstance(manifest.get("phases"), list):
         return False
@@ -684,24 +725,54 @@ def phase_completed_in_manifest(version_tag: str, phase: str) -> bool:
 
 
 def test_report_has_zero_failures(version_tag: str) -> tuple[bool, str]:
-    """Validate test report exists and indicates zero failures."""
-    report_path = artifact_paths(version_tag)["test_report"]
+    """Validate test report exists and indicates a healthy executed test run."""
+    report_path = resolve_artifact_for_read(version_tag, "test_report")
     report = load_json_file(report_path)
     if not report:
         return False, f"missing or invalid test report: {report_path}"
 
-    possible_keys = ("failures", "failed", "failed_tests", "tests_failed")
-    failures = None
-    for key in possible_keys:
+    summary = report.get("summary") if isinstance(report, dict) else None
+    failed_candidates: list[int] = []
+    total_candidates: list[int] = []
+    error_candidates: list[int] = []
+
+    if isinstance(summary, dict):
+        if isinstance(summary.get("failed"), int):
+            failed_candidates.append(summary["failed"])
+        if isinstance(summary.get("total_tests"), int):
+            total_candidates.append(summary["total_tests"])
+        if isinstance(summary.get("errors"), int):
+            error_candidates.append(summary["errors"])
+
+    for key in ("failures", "failed", "failed_tests", "tests_failed"):
         value = report.get(key)
         if isinstance(value, int):
-            failures = value
-            break
+            failed_candidates.append(value)
 
-    if failures is None:
-        return False, f"test report missing failure count fields: {possible_keys}"
-    if failures != 0:
-        return False, f"test report indicates failures={failures}"
+    for key in ("total_tests", "total"):
+        value = report.get(key)
+        if isinstance(value, int):
+            total_candidates.append(value)
+
+    for key in ("errors",):
+        value = report.get(key)
+        if isinstance(value, int):
+            error_candidates.append(value)
+
+    if not failed_candidates:
+        return False, "test report missing failure count metric"
+    if failed_candidates[0] != 0:
+        return False, f"test report indicates failures={failed_candidates[0]}"
+
+    if not error_candidates:
+        return False, "test report missing error count metric"
+    if error_candidates[0] != 0:
+        return False, f"test report indicates errors={error_candidates[0]}"
+
+    if not total_candidates:
+        return False, "test report missing total test count metric"
+    if total_candidates[0] <= 0:
+        return False, "test report has zero executed tests"
 
     return True, "ok"
 
@@ -813,7 +884,8 @@ def run_phase(
         phase_ok, phase_reason = validate_phase_ordering(phase, version_tag)
         if not phase_ok:
             return 1, {"phase": phase, "status": "blocked", "error": phase_reason, "timestamp": isoformat_utc()}
-        prereq_ok, prereq_reason = validate_phase_prerequisites(phase, version_tag)
+        prereq_ok, prereq_reason = validate_phase_prerequisites(
+            phase, version_tag)
         if not prereq_ok:
             return 1, {"phase": phase, "status": "blocked", "error": prereq_reason, "timestamp": isoformat_utc()}
 
@@ -1042,7 +1114,8 @@ def main() -> int:
             lock = load_lock()
             status_target = lock.get("version") if lock else None
         if not status_target:
-            parser.error("--target-version is required with --status when no active race lock exists")
+            parser.error(
+                "--target-version is required with --status when no active race lock exists")
         try:
             version_tag = normalize_version_tag(status_target)
         except ValueError as exc:

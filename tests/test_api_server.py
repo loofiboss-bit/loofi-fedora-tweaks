@@ -88,6 +88,24 @@ def test_token_flow(test_client, valid_api_key, mock_action_executor):
     assert data["preview"]["preview"] is True
 
 
+def test_api_server_rejects_non_loopback_bind_without_allow_expose():
+    """APIServer should refuse unsafe binds unless explicitly overridden."""
+    with pytest.raises(ValueError, match="--unsafe-expose"):
+        APIServer(host="0.0.0.0", port=8000)
+
+
+def test_api_server_allows_non_loopback_bind_with_unsafe_expose():
+    """APIServer should permit non-loopback binds when explicitly opted in."""
+    server = APIServer(host="0.0.0.0", port=8000, allow_expose=True)
+    assert server.host == "0.0.0.0"
+    assert server.allow_expose is True
+
+
+def test_api_server_allows_ipv6_loopback_without_unsafe_expose():
+    """Loopback IPv6 should remain a safe default bind target."""
+    server = APIServer(host="::1", port=8000)
+    assert server.host == "::1"
+
 # ============================================================================
 # Authentication Security Tests
 # ============================================================================

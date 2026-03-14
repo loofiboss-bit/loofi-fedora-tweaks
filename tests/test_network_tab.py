@@ -416,31 +416,26 @@ class TestNetworkTabConnections(unittest.TestCase):
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.NetworkUtils")
     def test_connect_wifi_success(self, mock_nu, mock_ss):
-        """_connect_wifi calls run_command with ssid."""
+        """_connect_wifi routes through NetworkUtils.connect_wifi with selected SSID."""
         mock_nu.scan_wifi.return_value = [("TestNet", "90%", "WPA2", "")]
+        mock_nu.connect_wifi.return_value = True
         tab = _create_tab()
 
         tab._scan_wifi()
         tab.wifi_table.setCurrentCell(0, 0)
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab._connect_wifi()
-            mock_run.assert_called_once()
-            args = mock_run.call_args
-            self.assertEqual(args[0][0], "nmcli")
-            self.assertIn("TestNet", args[0][1])
+        tab._connect_wifi()
+        mock_nu.connect_wifi.assert_called_once_with("TestNet")
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
-    def test_disconnect_wifi(self, mock_ss):
-        """_disconnect_wifi calls run_command to disconnect wlan0."""
+    @patch("ui.network_tab.NetworkUtils")
+    def test_disconnect_wifi(self, mock_nu, mock_ss):
+        """_disconnect_wifi routes through NetworkUtils.disconnect_wifi."""
+        mock_nu.disconnect_wifi.return_value = True
         tab = _create_tab()
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab._disconnect_wifi()
-            mock_run.assert_called_once()
-            args = mock_run.call_args
-            self.assertEqual(args[0][0], "nmcli")
-            self.assertIn("disconnect", args[0][1])
+        tab._disconnect_wifi()
+        mock_nu.disconnect_wifi.assert_called_once_with("wlan0")
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.NetworkUtils")
@@ -527,18 +522,14 @@ class TestNetworkTabDNS(unittest.TestCase):
     def test_apply_dns_auto_dhcp(self, mock_nu, mock_msgbox, mock_ss):
         """apply_dns resets DNS to DHCP when 'auto' is selected."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
+        mock_nu.apply_dns.return_value = True
         tab = _create_tab()
         # Select "System Default (DHCP)" which has data "auto"
         tab.dns_combo.setCurrentIndex(5)
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab.apply_dns()
-            mock_run.assert_called_once()
-            args = mock_run.call_args[0]
-            self.assertEqual(args[0], "nmcli")
-            self.assertIn("ipv4.ignore-auto-dns", args[1])
-            self.assertIn("no", args[1])
+        tab.apply_dns()
 
+        mock_nu.apply_dns.assert_called_once_with("WiFi Home", "auto")
         mock_nu.reactivate_connection.assert_called_once_with("WiFi Home")
         mock_msgbox.information.assert_called_once()
 
@@ -548,18 +539,14 @@ class TestNetworkTabDNS(unittest.TestCase):
     def test_apply_dns_custom_provider(self, mock_nu, mock_msgbox, mock_ss):
         """apply_dns applies custom DNS servers for non-auto selection."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
+        mock_nu.apply_dns.return_value = True
         tab = _create_tab()
         # Select Cloudflare (index 0)
         tab.dns_combo.setCurrentIndex(0)
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab.apply_dns()
-            mock_run.assert_called_once()
-            args = mock_run.call_args[0]
-            self.assertEqual(args[0], "nmcli")
-            self.assertIn("ipv4.dns", args[1])
-            self.assertIn("1.1.1.1 1.0.0.1", args[1])
+        tab.apply_dns()
 
+        mock_nu.apply_dns.assert_called_once_with("WiFi Home", "1.1.1.1 1.0.0.1")
         mock_nu.reactivate_connection.assert_called_once()
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
@@ -709,18 +696,15 @@ class TestNetworkTabPrivacy(unittest.TestCase):
     @patch("ui.network_tab.QMessageBox")
     @patch("ui.network_tab.NetworkUtils")
     def test_toggle_hostname_hide(self, mock_nu, mock_msgbox, mock_ss):
-        """_toggle_hostname_privacy(True) sets send-hostname to 'no'."""
+        """_toggle_hostname_privacy(True) routes through service with hide=True."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
+        mock_nu.set_hostname_privacy.return_value = True
         tab = _create_tab()
         tab.history = MagicMock()
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab._toggle_hostname_privacy(True)
-            mock_run.assert_called_once()
-            args = mock_run.call_args[0]
-            self.assertEqual(args[0], "nmcli")
-            self.assertIn("no", args[1])
+        tab._toggle_hostname_privacy(True)
 
+        mock_nu.set_hostname_privacy.assert_called_once_with("WiFi Home", True)
         tab.history.log_change.assert_called_once()
         mock_msgbox.information.assert_called_once()
 
@@ -728,17 +712,15 @@ class TestNetworkTabPrivacy(unittest.TestCase):
     @patch("ui.network_tab.QMessageBox")
     @patch("ui.network_tab.NetworkUtils")
     def test_toggle_hostname_show(self, mock_nu, mock_msgbox, mock_ss):
-        """_toggle_hostname_privacy(False) sets send-hostname to 'yes'."""
+        """_toggle_hostname_privacy(False) routes through service with hide=False."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
+        mock_nu.set_hostname_privacy.return_value = True
         tab = _create_tab()
         tab.history = MagicMock()
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab._toggle_hostname_privacy(False)
-            mock_run.assert_called_once()
-            args = mock_run.call_args[0]
-            self.assertIn("yes", args[1])
+        tab._toggle_hostname_privacy(False)
 
+        mock_nu.set_hostname_privacy.assert_called_once_with("WiFi Home", False)
         tab.history.log_change.assert_called_once()
 
 

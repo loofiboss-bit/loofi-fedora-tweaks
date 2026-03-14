@@ -9,10 +9,12 @@ Migrated from utils/ports.py in v2.0.0.
 
 import logging
 import re
-import shutil
 import subprocess
 from dataclasses import dataclass
 from typing import Optional
+
+from services.ipc import daemon_client
+from services.system.system import cached_which
 
 logger = logging.getLogger(__name__)
 
@@ -65,17 +67,55 @@ class PortAuditor:
         11211: ("Memcached", "Cache - often unauth"),
     }
 
+    @staticmethod
+    def _normalize_port(port: int) -> int:
+        if not isinstance(port, int):
+            raise ValueError("Port must be an integer")
+        if port < 1 or port > 65535:
+            raise ValueError("Port must be between 1 and 65535")
+        return port
+
+    @staticmethod
+    def _normalize_protocol(protocol: str) -> str:
+        if not isinstance(protocol, str):
+            raise ValueError("Protocol must be a string")
+        normalized = protocol.strip().lower()
+        if normalized not in {"tcp", "udp"}:
+            raise ValueError("Protocol must be tcp or udp")
+        return normalized
+
     @classmethod
     def scan_ports(cls) -> list[OpenPort]:
-        """
-        Scan all open listening ports.
-        Uses ss (socket statistics) for accuracy.
-        """
+        """Scan all open listening ports."""
+        data = daemon_client.call_json("PortAuditScan")
+        if isinstance(data, list):
+            result: list[OpenPort] = []
+            for row in data:
+                if not isinstance(row, dict):
+                    continue
+                result.append(
+                    OpenPort(
+                        protocol=str(row.get("protocol", "")),
+                        port=int(row.get("port", 0) or 0),
+                        address=str(row.get("address", "")),
+                        process=str(row.get("process", "")),
+                        pid=int(row.get("pid", 0) or 0),
+                        is_risky=bool(row.get("is_risky", False)),
+                        risk_reason=str(row.get("risk_reason", "")),
+                    )
+                )
+            return result
+        return cls.scan_ports_local()
+
+    @classmethod
+    def scan_ports_local(cls) -> list[OpenPort]:
+        """Local scan via ss."""
         ports = []
 
         try:
             # ss -tulwn: TCP/UDP listening with numeric ports
-            result = subprocess.run(["ss", "-tulwn"], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ["ss", "-tulwn"], capture_output=True, text=True, timeout=10)
 
             if result.returncode != 0:
                 return []
@@ -122,7 +162,8 @@ class PortAuditor:
 
                 ports.append(
                     OpenPort(
-                        protocol=protocol.replace("tcp", "TCP").replace("udp", "UDP"),
+                        protocol=protocol.replace(
+                            "tcp", "TCP").replace("udp", "UDP"),
                         port=port,
                         address=address,
                         process=process,
@@ -145,7 +186,8 @@ class PortAuditor:
     def _enhance_with_process_info(cls, ports: list[OpenPort]):
         """Add process information to ports (best effort)."""
         try:
-            result = subprocess.run(["ss", "-tulpn"], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ["ss", "-tulpn"], capture_output=True, text=True, timeout=10)
 
             if result.returncode != 0:
                 return
@@ -186,8 +228,17 @@ class PortAuditor:
     @classmethod
     def is_firewalld_running(cls) -> bool:
         """Check if firewalld is running."""
+        status = daemon_client.call_json("FirewallGetStatus")
+        if isinstance(status, dict):
+            return bool(status.get("running", False))
+        return cls.is_firewalld_running_local()
+
+    @classmethod
+    def is_firewalld_running_local(cls) -> bool:
+        """Local firewalld state check."""
         try:
-            result = subprocess.run(["systemctl", "is-active", "firewalld"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["systemctl", "is-active", "firewalld"], capture_output=True, text=True, timeout=5)
             return result.returncode == 0
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to check firewalld status: %s", e)
@@ -202,22 +253,49 @@ class PortAuditor:
             port: Port number to block
             protocol: tcp or udp
         """
-        if not shutil.which("firewall-cmd"):
+        try:
+            valid_port = cls._normalize_port(port)
+            valid_protocol = cls._normalize_protocol(protocol)
+        except ValueError as e:
+            return Result(False, str(e))
+
+        data = daemon_client.call_json(
+            "FirewallClosePort", str(valid_port), valid_protocol, "", True
+        )
+        if isinstance(data, dict):
+            return Result(bool(data.get("success", False)), str(data.get("message", "")))
+        return cls.block_port_local(valid_port, valid_protocol)
+
+    @classmethod
+    def block_port_local(cls, port: int, protocol: str = "tcp") -> Result:
+        """Local fallback for blocking a port."""
+        try:
+            valid_port = cls._normalize_port(port)
+            valid_protocol = cls._normalize_protocol(protocol)
+        except ValueError as e:
+            return Result(False, str(e))
+
+        if not cached_which("firewall-cmd"):
             return Result(False, "firewall-cmd not found")
 
-        if not cls.is_firewalld_running():
+        if not cls.is_firewalld_running_local():
             return Result(False, "firewalld is not running")
 
         try:
             # Remove from allowed (if present) and add to blocked
             subprocess.run(
-                ["pkexec", "firewall-cmd", "--remove-port", f"{port}/{protocol}", "--permanent"], capture_output=True, text=True, timeout=30
+                ["pkexec", "firewall-cmd", "--remove-port",
+                    f"{valid_port}/{valid_protocol}", "--permanent"],
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
             # Reload firewall
-            subprocess.run(["pkexec", "firewall-cmd", "--reload"], capture_output=True, text=True, timeout=30)
+            subprocess.run(["pkexec", "firewall-cmd", "--reload"],
+                           capture_output=True, text=True, timeout=30)
 
-            return Result(True, f"Port {port}/{protocol} blocked")
+            return Result(True, f"Port {valid_port}/{valid_protocol} blocked")
 
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             return Result(False, f"Error: {e}")
@@ -231,24 +309,51 @@ class PortAuditor:
             port: Port number to allow
             protocol: tcp or udp
         """
-        if not shutil.which("firewall-cmd"):
+        try:
+            valid_port = cls._normalize_port(port)
+            valid_protocol = cls._normalize_protocol(protocol)
+        except ValueError as e:
+            return Result(False, str(e))
+
+        data = daemon_client.call_json(
+            "FirewallOpenPort", str(valid_port), valid_protocol, "", True
+        )
+        if isinstance(data, dict):
+            return Result(bool(data.get("success", False)), str(data.get("message", "")))
+        return cls.allow_port_local(valid_port, valid_protocol)
+
+    @classmethod
+    def allow_port_local(cls, port: int, protocol: str = "tcp") -> Result:
+        """Local fallback for allowing a port."""
+        try:
+            valid_port = cls._normalize_port(port)
+            valid_protocol = cls._normalize_protocol(protocol)
+        except ValueError as e:
+            return Result(False, str(e))
+
+        if not cached_which("firewall-cmd"):
             return Result(False, "firewall-cmd not found")
 
-        if not cls.is_firewalld_running():
+        if not cls.is_firewalld_running_local():
             return Result(False, "firewalld is not running")
 
         try:
             result = subprocess.run(
-                ["pkexec", "firewall-cmd", "--add-port", f"{port}/{protocol}", "--permanent"], capture_output=True, text=True, timeout=30
+                ["pkexec", "firewall-cmd", "--add-port",
+                    f"{valid_port}/{valid_protocol}", "--permanent"],
+                capture_output=True,
+                text=True,
+                timeout=30,
             )
 
             if result.returncode != 0:
                 return Result(False, f"Failed: {result.stderr}")
 
             # Reload firewall
-            subprocess.run(["pkexec", "firewall-cmd", "--reload"], capture_output=True, text=True, timeout=30)
+            subprocess.run(["pkexec", "firewall-cmd", "--reload"],
+                           capture_output=True, text=True, timeout=30)
 
-            return Result(True, f"Port {port}/{protocol} allowed")
+            return Result(True, f"Port {valid_port}/{valid_protocol} allowed")
 
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             return Result(False, f"Error: {e}")
@@ -256,26 +361,43 @@ class PortAuditor:
     @classmethod
     def get_firewall_status(cls) -> dict:
         """Get firewall status and open ports."""
-        status = {"running": False, "default_zone": "unknown", "allowed_ports": [], "allowed_services": []}
+        status = daemon_client.call_json("FirewallGetStatus")
+        if isinstance(status, dict):
+            return {
+                "running": bool(status.get("running", False)),
+                "default_zone": str(status.get("default_zone", "unknown")),
+                "allowed_ports": [str(x) for x in status.get("ports", [])],
+                "allowed_services": [str(x) for x in status.get("services", [])],
+            }
+        return cls.get_firewall_status_local()
 
-        if not cls.is_firewalld_running():
+    @classmethod
+    def get_firewall_status_local(cls) -> dict:
+        """Local fallback for firewall status."""
+        status = {"running": False, "default_zone": "unknown",
+                  "allowed_ports": [], "allowed_services": []}
+
+        if not cls.is_firewalld_running_local():
             return status
 
         status["running"] = True
 
         try:
             # Get default zone
-            result = subprocess.run(["firewall-cmd", "--get-default-zone"], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ["firewall-cmd", "--get-default-zone"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 status["default_zone"] = result.stdout.strip()
 
             # Get allowed ports
-            result = subprocess.run(["firewall-cmd", "--list-ports"], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ["firewall-cmd", "--list-ports"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 status["allowed_ports"] = result.stdout.strip().split()
 
             # Get allowed services
-            result = subprocess.run(["firewall-cmd", "--list-services"], capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                ["firewall-cmd", "--list-services"], capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 status["allowed_services"] = result.stdout.strip().split()
 
@@ -291,6 +413,14 @@ class PortAuditor:
 
         Returns score from 0-100 and recommendations.
         """
+        data = daemon_client.call_json("PortAuditSecurityScore")
+        if isinstance(data, dict):
+            return data
+        return cls.get_security_score_local()
+
+    @classmethod
+    def get_security_score_local(cls) -> dict:
+        """Local fallback for security score."""
         ports = cls.scan_ports()
         risky = [p for p in ports if p.is_risky]
 
@@ -302,13 +432,16 @@ class PortAuditor:
         for p in risky:
             if p.port == 23:  # Telnet is critical
                 score -= 30
-                recommendations.append(f"CRITICAL: Disable Telnet on port {p.port}")
+                recommendations.append(
+                    f"CRITICAL: Disable Telnet on port {p.port}")
             elif p.port in [3306, 5432, 27017, 6379]:  # Databases
                 score -= 15
-                recommendations.append(f"Database {p.process} on port {p.port} exposed")
+                recommendations.append(
+                    f"Database {p.process} on port {p.port} exposed")
             else:
                 score -= 10
-                recommendations.append(f"Review {p.process} on port {p.port}: {p.risk_reason}")
+                recommendations.append(
+                    f"Review {p.process} on port {p.port}: {p.risk_reason}")
 
         # Check if firewall is running
         if not cls.is_firewalld_running():

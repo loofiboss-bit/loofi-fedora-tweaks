@@ -5,9 +5,10 @@ Migrated from utils/safety.py in v2.0.0.
 """
 
 import logging
-import shutil
 import subprocess
 from typing import Optional
+
+from services.system.system import cached_which
 
 logger = logging.getLogger(__name__)
 
@@ -48,9 +49,9 @@ class SafetyManager:
         Returns:
             Tool name ('timeshift' or 'snapper'), or None if neither found.
         """
-        if shutil.which("timeshift"):
+        if cached_which("timeshift"):
             return "timeshift"
-        elif shutil.which("snapper"):
+        elif cached_which("snapper"):
             return "snapper"
         return None
 
@@ -113,7 +114,7 @@ class SafetyManager:
         Returns:
             True if the action should proceed, False otherwise.
         """
-        from PyQt6.QtWidgets import QApplication, QMessageBox
+        from PyQt6.QtWidgets import QMessageBox
 
         tool = SafetyManager.check_snapshot_tool()
 
@@ -147,12 +148,10 @@ class SafetyManager:
         if tool and clicked == btn_snapshot:
             # Show a progress message while snapshot runs
             parent.setDisabled(True)
-            QApplication.processEvents()
 
             success = SafetyManager.create_snapshot(tool, f"Pre-{description.split(' ')[0]}")
 
             parent.setDisabled(False)
-            QApplication.processEvents()
 
             if not success:
                 QMessageBox.warning(

@@ -3,15 +3,16 @@ Tests for utils/network_utils.py (v34.0).
 Covers scan_wifi, load_vpn_connections, detect_current_dns,
 get_active_connection, check_hostname_privacy, reactivate_connection.
 """
-import unittest
+import os
 import subprocess
 import sys
-import os
-from unittest.mock import patch, MagicMock
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
+import unittest
+from unittest.mock import MagicMock, patch
 
 from services.network.network import NetworkUtils
+
+sys.path.append(os.path.join(os.path.dirname(
+    __file__), '..', 'loofi-fedora-tweaks'))
 
 
 class TestScanWifi(unittest.TestCase):
@@ -159,11 +160,10 @@ class TestDetectCurrentDns(unittest.TestCase):
 
     @patch('services.network.network.subprocess.run')
     def test_no_dns_found(self, mock_run):
-        mock_run.return_value = MagicMock(stdout="IP4.ADDRESS[1]:192.168.1.2/24\n")
-        NetworkUtils.detect_current_dns()
-        # Line has ':', but value after split is '192.168.1.2/24' — added to set
-        # Since there IS a value, it returns it. Let's test truly empty.
-        pass
+        mock_run.return_value = MagicMock(
+            stdout="IP4.ADDRESS[1]:192.168.1.2/24\n")
+        dns = NetworkUtils.detect_current_dns()
+        self.assertEqual(dns, "192.168.1.2/24")
 
     @patch('services.network.network.subprocess.run')
     def test_empty_output(self, mock_run):
@@ -249,6 +249,36 @@ class TestGetActiveConnection(unittest.TestCase):
         conn = NetworkUtils.get_active_connection()
         self.assertIsNone(conn)
 
+    @patch('services.network.network.subprocess.run')
+    def test_malformed_rows_return_none(self, mock_run):
+        mock_run.return_value = MagicMock(
+            stdout="bad_row_without_delimiter\nOffice\\:WiFi:wifi\n"
+        )
+
+        conn = NetworkUtils.get_active_connection()
+
+        self.assertIsNone(conn)
+
+    @patch('services.network.network.subprocess.run')
+    def test_non_target_types_not_misclassified_by_name(self, mock_run):
+        mock_run.return_value = MagicMock(
+            stdout="wifi-tools:bridge\nethernet-lab:vpn\n"
+        )
+
+        conn = NetworkUtils.get_active_connection()
+
+        self.assertIsNone(conn)
+
+    @patch('services.network.network.subprocess.run')
+    def test_selects_first_valid_wifi_or_ethernet_row(self, mock_run):
+        mock_run.return_value = MagicMock(
+            stdout="lo:loopback\nCorpVPN:vpn\nHome:wifi\nWired:ethernet\n"
+        )
+
+        conn = NetworkUtils.get_active_connection()
+
+        self.assertEqual(conn, "Home")
+
 
 class TestCheckHostnamePrivacy(unittest.TestCase):
     """Tests for NetworkUtils.check_hostname_privacy()."""
@@ -298,7 +328,9 @@ class TestReactivateConnection(unittest.TestCase):
         self.assertTrue(result)
         mock_run.assert_called_once_with(
             ["nmcli", "con", "up", "MyConn"],
-            capture_output=True, timeout=10
+            capture_output=True,
+            check=False,
+            timeout=10,
         )
 
     @patch('services.network.network.subprocess.run')
@@ -317,6 +349,107 @@ class TestReactivateConnection(unittest.TestCase):
     def test_reactivate_subprocess_error(self, mock_run):
         mock_run.side_effect = subprocess.SubprocessError("connection failed")
         result = NetworkUtils.reactivate_connection("MyConn")
+        self.assertFalse(result)
+
+
+class TestDaemonFirstNetworkMutations(unittest.TestCase):
+    """Tests daemon-first behavior for network mutating methods."""
+
+    @patch('services.network.network.subprocess.run')
+    @patch('services.network.network.daemon_client.call_json')
+    def test_connect_wifi_prefers_daemon_result(
+        self,
+        mock_call_json,
+        mock_run,
+    ):
+        mock_call_json.return_value = True
+        result = NetworkUtils.connect_wifi("MyWiFi")
+        self.assertTrue(result)
+        mock_call_json.assert_called_once_with("NetworkConnectWifi", "MyWiFi")
+        mock_run.assert_not_called()
+
+    @patch('services.network.network.subprocess.run')
+    @patch('services.network.network.daemon_client.call_json')
+    def test_connect_wifi_falls_back_local(self, mock_call_json, mock_run):
+        mock_call_json.return_value = None
+        mock_run.return_value = MagicMock(returncode=0)
+        result = NetworkUtils.connect_wifi("MyWiFi")
+        self.assertTrue(result)
+        mock_call_json.assert_called_once_with("NetworkConnectWifi", "MyWiFi")
+        mock_run.assert_called_once_with(
+            ["nmcli", "device", "wifi", "connect", "MyWiFi"],
+            capture_output=True,
+            text=True,
+            check=False,
+            timeout=30,
+        )
+
+    @patch('services.network.network.subprocess.run')
+    @patch('services.network.network.daemon_client.call_json')
+    def test_apply_dns_prefers_daemon_result(self, mock_call_json, mock_run):
+        mock_call_json.return_value = True
+        result = NetworkUtils.apply_dns("Home", "auto")
+        self.assertTrue(result)
+        mock_call_json.assert_called_once_with(
+            "NetworkApplyDns", "Home", "auto")
+        mock_run.assert_not_called()
+
+    @patch('services.network.network.subprocess.run')
+    @patch('services.network.network.daemon_client.call_json')
+    def test_set_hostname_privacy_prefers_daemon_result(
+        self,
+        mock_call_json,
+        mock_run,
+    ):
+        mock_call_json.return_value = True
+        result = NetworkUtils.set_hostname_privacy("Home", True)
+        self.assertTrue(result)
+        mock_call_json.assert_called_once_with(
+            "NetworkSetHostnamePrivacy", "Home", True)
+        mock_run.assert_not_called()
+
+
+class TestNetworkLocalWriteReturnCodes(unittest.TestCase):
+    """Tests strict local return semantics for network write paths."""
+
+    @patch('services.network.network.subprocess.run')
+    def test_connect_wifi_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=10)
+
+        result = NetworkUtils.connect_wifi_local("MyWiFi")
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_disconnect_wifi_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=4)
+
+        result = NetworkUtils.disconnect_wifi_local("wlan0")
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_apply_dns_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=2)
+
+        result = NetworkUtils.apply_dns_local("Home", "1.1.1.1")
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_set_hostname_privacy_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=5)
+
+        result = NetworkUtils.set_hostname_privacy_local("Home", True)
+
+        self.assertFalse(result)
+
+    @patch('services.network.network.subprocess.run')
+    def test_reactivate_connection_local_non_zero_returncode(self, mock_run):
+        mock_run.return_value = MagicMock(returncode=1)
+
+        result = NetworkUtils.reactivate_connection_local("Home")
+
         self.assertFalse(result)
 
 

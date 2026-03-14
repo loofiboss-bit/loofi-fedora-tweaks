@@ -11,6 +11,8 @@ import subprocess
 from dataclasses import dataclass
 from enum import Enum
 
+from services.ipc import daemon_client
+
 logger = logging.getLogger(__name__)
 
 
@@ -88,6 +90,33 @@ class ServiceManager:
         Returns:
             List of ServiceUnit objects.
         """
+        daemon_payload = daemon_client.call_json(
+            "ServiceListUnits", scope.value, filter_type
+        )
+        if isinstance(daemon_payload, list):
+            units: list[ServiceUnit] = []
+            for row in daemon_payload:
+                if not isinstance(row, dict):
+                    continue
+                state_raw = str(row.get("state", "unknown")).lower()
+                state = UnitState.UNKNOWN
+                for candidate in UnitState:
+                    if state_raw == candidate.value:
+                        state = candidate
+                        break
+                scope_raw = str(row.get("scope", scope.value)).lower()
+                parsed_scope = UnitScope.SYSTEM if scope_raw == "system" else UnitScope.USER
+                units.append(
+                    ServiceUnit(
+                        name=str(row.get("name", "")),
+                        state=state,
+                        scope=parsed_scope,
+                        description=str(row.get("description", "")),
+                        is_gaming=bool(row.get("is_gaming", False)),
+                    )
+                )
+            return units
+
         try:
             cmd = ["systemctl"]
             if scope == UnitScope.USER:
@@ -103,7 +132,8 @@ class ServiceManager:
                 ]
             )
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30)
 
             if result.returncode != 0:
                 return []
@@ -201,6 +231,15 @@ class ServiceManager:
     @classmethod
     def start_unit(cls, name: str, scope: UnitScope = UnitScope.USER) -> Result:
         """Start a service unit."""
+        daemon_payload = daemon_client.call_json(
+            "ServiceStartUnit", name, scope.value
+        )
+        if isinstance(daemon_payload, dict):
+            return Result(
+                bool(daemon_payload.get("success", False)),
+                str(daemon_payload.get("message", "")),
+            )
+
         cmd = ["systemctl"]
         if scope == UnitScope.USER:
             cmd.append("--user")
@@ -209,7 +248,8 @@ class ServiceManager:
         cmd.extend(["start", f"{name}.service"])
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
                 return Result(True, f"Started {name}")
             else:
@@ -220,6 +260,15 @@ class ServiceManager:
     @classmethod
     def stop_unit(cls, name: str, scope: UnitScope = UnitScope.USER) -> Result:
         """Stop a service unit."""
+        daemon_payload = daemon_client.call_json(
+            "ServiceStopUnit", name, scope.value
+        )
+        if isinstance(daemon_payload, dict):
+            return Result(
+                bool(daemon_payload.get("success", False)),
+                str(daemon_payload.get("message", "")),
+            )
+
         cmd = ["systemctl"]
         if scope == UnitScope.USER:
             cmd.append("--user")
@@ -228,7 +277,8 @@ class ServiceManager:
         cmd.extend(["stop", f"{name}.service"])
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
                 return Result(True, f"Stopped {name}")
             else:
@@ -239,6 +289,15 @@ class ServiceManager:
     @classmethod
     def restart_unit(cls, name: str, scope: UnitScope = UnitScope.USER) -> Result:
         """Restart a service unit."""
+        daemon_payload = daemon_client.call_json(
+            "ServiceRestartUnit", name, scope.value
+        )
+        if isinstance(daemon_payload, dict):
+            return Result(
+                bool(daemon_payload.get("success", False)),
+                str(daemon_payload.get("message", "")),
+            )
+
         cmd = ["systemctl"]
         if scope == UnitScope.USER:
             cmd.append("--user")
@@ -247,7 +306,8 @@ class ServiceManager:
         cmd.extend(["restart", f"{name}.service"])
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
                 return Result(True, f"Restarted {name}")
             else:
@@ -258,6 +318,15 @@ class ServiceManager:
     @classmethod
     def mask_unit(cls, name: str, scope: UnitScope = UnitScope.USER) -> Result:
         """Mask a service unit (prevent it from starting)."""
+        daemon_payload = daemon_client.call_json(
+            "ServiceMaskUnit", name, scope.value
+        )
+        if isinstance(daemon_payload, dict):
+            return Result(
+                bool(daemon_payload.get("success", False)),
+                str(daemon_payload.get("message", "")),
+            )
+
         cmd = ["systemctl"]
         if scope == UnitScope.USER:
             cmd.append("--user")
@@ -266,7 +335,8 @@ class ServiceManager:
         cmd.extend(["mask", f"{name}.service"])
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
                 return Result(True, f"Masked {name}")
             else:
@@ -277,6 +347,15 @@ class ServiceManager:
     @classmethod
     def unmask_unit(cls, name: str, scope: UnitScope = UnitScope.USER) -> Result:
         """Unmask a service unit."""
+        daemon_payload = daemon_client.call_json(
+            "ServiceUnmaskUnit", name, scope.value
+        )
+        if isinstance(daemon_payload, dict):
+            return Result(
+                bool(daemon_payload.get("success", False)),
+                str(daemon_payload.get("message", "")),
+            )
+
         cmd = ["systemctl"]
         if scope == UnitScope.USER:
             cmd.append("--user")
@@ -285,7 +364,8 @@ class ServiceManager:
         cmd.extend(["unmask", f"{name}.service"])
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=30)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=30)
             if result.returncode == 0:
                 return Result(True, f"Unmasked {name}")
             else:
@@ -296,13 +376,20 @@ class ServiceManager:
     @classmethod
     def get_unit_status(cls, name: str, scope: UnitScope = UnitScope.USER) -> str:
         """Get detailed status of a unit."""
+        daemon_payload = daemon_client.call_json(
+            "ServiceGetUnitStatus", name, scope.value
+        )
+        if isinstance(daemon_payload, str):
+            return daemon_payload
+
         cmd = ["systemctl"]
         if scope == UnitScope.USER:
             cmd.append("--user")
         cmd.extend(["status", f"{name}.service", "--no-pager"])
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=10)
             return result.stdout
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get unit status: %s", e)

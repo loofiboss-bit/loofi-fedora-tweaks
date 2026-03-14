@@ -7,15 +7,15 @@ import argparse
 import json as json_module
 import logging
 import os
-import shutil
 import subprocess
 import sys
 from typing import List, Optional
 
+from core.executor.operations import AdvancedOps, CleanupOps, NetworkOps, TweakOps
+
 logger = logging.getLogger(__name__)
 
 from core.diagnostics import HealthTimeline  # noqa: E402
-from core.executor.operations import AdvancedOps, CleanupOps, NetworkOps, TweakOps  # noqa: E402
 from services.hardware import (
     BluetoothManager,  # noqa: E402
     DiskManager,  # noqa: E402
@@ -30,6 +30,66 @@ from services.system import (
     ProcessManager,  # noqa: E402
     SystemManager,  # noqa: E402
 )
+from services.system.system import cached_which  # noqa: E402
+from cli.commands.system_commands import (  # noqa: E402
+    handle_disk,
+    handle_health,
+    handle_info,
+    handle_netmon,
+    handle_processes,
+    handle_temperature,
+)
+from cli.commands.ops_commands import (  # noqa: E402
+    handle_advanced,
+    handle_cleanup,
+    handle_network,
+    handle_tweak,
+)
+from cli.commands.user_commands import (  # noqa: E402
+    handle_focus_mode,
+    handle_preset,
+    handle_profile,
+)
+from cli.commands.insight_commands import (  # noqa: E402
+    handle_ai_models,
+    handle_security_audit,
+)
+from cli.commands.diagnostic_commands import (  # noqa: E402
+    handle_audit_log,
+    handle_doctor,
+    handle_support_bundle,
+)
+from cli.commands.hardware_commands import (  # noqa: E402
+    handle_bluetooth,
+    handle_hardware,
+    handle_storage,
+    handle_vfio,
+    handle_vm,
+)
+from cli.commands.update_commands import (  # noqa: E402
+    handle_self_update,
+    handle_updates,
+)
+from cli.commands.plugin_commands import (  # noqa: E402
+    handle_plugin_marketplace,
+    handle_plugins,
+)
+from cli.commands.network_mesh_commands import (  # noqa: E402
+    handle_mesh,
+    handle_teleport,
+)
+from cli.commands.tuning_commands import (  # noqa: E402
+    handle_boot,
+    handle_snapshot,
+)
+from cli.commands.service_package_commands import (  # noqa: E402
+    handle_extension,
+    handle_flatpak_manage,
+    handle_package,
+    handle_service,
+)
+from cli.commands.firewall_commands import handle_firewall  # noqa: E402
+from cli.commands.agent_commands import handle_agent  # noqa: E402
 from utils.focus_mode import FocusMode  # noqa: E402
 from utils.journal import JournalManager  # noqa: E402
 from utils.monitor import SystemMonitor  # noqa: E402
@@ -39,7 +99,7 @@ from utils.plugin_installer import PluginInstaller  # noqa: E402
 from utils.plugin_marketplace import PluginMarketplace  # noqa: E402
 from utils.presets import PresetManager  # noqa: E402
 from utils.profiles import ProfileManager  # noqa: E402
-from utils.service_explorer import ServiceExplorer, ServiceScope  # noqa: E402
+from utils.service_explorer import ServiceExplorer  # noqa: E402
 from utils.storage import StorageManager  # noqa: E402
 from utils.update_checker import UpdateChecker  # noqa: E402
 from version import __version__, __version_codename__  # noqa: E402
@@ -133,926 +193,133 @@ def run_operation(op_result, timeout=None):
 
 def cmd_cleanup(args):
     """Handle cleanup subcommand."""
-    if args.action == "all":
-        actions = ["dnf", "journal", "trim"]
-    else:
-        actions = [args.action]
-
-    success = True
-    for action in actions:
-        if action == "dnf":
-            success &= run_operation(CleanupOps.clean_dnf_cache())
-        elif action == "journal":
-            success &= run_operation(CleanupOps.vacuum_journal(args.days))
-        elif action == "trim":
-            success &= run_operation(CleanupOps.trim_ssd())
-        elif action == "autoremove":
-            success &= run_operation(CleanupOps.autoremove())
-        elif action == "rpmdb":
-            success &= run_operation(CleanupOps.rebuild_rpmdb())
-
-    return 0 if success else 1
+    return handle_cleanup(args=args, run_operation=run_operation, cleanup_ops_cls=CleanupOps)
 
 
 def cmd_tweak(args):
     """Handle tweak subcommand."""
-    if args.action == "power":
-        return 0 if run_operation(TweakOps.set_power_profile(args.profile)) else 1
-    elif args.action == "audio":
-        return 0 if run_operation(TweakOps.restart_audio()) else 1
-    elif args.action == "battery":
-        result = TweakOps.set_battery_limit(args.limit)
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    elif args.action == "status":
-        profile = TweakOps.get_power_profile()
-        if _json_output:
-            _output_json(
-                {
-                    "power_profile": profile,
-                    "system_type": "Atomic" if SystemManager.is_atomic() else "Traditional",
-                }
-            )
-        else:
-            _print(f"⚡ Power Profile: {profile}")
-            _print(f"💻 System: {'Atomic' if SystemManager.is_atomic() else 'Traditional'} Fedora")
-        return 0
-    return 1
+    return handle_tweak(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        run_operation=run_operation,
+        tweak_ops_cls=TweakOps,
+        system_manager_cls=SystemManager,
+    )
 
 
 def cmd_advanced(args):
     """Handle advanced subcommand."""
-    if args.action == "dnf-tweaks":
-        result = AdvancedOps.apply_dnf_tweaks()
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    elif args.action == "bbr":
-        result = AdvancedOps.enable_tcp_bbr()
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    elif args.action == "gamemode":
-        result = AdvancedOps.install_gamemode()
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    elif args.action == "swappiness":
-        result = AdvancedOps.set_swappiness(args.value)
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    return 1
+    return handle_advanced(args=args, print_fn=_print, advanced_ops_cls=AdvancedOps)
 
 
 def cmd_network(args):
     """Handle network subcommand."""
-    if args.action == "dns":
-        result = NetworkOps.set_dns(args.provider)
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    return 1
+    return handle_network(args=args, print_fn=_print, network_ops_cls=NetworkOps)
 
 
 def cmd_info(_args):
     """Show system information."""
-    is_atomic = SystemManager.is_atomic()
-    pm = SystemManager.get_package_manager()
-    profile = TweakOps.get_power_profile()
-
-    if _json_output:
-        data = {
-            "version": __version__,
-            "codename": __version_codename__,
-            "system_type": "Atomic" if is_atomic else "Traditional",
-            "package_manager": pm,
-            "power_profile": profile,
-        }
-        if is_atomic and SystemManager.has_pending_deployment():
-            data["pending_deployment"] = True
-        _output_json(data)
-    else:
-        _print("═══════════════════════════════════════════")
-        _print(f"   Loofi Fedora Tweaks v{__version__} CLI")
-        _print("═══════════════════════════════════════════")
-        _print(f"🖥️  System: {'Atomic' if is_atomic else 'Traditional'} Fedora")
-        _print(f"📦 Package Manager: {pm}")
-        _print(f"⚡ Power Profile: {profile}")
-
-        if is_atomic and SystemManager.has_pending_deployment():
-            _print("🔄 Pending deployment: ⚠️  Reboot required")
-
-    return 0
+    return handle_info(
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        version=__version__,
+        codename=__version_codename__,
+        system_manager_cls=SystemManager,
+        tweak_ops_cls=TweakOps,
+    )
 
 
 def cmd_health(_args):
     """Show system health overview."""
-    health = SystemMonitor.get_system_health()
-
-    if _json_output:
-        data = {
-            "hostname": health.hostname,
-            "uptime": health.uptime,
-        }
-        if health.memory:
-            data["memory"] = {
-                "used": health.memory.used_human,
-                "total": health.memory.total_human,
-                "percent": health.memory.percent_used,
-                "status": health.memory_status,
-            }
-        if health.cpu:
-            data["cpu"] = {
-                "load_1min": health.cpu.load_1min,
-                "load_5min": health.cpu.load_5min,
-                "load_15min": health.cpu.load_15min,
-                "cores": health.cpu.core_count,
-                "load_percent": health.cpu.load_percent,
-                "status": health.cpu_status,
-            }
-        disk_level, disk_msg = DiskManager.check_disk_health("/")
-        data["disk"] = {"status": disk_level, "message": disk_msg}
-        data["power_profile"] = TweakOps.get_power_profile()
-        _output_json(data)
-    else:
-        _print("═══════════════════════════════════════════")
-        _print("   System Health Check")
-        _print("═══════════════════════════════════════════")
-        _print(f"🖥️  Hostname: {health.hostname}")
-        _print(f"⏱️  Uptime: {health.uptime}")
-
-        if health.memory:
-            mem_icon = "🟢" if health.memory_status == "ok" else ("🟡" if health.memory_status == "warning" else "🔴")
-            _print(f"{mem_icon} Memory: {health.memory.used_human} / {health.memory.total_human} ({health.memory.percent_used}%)")
-        else:
-            _print("⚪ Memory: Unable to read")
-
-        if health.cpu:
-            cpu_icon = "🟢" if health.cpu_status == "ok" else ("🟡" if health.cpu_status == "warning" else "🔴")
-            _print(
-                f"{cpu_icon} CPU Load: {health.cpu.load_1min} / {health.cpu.load_5min} / {health.cpu.load_15min} ({health.cpu.core_count} cores, {health.cpu.load_percent}%)"
-            )
-        else:
-            _print("⚪ CPU: Unable to read")
-
-        disk_level, disk_msg = DiskManager.check_disk_health("/")
-        disk_icon = "🟢" if disk_level == "ok" else ("🟡" if disk_level == "warning" else "🔴")
-        _print(f"{disk_icon} {disk_msg}")
-        _print(f"⚡ Power Profile: {TweakOps.get_power_profile()}")
-        _print(f"💻 System: {'Atomic' if SystemManager.is_atomic() else 'Traditional'} Fedora ({SystemManager.get_variant_name()})")
-
-    return 0
+    return handle_health(
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        system_monitor_cls=SystemMonitor,
+        disk_manager_cls=DiskManager,
+        tweak_ops_cls=TweakOps,
+        system_manager_cls=SystemManager,
+    )
 
 
 def cmd_disk(args):
     """Show disk usage information."""
-    usage = DiskManager.get_disk_usage("/")
-
-    if _json_output:
-        data = {"root": None, "home": None}
-        if usage:
-            level, _ = DiskManager.check_disk_health("/")
-            data["root"] = {
-                "total": usage.total_human,
-                "used": usage.used_human,
-                "free": usage.free_human,
-                "percent": usage.percent_used,
-                "status": level,
-            }
-        home_usage = DiskManager.get_disk_usage(os.path.expanduser("~"))
-        if home_usage and home_usage.mount_point != "/":
-            level, _ = DiskManager.check_disk_health(home_usage.mount_point)
-            data["home"] = {
-                "mount_point": home_usage.mount_point,
-                "total": home_usage.total_human,
-                "used": home_usage.used_human,
-                "free": home_usage.free_human,
-                "percent": home_usage.percent_used,
-                "status": level,
-            }
-        _output_json(data)
-    else:
-        _print("═══════════════════════════════════════════")
-        _print("   Disk Usage")
-        _print("═══════════════════════════════════════════")
-
-        if usage:
-            level, _ = DiskManager.check_disk_health("/")
-            icon = "🟢" if level == "ok" else ("🟡" if level == "warning" else "🔴")
-            _print(f"\n{icon} Root (/)")
-            _print(f"   Total: {usage.total_human}")
-            _print(f"   Used:  {usage.used_human} ({usage.percent_used}%)")
-            _print(f"   Free:  {usage.free_human}")
-        else:
-            _print("❌ Unable to read root filesystem")
-
-        home_usage = DiskManager.get_disk_usage(os.path.expanduser("~"))
-        if home_usage and home_usage.mount_point != "/":
-            level, _ = DiskManager.check_disk_health(home_usage.mount_point)
-            icon = "🟢" if level == "ok" else ("🟡" if level == "warning" else "🔴")
-            _print(f"\n{icon} Home ({home_usage.mount_point})")
-            _print(f"   Total: {home_usage.total_human}")
-            _print(f"   Used:  {home_usage.used_human} ({home_usage.percent_used}%)")
-            _print(f"   Free:  {home_usage.free_human}")
-
-        if getattr(args, "details", False):
-            home_dir = os.path.expanduser("~")
-            _print(f"\n📂 Largest directories in {home_dir}:")
-            large_dirs = DiskManager.find_large_directories(home_dir, max_depth=2, top_n=5)
-            if large_dirs:
-                for d in large_dirs:
-                    _print(f"   {d.size_human:>10}  {d.path}")
-            else:
-                _print("   (no results)")
-
-    return 0
+    return handle_disk(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        disk_manager_cls=DiskManager,
+    )
 
 
 def cmd_processes(args):
     """Show top processes."""
-    counts = ProcessManager.get_process_count()
-    n = getattr(args, "count", 10)
-    sort_by = getattr(args, "sort", "cpu")
-
-    if sort_by == "memory":
-        processes = ProcessManager.get_top_by_memory(n)
-    else:
-        processes = ProcessManager.get_top_by_cpu(n)
-
-    if _json_output:
-        data = {
-            "counts": counts,
-            "sort_by": sort_by,
-            "processes": [
-                {
-                    "pid": p.pid,
-                    "name": p.name,
-                    "cpu_percent": p.cpu_percent,
-                    "memory_percent": p.memory_percent,
-                    "memory_bytes": p.memory_bytes,
-                    "user": p.user,
-                }
-                for p in processes
-            ],
-        }
-        _output_json(data)
-    else:
-        _print("═══════════════════════════════════════════")
-        _print("   Process Monitor")
-        _print("═══════════════════════════════════════════")
-        _print(f"\n📊 Total: {counts['total']} | Running: {counts['running']} | Sleeping: {counts['sleeping']} | Zombie: {counts['zombie']}")
-        _print(f"\n🔍 Top {n} by {'Memory' if sort_by == 'memory' else 'CPU'}:")
-        _print(f"{'PID':>7}  {'CPU%':>6}  {'MEM%':>6}  {'Memory':>10}  {'User':<12}  {'Name'}")
-        _print("─" * 70)
-        for p in processes:
-            mem_human = ProcessManager.bytes_to_human(p.memory_bytes)
-            _print(f"{p.pid:>7}  {p.cpu_percent:>5.1f}%  {p.memory_percent:>5.1f}%  {mem_human:>10}  {p.user:<12}  {p.name}")
-
-    return 0
+    return handle_processes(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        process_manager_cls=ProcessManager,
+    )
 
 
 def cmd_temperature(_args):
     """Show temperature readings."""
-    sensors = TemperatureManager.get_all_sensors()
-
-    if _json_output:
-        data = {
-            "sensors": [
-                {
-                    "label": s.label,
-                    "current": s.current,
-                    "high": s.high,
-                    "critical": s.critical,
-                }
-                for s in sensors
-            ]
-        }
-        if sensors:
-            data["avg"] = sum(s.current for s in sensors) / len(sensors)
-            data["max"] = max(s.current for s in sensors)
-        _output_json(data)
-    else:
-        _print("═══════════════════════════════════════════")
-        _print("   Temperature Monitor")
-        _print("═══════════════════════════════════════════")
-
-        if not sensors:
-            _print("\n⚠️  No temperature sensors found.")
-            from utils.install_hints import build_install_hint
-
-            _print(f"   Ensure lm_sensors is installed: {build_install_hint('lm_sensors')}")
-            return 1
-
-        for sensor in sensors:
-            if sensor.critical and sensor.current >= sensor.critical:
-                icon = "🔴"
-            elif sensor.high and sensor.current >= sensor.high:
-                icon = "🟡"
-            else:
-                icon = "🟢"
-
-            line = f"{icon} {sensor.label:<20} {sensor.current:>5.1f}°C"
-            if sensor.high:
-                line += f"  (high: {sensor.high:.0f}°C)"
-            if sensor.critical:
-                line += f"  (crit: {sensor.critical:.0f}°C)"
-            _print(line)
-
-        if len(sensors) > 1:
-            avg_temp = sum(s.current for s in sensors) / len(sensors)
-            hottest = max(sensors, key=lambda s: s.current)
-            _print(f"\n📊 Summary: avg {avg_temp:.1f}°C | max {hottest.current:.1f}°C ({hottest.label})")
-
-    return 0
+    return handle_temperature(
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        temperature_manager_cls=TemperatureManager,
+    )
 
 
 def cmd_netmon(args):
     """Show network interface stats."""
-    interfaces = NetworkMonitor.get_all_interfaces()
-
-    if _json_output:
-        data = {
-            "interfaces": [
-                {
-                    "name": i.name,
-                    "type": i.type,
-                    "is_up": i.is_up,
-                    "ip_address": i.ip_address if hasattr(i, "ip_address") else None,
-                    "bytes_recv": i.bytes_recv,
-                    "bytes_sent": i.bytes_sent,
-                }
-                for i in interfaces
-            ],
-            "summary": NetworkMonitor.get_bandwidth_summary(),
-        }
-        _output_json(data)
-    else:
-        _print("═══════════════════════════════════════════")
-        _print("   Network Monitor")
-        _print("═══════════════════════════════════════════")
-
-        if not interfaces:
-            _print("\n⚠️  No network interfaces found.")
-            return 1
-
-        for iface in interfaces:
-            status = "UP" if iface.is_up else "DOWN"
-            icon = "🟢" if iface.is_up else "🔴"
-            _print(f"\n{icon} {iface.name} ({iface.type}) [{status}]")
-            if iface.ip_address:
-                _print(f"   IP: {iface.ip_address}")
-            _print(f"   RX: {NetworkMonitor.bytes_to_human(iface.bytes_recv)}  TX: {NetworkMonitor.bytes_to_human(iface.bytes_sent)}")
-            if iface.recv_rate > 0 or iface.send_rate > 0:
-                _print(f"   Rate: ↓{NetworkMonitor.bytes_to_human(int(iface.recv_rate))}/s  ↑{NetworkMonitor.bytes_to_human(int(iface.send_rate))}/s")
-
-        summary = NetworkMonitor.get_bandwidth_summary()
-        _print(f"\n📊 Total: ↓{NetworkMonitor.bytes_to_human(summary['total_recv'])} ↑{NetworkMonitor.bytes_to_human(summary['total_sent'])}")
-
-        if getattr(args, "connections", False):
-            connections = NetworkMonitor.get_active_connections()
-            if connections:
-                _print(f"\n🔗 Active Connections ({len(connections)}):")
-                _print(f"{'Proto':<6} {'Local':>21} {'Remote':>21} {'State':<14} {'Process'}")
-                _print("─" * 80)
-                for conn in connections[:20]:
-                    local = f"{conn.local_addr}:{conn.local_port}"
-                    remote = f"{conn.remote_addr}:{conn.remote_port}" if conn.remote_addr != "0.0.0.0" else "*"
-                    _print(f"{conn.protocol:<6} {local:>21} {remote:>21} {conn.state:<14} {conn.process_name}")
-
-    return 0
+    return handle_netmon(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        network_monitor_cls=NetworkMonitor,
+    )
 
 
 def cmd_doctor(_args):
     """Run system diagnostics and check dependencies."""
-    critical_tools = ["dnf", "pkexec", "systemctl", "flatpak"]
-    optional_tools = [
-        "fwupdmgr",
-        "timeshift",
-        "nbfc",
-        "firejail",
-        "ollama",
-        "distrobox",
-        "podman",
-    ]
-
-    all_ok = True
-
-    if _json_output:
-        data = {"critical": {}, "optional": {}}
-        for tool in critical_tools:
-            data["critical"][tool] = shutil.which(tool) is not None
-        for tool in optional_tools:
-            data["optional"][tool] = shutil.which(tool) is not None
-        data["all_critical_ok"] = all(data["critical"].values())
-        all_ok = data["all_critical_ok"]
-        _output_json(data)
-    else:
-        _print("═══════════════════════════════════════════")
-        _print("   System Doctor")
-        _print("═══════════════════════════════════════════")
-
-        _print("\nCritical Tools:")
-        all_ok = True
-        for tool in critical_tools:
-            found = shutil.which(tool) is not None
-            icon = "✅" if found else "❌"
-            _print(f"  {icon} {tool}")
-            if not found:
-                all_ok = False
-
-        _print("\nOptional Tools:")
-        for tool in optional_tools:
-            found = shutil.which(tool) is not None
-            icon = "✅" if found else "⚪"
-            _print(f"  {icon} {tool}")
-
-        if all_ok:
-            _print("\n🟢 All critical dependencies found.")
-        else:
-            _print("\n🔴 Some critical tools are missing. Install them for full functionality.")
-
-    return 0 if all_ok else 1
+    return handle_doctor(_json_output, _output_json, _print, which_fn=cached_which)
 
 
 def cmd_hardware(_args):
     """Show detected hardware profile."""
     from services.hardware.hardware_profiles import detect_hardware_profile
-
-    key, profile = detect_hardware_profile()
-
-    if _json_output:
-        _output_json({"profile_key": key, "profile": profile})
-    else:
-        _print("═══════════════════════════════════════════")
-        _print("   Hardware Profile")
-        _print("═══════════════════════════════════════════")
-        _print(f"\n🖥️  Detected: {profile['label']}")
-        _print(f"   Battery Limit:    {'✅' if profile.get('battery_limit') else '❌'}")
-        _print(f"   Fan Control:      {'✅' if profile.get('nbfc') else '❌'}")
-        _print(f"   Fingerprint:      {'✅' if profile.get('fingerprint') else '❌'}")
-        _print(f"   Power Profiles:   {'✅' if profile.get('power_profiles') else '❌'}")
-        thermal = profile.get("thermal_management", "None")
-        _print(f"   Thermal Driver:   {thermal or 'Generic'}")
-
-    return 0
+    return handle_hardware(_json_output, _output_json, _print, detect_hardware_profile)
 
 
 def cmd_self_update(args):
     """Check and run self-update flow."""
-    package_manager = SystemManager.get_package_manager()
-    preference = UpdateChecker.resolve_artifact_preference(package_manager, args.channel)
-    use_cache = not args.no_cache
-
-    if args.action == "check":
-        info = UpdateChecker.check_for_updates(timeout=args.timeout, use_cache=use_cache)
-        if _json_output:
-            _output_json(
-                {
-                    "success": info is not None,
-                    "stage": "check",
-                    "update_available": bool(info and info.is_newer),
-                    "offline": bool(info and info.offline),
-                    "source": info.source if info else "network",
-                    "current_version": info.current_version if info else __version__,
-                    "latest_version": info.latest_version if info else None,
-                    "selected_asset": info.selected_asset.name if info and info.selected_asset else None,
-                }
-            )
-            return 0 if info is not None else 1
-
-        if info is None:
-            _print("❌ Update check failed")
-            return 1
-        if info.is_newer:
-            _print(f"✅ Update available: {info.current_version} -> {info.latest_version}")
-            if info.selected_asset:
-                _print(f"📦 Selected asset: {info.selected_asset.name}")
-        else:
-            _print("✅ No update available")
-        return 0
-
-    result = UpdateChecker.run_auto_update(
-        artifact_preference=preference,
-        target_dir=os.path.expanduser(args.download_dir),
-        timeout=args.timeout,
-        use_cache=use_cache,
-        expected_sha256=args.checksum,
-        signature_path=args.signature_path,
-        public_key_path=args.public_key_path,
+    return handle_self_update(
+        args, _json_output, _output_json, _print, SystemManager, UpdateChecker, __version__
     )
-
-    if _json_output:
-        _output_json(
-            {
-                "success": result.success,
-                "stage": result.stage,
-                "error": result.error,
-                "offline": result.offline,
-                "source": result.source,
-                "selected_asset": result.selected_asset.name if result.selected_asset else None,
-                "downloaded_file": result.download.file_path if result.download else None,
-                "download_ok": result.download.ok if result.download else None,
-                "verify_ok": result.verify.ok if result.verify else None,
-            }
-        )
-    else:
-        if result.success:
-            _print("✅ Update package downloaded and verified")
-            if result.download and result.download.file_path:
-                _print(f"📁 File: {result.download.file_path}")
-        else:
-            _print(f"❌ Self-update failed at stage '{result.stage}': {result.error}")
-
-    return 0 if result.success else 1
 
 
 def cmd_plugins(args):
     """Manage plugins."""
-    loader = PluginLoader()
-
-    if args.action == "list":
-        plugins = loader.list_plugins()
-        if _json_output:
-            _output_json({"plugins": plugins})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Plugins")
-            _print("═══════════════════════════════════════════")
-            if not plugins:
-                _print("\n(no plugins found)")
-                return 0
-            for plugin in plugins:
-                name = plugin["name"]
-                enabled = plugin["enabled"]
-                manifest = plugin.get("manifest") or {}
-                status = "✅" if enabled else "❌"
-                version = manifest.get("version", "unknown")
-                desc = manifest.get("description", "")
-                _print(f"{status} {name} v{version}")
-                if desc:
-                    _print(f"   {desc}")
-        return 0
-
-    if args.action in ("enable", "disable"):
-        if not args.name:
-            _print("❌ Plugin name required")
-            return 1
-        enabled = args.action == "enable"
-        loader.set_enabled(args.name, enabled)
-        if _json_output:
-            _output_json({"plugin": args.name, "enabled": enabled})
-        else:
-            _print(f"{'✅' if enabled else '❌'} {args.name} {'enabled' if enabled else 'disabled'}")
-        return 0
-
-    return 1
+    return handle_plugins(args, _json_output, _output_json, _print, PluginLoader)
 
 
 def cmd_plugin_marketplace(args):
     """Plugin marketplace operations."""
-    marketplace = PluginMarketplace()
-    installer = PluginInstaller()
-    use_json = getattr(args, "json", False) or _json_output
-
-    def _resolve_plugin_id():
-        """Accept both modern `plugin_id` and legacy `plugin` argparse names."""
-        plugin_id = getattr(args, "plugin_id", None)
-        if isinstance(plugin_id, str) and plugin_id:
-            return plugin_id
-        legacy = getattr(args, "plugin", None)
-        if isinstance(legacy, str) and legacy:
-            return legacy
-        return None
-
-    if args.action == "search":
-        query = getattr(args, "query", None) or ""
-        category = getattr(args, "category", None)
-        result = marketplace.search(query=query, category=category)
-
-        if not result.success:
-            print(f"Error: {result.error}", file=sys.stderr)
-            return 1
-
-        plugins = result.data or []
-        if use_json:
-            data = [
-                {
-                    "id": p.id,
-                    "name": p.name,
-                    "version": p.version,
-                    "author": p.author,
-                    "category": p.category,
-                    "description": p.description,
-                    "verified_publisher": bool(getattr(p, "verified_publisher", False)),
-                    "publisher_id": getattr(p, "publisher_id", None),
-                    "publisher_badge": getattr(p, "publisher_badge", None),
-                }
-                for p in plugins
-            ]
-            print(json_module.dumps({"plugins": data, "count": len(data)}, indent=2, default=str))
-        else:
-            if not plugins:
-                print("No plugins found")
-                return 0
-            for p in plugins:
-                print(f"📦 {p.name} v{p.version} by {p.author}")
-                print(f"   Category: {p.category}")
-                if getattr(p, "verified_publisher", False):
-                    badge = getattr(p, "publisher_badge", None) or "verified"
-                    publisher_id = getattr(p, "publisher_id", None)
-                    publisher_suffix = f" ({publisher_id})" if publisher_id else ""
-                    print(f"   Publisher: {badge}{publisher_suffix}")
-                print(f"   {p.description}")
-                print()
-        return 0
-
-    if args.action == "info":
-        plugin_id = _resolve_plugin_id()
-        if not plugin_id:
-            print("Error: Plugin ID required", file=sys.stderr)
-            return 1
-
-        result = marketplace.get_plugin(plugin_id)
-
-        if not result.success:
-            print(f"Error: {result.error}", file=sys.stderr)
-            return 1
-
-        plugin = result.data[0] if isinstance(result.data, list) else result.data
-
-        if use_json:
-            data = {
-                "id": plugin.id,
-                "name": plugin.name,
-                "version": plugin.version,
-                "author": plugin.author,
-                "category": plugin.category,
-                "description": plugin.description,
-                "homepage": getattr(plugin, "homepage", None),
-                "license": getattr(plugin, "license", None),
-                "verified_publisher": bool(getattr(plugin, "verified_publisher", False)),
-                "publisher_id": getattr(plugin, "publisher_id", None),
-                "publisher_badge": getattr(plugin, "publisher_badge", None),
-            }
-            print(json_module.dumps(data, indent=2, default=str))
-        else:
-            print(f"{plugin.name} v{plugin.version}")
-            print(f"Author:      {plugin.author}")
-            print(f"Category:    {plugin.category}")
-            print(f"Description: {plugin.description}")
-            if getattr(plugin, "verified_publisher", False):
-                badge = getattr(plugin, "publisher_badge", None) or "verified"
-                publisher_id = getattr(plugin, "publisher_id", None)
-                if publisher_id:
-                    print(f"Publisher:   {badge} ({publisher_id})")
-                else:
-                    print(f"Publisher:   {badge}")
-            if getattr(plugin, "homepage", None):
-                print(f"Homepage:    {plugin.homepage}")
-        return 0
-
-    if args.action == "install":
-        plugin_id = _resolve_plugin_id()
-        if not plugin_id:
-            print("Error: Plugin ID required", file=sys.stderr)
-            return 1
-
-        # Fetch plugin info
-        info_result = marketplace.get_plugin(plugin_id)
-        if not info_result.success:
-            print(f"Error: {info_result.error}", file=sys.stderr)
-            return 1
-
-        plugin = info_result.data[0] if isinstance(info_result.data, list) else info_result.data
-
-        # Check permissions consent
-        permissions = getattr(plugin, "requires", None) or []
-        accept = getattr(args, "accept_permissions", False)
-        if permissions and not accept:
-            print(f"Plugin '{plugin.name}' requires permissions: {', '.join(permissions)}")
-            print("Re-run with --accept-permissions to install")
-            return 1
-
-        result = installer.install(plugin_id)
-
-        if result.success:
-            if use_json:
-                print(
-                    json_module.dumps(
-                        {"status": "success", "plugin": plugin_id},
-                        indent=2,
-                        default=str,
-                    )
-                )
-            else:
-                print(f"Successfully installed '{plugin.name}'")
-            return 0
-        else:
-            print(f"Error: Installation failed: {result.error}", file=sys.stderr)
-            return 1
-
-    if args.action == "reviews":
-        plugin_id = _resolve_plugin_id()
-        if not plugin_id:
-            print("Error: Plugin ID required", file=sys.stderr)
-            return 1
-
-        limit = getattr(args, "limit", 20)
-        offset = getattr(args, "offset", 0)
-        result = marketplace.fetch_reviews(plugin_id=plugin_id, limit=limit, offset=offset)
-
-        if not result.success:
-            print(f"Error: {result.error}", file=sys.stderr)
-            return 1
-
-        reviews = result.data or []
-        if use_json:
-            data = [
-                {
-                    "plugin_id": r.plugin_id,
-                    "reviewer": r.reviewer,
-                    "rating": r.rating,
-                    "title": r.title,
-                    "comment": r.comment,
-                    "created_at": r.created_at,
-                    "updated_at": r.updated_at,
-                }
-                for r in reviews
-            ]
-            print(
-                json_module.dumps(
-                    {"plugin_id": plugin_id, "reviews": data, "count": len(data)},
-                    indent=2,
-                    default=str,
-                )
-            )
-        else:
-            if not reviews:
-                print("No reviews found")
-                return 0
-            for review in reviews:
-                print(f"★ {review.rating}/5 by {review.reviewer}")
-                if review.title:
-                    print(f"  {review.title}")
-                if review.comment:
-                    print(f"  {review.comment}")
-                if review.created_at:
-                    print(f"  Date: {review.created_at}")
-                print()
-        return 0
-
-    if args.action == "review-submit":
-        plugin_id = _resolve_plugin_id()
-        if not plugin_id:
-            print("Error: Plugin ID required", file=sys.stderr)
-            return 1
-
-        reviewer = getattr(args, "reviewer", "")
-        rating = getattr(args, "rating", None)
-        title = getattr(args, "title", "") or ""
-        comment = getattr(args, "comment", "") or ""
-
-        result = marketplace.submit_review(
-            plugin_id=plugin_id,
-            reviewer=reviewer,
-            rating=rating,
-            title=title,
-            comment=comment,
-        )
-
-        if not result.success:
-            print(f"Error: {result.error}", file=sys.stderr)
-            return 1
-
-        if use_json:
-            print(
-                json_module.dumps(
-                    {
-                        "status": "success",
-                        "plugin_id": plugin_id,
-                        "review": result.data,
-                    },
-                    indent=2,
-                    default=str,
-                )
-            )
-        else:
-            print(f"Review submitted for '{plugin_id}'")
-        return 0
-
-    if args.action == "rating":
-        plugin_id = _resolve_plugin_id()
-        if not plugin_id:
-            print("Error: Plugin ID required", file=sys.stderr)
-            return 1
-
-        result = marketplace.get_rating_aggregate(plugin_id=plugin_id)
-        if not result.success:
-            print(f"Error: {result.error}", file=sys.stderr)
-            return 1
-
-        aggregate = result.data
-        if use_json:
-            print(
-                json_module.dumps(
-                    {
-                        "plugin_id": aggregate.plugin_id,
-                        "average_rating": aggregate.average_rating,
-                        "rating_count": aggregate.rating_count,
-                        "review_count": aggregate.review_count,
-                        "breakdown": aggregate.breakdown,
-                    },
-                    indent=2,
-                    default=str,
-                )
-            )
-        else:
-            print(f"Rating for {aggregate.plugin_id}: {aggregate.average_rating:.2f}/5")
-            print(f"Ratings: {aggregate.rating_count}")
-            print(f"Reviews: {aggregate.review_count}")
-            if aggregate.breakdown:
-                print("Breakdown:")
-                for stars in sorted(aggregate.breakdown.keys(), reverse=True):
-                    print(f"  {stars}★: {aggregate.breakdown[stars]}")
-        return 0
-
-    if args.action == "uninstall":
-        plugin_id = _resolve_plugin_id()
-        if not plugin_id:
-            print("Error: Plugin ID required", file=sys.stderr)
-            return 1
-
-        result = installer.uninstall(plugin_id)
-
-        if result.success:
-            if use_json:
-                print(
-                    json_module.dumps(
-                        {"status": "success", "plugin": plugin_id},
-                        indent=2,
-                        default=str,
-                    )
-                )
-            else:
-                print(f"Successfully uninstalled '{plugin_id}'")
-            return 0
-        else:
-            print(f"Error: {result.error}", file=sys.stderr)
-            return 1
-
-    if args.action == "update":
-        plugin_id = _resolve_plugin_id()
-        if not plugin_id:
-            print("Error: Plugin ID required", file=sys.stderr)
-            return 1
-
-        # Check if update is available first
-        check = installer.check_update(plugin_id)
-        if check.success and check.data and not check.data.get("update_available", True):
-            print(f"Plugin '{plugin_id}' is already up to date")
-            return 0
-
-        result = installer.update(plugin_id)
-
-        if result.success:
-            if use_json:
-                print(
-                    json_module.dumps(
-                        {"status": "success", "plugin": plugin_id},
-                        indent=2,
-                        default=str,
-                    )
-                )
-            else:
-                print(f"Successfully updated '{plugin_id}'")
-            return 0
-        else:
-            print(f"Error: {result.error}", file=sys.stderr)
-            return 1
-
-    if args.action == "list-installed":
-        result = installer.list_installed()
-
-        plugins = result.data or []
-        if use_json:
-            print(json_module.dumps(plugins, indent=2, default=str))
-        else:
-            if not plugins:
-                print("No plugins installed")
-                return 0
-            for p in plugins:
-                name = p.get("name", p.get("id", "unknown"))
-                version = p.get("version", "unknown")
-                print(f"📦 {name} v{version}")
-        return 0
-
-    return 1
+    import json as json_module
+    return handle_plugin_marketplace(args, _json_output, _output_json, _print, json_module, PluginMarketplace, PluginInstaller)
 
 
 def cmd_support_bundle(_args):
     """Export support bundle ZIP."""
-    result = JournalManager.export_support_bundle()
-    if _json_output:
-        _output_json({"success": result.success, "message": result.message, "data": result.data})
-    else:
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-    return 0 if result.success else 1
+    return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
 
 
 # ==================== v11.5 / v12.0 COMMANDS ====================
@@ -1061,558 +328,82 @@ def cmd_support_bundle(_args):
 def cmd_vm(args):
     """Handle VM subcommand."""
     from services.virtualization import VMManager
-
-    if args.action == "list":
-        vms = VMManager.list_vms()
-        if _json_output:
-            from dataclasses import asdict
-
-            _output_json({"vms": [asdict(v) for v in vms]})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Virtual Machines")
-            _print("═══════════════════════════════════════════")
-            if not vms:
-                _print("\n(no VMs found)")
-            else:
-                for vm in vms:
-                    icon = "🟢" if vm.state == "running" else "⚪"
-                    _print(f"  {icon} {vm.name} [{vm.state}]  RAM: {vm.memory_mb}MB  vCPUs: {vm.vcpus}")
-        return 0
-
-    elif args.action == "status":
-        status = VMManager.get_vm_info(args.name)
-        if _json_output:
-            if status:
-                from dataclasses import asdict
-
-                _output_json(asdict(status))
-            else:
-                _output_json({"error": "VM not found"})
-        else:
-            if status:
-                _print(f"VM: {status.name} [{status.state}]")
-            else:
-                _print(f"❌ VM '{args.name}' not found")
-        return 0
-
-    elif args.action == "start":
-        result = VMManager.start_vm(args.name)
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "stop":
-        result = VMManager.stop_vm(args.name)
-        _print(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-
-    return 1
+    return handle_vm(args, _json_output, _output_json, _print, VMManager)
 
 
 def cmd_vfio(args):
     """Handle VFIO GPU passthrough subcommand."""
     from services.virtualization import VFIOAssistant
-
-    if args.action == "check":
-        prereqs = VFIOAssistant.check_prerequisites()
-        if _json_output:
-            _output_json(prereqs)
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   VFIO Prerequisites Check")
-            _print("═══════════════════════════════════════════")
-            for key, val in prereqs.items():
-                icon = "✅" if val else "❌"
-                _print(f"  {icon} {key}")
-        return 0
-
-    elif args.action == "gpus":
-        candidates = VFIOAssistant.get_passthrough_candidates()
-        if _json_output:
-            _output_json({"candidates": candidates})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   GPU Passthrough Candidates")
-            _print("═══════════════════════════════════════════")
-            if not candidates:
-                _print("\n(no candidates found)")
-            else:
-                for gpu in candidates:
-                    _print(f"\n  {gpu.get('name', 'Unknown GPU')}")
-                    _print(f"    IOMMU Group: {gpu.get('iommu_group', '?')}")
-                    _print(f"    IDs: {gpu.get('vendor_id', '?')}:{gpu.get('device_id', '?')}")
-        return 0
-
-    elif args.action == "plan":
-        candidates = VFIOAssistant.get_passthrough_candidates()
-        if not candidates:
-            if _json_output:
-                _output_json({"steps": [], "error": "No passthrough GPU candidates found"})
-            else:
-                _print("❌ No passthrough GPU candidates found")
-            return 1
-
-        plan = VFIOAssistant.get_step_by_step_plan(candidates[0])
-        if _json_output:
-            _output_json({"steps": plan})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   VFIO Setup Plan")
-            _print("═══════════════════════════════════════════")
-            for i, step in enumerate(plan, 1):
-                _print(f"\n  Step {i}: {step}")
-        return 0
-
-    return 1
+    return handle_vfio(args, _json_output, _output_json, _print, VFIOAssistant)
 
 
 def cmd_mesh(args):
     """Handle mesh networking subcommand."""
     from services.network import MeshDiscovery
-
-    if args.action == "discover":
-        peers = MeshDiscovery.discover_peers()
-        if _json_output:
-            from dataclasses import asdict
-
-            _output_json({"peers": [asdict(p) for p in peers]})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Loofi Link - Nearby Devices")
-            _print("═══════════════════════════════════════════")
-            if not peers:
-                _print("\n(no devices found on local network)")
-            else:
-                for peer in peers:
-                    _print(f"  🔗 {peer.hostname} ({peer.ip_address})")
-        return 0
-
-    elif args.action == "status":
-        device_id = MeshDiscovery.get_device_id()
-        local_ips = MeshDiscovery.get_local_ips()
-        if _json_output:
-            _output_json({"device_id": device_id, "local_ips": local_ips})
-        else:
-            _print(f"Device ID: {device_id}")
-            _print(f"Local IPs: {', '.join(local_ips)}")
-        return 0
-
-    return 1
+    return handle_mesh(args, _json_output, _output_json, _print, MeshDiscovery)
 
 
 def cmd_teleport(args):
     """Handle state teleport subcommand."""
     from services.storage import StateTeleportManager
-
-    if args.action == "capture":
-        workspace_path = getattr(args, "path", None) or os.getcwd()
-        state = StateTeleportManager.capture_full_state(workspace_path)
-        package = StateTeleportManager.create_teleport_package(state, target_device=getattr(args, "target", "unknown"))
-        pkg_dir = StateTeleportManager.get_package_dir()
-        filepath = os.path.join(pkg_dir, f"{package.package_id}.json")
-        result = StateTeleportManager.save_package_to_file(package, filepath)
-
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "package_id": package.package_id,
-                    "file": filepath,
-                }
-            )
-        else:
-            _print(f"{'✅' if result.success else '❌'} {result.message}")
-            if result.success:
-                _print(f"   Package ID: {package.package_id}")
-                _print(f"   Size: {package.size_bytes} bytes")
-        return 0 if result.success else 1
-
-    elif args.action == "list":
-        packages = StateTeleportManager.list_saved_packages()
-        if _json_output:
-            _output_json({"packages": packages})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Saved Teleport Packages")
-            _print("═══════════════════════════════════════════")
-            if not packages:
-                _print("\n(no packages found)")
-            else:
-                for pkg in packages:
-                    _print(f"  📦 {pkg['package_id'][:8]}... from {pkg['source_device']}")
-                    _print(f"     Size: {pkg['size_bytes']} bytes")
-        return 0
-
-    elif args.action == "restore":
-        if not args.package_id:
-            _print("❌ Package ID required for restore")
-            return 1
-        pkg_dir = StateTeleportManager.get_package_dir()
-        # Find matching package file
-        for filename in os.listdir(pkg_dir):
-            if args.package_id in filename:
-                filepath = os.path.join(pkg_dir, filename)
-                package = StateTeleportManager.load_package_from_file(filepath)
-                result = StateTeleportManager.apply_teleport(package)
-                _print(f"{'✅' if result.success else '❌'} {result.message}")
-                return 0 if result.success else 1
-        _print(f"❌ Package '{args.package_id}' not found")
-        return 1
-
-    return 1
+    return handle_teleport(args, _json_output, _output_json, _print, StateTeleportManager)
 
 
 def cmd_ai_models(args):
     """Handle AI models subcommand."""
     from core.ai import RECOMMENDED_MODELS, AIModelManager
-
-    if args.action == "list":
-        installed = AIModelManager.get_installed_models()
-        recommended = RECOMMENDED_MODELS
-        if _json_output:
-            _output_json({"installed": installed, "recommended": list(recommended.keys())})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   AI Models")
-            _print("═══════════════════════════════════════════")
-            _print("\nInstalled:")
-            if not installed:
-                _print("  (none - install Ollama first)")
-            else:
-                for model in installed:
-                    _print(f"  ✅ {model}")
-            _print("\nRecommended:")
-            for name, info in recommended.items():
-                status = "✅" if name in installed else "⚪"
-                _print(f"  {status} {name} - {info.get('description', '')}")
-        return 0
-
-    elif args.action == "recommend":
-        model = AIModelManager.get_recommended_model(AIModelManager.get_system_ram())
-        if _json_output:
-            _output_json({"recommended": model})
-        else:
-            if model:
-                _print(f"Recommended model for this system: {model}")
-            else:
-                _print("Unable to determine recommended model")
-        return 0
-
-    return 1
+    return handle_ai_models(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        ai_model_manager_cls=AIModelManager,
+        recommended_models=RECOMMENDED_MODELS,
+    )
 
 
 def cmd_preset(args):
     """Handle preset subcommand."""
-    manager = PresetManager()
-
-    if args.action == "list":
-        presets = manager.list_presets()
-        if _json_output:
-            _output_json({"presets": presets})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Available Presets")
-            _print("═══════════════════════════════════════════")
-            if not presets:
-                _print("\n(no presets found)")
-            else:
-                for name in presets:
-                    _print(f"  📋 {name}")
-        return 0
-
-    elif args.action == "apply":
-        if not args.name:
-            _print("❌ Preset name required")
-            return 1
-        result = manager.load_preset(args.name)
-        if result:
-            if _json_output:
-                _output_json({"success": True, "applied": args.name, "settings": result})
-            else:
-                _print(f"✅ Applied preset: {args.name}")
-            return 0
-        else:
-            if _json_output:
-                _output_json({"success": False, "error": f"Preset '{args.name}' not found"})
-            else:
-                _print(f"❌ Preset '{args.name}' not found")
-            return 1
-
-    elif args.action == "export":
-        if not args.name or not args.path:
-            _print("❌ Preset name and path required")
-            return 1
-        # First load the preset to get its data
-        result = manager.load_preset(args.name)
-        if not result:
-            _print(f"❌ Preset '{args.name}' not found")
-            return 1
-        # Write to file
-        try:
-            with open(args.path, "w", encoding="utf-8") as f:
-                json_module.dump(result, f, indent=2)
-            if _json_output:
-                _output_json({"success": True, "exported": args.name, "path": args.path})
-            else:
-                _print(f"✅ Exported preset '{args.name}' to {args.path}")
-            return 0
-        except (OSError, TypeError, ValueError) as e:
-            _print(f"❌ Export failed: {e}")
-            return 1
-
-    return 1
+    return handle_preset(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        json_module=json_module,
+        preset_manager_cls=PresetManager,
+    )
 
 
 def cmd_focus_mode(args):
     """Handle focus-mode subcommand."""
-    if args.action == "on":
-        profile = getattr(args, "profile", "default")
-        result = FocusMode.enable(profile)
-        if _json_output:
-            _output_json(result)
-        else:
-            icon = "✅" if result["success"] else "❌"
-            _print(f"{icon} {result['message']}")
-            if result.get("hosts_modified"):
-                _print("   🌐 Domains blocked via /etc/hosts")
-            if result.get("dnd_enabled"):
-                _print("   🔕 Do Not Disturb enabled")
-            if result.get("processes_killed"):
-                _print(f"   💀 Killed processes: {', '.join(result['processes_killed'])}")
-        return 0 if result["success"] else 1
-
-    elif args.action == "off":
-        result = FocusMode.disable()
-        if _json_output:
-            _output_json(result)
-        else:
-            icon = "✅" if result["success"] else "❌"
-            _print(f"{icon} {result['message']}")
-        return 0 if result["success"] else 1
-
-    elif args.action == "status":
-        is_active = FocusMode.is_active()
-        active_profile = FocusMode.get_active_profile()
-        profiles = FocusMode.list_profiles()
-
-        if _json_output:
-            _output_json(
-                {
-                    "active": is_active,
-                    "active_profile": active_profile,
-                    "profiles": profiles,
-                }
-            )
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Focus Mode Status")
-            _print("═══════════════════════════════════════════")
-            status_icon = "🟢 Active" if is_active else "⚪ Inactive"
-            _print(f"\nStatus: {status_icon}")
-            if active_profile:
-                _print(f"Profile: {active_profile}")
-            _print(f"\nAvailable profiles: {', '.join(profiles)}")
-        return 0
-
-    return 1
+    return handle_focus_mode(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        focus_mode_cls=FocusMode,
+    )
 
 
 def cmd_security_audit(_args):
     """Handle security-audit subcommand."""
-    score_data = PortAuditor.get_security_score()
-
-    if _json_output:
-        _output_json(score_data)
-    else:
-        score = score_data["score"]
-        rating = score_data["rating"]
-
-        # Color based on score
-        if score >= 90:
-            icon = "🟢"
-        elif score >= 70:
-            icon = "🟡"
-        elif score >= 50:
-            icon = "🟠"
-        else:
-            icon = "🔴"
-
-        _print("═══════════════════════════════════════════")
-        _print("   Security Audit")
-        _print("═══════════════════════════════════════════")
-        _print(f"\n{icon} Security Score: {score}/100 ({rating})")
-        _print(f"\n📊 Open Ports: {score_data['open_ports']}")
-        _print(f"⚠️  Risky Ports: {score_data['risky_ports']}")
-
-        fw_status = "Running" if PortAuditor.is_firewalld_running() else "Not Running"
-        fw_icon = "✅" if PortAuditor.is_firewalld_running() else "❌"
-        _print(f"{fw_icon} Firewall: {fw_status}")
-
-        if score_data["recommendations"]:
-            _print("\n📋 Recommendations:")
-            for rec in score_data["recommendations"]:
-                _print(f"   • {rec}")
-
-    return 0
+    return handle_security_audit(
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        port_auditor_cls=PortAuditor,
+    )
 
 
 def cmd_profile(args):
     """Handle profile subcommand."""
-    if args.action == "list":
-        profiles = ProfileManager.list_profiles()
-        if _json_output:
-            _output_json({"profiles": profiles})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   System Profiles")
-            _print("═══════════════════════════════════════════")
-            if not profiles:
-                _print("\n(no profiles found)")
-            else:
-                active = ProfileManager.get_active_profile()
-                for p in profiles:
-                    badge = " [ACTIVE]" if p["key"] == active else ""
-                    ptype = "built-in" if p["builtin"] else "custom"
-                    _print(f"\n  {p['icon']}  {p['name']}{badge}")
-                    _print(f"      Key: {p['key']} ({ptype})")
-                    _print(f"      {p['description']}")
-        return 0
-
-    elif args.action == "apply":
-        if not args.name:
-            _print("❌ Profile name required")
-            return 1
-        result = ProfileManager.apply_profile(
-            args.name,
-            create_snapshot=not getattr(args, "no_snapshot", False),
-        )
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "create":
-        if not args.name:
-            _print("❌ Profile name required")
-            return 1
-        result = ProfileManager.capture_current_as_profile(args.name)
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "delete":
-        if not args.name:
-            _print("❌ Profile name required")
-            return 1
-        result = ProfileManager.delete_custom_profile(args.name)
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "export":
-        if not args.name or not args.path:
-            _print("❌ Profile name and export path required")
-            return 1
-        result = ProfileManager.export_profile_json(args.name, args.path)
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "import":
-        path = args.path or args.name
-        if not path:
-            _print("❌ Import path required")
-            return 1
-        result = ProfileManager.import_profile_json(path, overwrite=getattr(args, "overwrite", False))
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "export-all":
-        path = args.path or args.name
-        if not path:
-            _print("❌ Export path required")
-            return 1
-        result = ProfileManager.export_bundle_json(
-            path,
-            include_builtins=getattr(args, "include_builtins", False),
-        )
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "import-all":
-        path = args.path or args.name
-        if not path:
-            _print("❌ Import bundle path required")
-            return 1
-        result = ProfileManager.import_bundle_json(path, overwrite=getattr(args, "overwrite", False))
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    return 1
+    return handle_profile(
+        args=args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        profile_manager_cls=ProfileManager,
+    )
 
 
 def cmd_health_history(args):
@@ -1776,52 +567,7 @@ def cmd_tuner(args):
 def cmd_snapshot(args):
     """Handle snapshot subcommand."""
     from utils.snapshot_manager import SnapshotManager
-
-    if args.action == "list":
-        snapshots = SnapshotManager.list_snapshots()
-        if _json_output:
-            _output_json([vars(s) for s in snapshots])
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   System Snapshots")
-            _print("═══════════════════════════════════════════")
-            if not snapshots:
-                _print("\n  (no snapshots found)")
-            else:
-                import time
-
-                for s in snapshots[:20]:
-                    ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(s.timestamp)) if s.timestamp else "unknown"
-                    _print(f"  [{s.backend}] {s.id}: {s.label or '(no label)'} — {ts}")
-        return 0
-
-    elif args.action == "create":
-        label = args.label or "manual-snapshot"
-        _print(f"🔄 Creating snapshot: {label}")
-        success = run_operation(SnapshotManager.create_snapshot(label))
-        return 0 if success else 1
-
-    elif args.action == "delete":
-        if not args.snapshot_id:
-            _print("❌ Snapshot ID required")
-            return 1
-        success = run_operation(SnapshotManager.delete_snapshot(args.snapshot_id))
-        return 0 if success else 1
-
-    elif args.action == "backends":
-        backends = SnapshotManager.detect_backends()
-        if _json_output:
-            _output_json([vars(b) for b in backends])
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Snapshot Backends")
-            _print("═══════════════════════════════════════════")
-            for b in backends:
-                status = "✅" if b.available else "❌"
-                _print(f"  {status} {b.name}: {b.version if b.available else 'not installed'}")
-        return 0
-
-    return 1
+    return handle_snapshot(args, _json_output, _output_json, _print, run_operation, SnapshotManager)
 
 
 def cmd_logs(args):
@@ -1886,241 +632,17 @@ def cmd_logs(args):
 
 def cmd_service(args):
     """Handle service subcommand."""
-    scope = ServiceScope.USER if args.user else ServiceScope.SYSTEM
-
-    if args.action == "list":
-        services = ServiceExplorer.list_services(scope=scope, filter_state=args.filter, search=args.search or "")
-        if _json_output:
-            _output_json([s.to_dict() for s in services])
-        else:
-            _print(f"{'Name':<35} {'State':<12} {'Enabled':<10} Description")
-            _print("─" * 90)
-            for s in services:
-                color = "✅" if s.is_running else "❌" if s.is_failed else "⬜"
-                _print(f"{color} {s.name:<33} {s.state.value:<12} {s.enabled:<10} {s.description[:40]}")
-            _print(f"\nTotal: {len(services)} services")
-        return 0
-
-    elif args.action in (
-        "start",
-        "stop",
-        "restart",
-        "enable",
-        "disable",
-        "mask",
-        "unmask",
-    ):
-        name = args.name
-        if not name:
-            _print("❌ Service name required")
-            return 1
-        action_map = {
-            "start": ServiceExplorer.start_service,
-            "stop": ServiceExplorer.stop_service,
-            "restart": ServiceExplorer.restart_service,
-            "enable": ServiceExplorer.enable_service,
-            "disable": ServiceExplorer.disable_service,
-            "mask": ServiceExplorer.mask_service,
-            "unmask": ServiceExplorer.unmask_service,
-        }
-        result = action_map[args.action](name, scope)
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        if _json_output:
-            _output_json({"success": result.success, "message": result.message})
-        return 0 if result.success else 1
-
-    elif args.action == "logs":
-        name = args.name
-        if not name:
-            _print("❌ Service name required")
-            return 1
-        logs = ServiceExplorer.get_service_logs(name, scope, lines=args.lines)
-        if _json_output:
-            _output_json({"service": name, "logs": logs})
-        else:
-            _print(logs)
-        return 0
-
-    elif args.action == "status":
-        name = args.name
-        if not name:
-            _print("❌ Service name required")
-            return 1
-        info = ServiceExplorer.get_service_details(name, scope)
-        if _json_output:
-            _output_json(info.to_dict())
-        else:
-            _print(f"Service: {info.name}")
-            _print(f"Description: {info.description}")
-            _print(f"State: {info.state.value} ({info.sub_state})")
-            _print(f"Enabled: {info.enabled}")
-            _print(f"Memory: {info.memory_human}")
-            _print(f"PID: {info.main_pid}")
-            _print(f"Active since: {info.active_enter}")
-        return 0
-
-    return 1
+    return handle_service(args, _json_output, _output_json, _print, run_operation, ServiceExplorer)
 
 
 def cmd_package(args):
     """Handle package subcommand."""
-    if args.action == "search":
-        query = args.query or args.name
-        if not query:
-            _print("❌ Search query required")
-            return 1
-        results = PackageExplorer.search(query)
-        if _json_output:
-            _output_json([p.to_dict() for p in results])
-        else:
-            _print(f"{'Name':<40} {'Ver':<15} {'Source':<12} {'Inst':<6} Summary")
-            _print("─" * 100)
-            for p in results[:30]:
-                inst = "✅" if p.installed else "  "
-                _print(f"{p.name:<40} {p.version:<15} {p.source:<12} {inst:<6} {p.summary[:35]}")
-            _print(f"\nShowing {min(len(results), 30)} of {len(results)} results")
-        return 0
-
-    elif args.action == "install":
-        name = args.name
-        if not name:
-            _print("❌ Package name required")
-            return 1
-        _print(f"🔄 Installing {name}...")
-        result = PackageExplorer.install(name)
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        if _json_output:
-            _output_json({"success": result.success, "message": result.message})
-        return 0 if result.success else 1
-
-    elif args.action == "remove":
-        name = args.name
-        if not name:
-            _print("❌ Package name required")
-            return 1
-        _print(f"🔄 Removing {name}...")
-        result = PackageExplorer.remove(name)
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        if _json_output:
-            _output_json({"success": result.success, "message": result.message})
-        return 0 if result.success else 1
-
-    elif args.action == "list":
-        source = args.source or "all"
-        packages = PackageExplorer.list_installed(source=source, search=args.search or "")
-        if _json_output:
-            _output_json([p.to_dict() for p in packages])
-        else:
-            _print(f"Installed packages ({source}): {len(packages)}")
-            for p in packages[:50]:
-                _print(f"  {p.name:<40} {p.version:<20} [{p.source}]")
-            if len(packages) > 50:
-                _print(f"  ... and {len(packages) - 50} more")
-        return 0
-
-    elif args.action == "recent":
-        packages = PackageExplorer.recently_installed(days=args.days)
-        if _json_output:
-            _output_json([p.to_dict() for p in packages])
-        else:
-            _print(f"Recently installed (last {args.days} days): {len(packages)}")
-            for p in packages:
-                _print(f"  {p.name:<40} {p.summary}")
-        return 0
-
-    return 1
+    return handle_package(args, _json_output, _output_json, _print, run_operation, PackageExplorer)
 
 
 def cmd_firewall(args):
     """Handle firewall subcommand."""
-    if not FirewallManager.is_available():
-        _print("❌ firewall-cmd not found. Install firewalld.")
-        return 1
-
-    if args.action == "status":
-        info = FirewallManager.get_status()
-        if _json_output:
-            _output_json(info.to_dict())
-        else:
-            state = "🟢 Running" if info.running else "🔴 Stopped"
-            _print(f"Firewall: {state}")
-            _print(f"Default zone: {info.default_zone}")
-            _print(f"Active zones: {info.active_zones}")
-            _print(f"Open ports: {', '.join(info.ports) or 'none'}")
-            _print(f"Services: {', '.join(info.services) or 'none'}")
-            if info.rich_rules:
-                _print("Rich rules:")
-                for r in info.rich_rules:
-                    _print(f"  {r}")
-        return 0
-
-    elif args.action == "ports":
-        ports = FirewallManager.list_ports()
-        if _json_output:
-            _output_json({"ports": ports})
-        else:
-            if ports:
-                _print("Open ports:")
-                for p in ports:
-                    _print(f"  {p}")
-            else:
-                _print("No ports open.")
-        return 0
-
-    elif args.action == "open-port":
-        spec = args.spec
-        if not spec:
-            _print("❌ Port spec required (e.g. 8080/tcp)")
-            return 1
-        if "/" in spec:
-            port, proto = spec.split("/", 1)
-        else:
-            port, proto = spec, "tcp"
-        result = FirewallManager.open_port(port, proto)
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "close-port":
-        spec = args.spec
-        if not spec:
-            _print("❌ Port spec required (e.g. 8080/tcp)")
-            return 1
-        if "/" in spec:
-            port, proto = spec.split("/", 1)
-        else:
-            port, proto = spec, "tcp"
-        result = FirewallManager.close_port(port, proto)
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "services":
-        services = FirewallManager.list_services()
-        if _json_output:
-            _output_json({"services": services})
-        else:
-            _print("Allowed services:")
-            for s in services:
-                _print(f"  {s}")
-        return 0
-
-    elif args.action == "zones":
-        zones = FirewallManager.get_zones()
-        active = FirewallManager.get_active_zones()
-        if _json_output:
-            _output_json({"zones": zones, "active": active})
-        else:
-            _print("Available zones:")
-            for z in zones:
-                marker = " (active)" if z in active else ""
-                _print(f"  {z}{marker}")
-        return 0
-
-    return 1
+    return handle_firewall(args, _json_output, _output_json, _print, run_operation, FirewallManager)
 
 
 # ==================== v17.0 Atlas ====================
@@ -2128,110 +650,7 @@ def cmd_firewall(args):
 
 def cmd_bluetooth(args):
     """Handle bluetooth subcommand."""
-    if args.action == "status":
-        status = BluetoothManager.get_adapter_status()
-        if _json_output:
-            _output_json(
-                {
-                    "available": bool(status.adapter_name),
-                    "powered": status.powered,
-                    "discoverable": status.discoverable,
-                    "adapter_name": status.adapter_name,
-                    "adapter_address": status.adapter_address,
-                }
-            )
-        else:
-            if not status.adapter_name:
-                _print("❌ No Bluetooth adapter found")
-                return 1
-            power = "🟢 On" if status.powered else "🔴 Off"
-            _print(f"Bluetooth: {power}")
-            _print(f"Adapter: {status.adapter_name} ({status.adapter_address})")
-            _print(f"Discoverable: {'yes' if status.discoverable else 'no'}")
-        return 0
-
-    elif args.action == "devices":
-        paired_only = getattr(args, "paired", False)
-        devices = BluetoothManager.list_devices(paired_only=paired_only)
-        if _json_output:
-            _output_json(
-                {
-                    "devices": [
-                        {
-                            "address": d.address,
-                            "name": d.name,
-                            "paired": d.paired,
-                            "connected": d.connected,
-                            "trusted": d.trusted,
-                            "device_type": d.device_type.value,
-                        }
-                        for d in devices
-                    ]
-                }
-            )
-        else:
-            if not devices:
-                _print("No devices found.")
-                return 0
-            for d in devices:
-                status_icons = []
-                if d.connected:
-                    status_icons.append("connected")
-                if d.paired:
-                    status_icons.append("paired")
-                if d.trusted:
-                    status_icons.append("trusted")
-                status_str = ", ".join(status_icons) if status_icons else "available"
-                _print(f"  {d.name} ({d.address}) [{status_str}]")
-        return 0
-
-    elif args.action == "scan":
-        timeout = getattr(args, "timeout", 10)
-        _print(f"Scanning for {timeout} seconds...")
-        devices = BluetoothManager.scan(timeout=timeout)
-        if _json_output:
-            _output_json(
-                {
-                    "devices": [
-                        {
-                            "address": d.address,
-                            "name": d.name,
-                            "device_type": d.device_type.value,
-                        }
-                        for d in devices
-                    ]
-                }
-            )
-        else:
-            _print(f"Found {len(devices)} devices:")
-            for d in devices:
-                _print(f"  {d.name} ({d.address}) [{d.device_type.value}]")
-        return 0
-
-    elif args.action in ("power-on", "power-off"):
-        result = BluetoothManager.power_on() if args.action == "power-on" else BluetoothManager.power_off()
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action in ("connect", "disconnect", "pair", "unpair", "trust"):
-        address = getattr(args, "address", None)
-        if not address:
-            _print("❌ Device address required")
-            return 1
-        action_map = {
-            "connect": BluetoothManager.connect,
-            "disconnect": BluetoothManager.disconnect,
-            "pair": BluetoothManager.pair,
-            "unpair": BluetoothManager.unpair,
-            "trust": BluetoothManager.trust,
-        }
-        result = action_map[args.action](address)
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    return 1
+    return handle_bluetooth(args, _json_output, _output_json, _print, BluetoothManager)
 
 
 # ==================== v18.0 Sentinel ====================
@@ -2239,383 +658,19 @@ def cmd_bluetooth(args):
 
 def cmd_agent(args):
     """Handle agent subcommand."""
-    import time as time_mod
-
-    from core.agents import AgentRegistry
-
-    registry = AgentRegistry.instance()
-
-    if args.action == "list":
-        agents = registry.list_agents()
-        if _json_output:
-            _output_json({"agents": [a.to_dict() for a in agents]})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   System Agents")
-            _print("═══════════════════════════════════════════")
-            if not agents:
-                _print("\n(no agents found)")
-            else:
-                for a in agents:
-                    state = registry.get_state(a.agent_id)
-                    enabled = "✅" if a.enabled else "❌"
-                    _print(f"\n  {enabled} {a.name} ({a.agent_id})")
-                    _print(f"      Type: {a.agent_type.value} | Status: {state.status.value}")
-                    _print(f"      Runs: {state.run_count} | Errors: {state.error_count}")
-                    _print(f"      {a.description}")
-        return 0
-
-    elif args.action == "status":
-        summary = registry.get_agent_summary()
-        if _json_output:
-            _output_json(summary)
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Agent Status")
-            _print("═══════════════════════════════════════════")
-            _print(f"\n  Total: {summary['total_agents']}")
-            _print(f"  Enabled: {summary['enabled']}")
-            _print(f"  Running: {summary['running']}")
-            _print(f"  Errors: {summary['errors']}")
-            _print(f"  Total Runs: {summary['total_runs']}")
-        return 0
-
-    elif args.action == "enable":
-        if not args.agent_id:
-            _print("❌ Agent ID required")
-            return 1
-        success = registry.enable_agent(args.agent_id)
-        icon = "✅" if success else "❌"
-        msg = f"Agent '{args.agent_id}' enabled" if success else f"Agent '{args.agent_id}' not found"
-        _print(f"{icon} {msg}")
-        if _json_output:
-            _output_json({"success": success, "message": msg})
-        return 0 if success else 1
-
-    elif args.action == "disable":
-        if not args.agent_id:
-            _print("❌ Agent ID required")
-            return 1
-        success = registry.disable_agent(args.agent_id)
-        icon = "✅" if success else "❌"
-        msg = f"Agent '{args.agent_id}' disabled" if success else f"Agent '{args.agent_id}' not found"
-        _print(f"{icon} {msg}")
-        if _json_output:
-            _output_json({"success": success, "message": msg})
-        return 0 if success else 1
-
-    elif args.action == "run":
-        if not args.agent_id:
-            _print("❌ Agent ID required")
-            return 1
-        from core.agents import AgentScheduler
-
-        scheduler = AgentScheduler()
-        _print(f"🔄 Running agent '{args.agent_id}'...")
-        results = scheduler.run_agent_now(args.agent_id)
-        if _json_output:
-            _output_json({"results": [r.to_dict() for r in results]})
-        else:
-            for r in results:
-                icon = "✅" if r.success else "❌"
-                _print(f"  {icon} [{r.action_id}] {r.message}")
-        return 0
-
-    elif args.action == "create":
-        goal = args.goal
-        if not goal:
-            _print("❌ Goal required (use --goal 'description')")
-            return 1
-        from core.agents import AgentPlanner
-
-        plan = AgentPlanner.plan_from_goal(goal)
-        config = plan.to_agent_config()
-        registered = registry.register_agent(config)
-
-        if _json_output:
-            _output_json(
-                {
-                    "success": True,
-                    "agent_id": registered.agent_id,
-                    "name": registered.name,
-                    "plan": plan.to_dict(),
-                }
-            )
-        else:
-            _print(f"✅ Created agent: {registered.name} (ID: {registered.agent_id})")
-            _print(f"   Type: {plan.agent_type.value}")
-            _print(f"   Confidence: {plan.confidence:.0%}")
-            _print("   Steps:")
-            for step in plan.steps:
-                _print(f"     {step.step_number}. {step.description}")
-            _print(f"\n   Agent starts in dry-run mode. Use 'agent enable {registered.agent_id}' to activate.")
-        return 0
-
-    elif args.action == "remove":
-        if not args.agent_id:
-            _print("❌ Agent ID required")
-            return 1
-        success = registry.remove_agent(args.agent_id)
-        icon = "✅" if success else "❌"
-        msg = f"Agent '{args.agent_id}' removed" if success else f"Cannot remove agent '{args.agent_id}' (built-in or not found)"
-        _print(f"{icon} {msg}")
-        if _json_output:
-            _output_json({"success": success, "message": msg})
-        return 0 if success else 1
-
-    elif args.action == "logs":
-        if not args.agent_id:
-            # Show all recent activity
-            activity = registry.get_recent_activity(limit=30)
-            if _json_output:
-                _output_json({"activity": activity})
-            else:
-                _print("═══════════════════════════════════════════")
-                _print("   Recent Agent Activity")
-                _print("═══════════════════════════════════════════")
-                if not activity:
-                    _print("\n(no activity)")
-                else:
-                    for item in activity:
-                        ts = time_mod.strftime("%Y-%m-%d %H:%M:%S", time_mod.localtime(item["timestamp"]))
-                        icon = "✅" if item["success"] else "❌"
-                        _print(f"  {ts} {icon} [{item['agent_name']}] {item['message'][:80]}")
-        else:
-            state = registry.get_state(args.agent_id)
-            if _json_output:
-                _output_json({"history": [h.to_dict() for h in state.history]})
-            else:
-                agent = registry.get_agent(args.agent_id)
-                name = agent.name if agent else args.agent_id
-                _print(f"Agent: {name} (runs: {state.run_count}, errors: {state.error_count})")
-                if not state.history:
-                    _print("  (no history)")
-                else:
-                    for h in state.history[-20:]:
-                        ts = time_mod.strftime("%H:%M:%S", time_mod.localtime(h.timestamp))
-                        icon = "✅" if h.success else "❌"
-                        _print(f"  {ts} {icon} [{h.action_id}] {h.message[:80]}")
-        return 0
-
-    elif args.action == "templates":
-        from core.agents import AgentPlanner
-
-        templates = AgentPlanner.list_goal_templates()
-        if _json_output:
-            _output_json({"templates": templates})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Agent Goal Templates")
-            _print("═══════════════════════════════════════════")
-            for t in templates:
-                _print(f"\n  📋 {t['name']}")
-                _print(f'     Goal: "{t["goal"]}"')
-                _print(f"     Type: {t['type']}")
-                _print(f"     {t['description']}")
-        return 0
-
-    elif args.action == "notify":
-        if not args.agent_id:
-            # Show notification config for all agents
-            agents = registry.list_agents()
-            if _json_output:
-                configs = {a.agent_id: a.notification_config for a in agents}
-                _output_json({"notification_configs": configs})
-            else:
-                _print("═══════════════════════════════════════════")
-                _print("   Agent Notification Settings")
-                _print("═══════════════════════════════════════════")
-                for a in agents:
-                    nc = a.notification_config
-                    enabled = nc.get("enabled", False)
-                    icon = "🔔" if enabled else "🔕"
-                    _print(f"\n  {icon} {a.name} ({a.agent_id})")
-                    _print(f"      Enabled: {enabled}")
-                    if enabled:
-                        _print(f"      Min severity: {nc.get('min_severity', 'high')}")
-                        _print(f"      Channels: {', '.join(nc.get('channels', ['desktop', 'in_app']))}")
-                        webhook = nc.get("webhook_url", "")
-                        if webhook:
-                            _print(f"      Webhook: {webhook}")
-            return 0
-        else:
-            agent = registry.get_agent(args.agent_id)
-            if not agent:
-                _print(f"❌ Agent '{args.agent_id}' not found")
-                return 1
-            # Update notification config
-            nc = dict(agent.notification_config)
-            updated = False
-            if args.webhook is not None:
-                from core.agents import AgentNotifier
-
-                if args.webhook and not AgentNotifier.validate_webhook_url(args.webhook):
-                    _print("❌ Invalid webhook URL (must start with http:// or https://)")
-                    return 1
-                nc["webhook_url"] = args.webhook or None
-                if args.webhook:
-                    if "webhook" not in nc.get("channels", []):
-                        nc.setdefault("channels", ["desktop", "in_app"]).append("webhook")
-                updated = True
-            if args.min_severity is not None:
-                valid = ["info", "low", "medium", "high", "critical"]
-                if args.min_severity not in valid:
-                    _print(f"❌ Invalid severity. Choose from: {', '.join(valid)}")
-                    return 1
-                nc["min_severity"] = args.min_severity
-                updated = True
-            if not updated:
-                # Toggle enable/disable
-                nc["enabled"] = not nc.get("enabled", False)
-            else:
-                nc["enabled"] = True
-            agent.notification_config = nc
-            registry.save()
-            icon = "🔔" if nc.get("enabled") else "🔕"
-            _print(f"{icon} Notifications {'enabled' if nc.get('enabled') else 'disabled'} for '{agent.name}'")
-            if _json_output:
-                _output_json({"success": True, "notification_config": nc})
-            return 0
-
-    return 1
+    from core.agents import AgentRegistry, AgentScheduler, AgentPlanner, AgentNotifier
+    return handle_agent(args, _json_output, _output_json, _print, run_operation, AgentRegistry, AgentScheduler, AgentPlanner, AgentNotifier)
 
 
 def cmd_storage(args):
     """Handle storage subcommand."""
-    if args.action == "disks":
-        disks = StorageManager.list_disks()
-        if _json_output:
-            _output_json(
-                {
-                    "disks": [
-                        {
-                            "name": d.name,
-                            "size": d.size,
-                            "type": d.device_type,
-                            "model": d.model,
-                            "mountpoint": d.mountpoint,
-                            "removable": d.rm,
-                        }
-                        for d in disks
-                    ]
-                }
-            )
-        else:
-            if not disks:
-                _print("No disks found.")
-                return 0
-            _print("Physical Disks:")
-            for d in disks:
-                rm = " [removable]" if d.rm else ""
-                _print(f"  {d.name}: {d.model or 'Unknown'} ({d.size}){rm}")
-        return 0
-
-    elif args.action == "mounts":
-        mounts = StorageManager.list_mounts()
-        if _json_output:
-            _output_json(
-                {
-                    "mounts": [
-                        {
-                            "device": m.source,
-                            "mountpoint": m.target,
-                            "fstype": m.fstype,
-                            "size": m.size,
-                            "used": m.used,
-                            "available": m.avail,
-                            "use_percent": m.use_percent,
-                        }
-                        for m in mounts
-                    ]
-                }
-            )
-        else:
-            _print("Mount Points:")
-            for m in mounts:
-                _print(f"  {m.source} -> {m.target} ({m.fstype}) [{m.used}/{m.size} = {m.use_percent}]")
-        return 0
-
-    elif args.action == "smart":
-        device = getattr(args, "device", None)
-        if not device:
-            _print("❌ Device path required (e.g. /dev/sda)")
-            return 1
-        health = StorageManager.get_smart_health(device)
-        if _json_output:
-            _output_json(
-                {
-                    "device": device,
-                    "model": health.model,
-                    "serial": health.serial,
-                    "health": "PASSED" if health.health_passed else "FAILED",
-                    "temperature_c": health.temperature_c,
-                    "power_on_hours": health.power_on_hours,
-                    "reallocated_sectors": health.reallocated_sectors,
-                    "raw_output": health.raw_output,
-                }
-            )
-        else:
-            _print(f"SMART Health for {device}:")
-            _print(f"  Model: {health.model}")
-            _print(f"  Serial: {health.serial}")
-            _print(f"  Health: {'PASSED' if health.health_passed else 'FAILED'}")
-            _print(f"  Temperature: {health.temperature_c}°C")
-            _print(f"  Power-on hours: {health.power_on_hours}")
-            _print(f"  Reallocated sectors: {health.reallocated_sectors}")
-        return 0
-
-    elif args.action == "usage":
-        summary = StorageManager.get_usage_summary()
-        if _json_output:
-            _output_json(summary)
-        else:
-            _print(f"Total: {summary.get('total_size', 'N/A')}")
-            _print(f"Used:  {summary.get('total_used', 'N/A')}")
-            _print(f"Free:  {summary.get('total_available', 'N/A')}")
-            _print(f"Disks: {summary.get('disk_count', 0)}")
-            _print(f"Mounts: {summary.get('mount_count', 0)}")
-        return 0
-
-    elif args.action == "trim":
-        result = StorageManager.trim_ssd()
-        icon = "✅" if result.success else "❌"
-        _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    return 1
+    return handle_storage(args, _json_output, _output_json, _print, StorageManager)
 
 
 def cmd_audit_log(args):
     """Show recent audit log entries."""
     from services.security import AuditLogger
-
-    audit = AuditLogger()
-    count = getattr(args, "count", 20)
-    entries = audit.get_recent(count)
-
-    if _json_output:
-        _output_json({"entries": entries, "count": len(entries), "log_path": str(audit.log_path)})
-        return 0
-
-    if not entries:
-        _print("No audit log entries found.")
-        _print(f"Log path: {audit.log_path}")
-        return 0
-
-    _print(f"📋 Recent Audit Log ({len(entries)} entries)")
-    _print(f"   Log: {audit.log_path}")
-    _print("─" * 72)
-
-    for entry in entries:
-        ts = entry.get("ts", "?")[:19].replace("T", " ")
-        action = entry.get("action", "?")
-        exit_code = entry.get("exit_code")
-        dry_run = entry.get("dry_run", False)
-
-        status = "DRY" if dry_run else ("✅" if exit_code == 0 else f"❌ ({exit_code})")
-        _print(f"  {ts}  {action:30s}  {status}")
-
-    return 0
+    return handle_audit_log(args, _json_output, _output_json, _print, AuditLogger)
 
 
 # ==================== v37.0 Pinnacle ====================
@@ -2624,229 +679,25 @@ def cmd_audit_log(args):
 def cmd_updates(args):
     """Handle smart updates subcommand."""
     from utils.update_manager import UpdateManager
-
-    if args.action == "check":
-        updates = UpdateManager.check_updates()
-        if _json_output:
-            _output_json(
-                [
-                    {
-                        "name": u.name,
-                        "old": u.old_version,
-                        "new": u.new_version,
-                        "source": u.source,
-                    }
-                    for u in updates
-                ]
-            )
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Available Updates")
-            _print("═══════════════════════════════════════════")
-            if not updates:
-                _print("  System is up to date.")
-            for u in updates:
-                _print(f"  {u.name}: {u.old_version} → {u.new_version} ({u.source})")
-        return 0
-
-    elif args.action == "conflicts":
-        conflicts = UpdateManager.preview_conflicts()
-        if _json_output:
-            _output_json(
-                [
-                    {
-                        "package": c.package,
-                        "type": c.conflict_type,
-                        "desc": c.description,
-                    }
-                    for c in conflicts
-                ]
-            )
-        else:
-            if not conflicts:
-                _print("  No conflicts detected.")
-            for c in conflicts:
-                _print(f"  ⚠ {c.package}: {c.conflict_type} — {c.description}")
-        return 0
-
-    elif args.action == "schedule":
-        time_str = getattr(args, "time", "02:00") or "02:00"
-        scheduled = UpdateManager.schedule_update(time_str)
-        cmds = UpdateManager.get_schedule_commands(scheduled)
-        for binary, cmd_args, desc in cmds:
-            run_operation((binary, cmd_args, desc))
-        return 0
-
-    elif args.action == "rollback":
-        return 0 if run_operation(UpdateManager.rollback_last()) else 1
-
-    elif args.action == "history":
-        history = UpdateManager.get_update_history()
-        if _json_output:
-            _output_json(
-                [
-                    {
-                        "date": h.date,
-                        "name": h.name,
-                        "version": h.new_version,
-                        "source": h.source,
-                    }
-                    for h in history
-                ]
-            )
-        else:
-            for h in history:
-                _print(f"  {h.date}: {h.name} → {h.new_version} ({h.source})")
-        return 0
-
-    return 1
+    return handle_updates(args, _json_output, _output_json, _print, run_operation, UpdateManager)
 
 
 def cmd_extension(args):
     """Handle extension management subcommand."""
     from utils.extension_manager import ExtensionManager
-
-    if args.action == "list":
-        extensions = ExtensionManager.list_installed()
-        if _json_output:
-            _output_json(
-                [
-                    {
-                        "uuid": e.uuid,
-                        "name": e.name,
-                        "enabled": e.enabled,
-                        "desktop": e.desktop,
-                    }
-                    for e in extensions
-                ]
-            )
-        else:
-            for e in extensions:
-                status = "✅" if e.enabled else "❌"
-                _print(f"  {status} {e.name or e.uuid} ({e.desktop})")
-        return 0
-
-    elif args.action == "install":
-        if not args.uuid:
-            _print("❌ Extension UUID required")
-            return 1
-        return 0 if run_operation(ExtensionManager.install(args.uuid)) else 1
-
-    elif args.action == "remove":
-        if not args.uuid:
-            _print("❌ Extension UUID required")
-            return 1
-        return 0 if run_operation(ExtensionManager.remove(args.uuid)) else 1
-
-    elif args.action == "enable":
-        if not args.uuid:
-            _print("❌ Extension UUID required")
-            return 1
-        return 0 if run_operation(ExtensionManager.enable(args.uuid)) else 1
-
-    elif args.action == "disable":
-        if not args.uuid:
-            _print("❌ Extension UUID required")
-            return 1
-        return 0 if run_operation(ExtensionManager.disable(args.uuid)) else 1
-
-    return 1
+    return handle_extension(args, _json_output, _output_json, _print, run_operation, ExtensionManager)
 
 
 def cmd_flatpak_manage(args):
     """Handle Flatpak management subcommand."""
     from services.software import FlatpakManager
-
-    if args.action == "sizes":
-        sizes = FlatpakManager.get_flatpak_sizes()
-        if _json_output:
-            _output_json([{"app_id": s.app_id, "size": s.size_str} for s in sizes])
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Flatpak Sizes")
-            _print("═══════════════════════════════════════════")
-            for s in sizes:
-                _print(f"  {s.app_id}: {s.size_str}")
-            _print(f"\n  Total: {FlatpakManager.get_total_size()}")
-        return 0
-
-    elif args.action == "permissions":
-        all_perms = FlatpakManager.get_all_permissions()
-        if _json_output:
-            _output_json(
-                [
-                    {
-                        "app_id": a.app_id,
-                        "permissions": [{"type": p.permission_type, "value": p.value} for p in a.permissions],
-                    }
-                    for a in all_perms
-                ]
-            )
-        else:
-            for a in all_perms:
-                _print(f"  {a.app_id}: {len(a.permissions)} permissions")
-        return 0
-
-    elif args.action == "orphans":
-        orphans = FlatpakManager.find_orphan_runtimes()
-        if _json_output:
-            _output_json({"orphans": orphans})
-        else:
-            if not orphans:
-                _print("  No orphan runtimes found.")
-            for o in orphans:
-                _print(f"  🗑 {o}")
-        return 0
-
-    elif args.action == "cleanup":
-        return 0 if run_operation(FlatpakManager.cleanup_unused()) else 1
-
-    return 1
+    return handle_flatpak_manage(args, _json_output, _output_json, _print, run_operation, FlatpakManager)
 
 
 def cmd_boot(args):
     """Handle boot configuration subcommand."""
     from utils.boot_config import BootConfigManager
-
-    if args.action == "config":
-        config = BootConfigManager.get_grub_config()
-        if _json_output:
-            _output_json(
-                {
-                    "default": config.default_entry,
-                    "timeout": config.timeout,
-                    "theme": config.theme,
-                    "cmdline": config.cmdline_linux,
-                }
-            )
-        else:
-            _print(f"  Default: {config.default_entry}")
-            _print(f"  Timeout: {config.timeout}s")
-            _print(f"  Theme: {config.theme or 'none'}")
-            _print(f"  Cmdline: {config.cmdline_linux}")
-        return 0
-
-    elif args.action == "kernels":
-        kernels = BootConfigManager.list_kernels()
-        if _json_output:
-            _output_json([{"title": k.title, "version": k.version, "default": k.is_default} for k in kernels])
-        else:
-            for k in kernels:
-                marker = "→ " if k.is_default else "  "
-                _print(f"  {marker}{k.title} ({k.version})")
-        return 0
-
-    elif args.action == "timeout":
-        seconds = getattr(args, "seconds", None)
-        if seconds is None:
-            _print("❌ --seconds required")
-            return 1
-        return 0 if run_operation(BootConfigManager.set_timeout(seconds)) else 1
-
-    elif args.action == "apply":
-        return 0 if run_operation(BootConfigManager.apply_grub_changes()) else 1
-
-    return 1
+    return handle_boot(args, _json_output, _output_json, _print, run_operation, BootConfigManager)
 
 
 def cmd_display(args):

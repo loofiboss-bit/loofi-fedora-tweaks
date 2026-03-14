@@ -242,8 +242,10 @@ class TestExportSupportBundle(unittest.TestCase):
             self.assertTrue(result.success)
 
     def test_failure_on_bad_path(self):
-        result = JournalManager.export_support_bundle(Path("/nonexistent/path/bundle.zip"))
-        self.assertFalse(result.success)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            bad_output = Path(tmpdir) / "missing-dir" / "bundle.zip"
+            result = JournalManager.export_support_bundle(bad_output)
+            self.assertFalse(result.success)
 
 
 class TestGetQuickDiagnostic(unittest.TestCase):

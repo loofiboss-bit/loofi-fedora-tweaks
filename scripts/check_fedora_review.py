@@ -3,6 +3,7 @@
 
 from __future__ import annotations
 
+import os
 import shutil
 import subprocess
 import sys
@@ -62,6 +63,21 @@ def _run_probe(
 
 def check_fedora_review(timeout: int = DEFAULT_TIMEOUT_SECONDS) -> tuple[bool, list[str]]:
     """Check that fedora-review exists and responds to lightweight probes."""
+    # Opt-in override for local non-Fedora environments (Windows dev)
+    skip_gate = os.environ.get("LOOFI_SKIP_FEDORA_REVIEW_GATE") == "1"
+    in_ci = any(os.environ.get(var) for var in ("CI", "GITHUB_ACTIONS", "JENKINS_HOME"))
+    
+    if skip_gate:
+        if in_ci:
+            return (
+                False,
+                ["LOOFI_SKIP_FEDORA_REVIEW_GATE is set but CI environment detected - override disabled for security"],
+            )
+        return (
+            True,
+            ["WARNING: fedora-review gate skipped via LOOFI_SKIP_FEDORA_REVIEW_GATE=1 (local override)"],
+        )
+    
     binary = shutil.which("fedora-review")
     if not binary:
         return (
@@ -85,14 +101,16 @@ def check_fedora_review(timeout: int = DEFAULT_TIMEOUT_SECONDS) -> tuple[bool, l
 
 def main() -> int:
     """Entry point for workflow gates."""
-    ok, errors = check_fedora_review()
+    ok, messages = check_fedora_review()
     if not ok:
         print("[fedora-review-check] FAILED")
-        for error in errors:
+        for error in messages:
             print(f"- {error}")
         return 1
 
     print("[fedora-review-check] OK")
+    for msg in messages:
+        print(f"- {msg}")
     return 0
 
 

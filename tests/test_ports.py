@@ -7,17 +7,19 @@ block/allow ports, security score, and error handling.
 import os
 import sys
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import MagicMock, patch
+
+from services.network.ports import OpenPort, PortAuditor
 
 # Add source path to sys.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
-
-from services.network.ports import PortAuditor, OpenPort
+sys.path.insert(0, os.path.join(os.path.dirname(
+    __file__), '..', 'loofi-fedora-tweaks'))
 
 
 # ---------------------------------------------------------------------------
 # TestOpenPortDataclass — dataclass tests
 # ---------------------------------------------------------------------------
+
 
 class TestOpenPortDataclass(unittest.TestCase):
     """Tests for OpenPort dataclass."""
@@ -143,6 +145,14 @@ class TestFirewallStatus(unittest.TestCase):
         """is_firewalld_running returns False on OSError."""
         self.assertFalse(PortAuditor.is_firewalld_running())
 
+    @patch('services.network.ports.daemon_client.call_json')
+    def test_is_firewalld_running_daemon_first(self, mock_call_json):
+        """is_firewalld_running reads daemon status when available."""
+        mock_call_json.return_value = {"running": True}
+
+        self.assertTrue(PortAuditor.is_firewalld_running())
+        mock_call_json.assert_called_once_with("FirewallGetStatus")
+
 
 # ---------------------------------------------------------------------------
 # TestBlockAllowPort — firewall port management
@@ -153,7 +163,7 @@ class TestBlockAllowPort(unittest.TestCase):
 
     @patch('services.network.ports.subprocess.run')
     @patch.object(PortAuditor, 'is_firewalld_running', return_value=True)
-    @patch('services.network.ports.shutil.which', return_value='/usr/bin/firewall-cmd')
+    @patch('services.network.ports.cached_which', return_value='/usr/bin/firewall-cmd')
     def test_block_port_success(self, mock_which, mock_firewalld, mock_run):
         """block_port returns success when firewall-cmd succeeds."""
         mock_run.return_value = MagicMock(returncode=0)
@@ -162,13 +172,13 @@ class TestBlockAllowPort(unittest.TestCase):
         self.assertTrue(result.success)
 
     @patch.object(PortAuditor, 'is_firewalld_running', return_value=False)
-    @patch('services.network.ports.shutil.which', return_value='/usr/bin/firewall-cmd')
+    @patch('services.network.ports.cached_which', return_value='/usr/bin/firewall-cmd')
     def test_block_port_firewalld_not_running(self, mock_which, mock_firewalld):
         """block_port fails when firewalld is not running."""
         result = PortAuditor.block_port(8080)
         self.assertFalse(result.success)
 
-    @patch('services.network.ports.shutil.which', return_value=None)
+    @patch('services.network.ports.cached_which', return_value=None)
     def test_block_port_firewall_cmd_missing(self, mock_which):
         """block_port fails when firewall-cmd not found."""
         result = PortAuditor.block_port(8080)
@@ -177,13 +187,59 @@ class TestBlockAllowPort(unittest.TestCase):
 
     @patch('services.network.ports.subprocess.run')
     @patch.object(PortAuditor, 'is_firewalld_running', return_value=True)
-    @patch('services.network.ports.shutil.which', return_value='/usr/bin/firewall-cmd')
+    @patch('services.network.ports.cached_which', return_value='/usr/bin/firewall-cmd')
     def test_allow_port_success(self, mock_which, mock_firewalld, mock_run):
         """allow_port returns success when firewall-cmd succeeds."""
         mock_run.return_value = MagicMock(returncode=0)
 
         result = PortAuditor.allow_port(443)
         self.assertTrue(result.success)
+
+    @patch('services.network.ports.subprocess.run')
+    @patch('services.network.ports.daemon_client.call_json')
+    def test_block_port_uses_daemon_payload(self, mock_call_json, mock_run):
+        """block_port returns daemon payload without local subprocess fallback."""
+        mock_call_json.return_value = {"success": True, "message": "ok"}
+
+        result = PortAuditor.block_port(8080)
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "ok")
+        mock_call_json.assert_called_once_with(
+            "FirewallClosePort", "8080", "tcp", "", True)
+        mock_run.assert_not_called()
+
+    @patch('services.network.ports.subprocess.run')
+    @patch('services.network.ports.daemon_client.call_json')
+    def test_allow_port_uses_daemon_payload(self, mock_call_json, mock_run):
+        """allow_port returns daemon payload without local subprocess fallback."""
+        mock_call_json.return_value = {"success": True, "message": "ok"}
+
+        result = PortAuditor.allow_port(443)
+
+        self.assertTrue(result.success)
+        self.assertEqual(result.message, "ok")
+        mock_call_json.assert_called_once_with(
+            "FirewallOpenPort", "443", "tcp", "", True)
+        mock_run.assert_not_called()
+
+    @patch('services.network.ports.daemon_client.call_json')
+    def test_block_port_rejects_invalid_port(self, mock_call_json):
+        """block_port fails closed on invalid port before daemon call."""
+        result = PortAuditor.block_port(0)
+
+        self.assertFalse(result.success)
+        self.assertIn("between 1 and 65535", result.message)
+        mock_call_json.assert_not_called()
+
+    @patch('services.network.ports.daemon_client.call_json')
+    def test_allow_port_rejects_invalid_protocol(self, mock_call_json):
+        """allow_port fails closed on invalid protocol before daemon call."""
+        result = PortAuditor.allow_port(443, protocol='icmp')
+
+        self.assertFalse(result.success)
+        self.assertIn('tcp or udp', result.message)
+        mock_call_json.assert_not_called()
 
 
 # ---------------------------------------------------------------------------

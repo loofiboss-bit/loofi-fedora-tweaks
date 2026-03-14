@@ -44,3 +44,33 @@ class FooTab(QWidget, PluginInterface):  # QWidget MUST come first
 ## Critical Edit Warning
 - When editing class docstrings, be careful not to accidentally insert class body code INSIDE the docstring
 - Always use a separate old_string that ends the docstring with `"""` before placing new class attributes
+
+## CLI Modularization (2026-02-25) ✅ COMPLETE
+
+### Fixed Handler API Mismatches
+
+**agent_commands.py** - Aligned with AgentRegistry:
+- Methods: `instance().list_agents()`, `get_state(id)`, `enable_agent(id)`, `disable_agent(id)`, `register_agent(config)`, `remove_agent(id)`, `get_recent_activity(limit)`
+- Actions fixed: status (uses get_state), create (uses register_agent), remove, logs, templates, notify
+
+**service_package_commands.py** - Aligned with ServiceExplorer:
+- Methods: `list_services(scope, filter_state, search)`, `get_service_details(name, scope)`, `start/stop/restart/enable/disable/mask/unmask_service(name, scope)`, `get_service_logs(name, scope, lines)`  
+- Args fixed: `service_name` → `name`, added `user` scope flag, ServiceScope imported in handler
+
+**diagnostic_commands.py** - Fixed import path:
+- Changed `from services.system import cached_which` → `from services.system.system import cached_which`
+
+**main.py** - Cleaned dead imports:
+- Removed: `cached_which`, `ServiceScope`, `handle_display`, `handle_health_history`, `handle_logs`, `handle_tuner`, `handle_backup`
+- These commands (`cmd_health_history`, `cmd_tuner`, `cmd_logs`, `cmd_display`, `cmd_backup`) remain inline in main.py ~lines 400-1200
+
+**cli/__init__.py** - Added main import for test compatibility:
+- Added `from cli import main  # noqa: F401` to make `cli.main` resolvable by test patches
+
+### Test Results
+✅ All 62 targeted tests pass (test_v17_cli.py, test_new_features.py, test_main_entry.py)
+✅ Flake8 passes on all changed files
+✅ Backward compatibility maintained - tests can still patch `cli.main.BluetoothManager`, etc.
+
+### Test Compatibility Rule
+CLI tests patch symbols on `cli.main`. When extracting handlers, keep wrapper functions (`cmd_*`) in cli.main as monkeypatch points.

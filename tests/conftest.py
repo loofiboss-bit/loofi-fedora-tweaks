@@ -12,26 +12,10 @@ import subprocess
 import tempfile
 import shutil
 
-# ── Skip broken test files that fail at import time ────────────────────
-# These files have unresolved import errors (missing PyQt6 symbols,
-# missing service classes, etc.) and must be excluded from collection
-# until the underlying modules are fixed.
-collect_ignore = [
-    "test_plugin_adapter.py",
-    "test_plugin_compat.py",
-    "test_plugin_integration.py",
-    "test_plugin_marketplace_phase2.py",
-    "test_plugin_marketplace_phase3.py",
-    "test_plugin_registry.py",
-    "test_pulse_features.py",
-    "test_services.py",
-    "test_update_manager.py",
-    "test_utils.py",
-    "test_health_score.py",
-    "test_new_features.py",
-    "test_v10_features.py",
-    "test_v17_cli.py",
-]
+# ── Skip currently failing legacy test modules ──────────────────────────
+# These files are temporarily excluded while their mocks/expectations are
+# being aligned with the current services/core architecture.
+collect_ignore = []
 
 # Force offscreen Qt rendering in CI (must be set before any PyQt6 import)
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -41,6 +25,56 @@ from unittest.mock import patch, MagicMock  # noqa: E402
 
 # Ensure the app source is on the path for all test modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
+
+
+# ── Clear all LRU caches before every test ─────────────────────────────
+# Prevents cross-test cache contamination from @lru_cache functions that
+# call real system commands (lscpu, shutil.which, etc.).
+@pytest.fixture(autouse=True)
+def _clear_lru_caches():
+    """Clear all lru_cache functions before each test for isolation."""
+    try:
+        from services.system.system import cached_which
+        cached_which.cache_clear()
+    except ImportError:
+        pass
+    try:
+        from utils.system_info_utils import get_cpu_model
+        get_cpu_model.cache_clear()
+    except ImportError:
+        pass
+    try:
+        from core.export.kickstart import _cached_keyboard_layout
+        _cached_keyboard_layout.cache_clear()
+    except ImportError:
+        pass
+    try:
+        from services.security.firewall import FirewallManager
+        FirewallManager._available_cached = None
+    except ImportError:
+        pass
+    yield
+    # Clear again after test so the next test starts clean
+    try:
+        from services.system.system import cached_which
+        cached_which.cache_clear()
+    except ImportError:
+        pass
+    try:
+        from utils.system_info_utils import get_cpu_model
+        get_cpu_model.cache_clear()
+    except ImportError:
+        pass
+    try:
+        from core.export.kickstart import _cached_keyboard_layout
+        _cached_keyboard_layout.cache_clear()
+    except ImportError:
+        pass
+    try:
+        from services.security.firewall import FirewallManager
+        FirewallManager._available_cached = None
+    except ImportError:
+        pass
 
 
 # ── Block real privilege-escalation calls during tests ─────────────────
@@ -194,9 +228,12 @@ def mock_which():
         def test_bar(mock_which):
             mock_which.side_effect = lambda cmd: '/usr/bin/dnf' if cmd == 'dnf' else None
     """
-    with patch("shutil.which") as mocked:
+    from services.system.system import cached_which
+    cached_which.cache_clear()
+    with patch("services.system.system.shutil.which") as mocked:
         mocked.return_value = None
         yield mocked
+    cached_which.cache_clear()
 
 
 @pytest.fixture

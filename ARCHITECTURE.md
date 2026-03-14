@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 2.0.0 "Evolution" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora Linux
+> **Version**: 2.4.0 "Daemon Foundation" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora Linux
 
 ## Project Structure
 
@@ -53,6 +53,7 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   ├── storage/              # CloudSync, StateTeleport
 │   ├── network/              # NetworkUtils, NetworkMonitor, Ports, MeshDiscovery
 │   └── virtualization/       # Virtualization, VMManager, VFIO, DisposableVM
+├── services/ipc/             # Daemon IPC client and mode controls (v2.4.0)
 ├── config/                   # apps.json, polkit policy, systemd unit
 ├── assets/                   # modern.qss, icon-pack, resources
 ├── agents/                   # Agent runtime (in-app AI orchestration)
@@ -77,7 +78,7 @@ completions/                  # Shell completions (bash, zsh)
 | ---------- | ---------- | ------------------------ | ------------------------------------------ |
 | **GUI**    | (default)  | `main.py` → `MainWindow` | PyQt6 desktop app with 28 lazy-loaded tabs |
 | **CLI**    | `--cli`    | `cli/main.py`            | Subcommands with `--json` output           |
-| **Daemon** | `--daemon` | `utils/daemon.py`        | Background scheduler                       |
+| **Daemon** | `--daemon` | `daemon/runtime.py`      | D-Bus daemon host + legacy fallback        |
 
 ## Layer Rules (STRICT)
 
@@ -309,3 +310,9 @@ flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722,E
 - **i18n**: `self.tr("...")` for all user-visible strings
 - **Naming**: `ui/*_tab.py` → `*Tab`; `utils/*.py` → `*Manager`/`*Ops` with `@staticmethod`
 - **Plugins**: Extend `LoofiPlugin` ABC, place in `plugins/<name>/plugin.py`
+├── daemon/                   # D-Bus daemon host + validators + handlers (v2.4.0)
+│   ├── runtime.py            # Daemon bootstrap and GLib main loop
+│   ├── server.py             # D-Bus object methods (org.loofi.FedoraTweaks.Daemon1)
+│   ├── contracts.py          # Standard JSON response envelope
+│   ├── validators.py         # Input validation for privileged operations
+│   └── handlers/             # Network/firewall/port-audit execution handlers

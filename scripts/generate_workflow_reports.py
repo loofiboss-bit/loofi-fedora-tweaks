@@ -2,8 +2,8 @@
 """Generate workflow report artifacts required by check_release_docs.py --require-logs.
 
 Creates:
-  .workflow/reports/test-results-v{MAJOR}.{MINOR}.json
-  .workflow/reports/run-manifest-v{MAJOR}.{MINOR}.json
+    .workflow/reports/test-results-v{MAJOR}.{MINOR}.{PATCH}.json
+    .workflow/reports/run-manifest-v{MAJOR}.{MINOR}.{PATCH}.json
 
 Usage:
   python3 scripts/generate_workflow_reports.py          # auto-detect version
@@ -46,9 +46,18 @@ def extract_version() -> str:
 
 
 def workflow_tag(version: str) -> str:
-    """Convert '29.0.0' -> 'v29.0'."""
+    """Convert '29.0.0' -> 'v29.0.0'."""
     parts = version.split(".")
-    return f"v{parts[0]}.{parts[1]}" if len(parts) >= 2 else f"v{version}"
+    if len(parts) >= 3:
+        return f"v{parts[0]}.{parts[1]}.{parts[2]}"
+    if len(parts) == 2:
+        return f"v{parts[0]}.{parts[1]}.0"
+    return f"v{parts[0]}.0.0"
+
+
+def workflow_tags(version: str) -> list[str]:
+    """Return canonical report tag list (vX.Y.Z only)."""
+    return [workflow_tag(version)]
 
 
 def report_paths(version: str) -> tuple[Path, Path]:
@@ -59,15 +68,28 @@ def report_paths(version: str) -> tuple[Path, Path]:
     )
 
 
+def report_path_candidates(version: str) -> tuple[list[Path], list[Path]]:
+    """Return accepted test/manifest report candidates for --check mode."""
+    tags = workflow_tags(version)
+    test_candidates = [REPORTS_DIR /
+                       f"test-results-{tag}.json" for tag in tags]
+    manifest_candidates = [REPORTS_DIR /
+                           f"run-manifest-{tag}.json" for tag in tags]
+    return test_candidates, manifest_candidates
+
+
+def _resolve_existing(candidates: list[Path]) -> Path | None:
+    for candidate in candidates:
+        if candidate.exists():
+            return candidate
+    return None
+
+
 def run_tests() -> dict:
     """Execute pytest and parse the summary line."""
-    env = {
-        "PYTHONPATH": str(ROOT / "loofi-fedora-tweaks"),
-        "QT_QPA_PLATFORM": "offscreen",
-        "PATH": os.environ.get("PATH", ""),
-        "HOME": os.environ.get("HOME", ""),
-        "DISPLAY": os.environ.get("DISPLAY", ""),
-    }
+    env = os.environ.copy()
+    env["PYTHONPATH"] = str(ROOT / "loofi-fedora-tweaks")
+    env["QT_QPA_PLATFORM"] = "offscreen"
     start = time.monotonic()
     result = subprocess.run(
         PYTEST_CMD,
@@ -76,8 +98,13 @@ def run_tests() -> dict:
     elapsed = round(time.monotonic() - start, 2)
 
     # Parse last non-empty line for counts: "2322 passed, 20 skipped ..."
-    lines = [l.strip() for l in result.stdout.strip().splitlines() if l.strip()]
+    lines = [line.strip()
+             for line in result.stdout.strip().splitlines() if line.strip()]
     summary_line = lines[-1] if lines else ""
+    stderr_lines = [line.strip()
+                    for line in result.stderr.strip().splitlines() if line.strip()]
+    stdout_tail = lines[-1] if lines else ""
+    stderr_tail = stderr_lines[-1] if stderr_lines else ""
     passed = _extract_count(summary_line, "passed")
     failed = _extract_count(summary_line, "failed")
     skipped = _extract_count(summary_line, "skipped")
@@ -92,6 +119,8 @@ def run_tests() -> dict:
         "total": passed + failed + skipped + errors,
         "duration_seconds": elapsed,
         "summary_line": summary_line,
+        "stdout_tail": stdout_tail,
+        "stderr_tail": stderr_tail,
     }
 
 
@@ -109,7 +138,16 @@ def _extract_count(line: str, keyword: str) -> int:
 def generate_test_results(version: str, test_data: dict) -> dict:
     """Build test-results JSON payload."""
     now = datetime.now(timezone.utc).isoformat(timespec="seconds")
-    status = "pass" if test_data["failed"] == 0 and test_data["errors"] == 0 else "fail"
+    status = (
+        "pass"
+        if (
+            test_data["returncode"] == 0
+            and test_data["failed"] == 0
+            and test_data["errors"] == 0
+            and test_data["total"] > 0
+        )
+        else "fail"
+    )
     total = test_data["total"]
     rate = f"{round(test_data['passed'] / total * 100)}%" if total else "0%"
     return {
@@ -171,7 +209,7 @@ def generate_run_manifest(version: str) -> dict:
              "timestamp": now, "artifacts": [f".workflow/reports/test-results-{tag}.json"]},
             {"phase": "document", "phase_name": "P5 DOCUMENT", "status": "success",
              "timestamp": now, "artifacts": ["CHANGELOG.md", "README.md",
-                                              f"docs/releases/RELEASE-NOTES-v{version}.md"]},
+                                             f"docs/releases/RELEASE-NOTES-v{version}.md"]},
             {"phase": "package", "phase_name": "P6 PACKAGE", "status": "success",
              "timestamp": now, "artifacts": ["loofi-fedora-tweaks.spec"]},
             {"phase": "release", "phase_name": "P7 RELEASE", "status": "success",
@@ -182,21 +220,33 @@ def generate_run_manifest(version: str) -> dict:
 
 def check_only(version: str) -> int:
     """Return 0 if both reports exist, 1 otherwise."""
-    test_path, manifest_path = report_paths(version)
+    test_candidates, manifest_candidates = report_path_candidates(version)
+    test_path = _resolve_existing(test_candidates)
+    manifest_path = _resolve_existing(manifest_candidates)
     ok = True
-    for p in (test_path, manifest_path):
-        if p.exists():
-            print(f"  [OK] {p.relative_to(ROOT)}")
-        else:
-            print(f"  [MISSING] {p.relative_to(ROOT)}")
-            ok = False
+
+    if test_path is not None:
+        print(f"  [OK] {test_path.relative_to(ROOT)}")
+    else:
+        print(f"  [MISSING] {test_candidates[0].relative_to(ROOT)}")
+        ok = False
+
+    if manifest_path is not None:
+        print(f"  [OK] {manifest_path.relative_to(ROOT)}")
+    else:
+        print(f"  [MISSING] {manifest_candidates[0].relative_to(ROOT)}")
+        ok = False
+
     return 0 if ok else 1
 
 
 def main() -> int:
-    parser = argparse.ArgumentParser(description="Generate workflow report artifacts for release")
-    parser.add_argument("--check", action="store_true", help="Only verify reports exist (no write)")
-    parser.add_argument("--skip-tests", action="store_true", help="Skip running pytest (use placeholder data)")
+    parser = argparse.ArgumentParser(
+        description="Generate workflow report artifacts for release")
+    parser.add_argument("--check", action="store_true",
+                        help="Only verify reports exist (no write)")
+    parser.add_argument("--skip-tests", action="store_true",
+                        help="Skip running pytest (use placeholder data)")
     args = parser.parse_args()
 
     version = extract_version()
@@ -219,18 +269,57 @@ def main() -> int:
     else:
         print("[workflow-reports] running test suite...")
         test_data = run_tests()
+        returncode_raw = test_data.get("returncode")
+        failed_raw = test_data.get("failed")
+        errors_raw = test_data.get("errors")
+        total_raw = test_data.get("total")
+
+        returncode = returncode_raw if isinstance(returncode_raw, int) else 1
+        failed = failed_raw if isinstance(failed_raw, int) else 0
+        errors = errors_raw if isinstance(errors_raw, int) else 0
+        total = total_raw if isinstance(total_raw, int) else 0
+        summary_line_raw = test_data.get("summary_line")
+        summary_line = summary_line_raw if isinstance(
+            summary_line_raw, str) else ""
+        stderr_tail_raw = test_data.get("stderr_tail")
+        stderr_tail = stderr_tail_raw if isinstance(
+            stderr_tail_raw, str) else ""
+        stdout_tail_raw = test_data.get("stdout_tail")
+        stdout_tail = stdout_tail_raw if isinstance(
+            stdout_tail_raw, str) else ""
         print(f"[workflow-reports] {test_data['summary_line']}")
-        if test_data["failed"] > 0 or test_data["errors"] > 0:
-            print("[workflow-reports] WARNING: tests have failures — reports still generated")
+        if returncode != 0:
+            print(
+                "[workflow-reports] WARNING: pytest exited non-zero "
+                "— report will be marked FAIL"
+            )
+            if not summary_line:
+                root_cause = stderr_tail or stdout_tail or "no output captured"
+                print(
+                    "[workflow-reports] ROOT-CAUSE: pytest failed before "
+                    f"summary output: {root_cause}"
+                )
+        if failed > 0 or errors > 0:
+            print(
+                "[workflow-reports] WARNING: tests have failures "
+                "— reports still generated"
+            )
+        if total == 0:
+            print(
+                "[workflow-reports] WARNING: zero executed tests "
+                "detected — fail-closed applied"
+            )
 
     # Write test results
     test_payload = generate_test_results(version, test_data)
-    test_path.write_text(json.dumps(test_payload, indent=2) + "\n", encoding="utf-8")
+    test_path.write_text(json.dumps(
+        test_payload, indent=2) + "\n", encoding="utf-8")
     print(f"[workflow-reports] wrote {test_path.relative_to(ROOT)}")
 
     # Write run manifest
     manifest_payload = generate_run_manifest(version)
-    manifest_path.write_text(json.dumps(manifest_payload, indent=2) + "\n", encoding="utf-8")
+    manifest_path.write_text(json.dumps(
+        manifest_payload, indent=2) + "\n", encoding="utf-8")
     print(f"[workflow-reports] wrote {manifest_path.relative_to(ROOT)}")
 
     print("[workflow-reports] OK — remember to git add these files before tagging!")

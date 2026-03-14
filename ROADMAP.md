@@ -7,42 +7,436 @@
 
 ## Version Index
 
-| Version | Codename                        | Status  | Theme                                                                             |
-| ------- | ------------------------------- | ------- | --------------------------------------------------------------------------------- |
-| v21.0   | UX Stabilization                | DONE    | Layout integrity, QSS scoping                                                     |
-| v22.0   | Usability                       | SKIPPED | Search, status indicators, preferences                                            |
-| v23.0   | Architecture Hardening          | DONE    | Service layer, executor, imports                                                  |
-| v24.0   | Power Features                  | DONE    | Profiles, export, log panel, snapshots                                            |
-| v25.0   | Plugin Architecture             | DONE    | Plugin system, UI redesign, API                                                   |
-| v25.0.3 | Maintenance Update Crash Hotfix | DONE    | Stabilize Maintenance update actions                                              |
-| v26.0   | Plugin Marketplace              | DONE    | External plugins, marketplace, sandboxing                                         |
-| v27.0   | Marketplace Enhancement         | DONE    | CDN index, ratings/reviews, badges, analytics, hot-reload, stronger sandbox       |
-| v28.0   | Workflow Contract Reset         | DONE    | Clean-slate workflow state, runner-compatible planning artifacts, kickoff handoff |
-| v29.0   | Usability & Polish              | DONE    | UX polish, skipped v22 scope, error handling, accessibility, CORS                 |
-| v30.0   | Distribution & Reliability      | DONE    | Flatpak, AppImage, auto-update, CI hardening, coverage 75%                        |
-| v31.0   | Smart UX                        | DONE    | Health score, i18n, batch ops, export report, plugin template                     |
-| v32.0   | Abyss                           | DONE    | Full visual redesign, activity-based categories, Abyss theme                      |
-| v33.0   | Bastion                         | DONE    | Testing & type safety debt, CI pipeline hardening                                 |
-| v34.0   | Citadel                         | DONE    | Light theme fix, stability hardening, accessibility polish                        |
-| v35.0   | Fortress                        | DONE    | Subprocess timeout enforcement, audit logging, privilege hardening                |
-| v36.0   | Horizon                         | DONE    | UX safety, performance optimization, navigation polish                            |
-| v37.0   | Pinnacle                        | DONE    | Smart features, ecosystem expansion, user-requested enhancements                  |
-| v38.0   | Clarity                         | DONE    | UX polish, theme correctness, stability improvements                              |
-| v39.0   | Prism                           | DONE    | Deprecated import migration, inline style elimination                             |
-| v40.0   | Foundation                      | DONE    | Correctness & safety hardening, zero shell injection                              |
-| v41.0   | Coverage                        | DONE    | Test coverage 80%+, CI pipeline hardening                                         |
-| v42.0   | Sentinel                        | DONE    | Exception narrowing, hardcoded dnf elimination, UX polish                         |
-| v43.0   | Stabilization-Only              | DONE    | Policy enforcement, runtime hardening, CI gate tightening                         |
-| v44.0   | Review Gate                     | DONE    | Fedora review prerequisite enforcement for workflow and CI pipelines              |
-| v45.0   | Housekeeping                    | DONE    | Stability fixes, safe guidance cleanup, reliability UX consistency                |
-| v46.0   | Navigator                       | DONE    | Category clarity, navigation consistency, release packaging alignment             |
-| v47.0   | Experience                      | DONE    | UX experience levels, actionable feedback, health drill-down, guided tour         |
-| v48.0   | Sidebar Index                   | DONE    | Tab/sidebar restructure with O(1) ID-based lookups                                |
-| v49.0   | Shield                          | DONE    | Test coverage expansion for lowest-covered modules                                |
-| v50.0   | Forge                           | DONE    | Quality hardening, exception narrowing, docstrings, coverage push                 |
-| 1.0.0   | Foundation (SemVer)             | DONE    | Version renormalization to SemVer 1.0.0                                           |
-| 2.0.0   | Evolution                       | DONE    | Service layer migration, core domain extraction                                   |
-| 2.1.0   | Continuity                      | DONE    | Workflow realignment, tracker consistency, automation hardening                   |
+| Version | Codename                        | Status  | Theme                                                                                      |
+| ------- | ------------------------------- | ------- | ------------------------------------------------------------------------------------------ |
+| v21.0   | UX Stabilization                | DONE    | Layout integrity, QSS scoping                                                              |
+| v22.0   | Usability                       | SKIPPED | Search, status indicators, preferences                                                     |
+| v23.0   | Architecture Hardening          | DONE    | Service layer, executor, imports                                                           |
+| v24.0   | Power Features                  | DONE    | Profiles, export, log panel, snapshots                                                     |
+| v25.0   | Plugin Architecture             | DONE    | Plugin system, UI redesign, API                                                            |
+| v25.0.3 | Maintenance Update Crash Hotfix | DONE    | Stabilize Maintenance update actions                                                       |
+| v26.0   | Plugin Marketplace              | DONE    | External plugins, marketplace, sandboxing                                                  |
+| v27.0   | Marketplace Enhancement         | DONE    | CDN index, ratings/reviews, badges, analytics, hot-reload, stronger sandbox                |
+| v28.0   | Workflow Contract Reset         | DONE    | Clean-slate workflow state, runner-compatible planning artifacts, kickoff handoff          |
+| v29.0   | Usability & Polish              | DONE    | UX polish, skipped v22 scope, error handling, accessibility, CORS                          |
+| v30.0   | Distribution & Reliability      | DONE    | Flatpak, AppImage, auto-update, CI hardening, coverage 75%                                 |
+| v31.0   | Smart UX                        | DONE    | Health score, i18n, batch ops, export report, plugin template                              |
+| v32.0   | Abyss                           | DONE    | Full visual redesign, activity-based categories, Abyss theme                               |
+| v33.0   | Bastion                         | DONE    | Testing & type safety debt, CI pipeline hardening                                          |
+| v34.0   | Citadel                         | DONE    | Light theme fix, stability hardening, accessibility polish                                 |
+| v35.0   | Fortress                        | DONE    | Subprocess timeout enforcement, audit logging, privilege hardening                         |
+| v36.0   | Horizon                         | DONE    | UX safety, performance optimization, navigation polish                                     |
+| v37.0   | Pinnacle                        | DONE    | Smart features, ecosystem expansion, user-requested enhancements                           |
+| v38.0   | Clarity                         | DONE    | UX polish, theme correctness, stability improvements                                       |
+| v39.0   | Prism                           | DONE    | Deprecated import migration, inline style elimination                                      |
+| v40.0   | Foundation                      | DONE    | Correctness & safety hardening, zero shell injection                                       |
+| v41.0   | Coverage                        | DONE    | Test coverage 80%+, CI pipeline hardening                                                  |
+| v42.0   | Sentinel                        | DONE    | Exception narrowing, hardcoded dnf elimination, UX polish                                  |
+| v43.0   | Stabilization-Only              | DONE    | Policy enforcement, runtime hardening, CI gate tightening                                  |
+| v44.0   | Review Gate                     | DONE    | Fedora review prerequisite enforcement for workflow and CI pipelines                       |
+| v45.0   | Housekeeping                    | DONE    | Stability fixes, safe guidance cleanup, reliability UX consistency                         |
+| v46.0   | Navigator                       | DONE    | Category clarity, navigation consistency, release packaging alignment                      |
+| v47.0   | Experience                      | DONE    | UX experience levels, actionable feedback, health drill-down, guided tour                  |
+| v48.0   | Sidebar Index                   | DONE    | Tab/sidebar restructure with O(1) ID-based lookups                                         |
+| v49.0   | Shield                          | DONE    | Test coverage expansion for lowest-covered modules                                         |
+| v50.0   | Forge                           | DONE    | Quality hardening, exception narrowing, docstrings, coverage push                          |
+| 1.0.0   | Foundation (SemVer)             | DONE    | Version renormalization to SemVer 1.0.0                                                    |
+| 2.0.0   | Evolution                       | DONE    | Service layer migration, core domain extraction                                            |
+| 2.1.0   | Continuity                      | DONE    | Workflow realignment, tracker consistency, automation hardening                            |
+| 2.2.0   | Velocity                        | DONE    | Performance caching, subprocess safety, service-layer test coverage                        |
+| 2.2.1   | Velocity (patch)                | DONE    | CI stability: @patch target corrections for test reliability                               |
+| 2.2.2   | Velocity (patch)                | DONE    | CI: lower coverage threshold to 77%, fix tasks spec gate                                   |
+| 2.3.0   | Insight                         | DONE    | Enhanced diagnostics: 5 new report sections (services, journal, updates, SELinux, network) |
+| 2.4.0   | Daemon Foundation               | DONE    | Daemonized network/firewall execution boundary via D-Bus with fallback                     |
+| 2.5.0   | API Migration Slice 1           | DONE    | Network/firewall API-first hardening with strict IPC compatibility and fallback safeguards |
+| 2.6.0   | API Migration Slice 2           | DONE    | Package API-first migration with strict IPC payload validation and fallback safeguards     |
+| 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                    |
+| 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                |
+| 2.9.0   | API Migration Slice 5           | DONE    | Residual privileged daemon/API migration + compatibility hardening                         |
+| 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                      |
+| 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement              |
+| 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening             |
+| 3.0.0   | Aegis                           | ACTIVE  | API security, Safe Mode defaults, plugin update safety, and version consistency cleanup    |
+
+---
+
+## [ACTIVE] v3.0.0 "Aegis" — API Security & UX Safety
+
+### Scope
+
+First post-migration major release focused on stabilization phases 3–6 from the
+hardening guide. The goal is to keep the existing daemon/API architecture while
+closing trust-boundary gaps around API exposure, auth/bootstrap storage, Safe Mode,
+plugin auto-update safety, and version consistency.
+
+### Planned Deliverables
+
+- [ ] Activate v3.0.0 workflow metadata and restore a canonical Phase 3 planning baseline
+- [ ] Enforce loopback-only API startup unless `--unsafe-expose` is explicitly supplied
+- [ ] Harden auth/bootstrap storage and constrain `/api/key` + `/api/token` bootstrap behavior
+- [ ] Add route-aware API throttling and explicit read-only versus privileged endpoint policy buckets
+- [ ] Introduce Safe Mode as a default-on mutation guard with persisted user control
+- [ ] Surface registry-backed risk and revert guidance through shared confirmation flows
+- [ ] Formalize plugin auto-update as an explicit default-off setting in daemon/runtime behavior
+- [ ] Remove version drift by aligning runtime, packaging, and release documentation on `3.0.0`
+
+### Agent Assignment
+
+| Agent                        | Task                                                               |
+| ---------------------------- | ------------------------------------------------------------------ |
+| project-coordinator          | v3.0.0 activation, metadata reconciliation, baseline recovery      |
+| backend-builder              | API exposure/auth/rate-limit hardening + Safe Mode service work    |
+| frontend-integration-builder | Settings + confirmation-flow integration for Safe Mode and risk UX |
+| test-writer                  | Focused API and UX safety regression coverage                      |
+| release-planner              | SECURITY/docs/version-consistency closure                          |
+
+---
+
+## [DONE] v2.12.0 "API Migration Slice 8" — Service Parity Completion
+
+### Scope
+
+Continue daemon/API migration by targeting the remaining service-layer residual paths
+that still rely on local execution defaults. This slice stays stabilization-focused:
+no privilege-scope expansion, no UI feature expansion, and strict fallback compatibility.
+
+### Planned Deliverables
+
+- [x] Activate v2.12.0 workflow metadata (`ROADMAP`, race-lock, task/arch specs)
+- [x] Finalize residual inventory for daemon-first vs intentional-local service paths
+- [x] Implement bounded migration updates for selected residual service methods
+- [x] Add focused regression coverage for daemon/local parity and fallback guarantees
+- [x] Reconcile v2.12 workflow reports and release documentation artifacts
+
+### Agent Assignment
+
+| Agent               | Task                                             |
+| ------------------- | ------------------------------------------------ |
+| project-coordinator | v2.12 scope/task contracts + activation metadata |
+| backend-builder     | residual service migration + fallback hardening  |
+| test-writer         | focused daemon/local parity regression coverage  |
+| release-planner     | roadmap/changelog/release-note synchronization   |
+
+---
+
+## [DONE] v2.10.0 "API Migration Slice 6" — Canonical Workflow + Next Migration Kickoff
+
+### Scope
+
+Start the next bounded slice after v2.9.0 closure by standardizing workflow
+artifacts on canonical `vX.Y.Z` tags, reconciling workflow metadata state,
+and preparing a fresh migration target list for the next daemon/API-first
+residual pathways.
+
+### Planned Deliverables
+
+- [ ] Close v2.9.0 metadata state (`ROADMAP`, race-lock transition, memory-bank sync)
+- [ ] Standardize workflow scripts and tests to canonical `vX.Y.Z` artifact naming only
+- [ ] Remove duplicate short-tag (`vX.Y`) artifacts for active release lines
+- [ ] Create v2.10.0 workflow task and architecture contracts
+- [ ] Define bounded daemon/API migration targets for Slice 6
+- [ ] Add focused regression coverage for any script/contract behavior changes
+
+### Agent Assignment
+
+| Agent               | Task                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| project-coordinator | v2.10.0 scope/task contracts + activation                    |
+| backend-builder     | workflow script normalization + daemon/API migration prep    |
+| test-writer         | focused regression updates for workflow/tag canonicalization |
+| release-planner     | roadmap/workflow/memory metadata synchronization             |
+
+---
+
+## [DONE] v2.11.0 "API Migration Slice 7" — Residual Service Hardening
+
+### Scope
+
+Continue daemon/API migration hardening by tightening residual network, firewall,
+and system service pathways identified in v2.10 planning artifacts. This slice
+focuses on deterministic local fallback behavior, command construction consistency,
+and explicit daemon/local read-path contracts without expanding privilege scope.
+
+### Planned Deliverables
+
+- [x] Reconcile metadata for v2.11 activation (`ROADMAP`, race-lock, manifests)
+- [x] Harden residual network local write-path return semantics
+- [x] Tighten active-connection parsing for deterministic classification
+- [x] Normalize firewall mutator command construction to project standards
+- [x] Define/implement daemon-vs-local classification for targeted system read paths
+- [x] Add focused regression coverage for network/firewall/system parity changes
+- [x] Publish v2.11 docs and release notes after verification
+
+### Agent Assignment
+
+| Agent               | Task                                                |
+| ------------------- | --------------------------------------------------- |
+| project-coordinator | v2.11 scope/task contracts + activation metadata    |
+| backend-builder     | network/firewall/system residual hardening          |
+| test-writer         | focused regression coverage for daemon/local parity |
+| release-planner     | changelog/roadmap/release-note synchronization      |
+
+---
+
+## [DONE] v2.9.0 "API Migration Slice 5" — Residual Privileged Path Migration
+
+### Scope
+
+Continue daemon/API-first migration by targeting remaining privileged pathways
+that still rely on local execution fallbacks across `services/system/`,
+`services/security/`, and `services/network/` while preserving strict IPC
+envelope compatibility and fail-closed validator behavior.
+
+### Planned Deliverables
+
+- [ ] Activate v2.9.0 workflow contracts (`ROADMAP`, race-lock, tasks/arch specs)
+- [ ] Inventory residual privileged pathways and prioritize bounded migration targets
+- [ ] Extend daemon handler + validator coverage for selected v2.9 methods
+- [ ] Migrate prioritized service call paths to daemon-first with preferred-mode fallback parity
+- [ ] Add focused daemon/client/fallback regression coverage for migrated pathways
+- [ ] Synchronize roadmap/workflow/memory metadata after verification
+
+### Agent Assignment
+
+| Agent               | Task                                                          |
+| ------------------- | ------------------------------------------------------------- |
+| project-coordinator | v2.9.0 scope/task contracts + activation                      |
+| backend-builder     | daemon handler/validator extension + service migration slices |
+| test-writer         | focused daemon/client/fallback regression coverage            |
+| release-planner     | workflow/roadmap/memory metadata synchronization              |
+
+---
+
+## [DONE] v2.8.0 "API Migration Slice 4" — Phase 3 Policy Inventory & Validator Hardening
+
+### Scope
+
+Execute the bounded Phase 3 preparation work identified in v2.7.0 by turning
+policy inventory and privileged validator tightening into implementation tasks.
+The slice remains restrictive: no root-capability expansion, no privilege model
+broadening, and no UI feature scope unrelated to hardening.
+
+### Planned Deliverables
+
+- [x] Build a policy inventory map for `config/org.loofi.fedora-tweaks.*.policy`
+- [x] Map daemon-exposed privileged methods to validator coverage and identify gaps
+- [x] Tighten parameter validation for prioritized privileged pathways
+- [x] Add focused tests for new validator edge-cases and deny-by-default behavior
+- [x] Synchronize roadmap/workflow/memory metadata after verification
+
+### Status snapshot (2026-02-26)
+
+- [x] v2.8.0 task chain `TASK001`–`TASK006` completed (plan/design/build/test/document)
+- [x] Targeted hardening suite passed with 98 tests
+- [x] Targeted hardening coverage reached 91% (`daemon.validators`, selected handlers, `services.ipc.types`)
+- [x] `P6 PACKAGE` executed successfully in Fedora container (`loofi-fedora-tweaks-2.8.0-1.fc41.noarch.rpm`, `loofi_fedora_tweaks-2.8.0.tar.gz`)
+- [x] `P7 RELEASE` completed (workflow closure committed and tagged)
+
+### Agent Assignment
+
+| Agent               | Task                                             |
+| ------------------- | ------------------------------------------------ |
+| project-coordinator | v2.8.0 scope/task contracts                      |
+| backend-builder     | validator hardening + policy mapping utilities   |
+| test-writer         | privileged validation regression coverage        |
+| release-planner     | workflow/roadmap/memory metadata synchronization |
+
+---
+
+## [DONE] v2.6.0 "API Migration Slice 2" — Phase 2 Package Migration
+
+### Scope
+
+Extend daemon-first service pathways into package management while preserving
+caller-compatible signatures, strict IPC envelopes, and `LOOFI_IPC_MODE=preferred`
+fallback semantics.
+
+### Status snapshot (2026-02-25)
+
+- [x] v2.6.0 workflow cycle activated (`.race-lock`, tasks, arch, manifest)
+- [x] Package daemon handler foundation implemented
+- [x] Package service daemon-first migration completed with local fallback parity
+- [x] IPC payload hardening implemented for package daemon methods
+- [x] Focused verification passed (`test_daemon_client.py`, `test_ipc_fallback_modes.py`, `test_package_service.py`)
+- [x] Memory-bank planning artifact sync completed
+
+### Agent Assignment
+
+| Agent               | Task                                                      |
+| ------------------- | --------------------------------------------------------- |
+| project-coordinator | v2.6.0 scope/task contracts                               |
+| backend-builder     | package handler, package service migration, IPC hardening |
+| test-writer         | focused package/IPC fallback regression validation        |
+| release-planner     | roadmap/workflow progress metadata sync                   |
+
+---
+
+## [DONE] v2.7.0 "API Migration Slice 3" — Phase 2 System-Service Migration + Phase 3 Prep
+
+### Scope
+
+Continue API-first migration for system/service operations currently backed by
+`systemctl` execution paths while preserving caller-facing signatures and strict IPC
+envelope compatibility. In parallel, perform bounded Phase 3 preparation by defining
+policy-audit inventory and validator-tightening tasks without expanding privilege scope.
+
+### Planned Deliverables
+
+- [x] Add daemon-side service handler foundation for system/service operations
+- [x] Migrate service/system APIs to daemon-first pathways with preferred-mode fallback
+- [x] Harden IPC payload compatibility for new service handler response types
+- [x] Add focused regression tests for success/failure/fallback payload handling
+- [x] Produce a policy-audit inventory and validator tightening checklist (prep only)
+
+### Status snapshot (2026-02-25)
+
+- [x] Service daemon handler foundation implemented (`service_handler.py` + handler export)
+- [x] `SystemService` daemon-first migration implemented with local fallback parity
+- [x] System IPC payload validation hardening implemented (`is_system_payload` + client enforcement)
+- [x] Focused daemon/system fallback regression tests passed
+- [x] Phase 3 prep inventory documented in `arch-v2.7.0.md`
+- [x] Workflow phase metadata sync finalized (`run-manifest-v2.7.0.json` + memory-bank progress)
+- [x] Workflow closure phases completed (`P6 package` and `P7 release`)
+
+### Agent Assignment
+
+| Agent               | Task                                                            |
+| ------------------- | --------------------------------------------------------------- |
+| project-coordinator | v2.7.0 scope/task contracts                                     |
+| backend-builder     | service handler + service API migration + IPC compatibility     |
+| test-writer         | daemon/service fallback regression validation                   |
+| release-planner     | planning artifact and roadmap/workflow metadata synchronization |
+
+---
+
+## [DONE] v2.5.0 "API Migration Slice 1" — Phase 2 Daemon-Service Hardening
+
+### Scope
+
+Reduce parsing-heavy network/firewall service pathways while preserving v2.4.0 daemon-first
+contracts, strict envelope handling, and `LOOFI_IPC_MODE=preferred` fallback semantics.
+
+### Status snapshot (2026-02-25)
+
+- [x] Network service API migration slice completed
+- [x] Firewall service API migration slice completed
+- [x] IPC compatibility hardening validated (strict envelope + required/preferred behavior)
+- [x] Focused verification passed (`test_daemon_client.py`, `test_ipc_fallback_modes.py`, `test_daemon_dbus.py`, `test_network_utils.py`, `test_firewall_manager.py`)
+
+### Agent Assignment
+
+| Agent               | Task                                                         |
+| ------------------- | ------------------------------------------------------------ |
+| project-coordinator | v2.5.0 scope/task contracts                                  |
+| backend-builder     | network/firewall API migration + IPC compatibility hardening |
+| test-writer         | focused IPC/network/firewall regression validation           |
+| release-planner     | roadmap/workflow progress metadata sync                      |
+
+---
+
+## [DONE] v2.4.0 "Daemon Foundation" — Phase 1 Daemonization
+
+### Scope
+
+Introduce a standalone daemon IPC boundary for network and firewall operations using D-Bus.
+Phase 1 focuses on execution-path decoupling (GUI + CLI to daemon-backed services) with
+strangler fallback behavior (`LOOFI_IPC_MODE=preferred`) to preserve stability.
+
+### Planned Deliverables
+
+Status snapshot (2026-02-25): Phase 1 implementation is complete in `v2.4.0`; remaining refactor phases are tracked in the longer-term refactoring plan.
+
+- [x] Add `daemon/` package with D-Bus host, contracts, validators, and handlers
+- [x] Add `services/ipc/` daemon client with `disabled|preferred|required` modes
+- [x] Migrate `services/network/network.py` to daemon-first calls with local fallback
+- [x] Migrate `services/security/firewall.py` to daemon-first calls with local fallback
+- [x] Migrate `services/network/ports.py` to daemon-first calls with local fallback
+- [x] Route security firewall UI actions through service layer (no direct systemctl commands)
+- [x] Wire `--daemon` entrypoint to new daemon runtime
+- [x] Update packaging metadata for daemon IPC dependency/runtime
+- [x] Add IPC tests (`test_daemon_client.py`, `test_ipc_fallback_modes.py`, `test_daemon_dbus.py`)
+- [x] Update CHANGELOG, ARCHITECTURE, and workflow task spec for v2.4.0
+
+### Agent Assignment
+
+| Agent                        | Task                                                  |
+| ---------------------------- | ----------------------------------------------------- |
+| project-coordinator          | v2.4.0 scope/task contracts                           |
+| backend-builder              | daemon host, validators, handlers, service migrations |
+| frontend-integration-builder | UI/CLI callsite migration to service layer            |
+| test-writer                  | IPC and fallback-mode tests                           |
+| release-planner              | docs/version/packaging updates                        |
+
+---
+
+## [DONE] v2.3.0 "Insight" — Enhanced Diagnostics
+
+### Scope
+
+Enriches the HTML/Markdown system report generated by `ReportExporter` with five new diagnostic
+sections: failed systemd services, recent journal errors, pending package updates, SELinux enforcement
+status, and network overview. All diagnostics are collected gracefully with subprocess timeouts and
+fallbacks. Atomic Fedora (rpm-ostree) is fully supported in the updates section.
+
+### Planned Deliverables
+
+- [x] `gather_services_info()` — failed systemd units list
+- [x] `gather_journal_errors()` — last 20 critical journal entries
+- [x] `gather_updates_info()` — pending dnf/rpm-ostree packages
+- [x] `gather_selinux_info()` — SELinux mode + today's AVC denials
+- [x] `gather_network_info()` — IPv4 addresses, DNS servers, default gateway
+- [x] `gather_all_diagnostics()` — unified entry point returning all six sections
+- [x] `export_markdown()` and `export_html()` updated with optional `diagnostics=` param
+- [x] `save_report()` updated with `comprehensive=True` default
+- [x] Comprehensive test suite (`tests/test_report_exporter.py`, 33 tests)
+- [x] CHANGELOG and ROADMAP updated
+
+### Agent Assignment
+
+| Agent           | Task                                                          |
+| --------------- | ------------------------------------------------------------- |
+| backend-builder | Five gather methods + gather_all_diagnostics + export updates |
+| test-writer     | test_report_exporter.py comprehensive suite                   |
+
+---
+
+## [DONE] v2.2.0 "Velocity" — Performance & Stability
+
+### Scope
+
+Performance and stability hardening release. Adds `@lru_cache` for `shutil.which()` and
+`SystemManager` lookups, enforces `timeout` on all remaining subprocess calls, caches
+static system data, and closes the service-layer test coverage gap (~18 untested files).
+
+### Planned Deliverables
+
+- [x] Version bump to 2.2.0 "Velocity"
+- [x] Add `timeout` to 17 remaining `subprocess.run()` calls
+- [x] Create `_cached_which()` utility with `@lru_cache(maxsize=64)`
+- [x] Migrate ~100+ `shutil.which()` calls to `_cached_which()` across ~30 files
+- [x] Cache `SystemManager.is_atomic()` and `get_package_manager()` with `@lru_cache`
+- [x] Cache static subprocess data (lscpu, uname, lspci, localectl, firewall-cmd --version)
+- [x] Replace `print()` with `logger` in 2 plugin files
+- [x] Add tests for subprocess timeout enforcement
+- [x] Add tests for `_cached_which()` utility
+- [x] Add service-layer tests: desktop + hardware (5 modules)
+- [x] Add service-layer tests: security + network + virtualization + package (7 modules)
+- [x] Update CHANGELOG, README, release notes
+- [x] Full verification (tests, lint, coverage ≥ 80%)
+
+### Agent Assignment
+
+| Agent               | Task                                                          |
+| ------------------- | ------------------------------------------------------------- |
+| project-coordinator | v2.2.0 scope, task decomposition, dependency ordering         |
+| backend-builder     | Timeout enforcement, caching utilities, SystemManager caching |
+| code-implementer    | shutil.which migration, print→logger, version bump            |
+| test-writer         | Service-layer tests, timeout tests, cached_which tests        |
+| release-planner     | CHANGELOG, README, release notes                              |
+
+### Dependencies
+
+- v2.1.0 Continuity (workflow baseline)
 
 ---
 

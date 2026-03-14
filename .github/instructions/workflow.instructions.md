@@ -33,8 +33,9 @@ See `.github/instructions/system_hardening_and_stabilization_guide.md` for full 
 - If unsure, default to restrictive behavior
 
 ### Current State
-- **Done**: v2.0.0 "Evolution"
-- **Active/Next**: See `ROADMAP.md`
+- **Done**: v2.12.0 "API Migration Slice 8"
+- **Active**: v3.0.0 "Aegis"
+- **Next**: Follow `ROADMAP.md` after v3.0.0 deliverables are complete
 - **Source of truth**: `ROADMAP.md`
 
 ---

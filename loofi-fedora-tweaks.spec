@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        2.0.0
+Version:        2.11.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -25,6 +25,7 @@ Requires:       python3-uvicorn
 Requires:       python3-jwt
 Requires:       python3-bcrypt
 Requires:       python3-httpx
+Requires:       python3-dbus
 Requires:       hicolor-icon-theme
 Requires:       google-noto-color-emoji-fonts
 

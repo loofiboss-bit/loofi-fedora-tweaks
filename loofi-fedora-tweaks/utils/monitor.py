@@ -138,7 +138,10 @@ class SystemMonitor:
             CpuInfo object or None on error.
         """
         try:
-            load_1, load_5, load_15 = os.getloadavg()
+            getloadavg = getattr(os, "getloadavg", None)
+            if not callable(getloadavg):
+                return None
+            load_1, load_5, load_15 = getloadavg()
             core_count = os.cpu_count() or 1
             return CpuInfo(
                 load_1min=round(load_1, 2),
@@ -146,7 +149,7 @@ class SystemMonitor:
                 load_15min=round(load_15, 2),
                 core_count=core_count,
             )
-        except OSError as e:
+        except (OSError, AttributeError) as e:
             logger.debug("Failed to get CPU load averages: %s", e)
             return None
 

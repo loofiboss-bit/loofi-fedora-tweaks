@@ -4,7 +4,7 @@ Migrated from utils/ in v2.0.0.
 """
 
 from services.security.audit import AuditLogger
-from services.security.firewall import FirewallInfo, FirewallManager, FirewallResult
+from services.security.firewall import FirewallInfo, FirewallManager, FirewallResult, ZoneInfo
 from services.security.risk import RiskEntry, RiskLevel, RiskRegistry
 from services.security.safety import SafetyManager
 from services.security.sandbox import BubblewrapManager, PluginIsolationManager, SandboxManager
@@ -28,4 +28,5 @@ __all__ = [
     "SecureBootStatus",
     "USBDevice",
     "USBGuardManager",
+    "ZoneInfo",
 ]

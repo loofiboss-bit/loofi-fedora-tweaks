@@ -83,7 +83,7 @@ class TestMainDaemon(unittest.TestCase):
     """Tests for main() --daemon mode."""
 
     @patch("sys.argv", ["loofi-fedora-tweaks", "--daemon"])
-    @patch("utils.daemon.Daemon.run")
+    @patch("daemon.runtime.run_daemon")
     def test_daemon_mode(self, mock_run):
         from main import main
         main()
@@ -114,6 +114,31 @@ class TestMainWeb(unittest.TestCase):
         mock_api_class.return_value = mock_server
         from main import main
         main()
+        mock_api_class.assert_called_once_with(host="127.0.0.1", port=8000, allow_expose=False)
+        mock_server.start.assert_called_once()
+
+    @patch.dict(os.environ, {"LOOFI_API_HOST": "0.0.0.0"}, clear=False)
+    @patch("sys.argv", ["loofi-fedora-tweaks", "--web"])
+    def test_web_mode_rejects_non_loopback_without_unsafe_expose(self):
+        from main import main
+
+        with self.assertRaises(SystemExit) as cm:
+            main()
+
+        self.assertEqual(cm.exception.code, 1)
+
+    @patch.dict(os.environ, {"LOOFI_API_HOST": "0.0.0.0"}, clear=False)
+    @patch("sys.argv", ["loofi-fedora-tweaks", "--web", "--unsafe-expose"])
+    @patch("utils.api_server.APIServer")
+    @patch("time.sleep", side_effect=KeyboardInterrupt)
+    def test_web_mode_allows_non_loopback_with_unsafe_expose(self, mock_sleep, mock_api_class):
+        mock_server = MagicMock()
+        mock_api_class.return_value = mock_server
+        from main import main
+
+        main()
+
+        mock_api_class.assert_called_once_with(host="0.0.0.0", port=8000, allow_expose=True)
         mock_server.start.assert_called_once()
 
 
@@ -136,6 +161,18 @@ class TestMainGUI(unittest.TestCase):
             # The real import will fail so main catches it
             pass
         # Just verify the function path without actual GUI
+
+    def test_gui_startup_catches_type_and_attribute_errors(self):
+        """Startup catch block includes TypeError/AttributeError regressions."""
+        filepath = os.path.join(
+            os.path.dirname(__file__), '..', 'loofi-fedora-tweaks', 'main.py'
+        )
+        with open(filepath, 'r', encoding='utf-8') as f:
+            source = f.read()
+        self.assertIn(
+            "except (OSError, RuntimeError, ValueError, ImportError, TypeError, AttributeError) as exc:",
+            source,
+        )
 
 
 if __name__ == '__main__':

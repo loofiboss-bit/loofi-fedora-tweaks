@@ -1,11 +1,6 @@
-"""
-Firewall Manager — firewalld GUI backend.
+"""Firewall Manager — firewalld backend with daemon-first IPC."""
 
-Provides a clean interface to firewall-cmd for managing zones,
-ports, services, and rich rules.
-
-Migrated from utils/firewall_manager.py in v2.0.0.
-"""
+from __future__ import annotations
 
 import logging
 import subprocess
@@ -14,18 +9,20 @@ from typing import List
 
 from utils.commands import PrivilegedCommand
 
+from services.ipc import daemon_client
+
 logger = logging.getLogger(__name__)
 
 
 @dataclass
 class FirewallInfo:
-    """Snapshot of the current firewall state."""
+    """Snapshot of current firewall state."""
 
     running: bool = False
     default_zone: str = ""
-    active_zones: dict = field(default_factory=dict)  # zone -> [interfaces]
-    ports: List[str] = field(default_factory=list)  # ["80/tcp", ...]
-    services: List[str] = field(default_factory=list)  # ["ssh", "http", ...]
+    active_zones: dict = field(default_factory=dict)
+    ports: List[str] = field(default_factory=list)
+    services: List[str] = field(default_factory=list)
     rich_rules: List[str] = field(default_factory=list)
 
     def to_dict(self) -> dict:
@@ -41,47 +38,67 @@ class FirewallInfo:
 
 @dataclass
 class FirewallResult:
-    """Result of a firewall operation."""
+    """Result of firewall write operation."""
 
     success: bool
     message: str
 
 
+@dataclass
+class ZoneInfo:
+    """CLI-compatible zone snapshot."""
+
+    name: str
+    active: bool
+
+
 class FirewallManager:
-    """Interface to firewalld via firewall-cmd.
+    """Interface to firewalld with daemon-first fallback."""
+    _available_cached: bool | None = None
+    _available_cache_run_id: int | None = None
 
-    Read operations run directly (no pkexec needed for queries).
-    Write operations go through pkexec.
-    """
-
-    # ------------------------------------------------------------ status
     @classmethod
     def is_available(cls) -> bool:
-        """Check if firewall-cmd is installed."""
+        run_id = id(subprocess.run)
+        if cls._available_cached is not None and cls._available_cache_run_id == run_id:
+            return cls._available_cached
         try:
-            result = subprocess.run(["firewall-cmd", "--version"], capture_output=True, text=True, timeout=5)
-            return result.returncode == 0
+            result = subprocess.run(
+                ["firewall-cmd", "--version"], capture_output=True, text=True, timeout=5)
+            cls._available_cached = result.returncode == 0
         except (OSError, subprocess.TimeoutExpired):
-            return False
+            cls._available_cached = False
+        cls._available_cache_run_id = run_id
+        return cls._available_cached
 
     @classmethod
     def is_running(cls) -> bool:
-        """Check if firewalld is running."""
-        try:
-            result = subprocess.run(["firewall-cmd", "--state"], capture_output=True, text=True, timeout=5)
-            return result.stdout.strip() == "running"
-        except (OSError, subprocess.TimeoutExpired):
-            return False
+        data = daemon_client.call_json("FirewallGetStatus")
+        if isinstance(data, dict):
+            return bool(data.get("running", False))
+        return cls.is_running_local()
 
-    # ------------------------------------------------------------ info
     @classmethod
     def get_status(cls) -> FirewallInfo:
-        """Get comprehensive firewall status."""
+        data = daemon_client.call_json("FirewallGetStatus")
+        if isinstance(data, dict):
+            return FirewallInfo(
+                running=bool(data.get("running", False)),
+                default_zone=str(data.get("default_zone", "")),
+                active_zones=data.get("active_zones", {}) or {},
+                ports=[str(x) for x in (data.get("ports", []) or [])],
+                services=[str(x) for x in (data.get("services", []) or [])],
+                rich_rules=[str(x)
+                            for x in (data.get("rich_rules", []) or [])],
+            )
+        return cls._get_status_legacy()
+
+    @classmethod
+    def get_status_local(cls) -> FirewallInfo:
         info = FirewallInfo()
-        info.running = cls.is_running()
+        info.running = cls.is_running_local()
         if not info.running:
             return info
-
         info.default_zone = cls.get_default_zone()
         info.active_zones = cls.get_active_zones()
         info.ports = cls.list_ports()
@@ -90,19 +107,56 @@ class FirewallManager:
         return info
 
     @classmethod
-    def get_default_zone(cls) -> str:
-        """Get the default firewall zone."""
+    def _get_status_legacy(cls) -> FirewallInfo:
+        """Legacy status flow used by tests and fallback mode."""
+        info = FirewallInfo()
+        info.running = cls.is_running_local()
+        if not info.running:
+            return info
+        info.default_zone = cls.get_default_zone()
+        info.active_zones = cls.get_active_zones()
+        info.ports = cls.list_ports()
+        info.services = cls.list_services()
+        info.rich_rules = cls.list_rich_rules()
+        return info
+
+    @classmethod
+    def is_running_local(cls) -> bool:
         try:
-            result = subprocess.run(["firewall-cmd", "--get-default-zone"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["firewall-cmd", "--state"], capture_output=True, text=True, timeout=5)
+            return result.stdout.strip() == "running"
+        except (OSError, subprocess.TimeoutExpired):
+            return False
+
+    @classmethod
+    def get_default_zone(cls) -> str:
+        data = daemon_client.call_json("FirewallGetDefaultZone")
+        if isinstance(data, str):
+            return data
+        return cls.get_default_zone_local()
+
+    @classmethod
+    def get_default_zone_local(cls) -> str:
+        try:
+            result = subprocess.run(
+                ["firewall-cmd", "--get-default-zone"], capture_output=True, text=True, timeout=5)
             return result.stdout.strip() if result.returncode == 0 else ""
         except (OSError, subprocess.TimeoutExpired):
             return ""
 
     @classmethod
     def get_zones(cls) -> List[str]:
-        """List all available zones."""
+        data = daemon_client.call_json("FirewallGetZones")
+        if isinstance(data, list):
+            return [str(x) for x in data]
+        return cls.get_zones_local()
+
+    @classmethod
+    def get_zones_local(cls) -> List[str]:
         try:
-            result = subprocess.run(["firewall-cmd", "--get-zones"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["firewall-cmd", "--get-zones"], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 return result.stdout.strip().split()
             return []
@@ -111,16 +165,26 @@ class FirewallManager:
 
     @classmethod
     def get_active_zones(cls) -> dict:
-        """Get active zones with their interfaces.
+        data = daemon_client.call_json("FirewallGetActiveZones")
+        if isinstance(data, dict):
+            parsed: dict[str, list[str]] = {}
+            for zone, values in data.items():
+                if not isinstance(zone, str):
+                    continue
+                if isinstance(values, list):
+                    parsed[zone] = [str(item) for item in values]
+                else:
+                    parsed[zone] = []
+            return parsed
+        return cls.get_active_zones_local()
 
-        Returns:
-            Dict mapping zone name to list of interfaces.
-        """
+    @classmethod
+    def get_active_zones_local(cls) -> dict:
         try:
-            result = subprocess.run(["firewall-cmd", "--get-active-zones"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["firewall-cmd", "--get-active-zones"], capture_output=True, text=True, timeout=5)
             if result.returncode != 0:
                 return {}
-
             zones: dict[str, list[str]] = {}
             current_zone = None
             for line in result.stdout.strip().splitlines():
@@ -135,19 +199,24 @@ class FirewallManager:
                     current_zone = line
                     zones.setdefault(current_zone, [])
             return zones
-
         except (OSError, subprocess.TimeoutExpired):
             return {}
 
-    # ------------------------------------------------------------ ports
     @classmethod
     def list_ports(cls, zone: str = "") -> List[str]:
-        """List open ports in a zone (default zone if empty)."""
+        data = daemon_client.call_json("FirewallListPorts", zone)
+        if isinstance(data, list):
+            return [str(x) for x in data]
+        return cls.list_ports_local(zone)
+
+    @classmethod
+    def list_ports_local(cls, zone: str = "") -> List[str]:
         try:
             cmd = ["firewall-cmd", "--list-ports"]
             if zone:
                 cmd.extend(["--zone", zone])
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=5)
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip().split()
             return []
@@ -155,63 +224,20 @@ class FirewallManager:
             return []
 
     @classmethod
-    def open_port(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
-        """Open a port.
-
-        Args:
-            port: Port number or range (e.g. "8080" or "8000-8100").
-            protocol: "tcp" or "udp".
-            zone: Zone name (default zone if empty).
-            permanent: Make change persistent across reboots.
-        """
-        port_spec = f"{port}/{protocol}"
-        try:
-            cmd = ["pkexec", "firewall-cmd", f"--add-port={port_spec}"]
-            if zone:
-                cmd.extend(["--zone", zone])
-            if permanent:
-                cmd.append("--permanent")
-
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-            if result.returncode == 0:
-                if permanent:
-                    cls._reload()
-                return FirewallResult(True, f"Opened port {port_spec}")
-            else:
-                return FirewallResult(False, f"Failed to open {port_spec}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            return FirewallResult(False, f"Error: {exc}")
-
-    @classmethod
-    def close_port(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
-        """Close a port."""
-        port_spec = f"{port}/{protocol}"
-        try:
-            cmd = ["pkexec", "firewall-cmd", f"--remove-port={port_spec}"]
-            if zone:
-                cmd.extend(["--zone", zone])
-            if permanent:
-                cmd.append("--permanent")
-
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-            if result.returncode == 0:
-                if permanent:
-                    cls._reload()
-                return FirewallResult(True, f"Closed port {port_spec}")
-            else:
-                return FirewallResult(False, f"Failed to close {port_spec}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            return FirewallResult(False, f"Error: {exc}")
-
-    # ----------------------------------------------------------- services
-    @classmethod
     def list_services(cls, zone: str = "") -> List[str]:
-        """List allowed services in a zone."""
+        data = daemon_client.call_json("FirewallListServices", zone)
+        if isinstance(data, list):
+            return [str(x) for x in data]
+        return cls.list_services_local(zone)
+
+    @classmethod
+    def list_services_local(cls, zone: str = "") -> List[str]:
         try:
             cmd = ["firewall-cmd", "--list-services"]
             if zone:
                 cmd.extend(["--zone", zone])
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=5)
             if result.returncode == 0 and result.stdout.strip():
                 return sorted(result.stdout.strip().split())
             return []
@@ -220,9 +246,19 @@ class FirewallManager:
 
     @classmethod
     def get_available_services(cls) -> List[str]:
-        """List all service definitions known to firewalld."""
+        """List all known firewall services.
+
+        Behavior contract (v2.11.0 TASK-006):
+        - Intentional local-read: unprivileged firewall-cmd query.
+        - No daemon expansion needed; service list is static reference data.
+        - Returns empty list on error (safe fallback).
+
+        Returns:
+            Sorted list of service names, or empty list on failure.
+        """
         try:
-            result = subprocess.run(["firewall-cmd", "--get-services"], capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                ["firewall-cmd", "--get-services"], capture_output=True, text=True, timeout=5)
             if result.returncode == 0:
                 return sorted(result.stdout.strip().split())
             return []
@@ -230,54 +266,142 @@ class FirewallManager:
             return []
 
     @classmethod
-    def add_service(cls, service: str, zone: str = "", permanent: bool = True) -> FirewallResult:
-        """Allow a service through the firewall."""
-        try:
-            cmd = ["pkexec", "firewall-cmd", f"--add-service={service}"]
-            if zone:
-                cmd.extend(["--zone", zone])
-            if permanent:
-                cmd.append("--permanent")
+    def open_port(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
+        data = daemon_client.call_json(
+            "FirewallOpenPort", port, protocol, zone, bool(permanent))
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.open_port_local(port, protocol, zone, permanent)
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    @classmethod
+    def open_port_local(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
+        port_spec = f"{port}/{protocol}"
+        try:
+            args = [f"--add-port={port_spec}"]
+            if zone:
+                args.extend(["--zone", zone])
+            if permanent:
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
+            if result.returncode == 0:
+                if permanent:
+                    cls._reload()
+                return FirewallResult(True, f"Opened port {port_spec}")
+            err_msg = f"Failed to open {port_spec}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
+            return FirewallResult(False, f"Error: {exc}")
+
+    @classmethod
+    def close_port(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
+        data = daemon_client.call_json(
+            "FirewallClosePort", port, protocol, zone, bool(permanent))
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.close_port_local(port, protocol, zone, permanent)
+
+    @classmethod
+    def close_port_local(cls, port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
+        port_spec = f"{port}/{protocol}"
+        try:
+            args = [f"--remove-port={port_spec}"]
+            if zone:
+                args.extend(["--zone", zone])
+            if permanent:
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
+            if result.returncode == 0:
+                if permanent:
+                    cls._reload()
+                return FirewallResult(True, f"Closed port {port_spec}")
+            err_msg = f"Failed to close {port_spec}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
+            return FirewallResult(False, f"Error: {exc}")
+
+    @classmethod
+    def add_service(cls, service: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        data = daemon_client.call_json(
+            "FirewallAddService", service, zone, bool(permanent))
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.add_service_local(service, zone, permanent)
+
+    @classmethod
+    def add_service_local(cls, service: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
+        try:
+            args = [f"--add-service={service}"]
+            if zone:
+                args.extend(["--zone", zone])
+            if permanent:
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, f"Added service {service}")
-            else:
-                return FirewallResult(False, f"Failed to add {service}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = f"Failed to add {service}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
     @classmethod
     def remove_service(cls, service: str, zone: str = "", permanent: bool = True) -> FirewallResult:
-        """Remove a service from the firewall."""
-        try:
-            cmd = ["pkexec", "firewall-cmd", f"--remove-service={service}"]
-            if zone:
-                cmd.extend(["--zone", zone])
-            if permanent:
-                cmd.append("--permanent")
+        data = daemon_client.call_json(
+            "FirewallRemoveService", service, zone, bool(permanent))
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.remove_service_local(service, zone, permanent)
 
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+    @classmethod
+    def remove_service_local(cls, service: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
+        try:
+            args = [f"--remove-service={service}"]
+            if zone:
+                args.extend(["--zone", zone])
+            if permanent:
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             if result.returncode == 0:
                 if permanent:
                     cls._reload()
                 return FirewallResult(True, f"Removed service {service}")
-            else:
-                return FirewallResult(False, f"Failed to remove {service}: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+            err_msg = f"Failed to remove {service}: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
-    # -------------------------------------------------------- rich rules
     @classmethod
     def list_rich_rules(cls, zone: str = "") -> List[str]:
-        """List rich rules in a zone."""
+        data = daemon_client.call_json("FirewallListRichRules", zone)
+        if isinstance(data, list):
+            return [str(x) for x in data]
+        return cls.list_rich_rules_local(zone)
+
+    @classmethod
+    def list_rich_rules_local(cls, zone: str = "") -> List[str]:
         try:
             cmd = ["firewall-cmd", "--list-rich-rules"]
             if zone:
                 cmd.extend(["--zone", zone])
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=5)
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, timeout=5)
             if result.returncode == 0 and result.stdout.strip():
                 return result.stdout.strip().splitlines()
             return []
@@ -285,52 +409,18 @@ class FirewallManager:
             return []
 
     @classmethod
-    def add_rich_rule(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
-        """Add a rich rule."""
-        try:
-            cmd = ["pkexec", "firewall-cmd", f"--add-rich-rule={rule}"]
-            if zone:
-                cmd.extend(["--zone", zone])
-            if permanent:
-                cmd.append("--permanent")
-
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-            if result.returncode == 0:
-                if permanent:
-                    cls._reload()
-                return FirewallResult(True, "Added rich rule")
-            else:
-                return FirewallResult(False, f"Failed to add rule: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            return FirewallResult(False, f"Error: {exc}")
-
-    @classmethod
-    def remove_rich_rule(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
-        """Remove a rich rule."""
-        try:
-            cmd = ["pkexec", "firewall-cmd", f"--remove-rich-rule={rule}"]
-            if zone:
-                cmd.extend(["--zone", zone])
-            if permanent:
-                cmd.append("--permanent")
-
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-            if result.returncode == 0:
-                if permanent:
-                    cls._reload()
-                return FirewallResult(True, "Removed rich rule")
-            else:
-                return FirewallResult(False, f"Failed to remove rule: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
-            return FirewallResult(False, f"Error: {exc}")
-
-    # ----------------------------------------------------- toggle firewall
-    @classmethod
     def start_firewall(cls) -> FirewallResult:
-        """Start firewalld."""
+        data = daemon_client.call_json("FirewallStart")
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.start_firewall_local()
+
+    @classmethod
+    def start_firewall_local(cls) -> FirewallResult:
         try:
             binary, args, _ = PrivilegedCommand.systemctl("start", "firewalld")
-            result = subprocess.run([binary] + args, capture_output=True, text=True, timeout=15)
+            result = subprocess.run(
+                [binary] + args, capture_output=True, text=True, timeout=15)
             if result.returncode == 0:
                 return FirewallResult(True, "Firewall started")
             return FirewallResult(False, f"Failed: {result.stderr.strip()}")
@@ -339,35 +429,146 @@ class FirewallManager:
 
     @classmethod
     def stop_firewall(cls) -> FirewallResult:
-        """Stop firewalld."""
+        data = daemon_client.call_json("FirewallStop")
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.stop_firewall_local()
+
+    @classmethod
+    def stop_firewall_local(cls) -> FirewallResult:
         try:
             binary, args, _ = PrivilegedCommand.systemctl("stop", "firewalld")
-            result = subprocess.run([binary] + args, capture_output=True, text=True, timeout=15)
+            result = subprocess.run(
+                [binary] + args, capture_output=True, text=True, timeout=15)
             if result.returncode == 0:
                 return FirewallResult(True, "Firewall stopped")
             return FirewallResult(False, f"Failed: {result.stderr.strip()}")
         except (OSError, subprocess.TimeoutExpired) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
-    # ----------------------------------------------------------- zone mgmt
     @classmethod
     def set_default_zone(cls, zone: str) -> FirewallResult:
-        """Set the default firewall zone."""
+        data = daemon_client.call_json("FirewallSetDefaultZone", zone)
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.set_default_zone_local(zone)
+
+    @classmethod
+    def set_default_zone_local(cls, zone: str) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            cmd = ["pkexec", "firewall-cmd", f"--set-default-zone={zone}"]
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
+            arg = f"--set-default-zone={zone}"
+            cmd_tuple = PrivilegedCommand.firewall_cmd(arg)
+            result = PrivilegedCommand.execute_and_log(
+                cmd_tuple, timeout=15
+            )
             if result.returncode == 0:
                 return FirewallResult(True, f"Default zone set to {zone}")
             return FirewallResult(False, f"Failed: {result.stderr.strip()}")
-        except (OSError, subprocess.TimeoutExpired) as exc:
+        except (OSError, CommandTimeoutError) as exc:
             return FirewallResult(False, f"Error: {exc}")
 
-    # ----------------------------------------------------------- internal
+    @classmethod
+    def add_rich_rule(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        data = daemon_client.call_json(
+            "FirewallAddRichRule", rule, zone, bool(permanent))
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.add_rich_rule_local(rule, zone, permanent)
+
+    @classmethod
+    def add_rich_rule_local(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
+        try:
+            args = [f"--add-rich-rule={rule}"]
+            if zone:
+                args.extend(["--zone", zone])
+            if permanent:
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
+            if result.returncode == 0:
+                if permanent:
+                    cls._reload()
+                return FirewallResult(True, "Added rich rule")
+            err_msg = "Failed to add rich rule: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
+            return FirewallResult(False, f"Error: {exc}")
+
+    @classmethod
+    def remove_rich_rule(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        data = daemon_client.call_json(
+            "FirewallRemoveRichRule", rule, zone, bool(permanent))
+        if isinstance(data, dict):
+            return FirewallResult(success=bool(data.get("success", False)), message=str(data.get("message", "")))
+        return cls.remove_rich_rule_local(rule, zone, permanent)
+
+    @classmethod
+    def remove_rich_rule_local(cls, rule: str, zone: str = "", permanent: bool = True) -> FirewallResult:
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
+        try:
+            args = [f"--remove-rich-rule={rule}"]
+            if zone:
+                args.extend(["--zone", zone])
+            if permanent:
+                args.append("--permanent")
+            cmd_tuple = PrivilegedCommand.firewall_cmd(*args)
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
+            if result.returncode == 0:
+                if permanent:
+                    cls._reload()
+                return FirewallResult(True, "Removed rich rule")
+            err_msg = "Failed to remove rich rule: "
+            err_msg += result.stderr.strip()
+            return FirewallResult(False, err_msg)
+        except (OSError, CommandTimeoutError) as exc:
+            return FirewallResult(False, f"Error: {exc}")
+
+    # CLI compatibility aliases
+    @classmethod
+    def list_zones(cls) -> list[ZoneInfo]:
+        zones = cls.get_zones()
+        active = cls.get_active_zones()
+        return [ZoneInfo(name=z, active=z in active) for z in zones]
+
+    @classmethod
+    def add_port(cls, port_spec: str, zone: str = "") -> FirewallResult:
+        if "/" in port_spec:
+            port, protocol = port_spec.split("/", 1)
+        else:
+            port, protocol = port_spec, "tcp"
+        return cls.open_port(port, protocol, zone)
+
+    @classmethod
+    def remove_port(cls, port_spec: str, zone: str = "") -> FirewallResult:
+        if "/" in port_spec:
+            port, protocol = port_spec.split("/", 1)
+        else:
+            port, protocol = port_spec, "tcp"
+        return cls.close_port(port, protocol, zone)
+
+    @classmethod
+    def reload(cls) -> FirewallResult:
+        reloaded = cls._reload()
+        return FirewallResult(reloaded, "Reloaded firewall" if reloaded else "Failed to reload firewall")
+
     @classmethod
     def _reload(cls) -> bool:
-        """Reload firewalld to apply permanent changes."""
+        from utils.commands import PrivilegedCommand
+        from utils.errors import CommandTimeoutError
         try:
-            result = subprocess.run(["pkexec", "firewall-cmd", "--reload"], capture_output=True, text=True, timeout=15)
+            cmd_tuple = PrivilegedCommand.firewall_reload()
+            result = PrivilegedCommand.execute_and_log(cmd_tuple, timeout=15)
             return result.returncode == 0
-        except (OSError, subprocess.TimeoutExpired):
+        except (OSError, CommandTimeoutError):
             return False
+
+    @classmethod
+    def _reload_local(cls) -> bool:
+        # Backward-compatible alias for older call sites.
+        return cls._reload()

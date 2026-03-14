@@ -140,19 +140,52 @@
     {
       "label": "Dev: Run Tests",
       "type": "shell",
-      "command": "python",
+      "command": "pwsh",
       "args": [
-        "-m",
-        "pytest",
-        "tests/",
-        "-v",
-        "--tb=short"
+        "-File",
+        "scripts/run_linux_tests.ps1",
+        "-Backend",
+        "docker"
       ],
-      "options": {
-        "env": {
-          "PYTHONPATH": "loofi-fedora-tweaks"
-        }
-      },
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Run Tests (Linux Auto: Docker\u2192WSL)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "scripts/run_linux_tests.ps1",
+        "-Backend",
+        "auto"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Run Tests (Linux WSL)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "scripts/run_linux_tests.ps1",
+        "-Backend",
+        "wsl"
+      ],
+      "group": "test",
+      "problemMatcher": []
+    },
+    {
+      "label": "Dev: Run Tests (Linux venv Docker, Primary)",
+      "type": "shell",
+      "command": "pwsh",
+      "args": [
+        "-File",
+        "scripts/run_linux_tests.ps1",
+        "-Backend",
+        "docker"
+      ],
       "group": "test",
       "problemMatcher": []
     },
@@ -217,13 +250,13 @@
       "id": "workflowVersion",
       "type": "promptString",
       "description": "Workflow target version (example: v45.0)",
-      "default": "v48.0"
+      "default": "v2.11"
     },
     {
       "id": "workflowVersionNoV",
       "type": "promptString",
       "description": "Workflow target version without v (example: 45.0)",
-      "default": "48.0"
+      "default": "2.11"
     },
     {
       "id": "workflowPhase",

@@ -6,11 +6,25 @@ Handles detection of Fedora Atomic variants (Silverblue, Kinoite, etc.)
 import os
 import shutil
 import subprocess
-from typing import Any
+from functools import lru_cache
+from typing import Any, Optional
 
 from utils.log import get_logger
 
 logger = get_logger(__name__)
+
+
+@lru_cache(maxsize=64)
+def cached_which(tool: str) -> Optional[str]:
+    """Cached wrapper around shutil.which() to avoid repeated PATH lookups.
+
+    Args:
+        tool: Name of the executable to find.
+
+    Returns:
+        Full path to the executable, or None if not found.
+    """
+    return shutil.which(tool)
 
 
 class SystemManager:
@@ -38,6 +52,10 @@ class SystemManager:
         """
         Get the name of the Fedora variant.
 
+        Behavior contract (v2.12.0 TASK-003):
+        - Intentional local-read helper used by daemon handlers.
+        - Must not depend on daemon IPC to avoid recursion.
+
         Returns:
             String like "Silverblue", "Kinoite", "Workstation", etc.
         """
@@ -61,6 +79,10 @@ class SystemManager:
         """
         Get the appropriate package manager for this system.
 
+        Behavior contract (v2.12.0 TASK-003):
+        - Intentional local-read helper used by daemon handlers.
+        - Must not depend on daemon IPC to avoid recursion.
+
         Returns:
             'rpm-ostree' for Atomic systems, 'dnf' for traditional Workstation.
         """
@@ -68,8 +90,12 @@ class SystemManager:
 
     @classmethod
     def has_pending_deployment(cls) -> bool:
-        """
-        Check if there's a pending rpm-ostree deployment waiting for reboot.
+        """Check if there's a pending rpm-ostree deployment waiting for reboot.
+
+        Behavior contract (v2.11.0 TASK-006):
+        - Intentional local-read: rpm-ostree status --json parse.
+        - No daemon expansion; deployment state is session-local.
+        - Returns False on non-atomic systems or parse errors (safe fallback).
 
         Returns:
             True if reboot is needed to apply changes, False otherwise.
@@ -100,8 +126,12 @@ class SystemManager:
 
     @classmethod
     def get_layered_packages(cls) -> list:
-        """
-        Get list of layered (overlayed) packages on Atomic systems.
+        """Get list of layered (overlayed) packages on Atomic systems.
+
+        Behavior contract (v2.11.0 TASK-006):
+        - Intentional local-read: rpm-ostree status --json parse.
+        - No daemon expansion; package list is session-local query.
+        - Returns empty list on non-atomic systems or parse errors (safe fallback).
 
         Returns:
             List of package names layered on top of the base image.
@@ -138,7 +168,7 @@ class SystemManager:
     @classmethod
     def is_flatpak_available(cls) -> bool:
         """Check if Flatpak is installed and available."""
-        return shutil.which("flatpak") is not None
+        return cached_which("flatpak") is not None
 
     @classmethod
     def is_flathub_enabled(cls) -> bool:
