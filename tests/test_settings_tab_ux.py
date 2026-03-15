@@ -112,5 +112,58 @@ class TestSettingsBehaviorReset(unittest.TestCase):
         tab.safe_mode_cb.setChecked.assert_called_once_with(True)
 
 
+class TestSettingsAdvancedReset(unittest.TestCase):
+    """Advanced reset should restore plugin update safety controls."""
+
+    @patch('ui.settings_tab.QMessageBox.question')
+    def test_reset_all_restores_plugin_auto_update_checkbox(self, mock_question):
+        from ui.settings_tab import SettingsTab
+        from PyQt6.QtWidgets import QMessageBox
+
+        mock_question.return_value = QMessageBox.StandardButton.Yes
+
+        tab = SettingsTab.__new__(SettingsTab)
+        tab._main_window = None
+        tab._mgr = MagicMock()
+        tab._mgr.get.side_effect = lambda key: {
+            'theme': 'dark',
+            'follow_system_theme': False,
+            'start_minimized': False,
+            'show_notifications': True,
+            'confirm_dangerous_actions': True,
+            'safe_mode_enabled': True,
+            'restore_last_tab': False,
+            'log_level': 'INFO',
+            'check_updates_on_start': True,
+            'plugin_auto_update': False,
+        }[key]
+        tab._get_bool_setting = lambda key, default=False: {
+            'follow_system_theme': False,
+            'start_minimized': False,
+            'show_notifications': True,
+            'confirm_dangerous_actions': True,
+            'safe_mode_enabled': True,
+            'restore_last_tab': False,
+            'check_updates_on_start': True,
+            'plugin_auto_update': False,
+        }.get(key, default)
+        tab.tr = lambda s: s
+        tab.theme_combo = MagicMock()
+        tab.follow_system_cb = MagicMock()
+        tab.start_minimized_cb = MagicMock()
+        tab.notifications_cb = MagicMock()
+        tab.confirm_cb = MagicMock()
+        tab.safe_mode_cb = MagicMock()
+        tab.restore_tab_cb = MagicMock()
+        tab.log_combo = MagicMock()
+        tab.updates_cb = MagicMock()
+        tab.plugin_auto_update_cb = MagicMock()
+
+        tab._on_reset()
+
+        tab._mgr.reset.assert_called_once_with()
+        tab.plugin_auto_update_cb.setChecked.assert_called_once_with(False)
+
+
 if __name__ == '__main__':
     unittest.main()

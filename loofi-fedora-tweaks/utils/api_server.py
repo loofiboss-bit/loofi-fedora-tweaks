@@ -1,5 +1,6 @@
 """Loofi Web API server (FastAPI + Uvicorn)."""
 
+import logging
 import math
 import ipaddress
 import os
@@ -7,6 +8,7 @@ import threading
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Optional
+from urllib.parse import urlparse
 
 import uvicorn
 from api.routes import executor as executor_routes
@@ -18,9 +20,13 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from fastapi.responses import FileResponse
 from fastapi.staticfiles import StaticFiles
+from version import __version__
 
 from utils.auth import AuthManager
 from utils.rate_limiter import TokenBucketRateLimiter
+
+
+logger = logging.getLogger(__name__)
 
 
 @dataclass(frozen=True)
@@ -140,15 +146,90 @@ class APIServer:
             return request.client.host
         return "unknown"
 
-    def _create_app(self) -> FastAPI:
-        app = FastAPI(title="Loofi Web API", version="20.0.0")
+    @staticmethod
+    def _is_loopback_host(host: str) -> bool:
+        """Return True when a host resolves to a local loopback address."""
+        normalized_host = str(host).strip().lower()
+        if normalized_host == "localhost":
+            return True
+
+        try:
+            return ipaddress.ip_address(normalized_host).is_loopback
+        except ValueError:
+            return False
+
+    @staticmethod
+    def _build_origin(host: str, port: int) -> str:
+        """Build a browser origin string for a host/port pair."""
+        try:
+            parsed = ipaddress.ip_address(host)
+        except ValueError:
+            parsed = None
+
+        if parsed is not None and parsed.version == 6:
+            return f"http://[{host}]:{port}"
+
+        return f"http://{host}:{port}"
+
+    def _default_allowed_origins(self) -> list[str]:
+        """Return the safe default local origins for desktop API usage."""
+        candidates = ["localhost", "127.0.0.1"]
+        if self._is_loopback_host(self.host):
+            candidates.insert(0, self.host)
+
+        origins: list[str] = []
+        for host in candidates:
+            origin = self._build_origin(host, self.port)
+            if origin not in origins:
+                origins.append(origin)
+
+        return origins
+
+    def _is_allowed_origin(self, origin: str) -> bool:
+        """Validate a configured CORS origin against the current exposure policy."""
+        if origin == "*":
+            return False
+
+        parsed = urlparse(origin)
+        if parsed.scheme not in {"http", "https"} or not parsed.hostname:
+            return False
+
+        if "*" in parsed.hostname:
+            return False
+
+        if self.allow_expose:
+            return True
+
+        return self._is_loopback_host(parsed.hostname)
+
+    def _allowed_cors_origins(self) -> list[str]:
+        """Return validated CORS origins, falling back to safe local defaults."""
         configured_origins = os.getenv("LOOFI_CORS_ORIGINS", "").strip()
-        default_origins = [
-            f"http://{self.host}:{self.port}",
-            "http://localhost:8000",
-            "http://127.0.0.1:8000",
-        ]
-        allowed_origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()] or default_origins
+        if not configured_origins:
+            return self._default_allowed_origins()
+
+        allowed_origins: list[str] = []
+        for origin in configured_origins.split(","):
+            candidate = origin.strip().rstrip("/")
+            if not candidate:
+                continue
+            if self._is_allowed_origin(candidate):
+                if candidate not in allowed_origins:
+                    allowed_origins.append(candidate)
+            else:
+                logger.warning("Ignoring unsafe CORS origin override: %s", candidate)
+
+        return allowed_origins or self._default_allowed_origins()
+
+    def _create_app(self) -> FastAPI:
+        app = FastAPI(
+            title="Loofi Web API",
+            version=__version__,
+            docs_url=None,
+            redoc_url=None,
+            openapi_url=None,
+        )
+        allowed_origins = self._allowed_cors_origins()
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
         @app.middleware("http")

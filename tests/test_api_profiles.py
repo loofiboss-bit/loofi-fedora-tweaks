@@ -61,11 +61,43 @@ class TestAPIProfiles(unittest.TestCase):
         self.assertEqual(payload["active_profile"], "gaming")
         self.assertEqual(payload["profiles"][0]["key"], "gaming")
 
+    @patch("api.routes.profiles.SafetyManager.api_mutation_block_reason", return_value=None)
     @patch("api.routes.profiles.ProfileManager.apply_profile", return_value=Result(True, "ok", {"warnings": []}))
-    def test_profiles_apply(self, mock_apply):
+    def test_profiles_apply(self, mock_apply, mock_safe_mode):
         resp = self.client.post("/api/profiles/apply", json={"name": "gaming", "create_snapshot": False})
         self.assertEqual(resp.status_code, 200)
         self.assertTrue(resp.json()["success"])
+
+    @patch("api.routes.profiles.AuditLogger")
+    @patch("api.routes.profiles.SafetyManager.api_mutation_block_reason", return_value="Safe Mode blocked profile changes")
+    @patch("api.routes.profiles.ProfileManager.apply_profile")
+    def test_profiles_apply_blocked_by_safe_mode(self, mock_apply, mock_safe_mode, mock_audit_cls):
+        resp = self.client.post("/api/profiles/apply", json={"name": "gaming", "create_snapshot": False})
+
+        self.assertEqual(resp.status_code, 403)
+        self.assertIn("Safe Mode blocked", resp.json()["detail"])
+        mock_apply.assert_not_called()
+        mock_audit_cls.return_value.log.assert_called_once()
+
+    @patch("api.routes.profiles.AuditLogger")
+    @patch("api.routes.profiles.SafetyManager.api_mutation_block_reason", return_value=None)
+    @patch("api.routes.profiles.ProfileManager.import_bundle_data", return_value=Result(True, "imported", {"imported": 1}))
+    def test_profile_import_all_audits_success(self, mock_import_all, mock_safe_mode, mock_audit_cls):
+        resp = self.client.post(
+            "/api/profiles/import-all",
+            json={
+                "bundle": {"schema_version": 1, "profiles": [{"key": "x", "name": "X", "settings": {}}]},
+                "overwrite": True,
+            },
+        )
+
+        self.assertEqual(resp.status_code, 200)
+        mock_import_all.assert_called_once()
+        mock_audit_cls.return_value.log.assert_called_once_with(
+            "api.profiles.import_all",
+            params={"overwrite": True, "profile_count": 1, "success": True},
+            exit_code=0,
+        )
 
     @patch("api.routes.profiles.ProfileManager.export_profile_data", return_value={})
     def test_profile_export_single_not_found(self, mock_export):
@@ -77,8 +109,9 @@ class TestAPIProfiles(unittest.TestCase):
         resp = self.client.post("/api/profiles/import", json={"overwrite": False})
         self.assertEqual(resp.status_code, 422)
 
+    @patch("api.routes.profiles.SafetyManager.api_mutation_block_reason", return_value=None)
     @patch("api.routes.profiles.ProfileManager.import_profile_data", return_value=Result(True, "imported", {"key": "one"}))
-    def test_profile_import_single_success(self, mock_import):
+    def test_profile_import_single_success(self, mock_import, mock_safe_mode):
         resp = self.client.post(
             "/api/profiles/import",
             json={"profile": {"key": "one", "name": "One", "settings": {}}, "overwrite": False},
@@ -94,8 +127,9 @@ class TestAPIProfiles(unittest.TestCase):
         self.assertEqual(resp.status_code, 200)
         self.assertEqual(resp.json()["kind"], "profile_bundle")
 
+    @patch("api.routes.profiles.SafetyManager.api_mutation_block_reason", return_value=None)
     @patch("api.routes.profiles.ProfileManager.import_bundle_data", return_value=Result(False, "with errors", {"errors": [{"key": "x"}]}))
-    def test_profile_import_all_overwrite(self, mock_import_all):
+    def test_profile_import_all_overwrite(self, mock_import_all, mock_safe_mode):
         resp = self.client.post(
             "/api/profiles/import-all",
             json={
@@ -129,10 +163,11 @@ class TestAPIProfiles(unittest.TestCase):
             ),
         },
     )
+    @patch("api.routes.profiles.SafetyManager.api_mutation_block_reason", return_value=None)
     @patch("api.routes.profiles.ProfileManager.apply_profile", return_value=Result(True, "ok", {"warnings": []}))
     @patch("api.routes.profiles.ProfileManager.get_active_profile", return_value="gaming")
     @patch("api.routes.profiles.ProfileManager.list_profiles", return_value=[{"key": "gaming", "builtin": True}])
-    def test_mutation_routes_are_stricter_than_read_only(self, mock_list, mock_active, mock_apply):
+    def test_mutation_routes_are_stricter_than_read_only(self, mock_list, mock_active, mock_apply, mock_safe_mode):
         client = self._build_client()
 
         read_one = client.get("/api/profiles")

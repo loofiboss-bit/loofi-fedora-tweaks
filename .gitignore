@@ -44,6 +44,7 @@ repo/
 
 # Test caches
 .pytest_cache/
+.pytest-tmp/
 .mypy_cache/
 .mypy.cache/
 .coverage

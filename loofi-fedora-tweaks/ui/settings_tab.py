@@ -256,6 +256,17 @@ class SettingsTab(QWidget, PluginInterface):
         )
         layout.addWidget(self.updates_cb)
 
+        self.plugin_auto_update_cb = QCheckBox(self.tr("Automatically install plugin updates"))
+        self.plugin_auto_update_cb.setAccessibleName(self.tr("Automatically install plugin updates"))
+        self.plugin_auto_update_cb.setAccessibleDescription(
+            self.tr("Allow the daemon to install verified plugin updates without prompting you each time.")
+        )
+        self.plugin_auto_update_cb.setChecked(self._get_bool_setting("plugin_auto_update"))
+        self.plugin_auto_update_cb.toggled.connect(
+            lambda v: self._toggle_setting("plugin_auto_update", v)
+        )
+        layout.addWidget(self.plugin_auto_update_cb)
+
         # Reset
         reset_group = QGroupBox(self.tr("Reset"))
         reset_layout = QVBoxLayout(reset_group)
@@ -366,6 +377,7 @@ class SettingsTab(QWidget, PluginInterface):
         self.restore_tab_cb.setChecked(self._get_bool_setting("restore_last_tab"))
         self.log_combo.setCurrentText(self._mgr.get("log_level"))
         self.updates_cb.setChecked(self._get_bool_setting("check_updates_on_start", default=True))
+        self.plugin_auto_update_cb.setChecked(self._get_bool_setting("plugin_auto_update"))
 
         if self._main_window and hasattr(self._main_window, "load_theme"):
             self._main_window.load_theme(self._mgr.get("theme"))

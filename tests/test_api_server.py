@@ -1,5 +1,6 @@
 """Comprehensive security tests for API server."""
 
+import os
 from unittest.mock import MagicMock, patch
 
 import pytest
@@ -17,6 +18,7 @@ if _HAS_FASTAPI:
     from utils.config_manager import ConfigManager
     from utils.api_server import APIServer, RouteRateLimitPolicy
     from utils.auth import AuthManager
+    from version import __version__
 else:
     class RouteRateLimitPolicy:  # type: ignore[no-redef]
         def __init__(self, rate=0.0, capacity=0, retry_guidance=""):
@@ -107,6 +109,48 @@ def test_health_endpoint_uses_public_route_policy(test_client):
 
     assert response.status_code == 200
     assert response.headers["X-Loofi-Route-Policy"] == "public"
+
+
+def test_api_server_uses_canonical_version_metadata():
+    """FastAPI metadata should track the canonical application version."""
+    assert APIServer().app.version == __version__
+
+
+def test_api_docs_and_openapi_are_disabled_by_default(test_client):
+    """Desktop API mode should not expose docs or OpenAPI discovery by default."""
+    assert test_client.get("/docs").status_code == 404
+    assert test_client.get("/redoc").status_code == 404
+    assert test_client.get("/openapi.json").status_code == 404
+
+
+def test_invalid_cors_overrides_fall_back_to_safe_local_defaults(isolated_config_dir):
+    """Unsafe CORS override values should be ignored in favor of local-only defaults."""
+    del isolated_config_dir
+
+    with patch.dict(os.environ, {"LOOFI_CORS_ORIGINS": "*, https://evil.example"}, clear=False):
+        client = TestClient(APIServer().app)
+        local_response = client.get("/api/health", headers={"Origin": "http://localhost:8000"})
+        remote_response = client.get("/api/health", headers={"Origin": "https://evil.example"})
+
+    assert local_response.headers["access-control-allow-origin"] == "http://localhost:8000"
+    assert "access-control-allow-origin" not in remote_response.headers
+
+
+def test_configured_loopback_cors_origin_is_allowed_but_remote_origin_is_ignored(isolated_config_dir):
+    """Loopback CORS overrides should work without allowing arbitrary remote origins."""
+    del isolated_config_dir
+
+    with patch.dict(
+        os.environ,
+        {"LOOFI_CORS_ORIGINS": "http://127.0.0.1:9000, https://evil.example"},
+        clear=False,
+    ):
+        client = TestClient(APIServer().app)
+        loopback_response = client.get("/api/health", headers={"Origin": "http://127.0.0.1:9000"})
+        remote_response = client.get("/api/health", headers={"Origin": "https://evil.example"})
+
+    assert loopback_response.headers["access-control-allow-origin"] == "http://127.0.0.1:9000"
+    assert "access-control-allow-origin" not in remote_response.headers
 
 
 def test_token_flow(test_client, valid_api_key, mock_action_executor):
