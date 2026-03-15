@@ -33,7 +33,7 @@ See `.github/instructions/system_hardening_and_stabilization_guide.md` for full 
 - If unsure, default to restrictive behavior
 
 ### Current State
-- **Done**: v3.0.0 "Aegis"
+- **Done**: v3.0.1 "Aegis"
 - **Active**: Follow `ROADMAP.md` for the next activation target
 - **Next**: Select the next version from `ROADMAP.md` before starting new feature work
 - **Source of truth**: `ROADMAP.md`

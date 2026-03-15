@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v3.0.0 "Aegis"
+# Loofi Fedora Tweaks v3.0.1 "Aegis"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases/tag/v3.0.0">
-    <img src="https://img.shields.io/badge/Release-v3.0.0-blue?style=for-the-badge&logo=github" alt="Release v3.0.0"/>
+  <a href="https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases/tag/v3.0.1">
+    <img src="https://img.shields.io/badge/Release-v3.0.1-blue?style=for-the-badge&logo=github" alt="Release v3.0.1"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43-blue?style=for-the-badge&logo=fedora" alt="Fedora 43"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -41,27 +41,27 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What Is New in v3.0.0?
+## What Is New in v3.0.1?
 
-`v3.0.0 "Aegis"` ships the stabilization and safety defaults that close the current API and plugin-update hardening line.
+`v3.0.1 "Aegis"` is a post-release hardening patch that tightens the local API surface and exposes the remaining safety controls more clearly.
 
-- The Web API now defaults to loopback-only binding and refuses non-loopback startup unless `--unsafe-expose` is provided explicitly.
-- Auth bootstrap and token issuance are hardened around owner-only auth storage, deterministic bootstrap behavior, and route-aware throttling.
-- Safe Mode is enabled by default for API mutations and must be explicitly disabled before mutating `/api/execute` requests are allowed.
-- Dangerous actions now surface registry-backed risk badges and revert hints in the shared confirmation flow.
-- Plugin auto-update is formalized as a persisted setting, defaults to off, and still preserves integrity verification plus rollback behavior when enabled.
+- FastAPI docs, ReDoc, and OpenAPI discovery are disabled by default in desktop API mode.
+- `LOOFI_CORS_ORIGINS` now fails closed on unsafe wildcard or remote origin overrides unless exposure is explicitly allowed.
+- Profile apply/import API routes now honor Safe Mode and emit audit logs for blocked or successful mutations.
+- Plugin auto-update is now visible in **Settings → Advanced** and is restored correctly by reset flows.
+- Windows-local pytest temp directories are ignored to keep release branches clean during validation.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v3.0.0.md`](docs/releases/RELEASE-NOTES-v3.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v3.0.1.md`](docs/releases/RELEASE-NOTES-v3.0.1.md)
 
 ## Current Development Cycle
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and next implementation slice.
 
-Current stable release is **v3.0.0 "Aegis"**.
+Current stable release is **v3.0.1 "Aegis"**.
 
-`Aegis` completes the current API exposure, bootstrap/auth, Safe Mode, plugin-update safety, and version-consistency stabilization tranche.
+`Aegis` now includes the post-release patch that locks down default API docs/CORS behavior and completes the profile/settings safety follow-up work.
 
-Latest shipped notes: [`docs/releases/RELEASE-NOTES-v3.0.0.md`](docs/releases/RELEASE-NOTES-v3.0.0.md)
+Latest shipped notes: [`docs/releases/RELEASE-NOTES-v3.0.1.md`](docs/releases/RELEASE-NOTES-v3.0.1.md)
 
 ---
 
@@ -140,7 +140,7 @@ loofi-fedora-tweaks --web --unsafe-expose
 
 `--unsafe-expose` is required for any non-loopback bind. Without it, the Web API refuses startup instead of silently widening network exposure.
 
-Additional API safety defaults in `v3.0.0`:
+Additional API safety defaults in `v3.0.1`:
 
 - `POST /api/key` is unauthenticated only during first-run bootstrap; later rotations require a Bearer token.
 - `POST /api/token`, authenticated read routes, and mutation routes each have separate rate-limit buckets with retry guidance.

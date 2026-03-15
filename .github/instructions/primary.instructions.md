@@ -10,14 +10,14 @@ You are the primary AI developer for Loofi Fedora Tweaks.
 Delegate to agents. Follow existing patterns. Minimize token usage.
 
 ## PROJECT OVERVIEW
-- PyQt6-based desktop app for Fedora Linux (current roadmap line: v3.0.0 "Aegis")
+- PyQt6-based desktop app for Fedora Linux (current roadmap line: v3.0.1 "Aegis")
 - 28 UI tabs, 246 test files, 80% coverage (CI-enforced), 107 utils modules
 - Four entry modes: GUI (default), CLI (`--cli`), Daemon (`--daemon`), API (`--api`)
 - Architecture: `ARCHITECTURE.md` (canonical reference — read once, never duplicate)
 - Agent-based workflow defined in `.github/agents/` (VS Code) and `.github/claude-agents/` (Claude)
 
 ## ACTIVE FOCUS
-- v3.0.0 "Aegis" = API security, Safe Mode defaults, plugin update safety, and version consistency cleanup
+- v3.0.1 "Aegis" = API security, Safe Mode defaults, plugin update safety, and version consistency cleanup
 - Prioritize stabilization phases 3–6 from the hardening guide over new feature expansion
 
 ## KEY FILES (READ ONCE, REFERENCE BY NAME)

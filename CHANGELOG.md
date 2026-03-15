@@ -6,6 +6,25 @@ All notable changes to this project will be documented in this file.
 
 ## [Unreleased]
 
+## [3.0.1] - 2026-03-15 "Aegis"
+
+### Added
+
+- Add Safe Mode enforcement and audit logging to profile apply/import API routes
+- Add regression coverage for hidden API docs/OpenAPI routes, safe CORS defaults, profile mutation guards, and plugin auto-update settings reset
+
+### Changed
+
+- Promote the shipped version line to `3.0.1` while keeping the `Aegis` release codename
+- Tighten desktop API defaults by hiding FastAPI docs/OpenAPI endpoints and rejecting unsafe `LOOFI_CORS_ORIGINS` overrides unless exposure is explicit
+- Surface `plugin_auto_update` in Settings as a first-class advanced preference and preserve its value during reset flows
+
+### Fixed
+
+- Fix user-facing release metadata drift after the original `v3.0.0` release by aligning runtime, packaging, docs, and release notes on `3.0.1`
+- Fix profile mutation endpoints so Safe Mode blocks write actions consistently instead of only protecting executor routes
+- Fix Windows-local pytest temp handling by ignoring `.pytest-tmp/` and preventing generated artifacts from dirtying git status
+
 ## [3.0.0] - 2026-03-14 "Aegis"
 
 ### Added

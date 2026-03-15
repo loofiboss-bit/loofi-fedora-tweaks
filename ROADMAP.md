@@ -56,6 +56,7 @@
 | 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                      |
 | 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement              |
 | 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening             |
+| 3.0.1   | Aegis (patch)                   | DONE    | Post-release API docs/CORS tightening, profile Safe Mode enforcement, and settings polish  |
 | 3.0.0   | Aegis                           | DONE    | API security, Safe Mode defaults, plugin update safety, and version consistency cleanup    |
 
 ---

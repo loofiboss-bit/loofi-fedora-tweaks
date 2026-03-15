@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        3.0.0
+Version:        3.0.1
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -126,6 +126,13 @@ PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; print('Import OK')" || :
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Sun Mar 15 2026 Loofi <loofi@example.com> - 3.0.1-1
+- v3.0.1 "Aegis" — Post-release API and settings hardening patch
+- Disabled default FastAPI docs/OpenAPI exposure and aligned API metadata to canonical versioning
+- Tightened CORS handling to reject unsafe remote origins unless exposure is explicitly allowed
+- Applied Safe Mode mutation guards and audit logging to profile apply/import API routes
+- Exposed plugin auto-update in Settings and restored it correctly during reset flows
+
 * Mon Feb 17 2026 Loofi <loofi@example.com> - 48.0.0-1
 - v48.0.0 "Sidebar Index" — Sidebar restructure with O(1) lookups
 - SidebarEntry dataclass and SidebarIndex for O(1) tab lookups

@@ -4,11 +4,12 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v45.0.0 "Housekeeping"**
-- Full notes: [RELEASE-NOTES-v45.0.0.md](RELEASE-NOTES-v45.0.0.md)
+- **v3.0.1 "Aegis"**
+- Full notes: [RELEASE-NOTES-v3.0.1.md](RELEASE-NOTES-v3.0.1.md)
 
 ## Recent Releases
 
+- v3.0.0 "Aegis": [RELEASE-NOTES-v3.0.0.md](RELEASE-NOTES-v3.0.0.md)
 - v44.0.0 "Review Gate": [RELEASE-NOTES-v44.0.0.md](RELEASE-NOTES-v44.0.0.md)
 - v43.0.0 "Stabilization-Only": [RELEASE-NOTES-v43.0.0.md](RELEASE-NOTES-v43.0.0.md)
 - v42.0.0 "Sentinel": [RELEASE-NOTES-v42.0.0.md](RELEASE-NOTES-v42.0.0.md)
