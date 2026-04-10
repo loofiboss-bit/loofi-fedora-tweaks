@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v2.11.0 "API Migration Slice 7"
+# Loofi Fedora Tweaks
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -41,7 +41,7 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What Is New in v2.11.0?
+## What Was New in v2.11.0?
 
 `v2.11.0 "API Migration Slice 7"` focuses on hardening network, firewall, and system service local execution paths.
 
@@ -57,9 +57,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOT
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-Current release is **v2.11.0 "API Migration Slice 7"**, focused on network/firewall/system residual hardening and daemon/local parity refinement.
-
-Slice notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOTES-v2.11.0.md)
+- Active workflow target: **v2.13.0 "Alignment"** (see `ROADMAP.md` and `.workflow/specs/.race-lock.json`)
+- Latest documented release line: **v2.12.0 "API Migration Slice 8"** (see `CHANGELOG.md` and `docs/releases/RELEASE-NOTES-v2.12.0.md`)
+- Packaged runtime/version files baseline: **2.11.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 
