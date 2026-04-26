@@ -1,219 +1,104 @@
-# Loofi Fedora Tweaks — Agent Instructions
+# Loofi Fedora Tweaks — Workspace Instructions
 
-> PyQt6 desktop app for Fedora Linux system customization.
-> Python 3.12+ | 28 feature tabs | 245 test files | 80% coverage (CI-enforced) | 107 utils modules
-> Canonical references: `ARCHITECTURE.md` (structure), `ROADMAP.md` (scope), `.github/copilot-instructions.md` (patterns)
+Treat this file as the canonical, hand-maintained workspace instructions for the repository.
+`.github/copilot-instructions.md` is generated and should stay a thin summary.
 
-## Build, Lint, Test Commands
+## Project at a glance
 
-```bash
-# Run full test suite
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v --tb=short
+- Fedora-focused desktop control center built with Python 3.12+ and PyQt6.
+- Main source root is `loofi-fedora-tweaks/`; set `PYTHONPATH=loofi-fedora-tweaks` for direct Python commands.
+- Entry modes live in `loofi-fedora-tweaks/main.py`: GUI, `--cli`, `--daemon`, and `--web`.
+- Canonical references:
+  - `ARCHITECTURE.md` — structure, boundaries, critical patterns
+  - `ROADMAP.md` — release scope and status
+  - `docs/README.md` — documentation index
+  - `.github/instructions/system_hardening_and_stabilization_guide.md` — safety and privilege rules
 
-# Run a single test file
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/test_commands.py -v
+## Build and verify
 
-# Run a single test method
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/test_commands.py::TestPrivilegedCommandBuilders::test_dnf_install -v
+Prefer the `Justfile` as the primary command surface.
 
-# Run tests with coverage
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v --cov=loofi-fedora-tweaks --cov-report=term-missing --cov-fail-under=80
+- Run app: `just run`
+- CLI example: `just cli info`
+- Full tests: `just test`
+- Single test file: `just test-file test_commands`
+- Single test: `just test-method test_commands.py::TestPrivilegedCommandBuilders::test_dnf_install`
+- Coverage: `just test-coverage`
+- Lint: `just lint`
+- Typecheck: `just typecheck`
+- Full verification: `just verify`
+- Build RPM: `just build-rpm`
+- Release-doc validation: `just validate-release`
+- Agent adapter drift: `just check-drift`
 
-# Lint
-flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722,E203
+Useful raw equivalents:
 
-# Type check
-mypy loofi-fedora-tweaks/ --ignore-missing-imports --no-error-summary
+- `PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py`
+- `PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v --tb=short`
+- `flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722,E203`
+- `mypy loofi-fedora-tweaks/ --ignore-missing-imports --no-error-summary`
 
-# Build RPM
-bash scripts/build_rpm.sh
+## Architecture boundaries
 
-# Dev run
-./run.sh
-```
+See `ARCHITECTURE.md` for the full map. The rules that matter on almost every task are:
 
-## Project Layout
+- `ui/*_tab.py`: PyQt6 widgets only. No `subprocess`, no business logic.
+- `services/` and `core/`: domain logic. No PyQt imports.
+- `utils/`: shared infrastructure, command helpers, errors, compatibility shims.
+- `cli/main.py`: argument parsing and service calls only. Never import UI.
+- Use `loofi-fedora-tweaks/ui/base_tab.py` and `utils/command_runner.py` for async GUI command flows.
 
-```
-loofi-fedora-tweaks/          # Source root (set as PYTHONPATH)
-├── ui/*_tab.py               # PyQt6 tabs (inherit BaseTab)
-├── ui/base_tab.py            # BaseTab: shared CommandRunner, output_area
-├── utils/*.py                # Business logic (@staticmethod, operations tuples)
-├── utils/commands.py         # PrivilegedCommand builder (pkexec)
-├── utils/errors.py           # LoofiError hierarchy (code, hint, recoverable)
-├── core/executor/            # BaseActionExecutor + ActionResult
-├── cli/main.py               # CLI entry (calls utils/, never ui/)
-├── config/                   # apps.json, polkit policy, systemd
-└── version.py                # __version__, __version_codename__
-tests/                        # unittest + mock, @patch decorators, no root
-scripts/                      # build_rpm.sh, MCP servers, workflow tools
-.github/agents/               # 9 VS Code Copilot agents (canonical)
-.github/claude-agents/        # 7 Claude agents (adapters)
-.github/instructions/         # AI instructions + hardening guide
-```
+Before release-scoped or workflow-scoped work, check:
 
-## Code Style
+- `.workflow/specs/.race-lock.json`
+- `.workflow/specs/tasks-vX.Y.Z.md`
+- `.workflow/specs/arch-vX.Y.Z.md`
 
-### Imports
-Ordered: stdlib, blank line, third-party, blank line, local. Alphabetical within groups.
-```python
-import logging
-import subprocess
-from typing import List, Optional, Tuple
+## Critical conventions
 
-from PyQt6.QtWidgets import QVBoxLayout, QLabel
+- Never use `sudo`; use `pkexec` through `utils/commands.py`.
+- Never use `shell=True`.
+- Every subprocess call must include `timeout=...`.
+- Always unpack `PrivilegedCommand` tuples before execution.
+- Never hardcode `dnf`; use `SystemManager.get_package_manager()` and branch on `SystemManager.is_atomic()`.
+- The real `SystemManager` implementation lives in `loofi-fedora-tweaks/services/system/system.py`.
+- UI work must use `BaseTab`, `CommandRunner`, and `self.tr("...")` for user-facing strings.
+- Use `%s` logging placeholders, not f-strings in log calls.
+- Keep version changes synchronized across `loofi-fedora-tweaks/version.py`, `loofi-fedora-tweaks.spec`, and `pyproject.toml` via `scripts/bump_version.py`.
+- Do not hardcode versions or codenames in tests.
 
-from utils.commands import PrivilegedCommand
-from utils.errors import LoofiError
-```
+## Testing conventions
 
-### Logging
-```python
-from utils.log import get_logger       # preferred (in utils/)
-logger = get_logger(__name__)
+- Tests are executed with `pytest`, but new tests should follow the repository’s `unittest` + `unittest.mock` style.
+- Use `@patch` decorators, not patch context managers.
+- Mock all system calls (`subprocess`, `shutil.which`, file I/O, OS probes, network access).
+- For package operations, test both traditional Fedora and Atomic Fedora paths.
+- Keep tests rootless and deterministic.
+- See `.github/instructions/test.instructions.md` for the full testing contract.
 
-import logging                          # acceptable (in ui/)
-logger = logging.getLogger(__name__)
-```
-Use `%s` formatting in log calls, never f-strings: `logger.debug("Failed: %s", e)`
+## Exemplar files
 
-### Type Hints
-- Inline annotations on all public methods (PEP 484)
-- `Tuple[str, List[str], str]` for operations tuples (aliased as `CommandTuple`)
-- `Optional[X]` or `X | None` (both accepted, PEP 604 preferred for new code)
-- Return type on every public function
+- `loofi-fedora-tweaks/ui/base_tab.py` — base UI command-tab pattern
+- `loofi-fedora-tweaks/ui/main_window.py` — plugin/sidebar/lazy-loading wiring
+- `loofi-fedora-tweaks/utils/commands.py` — `PrivilegedCommand`, validation, audit logging
+- `loofi-fedora-tweaks/services/system/system.py` — `SystemManager`, package-manager detection, caching
+- `loofi-fedora-tweaks/cli/main.py` — CLI boundary patterns
+- `tests/test_commands.py` — command-builder and patching style
 
-### Docstrings
-Google-style. Module-level docstring on every file.
-```python
-"""One-line summary.
+## Link-first docs
 
-Args:
-    param: Description.
+Prefer linking to these instead of duplicating them in new instructions or prompts:
 
-Returns:
-    Description of return value.
-"""
-```
+- `README.md` — product overview and quick start
+- `docs/README.md` — documentation map
+- `CONTRIBUTING.md` — contributor workflow
+- `docs/PLUGIN_SDK.md` — plugin-specific work
+- `docs/TROUBLESHOOTING.md` — operational issues
+- `CHANGELOG.md` and `docs/releases/` — release history
+- `.github/instructions/` — specialized repo rules by concern and file area
 
-### Naming Conventions
-| Element | Convention | Example |
-|---------|-----------|---------|
-| Files | `snake_case.py` | `network_utils.py` |
-| Tab files | `*_tab.py` | `hardware_tab.py` |
-| Test files | `test_*.py` | `test_commands.py` |
-| Classes | `PascalCase` | `NetworkUtils`, `BaseTab` |
-| Exceptions | `PascalCase` + `Error` | `DnfLockedError` |
-| Methods | `snake_case` | `scan_wifi()` |
-| Private | `_leading_underscore` | `_derive_action_name()` |
-| Constants | `UPPER_SNAKE_CASE` | `POLKIT_MAP` |
-| Type aliases | `PascalCase` | `CommandTuple` |
-| Test classes | `Test` + `PascalCase` | `TestScanWifi` |
-| Test methods | `test_what_scenario` | `test_dnf_install` |
+## Agent and customization notes
 
-### Error Handling
-```python
-try:
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=15)
-except (subprocess.SubprocessError, OSError) as e:
-    logger.debug("Descriptive msg: %s", e)
-    return []  # safe default: [], "", None, False
-```
-Use typed exceptions from `utils/errors.py`. Each has `code`, `hint`, `recoverable`.
-
-## Critical Rules (Never Violate)
-
-1. **Never `sudo`** — only `pkexec` via `PrivilegedCommand`
-2. **Never hardcode `dnf`** — use `SystemManager.get_package_manager()`
-3. **Never subprocess in UI** — extract to `utils/`, call via `CommandRunner`
-4. **Always unpack PrivilegedCommand** — `binary, args, desc = PrivilegedCommand.dnf(...)`
-5. **Always `timeout=N`** on every `subprocess.run()` / `check_output()` call
-6. **Always branch on `SystemManager.is_atomic()`** for dnf vs rpm-ostree
-7. **Version sync** — `version.py`, `.spec`, and `pyproject.toml` must match (use `scripts/bump_version.py`)
-8. **Audit log** privileged actions (timestamp, action, params, exit code)
-9. **Stabilization gate** — no new major features until Phase 1-2 complete
-10. **Never `shell=True`** in subprocess calls
-11. **Never hardcode versions in tests** — use dynamic assertions (non-empty, semver format); CI `docs_gate` blocks hardcoded version/codename assertions
-12. **Always scaffold release notes** — run `bump_version.py` which creates `docs/releases/RELEASE-NOTES-vX.Y.Z.md`
-
-## Key Patterns
-
-```python
-# PrivilegedCommand — always unpack the tuple
-from utils.commands import PrivilegedCommand
-binary, args, desc = PrivilegedCommand.dnf("install", "package")
-cmd = [binary] + args  # ["pkexec", "dnf", "install", "-y", "package"]
-
-# Utils class — all @staticmethod, no instance state
-class FeatureManager:
-    @staticmethod
-    def operation() -> Tuple[str, List[str], str]:
-        return ("pkexec", ["dnf", "clean", "all"], "Cleaning...")
-
-# UI tab — inherit BaseTab
-from ui.base_tab import BaseTab
-class MyTab(BaseTab):
-    def __init__(self):
-        super().__init__()  # gives self.output_area, self.runner, self.run_command()
-
-# Atomic detection
-pm = SystemManager.get_package_manager()  # "dnf" or "rpm-ostree"
-```
-
-## Testing Rules
-
-```python
-"""Tests for utils/module.py"""
-import unittest
-import sys
-import os
-from unittest.mock import patch, MagicMock, mock_open
-
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
-
-from utils.module import Manager
-
-class TestManager(unittest.TestCase):
-    """Tests for Manager operations."""
-
-    @patch('utils.module.subprocess.run')
-    def test_operation_success(self, mock_run):
-        mock_run.return_value = MagicMock(returncode=0, stdout='OK')
-        result = Manager.operation()
-        self.assertIsNotNone(result)
-        mock_run.assert_called_once()
-
-    @patch('utils.module.subprocess.run')
-    def test_operation_failure(self, mock_run):
-        mock_run.side_effect = subprocess.SubprocessError("fail")
-        result = Manager.operation()
-        self.assertEqual(result, [])  # safe default
-```
-
-- **`@patch` decorators only** — never context managers
-- Patch the module-under-test namespace: `'utils.module.subprocess.run'`
-- Mock: `subprocess.run`, `subprocess.check_output`, `shutil.which`, `os.path.exists`, `builtins.open`
-- Test both success AND failure paths
-- Test both dnf and rpm-ostree paths where applicable
-- No root needed — all system calls mocked
-
-## Agent System
-
-For complex multi-step tasks, delegate to agents in `.github/claude-agents/`:
-- **project-coordinator** — task decomposition, dependency ordering
-- **architecture-advisor** — design, module structure
-- **backend-builder** — utils/ modules, system integration
-- **code-implementer** — general implementation
-- **frontend-integration-builder** — UI tabs, CLI commands
-- **test-writer** — test creation, coverage
-- **release-planner** — roadmap, releases
-
-VS Code equivalents in `.github/agents/`: Arkitekt, Builder, CodeGen, Guardian, Manager, Planner, Sculptor, Test.
-
-## Stabilization Directive
-
-See `.github/instructions/system_hardening_and_stabilization_guide.md`:
-- No new major features until Phase 1-2 hardening complete
-- Refactor before expanding. Safety over velocity.
-- Never expand root-level capability without: validation, audit log, rollback strategy
-- If unsure, default to restrictive behavior
+- Use the repo agents in `.github/agents/` and `.github/claude-agents/` for multi-step work.
+- Keep new workspace instructions minimal and broadly applicable.
+- Prefer file-specific instructions under `.github/instructions/` for narrow domains instead of growing this file.

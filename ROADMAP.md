@@ -56,6 +56,40 @@
 | 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                         |
 | 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement                 |
 | 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening                |
+| 2.13.0  | Alignment                       | ACTIVE  | Documentation/workflow convergence and release-authority hardening                            |
+
+---
+
+## [ACTIVE] v2.13.0 "Alignment" — Documentation & Workflow Convergence
+
+### Scope
+
+Start the next bounded stabilization slice after `v2.12.0` closure by restoring a single
+authoritative current-release story across roadmap metadata, workflow artifacts, README/docs
+entrypoints, and architecture references. This slice is documentation/workflow hardening only:
+no privilege-scope expansion, no new product features, and no runtime behavior changes unless
+required for validation-script correctness.
+
+### Planned Deliverables
+
+- [ ] Activate `v2.13.0` workflow metadata (`ROADMAP`, race-lock, task/arch specs)
+- [ ] Inventory authoritative release/documentation drift against actual repo artifacts
+- [ ] Reconcile `README.md` current-release references and run-mode documentation
+- [ ] Reconcile `docs/README.md` and `docs/releases/RELEASE_NOTES.md` latest-release pointers
+- [ ] Refresh `ARCHITECTURE.md` version/entry-mode statements to match current repo reality
+- [ ] Resolve `v2.12.0` workflow-report reference drift with evidence-backed docs or backfilled artifacts
+- [ ] Harden release-doc/workflow validation scripts to catch stale references and missing artifacts
+- [ ] Add focused regression coverage for documentation/workflow consistency rules
+
+### Agent Assignment
+
+| Agent               | Task                                                          |
+| ------------------- | ------------------------------------------------------------- |
+| project-coordinator | v2.13.0 activation metadata + workflow closure sequencing     |
+| architecture-advisor| release/architecture drift inventory + canonical doc refresh  |
+| release-planner     | README/docs/release-note index reconciliation + final docs    |
+| backend-builder     | workflow-report reconciliation + validation hardening         |
+| test-writer         | regression coverage for release-doc/workflow consistency      |
 
 ---
 

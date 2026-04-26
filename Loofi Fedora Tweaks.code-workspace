@@ -105,5 +105,9 @@
     "claudeCode.useTerminal": true,
     "claudeCode.initialPermissionMode": "bypassPermissions",
     "claudeCode.allowDangerouslySkipPermissions": true,
+    "workbench.colorCustomizations": {
+      "statusBar.noFolderBackground": "#0F3046",
+      "statusBar.noFolderForeground": "#F6FAFD"
+    },
   },
 }
