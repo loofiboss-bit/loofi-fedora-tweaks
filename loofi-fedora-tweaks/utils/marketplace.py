@@ -66,7 +66,7 @@ class PresetMarketplace:
     """
 
     # GitHub-based preset repository
-    REPO_OWNER = "loofitheboss"
+    REPO_OWNER = "multidraxter-bit"
     REPO_NAME = "loofi-presets"
     BRANCH = "main"
 

@@ -32,7 +32,7 @@
 
 ## Distribution
 
-- RPM via COPR (`loofitheboss/loofi-fedora-tweaks`)
+- RPM via COPR (`multidraxter-bit/loofi-fedora-tweaks`)
 - Flatpak (org.loofi.FedoraTweaks)
 - AppImage
 - Direct install via `install.sh`

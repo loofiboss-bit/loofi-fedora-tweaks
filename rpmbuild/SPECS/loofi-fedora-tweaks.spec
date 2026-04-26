@@ -4,7 +4,7 @@ Release:        1%{?dist}
 Summary:        System tweaks and maintenance for HP Elitebook 840 G8
 
 License:        MIT
-URL:            https://github.com/loofitheboss/loofi-fedora-tweaks
+URL:            https://github.com/multidraxter-bit/loofi-fedora-tweaks
 Source0:        %{name}-%{version}.tar.gz
 
 BuildArch:      noarch
