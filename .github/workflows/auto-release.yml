@@ -39,7 +39,7 @@ jobs:
       version: ${{ steps.version.outputs.version }}
       tag: ${{ steps.version.outputs.tag }}
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -115,7 +115,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -130,7 +130,7 @@ jobs:
     continue-on-error: true
     needs: [validate]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Validate workflow specs exist
         run: |
           VER="v${{ needs.validate.outputs.version }}"
@@ -189,7 +189,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -202,7 +202,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -215,7 +215,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -226,7 +226,7 @@ jobs:
     container: fedora:43
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Fedora review tool
         run: dnf install -y python3 fedora-review mock
       - name: Configure mock group for CI
@@ -238,7 +238,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -252,7 +252,7 @@ jobs:
     env:
       QT_QPA_PLATFORM: offscreen
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install system test dependencies
         run: |
           sudo apt-get update
@@ -297,7 +297,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -328,7 +328,7 @@ jobs:
       needs.docs_gate.result == 'success' &&
       needs.security.result == 'success'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install build deps
         run: dnf install -y rpm-build python3 python3-devel desktop-file-utils systemd-rpm-macros
       - name: Build RPM
@@ -348,7 +348,7 @@ jobs:
       !cancelled() &&
       needs.build.result == 'success'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Download RPM artifact
         uses: actions/download-artifact@v7
         with:
@@ -380,7 +380,7 @@ jobs:
       needs.validate.result == 'success' &&
       needs.lint.result == 'success'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - name: Install Flatpak tools
         run: |
           sudo apt-get update
@@ -407,7 +407,7 @@ jobs:
       !cancelled() &&
       needs.validate.result == 'success'
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
       - uses: actions/setup-python@v6
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -437,7 +437,7 @@ jobs:
       contents: write
     needs: [validate, build, rpm_smoke_test, build_flatpak, build_sdist]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -477,7 +477,7 @@ jobs:
       - name: Install release deps
         run: dnf install -y git python3 curl
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
         with:
           fetch-depth: 0
 
@@ -620,7 +620,7 @@ jobs:
         run: |
           dnf install -y rpm-build python3 curl copr-cli
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Validate spec version matches
         run: |

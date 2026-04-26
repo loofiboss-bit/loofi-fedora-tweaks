@@ -32,7 +32,7 @@ jobs:
         run: |
           dnf install -y rpm-build python3 curl copr-cli
 
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v6
 
       - name: Resolve version
         id: version
