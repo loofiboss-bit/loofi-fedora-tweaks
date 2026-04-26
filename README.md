@@ -57,8 +57,8 @@ Full notes: [`docs/releases/RELEASE-NOTES-v2.11.0.md`](docs/releases/RELEASE-NOT
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Active workflow target: **v2.13.0 "Alignment"** (see `ROADMAP.md` and `.workflow/specs/.race-lock.json`)
-- Latest documented release line: **v2.12.0 "API Migration Slice 8"** (see `CHANGELOG.md` and `docs/releases/RELEASE-NOTES-v2.12.0.md`)
+- Active target: **v4.0.0 "Atlas"** (see `ROADMAP.md` and `docs/architecture/V4_ATLAS_PLAN.md`)
+- Current stable baseline: **v2.13.0 "Alignment"** (see `CHANGELOG.md`)
 - Packaged runtime/version files baseline: **2.11.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---

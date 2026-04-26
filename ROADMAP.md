@@ -56,11 +56,47 @@
 | 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                         |
 | 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement                 |
 | 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening                |
-| 2.13.0  | Alignment                       | ACTIVE  | Documentation/workflow convergence and release-authority hardening                            |
+| 2.13.0  | Alignment                       | DONE    | Documentation/workflow convergence and release-authority hardening                            |
+| v4.0.0  | Atlas                           | DONE    | Guided diagnostics, safe repairs, rollback-first actions, and task-based UX                   |
 
 ---
 
-## [ACTIVE] v2.13.0 "Alignment" — Documentation & Workflow Convergence
+## [DONE] v4.0.0 "Atlas" — Guided Fedora Control Center
+
+**Theme**: From Toolbox to Assistant
+**Focus**: Guided diagnostics, rollback-first system actions, and task-oriented home dashboard.
+
+### Scope
+
+v4.0 "Atlas" marks a major shift from a multi-purpose Fedora toolbox to a guided system assistant. It introduces a "Health & Repair Autopilot" that detects issues and suggests safe repairs, a "Fedora Upgrade Assistant" for smooth version transitions, and a task-based home dashboard.
+
+### Deliverables
+
+- [x] **Health & Repair Autopilot Foundation**: Centralized diagnostic system with structured health models (id, severity, detection, safe-fix).
+- [x] **Rollback-First Action Model**: Reusable schema for risky actions with dry-run, risk-level, and revert metadata.
+- [x] **Fedora Upgrade Assistant Foundation**: Guided pre-upgrade checker for system readiness (disk, kernel, repos, NVIDIA/akmods).
+- [x] **Task-Based Home UX**: Dashboard cards for "Maintain my system", "Optimize gaming", "Prepare upgrade", etc.
+- [x] **Gaming Mode Profile Improvements**: Enhanced safe profiles with Wayland/KDE session hints and reversible tweaks.
+- [x] **Support Bundle v2**: Structured diagnostic export (system summary, health check output, safe logs).
+- [x] **Atomic/rpm-ostree Parity**: Full health/upgrade detection for Atomic Fedora variants.
+
+### Agent Assignment
+
+| Agent    | Task                                                               |
+| -------- | ------------------------------------------------------------------ |
+| Arkitekt | Health & Action schema design, Upgrade Assistant logic             |
+| Builder  | Autopilot backend, action executors, support bundle improvements   |
+| Sculptor | Task-based Dashboard UI, Gaming Profile enhancements               |
+| Guardian | Integration tests, safety verification, rollback validation        |
+| Planner  | Documentation ground-truth, release notes                          |
+
+### Dependencies
+
+- v2.13.0 Alignment (Documentation and metadata baseline)
+
+---
+
+## [DONE] v2.13.0 "Alignment" — Documentation & Workflow Convergence
 
 ### Scope
 
@@ -70,26 +106,16 @@ entrypoints, and architecture references. This slice is documentation/workflow h
 no privilege-scope expansion, no new product features, and no runtime behavior changes unless
 required for validation-script correctness.
 
-### Planned Deliverables
+### Deliverables
 
-- [ ] Activate `v2.13.0` workflow metadata (`ROADMAP`, race-lock, task/arch specs)
-- [ ] Inventory authoritative release/documentation drift against actual repo artifacts
-- [ ] Reconcile `README.md` current-release references and run-mode documentation
-- [ ] Reconcile `docs/README.md` and `docs/releases/RELEASE_NOTES.md` latest-release pointers
-- [ ] Refresh `ARCHITECTURE.md` version/entry-mode statements to match current repo reality
-- [ ] Resolve `v2.12.0` workflow-report reference drift with evidence-backed docs or backfilled artifacts
-- [ ] Harden release-doc/workflow validation scripts to catch stale references and missing artifacts
-- [ ] Add focused regression coverage for documentation/workflow consistency rules
-
-### Agent Assignment
-
-| Agent               | Task                                                          |
-| ------------------- | ------------------------------------------------------------- |
-| project-coordinator | v2.13.0 activation metadata + workflow closure sequencing     |
-| architecture-advisor| release/architecture drift inventory + canonical doc refresh  |
-| release-planner     | README/docs/release-note index reconciliation + final docs    |
-| backend-builder     | workflow-report reconciliation + validation hardening         |
-| test-writer         | regression coverage for release-doc/workflow consistency      |
+- [x] Activate `v2.13.0` workflow metadata (`ROADMAP`, race-lock, task/arch specs)
+- [x] Inventory authoritative release/documentation drift against actual repo artifacts
+- [x] Reconcile `README.md` current-release references and run-mode documentation
+- [x] Reconcile `docs/README.md` and `docs/releases/RELEASE_NOTES.md` latest-release pointers
+- [x] Refresh `ARCHITECTURE.md` version/entry-mode statements to match current repo reality
+- [x] Resolve `v2.12.0` workflow-report reference drift with evidence-backed docs or backfilled artifacts
+- [x] Harden release-doc/workflow validation scripts to catch stale references and missing artifacts
+- [x] Add focused regression coverage for documentation/workflow consistency rules
 
 ---
 

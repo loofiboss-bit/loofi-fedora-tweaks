@@ -25,6 +25,7 @@ log = logging.getLogger(__name__)
 # Final sidebar order is determined by (CATEGORY_ORDER rank, PluginMetadata.order).
 # See core/plugins/registry.py for CATEGORY_ORDER.
 _BUILTIN_PLUGINS: list[tuple[str, str]] = [
+    ("ui.atlas_dashboard_tab", "AtlasDashboardTab"),
     ("ui.dashboard_tab", "DashboardTab"),
     ("ui.agents_tab", "AgentsTab"),
     ("ui.automation_tab", "AutomationTab"),

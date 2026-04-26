@@ -29,7 +29,7 @@ class ExperienceLevel(Enum):
 # Tab IDs visible at each experience level (cumulative).
 # BEGINNER tabs are always visible; INTERMEDIATE adds more; ADVANCED shows all.
 _BEGINNER_TABS: List[str] = [
-    "dashboard",
+    "atlas_dashboard",
     "system-info",
     "software",
     "hardware",
@@ -44,6 +44,7 @@ _BEGINNER_TABS: List[str] = [
 ]
 
 _INTERMEDIATE_TABS: List[str] = _BEGINNER_TABS + [
+    "dashboard",
     "development",
     "extensions",
     "gaming",

@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        2.11.0
+Version:        4.0.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -126,6 +126,16 @@ PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; print('Import OK')" || :
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Sun Apr 26 2026 Loofi <loofi@example.com> - 4.0.0-1
+- v4.0.0 "Atlas" — Guided Fedora Control Center
+- Health & Repair Autopilot (HRA) for automated system diagnostics
+- Rollback-first system actions with risk assessment and command preview
+- Task-based Home Dashboard with goal-oriented guided wizards
+- Atomic Fedora (rpm-ostree) first-class parity and rebase readiness checks
+- Gaming Mode Profile improvements with safe performance toggles
+- Support Bundle v2 with structured, safe diagnostic exports
+- Documentation alignment and version normalization
+
 * Mon Feb 17 2026 Loofi <loofi@example.com> - 48.0.0-1
 - v48.0.0 "Sidebar Index" — Sidebar restructure with O(1) lookups
 - SidebarEntry dataclass and SidebarIndex for O(1) tab lookups
