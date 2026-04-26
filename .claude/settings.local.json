@@ -1,7 +1,0 @@
-{
-  "enabledMcpjsonServers": [
-    "loofi-workflow",
-    "loofi-agent-sync"
-  ],
-  "enableAllProjectMcpServers": true
-}
