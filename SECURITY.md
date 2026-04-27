@@ -17,7 +17,7 @@ We take security seriously. If you discover a security vulnerability in Loofi Fe
 ### How to Report
 
 1. **GitHub Security Advisories (preferred)**: [Create a private security advisory](https://github.com/multidraxter-bit/loofi-fedora-tweaks/security/advisories/new)
-2. **Email**: [security@loofi.dev](mailto:security@loofi.dev) (if available)
+2. **Email**: security@loofi.dev (if available)
 
 ### What to Include
 

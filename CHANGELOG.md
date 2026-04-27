@@ -4,6 +4,24 @@
 
 All notable changes to this project will be documented in this file.
 
+## [4.0.0] - 2026-04-26 "Atlas"
+
+### Added
+
+- **Health & Repair Autopilot Foundation**: Centralized diagnostic system with structured health models (id, severity, detection, safe-fix).
+- **Rollback-First Action Model**: Reusable schema for risky actions with dry-run, risk-level, and revert metadata.
+- **Fedora Upgrade Assistant Foundation**: Guided pre-upgrade checker for system readiness (disk, kernel, repos, NVIDIA/akmods).
+- **Task-Based Home UX Foundation**: Dashboard cards for "Maintain my system", "Optimize gaming", "Prepare upgrade", etc.
+- **Gaming Mode Profile Improvements**: Enhanced safe profiles with Wayland/KDE session hints and reversible tweaks.
+- **Support Bundle v2**: Structured diagnostic export (system summary, health check output, safe logs).
+- **Atomic/rpm-ostree Parity**: Full health/upgrade detection for Atomic Fedora variants.
+
+## [2.13.0] - 2026-04-26 "Alignment"
+
+### Changed
+
+- **Documentation**: Synchronized roadmap, readme, and internal version references to establish v2.13.0 as the stable baseline before v4.0 development.
+- **Workflow**: Hardened release-doc and workflow validation scripts to prevent metadata drift.
 ## [Unreleased]
 
 ## [3.0.1] - 2026-03-15 "Aegis"

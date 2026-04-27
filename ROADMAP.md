@@ -47,49 +47,75 @@
 | 2.2.1   | Velocity (patch)                | DONE    | CI stability: @patch target corrections for test reliability                               |
 | 2.2.2   | Velocity (patch)                | DONE    | CI: lower coverage threshold to 77%, fix tasks spec gate                                   |
 | 2.3.0   | Insight                         | DONE    | Enhanced diagnostics: 5 new report sections (services, journal, updates, SELinux, network) |
-| 2.4.0   | Daemon Foundation               | DONE    | Daemonized network/firewall execution boundary via D-Bus with fallback                     |
-| 2.5.0   | API Migration Slice 1           | DONE    | Network/firewall API-first hardening with strict IPC compatibility and fallback safeguards |
-| 2.6.0   | API Migration Slice 2           | DONE    | Package API-first migration with strict IPC payload validation and fallback safeguards     |
-| 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                    |
-| 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                |
-| 2.9.0   | API Migration Slice 5           | DONE    | Residual privileged daemon/API migration + compatibility hardening                         |
-| 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                      |
-| 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement              |
-| 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening             |
-| 3.0.1   | Aegis (patch)                   | DONE    | Post-release API docs/CORS tightening, profile Safe Mode enforcement, and settings polish  |
-| 3.0.0   | Aegis                           | DONE    | API security, Safe Mode defaults, plugin update safety, and version consistency cleanup    |
+| 2.4.0   | Daemon Foundation               | DONE    | Daemonized network/firewall execution boundary via D-Bus with fallback                      |
+| 2.5.0   | API Migration Slice 1           | DONE    | Network/firewall API-first hardening with strict IPC compatibility and fallback safeguards   |
+| 2.6.0   | API Migration Slice 2           | DONE    | Package API-first migration with strict IPC payload validation and fallback safeguards       |
+| 2.7.0   | API Migration Slice 3           | DONE    | System service API migration + bounded Phase 3 policy-audit preparation                      |
+| 2.8.0   | API Migration Slice 4           | DONE    | Policy inventory execution + privileged validator hardening                                   |
+| 2.9.0   | API Migration Slice 5           | DONE    | Residual privileged daemon/API migration + compatibility hardening                            |
+| 2.10.0  | API Migration Slice 6           | DONE    | Canonical workflow normalization + next daemon/API migration planning                         |
+| 2.11.0  | API Migration Slice 7           | DONE    | Network/firewall/system residual hardening and daemon/local parity refinement                 |
+| 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening                |
+| 2.13.0  | Alignment                       | DONE    | Documentation/workflow convergence and release-authority hardening                            |
+| v4.0.0  | Atlas                           | DONE    | Guided diagnostics, safe repairs, rollback-first actions, and task-based UX                   |
 
 ---
 
-## [DONE] v3.0.0 "Aegis" — API Security & UX Safety
+## [DONE] v4.0.0 "Atlas" — Guided Fedora Control Center
+
+**Theme**: From Toolbox to Assistant
+**Focus**: Guided diagnostics, rollback-first system actions, and task-oriented home dashboard.
 
 ### Scope
 
-First post-migration major release focused on stabilization phases 3–6 from the
-hardening guide. The goal is to keep the existing daemon/API architecture while
-closing trust-boundary gaps around API exposure, auth/bootstrap storage, Safe Mode,
-plugin auto-update safety, and version consistency.
+v4.0 "Atlas" marks a major shift from a multi-purpose Fedora toolbox to a guided system assistant. It introduces a "Health & Repair Autopilot" that detects issues and suggests safe repairs, a "Fedora Upgrade Assistant" for smooth version transitions, and a task-based home dashboard.
 
-### Planned Deliverables
+### Deliverables
 
-- [x] Activate v3.0.0 workflow metadata and restore a canonical Phase 3 planning baseline
-- [x] Enforce loopback-only API startup unless `--unsafe-expose` is explicitly supplied
-- [x] Harden auth/bootstrap storage and constrain `/api/key` + `/api/token` bootstrap behavior
-- [x] Add route-aware API throttling and explicit read-only versus privileged endpoint policy buckets
-- [x] Introduce Safe Mode as a default-on mutation guard with persisted user control
-- [x] Surface registry-backed risk and revert guidance through shared confirmation flows
-- [x] Formalize plugin auto-update as an explicit default-off setting in daemon/runtime behavior
-- [x] Remove version drift by aligning runtime, packaging, and release documentation on `3.0.0`
+- [x] **Health & Repair Autopilot Foundation**: Centralized diagnostic system with structured health models (id, severity, detection, safe-fix).
+- [x] **Rollback-First Action Model**: Reusable schema for risky actions with dry-run, risk-level, and revert metadata.
+- [x] **Fedora Upgrade Assistant Foundation**: Guided pre-upgrade checker for system readiness (disk, kernel, repos, NVIDIA/akmods).
+- [x] **Task-Based Home UX**: Dashboard cards for "Maintain my system", "Optimize gaming", "Prepare upgrade", etc.
+- [x] **Gaming Mode Profile Improvements**: Enhanced safe profiles with Wayland/KDE session hints and reversible tweaks.
+- [x] **Support Bundle v2**: Structured diagnostic export (system summary, health check output, safe logs).
+- [x] **Atomic/rpm-ostree Parity**: Full health/upgrade detection for Atomic Fedora variants.
 
 ### Agent Assignment
 
-| Agent                        | Task                                                               |
-| ---------------------------- | ------------------------------------------------------------------ |
-| project-coordinator          | v3.0.0 activation, metadata reconciliation, baseline recovery      |
-| backend-builder              | API exposure/auth/rate-limit hardening + Safe Mode service work    |
-| frontend-integration-builder | Settings + confirmation-flow integration for Safe Mode and risk UX |
-| test-writer                  | Focused API and UX safety regression coverage                      |
-| release-planner              | SECURITY/docs/version-consistency closure                          |
+| Agent    | Task                                                               |
+| -------- | ------------------------------------------------------------------ |
+| Arkitekt | Health & Action schema design, Upgrade Assistant logic             |
+| Builder  | Autopilot backend, action executors, support bundle improvements   |
+| Sculptor | Task-based Dashboard UI, Gaming Profile enhancements               |
+| Guardian | Integration tests, safety verification, rollback validation        |
+| Planner  | Documentation ground-truth, release notes                          |
+
+### Dependencies
+
+- v2.13.0 Alignment (Documentation and metadata baseline)
+
+---
+
+## [DONE] v2.13.0 "Alignment" — Documentation & Workflow Convergence
+
+### Scope
+
+Start the next bounded stabilization slice after `v2.12.0` closure by restoring a single
+authoritative current-release story across roadmap metadata, workflow artifacts, README/docs
+entrypoints, and architecture references. This slice is documentation/workflow hardening only:
+no privilege-scope expansion, no new product features, and no runtime behavior changes unless
+required for validation-script correctness.
+
+### Deliverables
+
+- [x] Activate `v2.13.0` workflow metadata (`ROADMAP`, race-lock, task/arch specs)
+- [x] Inventory authoritative release/documentation drift against actual repo artifacts
+- [x] Reconcile `README.md` current-release references and run-mode documentation
+- [x] Reconcile `docs/README.md` and `docs/releases/RELEASE_NOTES.md` latest-release pointers
+- [x] Refresh `ARCHITECTURE.md` version/entry-mode statements to match current repo reality
+- [x] Resolve `v2.12.0` workflow-report reference drift with evidence-backed docs or backfilled artifacts
+- [x] Harden release-doc/workflow validation scripts to catch stale references and missing artifacts
+- [x] Add focused regression coverage for documentation/workflow consistency rules
 
 ---
 

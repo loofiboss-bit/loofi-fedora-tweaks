@@ -3,7 +3,7 @@
   "terminal.integrated.shellIntegration.decorationsEnabled": "both",
 
   // Python environment
-  "python.defaultInterpreterPath": "C:\\Program Files\\PyManager\\python.exe",
+  "python.defaultInterpreterPath": "python",
 
   // Ruff — fast linter + formatter (replaces flake8, isort, black)
   "ruff.enable": true,
@@ -136,5 +136,9 @@
         "copilot/oswe-vscode-prime"
       ]
     }
+  },
+  "workbench.colorCustomizations": {
+    "statusBar.noFolderBackground": "#0F3046",
+    "statusBar.noFolderForeground": "#F6FAFD"
   }
 }

@@ -28,14 +28,12 @@ Core behavior:
 
 ## 2) Install and Launch
 
-Install from [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/):
+Install from [Fedora COPR](https://copr.fedorainfracloud.org/coprs/multidraxter-bit/loofi-fedora-tweaks/):
 
 ```bash
-sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
+sudo dnf copr enable multidraxter-bit/loofi-fedora-tweaks
 sudo dnf install loofi-fedora-tweaks
 ```
-
-The GitHub repository now lives under [`multidraxter-bit/loofi-fedora-tweaks`](https://github.com/multidraxter-bit/loofi-fedora-tweaks), while the current COPR namespace remains `loofitheboss/loofi-fedora-tweaks`.
 
 Or download the RPM from the [Releases](https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases) page:
 

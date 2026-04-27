@@ -20,7 +20,7 @@
 ### Infrastructure
 
 - 228+ test files, 6383+ tests, 81%+ coverage (80% CI-enforced)
-- RPM packaging via COPR (`loofitheboss/loofi-fedora-tweaks`)
+- RPM packaging via COPR (`multidraxter-bit/loofi-fedora-tweaks`)
 - Flatpak and AppImage distribution
 - Systemd service for daemon mode
 - Polkit policy for privilege escalation

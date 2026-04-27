@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v3.0.1 "Aegis"
+# Loofi Fedora Tweaks v4.0.0 "Atlas"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,15 +12,15 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases/tag/v3.0.1">
-    <img src="https://img.shields.io/badge/Release-v3.0.1-blue?style=for-the-badge&logo=github" alt="Release v3.0.1"/>
+  <a href="https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases/tag/v4.0.0">
+    <img src="https://img.shields.io/badge/Release-v4.0.0-blue?style=for-the-badge&logo=github" alt="Release v4.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43-blue?style=for-the-badge&logo=fedora" alt="Fedora 43"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
   <img src="https://img.shields.io/badge/Coverage-81%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 81%"/>
-  <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
-    <img src="https://img.shields.io/badge/COPR-loofitheboss%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
+  <a href="https://copr.fedorainfracloud.org/coprs/multidraxter-bit/loofi-fedora-tweaks/">
+    <img src="https://img.shields.io/badge/COPR-multidraxter-bit%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
   </a>
 </p>
 
@@ -41,29 +41,31 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What Is New in v3.0.1?
+## What's New in v4.0.0?
 
-`v3.0.1 "Aegis"` is a post-release hardening patch that tightens the local API surface and exposes the remaining safety controls more clearly.
+`v4.0.0 "Atlas"` transforms the app into a guided Fedora assistant with automated diagnostics and task-based workflows.
 
-- FastAPI docs, ReDoc, and OpenAPI discovery are disabled by default in desktop API mode.
-- `LOOFI_CORS_ORIGINS` now fails closed on unsafe wildcard or remote origin overrides unless exposure is explicitly allowed.
-- Profile apply/import API routes now honor Safe Mode and emit audit logs for blocked or successful mutations.
-- Plugin auto-update is now visible in **Settings → Advanced** and is restored correctly by reset flows.
-- Windows-local pytest temp directories are ignored to keep release branches clean during validation.
+- **Health & Repair Autopilot**: Real-time system health checks (DNF, services, drivers).
+- **Guided Dashboad**: Goal-oriented task cards with step-by-step repair wizards.
+- **Rollback-First Safety**: Risk assessment and command preview for all system changes.
+- **Atomic Parity**: Dedicated support for Fedora Silverblue and Kinoite (`rpm-ostree`).
+- **Support Bundle v2**: Structured diagnostic exports with data privacy masking.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v3.0.1.md`](docs/releases/RELEASE-NOTES-v3.0.1.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v4.0.0.md`](docs/releases/RELEASE-NOTES-v4.0.0.md)
 
 ## Current Development Cycle
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and next implementation slice.
 
-Current stable release is **v3.0.1 "Aegis"**.
-
-`Aegis` now includes the post-release patch that locks down default API docs/CORS behavior and completes the profile/settings safety follow-up work.
-
-Latest shipped notes: [`docs/releases/RELEASE-NOTES-v3.0.1.md`](docs/releases/RELEASE-NOTES-v3.0.1.md)
+- Current release: **v4.0.0 "Atlas"** (see `ROADMAP.md` and `docs/architecture/V4_ATLAS_PLAN.md`)
+- Current stable baseline: **v4.0.0 "Atlas"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **4.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
+
+## What Was New in v2.11.0?
+
+`v2.11.0 "API Migration Slice 7"` focuses on hardening network, firewall, and system service local execution paths.
 
 ## What Was New in v1.0.0?
 
@@ -75,12 +77,12 @@ Latest shipped notes: [`docs/releases/RELEASE-NOTES-v3.0.1.md`](docs/releases/RE
 
 ### Install from COPR (Recommended)
 
-The package is published on [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/). This gives you automatic updates via `dnf`.
+The package is published on [Fedora COPR](https://copr.fedorainfracloud.org/coprs/multidraxter-bit/loofi-fedora-tweaks/). This gives you automatic updates via `dnf`.
 
 The GitHub repository now lives under [`multidraxter-bit/loofi-fedora-tweaks`](https://github.com/multidraxter-bit/loofi-fedora-tweaks), but the current COPR namespace remains `loofitheboss/loofi-fedora-tweaks`.
 
 ```bash
-sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
+sudo dnf copr enable multidraxter-bit/loofi-fedora-tweaks
 sudo dnf install loofi-fedora-tweaks
 ```
 
@@ -88,7 +90,7 @@ To uninstall:
 
 ```bash
 sudo dnf remove loofi-fedora-tweaks
-sudo dnf copr remove loofitheboss/loofi-fedora-tweaks
+sudo dnf copr remove multidraxter-bit/loofi-fedora-tweaks
 ```
 
 ### Install from a Release RPM
@@ -185,7 +187,7 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ## Screenshots
 
-Current UI screenshots (v2.8.0) are maintained in:
+Current UI screenshots (v4.0.0) are maintained in:
 
 - [`docs/images/user-guide/README.md`](docs/images/user-guide/README.md)
 

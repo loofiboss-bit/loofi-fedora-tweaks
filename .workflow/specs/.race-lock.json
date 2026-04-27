@@ -1,7 +1,6 @@
 {
-  "version": "v3.0.0",
-  "started_at": "20260309_000000",
+  "version": "v4.0.0",
+  "started_at": "20260426_000000",
   "status": "active",
-  "target_version": "v3.0.0",
-  "bumped_at": "2026-03-09T00:00:00.000000+00:00"
+  "target_version": "v4.0.0"
 }

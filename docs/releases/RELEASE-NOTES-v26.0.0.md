@@ -242,7 +242,7 @@ sudo dnf install loofi-fedora-tweaks-26.0.0-1.fc43.noarch.rpm
 ### From Source
 
 ```bash
-git clone https://github.com/loofitheboss/loofi-fedora-tweaks.git
+git clone https://github.com/multidraxter-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
 git checkout v26.0.0
 bash scripts/build_rpm.sh
@@ -368,5 +368,5 @@ See [ROADMAP.md](ROADMAP.md) for details.
 ---
 
 **Full Changelog:** [CHANGELOG.md](CHANGELOG.md)  
-**GitHub Release:** https://github.com/loofitheboss/loofi-fedora-tweaks/releases/tag/v26.0.0  
-**Issue Tracker:** https://github.com/loofitheboss/loofi-fedora-tweaks/issues
+**GitHub Release:** https://github.com/multidraxter-bit/loofi-fedora-tweaks/releases/tag/v26.0.0  
+**Issue Tracker:** https://github.com/multidraxter-bit/loofi-fedora-tweaks/issues
