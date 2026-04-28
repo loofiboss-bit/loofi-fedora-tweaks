@@ -1,7 +1,7 @@
 PyQt6==6.11.0
 requests==2.33.1
 fastapi==0.136.1
-uvicorn==0.40.0
+uvicorn==0.46.0
 PyJWT==2.12.1
 bcrypt==5.0.0
 httpx==0.28.1
