@@ -7,7 +7,7 @@ updates:
       day: "monday"
     labels:
       - "dependencies"
-    commit-message:
+    commit-message: 
       prefix: "deps"
     open-pull-requests-limit: 5
 
