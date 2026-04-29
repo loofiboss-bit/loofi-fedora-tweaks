@@ -191,6 +191,23 @@ class ProfileManager:
             warnings.append("Snapshot operation unavailable; applying without snapshot")
             return
 
+        # Defense-in-depth: execute only known-safe snapshot command tuples.
+        allowed_prefixes = (
+            ["timeshift", "--create", "--comments"],
+            ["snapper", "create", "--description"],
+            ["btrfs", "subvolume", "snapshot", "/"],
+        )
+        if (
+            binary != "pkexec"
+            or not isinstance(args, list)
+            or not args
+            or not any(args[: len(prefix)] == prefix for prefix in allowed_prefixes)
+        ):
+            warnings.append(
+                "Snapshot operation blocked: invalid command tuple from snapshot backend"
+            )
+            return
+
         try:
             result = subprocess.run(
                 [binary] + args,
