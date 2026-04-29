@@ -28,7 +28,7 @@ import os
 import subprocess
 import time
 from pathlib import Path
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, FrozenSet, List, Optional
 
 from core.executor.action_result import ActionResult
 from core.executor.base_executor import BaseActionExecutor
@@ -40,6 +40,36 @@ COMMAND_TIMEOUT = 120  # seconds
 MAX_STDOUT = 4000
 MAX_STDERR = 2000
 MAX_LOG_ENTRIES = 500
+
+# Allowlist of executables this executor may invoke.
+COMMAND_ALLOWLIST: FrozenSet[str] = frozenset(
+    {
+        "dnf",
+        "rpm-ostree",
+        "systemctl",
+        "sysctl",
+        "flatpak",
+        "fwupdmgr",
+        "journalctl",
+        "fstrim",
+        "rpm",
+        "hostnamectl",
+        "uname",
+        "lsblk",
+        "df",
+        "free",
+        "uptime",
+        "sensors",
+        "lspci",
+        "lsusb",
+        "ip",
+        "ss",
+        "nmcli",
+        "firewall-cmd",
+        "timedatectl",
+        "localectl",
+    }
+)
 
 # Action log location
 _LOG_DIR = os.path.join(
@@ -184,6 +214,9 @@ class ActionExecutor(BaseActionExecutor):
         self, command: str, args: List[str], *, privileged: bool = False
     ) -> List[str]:
         """Build the final command list, handling Flatpak and privilege escalation."""
+        if command not in COMMAND_ALLOWLIST:
+            raise ValueError(f"Command '{command}' is not in the executor allowlist")
+
         cmd = [command] + args
 
         # Privilege escalation via pkexec
