@@ -11,6 +11,7 @@ Source0:        %{url}/archive/v%{version}/%{name}-%{version}.tar.gz
 BuildArch:      noarch
 BuildRequires:  python3-devel
 BuildRequires:  desktop-file-utils
+BuildRequires:  libappstream-glib
 BuildRequires:  systemd-rpm-macros
 
 Requires:       python3
@@ -74,7 +75,7 @@ mkdir -p %{buildroot}%{_bindir}
 mkdir -p %{buildroot}%{_datadir}/polkit-1/actions
 mkdir -p %{buildroot}%{_userunitdir}
 mkdir -p %{buildroot}%{_datadir}/icons/hicolor/128x128/apps
-mkdir -p %{buildroot}%{_licensedir}/%{name}
+ mkdir -p %{buildroot}%{_datadir}/metainfo
 
 cp -r loofi-fedora-tweaks/* %{buildroot}%{_prefix}/lib/%{name}/
 
@@ -114,10 +115,12 @@ install -m 644 loofi-fedora-tweaks/config/loofi-fedora-tweaks.service %{buildroo
 install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/
 install -Dm 644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
 install -Dm 644 %{name}.1 %{buildroot}%{_mandir}/man1/%{name}.1
+install -m 644 %{name}.metainfo.xml %{buildroot}%{_datadir}/metainfo/%{name}.metainfo.xml
 
 %check
 # Run basic import validation
 PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; print('Import OK')" || :
+appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 
 %post api
 %systemd_user_post %{name}-api.service
@@ -151,6 +154,7 @@ PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; print('Import OK')" || :
 %{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.kernel.policy
 %{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.security.policy
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
+%{_datadir}/metainfo/%{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %files api

@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<component type="desktop-application">
+  <id>loofi-fedora-tweaks</id>
+  <metadata_license>MIT</metadata_license>
+  <project_license>MIT</project_license>
+
+  <name>Loofi Fedora Tweaks</name>
+  <summary>Complete Fedora system management with AI, security, and window management</summary>
+
+  <description>
+    <p>
+      A comprehensive GUI control center for Fedora KDE 44 covering system maintenance,
+      developer tooling, AI integration, security hardening, window management,
+      virtualization, mesh networking, and workspace state management.
+    </p>
+    <p>Features include:</p>
+    <ul>
+      <li>Fedora KDE 44 Readiness Center — diagnostics for Plasma, Wayland, DNF5, Flatpak, NVIDIA, and more</li>
+      <li>Security Center with polkit-managed privileged operations</li>
+      <li>VM Quick-Create and VFIO GPU Passthrough</li>
+      <li>AI Lab integration</li>
+      <li>Loofi Link Mesh networking</li>
+      <li>State Teleport workspace snapshots</li>
+      <li>Replicator IaC / Ansible export</li>
+      <li>Optional headless Web API and user daemon</li>
+    </ul>
+  </description>
+
+  <launchable type="desktop-id">loofi-fedora-tweaks.desktop</launchable>
+
+  <url type="homepage">https://github.com/loofiboss-bit/loofi-fedora-tweaks</url>
+  <url type="bugtracker">https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues</url>
+
+  <categories>
+    <category>System</category>
+    <category>Settings</category>
+  </categories>
+
+  <provides>
+    <binary>loofi-fedora-tweaks</binary>
+  </provides>
+
+  <releases>
+    <release version="5.0.0" date="2026-04-30">
+      <description>
+        <p>v5.0.0 "Aurora" — Fedora KDE 44 Experience &amp; Compatibility</p>
+        <ul>
+          <li>Added Fedora KDE 44 Readiness Center with full diagnostics</li>
+          <li>Split optional Web API and daemon into subpackages</li>
+          <li>Extended support bundle to v3 with privacy-masked diagnostics</li>
+          <li>Updated COPR/workflow target to Fedora 44</li>
+        </ul>
+      </description>
+    </release>
+  </releases>
+
+  <content_rating type="oars-1.1"/>
+</component>
