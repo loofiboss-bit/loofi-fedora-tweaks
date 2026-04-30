@@ -613,6 +613,7 @@ jobs:
     timeout-minutes: 20
     needs: [validate, release]
     env:
+      COPR_OWNER: "loofitheboss"
       COPR_PROJECT: "loofi-fedora-tweaks"
       COPR_CHROOTS: "fedora-44-x86_64"
     steps:
@@ -647,8 +648,6 @@ jobs:
           chmod 600 ~/.config/copr
 
       - name: Resolve effective COPR chroots
-        env:
-          COPR_OWNER: ${{ secrets.COPR_USERNAME }}
         run: |
           set -euo pipefail
           PROJECT_JSON=$(curl -fsSL "https://copr.fedorainfracloud.org/api_3/project?ownername=${COPR_OWNER}&projectname=${COPR_PROJECT}")
@@ -697,4 +696,4 @@ jobs:
           echo "::notice::COPR build submitted for loofi-fedora-tweaks v${VER}"
           echo "::notice::Target chroots: ${COPR_CHROOTS_EFFECTIVE:-${COPR_CHROOTS}}"
           echo "Track build status at:"
-          echo "  https://copr.fedorainfracloud.org/coprs/${{ secrets.COPR_USERNAME }}/${COPR_PROJECT}/builds/"
+          echo "  https://copr.fedorainfracloud.org/coprs/${COPR_OWNER}/${COPR_PROJECT}/builds/"
