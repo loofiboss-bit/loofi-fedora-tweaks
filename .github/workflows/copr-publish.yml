@@ -99,17 +99,27 @@ jobs:
           echo "COPR_CHROOTS_EFFECTIVE=${EFFECTIVE_CHROOTS}" >> "$GITHUB_ENV"
           echo "Resolved COPR chroots: ${EFFECTIVE_CHROOTS}"
 
+      - name: Test COPR auth
+        run: |
+          WHO=$(copr-cli whoami 2>&1) && echo "::notice::COPR auth OK: logged in as ${WHO}" || echo "::error::COPR auth failed: ${WHO}. Check COPR_LOGIN, COPR_TOKEN, COPR_USERNAME secrets."
+
       - name: Submit build to COPR
         run: |
           SRPM=$(ls rpmbuild/SRPMS/*.src.rpm | head -1)
-          echo "Submitting ${SRPM} to COPR project ${COPR_PROJECT}"
+          echo "Submitting ${SRPM} to COPR project ${COPR_OWNER}/${COPR_PROJECT}"
           CHROOT_ARGS=""
           for chroot in ${COPR_CHROOTS_EFFECTIVE}; do
             CHROOT_ARGS="${CHROOT_ARGS} --chroot ${chroot}"
           done
           echo "Target chroots:${CHROOT_ARGS}"
           # shellcheck disable=SC2086
-          copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --nowait ${CHROOT_ARGS}
+          COPR_OUT=$(copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --nowait ${CHROOT_ARGS} 2>&1)
+          RC=$?
+          echo "${COPR_OUT}"
+          if [ ${RC} -ne 0 ]; then
+            echo "::error::copr-cli build failed (exit ${RC}): ${COPR_OUT}"
+            exit ${RC}
+          fi
 
       - name: Build summary
         if: always()
