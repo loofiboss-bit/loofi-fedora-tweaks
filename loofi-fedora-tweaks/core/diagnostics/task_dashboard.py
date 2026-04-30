@@ -1,7 +1,7 @@
 from dataclasses import dataclass, field
-from typing import List, Optional
-from .health_model import HealthCheck
+from typing import List
 from .health_registry import HealthRegistry
+
 
 @dataclass
 class DashboardTask:
@@ -17,10 +17,12 @@ class DashboardTask:
     action_ids: List[str] = field(default_factory=list)
     priority: int = 10  # Lower is higher priority
 
+
 class TaskManager:
     """
     Manager for task-based home dashboard.
     """
+
     def __init__(self, registry: HealthRegistry):
         self.registry = registry
         self._tasks: List[DashboardTask] = []
@@ -28,7 +30,7 @@ class TaskManager:
 
     def _initialize_default_tasks(self):
         """Register the primary v4.0 task cards."""
-        
+
         self._tasks.append(DashboardTask(
             id="task-maintenance",
             title="Maintain my system",
@@ -36,17 +38,25 @@ class TaskManager:
             icon_id="maintenance-health",
             check_ids=["dnf-lock", "pending-updates", "disk-space-root"],
             action_ids=["dnf-clean-all", "fstrim-all"],
-            priority=1
+            priority=2
         ))
 
         self._tasks.append(DashboardTask(
             id="task-repair",
             title="Fix problems",
             description="Identify and repair failed services or system inconsistencies.",
-            icon_id="status-ok", # Will use error icon if unhealthy
+            icon_id="status-ok",  # Will use error icon if unhealthy
             check_ids=["failed-services", "nvidia-akmods"],
             action_ids=["restart-failed-service"],
             priority=0
+        ))
+
+        self._tasks.append(DashboardTask(
+            id="task-fedora44-readiness",
+            title="Fedora KDE 44 Readiness",
+            description="Check Fedora 44, Plasma, Wayland, package, NVIDIA, Flatpak, and Atomic compatibility.",
+            icon_id="status-ok",
+            priority=1
         ))
 
         self._tasks.append(DashboardTask(
@@ -55,8 +65,8 @@ class TaskManager:
             description="Check if your system is ready for the next Fedora version.",
             icon_id="update",
             check_ids=[
-                "upgrade-fedora-version", 
-                "upgrade-repo-risk", 
+                "upgrade-fedora-version",
+                "upgrade-repo-risk",
                 "upgrade-storage-readiness"
             ],
             priority=2
@@ -67,7 +77,8 @@ class TaskManager:
             title="Optimize Gaming",
             description="Improve gaming performance with safe power profiles and optimization tools.",
             icon_id="gaming",
-            check_ids=["gaming-gamemode", "gaming-mangohud", "gaming-cpu-governor"],
+            check_ids=["gaming-gamemode",
+                       "gaming-mangohud", "gaming-cpu-governor"],
             action_ids=["gaming-install-tools", "gaming-set-performance"],
             priority=3
         ))

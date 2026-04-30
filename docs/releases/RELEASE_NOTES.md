@@ -4,14 +4,15 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v45.0.0 "Housekeeping"**
-- Full notes: [RELEASE-NOTES-v45.0.0.md](RELEASE-NOTES-v45.0.0.md)
+- **v5.0.0 "Aurora"**
+- Full notes: [RELEASE-NOTES-v5.0.0.md](RELEASE-NOTES-v5.0.0.md)
 
 ## Recent Releases
 
+- v4.0.0 "Atlas": [RELEASE-NOTES-v4.0.0.md](RELEASE-NOTES-v4.0.0.md)
+- v45.0.0 "Housekeeping": [RELEASE-NOTES-v45.0.0.md](RELEASE-NOTES-v45.0.0.md)
 - v44.0.0 "Review Gate": [RELEASE-NOTES-v44.0.0.md](RELEASE-NOTES-v44.0.0.md)
 - v43.0.0 "Stabilization-Only": [RELEASE-NOTES-v43.0.0.md](RELEASE-NOTES-v43.0.0.md)
-- v42.0.0 "Sentinel": [RELEASE-NOTES-v42.0.0.md](RELEASE-NOTES-v42.0.0.md)
 
 ## Versioned Notes
 

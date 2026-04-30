@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v4.0.0 "Atlas"
+# Loofi Fedora Tweaks v5.0.0 "Aurora"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,10 +12,10 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v4.0.0">
-    <img src="https://img.shields.io/badge/Release-v4.0.0-blue?style=for-the-badge&logo=github" alt="Release v4.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v5.0.0">
+    <img src="https://img.shields.io/badge/Release-v5.0.0-blue?style=for-the-badge&logo=github" alt="Release v5.0.0"/>
   </a>
-  <img src="https://img.shields.io/badge/Fedora-43-blue?style=for-the-badge&logo=fedora" alt="Fedora 43"/>
+  <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
   <img src="https://img.shields.io/badge/Coverage-81%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 81%"/>
@@ -41,25 +41,25 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v4.0.0?
+## What's New in v5.0.0?
 
-`v4.0.0 "Atlas"` transforms the app into a guided Fedora assistant with automated diagnostics and task-based workflows.
+`v5.0.0 "Aurora"` is the Fedora KDE 44 Experience & Compatibility release. It keeps the v4 Atlas assistant model and adds focused readiness diagnostics for the Fedora 44 KDE desktop stack.
 
-- **Health & Repair Autopilot**: Real-time system health checks (DNF, services, drivers).
-- **Guided Dashboad**: Goal-oriented task cards with step-by-step repair wizards.
-- **Rollback-First Safety**: Risk assessment and command preview for all system changes.
-- **Atomic Parity**: Dedicated support for Fedora Silverblue and Kinoite (`rpm-ostree`).
-- **Support Bundle v2**: Structured diagnostic exports with data privacy masking.
+- **Fedora KDE 44 Readiness**: Checks Fedora, Plasma, Qt, Wayland/X11, display manager, DNF5, PackageKit, repos, Atomic, NVIDIA/akmods/Secure Boot, Flatpak KDE runtimes, and TLS cert compatibility.
+- **Dashboard + CLI Access**: Readiness runs from the Atlas dashboard card or `loofi-fedora-tweaks --cli fedora44-readiness`.
+- **Support Bundle v3**: Adds privacy-masked Fedora KDE 44 diagnostics for support and issue reports.
+- **Packaging Cleanup**: Optional Web API and daemon runtime dependencies are split from the base GUI/CLI RPM.
+- **Fedora 44 Targeting**: Active release, build, and COPR guidance now targets Fedora KDE 44; Fedora 43 is best-effort compatible.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v4.0.0.md`](docs/releases/RELEASE-NOTES-v4.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v5.0.0.md`](docs/releases/RELEASE-NOTES-v5.0.0.md)
 
 ## Current Development Cycle
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v4.0.0 "Atlas"** (see `ROADMAP.md` and `docs/architecture/V4_ATLAS_PLAN.md`)
-- Current stable baseline: **v4.0.0 "Atlas"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **4.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v5.0.0 "Aurora"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v5.0.0.md`)
+- Current stable baseline: **v5.0.0 "Aurora"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **5.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 
@@ -177,7 +177,7 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ## Screenshots
 
-Current UI screenshots (v4.0.0) are maintained in:
+Current UI screenshots are maintained in:
 
 - [`docs/images/user-guide/README.md`](docs/images/user-guide/README.md)
 
@@ -257,7 +257,8 @@ loofi --json package search --query vim
 
 ## Requirements
 
-- Fedora 43+
+- Fedora KDE 44 supported target
+- Fedora 43 best-effort compatibility
 - Python 3.12+
 - PyQt6
 - polkit (`pkexec`)
@@ -351,7 +352,7 @@ Every push to `master` and every pull request runs through two pipelines:
 push to master
   → validate (version alignment, packaging scripts)
   → adapter_drift, lint, typecheck, test, security, docs_gate, fedora_review (parallel)
-  → build (RPM in Fedora 43 container)
+  → build (RPM in Fedora 44 container)
   → auto_tag (creates vX.Y.Z tag if missing)
   → release (publishes GitHub Release with RPM/Flatpak/sdist artifacts)
   → copr_publish (builds SRPM and submits to Fedora COPR)

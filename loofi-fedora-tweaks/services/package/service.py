@@ -42,6 +42,8 @@ class DnfPackageService(BasePackageService):
     def _from_daemon_payload(payload: object) -> ActionResult | None:
         if not isinstance(payload, dict):
             return None
+        if "success" not in payload:
+            return None
         try:
             return ActionResult.from_dict(payload)
         except (TypeError, ValueError):

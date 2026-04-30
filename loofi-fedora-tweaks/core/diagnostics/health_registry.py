@@ -3,11 +3,13 @@ import os
 from typing import List, Dict, Optional
 from .health_model import HealthCheck, HealthResult
 
+
 class HealthRegistry:
     """
     Central registry for v4.0 Health & Repair Autopilot.
     Manages diagnostic definitions and execution.
     """
+
     def __init__(self):
         self._checks: Dict[str, HealthCheck] = {}
         self._results: Dict[str, HealthResult] = {}
@@ -27,7 +29,7 @@ class HealthRegistry:
 
     def _initialize_core_checks(self):
         """Register the baseline v4.0 foundation checks."""
-        
+
         # 1. DNF Lock Check
         self.register(HealthCheck(
             id="dnf-lock",
@@ -51,7 +53,8 @@ class HealthRegistry:
             description="Identifies systemd services that have failed to start or crashed.",
             detection_cmd=["systemctl", "--failed", "--quiet"],
             suggested_fix="Inspect the service logs and attempt to restart the failed service.",
-            manual_commands=["systemctl status <service>", "journalctl -xeu <service>"],
+            manual_commands=["systemctl status <service>",
+                             "journalctl -xeu <service>"],
             rollback_hint="N/A"
         ))
 
@@ -78,7 +81,7 @@ class HealthRegistry:
             manual_commands=["dnf check-update", "flatpak update"],
             safe_to_auto_fix=False
         ))
-        
+
         # 5. NVIDIA Akmods Status
         self.register(HealthCheck(
             id="nvidia-akmods",
@@ -134,20 +137,20 @@ class HealthRegistry:
         """
         from ..executor.action_executor import ActionExecutor
         from services.system.system import SystemManager
-        
+
         check = self.get_check(check_id)
         if not check:
             return HealthResult(check_id, "error", f"Check '{check_id}' not found.")
-        
+
         executor = ActionExecutor()
-        
+
         # 1. Handle specialized detection logic for core checks
         if check_id == "dnf-lock":
             if SystemManager.is_atomic():
                 return HealthResult(check_id, "skipped", "DNF lock check not applicable on Atomic systems.")
-            
+
             res = executor.execute("fuser", ["/var/lib/dnf/labels.db"])
-            if res.exit_code == 0: # fuser returns 0 if file is accessed
+            if res.exit_code == 0:  # fuser returns 0 if file is accessed
                 return HealthResult(check_id, "unhealthy", "Another process is using DNF.", details=res.stdout)
             return HealthResult(check_id, "healthy", "DNF is not locked.")
 
@@ -160,11 +163,11 @@ class HealthRegistry:
                     parts = line.split()
                     if parts:
                         failed_names.append(parts[0])
-                
+
                 return HealthResult(
-                    check_id, 
-                    "unhealthy", 
-                    f"{len(failed_names)} failed system services detected.", 
+                    check_id,
+                    "unhealthy",
+                    f"{len(failed_names)} failed system services detected.",
                     details=res.stdout,
                     affected_entities=failed_names
                 )
@@ -205,14 +208,14 @@ class HealthRegistry:
                 pkgs = SystemManager.get_layered_packages()
                 if pkgs:
                     return HealthResult(
-                        check_id, 
-                        "info", 
+                        check_id,
+                        "info",
                         f"{len(pkgs)} layered packages detected.",
                         details=", ".join(pkgs),
                         affected_entities=pkgs
                     )
                 return HealthResult(check_id, "healthy", "No layered packages detected.")
-            except Exception as e:
+            except (OSError, RuntimeError, ValueError) as e:
                 return HealthResult(check_id, "error", f"Failed to detect layered packages: {e}")
 
         if check_id == "gaming-gamemode":
@@ -240,23 +243,23 @@ class HealthRegistry:
             from services.system.system import cached_which
             if not cached_which("modinfo"):
                 return HealthResult(check_id, "skipped", "modinfo tool not found.")
-            
+
             res = executor.execute("modinfo", ["nvidia"], timeout=10)
             if res.success:
                 return HealthResult(check_id, "healthy", "NVIDIA kernel module is loaded and valid.")
-            
+
             # Check if NVIDIA hardware is even present
             from services.system.system import SystemManager
             # Simple check via sysfs
             if not any(v in os.listdir("/sys/class/drm") for v in ["card0", "card1"]):
                 return HealthResult(check_id, "skipped", "No discrete GPU detected via DRM subsystem.")
-            
+
             return HealthResult(check_id, "warning", "NVIDIA module not found. Drivers may be missing or akmods failed to build.")
 
         if check_id == "selinux-status":
             if not os.path.exists("/usr/sbin/getenforce"):
                 return HealthResult(check_id, "skipped", "SELinux tools not installed.")
-            
+
             res = executor.execute("getenforce", [])
             if res.success:
                 mode = res.stdout.strip()
@@ -270,7 +273,7 @@ class HealthRegistry:
             cmd = check.detection_cmd[0]
             args = check.detection_cmd[1:]
             res = executor.execute(cmd, args)
-            
+
             if res.success:
                 # If expected_output is provided, check for a match
                 if check.expected_output:

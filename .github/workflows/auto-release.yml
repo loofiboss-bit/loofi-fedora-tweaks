@@ -223,7 +223,7 @@ jobs:
 
   fedora_review:
     runs-on: ubuntu-latest
-    container: fedora:43
+    container: fedora:44
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
@@ -313,7 +313,7 @@ jobs:
 
   build:
     runs-on: ubuntu-latest
-    container: fedora:43
+    container: fedora:44
     timeout-minutes: 20
     needs: [validate, adapter_drift, lint, typecheck, stabilization_rules, docs_gate, test, security, fedora_review]
     if: |
@@ -341,7 +341,7 @@ jobs:
 
   rpm_smoke_test:
     runs-on: ubuntu-latest
-    container: fedora:43
+    container: fedora:44
     timeout-minutes: 10
     needs: [build]
     if: |
@@ -467,7 +467,7 @@ jobs:
        (github.event_name == 'workflow_dispatch' && inputs.version != '') ||
        github.ref == 'refs/heads/master')
     runs-on: ubuntu-latest
-    container: fedora:43
+    container: fedora:44
     timeout-minutes: 20
     permissions:
       contents: write
@@ -609,12 +609,12 @@ jobs:
       needs.release.result == 'success' &&
       (github.event_name != 'workflow_dispatch' || !inputs.dry_run)
     runs-on: ubuntu-latest
-    container: fedora:43
+    container: fedora:44
     timeout-minutes: 20
     needs: [validate, release]
     env:
       COPR_PROJECT: "loofi-fedora-tweaks"
-      COPR_CHROOTS: "fedora-43-x86_64"
+      COPR_CHROOTS: "fedora-44-x86_64"
     steps:
       - name: Install dependencies
         run: |

@@ -9,10 +9,10 @@ Use this checklist before bumping a version. The CI pipeline handles tagging and
 Run the bump script — it handles files, scaffolding, and warnings:
 
 ```bash
-python3 scripts/bump_version.py 41.0.0 --codename "Scaffold"
+python3 scripts/bump_version.py 5.0.0 --codename "Aurora"
 
 # Preview first:
-python3 scripts/bump_version.py 41.0.0 --codename "Scaffold" --dry-run
+python3 scripts/bump_version.py 5.0.0 --codename "Aurora" --dry-run
 ```
 
 The script cascades across **7 targets**:
@@ -93,7 +93,7 @@ The **Auto Release Pipeline** runs automatically on every push to `master`:
 push to master
   -> validate (version alignment + packaging scripts)
   -> adapter_drift, lint, typecheck, test, security, docs_gate, fedora_review (parallel)
-  -> build (RPM in Fedora 43 container)
+  -> build (RPM in Fedora 44 container)
   -> auto_tag (creates vX.Y.Z tag if missing)
   -> release (publishes GitHub Release with RPM artifact)
 ```

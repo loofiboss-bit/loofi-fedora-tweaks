@@ -1,18 +1,20 @@
 from .health_model import HealthCheck, HealthResult
 from .health_registry import HealthRegistry
 
+
 class GamingAuditor:
     """
     Gaming Mode Audit foundation for v4.0 "Atlas".
     Provides safe checks for gaming-related system state.
     """
+
     def __init__(self, health_registry: HealthRegistry):
         self.registry = health_registry
         self._initialize_gaming_checks()
 
     def _initialize_gaming_checks(self):
         """Register gaming-focused health checks."""
-        
+
         # 1. GameMode Status
         self.registry.register(HealthCheck(
             id="gaming-gamemode",

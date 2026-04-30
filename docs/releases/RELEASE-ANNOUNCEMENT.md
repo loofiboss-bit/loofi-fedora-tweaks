@@ -1,107 +1,58 @@
-# Loofi Fedora Tweaks v41.0.0 "Coverage" Release Announcement
+# Loofi Fedora Tweaks v5.0.0 "Aurora" Release Announcement
 
 ## TL;DR
 
-Loofi Fedora Tweaks v41.0.0 "Coverage" is now available. This is a pure test and CI release with zero production code changes -- coverage pushed from 74% to 80%+.
+Loofi Fedora Tweaks v5.0.0 "Aurora" is now available as the Fedora KDE 44 Experience & Compatibility release. It adds a read-only readiness center, Support Bundle v3 diagnostics, Fedora 44 COPR targeting, and optional RPM subpackages for Web API and daemon runtimes.
 
-**Install now:**
-
-```bash
-pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks && pkexec dnf install loofi-fedora-tweaks
-```
-
-**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v41.0.0
-
----
-
-## What's New in v41.0.0 "Coverage"
-
-### Test Coverage Milestone
-
-- Coverage raised from 74% to 80%+ (30,653 statements, 6,125 missed)
-- 23 test files created or expanded (~1,900 new tests)
-- Total test suite: 5,894 tests collected
-
-### CI Pipeline Hardening
-
-- `dorny/test-reporter` renders JUnit XML as GitHub check annotations
-- RPM post-install smoke test gates every release build
-- Coverage threshold bumped from 74 to 80 across all CI workflows
-
----
-
-### Recent Release Highlights (still included)
-
-### v40.0.0 "Foundation"
-
-Security hardening -- subprocess timeout enforcement, shell injection elimination,
-privilege escalation cleanup, 141 silent exception blocks fixed.
-
-### v39.0.0 "Prism"
-
-Services layer migration -- zero deprecated imports, zero inline styles,
-zero DeprecationWarnings.
-
-### v38.0.0 "Clarity"
-
-UX polish -- Doctor tab rewrite, theme correctness, Quick Actions wiring,
-undo button, toast notifications, output toolbar, risk badges.
-
----
-
-## Installation & Usage
-
-**Fedora 43 (via COPR):**
+**Install:**
 
 ```bash
 pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
 ```
 
-**GUI Mode (default):**
-
-```bash
-loofi-fedora-tweaks
-```
-
-**CLI Mode:**
-
-```bash
-loofi-fedora-tweaks --cli info
-loofi-fedora-tweaks --cli health
-loofi-fedora-tweaks --cli doctor
-```
-
-**Headless Web API:**
-
-```bash
-loofi-fedora-tweaks --web
-```
+**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v5.0.0
 
 ---
 
-## Stats
+## What's New
 
-- **Tests**: 5,894 collected
-- **Coverage**: 80%
-- **Test files**: 193
-- **Tabs**: 28
-- **Utils modules**: 106
+- Fedora KDE 44 readiness checks for Fedora version, Plasma, Qt, Wayland/X11, display manager, DNF5, PackageKit, third-party repos, Atomic/rpm-ostree, NVIDIA/akmods/Secure Boot, Flatpak KDE runtimes, and TLS cert compatibility.
+- Dashboard card and focused detail view for beginner/advanced readiness output.
+- CLI command: `loofi-fedora-tweaks --cli fedora44-readiness`.
+- Support Bundle v3 with privacy-masked Fedora KDE 44 diagnostics.
+- Optional packages: `loofi-fedora-tweaks-api` and `loofi-fedora-tweaks-daemon`.
+
+---
+
+## Installation & Usage
+
+**Fedora 44 via COPR:**
+
+```bash
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
+```
+
+**Optional runtimes:**
+
+```bash
+pkexec dnf install loofi-fedora-tweaks-api
+pkexec dnf install loofi-fedora-tweaks-daemon
+```
+
+**Run readiness:**
+
+```bash
+loofi-fedora-tweaks --cli fedora44-readiness
+loofi-fedora-tweaks --cli --json fedora44-readiness
+```
 
 ---
 
 ## Links
 
-- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v41.0.0
+- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v5.0.0
 - **Full Changelog**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CHANGELOG.md
-- **Documentation**: https://github.com/loofiboss-bit/loofi-fedora-tweaks#readme
+- **Readiness Guide**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/FEDORA_KDE_44_READINESS.md
 - **Report Issues**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues
-
----
-
-**Credits:**
-- Developed with assistance from Claude Code (Anthropic)
-- Built for the Fedora Linux community
-- Open source under MIT License
-
-**Maintainer:** Loofi ([@loofiboss-bit](https://github.com/loofiboss-bit))

@@ -6,6 +6,7 @@ Re-exports from submodules for convenient top-level access:
 
 from services.desktop.desktop import DesktopUtils
 from services.desktop.display import DisplayInfo, WaylandDisplayManager
+from services.desktop.kde44 import KDE44DesktopInfo, KDE44DesktopService
 from services.desktop.kwin import KWinManager
 from services.desktop.kwin import Result as KWinResult
 from services.desktop.tiling import DotfileManager, TilingManager
@@ -17,6 +18,8 @@ __all__ = [
     "DotfileManager",
     "KWinManager",
     "KWinResult",
+    "KDE44DesktopInfo",
+    "KDE44DesktopService",
     "TilingManager",
     "TilingResult",
     "WaylandDisplayManager",

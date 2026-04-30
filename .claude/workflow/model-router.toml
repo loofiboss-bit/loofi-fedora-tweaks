@@ -1,0 +1,11 @@
+[default]
+model = "inherit"
+reasoning_effort = "medium"
+
+[release]
+model = "inherit"
+reasoning_effort = "medium"
+
+[validation]
+model = "inherit"
+reasoning_effort = "medium"

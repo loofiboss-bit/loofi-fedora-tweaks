@@ -112,7 +112,7 @@ class TestExperienceLevelManagerVisibleTabs(unittest.TestCase):
         tabs = ExperienceLevelManager.get_visible_tabs(ExperienceLevel.BEGINNER)
 
         self.assertIsInstance(tabs, list)
-        self.assertIn("dashboard", tabs)
+        self.assertIn("atlas_dashboard", tabs)
         self.assertIn("settings", tabs)
         self.assertIn("software", tabs)
         self.assertIn("hardware", tabs)
@@ -152,7 +152,7 @@ class TestExperienceLevelManagerIsTabVisible(unittest.TestCase):
 
     def test_beginner_visible_tab(self):
         """Test that core tab is visible in beginner mode."""
-        self.assertTrue(ExperienceLevelManager.is_tab_visible("dashboard", ExperienceLevel.BEGINNER))
+        self.assertTrue(ExperienceLevelManager.is_tab_visible("atlas_dashboard", ExperienceLevel.BEGINNER))
 
     def test_beginner_hidden_tab(self):
         """Test that advanced tab is hidden in beginner mode."""
@@ -172,7 +172,7 @@ class TestExperienceLevelManagerIsTabVisible(unittest.TestCase):
 
     def test_favorites_none(self):
         """Test behavior when favorites is None."""
-        result = ExperienceLevelManager.is_tab_visible("dashboard", ExperienceLevel.BEGINNER, favorites=None)
+        result = ExperienceLevelManager.is_tab_visible("atlas_dashboard", ExperienceLevel.BEGINNER, favorites=None)
         self.assertTrue(result)
 
     def test_favorites_empty(self):

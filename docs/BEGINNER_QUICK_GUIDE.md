@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 41.0.0 "Coverage"
+> Version 5.0.0 "Aurora" — Fedora KDE 44
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -40,18 +40,32 @@ Useful shortcuts:
 
 ## 3) First 5 Actions
 
-### Action 1 — Check Health
+### Action 1 — Check Fedora KDE 44 Readiness
 
 Open:
 
-- **Overview → Home**
+- **Overview → Atlas Home**
+- **Fedora KDE 44 Readiness**
+
+Review the score and safe guidance. Advanced details are optional.
+
+CLI equivalent:
+
+```bash
+loofi fedora44-readiness
+```
+
+### Action 2 — Check Health
+
+Open:
+
 - **Overview → System Monitor**
 
 Look for high CPU/RAM/process spikes.
 
 ![System Monitor](images/user-guide/system-monitor.png)
 
-### Action 2 — Run Updates
+### Action 3 — Run Updates
 
 Open **Manage → Maintenance → Updates** and run **Update All**.
 
@@ -62,7 +76,7 @@ Notes:
 
 ![Maintenance Updates](images/user-guide/maintenance-updates.png)
 
-### Action 3 — Clean Up
+### Action 4 — Clean Up
 
 Open **Manage → Maintenance → Cleanup** and run:
 
@@ -70,7 +84,7 @@ Open **Manage → Maintenance → Cleanup** and run:
 - journal vacuum
 - SSD trim (if applicable)
 
-### Action 4 — Security Pass
+### Action 5 — Security Pass
 
 Open **Network & Security → Security & Privacy**:
 
@@ -80,7 +94,7 @@ Open **Network & Security → Security & Privacy**:
 
 ![Security and Privacy](images/user-guide/security-privacy.png)
 
-### Action 5 — Save Preferences
+### Action 6 — Save Preferences
 
 Open **Personalize → Settings** and configure:
 
@@ -105,6 +119,7 @@ Open **Personalize → Settings** and configure:
 ```bash
 loofi info
 loofi health
+loofi fedora44-readiness
 loofi doctor
 loofi cleanup all
 loofi security-audit
@@ -115,5 +130,6 @@ loofi security-audit
 ## 6) Next Docs
 
 - Full user guide: `docs/USER_GUIDE.md`
+- Fedora KDE 44 readiness: `docs/FEDORA_KDE_44_READINESS.md`
 - Advanced operations: `docs/ADVANCED_ADMIN_GUIDE.md`
 - Troubleshooting: `docs/TROUBLESHOOTING.md`

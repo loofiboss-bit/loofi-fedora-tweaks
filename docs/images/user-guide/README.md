@@ -2,9 +2,9 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v46.0.0 "Navigator"
+**Last verified**: v5.0.0 "Aurora"
 
-**Status**: Screenshot set refreshed on 2026-02-17 for the current UI.
+**Status**: Screenshot references are current for v5 docs; image pixels should be refreshed after the Fedora KDE 44 UI smoke pass.
 
 ## Current Files
 
@@ -51,7 +51,7 @@ Screenshots must be captured manually on a running instance. To regenerate:
 | `community-marketplace.png` | Automation > Community | Show marketplace tab |
 | `settings-appearance.png` | Personalize > Settings | Show appearance options |
 
-### Additional screenshots to consider for v46
+### Additional screenshots to consider after v5
 
 - `extensions-tab.png` -- Manage > Extensions (new in v37)
 - `backup-tab.png` -- Manage > Backup (new in v37)

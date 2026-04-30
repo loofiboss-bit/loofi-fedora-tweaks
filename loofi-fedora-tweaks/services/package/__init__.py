@@ -6,6 +6,7 @@ for DNF and rpm-ostree package management.
 """
 
 from services.package.base import BasePackageService
+from services.package.dnf5_health import DNF5HealthReport, DNF5HealthService, RepoRisk
 from services.package.service import (
     DnfPackageService,
     RpmOstreePackageService,
@@ -15,6 +16,9 @@ from services.package.service import (
 __all__ = [
     "BasePackageService",
     "DnfPackageService",
+    "DNF5HealthReport",
+    "DNF5HealthService",
     "RpmOstreePackageService",
+    "RepoRisk",
     "get_package_service",
 ]

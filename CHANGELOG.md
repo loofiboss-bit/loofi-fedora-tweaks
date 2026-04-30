@@ -4,6 +4,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [5.0.0] - 2026-04-30 "Aurora"
+
+### Added
+
+- **Fedora KDE 44 Readiness Center**: New read-only diagnostic layer for Fedora version, KDE Plasma, Qt, Wayland/X11, display manager, DNF5, PackageKit, repository risk, Atomic/rpm-ostree, NVIDIA/akmods/Secure Boot, Flatpak KDE runtimes, and TLS certificate compatibility.
+- **Dashboard Entry Point**: Added a task card that opens a focused readiness detail view instead of adding another permanent sidebar tab.
+- **CLI Readiness Command**: Added `loofi-fedora-tweaks --cli fedora44-readiness [--advanced]` with JSON support through the global `--json` flag.
+- **Support Bundle v3**: Added privacy-masked Fedora KDE 44 diagnostics, failed services, journal warnings/errors, Flatpak runtimes, and masked repository signals.
+- **Packaging Split**: Added optional `loofi-fedora-tweaks-api` and `loofi-fedora-tweaks-daemon` RPM subpackages so the base GUI/CLI RPM no longer requires Web API dependencies.
+
+### Changed
+
+- Updated active release metadata to `5.0.0 "Aurora"` across runtime, packaging, workflow, and release artifacts.
+- Updated active build, release, and COPR targets from Fedora 43 to Fedora 44.
+- Marked Fedora KDE 44 as the supported target while keeping Fedora 43 as best-effort compatible.
+
 ## [4.0.0] - 2026-04-26 "Atlas"
 
 ### Added

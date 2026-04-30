@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 41.0.0 "Coverage"
+> Version 5.0.0 "Aurora" — Fedora KDE 44
 
 This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
 
@@ -23,6 +23,7 @@ Core behavior:
 - Privileged actions executed with `pkexec` (never `sudo`)
 - Automatic Fedora mode detection (`dnf` vs `rpm-ostree`)
 - Safety confirmations for dangerous operations
+- Fedora KDE 44 readiness diagnostics with beginner and advanced views
 
 ---
 
@@ -33,6 +34,13 @@ Install from [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/
 ```bash
 sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
 sudo dnf install loofi-fedora-tweaks
+```
+
+Optional runtime packages:
+
+```bash
+sudo dnf install loofi-fedora-tweaks-api
+sudo dnf install loofi-fedora-tweaks-daemon
 ```
 
 Or download the RPM from the [Releases](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases) page:
@@ -91,7 +99,7 @@ Current category model:
 
 ### Daily (2–3 minutes)
 
-1. Check **Overview → Home** for health and activity.
+1. Check **Overview → Atlas Home → Fedora KDE 44 Readiness** after install or system upgrades.
 2. Check **Overview → System Monitor** for abnormal CPU/RAM/process usage.
 3. Check **Network & Security → Security & Privacy** if score dropped or alerts appear.
 
@@ -123,6 +131,7 @@ loofi support-bundle
 ## Overview
 
 - **Home**: health score, quick status, fast navigation
+- **Fedora KDE 44 Readiness**: dashboard card for compatibility checks
 - **System Info**: OS/kernel/hardware/system metadata
 - **System Monitor**: performance and process analysis
 
@@ -191,6 +200,8 @@ System and diagnostics:
 ```bash
 loofi info
 loofi health
+loofi fedora44-readiness
+loofi fedora44-readiness --advanced
 loofi doctor
 loofi support-bundle
 ```
@@ -237,6 +248,7 @@ Machine-readable output:
 ```bash
 loofi --json info
 loofi --json health
+loofi --json fedora44-readiness
 ```
 
 ---

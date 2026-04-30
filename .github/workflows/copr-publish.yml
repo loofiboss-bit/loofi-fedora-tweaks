@@ -20,12 +20,12 @@ concurrency:
 env:
   PYTHON_VERSION: "3.12"
   COPR_PROJECT: "loofi-fedora-tweaks"
-  COPR_CHROOTS: "fedora-43-x86_64"
+  COPR_CHROOTS: "fedora-44-x86_64"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
-    container: fedora:43
+    container: fedora:44
     timeout-minutes: 20
     steps:
       - name: Install dependencies

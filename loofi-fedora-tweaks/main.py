@@ -92,11 +92,27 @@ def main():
 
     if args.daemon:
         # Run in daemon mode
-        from daemon.runtime import run_daemon
+        try:
+            from daemon.runtime import run_daemon
+        except ImportError as exc:
+            print(
+                "ERROR: Daemon dependencies are missing. Install loofi-fedora-tweaks-daemon and retry.",
+                file=sys.stderr,
+            )
+            _log.critical("Daemon dependency import failed: %s", exc, exc_info=True)
+            sys.exit(1)
 
         run_daemon()
     elif args.web:
-        from utils.api_server import APIServer
+        try:
+            from utils.api_server import APIServer
+        except ImportError as exc:
+            print(
+                "ERROR: Web API dependencies are missing. Install loofi-fedora-tweaks-api and retry.",
+                file=sys.stderr,
+            )
+            _log.critical("Web API dependency import failed: %s", exc, exc_info=True)
+            sys.exit(1)
 
         api_host = os.getenv("LOOFI_API_HOST", "127.0.0.1")
         try:

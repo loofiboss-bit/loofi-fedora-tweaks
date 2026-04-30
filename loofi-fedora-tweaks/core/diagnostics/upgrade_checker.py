@@ -2,18 +2,20 @@ from typing import List
 from .health_model import HealthCheck, HealthResult
 from .health_registry import HealthRegistry
 
+
 class UpgradeAssistant:
     """
     Fedora Upgrade Assistant foundation for v4.0 "Atlas".
     Provides specialized pre-upgrade diagnostic suites.
     """
+
     def __init__(self, health_registry: HealthRegistry):
         self.registry = health_registry
         self._initialize_upgrade_checks()
 
     def _initialize_upgrade_checks(self):
         """Register checks specifically for Fedora version upgrades."""
-        
+
         # 1. Major Version Check
         self.registry.register(HealthCheck(
             id="upgrade-fedora-version",

@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 4.0.0 "Atlas" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora Linux
+> **Version**: 5.0.0 "Aurora" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 
@@ -15,6 +15,7 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   ├── diagnostics/          # Health & Repair Autopilot (HRA)
 │   │   ├── health_registry.py# Central registry for system checks
 │   │   ├── health_model.py   # Structured HealthCheck/HealthResult schemas
+│   │   ├── fedora44_readiness.py# Fedora KDE 44 readiness aggregation
 │   │   ├── upgrade_checker.py# Fedora version transition assistant
 │   │   ├── task_dashboard.py # Goal-oriented task logic
 │   │   └── gaming_audit.py   # Specialized hardware/gaming diagnostics

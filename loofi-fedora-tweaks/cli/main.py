@@ -322,6 +322,34 @@ def cmd_support_bundle(_args):
     return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
 
 
+def cmd_fedora44_readiness(args):
+    """Run Fedora KDE 44 readiness diagnostics."""
+    from core.diagnostics.fedora44_readiness import Fedora44Readiness
+
+    report = Fedora44Readiness.run()
+    advanced = getattr(args, "advanced", False)
+    if _json_output:
+        _output_json(report.to_dict(advanced=True))
+        return 0 if report.status == "ready" else 1
+
+    _print("═══════════════════════════════════════════")
+    _print("   Fedora KDE 44 Readiness")
+    _print("═══════════════════════════════════════════")
+    _print(f"\nScore: {report.score}/100")
+    _print(report.summary)
+    for check in report.checks:
+        marker = "OK" if check.status == "pass" else check.status.upper()
+        _print(f"\n[{marker}] {check.title}")
+        _print(f"  {check.summary}")
+        _print(f"  {check.beginner_guidance}")
+        if advanced:
+            if check.command_preview:
+                _print(f"  Command: {' '.join(check.command_preview)}")
+            if check.advanced_detail:
+                _print(f"  Detail: {check.advanced_detail[:600]}")
+    return 0 if report.status == "ready" else 1
+
+
 # ==================== v11.5 / v12.0 COMMANDS ====================
 
 
@@ -946,6 +974,9 @@ def main(argv: Optional[List[str]] = None):
     # Support bundle
     subparsers.add_parser("support-bundle", help="Export support bundle ZIP")
 
+    readiness_parser = subparsers.add_parser("fedora44-readiness", help="Run Fedora KDE 44 readiness diagnostics")
+    readiness_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")
+
     # ==================== v11.5 / v12.0 subparsers ====================
 
     # VM management
@@ -1266,6 +1297,7 @@ def main(argv: Optional[List[str]] = None):
         "plugins": cmd_plugins,
         "plugin-marketplace": cmd_plugin_marketplace,
         "support-bundle": cmd_support_bundle,
+        "fedora44-readiness": cmd_fedora44_readiness,
         # v11.5 / v12.0
         "vm": cmd_vm,
         "vfio": cmd_vfio,

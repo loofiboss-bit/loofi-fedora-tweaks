@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        4.0.0
+Version:        5.0.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -20,12 +20,6 @@ Requires:       mesa-libGL
 Requires:       mesa-libEGL
 Requires:       polkit
 Requires:       /usr/bin/notify-send
-Requires:       python3-fastapi
-Requires:       python3-uvicorn
-Requires:       python3-jwt
-Requires:       python3-bcrypt
-Requires:       python3-httpx
-Requires:       python3-dbus
 Requires:       hicolor-icon-theme
 Requires:       google-noto-color-emoji-fonts
 
@@ -34,14 +28,39 @@ Obsoletes:      loofi-fedora-tweaks < 1:1.0.0
 Provides:       loofi-fedora-tweaks = 1:%{version}-%{release}
 
 %description
-A comprehensive GUI application for Fedora 43+
-(KDE Plasma) with system maintenance, developer
+A comprehensive GUI application for Fedora KDE 44
+with system maintenance, developer
 tooling, AI integration, security hardening,
 window management, virtualization, mesh networking,
 and workspace state teleportation. Features include
 VM Quick-Create, VFIO GPU Passthrough, Loofi Link
 Mesh, State Teleport, AI Lab, Security Center,
 Director, Containers, and Replicator IaC.
+
+Fedora 43 remains best-effort compatible, but v5.0.0 targets
+the Fedora KDE 44 desktop experience.
+
+%package api
+Summary:        Optional Loofi Fedora Tweaks Web API runtime
+Requires:       %{name} = %{epoch}:%{version}-%{release}
+Requires:       python3-fastapi
+Requires:       python3-uvicorn
+Requires:       python3-jwt
+Requires:       python3-bcrypt
+Requires:       python3-httpx
+
+%description api
+Optional FastAPI/Uvicorn web API runtime for Loofi Fedora Tweaks.
+Install this package only when the headless web API mode is needed.
+
+%package daemon
+Summary:        Optional Loofi Fedora Tweaks user daemon runtime
+Requires:       %{name} = %{epoch}:%{version}-%{release}
+Requires:       python3-dbus
+
+%description daemon
+Optional user daemon runtime and systemd user service for Loofi Fedora Tweaks.
+The base GUI and CLI package does not require the daemon service.
 
 %prep
 %setup -q
@@ -90,6 +109,7 @@ install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.storage.policy
 install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.service-manage.policy %{buildroot}%{_datadir}/polkit-1/actions/
 install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.kernel.policy %{buildroot}%{_datadir}/polkit-1/actions/
 install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.security.policy %{buildroot}%{_datadir}/polkit-1/actions/
+install -m 644 %{name}-api.service %{buildroot}%{_userunitdir}/%{name}-api.service
 install -m 644 loofi-fedora-tweaks/config/loofi-fedora-tweaks.service %{buildroot}%{_userunitdir}/
 install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/
 install -Dm 644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
@@ -99,13 +119,22 @@ install -Dm 644 %{name}.1 %{buildroot}%{_mandir}/man1/%{name}.1
 # Run basic import validation
 PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; print('Import OK')" || :
 
-%post
+%post api
+%systemd_user_post %{name}-api.service
+
+%preun api
+%systemd_user_preun %{name}-api.service
+
+%postun api
+%systemd_user_postun_with_restart %{name}-api.service
+
+%post daemon
 %systemd_user_post %{name}.service
 
-%preun
+%preun daemon
 %systemd_user_preun %{name}.service
 
-%postun
+%postun daemon
 %systemd_user_postun_with_restart %{name}.service
 
 %files
@@ -121,11 +150,24 @@ PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; print('Import OK')" || :
 %{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.service-manage.policy
 %{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.kernel.policy
 %{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.security.policy
-%{_userunitdir}/loofi-fedora-tweaks.service
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
 %{_mandir}/man1/%{name}.1*
 
+%files api
+%{_userunitdir}/loofi-fedora-tweaks-api.service
+
+%files daemon
+%{_userunitdir}/loofi-fedora-tweaks.service
+
 %changelog
+* Thu Apr 30 2026 Loofi <loofi@example.com> - 5.0.0-1
+- v5.0.0 "Aurora" — Fedora KDE 44 Experience & Compatibility
+- Added Fedora KDE 44 Readiness Center for Fedora, Plasma, Qt, Wayland, DNF5, PackageKit, repo, Atomic, NVIDIA, Flatpak, and TLS diagnostics
+- Added dashboard and CLI readiness entry points with read-only checks and advanced detail mode
+- Extended support bundle to v3 with privacy-masked Fedora KDE 44 diagnostics
+- Split optional Web API and daemon runtime dependencies into subpackages
+- Updated COPR/workflow target to Fedora 44
+
 * Sun Apr 26 2026 Loofi <loofi@example.com> - 4.0.0-1
 - v4.0.0 "Atlas" — Guided Fedora Control Center
 - Health & Repair Autopilot (HRA) for automated system diagnostics

@@ -58,6 +58,35 @@
 | 2.12.0  | API Migration Slice 8           | DONE    | API-first parity completion for service-layer residuals and workflow hardening                |
 | 2.13.0  | Alignment                       | DONE    | Documentation/workflow convergence and release-authority hardening                            |
 | v4.0.0  | Atlas                           | DONE    | Guided diagnostics, safe repairs, rollback-first actions, and task-based UX                   |
+| v5.0.0  | Aurora                          | DONE    | Fedora KDE 44 experience, readiness diagnostics, support bundle v3, packaging split           |
+
+---
+
+## [DONE] v5.0.0 "Aurora" — Fedora KDE 44 Experience & Compatibility
+
+**Theme**: Fedora KDE 44 readiness without feature bloat
+**Focus**: Compatibility diagnostics, supportability, and release/package alignment.
+
+### Scope
+
+v5.0 "Aurora" builds on the v4 Atlas assistant architecture and adds a Fedora KDE 44 readiness center. The release keeps checks read-only by default, routes users through dashboard and CLI surfaces, extends support bundle diagnostics, and cleans optional Web API/daemon RPM dependencies out of the base package.
+
+### Deliverables
+
+- [x] Version metadata aligned to `5.0.0 "Aurora"`
+- [x] Fedora KDE 44 readiness service/core layer
+- [x] Dashboard card and focused detail view
+- [x] CLI command: `fedora44-readiness`
+- [x] Support Bundle v3 with privacy-masked Fedora KDE 44 diagnostics
+- [x] Fedora 44 COPR/workflow target alignment
+- [x] Optional RPM split for API and daemon runtimes
+- [x] v5 documentation, changelog, release notes, and readiness guide
+
+### Compatibility
+
+- Fedora KDE 44 is the supported target.
+- Fedora 43 remains best-effort compatible where existing functionality still applies.
+- All readiness checks are read-only; repair workflows continue to require Atlas action metadata for command preview, risk level, and rollback guidance.
 
 ---
 

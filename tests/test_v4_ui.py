@@ -149,10 +149,10 @@ def test_task_wizard_dynamic_execution_fixed(mock_execute):
     assert mock_execute.call_count == 2
     assert "2 actions succeeded" in wizard.result_label.text()
 
-@patch("core.export.support_bundle_v2.SupportBundleV2.generate_bundle")
+@patch("core.export.support_bundle_v3.SupportBundleV3.generate_bundle")
 def test_support_bundle_wizard(mock_generate):
     mock_generate.return_value = {
-        "v": "4.0.0-atlas",
+        "v": "5.0.0-aurora-support-v3",
         "system": {"os": "Fedora"},
         "health": []
     }

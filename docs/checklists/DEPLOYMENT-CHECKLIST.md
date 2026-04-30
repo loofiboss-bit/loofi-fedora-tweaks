@@ -1,8 +1,8 @@
-# v41.0.0 "Coverage" Production Deployment Checklist
+# v5.0.0 "Aurora" Production Deployment Checklist
 
 ## Completed
 
-- [ ] Git tag v41.0.0 created and pushed
+- [ ] Git tag v5.0.0 created and pushed
 - [ ] GitHub release created with comprehensive notes
 - [ ] RPM packages built (via CI auto-release pipeline)
 - [ ] Release announcement drafted: `docs/releases/RELEASE-ANNOUNCEMENT.md`
@@ -26,7 +26,7 @@ pkexec dnf install copr-cli
 
 ```bash
 copr-cli create loofi-fedora-tweaks \
-  --chroot fedora-43-x86_64 \
+  --chroot fedora-44-x86_64 \
   --description "System tweaks and optimizations for Fedora Linux" \
   --instructions "pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks && pkexec dnf install loofi-fedora-tweaks"
 ```
@@ -35,7 +35,7 @@ copr-cli create loofi-fedora-tweaks \
 
 ```bash
 # From project root
-copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-41.0.0-1.src.rpm
+copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-5.0.0-1.src.rpm
 
 # Monitor build progress
 copr-cli watch-build <build-id>
@@ -50,7 +50,7 @@ pkexec dnf install loofi-fedora-tweaks
 
 # Test installation
 loofi-fedora-tweaks --version
-# Expected: 41.0.0 Coverage
+# Expected: 5.0.0 Aurora
 ```
 
 ---
@@ -59,7 +59,7 @@ loofi-fedora-tweaks --version
 
 ### Server Prerequisites
 
-- Fedora 43 or RHEL 9 server
+- Fedora 44 or RHEL 9 server
 - Domain name pointing to server IP
 - Ports 80/443 open in firewall
 
@@ -112,7 +112,7 @@ pkexec systemctl enable certbot-renew.timer
 ```bash
 # Test HTTPS endpoint
 curl https://YOUR_DOMAIN/api/health
-# Expected: {"status": "ok", "version": "41.0.0", "codename": "Coverage"}
+# Expected: {"status": "ok", "version": "5.0.0", "codename": "Aurora"}
 
 # Test authentication flow
 curl -X POST https://YOUR_DOMAIN/api/key
@@ -135,18 +135,18 @@ pkexec firewall-cmd --reload
 ### Fedora Discussion
 
 - **Forum**: https://discussion.fedoraproject.org/c/desktop/gnome/19
-- **Title**: "Loofi Fedora Tweaks v41.0.0 'Coverage' - 80% Test Coverage Milestone"
+- **Title**: "Loofi Fedora Tweaks v5.0.0 'Aurora' - Fedora KDE 44 Readiness"
 - **Content**: Use `docs/releases/RELEASE-ANNOUNCEMENT.md`
 
 ### Reddit
 
 - **Subreddit**: r/Fedora
-- **Title**: "Loofi Fedora Tweaks v41.0.0 'Coverage' - 80% Test Coverage"
+- **Title**: "Loofi Fedora Tweaks v5.0.0 'Aurora' - Fedora KDE 44 Readiness"
 - **Flair**: "New Release"
 
 ### GitHub
 
-- [ ] Publish: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v41.0.0
+- [ ] Publish: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v5.0.0
 
 ---
 
@@ -154,9 +154,9 @@ pkexec firewall-cmd --reload
 
 ### COPR Checklist
 
-- [ ] COPR build succeeds for Fedora 43
-- [ ] Package installs cleanly on fresh Fedora 43
-- [ ] `loofi-fedora-tweaks --version` shows 41.0.0
+- [ ] COPR build succeeds for Fedora 44
+- [ ] Package installs cleanly on fresh Fedora 44
+- [ ] `loofi-fedora-tweaks --version` shows 5.0.0
 - [ ] GUI launches successfully
 - [ ] Web mode starts without errors
 
@@ -184,7 +184,7 @@ pkexec firewall-cmd --reload
 
 ```bash
 rpmbuild -bs loofi-fedora-tweaks.spec
-copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-41.0.0-1.src.rpm
+copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-5.0.0-1.src.rpm
 ```
 
 ### If Web Service Fails

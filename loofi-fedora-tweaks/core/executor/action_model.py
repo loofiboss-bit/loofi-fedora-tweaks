@@ -1,6 +1,8 @@
 from dataclasses import dataclass, field
-from typing import List, Optional, Callable, Any
-from .action_result import ActionResult
+from typing import List, Optional
+
+from services.system.system import SystemManager
+
 
 @dataclass
 class SystemAction:
@@ -13,18 +15,18 @@ class SystemAction:
     explanation: str
     command: str
     args: List[str] = field(default_factory=list)
-    
+
     # Safety Metadata
     risk_level: str = "info"  # info | low | medium | high
     privileged: bool = False
     confirmation_required: bool = True
     dry_run_supported: bool = True
-    
+
     # Pre-checks & Reverts
     preflight_checks: List[str] = field(default_factory=list)
     revert_hint: Optional[str] = None
     backup_recommended: bool = False
-    
+
     # External Refs
     docs_link: Optional[str] = None
 
@@ -40,11 +42,13 @@ class SystemAction:
             "revert_hint": self.revert_hint
         }
 
+
 class AtlasActionRegistry:
     """
     Registry for v4.0 SystemActions.
     Pairs with HealthCheck items for guided repairs.
     """
+
     def __init__(self):
         self._actions: dict[str, SystemAction] = {}
         self._initialize_core_actions()
@@ -57,12 +61,13 @@ class AtlasActionRegistry:
 
     def _initialize_core_actions(self):
         """Register baseline actions for guided assistant."""
-        
+        package_manager = SystemManager.get_package_manager()
+
         self.register(SystemAction(
             id="dnf-clean-all",
             title="Clean DNF Cache",
             explanation="Removes all cached package data to free space and fix metadata issues.",
-            command="dnf",
+            command=package_manager,
             args=["clean", "all"],
             risk_level="low",
             privileged=True,
@@ -74,7 +79,7 @@ class AtlasActionRegistry:
             title="Restart Service",
             explanation="Attempts to restart a failed system service.",
             command="systemctl",
-            args=["restart"], # Needs service name appended at runtime
+            args=["restart"],  # Needs service name appended at runtime
             risk_level="medium",
             privileged=True,
             revert_hint="Stop the service if it causes issues."
@@ -95,7 +100,7 @@ class AtlasActionRegistry:
             id="gaming-install-tools",
             title="Install Gaming Tools",
             explanation="Installs GameMode, MangoHud, and Steam Devices rules.",
-            command="dnf",
+            command=package_manager,
             args=["install", "-y", "gamemode", "mangohud", "steam-devices"],
             risk_level="medium",
             privileged=True

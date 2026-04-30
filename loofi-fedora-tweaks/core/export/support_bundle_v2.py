@@ -1,16 +1,18 @@
 import json
 import time
-from typing import Any, Dict, List
+from typing import Any, Dict
 from .report_exporter import ReportExporter
 from ..diagnostics.health_registry import HealthRegistry
 from ..executor.action_executor import ActionExecutor
 
+
 class SupportBundleV2:
     """
     v4.0 "Atlas" Support Bundle.
-    Aggregates system info, health results, and action logs into a 
+    Aggregates system info, health results, and action logs into a
     structured diagnostic bundle.
     """
+
     def __init__(self, health_registry: HealthRegistry):
         self.registry = health_registry
         self.exporter = ReportExporter()
@@ -23,7 +25,7 @@ class SupportBundleV2:
         """
         # 1. Base system info
         system_info = self.exporter.gather_system_info()
-        
+
         # 2. Run all registered health checks
         health_results = []
         for check in self.registry.list_checks():
@@ -49,7 +51,7 @@ class SupportBundleV2:
             "network_summary": self.exporter.gather_network_info(),
             "selinux": self.exporter.gather_selinux_info()
         }
-        
+
         return bundle
 
     def save_json(self, path: str) -> str:
