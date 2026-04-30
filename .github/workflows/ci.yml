@@ -190,7 +190,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
       - run: pip install -r requirements.txt pip-audit
-      - run: pip-audit --strict --progress-spinner off
+      - run: pip-audit --strict --progress-spinner off -r requirements.txt
 
   package_flatpak:
     runs-on: ubuntu-latest
