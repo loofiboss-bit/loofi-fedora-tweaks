@@ -646,13 +646,44 @@ jobs:
           EOF
           chmod 600 ~/.config/copr
 
+      - name: Resolve effective COPR chroots
+        env:
+          COPR_OWNER: ${{ secrets.COPR_USERNAME }}
+        run: |
+          set -euo pipefail
+          PROJECT_JSON=$(curl -fsSL "https://copr.fedorainfracloud.org/api_3/project?ownername=${COPR_OWNER}&projectname=${COPR_PROJECT}")
+          AVAILABLE_CHROOTS=$(python3 -c 'import json,sys; d=json.loads(sys.argv[1]); print(" ".join(sorted((d.get("chroot_repos") or {}).keys())))' "$PROJECT_JSON")
+
+          if [ -z "${AVAILABLE_CHROOTS}" ]; then
+            echo "::error::No chroots found for COPR project ${COPR_OWNER}/${COPR_PROJECT}"
+            exit 1
+          fi
+
+          EFFECTIVE_CHROOTS=""
+          for chroot in ${COPR_CHROOTS}; do
+            for available in ${AVAILABLE_CHROOTS}; do
+              if [ "${chroot}" = "${available}" ]; then
+                EFFECTIVE_CHROOTS="${EFFECTIVE_CHROOTS} ${chroot}"
+              fi
+            done
+          done
+
+          if [ -z "${EFFECTIVE_CHROOTS}" ]; then
+            echo "::warning::Requested chroots '${COPR_CHROOTS}' not configured on ${COPR_OWNER}/${COPR_PROJECT}. Falling back to available chroots: ${AVAILABLE_CHROOTS}"
+            EFFECTIVE_CHROOTS="${AVAILABLE_CHROOTS}"
+          fi
+
+          EFFECTIVE_CHROOTS=$(echo "${EFFECTIVE_CHROOTS}" | xargs)
+          echo "COPR_CHROOTS_EFFECTIVE=${EFFECTIVE_CHROOTS}" >> "$GITHUB_ENV"
+          echo "Resolved COPR chroots: ${EFFECTIVE_CHROOTS}"
+
       - name: Submit build to COPR
         run: |
           SRPM=$(ls rpmbuild/SRPMS/*.src.rpm | head -1)
           VER="${{ needs.validate.outputs.version }}"
           echo "Submitting ${SRPM} (v${VER}) to COPR project ${COPR_PROJECT}"
           CHROOT_ARGS=""
-          for chroot in ${COPR_CHROOTS}; do
+          for chroot in ${COPR_CHROOTS_EFFECTIVE}; do
             CHROOT_ARGS="${CHROOT_ARGS} --chroot ${chroot}"
           done
           echo "Target chroots:${CHROOT_ARGS}"
@@ -664,6 +695,6 @@ jobs:
         run: |
           VER="${{ needs.validate.outputs.version }}"
           echo "::notice::COPR build submitted for loofi-fedora-tweaks v${VER}"
-          echo "::notice::Target chroots: ${COPR_CHROOTS}"
+          echo "::notice::Target chroots: ${COPR_CHROOTS_EFFECTIVE:-${COPR_CHROOTS}}"
           echo "Track build status at:"
           echo "  https://copr.fedorainfracloud.org/coprs/${{ secrets.COPR_USERNAME }}/${COPR_PROJECT}/builds/"
