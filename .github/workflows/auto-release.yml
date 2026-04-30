@@ -687,7 +687,7 @@ jobs:
           done
           echo "Target chroots:${CHROOT_ARGS}"
           # shellcheck disable=SC2086
-          copr-cli build "${COPR_PROJECT}" "${SRPM}" --nowait ${CHROOT_ARGS}
+          copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --nowait ${CHROOT_ARGS}
 
       - name: COPR build summary
         if: always()
