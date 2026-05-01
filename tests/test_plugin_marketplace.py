@@ -207,13 +207,13 @@ class TestPluginMarketplaceParseEntry:
         entry = _make_plugin_entry()
         entry["homepage"] = "https://example.com"
         entry["license"] = "MIT"
-        entry["min_loofi_version"] = "26.0.0"
+        entry["min_loofi_version"] = "26.0.0"  # fixture-version
 
         metadata = mp._parse_plugin_entry(entry)
 
         assert metadata.homepage == "https://example.com"
         assert metadata.license == "MIT"
-        assert metadata.min_loofi_version == "26.0.0"
+        assert metadata.min_loofi_version == "26.0.0"  # fixture-version
 
     def test_parse_defaults_featured_to_false(self):
         """_parse_plugin_entry() defaults featured to False."""

@@ -1,26 +1,33 @@
-# Fedora KDE 44 Readiness
+# Release Readiness
 
-Loofi Fedora Tweaks v5.0.0 "Aurora" includes a read-only readiness center for Fedora KDE 44. It is designed to explain compatibility signals before an upgrade or after a fresh install without changing system state.
+Loofi Fedora Tweaks v6.0.0 "Compass" includes a read-only release readiness center. Fedora KDE 44 is the supported target, and Fedora 45 is available as a preview-only planning profile.
 
 ## Run It
 
 GUI:
 
 - Open **Atlas Home**.
-- Choose **Fedora KDE 44 Readiness**.
+- Choose **Release Readiness**.
 - Use **Advanced** only when you need raw command/status details.
 
 CLI:
 
 ```bash
+loofi-fedora-tweaks --cli readiness --target 44
+loofi-fedora-tweaks --cli readiness --target 45-preview
+loofi-fedora-tweaks --cli readiness --target 44 --advanced
+loofi-fedora-tweaks --cli --json readiness --target 44
+```
+
+Compatibility alias:
+
+```bash
 loofi-fedora-tweaks --cli fedora44-readiness
-loofi-fedora-tweaks --cli fedora44-readiness --advanced
-loofi-fedora-tweaks --cli --json fedora44-readiness
 ```
 
 ## What It Checks
 
-- Fedora release, with Fedora KDE 44 as the supported target and Fedora 43 as best-effort compatible.
+- Fedora release, with Fedora KDE 44 as the supported target and Fedora 45 as preview-only.
 - KDE Plasma and Qt versions.
 - Wayland vs X11 session.
 - Display manager and Plasma login manager status, including SDDM/GDM detection.
@@ -28,22 +35,26 @@ loofi-fedora-tweaks --cli --json fedora44-readiness
 - Atomic/rpm-ostree status, pending deployment, and layered packages.
 - NVIDIA hardware, kernel module status, akmods, Secure Boot, and MOK state.
 - Flatpak KDE runtimes.
-- `/etc/pki/tls/cert.pem` compatibility.
+- TLS certificate compatibility, including Fedora's CA trust bundle layout.
 
 ## Safety Model
 
 Readiness checks never execute repair commands. Any command shown in the UI or JSON output is a preview of the read-only probe used to inspect the system.
 
-Repair actions remain part of the Atlas action model and must include:
+Recommendation metadata remains manual by default and may include:
 
 - risk level
 - command preview
-- dry-run/preview behavior where relevant
+- reversibility
 - rollback or revert guidance
+- docs link
+- manual-only flag
 
-## Support Bundle v3
+Repair actions remain part of the Atlas action model and must use existing `pkexec` and rollback conventions before anything mutates the system.
 
-Support bundles now include privacy-masked Fedora KDE 44 readiness data:
+## Support Bundle v4
+
+Support bundles now include privacy-masked generic `release_readiness` data:
 
 - Fedora/KDE/Qt versions
 - session type and display manager
@@ -54,5 +65,7 @@ Support bundles now include privacy-masked Fedora KDE 44 readiness data:
 - recent journal warnings/errors
 - Flatpak runtimes
 - masked repository list
+
+The legacy `fedora_kde_44_readiness` field is preserved as an alias for older support tooling.
 
 Home paths, token-like values, and private file contents are not intentionally included.

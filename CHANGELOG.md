@@ -4,6 +4,27 @@
 
 All notable changes to this project will be documented in this file.
 
+## [6.0.0] - 2026-05-01 "Compass"
+
+### Added
+
+- **Generic Release Readiness Engine**: Replaced the Fedora-44-only readiness implementation with target metadata for Fedora KDE 44 and a non-blocking Fedora 45 preview profile.
+- **Typed Recommendations**: Readiness findings can now include command preview, risk level, reversibility, rollback hint, docs link, and manual-only metadata without running repairs.
+- **Guided Readiness UI**: Added grouped readiness sections, severity filters, beginner/advanced rendering, asynchronous probes, copy support summary, and Support Bundle v4 export.
+- **CLI Readiness Command**: Added `loofi-fedora-tweaks --cli readiness [--target 44|45-preview] [--advanced]`.
+- **Support Bundle v4**: Added generic `release_readiness` data while preserving the legacy `fedora_kde_44_readiness` field as a compatibility alias.
+
+### Changed
+
+- Kept `fedora44-readiness` as a compatibility alias for one major release.
+- Updated the Atlas dashboard task from a Fedora-44-specific card to a release readiness entry point.
+- Updated TLS certificate compatibility guidance to treat Fedora's CA trust bundle path as valid before recommending any repair.
+
+### Fixed
+
+- Resolved the ambiguous historical `[6.0.0]` changelog heading by marking the older pre-SemVer entry as legacy.
+- Closed v5 workflow drift by activating v6.0.0 "Compass" specs and release metadata.
+
 ## [5.0.0] - 2026-04-30 "Aurora"
 
 ### Added
@@ -2199,7 +2220,7 @@ loofi network dns       # Set DNS provider
 
 ---
 
-## [6.0.0] - 2026-02-07 "Autonomy Update"
+## [Legacy 6.0.0] - 2026-02-07 "Autonomy Update"
 
 ### Added
 

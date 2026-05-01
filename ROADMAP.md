@@ -59,6 +59,36 @@
 | 2.13.0  | Alignment                       | DONE    | Documentation/workflow convergence and release-authority hardening                            |
 | v4.0.0  | Atlas                           | DONE    | Guided diagnostics, safe repairs, rollback-first actions, and task-based UX                   |
 | v5.0.0  | Aurora                          | DONE    | Fedora KDE 44 experience, readiness diagnostics, support bundle v3, packaging split           |
+| v6.0.0  | Compass                         | ACTIVE  | Generic release readiness engine, guided recommendations, support bundle v4                  |
+
+---
+
+## [ACTIVE] v6.0.0 "Compass" — Release Readiness & Guided Repair Planning
+
+**Theme**: Turn Fedora KDE 44 readiness into a reusable, guided readiness workflow.
+**Focus**: Generic target metadata, typed recommendations, beginner/advanced UX, and supportable diagnostics.
+
+### Scope
+
+v6.0.0 "Compass" keeps Fedora KDE 44 as the supported release target and adds Fedora 45 as a non-blocking preview profile. It generalizes the v5 readiness center into a release-readiness engine, keeps all checks read-only, and attaches Atlas-style recommendation metadata for any future repair flow.
+
+### Deliverables
+
+- [x] Version metadata aligned to `6.0.0 "Compass"`
+- [x] Generic `release_readiness` engine with Fedora 44 and Fedora 45 preview targets
+- [x] Typed readiness recommendations with command previews, risk, reversibility, docs, and manual-only flags
+- [x] Dashboard readiness card with grouped sections, severity filters, beginner/advanced rendering, async probes, copy summary, and support bundle export
+- [x] CLI command: `readiness [--target 44|45-preview] [--advanced]`
+- [x] Compatibility alias: `fedora44-readiness [--advanced]`
+- [x] Support Bundle v4 with generic `release_readiness` data and v3 alias fields
+- [x] TLS certificate warning regression coverage for Fedora's actual CA bundle layout
+- [x] v6 workflow specs, changelog, README, and release notes
+
+### Compatibility
+
+- Fedora KDE 44 remains the supported target.
+- Fedora 45 is preview-only until Fedora 45 reaches release milestones; findings are advisory and non-blocking.
+- All readiness and repair guidance remains read-only by default. Mutating actions must continue through Atlas action metadata and existing `pkexec`/rollback conventions.
 
 ---
 

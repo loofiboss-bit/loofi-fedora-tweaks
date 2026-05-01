@@ -322,18 +322,14 @@ def cmd_support_bundle(_args):
     return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
 
 
-def cmd_fedora44_readiness(args):
-    """Run Fedora KDE 44 readiness diagnostics."""
-    from core.diagnostics.fedora44_readiness import Fedora44Readiness
-
-    report = Fedora44Readiness.run()
-    advanced = getattr(args, "advanced", False)
+def _print_readiness_report(report, *, advanced: bool) -> int:
+    """Print a readiness report in CLI text or JSON mode."""
     if _json_output:
         _output_json(report.to_dict(advanced=True))
-        return 0 if report.status == "ready" else 1
+        return 0 if report.status in {"ready", "preview"} else 1
 
     _print("═══════════════════════════════════════════")
-    _print("   Fedora KDE 44 Readiness")
+    _print(f"   {report.target} Readiness")
     _print("═══════════════════════════════════════════")
     _print(f"\nScore: {report.score}/100")
     _print(report.summary)
@@ -342,12 +338,31 @@ def cmd_fedora44_readiness(args):
         _print(f"\n[{marker}] {check.title}")
         _print(f"  {check.summary}")
         _print(f"  {check.beginner_guidance}")
+        if check.recommendation:
+            _print(f"  Recommendation: {check.recommendation.title}")
         if advanced:
             if check.command_preview:
                 _print(f"  Command: {' '.join(check.command_preview)}")
             if check.advanced_detail:
                 _print(f"  Detail: {check.advanced_detail[:600]}")
-    return 0 if report.status == "ready" else 1
+    return 0 if report.status in {"ready", "preview"} else 1
+
+
+def cmd_readiness(args):
+    """Run release readiness diagnostics."""
+    from core.diagnostics.release_readiness import ReleaseReadiness
+
+    target = getattr(args, "target", "44")
+    report = ReleaseReadiness.run(target)
+    return _print_readiness_report(report, advanced=getattr(args, "advanced", False))
+
+
+def cmd_fedora44_readiness(args):
+    """Run Fedora KDE 44 readiness diagnostics (compatibility alias)."""
+    from core.diagnostics.release_readiness import ReleaseReadiness
+
+    report = ReleaseReadiness.run("44")
+    return _print_readiness_report(report, advanced=getattr(args, "advanced", False))
 
 
 # ==================== v11.5 / v12.0 COMMANDS ====================
@@ -974,8 +989,12 @@ def main(argv: Optional[List[str]] = None):
     # Support bundle
     subparsers.add_parser("support-bundle", help="Export support bundle ZIP")
 
-    readiness_parser = subparsers.add_parser("fedora44-readiness", help="Run Fedora KDE 44 readiness diagnostics")
+    readiness_parser = subparsers.add_parser("readiness", help="Run release readiness diagnostics")
+    readiness_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
     readiness_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")
+
+    fedora44_parser = subparsers.add_parser("fedora44-readiness", help="Compatibility alias for 'readiness --target 44'")
+    fedora44_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")
 
     # ==================== v11.5 / v12.0 subparsers ====================
 
@@ -1297,6 +1316,7 @@ def main(argv: Optional[List[str]] = None):
         "plugins": cmd_plugins,
         "plugin-marketplace": cmd_plugin_marketplace,
         "support-bundle": cmd_support_bundle,
+        "readiness": cmd_readiness,
         "fedora44-readiness": cmd_fedora44_readiness,
         # v11.5 / v12.0
         "vm": cmd_vm,

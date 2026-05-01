@@ -4,11 +4,12 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v5.0.0 "Aurora"**
-- Full notes: [RELEASE-NOTES-v5.0.0.md](RELEASE-NOTES-v5.0.0.md)
+- **v6.0.0 "Compass"**
+- Full notes: [RELEASE-NOTES-v6.0.0.md](RELEASE-NOTES-v6.0.0.md)
 
 ## Recent Releases
 
+- v5.0.0 "Aurora": [RELEASE-NOTES-v5.0.0.md](RELEASE-NOTES-v5.0.0.md)
 - v4.0.0 "Atlas": [RELEASE-NOTES-v4.0.0.md](RELEASE-NOTES-v4.0.0.md)
 - v45.0.0 "Housekeeping": [RELEASE-NOTES-v45.0.0.md](RELEASE-NOTES-v45.0.0.md)
 - v44.0.0 "Review Gate": [RELEASE-NOTES-v44.0.0.md](RELEASE-NOTES-v44.0.0.md)

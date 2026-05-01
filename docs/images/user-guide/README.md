@@ -2,13 +2,15 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v5.0.0 "Aurora"
+**Last verified**: v6.0.0 "Compass"
 
-**Status**: Screenshot references are current for v5 docs; image pixels should be refreshed after the Fedora KDE 44 UI smoke pass.
+**Status**: Screenshot references are current for v6 docs. The Release Readiness images are generated with `scripts/capture_v6_readiness_screenshots.py`.
 
 ## Current Files
 
 - `home-dashboard.png` -- Overview/Home
+- `release-readiness.png` -- Atlas Home > Release Readiness
+- `release-readiness-advanced.png` -- Release Readiness advanced details
 - `system-monitor.png` -- Overview/System Monitor
 - `maintenance-updates.png` -- Manage/Maintenance updates workflow
 - `network-overview.png` -- Network tab overview
@@ -27,7 +29,13 @@ Canonical screenshot assets for user-facing docs.
 
 ## Regeneration Instructions
 
-Screenshots must be captured manually on a running instance. To regenerate:
+Release readiness screenshots can be regenerated from real PyQt widgets:
+
+```bash
+PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v6_readiness_screenshots.py
+```
+
+General screenshots must be captured manually on a running instance. To regenerate:
 
 1. Launch the app: `./run.sh` or `PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py`
 2. Set the window to a consistent size (e.g., 1280x800).
@@ -42,6 +50,8 @@ Screenshots must be captured manually on a running instance. To regenerate:
 | Screenshot | Navigate To | Notes |
 |------------|-------------|-------|
 | `home-dashboard.png` | Overview > Home | Show health score, quick actions |
+| `release-readiness.png` | Overview > Home > Release Readiness | Show grouped beginner readiness findings |
+| `release-readiness-advanced.png` | Overview > Home > Release Readiness > Advanced | Show command/recommendation metadata |
 | `system-monitor.png` | Overview > System Monitor | Show CPU/RAM/process data |
 | `maintenance-updates.png` | Manage > Maintenance > Updates | Show update workflow |
 | `network-overview.png` | Network & Security > Network | Show connections view |

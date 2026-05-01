@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v5.0.0 "Aurora"
+# Loofi Fedora Tweaks v6.0.0 "Compass"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v5.0.0">
-    <img src="https://img.shields.io/badge/Release-v5.0.0-blue?style=for-the-badge&logo=github" alt="Release v5.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v6.0.0">
+    <img src="https://img.shields.io/badge/Release-v6.0.0-blue?style=for-the-badge&logo=github" alt="Release v6.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -41,25 +41,31 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v5.0.0?
+## What's New in v6.0.0?
 
-`v5.0.0 "Aurora"` is the Fedora KDE 44 Experience & Compatibility release. It keeps the v4 Atlas assistant model and adds focused readiness diagnostics for the Fedora 44 KDE desktop stack.
+`v6.0.0 "Compass"` turns the v5 Fedora KDE 44 readiness center into a reusable release readiness workflow. Fedora KDE 44 remains the supported target, while Fedora 45 is available as a preview-only planning profile.
 
-- **Fedora KDE 44 Readiness**: Checks Fedora, Plasma, Qt, Wayland/X11, display manager, DNF5, PackageKit, repos, Atomic, NVIDIA/akmods/Secure Boot, Flatpak KDE runtimes, and TLS cert compatibility.
-- **Dashboard + CLI Access**: Readiness runs from the Atlas dashboard card or `loofi-fedora-tweaks --cli fedora44-readiness`.
-- **Support Bundle v3**: Adds privacy-masked Fedora KDE 44 diagnostics for support and issue reports.
-- **Packaging Cleanup**: Optional Web API and daemon runtime dependencies are split from the base GUI/CLI RPM.
-- **Fedora 44 Targeting**: Active release, build, and COPR guidance now targets Fedora KDE 44; Fedora 43 is best-effort compatible.
+- **Release Readiness**: Generic target metadata powers Fedora KDE 44 checks and Fedora 45 preview guidance.
+- **Guided Recommendations**: Findings can include command previews, risk, reversibility, docs, and manual-only metadata without running repairs.
+- **Dashboard + CLI Access**: Readiness runs from the Atlas dashboard card or `loofi-fedora-tweaks --cli readiness --target 44`.
+- **Support Bundle v4**: Adds generic `release_readiness` data and keeps the v3 Fedora KDE 44 field as an alias.
+- **Compatibility Alias**: `loofi-fedora-tweaks --cli fedora44-readiness` remains available for one major release.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v5.0.0.md`](docs/releases/RELEASE-NOTES-v5.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v6.0.0.md`](docs/releases/RELEASE-NOTES-v6.0.0.md)
+
+### Screenshots
+
+![Atlas Home dashboard with Release Readiness](docs/images/user-guide/home-dashboard.png)
+
+![Release Readiness grouped findings](docs/images/user-guide/release-readiness.png)
 
 ## Current Development Cycle
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v5.0.0 "Aurora"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v5.0.0.md`)
-- Current stable baseline: **v5.0.0 "Aurora"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **5.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v6.0.0 "Compass"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v6.0.0.md`)
+- Current stable baseline: **v6.0.0 "Compass"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **6.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 

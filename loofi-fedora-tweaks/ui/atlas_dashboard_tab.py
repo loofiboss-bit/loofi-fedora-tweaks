@@ -152,9 +152,9 @@ class AtlasDashboardTab(BaseTab):
                 wizard.exec()
                 return
 
-            if task_id == "task-fedora44-readiness":
-                from .fedora44_readiness_dialog import Fedora44ReadinessDialog
-                dialog = Fedora44ReadinessDialog(self)
+            if task_id in {"task-release-readiness", "task-fedora44-readiness"}:
+                from .release_readiness_dialog import ReleaseReadinessDialog
+                dialog = ReleaseReadinessDialog("44", self)
                 dialog.exec()
                 return
 

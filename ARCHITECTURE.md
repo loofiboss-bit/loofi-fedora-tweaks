@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 5.0.0 "Aurora" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 5.0.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 

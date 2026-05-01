@@ -8,6 +8,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-t
 
 from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QCheckBox
 from ui.task_wizard import AtlasTaskWizard
+from core.diagnostics.release_readiness import ReadinessCheck, ReleaseReadinessReport
 from core.diagnostics.health_model import HealthResult
 from core.executor.action_result import ActionResult
 
@@ -149,10 +150,10 @@ def test_task_wizard_dynamic_execution_fixed(mock_execute):
     assert mock_execute.call_count == 2
     assert "2 actions succeeded" in wizard.result_label.text()
 
-@patch("core.export.support_bundle_v3.SupportBundleV3.generate_bundle")
+@patch("core.export.support_bundle_v4.SupportBundleV4.generate_bundle")
 def test_support_bundle_wizard(mock_generate):
     mock_generate.return_value = {
-        "v": "5.0.0-aurora-support-v3",
+        "v": "6.0.0-compass-support-v4",
         "system": {"os": "Fedora"},
         "health": []
     }
@@ -164,6 +165,71 @@ def test_support_bundle_wizard(mock_generate):
     # Check if preview contains the mock JSON data
     assert "\"os\": \"Fedora\"" in wizard.preview.toPlainText()
     assert mock_generate.called
+
+
+def test_release_readiness_dialog_groups_and_filters():
+    from ui.release_readiness_dialog import ReleaseReadinessDialog
+
+    dialog = ReleaseReadinessDialog(auto_run=False)
+    dialog.report = ReleaseReadinessReport(
+        target="Fedora KDE 44",
+        generated_at=1.0,
+        score=91,
+        status="ready",
+        summary="ready",
+        checks=[
+            ReadinessCheck(
+                id="fedora-version",
+                title="Fedora Version",
+                category="system",
+                status="pass",
+                severity="info",
+                summary="Fedora 44",
+                beginner_guidance="ok",
+            ),
+            ReadinessCheck(
+                id="third-party-repos",
+                title="Third-Party Repository Risk",
+                category="package",
+                status="warning",
+                severity="warning",
+                summary="One repo",
+                beginner_guidance="Review it",
+                advanced_detail="raw repo detail",
+            ),
+        ],
+    )
+
+    dialog._render()
+    labels = " ".join(label.text() for label in dialog.findChildren(QLabel))
+    assert "System" in labels
+    assert "Packages" in labels
+    assert "Third-Party Repository Risk" in labels
+
+    dialog.severity_filter.setCurrentIndex(dialog.severity_filter.findData("pass"))
+    dialog._render()
+    labels = " ".join(label.text() for label in dialog.findChildren(QLabel))
+    assert "Fedora Version" in labels
+
+
+@patch("ui.release_readiness_dialog.SupportBundleV4.save_json")
+@patch("ui.release_readiness_dialog.QMessageBox.information")
+@patch("ui.release_readiness_dialog.QFileDialog.getSaveFileName", return_value=("/tmp/loofi-test-bundle.json", ""))
+def test_release_readiness_dialog_export_action(mock_file, mock_message, mock_save):
+    from ui.release_readiness_dialog import ReleaseReadinessDialog
+
+    dialog = ReleaseReadinessDialog(auto_run=False)
+    dialog.report = ReleaseReadinessReport(
+        target="Fedora KDE 45 Preview",
+        generated_at=1.0,
+        score=80,
+        status="preview",
+        summary="preview",
+        checks=[],
+    )
+    dialog.target_key = "45-preview"
+    dialog.export_support_bundle()
+    mock_save.assert_called_once_with("/tmp/loofi-test-bundle.json", target="45-preview")
 
 def test_task_wizard_log_and_rollback():
     wizard = AtlasTaskWizard(

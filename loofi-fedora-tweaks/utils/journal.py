@@ -302,19 +302,19 @@ class JournalManager:
                 # System info
                 (tmp / "system-info.txt").write_text(cls._get_system_info() or "No system info")
 
-                # Fedora KDE 44 support bundle v3 payload
+                # Release readiness support bundle v4 payload
                 try:
-                    from core.export.support_bundle_v3 import SupportBundleV3
+                    from core.export.support_bundle_v4 import SupportBundleV4
 
-                    bundle_v3 = SupportBundleV3.generate_bundle()
-                    (tmp / "support-bundle-v3.json").write_text(
-                        __import__("json").dumps(bundle_v3, indent=2, default=str),
+                    bundle_v4 = SupportBundleV4.generate_bundle()
+                    (tmp / "support-bundle-v4.json").write_text(
+                        __import__("json").dumps(bundle_v4, indent=2, default=str),
                         encoding="utf-8",
                     )
                 except (ImportError, OSError, RuntimeError, ValueError, TypeError, AttributeError) as e:
-                    logger.debug("Failed to include support bundle v3 payload: %s", e)
-                    (tmp / "support-bundle-v3.json").write_text(
-                        '{"v": "5.0.0-aurora-support-v3", "error": "unavailable"}',
+                    logger.debug("Failed to include support bundle v4 payload: %s", e)
+                    (tmp / "support-bundle-v4.json").write_text(
+                        '{"v": "6.0.0-compass-support-v4", "error": "unavailable"}',
                         encoding="utf-8",
                     )
 

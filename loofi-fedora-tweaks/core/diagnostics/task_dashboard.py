@@ -52,9 +52,9 @@ class TaskManager:
         ))
 
         self._tasks.append(DashboardTask(
-            id="task-fedora44-readiness",
-            title="Fedora KDE 44 Readiness",
-            description="Check Fedora 44, Plasma, Wayland, package, NVIDIA, Flatpak, and Atomic compatibility.",
+            id="task-release-readiness",
+            title="Release Readiness",
+            description="Check Fedora KDE 44 support readiness and preview Fedora 45 planning signals.",
             icon_id="status-ok",
             priority=1
         ))

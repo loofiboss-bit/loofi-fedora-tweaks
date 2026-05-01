@@ -1,4 +1,4 @@
-"""Tests for Fedora KDE 44 readiness and support bundle v3."""
+"""Tests for release readiness and support bundle compatibility."""
 
 import json
 import os
@@ -14,8 +14,11 @@ from core.diagnostics.fedora44_readiness import (
     Fedora44Readiness,
     Fedora44ReadinessReport,
     ReadinessCheck,
+    ReleaseReadiness,
+    TARGETS,
 )
 from core.export.support_bundle_v3 import SupportBundleV3
+from core.export.support_bundle_v4 import SupportBundleV4
 from services.desktop.kde44 import KDE44DesktopInfo, KDE44DesktopService
 from services.package.dnf5_health import DNF5HealthReport, DNF5HealthService, RepoRisk
 
@@ -67,6 +70,20 @@ class TestFedoraVersionReadiness(unittest.TestCase):
     def test_unknown_release_errors(self):
         check = Fedora44Readiness._fedora_version_check({})
         self.assertEqual(check.status, "error")
+
+    def test_release_targets_include_fedora45_preview(self):
+        target = TARGETS["45-preview"]
+        self.assertFalse(target.supported)
+        self.assertTrue(target.preview)
+        self.assertEqual(target.final_target, "2026-10-20")
+
+    def test_fedora45_preview_accepts_fedora44_context(self):
+        check = ReleaseReadiness._fedora_version_check(
+            {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44 (KDE Plasma)"},
+            TARGETS["45-preview"],
+        )
+        self.assertEqual(check.status, "info")
+        self.assertIn("preview", check.beginner_guidance.lower())
 
 
 class TestFedora44ReadinessAggregation(unittest.TestCase):
@@ -132,6 +149,15 @@ class TestFedora44ReadinessAggregation(unittest.TestCase):
         checks = Fedora44Readiness._package_checks(package)
         repos = next(check for check in checks if check.id == "third-party-repos")
         self.assertEqual(repos.status, "warning")
+        self.assertIsNotNone(repos.recommendation)
+
+    @patch("core.diagnostics.release_readiness.os.path.exists")
+    def test_tls_check_accepts_fedora_ca_bundle_without_legacy_path(self, mock_exists):
+        mock_exists.side_effect = lambda path: path == "/etc/pki/ca-trust/extracted/pem/tls-ca-bundle.pem"
+        check = ReleaseReadiness._tls_check()
+        self.assertEqual(check.status, "info")
+        self.assertEqual(check.severity, "info")
+        self.assertIn("Fedora CA trust bundle", check.summary)
 
 
 class TestDNF5HealthService(unittest.TestCase):
@@ -155,7 +181,7 @@ class TestReadinessCLI(unittest.TestCase):
     def tearDown(self):
         cli_mod._json_output = self._orig_json
 
-    @patch("core.diagnostics.fedora44_readiness.Fedora44Readiness.run")
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
     @patch("cli.main._print")
     def test_cli_text_output(self, mock_print, mock_run):
         cli_mod._json_output = False
@@ -182,7 +208,7 @@ class TestReadinessCLI(unittest.TestCase):
         printed = " ".join(call.args[0] for call in mock_print.call_args_list)
         self.assertIn("Fedora KDE 44 Readiness", printed)
 
-    @patch("core.diagnostics.fedora44_readiness.Fedora44Readiness.run")
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
     @patch("builtins.print")
     def test_cli_json_output(self, mock_print, mock_run):
         cli_mod._json_output = True
@@ -199,16 +225,34 @@ class TestReadinessCLI(unittest.TestCase):
         payload = json.loads(mock_print.call_args.args[0])
         self.assertEqual(payload["target"], "Fedora KDE 44")
 
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
+    @patch("builtins.print")
+    def test_cli_readiness_preview_json_exits_zero(self, mock_print, mock_run):
+        cli_mod._json_output = True
+        mock_run.return_value = Fedora44ReadinessReport(
+            target="Fedora KDE 45 Preview",
+            generated_at=1.0,
+            score=75,
+            status="preview",
+            summary="preview",
+            checks=[],
+            target_metadata=TARGETS["45-preview"],
+        )
+        result = cli_mod.cmd_readiness(MagicMock(target="45-preview", advanced=True))
+        self.assertEqual(result, 0)
+        payload = json.loads(mock_print.call_args.args[0])
+        self.assertEqual(payload["target_metadata"]["key"], "45-preview")
+
 
 class TestSupportBundleV3(unittest.TestCase):
     """Support bundle v3 includes masked readiness diagnostics."""
 
-    @patch.object(SupportBundleV3, "_flatpak_runtimes", return_value="org.kde.Platform 6.9 flathub")
-    @patch.object(SupportBundleV3, "_recent_journal_warnings", return_value="/home/loofi/token=abc")
-    @patch.object(SupportBundleV3, "_failed_services", return_value=[{"unit": "bad.service"}])
-    @patch("core.export.support_bundle_v3.ReportExporter.gather_system_info", return_value={"fedora_version": "Fedora 44"})
-    @patch("core.export.support_bundle_v3.Fedora44Readiness.run")
-    def test_bundle_contains_v3_fields(self, mock_run, _mock_system, _mock_failed, _mock_journal, _mock_flatpak):
+    @patch.object(SupportBundleV4, "_flatpak_runtimes", return_value="org.kde.Platform 6.9 flathub")
+    @patch.object(SupportBundleV4, "_recent_journal_warnings", return_value="/home/loofi/token=abc")
+    @patch.object(SupportBundleV4, "_failed_services", return_value=[{"unit": "bad.service"}])
+    @patch("core.export.support_bundle_v4.ReportExporter.gather_system_info", return_value={"fedora_version": "Fedora 44"})
+    @patch("core.export.support_bundle_v4.ReleaseReadiness.run")
+    def test_bundle_contains_v3_alias_fields(self, mock_run, _mock_system, _mock_failed, _mock_journal, _mock_flatpak):
         package = _passing_package()
         package.repo_risks = [RepoRisk(repo_id="copr:<host>:<user>:x", source="/etc/yum.repos.d/x.repo", risk="warning", reason="COPR")]
         mock_run.return_value = Fedora44ReadinessReport(
@@ -222,8 +266,10 @@ class TestSupportBundleV3(unittest.TestCase):
             package=package,
         )
         bundle = SupportBundleV3.generate_bundle()
-        self.assertEqual(bundle["v"], "5.0.0-aurora-support-v3")
+        self.assertEqual(bundle["v"], "6.0.0-compass-support-v4")
+        self.assertIn("release_readiness", bundle)
         self.assertIn("fedora_kde_44_readiness", bundle)
+        self.assertEqual(bundle["release_readiness"], bundle["fedora_kde_44_readiness"])
         self.assertIn("masked_repo_list", bundle)
         self.assertTrue(bundle["privacy"]["tokens_masked"])
 

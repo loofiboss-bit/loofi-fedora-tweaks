@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 5.0.0 "Aurora" — Fedora KDE 44
+> Version 6.0.0 "Compass" — Release Readiness
 
 This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
 
@@ -99,9 +99,11 @@ Current category model:
 
 ### Daily (2–3 minutes)
 
-1. Check **Overview → Atlas Home → Fedora KDE 44 Readiness** after install or system upgrades.
+1. Check **Overview → Atlas Home → Release Readiness** after install or system upgrades.
 2. Check **Overview → System Monitor** for abnormal CPU/RAM/process usage.
 3. Check **Network & Security → Security & Privacy** if score dropped or alerts appear.
+
+![Release Readiness](images/user-guide/release-readiness.png)
 
 ![System Monitor](images/user-guide/system-monitor.png)
 
@@ -131,7 +133,7 @@ loofi support-bundle
 ## Overview
 
 - **Home**: health score, quick status, fast navigation
-- **Fedora KDE 44 Readiness**: dashboard card for compatibility checks
+- **Release Readiness**: dashboard card for Fedora KDE 44 support checks and Fedora 45 preview planning
 - **System Info**: OS/kernel/hardware/system metadata
 - **System Monitor**: performance and process analysis
 
@@ -200,11 +202,16 @@ System and diagnostics:
 ```bash
 loofi info
 loofi health
-loofi fedora44-readiness
-loofi fedora44-readiness --advanced
+loofi readiness --target 44
+loofi readiness --target 44 --advanced
+loofi readiness --target 45-preview
 loofi doctor
 loofi support-bundle
 ```
+
+Advanced readiness details show the read-only probe command and manual recommendation metadata:
+
+![Release Readiness Advanced](images/user-guide/release-readiness-advanced.png)
 
 Maintenance:
 
@@ -248,7 +255,7 @@ Machine-readable output:
 ```bash
 loofi --json info
 loofi --json health
-loofi --json fedora44-readiness
+loofi --json readiness --target 44
 ```
 
 ---

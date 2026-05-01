@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 5.0.0 "Aurora" — Fedora KDE 44
+> Version 6.0.0 "Compass" — Release Readiness
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -40,19 +40,21 @@ Useful shortcuts:
 
 ## 3) First 5 Actions
 
-### Action 1 — Check Fedora KDE 44 Readiness
+### Action 1 — Check Release Readiness
 
 Open:
 
 - **Overview → Atlas Home**
-- **Fedora KDE 44 Readiness**
+- **Release Readiness**
 
 Review the score and safe guidance. Advanced details are optional.
+
+![Release Readiness](images/user-guide/release-readiness.png)
 
 CLI equivalent:
 
 ```bash
-loofi fedora44-readiness
+loofi readiness --target 44
 ```
 
 ### Action 2 — Check Health
