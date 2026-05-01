@@ -38,8 +38,8 @@ VM Quick-Create, VFIO GPU Passthrough, Loofi Link
 Mesh, State Teleport, AI Lab, Security Center,
 Director, Containers, and Replicator IaC.
 
-Fedora 43 remains best-effort compatible, but v5.0.0 targets
-the Fedora KDE 44 desktop experience.
+Fedora KDE 44 remains the supported target for v6.0.0 Compass.
+Fedora 45 is available as a preview-only readiness profile.
 
 %package api
 Summary:        Optional Loofi Fedora Tweaks Web API runtime
