@@ -1,10 +1,12 @@
 name: Publish Wiki
 
 on:
+  workflow_dispatch:
   push:
     branches: [master]
     paths:
       - 'wiki/**'
+      - '.github/workflows/publish-wiki.yml'
 
 jobs:
   publish-wiki:
@@ -15,17 +17,15 @@ jobs:
       - name: Checkout main repo
         uses: actions/checkout@v6
 
-      - name: Checkout wiki repo
-        uses: actions/checkout@v6
-        with:
-          repository: loofiboss-bit/loofi-fedora-tweaks.wiki
-          path: wiki-repo
-          token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Sync wiki content
+        env:
+          WIKI_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.wiki.git
         run: |
-          rsync -av --delete wiki/ wiki-repo/
-          cd wiki-repo
+          set -euo pipefail
+          wiki_repo="$(mktemp -d)"
+          cp -a wiki/. "$wiki_repo/"
+          cd "$wiki_repo"
+          git init -b master
           git config user.name "github-actions[bot]"
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add -A
@@ -33,5 +33,5 @@ jobs:
             echo "No wiki changes to commit"
           else
             git commit -m "docs: auto-publish wiki from main repo"
-            git push
+            git push --force "$WIKI_REMOTE" master
           fi

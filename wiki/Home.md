@@ -2,7 +2,7 @@
 
 Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora control center for maintenance, diagnostics, security, performance, and automation.
 
-**Current Version**: v4.0.0 "Atlas" — Guided Fedora Control Center  
+**Current Version**: v7.0.0 "Aegis" — Safe Guided Fedora Control Center
 **Screenshots Refreshed**: April 2026
 
 ![Loofi Fedora Tweaks Dashboard](images/hero-home.png)
@@ -82,7 +82,7 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 ## Quick Links
 
 - GitHub Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Latest Release: [v4.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v4.0.0)
+- Latest Release: [v7.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v7.0.0)
 - Issues: [Issue Tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - Main README: [README.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/README.md)
 - Architecture Doc: [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)
