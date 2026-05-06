@@ -22,6 +22,16 @@ jobs:
           WIKI_REMOTE: https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.wiki.git
         run: |
           set -euo pipefail
+          if ! git ls-remote "$WIKI_REMOTE" HEAD >/dev/null 2>&1; then
+            echo "::notice title=Wiki not initialized::Open https://github.com/${GITHUB_REPOSITORY}/wiki, create the first Home page once, then rerun this workflow."
+            {
+              echo "## Wiki not initialized"
+              echo
+              echo "GitHub has wiki enabled for \`${GITHUB_REPOSITORY}\`, but the hidden wiki git repo is not exported yet."
+              echo "Create the first page once at https://github.com/${GITHUB_REPOSITORY}/wiki, then rerun this workflow to publish \`wiki/\`."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
           wiki_repo="$(mktemp -d)"
           cp -a wiki/. "$wiki_repo/"
           cd "$wiki_repo"
