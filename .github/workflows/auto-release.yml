@@ -84,15 +84,9 @@ jobs:
             fi
           fi
 
-      - name: Generate workflow reports if missing
+      - name: Validate release docs for release events
         if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-        run: |
-          python3 scripts/generate_workflow_reports.py --check || \
-            python3 scripts/generate_workflow_reports.py --skip-tests
-
-      - name: Validate workflow logs for release events
-        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-        run: python3 scripts/check_release_docs.py --require-logs
+        run: python3 scripts/check_release_docs.py
 
       - name: Validate packaging scripts
         run: |
@@ -330,7 +324,7 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install build deps
-        run: dnf install -y rpm-build python3 python3-devel desktop-file-utils systemd-rpm-macros
+        run: dnf install -y rpm-build python3 python3-devel desktop-file-utils libappstream-glib systemd-rpm-macros
       - name: Build RPM
         run: bash scripts/build_rpm.sh
       - uses: actions/upload-artifact@v4

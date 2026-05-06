@@ -171,7 +171,7 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 - Hardened release metadata, docs, workflow spec, and coverage threshold drift checks
 - Kept Fedora KDE 44 as the supported target and Fedora 45 as preview-only advisory context
 
-* Thu May 01 2026 Loofi <loofi@example.com> - 6.0.0-1
+* Fri May 01 2026 Loofi <loofi@example.com> - 6.0.0-1
 - v6.0.0 "Compass" — Release Readiness & Guided Repair Planning
 - Added generic release readiness engine, Fedora 45 preview profile, and Support Bundle v4
 - Added grouped readiness dialog and generic CLI readiness command
@@ -194,7 +194,7 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 - Support Bundle v2 with structured, safe diagnostic exports
 - Documentation alignment and version normalization
 
-* Mon Feb 17 2026 Loofi <loofi@example.com> - 48.0.0-1
+* Tue Feb 17 2026 Loofi <loofi@example.com> - 48.0.0-1
 - v48.0.0 "Sidebar Index" — Sidebar restructure with O(1) lookups
 - SidebarEntry dataclass and SidebarIndex for O(1) tab lookups
 - Decomposed add_page() into focused helpers
@@ -202,16 +202,16 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 - SidebarItemDelegate for colored status dots
 - Experience level sync validation
 
-* Mon Feb 17 2026 Loofi <loofi@example.com> - 47.0.0-1
+* Tue Feb 17 2026 Loofi <loofi@example.com> - 47.0.0-1
 - v47.0.0 "Experience" — UX improvements for all skill levels
 - Added experience level system (beginner, intermediate, advanced)
 - Tour overlay for first-time users
 - Contextual tooltips and progressive disclosure
 
-* Mon Feb 17 2026 Loofi <loofi@example.com> - 46.0.0-1
+* Tue Feb 17 2026 Loofi <loofi@example.com> - 46.0.0-1
 - v46.0.0 "Navigator" — Navigation and discoverability improvements
 
-* Mon Feb 17 2026 Loofi <loofi@example.com> - 45.0.0-1
+* Tue Feb 17 2026 Loofi <loofi@example.com> - 45.0.0-1
 - v45.0.0 "Housekeeping" — Code cleanup and documentation alignment
 
 * Mon Feb 16 2026 Loofi <loofi@example.com> - 44.0.0-1
