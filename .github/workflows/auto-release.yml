@@ -609,6 +609,7 @@ jobs:
     env:
       COPR_OWNER: "loofitheboss"
       COPR_PROJECT: "loofi-fedora-tweaks"
+      COPR_PACKAGE: "loofi-fedora-tweaks"
       COPR_CHROOTS: "fedora-44-x86_64"
     steps:
       - name: Install dependencies
@@ -672,7 +673,12 @@ jobs:
 
       - name: Test COPR auth
         run: |
-          WHO=$(copr-cli whoami 2>&1) && echo "::notice::COPR auth OK: logged in as ${WHO}" || echo "::error::COPR auth failed: ${WHO}. Check COPR_LOGIN, COPR_TOKEN, COPR_USERNAME secrets."
+          if WHO=$(copr-cli whoami 2>&1); then
+            echo "::notice::COPR auth OK: logged in as ${WHO}"
+          else
+            echo "::error::COPR auth failed: ${WHO}. Check COPR_LOGIN, COPR_TOKEN, COPR_USERNAME secrets."
+            exit 1
+          fi
 
       - name: Submit build to COPR
         run: |
@@ -685,10 +691,33 @@ jobs:
           done
           echo "Target chroots:${CHROOT_ARGS}"
           # shellcheck disable=SC2086
+          set +e
           COPR_OUT=$(copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --nowait ${CHROOT_ARGS} 2>&1)
           RC=$?
+          set -e
           echo "${COPR_OUT}"
           if [ ${RC} -ne 0 ]; then
+            echo "::warning::copr-cli build failed (exit ${RC}). Checking whether v${VER} is already submitted."
+            PKG_JSON=$(copr-cli get-package "${COPR_OWNER}/${COPR_PROJECT}" --name "${COPR_PACKAGE}" 2>/tmp/copr-package-error.txt || true)
+            if [ -n "${PKG_JSON}" ] && python3 - "${VER}" "${PKG_JSON}" <<'PY'
+          import json
+          import sys
+
+          version = sys.argv[1]
+          payload = json.loads(sys.argv[2])
+          latest = payload.get("latest_build") or {}
+          source = latest.get("source_package") or {}
+          state = latest.get("state")
+          source_version = str(source.get("version") or "")
+          if f":{version}-" in source_version and state in {"pending", "importing", "starting", "running", "succeeded"}:
+              print(f"COPR already has v{version} build {latest.get('id')} in state {state}")
+              raise SystemExit(0)
+          raise SystemExit(1)
+          PY
+            then
+              exit 0
+            fi
+            cat /tmp/copr-package-error.txt 2>/dev/null || true
             echo "::error::copr-cli build failed (exit ${RC}): ${COPR_OUT}"
             exit ${RC}
           fi
