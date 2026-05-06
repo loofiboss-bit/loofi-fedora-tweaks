@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
@@ -14,11 +15,15 @@ from core.diagnostics.fedora44_readiness import (
     Fedora44Readiness,
     Fedora44ReadinessReport,
     ReadinessCheck,
+    ReadinessRecommendation,
     ReleaseReadiness,
     TARGETS,
 )
+from core.diagnostics.readiness_actions import ReadinessActionService
+from core.executor.action_result import ActionResult
 from core.export.support_bundle_v3 import SupportBundleV3
 from core.export.support_bundle_v4 import SupportBundleV4
+from core.export.support_bundle_v5 import SupportBundleV5
 from services.desktop.kde44 import KDE44DesktopInfo, KDE44DesktopService
 from services.package.dnf5_health import DNF5HealthReport, DNF5HealthService, RepoRisk
 
@@ -227,6 +232,62 @@ class TestReadinessCLI(unittest.TestCase):
 
     @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
     @patch("builtins.print")
+    def test_cli_json_default_excludes_advanced_detail(self, mock_print, mock_run):
+        cli_mod._json_output = True
+        mock_run.return_value = Fedora44ReadinessReport(
+            target="Fedora KDE 44",
+            generated_at=1.0,
+            score=80,
+            status="ready",
+            summary="ready",
+            checks=[
+                ReadinessCheck(
+                    id="repo-health",
+                    title="Repository Metadata",
+                    category="package",
+                    status="warning",
+                    severity="warning",
+                    summary="bad",
+                    beginner_guidance="review",
+                    advanced_detail="raw repo detail",
+                )
+            ],
+        )
+        result = cli_mod.cmd_fedora44_readiness(MagicMock(advanced=False))
+        self.assertEqual(result, 0)
+        payload = json.loads(mock_print.call_args.args[0])
+        self.assertNotIn("advanced_detail", payload["checks"][0])
+
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
+    @patch("builtins.print")
+    def test_cli_json_advanced_includes_advanced_detail(self, mock_print, mock_run):
+        cli_mod._json_output = True
+        mock_run.return_value = Fedora44ReadinessReport(
+            target="Fedora KDE 44",
+            generated_at=1.0,
+            score=80,
+            status="ready",
+            summary="ready",
+            checks=[
+                ReadinessCheck(
+                    id="repo-health",
+                    title="Repository Metadata",
+                    category="package",
+                    status="warning",
+                    severity="warning",
+                    summary="bad",
+                    beginner_guidance="review",
+                    advanced_detail="raw repo detail",
+                )
+            ],
+        )
+        result = cli_mod.cmd_fedora44_readiness(MagicMock(advanced=True))
+        self.assertEqual(result, 0)
+        payload = json.loads(mock_print.call_args.args[0])
+        self.assertEqual(payload["checks"][0]["advanced_detail"], "raw repo detail")
+
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
+    @patch("builtins.print")
     def test_cli_readiness_preview_json_exits_zero(self, mock_print, mock_run):
         cli_mod._json_output = True
         mock_run.return_value = Fedora44ReadinessReport(
@@ -247,11 +308,11 @@ class TestReadinessCLI(unittest.TestCase):
 class TestSupportBundleV3(unittest.TestCase):
     """Support bundle v3 includes masked readiness diagnostics."""
 
-    @patch.object(SupportBundleV4, "_flatpak_runtimes", return_value="org.kde.Platform 6.9 flathub")
-    @patch.object(SupportBundleV4, "_recent_journal_warnings", return_value="/home/loofi/token=abc")
-    @patch.object(SupportBundleV4, "_failed_services", return_value=[{"unit": "bad.service"}])
-    @patch("core.export.support_bundle_v4.ReportExporter.gather_system_info", return_value={"fedora_version": "Fedora 44"})
-    @patch("core.export.support_bundle_v4.ReleaseReadiness.run")
+    @patch.object(SupportBundleV5, "_flatpak_runtimes", return_value="org.kde.Platform 6.9 flathub")
+    @patch.object(SupportBundleV5, "_recent_journal_warnings", return_value="/home/loofi/token=abc")
+    @patch.object(SupportBundleV5, "_failed_services", return_value=[{"unit": "bad.service"}])
+    @patch("core.export.support_bundle_v5.ReportExporter.gather_system_info", return_value={"fedora_version": "Fedora 44"})
+    @patch("core.export.support_bundle_v5.ReleaseReadiness.run")
     def test_bundle_contains_v3_alias_fields(self, mock_run, _mock_system, _mock_failed, _mock_journal, _mock_flatpak):
         package = _passing_package()
         package.repo_risks = [RepoRisk(repo_id="copr:<host>:<user>:x", source="/etc/yum.repos.d/x.repo", risk="warning", reason="COPR")]
@@ -266,18 +327,210 @@ class TestSupportBundleV3(unittest.TestCase):
             package=package,
         )
         bundle = SupportBundleV3.generate_bundle()
-        self.assertEqual(bundle["v"], "6.0.0-compass-support-v4")
+        self.assertEqual(bundle["v"], "7.0.0-aegis-support-v5")
         self.assertIn("release_readiness", bundle)
         self.assertIn("fedora_kde_44_readiness", bundle)
         self.assertEqual(bundle["release_readiness"], bundle["fedora_kde_44_readiness"])
+        self.assertIn("action_candidates", bundle)
         self.assertIn("masked_repo_list", bundle)
         self.assertTrue(bundle["privacy"]["tokens_masked"])
 
+    @patch.object(SupportBundleV5, "_flatpak_runtimes", return_value="")
+    @patch.object(SupportBundleV5, "_recent_journal_warnings", return_value="user@example.com /home/loofi token=abc")
+    @patch.object(SupportBundleV5, "_failed_services", return_value=[])
+    @patch("core.export.support_bundle_v5.ActionExecutor.get_action_log", return_value=[{"cmd": ["/home/loofi/tool"], "token": "abc"}])
+    @patch("core.export.support_bundle_v5.ReportExporter.gather_system_info", return_value={"home": "/home/loofi", "email": "user@example.com"})
+    @patch("core.export.support_bundle_v5.ReleaseReadiness.run")
+    def test_bundle_v5_redacts_private_values(self, mock_run, _mock_system, _mock_history, _mock_failed, _mock_journal, _mock_flatpak):
+        mock_run.return_value = Fedora44ReadinessReport(
+            target="Fedora KDE 44",
+            generated_at=1.0,
+            score=91,
+            status="ready",
+            summary="ready",
+            checks=[],
+            desktop=_passing_desktop(),
+            package=_passing_package(),
+        )
+        bundle = SupportBundleV5.generate_bundle()
+        text = json.dumps(bundle)
+        self.assertEqual(bundle["schema"], "7.0.0-aegis-support-v5")
+        self.assertNotIn("/home/loofi", text)
+        self.assertNotIn("user@example.com", text)
+        self.assertNotIn("token=abc", text)
+        self.assertEqual(bundle["action_history"][0]["token"], "<masked>")
 
-class TestAuroraPackaging(unittest.TestCase):
+    @patch.object(SupportBundleV5, "generate_bundle", return_value={"schema": SupportBundleV5.BUNDLE_SCHEMA})
+    def test_bundle_v5_save_json_writes_schema(self, mock_generate):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "bundle.json"
+            result = SupportBundleV5.save_json(str(path), target="44")
+            payload = json.loads(path.read_text(encoding="utf-8"))
+
+        self.assertEqual(result, str(path))
+        self.assertEqual(payload["schema"], SupportBundleV5.BUNDLE_SCHEMA)
+        mock_generate.assert_called_once_with(target="44")
+
+
+class TestReadinessActions(unittest.TestCase):
+    """Guided readiness action bridge keeps mutation opt-in."""
+
+    def _repo_report(self, status="warning", severity="warning"):
+        return Fedora44ReadinessReport(
+            target="Fedora KDE 44",
+            generated_at=1.0,
+            score=80,
+            status="review",
+            summary="review",
+            checks=[
+                ReadinessCheck(
+                    id="repo-health",
+                    title="Repository Metadata",
+                    category="package",
+                    status=status,
+                    severity=severity,
+                    summary="Repository query reported a problem.",
+                    beginner_guidance="Review repositories.",
+                    command_preview=["dnf", "repolist", "--enabled"],
+                    recommendation=ReadinessRecommendation(
+                        title="Review enabled repositories",
+                        description="Refresh package metadata after reviewing repositories.",
+                        command_preview=["dnf", "repolist", "--enabled"],
+                        risk_level="low",
+                        manual_only=True,
+                    ),
+                )
+            ],
+        )
+
+    @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
+    def test_action_candidate_produced_for_repo_health(self, _mock_pm):
+        plan = ReadinessActionService.build_plan(report=self._repo_report())
+        self.assertEqual(plan.candidates[0].id, "readiness-repo-cache-clean")
+        self.assertFalse(plan.candidates[0].manual_only)
+        self.assertTrue(plan.candidates[0].privileged)
+        self.assertEqual(plan.candidates[0].command_preview[:2], ["pkexec", "dnf"])
+
+    @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
+    def test_action_preview_does_not_execute(self, _mock_pm):
+        executor = MagicMock()
+        executor.preview.return_value = ActionResult.previewed("pkexec", ["dnf", "clean", "all"], action_id="readiness-repo-cache-clean")
+        result = ReadinessActionService.preview(
+            "readiness-repo-cache-clean",
+            report=self._repo_report(),
+            executor=executor,
+        )
+        self.assertTrue(result.preview)
+        executor.preview.assert_called_once()
+        executor.execute.assert_not_called()
+
+    @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
+    def test_action_run_fails_without_confirm(self, _mock_pm):
+        executor = MagicMock()
+        result = ReadinessActionService.run(
+            "readiness-repo-cache-clean",
+            report=self._repo_report(),
+            executor=executor,
+        )
+        self.assertFalse(result.success)
+        self.assertIn("--confirm", result.message)
+        executor.execute.assert_not_called()
+
+    def test_manual_only_action_cannot_execute(self):
+        report = Fedora44ReadinessReport(
+            target="Fedora KDE 44",
+            generated_at=1.0,
+            score=80,
+            status="review",
+            summary="review",
+            checks=[
+                ReadinessCheck(
+                    id="third-party-repos",
+                    title="Third-Party Repository Risk",
+                    category="package",
+                    status="warning",
+                    severity="warning",
+                    summary="review",
+                    beginner_guidance="review",
+                    recommendation=ReadinessRecommendation(
+                        title="Review third-party repositories",
+                        description="Manual review is required.",
+                        command_preview=["dnf", "repolist", "--enabled"],
+                        risk_level="low",
+                    ),
+                )
+            ],
+        )
+        executor = MagicMock()
+        result = ReadinessActionService.run(
+            "readiness-third-party-repos",
+            report=report,
+            confirm=True,
+            executor=executor,
+        )
+        self.assertFalse(result.success)
+        self.assertIn("Manual-only", result.message)
+        executor.execute.assert_not_called()
+
+    @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
+    def test_confirmed_action_routes_through_executor(self, _mock_pm):
+        executor = MagicMock()
+        executor.execute.return_value = ActionResult.ok("cleaned", action_id="readiness-repo-cache-clean")
+        result = ReadinessActionService.run(
+            "readiness-repo-cache-clean",
+            report=self._repo_report(),
+            confirm=True,
+            executor=executor,
+        )
+        self.assertTrue(result.success)
+        executor.execute.assert_called_once_with(
+            "dnf",
+            ["clean", "all"],
+            privileged=True,
+            action_id="readiness-repo-cache-clean",
+        )
+
+    @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
+    @patch("core.diagnostics.readiness_actions.ReleaseReadiness.run")
+    def test_action_verify_reruns_related_readiness_check(self, mock_run, _mock_pm):
+        failing = self._repo_report()
+        passing = self._repo_report(status="pass", severity="info")
+        mock_run.side_effect = [failing, passing]
+        result = ReadinessActionService.verify("readiness-repo-cache-clean")
+        self.assertTrue(result.success)
+        self.assertEqual(mock_run.call_count, 2)
+
+    @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
+    @patch("builtins.print")
+    def test_cli_actions_json_is_structured(self, mock_print, mock_run, _mock_pm):
+        cli_mod._json_output = True
+        mock_run.return_value = self._repo_report()
+        result = cli_mod.cmd_readiness(MagicMock(readiness_action="actions", target="44"))
+        self.assertEqual(result, 0)
+        payload = json.loads(mock_print.call_args.args[0])
+        self.assertEqual(payload["candidates"][0]["id"], "readiness-repo-cache-clean")
+
+
+class TestFedora44Packaging(unittest.TestCase):
     """RPM and workflow packaging reflect Fedora 44 and optional runtime split."""
 
     ROOT = Path(__file__).resolve().parents[1]
+
+    def test_current_release_metadata_is_aligned(self):
+        from version import __version__, __version_codename__
+
+        spec = (self.ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
+        pyproject = (self.ROOT / "pyproject.toml").read_text(encoding="utf-8")
+        notes = self.ROOT / "docs" / "releases" / f"RELEASE-NOTES-v{__version__}.md"
+        tasks = self.ROOT / ".workflow" / "specs" / f"tasks-v{__version__}.md"
+        arch = self.ROOT / ".workflow" / "specs" / f"arch-v{__version__}.md"
+        self.assertIn(f"Version:        {__version__}", spec)
+        self.assertIn(f'version = "{__version__}"', pyproject)
+        self.assertTrue(notes.exists())
+        self.assertTrue(tasks.exists())
+        self.assertTrue(arch.exists())
+        self.assertIn(__version_codename__, notes.read_text(encoding="utf-8"))
 
     def test_spec_splits_api_and_daemon_dependencies(self):
         spec = (self.ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")

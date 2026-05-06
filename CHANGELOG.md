@@ -4,6 +4,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [7.0.0] - 2026-05-06 "Aegis"
+
+### Added
+
+- **Guided Action Bridge**: Added safe readiness action candidates with command previews, risk, privilege, manual-only, rollback, documentation, preflight, and verification metadata.
+- **Readiness Action CLI**: Added `readiness actions`, `action-info`, `action-preview`, `action-run --confirm`, and `action-verify`.
+- **Action Inbox UI**: Added an in-dialog readiness Action Inbox without adding a new permanent tab or a fix-all workflow.
+- **Support Bundle v5**: Added action plan summaries, recent redacted action history, readiness delta placeholder, and stronger recursive privacy redaction.
+
+### Changed
+
+- Bumped runtime, package, workflow, and release metadata to `7.0.0 "Aegis"`.
+- Raised CI and auto-release coverage gates to 80 and aligned release-doc claim checks with that threshold.
+- Kept Fedora KDE 44 as the supported target while preserving Fedora 45 only as an advisory preview profile.
+- Readiness JSON now omits advanced-only details unless `--advanced` is requested.
+
+### Fixed
+
+- Hardened release metadata drift validation across README, ROADMAP, CHANGELOG, release notes, workflow specs, race lock, CI thresholds, and docs-only CI behavior.
+- Updated stale v6/v5 current-release documentation and Plugin SDK icon guidance.
+- Expanded typecheck coverage to diagnostics, export, and CLI modules and fixed existing typing blockers.
+
 ## [6.0.0] - 2026-05-01 "Compass"
 
 ### Added

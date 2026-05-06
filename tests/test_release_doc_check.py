@@ -20,24 +20,59 @@ def _write_release_files(
     use_legacy_root_notes: bool = False,
     include_pyproject: bool = True,
 ) -> None:
+    version = "26.0.1"
+    codename = "TestRelease"
     (root / "loofi-fedora-tweaks").mkdir(parents=True, exist_ok=True)
     (root / "loofi-fedora-tweaks" / "version.py").write_text(
-        '__version__ = "26.0.1"\n__version_codename__ = "TestRelease"\n',
+        f'__version__ = "{version}"\n__version_codename__ = "{codename}"\n',
         encoding="utf-8",
     )
     (root / "loofi-fedora-tweaks.spec").write_text(
-        "Version:        26.0.1\n", encoding="utf-8"
+        f"Version:        {version}\n", encoding="utf-8"
     )
     if include_pyproject:
         (root / "pyproject.toml").write_text(
-            '[project]\nname = "test"\nversion = "26.0.1"\n', encoding="utf-8"
+            f'[project]\nname = "test"\nversion = "{version}"\n', encoding="utf-8"
         )
-    (root /
-     "CHANGELOG.md").write_text("## [26.0.1] - 2026-02-11\n", encoding="utf-8")
-    (root / "README.md").write_text("Loofi\n", encoding="utf-8")
+    (root / "CHANGELOG.md").write_text(
+        f'## [{version}] - 2026-02-11 "{codename}"\n',
+        encoding="utf-8",
+    )
+    (root / "README.md").write_text(
+        f"# Loofi v{version} \"{codename}\"\n"
+        f"https://example.invalid/releases/tag/v{version}\n"
+        "![Coverage](https://img.shields.io/badge/Coverage-80%25-brightgreen)\n",
+        encoding="utf-8",
+    )
+    (root / "ROADMAP.md").write_text(
+        f'| v{version} | {codename} | ACTIVE | Test |\n'
+        f'## [ACTIVE] v{version} "{codename}"\n',
+        encoding="utf-8",
+    )
     notes_root = root if use_legacy_root_notes else root / "docs" / "releases"
     notes_root.mkdir(parents=True, exist_ok=True)
-    (notes_root / "RELEASE-NOTES-v26.0.1.md").write_text("notes\n", encoding="utf-8")
+    (notes_root / f"RELEASE-NOTES-v{version}.md").write_text(
+        f'# Release Notes -- v{version} "{codename}"\n',
+        encoding="utf-8",
+    )
+    specs = root / ".workflow" / "specs"
+    specs.mkdir(parents=True, exist_ok=True)
+    (specs / ".race-lock.json").write_text(
+        f'{{"version": "v{version}", "target_version": "v{version}"}}\n',
+        encoding="utf-8",
+    )
+    (specs / f"tasks-v{version}.md").write_text("# tasks\n", encoding="utf-8")
+    (specs / f"arch-v{version}.md").write_text("# arch\n", encoding="utf-8")
+    workflows = root / ".github" / "workflows"
+    workflows.mkdir(parents=True, exist_ok=True)
+    workflow_text = (
+        'env:\n  COVERAGE_THRESHOLD: "80"\n'
+        "jobs:\n  docs_gate:\n    steps:\n"
+        "      - run: python3 scripts/check_release_docs.py\n"
+    )
+    (workflows / "ci.yml").write_text(workflow_text, encoding="utf-8")
+    (workflows / "auto-release.yml").write_text(workflow_text, encoding="utf-8")
+    (root / "Justfile").write_text('coverage_min := "80"\n', encoding="utf-8")
     # Empty tests dir (no stale tests)
     (root / "tests").mkdir(exist_ok=True)
 
@@ -50,6 +85,12 @@ def _set_module_paths(module, tmp_path: Path) -> None:
     module.CHANGELOG_FILE = tmp_path / "CHANGELOG.md"
     module.README_FILE = tmp_path / "README.md"
     module.TESTS_DIR = tmp_path / "tests"
+    module.ROADMAP_FILE = tmp_path / "ROADMAP.md"
+    module.WORKFLOW_SPECS_DIR = tmp_path / ".workflow" / "specs"
+    module.RACE_LOCK_FILE = tmp_path / ".workflow" / "specs" / ".race-lock.json"
+    module.CI_WORKFLOW_FILE = tmp_path / ".github" / "workflows" / "ci.yml"
+    module.AUTO_RELEASE_WORKFLOW_FILE = tmp_path / ".github" / "workflows" / "auto-release.yml"
+    module.JUSTFILE = tmp_path / "Justfile"
 
 
 def test_release_doc_check_passes_when_required_files_exist(tmp_path):
@@ -267,3 +308,53 @@ def test_release_doc_check_allows_dynamic_version_tests(tmp_path):
 
     issues = module.validate_release_docs(tmp_path, require_logs=False)
     assert issues == []
+
+
+def test_release_doc_check_catches_readme_release_badge_drift(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_readme_badge",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    (tmp_path / "README.md").write_text("missing current badge\n", encoding="utf-8")
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+    assert any("README" in item for item in issues)
+
+
+def test_release_doc_check_catches_coverage_threshold_mismatch(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_threshold",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+        'env:\n  COVERAGE_THRESHOLD: "77"\n'
+        "jobs:\n  docs_gate:\n    steps:\n"
+        "      - run: python3 scripts/check_release_docs.py\n",
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+    assert any("coverage threshold" in item for item in issues)
+
+
+def test_release_doc_check_catches_docs_only_ci_bypass(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_docs_bypass",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
+        'on:\n  push:\n    paths-ignore:\n      - "docs/**"\n'
+        'env:\n  COVERAGE_THRESHOLD: "80"\n'
+        "jobs:\n  docs_gate:\n    steps:\n"
+        "      - run: python3 scripts/check_release_docs.py\n",
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+    assert any("docs-only" in item for item in issues)

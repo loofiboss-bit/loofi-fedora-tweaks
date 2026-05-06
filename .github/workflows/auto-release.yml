@@ -26,7 +26,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  COVERAGE_THRESHOLD: "77"
+  COVERAGE_THRESHOLD: "80"
   PIP_CACHE_FILES: |
     requirements.txt
     .github/workflows/auto-release.yml
@@ -209,7 +209,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
       - run: pip install mypy PyQt6-stubs
-      - run: mypy loofi-fedora-tweaks/services/security loofi-fedora-tweaks/services/network --ignore-missing-imports --no-error-summary --follow-imports=silent
+      - run: mypy loofi-fedora-tweaks/services/security loofi-fedora-tweaks/services/network loofi-fedora-tweaks/core/diagnostics loofi-fedora-tweaks/core/export loofi-fedora-tweaks/cli --ignore-missing-imports --no-error-summary --follow-imports=silent
 
   stabilization_rules:
     runs-on: ubuntu-latest

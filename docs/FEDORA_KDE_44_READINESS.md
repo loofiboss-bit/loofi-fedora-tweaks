@@ -1,6 +1,6 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v6.0.0 "Compass" includes a read-only release readiness center. Fedora KDE 44 is the supported target, and Fedora 45 is available as a preview-only planning profile.
+Loofi Fedora Tweaks v7.0.0 "Aegis" includes a read-only release readiness center plus safe guided action planning. Fedora KDE 44 is the supported target. Fedora 45 remains preview-only and advisory.
 
 ## Run It
 
@@ -8,14 +8,20 @@ GUI:
 
 - Open **Atlas Home**.
 - Choose **Release Readiness**.
+- Review beginner guidance first.
 - Use **Advanced** only when you need raw command/status details.
+- Use **Action Inbox** to review candidate actions. There is no fix-all action.
 
 CLI:
 
 ```bash
 loofi-fedora-tweaks --cli readiness --target 44
-loofi-fedora-tweaks --cli readiness --target 45-preview
 loofi-fedora-tweaks --cli readiness --target 44 --advanced
+loofi-fedora-tweaks --cli readiness actions --target 44
+loofi-fedora-tweaks --cli readiness action-info <action-id> --target 44
+loofi-fedora-tweaks --cli readiness action-preview <action-id> --target 44
+loofi-fedora-tweaks --cli readiness action-run <action-id> --target 44 --confirm
+loofi-fedora-tweaks --cli readiness action-verify <action-id> --target 44
 loofi-fedora-tweaks --cli --json readiness --target 44
 ```
 
@@ -39,22 +45,31 @@ loofi-fedora-tweaks --cli fedora44-readiness
 
 ## Safety Model
 
-Readiness checks never execute repair commands. Any command shown in the UI or JSON output is a preview of the read-only probe used to inspect the system.
+Readiness checks are read-only by default. Probe commands shown in beginner, advanced, or JSON output describe inspection steps unless explicitly shown as an Action Inbox candidate.
 
-Recommendation metadata remains manual by default and may include:
+Guided action candidates include:
 
 - risk level
 - command preview
-- reversibility
-- rollback or revert guidance
+- privilege requirement
+- reversibility and rollback hint
 - docs link
 - manual-only flag
+- preflight checks
+- verification command or readiness check
 
-Repair actions remain part of the Atlas action model and must use existing `pkexec` and rollback conventions before anything mutates the system.
+Rules:
 
-## Support Bundle v4
+- No automatic repair.
+- No fix-all button.
+- `action-preview` never mutates the system.
+- `action-run` fails without `--confirm`.
+- Manual-only recommendations cannot be executed.
+- Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 
-Support bundles now include privacy-masked generic `release_readiness` data:
+## Support Bundle v5
+
+Support bundles now include privacy-masked generic `release_readiness` data and guided action context:
 
 - Fedora/KDE/Qt versions
 - session type and display manager
@@ -65,7 +80,10 @@ Support bundles now include privacy-masked generic `release_readiness` data:
 - recent journal warnings/errors
 - Flatpak runtimes
 - masked repository list
+- action candidates or action plan summary
+- recent redacted action history
+- privacy manifest
 
 The legacy `fedora_kde_44_readiness` field is preserved as an alias for older support tooling.
 
-Home paths, token-like values, and private file contents are not intentionally included.
+Home paths, token/password/secret/key-like values, email addresses, and private file contents are not intentionally included.

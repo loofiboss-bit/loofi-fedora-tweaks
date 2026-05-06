@@ -302,19 +302,29 @@ class JournalManager:
                 # System info
                 (tmp / "system-info.txt").write_text(cls._get_system_info() or "No system info")
 
-                # Release readiness support bundle v4 payload
+                # Release readiness support bundle v5 payload, plus v4 filename alias
                 try:
-                    from core.export.support_bundle_v4 import SupportBundleV4
+                    from core.export.support_bundle_v5 import SupportBundleV5
 
-                    bundle_v4 = SupportBundleV4.generate_bundle()
+                    bundle_v5 = SupportBundleV5.generate_bundle()
+                    bundle_text = __import__("json").dumps(bundle_v5, indent=2, default=str)
+                    (tmp / "support-bundle-v5.json").write_text(
+                        bundle_text,
+                        encoding="utf-8",
+                    )
                     (tmp / "support-bundle-v4.json").write_text(
-                        __import__("json").dumps(bundle_v4, indent=2, default=str),
+                        bundle_text,
                         encoding="utf-8",
                     )
                 except (ImportError, OSError, RuntimeError, ValueError, TypeError, AttributeError) as e:
-                    logger.debug("Failed to include support bundle v4 payload: %s", e)
+                    logger.debug("Failed to include support bundle v5 payload: %s", e)
+                    fallback = '{"v": "7.0.0-aegis-support-v5", "error": "unavailable"}'
+                    (tmp / "support-bundle-v5.json").write_text(
+                        fallback,
+                        encoding="utf-8",
+                    )
                     (tmp / "support-bundle-v4.json").write_text(
-                        '{"v": "6.0.0-compass-support-v4", "error": "unavailable"}',
+                        fallback,
                         encoding="utf-8",
                     )
 

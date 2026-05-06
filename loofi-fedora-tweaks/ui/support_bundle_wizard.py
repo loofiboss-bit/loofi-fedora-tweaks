@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTextEdit, QFileDialog, QMessageBox
 )
-from core.export.support_bundle_v4 import SupportBundleV4
+from core.export.support_bundle_v5 import SupportBundleV5
 from utils.log import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +20,7 @@ class SupportBundleWizard(QDialog):
         self.setWindowTitle("Atlas Assistant - Support Bundle")
         self.setMinimumSize(700, 500)
 
-        self.bundle_gen = SupportBundleV4()
+        self.bundle_gen = SupportBundleV5()
         self.bundle_data = {}
 
         self._setup_ui()
@@ -66,7 +66,7 @@ class SupportBundleWizard(QDialog):
         layout.addLayout(nav)
 
     def _gather_data(self):
-        """Collect data from SupportBundleV3 and update preview."""
+        """Collect data from the current support bundle generator and update preview."""
         try:
             self.bundle_data = self.bundle_gen.generate_bundle()
             # Pretty-print for preview

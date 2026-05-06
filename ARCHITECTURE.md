@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 5.0.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 7.0.0 "Aegis" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 
@@ -15,7 +15,9 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   ├── diagnostics/          # Health & Repair Autopilot (HRA)
 │   │   ├── health_registry.py# Central registry for system checks
 │   │   ├── health_model.py   # Structured HealthCheck/HealthResult schemas
-│   │   ├── fedora44_readiness.py# Fedora KDE 44 readiness aggregation
+│   │   ├── release_readiness.py# Fedora KDE 44 release readiness aggregation
+│   │   ├── readiness_actions.py# v7 safe action planning bridge
+│   │   ├── fedora44_readiness.py# Compatibility facade
 │   │   ├── upgrade_checker.py# Fedora version transition assistant
 │   │   ├── task_dashboard.py # Goal-oriented task logic
 │   │   └── gaming_audit.py   # Specialized hardware/gaming diagnostics
@@ -23,7 +25,8 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   │   ├── action_model.py   # SystemAction with risk/rollback metadata
 │   │   └── action_executor.py# Centralized safe command runner
 │   ├── export/               # Diagnostic export services
-│   │   ├── support_bundle_v2.py# Structured diagnostic bundle generator
+│   │   ├── support_bundle_v5.py# Aegis support diagnostics and redaction
+│   │   ├── support_bundle_v4.py# Compatibility wrapper
 │   │   └── ansible_exporter.py # ANSIBLE export logic
 │   ├── plugins/              # Plugin discovery and loading logic
 │   ├── agents/               # AgentRegistry, AgentPlanner, AgentExecutor

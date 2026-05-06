@@ -4,16 +4,12 @@ on:
   push:
     branches: [master]
     paths-ignore:
-      - "docs/**"
-      - "**/*.md"
       - ".github/ISSUE_TEMPLATE/**"
       - ".vscode/**"
       - ".copilot/**"
   pull_request:
     branches: [master]
     paths-ignore:
-      - "docs/**"
-      - "**/*.md"
       - ".github/ISSUE_TEMPLATE/**"
       - ".vscode/**"
       - ".copilot/**"
@@ -29,7 +25,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  COVERAGE_THRESHOLD: "77"
+  COVERAGE_THRESHOLD: "80"
   PIP_CACHE_FILES: |
     requirements.txt
     .github/workflows/ci.yml
@@ -72,7 +68,19 @@ jobs:
           cache: "pip"
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
       - run: pip install mypy PyQt6-stubs
-      - run: mypy loofi-fedora-tweaks/services/security loofi-fedora-tweaks/services/network --ignore-missing-imports --no-error-summary --follow-imports=silent
+      - run: mypy loofi-fedora-tweaks/services/security loofi-fedora-tweaks/services/network loofi-fedora-tweaks/core/diagnostics loofi-fedora-tweaks/core/export loofi-fedora-tweaks/cli --ignore-missing-imports --no-error-summary --follow-imports=silent
+
+  docs_gate:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v6
+      - uses: actions/setup-python@v6
+        with:
+          python-version: ${{ env.PYTHON_VERSION }}
+          cache: "pip"
+          cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
+      - run: python3 scripts/check_release_docs.py
 
   stabilization_rules:
     runs-on: ubuntu-latest

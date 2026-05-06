@@ -26,10 +26,19 @@ PYPROJECT_FILE = ROOT / "pyproject.toml"
 CHANGELOG_FILE = ROOT / "CHANGELOG.md"
 README_FILE = ROOT / "README.md"
 TESTS_DIR = ROOT / "tests"
+ROADMAP_FILE = ROOT / "ROADMAP.md"
+WORKFLOW_SPECS_DIR = ROOT / ".workflow" / "specs"
+RACE_LOCK_FILE = WORKFLOW_SPECS_DIR / ".race-lock.json"
+CI_WORKFLOW_FILE = ROOT / ".github" / "workflows" / "ci.yml"
+AUTO_RELEASE_WORKFLOW_FILE = ROOT / ".github" / "workflows" / "auto-release.yml"
+JUSTFILE = ROOT / "Justfile"
 
 VERSION_RE = re.compile(r'__version__\s*=\s*"([^"]+)"')
+CODENAME_RE = re.compile(r'__version_codename__\s*=\s*"([^"]+)"')
 SPEC_VERSION_RE = re.compile(r"^Version:\s*(\S+)", re.MULTILINE)
 PYPROJECT_VERSION_RE = re.compile(r'^version\s*=\s*"([^"]+)"', re.MULTILINE)
+COVERAGE_THRESHOLD_RE = re.compile(r'COVERAGE_THRESHOLD:\s*["\']?(\d+)["\']?')
+JUST_COVERAGE_RE = re.compile(r'^coverage_min\s*:=\s*"(\d+)"', re.MULTILINE)
 
 # Matches assertEqual-style assertions containing a literal X.Y.Z string.
 _HARDCODED_VERSION_RE = re.compile(
@@ -47,6 +56,13 @@ def extract_version() -> str:
     if not match:
         raise RuntimeError("Unable to parse __version__ from version.py")
     return match.group(1)
+
+
+def extract_codename() -> str | None:
+    """Extract __version_codename__ from version.py, or None."""
+    content = VERSION_FILE.read_text(encoding="utf-8")
+    match = CODENAME_RE.search(content)
+    return match.group(1) if match else None
 
 
 def extract_spec_version() -> str:
@@ -150,9 +166,7 @@ def scan_stale_version_tests(
 
 def _extract_codename() -> str | None:
     """Extract __version_codename__ from version.py, or None."""
-    content = VERSION_FILE.read_text(encoding="utf-8")
-    match = re.search(r'__version_codename__\s*=\s*"([^"]+)"', content)
-    return match.group(1) if match else None
+    return extract_codename()
 
 
 def _metric_from_report(report: dict, key: str) -> int | None:
@@ -175,6 +189,101 @@ def _metric_from_report(report: dict, key: str) -> int | None:
     return None
 
 
+def _read_text(path: Path) -> str:
+    try:
+        return path.read_text(encoding="utf-8")
+    except OSError:
+        return ""
+
+
+def _workflow_threshold(path: Path) -> int | None:
+    text = _read_text(path)
+    match = COVERAGE_THRESHOLD_RE.search(text)
+    return int(match.group(1)) if match else None
+
+
+def _just_threshold() -> int | None:
+    text = _read_text(JUSTFILE)
+    match = JUST_COVERAGE_RE.search(text)
+    return int(match.group(1)) if match else None
+
+
+def _coverage_claims(text: str) -> List[int]:
+    claims = [int(value) for value in re.findall(r"Coverage-(\d+)(?:%25|%)", text)]
+    claims.extend(int(value) for value in re.findall(r"coverage\s+(\d+)%", text, flags=re.IGNORECASE))
+    return claims
+
+
+def _validate_release_surface(root: Path, version: str, codename: str | None, notes_file: Path) -> List[str]:
+    errors: List[str] = []
+    tag = f"v{version}"
+
+    readme = _read_text(README_FILE)
+    if tag not in readme or (codename and codename not in readme):
+        errors.append(f"README missing current release {tag} {codename or ''}".strip())
+    if f"releases/tag/{tag}" not in readme:
+        errors.append(f"README release badge/link missing {tag}")
+
+    roadmap = _read_text(ROADMAP_FILE)
+    if f"## [ACTIVE] {tag}" not in roadmap:
+        errors.append(f"ROADMAP missing ACTIVE section for {tag}")
+    if re.search(r"^## \[ACTIVE\] v(?!%s\b)" % re.escape(version), roadmap, flags=re.MULTILINE):
+        errors.append("ROADMAP has an ACTIVE section for a different release")
+    if codename and codename not in roadmap:
+        errors.append(f"ROADMAP missing codename {codename}")
+
+    changelog = _read_text(CHANGELOG_FILE)
+    if codename and f'"{codename}"' not in changelog:
+        errors.append(f"CHANGELOG current entry missing codename {codename}")
+
+    notes = _read_text(notes_file)
+    if codename and codename not in notes:
+        errors.append(f"release notes missing codename {codename}")
+
+    tasks_file = WORKFLOW_SPECS_DIR / f"tasks-{tag}.md"
+    arch_file = WORKFLOW_SPECS_DIR / f"arch-{tag}.md"
+    for path in (tasks_file, arch_file):
+        if not path.exists() or not _read_text(path).strip():
+            errors.append(f"missing workflow spec: {path.relative_to(root)}")
+
+    if not RACE_LOCK_FILE.exists():
+        errors.append(f"missing race lock: {RACE_LOCK_FILE.relative_to(root)}")
+    else:
+        try:
+            lock = json.loads(RACE_LOCK_FILE.read_text(encoding="utf-8"))
+        except json.JSONDecodeError:
+            errors.append(f"invalid race lock JSON: {RACE_LOCK_FILE.relative_to(root)}")
+        else:
+            if lock.get("version") != tag or lock.get("target_version") != tag:
+                errors.append(f"race lock does not target {tag}")
+
+    ci_threshold = _workflow_threshold(CI_WORKFLOW_FILE)
+    release_threshold = _workflow_threshold(AUTO_RELEASE_WORKFLOW_FILE)
+    just_threshold = _just_threshold()
+    thresholds = [value for value in (ci_threshold, release_threshold, just_threshold) if value is not None]
+    if ci_threshold is None:
+        errors.append("CI workflow missing COVERAGE_THRESHOLD")
+    if release_threshold is None:
+        errors.append("auto-release workflow missing COVERAGE_THRESHOLD")
+    if thresholds and len(set(thresholds)) != 1:
+        errors.append(f"coverage threshold mismatch: values={thresholds}")
+    if thresholds and min(thresholds) < 80:
+        errors.append(f"coverage threshold below 80: values={thresholds}")
+
+    ci_text = _read_text(CI_WORKFLOW_FILE)
+    if "docs/**" in ci_text or "**/*.md" in ci_text:
+        errors.append("CI paths-ignore allows docs-only changes to bypass checks")
+    if "docs_gate" not in ci_text or "scripts/check_release_docs.py" not in ci_text:
+        errors.append("CI missing docs_gate release-doc validation")
+
+    enforced_threshold = ci_threshold or release_threshold or just_threshold or 0
+    for claim in _coverage_claims(readme + "\n" + notes):
+        if enforced_threshold and claim > enforced_threshold:
+            errors.append(f"docs claim {claim}% coverage but CI enforces {enforced_threshold}%")
+
+    return errors
+
+
 def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
     errors: List[str] = []
 
@@ -183,6 +292,7 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
         spec_version = extract_spec_version()
     except Exception as exc:  # pragma: no cover - defensive parser guard
         return [str(exc)]
+    codename = _extract_codename()
 
     # --- Version sync: version.py vs .spec ---
     if py_version != spec_version:
@@ -212,6 +322,8 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
     if not notes_file.exists() or not notes_file.read_text(encoding="utf-8").strip():
         expected = release_notes_candidates(root, py_version)[0]
         errors.append(f"missing release notes: {expected.relative_to(root)}")
+    else:
+        errors.extend(_validate_release_surface(root, py_version, codename, notes_file))
 
     # --- Workflow artifacts (optional) ---
     if require_logs:
@@ -293,7 +405,6 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
                         )
 
     # --- Stale version tests ---
-    codename = _extract_codename()
     stale_errors = scan_stale_version_tests(TESTS_DIR, py_version, codename)
     errors.extend(stale_errors)
 

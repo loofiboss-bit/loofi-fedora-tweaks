@@ -54,7 +54,7 @@ class TaskManager:
         self._tasks.append(DashboardTask(
             id="task-release-readiness",
             title="Release Readiness",
-            description="Check Fedora KDE 44 support readiness and preview Fedora 45 planning signals.",
+            description="Check Fedora KDE 44 readiness and review safe guided action candidates.",
             icon_id="status-ok",
             priority=1
         ))

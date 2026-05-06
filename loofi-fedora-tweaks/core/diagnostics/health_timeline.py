@@ -28,7 +28,7 @@ if not hasattr(os, "statvfs"):
     def _statvfs_unavailable(_path: str):
         raise OSError("statvfs not available")
 
-    os.statvfs = _statvfs_unavailable  # type: ignore[attr-defined]
+    setattr(os, "statvfs", _statvfs_unavailable)
 
 if not hasattr(os, "getloadavg"):
     def _getloadavg_unavailable():

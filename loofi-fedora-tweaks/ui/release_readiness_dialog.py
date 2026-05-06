@@ -26,7 +26,11 @@ from core.diagnostics.release_readiness import (
     ReleaseReadiness,
     ReleaseReadinessReport,
 )
-from core.export.support_bundle_v4 import SupportBundleV4
+from core.diagnostics.readiness_actions import (
+    ReadinessActionCandidate,
+    ReadinessActionService,
+)
+from core.export.support_bundle_v5 import SupportBundleV5
 from utils.log import get_logger
 
 logger = get_logger(__name__)
@@ -231,12 +235,124 @@ class ReleaseReadinessDialog(QDialog):
             self.checks_layout.insertWidget(self.checks_layout.count() - 1, empty)
             return
 
+        self._render_action_inbox()
+
         for category, checks in grouped.items():
             label = QLabel(self._CATEGORY_LABELS.get(category, category.title()))
             label.setStyleSheet("font-size: 14px; font-weight: bold; margin-top: 8px;")
             self.checks_layout.insertWidget(self.checks_layout.count() - 1, label)
             for check in checks:
                 self.checks_layout.insertWidget(self.checks_layout.count() - 1, self._build_check_card(check))
+
+    def _render_action_inbox(self) -> None:
+        if self.report is None:
+            return
+        plan = ReadinessActionService.build_plan(self.target_key, report=self.report)
+        if not plan.candidates:
+            return
+
+        title = QLabel(self.tr("Action Inbox"))
+        title.setStyleSheet("font-size: 14px; font-weight: bold; margin-top: 10px;")
+        self.checks_layout.insertWidget(self.checks_layout.count() - 1, title)
+
+        for candidate in plan.candidates:
+            self.checks_layout.insertWidget(self.checks_layout.count() - 1, self._build_action_card(candidate))
+
+    def _build_action_card(self, candidate: ReadinessActionCandidate) -> QFrame:
+        frame = QFrame()
+        frame.setObjectName("dashboardCard")
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(8)
+
+        top = QHBoxLayout()
+        title = QLabel(candidate.title)
+        title.setStyleSheet("font-weight: bold;")
+        top.addWidget(title, 1)
+
+        mode = self.tr("MANUAL") if candidate.manual_only else self.tr("CONFIRM")
+        badge = QLabel(f"{candidate.risk_level.upper()} / {mode}")
+        badge.setStyleSheet("color: #2563eb; border: 1px solid #2563eb; border-radius: 4px; font-size: 10px; font-weight: bold; padding: 2px 5px;")
+        top.addWidget(badge)
+        layout.addLayout(top)
+
+        explanation = QLabel(candidate.explanation)
+        explanation.setWordWrap(True)
+        layout.addWidget(explanation)
+
+        facts = [
+            self.tr("Related check: %1").replace("%1", candidate.related_check_id),
+            self.tr("Privileges required: %1").replace("%1", str(candidate.privileged)),
+            self.tr("Reversible: %1").replace("%1", str(candidate.reversible)),
+            self.tr("Rollback: %1").replace("%1", candidate.revert_hint),
+        ]
+        if candidate.verification_command:
+            facts.append(self.tr("Verification: %1").replace("%1", " ".join(candidate.verification_command)))
+        details = QLabel("\n".join(facts))
+        details.setWordWrap(True)
+        details.setStyleSheet("color: #cbd5e1;")
+        layout.addWidget(details)
+
+        if candidate.command_preview:
+            cmd = QLabel("<code>" + " ".join(candidate.command_preview) + "</code>")
+            cmd.setWordWrap(True)
+            cmd.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+            cmd.setStyleSheet("background: #111827; color: #f8fafc; padding: 5px; border-radius: 4px; font-family: monospace;")
+            layout.addWidget(cmd)
+
+        if candidate.docs_link:
+            docs = QLabel(f'<a href="{candidate.docs_link}">{candidate.docs_link}</a>')
+            docs.setOpenExternalLinks(True)
+            docs.setWordWrap(True)
+            layout.addWidget(docs)
+
+        actions = QHBoxLayout()
+        actions.addStretch()
+        verify = QPushButton(self.tr("Verify"))
+        verify.clicked.connect(lambda _checked=False, action_id=candidate.id: self._verify_action(action_id))
+        actions.addWidget(verify)
+        if candidate.executable:
+            run = QPushButton(self.tr("Run..."))
+            run.clicked.connect(lambda _checked=False, action_id=candidate.id: self._confirm_and_run_action(action_id))
+            actions.addWidget(run)
+        else:
+            manual = QLabel(self.tr("Manual only"))
+            manual.setStyleSheet("color: #9ca3af;")
+            actions.addWidget(manual)
+        layout.addLayout(actions)
+        return frame
+
+    def _confirm_and_run_action(self, action_id: str) -> None:
+        if self.report is None:
+            return
+        candidate = ReadinessActionService.get_candidate(action_id, self.target_key, report=self.report)
+        if candidate is None:
+            QMessageBox.warning(self, self.tr("Action Unavailable"), self.tr("This readiness action is no longer available."))
+            return
+        message = self.tr("Run this action?\n\n%1\n\nCommand preview:\n%2").replace("%1", candidate.explanation).replace("%2", " ".join(candidate.command_preview))
+        answer = QMessageBox.question(
+            self,
+            self.tr("Confirm Readiness Action"),
+            message,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.No,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+        result = ReadinessActionService.run(action_id, target_key=self.target_key, confirm=True, report=self.report)
+        if result.success:
+            QMessageBox.information(self, self.tr("Action Complete"), result.message)
+        else:
+            QMessageBox.warning(self, self.tr("Action Failed"), result.message)
+
+    def _verify_action(self, action_id: str) -> None:
+        if self.report is None:
+            return
+        result = ReadinessActionService.verify(action_id, target_key=self.target_key)
+        if result.success:
+            QMessageBox.information(self, self.tr("Verification Complete"), result.message)
+        else:
+            QMessageBox.warning(self, self.tr("Verification Needs Attention"), result.message)
 
     def _build_check_card(self, check: ReadinessCheck) -> QFrame:
         frame = QFrame()
@@ -318,13 +434,13 @@ class ReleaseReadinessDialog(QDialog):
         path, _selected_filter = QFileDialog.getSaveFileName(
             self,
             self.tr("Export Support Bundle"),
-            "loofi-support-bundle-v4.json",
+            "loofi-support-bundle-v5.json",
             self.tr("JSON Files (*.json)"),
         )
         if not path:
             return
         try:
-            SupportBundleV4.save_json(path, target=self.target_key)
+            SupportBundleV5.save_json(path, target=self.target_key)
         except (OSError, RuntimeError, ValueError, TypeError) as exc:
             logger.error("Failed to export support bundle: %s", exc, exc_info=True)
             QMessageBox.warning(self, self.tr("Export Failed"), str(exc))

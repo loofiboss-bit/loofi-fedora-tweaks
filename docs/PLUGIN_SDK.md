@@ -52,7 +52,7 @@ Every plugin must have a `plugin.json` in its root directory:
     "min_app_version": "15.0.0",
     "permissions": ["network", "notifications"],
     "update_url": "https://example.com/my-plugin/latest.json",
-    "icon": "\ud83d\udd0c"
+    "icon": "developer-tools"
 }
 ```
 
@@ -66,7 +66,7 @@ Every plugin must have a `plugin.json` in its root directory:
 | `min_app_version` | No | Minimum Loofi version required (blocks loading if unmet) |
 | `permissions` | No | List of permissions the plugin requests (see Permissions below) |
 | `update_url` | No | URL returning JSON with a `"version"` key for update checking |
-| `icon` | No | Emoji icon for sidebar display (defaults to plug emoji) |
+| `icon` | No | Semantic icon ID for sidebar display (defaults to `plugin`) |
 
 ### 3. Implement the Plugin Class
 
@@ -84,7 +84,7 @@ class MyPlugin(LoofiPlugin):
             version="1.0.0",
             author="Your Name",
             description="What this plugin does.",
-            icon="\ud83d\udd0c",
+            icon="developer-tools",
         )
 
     def create_widget(self):

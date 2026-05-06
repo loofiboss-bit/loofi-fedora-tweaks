@@ -2,9 +2,9 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v6.0.0 "Compass"
+**Last verified**: v7.0.0 "Aegis"
 
-**Status**: Screenshot references are current for v6 docs. The Release Readiness images are generated with `scripts/capture_v6_readiness_screenshots.py`.
+**Status**: Screenshot filenames remain stable for v7 docs. The Release Readiness images are generated with `scripts/capture_v6_readiness_screenshots.py`.
 
 ## Current Files
 

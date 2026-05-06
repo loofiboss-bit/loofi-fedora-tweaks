@@ -8,4 +8,4 @@ Release work follows this sequence:
 4. Add deterministic tests with mocked host/system calls.
 5. Run stabilization, adapter, release-doc, lint, type, test, coverage, RPM, and CLI smoke validation.
 
-For v5.0.0 Aurora, active build and COPR references target Fedora 44.
+For v7.0.0 Aegis, active build and COPR references target Fedora 44.

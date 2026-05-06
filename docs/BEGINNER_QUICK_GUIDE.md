@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 6.0.0 "Compass" — Release Readiness
+> Version 7.0.0 "Aegis" — Safe Guided Actions
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -47,7 +47,7 @@ Open:
 - **Overview → Atlas Home**
 - **Release Readiness**
 
-Review the score and safe guidance. Advanced details are optional.
+Review the score and safe guidance. Advanced details and Action Inbox commands are optional.
 
 ![Release Readiness](images/user-guide/release-readiness.png)
 
@@ -122,6 +122,7 @@ Open **Personalize → Settings** and configure:
 loofi info
 loofi health
 loofi fedora44-readiness
+loofi readiness actions --target 44
 loofi doctor
 loofi cleanup all
 loofi security-audit

@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        6.0.0
+Version:        7.0.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -38,8 +38,8 @@ VM Quick-Create, VFIO GPU Passthrough, Loofi Link
 Mesh, State Teleport, AI Lab, Security Center,
 Director, Containers, and Replicator IaC.
 
-Fedora KDE 44 remains the supported target for v6.0.0 Compass.
-Fedora 45 is available as a preview-only readiness profile.
+Fedora KDE 44 remains the supported target for v7.0.0 Aegis.
+Fedora 45 remains preview-only and advisory.
 
 %package api
 Summary:        Optional Loofi Fedora Tweaks Web API runtime
@@ -164,6 +164,18 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Wed May 06 2026 Loofi <loofi@example.com> - 7.0.0-1
+- v7.0.0 "Aegis" — Safe guided actions, release reliability, and Fedora 44 polish
+- Added Guided Action Bridge for readiness action planning, preview, confirmation, and verification
+- Added Support Bundle v5 with action summaries, recent action history, and stronger redaction
+- Hardened release metadata, docs, workflow spec, and coverage threshold drift checks
+- Kept Fedora KDE 44 as the supported target and Fedora 45 as preview-only advisory context
+
+* Thu May 01 2026 Loofi <loofi@example.com> - 6.0.0-1
+- v6.0.0 "Compass" — Release Readiness & Guided Repair Planning
+- Added generic release readiness engine, Fedora 45 preview profile, and Support Bundle v4
+- Added grouped readiness dialog and generic CLI readiness command
+
 * Thu Apr 30 2026 Loofi <loofi@example.com> - 5.0.0-1
 - v5.0.0 "Aurora" — Fedora KDE 44 Experience & Compatibility
 - Added Fedora KDE 44 Readiness Center for Fedora, Plasma, Qt, Wayland, DNF5, PackageKit, repo, Atomic, NVIDIA, Flatpak, and TLS diagnostics

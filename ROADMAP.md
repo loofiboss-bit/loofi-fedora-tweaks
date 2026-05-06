@@ -59,11 +59,42 @@
 | 2.13.0  | Alignment                       | DONE    | Documentation/workflow convergence and release-authority hardening                            |
 | v4.0.0  | Atlas                           | DONE    | Guided diagnostics, safe repairs, rollback-first actions, and task-based UX                   |
 | v5.0.0  | Aurora                          | DONE    | Fedora KDE 44 experience, readiness diagnostics, support bundle v3, packaging split           |
-| v6.0.0  | Compass                         | ACTIVE  | Generic release readiness engine, guided recommendations, support bundle v4                  |
+| v6.0.0  | Compass                         | DONE    | Generic release readiness engine, guided recommendations, support bundle v4                  |
+| v7.0.0  | Aegis                           | ACTIVE  | Safe guided actions, release reliability, Fedora 44 polish, support diagnostics              |
 
 ---
 
-## [ACTIVE] v6.0.0 "Compass" — Release Readiness & Guided Repair Planning
+## [ACTIVE] v7.0.0 "Aegis" — Safe Guided Actions & Fedora 44 Reliability
+
+**Theme**: Safe guided actions, release reliability, and Fedora 44 polish.
+**Focus**: Action planning from readiness findings, explicit confirmation, support diagnostics, release metadata correctness, and design consistency.
+
+### Scope
+
+v7.0.0 "Aegis" keeps Fedora KDE 44 as the supported target and preserves Fedora 45 only as an existing preview/advisory profile. It turns read-only readiness findings into reviewable action candidates, blocks automatic repair, and strengthens release gates so docs, metadata, CI coverage, and workflow specs stay aligned.
+
+### Deliverables
+
+- [x] Version metadata aligned to `7.0.0 "Aegis"`
+- [x] v6.0.0 "Compass" marked completed and v7.0.0 activated
+- [x] Guided Action Bridge for readiness action candidates, previews, confirmation, run, and verification
+- [x] CLI action inbox commands under `readiness`
+- [x] Existing readiness dialog updated with an in-dialog Action Inbox
+- [x] Readiness JSON hides advanced-only details unless `--advanced` is passed
+- [x] Support Bundle v5 with action plan/history summaries and stronger redaction
+- [x] CI, auto-release, docs, and release-claim drift gates aligned to 80% coverage
+- [x] Fedora KDE 44 wording, readiness docs, and design/icon guidance polished
+
+### Compatibility
+
+- Fedora KDE 44 is the supported target.
+- Fedora 45 remains preview-only and advisory; it is not a v7 release theme.
+- Mutating readiness actions require explicit user confirmation and continue through existing `pkexec`/ActionExecutor conventions.
+- Manual-only recommendations are not executable.
+
+---
+
+## [DONE] v6.0.0 "Compass" — Release Readiness & Guided Repair Planning
 
 **Theme**: Turn Fedora KDE 44 readiness into a reusable, guided readiness workflow.
 **Focus**: Generic target metadata, typed recommendations, beginner/advanced UX, and supportable diagnostics.

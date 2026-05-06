@@ -1,8 +1,8 @@
-# v5.0.0 "Aurora" Production Deployment Checklist
+# v7.0.0 "Aegis" Production Deployment Checklist
 
 ## Completed
 
-- [ ] Git tag v5.0.0 created and pushed
+- [ ] Git tag v7.0.0 created and pushed
 - [ ] GitHub release created with comprehensive notes
 - [ ] RPM packages built (via CI auto-release pipeline)
 - [ ] Release announcement drafted: `docs/releases/RELEASE-ANNOUNCEMENT.md`
@@ -35,7 +35,7 @@ copr-cli create loofi-fedora-tweaks \
 
 ```bash
 # From project root
-copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-5.0.0-1.src.rpm
+copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-7.0.0-1.src.rpm
 
 # Monitor build progress
 copr-cli watch-build <build-id>
@@ -50,7 +50,7 @@ pkexec dnf install loofi-fedora-tweaks
 
 # Test installation
 loofi-fedora-tweaks --version
-# Expected: 5.0.0 Aurora
+# Expected: 7.0.0 Aegis
 ```
 
 ---
@@ -112,7 +112,7 @@ pkexec systemctl enable certbot-renew.timer
 ```bash
 # Test HTTPS endpoint
 curl https://YOUR_DOMAIN/api/health
-# Expected: {"status": "ok", "version": "5.0.0", "codename": "Aurora"}
+# Expected: {"status": "ok", "version": "7.0.0", "codename": "Aegis"}
 
 # Test authentication flow
 curl -X POST https://YOUR_DOMAIN/api/key
@@ -135,18 +135,18 @@ pkexec firewall-cmd --reload
 ### Fedora Discussion
 
 - **Forum**: https://discussion.fedoraproject.org/c/desktop/gnome/19
-- **Title**: "Loofi Fedora Tweaks v5.0.0 'Aurora' - Fedora KDE 44 Readiness"
+- **Title**: "Loofi Fedora Tweaks v7.0.0 'Aegis' - Safe Guided Actions"
 - **Content**: Use `docs/releases/RELEASE-ANNOUNCEMENT.md`
 
 ### Reddit
 
 - **Subreddit**: r/Fedora
-- **Title**: "Loofi Fedora Tweaks v5.0.0 'Aurora' - Fedora KDE 44 Readiness"
+- **Title**: "Loofi Fedora Tweaks v7.0.0 'Aegis' - Safe Guided Actions"
 - **Flair**: "New Release"
 
 ### GitHub
 
-- [ ] Publish: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v5.0.0
+- [ ] Publish: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v7.0.0
 
 ---
 
@@ -156,7 +156,7 @@ pkexec firewall-cmd --reload
 
 - [ ] COPR build succeeds for Fedora 44
 - [ ] Package installs cleanly on fresh Fedora 44
-- [ ] `loofi-fedora-tweaks --version` shows 5.0.0
+- [ ] `loofi-fedora-tweaks --version` shows 7.0.0
 - [ ] GUI launches successfully
 - [ ] Web mode starts without errors
 
@@ -184,7 +184,7 @@ pkexec firewall-cmd --reload
 
 ```bash
 rpmbuild -bs loofi-fedora-tweaks.spec
-copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-5.0.0-1.src.rpm
+copr-cli build loofi-fedora-tweaks ~/rpmbuild/SRPMS/loofi-fedora-tweaks-7.0.0-1.src.rpm
 ```
 
 ### If Web Service Fails

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 6.0.0 "Compass" — Release Readiness
+> Version 7.0.0 "Aegis" — Safe Guided Actions
 
 This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
 
@@ -23,7 +23,7 @@ Core behavior:
 - Privileged actions executed with `pkexec` (never `sudo`)
 - Automatic Fedora mode detection (`dnf` vs `rpm-ostree`)
 - Safety confirmations for dangerous operations
-- Fedora KDE 44 readiness diagnostics with beginner and advanced views
+- Fedora KDE 44 readiness diagnostics with beginner, advanced, and guided action views
 
 ---
 
@@ -133,7 +133,7 @@ loofi support-bundle
 ## Overview
 
 - **Home**: health score, quick status, fast navigation
-- **Release Readiness**: dashboard card for Fedora KDE 44 support checks and Fedora 45 preview planning
+- **Release Readiness**: dashboard card for Fedora KDE 44 support checks and safe guided action planning
 - **System Info**: OS/kernel/hardware/system metadata
 - **System Monitor**: performance and process analysis
 
@@ -204,12 +204,13 @@ loofi info
 loofi health
 loofi readiness --target 44
 loofi readiness --target 44 --advanced
-loofi readiness --target 45-preview
+loofi readiness actions --target 44
+loofi readiness action-preview readiness-repo-cache-clean --target 44
 loofi doctor
 loofi support-bundle
 ```
 
-Advanced readiness details show the read-only probe command and manual recommendation metadata:
+Advanced readiness details show the read-only probe command and manual recommendation metadata. Action Inbox commands show reviewable action candidates and require confirmation before any supported mutating action can run:
 
 ![Release Readiness Advanced](images/user-guide/release-readiness-advanced.png)
 

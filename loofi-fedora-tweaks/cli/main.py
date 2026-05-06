@@ -325,7 +325,7 @@ def cmd_support_bundle(_args):
 def _print_readiness_report(report, *, advanced: bool) -> int:
     """Print a readiness report in CLI text or JSON mode."""
     if _json_output:
-        _output_json(report.to_dict(advanced=True))
+        _output_json(report.to_dict(advanced=advanced))
         return 0 if report.status in {"ready", "preview"} else 1
 
     _print("═══════════════════════════════════════════")
@@ -352,6 +352,11 @@ def cmd_readiness(args):
     """Run release readiness diagnostics."""
     from core.diagnostics.release_readiness import ReleaseReadiness
 
+    readiness_action = getattr(args, "readiness_action", None)
+    if readiness_action:
+        if isinstance(readiness_action, str):
+            return _cmd_readiness_action(args)
+
     target = getattr(args, "target", "44")
     report = ReleaseReadiness.run(target)
     return _print_readiness_report(report, advanced=getattr(args, "advanced", False))
@@ -363,6 +368,97 @@ def cmd_fedora44_readiness(args):
 
     report = ReleaseReadiness.run("44")
     return _print_readiness_report(report, advanced=getattr(args, "advanced", False))
+
+
+def _print_action_result(result) -> int:
+    """Print an action result in text or JSON form."""
+    payload = result.to_dict()
+    if _json_output:
+        _output_json(payload)
+    else:
+        status = "OK" if result.success else "FAILED"
+        _print(f"[{status}] {result.message}")
+        candidate = (result.data or {}).get("candidate") if result.data else None
+        if candidate:
+            command_preview = candidate.get("command_preview") or []
+            if command_preview:
+                _print(f"Command preview: {' '.join(command_preview)}")
+            _print(f"Risk: {candidate.get('risk_level')}  Privileged: {candidate.get('privileged')}  Manual only: {candidate.get('manual_only')}")
+            if candidate.get("revert_hint"):
+                _print(f"Rollback: {candidate.get('revert_hint')}")
+    return 0 if result.success else 1
+
+
+def _cmd_readiness_action(args) -> int:
+    """Handle nested readiness action commands."""
+    from core.diagnostics.readiness_actions import ReadinessActionService
+
+    target = getattr(args, "target", "44")
+    action = getattr(args, "readiness_action", "")
+    action_id = getattr(args, "action_id", "")
+
+    if action == "actions":
+        plan = ReadinessActionService.build_plan(target)
+        if _json_output:
+            _output_json(plan.to_dict())
+        else:
+            _print(f"{plan.target} Action Inbox")
+            if not plan.candidates:
+                _print("No readiness actions are currently available.")
+            for plan_candidate in plan.candidates:
+                mode = "manual" if plan_candidate.manual_only else "executable"
+                _print(f"- {plan_candidate.id}: {plan_candidate.title} [{plan_candidate.risk_level}, {mode}]")
+                _print(f"  {plan_candidate.explanation}")
+                if plan_candidate.command_preview:
+                    _print(f"  Preview: {' '.join(plan_candidate.command_preview)}")
+        return 0
+
+    if action == "action-info":
+        candidate = ReadinessActionService.get_candidate(action_id, target)
+        if candidate is None:
+            if _json_output:
+                _output_json({"error": "not_found", "action_id": action_id})
+            else:
+                _print(f"Readiness action not found: {action_id}")
+            return 1
+        if _json_output:
+            _output_json(candidate.to_dict())
+        else:
+            _print(f"{candidate.title} ({candidate.id})")
+            _print(candidate.explanation)
+            _print(f"Related check: {candidate.related_check_id}")
+            _print(f"Risk: {candidate.risk_level}")
+            _print(f"Privileged: {candidate.privileged}")
+            _print(f"Manual only: {candidate.manual_only}")
+            if candidate.command_preview:
+                _print(f"Command preview: {' '.join(candidate.command_preview)}")
+            if candidate.revert_hint:
+                _print(f"Rollback: {candidate.revert_hint}")
+            if candidate.verification_command:
+                _print(f"Verify: {' '.join(candidate.verification_command)}")
+            if candidate.docs_link:
+                _print(f"Docs: {candidate.docs_link}")
+        return 0
+
+    if action == "action-preview":
+        return _print_action_result(ReadinessActionService.preview(action_id, target))
+
+    if action == "action-run":
+        result = ReadinessActionService.run(
+            action_id,
+            target_key=target,
+            confirm=getattr(args, "confirm", False),
+        )
+        return _print_action_result(result)
+
+    if action == "action-verify":
+        return _print_action_result(ReadinessActionService.verify(action_id, target))
+
+    if _json_output:
+        _output_json({"error": "unknown_readiness_action", "action": action})
+    else:
+        _print(f"Unknown readiness action command: {action}")
+    return 1
 
 
 # ==================== v11.5 / v12.0 COMMANDS ====================
@@ -992,6 +1088,27 @@ def main(argv: Optional[List[str]] = None):
     readiness_parser = subparsers.add_parser("readiness", help="Run release readiness diagnostics")
     readiness_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
     readiness_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")
+    readiness_subparsers = readiness_parser.add_subparsers(dest="readiness_action", help="Readiness action commands")
+
+    readiness_actions_parser = readiness_subparsers.add_parser("actions", help="List safe readiness action candidates")
+    readiness_actions_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+
+    readiness_info_parser = readiness_subparsers.add_parser("action-info", help="Show one readiness action candidate")
+    readiness_info_parser.add_argument("action_id", help="Readiness action ID")
+    readiness_info_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+
+    readiness_preview_parser = readiness_subparsers.add_parser("action-preview", help="Preview one readiness action")
+    readiness_preview_parser.add_argument("action_id", help="Readiness action ID")
+    readiness_preview_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+
+    readiness_run_parser = readiness_subparsers.add_parser("action-run", help="Run a confirmed readiness action")
+    readiness_run_parser.add_argument("action_id", help="Readiness action ID")
+    readiness_run_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+    readiness_run_parser.add_argument("--confirm", action="store_true", help="Confirm the selected mutating action")
+
+    readiness_verify_parser = readiness_subparsers.add_parser("action-verify", help="Verify one readiness action")
+    readiness_verify_parser.add_argument("action_id", help="Readiness action ID")
+    readiness_verify_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
 
     fedora44_parser = subparsers.add_parser("fedora44-readiness", help="Compatibility alias for 'readiness --target 44'")
     fedora44_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")

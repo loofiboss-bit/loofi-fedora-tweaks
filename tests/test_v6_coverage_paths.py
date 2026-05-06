@@ -740,7 +740,7 @@ def test_release_readiness_dialog_worker_and_actions():
         assert errors == ["boom"]
 
     with patch("ui.release_readiness_dialog.QFileDialog.getSaveFileName", return_value=("/tmp/test.json", "")):
-        with patch("ui.release_readiness_dialog.SupportBundleV4.save_json", side_effect=OSError("no")):
+        with patch("ui.release_readiness_dialog.SupportBundleV5.save_json", side_effect=OSError("no")):
             with patch("ui.release_readiness_dialog.QMessageBox.warning") as warning:
                 dialog.export_support_bundle()
                 warning.assert_called_once()

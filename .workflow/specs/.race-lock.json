@@ -1,7 +1,7 @@
 {
-  "version": "v6.0.0",
-  "started_at": "20260501_005109",
+  "version": "v7.0.0",
+  "started_at": "20260506_115822",
   "status": "active",
-  "target_version": "v6.0.0",
-  "bumped_at": "2026-05-01T00:51:09.756892+00:00"
+  "target_version": "v7.0.0",
+  "bumped_at": "2026-05-06T11:58:22.514141+00:00"
 }

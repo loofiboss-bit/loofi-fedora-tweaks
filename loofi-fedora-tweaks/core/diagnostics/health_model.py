@@ -51,6 +51,7 @@ class HealthResult:
     status: str             # healthy | unhealthy | error | skipped
     message: str
     details: Optional[str] = None
+    suggested_fix: Optional[str] = None
     timestamp: float = 0.0
     detected_at: Optional[str] = None
     # e.g., ["bluetooth.service", "auditd.service"]

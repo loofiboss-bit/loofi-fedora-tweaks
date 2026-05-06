@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 41.0.0 "Coverage"
+> Version 7.0.0 "Aegis"
 
 Operational runbook for power users and Fedora admins.
 

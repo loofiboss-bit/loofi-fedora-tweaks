@@ -6,9 +6,9 @@ from unittest.mock import MagicMock, patch
 # Add source path to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QCheckBox
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QCheckBox, QMessageBox
 from ui.task_wizard import AtlasTaskWizard
-from core.diagnostics.release_readiness import ReadinessCheck, ReleaseReadinessReport
+from core.diagnostics.release_readiness import ReadinessCheck, ReadinessRecommendation, ReleaseReadinessReport
 from core.diagnostics.health_model import HealthResult
 from core.executor.action_result import ActionResult
 
@@ -150,10 +150,10 @@ def test_task_wizard_dynamic_execution_fixed(mock_execute):
     assert mock_execute.call_count == 2
     assert "2 actions succeeded" in wizard.result_label.text()
 
-@patch("core.export.support_bundle_v4.SupportBundleV4.generate_bundle")
+@patch("core.export.support_bundle_v5.SupportBundleV5.generate_bundle")
 def test_support_bundle_wizard(mock_generate):
     mock_generate.return_value = {
-        "v": "6.0.0-compass-support-v4",
+        "v": "7.0.0-aegis-support-v5",
         "system": {"os": "Fedora"},
         "health": []
     }
@@ -212,7 +212,115 @@ def test_release_readiness_dialog_groups_and_filters():
     assert "Fedora Version" in labels
 
 
-@patch("ui.release_readiness_dialog.SupportBundleV4.save_json")
+@patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
+@patch("ui.release_readiness_dialog.ReadinessActionService.run", return_value=ActionResult.ok("cleaned"))
+@patch("ui.release_readiness_dialog.QMessageBox.question", return_value=QMessageBox.StandardButton.Yes)
+@patch("ui.release_readiness_dialog.QMessageBox.information")
+def test_release_readiness_dialog_action_inbox_run_path(mock_info, _mock_question, mock_run, _mock_pm):
+    from ui.release_readiness_dialog import ReleaseReadinessDialog
+
+    dialog = ReleaseReadinessDialog(auto_run=False)
+    dialog.report = ReleaseReadinessReport(
+        target="Fedora KDE 44",
+        generated_at=1.0,
+        score=78,
+        status="review",
+        summary="review",
+        checks=[
+            ReadinessCheck(
+                id="repo-health",
+                title="Repository Metadata",
+                category="package",
+                status="warning",
+                severity="warning",
+                summary="Metadata needs refresh",
+                beginner_guidance="Review repositories first.",
+                command_preview=["dnf", "repolist", "--enabled"],
+                recommendation=ReadinessRecommendation(
+                    title="Review enabled repositories",
+                    description="Refresh package metadata after review.",
+                    command_preview=["dnf", "repolist", "--enabled"],
+                    risk_level="low",
+                    rollback_hint="Package metadata is rebuilt on the next query.",
+                    docs_link="https://example.invalid/readiness",
+                ),
+            )
+        ],
+    )
+
+    dialog._render()
+    labels = " ".join(label.text() for label in dialog.findChildren(QLabel))
+    buttons = [button.text() for button in dialog.findChildren(QPushButton)]
+
+    assert "Action Inbox" in labels
+    assert "Clean package metadata cache" in labels
+    assert "https://example.invalid/readiness" in labels
+    assert "Run..." in buttons
+    assert "Verify" in buttons
+
+    dialog._confirm_and_run_action("readiness-repo-cache-clean")
+    mock_run.assert_called_once_with(
+        "readiness-repo-cache-clean",
+        target_key="44",
+        confirm=True,
+        report=dialog.report,
+    )
+    mock_info.assert_called_once()
+
+
+@patch("ui.release_readiness_dialog.ReadinessActionService.verify", return_value=ActionResult.fail("still needs attention"))
+@patch("ui.release_readiness_dialog.QMessageBox.warning")
+def test_release_readiness_dialog_manual_action_and_warning_paths(mock_warning, mock_verify):
+    from ui.release_readiness_dialog import ReleaseReadinessDialog
+
+    dialog = ReleaseReadinessDialog(auto_run=False)
+    dialog.report = ReleaseReadinessReport(
+        target="Fedora KDE 44",
+        generated_at=1.0,
+        score=76,
+        status="review",
+        summary="review",
+        checks=[
+            ReadinessCheck(
+                id="third-party-repos",
+                title="Third-Party Repository Risk",
+                category="package",
+                status="warning",
+                severity="warning",
+                summary="Review enabled repositories",
+                beginner_guidance="Open the repository list and decide what to keep.",
+                command_preview=["dnf", "repolist", "--enabled"],
+                recommendation=ReadinessRecommendation(
+                    title="Review third-party repositories",
+                    description="Manual repository review is required before release work.",
+                    command_preview=["dnf", "repolist", "--enabled"],
+                    risk_level="medium",
+                    manual_only=True,
+                    reversible=False,
+                    rollback_hint="Re-enable any repository you decide to keep.",
+                ),
+            )
+        ],
+    )
+
+    dialog._render()
+    labels = " ".join(label.text() for label in dialog.findChildren(QLabel))
+    buttons = [button.text() for button in dialog.findChildren(QPushButton)]
+
+    assert "Manual only" in labels
+    assert "Run..." not in buttons
+
+    dialog._confirm_and_run_action("missing-action")
+    dialog._verify_action("readiness-third-party-repos")
+    mock_verify.assert_called_once_with("readiness-third-party-repos", target_key="44")
+    assert mock_warning.call_count == 2
+
+    empty = ReleaseReadinessDialog(auto_run=False)
+    empty._confirm_and_run_action("missing-action")
+    empty._verify_action("missing-action")
+
+
+@patch("ui.release_readiness_dialog.SupportBundleV5.save_json")
 @patch("ui.release_readiness_dialog.QMessageBox.information")
 @patch("ui.release_readiness_dialog.QFileDialog.getSaveFileName", return_value=("/tmp/loofi-test-bundle.json", ""))
 def test_release_readiness_dialog_export_action(mock_file, mock_message, mock_save):

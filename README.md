@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v6.0.0 "Compass"
+# Loofi Fedora Tweaks v7.0.0 "Aegis"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,13 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v6.0.0">
-    <img src="https://img.shields.io/badge/Release-v6.0.0-blue?style=for-the-badge&logo=github" alt="Release v6.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v7.0.0">
+    <img src="https://img.shields.io/badge/Release-v7.0.0-blue?style=for-the-badge&logo=github" alt="Release v7.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
-  <img src="https://img.shields.io/badge/Coverage-81%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 81%"/>
+  <img src="https://img.shields.io/badge/Coverage-80%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 80%"/>
   <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
     <img src="https://img.shields.io/badge/COPR-loofitheboss%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
   </a>
@@ -41,17 +41,17 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v6.0.0?
+## What's New in v7.0.0?
 
-`v6.0.0 "Compass"` turns the v5 Fedora KDE 44 readiness center into a reusable release readiness workflow. Fedora KDE 44 remains the supported target, while Fedora 45 is available as a preview-only planning profile.
+`v7.0.0 "Aegis"` turns release readiness findings into a safe, reviewable action planning workflow. Fedora KDE 44 remains the supported target; the existing Fedora 45 preview profile stays advisory only.
 
-- **Release Readiness**: Generic target metadata powers Fedora KDE 44 checks and Fedora 45 preview guidance.
-- **Guided Recommendations**: Findings can include command previews, risk, reversibility, docs, and manual-only metadata without running repairs.
-- **Dashboard + CLI Access**: Readiness runs from the Atlas dashboard card or `loofi-fedora-tweaks --cli readiness --target 44`.
-- **Support Bundle v4**: Adds generic `release_readiness` data and keeps the v3 Fedora KDE 44 field as an alias.
-- **Compatibility Alias**: `loofi-fedora-tweaks --cli fedora44-readiness` remains available for one major release.
+- **Guided Action Bridge**: Action candidates show risk, privilege needs, command previews, rollback hints, and verification steps before anything runs.
+- **Explicit Confirmation**: Executable readiness actions refuse to run without confirmation, and manual-only recommendations cannot be executed.
+- **Action Inbox**: The existing readiness dialog now includes focused action planning without adding another permanent tab.
+- **Support Bundle v5**: Adds action plan summaries, recent action history, stronger redaction, and v4-compatible readiness fields.
+- **Release Gate Hardening**: CI, auto-release, docs, workflow specs, and release claims now share the same v7 metadata and coverage threshold.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v6.0.0.md`](docs/releases/RELEASE-NOTES-v6.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v7.0.0.md`](docs/releases/RELEASE-NOTES-v7.0.0.md)
 
 ### Screenshots
 
@@ -63,9 +63,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v6.0.0.md`](docs/releases/RELEASE-NOTE
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v6.0.0 "Compass"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v6.0.0.md`)
+- Current release: **v7.0.0 "Aegis"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v7.0.0.md`)
 - Current stable baseline: **v6.0.0 "Compass"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **6.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Packaged runtime/version files baseline: **7.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 

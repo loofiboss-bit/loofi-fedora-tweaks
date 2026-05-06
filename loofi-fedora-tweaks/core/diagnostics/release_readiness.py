@@ -457,7 +457,7 @@ class ReleaseReadiness:
                     ReadinessRecommendation(
                         title="Review third-party repositories",
                         description="Leave common repos alone during daily use, but audit COPRs and vendor repos before major upgrades.",
-                        command_preview=["dnf5", "repolist", "--enabled"],
+                        command_preview=[package.package_manager, "repolist", "--enabled"] if package.package_manager != "Unknown" else None,
                         risk_level="low",
                         rollback_hint="If a repo is disabled manually, re-enable it with the same repo management tool after the upgrade.",
                         docs_link="https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/",
