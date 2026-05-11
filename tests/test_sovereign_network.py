@@ -782,11 +782,11 @@ class TestFileDropHttpServer(unittest.TestCase):
     """Tests for HTTP server command builder."""
 
     def test_build_http_server_command(self):
-        """Command tuple is correctly formed."""
+        """Command tuple uses the hardened inline file server."""
         cmd, args = FileDropManager.build_http_server_command(8080, "/tmp/share")
         self.assertEqual(cmd, "python3")
-        self.assertIn("-m", args)
-        self.assertIn("http.server", args)
+        self.assertIn("-c", args)
+        self.assertIn("Directory listing disabled", args[1])
         self.assertIn("8080", args)
         self.assertIn("/tmp/share", args)
 

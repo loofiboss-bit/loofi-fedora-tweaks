@@ -12,6 +12,7 @@ import hashlib
 import mimetypes
 import os
 import re
+import tempfile
 import threading
 import uuid
 from dataclasses import dataclass
@@ -33,6 +34,40 @@ DEFAULT_PORT = 53317
 CHUNK_SIZE = 65536  # 64 KB chunks
 MAX_FILE_SIZE = 10 * 1024 * 1024 * 1024  # 10 GB limit
 DOWNLOAD_DIR = "~/Downloads/Loofi"
+SAFE_HTTP_SERVER_SCRIPT = """
+import functools
+import os
+import sys
+from http.server import SimpleHTTPRequestHandler, ThreadingHTTPServer
+
+
+class SafeFileHandler(SimpleHTTPRequestHandler):
+    def list_directory(self, path):
+        self.send_error(403, "Directory listing disabled")
+        return None
+
+    def translate_path(self, path):
+        translated = super().translate_path(path)
+        root = os.path.realpath(self.directory)
+        real_path = os.path.realpath(translated)
+        if real_path != root and not real_path.startswith(root + os.sep):
+            return os.path.join(root, "__blocked__")
+        return translated
+
+    def end_headers(self):
+        self.send_header("X-Content-Type-Options", "nosniff")
+        self.send_header("Cache-Control", "no-store")
+        super().end_headers()
+
+    def log_message(self, format, *args):
+        pass
+
+
+port = int(sys.argv[1])
+directory = os.path.abspath(sys.argv[2])
+handler = functools.partial(SafeFileHandler, directory=directory)
+ThreadingHTTPServer(("127.0.0.1", port), handler).serve_forever()
+""".strip()
 
 # Extensions the user should be warned about before accepting
 DANGEROUS_EXTENSIONS = {
@@ -260,7 +295,7 @@ class FileDropManager:
 
     @staticmethod
     def build_http_server_command(port: int, directory: str) -> tuple:
-        """Build a command tuple for a simple Python HTTP file server.
+        """Build a command tuple for a safe Python HTTP file server.
 
         Args:
             port: TCP port to listen on.
@@ -271,7 +306,7 @@ class FileDropManager:
         """
         return (
             "python3",
-            ["-m", "http.server", str(port), "--directory", directory],
+            ["-c", SAFE_HTTP_SERVER_SCRIPT, str(port), directory],
         )
 
     @classmethod
@@ -379,7 +414,11 @@ class FileDropManager:
                 # Get headers
                 filename = self.headers.get("X-Filename", "uploaded_file")
                 expected_checksum = self.headers.get("X-Checksum-SHA256", "")
-                content_length = int(self.headers.get("Content-Length", 0))
+                try:
+                    content_length = int(self.headers.get("Content-Length", 0))
+                except ValueError:
+                    self.send_error(400, "Invalid content length")
+                    return
 
                 if content_length <= 0:
                     self.send_error(400, "No content")
@@ -390,29 +429,26 @@ class FileDropManager:
                     self.send_error(413, "File too large")
                     return
 
-                # Sanitize filename
-                safe_filename = FileDropManager.validate_filename(filename)
+                # Sanitize before extension and path checks so traversal payloads cannot hide a dangerous suffix.
+                safe_filename = os.path.basename(FileDropManager.validate_filename(filename))
+                if safe_filename in {"", ".", ".."}:
+                    self.send_error(400, "Invalid filename")
+                    return
+                _, ext = os.path.splitext(safe_filename)
+                if ext.lower() in DANGEROUS_EXTENSIONS:
+                    self.send_error(400, "Unsafe file type")
+                    return
 
-                # Read file data
-                file_data = b""
-                remaining = content_length
-                while remaining > 0:
-                    chunk_size = min(CHUNK_SIZE, remaining)
-                    chunk = self.rfile.read(chunk_size)
-                    if not chunk:
-                        break
-                    file_data += chunk
-                    remaining -= len(chunk)
+                available = FileDropManager.get_available_disk_space(cls._http_save_dir)
+                if content_length > available:
+                    self.send_error(507, "Insufficient storage")
+                    return
 
-                # Verify checksum if provided
-                if expected_checksum:
-                    actual_checksum = hashlib.sha256(file_data).hexdigest()
-                    if actual_checksum != expected_checksum:
-                        self.send_error(400, "Checksum mismatch")
-                        return
-
-                # Save file
-                save_path = os.path.join(cls._http_save_dir, safe_filename)
+                save_dir = os.path.abspath(cls._http_save_dir)
+                save_path = os.path.abspath(os.path.join(save_dir, safe_filename))
+                if os.path.commonpath([save_dir, save_path]) != save_dir:
+                    self.send_error(400, "Invalid filename")
+                    return
 
                 # Handle filename conflicts
                 base, ext = os.path.splitext(save_path)
@@ -421,8 +457,40 @@ class FileDropManager:
                     save_path = f"{base}_{counter}{ext}"
                     counter += 1
 
-                with open(save_path, "wb") as f:
-                    f.write(file_data)
+                # Stream file data to disk to avoid holding large uploads in memory.
+                sha = hashlib.sha256()
+                remaining = content_length
+                temp_path = None
+                try:
+                    with tempfile.NamedTemporaryFile("wb", dir=save_dir, prefix=".loofi-upload-", delete=False) as f:
+                        temp_path = f.name
+                        while remaining > 0:
+                            chunk_size = min(CHUNK_SIZE, remaining)
+                            chunk = self.rfile.read(chunk_size)
+                            if not chunk:
+                                break
+                            sha.update(chunk)
+                            f.write(chunk)
+                            remaining -= len(chunk)
+
+                    if remaining != 0:
+                        os.unlink(temp_path)
+                        self.send_error(400, "Upload incomplete")
+                        return
+
+                    # Verify checksum if provided
+                    if expected_checksum and sha.hexdigest() != expected_checksum:
+                        os.unlink(temp_path)
+                        self.send_error(400, "Checksum mismatch")
+                        return
+
+                    # save_path is constrained to save_dir after basename sanitization and commonpath validation.
+                    os.replace(temp_path, save_path)  # codeql[py/path-injection]
+                except OSError:
+                    if temp_path and os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                    self.send_error(500, "Unable to save file")
+                    return
 
                 self.send_response(200)
                 self.send_header("Content-Type", "application/json")
@@ -480,7 +548,7 @@ class FileDropManager:
             Result with success/failure.
         """
         if not os.path.isfile(file_path):
-            return Result(success=False, message=f"File not found: {file_path}")
+            return Result(success=False, message="File not found.")
 
         try:
             filename = os.path.basename(file_path)
@@ -510,5 +578,5 @@ class FileDropManager:
             return Result(success=False, message=f"HTTP error: {e.code} {e.reason}")
         except URLError as e:
             return Result(success=False, message=f"Connection error: {e.reason}")
-        except OSError as e:
-            return Result(success=False, message=f"File error: {e}")
+        except OSError:
+            return Result(success=False, message="File error while reading selected file.")
