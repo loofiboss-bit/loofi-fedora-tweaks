@@ -39,6 +39,7 @@ from utils.file_drop import (
     DEFAULT_PORT,
     DOWNLOAD_DIR,
     MAX_FILE_SIZE,
+    SAFE_HTTP_SERVER_SCRIPT,
     FileDropManager,
     TransferInfo,
 )
@@ -446,17 +447,24 @@ class TestBuildHttpServerCommand(unittest.TestCase):
     """Tests for FileDropManager.build_http_server_command."""
 
     def test_returns_command_tuple(self):
-        """build_http_server_command returns (binary, args) tuple."""
+        """build_http_server_command returns a safe inline server tuple."""
         cmd, args = FileDropManager.build_http_server_command(8080, "/srv/files")
         self.assertEqual(cmd, "python3")
-        self.assertEqual(
-            args, ["-m", "http.server", "8080", "--directory", "/srv/files"]
-        )
+        self.assertEqual(args, ["-c", SAFE_HTTP_SERVER_SCRIPT, "8080", "/srv/files"])
+        self.assertIn("Directory listing disabled", args[1])
+        self.assertNotIn("-m", args)
+        self.assertNotIn("http.server", args)
 
     def test_port_is_stringified(self):
         """The port number is converted to a string in the args list."""
         _, args = FileDropManager.build_http_server_command(53317, "/tmp")
         self.assertIn("53317", args)
+
+    def test_server_script_blocks_directory_listing(self):
+        """The inline HTTP server disables directory indexes."""
+        _, args = FileDropManager.build_http_server_command(8080, "/srv/files")
+        self.assertIn("def list_directory", args[1])
+        self.assertIn("send_error(403", args[1])
 
 
 class TestListPendingTransfers(unittest.TestCase):
@@ -675,6 +683,7 @@ class TestSendFile(unittest.TestCase):
         result = FileDropManager.send_file("localhost", 8080, "/missing/file.txt")
         self.assertFalse(result.success)
         self.assertIn("not found", result.message.lower())
+        self.assertNotIn("/missing/file.txt", result.message)
 
     @patch("utils.file_drop.urlopen")
     @patch("builtins.open", mock_open(read_data=b"content"))
@@ -735,6 +744,7 @@ class TestSendFile(unittest.TestCase):
         result = FileDropManager.send_file("localhost", 8080, "/tmp/test.txt")
         self.assertFalse(result.success)
         self.assertIn("file error", result.message.lower())
+        self.assertNotIn("/tmp/test.txt", result.message)
 
 
 class TestValidateFilenameEdgeCases(unittest.TestCase):
