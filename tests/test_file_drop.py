@@ -682,6 +682,7 @@ class TestSendFile(unittest.TestCase):
         """send_file returns failure when file does not exist."""
         result = FileDropManager.send_file("localhost", 8080, "/missing/file.txt")
         self.assertFalse(result.success)
+        self.assertEqual(result.message, "File not found.")
         self.assertIn("not found", result.message.lower())
         self.assertNotIn("/missing/file.txt", result.message)
 
@@ -743,6 +744,7 @@ class TestSendFile(unittest.TestCase):
         """send_file returns failure on OSError during file read."""
         result = FileDropManager.send_file("localhost", 8080, "/tmp/test.txt")
         self.assertFalse(result.success)
+        self.assertEqual(result.message, "File error while reading selected file: OSError")
         self.assertIn("file error", result.message.lower())
         self.assertNotIn("/tmp/test.txt", result.message)
 

@@ -428,8 +428,11 @@ class FileDropManager:
                     self.send_error(413, "File too large")
                     return
 
-                # Sanitize filename
-                safe_filename = FileDropManager.validate_filename(filename)
+                # Sanitize before extension and path checks so traversal payloads cannot hide a dangerous suffix.
+                safe_filename = os.path.basename(FileDropManager.validate_filename(filename))
+                if os.path.isabs(safe_filename) or safe_filename in {"", ".", ".."}:
+                    self.send_error(400, "Invalid filename")
+                    return
                 _, ext = os.path.splitext(safe_filename)
                 if ext.lower() in DANGEROUS_EXTENSIONS:
                     self.send_error(400, "Unsafe file type")
@@ -440,7 +443,11 @@ class FileDropManager:
                     self.send_error(507, "Insufficient storage")
                     return
 
-                save_path = os.path.join(cls._http_save_dir, safe_filename)
+                save_dir = os.path.abspath(cls._http_save_dir)
+                save_path = os.path.abspath(os.path.join(save_dir, safe_filename))
+                if os.path.commonpath([save_dir, save_path]) != save_dir:
+                    self.send_error(400, "Invalid filename")
+                    return
 
                 # Handle filename conflicts
                 base, ext = os.path.splitext(save_path)
@@ -465,7 +472,8 @@ class FileDropManager:
 
                     if remaining != 0:
                         os.unlink(save_path)
-                        self.send_error(400, "Incomplete upload")
+                        received = content_length - remaining
+                        self.send_error(400, f"Upload incomplete: expected {content_length} bytes, received {received} bytes")
                         return
 
                     # Verify checksum if provided
@@ -473,10 +481,10 @@ class FileDropManager:
                         os.unlink(save_path)
                         self.send_error(400, "Checksum mismatch")
                         return
-                except OSError:
+                except OSError as e:
                     if os.path.exists(save_path):
                         os.unlink(save_path)
-                    self.send_error(500, "Unable to save file")
+                    self.send_error(500, f"Unable to save file: {type(e).__name__}")
                     return
 
                 self.send_response(200)
