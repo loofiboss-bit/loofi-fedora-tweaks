@@ -744,9 +744,11 @@ class TestSendFile(unittest.TestCase):
         """send_file returns failure on OSError during file read."""
         result = FileDropManager.send_file("localhost", 8080, "/tmp/test.txt")
         self.assertFalse(result.success)
-        self.assertEqual(result.message, "File error while reading selected file: OSError")
+        self.assertEqual(result.message, "File error while reading selected file.")
         self.assertIn("file error", result.message.lower())
         self.assertNotIn("/tmp/test.txt", result.message)
+        self.assertNotIn("Permission denied", result.message)
+        self.assertNotIn("OSError", result.message)
 
 
 class TestValidateFilenameEdgeCases(unittest.TestCase):

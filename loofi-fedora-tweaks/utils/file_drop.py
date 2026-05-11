@@ -12,6 +12,7 @@ import hashlib
 import mimetypes
 import os
 import re
+import tempfile
 import threading
 import uuid
 from dataclasses import dataclass
@@ -430,7 +431,7 @@ class FileDropManager:
 
                 # Sanitize before extension and path checks so traversal payloads cannot hide a dangerous suffix.
                 safe_filename = os.path.basename(FileDropManager.validate_filename(filename))
-                if os.path.isabs(safe_filename) or safe_filename in {"", ".", ".."}:
+                if safe_filename in {"", ".", ".."}:
                     self.send_error(400, "Invalid filename")
                     return
                 _, ext = os.path.splitext(safe_filename)
@@ -459,8 +460,10 @@ class FileDropManager:
                 # Stream file data to disk to avoid holding large uploads in memory.
                 sha = hashlib.sha256()
                 remaining = content_length
+                temp_path = None
                 try:
-                    with open(save_path, "wb") as f:
+                    with tempfile.NamedTemporaryFile("wb", dir=save_dir, prefix=".loofi-upload-", delete=False) as f:
+                        temp_path = f.name
                         while remaining > 0:
                             chunk_size = min(CHUNK_SIZE, remaining)
                             chunk = self.rfile.read(chunk_size)
@@ -471,20 +474,22 @@ class FileDropManager:
                             remaining -= len(chunk)
 
                     if remaining != 0:
-                        os.unlink(save_path)
-                        received = content_length - remaining
-                        self.send_error(400, f"Upload incomplete: expected {content_length} bytes, received {received} bytes")
+                        os.unlink(temp_path)
+                        self.send_error(400, "Upload incomplete")
                         return
 
                     # Verify checksum if provided
                     if expected_checksum and sha.hexdigest() != expected_checksum:
-                        os.unlink(save_path)
+                        os.unlink(temp_path)
                         self.send_error(400, "Checksum mismatch")
                         return
-                except OSError as e:
-                    if os.path.exists(save_path):
-                        os.unlink(save_path)
-                    self.send_error(500, f"Unable to save file: {type(e).__name__}")
+
+                    # save_path is constrained to save_dir after basename sanitization and commonpath validation.
+                    os.replace(temp_path, save_path)  # codeql[py/path-injection]
+                except OSError:
+                    if temp_path and os.path.exists(temp_path):
+                        os.unlink(temp_path)
+                    self.send_error(500, "Unable to save file")
                     return
 
                 self.send_response(200)
@@ -573,5 +578,5 @@ class FileDropManager:
             return Result(success=False, message=f"HTTP error: {e.code} {e.reason}")
         except URLError as e:
             return Result(success=False, message=f"Connection error: {e.reason}")
-        except OSError as e:
-            return Result(success=False, message=f"File error while reading selected file: {type(e).__name__}")
+        except OSError:
+            return Result(success=False, message="File error while reading selected file.")
