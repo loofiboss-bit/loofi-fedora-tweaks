@@ -90,3 +90,4 @@ loofi-fedora-tweaks-build/
 .ripgreprc
 .idea/
 *.code-workspace
+.vscode/settings.json
