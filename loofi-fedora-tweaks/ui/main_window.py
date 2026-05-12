@@ -1,12 +1,13 @@
 """
 Main Window - v25.0 "Plugin Architecture"
-26-tab layout sourced from PluginRegistry with sidebar navigation, breadcrumb, and status bar.
+PluginRegistry layout with route-aware sidebar navigation, breadcrumb, and status bar.
 """
 
 import logging
 import os
 from dataclasses import dataclass, field
 
+from core.navigation import NavigationRoute, resolve
 from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
 from core.plugins.registry import CATEGORY_ICONS
@@ -22,6 +23,7 @@ from PyQt6.QtWidgets import (
     QStackedWidget,
     QStyledItemDelegate,
     QStyleOptionViewItem,
+    QTabWidget,
     QTreeWidget,
     QTreeWidgetItem,
     QTreeWidgetItemIterator,
@@ -48,6 +50,7 @@ _ROLE_BADGE = Qt.ItemDataRole.UserRole + 2  # "recommended" | "advanced" | ""
 _ROLE_STATUS = Qt.ItemDataRole.UserRole + 3  # "ok" | "warning" | "error" | ""
 _ROLE_NAME = Qt.ItemDataRole.UserRole + 4  # Raw tab name (without badges/status)
 _ROLE_ICON = Qt.ItemDataRole.UserRole + 5  # Semantic icon token
+_ROLE_ROUTE_ID = Qt.ItemDataRole.UserRole + 6  # Stable route/plugin ID
 
 
 @dataclass
@@ -168,6 +171,7 @@ class MainWindow(QMainWindow):
         from PyQt6.QtWidgets import QLineEdit
 
         self.sidebar_search = QLineEdit()
+        self.sidebar_search.setObjectName("sidebarSearch")
         self.sidebar_search.setPlaceholderText(self.tr("Search tabs..."))
         self.sidebar_search.setClearButtonEnabled(True)
         self.sidebar_search.setAccessibleName(self.tr("Search tabs"))
@@ -175,7 +179,6 @@ class MainWindow(QMainWindow):
         # HiDPI: 2*line_height + padding (4+10)*2 = approx 36px at 1x DPI
         search_height = int(self._line_height * 2 + 28)
         self.sidebar_search.setFixedHeight(search_height)
-        self.sidebar_search.setStyleSheet("QLineEdit { margin: 5px 10px; border-radius: 8px; padding: 4px 10px; }")
         self.sidebar_search.textChanged.connect(self._filter_sidebar)
         sidebar_layout.addWidget(self.sidebar_search)
 
@@ -212,13 +215,13 @@ class MainWindow(QMainWindow):
         sidebar_layout.addWidget(self.sidebar)
 
         # Sidebar footer
-        sidebar_footer = QLabel(f"v{__version__}")
-        sidebar_footer.setObjectName("sidebarFooter")
-        sidebar_footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.sidebar_footer = QLabel(f"v{__version__}")
+        self.sidebar_footer.setObjectName("sidebarFooter")
+        self.sidebar_footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         # HiDPI: 2*line_height = approx 28px at 1x DPI
         footer_height = int(self._line_height * 2)
-        sidebar_footer.setFixedHeight(footer_height)
-        sidebar_layout.addWidget(sidebar_footer)
+        self.sidebar_footer.setFixedHeight(footer_height)
+        sidebar_layout.addWidget(self.sidebar_footer)
 
         main_layout.addWidget(sidebar_container)
 
@@ -293,6 +296,7 @@ class MainWindow(QMainWindow):
         self._sidebar_index: dict[str, SidebarEntry] = {}
         self._category_items: dict[str, QTreeWidgetItem] = {}
         self._pages_cache: dict[str, QWidget] | None = None
+        self._active_route_id = ""
 
         # Build sidebar from PluginRegistry (v25.0 plugin architecture)
         context = {
@@ -486,6 +490,7 @@ class MainWindow(QMainWindow):
         else:
             page_widget = self._wrap_page_widget(widget)
         item.setData(0, Qt.ItemDataRole.UserRole, page_widget)
+        item.setData(0, _ROLE_ROUTE_ID, meta.id)
         entry = SidebarEntry(
             plugin_id=meta.id,
             display_name=meta.name,
@@ -513,24 +518,34 @@ class MainWindow(QMainWindow):
 
         fav_category = QTreeWidgetItem()
         fav_category.setText(0, "Favorites")
+        fav_category.setData(0, _ROLE_DESC, "Favorites")
         self._set_tree_item_icon(fav_category, "status-ok")
         fav_category.setExpanded(True)
         self.sidebar.insertTopLevelItem(0, fav_category)
 
         for fav_id in favorites:
-            entry = self._sidebar_index.get(fav_id)
+            route = resolve(fav_id)
+            route_id = route.id if route else fav_id
+            plugin_id = route.plugin_id if route else fav_id
+            entry = self._sidebar_index.get(plugin_id)
             if not entry:
                 logger.warning("Stale favorite ignored: %s", fav_id)
                 continue
 
             item = QTreeWidgetItem(fav_category)
-            item.setText(0, entry.display_name)
-            item.setData(0, _ROLE_DESC, f"Pinned: {entry.display_name}")
-            item.setData(0, _ROLE_NAME, entry.display_name)
+            label = route.label if route and route.subroute else entry.display_name
+            desc = route.description if route else entry.metadata.description
+            item.setText(0, label)
+            item.setData(0, _ROLE_DESC, f"Pinned: {desc or label}")
+            item.setData(0, _ROLE_NAME, label)
+            item.setData(0, _ROLE_ROUTE_ID, route_id)
             item.setData(0, Qt.ItemDataRole.UserRole, entry.tree_item.data(0, Qt.ItemDataRole.UserRole))
             self._copy_tree_item_icon(entry.tree_item, item)
+            item.setToolTip(0, desc or label)
 
         self._refresh_sidebar_icon_tints()
+        if self._sidebar_collapsed:
+            self._set_sidebar_icon_only(True)
 
     def _sidebar_context_menu(self, pos):
         """Show context menu for sidebar items with favorite toggle."""
@@ -540,10 +555,14 @@ class MainWindow(QMainWindow):
 
         from PyQt6.QtWidgets import QMenu
 
-        tab_name = item.data(0, _ROLE_NAME)
-        if not tab_name:
-            tab_name = item.text(0).replace("  ★", "").replace("  ⚙", "").strip()
-        tab_id = str(tab_name).lower().replace(" ", "_")
+        tab_id = item.data(0, _ROLE_ROUTE_ID)
+        if not tab_id:
+            tab_name = item.data(0, _ROLE_NAME)
+            if not tab_name:
+                tab_name = item.text(0).replace("  ★", "").replace("  ⚙", "").strip()
+            route = resolve(str(tab_name))
+            tab_id = route.id if route else str(tab_name).lower().replace(" ", "_")
+        tab_id = str(tab_id)
 
         menu = QMenu(self)
         is_fav = FavoritesManager.is_favorite(tab_id)
@@ -568,6 +587,8 @@ class MainWindow(QMainWindow):
                 break
         self._build_favorites_section()
         self._refresh_sidebar_icon_tints()
+        if self._sidebar_collapsed:
+            self._set_sidebar_icon_only(True)
 
     def _rebuild_sidebar_for_experience_level(self):
         """Rebuild sidebar when experience level changes."""
@@ -613,9 +634,9 @@ class MainWindow(QMainWindow):
         else:
             page_widget = self._wrap_page_widget(widget)
 
-        item.setData(0, Qt.ItemDataRole.UserRole, page_widget)
-
         plugin_id = name.lower().replace(" ", "_")
+        item.setData(0, Qt.ItemDataRole.UserRole, page_widget)
+        item.setData(0, _ROLE_ROUTE_ID, plugin_id)
         meta = PluginMetadata(id=plugin_id, name=name, description=description, category=category, icon=icon, badge=badge)
         entry = SidebarEntry(
             plugin_id=plugin_id,
@@ -649,6 +670,10 @@ class MainWindow(QMainWindow):
         widget = current.data(0, Qt.ItemDataRole.UserRole)
         if widget:
             self.content_area.setCurrentWidget(widget)
+            route = resolve(str(current.data(0, _ROLE_ROUTE_ID) or current.data(0, _ROLE_NAME) or ""))
+            self._active_route_id = route.id if route else ""
+            if route and route.subroute:
+                self._activate_route_widget(route)
             self._update_breadcrumb(current)
         else:
             # Category item: expand and auto-select first child
@@ -657,7 +682,7 @@ class MainWindow(QMainWindow):
                 self.sidebar.setCurrentItem(current.child(0))
 
     def _update_breadcrumb(self, item):
-        """Update breadcrumb bar with current category > page."""
+        """Update breadcrumb bar with current route category > page."""
         parent = item.parent()
         # Use raw category name (stored in _ROLE_DESC on category items) for clean breadcrumb
         category = ""
@@ -669,11 +694,68 @@ class MainWindow(QMainWindow):
             page_name = raw.replace("  ★", "").replace("  ⚙", "")
         page_name = str(page_name)
         desc = item.data(0, _ROLE_DESC) or ""
+        route = resolve(self._active_route_id or str(item.data(0, _ROLE_ROUTE_ID) or ""))
+        if route:
+            category = route.category
+            page_name = route.label
+            desc = route.description
         self._bc_category.setText(category)
         self._bc_page.setText(page_name)
         self._bc_desc.setText(desc)
         # Store parent item ref for breadcrumb click (v38.0)
         self._bc_parent_item = parent
+
+    @staticmethod
+    def _normalize_route_label(value: str) -> str:
+        """Normalize route labels and tab titles for loose subroute matching."""
+        cleaned = "".join(ch.lower() if ch.isalnum() else " " for ch in str(value))
+        return " ".join(cleaned.split())
+
+    def _real_widget_for_entry(self, entry: SidebarEntry) -> QWidget:
+        """Return the realized page widget for a sidebar entry."""
+        widget = entry.page_widget
+        ensure_loaded = getattr(widget, "ensure_loaded", None)
+        if callable(ensure_loaded):
+            realized = ensure_loaded()
+            if isinstance(realized, QWidget):
+                return realized
+        get_real_widget = getattr(widget, "get_real_widget", None)
+        if callable(get_real_widget):
+            realized = get_real_widget()
+            if isinstance(realized, QWidget):
+                return realized
+        return widget
+
+    def _activate_route_widget(self, route: NavigationRoute) -> bool:
+        """Activate a route's sub-navigation inside the realized plugin widget."""
+        entry = self._sidebar_index.get(route.plugin_id)
+        if not entry:
+            return False
+        widget = self._real_widget_for_entry(entry)
+
+        activator = getattr(widget, "activate_route", None)
+        if callable(activator):
+            try:
+                return bool(activator(route))
+            except (RuntimeError, ValueError, TypeError) as exc:
+                logger.debug("Route activator failed for %s: %s", route.id, exc)
+
+        if not route.subroute:
+            return True
+
+        labels = {
+            self._normalize_route_label(route.subroute),
+            self._normalize_route_label(route.label),
+        }
+        labels.update(self._normalize_route_label(alias) for alias in route.aliases)
+
+        for tab_widget in widget.findChildren(QTabWidget):
+            for index in range(tab_widget.count()):
+                tab_label = self._normalize_route_label(tab_widget.tabText(index))
+                if tab_label in labels:
+                    tab_widget.setCurrentIndex(index)
+                    return True
+        return False
 
     def _set_tree_item_icon(self, item: QTreeWidgetItem, icon_value: str) -> None:
         """Apply bundled icon-pack icon to a tree item when available."""
@@ -788,12 +870,41 @@ class MainWindow(QMainWindow):
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
 
+    def switch_to_route(self, route_id: str) -> bool:
+        """Switch to a canonical route ID or route alias."""
+        route = resolve(str(route_id))
+        if not route:
+            logger.debug("switch_to_route: no route for '%s'", route_id)
+            return False
+
+        entry = self._sidebar_index.get(route.plugin_id)
+        if not entry:
+            logger.debug(
+                "switch_to_route: route '%s' references unavailable plugin '%s'",
+                route.id,
+                route.plugin_id,
+            )
+            return False
+
+        self.sidebar.setCurrentItem(entry.tree_item)
+        self._active_route_id = route.id
+        activated = self._activate_route_widget(route)
+        self._update_breadcrumb(entry.tree_item)
+        if not activated:
+            logger.debug("switch_to_route: plugin selected but subroute did not activate: %s", route.id)
+        return True
+
     def switch_to_tab(self, name):
-        """Switch to a tab by plugin ID (primary) or display name (fallback)."""
+        """Switch to a route by ID/alias, then plugin ID or display name fallback."""
+        route = resolve(str(name))
+        if route and self.switch_to_route(route.id):
+            return True
+
         entry = self._sidebar_index.get(name)
         if entry:
             self.sidebar.setCurrentItem(entry.tree_item)
-            return
+            self._active_route_id = str(entry.tree_item.data(0, _ROLE_ROUTE_ID) or entry.plugin_id)
+            return True
 
         # Fallback: search by display name
         for entry in self._sidebar_index.values():
@@ -804,9 +915,11 @@ class MainWindow(QMainWindow):
                     entry.plugin_id,
                 )
                 self.sidebar.setCurrentItem(entry.tree_item)
-                return
+                self._active_route_id = str(entry.tree_item.data(0, _ROLE_ROUTE_ID) or entry.plugin_id)
+                return True
 
         logger.debug("switch_to_tab: no match for '%s'", name)
+        return False
 
     def _setup_command_palette_shortcut(self):
         """Register Ctrl+K shortcut for the command palette."""
@@ -818,7 +931,7 @@ class MainWindow(QMainWindow):
         try:
             from ui.command_palette import CommandPalette
 
-            palette = CommandPalette(self.switch_to_tab, self)
+            palette = CommandPalette(self.switch_to_route, self)
             palette.exec()
         except ImportError:
             logger.debug("Command palette module not available", exc_info=True)
@@ -862,16 +975,50 @@ class MainWindow(QMainWindow):
             self._sidebar_container.setFixedWidth(self._sidebar_expanded_width)
             self.sidebar.setVisible(True)
             self.sidebar_search.setVisible(True)
+            self.sidebar_footer.setVisible(True)
+            self.sidebar.setIndentation(20)
+            self.sidebar.setRootIsDecorated(True)
+            self._set_sidebar_icon_only(False)
             self._sidebar_toggle.setText("◀")
             self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
             self._sidebar_collapsed = False
         else:
-            self._sidebar_container.setFixedWidth(int(self._line_height * 3))
-            self.sidebar.setVisible(False)
+            self._sidebar_container.setFixedWidth(int(self._line_height * 4))
+            self.sidebar.setVisible(True)
             self.sidebar_search.setVisible(False)
+            self.sidebar_footer.setVisible(False)
+            self.sidebar.setIndentation(0)
+            self.sidebar.setRootIsDecorated(False)
+            self._set_sidebar_icon_only(True)
             self._sidebar_toggle.setText("▶")
             self._sidebar_toggle.setToolTip(self.tr("Expand sidebar"))
             self._sidebar_collapsed = True
+
+    def _sidebar_display_text(self, item: QTreeWidgetItem) -> str:
+        """Return the expanded display text for a sidebar item."""
+        name = item.data(0, _ROLE_NAME)
+        if name:
+            badge = item.data(0, _ROLE_BADGE) or ""
+            suffix = ""
+            if badge == "recommended":
+                suffix = "  ★"
+            elif badge == "advanced":
+                suffix = "  ⚙"
+            return f"{name}{suffix}"
+        return str(item.data(0, _ROLE_DESC) or item.text(0))
+
+    def _set_sidebar_icon_only(self, collapsed: bool) -> None:
+        """Toggle sidebar labels while keeping icon rows selectable."""
+        iterator = QTreeWidgetItemIterator(self.sidebar)
+        while iterator.value():
+            item = iterator.value()
+            if item is None:
+                break
+            display_text = self._sidebar_display_text(item)
+            if display_text:
+                item.setToolTip(0, item.toolTip(0) or display_text)
+            item.setText(0, "" if collapsed else display_text)
+            iterator += 1
 
     def _setup_keyboard_shortcuts(self):
         """Register keyboard shortcuts for tab navigation."""
@@ -957,19 +1104,15 @@ class MainWindow(QMainWindow):
 
         # Bell button
         self.notif_bell = QToolButton()
+        self.notif_bell.setObjectName("notificationBell")
         self.notif_bell.setText("")
         self.notif_bell.setIcon(get_qicon("notifications", size=17))
         self.notif_bell.setIconSize(QSize(17, 17))
-        self.notif_bell.setStyleSheet(
-            "QToolButton { border: none; font-size: 20px; padding: 5px; }QToolButton:hover { background-color: #1c2030; border-radius: 6px; }"
-        )
         self.notif_bell.clicked.connect(self._toggle_notification_panel)
 
         # Unread count badge (overlays bell button)
         self._notif_badge = QLabel("0")
-        self._notif_badge.setStyleSheet(
-            "background-color: #e8556d; color: #0b0e14; border-radius: 8px; padding: 1px 6px; font-size: 10px; font-weight: bold;"
-        )
+        self._notif_badge.setObjectName("notificationBadge")
         self._notif_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
         self._notif_badge.setFixedHeight(16)
         self._notif_badge.setVisible(False)

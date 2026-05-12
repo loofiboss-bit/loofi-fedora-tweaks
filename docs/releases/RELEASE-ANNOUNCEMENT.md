@@ -1,8 +1,8 @@
-# Loofi Fedora Tweaks v7.0.0 "Aegis" Release Announcement
+# Loofi Fedora Tweaks v8.0.0 "Beacon" Release Announcement
 
 ## TL;DR
 
-Loofi Fedora Tweaks v7.0.0 "Aegis" is now available as the safe guided actions and Fedora 44 reliability release. It adds readiness action planning, explicit confirmation for supported mutating actions, Support Bundle v5 diagnostics, and stricter release gates.
+Loofi Fedora Tweaks v8.0.0 "Beacon" is now available as the navigation reliability release. It adds stable route IDs across the sidebar, command palette, quick actions, dashboard cards, and favorites while hardening command safety and packaging validation.
 
 **Install:**
 
@@ -11,17 +11,18 @@ pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
 ```
 
-**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v7.0.0
+**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0
 
 ---
 
 ## What's New
 
-- Guided Action Bridge for safe readiness action planning and verification.
-- Action Inbox in the existing readiness dialog with risk, privilege, rollback, and command preview metadata.
-- CLI commands under `loofi-fedora-tweaks --cli readiness` for action listing, preview, confirmed run, and verification.
-- Support Bundle v5 with privacy-masked Fedora KDE 44 diagnostics and action summaries.
-- Stricter CI/release metadata drift gates.
+- Central route manifest for plugin-level and subroute-level navigation.
+- Route-aware command palette, quick actions, dashboard cards, favorites, sidebar selection, and breadcrumbs.
+- Favorites v2 migration to stable IDs such as `maintenance:updates` and `software:apps`.
+- Icon-only collapsed sidebar with tooltips, status dots, QSS styling, and semantic icon fallbacks.
+- Shared command allowlist for preview, execute, web API executor, and ProfileManager snapshot commands.
+- Blocking RPM import check plus packaging manifest validation for wheel/sdist contents and entry points.
 
 ---
 
@@ -41,18 +42,18 @@ pkexec dnf install loofi-fedora-tweaks-api
 pkexec dnf install loofi-fedora-tweaks-daemon
 ```
 
-**Run readiness:**
+**Run the app or CLI:**
 
 ```bash
-loofi-fedora-tweaks --cli readiness --target 44
-loofi-fedora-tweaks --cli readiness actions --target 44
+loofi-fedora-tweaks
+loofi-fedora-tweaks --cli info
 ```
 
 ---
 
 ## Links
 
-- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v7.0.0
+- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0
 - **Full Changelog**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CHANGELOG.md
-- **Readiness Guide**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/FEDORA_KDE_44_READINESS.md
+- **Architecture Guide**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md
 - **Report Issues**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues

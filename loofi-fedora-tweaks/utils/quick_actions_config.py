@@ -23,7 +23,7 @@ class QuickActionsConfig:
         Return the default quick actions.
 
         Returns:
-            List of action dictionaries with id, label, icon, color, target_tab.
+            List of action dictionaries with id, label, icon, color, route_id.
         """
         return [
             {
@@ -31,30 +31,47 @@ class QuickActionsConfig:
                 "label": "Clean Cache",
                 "icon": "cleanup",
                 "color": "#e8b84d",
-                "target_tab": "Maintenance",
+                "route_id": "maintenance:cleanup",
             },
             {
                 "id": "update_all",
                 "label": "Update All",
                 "icon": "update",
                 "color": "#39c5cf",
-                "target_tab": "Maintenance",
+                "route_id": "maintenance:updates",
             },
             {
                 "id": "power_profile",
                 "label": "Power Profile",
                 "icon": "hardware-performance",
                 "color": "#3dd68c",
-                "target_tab": "Hardware",
+                "route_id": "hardware",
             },
             {
                 "id": "gaming_mode",
                 "label": "Gaming Mode",
                 "icon": "cpu-performance",
                 "color": "#e8556d",
-                "target_tab": "Gaming",
+                "route_id": "gaming",
             },
         ]
+
+    @staticmethod
+    def _normalize_action(action: Dict[str, str]) -> Dict[str, str]:
+        """Return an action using route_id, migrating legacy target_tab values."""
+        normalized = dict(action)
+        route_id = normalized.get("route_id", "")
+        if not route_id and normalized.get("target_tab"):
+            try:
+                from core.navigation import resolve
+                route = resolve(normalized["target_tab"])
+                route_id = route.id if route else ""
+            except ImportError:
+                route_id = ""
+        if route_id:
+            normalized["route_id"] = route_id
+        normalized.pop("target_tab", None)
+        return normalized
 
     @classmethod
     def get_actions(cls) -> List[Dict[str, str]]:
@@ -70,7 +87,7 @@ class QuickActionsConfig:
                 with open(_ACTIONS_FILE, "r") as f:
                     data = json.load(f)
                 if isinstance(data, list) and len(data) > 0:
-                    return data
+                    return [cls._normalize_action(item) for item in data if isinstance(item, dict)]
         except (OSError, json.JSONDecodeError) as e:
             logger.warning("Failed to load quick actions config: %s", e)
         return cls.default_actions()
@@ -86,7 +103,8 @@ class QuickActionsConfig:
         try:
             os.makedirs(_CONFIG_DIR, exist_ok=True)
             with open(_ACTIONS_FILE, "w") as f:
-                json.dump(actions, f, indent=2)
+                normalized = [cls._normalize_action(item) for item in actions]
+                json.dump(normalized, f, indent=2)
         except (OSError, json.JSONDecodeError) as e:
             logger.warning("Failed to save quick actions config: %s", e)
 
@@ -113,5 +131,6 @@ class QuickActionsConfig:
         Returns:
             True if valid, False otherwise.
         """
-        required = {"id", "label", "icon", "color", "target_tab"}
-        return required.issubset(action.keys())
+        normalized = QuickActionsConfig._normalize_action(action)
+        required = {"id", "label", "icon", "color", "route_id"}
+        return required.issubset(normalized.keys())

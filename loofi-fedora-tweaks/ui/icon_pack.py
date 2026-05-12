@@ -95,6 +95,8 @@ _ICON_ALIASES: dict[str, str] = {
     "🛠️": "developer-tools",
     "🛡": "security-shield",
     "🛡️": "security-shield",
+    "🖥": "terminal-console",
+    "🖥️": "terminal-console",
     "🧠": "cpu-performance",
     "🧹": "cleanup",
     "🧩": "developer-tools",

@@ -9,10 +9,10 @@ Use this checklist before bumping a version. The CI pipeline handles tagging and
 Run the bump script — it handles files, scaffolding, and warnings:
 
 ```bash
-python3 scripts/bump_version.py 7.0.0 --codename "Aegis"
+python3 scripts/bump_version.py 8.0.0 --codename "Beacon"
 
 # Preview first:
-python3 scripts/bump_version.py 7.0.0 --codename "Aegis" --dry-run
+python3 scripts/bump_version.py 8.0.0 --codename "Beacon" --dry-run
 ```
 
 The script cascades across **7 targets**:

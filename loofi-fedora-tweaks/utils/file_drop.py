@@ -28,7 +28,7 @@ if not hasattr(os, "statvfs"):
     def _statvfs_unavailable(_path: str):
         raise OSError("statvfs not available")
 
-    os.statvfs = _statvfs_unavailable  # type: ignore[attr-defined]
+    os.statvfs = _statvfs_unavailable  # type: ignore[attr-defined, assignment]
 
 DEFAULT_PORT = 53317
 CHUNK_SIZE = 65536  # 64 KB chunks

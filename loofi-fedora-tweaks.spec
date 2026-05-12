@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        7.0.0
+Version:        8.0.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -38,7 +38,7 @@ VM Quick-Create, VFIO GPU Passthrough, Loofi Link
 Mesh, State Teleport, AI Lab, Security Center,
 Director, Containers, and Replicator IaC.
 
-Fedora KDE 44 remains the supported target for v7.0.0 Aegis.
+Fedora KDE 44 remains the supported target for v8.0.0 Beacon.
 Fedora 45 remains preview-only and advisory.
 
 %package api
@@ -119,7 +119,7 @@ install -m 644 %{name}.metainfo.xml %{buildroot}%{_datadir}/metainfo/%{name}.met
 
 %check
 # Run basic import validation
-PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; print('Import OK')" || :
+PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; from core.navigation import all_routes; assert all_routes(); print('Import OK')"
 appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 
 %post api
@@ -164,6 +164,14 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Tue May 12 2026 Loofi <loofi@example.com> - 8.0.0-1
+- v8.0.0 "Beacon" - Navigation reliability, visual clarity, safety hardening, and packaging trust
+- Added core.navigation route manifest for plugin and subroute navigation
+- Refactored command palette, quick actions, dashboard cards, sidebar switching, and favorites to stable route IDs
+- Added shared command allowlist validation and ProfileManager snapshot command validation
+- Hardened RPM import smoke and wheel/sdist packaging manifest checks
+- Raised release coverage threshold to 82%
+
 * Wed May 06 2026 Loofi <loofi@example.com> - 7.0.0-1
 - v7.0.0 "Aegis" — Safe guided actions, release reliability, and Fedora 44 polish
 - Added Guided Action Bridge for readiness action planning, preview, confirmation, and verification

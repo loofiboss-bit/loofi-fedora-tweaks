@@ -2,7 +2,7 @@
 # Unified command interface for humans and AI agents.
 # Run `just --list` to see all available commands.
 #
-# Install just: sudo dnf install just
+# Install just: pkexec dnf install just
 
 # Default: show available commands
 default:
@@ -15,7 +15,7 @@ src_root := "loofi-fedora-tweaks"
 test_dir := "tests"
 
 # Thresholds (single source of truth — CI workflows read these)
-coverage_min := "80"
+coverage_min := "82"
 max_line_length := "150"
 flake8_ignore := "E501,W503,E402,E722,E203"
 
@@ -151,6 +151,10 @@ check-drift:
 validate-release:
     PYTHONPATH={{src_root}} python3 scripts/check_release_docs.py
 
+# Validate pyproject package metadata and wheel/sdist contents
+check-packaging:
+    PYTHONPATH={{src_root}} python3 scripts/check_packaging_manifest.py --build
+
 # Generate workflow reports (test results + run manifest)
 workflow-reports:
     PYTHONPATH={{src_root}} python3 scripts/generate_workflow_reports.py
@@ -208,6 +212,9 @@ release-prep:
     @echo ""
     @echo "=== Step 4: Check agent sync ==="
     just check-drift
+    @echo ""
+    @echo "=== Step 5: Check packaging manifest ==="
+    just check-packaging
     @echo ""
     @echo "=== Release preparation complete ==="
 

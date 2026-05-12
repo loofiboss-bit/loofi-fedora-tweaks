@@ -27,7 +27,7 @@ class LazyWidget(QWidget):
         """
         super().__init__()
         self.loader_fn = loader_fn
-        self.real_widget = None
+        self.real_widget: QWidget | None = None
         self._loaded = False
 
         # Minimal placeholder layout
@@ -41,8 +41,8 @@ class LazyWidget(QWidget):
         self._loading_label.setObjectName("loadingLabel")
         self._layout.addWidget(self._loading_label)
 
-    def showEvent(self, event):
-        """Load the real widget when first shown."""
+    def ensure_loaded(self) -> QWidget | None:
+        """Load and return the real widget without waiting for a show event."""
         if not self._loaded:
             self._loaded = True
 
@@ -61,6 +61,11 @@ class LazyWidget(QWidget):
                 error_label.setObjectName("errorLabel")
                 error_label.setWordWrap(True)
                 self._layout.addWidget(error_label)
+        return self.real_widget
+
+    def showEvent(self, event):
+        """Load the real widget when first shown."""
+        self.ensure_loaded()
 
         super().showEvent(event)
 

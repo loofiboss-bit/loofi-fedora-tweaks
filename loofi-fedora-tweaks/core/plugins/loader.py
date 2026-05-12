@@ -165,6 +165,14 @@ class PluginLoader:
         mod = importlib.import_module(module_path)
         cls = getattr(mod, class_name)
         if not (isinstance(cls, type) and issubclass(cls, PluginInterface)):
+            # Test and plugin reload flows can leave a built-in module imported
+            # against a temporary PluginInterface stub. Import it fresh once
+            # before treating the plugin as genuinely invalid.
+            sys.modules.pop(module_path, None)
+            importlib.invalidate_caches()
+            mod = importlib.import_module(module_path)
+            cls = getattr(mod, class_name)
+        if not (isinstance(cls, type) and issubclass(cls, PluginInterface)):
             raise TypeError(f"{class_name} does not subclass PluginInterface")
         return cls()
 

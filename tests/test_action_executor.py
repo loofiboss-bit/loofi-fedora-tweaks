@@ -4,6 +4,7 @@ Tests for v19.0 Foundation — ActionResult + ActionExecutor.
 
 import json
 import os
+import subprocess
 import sys
 import tempfile
 import time
@@ -124,34 +125,74 @@ class TestActionExecutor:
                 assert result.exit_code == 0
                 assert "hello world" in result.stdout
 
-    def test_failed_execution(self):
+    @patch("core.executor.action_executor.subprocess.run")
+    def test_failed_execution(self, mock_run):
         from core.executor.action_executor import ActionExecutor
+        mock_run.return_value = subprocess.CompletedProcess(
+            ["dnf", "check-update"],
+            returncode=100,
+            stdout="updates available",
+            stderr="",
+        )
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
                  patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
-                result = ActionExecutor.run("false")
+                result = ActionExecutor.run("dnf", ["check-update"])
                 assert result.success is False
-                assert result.exit_code != 0
+                assert result.exit_code == 100
 
-    def test_command_not_found(self):
+    @patch("core.executor.action_executor.subprocess.run", side_effect=FileNotFoundError())
+    def test_command_not_found(self, mock_run):
         from core.executor.action_executor import ActionExecutor
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
                  patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
-                result = ActionExecutor.run("nonexistent_cmd_xyz_12345")
+                result = ActionExecutor.run("dnf")
                 assert result.success is False
                 assert result.exit_code == 127
                 assert "not found" in result.message.lower()
 
-    @unittest.skipIf(sys.platform == "win32", "sleep command not available on Windows")
-    def test_timeout(self):
+    @patch("core.executor.action_executor.subprocess.run")
+    def test_timeout(self, mock_run):
+        from core.executor.action_executor import ActionExecutor
+        mock_run.side_effect = subprocess.TimeoutExpired(["dnf"], timeout=1)
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
+                 patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
+                result = ActionExecutor.run("dnf", ["check-update"], timeout=1)
+                assert result.success is False
+                assert "timed out" in result.message.lower()
+
+    def test_disallowed_preview_rejected_before_execution(self):
         from core.executor.action_executor import ActionExecutor
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
                  patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
-                result = ActionExecutor.run("sleep", ["10"], timeout=1)
+                result = ActionExecutor.run("bash", ["-lc", "id"], preview=True)
                 assert result.success is False
-                assert "timed out" in result.message.lower()
+                assert result.exit_code == 126
+                assert "rejected" in result.message
+
+    @patch("core.executor.action_executor.subprocess.run")
+    def test_disallowed_execute_rejected_before_subprocess(self, mock_run):
+        from core.executor.action_executor import ActionExecutor
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
+                 patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
+                result = ActionExecutor.run("sudo", ["dnf", "update"])
+                assert result.success is False
+                assert result.exit_code == 126
+                mock_run.assert_not_called()
+
+    def test_path_separated_command_rejected(self):
+        from core.executor.action_executor import ActionExecutor
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
+                 patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
+                result = ActionExecutor.run("/usr/bin/dnf", ["check-update"], preview=True)
+                assert result.success is False
+                assert result.exit_code == 126
+                assert "basename" in result.message
 
     def test_pkexec_prepend(self):
         from core.executor.action_executor import ActionExecutor

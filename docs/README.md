@@ -41,6 +41,6 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are aligned to `v7.0.0 "Aegis"` for safe guided actions and Fedora 44 readiness.
+- User-facing guides are aligned to `v8.0.0 "Beacon"` for route-aware navigation reliability and Fedora 44 readiness.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.

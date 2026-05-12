@@ -32,21 +32,21 @@ Core behavior:
 Install from [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/):
 
 ```bash
-sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
-sudo dnf install loofi-fedora-tweaks
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
 ```
 
 Optional runtime packages:
 
 ```bash
-sudo dnf install loofi-fedora-tweaks-api
-sudo dnf install loofi-fedora-tweaks-daemon
+pkexec dnf install loofi-fedora-tweaks-api
+pkexec dnf install loofi-fedora-tweaks-daemon
 ```
 
 Or download the RPM from the [Releases](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases) page:
 
 ```bash
-sudo dnf install ./loofi-fedora-tweaks-*.noarch.rpm
+pkexec dnf install ./loofi-fedora-tweaks-*.noarch.rpm
 ```
 
 Launch:

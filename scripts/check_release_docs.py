@@ -14,6 +14,7 @@ Checks performed:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 from pathlib import Path
@@ -32,6 +33,7 @@ RACE_LOCK_FILE = WORKFLOW_SPECS_DIR / ".race-lock.json"
 CI_WORKFLOW_FILE = ROOT / ".github" / "workflows" / "ci.yml"
 AUTO_RELEASE_WORKFLOW_FILE = ROOT / ".github" / "workflows" / "auto-release.yml"
 JUSTFILE = ROOT / "Justfile"
+PLUGIN_LOADER_FILE = ROOT / "loofi-fedora-tweaks" / "core" / "plugins" / "loader.py"
 
 VERSION_RE = re.compile(r'__version__\s*=\s*"([^"]+)"')
 CODENAME_RE = re.compile(r'__version_codename__\s*=\s*"([^"]+)"')
@@ -214,6 +216,32 @@ def _coverage_claims(text: str) -> List[int]:
     return claims
 
 
+def _builtin_plugin_count() -> int | None:
+    """Return the built-in plugin count from PluginLoader without importing UI modules."""
+    try:
+        tree = ast.parse(PLUGIN_LOADER_FILE.read_text(encoding="utf-8"))
+    except (OSError, SyntaxError):
+        return None
+    for node in tree.body:
+        if isinstance(node, ast.Assign):
+            for target in node.targets:
+                if isinstance(target, ast.Name) and target.id == "_BUILTIN_PLUGINS":
+                    if isinstance(node.value, ast.List):
+                        return len(node.value.elts)
+    return None
+
+
+def _tab_count_claims(text: str) -> List[int]:
+    return [
+        int(match.group(1))
+        for match in re.finditer(
+            r"\b(\d+)\s+(?:lazy-loaded\s+)?(?:feature\s+)?tabs?\b",
+            text,
+            flags=re.IGNORECASE,
+        )
+    ]
+
+
 def _validate_release_surface(root: Path, version: str, codename: str | None, notes_file: Path) -> List[str]:
     errors: List[str] = []
     tag = f"v{version}"
@@ -225,8 +253,11 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
         errors.append(f"README release badge/link missing {tag}")
 
     roadmap = _read_text(ROADMAP_FILE)
+    active_sections = re.findall(r"^## \[ACTIVE\] v[^\n]+", roadmap, flags=re.MULTILINE)
     if f"## [ACTIVE] {tag}" not in roadmap:
         errors.append(f"ROADMAP missing ACTIVE section for {tag}")
+    if len(active_sections) != 1:
+        errors.append(f"ROADMAP must have exactly one ACTIVE release section, found {len(active_sections)}")
     if re.search(r"^## \[ACTIVE\] v(?!%s\b)" % re.escape(version), roadmap, flags=re.MULTILINE):
         errors.append("ROADMAP has an ACTIVE section for a different release")
     if codename and codename not in roadmap:
@@ -267,8 +298,8 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
         errors.append("auto-release workflow missing COVERAGE_THRESHOLD")
     if thresholds and len(set(thresholds)) != 1:
         errors.append(f"coverage threshold mismatch: values={thresholds}")
-    if thresholds and min(thresholds) < 80:
-        errors.append(f"coverage threshold below 80: values={thresholds}")
+    if thresholds and min(thresholds) < 82:
+        errors.append(f"coverage threshold below 82: values={thresholds}")
 
     ci_text = _read_text(CI_WORKFLOW_FILE)
     if "docs/**" in ci_text or "**/*.md" in ci_text:
@@ -280,6 +311,17 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     for claim in _coverage_claims(readme + "\n" + notes):
         if enforced_threshold and claim > enforced_threshold:
             errors.append(f"docs claim {claim}% coverage but CI enforces {enforced_threshold}%")
+
+    plugin_count = _builtin_plugin_count()
+    if plugin_count is not None:
+        architecture = _read_text(root / "ARCHITECTURE.md")
+        for claim in _tab_count_claims(readme + "\n" + architecture):
+            if claim != plugin_count:
+                errors.append(f"current docs claim {claim} tabs but PluginLoader defines {plugin_count}")
+
+    spec_text = _read_text(SPEC_FILE)
+    if re.search(r'python3\s+-c\s+"import main[^"]*"\s*\|\|', spec_text):
+        errors.append("RPM import check must be blocking; remove '|| :' from the import validation")
 
     return errors
 

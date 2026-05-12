@@ -49,6 +49,7 @@ class QuickAction:
     description: str
     icon: str
     keywords: List[str] = field(default_factory=list)
+    route_id: str = ""
 
 
 # -----------------------------------------------------------------------
@@ -193,22 +194,15 @@ class QuickActionsBar(QDialog):
 
         # Action list
         self._list_widget = QListWidget()
+        self._list_widget.setObjectName("quickActionsList")
         self._list_widget.setIconSize(QSize(17, 17))
-        self._list_widget.setStyleSheet("""
-            QListWidget {
-                font-size: 13px;
-            }
-            QListWidget::item {
-                padding: 6px 10px;
-            }
-        """)
         self._list_widget.itemActivated.connect(self._on_item_activated)
         self._list_widget.itemClicked.connect(self._on_item_clicked)
         layout.addWidget(self._list_widget, 1)
 
         # Status label
         self._status_label = QLabel()
-        self._status_label.setStyleSheet("color: #6c7086; font-size: 11px;")
+        self._status_label.setObjectName("quickActionsStatus")
         layout.addWidget(self._status_label)
 
         # Initial population
@@ -275,141 +269,158 @@ class QuickActionsBar(QDialog):
 def register_default_actions(registry: QuickActionRegistry, main_window=None) -> None:
     """Register the built-in set of quick actions.
 
-    When *main_window* is provided, callbacks navigate to the relevant tab.
+    When *main_window* is provided, callbacks navigate to the relevant route.
     Otherwise, callbacks are no-ops (for test/headless use).
     """
 
-    def _nav(tab_name: str) -> Callable:
-        """Return a callback that switches to *tab_name* via MainWindow."""
+    def _nav(route_id: str) -> Callable:
+        """Return a callback that switches to *route_id* via MainWindow."""
+        if main_window is not None and hasattr(main_window, "switch_to_route"):
+            return lambda: main_window.switch_to_route(route_id)
         if main_window is not None and hasattr(main_window, "switch_to_tab"):
-            return lambda: main_window.switch_to_tab(tab_name)
-        return lambda: tab_name
+            return lambda: main_window.switch_to_tab(route_id)
+        return lambda: route_id
 
     defaults: List[QuickAction] = [
         # -- Maintenance --
         QuickAction(
             name="Update System",
             category="Maintenance",
-            callback=_nav("Updates"),
+            callback=_nav("maintenance:updates"),
             description="Run a full system update via the package manager",
             icon="update",
             keywords=["dnf", "upgrade", "packages", "rpm-ostree"],
+            route_id="maintenance:updates",
         ),
         QuickAction(
             name="Clean DNF Cache",
             category="Maintenance",
-            callback=_nav("Cleanup"),
+            callback=_nav("maintenance:cleanup"),
             description="Clear the DNF package cache to free disk space",
             icon="cleanup",
             keywords=["cache", "cleanup", "disk", "space"],
+            route_id="maintenance:cleanup",
         ),
         QuickAction(
             name="Trim SSD",
             category="Maintenance",
-            callback=_nav("Cleanup"),
+            callback=_nav("maintenance:cleanup"),
             description="Run fstrim to optimize SSD performance",
             icon="storage-disk",
             keywords=["fstrim", "ssd", "discard", "optimize"],
+            route_id="maintenance:cleanup",
         ),
         QuickAction(
             name="Vacuum Journals",
             category="Maintenance",
-            callback=_nav("Cleanup"),
+            callback=_nav("maintenance:cleanup"),
             description="Vacuum systemd journal logs to reclaim space",
             icon="logs",
             keywords=["journal", "vacuum", "log", "journalctl", "systemd"],
+            route_id="maintenance:cleanup",
         ),
         # -- Security --
         QuickAction(
             name="Run Security Scan",
             category="Security",
-            callback=_nav("Security"),
+            callback=_nav("security:overview"),
             description="Perform a security audit of the system",
             icon="security-shield",
             keywords=["audit", "hardening", "scan", "security"],
+            route_id="security:overview",
         ),
         QuickAction(
             name="Check Open Ports",
             category="Security",
-            callback=_nav("Security"),
+            callback=_nav("security:ports"),
             description="List all open network ports on this machine",
             icon="search",
             keywords=["port", "scan", "network", "firewall", "ss"],
+            route_id="security:ports",
         ),
         QuickAction(
             name="Toggle Firewall",
             category="Security",
-            callback=_nav("Security"),
+            callback=_nav("security:firewall"),
             description="Enable or disable the system firewall (firewalld)",
             icon="security-shield",
             keywords=["firewall", "firewalld", "enable", "disable"],
+            route_id="security:firewall",
         ),
         # -- Hardware --
         QuickAction(
             name="Auto-Tune Performance",
             category="Hardware",
-            callback=_nav("Hardware"),
+            callback=_nav("performance"),
             description="Apply optimized hardware-specific performance settings",
             icon="hardware-performance",
             keywords=["tune", "performance", "cpu", "governor", "turbo"],
+            route_id="performance",
         ),
         QuickAction(
             name="Show CPU Governor",
             category="Hardware",
-            callback=_nav("Hardware"),
+            callback=_nav("performance"),
             description="Display the current CPU frequency scaling governor",
             icon="cpu-performance",
             keywords=["cpu", "governor", "frequency", "scaling"],
+            route_id="performance",
         ),
         QuickAction(
             name="Show Battery Status",
             category="Hardware",
-            callback=_nav("HP Tweaks"),
+            callback=_nav("hardware"),
             description="Show battery charge level and health information",
             icon="hardware-performance",
             keywords=["battery", "charge", "health", "power"],
+            route_id="hardware",
         ),
         # -- Network --
         QuickAction(
             name="Show DNS Config",
             category="Network",
-            callback=_nav("Network"),
+            callback=_nav("network:dns"),
             description="Display the currently configured DNS resolvers",
             icon="network-connectivity",
             keywords=["dns", "nameserver", "resolver", "resolv.conf"],
+            route_id="network:dns",
         ),
         QuickAction(
             name="Flush DNS Cache",
             category="Network",
-            callback=_nav("Network"),
+            callback=_nav("network:dns"),
             description="Flush the local DNS resolver cache",
             icon="network-traffic",
             keywords=["dns", "flush", "cache", "resolved"],
+            route_id="network:dns",
         ),
         # -- System --
         QuickAction(
             name="View System Info",
             category="System",
-            callback=_nav("System Info"),
+            callback=_nav("system_info"),
             description="Show detailed hardware and OS information",
             icon="info",
             keywords=["info", "hardware", "os", "kernel", "specs"],
+            route_id="system_info",
         ),
         QuickAction(
             name="Show Disk Usage",
             category="System",
-            callback=_nav("Storage"),
+            callback=_nav("storage"),
             description="Display disk usage summary for all mounted volumes",
             icon="storage-disk",
             keywords=["disk", "usage", "df", "storage", "mount"],
+            route_id="storage",
         ),
         QuickAction(
             name="Create Snapshot",
             category="System",
-            callback=_nav("Snapshots"),
+            callback=_nav("snapshots"),
             description="Create a system snapshot via Timeshift or Snapper",
             icon="logs",
             keywords=["snapshot", "timeshift", "snapper", "backup", "btrfs"],
+            route_id="snapshots",
         ),
     ]
 

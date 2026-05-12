@@ -41,7 +41,7 @@ def _write_release_files(
     (root / "README.md").write_text(
         f"# Loofi v{version} \"{codename}\"\n"
         f"https://example.invalid/releases/tag/v{version}\n"
-        "![Coverage](https://img.shields.io/badge/Coverage-80%25-brightgreen)\n",
+        "![Coverage](https://img.shields.io/badge/Coverage-82%25-brightgreen)\n",
         encoding="utf-8",
     )
     (root / "ROADMAP.md").write_text(
@@ -66,13 +66,13 @@ def _write_release_files(
     workflows = root / ".github" / "workflows"
     workflows.mkdir(parents=True, exist_ok=True)
     workflow_text = (
-        'env:\n  COVERAGE_THRESHOLD: "80"\n'
+        'env:\n  COVERAGE_THRESHOLD: "82"\n'
         "jobs:\n  docs_gate:\n    steps:\n"
         "      - run: python3 scripts/check_release_docs.py\n"
     )
     (workflows / "ci.yml").write_text(workflow_text, encoding="utf-8")
     (workflows / "auto-release.yml").write_text(workflow_text, encoding="utf-8")
-    (root / "Justfile").write_text('coverage_min := "80"\n', encoding="utf-8")
+    (root / "Justfile").write_text('coverage_min := "82"\n', encoding="utf-8")
     # Empty tests dir (no stale tests)
     (root / "tests").mkdir(exist_ok=True)
 
@@ -91,6 +91,7 @@ def _set_module_paths(module, tmp_path: Path) -> None:
     module.CI_WORKFLOW_FILE = tmp_path / ".github" / "workflows" / "ci.yml"
     module.AUTO_RELEASE_WORKFLOW_FILE = tmp_path / ".github" / "workflows" / "auto-release.yml"
     module.JUSTFILE = tmp_path / "Justfile"
+    module.PLUGIN_LOADER_FILE = tmp_path / "loofi-fedora-tweaks" / "core" / "plugins" / "loader.py"
 
 
 def test_release_doc_check_passes_when_required_files_exist(tmp_path):
@@ -350,7 +351,7 @@ def test_release_doc_check_catches_docs_only_ci_bypass(tmp_path):
     _set_module_paths(module, tmp_path)
     (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
         'on:\n  push:\n    paths-ignore:\n      - "docs/**"\n'
-        'env:\n  COVERAGE_THRESHOLD: "80"\n'
+        'env:\n  COVERAGE_THRESHOLD: "82"\n'
         "jobs:\n  docs_gate:\n    steps:\n"
         "      - run: python3 scripts/check_release_docs.py\n",
         encoding="utf-8",
@@ -358,3 +359,60 @@ def test_release_doc_check_catches_docs_only_ci_bypass(tmp_path):
 
     issues = module.validate_release_docs(tmp_path, require_logs=False)
     assert any("docs-only" in item for item in issues)
+
+
+def test_release_doc_check_requires_exactly_one_active_release(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_one_active",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    roadmap = tmp_path / "ROADMAP.md"
+    roadmap.write_text(
+        roadmap.read_text(encoding="utf-8")
+        + '\n## [ACTIVE] v99.0.0 "Other"\n',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+    assert any("exactly one ACTIVE" in item for item in issues)
+
+
+def test_release_doc_check_catches_current_tab_count_drift(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_tab_count",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    module.PLUGIN_LOADER_FILE.parent.mkdir(parents=True, exist_ok=True)
+    module.PLUGIN_LOADER_FILE.write_text(
+        "_BUILTIN_PLUGINS = [\n    'a',\n    'b',\n    'c',\n]\n",
+        encoding="utf-8",
+    )
+    (tmp_path / "README.md").write_text(
+        "Current app has 2 tabs.\n"
+        "https://example.invalid/releases/tag/v26.0.1\n"
+        "TestRelease\n",
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+    assert any("current docs claim 2 tabs" in item for item in issues)
+
+
+def test_release_doc_check_catches_non_blocking_rpm_import_check(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_spec_import",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    (tmp_path / "loofi-fedora-tweaks.spec").write_text(
+        'Version:        26.0.1\n%check\npython3 -c "import main" || :\n',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+    assert any("RPM import check must be blocking" in item for item in issues)

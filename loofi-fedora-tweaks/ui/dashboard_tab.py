@@ -657,12 +657,12 @@ class DashboardTab(BaseTab):
         actions = QuickActionsConfig.get_actions()
         for i, action in enumerate(actions[:8]):  # Max 8 actions in 2x4 grid
             row, col = divmod(i, 2)
-            target = action.get("target_tab", "")
+            target = action.get("route_id", "")
             btn = self._action_btn(
                 action.get("label", "Action"),
                 action.get("icon", "settings"),
                 action.get("color", "#39c5cf"),
-                lambda checked, t=target: self._go_to_tab(t),
+                lambda checked, t=target: self._go_to_route(t),
             )
             self._quick_actions_grid.addWidget(btn, row, col)
 
@@ -745,24 +745,30 @@ class DashboardTab(BaseTab):
     # Quick Action callbacks
     # ==================================================================
 
-    def _go_to_tab(self, tab_name: str):
-        """Navigate to a named tab via MainWindow."""
-        if tab_name and self.main_window is not None and hasattr(self.main_window, "switch_to_tab"):
-            self.main_window.switch_to_tab(tab_name)
+    def _go_to_route(self, route_id: str):
+        """Navigate to a route via MainWindow."""
+        if route_id and self.main_window is not None and hasattr(self.main_window, "switch_to_route"):
+            self.main_window.switch_to_route(route_id)
             if hasattr(self.main_window, "show_toast"):
-                self.main_window.show_toast("Quick Action", f"Navigated to {tab_name}", "general")
+                self.main_window.show_toast("Quick Action", f"Navigated to {route_id}", "general")
+        elif route_id and self.main_window is not None and hasattr(self.main_window, "switch_to_tab"):
+            self.main_window.switch_to_tab(route_id)
+
+    def _go_to_tab(self, tab_name: str):
+        """Backward-compatible navigation helper."""
+        self._go_to_route(tab_name)
 
     def _go_maintenance(self):
-        if hasattr(self.main_window, "switch_to_tab"):
-            self.main_window.switch_to_tab("Maintenance")
+        if hasattr(self.main_window, "switch_to_route"):
+            self.main_window.switch_to_route("maintenance")
 
     def _go_hardware(self):
-        if hasattr(self.main_window, "switch_to_tab"):
-            self.main_window.switch_to_tab("Hardware")
+        if hasattr(self.main_window, "switch_to_route"):
+            self.main_window.switch_to_route("hardware")
 
     def _go_gaming(self):
-        if hasattr(self.main_window, "switch_to_tab"):
-            self.main_window.switch_to_tab("Gaming")
+        if hasattr(self.main_window, "switch_to_route"):
+            self.main_window.switch_to_route("gaming")
 
     # ==================================================================
     # Health Score refresh (v31.0)
@@ -781,16 +787,16 @@ class DashboardTab(BaseTab):
 
     def _navigate_to_tab(self, tab_id: str):
         """Navigate to a tab by its plugin ID."""
-        if hasattr(self, "main_window") and self.main_window is not None and hasattr(self.main_window, "switch_to_tab"):
-            tab_name_map = {
-                "performance": "Performance",
-                "storage": "Storage",
-                "maintenance": "Maintenance",
-                "security": "Security",
-                "network": "Network",
+        if hasattr(self, "main_window") and self.main_window is not None and hasattr(self.main_window, "switch_to_route"):
+            route_map = {
+                "performance": "system-monitor:performance",
+                "storage": "storage",
+                "maintenance": "maintenance",
+                "security": "security",
+                "network": "network",
             }
-            tab_name = tab_name_map.get(tab_id, tab_id.title())
-            self.main_window.switch_to_tab(tab_name)  # type: ignore[union-attr]
+            route_id = route_map.get(tab_id, tab_id)
+            self.main_window.switch_to_route(route_id)  # type: ignore[union-attr]
 
     def _refresh_health_score(self):
         """Refresh the health score gauge."""

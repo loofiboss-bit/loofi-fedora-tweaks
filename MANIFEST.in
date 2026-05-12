@@ -1,0 +1,11 @@
+include LICENSE
+include README.md
+include loofi-fedora-tweaks.desktop
+include loofi-fedora-tweaks.metainfo.xml
+include loofi-fedora-tweaks.1
+include loofi-fedora-tweaks.service
+include loofi-fedora-tweaks-api.service
+recursive-include loofi-fedora-tweaks/agents *
+recursive-include loofi-fedora-tweaks/assets *
+recursive-include loofi-fedora-tweaks/config *
+recursive-include loofi-fedora-tweaks/resources *

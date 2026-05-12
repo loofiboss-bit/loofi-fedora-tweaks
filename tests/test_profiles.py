@@ -668,6 +668,21 @@ class TestSnapshotBeforeApply(unittest.TestCase):
         self.assertEqual(len(warnings), 1)
         self.assertIn("No snapshot backend", warnings[0])
 
+    @patch("utils.profiles.subprocess.run")
+    @patch("utils.profiles.SnapshotManager.create_snapshot")
+    @patch("utils.profiles.SnapshotManager.get_preferred_backend")
+    def test_invalid_snapshot_command_is_rejected_before_subprocess(self, mock_backend, mock_create, mock_run):
+        """Unsafe snapshot commands are skipped before subprocess.run."""
+        mock_backend.return_value = "timeshift"
+        mock_create.return_value = ("bash", ["-lc", "timeshift --create"], "Unsafe snapshot")
+
+        warnings = []
+        ProfileManager._create_pre_apply_snapshot("gaming", warnings)
+
+        mock_run.assert_not_called()
+        self.assertEqual(len(warnings), 1)
+        self.assertIn("Snapshot command rejected", warnings[0])
+
     @patch.object(ProfileManager, "_save_active_profile")
     @patch.object(ProfileManager, "_set_swappiness", return_value=True)
     @patch.object(ProfileManager, "_toggle_services")

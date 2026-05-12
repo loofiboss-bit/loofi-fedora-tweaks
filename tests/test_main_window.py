@@ -676,6 +676,7 @@ def _install_stubs():
     qt_widgets.QTreeWidgetItemIterator = _DummyTreeWidgetItemIterator
     qt_widgets.QStackedWidget = _DummyStackedWidget
     qt_widgets.QScrollArea = _DummyScrollArea
+    qt_widgets.QTabWidget = _Dummy
     qt_widgets.QLabel = _DummyLabel
     qt_widgets.QPushButton = _DummyButton
     qt_widgets.QLineEdit = _DummyLineEdit
@@ -834,8 +835,68 @@ def _install_stubs():
 
     plugins_pkg.PluginInterface = _StubPluginInterface
     plugins_pkg.PluginRegistry = _StubPluginRegistry
+    core_mod = types.ModuleType("core")
+    core_mod.__path__ = []
+    sys.modules["core"] = core_mod
     sys.modules["core.plugins"] = plugins_pkg
-    sys.modules["core"] = types.ModuleType("core")
+    core_mod.plugins = plugins_pkg
+
+    # -- core.navigation --
+    nav_mod = types.ModuleType("core.navigation")
+
+    class _StubRoute:
+        def __init__(
+            self,
+            route_id,
+            label,
+            plugin_id,
+            category="System",
+            icon="info",
+            description="",
+            aliases=(),
+            keywords=(),
+            risk="none",
+            visibility="all",
+            subroute="",
+        ):
+            self.id = route_id
+            self.label = label
+            self.plugin_id = plugin_id
+            self.category = category
+            self.icon = icon
+            self.description = description
+            self.aliases = tuple(aliases)
+            self.keywords = tuple(keywords)
+            self.risk = risk
+            self.visibility = visibility
+            self.subroute = subroute
+
+    _routes = {
+        "hardware": _StubRoute("hardware", "Hardware", "hardware", description="Hardware route", aliases=("Hardware", "HP Tweaks")),
+        "maintenance": _StubRoute("maintenance", "Maintenance", "maintenance", description="Maintenance route", aliases=("Maintenance",)),
+        "maintenance:updates": _StubRoute("maintenance:updates", "Updates", "maintenance", description="Update route", aliases=("Updates", "Update System"), subroute="updates"),
+        "maintenance:cleanup": _StubRoute("maintenance:cleanup", "Cleanup", "maintenance", description="Cleanup route", aliases=("Cleanup",), subroute="cleanup"),
+    }
+    _aliases = {}
+    for route in _routes.values():
+        _aliases[route.id.lower().replace("_", "-")] = route
+        _aliases[route.label.lower().replace(" ", "-")] = route
+        for alias in route.aliases:
+            _aliases[str(alias).lower().replace(" ", "-").replace("_", "-")] = route
+
+    def _resolve(value):
+        if not value:
+            return None
+        key = str(value).strip()
+        normalized = key.lower().replace(" ", "-").replace("_", "-")
+        return _routes.get(key) or _aliases.get(normalized) or _aliases.get(key.lower())
+
+    nav_mod.NavigationRoute = _StubRoute
+    nav_mod.resolve = _resolve
+    nav_mod.get_route = lambda route_id: _routes.get(route_id)
+    nav_mod.all_routes = lambda: tuple(_routes.values())
+    sys.modules["core.navigation"] = nav_mod
+    core_mod.navigation = nav_mod
 
     # -- core.plugins.interface --
     iface_mod = types.ModuleType("core.plugins.interface")
@@ -929,10 +990,19 @@ def _install_stubs():
     log_mod.get_logger = lambda name: MagicMock()
     sys.modules["utils.log"] = log_mod
 
+    services_mod = types.ModuleType("services")
+    services_mod.__path__ = []
+    sys.modules["services"] = services_mod
     sys_mod = types.ModuleType("services.system")
+    sys_mod.__path__ = []
     sys_mod.SystemManager = MagicMock()
-    sys.modules["services"] = types.ModuleType("services")
     sys.modules["services.system"] = sys_mod
+    services_mod.system = sys_mod
+    system_impl_mod = types.ModuleType("services.system.system")
+    system_impl_mod.SystemManager = sys_mod.SystemManager
+    system_impl_mod.cached_which = MagicMock(return_value="/usr/bin/dnf")
+    sys.modules["services.system.system"] = system_impl_mod
+    sys_mod.system = system_impl_mod
 
     pulse_mod = types.ModuleType("utils.pulse")
     pulse_mod.PulseThread = MagicMock()
@@ -997,6 +1067,7 @@ _MODULE_KEYS = [
     "ui.notification_panel",
     "ui.wizard",
     "core",
+    "core.navigation",
     "core.plugins",
     "core.plugins.interface",
     "core.plugins.metadata",
@@ -1015,6 +1086,7 @@ _MODULE_KEYS = [
     "utils.update_checker",
     "services",
     "services.system",
+    "services.system.system",
     "services.hardware",
     "services.hardware.disk",
     "version",
@@ -1074,6 +1146,7 @@ def _make_window(skip_init=False):
         win._sidebar_expanded_width = 210
         win._line_height = 14
         win.sidebar_search = _DummyLineEdit()
+        win.sidebar_footer = _DummyLabel("v99")
         win._status_label = _DummyLabel()
         win._undo_btn = _DummyButton()
         win._undo_btn._visible = False
@@ -1426,6 +1499,33 @@ class TestSwitchToTab(unittest.TestCase):
         self.win.sidebar.currentItem()
         # Should not match the category item (it has no UserRole data)
 
+    def test_switch_to_route_selects_plugin_and_updates_breadcrumb(self):
+        """switch_to_route selects the owning plugin and renders route breadcrumbs."""
+        activated = []
+
+        class RouteAwareWidget:
+            def activate_route(self, route):
+                activated.append(route.id)
+                return True
+
+        self.win.add_page("Maintenance", "🔧", RouteAwareWidget(), category="System")
+        result = self.win.switch_to_route("maintenance:updates")
+
+        self.assertTrue(result)
+        self.assertEqual(activated, ["maintenance:updates"])
+        current = self.win.sidebar.currentItem()
+        self.assertIsNotNone(current)
+        self.assertIn("Maintenance", current.text(0))
+        self.assertEqual(self.win._bc_category._text, "System")
+        self.assertEqual(self.win._bc_page._text, "Updates")
+        self.assertEqual(self.win._bc_desc._text, "Update route")
+
+    def test_switch_to_tab_resolves_legacy_alias_to_route(self):
+        """Legacy tab names continue through route alias resolution."""
+        self.win.add_page("Maintenance", "🔧", MagicMock(), category="System")
+        self.assertTrue(self.win.switch_to_tab("Updates"))
+        self.assertEqual(self.win._active_route_id, "maintenance:updates")
+
 
 class TestFilterSidebar(unittest.TestCase):
     """Tests for MainWindow._filter_sidebar()."""
@@ -1556,6 +1656,22 @@ class TestToggleSidebar(unittest.TestCase):
         self.win._sidebar_collapsed = False
         self.win._toggle_sidebar()
         self.assertFalse(self.win.sidebar_search.isVisible())
+
+    def test_collapse_keeps_icon_only_sidebar_rows(self):
+        """Collapsed sidebar keeps rows selectable and preserves tooltips."""
+        self.win.add_page("Hardware", "🖥️", MagicMock(), category="System", description="Hardware tools")
+        cat = self.win.sidebar.topLevelItem(0)
+        child = cat.child(0)
+
+        self.win._sidebar_collapsed = False
+        self.win._toggle_sidebar()
+
+        self.assertTrue(self.win.sidebar.isVisible())
+        self.assertEqual(child.text(0), "")
+        self.assertEqual(child.toolTip(0), "Hardware tools")
+
+        self.win._toggle_sidebar()
+        self.assertEqual(child.text(0), "Hardware")
 
     def test_expand_shows_search(self):
         """Expanding sidebar shows the search box."""

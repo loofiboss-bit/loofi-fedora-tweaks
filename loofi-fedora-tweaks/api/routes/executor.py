@@ -7,10 +7,11 @@ Security:
 """
 
 import logging
-from typing import FrozenSet, List
+from typing import List
 
 from core.executor.action_executor import ActionExecutor
 from core.executor.action_result import ActionResult
+from core.executor.command_policy import CommandValidationError, validate_command
 from fastapi import APIRouter, Depends, HTTPException, status
 from pydantic import BaseModel, Field
 from services.security import AuditLogger
@@ -19,45 +20,6 @@ from utils.auth import AuthManager
 logger = logging.getLogger(__name__)
 
 router = APIRouter()
-
-# Allowlist of executables the API may invoke.
-# Matches the commands exposed by PrivilegedCommand builders and common
-# read-only diagnostic tools.  Anything not listed is rejected with 403.
-COMMAND_ALLOWLIST: FrozenSet[str] = frozenset(
-    {
-        # Package management (via PrivilegedCommand)
-        "dnf",
-        "rpm-ostree",
-        # Service management
-        "systemctl",
-        # Kernel tuning
-        "sysctl",
-        # Flatpak
-        "flatpak",
-        # Firmware
-        "fwupdmgr",
-        # Maintenance
-        "journalctl",
-        "fstrim",
-        "rpm",
-        # Read-only diagnostics
-        "hostnamectl",
-        "uname",
-        "lsblk",
-        "df",
-        "free",
-        "uptime",
-        "sensors",
-        "lspci",
-        "lsusb",
-        "ip",
-        "ss",
-        "nmcli",
-        "firewall-cmd",
-        "timedatectl",
-        "localectl",
-    }
-)
 
 
 class ActionPayload(BaseModel):
@@ -83,17 +45,19 @@ def _validate_command(command: str, args: List[str]) -> None:
     Raises:
         HTTPException: 403 if command is not allowed.
     """
-    if command not in COMMAND_ALLOWLIST:
+    try:
+        validate_command(command, args)
+    except CommandValidationError as exc:
         audit = AuditLogger()
         audit.log(
             "api.execute.rejected",
-            params={"command": command, "args": args, "reason": "not_in_allowlist"},
+            params={"command": command, "args": args, "reason": str(exc)},
             exit_code=None,
         )
         logger.warning("API rejected disallowed command: %s", command)
         raise HTTPException(
             status_code=status.HTTP_403_FORBIDDEN,
-            detail=f"Command '{command}' is not in the API allowlist",
+            detail=str(exc),
         )
 
 

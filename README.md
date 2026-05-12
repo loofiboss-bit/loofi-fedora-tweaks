@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v7.0.0 "Aegis"
+# Loofi Fedora Tweaks v8.0.0 "Beacon"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,13 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v7.0.0">
-    <img src="https://img.shields.io/badge/Release-v7.0.0-blue?style=for-the-badge&logo=github" alt="Release v7.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0">
+    <img src="https://img.shields.io/badge/Release-v8.0.0-blue?style=for-the-badge&logo=github" alt="Release v8.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
-  <img src="https://img.shields.io/badge/Coverage-80%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 80%"/>
+  <img src="https://img.shields.io/badge/Coverage-82%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 82%"/>
   <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
     <img src="https://img.shields.io/badge/COPR-loofitheboss%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
   </a>
@@ -41,17 +41,17 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v7.0.0?
+## What's New in v8.0.0?
 
-`v7.0.0 "Aegis"` turns release readiness findings into a safe, reviewable action planning workflow. Fedora KDE 44 remains the supported target; the existing Fedora 45 preview profile stays advisory only.
+`v8.0.0 "Beacon"` is a navigation-first UX and reliability release. It keeps the existing plugin architecture and feature set, but makes routes the stable contract behind sidebar navigation, command search, quick actions, favorites, and dashboard cards.
 
-- **Guided Action Bridge**: Action candidates show risk, privilege needs, command previews, rollback hints, and verification steps before anything runs.
-- **Explicit Confirmation**: Executable readiness actions refuse to run without confirmation, and manual-only recommendations cannot be executed.
-- **Action Inbox**: The existing readiness dialog now includes focused action planning without adding another permanent tab.
-- **Support Bundle v5**: Adds action plan summaries, recent action history, stronger redaction, and v4-compatible readiness fields.
-- **Release Gate Hardening**: CI, auto-release, docs, workflow specs, and release claims now share the same v7 metadata and coverage threshold.
+- **Route Manifest**: `core/navigation` defines canonical plugin and subroute IDs such as `maintenance:updates`, `software:apps`, and `system-monitor:processes`.
+- **Navigation UX**: Command palette, quick actions, dashboard cards, breadcrumbs, collapsed sidebar, and Favorites v2 now use stable route IDs instead of display-name guesses.
+- **Safety Hardening**: ActionExecutor preview and execution share a core command allowlist with the API, and profile snapshot commands are validated before subprocess execution.
+- **Packaging Trust**: RPM import validation is blocking, and the release gate verifies pyproject, sdist, wheel, assets, translations, and entry point coverage.
+- **Release Gate Hardening**: CI, auto-release, docs, workflow specs, and release claims now share the same v8 metadata and 82% coverage threshold.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v7.0.0.md`](docs/releases/RELEASE-NOTES-v7.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v8.0.0.md`](docs/releases/RELEASE-NOTES-v8.0.0.md)
 
 ### Screenshots
 
@@ -63,9 +63,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v7.0.0.md`](docs/releases/RELEASE-NOTE
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v7.0.0 "Aegis"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v7.0.0.md`)
-- Current stable baseline: **v6.0.0 "Compass"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **7.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v8.0.0 "Beacon"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v8.0.0.md`)
+- Current stable baseline: **v8.0.0 "Beacon"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **8.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 
@@ -86,15 +86,15 @@ Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current impl
 The package is published on [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/). This gives you automatic updates via `dnf`.
 
 ```bash
-sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
-sudo dnf install loofi-fedora-tweaks
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
 ```
 
 To uninstall:
 
 ```bash
-sudo dnf remove loofi-fedora-tweaks
-sudo dnf copr remove loofitheboss/loofi-fedora-tweaks
+pkexec dnf remove loofi-fedora-tweaks
+pkexec dnf copr remove loofitheboss/loofi-fedora-tweaks
 ```
 
 ### Install from a Release RPM
@@ -102,7 +102,7 @@ sudo dnf copr remove loofitheboss/loofi-fedora-tweaks
 Download the `.noarch.rpm` from the [Releases](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases) page:
 
 ```bash
-sudo dnf install ./loofi-fedora-tweaks-*.noarch.rpm
+pkexec dnf install ./loofi-fedora-tweaks-*.noarch.rpm
 ```
 
 ### Run from Source

@@ -26,6 +26,8 @@ for _mod, _orig in [("PyQt6", _orig_pyqt6), ("PyQt6.QtWidgets", _orig_qtwidgets)
         sys.modules[_mod] = _orig
     else:
         sys.modules.pop(_mod, None)
+sys.modules.pop("ui.icon_pack", None)
+sys.modules.pop("ui.quick_actions", None)
 
 
 class TestQuickAction(unittest.TestCase):
@@ -49,6 +51,20 @@ class TestQuickAction(unittest.TestCase):
         self.assertEqual(action.description, "A test action")
         self.assertEqual(action.icon, "🔧")
         self.assertEqual(action.keywords, ["test", "demo"])
+        self.assertEqual(action.route_id, "")
+
+    def test_create_with_route_id(self):
+        """Route IDs are stored as stable navigation targets."""
+        action = QuickAction(
+            name="Update",
+            category="Maintenance",
+            callback=lambda: None,
+            description="desc",
+            icon="update",
+            keywords=["packages"],
+            route_id="maintenance:updates",
+        )
+        self.assertEqual(action.route_id, "maintenance:updates")
 
     def test_callback_callable(self):
         """Verify the callback can be invoked."""
@@ -360,6 +376,27 @@ class TestRegisterDefaults(unittest.TestCase):
                 callable(action.callback),
                 f"{action.name} callback is not callable",
             )
+
+    def test_default_actions_have_valid_route_ids(self):
+        """Every default quick action targets a valid navigation route."""
+        from core.navigation import resolve
+
+        reg = QuickActionRegistry.instance()
+        register_default_actions(reg)
+
+        for action in reg.get_all():
+            self.assertTrue(action.route_id, action.name)
+            self.assertIsNotNone(resolve(action.route_id), action.route_id)
+
+    def test_default_callbacks_use_switch_to_route(self):
+        """MainWindow-aware quick actions call switch_to_route with route IDs."""
+        main_window = MagicMock()
+        reg = QuickActionRegistry.instance()
+        register_default_actions(reg, main_window=main_window)
+
+        update = next(action for action in reg.get_all() if action.name == "Update System")
+        update.callback()
+        main_window.switch_to_route.assert_called_once_with("maintenance:updates")
 
 
 if __name__ == "__main__":

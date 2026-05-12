@@ -60,11 +60,44 @@
 | v4.0.0  | Atlas                           | DONE    | Guided diagnostics, safe repairs, rollback-first actions, and task-based UX                   |
 | v5.0.0  | Aurora                          | DONE    | Fedora KDE 44 experience, readiness diagnostics, support bundle v3, packaging split           |
 | v6.0.0  | Compass                         | DONE    | Generic release readiness engine, guided recommendations, support bundle v4                  |
-| v7.0.0  | Aegis                           | ACTIVE  | Safe guided actions, release reliability, Fedora 44 polish, support diagnostics              |
+| v7.0.0  | Aegis                           | DONE    | Safe guided actions, release reliability, Fedora 44 polish, support diagnostics              |
+| v8.0.0  | Beacon                          | ACTIVE  | Navigation-first UX, visual routing clarity, safety and packaging hardening                  |
 
 ---
 
-## [ACTIVE] v7.0.0 "Aegis" — Safe Guided Actions & Fedora 44 Reliability
+## [ACTIVE] v8.0.0 "Beacon" — Navigation Reliability & UX Clarity
+
+**Theme**: Navigation-first UX and release reliability without adding major feature tabs.
+**Focus**: Central route manifest, stable favorites, route-aware command surfaces, visual sidebar/breadcrumb polish, command safety, and packaging trust.
+
+### Scope
+
+v8.0.0 "Beacon" fixes navigation drift by making route IDs the canonical contract for the sidebar, command palette, quick actions, favorites, and dashboard task cards. It keeps the existing plugin architecture intact, avoids new major tabs, and hardens release gates so docs use live registry counts instead of stale tab-count claims.
+
+### Deliverables
+
+- [x] Version metadata aligned to `8.0.0 "Beacon"`
+- [x] v7.0.0 "Aegis" marked completed and v8.0.0 activated
+- [x] PyQt-free `core/navigation` manifest with plugin-level and subroute-level route IDs
+- [x] `MainWindow.switch_to_route(route_id)` with backward-compatible `switch_to_tab(name)`
+- [x] Command palette, quick actions, dashboard actions, and health navigation resolve stable route IDs
+- [x] Favorites v2 stores route/plugin IDs and migrates legacy display-name-derived favorites
+- [x] Sidebar collapse keeps icon-only navigation visible with tooltips, badges, and status dots
+- [x] Route-aware breadcrumbs and expanded semantic icon fallback coverage
+- [x] Shared ActionExecutor/API command allowlist with preview and execute validation
+- [x] Profile pre-apply snapshot command validation before subprocess execution
+- [x] Blocking RPM import check and wheel/sdist packaging manifest verification
+- [x] CI, auto-release, docs, and release-claim drift gates aligned to 82% coverage
+
+### Compatibility
+
+- No new major feature tabs are added; Beacon routes point at existing plugins, sub-tabs, and focused dialogs.
+- Legacy tab names remain aliases for compatibility, but persisted state uses route IDs or plugin IDs.
+- UI code still does not call subprocess directly, services/core still avoid PyQt imports, and privileged actions continue through `pkexec`/executor conventions.
+
+---
+
+## [DONE] v7.0.0 "Aegis" — Safe Guided Actions & Fedora 44 Reliability
 
 **Theme**: Safe guided actions, release reliability, and Fedora 44 polish.
 **Focus**: Action planning from readiness findings, explicit confirmation, support diagnostics, release metadata correctness, and design consistency.

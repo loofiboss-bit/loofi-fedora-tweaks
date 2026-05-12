@@ -27,7 +27,7 @@ class TestQuickActionsConfig(unittest.TestCase):
             self.assertIn("label", action)
             self.assertIn("icon", action)
             self.assertIn("color", action)
-            self.assertIn("target_tab", action)
+            self.assertIn("route_id", action)
 
     def test_default_actions_ids_unique(self):
         """All default action IDs are unique."""
@@ -41,13 +41,22 @@ class TestQuickActionsConfig(unittest.TestCase):
         result = QuickActionsConfig.get_actions()
         self.assertEqual(len(result), 4)
 
-    @patch('builtins.open', mock_open(read_data='[{"id":"test","label":"Test","icon":"🔥","color":"#fff","target_tab":"Home"}]'))
+    @patch('builtins.open', mock_open(read_data='[{"id":"test","label":"Test","icon":"cleanup","color":"#fff","route_id":"maintenance:cleanup"}]'))
     @patch('utils.quick_actions_config.os.path.isfile', return_value=True)
     def test_get_actions_from_file(self, mock_isfile):
         """Returns actions from config file."""
         result = QuickActionsConfig.get_actions()
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0]["id"], "test")
+        self.assertEqual(result[0]["route_id"], "maintenance:cleanup")
+
+    @patch('builtins.open', mock_open(read_data='[{"id":"legacy","label":"Legacy","icon":"cleanup","color":"#fff","target_tab":"Cleanup"}]'))
+    @patch('utils.quick_actions_config.os.path.isfile', return_value=True)
+    def test_get_actions_migrates_legacy_target_tab(self, mock_isfile):
+        """Legacy target_tab actions are normalized to route IDs."""
+        result = QuickActionsConfig.get_actions()
+        self.assertEqual(result[0]["route_id"], "maintenance:cleanup")
+        self.assertNotIn("target_tab", result[0])
 
     @patch('builtins.open', mock_open(read_data='[]'))
     @patch('utils.quick_actions_config.os.path.isfile', return_value=True)
@@ -67,7 +76,7 @@ class TestQuickActionsConfig(unittest.TestCase):
     @patch('utils.quick_actions_config.os.makedirs')
     def test_set_actions_saves(self, mock_makedirs, mock_file):
         """set_actions writes to file."""
-        actions = [{"id": "test", "label": "Test", "icon": "🔥", "color": "#fff", "target_tab": "Home"}]
+        actions = [{"id": "test", "label": "Test", "icon": "cleanup", "color": "#fff", "route_id": "maintenance:cleanup"}]
         QuickActionsConfig.set_actions(actions)
         mock_file.assert_called_once()
         mock_makedirs.assert_called_once()
@@ -87,8 +96,20 @@ class TestQuickActionsConfig(unittest.TestCase):
 
     def test_validate_action_valid(self):
         """Valid action passes validation."""
-        action = {"id": "test", "label": "Test", "icon": "🔥", "color": "#fff", "target_tab": "Home"}
+        action = {"id": "test", "label": "Test", "icon": "cleanup", "color": "#fff", "route_id": "maintenance:cleanup"}
         self.assertTrue(QuickActionsConfig.validate_action(action))
+
+    def test_validate_action_accepts_legacy_target_tab(self):
+        """Legacy action config remains valid when target_tab resolves."""
+        action = {"id": "legacy", "label": "Legacy", "icon": "cleanup", "color": "#fff", "target_tab": "Cleanup"}
+        self.assertTrue(QuickActionsConfig.validate_action(action))
+
+    def test_default_action_routes_resolve(self):
+        """Every default dashboard quick action targets a known route."""
+        from core.navigation import resolve
+
+        for action in QuickActionsConfig.default_actions():
+            self.assertIsNotNone(resolve(action["route_id"]), action)
 
     def test_validate_action_missing_field(self):
         """Action missing required field fails validation."""

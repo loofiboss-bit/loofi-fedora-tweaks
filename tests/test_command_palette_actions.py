@@ -90,6 +90,39 @@ class TestCommandPaletteQuickCommands(unittest.TestCase):
         self.assertGreater(len(nav_features), 50)
 
     @patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"})
+    def test_navigate_features_use_valid_route_ids(self):
+        """Every command palette navigation feature resolves through the route manifest."""
+        from core.navigation import resolve
+        from ui.command_palette import _build_feature_registry
+
+        features = _build_feature_registry()
+        nav_features = [f for f in features if f.get("type", "navigate") == "navigate"]
+        self.assertGreater(len(nav_features), 0)
+        for feature in nav_features:
+            self.assertEqual(feature.get("action"), feature.get("route_id"))
+            self.assertIsNotNone(resolve(feature["route_id"]), feature)
+
+    @patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"})
+    def test_required_routes_are_searchable(self):
+        """Required Beacon subroutes appear in the palette registry."""
+        from ui.command_palette import _build_feature_registry
+
+        route_ids = {
+            f["route_id"]
+            for f in _build_feature_registry()
+            if f.get("type", "navigate") == "navigate"
+        }
+        for route_id in [
+            "maintenance:updates",
+            "maintenance:cleanup",
+            "software:apps",
+            "software:repos",
+            "security:firewall",
+            "system-monitor:processes",
+        ]:
+            self.assertIn(route_id, route_ids)
+
+    @patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"})
     def test_match_score_for_quick_command(self):
         """Quick command entries should be matchable by search."""
         from ui.command_palette import CommandPalette

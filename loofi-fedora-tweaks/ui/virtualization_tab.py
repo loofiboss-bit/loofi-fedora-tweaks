@@ -197,16 +197,16 @@ class VirtualizationTab(QWidget, PluginInterface):
         self.vm_table.setRowCount(0)
         vms = VMManager.list_vms()
         if not vms:
-            self.set_table_empty_state(self.vm_table, self.tr("No virtual machines found"))
+            BaseTab.set_table_empty_state(self.vm_table, self.tr("No virtual machines found"))
             self.log(self.tr("VM list refreshed (0 VMs)."))
             return
         for vm in vms:
             row = self.vm_table.rowCount()
             self.vm_table.insertRow(row)
-            self.vm_table.setItem(row, 0, self.make_table_item(vm.name))
-            self.vm_table.setItem(row, 1, self.make_table_item(vm.state))
-            self.vm_table.setItem(row, 2, self.make_table_item(str(vm.memory_mb)))
-            self.vm_table.setItem(row, 3, self.make_table_item(str(vm.vcpus)))
+            self.vm_table.setItem(row, 0, BaseTab.make_table_item(vm.name))
+            self.vm_table.setItem(row, 1, BaseTab.make_table_item(vm.state))
+            self.vm_table.setItem(row, 2, BaseTab.make_table_item(str(vm.memory_mb)))
+            self.vm_table.setItem(row, 3, BaseTab.make_table_item(str(vm.vcpus)))
         normalize = getattr(BaseTab, "ensure_table_row_heights", None)
         if callable(normalize):
             normalize(self.vm_table)

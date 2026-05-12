@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 7.0.0 "Aegis" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 8.0.0 "Beacon" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 
@@ -23,7 +23,9 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   │   └── gaming_audit.py   # Specialized hardware/gaming diagnostics
 │   ├── executor/             # Action execution and safety
 │   │   ├── action_model.py   # SystemAction with risk/rollback metadata
-│   │   └── action_executor.py# Centralized safe command runner
+│   │   ├── action_executor.py# Centralized safe command runner
+│   │   └── command_policy.py # Shared executor/API command allowlist
+│   ├── navigation/           # Beacon route manifest and route validation
 │   ├── export/               # Diagnostic export services
 │   │   ├── support_bundle_v5.py# Aegis support diagnostics and redaction
 │   │   ├── support_bundle_v4.py# Compatibility wrapper
@@ -58,7 +60,7 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 
 | Mode       | Flag       | Module                   | Purpose                                    |
 | ---------- | ---------- | ------------------------ | ------------------------------------------ |
-| **GUI**    | (default)  | `main.py` → `MainWindow` | PyQt6 desktop app with 28 lazy-loaded tabs |
+| **GUI**    | (default)  | `main.py` → `MainWindow` | PyQt6 desktop app with registry-loaded tabs |
 | **CLI**    | `--cli`    | `cli/main.py`            | Subcommands with `--json` output           |
 | **Daemon** | `--daemon` | `daemon/runtime.py`      | D-Bus daemon host + legacy fallback        |
 
@@ -74,7 +76,9 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 
 **Key rule**: `services/` and `core/` hold domain logic. `utils/` retains shared infrastructure (`commands.py`, `errors.py`, `operations.py`) and backward-compatible shims. GUI and CLI are consumers only.
 
-## Tab Layout (28 Feature Tabs)
+## Tab Layout And Routes
+
+Built-in feature tabs are sourced from `core/plugins/loader.py` and `PluginRegistry`; release gates validate the live loader count instead of relying on prose counts. Route-level navigation is defined in `core/navigation/manifest.py`, where plugin routes and subroutes such as `maintenance:updates`, `software:apps`, and `system-monitor:processes` are stable IDs.
 
 ### Sidebar Categories
 
@@ -89,42 +93,43 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 | 7     | Tools       | `developer-tools`      |
 | 8     | Maintenance | `maintenance-health`   |
 
-| #   | Tab                | File                     | Consolidates                             |
-| --- | ------------------ | ------------------------ | ---------------------------------------- |
-| 1   | Home               | `dashboard_tab.py`       | Dashboard                                |
-| 2   | System Info        | `system_info_tab.py`     | System details                           |
-| 3   | System Monitor     | `monitor_tab.py`         | Performance + Processes                  |
-| 4   | Maintenance        | `maintenance_tab.py`     | Updates + Cleanup + Overlays             |
-| 5   | Hardware           | `hardware_tab.py`        | Hardware + HP Tweaks + Bluetooth         |
-| 6   | Software           | `software_tab.py`        | Apps + Repos                             |
-| 7   | Security & Privacy | `security_tab.py`        | Security + Privacy                       |
-| 8   | Network            | `network_tab.py`         | Connections + DNS + Privacy + Monitoring |
-| 9   | Gaming             | `gaming_tab.py`          | Gaming setup                             |
-| 10  | Desktop            | `desktop_tab.py`         | Director + Theming                       |
-| 11  | Development        | `development_tab.py`     | Containers + Developer tools             |
-| 12  | AI Lab             | `ai_enhanced_tab.py`     | AI features                              |
-| 13  | Automation         | `automation_tab.py`      | Scheduler + Replicator + Pulse           |
-| 14  | Community          | `community_tab.py`       | Presets + Marketplace                    |
-| 15  | Diagnostics        | `diagnostics_tab.py`     | Watchtower + Boot                        |
-| 16  | Virtualization     | `virtualization_tab.py`  | VMs + VFIO + Disposable                  |
-| 17  | Loofi Link         | `mesh_tab.py`            | Mesh + Clipboard + File Drop             |
-| 18  | State Teleport     | `teleport_tab.py`        | Workspace Capture/Restore                |
-| 19  | Performance        | `performance_tab.py`     | Auto-Tuner                               |
-| 20  | Snapshots          | `snapshot_tab.py`        | Snapshot Timeline                        |
-| 21  | Logs               | `logs_tab.py`            | Smart Log Viewer                         |
-| 22  | Storage            | `storage_tab.py`         | Disks + Mounts + SMART                   |
-| 23  | Health Timeline    | `health_timeline_tab.py` | System health over time                  |
-| 24  | Profiles           | `profiles_tab.py`        | User profiles management                 |
-| 25  | Extensions         | `extensions_tab.py`      | GNOME/KDE extensions browser             |
-| 26  | Backup             | `backup_tab.py`          | Backup wizard + Timeshift/Snapper        |
-| 27  | Agents             | `agents_tab.py`          | AI agent management                      |
-| 28  | Settings           | `settings_tab.py`        | App settings                             |
+| Route/plugin ID    | Tab                | File                     | Consolidates                             |
+| ------------------ | ------------------ | ------------------------ | ---------------------------------------- |
+| `atlas_dashboard`  | Atlas Home         | `atlas_dashboard_tab.py` | Task cards and guided entry              |
+| `dashboard`        | Home               | `dashboard_tab.py`       | Dashboard                                |
+| `system_info`      | System Info        | `system_info_tab.py`     | System details                           |
+| `monitor`          | System Monitor     | `monitor_tab.py`         | Performance + Processes                  |
+| `maintenance`      | Maintenance        | `maintenance_tab.py`     | Updates + Cleanup + Overlays             |
+| `hardware`         | Hardware           | `hardware_tab.py`        | Hardware + HP Tweaks + Bluetooth         |
+| `software`         | Software           | `software_tab.py`        | Apps + Repos                             |
+| `security`         | Security & Privacy | `security_tab.py`        | Security + Privacy                       |
+| `network`          | Network            | `network_tab.py`         | Connections + DNS + Privacy + Monitoring |
+| `gaming`           | Gaming             | `gaming_tab.py`          | Gaming setup                             |
+| `desktop`          | Desktop            | `desktop_tab.py`         | Director + Theming                       |
+| `development`      | Development        | `development_tab.py`     | Containers + Developer tools             |
+| `ai_lab`           | AI Lab             | `ai_enhanced_tab.py`     | AI features                              |
+| `automation`       | Automation         | `automation_tab.py`      | Scheduler + Replicator + Pulse           |
+| `community`        | Community          | `community_tab.py`       | Presets + Marketplace                    |
+| `diagnostics`      | Diagnostics        | `diagnostics_tab.py`     | Watchtower + Boot                        |
+| `virtualization`   | Virtualization     | `virtualization_tab.py`  | VMs + VFIO + Disposable                  |
+| `mesh`             | Loofi Link         | `mesh_tab.py`            | Mesh + Clipboard + File Drop             |
+| `teleport`         | State Teleport     | `teleport_tab.py`        | Workspace Capture/Restore                |
+| `performance`      | Performance        | `performance_tab.py`     | Auto-Tuner                               |
+| `snapshots`        | Snapshots          | `snapshot_tab.py`        | Snapshot Timeline                        |
+| `logs`             | Logs               | `logs_tab.py`            | Smart Log Viewer                         |
+| `storage`          | Storage            | `storage_tab.py`         | Disks + Mounts + SMART                   |
+| `health`           | Health Timeline    | `health_timeline_tab.py` | System health over time                  |
+| `profiles`         | Profiles           | `profiles_tab.py`        | User profiles management                 |
+| `extensions`       | Extensions         | `extensions_tab.py`      | GNOME/KDE extensions browser             |
+| `backup`           | Backup             | `backup_tab.py`          | Backup wizard + Timeshift/Snapper        |
+| `agents`           | Agents             | `agents_tab.py`          | AI agent management                      |
+| `settings`         | Settings           | `settings_tab.py`        | App settings                             |
 
 Consolidated tabs use `QTabWidget` for sub-navigation within the tab.
 
-### Sidebar Index (v48.0)
+### Sidebar Index And Routes (v8.0.0)
 
-The sidebar uses a `SidebarIndex` (`dict[str, SidebarEntry]`) keyed by `PluginMetadata.id` for O(1) tab lookups. `SidebarEntry` holds the tree item, page widget, metadata, and status.
+The sidebar uses a `SidebarIndex` (`dict[str, SidebarEntry]`) keyed by `PluginMetadata.id` for O(1) tab lookups. `SidebarEntry` holds the tree item, page widget, metadata, and status. Route IDs are resolved through `core.navigation`; Favorites v2 persists route/plugin IDs rather than display-name-derived slugs.
 
 Key methods:
 
@@ -132,7 +137,8 @@ Key methods:
 - `_create_tab_item(...)` — creates tree item with badge and icon
 - `_register_in_index(plugin_id, entry)` — populates index and content area
 - `add_page(...)` — public API orchestrator (backward-compatible)
-- `switch_to_tab(name)` — O(1) by plugin ID, fallback by display name
+- `switch_to_route(route_id)` — canonical route/plugin navigation with subroute activation
+- `switch_to_tab(name)` — backward-compatible alias wrapper
 - `_set_tab_status(tab_id, status)` — O(1) status update via data role
 
 Status rendering uses `SidebarItemDelegate` with colored dots instead of text markers.
@@ -255,7 +261,7 @@ for plugin in PluginRegistry.instance():
 - **Both paths**: Test success AND failure
 - **No root**: Tests run in CI without privileges
 - **Path setup**: `sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))`
-- **Coverage**: 80%+ current, 85% stretch goal
+- **Coverage**: 82%+ current, 85% stretch goal
 
 ## Adding a Feature
 

@@ -1,5 +1,6 @@
 """Tests for packaging scripts used in v30.0."""
 
+import importlib.util
 import os
 import re
 import stat
@@ -11,6 +12,17 @@ from shutil import copy2
 
 ROOT = Path(__file__).resolve().parents[1]
 BASH = "/bin/bash"
+
+
+def _load_packaging_manifest_module():
+    spec = importlib.util.spec_from_file_location(
+        "check_packaging_manifest_test",
+        ROOT / "scripts" / "check_packaging_manifest.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    return module
 
 
 def _write_executable(path: Path, content: str) -> None:
@@ -29,6 +41,20 @@ def _extract_version(version_file: Path) -> str:
     match = re.search(r'^__version__\s*=\s*"([^"]+)"', content, re.MULTILINE)
     assert match, "Version parse failed in test fixture"
     return match.group(1)
+
+
+def test_packaging_manifest_static_metadata_passes():
+    module = _load_packaging_manifest_module()
+    assert module.validate_packaging(build=False) == []
+
+
+def test_packaging_manifest_tracks_navigation_and_assets():
+    module = _load_packaging_manifest_module()
+    expected = set(module.EXPECTED_SOURCE_SUFFIXES)
+    assert "core/navigation/manifest.py" in expected
+    assert "core/executor/command_policy.py" in expected
+    assert "assets/modern.qss" in expected
+    assert "resources/translations/en.ts" in expected
 
 
 @unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")

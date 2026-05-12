@@ -13,9 +13,15 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
+import utils.update_manager as update_manager_module
 from utils.update_manager import (
     UpdateManager, UpdateEntry, ConflictEntry, ScheduledUpdate,
 )
+
+
+def setUpModule():
+    """Keep string-based patches bound to this module despite UI stub tests."""
+    sys.modules["utils.update_manager"] = update_manager_module
 
 
 class TestDataclasses(unittest.TestCase):

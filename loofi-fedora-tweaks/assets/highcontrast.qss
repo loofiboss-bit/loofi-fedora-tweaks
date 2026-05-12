@@ -1031,3 +1031,43 @@ QMessageBox QLabel {
     color: #ffffff;
     font-size: 11pt;
 }
+
+/* ===== Beacon Navigation Polish ===== */
+QLineEdit#sidebarSearch {
+    margin: 5px 10px;
+    border-radius: 4px;
+    padding: 4px 10px;
+}
+
+QToolButton#notificationBell {
+    border: none;
+    padding: 5px;
+}
+
+QToolButton#notificationBell:hover {
+    background-color: #333333;
+    border-radius: 4px;
+}
+
+QLabel#notificationBadge {
+    background-color: #ffff00;
+    color: #000000;
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+QListWidget#quickActionsList {
+    font-size: 13px;
+}
+
+QListWidget#quickActionsList::item {
+    padding: 6px 10px;
+}
+
+QLabel#quickActionsStatus,
+QLabel#atlasSubheader {
+    color: #ffff00;
+    font-size: 11px;
+}

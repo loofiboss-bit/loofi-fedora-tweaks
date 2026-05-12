@@ -32,6 +32,7 @@ from typing import Any, Dict, List, Optional
 
 from core.executor.action_result import ActionResult
 from core.executor.base_executor import BaseActionExecutor
+from core.executor.command_policy import CommandValidationError, validate_command
 
 logger = logging.getLogger(__name__)
 
@@ -96,8 +97,12 @@ class ActionExecutor(BaseActionExecutor):
                 command, args, privileged=privileged, action_id=action_id
             )
 
-        # Build final command list
-        cmd = self._build_command(command, args, privileged=privileged)
+        try:
+            cmd = self._build_command(command, args, privileged=privileged)
+        except CommandValidationError as exc:
+            result = ActionResult.fail(str(exc), exit_code=126, action_id=action_id)
+            self._log_action([command] + args, result)
+            return result
 
         # Execute
         result = self._execute_subprocess(
@@ -127,7 +132,12 @@ class ActionExecutor(BaseActionExecutor):
             ActionResult with preview=True and command details in data field.
         """
         args = args or []
-        cmd = self._build_command(command, args, privileged=privileged)
+        try:
+            cmd = self._build_command(command, args, privileged=privileged)
+        except CommandValidationError as exc:
+            result = ActionResult.fail(str(exc), exit_code=126, action_id=action_id)
+            self._log_action([command] + args, result)
+            return result
 
         result = ActionResult.previewed(cmd[0], cmd[1:], action_id=action_id)
         self._log_action(cmd, result)
@@ -184,6 +194,7 @@ class ActionExecutor(BaseActionExecutor):
         self, command: str, args: List[str], *, privileged: bool = False
     ) -> List[str]:
         """Build the final command list, handling Flatpak and privilege escalation."""
+        validate_command(command, args)
         cmd = [command] + args
 
         # Privilege escalation via pkexec

@@ -9,8 +9,8 @@ Use this guide for a safe first run in under 10 minutes.
 ## 1) Install and Launch
 
 ```bash
-sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
-sudo dnf install loofi-fedora-tweaks
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
 loofi-fedora-tweaks
 ```
 

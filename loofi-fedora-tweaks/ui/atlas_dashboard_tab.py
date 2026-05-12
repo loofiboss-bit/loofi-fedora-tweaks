@@ -33,13 +33,12 @@ class TaskCard(QFrame):
         icon_label = QLabel()
         try:
             icon_label.setPixmap(get_qicon(task.icon_id, size=32).pixmap(32, 32))
-        except (OSError, RuntimeError, ValueError):
+        except (OSError, RuntimeError, TypeError, ValueError):
             logger.debug("Unable to load dashboard icon %s", task.icon_id, exc_info=True)
         header.addWidget(icon_label)
 
         title = QLabel(task.title)
         title.setObjectName("healthTitle")
-        title.setStyleSheet("font-size: 16px; font-weight: bold;")
         header.addWidget(title, 1)
         layout.addLayout(header)
 
@@ -105,7 +104,7 @@ class AtlasDashboardTab(BaseTab):
         layout.addWidget(header)
 
         subheader = QLabel("Guided Fedora Control Center — What would you like to do today?")
-        subheader.setStyleSheet("font-size: 14px; color: #6c7086;")
+        subheader.setObjectName("atlasSubheader")
         layout.addWidget(subheader)
 
         # Task Grid
@@ -159,7 +158,7 @@ class AtlasDashboardTab(BaseTab):
                 return
 
             from .task_wizard import AtlasTaskWizard
-            wizard = AtlasTaskWizard(task.id, task.check_ids, task.action_ids, self)
-            wizard.exec()
+            task_wizard = AtlasTaskWizard(task.id, task.check_ids, task.action_ids, self)
+            task_wizard.exec()
         except (ImportError, RuntimeError, OSError, ValueError) as e:
             logger.error("Failed to launch Atlas Task Wizard: %s", e, exc_info=True)

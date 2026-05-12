@@ -7,6 +7,7 @@ Rules:
 3. Runtime code must not hardcode executable dnf invocations
 4. broad except Exception handlers must be explicitly allowlisted
 5. Runtime code must not contain "sudo " in string literals
+6. subprocess calls must not use shell=True
 """
 
 from __future__ import annotations
@@ -96,6 +97,16 @@ class _Analyzer(ast.NodeVisitor):
                     )
                 )
 
+            if _has_shell_true_kw(node):
+                self.violations.append(
+                    Violation(
+                        rule="shell-true",
+                        path=self.rel_path,
+                        line=node.lineno,
+                        message=f"subprocess.{func_name} call uses shell=True",
+                    )
+                )
+
             if self.rel_path.startswith("loofi-fedora-tweaks/ui/"):
                 self.violations.append(
                     Violation(
@@ -162,6 +173,15 @@ def _subprocess_func_name(node: ast.Call) -> str:
 
 def _has_timeout_kw(node: ast.Call) -> bool:
     return any(k.arg == "timeout" for k in node.keywords)
+
+
+def _has_shell_true_kw(node: ast.Call) -> bool:
+    return any(
+        k.arg == "shell"
+        and isinstance(k.value, ast.Constant)
+        and k.value.value is True
+        for k in node.keywords
+    )
 
 
 def _is_literal_dnf(value: ast.AST) -> bool:

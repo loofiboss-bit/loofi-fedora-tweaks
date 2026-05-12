@@ -85,6 +85,7 @@ class UpdateManager:
         package_manager = SystemManager.get_package_manager()
         if not cached_which(package_manager):
             logger.debug("Package manager binary not found in PATH: %s", package_manager)
+            return updates
         try:
             result = subprocess.run(
                 [package_manager, "check-update", "--quiet"],
@@ -162,6 +163,7 @@ class UpdateManager:
         package_manager = SystemManager.get_package_manager()
         if not cached_which(package_manager):
             logger.debug("Package manager binary not found in PATH: %s", package_manager)
+            return conflicts
 
         try:
             cmd = [package_manager, "check-update", "--assumeno"]

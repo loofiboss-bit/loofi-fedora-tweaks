@@ -197,8 +197,11 @@ class ReleaseReadinessDialog(QDialog):
     def _clear_checks(self) -> None:
         while self.checks_layout.count() > 1:
             item = self.checks_layout.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+            if item is None:
+                continue
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
 
     def _filtered_checks(self) -> list[ReadinessCheck]:
         if self.report is None:
@@ -428,6 +431,8 @@ class ReleaseReadinessDialog(QDialog):
         if self.report is None:
             return
         clipboard = QApplication.clipboard()
+        if clipboard is None:
+            return
         clipboard.setText(self.report.support_summary())
 
     def export_support_bundle(self) -> None:

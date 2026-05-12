@@ -4,6 +4,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.0.0] - 2026-05-12 "Beacon"
+
+### Added
+
+- **Navigation Manifest**: Added a PyQt-free `core.navigation` route manifest with stable plugin and subroute IDs for the sidebar, command palette, quick actions, dashboard cards, and favorites.
+- **Route-Aware UX**: Added `MainWindow.switch_to_route()` with backward-compatible `switch_to_tab()` alias resolution, route-aware breadcrumbs, icon-only collapsed sidebar mode, and richer semantic icon coverage.
+- **Favorites v2**: Added stable persisted favorite IDs with migration from legacy display-name-derived favorites.
+- **Packaging Manifest Gate**: Added a wheel/sdist manifest checker that verifies source subpackages, QSS/icons, translations, config/agent resources, and console entry point metadata.
+
+### Changed
+
+- Bumped runtime, package, workflow, and release metadata to `8.0.0 "Beacon"`.
+- Refactored the command palette, dashboard quick actions, quick action registry, and health/detail navigation to use route IDs instead of tab display names.
+- Raised the release coverage gate to 82% across Justfile, CI, auto-release, docs validation, and release claims.
+- Current docs now validate the live PluginLoader built-in count instead of hardcoding stale tab totals.
+
+### Fixed
+
+- Hardened action execution with a shared command allowlist enforced before preview or execution, including pkexec/flatpak-spawn boundary validation and sudo/shell-interpreter rejection.
+- Reused the shared command policy in the web API executor route and ProfileManager pre-apply snapshot validation.
+- Made the RPM `%check` import smoke blocking and extended it to cover `core.navigation`.
+- Fixed the built-in virtualization plugin load path so it remains part of the live registry count.
+
 ## [7.0.0] - 2026-05-06 "Aegis"
 
 ### Added

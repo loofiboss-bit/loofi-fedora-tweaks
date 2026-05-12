@@ -192,6 +192,9 @@ class ProfileManager:
             return
 
         try:
+            from core.executor.command_policy import CommandValidationError, validate_command_vector
+
+            validate_command_vector([binary] + args)
             result = subprocess.run(
                 [binary] + args,
                 capture_output=True,
@@ -201,6 +204,8 @@ class ProfileManager:
             if result.returncode != 0:
                 err = result.stderr.strip() or result.stdout.strip() or "unknown error"
                 warnings.append(f"Snapshot creation failed ({backend}): {err}")
+        except CommandValidationError as exc:
+            warnings.append(f"Snapshot command rejected ({backend}): {exc}")
         except (subprocess.TimeoutExpired, OSError) as exc:
             warnings.append(f"Snapshot creation failed ({backend}): {exc}")
 

@@ -897,3 +897,43 @@ QPushButton#outputCancelBtn:hover {
     background-color: #fde0dc;
     color: #d20f39;
 }
+
+/* ===== Beacon Navigation Polish ===== */
+QLineEdit#sidebarSearch {
+    margin: 5px 10px;
+    border-radius: 8px;
+    padding: 4px 10px;
+}
+
+QToolButton#notificationBell {
+    border: none;
+    padding: 5px;
+}
+
+QToolButton#notificationBell:hover {
+    background-color: #dce0e8;
+    border-radius: 6px;
+}
+
+QLabel#notificationBadge {
+    background-color: #d20f39;
+    color: #eff1f5;
+    border-radius: 8px;
+    padding: 1px 6px;
+    font-size: 10px;
+    font-weight: bold;
+}
+
+QListWidget#quickActionsList {
+    font-size: 13px;
+}
+
+QListWidget#quickActionsList::item {
+    padding: 6px 10px;
+}
+
+QLabel#quickActionsStatus,
+QLabel#atlasSubheader {
+    color: #6c6f85;
+    font-size: 11px;
+}

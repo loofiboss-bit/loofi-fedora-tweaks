@@ -20,7 +20,7 @@ if not hasattr(os, "sysconf"):
     def _sysconf_unavailable(_name: str) -> int:
         raise ValueError("sysconf not available")
 
-    os.sysconf = _sysconf_unavailable  # type: ignore[attr-defined]
+    os.sysconf = _sysconf_unavailable  # type: ignore[attr-defined, assignment]
 
 
 @dataclass

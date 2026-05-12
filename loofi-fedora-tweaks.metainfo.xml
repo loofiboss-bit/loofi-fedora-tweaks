@@ -41,6 +41,27 @@
   </provides>
 
   <releases>
+    <release version="8.0.0" date="2026-05-12">
+      <description>
+        <p>v8.0.0 "Beacon" - Navigation Reliability &amp; UX Clarity</p>
+        <ul>
+          <li>Added a central route manifest for stable plugin and subroute navigation</li>
+          <li>Refactored command palette, quick actions, dashboard cards, breadcrumbs, and favorites to route IDs</li>
+          <li>Added Favorites v2 migration with stable persisted identifiers</li>
+          <li>Hardened action command validation, snapshot command validation, RPM imports, and packaging manifests</li>
+        </ul>
+      </description>
+    </release>
+    <release version="7.0.0" date="2026-05-06">
+      <description>
+        <p>v7.0.0 "Aegis" - Safe Guided Actions &amp; Fedora 44 Reliability</p>
+        <ul>
+          <li>Added readiness action planning, preview, confirmation, and verification</li>
+          <li>Added Action Inbox and Support Bundle v5 diagnostics</li>
+          <li>Hardened release metadata and workflow drift checks</li>
+        </ul>
+      </description>
+    </release>
     <release version="5.0.0" date="2026-04-30">
       <description>
         <p>v5.0.0 "Aurora" — Fedora KDE 44 Experience &amp; Compatibility</p>
