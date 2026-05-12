@@ -1,65 +1,35 @@
 # Screenshots
 
-Fresh UI screenshots for **v46.0.0 "Navigator"** (captured on February 17, 2026).
+Fresh UI screenshots for **v8.0.0 "Beacon"**, captured from the real PyQt app in May 2026.
 
-## Overview
+## Navigation and System Workflows
 
-### Home Dashboard
+| Home Dashboard | System Monitor |
+| --- | --- |
+| ![Home Dashboard](images/hero-home.png) | ![System Monitor](images/system-monitor.png) |
 
-![Home Dashboard](images/hero-home.png)
-
-### System Monitor
-
-![System Monitor](images/system-monitor.png)
-
-### Maintenance Updates
-
-![Maintenance Updates](images/maintenance-updates.png)
+| Maintenance Updates | Release Readiness |
+| --- | --- |
+| ![Maintenance Updates](images/maintenance-updates.png) | ![Release Readiness](images/release-readiness.png) |
 
 ## Network and Security
 
-### Network Connections
-
-![Network Connections](images/network-connections.png)
-
-### Security and Privacy
-
-![Security and Privacy](images/security-privacy.png)
+| Network Connections | Security and Privacy |
+| --- | --- |
+| ![Network Connections](images/network-connections.png) | ![Security and Privacy](images/security-privacy.png) |
 
 ## Personalization and Tools
 
-### Settings - Appearance
+| Settings Appearance | AI Lab Models |
+| --- | --- |
+| ![Settings Appearance](images/settings-appearance.png) | ![AI Lab Models](images/ai-lab-models.png) |
 
-![Settings Appearance](images/settings-appearance.png)
+## Community
 
-### AI Lab - Models
+| Community Presets | Community Marketplace |
+| --- | --- |
+| ![Community Presets](images/community-presets.png) | ![Community Marketplace](images/community-marketplace.png) |
 
-![AI Lab Models](images/ai-lab-models.png)
+## Advanced Readiness
 
-## Community and Automation
-
-### Community Presets
-
-![Community Presets](images/community-presets.png)
-
-### Community Marketplace
-
-![Community Marketplace](images/community-marketplace.png)
-
-### Agents Dashboard
-
-![Agents Dashboard](images/agents-dashboard.png)
-
-## Admin and Power Features
-
-### Extensions Manager
-
-![Extensions Manager](images/extensions-manager.png)
-
-### Backup Wizard
-
-![Backup Wizard](images/backup-wizard.png)
-
-### Diagnostics - Watchtower
-
-![Diagnostics Watchtower](images/diagnostics-watchtower.png)
+![Release Readiness Advanced](images/release-readiness-advanced.png)

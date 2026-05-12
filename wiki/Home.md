@@ -2,16 +2,16 @@
 
 Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora control center for maintenance, diagnostics, security, performance, and automation.
 
-**Current Version**: v7.0.0 "Aegis" — Safe Guided Fedora Control Center
-**Screenshots Refreshed**: April 2026
+**Current Version**: v8.0.0 "Beacon" — Navigation-first Fedora Control Center
+**Screenshots Refreshed**: May 2026
 
 ![Loofi Fedora Tweaks Dashboard](images/hero-home.png)
 
 ## At a Glance
 
-- **Guided Fedora Assistant**: v4.0 introduces a task-based home dashboard and automated health monitoring.
-- **Health & Repair Autopilot**: 10+ real-time system checks (DNF, Services, Drivers, Security).
-- **Safe Repairs**: Guided repair wizards with risk assessment, command preview, and rollback hints.
+- **Route-aware navigation**: v8 uses stable route IDs for sidebar navigation, command search, quick actions, favorites, breadcrumbs, and dashboard cards.
+- **Task-based dashboard**: Home cards route users into focused maintenance, readiness, and safety workflows.
+- **Safe actions**: Privileged operations use `pkexec`; command preview and execution share the same allowlist checks.
 - **First-Class Atomic Support**: Dedicated `rpm-ostree` diagnostics and upgrade checks for Silverblue/Kinoite.
 - 4 run modes: GUI, CLI (`--json`), daemon scheduler, and Web API.
 - Privileged actions through `pkexec` (never `sudo`).
@@ -28,23 +28,23 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 
 ### Core Workflows
 
-![System Monitor](images/system-monitor.png)
+| System Monitor | Maintenance Updates |
+| --- | --- |
+| ![System Monitor](images/system-monitor.png) | ![Maintenance Updates](images/maintenance-updates.png) |
 
-![Maintenance Updates](images/maintenance-updates.png)
-
-![Network Connections](images/network-connections.png)
-
-![Security and Privacy](images/security-privacy.png)
+| Release Readiness | Security and Privacy |
+| --- | --- |
+| ![Release Readiness](images/release-readiness.png) | ![Security and Privacy](images/security-privacy.png) |
 
 ### Advanced Workflows
 
-![AI Lab Models](images/ai-lab-models.png)
+| Network Connections | Settings Appearance |
+| --- | --- |
+| ![Network Connections](images/network-connections.png) | ![Settings Appearance](images/settings-appearance.png) |
 
-![Community Marketplace](images/community-marketplace.png)
-
-![Agents Dashboard](images/agents-dashboard.png)
-
-![Diagnostics Watchtower](images/diagnostics-watchtower.png)
+| AI Lab Models | Community Marketplace |
+| --- | --- |
+| ![AI Lab Models](images/ai-lab-models.png) | ![Community Marketplace](images/community-marketplace.png) |
 
 ## Wiki Pages
 
@@ -82,7 +82,7 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 ## Quick Links
 
 - GitHub Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Latest Release: [v7.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v7.0.0)
+- Latest Release: [v8.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0)
 - Issues: [Issue Tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - Main README: [README.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/README.md)
 - Architecture Doc: [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)

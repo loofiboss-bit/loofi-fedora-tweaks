@@ -10,6 +10,22 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ## Latest Release
 
+### v8.0.0 "Beacon" (2026-05-12)
+
+**Navigation-first UX and reliability release** focused on route-aware navigation, visual clarity, safety hardening, and packaging trust.
+
+**Key Changes:**
+- Added a central `core/navigation` route manifest for plugin and subroute IDs such as `maintenance:updates`, `system-monitor:processes`, and `security:privacy`
+- Refactored command palette, quick actions, dashboard task cards, and Favorites v2 to use stable route IDs
+- Improved breadcrumbs, sidebar status signals, collapsed sidebar behavior, task cards, and semantic icon coverage
+- Hardened ActionExecutor, web API execution, and profile snapshot pre-apply command validation with a shared allowlist policy
+- Strengthened packaging and release gates for RPM import checks, sdist/wheel contents, assets, translations, entry points, and 82% coverage
+- Published GitHub release assets and COPR build `10451968` for Fedora 44
+
+**Test Suite**: CI, CodeQL, Dependency Graph, branch Auto Release Pipeline, and tag Auto Release Pipeline passed for `c13a94f`; local release checks passed with 84%+ coverage.
+
+---
+
 ### v2.8.0 "API Migration Slice 4" (2026-02-26)
 
 **Policy and validator hardening release** focused on privileged pathway validation, fail-closed IPC safety, and workflow/release-state consistency.

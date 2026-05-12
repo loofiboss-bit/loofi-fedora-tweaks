@@ -1,6 +1,6 @@
 # GUI Tabs Reference
 
-Complete reference for all feature tabs in Loofi Fedora Tweaks v4.0 "Atlas".
+Complete reference for the built-in feature areas in Loofi Fedora Tweaks v8.0.0 "Beacon".
 
 ---
 
@@ -60,7 +60,7 @@ Complete reference for all feature tabs in Loofi Fedora Tweaks v4.0 "Atlas".
 
 ## Navigation Tips
 
-- Use sidebar search to filter tabs by name and description.
-- Use favorites to pin frequently used tabs.
+- Use sidebar search to filter routes by name, aliases, and description.
+- Use Favorites v2 to pin stable plugin or route IDs.
 - Press `Ctrl+K` to open the command palette.
-- Use breadcrumb category links for quick parent navigation.
+- Use route-aware breadcrumbs to confirm the current category and focused page.

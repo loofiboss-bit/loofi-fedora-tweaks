@@ -106,9 +106,9 @@ loofi-fedora-tweaks --cli doctor
 
 Expected output from `--cli info`:
 ```
-Loofi Fedora Tweaks v7.0.0 "Aegis"
+Loofi Fedora Tweaks v8.0.0 "Beacon"
 Python: 3.12.x
-OS: Fedora 43
+OS: Fedora 44
 Package Manager: dnf (or rpm-ostree on Atomic)
 ```
 
