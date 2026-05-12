@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 8.0.0 "Beacon" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 8.1.0 "Breeze" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 
@@ -25,7 +25,7 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   │   ├── action_model.py   # SystemAction with risk/rollback metadata
 │   │   ├── action_executor.py# Centralized safe command runner
 │   │   └── command_policy.py # Shared executor/API command allowlist
-│   ├── navigation/           # Beacon route manifest and route validation
+│   ├── navigation/           # Route manifest, focused navigation areas, and route validation
 │   ├── export/               # Diagnostic export services
 │   │   ├── support_bundle_v5.py# Aegis support diagnostics and redaction
 │   │   ├── support_bundle_v4.py# Compatibility wrapper
@@ -80,23 +80,23 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 
 Built-in feature tabs are sourced from `core/plugins/loader.py` and `PluginRegistry`; release gates validate the live loader count instead of relying on prose counts. Route-level navigation is defined in `core/navigation/manifest.py`, where plugin routes and subroutes such as `maintenance:updates`, `software:apps`, and `system-monitor:processes` are stable IDs.
 
-### Sidebar Categories
+### Focused Navigation Areas
 
-| Order | Category    | Icon                   |
-| ----- | ----------- | ---------------------- |
-| 1     | System      | `overview-dashboard`   |
-| 2     | Packages    | `packages-software`    |
-| 3     | Hardware    | `hardware-performance` |
-| 4     | Network     | `network-connectivity` |
-| 5     | Security    | `security-shield`      |
-| 6     | Appearance  | `appearance-theme`     |
-| 7     | Tools       | `developer-tools`      |
-| 8     | Maintenance | `maintenance-health`   |
+The route manifest keeps the stable plugin and subroute contract. `core/navigation/areas.py` groups those routes into the v8.1 focused sidebar without importing PyQt.
+
+| Order | Area               | Icon                   | Default role                              |
+| ----- | ------------------ | ---------------------- | ----------------------------------------- |
+| 1     | Home               | `home`                 | Launch page, task cards, readiness        |
+| 2     | Software & Updates | `packages-software`    | Apps, repositories, updates, maintenance  |
+| 3     | System & Hardware  | `hardware-performance` | System info, monitoring, hardware, disks  |
+| 4     | Network & Security | `security-shield`      | Connectivity, privacy, firewall, backup   |
+| 5     | Desktop & Settings | `appearance-theme`     | Desktop, app settings, profiles, tooling  |
+| 6     | More               | `developer-tools`      | Advanced, automation, community, and logs |
 
 | Route/plugin ID    | Tab                | File                     | Consolidates                             |
 | ------------------ | ------------------ | ------------------------ | ---------------------------------------- |
-| `atlas_dashboard`  | Atlas Home         | `atlas_dashboard_tab.py` | Task cards and guided entry              |
-| `dashboard`        | Home               | `dashboard_tab.py`       | Dashboard                                |
+| `atlas_dashboard`  | Home               | `atlas_dashboard_tab.py` | Task cards and guided entry              |
+| `dashboard`        | Live Overview      | `dashboard_tab.py`       | Dashboard                                |
 | `system_info`      | System Info        | `system_info_tab.py`     | System details                           |
 | `monitor`          | System Monitor     | `monitor_tab.py`         | Performance + Processes                  |
 | `maintenance`      | Maintenance        | `maintenance_tab.py`     | Updates + Cleanup + Overlays             |
@@ -127,7 +127,7 @@ Built-in feature tabs are sourced from `core/plugins/loader.py` and `PluginRegis
 
 Consolidated tabs use `QTabWidget` for sub-navigation within the tab.
 
-### Sidebar Index And Routes (v8.0.0)
+### Sidebar Index And Routes (v8.1.0)
 
 The sidebar uses a `SidebarIndex` (`dict[str, SidebarEntry]`) keyed by `PluginMetadata.id` for O(1) tab lookups. `SidebarEntry` holds the tree item, page widget, metadata, and status. Route IDs are resolved through `core.navigation`; Favorites v2 persists route/plugin IDs rather than display-name-derived slugs.
 

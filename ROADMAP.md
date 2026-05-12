@@ -61,11 +61,44 @@
 | v5.0.0  | Aurora                          | DONE    | Fedora KDE 44 experience, readiness diagnostics, support bundle v3, packaging split           |
 | v6.0.0  | Compass                         | DONE    | Generic release readiness engine, guided recommendations, support bundle v4                  |
 | v7.0.0  | Aegis                           | DONE    | Safe guided actions, release reliability, Fedora 44 polish, support diagnostics              |
-| v8.0.0  | Beacon                          | ACTIVE  | Navigation-first UX, visual routing clarity, safety and packaging hardening                  |
+| v8.0.0  | Beacon                          | DONE    | Navigation-first UX, visual routing clarity, safety and packaging hardening                  |
+| v8.1.0  | Breeze                          | ACTIVE  | Focused sidebar, airy desktop layout, responsive scaling, and updated screenshots            |
 
 ---
 
-## [ACTIVE] v8.0.0 "Beacon" — Navigation Reliability & UX Clarity
+## [ACTIVE] v8.1.0 "Breeze" — Focused Sidebar & Airy UI
+
+**Theme**: Airier Fedora desktop control center with fewer default menu areas and Wayland-friendly responsive layout.
+**Focus**: Focused navigation, visual breathing room, text alignment, theme consistency, and screenshot refresh without changing the toolkit or adding feature bloat.
+
+### Scope
+
+v8.1.0 "Breeze" builds on the v8 route manifest by changing how the app presents its existing pages. The default sidebar now exposes five primary areas, advanced and automation-heavy tools stay searchable and favoriteable, and the main shell uses font-derived spacing plus screen-aware sizing so the UI behaves better under Wayland, fractional scaling, and narrow aspect ratios.
+
+### Deliverables
+
+- [x] Version metadata aligned to `8.1.0 "Breeze"`
+- [x] v8.0.0 "Beacon" marked completed and v8.1.0 activated
+- [x] PyQt-free `NavigationArea` model beside the route manifest
+- [x] Default sidebar reduced to Home, Software & Updates, System & Hardware, Network & Security, and Desktop & Settings
+- [x] AI, agent, automation, community, logs, virtualization, profiles, extensions, snapshots, gaming, and performance tools hidden from default navigation but preserved through search, favorites, routes, and Advanced mode
+- [x] Atlas Home renamed to Home with live overview available as a Home card/subroute
+- [x] Main shell reworked with focused sidebar, page header, content stack, and compact status footer
+- [x] Shared layout primitives for page headers, sections, action rows, route cards, and adaptive grids
+- [x] Font-metric and screen-geometry layout metrics for Wayland/fractional scaling safety
+- [x] `modern.qss`, `light.qss`, and `highcontrast.qss` aligned to the airy theme contract
+- [x] Startup theme loading honors saved/system theme selection
+- [x] New design screenshots regenerated from the real PyQt app
+
+### Compatibility
+
+- This remains a PyQt6 redesign of the existing app, not a Kirigami migration.
+- Stable `NavigationRoute` IDs, `switch_to_route()`, command palette routes, quick actions, and favorites remain compatible.
+- UI code stays within PyQt boundaries; services/core remain PyQt-free and privileged actions continue through existing command helpers.
+
+---
+
+## [DONE] v8.0.0 "Beacon" — Navigation Reliability & UX Clarity
 
 **Theme**: Navigation-first UX and release reliability without adding major feature tabs.
 **Focus**: Central route manifest, stable favorites, route-aware command surfaces, visual sidebar/breadcrumb polish, command safety, and packaging trust.

@@ -2,23 +2,23 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v8.0.0 "Beacon"
+**Last verified**: v8.1.0 "Breeze"
 
-**Status**: Screenshot filenames remain stable for v8 docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
+**Status**: Screenshot filenames remain stable for v8.1 docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
 
 ## Current Files
 
-- `home-dashboard.png` -- Overview/Home
-- `release-readiness.png` -- Atlas Home > Release Readiness
+- `home-dashboard.png` -- Home
+- `release-readiness.png` -- Home > Release Readiness
 - `release-readiness-advanced.png` -- Release Readiness advanced details
-- `system-monitor.png` -- Overview/System Monitor
-- `maintenance-updates.png` -- Manage/Maintenance updates workflow
+- `system-monitor.png` -- System & Hardware > System Monitor
+- `maintenance-updates.png` -- Software & Updates > Maintenance updates workflow
 - `network-overview.png` -- Network tab overview
 - `security-privacy.png` -- Security & Privacy tab
-- `ai-lab-models.png` -- Developer/AI Lab models view
-- `community-presets.png` -- Automation/Community presets view
-- `community-marketplace.png` -- Automation/Community marketplace view
-- `settings-appearance.png` -- Personalize/Settings appearance
+- `ai-lab-models.png` -- Advanced route > AI Lab models view
+- `community-presets.png` -- Advanced route > Community presets view
+- `community-marketplace.png` -- Advanced route > Community marketplace view
+- `settings-appearance.png` -- Desktop & Settings > Settings appearance
 
 ## Referenced By
 
@@ -35,6 +35,8 @@ User-guide screenshots can be regenerated from real PyQt widgets:
 PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v8_user_guide_screenshots.py
 ```
 
+The capture script uses a temporary clean profile by default so first-run wizard, guided tour, favorites, and local experience-level settings do not affect release images. Set `LOOFI_SCREENSHOT_REAL_HOME=1` only when intentionally capturing a local user profile.
+
 For manual verification after regeneration:
 
 1. Launch the app: `./run.sh` or `PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py`
@@ -49,17 +51,17 @@ For manual verification after regeneration:
 
 | Screenshot | Navigate To | Notes |
 |------------|-------------|-------|
-| `home-dashboard.png` | Overview > Home | Show health score, quick actions |
-| `release-readiness.png` | Overview > Home > Release Readiness | Show grouped beginner readiness findings |
-| `release-readiness-advanced.png` | Overview > Home > Release Readiness > Advanced | Show command/recommendation metadata |
-| `system-monitor.png` | Overview > System Monitor | Show CPU/RAM/process data |
-| `maintenance-updates.png` | Manage > Maintenance > Updates | Show update workflow |
+| `home-dashboard.png` | Home | Show focused sidebar and Home route cards |
+| `release-readiness.png` | Home > Release Readiness | Show grouped beginner readiness findings |
+| `release-readiness-advanced.png` | Home > Release Readiness > Advanced | Show command/recommendation metadata |
+| `system-monitor.png` | System & Hardware > System Monitor | Show CPU/RAM/process data |
+| `maintenance-updates.png` | Software & Updates > Maintenance > Updates | Show update workflow |
 | `network-overview.png` | Network & Security > Network | Show connections view |
 | `security-privacy.png` | Network & Security > Security | Show security score |
-| `ai-lab-models.png` | Developer > AI Lab | Show models list |
-| `community-presets.png` | Automation > Community | Show presets tab |
-| `community-marketplace.png` | Automation > Community | Show marketplace tab |
-| `settings-appearance.png` | Personalize > Settings | Show appearance options |
+| `ai-lab-models.png` | Search/direct route > AI Lab | Show models list |
+| `community-presets.png` | Search/direct route > Community | Show presets tab |
+| `community-marketplace.png` | Search/direct route > Community | Show marketplace tab |
+| `settings-appearance.png` | Desktop & Settings > Settings | Show appearance options |
 
 ### Additional screenshots to consider after v5
 

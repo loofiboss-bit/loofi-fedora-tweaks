@@ -116,10 +116,14 @@ class TestExperienceLevelManagerVisibleTabs(unittest.TestCase):
         self.assertIn("settings", tabs)
         self.assertIn("software", tabs)
         self.assertIn("hardware", tabs)
+        self.assertIn("system_info", tabs)
         self.assertIn("security", tabs)
+        self.assertIn("diagnostics", tabs)
         self.assertNotIn("development", tabs)
         self.assertNotIn("gaming", tabs)
         self.assertNotIn("virtualization", tabs)
+        self.assertNotIn("system-info", tabs)
+        self.assertNotIn("snapshot", tabs)
 
     def test_intermediate_tabs_superset(self):
         """Test intermediate includes all beginner tabs plus more."""

@@ -67,6 +67,33 @@ def _check_pyqt6():
         return False
 
 
+def _startup_theme_name() -> str:
+    """Return the saved or system theme name for GUI startup."""
+    try:
+        from utils.settings import SettingsManager
+
+        settings = SettingsManager.instance()
+        if settings.get("follow_system_theme", False):
+            from services.desktop import DesktopUtils
+
+            theme = DesktopUtils.detect_color_scheme()
+        else:
+            theme = settings.get("theme", "dark")
+    except (ImportError, KeyError, RuntimeError, OSError, ValueError, TypeError) as exc:
+        _log.debug("Theme preference lookup failed, using dark theme: %s", exc)
+        theme = "dark"
+    return theme if theme in {"dark", "light", "highcontrast"} else "dark"
+
+
+def _theme_file_for(name: str) -> str:
+    """Return the QSS filename for a theme name."""
+    return {
+        "dark": "modern.qss",
+        "light": "light.qss",
+        "highcontrast": "highcontrast.qss",
+    }.get(name, "modern.qss")
+
+
 def main():
     """Main entry point with argument parsing."""
     parser = argparse.ArgumentParser(
@@ -171,11 +198,12 @@ def main():
             elif translator.load(f"loofi_{locale.split('_')[0]}", translations_path):
                 app.installTranslator(translator)
 
-            # Load QSS Stylesheet
+            # Load QSS Stylesheet from saved/system preference.
+            theme_name = _startup_theme_name()
             style_file = os.path.join(
                 os.path.dirname(os.path.abspath(__file__)),
                 "assets",
-                "modern.qss",
+                _theme_file_for(theme_name),
             )
             if os.path.exists(style_file):
                 with open(style_file, "r") as f:

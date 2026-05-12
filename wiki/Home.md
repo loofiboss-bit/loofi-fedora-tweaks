@@ -2,15 +2,16 @@
 
 Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora control center for maintenance, diagnostics, security, performance, and automation.
 
-**Current Version**: v8.0.0 "Beacon" — Navigation-first Fedora Control Center
+**Current Version**: v8.1.0 "Breeze" — Focused Fedora Control Center
 **Screenshots Refreshed**: May 2026
 
 ![Loofi Fedora Tweaks Dashboard](images/hero-home.png)
 
 ## At a Glance
 
-- **Route-aware navigation**: v8 uses stable route IDs for sidebar navigation, command search, quick actions, favorites, breadcrumbs, and dashboard cards.
-- **Task-based dashboard**: Home cards route users into focused maintenance, readiness, and safety workflows.
+- **Focused navigation**: v8.1 uses five default areas for everyday Fedora workflows while preserving stable route IDs for search, favorites, quick actions, breadcrumbs, and dashboard cards.
+- **Task-based Home**: Home cards route users into focused maintenance, readiness, and safety workflows.
+- **Advanced tools on demand**: AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, Snapshots, and Loofi Link remain searchable and favoriteable without crowding the sidebar.
 - **Safe actions**: Privileged operations use `pkexec`; command preview and execution share the same allowlist checks.
 - **First-Class Atomic Support**: Dedicated `rpm-ostree` diagnostics and upgrade checks for Silverblue/Kinoite.
 - 4 run modes: GUI, CLI (`--json`), daemon scheduler, and Web API.
@@ -82,7 +83,7 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 ## Quick Links
 
 - GitHub Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Latest Release: [v8.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0)
+- Latest Release: [v8.1.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.1.0)
 - Issues: [Issue Tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - Main README: [README.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/README.md)
 - Architecture Doc: [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)

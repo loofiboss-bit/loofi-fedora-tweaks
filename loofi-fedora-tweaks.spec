@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        8.0.0
+Version:        8.1.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -38,7 +38,7 @@ VM Quick-Create, VFIO GPU Passthrough, Loofi Link
 Mesh, State Teleport, AI Lab, Security Center,
 Director, Containers, and Replicator IaC.
 
-Fedora KDE 44 remains the supported target for v8.0.0 Beacon.
+Fedora KDE 44 remains the supported target for v8.1.0 Breeze.
 Fedora 45 remains preview-only and advisory.
 
 %package api
@@ -164,6 +164,14 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Wed May 13 2026 Loofi <loofi@example.com> - 8.1.0-1
+- v8.1.0 "Breeze" - Focused sidebar, airy desktop layout, and responsive scaling
+- Added PyQt-free focused navigation areas beside the route manifest
+- Reworked the main window shell with roomier sidebar, page header, and screen-aware sizing
+- Added shared layout primitives for page headers, sections, action rows, route cards, and adaptive grids
+- Updated dark, light, and high-contrast themes with the new airy layout contract
+- Refreshed user-guide and wiki screenshots from the redesigned PyQt UI
+
 * Tue May 12 2026 Loofi <loofi@example.com> - 8.0.0-1
 - v8.0.0 "Beacon" - Navigation reliability, visual clarity, safety hardening, and packaging trust
 - Added core.navigation route manifest for plugin and subroute navigation

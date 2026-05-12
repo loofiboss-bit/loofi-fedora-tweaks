@@ -18,8 +18,10 @@ PYPROJECT = ROOT / "pyproject.toml"
 EXPECTED_SOURCE_SUFFIXES = (
     "main.py",
     "version.py",
+    "core/navigation/areas.py",
     "core/navigation/manifest.py",
     "core/executor/command_policy.py",
+    "ui/layout_primitives.py",
     "ui/main_window.py",
     "assets/modern.qss",
     "assets/icons/icon-map.json",

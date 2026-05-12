@@ -5,8 +5,9 @@ Shared helpers for tab widgets.
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QTabWidget
 
-# Standard content margins for tab root layouts
-CONTENT_MARGINS = (20, 16, 20, 16)
+# Standard content margins for tab root layouts.  Keep this generous enough for
+# high-DPI Wayland sessions where cramped fixed layouts become hard to scan.
+CONTENT_MARGINS = (28, 24, 28, 24)
 
 
 def configure_top_tabs(tab_widget: QTabWidget) -> None:

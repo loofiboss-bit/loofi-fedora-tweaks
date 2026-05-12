@@ -88,9 +88,47 @@ class TestNavigationManifest(unittest.TestCase):
         self.assertTrue({route.id for route in routes_for_palette()}.issubset(route_ids))
         self.assertTrue({route.id for route in routes_for_quick_actions()}.issubset(route_ids))
 
+    def test_focused_areas_are_unique_and_default_to_five(self):
+        from core.navigation import all_areas, default_areas
+
+        areas = all_areas()
+        area_ids = [area.id for area in areas]
+        self.assertEqual(len(area_ids), len(set(area_ids)))
+        self.assertEqual(
+            [area.label for area in default_areas()],
+            [
+                "Home",
+                "Software & Updates",
+                "System & Hardware",
+                "Network & Security",
+                "Desktop & Settings",
+            ],
+        )
+
+    def test_area_visibility_keeps_advanced_routes_searchable(self):
+        from core.navigation import (
+            HIDDEN_BY_DEFAULT_PLUGIN_IDS,
+            is_plugin_visible_for_level,
+            routes_for_palette,
+        )
+
+        self.assertFalse(is_plugin_visible_for_level("ai_lab", "beginner"))
+        self.assertFalse(is_plugin_visible_for_level("agents", "beginner"))
+        palette_plugin_ids = {route.plugin_id for route in routes_for_palette()}
+        for plugin_id in HIDDEN_BY_DEFAULT_PLUGIN_IDS:
+            self.assertIn(plugin_id, palette_plugin_ids)
+
+    def test_visible_plugin_ids_match_real_plugin_ids(self):
+        from core.navigation import DEFAULT_PLUGIN_IDS, INTERMEDIATE_PLUGIN_IDS
+
+        self.assertIn("system_info", DEFAULT_PLUGIN_IDS)
+        self.assertNotIn("system-info", DEFAULT_PLUGIN_IDS)
+        self.assertIn("snapshots", INTERMEDIATE_PLUGIN_IDS)
+        self.assertNotIn("snapshot", INTERMEDIATE_PLUGIN_IDS)
+
     @patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"})
     def test_manifest_validates_against_live_builtin_registry_and_icons(self):
-        from core.navigation import all_routes, validate_routes
+        from core.navigation import all_routes, validate_areas, validate_routes
         from core.plugins.loader import PluginLoader
         from core.plugins.registry import PluginRegistry
         from ui.icon_pack import resolve_icon_path
@@ -102,6 +140,7 @@ class TestNavigationManifest(unittest.TestCase):
             plugin_routes = {route.id for route in all_routes() if ":" not in route.id}
             self.assertTrue(set(loaded).issubset(plugin_routes))
             self.assertEqual(validate_routes(loaded, resolve_icon_path), [])
+            self.assertEqual(validate_areas(loaded), [])
         finally:
             PluginRegistry.reset()
 

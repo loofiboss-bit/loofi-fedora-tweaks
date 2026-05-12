@@ -6,7 +6,10 @@ from __future__ import annotations
 import os
 import sys
 import time
+from contextlib import contextmanager
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Iterator
 
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "loofi-fedora-tweaks"
@@ -17,9 +20,6 @@ sys.path.insert(0, str(SRC))
 
 from PyQt6.QtCore import QSize, Qt  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QDialog, QScrollArea  # noqa: E402
-
-from ui.main_window import MainWindow  # noqa: E402
-from ui.release_readiness_dialog import ReleaseReadinessDialog  # noqa: E402
 
 
 WINDOW_SIZE = QSize(1400, 900)
@@ -52,7 +52,45 @@ def _save_widget(widget, filename: str) -> None:
     print(f"captured {path.relative_to(ROOT)}")
 
 
+@contextmanager
+def _screenshot_home() -> Iterator[None]:
+    """Use a deterministic profile so captures do not depend on local user state."""
+    if os.environ.get("LOOFI_SCREENSHOT_REAL_HOME") == "1":
+        yield
+        return
+
+    original_home = os.environ.get("HOME")
+    with TemporaryDirectory(prefix="loofi-screenshots-") as tmp_home:
+        os.environ["HOME"] = tmp_home
+        config_dir = Path(tmp_home) / ".config" / "loofi-fedora-tweaks"
+        config_dir.mkdir(parents=True, exist_ok=True)
+        (config_dir / "first_run_complete").touch()
+        (config_dir / "tour_complete").touch()
+        (config_dir / "favorites.json").write_text('{"version": 2, "favorites": []}\n', encoding="utf-8")
+        (config_dir / "settings.json").write_text(
+            (
+                "{\n"
+                '  "theme": "dark",\n'
+                '  "follow_system_theme": false,\n'
+                '  "experience_level": "beginner",\n'
+                '  "restore_last_tab": false,\n'
+                '  "last_tab_index": 0\n'
+                "}\n"
+            ),
+            encoding="utf-8",
+        )
+        try:
+            yield
+        finally:
+            if original_home is None:
+                os.environ.pop("HOME", None)
+            else:
+                os.environ["HOME"] = original_home
+
+
 def _capture_main_window(app: QApplication) -> None:
+    from ui.main_window import MainWindow
+
     window = MainWindow()
     window.resize(WINDOW_SIZE)
     window.show()
@@ -79,6 +117,8 @@ def _wait_for_readiness(dialog: ReleaseReadinessDialog, app: QApplication, timeo
 
 
 def _capture_release_readiness(app: QApplication) -> None:
+    from ui.release_readiness_dialog import ReleaseReadinessDialog
+
     dialog = ReleaseReadinessDialog(auto_run=True)
     dialog.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)
     dialog.resize(QSize(1100, 820))
@@ -104,15 +144,16 @@ def _capture_release_readiness(app: QApplication) -> None:
 
 def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
-    app = QApplication.instance() or QApplication(sys.argv)
-    app.setStyle("Fusion")
+    with _screenshot_home():
+        app = QApplication.instance() or QApplication(sys.argv)
+        app.setStyle("Fusion")
 
-    qss_path = SRC / "assets" / "modern.qss"
-    if qss_path.exists():
-        app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+        qss_path = SRC / "assets" / "modern.qss"
+        if qss_path.exists():
+            app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
 
-    _capture_main_window(app)
-    _capture_release_readiness(app)
+        _capture_main_window(app)
+        _capture_release_readiness(app)
     return 0
 
 

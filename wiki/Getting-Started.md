@@ -45,29 +45,26 @@ The wizard creates a profile at `~/.config/loofi-fedora-tweaks/profile.json` and
 
 ## GUI Navigation
 
-### Sidebar Categories
+### Focused Sidebar
 
-The main window features a collapsible sidebar organized into **8 activity-based categories**:
+The main window uses five default navigation areas:
 
-| Icon | Category | Purpose |
-|------|----------|---------|
-| 🏠 | **Overview** | Dashboard, system info, system monitor |
-| 📦 | **Manage** | Software, maintenance, snapshots, virtualization, extensions, backup |
-| 🔧 | **Hardware** | Hardware info, performance tuning, storage, gaming |
-| 🌐 | **Network & Security** | Network settings, Loofi Link mesh, security & privacy |
-| 🎨 | **Personalize** | Desktop customization, profiles, app settings |
-| 💻 | **Developer** | Development tools, AI Lab, State Teleport |
-| 🤖 | **Automation** | Agents, automation scheduler |
-| 📊 | **Health & Logs** | Health timeline, logs viewer, diagnostics, community |
+| Area | Purpose |
+|------|---------|
+| **Home** | Launch dashboard, task cards, and release readiness |
+| **Software & Updates** | Software, repositories, maintenance, snapshots, and virtualization |
+| **System & Hardware** | System information, monitoring, hardware, storage, health, and diagnostics |
+| **Network & Security** | Network settings, backup, firewall, privacy, and hardening |
+| **Desktop & Settings** | Desktop customization, app settings, profiles, extensions, and developer tools |
 
-**Tip**: Click the category name to collapse/expand the sidebar for more screen space.
+Advanced tools such as AI Lab, Agents, Automation, Logs, Community, Teleport, Gaming, Performance, Profiles, Extensions, Snapshots, Virtualization, and Loofi Link are available through search, favorites, command palette, direct routes, or Advanced mode.
 
 ### Key UI Features
 
 - **Sidebar Search**: Type to filter tabs by name
-- **Favorites**: Right-click any tab to add it to favorites (quick access at top of sidebar)
+- **Favorites**: Pin any route, including advanced routes hidden from the default sidebar
 - **Command Palette**: Press `Ctrl+K` to open the global command palette for quick navigation and actions
-- **Breadcrumb Bar**: Shows current category and tab location
+- **Page Header**: Shows current area, route context, and common actions
 - **Toast Notifications**: Transient success/error messages appear in the status bar
 - **Status Bar Undo**: Click the undo button to revert the last privileged action (via `HistoryManager`)
 

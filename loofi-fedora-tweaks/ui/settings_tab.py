@@ -283,6 +283,8 @@ class SettingsTab(QWidget, PluginInterface):
         level = level_map.get(index, ExperienceLevel.BEGINNER)
         ExperienceLevelManager.set_level(level)
         self._experience_desc.setText(self._experience_description(level))
+        if self._main_window and hasattr(self._main_window, "apply_experience_level"):
+            self._main_window.apply_experience_level(level)
 
     def _on_theme_changed(self, theme_name: str):
         self._mgr.set("theme", theme_name)

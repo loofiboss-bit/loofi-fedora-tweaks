@@ -19,6 +19,12 @@ CATEGORY_ORDER: dict[str, int] = {
 
 # Category icons — semantic ids resolved by ui/icon_pack.py.
 CATEGORY_ICONS: dict[str, str] = {
+    "Home": "home",
+    "Software & Updates": "packages-software",
+    "System & Hardware": "hardware-performance",
+    "Network & Security": "security-shield",
+    "Desktop & Settings": "appearance-theme",
+    "More": "developer-tools",
     "System": "overview-dashboard",
     "Packages": "packages-software",
     "Hardware": "hardware-performance",

@@ -4,6 +4,29 @@
 
 All notable changes to this project will be documented in this file.
 
+## [8.1.0] - 2026-05-13 "Breeze"
+
+### Added
+
+- **Focused Navigation Areas**: Added a PyQt-free `NavigationArea` model that groups stable route/plugin IDs into five default sidebar areas: Home, Software & Updates, System & Hardware, Network & Security, and Desktop & Settings.
+- **Shared Layout Primitives**: Added `PageHeader`, `Section`, `ActionRow`, `RouteCard`, and `AdaptiveGrid` for roomier page structure and consistent wrapping.
+- **Scaling Smoke Coverage**: Added offscreen fractional-scale startup checks for `QT_SCALE_FACTOR=1`, `1.25`, `1.5`, and `2`.
+
+### Changed
+
+- Bumped runtime, package, workflow, and release metadata to `8.1.0 "Breeze"`.
+- Reworked the main window shell with an airier sidebar, clearer page header, compact status footer, and screen-aware initial sizing.
+- Hid AI/agent/automation and other advanced pages from default navigation while preserving direct routes, command search, favorites, and Advanced mode.
+- Renamed Atlas Home to Home and moved the live overview behind a Home route card instead of a second top-level Home item.
+- Updated dark, light, and high-contrast themes with calmer KDE-native spacing, stronger selected states, lighter card borders, and safer text wrapping.
+- Made GUI startup honor saved/system theme selection instead of always loading `modern.qss`.
+
+### Fixed
+
+- Fixed experience-level ID drift by aligning visible tabs with real plugin IDs such as `system_info` and `snapshots`.
+- Fixed hidden-route compatibility so advanced pages remain searchable and routable even when absent from the default sidebar.
+- Fixed package manifest coverage for the new navigation and layout modules.
+
 ## [8.0.0] - 2026-05-12 "Beacon"
 
 ### Added

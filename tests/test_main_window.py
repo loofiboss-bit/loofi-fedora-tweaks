@@ -677,6 +677,7 @@ def _install_stubs():
     qt_widgets.QStackedWidget = _DummyStackedWidget
     qt_widgets.QScrollArea = _DummyScrollArea
     qt_widgets.QTabWidget = _Dummy
+    qt_widgets.QGridLayout = _Dummy
     qt_widgets.QLabel = _DummyLabel
     qt_widgets.QPushButton = _DummyButton
     qt_widgets.QLineEdit = _DummyLineEdit
@@ -690,6 +691,9 @@ def _install_stubs():
     qt_widgets.QGroupBox = _Dummy
     qt_widgets.QApplication = _DummyQApplication
     qt_widgets.QToolButton = _DummyToolButton
+    qt_widgets.QSizePolicy = types.SimpleNamespace(
+        Policy=types.SimpleNamespace(Fixed=0, Expanding=1, Minimum=2)
+    )
     qt_widgets.QStyledItemDelegate = _Dummy
     qt_widgets.QStyleOptionViewItem = _Dummy
 
@@ -877,6 +881,15 @@ def _install_stubs():
         "maintenance:updates": _StubRoute("maintenance:updates", "Updates", "maintenance", description="Update route", aliases=("Updates", "Update System"), subroute="updates"),
         "maintenance:cleanup": _StubRoute("maintenance:cleanup", "Cleanup", "maintenance", description="Cleanup route", aliases=("Cleanup",), subroute="cleanup"),
     }
+
+    class _StubArea:
+        def __init__(self, area_id, label, icon="info", plugin_ids=()):
+            self.id = area_id
+            self.label = label
+            self.icon = icon
+            self.description = label
+            self.plugin_ids = tuple(plugin_ids)
+            self.advanced_only = False
     _aliases = {}
     for route in _routes.values():
         _aliases[route.id.lower().replace("_", "-")] = route
@@ -892,9 +905,13 @@ def _install_stubs():
         return _routes.get(key) or _aliases.get(normalized) or _aliases.get(key.lower())
 
     nav_mod.NavigationRoute = _StubRoute
+    nav_mod.NavigationArea = _StubArea
     nav_mod.resolve = _resolve
     nav_mod.get_route = lambda route_id: _routes.get(route_id)
     nav_mod.all_routes = lambda: tuple(_routes.values())
+    nav_mod.area_for_plugin = lambda plugin_id: _StubArea("system_hardware", "System")
+    nav_mod.is_plugin_visible_for_level = lambda plugin_id, level, favorites=None: True
+    nav_mod.sidebar_areas_for_level = lambda level: (_StubArea("system_hardware", "System", plugin_ids=("hardware", "maintenance")),)
     sys.modules["core.navigation"] = nav_mod
     core_mod.navigation = nav_mod
 
@@ -1059,6 +1076,7 @@ _MODULE_KEYS = [
     "ui",
     "ui.base_tab",
     "ui.tab_utils",
+    "ui.layout_primitives",
     "ui.lazy_widget",
     "ui.doctor",
     "ui.command_palette",
@@ -1104,6 +1122,7 @@ def setUpModule():
     _install_stubs()
     # Force re-import so stubs are used
     sys.modules.pop("ui.main_window", None)
+    sys.modules.pop("ui.layout_primitives", None)
     sys.modules.pop("ui", None)
     importlib.import_module("ui.main_window")
 
@@ -1143,6 +1162,7 @@ def _make_window(skip_init=False):
         win._sidebar_container = _Dummy()
         win._sidebar_toggle = _DummyButton()
         win._sidebar_collapsed = False
+        win._auto_sidebar_collapsed = False
         win._sidebar_expanded_width = 210
         win._line_height = 14
         win.sidebar_search = _DummyLineEdit()

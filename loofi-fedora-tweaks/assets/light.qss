@@ -937,3 +937,118 @@ QLabel#atlasSubheader {
     color: #6c6f85;
     font-size: 11px;
 }
+
+/* ===== Focused Airy Redesign ===== */
+QWidget#sidebarContainer {
+    background-color: #f5f7fa;
+    border-right: 1px solid #d8dee8;
+}
+
+QTreeWidget#sidebar {
+    background-color: #f5f7fa;
+    padding-top: 4px;
+    font-size: 10.75pt;
+}
+
+QTreeWidget#sidebar::item {
+    height: 44px;
+    padding-left: 14px;
+    margin: 3px 4px;
+    border-radius: 8px;
+    color: #4e5969;
+}
+
+QTreeWidget#sidebar::item:hover {
+    background-color: #e7ecf3;
+    color: #1e2937;
+}
+
+QTreeWidget#sidebar::item:selected {
+    background-color: #dfeafa;
+    color: #1f5f91;
+    border-left: 3px solid #3178b8;
+}
+
+QLineEdit#sidebarSearch {
+    margin: 0;
+    min-height: 34px;
+    border-radius: 8px;
+    background-color: #ffffff;
+    border: 1px solid #c8d1df;
+    color: #17202c;
+}
+
+QPushButton#sidebarToggle {
+    min-height: 32px;
+    border-radius: 8px;
+    color: #586579;
+}
+
+QFrame#pageHeader {
+    background-color: #ffffff;
+    border-bottom: 1px solid #d8dee8;
+}
+
+QPushButton#bcCategory,
+QPushButton#pageHeaderEyebrow {
+    color: #28679b;
+    font-size: 9.5pt;
+    font-weight: 600;
+    background-color: transparent;
+    border: none;
+    padding: 0;
+    text-align: left;
+}
+
+QLabel#bcPage,
+QLabel#pageHeaderTitle {
+    color: #17202c;
+    font-size: 17pt;
+    font-weight: 700;
+}
+
+QLabel#bcDesc,
+QLabel#pageHeaderDescription {
+    color: #5c6878;
+    font-size: 10.25pt;
+    font-style: normal;
+}
+
+QFrame#contentSection,
+QFrame#routeCard,
+QFrame#dashboardCard {
+    background-color: #ffffff;
+    border: 1px solid #d6deea;
+    border-radius: 8px;
+}
+
+QFrame#routeCard:hover {
+    border-color: #3178b8;
+    background-color: #f4f8fc;
+}
+
+QLabel#routeCardTitle {
+    color: #17202c;
+    font-size: 12.5pt;
+    font-weight: 700;
+}
+
+QLabel#routeCardDescription {
+    color: #5c6878;
+    font-size: 10pt;
+}
+
+QGroupBox {
+    border-radius: 8px;
+    margin-top: 24px;
+    padding: 20px 16px 16px 16px;
+}
+
+QTabBar::tab {
+    padding: 11px 20px;
+    margin-right: 4px;
+}
+
+QScrollArea#pageScroll {
+    background-color: #fafbfc;
+}

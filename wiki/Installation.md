@@ -106,7 +106,7 @@ loofi-fedora-tweaks --cli doctor
 
 Expected output from `--cli info`:
 ```
-Loofi Fedora Tweaks v8.0.0 "Beacon"
+Loofi Fedora Tweaks v8.1.0 "Breeze"
 Python: 3.12.x
 OS: Fedora 44
 Package Manager: dnf (or rpm-ostree on Atomic)

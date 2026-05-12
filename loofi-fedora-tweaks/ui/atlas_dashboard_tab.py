@@ -1,6 +1,6 @@
 from PyQt6.QtWidgets import (
     QWidget, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QFrame, QGridLayout, QScrollArea
+    QPushButton, QFrame, QScrollArea
 )
 from PyQt6.QtCore import Qt
 from .base_tab import BaseTab
@@ -8,6 +8,7 @@ from core.plugins.metadata import PluginMetadata
 from core.diagnostics.task_dashboard import TaskManager, DashboardTask
 from core.diagnostics.health_registry import HealthRegistry
 from .icon_pack import get_qicon
+from .layout_primitives import AdaptiveGrid, RouteCard, make_page_title
 from utils.log import get_logger
 from version import __version__, __version_codename__
 
@@ -21,12 +22,12 @@ class TaskCard(QFrame):
     def __init__(self, task: DashboardTask, callback, parent=None):
         super().__init__(parent)
         self.task = task
-        self.setObjectName("dashboardCard")
+        self.setObjectName("routeCard")
         self.setCursor(Qt.CursorShape.PointingHandCursor)
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(20, 20, 20, 20)
-        layout.setSpacing(10)
+        layout.setContentsMargins(18, 16, 18, 16)
+        layout.setSpacing(12)
 
         # Icon and Title
         header = QHBoxLayout()
@@ -38,21 +39,22 @@ class TaskCard(QFrame):
         header.addWidget(icon_label)
 
         title = QLabel(task.title)
-        title.setObjectName("healthTitle")
+        title.setObjectName("routeCardTitle")
+        title.setWordWrap(True)
         header.addWidget(title, 1)
         layout.addLayout(header)
 
         # Description
         desc = QLabel(task.description)
         desc.setWordWrap(True)
-        desc.setObjectName("healthRecs")
+        desc.setObjectName("routeCardDescription")
         layout.addWidget(desc)
 
         layout.addStretch()
 
         # Action Button
         self.btn = QPushButton("View Task")
-        self.btn.setObjectName("quickActionButton")
+        self.btn.setObjectName("primaryAction")
         self.btn.clicked.connect(lambda: callback(task.id))
         layout.addWidget(self.btn)
 
@@ -69,11 +71,11 @@ class AtlasDashboardTab(BaseTab):
     """
     _METADATA = PluginMetadata(
         id="atlas_dashboard",
-        name="Atlas Home",
+        name="Home",
         description="Guided task-based control center for your Fedora system.",
         category="System",
         icon="home",
-        badge="new",
+        badge="recommended",
         order=0,
     )
 
@@ -95,17 +97,24 @@ class AtlasDashboardTab(BaseTab):
 
     def _setup_ui(self):
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(20)
+        layout.setContentsMargins(32, 28, 32, 28)
+        layout.setSpacing(18)
 
         # Header
-        header = QLabel(f"Loofi Fedora Tweaks v{__version__} \"{__version_codename__}\"")
-        header.setObjectName("header")
+        header = make_page_title(f"Loofi Fedora Tweaks v{__version__} \"{__version_codename__}\"")
         layout.addWidget(header)
 
-        subheader = QLabel("Guided Fedora Control Center — What would you like to do today?")
+        subheader = QLabel("Fedora control center for everyday maintenance, safety, and setup tasks.")
         subheader.setObjectName("atlasSubheader")
+        subheader.setWordWrap(True)
         layout.addWidget(subheader)
+
+        overview_card = RouteCard(
+            "System overview",
+            "Open the live dashboard for health, resource graphs, recent actions, and quick actions.",
+        )
+        overview_card.mousePressEvent = lambda event: self._open_route("dashboard")  # type: ignore[method-assign]
+        layout.addWidget(overview_card)
 
         # Task Grid
         scroll = QScrollArea()
@@ -113,8 +122,10 @@ class AtlasDashboardTab(BaseTab):
         scroll.setFrameShape(QFrame.Shape.NoFrame)
 
         grid_container = QWidget()
-        self.grid = QGridLayout(grid_container)
-        self.grid.setSpacing(20)
+        self.grid = AdaptiveGrid(min_column_width=300, parent=grid_container)
+        grid_layout = QVBoxLayout(grid_container)
+        grid_layout.setContentsMargins(0, 0, 0, 0)
+        grid_layout.addWidget(self.grid)
 
         self._refresh_tasks()
 
@@ -125,16 +136,23 @@ class AtlasDashboardTab(BaseTab):
 
     def _refresh_tasks(self):
         # Clear existing
-        while self.grid.count():
-            item = self.grid.takeAt(0)
-            if item.widget():
-                item.widget().deleteLater()
+        for card in list(getattr(self.grid, "_items", [])):
+            card.deleteLater()
+        self.grid._items.clear()
+        self.grid._columns = 0
 
         tasks = self.task_manager.get_tasks()
-        for i, task in enumerate(tasks):
-            row, col = divmod(i, 2)
+        for task in tasks:
             card = TaskCard(task, self._on_task_clicked)
-            self.grid.addWidget(card, row, col)
+            self.grid.add_card(card)
+
+    def _open_route(self, route_id: str):
+        main_window = self.main_window
+        if main_window is None:
+            main_window = self.window() if hasattr(self, "window") else None
+        switch = getattr(main_window, "switch_to_route", None)
+        if callable(switch):
+            switch(route_id)
 
     def _on_task_clicked(self, task_id: str):
         logger.info("Task clicked: %s", task_id)

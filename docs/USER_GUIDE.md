@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 7.0.0 "Aegis" — Safe Guided Actions
+> Version 8.1.0 "Breeze" — Focused Sidebar and Airy Desktop Layout
 
 This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
 
@@ -19,7 +19,8 @@ Loofi Fedora Tweaks is a Fedora control center with three entry modes:
 
 Core behavior:
 
-- Plugin-based tabs loaded via registry and lazy widgets
+- Focused navigation areas backed by stable plugin and route IDs
+- Plugin-based pages loaded via registry and lazy widgets
 - Privileged actions executed with `pkexec` (never `sudo`)
 - Automatic Fedora mode detection (`dnf` vs `rpm-ostree`)
 - Safety confirmations for dangerous operations
@@ -67,10 +68,10 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 Main areas:
 
-- Sidebar: categories and tabs
-- Header area: tab title and context
-- Main pane: active tools
-- Bottom status area: app state and shortcuts
+- Sidebar: five focused areas by default, with search and favorites
+- Header area: current page title, route context, and actions
+- Main pane: active tools with roomier sections and adaptive cards
+- Footer: compact app state and shortcuts
 
 Primary shortcuts:
 
@@ -80,16 +81,15 @@ Primary shortcuts:
 - `F1` shortcuts help
 - `Ctrl+Q` quit
 
-Current category model:
+Default sidebar areas:
 
-- Overview
-- Manage
-- Hardware
+- Home
+- Software & Updates
+- System & Hardware
 - Network & Security
-- Personalize
-- Developer
-- Automation
-- Health & Logs
+- Desktop & Settings
+
+Advanced and specialized pages are not removed. AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, Snapshots, and Loofi Link remain available from search, favorites, command palette, direct routes, and Advanced mode.
 
 ![Home Dashboard](images/user-guide/home-dashboard.png)
 
@@ -99,8 +99,8 @@ Current category model:
 
 ### Daily (2–3 minutes)
 
-1. Check **Overview → Atlas Home → Release Readiness** after install or system upgrades.
-2. Check **Overview → System Monitor** for abnormal CPU/RAM/process usage.
+1. Check **Home → Release Readiness** after install or system upgrades.
+2. Check **System & Hardware → System Monitor** for abnormal CPU/RAM/process usage.
 3. Check **Network & Security → Security & Privacy** if score dropped or alerts appear.
 
 ![Release Readiness](images/user-guide/release-readiness.png)
@@ -109,10 +109,10 @@ Current category model:
 
 ### Weekly Maintenance
 
-1. Run updates from **Manage → Maintenance → Updates**.
-2. Run cleanup actions from **Manage → Maintenance → Cleanup**.
+1. Run updates from **Software & Updates → Maintenance → Updates**.
+2. Run cleanup actions from **Software & Updates → Maintenance → Cleanup**.
 3. Validate security score and firewall status.
-4. Refresh snapshots before risky changes.
+4. Refresh snapshots before risky changes from search, favorites, or Advanced mode.
 
 ![Maintenance Updates](images/user-guide/maintenance-updates.png)
 
@@ -128,70 +128,65 @@ loofi support-bundle
 
 ---
 
-## 5) Tabs by Category
+## 5) Areas and Routes
 
-## Overview
+## Home
 
 - **Home**: health score, quick status, fast navigation
-- **Release Readiness**: dashboard card for Fedora KDE 44 support checks and safe guided action planning
+- **Release Readiness**: Home card for Fedora KDE 44 support checks and safe guided action planning
+
+## Software & Updates
+
+- **Software**: applications, repositories, Flatpak, RPM Fusion, Flathub, and COPR sources
+- **Maintenance**: updates, cleanup, smart updates, and Atomic overlays
+- **Snapshots**: create/delete/refresh snapshot timeline, visible in Advanced mode or by search/favorite
+- **Virtualization**: VM operations, passthrough checks, and disposable flows, visible in Advanced mode or by search/favorite
+
+## System & Hardware
+
 - **System Info**: OS/kernel/hardware/system metadata
 - **System Monitor**: performance and process analysis
-
-## Manage
-
-- **Software**: applications and repositories
-- **Maintenance**: updates, cleanup, overlays on Atomic systems
-- **Snapshots**: create/delete/refresh snapshot timeline
-- **Storage**: disk usage, SMART, TRIM, filesystem checks
-
-## Hardware
-
 - **Hardware**: power/governor/fan/audio/Bluetooth helper controls
-- **Performance**: workload-based tuning recommendation/apply flow
-- **Gaming**: gaming-focused optimization shortcuts
+- **Storage**: disk usage, SMART, TRIM, filesystem checks
+- **Health**: historical health timeline/trends
+- **Diagnostics**: service/system checks and support actions
+- **Performance** and **Gaming**: advanced tuning shortcuts, visible in Advanced mode or by search/favorite
 
 ## Network & Security
 
 - **Network**: connections, DNS, privacy, monitoring
-- **Loofi Link**: local peer discovery, clipboard, file drop
 - **Security & Privacy**: score, firewall, telemetry, hardening actions
+- **Backup**: guided backup and restore workflows
+- **Loofi Link**: local peer discovery, clipboard, file drop, visible in Advanced mode or by search/favorite
 
 ![Network Overview](images/user-guide/network-overview.png)
 
 ![Security and Privacy](images/user-guide/security-privacy.png)
 
-## Personalize
+## Desktop & Settings
 
 - **Desktop**: desktop/theming controls
-- **Profiles**: save/apply/import/export profile states
 - **Settings**: appearance, behavior, advanced options
+- **Profiles**: save/apply/import/export profile states, visible in Advanced mode or by search/favorite
+- **Extensions**: desktop extension compatibility, visible in Advanced mode or by search/favorite
+- **Development Tools**: containers and developer setup, visible in Intermediate/Advanced mode or by search/favorite
 
 ![Settings Appearance](images/user-guide/settings-appearance.png)
 
-## Developer
+## More and Advanced
 
-- **Development**: container/developer utilities
 - **AI Lab**: models, voice, and knowledge indexing
-- **Diagnostics**: service/system checks and support actions
-- **Virtualization**: VM operations, passthrough checks, disposable flows
-
-![AI Lab Models](images/user-guide/ai-lab-models.png)
-
-## Automation
-
 - **Agents**: local agent dashboard and controls
 - **Automation**: scheduler and replicator workflows
 - **Community**: presets and marketplace actions
+- **Logs**: filtered log inspection and export tools
 - **State Teleport**: capture/restore workspace state packages
+
+![AI Lab Models](images/user-guide/ai-lab-models.png)
 
 ![Community Presets](images/user-guide/community-presets.png)
 
 ![Community Marketplace](images/user-guide/community-marketplace.png)
-
-## Health & Logs
-
-- **Health**: historical health timeline/trends
-- **Logs**: filtered log inspection and export tools
 
 ---
 

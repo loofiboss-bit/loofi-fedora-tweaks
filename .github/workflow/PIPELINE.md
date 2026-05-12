@@ -8,4 +8,4 @@ Release work follows this sequence:
 4. Add deterministic tests with mocked host/system calls.
 5. Run stabilization, adapter, release-doc, lint, type, test, coverage, RPM, and CLI smoke validation.
 
-For v8.0.0 Beacon, active build and COPR references target Fedora 44. Navigation work must route through `core/navigation` and must not add another major feature tab.
+For v8.1.0 Breeze, active build and COPR references target Fedora 44. Navigation work must route through `core/navigation`, keep the focused five-area sidebar, and avoid adding another major feature tab.

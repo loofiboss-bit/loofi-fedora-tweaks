@@ -41,6 +41,18 @@
   </provides>
 
   <releases>
+    <release version="8.1.0" date="2026-05-13">
+      <description>
+        <p>v8.1.0 "Breeze" - Focused Sidebar &amp; Airy UI</p>
+        <ul>
+          <li>Redesigned the default navigation around five focused sidebar areas</li>
+          <li>Kept advanced pages available through search, favorites, direct routes, and Advanced mode</li>
+          <li>Added screen-aware and font-derived layout metrics for better Wayland and fractional scaling behavior</li>
+          <li>Updated dark, light, and high-contrast themes with roomier spacing and clearer selected states</li>
+          <li>Regenerated user-guide and wiki screenshots from the redesigned PyQt UI</li>
+        </ul>
+      </description>
+    </release>
     <release version="8.0.0" date="2026-05-12">
       <description>
         <p>v8.0.0 "Beacon" - Navigation Reliability &amp; UX Clarity</p>

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 7.0.0 "Aegis" — Safe Guided Actions
+> Version 8.1.0 "Breeze" — Focused Sidebar and Safe Guided Actions
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -24,9 +24,9 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ## 2) Learn the UI in 30 Seconds
 
-- Sidebar = categories and tabs
-- Main panel = active tools
-- Bottom area = status and shortcuts
+- Sidebar = five focused areas plus search and favorites
+- Main panel = active tools with larger sections and clearer cards
+- Footer = compact status and shortcuts
 
 Useful shortcuts:
 
@@ -44,7 +44,7 @@ Useful shortcuts:
 
 Open:
 
-- **Overview → Atlas Home**
+- **Home**
 - **Release Readiness**
 
 Review the score and safe guidance. Advanced details and Action Inbox commands are optional.
@@ -61,7 +61,7 @@ loofi readiness --target 44
 
 Open:
 
-- **Overview → System Monitor**
+- **System & Hardware → System Monitor**
 
 Look for high CPU/RAM/process spikes.
 
@@ -69,7 +69,7 @@ Look for high CPU/RAM/process spikes.
 
 ### Action 3 — Run Updates
 
-Open **Manage → Maintenance → Updates** and run **Update All**.
+Open **Software & Updates → Maintenance → Updates** and run **Update All**.
 
 Notes:
 
@@ -80,7 +80,7 @@ Notes:
 
 ### Action 4 — Clean Up
 
-Open **Manage → Maintenance → Cleanup** and run:
+Open **Software & Updates → Maintenance → Cleanup** and run:
 
 - cache clean
 - journal vacuum
@@ -98,7 +98,7 @@ Open **Network & Security → Security & Privacy**:
 
 ### Action 6 — Save Preferences
 
-Open **Personalize → Settings** and configure:
+Open **Desktop & Settings → Settings** and configure:
 
 - update checks on startup
 - safety confirmations enabled

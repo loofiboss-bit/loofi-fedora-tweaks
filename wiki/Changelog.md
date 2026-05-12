@@ -10,6 +10,22 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ## Latest Release
 
+### v8.1.0 "Breeze" (2026-05-13)
+
+**Focused UI/UX redesign** with an airy desktop layout, five-area default sidebar, clearer page headers, and responsive Wayland/fractional-scaling behavior.
+
+**Key Changes:**
+- Replaced the crowded default sidebar with Home, Software & Updates, System & Hardware, Network & Security, and Desktop & Settings
+- Kept AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, Snapshots, and Loofi Link available through search, favorites, direct routes, and Advanced mode
+- Added shared layout primitives for page headers, sections, action rows, route cards, and adaptive grids
+- Updated dark, light, and high-contrast themes with calmer spacing, selected states, card borders, and text wrapping rules
+- Made startup honor saved/system theme selection
+- Regenerated user guide and wiki screenshots from the redesigned PyQt UI
+
+**Test Suite**: Local release gates passed with 7,378 tests, 48 skipped, lint/typecheck clean, and 84%+ coverage.
+
+---
+
 ### v8.0.0 "Beacon" (2026-05-12)
 
 **Navigation-first UX and reliability release** focused on route-aware navigation, visual clarity, safety hardening, and packaging trust.

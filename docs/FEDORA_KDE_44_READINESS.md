@@ -1,12 +1,12 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v7.0.0 "Aegis" includes a read-only release readiness center plus safe guided action planning. Fedora KDE 44 is the supported target. Fedora 45 remains preview-only and advisory.
+Loofi Fedora Tweaks v8.1.0 "Breeze" includes a read-only release readiness center plus safe guided action planning. Fedora KDE 44 is the supported target. Fedora 45 remains preview-only and advisory.
 
 ## Run It
 
 GUI:
 
-- Open **Atlas Home**.
+- Open **Home**.
 - Choose **Release Readiness**.
 - Review beginner guidance first.
 - Use **Advanced** only when you need raw command/status details.

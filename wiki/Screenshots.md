@@ -1,6 +1,6 @@
 # Screenshots
 
-Fresh UI screenshots for **v8.0.0 "Beacon"**, captured from the real PyQt app in May 2026.
+Fresh UI screenshots for **v8.1.0 "Breeze"**, captured from the real PyQt app in May 2026.
 
 ## Navigation and System Workflows
 

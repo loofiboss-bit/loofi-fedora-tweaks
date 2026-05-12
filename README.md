@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v8.0.0 "Beacon"
+# Loofi Fedora Tweaks v8.1.0 "Breeze"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0">
-    <img src="https://img.shields.io/badge/Release-v8.0.0-blue?style=for-the-badge&logo=github" alt="Release v8.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.1.0">
+    <img src="https://img.shields.io/badge/Release-v8.1.0-blue?style=for-the-badge&logo=github" alt="Release v8.1.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -32,7 +32,7 @@ Loofi Fedora Tweaks is a desktop control center for Fedora Linux that combines d
 
 It is designed to be practical for both casual users and advanced users:
 
-- Plugin-based UI with category-organized tabs and lazy loading.
+- Focused 5-area sidebar with search, favorites, direct routes, and advanced tools available on demand.
 - CLI mode for scripting and remote administration.
 - Daemon mode for background automation.
 - Optional headless web API mode.
@@ -41,31 +41,31 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v8.0.0?
+## What's New in v8.1.0?
 
-`v8.0.0 "Beacon"` is a navigation-first UX and reliability release. It keeps the existing plugin architecture and feature set, but makes routes the stable contract behind sidebar navigation, command search, quick actions, favorites, and dashboard cards.
+`v8.1.0 "Breeze"` is an airy UI/UX redesign for Fedora desktop users. It keeps the v8 route architecture, but replaces the dense permanent menu with five primary areas, roomier pages, a clearer page header, and Wayland-friendly responsive sizing.
 
-- **Route Manifest**: `core/navigation` defines canonical plugin and subroute IDs such as `maintenance:updates`, `software:apps`, and `system-monitor:processes`.
-- **Navigation UX**: Command palette, quick actions, dashboard cards, breadcrumbs, collapsed sidebar, and Favorites v2 now use stable route IDs instead of display-name guesses.
-- **Safety Hardening**: ActionExecutor preview and execution share a core command allowlist with the API, and profile snapshot commands are validated before subprocess execution.
-- **Packaging Trust**: RPM import validation is blocking, and the release gate verifies pyproject, sdist, wheel, assets, translations, and entry point coverage.
-- **Release Gate Hardening**: CI, auto-release, docs, workflow specs, and release claims now share the same v8 metadata and 82% coverage threshold.
+- **Focused Sidebar**: Default navigation is now **Home**, **Software & Updates**, **System & Hardware**, **Network & Security**, and **Desktop & Settings**.
+- **Advanced Tools Hidden by Default**: AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, and Snapshots stay searchable, favoriteable, and route-compatible without crowding the default menu.
+- **Responsive Shell**: Window sizing uses available screen geometry and Qt device-independent units; the sidebar adapts across wide, medium, and narrow layouts.
+- **Shared Layout Primitives**: New `PageHeader`, `Section`, `ActionRow`, `RouteCard`, and `AdaptiveGrid` helpers keep pages spacious and aligned.
+- **Theme Alignment**: Dark, light, and high-contrast QSS now share the same calmer KDE-native spacing, selected states, card borders, and text wrapping rules.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v8.0.0.md`](docs/releases/RELEASE-NOTES-v8.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v8.1.0.md`](docs/releases/RELEASE-NOTES-v8.1.0.md)
 
 ### Screenshots
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/images/user-guide/home-dashboard.png" alt="Beacon home dashboard with task cards and route-aware sidebar"/>
+      <img src="docs/images/user-guide/home-dashboard.png" alt="Breeze home dashboard with focused sidebar and spacious route cards"/>
     </td>
     <td width="50%">
       <img src="docs/images/user-guide/system-monitor.png" alt="System Monitor process view with live process data"/>
     </td>
   </tr>
   <tr>
-    <td><strong>Navigation-first dashboard</strong></td>
+    <td><strong>Focused Home dashboard</strong></td>
     <td><strong>Live system monitoring</strong></td>
   </tr>
   <tr>
@@ -86,9 +86,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v8.0.0.md`](docs/releases/RELEASE-NOTE
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v8.0.0 "Beacon"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v8.0.0.md`)
-- Current stable baseline: **v8.0.0 "Beacon"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **8.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v8.1.0 "Breeze"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v8.1.0.md`)
+- Current stable baseline: **v8.1.0 "Breeze"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **8.1.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 
@@ -189,24 +189,23 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ---
 
-## Built-In Tabs
+## Navigation Areas
 
-| Category    | Tabs                                                          |
-| ----------- | ------------------------------------------------------------- |
-| System      | Home, System Info, System Monitor, Community                  |
-| Packages    | Software, Maintenance, Snapshots                              |
-| Hardware    | Hardware, Performance, Storage, Gaming                        |
-| Network     | Network, Loofi Link                                           |
-| Security    | Security & Privacy, Backup                                    |
-| Appearance  | Desktop, Profiles, Extensions, Settings                       |
-| Tools       | Development, AI Lab, Virtualization                           |
-| Maintenance | Agents, Automation, Diagnostics, Health, Logs, State Teleport |
+| Default Area          | Everyday Pages                                  |
+| --------------------- | ----------------------------------------------- |
+| Home                  | Home dashboard and guided launch cards          |
+| Software & Updates    | Software, Maintenance                           |
+| System & Hardware     | System Info, System Monitor, Hardware, Storage, Health, Diagnostics |
+| Network & Security    | Network, Security & Privacy, Backup             |
+| Desktop & Settings    | Desktop, Settings                               |
+
+Advanced and specialized pages remain available through search, favorites, direct route IDs, and the Advanced experience level.
 
 ---
 
 ## Screenshots
 
-Current v8 UI screenshots are captured from the real PyQt app and maintained in:
+Current v8.1 UI screenshots are captured from the real PyQt app and maintained in:
 
 - [`docs/images/user-guide/README.md`](docs/images/user-guide/README.md)
 

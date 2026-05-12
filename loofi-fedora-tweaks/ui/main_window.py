@@ -7,19 +7,27 @@ import logging
 import os
 from dataclasses import dataclass, field
 
-from core.navigation import NavigationRoute, resolve
+from core.navigation import (
+    NavigationRoute,
+    area_for_plugin,
+    is_plugin_visible_for_level,
+    resolve,
+    sidebar_areas_for_level,
+)
 from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
 from core.plugins.registry import CATEGORY_ICONS
 from PyQt6.QtCore import QRect, QSize, Qt, QTimer
-from PyQt6.QtGui import QColor, QFontMetrics, QKeySequence, QPainter, QShortcut
+from PyQt6.QtGui import QColor, QKeySequence, QPainter, QShortcut
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
+    QLineEdit,
     QMainWindow,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QStackedWidget,
     QStyledItemDelegate,
     QStyleOptionViewItem,
@@ -40,6 +48,7 @@ from utils.pulse import PulseThread, SystemPulse
 from version import __version__
 
 from ui.icon_pack import get_qicon, icon_tint_variant
+from ui.layout_primitives import LayoutMetrics, PageHeader
 from ui.lazy_widget import LazyWidget
 
 logger = get_logger(__name__)
@@ -59,10 +68,13 @@ class SidebarEntry:
 
     plugin_id: str
     display_name: str
-    tree_item: QTreeWidgetItem
+    tree_item: QTreeWidgetItem | None
     page_widget: QWidget
     metadata: PluginMetadata
     status: str = field(default="")
+    content_widget: QWidget | None = field(default=None)
+    area_id: str = field(default="")
+    visible_in_sidebar: bool = field(default=True)
 
 
 class SidebarItemDelegate(QStyledItemDelegate):
@@ -136,12 +148,12 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, False)
         self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, False)
         self.setWindowTitle(self.tr("Loofi Fedora Tweaks v%1").replace("%1", __version__))
-        self.resize(1100, 700)
-        self.setMinimumSize(800, 500)
 
-        # HiDPI safety: compute scalable dimensions from font metrics
-        fm = QFontMetrics(self.font())
-        self._line_height = fm.height()
+        # HiDPI/Wayland safety: use Qt device-independent units and derive
+        # shell dimensions from the active font and available screen size.
+        self._metrics = LayoutMetrics.from_widget(self)
+        self._line_height = self._metrics.line_height
+        self._apply_initial_geometry()
 
         # Initialize Pulse event listener
         self.pulse = None
@@ -160,32 +172,29 @@ class MainWindow(QMainWindow):
 
         # Sidebar container with search
         sidebar_container = QWidget()
-        # HiDPI: 15*line_height = approx 240px at 1x DPI
-        sidebar_width = int(self._line_height * 15)
+        sidebar_container.setObjectName("sidebarContainer")
+        sidebar_width = self._metrics.sidebar_width
         sidebar_container.setFixedWidth(sidebar_width)
+        sidebar_container.setSizePolicy(QSizePolicy.Policy.Fixed, QSizePolicy.Policy.Expanding)
         sidebar_layout = QVBoxLayout(sidebar_container)
-        sidebar_layout.setContentsMargins(0, 10, 0, 0)
-        sidebar_layout.setSpacing(0)
+        sidebar_layout.setContentsMargins(12, 14, 12, 10)
+        sidebar_layout.setSpacing(10)
 
         # Search box
-        from PyQt6.QtWidgets import QLineEdit
-
         self.sidebar_search = QLineEdit()
         self.sidebar_search.setObjectName("sidebarSearch")
-        self.sidebar_search.setPlaceholderText(self.tr("Search tabs..."))
+        self.sidebar_search.setPlaceholderText(self.tr("Search pages..."))
         self.sidebar_search.setClearButtonEnabled(True)
-        self.sidebar_search.setAccessibleName(self.tr("Search tabs"))
-        self.sidebar_search.setAccessibleDescription(self.tr("Filter sidebar tabs by name or description"))
-        # HiDPI: 2*line_height + padding (4+10)*2 = approx 36px at 1x DPI
-        search_height = int(self._line_height * 2 + 28)
-        self.sidebar_search.setFixedHeight(search_height)
+        self.sidebar_search.setAccessibleName(self.tr("Search pages"))
+        self.sidebar_search.setAccessibleDescription(self.tr("Filter navigation pages by name or description"))
+        self.sidebar_search.setMinimumHeight(int(self._line_height * 2.4))
         self.sidebar_search.textChanged.connect(self._filter_sidebar)
         sidebar_layout.addWidget(self.sidebar_search)
 
         # Sidebar collapse toggle
         self._sidebar_toggle = QPushButton("◀")
         self._sidebar_toggle.setObjectName("sidebarToggle")
-        self._sidebar_toggle.setFixedHeight(int(self._line_height * 2))
+        self._sidebar_toggle.setMinimumHeight(int(self._line_height * 2.2))
         self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
         self._sidebar_toggle.clicked.connect(self._toggle_sidebar)
         sidebar_layout.addWidget(self._sidebar_toggle)
@@ -194,6 +203,7 @@ class MainWindow(QMainWindow):
         self._sidebar_container = sidebar_container
         self._sidebar_expanded_width = sidebar_width
         self._sidebar_collapsed = False
+        self._auto_sidebar_collapsed = False
 
         # Sidebar tree
         self.sidebar = QTreeWidget()
@@ -201,11 +211,11 @@ class MainWindow(QMainWindow):
         self.sidebar.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.sidebar.setHeaderHidden(True)
         self.sidebar.setAccessibleName(self.tr("Navigation sidebar"))
-        self.sidebar.setIndentation(20)
+        self.sidebar.setIndentation(16)
         self.sidebar.setRootIsDecorated(True)
-        self.sidebar.setUniformRowHeights(True)
+        self.sidebar.setUniformRowHeights(False)
         self.sidebar.setAnimated(True)
-        self.sidebar.setIconSize(QSize(17, 17))
+        self.sidebar.setIconSize(QSize(20, 20))
         self.sidebar.currentItemChanged.connect(self.change_page)
         self.sidebar.currentItemChanged.connect(self._on_sidebar_selection_changed)
         self.sidebar.setItemDelegate(SidebarItemDelegate(self.sidebar))
@@ -218,9 +228,7 @@ class MainWindow(QMainWindow):
         self.sidebar_footer = QLabel(f"v{__version__}")
         self.sidebar_footer.setObjectName("sidebarFooter")
         self.sidebar_footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        # HiDPI: 2*line_height = approx 28px at 1x DPI
-        footer_height = int(self._line_height * 2)
-        self.sidebar_footer.setFixedHeight(footer_height)
+        self.sidebar_footer.setMinimumHeight(self._metrics.status_height)
         sidebar_layout.addWidget(self.sidebar_footer)
 
         main_layout.addWidget(sidebar_container)
@@ -230,31 +238,18 @@ class MainWindow(QMainWindow):
         right_side.setContentsMargins(0, 0, 0, 0)
         right_side.setSpacing(0)
 
-        # Breadcrumb bar
-        self._breadcrumb_frame = QFrame()
-        self._breadcrumb_frame.setObjectName("breadcrumbBar")
-        # HiDPI: 3*line_height = approx 44px at 1x DPI
-        breadcrumb_height = int(self._line_height * 3)
-        self._breadcrumb_frame.setFixedHeight(breadcrumb_height)
-        bc_layout = QHBoxLayout(self._breadcrumb_frame)
-        bc_layout.setContentsMargins(16, 0, 16, 0)
-        self._bc_category = QPushButton("")
+        # Page header (keeps breadcrumb-compatible attributes for callers/tests)
+        self._breadcrumb_frame = PageHeader()
+        self._breadcrumb_frame.setMinimumHeight(self._metrics.header_height)
+        self._bc_category = self._breadcrumb_frame.eyebrow
         self._bc_category.setObjectName("bcCategory")
-        self._bc_category.setFlat(True)
-        self._bc_category.setCursor(Qt.CursorShape.PointingHandCursor)
         self._bc_category.clicked.connect(self._on_breadcrumb_category_click)
         self._bc_sep = QLabel("  ›  ")
         self._bc_sep.setObjectName("bcSep")
-        self._bc_page = QLabel("")
+        self._bc_page = self._breadcrumb_frame.title
         self._bc_page.setObjectName("bcPage")
-        self._bc_desc = QLabel("")
+        self._bc_desc = self._breadcrumb_frame.description
         self._bc_desc.setObjectName("bcDesc")
-        bc_layout.addWidget(self._bc_category)
-        bc_layout.addWidget(self._bc_sep)
-        bc_layout.addWidget(self._bc_page)
-        bc_layout.addSpacing(12)
-        bc_layout.addWidget(self._bc_desc)
-        bc_layout.addStretch()
         right_side.addWidget(self._breadcrumb_frame)
 
         # Content Area
@@ -264,9 +259,7 @@ class MainWindow(QMainWindow):
         # Status bar
         self._status_frame = QFrame()
         self._status_frame.setObjectName("statusBar")
-        # HiDPI: 2*line_height = approx 28px at 1x DPI
-        status_height = int(self._line_height * 2)
-        self._status_frame.setFixedHeight(status_height)
+        self._status_frame.setMinimumHeight(self._metrics.status_height)
         sb_layout = QHBoxLayout(self._status_frame)
         sb_layout.setContentsMargins(12, 0, 12, 0)
         self._status_label = QLabel("")
@@ -367,6 +360,28 @@ class MainWindow(QMainWindow):
             self._category_items = {}
         self._pages_cache = value
 
+    def _apply_initial_geometry(self) -> None:
+        """Set a responsive initial size using available screen geometry."""
+        min_width = 860
+        min_height = 560
+        self.setMinimumSize(min_width, min_height)
+
+        width = 1440
+        height = 900
+        try:
+            screen = self.screen()
+            if screen is not None:
+                available = screen.availableGeometry()
+                width = int(available.width())
+                height = int(available.height())
+        except (AttributeError, TypeError, ValueError, RuntimeError):
+            width = 1440
+            height = 900
+
+        target_width = max(min_width, min(int(width * 0.78), width - 80 if width > 980 else width))
+        target_height = max(min_height, min(int(height * 0.78), height - 80 if height > 720 else height))
+        self.resize(target_width, target_height)
+
     def _build_sidebar_from_registry(self, context: dict) -> None:
         """Source all tabs from PluginRegistry. Replaces 26 hardcoded add_page() calls."""
         from core.plugins.compat import CompatibilityDetector
@@ -378,20 +393,32 @@ class MainWindow(QMainWindow):
 
         registry = PluginRegistry.instance()
 
-        # Experience level filtering
+        # Experience level controls visible sidebar rows only; route/index
+        # registration still covers every plugin so command palette, favorites,
+        # and direct route switching keep working.
         from utils.experience_level import ExperienceLevelManager
         from utils.favorites import FavoritesManager
 
         level = ExperienceLevelManager.get_level()
         favorites = FavoritesManager.get_favorites()
+        self._active_experience_level = level
 
-        for plugin in registry:
+        plugins = list(registry)
+        visible_plugin_ids = {
+            plugin.metadata().id
+            for plugin in plugins
+            if is_plugin_visible_for_level(plugin.metadata().id, level.value, favorites)
+        }
+        for area in sidebar_areas_for_level(level.value):
+            if any(plugin_id in visible_plugin_ids for plugin_id in area.plugin_ids):
+                self._create_area_item(area.id, area.label, area.icon)
+
+        for plugin in plugins:
             meta = plugin.metadata()
-            if not ExperienceLevelManager.is_tab_visible(meta.id, level, favorites):
-                continue
             compat = plugin.check_compat(detector)
             lazy = self._wrap_in_lazy(plugin)
-            self._add_plugin_page(meta, lazy, compat)
+            visible = is_plugin_visible_for_level(meta.id, level.value, favorites)
+            self._add_plugin_page(meta, lazy, compat, visible_in_sidebar=visible)
 
         # Validate experience level tab lists against registry
         declared_ids = ExperienceLevelManager.get_all_declared_tab_ids()
@@ -402,6 +429,30 @@ class MainWindow(QMainWindow):
         advanced_only = registered_ids - declared_ids
         if advanced_only:
             logger.info("Tabs only visible to ADVANCED users: %s", sorted(advanced_only))
+
+    def _find_or_create_area(self, plugin_id: str, fallback_category: str) -> QTreeWidgetItem:
+        """Find/create a focused sidebar area for a plugin."""
+        area = area_for_plugin(plugin_id)
+        area_id = area.id if area else fallback_category
+        if area_id in self._category_items:
+            return self._category_items[area_id]
+
+        label = area.label if area else fallback_category
+        icon = area.icon if area else CATEGORY_ICONS.get(fallback_category, "")
+        return self._create_area_item(area_id, label, icon)
+
+    def _create_area_item(self, area_id: str, label: str, icon: str) -> QTreeWidgetItem:
+        """Create a top-level focused area row in sidebar order."""
+        if area_id in self._category_items:
+            return self._category_items[area_id]
+        category_item = QTreeWidgetItem(self.sidebar)
+        category_item.setText(0, label)
+        category_item.setData(0, _ROLE_DESC, label)
+        category_item.setData(0, _ROLE_ROUTE_ID, area_id)
+        category_item.setExpanded(True)
+        self._set_tree_item_icon(category_item, icon)
+        self._category_items[area_id] = category_item
+        return category_item
 
     def _wrap_in_lazy(self, plugin: PluginInterface) -> LazyWidget:
         """Wrap plugin.create_widget() in LazyWidget for deferred instantiation."""
@@ -466,6 +517,7 @@ class MainWindow(QMainWindow):
         self._sidebar_index[plugin_id] = entry
         self._pages_cache = None  # invalidate backward-compat cache
         target = scroll_widget if scroll_widget is not None else entry.page_widget
+        entry.content_widget = target
         self.content_area.addWidget(target)
 
     def _add_plugin_page(
@@ -473,30 +525,38 @@ class MainWindow(QMainWindow):
         meta: PluginMetadata,
         widget: LazyWidget,
         compat: CompatStatus,
+        *,
+        visible_in_sidebar: bool = True,
     ) -> None:
         """Register a plugin page in the sidebar and content area."""
-        category_item = self._find_or_create_category(meta.category)
-        item = self._create_tab_item(
-            category_item,
-            meta.name,
-            meta.icon,
-            meta.badge,
-            meta.description,
-            disabled=not compat.compatible,
-            disabled_reason=compat.reason,
-        )
+        item: QTreeWidgetItem | None = None
+        if visible_in_sidebar:
+            category_item = self._find_or_create_area(meta.id, meta.category)
+            item = self._create_tab_item(
+                category_item,
+                meta.name,
+                meta.icon,
+                meta.badge,
+                meta.description,
+                disabled=not compat.compatible,
+                disabled_reason=compat.reason,
+            )
         if not compat.compatible:
             page_widget = self._wrap_page_widget(DisabledPluginPage(meta, compat.reason))
         else:
             page_widget = self._wrap_page_widget(widget)
-        item.setData(0, Qt.ItemDataRole.UserRole, page_widget)
-        item.setData(0, _ROLE_ROUTE_ID, meta.id)
+        if item is not None:
+            item.setData(0, Qt.ItemDataRole.UserRole, page_widget)
+            item.setData(0, _ROLE_ROUTE_ID, meta.id)
+        area = area_for_plugin(meta.id)
         entry = SidebarEntry(
             plugin_id=meta.id,
             display_name=meta.name,
             tree_item=item,
             page_widget=widget,
             metadata=meta,
+            area_id=area.id if area else meta.category,
+            visible_in_sidebar=visible_in_sidebar,
         )
         self._register_in_index(meta.id, entry, scroll_widget=page_widget)
 
@@ -539,8 +599,11 @@ class MainWindow(QMainWindow):
             item.setData(0, _ROLE_DESC, f"Pinned: {desc or label}")
             item.setData(0, _ROLE_NAME, label)
             item.setData(0, _ROLE_ROUTE_ID, route_id)
-            item.setData(0, Qt.ItemDataRole.UserRole, entry.tree_item.data(0, Qt.ItemDataRole.UserRole))
-            self._copy_tree_item_icon(entry.tree_item, item)
+            item.setData(0, Qt.ItemDataRole.UserRole, entry.content_widget or entry.page_widget)
+            if entry.tree_item is not None:
+                self._copy_tree_item_icon(entry.tree_item, item)
+            else:
+                self._set_tree_item_icon(item, route.icon if route else entry.metadata.icon)
             item.setToolTip(0, desc or label)
 
         self._refresh_sidebar_icon_tints()
@@ -590,7 +653,7 @@ class MainWindow(QMainWindow):
         if self._sidebar_collapsed:
             self._set_sidebar_icon_only(True)
 
-    def _rebuild_sidebar_for_experience_level(self):
+    def _rebuild_sidebar_for_experience_level(self, level=None):
         """Rebuild sidebar when experience level changes."""
         self.sidebar.clear()
         self._sidebar_index.clear()
@@ -599,10 +662,16 @@ class MainWindow(QMainWindow):
         while self.content_area.count():
             w = self.content_area.widget(0)
             self.content_area.removeWidget(w)
+        try:
+            PluginRegistry.reset()
+        except (AttributeError, RuntimeError):
+            logger.debug("Plugin registry reset unavailable during sidebar rebuild")
         context = {
             "main_window": self,
             "config_manager": ConfigManager,
         }
+        if level is not None:
+            self._active_experience_level = level
         self._build_sidebar_from_registry(context)
         self._build_favorites_section()
         self._refresh_sidebar_icon_tints()
@@ -660,6 +729,7 @@ class MainWindow(QMainWindow):
         scroll.setWidgetResizable(True)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         scroll.setWidget(widget)
         return scroll
 
@@ -696,14 +766,32 @@ class MainWindow(QMainWindow):
         desc = item.data(0, _ROLE_DESC) or ""
         route = resolve(self._active_route_id or str(item.data(0, _ROLE_ROUTE_ID) or ""))
         if route:
-            category = route.category
+            area = area_for_plugin(route.plugin_id)
+            category = area.label if area else route.category
             page_name = route.label
             desc = route.description
+        elif parent:
+            parent_route = str(parent.data(0, _ROLE_ROUTE_ID) or "")
+            area = area_for_plugin(str(item.data(0, _ROLE_ROUTE_ID) or ""))
+            category = area.label if area else parent_route or category
         self._bc_category.setText(category)
         self._bc_page.setText(page_name)
         self._bc_desc.setText(desc)
+        if hasattr(self._breadcrumb_frame, "set_content"):
+            self._breadcrumb_frame.set_content(category, page_name, desc)
         # Store parent item ref for breadcrumb click (v38.0)
         self._bc_parent_item = parent
+
+    def _update_header_for_route(self, route: NavigationRoute, entry: SidebarEntry | None = None) -> None:
+        """Render the focused page header when a route has no visible sidebar row."""
+        area = area_for_plugin(route.plugin_id)
+        category = area.label if area else route.category
+        self._bc_category.setText(category)
+        self._bc_page.setText(route.label)
+        self._bc_desc.setText(route.description)
+        if hasattr(self._breadcrumb_frame, "set_content"):
+            self._breadcrumb_frame.set_content(category, route.label, route.description)
+        self._bc_parent_item = entry.tree_item.parent() if entry and entry.tree_item else None
 
     @staticmethod
     def _normalize_route_label(value: str) -> str:
@@ -886,10 +974,16 @@ class MainWindow(QMainWindow):
             )
             return False
 
-        self.sidebar.setCurrentItem(entry.tree_item)
+        if entry.tree_item is not None:
+            self.sidebar.setCurrentItem(entry.tree_item)
+        elif entry.content_widget is not None:
+            self.content_area.setCurrentWidget(entry.content_widget)
         self._active_route_id = route.id
         activated = self._activate_route_widget(route)
-        self._update_breadcrumb(entry.tree_item)
+        if entry.tree_item is not None:
+            self._update_breadcrumb(entry.tree_item)
+        else:
+            self._update_header_for_route(route, entry)
         if not activated:
             logger.debug("switch_to_route: plugin selected but subroute did not activate: %s", route.id)
         return True
@@ -902,8 +996,12 @@ class MainWindow(QMainWindow):
 
         entry = self._sidebar_index.get(name)
         if entry:
-            self.sidebar.setCurrentItem(entry.tree_item)
-            self._active_route_id = str(entry.tree_item.data(0, _ROLE_ROUTE_ID) or entry.plugin_id)
+            if entry.tree_item is not None:
+                self.sidebar.setCurrentItem(entry.tree_item)
+                self._active_route_id = str(entry.tree_item.data(0, _ROLE_ROUTE_ID) or entry.plugin_id)
+            elif entry.content_widget is not None:
+                self.content_area.setCurrentWidget(entry.content_widget)
+                self._active_route_id = entry.plugin_id
             return True
 
         # Fallback: search by display name
@@ -914,8 +1012,13 @@ class MainWindow(QMainWindow):
                     name,
                     entry.plugin_id,
                 )
-                self.sidebar.setCurrentItem(entry.tree_item)
-                self._active_route_id = str(entry.tree_item.data(0, _ROLE_ROUTE_ID) or entry.plugin_id)
+                if entry.tree_item is not None:
+                    self.sidebar.setCurrentItem(entry.tree_item)
+                    self._active_route_id = str(entry.tree_item.data(0, _ROLE_ROUTE_ID) or entry.plugin_id)
+                else:
+                    self._active_route_id = entry.plugin_id
+                    if entry.content_widget is not None:
+                        self.content_area.setCurrentWidget(entry.content_widget)
                 return True
 
         logger.debug("switch_to_tab: no match for '%s'", name)
@@ -971,19 +1074,25 @@ class MainWindow(QMainWindow):
 
     def _toggle_sidebar(self):
         """Toggle sidebar between expanded and collapsed states."""
-        if self._sidebar_collapsed:
+        self._auto_sidebar_collapsed = False
+        self._set_sidebar_collapsed(not self._sidebar_collapsed)
+
+    def _set_sidebar_collapsed(self, collapsed: bool) -> None:
+        """Apply sidebar collapsed/expanded state without changing route data."""
+        if not collapsed:
             self._sidebar_container.setFixedWidth(self._sidebar_expanded_width)
             self.sidebar.setVisible(True)
             self.sidebar_search.setVisible(True)
             self.sidebar_footer.setVisible(True)
-            self.sidebar.setIndentation(20)
+            self.sidebar.setIndentation(16)
             self.sidebar.setRootIsDecorated(True)
             self._set_sidebar_icon_only(False)
             self._sidebar_toggle.setText("◀")
             self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
             self._sidebar_collapsed = False
         else:
-            self._sidebar_container.setFixedWidth(int(self._line_height * 4))
+            collapsed_width = getattr(getattr(self, "_metrics", None), "sidebar_collapsed_width", int(self._line_height * 4))
+            self._sidebar_container.setFixedWidth(collapsed_width)
             self.sidebar.setVisible(True)
             self.sidebar_search.setVisible(False)
             self.sidebar_footer.setVisible(False)
@@ -993,6 +1102,20 @@ class MainWindow(QMainWindow):
             self._sidebar_toggle.setText("▶")
             self._sidebar_toggle.setToolTip(self.tr("Expand sidebar"))
             self._sidebar_collapsed = True
+
+    def resizeEvent(self, event) -> None:
+        """Apply responsive sidebar breakpoints as the window changes size."""
+        try:
+            width = int(self.width())
+            if width < 900 and not self._sidebar_collapsed:
+                self._auto_sidebar_collapsed = True
+                self._set_sidebar_collapsed(True)
+            elif width > 1120 and self._auto_sidebar_collapsed:
+                self._auto_sidebar_collapsed = False
+                self._set_sidebar_collapsed(False)
+        except (TypeError, ValueError, AttributeError, RuntimeError):
+            logger.debug("Responsive sidebar resize update failed", exc_info=True)
+        super().resizeEvent(event)
 
     def _sidebar_display_text(self, item: QTreeWidgetItem) -> str:
         """Return the expanded display text for a sidebar item."""
@@ -1118,7 +1241,9 @@ class MainWindow(QMainWindow):
         self._notif_badge.setVisible(False)
 
         # Add bell first, then badge — badge appears as overlay to the right
-        bc_layout = self._breadcrumb_frame.layout()
+        bc_layout = getattr(self._breadcrumb_frame, "actions_layout", None)
+        if bc_layout is None or not hasattr(bc_layout, "addWidget"):
+            bc_layout = self._breadcrumb_frame.layout()
         if bc_layout:
             bc_layout.addWidget(self.notif_bell)
             bc_layout.addWidget(self._notif_badge)
@@ -1239,6 +1364,8 @@ class MainWindow(QMainWindow):
             return
 
         entry.status = status
+        if entry.tree_item is None:
+            return
         entry.tree_item.setData(0, _ROLE_STATUS, status)
 
         if tooltip:
@@ -1273,17 +1400,11 @@ class MainWindow(QMainWindow):
             from utils.experience_level import ExperienceLevelManager
 
             if level is None:
-                level = ExperienceLevelManager.get_current_level()
-            visible_tabs = ExperienceLevelManager.get_visible_tabs(level)
-            favorites = FavoritesManager.get_favorites()
-            it = QTreeWidgetItemIterator(self.sidebar)
-            while it.value():
-                item = it.value()
-                name = item.data(0, _ROLE_NAME)
-                if name:
-                    item.setHidden(name not in visible_tabs and name not in favorites)
-                it += 1
-        except (ImportError, AttributeError, ValueError) as e:
+                level = ExperienceLevelManager.get_level()
+            if getattr(self, "_active_experience_level", None) == level:
+                return
+            self._rebuild_sidebar_for_experience_level(level)
+        except (ImportError, AttributeError, ValueError, RuntimeError) as e:
             logger.debug("Experience level filtering unavailable: %s", e)
 
     def _check_first_run(self):
@@ -1383,12 +1504,13 @@ class MainWindow(QMainWindow):
         QApplication.quit()
 
     def closeEvent(self, event):
-        if self.tray_icon and self.tray_icon.isVisible():
+        tray_icon = getattr(self, "tray_icon", None)
+        if tray_icon and tray_icon.isVisible():
             self.hide()
-            self.tray_icon.showMessage(
+            tray_icon.showMessage(
                 self.tr("Loofi Fedora Tweaks"),
                 self.tr("Minimized to tray."),
-                self.tray_icon.MessageIcon.Information,
+                tray_icon.MessageIcon.Information,
                 2000,
             )
             event.ignore()

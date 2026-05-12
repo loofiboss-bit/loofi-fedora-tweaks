@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 7.0.0 "Aegis"
+> Version 8.1.0 "Breeze"
 
 Operational runbook for power users and Fedora admins.
 
@@ -43,10 +43,10 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 ## 3) Weekly Maintenance Window
 
 1. Create snapshot baseline
-2. Run **Manage → Maintenance → Updates**
-3. Run **Manage → Maintenance → Cleanup**
+2. Run **Software & Updates → Maintenance → Updates**
+3. Run **Software & Updates → Maintenance → Cleanup**
 4. Validate **Security & Privacy** score/firewall
-5. Review **System Monitor** and **Logs** for regressions
+5. Review **System & Hardware → System Monitor** and **Logs** from search, favorites, or Advanced mode for regressions
 
 ![Maintenance Updates](images/user-guide/maintenance-updates.png)
 
@@ -56,10 +56,10 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 
 ## 4) Performance Investigation Runbook
 
-1. Inspect **Overview → System Monitor** for process pressure
-2. Inspect **Health & Logs → Logs** for recurring faults
-3. Check **Hardware → Performance** tuning recommendations
-4. Check **Manage → Storage** for disk/SMART concerns
+1. Inspect **System & Hardware → System Monitor** for process pressure
+2. Inspect **Logs** from search, favorites, or Advanced mode for recurring faults
+3. Check **Performance** from search, favorites, or Advanced mode for tuning recommendations
+4. Check **System & Hardware → Storage** for disk/SMART concerns
 
 ![System Monitor](images/user-guide/system-monitor.png)
 
@@ -67,7 +67,7 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 
 ## 5) Preset and Drift Control
 
-1. Use **Automation → Community** to apply controlled presets
+1. Use **Community** from search, favorites, or Advanced mode to apply controlled presets
 2. Re-check drift after major package/config changes
 3. Export profiles before broad rollout
 

@@ -1,8 +1,8 @@
-# Loofi Fedora Tweaks v8.0.0 "Beacon" Release Announcement
+# Loofi Fedora Tweaks v8.1.0 "Breeze" Release Announcement
 
 ## TL;DR
 
-Loofi Fedora Tweaks v8.0.0 "Beacon" is now available as the navigation reliability release. It adds stable route IDs across the sidebar, command palette, quick actions, dashboard cards, and favorites while hardening command safety and packaging validation.
+Loofi Fedora Tweaks v8.1.0 "Breeze" is now available as the focused UI/UX redesign release. It keeps the v8 route architecture, but replaces the crowded default menu with five primary areas, roomier pages, clearer headers, and responsive sizing for Wayland and fractional scaling.
 
 **Install:**
 
@@ -11,18 +11,18 @@ pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
 ```
 
-**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0
+**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.1.0
 
 ---
 
 ## What's New
 
-- Central route manifest for plugin-level and subroute-level navigation.
-- Route-aware command palette, quick actions, dashboard cards, favorites, sidebar selection, and breadcrumbs.
-- Favorites v2 migration to stable IDs such as `maintenance:updates` and `software:apps`.
-- Icon-only collapsed sidebar with tooltips, status dots, QSS styling, and semantic icon fallbacks.
-- Shared command allowlist for preview, execute, web API executor, and ProfileManager snapshot commands.
-- Blocking RPM import check plus packaging manifest validation for wheel/sdist contents and entry points.
+- Five default navigation areas: Home, Software & Updates, System & Hardware, Network & Security, and Desktop & Settings.
+- Advanced tools stay searchable, favoriteable, route-compatible, and available in Advanced mode without crowding the sidebar.
+- Shared layout primitives for airy page headers, sections, action rows, route cards, and adaptive grids.
+- Wayland-friendly sizing based on Qt device-independent units, font metrics, and available screen geometry.
+- Dark, light, and high-contrast themes updated with calmer spacing, selected states, card borders, and wrapping rules.
+- User guide and wiki screenshots regenerated from the redesigned PyQt UI.
 
 ---
 
@@ -53,7 +53,7 @@ loofi-fedora-tweaks --cli info
 
 ## Links
 
-- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.0.0
+- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.1.0
 - **Full Changelog**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CHANGELOG.md
 - **Architecture Guide**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md
 - **Report Issues**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues

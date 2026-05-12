@@ -10,6 +10,7 @@ all 28 tabs.
 from enum import Enum
 from typing import List
 
+from core.navigation import DEFAULT_PLUGIN_IDS, INTERMEDIATE_PLUGIN_IDS
 from utils.log import get_logger
 from utils.settings import SettingsManager
 
@@ -27,33 +28,11 @@ class ExperienceLevel(Enum):
 
 
 # Tab IDs visible at each experience level (cumulative).
-# BEGINNER tabs are always visible; INTERMEDIATE adds more; ADVANCED shows all.
-_BEGINNER_TABS: List[str] = [
-    "atlas_dashboard",
-    "system-info",
-    "software",
-    "hardware",
-    "network",
-    "security",
-    "backup",
-    "settings",
-    "storage",
-    "performance",
-    "desktop",
-    "maintenance",
-]
-
-_INTERMEDIATE_TABS: List[str] = _BEGINNER_TABS + [
-    "dashboard",
-    "development",
-    "extensions",
-    "gaming",
-    "profiles",
-    "virtualization",
-    "snapshot",
-    "monitor",
-    "diagnostics",
-]
+# The lists come from the focused navigation model so they cannot drift from
+# real plugin IDs such as ``system_info`` and ``snapshots``.
+_BEGINNER_TABS: List[str] = list(DEFAULT_PLUGIN_IDS)
+_INTERMEDIATE_TABS: List[str] = list(INTERMEDIATE_PLUGIN_IDS)
+_DECLARED_COMPAT_TABS = {"dashboard"}
 
 
 class ExperienceLevelManager:
@@ -133,7 +112,7 @@ class ExperienceLevelManager:
             Set of tab ID strings from all level lists. INTERMEDIATE is the
             superset of BEGINNER, so this returns the INTERMEDIATE set.
         """
-        return set(_INTERMEDIATE_TABS)
+        return set(_INTERMEDIATE_TABS) | set(_DECLARED_COMPAT_TABS)
 
     @staticmethod
     def get_default_for_profile(profile_name: str) -> ExperienceLevel:

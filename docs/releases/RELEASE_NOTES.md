@@ -4,11 +4,12 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v8.0.0 "Beacon"**
-- Full notes: [RELEASE-NOTES-v8.0.0.md](RELEASE-NOTES-v8.0.0.md)
+- **v8.1.0 "Breeze"**
+- Full notes: [RELEASE-NOTES-v8.1.0.md](RELEASE-NOTES-v8.1.0.md)
 
 ## Recent Releases
 
+- v8.0.0 "Beacon": [RELEASE-NOTES-v8.0.0.md](RELEASE-NOTES-v8.0.0.md)
 - v7.0.0 "Aegis": [RELEASE-NOTES-v7.0.0.md](RELEASE-NOTES-v7.0.0.md)
 - v6.0.0 "Compass": [RELEASE-NOTES-v6.0.0.md](RELEASE-NOTES-v6.0.0.md)
 - v5.0.0 "Aurora": [RELEASE-NOTES-v5.0.0.md](RELEASE-NOTES-v5.0.0.md)

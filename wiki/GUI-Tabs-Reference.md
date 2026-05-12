@@ -1,66 +1,71 @@
 # GUI Tabs Reference
 
-Complete reference for the built-in feature areas in Loofi Fedora Tweaks v8.0.0 "Beacon".
+Complete reference for the focused navigation areas in Loofi Fedora Tweaks v8.1.0 "Breeze".
 
 ---
 
-## 🖥️ System
+## Default Areas
 
-1. **Atlas Home** (`atlas_dashboard_tab.py`) — [v4.0 NEW] Task-based home dashboard with guided assistants.
-2. System Info (`system_info_tab.py`)
-3. System Monitor (`monitor_tab.py`)
-4. Community (`community_tab.py`)
+The default sidebar intentionally stays small:
 
-## 📦 Packages
+1. **Home** — Home dashboard and release readiness guidance.
+2. **Software & Updates** — Software, Maintenance, Snapshots, and Virtualization.
+3. **System & Hardware** — System Info, System Monitor, Hardware, Storage, Health, Diagnostics, Performance, and Gaming.
+4. **Network & Security** — Network, Security & Privacy, Backup, and Loofi Link.
+5. **Desktop & Settings** — Desktop, Settings, Profiles, Extensions, and Development Tools.
 
-5. Software (`software_tab.py`)
-6. Maintenance (`maintenance_tab.py`)
-7. Snapshots (`snapshot_tab.py`)
+## Home
 
-## ⚡ Hardware
+1. **Home** (`atlas_dashboard_tab.py`) — Task-based launch dashboard with guided assistants and release readiness.
 
+## Software & Updates
+
+2. Software (`software_tab.py`)
+3. Maintenance (`maintenance_tab.py`)
+4. Snapshots (`snapshot_tab.py`) — Advanced/search/favorite route by default.
+5. Virtualization (`virtualization_tab.py`) — Advanced/search/favorite route by default.
+
+## System & Hardware
+
+6. System Info (`system_info_tab.py`)
+7. System Monitor (`monitor_tab.py`)
 8. Hardware (`hardware_tab.py`)
-9. Performance (`performance_tab.py`)
-10. Storage (`storage_tab.py`)
-11. Gaming (`gaming_tab.py`)
+9. Storage (`storage_tab.py`)
+10. Health (`dashboard_tab.py`/health route)
+11. Diagnostics (`diagnostics_tab.py`)
+12. Performance (`performance_tab.py`) — Advanced/search/favorite route by default.
+13. Gaming (`gaming_tab.py`) — Advanced/search/favorite route by default.
 
-## 🌐 Network
+## Network & Security
 
-12. Network (`network_tab.py`)
-13. Loofi Link (`mesh_tab.py`)
+14. Network (`network_tab.py`)
+15. Security & Privacy (`security_tab.py`)
+16. Backup (`backup_tab.py`)
+17. Loofi Link (`mesh_tab.py`) — Advanced/search/favorite route by default.
 
-## 🛡️ Security
+## Desktop & Settings
 
-14. Security & Privacy (`security_tab.py`)
-15. Backup (`backup_tab.py`)
-
-## 🎨 Appearance
-
-16. Desktop (`desktop_tab.py`)
-17. Extensions (`extensions_tab.py`)
-18. Profiles (`profiles_tab.py`)
+18. Desktop (`desktop_tab.py`)
 19. Settings (`settings_tab.py`)
+20. Profiles (`profiles_tab.py`) — Advanced/search/favorite route by default.
+21. Extensions (`extensions_tab.py`) — Advanced/search/favorite route by default.
+22. Development Tools (`development_tab.py`) — Intermediate/Advanced/search/favorite route by default.
 
-## 🛠️ Tools
+## More and Advanced Tools
 
-20. Development (`development_tab.py`)
-21. Virtualization (`virtualization_tab.py`)
-22. AI Lab (`ai_enhanced_tab.py`)
-
-## 📋 Diagnostics & Automation
-
-23. **Metrics Dashboard** (`dashboard_tab.py`) — Traditional live overview (moved to Intermediate mode in v4.0).
-24. Logs (`logs_tab.py`)
-25. Diagnostics (`diagnostics_tab.py`)
-26. Agents (`agents_tab.py`)
-27. Automation (`automation_tab.py`)
-28. State Teleport (`teleport_tab.py`)
+23. Live Overview (`dashboard_tab.py`) — Route-addressable system overview.
+24. Community (`community_tab.py`) — Presets, marketplace, plugins, and featured content.
+25. Logs (`logs_tab.py`)
+26. AI Lab (`ai_enhanced_tab.py`)
+27. Agents (`agents_tab.py`)
+28. Automation (`automation_tab.py`)
+29. State Teleport (`teleport_tab.py`)
 
 ---
 
 ## Navigation Tips
 
 - Use sidebar search to filter routes by name, aliases, and description.
-- Use Favorites v2 to pin stable plugin or route IDs.
+- Use Favorites to pin stable plugin or route IDs, including hidden default routes.
 - Press `Ctrl+K` to open the command palette.
-- Use route-aware breadcrumbs to confirm the current category and focused page.
+- Switch to Advanced mode to expose the **More** area in the sidebar.
