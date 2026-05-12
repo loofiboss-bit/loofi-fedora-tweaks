@@ -55,9 +55,32 @@ Full notes: [`docs/releases/RELEASE-NOTES-v8.0.0.md`](docs/releases/RELEASE-NOTE
 
 ### Screenshots
 
-![Atlas Home dashboard with Release Readiness](docs/images/user-guide/home-dashboard.png)
-
-![Release Readiness grouped findings](docs/images/user-guide/release-readiness.png)
+<table>
+  <tr>
+    <td width="50%">
+      <img src="docs/images/user-guide/home-dashboard.png" alt="Beacon home dashboard with task cards and route-aware sidebar"/>
+    </td>
+    <td width="50%">
+      <img src="docs/images/user-guide/system-monitor.png" alt="System Monitor process view with live process data"/>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Navigation-first dashboard</strong></td>
+    <td><strong>Live system monitoring</strong></td>
+  </tr>
+  <tr>
+    <td>
+      <img src="docs/images/user-guide/maintenance-updates.png" alt="Maintenance updates route with DNF, Flatpak, firmware, and kernel tools"/>
+    </td>
+    <td>
+      <img src="docs/images/user-guide/security-privacy.png" alt="Security and privacy center with firewall and port audit panels"/>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Safe maintenance routes</strong></td>
+    <td><strong>Security and privacy controls</strong></td>
+  </tr>
+</table>
 
 ## Current Development Cycle
 
@@ -183,15 +206,46 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ## Screenshots
 
-Current UI screenshots are maintained in:
+Current v8 UI screenshots are captured from the real PyQt app and maintained in:
 
 - [`docs/images/user-guide/README.md`](docs/images/user-guide/README.md)
 
 Preview gallery:
 
-![Home Dashboard](docs/images/user-guide/home-dashboard.png)
-![System Monitor](docs/images/user-guide/system-monitor.png)
-![Maintenance Updates](docs/images/user-guide/maintenance-updates.png)
+<table>
+  <tr>
+    <td width="33%">
+      <img src="docs/images/user-guide/release-readiness.png" alt="Release Readiness grouped findings"/>
+    </td>
+    <td width="33%">
+      <img src="docs/images/user-guide/community-marketplace.png" alt="Community marketplace route"/>
+    </td>
+    <td width="33%">
+      <img src="docs/images/user-guide/settings-appearance.png" alt="Settings appearance route"/>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Readiness checks</strong></td>
+    <td><strong>Community marketplace</strong></td>
+    <td><strong>Appearance settings</strong></td>
+  </tr>
+  <tr>
+    <td>
+      <img src="docs/images/user-guide/network-overview.png" alt="Network connections overview"/>
+    </td>
+    <td>
+      <img src="docs/images/user-guide/ai-lab-models.png" alt="AI Lab models route"/>
+    </td>
+    <td>
+      <img src="docs/images/user-guide/community-presets.png" alt="Community presets route"/>
+    </td>
+  </tr>
+  <tr>
+    <td><strong>Network overview</strong></td>
+    <td><strong>AI Lab</strong></td>
+    <td><strong>Presets</strong></td>
+  </tr>
+</table>
 
 ---
 
