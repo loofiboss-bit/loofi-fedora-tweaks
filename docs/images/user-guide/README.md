@@ -2,9 +2,9 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v7.0.0 "Aegis"
+**Last verified**: v8.0.0 "Beacon"
 
-**Status**: Screenshot filenames remain stable for v7 docs. The Release Readiness images are generated with `scripts/capture_v6_readiness_screenshots.py`.
+**Status**: Screenshot filenames remain stable for v8 docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
 
 ## Current Files
 
@@ -29,13 +29,13 @@ Canonical screenshot assets for user-facing docs.
 
 ## Regeneration Instructions
 
-Release readiness screenshots can be regenerated from real PyQt widgets:
+User-guide screenshots can be regenerated from real PyQt widgets:
 
 ```bash
-PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v6_readiness_screenshots.py
+PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v8_user_guide_screenshots.py
 ```
 
-General screenshots must be captured manually on a running instance. To regenerate:
+For manual verification after regeneration:
 
 1. Launch the app: `./run.sh` or `PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py`
 2. Set the window to a consistent size (e.g., 1280x800).
