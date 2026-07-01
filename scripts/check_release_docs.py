@@ -26,6 +26,7 @@ SPEC_FILE = ROOT / "loofi-fedora-tweaks.spec"
 PYPROJECT_FILE = ROOT / "pyproject.toml"
 CHANGELOG_FILE = ROOT / "CHANGELOG.md"
 README_FILE = ROOT / "README.md"
+METAINFO_FILE = ROOT / "loofi-fedora-tweaks.metainfo.xml"
 TESTS_DIR = ROOT / "tests"
 ROADMAP_FILE = ROOT / "ROADMAP.md"
 WORKFLOW_SPECS_DIR = ROOT / ".workflow" / "specs"
@@ -267,6 +268,12 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     if codename and f'"{codename}"' not in changelog:
         errors.append(f"CHANGELOG current entry missing codename {codename}")
 
+    metainfo = _read_text(METAINFO_FILE)
+    if f'<release version="{version}"' not in metainfo:
+        errors.append(f"AppStream metainfo missing release entry for {version}")
+    if codename and f'"{codename}"' not in metainfo:
+        errors.append(f"AppStream metainfo missing codename {codename}")
+
     notes = _read_text(notes_file)
     if codename and codename not in notes:
         errors.append(f"release notes missing codename {codename}")
@@ -276,6 +283,12 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     for path in (tasks_file, arch_file):
         if not path.exists() or not _read_text(path).strip():
             errors.append(f"missing workflow spec: {path.relative_to(root)}")
+            continue
+        spec_text = _read_text(path)
+        if tag not in spec_text:
+            errors.append(f"workflow spec {path.name} missing {tag}")
+        if codename and codename not in spec_text:
+            errors.append(f"workflow spec {path.name} missing codename {codename}")
 
     if not RACE_LOCK_FILE.exists():
         errors.append(f"missing race lock: {RACE_LOCK_FILE.relative_to(root)}")

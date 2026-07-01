@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        10.0.0
+Version:        11.0.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -34,11 +34,11 @@ system maintenance, developer tooling, AI integration,
 security hardening, window management, virtualization,
 mesh networking, and workspace state teleportation.
 
-v10.0.0 Waypoint adds a guided Upgrade Assistant that
-keeps Fedora KDE 44 as the stable supported target while
-expanding Fedora 45 preview planning with read-only
-checks, command previews, action verification, and
-support-bundle export.
+v11.0.0 Harbor adds a Unified Action Center, daily
+maintenance diagnostics, rollback-first guidance, and
+Support Bundle v7 while keeping Fedora KDE 44 as the
+stable supported target and Fedora 45 as preview-only
+planning.
 
 %package api
 Summary:        Optional Loofi Fedora Tweaks Web API runtime
@@ -163,6 +163,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Wed Jul 01 2026 Loofi <loofi@example.com> - 11.0.0-1
+- v11.0.0 "Harbor" - Unified Action Center, daily maintenance diagnostics, rollback guidance, and Support Bundle v7
+
 * Wed Jul 01 2026 Loofi <loofi@example.com> - 10.0.0-1
 - v10.0.0 "Waypoint" - Release Upgrade Assistant, Fedora 45 preview planning, readiness CLI, and Support Bundle v6
 

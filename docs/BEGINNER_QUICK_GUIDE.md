@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 10.0.0 "Waypoint" — Upgrade Assistant and Safe Guided Actions
+> Version 11.0.0 "Harbor" — Upgrade Assistant, Action Center, and Safe Guided Actions
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -60,6 +60,7 @@ CLI equivalent:
 ```bash
 loofi readiness --target 44
 loofi readiness plan --target 45-preview
+loofi action-center list --target 44
 ```
 
 ### Action 2 — Check Health

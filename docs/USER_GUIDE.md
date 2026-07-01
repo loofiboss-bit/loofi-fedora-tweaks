@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 10.0.0 "Waypoint" — Upgrade Assistant and Guided Fedora Readiness
+> Version 11.0.0 "Harbor" — Unified Action Center and Daily Maintenance Trust
 
 This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
 

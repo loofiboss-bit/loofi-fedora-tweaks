@@ -537,6 +537,62 @@ def _cmd_readiness_action(args) -> int:
     return 1
 
 
+def cmd_action_center(args) -> int:
+    """Preview and inspect unified Action Center candidates."""
+    from core.actions import ActionCenterService
+
+    service = ActionCenterService()
+    target = getattr(args, "target", "44")
+    action = getattr(args, "action", "list")
+    candidates = service.candidates_from_readiness(target)
+
+    if action == "list":
+        payload = {"target": target, "candidates": [item.to_dict() for item in candidates]}
+        if _json_output:
+            _output_json(payload)
+            return 0
+        _print(f"{target} Action Center")
+        if not candidates:
+            _print("No action candidates are currently available.")
+        for item in candidates:
+            _print(f"- {item.id}: {item.title} [{item.state}, {item.risk_level}]")
+            _print(f"  {item.description}")
+            if item.command_preview:
+                _print(f"  Preview: {' '.join(item.command_preview)}")
+            if item.rollback_hint:
+                _print(f"  Rollback: {item.rollback_hint}")
+        return 0
+
+    if action == "preview":
+        action_id = getattr(args, "action_id", "")
+        preview_item = next((candidate for candidate in candidates if candidate.id == action_id), None)
+        if preview_item is None:
+            if _json_output:
+                _output_json({"error": "not_found", "action_id": action_id})
+            else:
+                _print(f"Action Center item not found: {action_id}")
+            return 1
+        return _print_action_result(service.preview(preview_item))
+
+    if action == "history":
+        payload = {"history": service.recent_history(limit=getattr(args, "limit", 25))}
+        if _json_output:
+            _output_json(payload)
+        else:
+            history = payload["history"]
+            if not history:
+                _print("No Action Center history recorded.")
+            for entry in history:
+                _print(json_module.dumps(entry, default=str))
+        return 0
+
+    if _json_output:
+        _output_json({"error": "unknown_action_center_command", "action": action})
+    else:
+        _print(f"Unknown Action Center command: {action}")
+    return 1
+
+
 # ==================== v11.5 / v12.0 COMMANDS ====================
 
 
@@ -1197,6 +1253,12 @@ def main(argv: Optional[List[str]] = None):
     readiness_verify_parser.add_argument("action_id", help="Readiness action ID")
     readiness_verify_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
 
+    action_center_parser = subparsers.add_parser("action-center", help="List and preview unified Action Center candidates")
+    action_center_parser.add_argument("action", choices=["list", "preview", "history"], nargs="?", default="list", help="Action Center command")
+    action_center_parser.add_argument("action_id", nargs="?", help="Action ID for preview")
+    action_center_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+    action_center_parser.add_argument("--limit", type=int, default=25, help="History entry limit")
+
     fedora44_parser = subparsers.add_parser("fedora44-readiness", help="Compatibility alias for 'readiness --target 44'")
     fedora44_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")
 
@@ -1521,6 +1583,7 @@ def main(argv: Optional[List[str]] = None):
         "plugin-marketplace": cmd_plugin_marketplace,
         "support-bundle": cmd_support_bundle,
         "readiness": cmd_readiness,
+        "action-center": cmd_action_center,
         "fedora44-readiness": cmd_fedora44_readiness,
         # v11.5 / v12.0
         "vm": cmd_vm,

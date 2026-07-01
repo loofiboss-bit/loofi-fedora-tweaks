@@ -41,6 +41,17 @@
   </provides>
 
   <releases>
+    <release version="11.0.0" date="2026-07-01">
+      <description>
+        <p>v11.0.0 "Harbor" - Unified Action Center, Daily Maintenance UX, Release Trust</p>
+        <ul>
+          <li>Added a Unified Action Center model for previewable readiness actions, queue state, rollback guidance, and history</li>
+          <li>Added read-only Daily Maintenance diagnostics for updates, Flatpak, firmware, services, journal warnings, disk usage, and package health</li>
+          <li>Added Support Bundle v7 fields for Action Center summaries, rollback hints, daemon/API status, and GitHub issue text export</li>
+          <li>Extended release validation to catch AppStream and workflow spec drift</li>
+        </ul>
+      </description>
+    </release>
     <release version="10.0.0" date="2026-07-01">
       <description>
         <p>v10.0.0 "Waypoint" - Release Upgrade Assistant &amp; Guided UX</p>

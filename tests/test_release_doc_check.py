@@ -44,6 +44,10 @@ def _write_release_files(
         "![Coverage](https://img.shields.io/badge/Coverage-84%25-brightgreen)\n",
         encoding="utf-8",
     )
+    (root / "loofi-fedora-tweaks.metainfo.xml").write_text(
+        f'<component><releases><release version="{version}" date="2026-02-11"><description><p>v{version} "{codename}"</p></description></release></releases></component>\n',
+        encoding="utf-8",
+    )
     (root / "ROADMAP.md").write_text(
         f'| v{version} | {codename} | ACTIVE | Test |\n'
         f'## [ACTIVE] v{version} "{codename}"\n',
@@ -61,8 +65,8 @@ def _write_release_files(
         f'{{"version": "v{version}", "target_version": "v{version}"}}\n',
         encoding="utf-8",
     )
-    (specs / f"tasks-v{version}.md").write_text("# tasks\n", encoding="utf-8")
-    (specs / f"arch-v{version}.md").write_text("# arch\n", encoding="utf-8")
+    (specs / f"tasks-v{version}.md").write_text(f'# tasks v{version} "{codename}"\n', encoding="utf-8")
+    (specs / f"arch-v{version}.md").write_text(f'# arch v{version} "{codename}"\n', encoding="utf-8")
     workflows = root / ".github" / "workflows"
     workflows.mkdir(parents=True, exist_ok=True)
     workflow_text = (
@@ -84,6 +88,7 @@ def _set_module_paths(module, tmp_path: Path) -> None:
     module.PYPROJECT_FILE = tmp_path / "pyproject.toml"
     module.CHANGELOG_FILE = tmp_path / "CHANGELOG.md"
     module.README_FILE = tmp_path / "README.md"
+    module.METAINFO_FILE = tmp_path / "loofi-fedora-tweaks.metainfo.xml"
     module.TESTS_DIR = tmp_path / "tests"
     module.ROADMAP_FILE = tmp_path / "ROADMAP.md"
     module.WORKFLOW_SPECS_DIR = tmp_path / ".workflow" / "specs"

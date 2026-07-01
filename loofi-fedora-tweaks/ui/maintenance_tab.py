@@ -777,6 +777,150 @@ class _UpgradeAssistantSubTab(QWidget):
 
 
 # ---------------------------------------------------------------------------
+# Sub-tab: Action Center (v11.0 Harbor)
+# ---------------------------------------------------------------------------
+
+
+class _ActionCenterSubTab(QWidget):
+    """Previewable Action Center surface backed by the core action service."""
+
+    def __init__(self):
+        super().__init__()
+        self._target_key = "44"
+        self._items = []
+
+        from core.actions.center import ActionCenterService
+
+        self._service = ActionCenterService()
+
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        self.setLayout(layout)
+
+        header = QLabel(self.tr("Action Center"))
+        header.setObjectName("header")
+        layout.addWidget(header)
+
+        intro = QLabel(
+            self.tr(
+                "Review readiness actions with command previews, risk, rollback guidance, "
+                "manual-only status, and recent Action Center history before running anything."
+            )
+        )
+        intro.setWordWrap(True)
+        layout.addWidget(intro)
+
+        target_row = QHBoxLayout()
+        load_stable = QPushButton(self.tr("Load Fedora 44 Actions"))
+        load_stable.clicked.connect(lambda: self._load_target("44"))
+        target_row.addWidget(load_stable)
+
+        load_preview = QPushButton(self.tr("Load Fedora 45 Preview Actions"))
+        load_preview.clicked.connect(lambda: self._load_target("45-preview"))
+        target_row.addWidget(load_preview)
+
+        preview_button = QPushButton(self.tr("Preview Selected"))
+        preview_button.clicked.connect(self._preview_selected)
+        target_row.addWidget(preview_button)
+
+        history_button = QPushButton(self.tr("Show History"))
+        history_button.clicked.connect(self._show_history)
+        target_row.addWidget(history_button)
+        target_row.addStretch()
+        layout.addLayout(target_row)
+
+        self.action_list = QListWidget()
+        self.action_list.setAccessibleName(self.tr("Action Center candidates"))
+        layout.addWidget(self.action_list, 1)
+
+        self.detail_area = QTextEdit()
+        self.detail_area.setReadOnly(True)
+        self.detail_area.setAccessibleName(self.tr("Action Center details"))
+        layout.addWidget(self.detail_area, 1)
+
+        self._load_target(self._target_key)
+
+    def _load_target(self, target_key: str) -> None:
+        self._target_key = target_key
+        self.action_list.clear()
+        try:
+            self._items = self._service.candidates_from_readiness(target_key)
+        except (OSError, RuntimeError, ValueError) as exc:
+            self._items = []
+            QMessageBox.warning(self, self.tr("Action Center Failed"), str(exc))
+            self.detail_area.setPlainText(self.tr("Action Center candidates could not be loaded."))
+            return
+
+        for item in self._items:
+            marker = self.tr("manual") if item.manual_only else item.state
+            self.action_list.addItem(f"{item.title} [{item.risk_level}] - {marker}")
+
+        if self._items:
+            self.action_list.setCurrentRow(0)
+            self._show_item(self._items[0])
+        else:
+            self.detail_area.setPlainText(self.tr("No Action Center candidates are currently available."))
+
+    def _selected_item(self):
+        row = self.action_list.currentRow()
+        if row < 0 or row >= len(self._items):
+            return None
+        return self._items[row]
+
+    def _show_item(self, item) -> None:
+        command = " ".join(item.command_preview) if item.command_preview else self.tr("Manual-only")
+        verification = " ".join(item.verification_command) if item.verification_command else self.tr("No verification command")
+        self.detail_area.setPlainText(
+            "\n".join(
+                [
+                    f"{self.tr('Title')}: {item.title}",
+                    f"{self.tr('Source')}: {item.source}",
+                    f"{self.tr('State')}: {item.state}",
+                    f"{self.tr('Risk')}: {item.risk_level}",
+                    f"{self.tr('Privilege')}: {item.privilege}",
+                    f"{self.tr('Command preview')}: {command}",
+                    f"{self.tr('Verification')}: {verification}",
+                    f"{self.tr('Rollback')}: {item.rollback_hint}",
+                    "",
+                    item.description,
+                ]
+            )
+        )
+
+    def _preview_selected(self) -> None:
+        item = self._selected_item()
+        if item is None:
+            QMessageBox.warning(self, self.tr("No Action Selected"), self.tr("Select an Action Center item first."))
+            return
+
+        result = self._service.preview(item)
+        self.detail_area.setPlainText(
+            "\n".join(
+                [
+                    f"{self.tr('Preview')}: {item.title}",
+                    f"{self.tr('Result')}: {result.message}",
+                    f"{self.tr('Risk')}: {item.risk_level}",
+                    f"{self.tr('Rollback')}: {item.rollback_hint}",
+                    f"{self.tr('Command')}: {' '.join(item.command_preview) if item.command_preview else self.tr('Manual-only')}",
+                ]
+            )
+        )
+
+    def _show_history(self) -> None:
+        history = self._service.recent_history(limit=25)
+        if not history:
+            self.detail_area.setPlainText(self.tr("No Action Center history recorded."))
+            return
+        lines = []
+        for entry in history:
+            event = entry.get("event", "event")
+            action = entry.get("action", {})
+            title = action.get("title", action.get("id", "unknown")) if isinstance(action, dict) else "unknown"
+            lines.append(f"{event}: {title}")
+        self.detail_area.setPlainText("\n".join(lines))
+
+
+# ---------------------------------------------------------------------------
 # Main consolidated tab
 # ---------------------------------------------------------------------------
 
@@ -816,6 +960,7 @@ class MaintenanceTab(BaseTab):
             (self.tr("Updates"), _UpdatesSubTab),
             (self.tr("Cleanup"), _CleanupSubTab),
             (self.tr("Smart Updates"), _SmartUpdatesSubTab),
+            (self.tr("Action Center"), _ActionCenterSubTab),
             (self.tr("Upgrade Assistant"), _UpgradeAssistantSubTab),
         ]
 

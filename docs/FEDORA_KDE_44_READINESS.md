@@ -1,6 +1,6 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v10.0.0 "Waypoint" includes a read-only release readiness center plus a guided Upgrade Assistant. Fedora KDE 44 is the supported stable target. Fedora 45 remains preview-only and advisory.
+Loofi Fedora Tweaks v11.0.0 "Harbor" includes a read-only release readiness center, guided Upgrade Assistant, and Unified Action Center preview flow. Fedora KDE 44 is the supported stable target. Fedora 45 remains preview-only and advisory.
 
 ## Run It
 
@@ -25,6 +25,9 @@ loofi-fedora-tweaks --cli readiness action-info <action-id> --target 44
 loofi-fedora-tweaks --cli readiness action-preview <action-id> --target 44
 loofi-fedora-tweaks --cli readiness action-run <action-id> --target 44 --confirm
 loofi-fedora-tweaks --cli readiness action-verify <action-id> --target 44
+loofi-fedora-tweaks --cli action-center list --target 44
+loofi-fedora-tweaks --cli action-center preview <action-id> --target 44
+loofi-fedora-tweaks --cli action-center history
 loofi-fedora-tweaks --cli --json readiness --target 44
 ```
 
@@ -70,9 +73,9 @@ Rules:
 - Manual-only recommendations cannot be executed.
 - Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 
-## Support Bundle v6
+## Support Bundle v7
 
-Support bundles now include privacy-masked generic `release_readiness` data, release planning metadata, and guided action context:
+Support bundles now include privacy-masked generic `release_readiness` data, release planning metadata, guided action context, and Action Center context:
 
 - Fedora/KDE/Qt versions
 - session type and display manager
@@ -87,8 +90,13 @@ Support bundles now include privacy-masked generic `release_readiness` data, rel
 - release plan and target change metadata
 - update preview and redacted package/repo health details
 - recent redacted action history
+- Action Center candidates and bounded history
+- Daily Maintenance dashboard signals
+- rollback hints used for medium/high-risk actions
+- daemon and optional Web API status probes
+- support-safe GitHub issue text export
 - privacy manifest
 
 The legacy `fedora_kde_44_readiness` field is preserved as an alias for older support tooling.
 
-Home paths, token/password/secret/key-like values, email addresses, and private file contents are not intentionally included.
+Home paths, token/password/secret/key-like values, email addresses, host identifiers, and private file contents are not intentionally included.

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 10.0.0 "Waypoint"
+> Version 11.0.0 "Harbor"
 
 Operational runbook for power users and Fedora admins.
 
@@ -43,7 +43,7 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 ## 3) Weekly Maintenance Window
 
 1. Create snapshot baseline
-2. Review **Software & Updates → Maintenance → Upgrade Assistant** for Fedora 44 readiness and Fedora 45 preview risk
+2. Review **Software & Updates → Maintenance → Upgrade Assistant** and `loofi action-center list --target 44` for Fedora 44 readiness, Action Center previews, and Fedora 45 preview risk
 3. Run **Software & Updates → Maintenance → Updates**
 4. Run **Software & Updates → Maintenance → Cleanup**
 5. Validate **Security & Privacy** score/firewall

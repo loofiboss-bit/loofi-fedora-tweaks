@@ -16,6 +16,7 @@ import os
 import sys
 import types
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
@@ -176,6 +177,7 @@ def _install_stubs():
 
     # --- services.system ---
     services_system_mod = types.ModuleType("services.system")
+    services_system_mod.__path__ = []
     services_system_mod.SystemManager = type(
         "SystemManager",
         (),
@@ -187,6 +189,9 @@ def _install_stubs():
             "has_pending_deployment": staticmethod(lambda: False),
         },
     )
+
+    services_system_system_mod = types.ModuleType("services.system.system")
+    services_system_system_mod.cached_which = lambda name: f"/usr/bin/{name}"
 
     # --- core.plugins.metadata ---
     metadata_mod = types.ModuleType("core.plugins.metadata")
@@ -252,6 +257,7 @@ def _install_stubs():
         "ui.tab_utils": tab_utils_mod,
         "utils.command_runner": cmd_runner_mod,
         "services.system": services_system_mod,
+        "services.system.system": services_system_system_mod,
         "core.plugins.metadata": metadata_mod,
         "core.plugins.interface": interface_mod,
         "utils.log": utils_log_mod,
@@ -332,6 +338,11 @@ class TestMaintenanceTabMetadata(unittest.TestCase):
         """MaintenanceTab has a tabs attribute."""
         self.assertTrue(hasattr(self.tab, "tabs"))
 
+    def test_has_action_center_subtab_factory(self):
+        """MaintenanceTab exposes the v11 Action Center as a real GUI sub-tab."""
+        labels = [label for label, _factory in self.tab._sub_tab_factories]
+        self.assertIn("Action Center", labels)
+
 
 # ===================================================================
 # Test: _UpdatesSubTab — static helper
@@ -370,6 +381,58 @@ class TestUpdatesSubTabSystemUpdateStep(unittest.TestCase):
         """rpm-ostree step description says 'Upgrade'."""
         cmd, args, desc = _mt._UpdatesSubTab._system_update_step("rpm-ostree")
         self.assertIn("Upgrade", desc)
+
+
+# ===================================================================
+# Test: _ActionCenterSubTab
+# ===================================================================
+
+
+class TestActionCenterSubTab(unittest.TestCase):
+    """Tests for the v11 Action Center GUI surface."""
+
+    def _item(self):
+        return SimpleNamespace(
+            id="readiness-test",
+            title="Review repository risk",
+            source="readiness:44",
+            description="Repository changes need review.",
+            risk_level="medium",
+            privilege="none",
+            command_preview=["dnf", "repolist"],
+            verification_command=["dnf", "repolist"],
+            rollback_hint="Disable the repository if it causes package issues.",
+            manual_only=False,
+            state="planned",
+        )
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_load_target_uses_action_center_service(self, service_cls):
+        service = service_cls.return_value
+        service.candidates_from_readiness.return_value = [self._item()]
+
+        tab = _mt._ActionCenterSubTab()
+
+        service.candidates_from_readiness.assert_called_with("44")
+        self.assertEqual(tab._items[0].id, "readiness-test")
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_preview_selected_uses_preview_not_execution(self, service_cls):
+        service = service_cls.return_value
+        service.candidates_from_readiness.return_value = []
+        service.preview.return_value = SimpleNamespace(message="preview ok")
+
+        tab = _mt._ActionCenterSubTab()
+        tab._items = [self._item()]
+        tab.action_list = MagicMock()
+        tab.action_list.currentRow.return_value = 0
+        tab.detail_area = MagicMock()
+
+        tab._preview_selected()
+
+        service.preview.assert_called_once_with(tab._items[0])
+        self.assertFalse(service.execute_next.called)
+        tab.detail_area.setPlainText.assert_called_once()
 
 
 # ===================================================================

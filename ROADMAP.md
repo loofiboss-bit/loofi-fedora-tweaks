@@ -64,11 +64,42 @@
 | v8.0.0  | Beacon                          | DONE    | Navigation-first UX, visual routing clarity, safety and packaging hardening                  |
 | v8.1.0  | Breeze                          | DONE    | Focused sidebar, airy desktop layout, responsive scaling, and updated screenshots            |
 | v9.0.0  | Keystone                        | DONE    | Whole-app quality, execution consistency, state reliability, and release hygiene             |
-| v10.0.0 | Waypoint                        | ACTIVE  | Release Upgrade Assistant, Fedora 45 preview planning, and guided readiness UX              |
+| v10.0.0 | Waypoint                        | DONE    | Release Upgrade Assistant, Fedora 45 preview planning, and guided readiness UX              |
+| v11.0.0 | Harbor                          | ACTIVE  | Unified Action Center, daily maintenance UX, rollback guidance, and release trust            |
 
 ---
 
-## [ACTIVE] v10.0.0 "Waypoint" — Release Upgrade Assistant & Guided UX
+## [ACTIVE] v11.0.0 "Harbor" — Unified Action Center & Release Trust
+
+**Theme**: Trustworthy Fedora KDE control center behavior for daily maintenance, previewable actions, rollback guidance, support export, and release metadata consistency.
+**Focus**: Unified Action Center model, daily maintenance signals, rollback-first action metadata, Fedora 45 preview continuity, Support Bundle v7, and v11 release trust gates.
+
+### Scope
+
+v11.0.0 "Harbor" keeps Fedora KDE 44 as the stable supported readiness target and preserves Fedora 45 as a non-blocking preview planning profile. It does not add feature sprawl. It unifies existing readiness action, command preview, rollback, maintenance, and support-bundle surfaces so users can understand what the app will do before anything mutates the system.
+
+### Deliverables
+
+- [x] Version metadata aligned to `11.0.0 "Harbor"`
+- [x] v10.0.0 "Waypoint" marked completed and v11.0.0 activated
+- [x] Release validation extended for AppStream and workflow codename/version drift
+- [x] Unified Action Center core model, queue, history, rollback guidance, and readiness action integration
+- [x] Action Center Maintenance GUI surface and CLI list/preview/history commands added without breaking readiness CLI compatibility
+- [x] Daily Maintenance read-only diagnostics for updates, Flatpak, firmware, failed services, journal warnings, disk usage, package health, and rollback availability
+- [x] Support Bundle v7 fields added while preserving v5/v6-compatible payloads and import paths
+- [x] Fedora KDE 44 stable and Fedora 45 preview/advisory status preserved
+- [x] v11 workflow specs, release notes, README, changelog, package metadata, and AppStream metadata refreshed
+
+### Compatibility
+
+- Fedora KDE 44 remains the stable supported target.
+- Fedora 45 remains preview-only and advisory.
+- Stable `NavigationRoute` IDs, CLI compatibility aliases, plugin metadata, favorites, and saved settings remain backward compatible.
+- Mutating actions continue through list-based commands, `pkexec` boundaries, allowlist validation, timeouts, audit metadata, and explicit confirmation for medium/high-risk actions.
+
+---
+
+## [DONE] v10.0.0 "Waypoint" — Release Upgrade Assistant & Guided UX
 
 **Theme**: Guided Fedora release planning that improves the whole app experience without adding a new permanent feature tab.
 **Focus**: Upgrade Assistant entry points, richer Fedora 45 preview checks, readiness CLI planning commands, Support Bundle v6, Smart Updates consistency, and v10 release hygiene.

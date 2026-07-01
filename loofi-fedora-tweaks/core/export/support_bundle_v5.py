@@ -9,6 +9,8 @@ import time
 from pathlib import Path
 from typing import Any, Dict, cast
 
+from core.actions import ActionCenterService
+from core.diagnostics.daily_maintenance import DailyMaintenanceService
 from core.diagnostics.readiness_actions import ReadinessActionService
 from core.diagnostics.release_readiness import ReleaseReadiness
 from core.executor.action_executor import ActionExecutor
@@ -23,21 +25,23 @@ logger = get_logger(__name__)
 class SupportBundleV5:
     """Privacy-masked diagnostic bundle for guided readiness support.
 
-    The class name stays stable for compatibility; the v10 payload schema is
-    support-v6 and preserves all v5 fields.
+    The class name stays stable for compatibility; the v11 payload schema is
+    support-v7 and preserves all v5/v6 fields.
     """
 
-    BUNDLE_SCHEMA = "10.0.0-waypoint-support-v6"
+    BUNDLE_SCHEMA = "11.0.0-harbor-support-v7"
     _SECRET_KEY_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)")
     _SECRET_VALUE_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key)=([^\s&]+)")
     _HOME_RE = re.compile(r"/home/[^/\\s]+")
     _EMAIL_RE = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+)")
+    _HOSTNAME_RE = re.compile(r"(?i)\b(hostname|host)\s*[:=]\s*([A-Za-z0-9_.-]+)")
 
     @classmethod
     def _mask_text(cls, text: str) -> str:
         masked = cls._HOME_RE.sub("/home/<user>", text or "")
         masked = cls._SECRET_VALUE_RE.sub(r"\1=<masked>", masked)
         masked = cls._EMAIL_RE.sub(r"\1***\2", masked)
+        masked = cls._HOSTNAME_RE.sub(r"\1=<masked-host>", masked)
         return masked[:6000]
 
     @classmethod
@@ -86,6 +90,29 @@ class SupportBundleV5:
         return None
 
     @classmethod
+    def _daemon_status(cls) -> Dict[str, Any]:
+        return {
+            "user_service_probe": cls._run(["systemctl", "--user", "is-active", "loofi-fedora-tweaks.service"], timeout=8) or "unknown",
+            "user": "<masked>",
+        }
+
+    @classmethod
+    def _web_api_status(cls) -> Dict[str, Any]:
+        return {
+            "enabled_hint": "optional",
+            "user_service_probe": cls._run(["systemctl", "--user", "is-active", "loofi-fedora-tweaks-api.service"], timeout=8) or "unknown",
+        }
+
+    @staticmethod
+    def _github_issue_text(readiness_summary: str, action_count: int) -> str:
+        return (
+            "## Loofi Fedora Tweaks diagnostics\n\n"
+            f"{readiness_summary}\n\n"
+            f"Action Center candidates: {action_count}\n"
+            "Private paths, emails, tokens, and host identifiers are redacted in the attached support bundle."
+        )
+
+    @classmethod
     def generate_bundle(cls, target: str = "44") -> Dict[str, Any]:
         mode = "upgrade-plan" if target == "45-preview" else "check"
         readiness = ReleaseReadiness.run(target, mode=mode)
@@ -93,8 +120,12 @@ class SupportBundleV5:
         readiness_payload = readiness.to_dict(advanced=True)
         action_plan = ReadinessActionService.build_plan(target, report=readiness)
         action_history = ActionExecutor.get_action_log(limit=25)
+        action_center = ActionCenterService()
+        action_center_items = action_center.candidates_from_readiness(target)
+        action_center_history = action_center.recent_history(limit=25)
         system_info = ReportExporter.gather_system_info()
         release_plan = ReleaseReadiness.build_release_plan(readiness)
+        daily_maintenance = DailyMaintenanceService().collect()
         update_preview = {
             "package_manager": package_report.package_manager,
             "dnf_locked": package_report.dnf_locked,
@@ -105,6 +136,7 @@ class SupportBundleV5:
         bundle: Dict[str, Any] = {
             "v": cls.BUNDLE_SCHEMA,
             "schema": cls.BUNDLE_SCHEMA,
+            "support_bundle_version": 7,
             "app": {
                 "version": __version__,
                 "codename": __version_codename__,
@@ -118,9 +150,20 @@ class SupportBundleV5:
             "action_candidates": [candidate.to_dict() for candidate in action_plan.candidates],
             "action_plan": action_plan.to_dict(),
             "action_history": action_history,
+            "action_center": {
+                "candidates": [item.to_dict() for item in action_center_items],
+                "history": action_center_history,
+                "failed": [entry for entry in action_center_history if str(entry.get("event")) == "executed" and not cast(Dict[str, Any], entry.get("result", {})).get("success", False)],
+                "succeeded": [entry for entry in action_center_history if str(entry.get("event")) == "executed" and cast(Dict[str, Any], entry.get("result", {})).get("success", False)],
+                "rollback_hints": [item.rollback_hint for item in action_center_items if item.rollback_hint],
+            },
+            "daily_maintenance": daily_maintenance.to_dict(),
             "update_preview": update_preview,
             "readiness_delta": cls._readiness_delta(),
             "support_summary": readiness.support_summary(),
+            "github_issue_text": cls._github_issue_text(readiness.support_summary(), len(action_center_items)),
+            "daemon_status": cls._daemon_status(),
+            "web_api_status": cls._web_api_status(),
             "desktop": readiness.desktop.to_dict() if readiness.desktop else {},
             "package_health": package_report.to_dict(),
             "rpm_ostree": [

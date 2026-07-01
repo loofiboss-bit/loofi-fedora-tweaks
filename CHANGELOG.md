@@ -4,6 +4,25 @@
 
 All notable changes to this project will be documented in this file.
 
+## [11.0.0] - 2026-07-01 "Harbor"
+
+### Added
+
+- **Unified Action Center**: Added `core.actions` with a typed Action Center item model, rollback guidance, FIFO queue, bounded history, and readiness-action integration.
+- **Action Center GUI and CLI**: Added a Maintenance > Action Center surface plus `action-center list`, `action-center preview`, and `action-center history` for rootless inspection of previewable action candidates.
+- **Daily Maintenance Diagnostics**: Added read-only maintenance probes for system updates, Flatpak, firmware, failed services, journal warnings, disk usage, package health, and rollback availability.
+- **Support Bundle v7**: Added Action Center candidates/history, daily maintenance data, rollback hints, daemon/API status, package health context, and support-safe GitHub issue text.
+
+### Changed
+
+- Bumped runtime, package, workflow, AppStream, README, roadmap, changelog, and release notes metadata to `11.0.0 "Harbor"`.
+- Kept Fedora KDE 44 as the stable supported target and Fedora 45 as preview/advisory planning.
+- Extended release validation to fail on AppStream release drift and workflow spec codename/version drift.
+
+### Fixed
+
+- Preserved existing readiness, support bundle, CLI, route, and plugin compatibility while adding v11 trust metadata.
+
 ## [10.0.0] - 2026-07-01 "Waypoint"
 
 ### Added

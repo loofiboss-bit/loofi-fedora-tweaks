@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v10.0.0 "Waypoint"
+# Loofi Fedora Tweaks v11.0.0 "Harbor"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v10.0.0">
-    <img src="https://img.shields.io/badge/Release-v10.0.0-blue?style=for-the-badge&logo=github" alt="Release v10.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v11.0.0">
+    <img src="https://img.shields.io/badge/Release-v11.0.0-blue?style=for-the-badge&logo=github" alt="Release v11.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -41,24 +41,24 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v10.0.0?
+## What's New in v11.0.0?
 
-`v10.0.0 "Waypoint"` adds a guided Upgrade Assistant for release planning. It keeps Fedora KDE 44 as the stable supported target and expands Fedora 45 preview into a richer non-blocking plan with read-only checks, release-change explanations, command previews, confirmed actions, verification, and support export.
+`v11.0.0 "Harbor"` is a trust and daily-maintenance release. It keeps Fedora KDE 44 as the stable supported target, keeps Fedora 45 preview advisory, and unifies existing readiness actions, rollback guidance, maintenance signals, and support export around a clearer Action Center workflow.
 
-- **Upgrade Assistant**: Home and Maintenance now route users into a guided readiness and upgrade-planning workflow.
-- **Fedora 45 Preview Planning**: New read-only checks cover repo layout changes, Python 3.15/Setuptools risk, IPv6-mostly NetworkManager, Podman 6, Atomic Flatpak filtering, RPM/OpenSSL compatibility, and PackageKit-DNF5 parity.
-- **Readiness CLI**: Added `readiness plan`, `readiness explain`, and `readiness export`.
-- **Support Bundle v6**: Readiness exports now include release plans, target changes, action history, update preview, and redacted package/repo health.
-- **Release Hygiene**: Runtime, packaging, docs, and workflow metadata are aligned to v10.
+- **Unified Action Center**: Readiness actions can be listed and previewed from the Maintenance GUI and CLI through a central model with state, risk, command preview, rollback guidance, and history metadata.
+- **Daily Maintenance Signals**: New read-only maintenance probes summarize updates, Flatpak, firmware, failed services, journal warnings, disk usage, package health, and rollback availability.
+- **Rollback-first Flow**: Medium/high-risk action candidates surface rpm-ostree, Snapper, Timeshift, or manual recovery guidance before execution.
+- **Support Bundle v7**: Exports now include Action Center summaries, daily maintenance, rollback hints, daemon/API status, and support-safe GitHub issue text while preserving older bundle fields.
+- **Release Trust Gate**: Runtime, packaging, docs, workflow specs, and AppStream metadata are aligned to v11 and checked for drift.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v10.0.0.md`](docs/releases/RELEASE-NOTES-v10.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v11.0.0.md`](docs/releases/RELEASE-NOTES-v11.0.0.md)
 
 ### Screenshots
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/images/user-guide/home-dashboard.png" alt="Waypoint home dashboard with focused sidebar and Upgrade Assistant card"/>
+      <img src="docs/images/user-guide/home-dashboard.png" alt="Harbor home dashboard with focused sidebar and maintenance guidance"/>
     </td>
     <td width="50%">
       <img src="docs/images/user-guide/system-monitor.png" alt="System Monitor process view with live process data"/>
@@ -86,9 +86,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v10.0.0.md`](docs/releases/RELEASE-NOT
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v10.0.0 "Waypoint"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v10.0.0.md`)
-- Current stable baseline: **v10.0.0 "Waypoint"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **10.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v11.0.0 "Harbor"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v11.0.0.md`)
+- Current stable baseline: **v11.0.0 "Harbor"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **11.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 
