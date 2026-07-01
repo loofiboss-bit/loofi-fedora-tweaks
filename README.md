@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v9.0.0 "Keystone"
+# Loofi Fedora Tweaks v10.0.0 "Waypoint"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v9.0.0">
-    <img src="https://img.shields.io/badge/Release-v9.0.0-blue?style=for-the-badge&logo=github" alt="Release v9.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v10.0.0">
+    <img src="https://img.shields.io/badge/Release-v10.0.0-blue?style=for-the-badge&logo=github" alt="Release v10.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -41,24 +41,24 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v9.0.0?
+## What's New in v10.0.0?
 
-`v9.0.0 "Keystone"` is a whole-app quality release. It keeps Fedora KDE 44 as the supported readiness target, leaves Fedora 45 as `45-preview` only, and improves consistency across the existing GUI, CLI, daemon/API, packaging, state, tests, and docs.
+`v10.0.0 "Waypoint"` adds a guided Upgrade Assistant for release planning. It keeps Fedora KDE 44 as the stable supported target and expands Fedora 45 preview into a richer non-blocking plan with read-only checks, release-change explanations, command previews, confirmed actions, verification, and support export.
 
-- **Execution Consistency**: New internal command facade standardizes list-based preview and execution over the existing allowlist, timeout, `pkexec`, and audit metadata policy.
-- **Fedora Target Discipline**: Fedora KDE 44 remains the default supported readiness target; Fedora 45 stays advisory as `45-preview`.
-- **Route and Plugin Trust**: Hidden advanced routes, favorites, command palette routes, quick actions, icons, and plugin metadata are covered by stronger drift checks.
-- **State Reliability**: v9 documents the saved-state contract for theme, experience level, favorites, hidden routes, and window geometry migration.
-- **Release Hygiene**: Coverage gates now enforce 84%, workflow specs are aligned, and stale planning docs are marked historical.
+- **Upgrade Assistant**: Home and Maintenance now route users into a guided readiness and upgrade-planning workflow.
+- **Fedora 45 Preview Planning**: New read-only checks cover repo layout changes, Python 3.15/Setuptools risk, IPv6-mostly NetworkManager, Podman 6, Atomic Flatpak filtering, RPM/OpenSSL compatibility, and PackageKit-DNF5 parity.
+- **Readiness CLI**: Added `readiness plan`, `readiness explain`, and `readiness export`.
+- **Support Bundle v6**: Readiness exports now include release plans, target changes, action history, update preview, and redacted package/repo health.
+- **Release Hygiene**: Runtime, packaging, docs, and workflow metadata are aligned to v10.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v9.0.0.md`](docs/releases/RELEASE-NOTES-v9.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v10.0.0.md`](docs/releases/RELEASE-NOTES-v10.0.0.md)
 
 ### Screenshots
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/images/user-guide/home-dashboard.png" alt="Keystone home dashboard with focused sidebar and spacious route cards"/>
+      <img src="docs/images/user-guide/home-dashboard.png" alt="Waypoint home dashboard with focused sidebar and Upgrade Assistant card"/>
     </td>
     <td width="50%">
       <img src="docs/images/user-guide/system-monitor.png" alt="System Monitor process view with live process data"/>
@@ -86,9 +86,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v9.0.0.md`](docs/releases/RELEASE-NOTE
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v9.0.0 "Keystone"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v9.0.0.md`)
-- Current stable baseline: **v9.0.0 "Keystone"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **9.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v10.0.0 "Waypoint"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v10.0.0.md`)
+- Current stable baseline: **v10.0.0 "Waypoint"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **10.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 

@@ -8,6 +8,7 @@ and transaction rollback for both DNF and rpm-ostree systems.
 
 import json
 import logging
+import re
 import subprocess
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -237,6 +238,17 @@ class UpdateManager:
         )
 
     @staticmethod
+    def _validate_schedule_packages(packages: List[str]) -> List[str]:
+        """Return package names safe to embed in a systemd ExecStart vector."""
+        valid: List[str] = []
+        for package in packages:
+            name = str(package or "").strip()
+            if not re.fullmatch(r"[A-Za-z0-9_.+:-]+", name):
+                raise ValueError(f"Invalid package name for scheduled update: {package!r}")
+            valid.append(name)
+        return valid
+
+    @staticmethod
     def get_schedule_commands(schedule: ScheduledUpdate) -> List[CommandTuple]:
         """Get the command tuples needed to set up a scheduled update.
 
@@ -247,19 +259,19 @@ class UpdateManager:
             List of CommandTuple to create and enable the systemd timer.
         """
         pm = SystemManager.get_package_manager()
+        packages = UpdateManager._validate_schedule_packages(schedule.packages)
         if pm == "rpm-ostree":
-            update_cmd = "rpm-ostree upgrade"
+            update_args = ["rpm-ostree", "upgrade"]
         else:
-            pkg_str = " ".join(schedule.packages) if schedule.packages else ""
-            update_cmd = "dnf update -y %s" % pkg_str
-            update_cmd = update_cmd.strip()
+            update_args = [pm, "update", "-y"] + packages
+        exec_start = "/usr/bin/" + " ".join(update_args)
 
         service_content = (
             f"[Unit]\n"
             f"Description=Loofi scheduled update {schedule.id}\n\n"
             f"[Service]\n"
             f"Type=oneshot\n"
-            f"ExecStart=/usr/bin/{update_cmd}\n"
+            f"ExecStart={exec_start}\n"
         )
 
         timer_content = (

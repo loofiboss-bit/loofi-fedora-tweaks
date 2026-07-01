@@ -81,6 +81,9 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         self.assertFalse(target.supported)
         self.assertTrue(target.preview)
         self.assertEqual(target.final_target, "2026-10-20")
+        self.assertEqual(target.status_label, "Preview planning profile")
+        self.assertTrue(target.important_changes)
+        self.assertTrue(target.known_risks)
 
     def test_fedora44_remains_default_supported_target(self):
         self.assertEqual(ReleaseReadiness.TARGET_KEY, "44")
@@ -97,6 +100,32 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         )
         self.assertEqual(check.status, "info")
         self.assertIn("preview", check.beginner_guidance.lower())
+
+    @patch("core.diagnostics.release_readiness.SystemManager.is_atomic", return_value=False)
+    @patch("core.diagnostics.release_readiness.cached_which", return_value=None)
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness._run", return_value=None)
+    @patch("core.diagnostics.release_readiness.glob.glob", return_value=["/etc/yum.repos.d/copr.repo"])
+    def test_fedora45_upgrade_checks_include_preview_topics(self, _mock_glob, _mock_run, _mock_which, _mock_atomic):
+        package = _passing_package()
+        package.repo_risks = [
+            RepoRisk(
+                repo_id="copr:<host>:<user>:test",
+                source="/etc/yum.repos.d/copr.repo",
+                risk="warning",
+                reason="COPR",
+            )
+        ]
+        checks = ReleaseReadiness._fedora45_upgrade_checks(package)
+        check_ids = {check.id for check in checks}
+        self.assertIn("fedora45-repo-config-layout", check_ids)
+        self.assertIn("fedora45-python315-setuptools", check_ids)
+        self.assertIn("fedora45-networkmanager-ipv6-mostly", check_ids)
+        self.assertIn("fedora45-podman6", check_ids)
+        self.assertIn("fedora45-atomic-flatpak-filtering", check_ids)
+        self.assertIn("fedora45-rpm-openssl-compat", check_ids)
+        self.assertIn("fedora45-packagekit-dnf5-consistency", check_ids)
+        repo_check = next(check for check in checks if check.id == "fedora45-repo-config-layout")
+        self.assertEqual(repo_check.severity, "warning")
 
     @patch.object(ReleaseReadiness, "_tls_check")
     @patch.object(ReleaseReadiness, "_flatpak_check")
@@ -138,6 +167,50 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         self.assertEqual(report.target_metadata.key, "44")
         self.assertEqual(report.target, "Fedora KDE 44")
         self.assertNotEqual(report.status, "preview")
+
+    @patch.object(ReleaseReadiness, "_fedora45_upgrade_checks", return_value=[])
+    @patch.object(ReleaseReadiness, "_tls_check")
+    @patch.object(ReleaseReadiness, "_flatpak_check")
+    @patch.object(ReleaseReadiness, "_nvidia_check")
+    @patch.object(ReleaseReadiness, "_atomic_check")
+    @patch("core.diagnostics.release_readiness.DNF5HealthService.collect")
+    @patch("core.diagnostics.release_readiness.KDE44DesktopService.collect")
+    @patch.object(ReleaseReadiness, "_os_release")
+    def test_run_upgrade_plan_records_mode(
+        self,
+        mock_os_release,
+        mock_desktop,
+        mock_package,
+        mock_atomic,
+        mock_nvidia,
+        mock_flatpak,
+        mock_tls,
+        mock_f45,
+    ):
+        mock_os_release.return_value = {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
+        mock_desktop.return_value = _passing_desktop()
+        mock_package.return_value = _passing_package()
+        for mock_check, cid in (
+            (mock_atomic, "atomic-status"),
+            (mock_nvidia, "nvidia-akmods-secureboot"),
+            (mock_flatpak, "flatpak-kde-runtimes"),
+            (mock_tls, "tls-cert-compat"),
+        ):
+            mock_check.return_value = ReadinessCheck(
+                id=cid,
+                title=cid,
+                category="system",
+                status="pass",
+                severity="info",
+                summary="ok",
+                beginner_guidance="ok",
+            )
+
+        report = ReleaseReadiness.run("45-preview", mode="upgrade-plan")
+        self.assertEqual(report.mode, "upgrade-plan")
+        self.assertEqual(report.status, "preview")
+        self.assertEqual(report.target_metadata.key, "45-preview")
+        mock_f45.assert_called_once()
 
 
 class TestFedora44ReadinessAggregation(unittest.TestCase):
@@ -353,6 +426,53 @@ class TestReadinessCLI(unittest.TestCase):
         payload = json.loads(mock_print.call_args.args[0])
         self.assertEqual(payload["target_metadata"]["key"], "45-preview")
 
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")
+    @patch("builtins.print")
+    def test_cli_readiness_plan_json(self, mock_print, mock_run):
+        cli_mod._json_output = True
+        mock_run.return_value = Fedora44ReadinessReport(
+            target="Fedora KDE 45 Preview",
+            generated_at=1.0,
+            score=75,
+            status="preview",
+            summary="preview",
+            checks=[],
+            target_metadata=TARGETS["45-preview"],
+            mode="upgrade-plan",
+        )
+        result = cli_mod.cmd_readiness(MagicMock(readiness_action="plan", target="45-preview"))
+        self.assertEqual(result, 0)
+        payload = json.loads(mock_print.call_args.args[0])
+        self.assertEqual(payload["mode"], "upgrade-plan")
+        self.assertIn("target_changes", payload)
+
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.explain_check")
+    @patch("builtins.print")
+    def test_cli_readiness_explain_json(self, mock_print, mock_explain):
+        cli_mod._json_output = True
+        mock_explain.return_value = {
+            "target": "Fedora KDE 45 Preview",
+            "check": {"id": "fedora45-podman6", "title": "Podman 6"},
+            "target_metadata": TARGETS["45-preview"].to_dict(),
+        }
+        result = cli_mod.cmd_readiness(
+            MagicMock(readiness_action="explain", action_id="fedora45-podman6", target="45-preview")
+        )
+        self.assertEqual(result, 0)
+        payload = json.loads(mock_print.call_args.args[0])
+        self.assertEqual(payload["check"]["id"], "fedora45-podman6")
+
+    @patch("core.export.support_bundle_v5.SupportBundleV5.save_json")
+    @patch("cli.main._print")
+    def test_cli_readiness_export_text(self, mock_print, mock_save):
+        cli_mod._json_output = False
+        result = cli_mod.cmd_readiness(
+            MagicMock(readiness_action="export", target="45-preview", path="bundle.json")
+        )
+        self.assertEqual(result, 0)
+        mock_save.assert_called_once_with("bundle.json", target="45-preview")
+        self.assertIn("Exported readiness support bundle", mock_print.call_args.args[0])
+
 
 class TestSupportBundleV3(unittest.TestCase):
     """Support bundle v3 includes masked readiness diagnostics."""
@@ -376,7 +496,7 @@ class TestSupportBundleV3(unittest.TestCase):
             package=package,
         )
         bundle = SupportBundleV3.generate_bundle()
-        self.assertEqual(bundle["v"], "7.0.0-aegis-support-v5")
+        self.assertEqual(bundle["v"], SupportBundleV5.BUNDLE_SCHEMA)
         self.assertIn("release_readiness", bundle)
         self.assertIn("fedora_kde_44_readiness", bundle)
         self.assertEqual(bundle["release_readiness"], bundle["fedora_kde_44_readiness"])
@@ -403,7 +523,10 @@ class TestSupportBundleV3(unittest.TestCase):
         )
         bundle = SupportBundleV5.generate_bundle()
         text = json.dumps(bundle)
-        self.assertEqual(bundle["schema"], "7.0.0-aegis-support-v5")
+        self.assertEqual(bundle["schema"], SupportBundleV5.BUNDLE_SCHEMA)
+        self.assertIn("release_plan", bundle)
+        self.assertIn("target_changes", bundle)
+        self.assertIn("update_preview", bundle)
         self.assertNotIn("/home/loofi", text)
         self.assertNotIn("user@example.com", text)
         self.assertNotIn("token=abc", text)

@@ -1,13 +1,13 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v8.1.0 "Breeze" includes a read-only release readiness center plus safe guided action planning. Fedora KDE 44 is the supported target. Fedora 45 remains preview-only and advisory.
+Loofi Fedora Tweaks v10.0.0 "Waypoint" includes a read-only release readiness center plus a guided Upgrade Assistant. Fedora KDE 44 is the supported stable target. Fedora 45 remains preview-only and advisory.
 
 ## Run It
 
 GUI:
 
 - Open **Home**.
-- Choose **Release Readiness**.
+- Choose **Upgrade Assistant** for guided planning or **Release Readiness** for the detailed report.
 - Review beginner guidance first.
 - Use **Advanced** only when you need raw command/status details.
 - Use **Action Inbox** to review candidate actions. There is no fix-all action.
@@ -16,6 +16,9 @@ CLI:
 
 ```bash
 loofi-fedora-tweaks --cli readiness --target 44
+loofi-fedora-tweaks --cli readiness plan --target 45-preview
+loofi-fedora-tweaks --cli readiness explain <check-id> --target 45-preview
+loofi-fedora-tweaks --cli readiness export --target 45-preview
 loofi-fedora-tweaks --cli readiness --target 44 --advanced
 loofi-fedora-tweaks --cli readiness actions --target 44
 loofi-fedora-tweaks --cli readiness action-info <action-id> --target 44
@@ -67,9 +70,9 @@ Rules:
 - Manual-only recommendations cannot be executed.
 - Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 
-## Support Bundle v5
+## Support Bundle v6
 
-Support bundles now include privacy-masked generic `release_readiness` data and guided action context:
+Support bundles now include privacy-masked generic `release_readiness` data, release planning metadata, and guided action context:
 
 - Fedora/KDE/Qt versions
 - session type and display manager
@@ -81,6 +84,8 @@ Support bundles now include privacy-masked generic `release_readiness` data and 
 - Flatpak runtimes
 - masked repository list
 - action candidates or action plan summary
+- release plan and target change metadata
+- update preview and redacted package/repo health details
 - recent redacted action history
 - privacy manifest
 

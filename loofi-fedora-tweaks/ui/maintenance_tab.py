@@ -656,7 +656,9 @@ class _SmartUpdatesSubTab(QWidget):
             updates = UpdateManager.check_updates()
             self.updates_list.clear()
             for u in updates:
-                item = QListWidgetItem(f"{u.name}  {u.old_version} → {u.new_version}  ({u.source})")
+                old_version = f"{u.old_version} → " if u.old_version else ""
+                source = u.repo or u.severity
+                item = QListWidgetItem(f"{u.name}  {old_version}{u.version}  ({source})")
                 self.updates_list.addItem(item)
             if not updates:
                 self.updates_list.addItem(QListWidgetItem(self.tr("System is up to date.")))
@@ -671,7 +673,7 @@ class _SmartUpdatesSubTab(QWidget):
             conflicts = UpdateManager.preview_conflicts()
             self.updates_list.clear()
             for c in conflicts:
-                item = QListWidgetItem(f"⚠ {c.package}: {c.conflict_type} — {c.description}")
+                item = QListWidgetItem(f"WARNING {c.package}: {c.reason}")
                 self.updates_list.addItem(item)
             if not conflicts:
                 self.updates_list.addItem(QListWidgetItem(self.tr("No conflicts detected.")))
@@ -682,7 +684,7 @@ class _SmartUpdatesSubTab(QWidget):
         try:
             from utils.update_manager import UpdateManager
 
-            scheduled = UpdateManager.schedule_update("02:00")
+            scheduled = UpdateManager.schedule_update(when="02:00")
             cmds = UpdateManager.get_schedule_commands(scheduled)
             for binary, args, desc in cmds:
                 self._append_output(f"{desc}\n")
@@ -699,6 +701,79 @@ class _SmartUpdatesSubTab(QWidget):
             self.runner.run_command(binary, args)
         except (RuntimeError, OSError, ValueError) as e:
             self._append_output(f"[ERROR] {e}\n")
+
+
+# ---------------------------------------------------------------------------
+# Sub-tab: Upgrade Assistant (v10.0 Waypoint)
+# ---------------------------------------------------------------------------
+
+
+class _UpgradeAssistantSubTab(QWidget):
+    """Guided release planning entry point backed by ReleaseReadiness."""
+
+    def __init__(self):
+        super().__init__()
+        layout = QVBoxLayout()
+        layout.setSpacing(14)
+        self.setLayout(layout)
+
+        header = QLabel(self.tr("Upgrade Assistant"))
+        header.setObjectName("header")
+        layout.addWidget(header)
+
+        intro = QLabel(
+            self.tr(
+                "Plan Fedora release work with read-only checks, risk explanations, "
+                "command previews, confirmed actions, verification, and support export."
+            )
+        )
+        intro.setWordWrap(True)
+        layout.addWidget(intro)
+
+        from core.diagnostics.release_readiness import ReleaseReadiness
+
+        for target in ReleaseReadiness.list_targets():
+            group = QGroupBox(target.label)
+            group_layout = QVBoxLayout(group)
+            summary = QLabel(f"{target.status_label} · {target.release_phase}")
+            summary.setWordWrap(True)
+            group_layout.addWidget(summary)
+
+            if target.important_changes:
+                changes = QLabel("\n".join(f"- {change.title}: {change.summary}" for change in target.important_changes))
+                changes.setWordWrap(True)
+                group_layout.addWidget(changes)
+
+            actions = QHBoxLayout()
+            open_button = QPushButton(self.tr("Open Guided Check"))
+            open_button.clicked.connect(lambda _checked=False, key=target.key: self._open_readiness(key))
+            actions.addWidget(open_button)
+
+            export_button = QPushButton(self.tr("Export Bundle"))
+            export_button.clicked.connect(lambda _checked=False, key=target.key: self._export_bundle(key))
+            actions.addWidget(export_button)
+            actions.addStretch()
+            group_layout.addLayout(actions)
+
+            layout.addWidget(group)
+
+        layout.addStretch()
+
+    def _open_readiness(self, target_key: str) -> None:
+        from ui.release_readiness_dialog import ReleaseReadinessDialog
+
+        dialog = ReleaseReadinessDialog(target_key, self)
+        dialog.exec()
+
+    def _export_bundle(self, target_key: str) -> None:
+        from core.export.support_bundle_v5 import SupportBundleV5
+
+        path = f"loofi-readiness-{target_key}.json"
+        try:
+            SupportBundleV5.save_json(path, target=target_key)
+            QMessageBox.information(self, self.tr("Export Complete"), self.tr("Saved support bundle to %1").replace("%1", path))
+        except (OSError, RuntimeError, ValueError) as exc:
+            QMessageBox.critical(self, self.tr("Export Failed"), str(exc))
 
 
 # ---------------------------------------------------------------------------
@@ -741,6 +816,7 @@ class MaintenanceTab(BaseTab):
             (self.tr("Updates"), _UpdatesSubTab),
             (self.tr("Cleanup"), _CleanupSubTab),
             (self.tr("Smart Updates"), _SmartUpdatesSubTab),
+            (self.tr("Upgrade Assistant"), _UpgradeAssistantSubTab),
         ]
 
         if SystemManager.is_atomic():

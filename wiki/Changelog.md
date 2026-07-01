@@ -10,6 +10,21 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ## Latest Release
 
+### v10.0.0 "Waypoint" (2026-07-01)
+
+**Release Upgrade Assistant & Guided UX** with Fedora 44 stable readiness, Fedora 45 preview planning, command previews, verification, and support bundle export.
+
+**Key Changes:**
+- Added Upgrade Assistant entry points from Home and Maintenance
+- Expanded Fedora 45 preview checks for repo config relocation, Python 3.15 packaging risk, IPv6-mostly NetworkManager behavior, Podman 6, Atomic Flatpak filtering, RPM/OpenSSL/certificate compatibility, and KDE/PackageKit-DNF5 consistency
+- Added CLI commands for `readiness plan`, `readiness explain`, and `readiness export`
+- Updated Support Bundle v6 with release plan, target changes, update preview, action history, and redacted package/repo health details
+- Regenerated user guide and wiki screenshots from the v10 PyQt UI
+
+**Test Suite**: Local release gates passed with 7,397 tests, 48 skipped, lint/typecheck clean, packaging check clean, and 84.11% coverage.
+
+---
+
 ### v8.1.0 "Breeze" (2026-05-13)
 
 **Focused UI/UX redesign** with an airy desktop layout, five-area default sidebar, clearer page headers, and responsive Wayland/fractional-scaling behavior.

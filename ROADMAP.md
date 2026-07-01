@@ -63,11 +63,43 @@
 | v7.0.0  | Aegis                           | DONE    | Safe guided actions, release reliability, Fedora 44 polish, support diagnostics              |
 | v8.0.0  | Beacon                          | DONE    | Navigation-first UX, visual routing clarity, safety and packaging hardening                  |
 | v8.1.0  | Breeze                          | DONE    | Focused sidebar, airy desktop layout, responsive scaling, and updated screenshots            |
-| v9.0.0  | Keystone                        | ACTIVE  | Whole-app quality, execution consistency, state reliability, and release hygiene             |
+| v9.0.0  | Keystone                        | DONE    | Whole-app quality, execution consistency, state reliability, and release hygiene             |
+| v10.0.0 | Waypoint                        | ACTIVE  | Release Upgrade Assistant, Fedora 45 preview planning, and guided readiness UX              |
 
 ---
 
-## [ACTIVE] v9.0.0 "Keystone" — Whole-App Quality Release
+## [ACTIVE] v10.0.0 "Waypoint" — Release Upgrade Assistant & Guided UX
+
+**Theme**: Guided Fedora release planning that improves the whole app experience without adding a new permanent feature tab.
+**Focus**: Upgrade Assistant entry points, richer Fedora 45 preview checks, readiness CLI planning commands, Support Bundle v6, Smart Updates consistency, and v10 release hygiene.
+
+### Scope
+
+v10.0.0 "Waypoint" keeps Fedora KDE 44 as the stable supported readiness target and expands Fedora 45 as a non-blocking preview planning profile. It promotes release readiness from a modal-only diagnostic into a guided workflow reachable from Home and Maintenance, while preserving existing route IDs, plugin IDs, CLI compatibility, favorites, and saved settings.
+
+### Deliverables
+
+- [x] Version metadata aligned to `10.0.0 "Waypoint"`
+- [x] v9.0.0 "Keystone" marked completed and v10.0.0 activated
+- [x] ReleaseTarget metadata expanded with phase, status, upgrade source, important changes, known risks, and docs links
+- [x] Fedora 45 preview checks added for repository layout, Python 3.15/Setuptools, IPv6-mostly NetworkManager, Podman 6, Atomic Flatpak filtering, RPM/OpenSSL, and PackageKit-DNF5 consistency
+- [x] `readiness plan`, `readiness explain`, and `readiness export` CLI commands added
+- [x] Maintenance Upgrade Assistant subroute added under the existing Maintenance plugin
+- [x] Home route card added for Upgrade Assistant entry
+- [x] Support Bundle v6 fields added while preserving v5-compatible payloads
+- [x] Smart Updates scheduled command generation hardened with validated package arguments
+- [x] v10 workflow specs, release notes, README, changelog, package metadata, and AppStream metadata refreshed
+
+### Compatibility
+
+- Fedora KDE 44 remains the stable supported target.
+- Fedora 45 remains preview-only and advisory.
+- Stable `NavigationRoute` IDs, CLI compatibility aliases, plugin metadata, favorites, and saved settings remain backward compatible.
+- Mutating actions continue through list-based commands, `pkexec` boundaries, allowlist validation, timeouts, and audit metadata.
+
+---
+
+## [DONE] v9.0.0 "Keystone" — Whole-App Quality Release
 
 **Theme**: Whole-app quality release that improves consistency, reliability, and supportability without making Fedora 45 the main target.
 **Focus**: Shared command execution policy, settings/state reliability, route/plugin drift checks, release hygiene, documentation cleanup, and targeted UX polish across existing workflows.

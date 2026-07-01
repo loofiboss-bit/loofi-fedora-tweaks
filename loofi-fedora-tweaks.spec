@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        9.0.0
+Version:        10.0.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -29,17 +29,16 @@ Obsoletes:      loofi-fedora-tweaks < 1:1.0.0
 Provides:       loofi-fedora-tweaks = 1:%{version}-%{release}
 
 %description
-A comprehensive GUI application for Fedora KDE 44
-with system maintenance, developer
-tooling, AI integration, security hardening,
-window management, virtualization, mesh networking,
-and workspace state teleportation. Features include
-VM Quick-Create, VFIO GPU Passthrough, Loofi Link
-Mesh, State Teleport, AI Lab, Security Center,
-Director, Containers, and Replicator IaC.
+A comprehensive GUI application for Fedora KDE with
+system maintenance, developer tooling, AI integration,
+security hardening, window management, virtualization,
+mesh networking, and workspace state teleportation.
 
-Fedora KDE 44 remains the supported target for v8.1.0 Breeze.
-Fedora 45 remains preview-only and advisory.
+v10.0.0 Waypoint adds a guided Upgrade Assistant that
+keeps Fedora KDE 44 as the stable supported target while
+expanding Fedora 45 preview planning with read-only
+checks, command previews, action verification, and
+support-bundle export.
 
 %package api
 Summary:        Optional Loofi Fedora Tweaks Web API runtime
@@ -164,6 +163,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Wed Jul 01 2026 Loofi <loofi@example.com> - 10.0.0-1
+- v10.0.0 "Waypoint" - Release Upgrade Assistant, Fedora 45 preview planning, readiness CLI, and Support Bundle v6
+
 * Wed May 13 2026 Loofi <loofi@example.com> - 8.1.0-1
 - v8.1.0 "Breeze" - Focused sidebar, airy desktop layout, and responsive scaling
 - Added PyQt-free focused navigation areas beside the route manifest

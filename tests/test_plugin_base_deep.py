@@ -111,7 +111,7 @@ class TestPluginLoaderState(unittest.TestCase):
 
     def test_parse_version(self):
         self.assertEqual(self.loader._parse_version("1.2.3"), (1, 2, 3))
-        self.assertEqual(self.loader._parse_version("10.0.0"), (10, 0, 0))
+        self.assertEqual(self.loader._parse_version("10.0.0"), (10, 0, 0))  # fixture-version
         self.assertEqual(self.loader._parse_version("1.2.beta"), (1, 2, 0))
 
     def test_is_version_compatible_none(self):

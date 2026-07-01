@@ -2,13 +2,14 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v8.1.0 "Breeze"
+**Last verified**: v10.0.0 "Waypoint"
 
-**Status**: Screenshot filenames remain stable for v8.1 docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
+**Status**: Screenshot filenames remain stable for user docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
 
 ## Current Files
 
 - `home-dashboard.png` -- Home
+- `upgrade-assistant.png` -- Software & Updates > Maintenance > Upgrade Assistant
 - `release-readiness.png` -- Home > Release Readiness
 - `release-readiness-advanced.png` -- Release Readiness advanced details
 - `system-monitor.png` -- System & Hardware > System Monitor
@@ -51,7 +52,8 @@ For manual verification after regeneration:
 
 | Screenshot | Navigate To | Notes |
 |------------|-------------|-------|
-| `home-dashboard.png` | Home | Show focused sidebar and Home route cards |
+| `home-dashboard.png` | Home | Show focused sidebar, v10 release title, and Upgrade Assistant entry |
+| `upgrade-assistant.png` | Software & Updates > Maintenance > Upgrade Assistant | Show Fedora 44 stable and Fedora 45 preview planning |
 | `release-readiness.png` | Home > Release Readiness | Show grouped beginner readiness findings |
 | `release-readiness-advanced.png` | Home > Release Readiness > Advanced | Show command/recommendation metadata |
 | `system-monitor.png` | System & Hardware > System Monitor | Show CPU/RAM/process data |
@@ -63,7 +65,7 @@ For manual verification after regeneration:
 | `community-marketplace.png` | Search/direct route > Community | Show marketplace tab |
 | `settings-appearance.png` | Desktop & Settings > Settings | Show appearance options |
 
-### Additional screenshots to consider after v5
+### Additional screenshots to consider next
 
 - `extensions-tab.png` -- Manage > Extensions (new in v37)
 - `backup-tab.png` -- Manage > Backup (new in v37)

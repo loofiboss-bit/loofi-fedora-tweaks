@@ -1,6 +1,6 @@
 # Screenshots
 
-Fresh UI screenshots for **v8.1.0 "Breeze"**, captured from the real PyQt app in May 2026.
+Fresh UI screenshots for **v10.0.0 "Waypoint"**, captured from the real PyQt app in July 2026.
 
 ## Navigation and System Workflows
 
@@ -11,6 +11,10 @@ Fresh UI screenshots for **v8.1.0 "Breeze"**, captured from the real PyQt app in
 | Maintenance Updates | Release Readiness |
 | --- | --- |
 | ![Maintenance Updates](images/maintenance-updates.png) | ![Release Readiness](images/release-readiness.png) |
+
+## Upgrade Planning
+
+![Upgrade Assistant](images/upgrade-assistant.png)
 
 ## Network and Security
 

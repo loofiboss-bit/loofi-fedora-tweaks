@@ -41,6 +41,17 @@
   </provides>
 
   <releases>
+    <release version="10.0.0" date="2026-07-01">
+      <description>
+        <p>v10.0.0 "Waypoint" - Release Upgrade Assistant &amp; Guided UX</p>
+        <ul>
+          <li>Added Home and Maintenance entry points for the guided Upgrade Assistant</li>
+          <li>Expanded Fedora 45 preview planning with read-only compatibility checks</li>
+          <li>Added readiness plan, explain, and export CLI commands</li>
+          <li>Extended support bundles with release plan, target changes, action history, and update preview data</li>
+        </ul>
+      </description>
+    </release>
     <release version="8.1.0" date="2026-05-13">
       <description>
         <p>v8.1.0 "Breeze" - Focused Sidebar &amp; Airy UI</p>

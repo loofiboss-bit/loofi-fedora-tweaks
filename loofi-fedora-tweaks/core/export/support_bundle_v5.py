@@ -21,9 +21,13 @@ logger = get_logger(__name__)
 
 
 class SupportBundleV5:
-    """Privacy-masked diagnostic bundle for guided readiness support."""
+    """Privacy-masked diagnostic bundle for guided readiness support.
 
-    BUNDLE_SCHEMA = "7.0.0-aegis-support-v5"
+    The class name stays stable for compatibility; the v10 payload schema is
+    support-v6 and preserves all v5 fields.
+    """
+
+    BUNDLE_SCHEMA = "10.0.0-waypoint-support-v6"
     _SECRET_KEY_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)")
     _SECRET_VALUE_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key)=([^\s&]+)")
     _HOME_RE = re.compile(r"/home/[^/\\s]+")
@@ -83,12 +87,20 @@ class SupportBundleV5:
 
     @classmethod
     def generate_bundle(cls, target: str = "44") -> Dict[str, Any]:
-        readiness = ReleaseReadiness.run(target)
+        mode = "upgrade-plan" if target == "45-preview" else "check"
+        readiness = ReleaseReadiness.run(target, mode=mode)
         package_report = readiness.package or DNF5HealthService.collect()
         readiness_payload = readiness.to_dict(advanced=True)
         action_plan = ReadinessActionService.build_plan(target, report=readiness)
         action_history = ActionExecutor.get_action_log(limit=25)
         system_info = ReportExporter.gather_system_info()
+        release_plan = ReleaseReadiness.build_release_plan(readiness)
+        update_preview = {
+            "package_manager": package_report.package_manager,
+            "dnf_locked": package_report.dnf_locked,
+            "repo_probe_ok": package_report.repo_probe_ok,
+            "repo_risks": [risk.to_dict() for risk in package_report.repo_risks],
+        }
 
         bundle: Dict[str, Any] = {
             "v": cls.BUNDLE_SCHEMA,
@@ -101,9 +113,12 @@ class SupportBundleV5:
             "system": system_info,
             "release_readiness": readiness_payload,
             "fedora_kde_44_readiness": readiness_payload,
+            "release_plan": release_plan,
+            "target_changes": readiness_payload.get("target_changes", {}),
             "action_candidates": [candidate.to_dict() for candidate in action_plan.candidates],
             "action_plan": action_plan.to_dict(),
             "action_history": action_history,
+            "update_preview": update_preview,
             "readiness_delta": cls._readiness_delta(),
             "support_summary": readiness.support_summary(),
             "desktop": readiness.desktop.to_dict() if readiness.desktop else {},

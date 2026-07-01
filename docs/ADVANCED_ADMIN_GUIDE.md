@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 8.1.0 "Breeze"
+> Version 10.0.0 "Waypoint"
 
 Operational runbook for power users and Fedora admins.
 
@@ -43,10 +43,13 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 ## 3) Weekly Maintenance Window
 
 1. Create snapshot baseline
-2. Run **Software & Updates → Maintenance → Updates**
-3. Run **Software & Updates → Maintenance → Cleanup**
-4. Validate **Security & Privacy** score/firewall
-5. Review **System & Hardware → System Monitor** and **Logs** from search, favorites, or Advanced mode for regressions
+2. Review **Software & Updates → Maintenance → Upgrade Assistant** for Fedora 44 readiness and Fedora 45 preview risk
+3. Run **Software & Updates → Maintenance → Updates**
+4. Run **Software & Updates → Maintenance → Cleanup**
+5. Validate **Security & Privacy** score/firewall
+6. Review **System & Hardware → System Monitor** and **Logs** from search, favorites, or Advanced mode for regressions
+
+![Upgrade Assistant](images/user-guide/upgrade-assistant.png)
 
 ![Maintenance Updates](images/user-guide/maintenance-updates.png)
 

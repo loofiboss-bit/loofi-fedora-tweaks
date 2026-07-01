@@ -1,6 +1,6 @@
 # GUI Tabs Reference
 
-Complete reference for the focused navigation areas in Loofi Fedora Tweaks v8.1.0 "Breeze".
+Complete reference for the focused navigation areas in Loofi Fedora Tweaks v10.0.0 "Waypoint".
 
 ---
 
@@ -8,7 +8,7 @@ Complete reference for the focused navigation areas in Loofi Fedora Tweaks v8.1.
 
 The default sidebar intentionally stays small:
 
-1. **Home** — Home dashboard and release readiness guidance.
+1. **Home** — Home dashboard, Upgrade Assistant entry, and release readiness guidance.
 2. **Software & Updates** — Software, Maintenance, Snapshots, and Virtualization.
 3. **System & Hardware** — System Info, System Monitor, Hardware, Storage, Health, Diagnostics, Performance, and Gaming.
 4. **Network & Security** — Network, Security & Privacy, Backup, and Loofi Link.
@@ -21,7 +21,7 @@ The default sidebar intentionally stays small:
 ## Software & Updates
 
 2. Software (`software_tab.py`)
-3. Maintenance (`maintenance_tab.py`)
+3. Maintenance (`maintenance_tab.py`) — Includes Updates, Cleanup, Smart Updates, and Upgrade Assistant.
 4. Snapshots (`snapshot_tab.py`) — Advanced/search/favorite route by default.
 5. Virtualization (`virtualization_tab.py`) — Advanced/search/favorite route by default.
 

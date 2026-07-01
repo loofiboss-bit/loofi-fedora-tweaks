@@ -26,6 +26,7 @@ WINDOW_SIZE = QSize(1400, 900)
 
 ROUTE_SCREENSHOTS = [
     ("home-dashboard.png", ""),
+    ("upgrade-assistant.png", "maintenance:upgrade-assistant"),
     ("system-monitor.png", "system-monitor:processes"),
     ("maintenance-updates.png", "maintenance:updates"),
     ("network-overview.png", "network:connections"),

@@ -116,6 +116,13 @@ class AtlasDashboardTab(BaseTab):
         overview_card.mousePressEvent = lambda event: self._open_route("dashboard")  # type: ignore[method-assign]
         layout.addWidget(overview_card)
 
+        upgrade_card = RouteCard(
+            "Upgrade Assistant",
+            "Review Fedora 44 readiness, Fedora 45 preview changes, safe action previews, verification, and support export.",
+        )
+        upgrade_card.mousePressEvent = lambda event: self._open_route("maintenance:upgrade-assistant")  # type: ignore[method-assign]
+        layout.addWidget(upgrade_card)
+
         # Task Grid
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)

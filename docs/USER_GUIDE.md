@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 8.1.0 "Breeze" — Focused Sidebar and Airy Desktop Layout
+> Version 10.0.0 "Waypoint" — Upgrade Assistant and Guided Fedora Readiness
 
 This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
 
@@ -99,11 +99,13 @@ Advanced and specialized pages are not removed. AI Lab, Agents, Automation, Logs
 
 ### Daily (2–3 minutes)
 
-1. Check **Home → Release Readiness** after install or system upgrades.
+1. Check **Home → Upgrade Assistant** or **Home → Release Readiness** after install or system upgrades.
 2. Check **System & Hardware → System Monitor** for abnormal CPU/RAM/process usage.
 3. Check **Network & Security → Security & Privacy** if score dropped or alerts appear.
 
 ![Release Readiness](images/user-guide/release-readiness.png)
+
+![Upgrade Assistant](images/user-guide/upgrade-assistant.png)
 
 ![System Monitor](images/user-guide/system-monitor.png)
 

@@ -8,6 +8,7 @@ import platform
 import re
 import subprocess
 import time
+import glob
 from dataclasses import dataclass, field
 from typing import Dict, List, Optional
 
@@ -18,6 +19,26 @@ from services.system.system import SystemManager, cached_which
 from utils.log import get_logger
 
 logger = get_logger(__name__)
+
+
+@dataclass(frozen=True)
+class ReleaseChange:
+    """Static release-profile metadata shown in upgrade planning surfaces."""
+
+    id: str
+    title: str
+    summary: str
+    impact: str = "info"
+    docs_link: str = ""
+
+    def to_dict(self) -> Dict[str, str]:
+        return {
+            "id": self.id,
+            "title": self.title,
+            "summary": self.summary,
+            "impact": self.impact,
+            "docs_link": self.docs_link,
+        }
 
 
 @dataclass(frozen=True)
@@ -34,6 +55,12 @@ class ReleaseTarget:
     min_qt: tuple[int, ...] = (6, 6)
     beta_target: str = ""
     final_target: str = ""
+    status_label: str = "Supported"
+    release_phase: str = "stable"
+    upgrade_from: tuple[str, ...] = ()
+    important_changes: tuple[ReleaseChange, ...] = ()
+    known_risks: tuple[ReleaseChange, ...] = ()
+    docs_links: tuple[str, ...] = ()
 
     def to_dict(self) -> Dict[str, object]:
         return {
@@ -47,6 +74,12 @@ class ReleaseTarget:
             "min_qt": ".".join(str(part) for part in self.min_qt),
             "beta_target": self.beta_target,
             "final_target": self.final_target,
+            "status_label": self.status_label,
+            "release_phase": self.release_phase,
+            "upgrade_from": list(self.upgrade_from),
+            "important_changes": [change.to_dict() for change in self.important_changes],
+            "known_risks": [risk.to_dict() for risk in self.known_risks],
+            "docs_links": list(self.docs_links),
         }
 
 
@@ -57,6 +90,38 @@ TARGETS: Dict[str, ReleaseTarget] = {
         fedora_version="44",
         supported=True,
         compatible_versions=("43",),
+        status_label="Supported baseline",
+        release_phase="stable",
+        upgrade_from=("43",),
+        important_changes=(
+            ReleaseChange(
+                "packagekit-dnf5",
+                "PackageKit uses DNF5",
+                "Fedora 44 aligns graphical software tools and command-line package management on the DNF5 stack.",
+                "medium",
+                "https://discussion.fedoraproject.org/t/f44-change-proposal-packagekit-dnf5-systemwide/179013",
+            ),
+            ReleaseChange(
+                "kde-oobe",
+                "Unified KDE setup",
+                "Fedora KDE variants use Plasma Setup for a more consistent first-run experience.",
+                "info",
+                "https://fedoraproject.org/wiki/Releases/44/ChangeSet",
+            ),
+        ),
+        known_risks=(
+            ReleaseChange(
+                "legacy-cert-path",
+                "Legacy TLS bundle path changed",
+                "Some legacy tools may still expect /etc/pki/tls/cert.pem even though Fedora uses the generated CA trust bundle.",
+                "low",
+                "https://fedoraproject.org/wiki/Releases/44/ChangeSet",
+            ),
+        ),
+        docs_links=(
+            "https://fedoraproject.org/kde/download/",
+            "https://fedoramagazine.org/announcing-fedora-linux-44/",
+        ),
     ),
     "45-preview": ReleaseTarget(
         key="45-preview",
@@ -67,6 +132,64 @@ TARGETS: Dict[str, ReleaseTarget] = {
         compatible_versions=("44",),
         beta_target="2026-09-15",
         final_target="2026-10-20",
+        status_label="Preview planning profile",
+        release_phase="preview",
+        upgrade_from=("44",),
+        important_changes=(
+            ReleaseChange(
+                "repo-configs-usr",
+                "Packaged repository configs move to /usr",
+                "Fedora 45 plans to relocate packaged RPM repository configuration data from /etc to /usr.",
+                "medium",
+                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
+            ),
+            ReleaseChange(
+                "python-315",
+                "Python 3.15 and Setuptools changes",
+                "Fedora 45 includes Python 3.15 planning and Setuptools 82+ compatibility work that can affect tools using removed legacy APIs.",
+                "medium",
+                "https://fedoraproject.org/wiki/Changes/Python3.15",
+            ),
+            ReleaseChange(
+                "networkmanager-ipv6-mostly",
+                "IPv6-mostly NetworkManager support",
+                "NetworkManager gains default support for IPv6-mostly networks.",
+                "low",
+                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
+            ),
+            ReleaseChange(
+                "podman-6",
+                "Podman 6",
+                "Podman 6 brings CLI/API changes and removes some deprecated container networking/storage components.",
+                "medium",
+                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
+            ),
+            ReleaseChange(
+                "atomic-flatpak-filtering",
+                "Atomic Flatpak filtering",
+                "Atomic Desktop images may filter Fedora Flatpaks and enable a verified Flathub subset by default.",
+                "low",
+                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
+            ),
+        ),
+        known_risks=(
+            ReleaseChange(
+                "third-party-repos",
+                "Third-party repositories need review",
+                "COPR, vendor, and RPM Fusion repositories can lag major release changes and should be audited before upgrade.",
+                "medium",
+            ),
+            ReleaseChange(
+                "rpm-openssl-compat",
+                "RPM/OpenSSL compatibility should be checked",
+                "RPM and OpenSSL stack changes can expose stale package metadata, signatures, or certificate assumptions.",
+                "medium",
+            ),
+        ),
+        docs_links=(
+            "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
+            "https://fedoraproject.org/wiki/Changes/Python3.15",
+        ),
     ),
 }
 
@@ -151,6 +274,7 @@ class ReleaseReadinessReport:
     desktop: Optional[KDE44DesktopInfo] = None
     package: Optional[DNF5HealthReport] = None
     target_metadata: ReleaseTarget = field(default_factory=lambda: TARGETS["44"])
+    mode: str = "check"
 
     def to_dict(self, *, advanced: bool = True) -> Dict[str, object]:
         data: Dict[str, object] = {
@@ -160,7 +284,12 @@ class ReleaseReadinessReport:
             "score": self.score,
             "status": self.status,
             "summary": self.summary,
+            "mode": self.mode,
             "checks": [check.to_dict(advanced=advanced) for check in self.checks],
+            "target_changes": {
+                "important_changes": [change.to_dict() for change in self.target_metadata.important_changes],
+                "known_risks": [risk.to_dict() for risk in self.target_metadata.known_risks],
+            },
         }
         if advanced:
             data["desktop"] = self.desktop.to_dict() if self.desktop else {}
@@ -653,6 +782,228 @@ class ReleaseReadiness:
             ),
         )
 
+    @classmethod
+    def _fedora45_upgrade_checks(cls, package: DNF5HealthReport) -> List[ReadinessCheck]:
+        """Return Fedora 45 preview planning checks.
+
+        These probes stay read-only. They explain likely upgrade friction points
+        from the local system state rather than attempting to repair anything.
+        """
+        checks: List[ReadinessCheck] = []
+
+        repo_config_paths = [
+            path
+            for pattern in DNF5HealthService.REPO_PATHS
+            for path in sorted(glob.glob(pattern))
+        ]
+        third_party_repo_paths = [
+            risk.source
+            for risk in package.repo_risks
+            if risk.risk == "warning" or "copr" in risk.reason.lower()
+        ]
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-repo-config-layout",
+                title="Fedora 45 Repository Config Layout",
+                category="package",
+                status="warning" if third_party_repo_paths else "info",
+                severity="warning" if third_party_repo_paths else "info",
+                summary=(
+                    f"{len(third_party_repo_paths)} third-party repository file(s) should be reviewed before Fedora 45."
+                    if third_party_repo_paths
+                    else "No high-risk third-party repository config files were detected."
+                ),
+                beginner_guidance=(
+                    "Review COPR and vendor repositories before upgrading; Fedora 45 changes where packaged repo configs live."
+                    if third_party_repo_paths
+                    else "Fedora 45 repo layout changes should not require action for the detected repo set."
+                ),
+                advanced_detail=json.dumps(
+                    {
+                        "repo_files": repo_config_paths,
+                        "third_party_repo_sources": third_party_repo_paths,
+                        "change": "Packaged RPM repository configuration data moves from /etc to /usr.",
+                    },
+                    indent=2,
+                    sort_keys=True,
+                ),
+                command_preview=["ls", "/etc/yum.repos.d", "/etc/dnf/repos.d"],
+                recommendation=(
+                    ReadinessRecommendation(
+                        title="Audit third-party repositories",
+                        description="Disable stale COPR or vendor repositories before a major Fedora upgrade, then re-enable after verifying Fedora 45 support.",
+                        command_preview=[package.package_manager, "repolist", "--enabled"] if package.package_manager != "Unknown" else None,
+                        risk_level="medium",
+                        manual_only=True,
+                        docs_link="https://fedoraproject.org/wiki/Releases/45/ChangeSet",
+                    )
+                    if third_party_repo_paths
+                    else None
+                ),
+            )
+        )
+
+        pkg_resources = cls._run(["python3", "-c", "import pkg_resources"], timeout=8)
+        pkg_resources_present = pkg_resources is not None and pkg_resources.returncode == 0
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-python315-setuptools",
+                title="Python 3.15 and Setuptools Compatibility",
+                category="software",
+                status="info" if pkg_resources_present else "pass",
+                severity="info",
+                summary=(
+                    "Legacy pkg_resources compatibility module is currently importable."
+                    if pkg_resources_present
+                    else "pkg_resources is not importable in the current Python environment."
+                ),
+                beginner_guidance="Review local Python tools and plugins before Fedora 45 if they depend on older setuptools APIs.",
+                advanced_detail=((pkg_resources.stdout if pkg_resources else "") or (pkg_resources.stderr if pkg_resources else "") or "python3/pkg_resources probe completed")[:2000],
+                command_preview=["python3", "-c", "import pkg_resources"],
+                recommendation=ReadinessRecommendation(
+                    title="Review local Python tooling",
+                    description="Fedora 45 planning includes Python 3.15 and Setuptools 82+ changes; plugins should avoid pkg_resources-only APIs.",
+                    command_preview=["python3", "--version"],
+                    risk_level="low",
+                    manual_only=True,
+                    docs_link="https://fedoraproject.org/wiki/Changes/Python3.15",
+                ),
+            )
+        )
+
+        nmcli = cached_which("nmcli")
+        nm_result = cls._run(["nmcli", "-t", "-f", "NAME,ipv6.method", "connection", "show"], timeout=12) if nmcli else None
+        disabled_ipv6 = []
+        if nm_result and nm_result.returncode == 0:
+            disabled_ipv6 = [line for line in nm_result.stdout.splitlines() if line.lower().endswith(":disabled")]
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-networkmanager-ipv6-mostly",
+                title="NetworkManager IPv6-Mostly Readiness",
+                category="network",
+                status="warning" if disabled_ipv6 else ("info" if nmcli else "info"),
+                severity="warning" if disabled_ipv6 else "info",
+                summary=(
+                    f"{len(disabled_ipv6)} connection profile(s) have IPv6 disabled."
+                    if disabled_ipv6
+                    else "No IPv6-disabled NetworkManager profiles were detected."
+                ),
+                beginner_guidance=(
+                    "Review IPv6-disabled network profiles before relying on IPv6-mostly networks."
+                    if disabled_ipv6
+                    else "Network profiles look acceptable for Fedora 45 IPv6-mostly planning."
+                ),
+                advanced_detail=(nm_result.stdout if nm_result else "nmcli unavailable")[:3000],
+                command_preview=["nmcli", "-t", "-f", "NAME,ipv6.method", "connection", "show"],
+            )
+        )
+
+        podman = cls._run(["podman", "--version"], timeout=8) if cached_which("podman") else None
+        podman_text = (podman.stdout if podman else "") or (podman.stderr if podman else "")
+        podman_version = cls._version_tuple(podman_text)
+        podman_old = bool(podman_version and podman_version[0] < 6)
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-podman6",
+                title="Podman 6 Planning",
+                category="software",
+                status="warning" if podman_old else "info",
+                severity="warning" if podman_old else "info",
+                summary=podman_text.strip() or "Podman is not installed.",
+                beginner_guidance=(
+                    "Check container scripts for Podman 6 compatibility before upgrading."
+                    if podman_old
+                    else "No local Podman version blocker was detected."
+                ),
+                advanced_detail=podman_text[:2000],
+                command_preview=["podman", "--version"],
+                recommendation=(
+                    ReadinessRecommendation(
+                        title="Review container automation",
+                        description="Podman 6 removes deprecated behavior; review scripts that depend on older networking or storage defaults.",
+                        command_preview=["podman", "--version"],
+                        risk_level="medium",
+                        manual_only=True,
+                    )
+                    if podman_old
+                    else None
+                ),
+            )
+        )
+
+        atomic = SystemManager.is_atomic()
+        flatpak_remotes = cls._run(["flatpak", "remotes", "--columns=name,options"], timeout=12) if cached_which("flatpak") else None
+        remote_text = (flatpak_remotes.stdout if flatpak_remotes else "") or ""
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-atomic-flatpak-filtering",
+                title="Atomic Flatpak Filtering",
+                category="software",
+                status="info",
+                severity="info",
+                summary=(
+                    "Atomic Fedora detected; review Flatpak remotes for Fedora 45 image filtering changes."
+                    if atomic
+                    else "Traditional Fedora detected; Atomic Flatpak image filtering is informational only."
+                ),
+                beginner_guidance="Check Fedora and Flathub remotes before upgrade if this system is Atomic.",
+                advanced_detail=remote_text[:3000] if remote_text else "flatpak remotes unavailable or no remotes detected",
+                command_preview=["flatpak", "remotes", "--columns=name,options"],
+            )
+        )
+
+        rpm_result = cls._run(["rpm", "--version"], timeout=8) if cached_which("rpm") else None
+        openssl_result = cls._run(["openssl", "version"], timeout=8) if cached_which("openssl") else None
+        rpm_text = (rpm_result.stdout if rpm_result else "") or (rpm_result.stderr if rpm_result else "")
+        openssl_text = (openssl_result.stdout if openssl_result else "") or (openssl_result.stderr if openssl_result else "")
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-rpm-openssl-compat",
+                title="RPM and OpenSSL Compatibility",
+                category="system",
+                status="pass" if rpm_text and openssl_text else "warning",
+                severity="info" if rpm_text and openssl_text else "warning",
+                summary=f"{rpm_text.strip() or 'rpm unavailable'}; {openssl_text.strip() or 'openssl unavailable'}",
+                beginner_guidance=(
+                    "RPM and OpenSSL probes are available."
+                    if rpm_text and openssl_text
+                    else "Install or repair base RPM/OpenSSL tooling before major release work."
+                ),
+                advanced_detail=json.dumps({"rpm": rpm_text, "openssl": openssl_text}, indent=2, sort_keys=True),
+                command_preview=["rpm", "--version"],
+            )
+        )
+
+        backend = cls._run(["rpm", "-q", "PackageKit-backend-dnf5"], timeout=8) if cached_which("rpm") else None
+        backend_ok = backend is not None and backend.returncode == 0
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-packagekit-dnf5-consistency",
+                title="PackageKit and DNF5 Consistency",
+                category="package",
+                status="pass" if package.dnf5_available and backend_ok else "info",
+                severity="info",
+                summary=(
+                    "DNF5 and PackageKit DNF5 backend are available."
+                    if package.dnf5_available and backend_ok
+                    else "PackageKit/DNF5 backend parity could not be fully confirmed."
+                ),
+                beginner_guidance="Use one update workflow at a time and avoid mixing package managers during upgrades.",
+                advanced_detail=json.dumps(
+                    {
+                        "dnf5_available": package.dnf5_available,
+                        "packagekit_active": package.packagekit_active,
+                        "backend_probe": ((backend.stdout if backend else "") or (backend.stderr if backend else ""))[:2000],
+                    },
+                    indent=2,
+                    sort_keys=True,
+                ),
+                command_preview=["rpm", "-q", "PackageKit-backend-dnf5"],
+            )
+        )
+
+        return checks
+
     @staticmethod
     def _score(checks: List[ReadinessCheck]) -> int:
         score = 100
@@ -676,8 +1027,53 @@ class ReleaseReadiness:
             return "review"
         return "ready"
 
+    @staticmethod
+    def build_release_plan(report: ReleaseReadinessReport) -> Dict[str, object]:
+        """Build a serializable guided release plan from a readiness report."""
+        attention = [
+            check.to_dict(advanced=False)
+            for check in report.checks
+            if check.severity in {"warning", "error", "critical"}
+        ]
+        next_action = "Review warnings before upgrading." if attention else "No blocking readiness warnings detected."
+        if report.target_metadata.preview:
+            next_action = "Use this as planning guidance only; wait for the Fedora release to become supported before treating it as final."
+        return {
+            "target": report.target,
+            "mode": report.mode,
+            "score": report.score,
+            "status": report.status,
+            "summary": report.summary,
+            "next_action": next_action,
+            "attention_count": len(attention),
+            "attention": attention,
+            "target_changes": {
+                "important_changes": [change.to_dict() for change in report.target_metadata.important_changes],
+                "known_risks": [risk.to_dict() for risk in report.target_metadata.known_risks],
+            },
+        }
+
     @classmethod
-    def run(cls, target_key: str | None = None) -> ReleaseReadinessReport:
+    def explain_check(
+        cls,
+        check_id: str,
+        target_key: str | None = None,
+        *,
+        mode: str = "upgrade-plan",
+    ) -> Dict[str, object] | None:
+        """Return one readiness check explanation for CLI and UI surfaces."""
+        report = cls.run(target_key, mode=mode)
+        check = next((item for item in report.checks if item.id == check_id), None)
+        if check is None:
+            return None
+        return {
+            "target": report.target,
+            "check": check.to_dict(advanced=True),
+            "target_metadata": report.target_metadata.to_dict(),
+        }
+
+    @classmethod
+    def run(cls, target_key: str | None = None, mode: str = "check") -> ReleaseReadinessReport:
         target = cls.get_target(target_key or cls.TARGET_KEY)
         os_release = cls._os_release()
         desktop = KDE44DesktopService.collect()
@@ -690,6 +1086,8 @@ class ReleaseReadiness:
         checks.append(cls._nvidia_check())
         checks.append(cls._flatpak_check())
         checks.append(cls._tls_check())
+        if target.key == "45-preview" or mode == "upgrade-plan":
+            checks.extend(cls._fedora45_upgrade_checks(package))
 
         score = cls._score(checks)
         status = cls._overall_status(score, checks, target)
@@ -707,6 +1105,7 @@ class ReleaseReadiness:
             desktop=desktop,
             package=package,
             target_metadata=target,
+            mode=mode,
         )
 
 

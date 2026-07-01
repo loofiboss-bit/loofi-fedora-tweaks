@@ -1,8 +1,8 @@
-# Loofi Fedora Tweaks v8.1.0 "Breeze" Release Announcement
+# Loofi Fedora Tweaks v10.0.0 "Waypoint" Release Announcement
 
 ## TL;DR
 
-Loofi Fedora Tweaks v8.1.0 "Breeze" is now available as the focused UI/UX redesign release. It keeps the v8 route architecture, but replaces the crowded default menu with five primary areas, roomier pages, clearer headers, and responsive sizing for Wayland and fractional scaling.
+Loofi Fedora Tweaks v10.0.0 "Waypoint" is now available with a guided Upgrade Assistant for Fedora release planning. Fedora KDE 44 remains the stable supported target, while Fedora 45 is available as a preview planning profile with read-only checks, risk explanations, command previews, verification, and support export.
 
 **Install:**
 
@@ -11,18 +11,17 @@ pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
 ```
 
-**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.1.0
+**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v10.0.0
 
 ---
 
 ## What's New
 
-- Five default navigation areas: Home, Software & Updates, System & Hardware, Network & Security, and Desktop & Settings.
-- Advanced tools stay searchable, favoriteable, route-compatible, and available in Advanced mode without crowding the sidebar.
-- Shared layout primitives for airy page headers, sections, action rows, route cards, and adaptive grids.
-- Wayland-friendly sizing based on Qt device-independent units, font metrics, and available screen geometry.
-- Dark, light, and high-contrast themes updated with calmer spacing, selected states, card borders, and wrapping rules.
-- User guide and wiki screenshots regenerated from the redesigned PyQt UI.
+- Upgrade Assistant launched from Home and Maintenance.
+- Fedora 45 preview checks for repo config relocation, Python 3.15 packaging risk, IPv6-mostly NetworkManager behavior, Podman 6, Atomic Flatpak filtering, RPM/OpenSSL/certificate compatibility, and KDE/PackageKit-DNF5 consistency.
+- Readiness CLI commands for planning, explaining checks, and exporting support bundles.
+- Support Bundle v6 fields for release plans, target changes, action history, update preview, and redacted package/repo health details.
+- User guide and wiki screenshots regenerated from the v10 PyQt UI.
 
 ---
 
@@ -53,7 +52,7 @@ loofi-fedora-tweaks --cli info
 
 ## Links
 
-- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.1.0
+- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v10.0.0
 - **Full Changelog**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CHANGELOG.md
 - **Architecture Guide**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md
 - **Report Issues**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues

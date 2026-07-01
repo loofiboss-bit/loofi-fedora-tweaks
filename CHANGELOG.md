@@ -4,6 +4,21 @@
 
 All notable changes to this project will be documented in this file.
 
+## [10.0.0] - 2026-07-01 "Waypoint"
+
+### Added
+
+- **Upgrade Assistant**: Added a Home and Maintenance entry point for guided Fedora release planning without adding a new permanent plugin tab.
+- **Fedora 45 Preview Checks**: Expanded `45-preview` with read-only checks for repo layout, Python 3.15/Setuptools, IPv6-mostly NetworkManager, Podman 6, Atomic Flatpak filtering, RPM/OpenSSL compatibility, and PackageKit-DNF5 parity.
+- **Readiness CLI**: Added `readiness plan`, `readiness explain`, and `readiness export`.
+- **Support Bundle v6**: Added release plan, target changes, action history, update preview, and redacted package/repo health data while preserving v5 fields.
+
+### Changed
+
+- Bumped runtime, package, workflow, and release metadata to `10.0.0 "Waypoint"`.
+- Kept Fedora KDE 44 as the stable supported target while making Fedora 45 preview planning more actionable.
+- Fixed Smart Updates display and scheduled-update command generation for validated systemd service commands.
+
 ## [9.0.0] - 2026-07-01 "Keystone"
 
 ### Added

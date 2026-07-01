@@ -24,6 +24,7 @@ class TestNavigationManifest(unittest.TestCase):
             "maintenance:updates",
             "maintenance:cleanup",
             "maintenance:smart-updates",
+            "maintenance:upgrade-assistant",
             "maintenance:overlays",
             "system-monitor:performance",
             "system-monitor:processes",

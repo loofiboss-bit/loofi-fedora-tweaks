@@ -9,7 +9,7 @@ import logging
 import os
 import subprocess
 import sys
-from typing import List, Optional
+from typing import Any, Dict, List, Optional, cast
 
 from core.executor.operations import AdvancedOps, CleanupOps, NetworkOps, TweakOps
 
@@ -348,6 +348,42 @@ def _print_readiness_report(report, *, advanced: bool) -> int:
     return 0 if report.status in {"ready", "preview"} else 1
 
 
+def _print_release_plan(report) -> int:
+    """Print a guided release plan in CLI text or JSON mode."""
+    from core.diagnostics.release_readiness import ReleaseReadiness
+
+    plan = cast(Dict[str, Any], ReleaseReadiness.build_release_plan(report))
+    if _json_output:
+        _output_json(plan)
+        return 0
+
+    _print("═══════════════════════════════════════════")
+    _print(f"   {report.target} Upgrade Plan")
+    _print("═══════════════════════════════════════════")
+    _print(f"\nScore: {report.score}/100")
+    _print(str(plan["summary"]))
+    _print(f"Next action: {plan['next_action']}")
+
+    changes = cast(Dict[str, Any], plan.get("target_changes", {}))
+    important = cast(List[Dict[str, Any]], changes.get("important_changes", []))
+    risks = cast(List[Dict[str, Any]], changes.get("known_risks", []))
+    if important:
+        _print("\nWhat changed:")
+        for change in important:
+            _print(f"- {change.get('title')}: {change.get('summary')}")
+    if risks:
+        _print("\nKnown risks:")
+        for risk in risks:
+            _print(f"- {risk.get('title')}: {risk.get('summary')}")
+
+    attention = cast(List[Dict[str, Any]], plan.get("attention", []))
+    if attention:
+        _print("\nNeeds review:")
+        for check in attention:
+            _print(f"- {check.get('id')}: {check.get('summary')}")
+    return 0
+
+
 def cmd_readiness(args):
     """Run release readiness diagnostics."""
     from core.diagnostics.release_readiness import ReleaseReadiness
@@ -411,6 +447,46 @@ def _cmd_readiness_action(args) -> int:
                 _print(f"  {plan_candidate.explanation}")
                 if plan_candidate.command_preview:
                     _print(f"  Preview: {' '.join(plan_candidate.command_preview)}")
+        return 0
+
+    if action == "plan":
+        from core.diagnostics.release_readiness import ReleaseReadiness
+
+        report = ReleaseReadiness.run(target, mode="upgrade-plan")
+        return _print_release_plan(report)
+
+    if action == "explain":
+        from core.diagnostics.release_readiness import ReleaseReadiness
+
+        explanation = ReleaseReadiness.explain_check(action_id, target, mode="upgrade-plan")
+        if explanation is None:
+            if _json_output:
+                _output_json({"error": "not_found", "check_id": action_id})
+            else:
+                _print(f"Readiness check not found: {action_id}")
+            return 1
+        if _json_output:
+            _output_json(explanation)
+        else:
+            check = cast(Dict[str, Any], explanation["check"])
+            _print(f"{check['title']} ({check['id']})")
+            _print(check["summary"])
+            _print(check["beginner_guidance"])
+            if check.get("command_preview"):
+                _print(f"Command: {' '.join(check['command_preview'])}")
+            if check.get("advanced_detail"):
+                _print(f"Detail: {str(check['advanced_detail'])[:1000]}")
+        return 0
+
+    if action == "export":
+        from core.export.support_bundle_v5 import SupportBundleV5
+
+        path = getattr(args, "path", None) or f"loofi-readiness-{target}.json"
+        if _json_output:
+            _output_json(SupportBundleV5.generate_bundle(target=target))
+            return 0
+        SupportBundleV5.save_json(path, target=target)
+        _print(f"Exported readiness support bundle: {path}")
         return 0
 
     if action == "action-info":
@@ -1092,6 +1168,17 @@ def main(argv: Optional[List[str]] = None):
 
     readiness_actions_parser = readiness_subparsers.add_parser("actions", help="List safe readiness action candidates")
     readiness_actions_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+
+    readiness_plan_parser = readiness_subparsers.add_parser("plan", help="Show guided release upgrade plan")
+    readiness_plan_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+
+    readiness_explain_parser = readiness_subparsers.add_parser("explain", help="Explain one readiness check")
+    readiness_explain_parser.add_argument("action_id", help="Readiness check ID")
+    readiness_explain_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+
+    readiness_export_parser = readiness_subparsers.add_parser("export", help="Export readiness support bundle")
+    readiness_export_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+    readiness_export_parser.add_argument("--path", help="Output JSON path")
 
     readiness_info_parser = readiness_subparsers.add_parser("action-info", help="Show one readiness action candidate")
     readiness_info_parser.add_argument("action_id", help="Readiness action ID")

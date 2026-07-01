@@ -48,7 +48,8 @@ class ReadinessWorker(QObject):
 
     def run(self) -> None:
         try:
-            self.finished.emit(ReleaseReadiness.run(self.target_key))
+            mode = "upgrade-plan" if self.target_key == "45-preview" else "check"
+            self.finished.emit(ReleaseReadiness.run(self.target_key, mode=mode))
         except (OSError, RuntimeError, ValueError, TypeError, AttributeError) as exc:
             logger.error("Release readiness probe failed: %s", exc, exc_info=True)
             self.failed.emit(str(exc))
@@ -238,6 +239,7 @@ class ReleaseReadinessDialog(QDialog):
             self.checks_layout.insertWidget(self.checks_layout.count() - 1, empty)
             return
 
+        self._render_target_changes()
         self._render_action_inbox()
 
         for category, checks in grouped.items():
@@ -246,6 +248,32 @@ class ReleaseReadinessDialog(QDialog):
             self.checks_layout.insertWidget(self.checks_layout.count() - 1, label)
             for check in checks:
                 self.checks_layout.insertWidget(self.checks_layout.count() - 1, self._build_check_card(check))
+
+    def _render_target_changes(self) -> None:
+        if self.report is None:
+            return
+        metadata = self.report.target_metadata
+        if not metadata.important_changes and not metadata.known_risks:
+            return
+
+        frame = QFrame()
+        frame.setObjectName("dashboardCard")
+        layout = QVBoxLayout(frame)
+        layout.setContentsMargins(14, 12, 14, 12)
+        layout.setSpacing(8)
+
+        title = QLabel(self.tr("What changed in this Fedora release?"))
+        title.setStyleSheet("font-weight: bold;")
+        layout.addWidget(title)
+
+        lines = [f"{change.title}: {change.summary}" for change in metadata.important_changes]
+        if self.advanced and metadata.known_risks:
+            lines.extend(f"{risk.title}: {risk.summary}" for risk in metadata.known_risks)
+        body = QLabel("\n".join(lines))
+        body.setWordWrap(True)
+        layout.addWidget(body)
+
+        self.checks_layout.insertWidget(self.checks_layout.count() - 1, frame)
 
     def _render_action_inbox(self) -> None:
         if self.report is None:

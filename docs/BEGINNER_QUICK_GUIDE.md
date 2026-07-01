@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 8.1.0 "Breeze" — Focused Sidebar and Safe Guided Actions
+> Version 10.0.0 "Waypoint" — Upgrade Assistant and Safe Guided Actions
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -40,14 +40,18 @@ Useful shortcuts:
 
 ## 3) First 5 Actions
 
-### Action 1 — Check Release Readiness
+### Action 1 — Plan Updates With Upgrade Assistant
 
 Open:
 
 - **Home**
-- **Release Readiness**
+- **Upgrade Assistant**
 
-Review the score and safe guidance. Advanced details and Action Inbox commands are optional.
+Review Fedora 44 readiness, Fedora 45 preview notes, the next safe action, and support export.
+
+![Upgrade Assistant](images/user-guide/upgrade-assistant.png)
+
+Then open **Release Readiness** when you want the detailed score, filters, and Action Inbox.
 
 ![Release Readiness](images/user-guide/release-readiness.png)
 
@@ -55,6 +59,7 @@ CLI equivalent:
 
 ```bash
 loofi readiness --target 44
+loofi readiness plan --target 45-preview
 ```
 
 ### Action 2 — Check Health

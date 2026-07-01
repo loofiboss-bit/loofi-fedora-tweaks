@@ -244,6 +244,18 @@ class TestUpdateManagerSchedule(unittest.TestCase):
         self.assertIn("tee", commands[0][1])
         self.assertIn("systemctl", commands[2][1])
 
+    @patch("utils.update_manager.SystemManager.get_package_manager", return_value="dnf")
+    def test_get_schedule_commands_rejects_invalid_package(self, mock_pm):
+        """Scheduled update package names are validated before service generation."""
+        schedule = ScheduledUpdate(
+            id="loofi-update-test",
+            packages=["vim;reboot"],
+            scheduled_time="03:00",
+            timer_unit="loofi-update-test.timer",
+        )
+        with self.assertRaises(ValueError):
+            UpdateManager.get_schedule_commands(schedule)
+
     @patch("utils.update_manager.SystemManager.get_package_manager", return_value="rpm-ostree")
     def test_get_schedule_commands_ostree(self, mock_pm):
         """Schedule commands for rpm-ostree."""
