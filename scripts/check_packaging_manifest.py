@@ -20,6 +20,7 @@ EXPECTED_SOURCE_SUFFIXES = (
     "version.py",
     "core/navigation/areas.py",
     "core/navigation/manifest.py",
+    "core/executor/command_facade.py",
     "core/executor/command_policy.py",
     "ui/layout_primitives.py",
     "ui/main_window.py",

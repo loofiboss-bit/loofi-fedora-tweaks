@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v8.1.0 "Breeze"
+# Loofi Fedora Tweaks v9.0.0 "Keystone"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,13 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v8.1.0">
-    <img src="https://img.shields.io/badge/Release-v8.1.0-blue?style=for-the-badge&logo=github" alt="Release v8.1.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v9.0.0">
+    <img src="https://img.shields.io/badge/Release-v9.0.0-blue?style=for-the-badge&logo=github" alt="Release v9.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
-  <img src="https://img.shields.io/badge/Coverage-82%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 82%"/>
+  <img src="https://img.shields.io/badge/Coverage-84%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 84%"/>
   <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
     <img src="https://img.shields.io/badge/COPR-loofitheboss%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
   </a>
@@ -41,24 +41,24 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v8.1.0?
+## What's New in v9.0.0?
 
-`v8.1.0 "Breeze"` is an airy UI/UX redesign for Fedora desktop users. It keeps the v8 route architecture, but replaces the dense permanent menu with five primary areas, roomier pages, a clearer page header, and Wayland-friendly responsive sizing.
+`v9.0.0 "Keystone"` is a whole-app quality release. It keeps Fedora KDE 44 as the supported readiness target, leaves Fedora 45 as `45-preview` only, and improves consistency across the existing GUI, CLI, daemon/API, packaging, state, tests, and docs.
 
-- **Focused Sidebar**: Default navigation is now **Home**, **Software & Updates**, **System & Hardware**, **Network & Security**, and **Desktop & Settings**.
-- **Advanced Tools Hidden by Default**: AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, and Snapshots stay searchable, favoriteable, and route-compatible without crowding the default menu.
-- **Responsive Shell**: Window sizing uses available screen geometry and Qt device-independent units; the sidebar adapts across wide, medium, and narrow layouts.
-- **Shared Layout Primitives**: New `PageHeader`, `Section`, `ActionRow`, `RouteCard`, and `AdaptiveGrid` helpers keep pages spacious and aligned.
-- **Theme Alignment**: Dark, light, and high-contrast QSS now share the same calmer KDE-native spacing, selected states, card borders, and text wrapping rules.
+- **Execution Consistency**: New internal command facade standardizes list-based preview and execution over the existing allowlist, timeout, `pkexec`, and audit metadata policy.
+- **Fedora Target Discipline**: Fedora KDE 44 remains the default supported readiness target; Fedora 45 stays advisory as `45-preview`.
+- **Route and Plugin Trust**: Hidden advanced routes, favorites, command palette routes, quick actions, icons, and plugin metadata are covered by stronger drift checks.
+- **State Reliability**: v9 documents the saved-state contract for theme, experience level, favorites, hidden routes, and window geometry migration.
+- **Release Hygiene**: Coverage gates now enforce 84%, workflow specs are aligned, and stale planning docs are marked historical.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v8.1.0.md`](docs/releases/RELEASE-NOTES-v8.1.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v9.0.0.md`](docs/releases/RELEASE-NOTES-v9.0.0.md)
 
 ### Screenshots
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/images/user-guide/home-dashboard.png" alt="Breeze home dashboard with focused sidebar and spacious route cards"/>
+      <img src="docs/images/user-guide/home-dashboard.png" alt="Keystone home dashboard with focused sidebar and spacious route cards"/>
     </td>
     <td width="50%">
       <img src="docs/images/user-guide/system-monitor.png" alt="System Monitor process view with live process data"/>
@@ -86,9 +86,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v8.1.0.md`](docs/releases/RELEASE-NOTE
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v8.1.0 "Breeze"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v8.1.0.md`)
-- Current stable baseline: **v8.1.0 "Breeze"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **8.1.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v9.0.0 "Keystone"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v9.0.0.md`)
+- Current stable baseline: **v9.0.0 "Keystone"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **9.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 
@@ -205,7 +205,7 @@ Advanced and specialized pages remain available through search, favorites, direc
 
 ## Screenshots
 
-Current v8.1 UI screenshots are captured from the real PyQt app and maintained in:
+Current UI screenshots are captured from the real PyQt app and maintained in:
 
 - [`docs/images/user-guide/README.md`](docs/images/user-guide/README.md)
 

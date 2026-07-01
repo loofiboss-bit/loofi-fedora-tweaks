@@ -82,6 +82,14 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         self.assertTrue(target.preview)
         self.assertEqual(target.final_target, "2026-10-20")
 
+    def test_fedora44_remains_default_supported_target(self):
+        self.assertEqual(ReleaseReadiness.TARGET_KEY, "44")
+        self.assertEqual(ReadinessActionService.DEFAULT_TARGET, "44")
+        default_target = ReleaseReadiness.get_target(ReleaseReadiness.TARGET_KEY)
+        self.assertEqual(default_target.key, "44")
+        self.assertTrue(default_target.supported)
+        self.assertFalse(default_target.preview)
+
     def test_fedora45_preview_accepts_fedora44_context(self):
         check = ReleaseReadiness._fedora_version_check(
             {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44 (KDE Plasma)"},
@@ -89,6 +97,47 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         )
         self.assertEqual(check.status, "info")
         self.assertIn("preview", check.beginner_guidance.lower())
+
+    @patch.object(ReleaseReadiness, "_tls_check")
+    @patch.object(ReleaseReadiness, "_flatpak_check")
+    @patch.object(ReleaseReadiness, "_nvidia_check")
+    @patch.object(ReleaseReadiness, "_atomic_check")
+    @patch("core.diagnostics.release_readiness.DNF5HealthService.collect")
+    @patch("core.diagnostics.release_readiness.KDE44DesktopService.collect")
+    @patch.object(ReleaseReadiness, "_os_release")
+    def test_run_without_target_uses_fedora44_not_preview(
+        self,
+        mock_os_release,
+        mock_desktop,
+        mock_package,
+        mock_atomic,
+        mock_nvidia,
+        mock_flatpak,
+        mock_tls,
+    ):
+        mock_os_release.return_value = {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
+        mock_desktop.return_value = _passing_desktop()
+        mock_package.return_value = _passing_package()
+        for mock_check, cid in (
+            (mock_atomic, "atomic-status"),
+            (mock_nvidia, "nvidia-akmods-secureboot"),
+            (mock_flatpak, "flatpak-kde-runtimes"),
+            (mock_tls, "tls-cert-compat"),
+        ):
+            mock_check.return_value = ReadinessCheck(
+                id=cid,
+                title=cid,
+                category="system",
+                status="pass",
+                severity="info",
+                summary="ok",
+                beginner_guidance="ok",
+            )
+
+        report = ReleaseReadiness.run()
+        self.assertEqual(report.target_metadata.key, "44")
+        self.assertEqual(report.target, "Fedora KDE 44")
+        self.assertNotEqual(report.status, "preview")
 
 
 class TestFedora44ReadinessAggregation(unittest.TestCase):

@@ -62,11 +62,43 @@
 | v6.0.0  | Compass                         | DONE    | Generic release readiness engine, guided recommendations, support bundle v4                  |
 | v7.0.0  | Aegis                           | DONE    | Safe guided actions, release reliability, Fedora 44 polish, support diagnostics              |
 | v8.0.0  | Beacon                          | DONE    | Navigation-first UX, visual routing clarity, safety and packaging hardening                  |
-| v8.1.0  | Breeze                          | ACTIVE  | Focused sidebar, airy desktop layout, responsive scaling, and updated screenshots            |
+| v8.1.0  | Breeze                          | DONE    | Focused sidebar, airy desktop layout, responsive scaling, and updated screenshots            |
+| v9.0.0  | Keystone                        | ACTIVE  | Whole-app quality, execution consistency, state reliability, and release hygiene             |
 
 ---
 
-## [ACTIVE] v8.1.0 "Breeze" — Focused Sidebar & Airy UI
+## [ACTIVE] v9.0.0 "Keystone" — Whole-App Quality Release
+
+**Theme**: Whole-app quality release that improves consistency, reliability, and supportability without making Fedora 45 the main target.
+**Focus**: Shared command execution policy, settings/state reliability, route/plugin drift checks, release hygiene, documentation cleanup, and targeted UX polish across existing workflows.
+
+### Scope
+
+v9.0.0 "Keystone" keeps Fedora KDE 44 as the supported readiness target and preserves Fedora 45 only as the existing `45-preview` advisory profile. It does not add a new permanent feature tab. Instead, it strengthens the existing GUI, CLI, daemon/API, packaging, docs, and workflow contracts so the app behaves more predictably across its current feature set.
+
+### Deliverables
+
+- [x] Version metadata aligned to `9.0.0 "Keystone"`
+- [x] v8.1.0 "Breeze" marked completed and v9.0.0 activated
+- [x] Internal command facade added above `ActionExecutor` and shared command policy
+- [x] Fedora KDE 44 preserved as default readiness target; `45-preview` remains preview/advisory only
+- [x] Route/plugin trust checks expanded for hidden routes, palette routes, quick actions, and plugin metadata
+- [x] Architecture docs updated to document explicit Qt runtime exceptions instead of hiding them
+- [x] Settings/state migration contract documented for theme, experience level, favorites, hidden routes, and window geometry
+- [x] Coverage gate raised to 84% across Justfile, CI, auto-release, release validation, and docs claims
+- [x] Stale v10 strategy document marked historical
+- [x] User and developer docs refreshed for the v9 quality-release scope
+
+### Compatibility
+
+- Fedora KDE 44 remains the supported target.
+- Fedora 45 remains `45-preview`; it is not promoted to the primary release target in v9.
+- Stable `NavigationRoute` IDs, CLI commands, plugin metadata, favorites, and saved settings remain backward compatible.
+- Mutating actions continue through list-based commands, `pkexec` boundaries, allowlist validation, timeouts, and audit metadata.
+
+---
+
+## [DONE] v8.1.0 "Breeze" — Focused Sidebar & Airy UI
 
 **Theme**: Airier Fedora desktop control center with fewer default menu areas and Wayland-friendly responsive layout.
 **Focus**: Focused navigation, visual breathing room, text alignment, theme consistency, and screenshot refresh without changing the toolkit or adding feature bloat.

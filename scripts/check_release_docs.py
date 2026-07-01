@@ -298,8 +298,8 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
         errors.append("auto-release workflow missing COVERAGE_THRESHOLD")
     if thresholds and len(set(thresholds)) != 1:
         errors.append(f"coverage threshold mismatch: values={thresholds}")
-    if thresholds and min(thresholds) < 82:
-        errors.append(f"coverage threshold below 82: values={thresholds}")
+    if thresholds and min(thresholds) < 84:
+        errors.append(f"coverage threshold below 84: values={thresholds}")
 
     ci_text = _read_text(CI_WORKFLOW_FILE)
     if "docs/**" in ci_text or "**/*.md" in ci_text:

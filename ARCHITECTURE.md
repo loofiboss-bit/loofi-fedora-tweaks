@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 8.1.0 "Breeze" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 9.0.0 "Keystone" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 
@@ -24,6 +24,7 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   ├── executor/             # Action execution and safety
 │   │   ├── action_model.py   # SystemAction with risk/rollback metadata
 │   │   ├── action_executor.py# Centralized safe command runner
+│   │   ├── command_facade.py # v9 command-vector preview/execute facade
 │   │   └── command_policy.py # Shared executor/API command allowlist
 │   ├── navigation/           # Route manifest, focused navigation areas, and route validation
 │   ├── export/               # Diagnostic export services
@@ -76,13 +77,25 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 
 **Key rule**: `services/` and `core/` hold domain logic. `utils/` retains shared infrastructure (`commands.py`, `errors.py`, `operations.py`) and backward-compatible shims. GUI and CLI are consumers only.
 
+### Explicit Qt Runtime Exceptions
+
+Most `core/` and `services/` code must remain PyQt-free. The allowed PyQt imports are bridge modules that exist to host or type UI workers/plugins, plus one legacy service confirmation bridge kept for backward compatibility:
+
+- `core/workers/base_worker.py`
+- `core/workers/command_worker.py`
+- `core/plugins/interface.py`
+- `core/plugins/adapter.py`
+- `services/security/safety.py` (`SafetyManager.confirm_action()` legacy UI confirmation bridge)
+
+`tests/test_architecture_imports.py` enforces this allowlist. New domain logic must not add PyQt imports to `core/` or `services/`.
+
 ## Tab Layout And Routes
 
 Built-in feature tabs are sourced from `core/plugins/loader.py` and `PluginRegistry`; release gates validate the live loader count instead of relying on prose counts. Route-level navigation is defined in `core/navigation/manifest.py`, where plugin routes and subroutes such as `maintenance:updates`, `software:apps`, and `system-monitor:processes` are stable IDs.
 
 ### Focused Navigation Areas
 
-The route manifest keeps the stable plugin and subroute contract. `core/navigation/areas.py` groups those routes into the v8.1 focused sidebar without importing PyQt.
+The route manifest keeps the stable plugin and subroute contract. `core/navigation/areas.py` groups those routes into the focused sidebar without importing PyQt.
 
 | Order | Area               | Icon                   | Default role                              |
 | ----- | ------------------ | ---------------------- | ----------------------------------------- |
@@ -127,7 +140,7 @@ The route manifest keeps the stable plugin and subroute contract. `core/navigati
 
 Consolidated tabs use `QTabWidget` for sub-navigation within the tab.
 
-### Sidebar Index And Routes (v8.1.0)
+### Sidebar Index And Routes (v9.0.0)
 
 The sidebar uses a `SidebarIndex` (`dict[str, SidebarEntry]`) keyed by `PluginMetadata.id` for O(1) tab lookups. `SidebarEntry` holds the tree item, page widget, metadata, and status. Route IDs are resolved through `core.navigation`; Favorites v2 persists route/plugin IDs rather than display-name-derived slugs.
 
@@ -181,6 +194,17 @@ self.runner.run_command("pkexec", ["dnf", "update", "-y"])
 ```
 
 Never block the GUI thread with synchronous subprocess calls.
+
+### 3b. CommandFacade (Shared Preview/Execute Boundary)
+
+```python
+from core.executor import CommandFacade
+
+result = CommandFacade().preview(["dnf", "check-update"], action_id="updates-preview")
+result = CommandFacade().execute(["dnf", "clean", "all"], privileged=True, timeout=120)
+```
+
+Use list-based command vectors. The facade delegates to `ActionExecutor` and `command_policy`, preserving allowlist validation, `pkexec`, timeout handling, action IDs, and audit metadata. Do not pass shell strings.
 
 ### 4. Operations Tuple Pattern
 
@@ -243,6 +267,16 @@ for plugin in PluginRegistry.instance():
 - `SafetyManager.confirm_action()` — snapshot prompt before risky ops
 - `HistoryManager.log_change()` — action log with undo commands (max 50)
 
+### 10b. Settings And State Migration
+
+Saved UI state must be keyed by stable IDs, never translated labels. Migrations must be idempotent and tolerate missing legacy values for:
+
+- theme and system-theme preference
+- experience level
+- favorite route/plugin IDs
+- hidden/default route visibility
+- main-window geometry and sidebar state
+
 ### 11. Icon System (Semantic IDs + Theme Tint)
 
 - Sidebar, dashboard, and quick actions use semantic icon IDs (for example `home`, `update`, `security-shield`) instead of emoji glyphs.
@@ -261,7 +295,7 @@ for plugin in PluginRegistry.instance():
 - **Both paths**: Test success AND failure
 - **No root**: Tests run in CI without privileges
 - **Path setup**: `sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))`
-- **Coverage**: 82%+ current, 85% stretch goal
+- **Coverage**: 84%+ current gate, 85% stretch goal
 
 ## Adding a Feature
 

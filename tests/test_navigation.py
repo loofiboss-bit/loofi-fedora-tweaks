@@ -144,6 +144,40 @@ class TestNavigationManifest(unittest.TestCase):
         finally:
             PluginRegistry.reset()
 
+    @patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"})
+    def test_route_plugin_trust_contract_covers_palette_quick_actions_and_metadata(self):
+        from core.navigation import (
+            HIDDEN_BY_DEFAULT_PLUGIN_IDS,
+            all_routes,
+            routes_for_palette,
+            routes_for_quick_actions,
+        )
+        from core.plugins.loader import PluginLoader
+        from core.plugins.registry import PluginRegistry
+
+        PluginRegistry.reset()
+        loaded = set(PluginLoader().load_builtins(context={}))
+        try:
+            routes = all_routes()
+            route_ids = {route.id for route in routes}
+            plugin_ids = {route.plugin_id for route in routes}
+            palette_ids = {route.id for route in routes_for_palette()}
+            quick_action_ids = {route.id for route in routes_for_quick_actions()}
+
+            self.assertEqual(palette_ids, route_ids)
+            self.assertEqual(quick_action_ids, route_ids)
+            self.assertTrue(loaded.issubset(plugin_ids))
+            self.assertTrue(set(HIDDEN_BY_DEFAULT_PLUGIN_IDS).issubset(plugin_ids))
+
+            for plugin in PluginRegistry.instance():
+                meta = plugin.metadata()
+                self.assertIn(meta.id, plugin_ids)
+                self.assertTrue(meta.name.strip(), meta.id)
+                self.assertTrue(meta.category.strip(), meta.id)
+                self.assertTrue(meta.icon.strip(), meta.id)
+        finally:
+            PluginRegistry.reset()
+
 
 if __name__ == "__main__":
     unittest.main()

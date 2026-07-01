@@ -53,6 +53,7 @@ def test_packaging_manifest_tracks_navigation_and_assets():
     expected = set(module.EXPECTED_SOURCE_SUFFIXES)
     assert "core/navigation/areas.py" in expected
     assert "core/navigation/manifest.py" in expected
+    assert "core/executor/command_facade.py" in expected
     assert "core/executor/command_policy.py" in expected
     assert "ui/layout_primitives.py" in expected
     assert "assets/modern.qss" in expected

@@ -41,6 +41,6 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are aligned to `v8.1.0 "Breeze"` for focused navigation, airy layout, route-aware reliability, and Fedora 44 readiness.
+- User-facing guides are aligned to `v9.0.0 "Keystone"` for whole-app quality, focused navigation, route-aware reliability, and Fedora 44 readiness.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.

@@ -228,6 +228,58 @@ class TestActionExecutor:
                 assert result.action_id == "op-123"
 
 
+class TestCommandFacade:
+    """Test the v9 command-vector facade."""
+
+    def test_preview_normalizes_vector_and_preserves_metadata(self):
+        from core.executor.command_facade import CommandFacade
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
+                 patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
+                result = CommandFacade().preview(["echo", "hello"], action_id="facade-preview")
+                assert result.success is True
+                assert result.preview is True
+                assert result.action_id == "facade-preview"
+                assert result.data["facade"] == "command-vector"
+                assert result.data["requested_vector"] == ["echo", "hello"]
+
+    @patch("core.executor.action_executor.subprocess.run")
+    def test_execute_uses_timeout_privilege_and_action_id(self, mock_run):
+        from core.executor.command_facade import CommandFacade
+        mock_run.return_value = subprocess.CompletedProcess(
+            ["pkexec", "dnf", "clean", "all"],
+            returncode=0,
+            stdout="cleaned",
+            stderr="",
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
+                 patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
+                result = CommandFacade().execute(
+                    ["dnf", "clean", "all"],
+                    privileged=True,
+                    timeout=7,
+                    action_id="facade-clean",
+                )
+        assert result.success is True
+        assert result.action_id == "facade-clean"
+        assert result.data["privileged"] is True
+        mock_run.assert_called_once()
+        assert mock_run.call_args.args[0] == ["pkexec", "dnf", "clean", "all"]
+        assert mock_run.call_args.kwargs["timeout"] == 7
+
+    @patch("core.executor.action_executor.subprocess.run")
+    def test_rejects_shell_style_commands_before_subprocess(self, mock_run):
+        from core.executor.command_facade import CommandFacade
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
+                 patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
+                result = CommandFacade().preview(["bash", "-lc", "id"])
+        assert result.success is False
+        assert result.exit_code == 126
+        mock_run.assert_not_called()
+
+
 class TestActionLog:
     """Test structured action logging."""
 
@@ -280,7 +332,7 @@ class TestActionLog:
                  patch("core.executor.action_executor._ACTION_LOG_FILE", log_path):
                 ActionExecutor.run("echo", ["diag"], preview=True)
                 diag = ActionExecutor.export_diagnostics()
-                assert diag["version"] == "19.0.0"
+                assert diag["version"] == "19.0.0"  # fixture-version
                 assert "exported_at" in diag
                 assert len(diag["action_log"]) >= 1
 

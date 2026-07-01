@@ -41,7 +41,7 @@ def _write_release_files(
     (root / "README.md").write_text(
         f"# Loofi v{version} \"{codename}\"\n"
         f"https://example.invalid/releases/tag/v{version}\n"
-        "![Coverage](https://img.shields.io/badge/Coverage-82%25-brightgreen)\n",
+        "![Coverage](https://img.shields.io/badge/Coverage-84%25-brightgreen)\n",
         encoding="utf-8",
     )
     (root / "ROADMAP.md").write_text(
@@ -66,13 +66,13 @@ def _write_release_files(
     workflows = root / ".github" / "workflows"
     workflows.mkdir(parents=True, exist_ok=True)
     workflow_text = (
-        'env:\n  COVERAGE_THRESHOLD: "82"\n'
+        'env:\n  COVERAGE_THRESHOLD: "84"\n'
         "jobs:\n  docs_gate:\n    steps:\n"
         "      - run: python3 scripts/check_release_docs.py\n"
     )
     (workflows / "ci.yml").write_text(workflow_text, encoding="utf-8")
     (workflows / "auto-release.yml").write_text(workflow_text, encoding="utf-8")
-    (root / "Justfile").write_text('coverage_min := "82"\n', encoding="utf-8")
+    (root / "Justfile").write_text('coverage_min := "84"\n', encoding="utf-8")
     # Empty tests dir (no stale tests)
     (root / "tests").mkdir(exist_ok=True)
 
@@ -351,7 +351,7 @@ def test_release_doc_check_catches_docs_only_ci_bypass(tmp_path):
     _set_module_paths(module, tmp_path)
     (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
         'on:\n  push:\n    paths-ignore:\n      - "docs/**"\n'
-        'env:\n  COVERAGE_THRESHOLD: "82"\n'
+        'env:\n  COVERAGE_THRESHOLD: "84"\n'
         "jobs:\n  docs_gate:\n    steps:\n"
         "      - run: python3 scripts/check_release_docs.py\n",
         encoding="utf-8",

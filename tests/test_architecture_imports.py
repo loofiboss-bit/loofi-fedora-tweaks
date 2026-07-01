@@ -14,10 +14,13 @@ This ensures the architecture refactor didn't break imports.
 
 import os
 import sys
+import ast
+from pathlib import Path
 
 import pytest
 
 # Add project paths
+ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
@@ -259,6 +262,43 @@ class TestCoreWorkersImports:
 
         expected = {"BaseWorker", "CommandWorker"}
         assert set(core.workers.__all__) == expected
+
+
+class TestPyQtBoundaryImports:
+    """Keep non-UI PyQt imports limited to documented runtime bridges."""
+
+    ALLOWED_CORE_PYQT_IMPORTS = {
+        "core/plugins/adapter.py",
+        "core/plugins/interface.py",
+        "core/workers/base_worker.py",
+        "core/workers/command_worker.py",
+    }
+    ALLOWED_SERVICE_PYQT_IMPORTS = {
+        "services/security/safety.py",
+    }
+
+    def _pyqt_imports(self, base: Path) -> set[str]:
+        hits: set[str] = set()
+        source_root = ROOT / "loofi-fedora-tweaks"
+        for path in sorted(base.rglob("*.py")):
+            tree = ast.parse(path.read_text(encoding="utf-8"))
+            for node in ast.walk(tree):
+                module = ""
+                if isinstance(node, ast.Import):
+                    module = ",".join(alias.name for alias in node.names)
+                elif isinstance(node, ast.ImportFrom):
+                    module = node.module or ""
+                if "PyQt6" in module:
+                    hits.add(path.relative_to(source_root).as_posix())
+        return hits
+
+    def test_core_pyqt_imports_are_explicitly_allowlisted(self):
+        hits = self._pyqt_imports(ROOT / "loofi-fedora-tweaks" / "core")
+        assert hits == self.ALLOWED_CORE_PYQT_IMPORTS
+
+    def test_services_pyqt_imports_are_explicitly_allowlisted(self):
+        hits = self._pyqt_imports(ROOT / "loofi-fedora-tweaks" / "services")
+        assert hits == self.ALLOWED_SERVICE_PYQT_IMPORTS
 
 
 class TestServicesNamespaceImports:

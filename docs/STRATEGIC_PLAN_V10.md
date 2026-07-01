@@ -1,6 +1,8 @@
 # Loofi Fedora Tweaks v10.0 Implementation Plan
 ## "Zenith Update" - From Tool to Platform
 
+> Historical note: this document is retained for archive context only. Its "current version", module counts, tab counts, test counts, and release assumptions predate the v9.0.0 Keystone baseline and must not be used as current planning authority. Use `ROADMAP.md`, `.workflow/specs/`, `ARCHITECTURE.md`, and `docs/releases/` for active release scope.
+
 **Planning Date:** February 7, 2026
 **Current Version:** v9.3.0 "Clarity Update"
 **Target:** v10.0 (Major Release)

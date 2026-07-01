@@ -15,7 +15,7 @@ python3 scripts/bump_version.py X.Y.Z --codename "Codename"
 python3 scripts/bump_version.py X.Y.Z --codename "Codename" --dry-run
 ```
 
-The script cascades across **7 targets**:
+The script cascades across version metadata, workflow state, stats, templates, and release scaffolding:
 
 | # | Target | Field |
 |---|--------|-------|
@@ -26,6 +26,8 @@ The script cascades across **7 targets**:
 | 5 | `.project-stats.json` | regenerated via `project_stats.py` |
 | 6 | AI adapter templates | re-rendered via `sync_ai_adapters.py` |
 | 7 | `docs/releases/RELEASE-NOTES-vX.Y.Z.md` | scaffolded if missing |
+| 8 | `.workflow/specs/tasks-vX.Y.Z.md` | scaffolded if missing |
+| 9 | `.workflow/specs/arch-vX.Y.Z.md` | scaffolded if missing |
 
 It also **scans `tests/` for hardcoded version strings** and warns if any are found.
 
@@ -81,6 +83,8 @@ The `check_release_docs.py` script validates:
 | CHANGELOG | Entry `## [X.Y.Z]` exists in `CHANGELOG.md` |
 | README | `README.md` exists and is non-empty |
 | Release notes | `docs/releases/RELEASE-NOTES-vX.Y.Z.md` exists and is non-empty |
+| Workflow specs | `.workflow/specs/tasks-vX.Y.Z.md`, `arch-vX.Y.Z.md`, and race lock target the current release |
+| Coverage gate | Justfile, CI, and auto-release enforce the same minimum |
 | Stale tests | No `tests/test_*.py` files hardcode the current version or codename |
 
 ---

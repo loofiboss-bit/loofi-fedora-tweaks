@@ -91,13 +91,8 @@ class KDE44DesktopService:
                 if version != "Unknown":
                     return version
 
-        try:
-            from PyQt6.QtCore import QT_VERSION_STR
-
-            return str(QT_VERSION_STR)
-        except ImportError as exc:
-            logger.debug("PyQt6 Qt version fallback failed: %s", exc)
-            return "Unknown"
+        logger.debug("Qt version probe did not return a version")
+        return "Unknown"
 
     @staticmethod
     def get_session_type() -> str:

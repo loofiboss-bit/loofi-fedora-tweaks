@@ -32,7 +32,7 @@ class TestDataclasses(unittest.TestCase):
         entry = UpdateEntry(name="vim", version="9.1.0", old_version="9.0.0", size="5MB", repo="updates", severity="bugfix")
         self.assertEqual(entry.name, "vim")
         self.assertEqual(entry.version, "9.1.0")
-        self.assertEqual(entry.old_version, "9.0.0")
+        self.assertEqual(entry.old_version, "9.0.0")  # fixture-version
         self.assertEqual(entry.size, "5MB")
         self.assertEqual(entry.repo, "updates")
         self.assertEqual(entry.severity, "bugfix")

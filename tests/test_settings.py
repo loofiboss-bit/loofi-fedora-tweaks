@@ -14,7 +14,7 @@ from pathlib import Path
 # Add source path to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
-from utils.settings import SettingsManager, AppSettings, KNOWN_KEYS
+from utils.settings import SettingsManager, AppSettings, KNOWN_KEYS, STATE_SCHEMA_VERSION
 
 
 # ---------------------------------------------------------------------------
@@ -56,6 +56,13 @@ class TestDefaults(unittest.TestCase):
 
     def test_default_plugin_analytics_is_disabled(self):
         self.assertFalse(AppSettings().plugin_analytics_enabled)
+
+    def test_default_state_contract_is_empty_and_versioned(self):
+        defaults = AppSettings()
+        self.assertEqual(defaults.favorite_routes, [])
+        self.assertEqual(defaults.hidden_routes, [])
+        self.assertEqual(defaults.window_geometry, {})
+        self.assertEqual(defaults.state_schema_version, STATE_SCHEMA_VERSION)
 
     def test_known_keys_match_dataclass_fields(self):
         from dataclasses import fields
@@ -231,6 +238,72 @@ class TestCorruptFile(unittest.TestCase):
             mgr = _make_manager(tmpdir, initial=data)
             self.assertEqual(mgr.get("theme"), "light")
             self.assertNotIn("unknown_future_key", mgr.all())
+
+
+# ---------------------------------------------------------------------------
+# TestStateMigration - v9 app state contract
+# ---------------------------------------------------------------------------
+
+class TestStateMigration(unittest.TestCase):
+    """Legacy UI state should migrate to canonical JSON-safe settings keys."""
+
+    def test_theme_and_experience_migrate_from_legacy_nested_keys(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mgr = _make_manager(tmpdir, initial={
+                "ui": {
+                    "theme": "light",
+                    "experience_level": "advanced",
+                },
+            })
+
+            self.assertEqual(mgr.get("theme"), "light")
+            self.assertEqual(mgr.get("experience_level"), "advanced")
+            self.assertEqual(mgr.get("state_schema_version"), STATE_SCHEMA_VERSION)
+
+    def test_favorites_and_hidden_routes_migrate_from_navigation_state(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mgr = _make_manager(tmpdir, initial={
+                "navigation": {
+                    "favorites": ["home", "home", "maintenance:updates"],
+                    "hidden_routes": ["settings:advanced", "", "system:hardware"],
+                },
+            })
+
+            self.assertEqual(mgr.get("favorite_routes"), ["home", "maintenance:updates"])
+            self.assertEqual(mgr.get("hidden_routes"), ["settings:advanced", "system:hardware"])
+
+    def test_window_geometry_migrates_from_legacy_list(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mgr = _make_manager(tmpdir, initial={"geometry": [10, 20, 1280, 720]})
+
+            self.assertEqual(mgr.get("window_geometry"), {
+                "x": 10,
+                "y": 20,
+                "width": 1280,
+                "height": 720,
+            })
+
+    def test_settings_migration_is_idempotent(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "settings.json"
+            legacy = {
+                "appearance": {"theme": "highcontrast"},
+                "experienceLevel": "intermediate",
+                "favorite_tabs": ["software:apps"],
+                "hiddenRoutes": ["settings:advanced"],
+                "main_window_geometry": {"x": 1, "y": 2, "width": 800, "height": 600, "extra": "drop"},
+            }
+            path.write_text(json.dumps(legacy, indent=2))
+
+            first = SettingsManager(settings_path=path).all()
+            second = SettingsManager(settings_path=path).all()
+
+            self.assertEqual(first, second)
+            self.assertEqual(second["theme"], "highcontrast")
+            self.assertEqual(second["experience_level"], "intermediate")
+            self.assertEqual(second["favorite_routes"], ["software:apps"])
+            self.assertEqual(second["hidden_routes"], ["settings:advanced"])
+            self.assertEqual(second["window_geometry"], {"x": 1, "y": 2, "width": 800, "height": 600})
 
 
 # ---------------------------------------------------------------------------

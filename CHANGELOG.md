@@ -4,6 +4,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [9.0.0] - 2026-07-01 "Keystone"
+
+### Added
+
+- **Command Facade**: Added a narrow internal execution facade above `ActionExecutor` and the shared command policy so preview/execute callers can use one list-based command contract with timeout and action metadata.
+- **v9 Workflow Contracts**: Added v9 architecture and task specs for app-wide quality work instead of Fedora 45 promotion.
+- **Route Trust Coverage**: Added regression coverage for hidden route searchability, quick action/palette parity, plugin metadata references, and stable route IDs.
+
+### Changed
+
+- Bumped runtime, package, workflow, and release metadata to `9.0.0 "Keystone"`.
+- Raised the release coverage gate from 82% to 84% across Justfile, CI, auto-release, docs validation, and release claims.
+- Preserved Fedora KDE 44 as the default readiness target while keeping Fedora 45 as `45-preview` only.
+- Updated documentation to frame v9 as a whole-app quality release covering GUI, CLI, daemon/API, packaging, state, and docs.
+- Marked the old v10 strategic plan as historical because its version and project-size assumptions are no longer current.
+
+### Fixed
+
+- Clarified architecture docs for Qt runtime exceptions in core/plugin worker plumbing instead of implying all core files are PyQt-free.
+- Documented the state/settings migration contract for theme, experience level, favorites, hidden routes, and window geometry.
+- Updated stale troubleshooting and documentation index wording that still referred to older release cycles.
+
 ## [8.1.0] - 2026-05-13 "Breeze"
 
 ### Added

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and fixes for v41.x.
+Common issues and fixes for v9.x.
 
 ---
 
@@ -80,6 +80,8 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 ```
 
 Confirm a desktop polkit agent is running.
+
+v9 commands are expected to pass through list-based executor policy. If an action reports "command is not in allowlist" or "command is rejected by policy", check the command preview and route the action through the supported GUI/CLI workflow rather than a shell string.
 
 ---
 

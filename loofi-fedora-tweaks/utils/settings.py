@@ -4,8 +4,9 @@ Part of v13.5 "UX Polish" update.
 
 Provides a singleton SettingsManager that persists user preferences
 to ~/.config/loofi-fedora-tweaks/settings.json. Includes typed
-defaults via AppSettings dataclass and safe read/write with
-automatic recovery from corrupt files.
+defaults via AppSettings dataclass, safe read/write with automatic
+recovery from corrupt files, and idempotent migration from older UI
+state keys.
 """
 
 import json
@@ -47,14 +48,109 @@ class AppSettings:
     experience_level: str = "beginner"
     suppressed_confirmations: list = field(default_factory=list)
     locale: str = "en"
+    favorite_routes: list = field(default_factory=list)
+    hidden_routes: list = field(default_factory=list)
+    window_geometry: dict = field(default_factory=dict)
 
     # Version tracking
     last_seen_version: str = "0.0.0"
+    state_schema_version: int = 1
 
 
 # Canonical set of known setting keys (derived from the dataclass).
 _DEFAULTS = AppSettings()
 KNOWN_KEYS = set(asdict(_DEFAULTS).keys())
+STATE_SCHEMA_VERSION = 1
+
+
+def _first(raw: dict, *keys: str) -> Any:
+    """Return the first present value from dotted or top-level keys."""
+    for key in keys:
+        current: Any = raw
+        found = True
+        for part in key.split("."):
+            if isinstance(current, dict) and part in current:
+                current = current[part]
+            else:
+                found = False
+                break
+        if found:
+            return current
+    return None
+
+
+def _string_list(value: Any) -> list:
+    """Normalize list-like setting values to a de-duplicated string list."""
+    if not isinstance(value, list):
+        return []
+    normalized = []
+    for item in value:
+        text = str(item).strip()
+        if text and text not in normalized:
+            normalized.append(text)
+    return normalized
+
+
+def _window_geometry(value: Any) -> dict:
+    """Normalize legacy window geometry into a JSON-safe geometry dict."""
+    if isinstance(value, dict):
+        allowed = ("x", "y", "width", "height", "state")
+        return {key: value[key] for key in allowed if key in value}
+    if isinstance(value, list) and len(value) >= 4:
+        return {
+            "x": value[0],
+            "y": value[1],
+            "width": value[2],
+            "height": value[3],
+        }
+    return {}
+
+
+def migrate_settings(raw: dict) -> tuple[dict, bool]:
+    """Return canonical settings plus whether legacy state was migrated."""
+    defaults = asdict(AppSettings())
+    migrated = False
+
+    for key in defaults:
+        if key in raw:
+            defaults[key] = raw[key]
+
+    legacy_theme = _first(raw, "appearance.theme", "ui.theme")
+    if "theme" not in raw and legacy_theme in {"dark", "light", "highcontrast"}:
+        defaults["theme"] = legacy_theme
+        migrated = True
+
+    legacy_experience = _first(raw, "experience", "experienceLevel", "ui.experience_level")
+    if "experience_level" not in raw and legacy_experience is not None:
+        value = str(legacy_experience).lower()
+        if value in {"beginner", "intermediate", "advanced"}:
+            defaults["experience_level"] = value
+            migrated = True
+
+    favorite_routes = _first(raw, "navigation.favorite_routes", "navigation.favorites", "favorite_tabs", "favorites")
+    if "favorite_routes" not in raw and favorite_routes is not None:
+        defaults["favorite_routes"] = _string_list(favorite_routes)
+        migrated = True
+
+    hidden_routes = _first(raw, "navigation.hidden_routes", "hiddenRoutes", "hidden_routes")
+    if "hidden_routes" not in raw and hidden_routes is not None:
+        defaults["hidden_routes"] = _string_list(hidden_routes)
+        migrated = True
+
+    window_geometry = _first(raw, "window.geometry", "main_window_geometry", "geometry")
+    if "window_geometry" not in raw and window_geometry is not None:
+        defaults["window_geometry"] = _window_geometry(window_geometry)
+        migrated = True
+
+    defaults["favorite_routes"] = _string_list(defaults.get("favorite_routes"))
+    defaults["hidden_routes"] = _string_list(defaults.get("hidden_routes"))
+    defaults["window_geometry"] = _window_geometry(defaults.get("window_geometry"))
+    defaults["state_schema_version"] = STATE_SCHEMA_VERSION
+
+    if raw.get("state_schema_version") != STATE_SCHEMA_VERSION:
+        migrated = True
+
+    return defaults, migrated
 
 
 class SettingsManager:
@@ -169,12 +265,9 @@ class SettingsManager:
             raw = json.loads(self._path.read_text())
             if not isinstance(raw, dict):
                 raise ValueError("Settings file root is not a JSON object")
-            # Merge only known keys, ignore stale/unknown keys silently
-            defaults = asdict(AppSettings())
-            for key in defaults:
-                if key in raw:
-                    defaults[key] = raw[key]
-            self._settings = defaults
+            self._settings, migrated = migrate_settings(raw)
+            if migrated:
+                self.save()
             logger.debug("Settings loaded from %s", self._path)
         except (json.JSONDecodeError, ValueError, OSError) as exc:
             logger.warning(
