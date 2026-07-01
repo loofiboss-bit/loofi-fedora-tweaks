@@ -82,20 +82,24 @@ class AuditLogger:
         self._logger.setLevel(logging.INFO)
         self._logger.propagate = False
 
-        # Only add handler once
-        if not self._logger.handlers:
-            try:
-                handler = RotatingFileHandler(
-                    str(self._log_path),
-                    maxBytes=self.MAX_BYTES,
-                    backupCount=self.BACKUP_COUNT,
-                    encoding="utf-8",
-                )
-            except OSError:
-                self._logger.addHandler(logging.NullHandler())
-            else:
-                handler.setFormatter(logging.Formatter("%(message)s"))
-                self._logger.addHandler(handler)
+        # The logging registry is process-global, so stale handlers can outlive
+        # singleton resets in test and plugin-hosted runtimes.
+        for existing in self._logger.handlers[:]:
+            existing.close()
+            self._logger.removeHandler(existing)
+
+        try:
+            handler = RotatingFileHandler(
+                str(self._log_path),
+                maxBytes=self.MAX_BYTES,
+                backupCount=self.BACKUP_COUNT,
+                encoding="utf-8",
+            )
+        except OSError:
+            self._logger.addHandler(logging.NullHandler())
+        else:
+            handler.setFormatter(logging.Formatter("%(message)s"))
+            self._logger.addHandler(handler)
 
     @property
     def log_path(self) -> Path:
