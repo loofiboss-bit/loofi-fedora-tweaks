@@ -36,6 +36,43 @@ class ActionCenterService:
         plan = ReadinessActionService.build_plan(target)
         return [self.from_readiness_candidate(candidate, target=target) for candidate in plan.candidates]
 
+    def recommendations_from_timeline(self, *, limit: int = 30) -> list[ActionCenterItem]:
+        """Build deduped, manual-safe recommendations from persisted health trends."""
+        from core.observability import HealthTimelineStore, MaintenanceTrendAnalyzer
+
+        snapshots = HealthTimelineStore().load()[-limit:]
+        summary = MaintenanceTrendAnalyzer(snapshots).analyze()
+        items: dict[str, ActionCenterItem] = {}
+        for fingerprint in [*summary.recurring, *summary.new]:
+            dedupe_key = f"observability:{fingerprint.id}"
+            if dedupe_key in items:
+                continue
+            risk = "medium" if fingerprint.severity in {"blocked", "error"} else "low"
+            items[dedupe_key] = ActionCenterItem(
+                id=f"recommendation-{fingerprint.id.replace(':', '-')}",
+                title=fingerprint.title,
+                source="observability:timeline",
+                description=fingerprint.summary,
+                risk_level=risk,  # type: ignore[arg-type]
+                privilege="none",
+                command_preview=[],
+                rollback_hint="Review the command preview before any follow-up action.",
+                manual_only=True,
+                confirmation_required=risk in {"medium", "high"},
+                state="manual_only",
+                correlation_id=fingerprint.id,
+                dedupe_key=dedupe_key,
+                why_this_matters=_why_this_matters(fingerprint.kind),
+                safe_next_step=_safe_next_step(fingerprint.kind),
+                metadata={
+                    "fingerprint_id": fingerprint.id,
+                    "fingerprint_kind": fingerprint.kind,
+                    "snapshot_id": summary.latest_snapshot_id,
+                    "group": _recommendation_group(fingerprint.kind),
+                },
+            )
+        return list(items.values())
+
     def from_readiness_candidate(self, candidate: ReadinessActionCandidate, *, target: str = "44") -> ActionCenterItem:
         risk = _normalize_risk(candidate.risk_level)
         rollback = RollbackGuidanceService.guidance_for(risk, candidate.revert_hint)
@@ -55,7 +92,10 @@ class ActionCenterService:
             verification_command=list(candidate.verification_command),
             state=state,
             correlation_id=f"{candidate.id}-{int(time.time())}",
-            metadata={"related_check_id": candidate.related_check_id},
+            dedupe_key=f"readiness:{target}:{candidate.id}",
+            why_this_matters=candidate.explanation,
+            safe_next_step="Preview this action, review rollback guidance, then run it only if the command and risk match your intent.",
+            metadata={"related_check_id": candidate.related_check_id, "group": "readiness"},
         )
 
     def preview(self, item: ActionCenterItem) -> ActionResult:
@@ -102,3 +142,39 @@ class ActionCenterService:
 
     def recent_history(self, limit: int = 25) -> list[dict[str, object]]:
         return self.history.recent(limit=limit)
+
+
+def _recommendation_group(kind: str) -> str:
+    groups = {
+        "failed-service": "services",
+        "journal-warning": "journal",
+        "dnf-lock": "package-manager",
+        "package-health": "package-manager",
+        "low-disk": "storage",
+        "missing-rollback": "rollback",
+    }
+    return groups.get(kind, "maintenance")
+
+
+def _why_this_matters(kind: str) -> str:
+    reasons = {
+        "failed-service": "A recurring failed service can indicate a startup, dependency, or hardware-related regression.",
+        "journal-warning": "Repeated journal warnings make later troubleshooting harder and can point to a recurring system problem.",
+        "dnf-lock": "Package manager locks can block updates, installs, and release readiness checks.",
+        "package-health": "Package manager health issues can make maintenance and security updates unreliable.",
+        "low-disk": "Low root filesystem space can break updates, logs, and desktop sessions.",
+        "missing-rollback": "Rollback tooling gives you a safer recovery path before risky maintenance.",
+    }
+    return reasons.get(kind, "This signal has appeared in the health timeline and should be reviewed.")
+
+
+def _safe_next_step(kind: str) -> str:
+    steps = {
+        "failed-service": "Inspect the unit status and logs before restarting or changing service configuration.",
+        "journal-warning": "Open the normalized warning details and review recent journal context.",
+        "dnf-lock": "Check whether another package operation is active before retrying package commands.",
+        "package-health": "Run a read-only repository and package health check before attempting repairs.",
+        "low-disk": "Review disk usage and preview cleanup actions before deleting anything.",
+        "missing-rollback": "Configure Snapper, Timeshift, or rpm-ostree rollback guidance before risky actions.",
+    }
+    return steps.get(kind, "Review the snapshot details and choose a previewable follow-up action.")

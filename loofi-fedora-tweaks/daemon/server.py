@@ -127,8 +127,20 @@ class DaemonService(_DbusObjectBase):  # type: ignore[misc,valid-type]
                     "unmask_unit",
                     "get_unit_status",
                 ],
+                "observability": [
+                    "collect_health_snapshot",
+                    "health_timeline",
+                ],
             }
         )
+
+    @_dbus_method(INTERFACE, in_signature="s", out_signature="s")
+    def ObservabilityCollectHealthSnapshot(self, target: str = "44") -> str:  # noqa: N802
+        return self._safe_call(_collect_health_snapshot, target)
+
+    @_dbus_method(INTERFACE, in_signature="i", out_signature="s")
+    def ObservabilityHealthTimeline(self, limit: int = 10) -> str:  # noqa: N802
+        return self._safe_call(_health_timeline, limit)
 
     @_dbus_method(INTERFACE, in_signature="as", out_signature="s")
     def PackageInstall(self, packages: list[str]) -> str:  # noqa: N802
@@ -339,3 +351,23 @@ class DaemonService(_DbusObjectBase):  # type: ignore[misc,valid-type]
         except (OSError, RuntimeError, ValueError, TypeError) as exc:
             logger.exception("Daemon method failure")
             return error_response("execution_error", str(exc))
+
+
+def _collect_health_snapshot(target: str = "44") -> dict[str, Any]:
+    from core.observability import HealthTimelineStore
+
+    if target not in {"44", "45-preview"}:
+        raise ValidationError("target must be 44 or 45-preview")
+    snapshot = HealthTimelineStore().collect_and_append(fedora_target=target)
+    return {
+        "schema_version": 1,
+        "read_only": True,
+        "snapshot": snapshot.to_dict(),
+    }
+
+
+def _health_timeline(limit: int = 10) -> dict[str, Any]:
+    from core.observability import HealthTimelineStore
+
+    bounded_limit = max(1, min(int(limit), 30))
+    return HealthTimelineStore().export(limit=bounded_limit)

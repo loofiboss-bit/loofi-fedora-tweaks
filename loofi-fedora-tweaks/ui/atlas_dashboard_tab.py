@@ -116,6 +116,13 @@ class AtlasDashboardTab(BaseTab):
         overview_card.mousePressEvent = lambda event: self._open_route("dashboard")  # type: ignore[method-assign]
         layout.addWidget(overview_card)
 
+        health_card = RouteCard(
+            "My Fedora Today",
+            "Review the latest health snapshot, recurring maintenance signals, and trend-aware next steps.",
+        )
+        health_card.mousePressEvent = lambda event: self._open_route("maintenance:health-timeline")  # type: ignore[method-assign]
+        layout.addWidget(health_card)
+
         upgrade_card = RouteCard(
             "Upgrade Assistant",
             "Review Fedora 44 readiness, Fedora 45 preview changes, safe action previews, verification, and support export.",

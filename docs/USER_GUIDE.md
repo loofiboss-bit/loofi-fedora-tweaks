@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 11.0.0 "Harbor" — Unified Action Center and Daily Maintenance Trust
+> Version 12.0.0 "Lighthouse" — My Fedora Today and Health Timeline Trust
 
 This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
 

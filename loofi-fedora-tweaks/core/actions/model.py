@@ -60,6 +60,9 @@ class ActionCenterItem:
     verification_result: str = ""
     timestamp: float = field(default_factory=time.time)
     correlation_id: str = ""
+    dedupe_key: str = ""
+    why_this_matters: str = ""
+    safe_next_step: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -89,5 +92,8 @@ class ActionCenterItem:
             "verification_result": self.verification_result,
             "timestamp": self.timestamp,
             "correlation_id": self.correlation_id or self.id,
+            "dedupe_key": self.dedupe_key or self.id,
+            "why_this_matters": self.why_this_matters,
+            "safe_next_step": self.safe_next_step,
             "metadata": dict(self.metadata),
         }

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 11.0.0 "Harbor"
+> Version 12.0.0 "Lighthouse"
 
 Operational runbook for power users and Fedora admins.
 

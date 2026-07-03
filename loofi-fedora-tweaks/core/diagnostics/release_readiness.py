@@ -871,6 +871,22 @@ class ReleaseReadiness:
             )
         )
 
+        pyqt_result = cls._run(["python3", "-c", "from PyQt6.QtCore import QT_VERSION_STR, PYQT_VERSION_STR; print(QT_VERSION_STR, PYQT_VERSION_STR)"], timeout=8)
+        pyqt_text = (pyqt_result.stdout if pyqt_result else "") or (pyqt_result.stderr if pyqt_result else "")
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-pyqt6-qt-packaging",
+                title="PyQt6 and Qt Packaging Compatibility",
+                category="desktop",
+                status="pass" if pyqt_result and pyqt_result.returncode == 0 else "info",
+                severity="info",
+                summary=pyqt_text.strip() or "PyQt6/Qt version probe is unavailable.",
+                beginner_guidance="Confirm PyQt6 and Qt packages remain installable before Fedora 45 promotion.",
+                advanced_detail=pyqt_text[:2000] if pyqt_text else "python3 PyQt6.QtCore probe unavailable",
+                command_preview=["python3", "-c", "from PyQt6.QtCore import QT_VERSION_STR, PYQT_VERSION_STR; print(QT_VERSION_STR, PYQT_VERSION_STR)"],
+            )
+        )
+
         nmcli = cached_which("nmcli")
         nm_result = cls._run(["nmcli", "-t", "-f", "NAME,ipv6.method", "connection", "show"], timeout=12) if nmcli else None
         disabled_ipv6 = []
@@ -895,6 +911,22 @@ class ReleaseReadiness:
                 ),
                 advanced_detail=(nm_result.stdout if nm_result else "nmcli unavailable")[:3000],
                 command_preview=["nmcli", "-t", "-f", "NAME,ipv6.method", "connection", "show"],
+            )
+        )
+
+        session = os.environ.get("XDG_SESSION_TYPE", "")
+        desktop = os.environ.get("XDG_CURRENT_DESKTOP", "")
+        checks.append(
+            ReadinessCheck(
+                id="fedora45-plasma-wayland-session",
+                title="KDE Plasma Wayland Assumptions",
+                category="desktop",
+                status="pass" if session.lower() == "wayland" else "info",
+                severity="info",
+                summary=f"Session={session or 'unknown'}; Desktop={desktop or 'unknown'}",
+                beginner_guidance="Fedora KDE 45 planning assumes Plasma Wayland remains the primary desktop path.",
+                advanced_detail=json.dumps({"XDG_SESSION_TYPE": session, "XDG_CURRENT_DESKTOP": desktop}, indent=2, sort_keys=True),
+                command_preview=["echo", "$XDG_SESSION_TYPE"],
             )
         )
 

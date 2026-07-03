@@ -1,6 +1,6 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v11.0.0 "Harbor" includes a read-only release readiness center, guided Upgrade Assistant, and Unified Action Center preview flow. Fedora KDE 44 is the supported stable target. Fedora 45 remains preview-only and advisory.
+Loofi Fedora Tweaks v12.0.0 "Lighthouse" includes a read-only release readiness center, guided Upgrade Assistant, Unified Action Center preview flow, and My Fedora Today health timeline. Fedora KDE 44 is the supported stable target. Fedora 45 remains preview-only and advisory.
 
 ## Run It
 
@@ -44,9 +44,11 @@ loofi-fedora-tweaks --cli fedora44-readiness
 - Wayland vs X11 session.
 - Display manager and Plasma login manager status, including SDDM/GDM detection.
 - DNF5, PackageKit, DNF/RPM locks, repository query health, COPR/RPM Fusion risk signals.
+- PyQt6/Qt packaging compatibility for Fedora 45 preview planning.
 - Atomic/rpm-ostree status, pending deployment, and layered packages.
 - NVIDIA hardware, kernel module status, akmods, Secure Boot, and MOK state.
 - Flatpak KDE runtimes.
+- KDE Plasma session and Wayland assumptions.
 - TLS certificate compatibility, including Fedora's CA trust bundle layout.
 
 ## Safety Model
@@ -73,9 +75,9 @@ Rules:
 - Manual-only recommendations cannot be executed.
 - Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 
-## Support Bundle v7
+## Support Bundle v8
 
-Support bundles now include privacy-masked generic `release_readiness` data, release planning metadata, guided action context, and Action Center context:
+Support bundles now include privacy-masked generic `release_readiness` data, release planning metadata, guided action context, Action Center context, and My Fedora Today observability context:
 
 - Fedora/KDE/Qt versions
 - session type and display manager
@@ -91,9 +93,13 @@ Support bundles now include privacy-masked generic `release_readiness` data, rel
 - update preview and redacted package/repo health details
 - recent redacted action history
 - Action Center candidates and bounded history
+- Action Center timeline recommendations
 - Daily Maintenance dashboard signals
+- latest health snapshot and bounded health timeline
+- recurring problem fingerprints
 - rollback hints used for medium/high-risk actions
 - daemon and optional Web API status probes
+- daemon snapshot status and read-only collection errors
 - support-safe GitHub issue text export
 - privacy manifest
 

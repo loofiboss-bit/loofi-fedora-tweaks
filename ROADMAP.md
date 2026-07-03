@@ -65,11 +65,46 @@
 | v8.1.0  | Breeze                          | DONE    | Focused sidebar, airy desktop layout, responsive scaling, and updated screenshots            |
 | v9.0.0  | Keystone                        | DONE    | Whole-app quality, execution consistency, state reliability, and release hygiene             |
 | v10.0.0 | Waypoint                        | DONE    | Release Upgrade Assistant, Fedora 45 preview planning, and guided readiness UX              |
-| v11.0.0 | Harbor                          | ACTIVE  | Unified Action Center, daily maintenance UX, rollback guidance, and release trust            |
+| v11.0.0 | Harbor                          | DONE    | Unified Action Center, daily maintenance UX, rollback guidance, and release trust            |
+| v12.0.0 | Lighthouse                      | ACTIVE  | Proactive health observability, My Fedora Today timeline, and guided recovery                |
 
 ---
 
-## [ACTIVE] v11.0.0 "Harbor" — Unified Action Center & Release Trust
+## [ACTIVE] v12.0.0 "Lighthouse" — Proactive Health Observability
+
+**Theme**: Proactive Fedora health observability and guided daily recovery.
+**Focus**: My Fedora Today snapshots, trend-aware maintenance, recurring issue detection, Action Center v2 recommendations, daemon read-only collection, Support Bundle v8, and Fedora 45 preview continuity.
+
+### Scope
+
+v12.0.0 "Lighthouse" keeps Fedora KDE 44 as the stable supported readiness target and preserves Fedora 45 as a non-blocking preview planning profile. It builds on v11 Daily Maintenance and Action Center systems by persisting bounded health snapshots, comparing them over time, and surfacing safe next steps without automatic repairs.
+
+### Deliverables
+
+- [x] Version metadata aligned to `12.0.0 "Lighthouse"`
+- [x] v11.0.0 "Harbor" marked completed and v12.0.0 activated
+- [x] `core.observability` added for health snapshots, timeline storage, fingerprints, trend analysis, and privacy redaction
+- [x] Bounded JSON timeline storage added under the existing XDG data directory pattern with corrupt-history fallback
+- [x] Daily Maintenance reports convertible into privacy-safe `HealthSnapshot` objects without mutating commands
+- [x] CLI commands added for `health snapshot`, `health timeline`, `maintenance today`, and `action-center recommendations`
+- [x] Optional daemon/API read-only health snapshot collection added without automatic repairs, upgrades, or service restarts
+- [x] Action Center v2 recommendations added from recurring/new health fingerprints with dedupe keys and safe next steps
+- [x] Support Bundle v8 fields added while preserving v5/v6/v7-compatible payload keys and import paths
+- [x] Maintenance > Health Timeline and Home > My Fedora Today entry points added without a new top-level sidebar area
+- [x] Fedora KDE 44 stable and Fedora 45 preview/advisory status preserved
+- [x] v12 workflow specs, release notes, README, changelog, package metadata, AppStream metadata, and plan docs refreshed
+
+### Compatibility
+
+- Fedora KDE 44 remains the stable supported target.
+- Fedora 45 remains preview-only and advisory.
+- Stable `NavigationRoute` IDs, CLI compatibility aliases, plugin metadata, favorites, and saved settings remain backward compatible.
+- Mutating actions continue through list-based commands, `pkexec` boundaries, allowlist validation, timeouts, audit metadata, and explicit confirmation for medium/high-risk actions.
+- The daemon may collect read-only health snapshots but does not run upgrades, cleanup, firmware updates, service restarts, or fix-all workflows.
+
+---
+
+## [DONE] v11.0.0 "Harbor" — Unified Action Center & Release Trust
 
 **Theme**: Trustworthy Fedora KDE control center behavior for daily maintenance, previewable actions, rollback guidance, support export, and release metadata consistency.
 **Focus**: Unified Action Center model, daily maintenance signals, rollback-first action metadata, Fedora 45 preview continuity, Support Bundle v7, and v11 release trust gates.

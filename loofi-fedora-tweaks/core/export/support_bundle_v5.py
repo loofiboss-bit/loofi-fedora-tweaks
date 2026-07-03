@@ -15,6 +15,7 @@ from core.diagnostics.readiness_actions import ReadinessActionService
 from core.diagnostics.release_readiness import ReleaseReadiness
 from core.executor.action_executor import ActionExecutor
 from core.export.report_exporter import ReportExporter
+from core.observability import HealthSnapshot, HealthTimelineStore, MaintenanceTrendAnalyzer
 from services.package.dnf5_health import DNF5HealthService
 from utils.log import get_logger
 from version import __version__, __version_codename__
@@ -25,11 +26,11 @@ logger = get_logger(__name__)
 class SupportBundleV5:
     """Privacy-masked diagnostic bundle for guided readiness support.
 
-    The class name stays stable for compatibility; the v11 payload schema is
-    support-v7 and preserves all v5/v6 fields.
+    The class name stays stable for compatibility; the v12 payload schema is
+    support-v8 and preserves older v5/v6/v7 fields.
     """
 
-    BUNDLE_SCHEMA = "11.0.0-harbor-support-v7"
+    BUNDLE_SCHEMA = "12.0.0-lighthouse-support-v8"
     _SECRET_KEY_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)")
     _SECRET_VALUE_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key)=([^\s&]+)")
     _HOME_RE = re.compile(r"/home/[^/\\s]+")
@@ -104,11 +105,12 @@ class SupportBundleV5:
         }
 
     @staticmethod
-    def _github_issue_text(readiness_summary: str, action_count: int) -> str:
+    def _github_issue_text(readiness_summary: str, action_count: int, recurring_count: int = 0) -> str:
         return (
             "## Loofi Fedora Tweaks diagnostics\n\n"
             f"{readiness_summary}\n\n"
             f"Action Center candidates: {action_count}\n"
+            f"Recurring health timeline issues: {recurring_count}\n"
             "Private paths, emails, tokens, and host identifiers are redacted in the attached support bundle."
         )
 
@@ -126,6 +128,12 @@ class SupportBundleV5:
         system_info = ReportExporter.gather_system_info()
         release_plan = ReleaseReadiness.build_release_plan(readiness)
         daily_maintenance = DailyMaintenanceService().collect()
+        current_snapshot = HealthSnapshot.from_daily_maintenance(daily_maintenance, action_center_items=action_center_items, fedora_target=target)
+        timeline_store = HealthTimelineStore()
+        stored_timeline = timeline_store.load()
+        timeline = [*stored_timeline, current_snapshot]
+        trend_summary = MaintenanceTrendAnalyzer(timeline).analyze()
+        recommendations = action_center.recommendations_from_timeline()
         update_preview = {
             "package_manager": package_report.package_manager,
             "dnf_locked": package_report.dnf_locked,
@@ -136,7 +144,7 @@ class SupportBundleV5:
         bundle: Dict[str, Any] = {
             "v": cls.BUNDLE_SCHEMA,
             "schema": cls.BUNDLE_SCHEMA,
-            "support_bundle_version": 7,
+            "support_bundle_version": 8,
             "app": {
                 "version": __version__,
                 "codename": __version_codename__,
@@ -158,10 +166,25 @@ class SupportBundleV5:
                 "rollback_hints": [item.rollback_hint for item in action_center_items if item.rollback_hint],
             },
             "daily_maintenance": daily_maintenance.to_dict(),
+            "health_snapshot": current_snapshot.to_dict(),
+            "health_timeline": {
+                "schema_version": 1,
+                "snapshots": [snapshot.to_dict() for snapshot in timeline[-10:]],
+                "trend_summary": trend_summary.to_dict(),
+                "corrupt_history_recovered": bool(timeline_store.last_error),
+            },
+            "recurring_problem_fingerprints": [item.to_dict() for item in trend_summary.recurring],
+            "action_center_recommendations": [item.to_dict() for item in recommendations],
+            "daemon_snapshot_status": {
+                "latest_snapshot_timestamp": stored_timeline[-1].timestamp if stored_timeline else None,
+                "last_error": timeline_store.last_error,
+                "read_only": True,
+            },
+            "read_only_collection_errors": list(current_snapshot.collection_errors),
             "update_preview": update_preview,
             "readiness_delta": cls._readiness_delta(),
             "support_summary": readiness.support_summary(),
-            "github_issue_text": cls._github_issue_text(readiness.support_summary(), len(action_center_items)),
+            "github_issue_text": cls._github_issue_text(readiness.support_summary(), len(action_center_items), len(trend_summary.recurring)),
             "daemon_status": cls._daemon_status(),
             "web_api_status": cls._web_api_status(),
             "desktop": readiness.desktop.to_dict() if readiness.desktop else {},

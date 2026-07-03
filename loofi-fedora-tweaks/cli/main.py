@@ -232,8 +232,41 @@ def cmd_info(_args):
     )
 
 
-def cmd_health(_args):
+def cmd_health(args):
     """Show system health overview."""
+    action = getattr(args, "health_action", None)
+    if action == "snapshot":
+        from core.observability import HealthSnapshot, HealthTimelineStore, MaintenanceTrendAnalyzer
+
+        store = HealthTimelineStore()
+        snapshot = store.append(HealthSnapshot.collect(fedora_target=getattr(args, "target", "44")))
+        timeline = store.load()
+        payload = {
+            "schema_version": 1,
+            "snapshot": snapshot.to_dict(),
+            "trend_summary": MaintenanceTrendAnalyzer(timeline).analyze().to_dict(),
+        }
+        if _json_output:
+            _output_json(payload)
+        else:
+            _print("My Fedora Today snapshot recorded.")
+            _print(payload["trend_summary"]["summary"])
+        return 0
+
+    if action == "timeline":
+        from core.observability import HealthTimelineStore
+
+        payload = HealthTimelineStore().export(limit=getattr(args, "limit", 10))
+        if _json_output:
+            _output_json(payload)
+        else:
+            _print("Health Timeline")
+            _print(f"Snapshots: {payload['count']}")
+            _print(str(payload["trend_summary"]["summary"]))
+            for snapshot in payload["snapshots"]:
+                _print(f"- {snapshot['timestamp']}: {snapshot['app_version']} {snapshot['app_codename']}")
+        return 0
+
     return handle_health(
         json_output=_json_output,
         output_json=_output_json,
@@ -243,6 +276,41 @@ def cmd_health(_args):
         tweak_ops_cls=TweakOps,
         system_manager_cls=SystemManager,
     )
+
+
+def cmd_maintenance(args):
+    """Show v12 daily maintenance health payloads."""
+    action = getattr(args, "maintenance_action", "today")
+    if action != "today":
+        if _json_output:
+            _output_json({"schema_version": 1, "error": "unknown_maintenance_command", "action": action})
+        else:
+            _print(f"Unknown maintenance command: {action}")
+        return 1
+
+    from core.actions import ActionCenterService
+    from core.diagnostics.daily_maintenance import DailyMaintenanceService
+    from core.observability import HealthSnapshot, HealthTimelineStore, MaintenanceTrendAnalyzer
+
+    report = DailyMaintenanceService().collect()
+    action_items = ActionCenterService().candidates_from_readiness(getattr(args, "target", "44"))
+    snapshot = HealthSnapshot.from_daily_maintenance(report, action_center_items=action_items, fedora_target=getattr(args, "target", "44"))
+    timeline = [*HealthTimelineStore().load(), snapshot]
+    payload = {
+        "schema_version": 1,
+        "daily_maintenance": report.to_dict(),
+        "snapshot": snapshot.to_dict(),
+        "trend_summary": MaintenanceTrendAnalyzer(timeline).analyze().to_dict(),
+    }
+    if _json_output or getattr(args, "json", False):
+        _output_json(payload)
+    else:
+        _print("My Fedora Today")
+        _print(str(payload["trend_summary"]["summary"]))
+        _print(report.recommended_action)
+        for card in report.cards:
+            _print(f"- {card.title}: {card.state} - {card.summary}")
+    return 0
 
 
 def cmd_disk(args):
@@ -561,6 +629,20 @@ def cmd_action_center(args) -> int:
                 _print(f"  Preview: {' '.join(item.command_preview)}")
             if item.rollback_hint:
                 _print(f"  Rollback: {item.rollback_hint}")
+        return 0
+
+    if action == "recommendations":
+        recommendations = service.recommendations_from_timeline(limit=getattr(args, "limit", 25))
+        payload = {"schema_version": 1, "recommendations": [item.to_dict() for item in recommendations]}
+        if _json_output:
+            _output_json(payload)
+        else:
+            if not recommendations:
+                _print("No Action Center recommendations from the health timeline.")
+            for item in recommendations:
+                _print(f"- {item.id}: {item.title} [{item.risk_level}]")
+                _print(f"  Why: {item.why_this_matters}")
+                _print(f"  Safe next step: {item.safe_next_step}")
         return 0
 
     if action == "preview":
@@ -1114,7 +1196,18 @@ def main(argv: Optional[List[str]] = None):
     subparsers.add_parser("info", help="Show system information")
 
     # Health command
-    subparsers.add_parser("health", help="System health check overview")
+    health_parser = subparsers.add_parser("health", help="System health check overview")
+    health_subparsers = health_parser.add_subparsers(dest="health_action", help="Health timeline commands")
+    health_snapshot_parser = health_subparsers.add_parser("snapshot", help="Record a My Fedora Today health snapshot")
+    health_snapshot_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+    health_timeline_parser = health_subparsers.add_parser("timeline", help="Show persisted health snapshots")
+    health_timeline_parser.add_argument("--limit", type=int, default=10, help="Snapshot limit")
+
+    maintenance_parser = subparsers.add_parser("maintenance", help="Daily maintenance health commands")
+    maintenance_subparsers = maintenance_parser.add_subparsers(dest="maintenance_action", help="Maintenance commands")
+    maintenance_today_parser = maintenance_subparsers.add_parser("today", help="Show My Fedora Today maintenance state")
+    maintenance_today_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
+    maintenance_today_parser.add_argument("--json", action="store_true", help="Output in JSON format")
 
     # Disk command
     disk_parser = subparsers.add_parser("disk", help="Disk usage information")
@@ -1254,7 +1347,7 @@ def main(argv: Optional[List[str]] = None):
     readiness_verify_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
 
     action_center_parser = subparsers.add_parser("action-center", help="List and preview unified Action Center candidates")
-    action_center_parser.add_argument("action", choices=["list", "preview", "history"], nargs="?", default="list", help="Action Center command")
+    action_center_parser.add_argument("action", choices=["list", "preview", "history", "recommendations"], nargs="?", default="list", help="Action Center command")
     action_center_parser.add_argument("action_id", nargs="?", help="Action ID for preview")
     action_center_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
     action_center_parser.add_argument("--limit", type=int, default=25, help="History entry limit")
@@ -1569,6 +1662,7 @@ def main(argv: Optional[List[str]] = None):
     commands = {
         "info": cmd_info,
         "health": cmd_health,
+        "maintenance": cmd_maintenance,
         "disk": cmd_disk,
         "processes": cmd_processes,
         "temperature": cmd_temperature,

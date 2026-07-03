@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        11.0.0
+Version:        12.0.0
 Release:        1%{?dist}
 Summary:        Complete Fedora system management with AI, security, and window management
 
@@ -34,10 +34,10 @@ system maintenance, developer tooling, AI integration,
 security hardening, window management, virtualization,
 mesh networking, and workspace state teleportation.
 
-v11.0.0 Harbor adds a Unified Action Center, daily
-maintenance diagnostics, rollback-first guidance, and
-Support Bundle v7 while keeping Fedora KDE 44 as the
-stable supported target and Fedora 45 as preview-only
+v12.0.0 Lighthouse adds My Fedora Today health snapshots,
+trend-aware maintenance recommendations, read-only daemon
+collection, and Support Bundle v8 while keeping Fedora KDE 44
+as the stable supported target and Fedora 45 as preview-only
 planning.
 
 %package api
@@ -163,6 +163,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Fri Jul 03 2026 Loofi <loofi@example.com> - 12.0.0-1
+- v12.0.0 "Lighthouse" - My Fedora Today health timeline, Action Center recommendations, daemon snapshot collection, and Support Bundle v8
+
 * Wed Jul 01 2026 Loofi <loofi@example.com> - 11.0.0-1
 - v11.0.0 "Harbor" - Unified Action Center, daily maintenance diagnostics, rollback guidance, and Support Bundle v7
 

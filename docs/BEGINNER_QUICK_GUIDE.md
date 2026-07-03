@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 11.0.0 "Harbor" — Upgrade Assistant, Action Center, and Safe Guided Actions
+> Version 12.0.0 "Lighthouse" — My Fedora Today, Action Center, and Safe Guided Actions
 
 Use this guide for a safe first run in under 10 minutes.
 

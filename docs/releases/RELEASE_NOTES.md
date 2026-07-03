@@ -4,8 +4,8 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v11.0.0 "Harbor"**
-- Full notes: [RELEASE-NOTES-v11.0.0.md](RELEASE-NOTES-v11.0.0.md)
+- **v12.0.0 "Lighthouse"**
+- Full notes: [RELEASE-NOTES-v12.0.0.md](RELEASE-NOTES-v12.0.0.md)
 
 ## Recent Releases
 

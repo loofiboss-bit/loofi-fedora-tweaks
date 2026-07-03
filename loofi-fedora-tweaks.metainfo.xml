@@ -41,6 +41,18 @@
   </provides>
 
   <releases>
+    <release version="12.0.0" date="2026-07-03">
+      <description>
+        <p>v12.0.0 "Lighthouse" - Proactive Health Observability</p>
+        <ul>
+          <li>Added My Fedora Today health snapshots with bounded retention and corrupt-history fallback</li>
+          <li>Added trend-aware recurring, new, resolved, and worsening issue detection from normalized fingerprints</li>
+          <li>Added Action Center v2 recommendations with dedupe keys, correlation IDs, grouping, and safe next steps</li>
+          <li>Added read-only daemon/API snapshot collection without automatic repairs or background upgrades</li>
+          <li>Added Support Bundle v8 fields for snapshots, timelines, recurring fingerprints, recommendations, daemon status, and redaction</li>
+        </ul>
+      </description>
+    </release>
     <release version="11.0.0" date="2026-07-01">
       <description>
         <p>v11.0.0 "Harbor" - Unified Action Center, Daily Maintenance UX, Release Trust</p>

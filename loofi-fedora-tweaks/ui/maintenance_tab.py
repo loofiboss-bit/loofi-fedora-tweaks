@@ -921,6 +921,91 @@ class _ActionCenterSubTab(QWidget):
 
 
 # ---------------------------------------------------------------------------
+# Sub-tab: Health Timeline (v12.0 Lighthouse)
+# ---------------------------------------------------------------------------
+
+
+class _HealthTimelineSubTab(QWidget):
+    """My Fedora Today timeline surface backed by core.observability."""
+
+    def __init__(self):
+        super().__init__()
+        from core.observability import HealthTimelineStore, MaintenanceTrendAnalyzer
+
+        self._store = HealthTimelineStore()
+        self._analyzer_cls = MaintenanceTrendAnalyzer
+
+        layout = QVBoxLayout()
+        layout.setSpacing(12)
+        self.setLayout(layout)
+
+        header = QLabel(self.tr("My Fedora Today"))
+        header.setObjectName("header")
+        layout.addWidget(header)
+
+        button_row = QHBoxLayout()
+        refresh_button = QPushButton(self.tr("Refresh"))
+        refresh_button.clicked.connect(self._load_timeline)
+        button_row.addWidget(refresh_button)
+
+        snapshot_button = QPushButton(self.tr("Record Snapshot"))
+        snapshot_button.clicked.connect(self._record_snapshot)
+        button_row.addWidget(snapshot_button)
+        button_row.addStretch()
+        layout.addLayout(button_row)
+
+        self.summary_label = QLabel()
+        self.summary_label.setWordWrap(True)
+        layout.addWidget(self.summary_label)
+
+        self.timeline_list = QListWidget()
+        self.timeline_list.setAccessibleName(self.tr("Health timeline snapshots"))
+        layout.addWidget(self.timeline_list, 1)
+
+        self.detail_area = QTextEdit()
+        self.detail_area.setReadOnly(True)
+        self.detail_area.setAccessibleName(self.tr("Health timeline details"))
+        layout.addWidget(self.detail_area, 1)
+
+        self._load_timeline()
+
+    def _load_timeline(self) -> None:
+        snapshots = self._store.load()
+        summary = self._analyzer_cls(snapshots).analyze()
+        self.timeline_list.clear()
+        self.summary_label.setText(summary.summary)
+
+        for snapshot in reversed(snapshots[-10:]):
+            self.timeline_list.addItem(
+                self.tr("%1 -- %2 issue(s)")
+                .replace("%1", str(snapshot.timestamp))
+                .replace("%2", str(len(snapshot.problem_fingerprints)))
+            )
+
+        self.detail_area.setPlainText(
+            "\n".join(
+                [
+                    f"{self.tr('Snapshots')}: {len(snapshots)}",
+                    f"{self.tr('New')}: {len(summary.new)}",
+                    f"{self.tr('Recurring')}: {len(summary.recurring)}",
+                    f"{self.tr('Resolved')}: {len(summary.resolved)}",
+                    f"{self.tr('Worsening')}: {len(summary.worsening)}",
+                    "",
+                    summary.summary,
+                ]
+            )
+        )
+
+    def _record_snapshot(self) -> None:
+        try:
+            self._store.collect_and_append(fedora_target="44")
+        except (OSError, RuntimeError, ValueError, TypeError) as exc:
+            QMessageBox.warning(self, self.tr("Snapshot Failed"), str(exc))
+            return
+        self._load_timeline()
+
+
+# ---------------------------------------------------------------------------
 # Main consolidated tab
 # ---------------------------------------------------------------------------
 
@@ -960,6 +1045,7 @@ class MaintenanceTab(BaseTab):
             (self.tr("Updates"), _UpdatesSubTab),
             (self.tr("Cleanup"), _CleanupSubTab),
             (self.tr("Smart Updates"), _SmartUpdatesSubTab),
+            (self.tr("Health Timeline"), _HealthTimelineSubTab),
             (self.tr("Action Center"), _ActionCenterSubTab),
             (self.tr("Upgrade Assistant"), _UpgradeAssistantSubTab),
         ]

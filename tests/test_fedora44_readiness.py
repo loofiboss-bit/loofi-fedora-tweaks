@@ -119,7 +119,9 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         check_ids = {check.id for check in checks}
         self.assertIn("fedora45-repo-config-layout", check_ids)
         self.assertIn("fedora45-python315-setuptools", check_ids)
+        self.assertIn("fedora45-pyqt6-qt-packaging", check_ids)
         self.assertIn("fedora45-networkmanager-ipv6-mostly", check_ids)
+        self.assertIn("fedora45-plasma-wayland-session", check_ids)
         self.assertIn("fedora45-podman6", check_ids)
         self.assertIn("fedora45-atomic-flatpak-filtering", check_ids)
         self.assertIn("fedora45-rpm-openssl-compat", check_ids)

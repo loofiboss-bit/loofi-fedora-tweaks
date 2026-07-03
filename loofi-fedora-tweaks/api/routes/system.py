@@ -73,3 +73,30 @@ def get_agents(
         "states": [registry.get_state(a.agent_id).to_dict() for a in agents],
         "summary": registry.get_agent_summary(),
     }
+
+
+@router.post("/observability/snapshot")
+def collect_health_snapshot(
+    target: str = "44",
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Collect and persist one read-only v12 health snapshot."""
+    from core.observability import HealthTimelineStore
+
+    snapshot = HealthTimelineStore().collect_and_append(fedora_target=target)
+    return {
+        "schema_version": 1,
+        "read_only": True,
+        "snapshot": snapshot.to_dict(),
+    }
+
+
+@router.get("/observability/timeline")
+def get_health_timeline(
+    limit: int = 10,
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Return bounded v12 health timeline data."""
+    from core.observability import HealthTimelineStore
+
+    return HealthTimelineStore().export(limit=max(1, min(limit, 30)))

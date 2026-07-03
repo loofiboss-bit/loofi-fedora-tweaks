@@ -343,6 +343,11 @@ class TestMaintenanceTabMetadata(unittest.TestCase):
         labels = [label for label, _factory in self.tab._sub_tab_factories]
         self.assertIn("Action Center", labels)
 
+    def test_has_health_timeline_subtab_factory(self):
+        """MaintenanceTab exposes the v12 Health Timeline as a Maintenance sub-tab."""
+        labels = [label for label, _factory in self.tab._sub_tab_factories]
+        self.assertIn("Health Timeline", labels)
+
 
 # ===================================================================
 # Test: _UpdatesSubTab — static helper
@@ -386,6 +391,48 @@ class TestUpdatesSubTabSystemUpdateStep(unittest.TestCase):
 # ===================================================================
 # Test: _ActionCenterSubTab
 # ===================================================================
+
+
+class TestUpgradeAssistantSubTab(unittest.TestCase):
+    """Tests for the Upgrade Assistant GUI surface."""
+
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.list_targets")
+    def test_init_renders_targets_and_changes(self, list_targets):
+        list_targets.return_value = [
+            SimpleNamespace(
+                key="45-preview",
+                label="Fedora 45 Preview",
+                status_label="Preview",
+                release_phase="planning",
+                important_changes=[SimpleNamespace(title="Qt", summary="Packaging shift")],
+            )
+        ]
+
+        tab = _mt._UpgradeAssistantSubTab()
+
+        self.assertIsNotNone(tab)
+        list_targets.assert_called_once_with()
+
+    @patch.object(_QMessageBox, "information")
+    @patch("core.export.support_bundle_v5.SupportBundleV5.save_json")
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.list_targets", return_value=[])
+    def test_export_bundle_shows_success(self, _list_targets, save_json, information):
+        tab = _mt._UpgradeAssistantSubTab()
+
+        tab._export_bundle("45-preview")
+
+        save_json.assert_called_once_with("loofi-readiness-45-preview.json", target="45-preview")
+        information.assert_called_once()
+
+    @patch.object(_QMessageBox, "critical")
+    @patch("core.export.support_bundle_v5.SupportBundleV5.save_json", side_effect=RuntimeError("write failed"))
+    @patch("core.diagnostics.release_readiness.ReleaseReadiness.list_targets", return_value=[])
+    def test_export_bundle_shows_failure(self, _list_targets, _save_json, critical):
+        tab = _mt._UpgradeAssistantSubTab()
+
+        tab._export_bundle("44")
+
+        critical.assert_called_once()
 
 
 class TestActionCenterSubTab(unittest.TestCase):
@@ -433,6 +480,85 @@ class TestActionCenterSubTab(unittest.TestCase):
         service.preview.assert_called_once_with(tab._items[0])
         self.assertFalse(service.execute_next.called)
         tab.detail_area.setPlainText.assert_called_once()
+
+
+# ===================================================================
+# Test: _HealthTimelineSubTab
+# ===================================================================
+
+
+class TestHealthTimelineSubTab(unittest.TestCase):
+    """Tests for the v12 Health Timeline GUI surface."""
+
+    def _summary_cls(self):
+        class _Analyzer:
+            def __init__(self, snapshots):
+                self.snapshots = snapshots
+
+            def analyze(self):
+                return SimpleNamespace(
+                    summary=f"{len(self.snapshots)} snapshot(s) loaded",
+                    new=[object()],
+                    recurring=[object(), object()],
+                    resolved=[],
+                    worsening=[object()],
+                )
+
+        return _Analyzer
+
+    @patch("core.observability.MaintenanceTrendAnalyzer")
+    @patch("core.observability.HealthTimelineStore")
+    def test_load_timeline_renders_summary_and_recent_items(self, store_cls, analyzer_cls):
+        analyzer_cls.side_effect = self._summary_cls()
+        snapshots = [
+            SimpleNamespace(timestamp=1.0, problem_fingerprints=[]),
+            SimpleNamespace(timestamp=2.0, problem_fingerprints=[object(), object()]),
+        ]
+        store_cls.return_value.load.return_value = snapshots
+
+        tab = _mt._HealthTimelineSubTab()
+        tab.timeline_list = MagicMock()
+        tab.summary_label = MagicMock()
+        tab.detail_area = MagicMock()
+
+        tab._load_timeline()
+
+        tab.timeline_list.clear.assert_called_once_with()
+        self.assertEqual(tab.timeline_list.addItem.call_count, 2)
+        tab.summary_label.setText.assert_called_with("2 snapshot(s) loaded")
+        detail = tab.detail_area.setPlainText.call_args.args[0]
+        self.assertIn("Snapshots: 2", detail)
+        self.assertIn("Recurring: 2", detail)
+
+    @patch.object(_QMessageBox, "warning")
+    @patch("core.observability.MaintenanceTrendAnalyzer")
+    @patch("core.observability.HealthTimelineStore")
+    def test_record_snapshot_handles_collection_failure(self, store_cls, analyzer_cls, warning):
+        analyzer_cls.side_effect = self._summary_cls()
+        store_cls.return_value.load.return_value = []
+        store_cls.return_value.collect_and_append.side_effect = RuntimeError("read failed")
+
+        tab = _mt._HealthTimelineSubTab()
+        tab._load_timeline = MagicMock()
+
+        tab._record_snapshot()
+
+        warning.assert_called_once()
+        tab._load_timeline.assert_not_called()
+
+    @patch("core.observability.MaintenanceTrendAnalyzer")
+    @patch("core.observability.HealthTimelineStore")
+    def test_record_snapshot_refreshes_on_success(self, store_cls, analyzer_cls):
+        analyzer_cls.side_effect = self._summary_cls()
+        store_cls.return_value.load.return_value = []
+
+        tab = _mt._HealthTimelineSubTab()
+        tab._load_timeline = MagicMock()
+
+        tab._record_snapshot()
+
+        store_cls.return_value.collect_and_append.assert_called_with(fedora_target="44")
+        tab._load_timeline.assert_called_once_with()
 
 
 # ===================================================================

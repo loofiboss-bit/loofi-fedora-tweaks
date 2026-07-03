@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v11.0.0 "Harbor"
+# Loofi Fedora Tweaks v12.0.0 "Lighthouse"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v11.0.0">
-    <img src="https://img.shields.io/badge/Release-v11.0.0-blue?style=for-the-badge&logo=github" alt="Release v11.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v12.0.0">
+    <img src="https://img.shields.io/badge/Release-v12.0.0-blue?style=for-the-badge&logo=github" alt="Release v12.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -41,24 +41,24 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v11.0.0?
+## What's New in v12.0.0?
 
-`v11.0.0 "Harbor"` is a trust and daily-maintenance release. It keeps Fedora KDE 44 as the stable supported target, keeps Fedora 45 preview advisory, and unifies existing readiness actions, rollback guidance, maintenance signals, and support export around a clearer Action Center workflow.
+`v12.0.0 "Lighthouse"` is a proactive health observability release. It keeps Fedora KDE 44 as the stable supported target, keeps Fedora 45 preview advisory, and turns Daily Maintenance plus the Action Center into a persisted My Fedora Today timeline.
 
-- **Unified Action Center**: Readiness actions can be listed and previewed from the Maintenance GUI and CLI through a central model with state, risk, command preview, rollback guidance, and history metadata.
-- **Daily Maintenance Signals**: New read-only maintenance probes summarize updates, Flatpak, firmware, failed services, journal warnings, disk usage, package health, and rollback availability.
-- **Rollback-first Flow**: Medium/high-risk action candidates surface rpm-ostree, Snapper, Timeshift, or manual recovery guidance before execution.
-- **Support Bundle v7**: Exports now include Action Center summaries, daily maintenance, rollback hints, daemon/API status, and support-safe GitHub issue text while preserving older bundle fields.
-- **Release Trust Gate**: Runtime, packaging, docs, workflow specs, and AppStream metadata are aligned to v11 and checked for drift.
+- **My Fedora Today timeline**: Health snapshots are stored locally with bounded retention, schema versioning, corrupt-history fallback, and privacy-safe exports.
+- **Trend-aware maintenance**: Recurring, new, resolved, and worsening signals are detected from normalized failed-service, journal, package, disk, and rollback fingerprints.
+- **Action Center v2 recommendations**: Timeline findings create deduped manual-safe recommendations with source metadata, correlation IDs, and safe next steps.
+- **Support Bundle v8**: Exports now include the latest snapshot, bounded timeline, recurring fingerprints, recommendation summaries, daemon snapshot status, and stronger redaction.
+- **Daemon/API health collection**: Optional daemon and authenticated API routes can collect read-only snapshots without automatic repairs or background upgrades.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v11.0.0.md`](docs/releases/RELEASE-NOTES-v11.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v12.0.0.md`](docs/releases/RELEASE-NOTES-v12.0.0.md)
 
 ### Screenshots
 
 <table>
   <tr>
     <td width="50%">
-      <img src="docs/images/user-guide/home-dashboard.png" alt="Harbor home dashboard with focused sidebar and maintenance guidance"/>
+      <img src="docs/images/user-guide/home-dashboard.png" alt="Lighthouse home dashboard with My Fedora Today and maintenance guidance"/>
     </td>
     <td width="50%">
       <img src="docs/images/user-guide/system-monitor.png" alt="System Monitor process view with live process data"/>
@@ -86,9 +86,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v11.0.0.md`](docs/releases/RELEASE-NOT
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v11.0.0 "Harbor"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v11.0.0.md`)
-- Current stable baseline: **v11.0.0 "Harbor"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **11.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v12.0.0 "Lighthouse"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v12.0.0.md`)
+- Current stable baseline: **v12.0.0 "Lighthouse"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **12.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 

@@ -6,7 +6,7 @@ Central documentation map for Loofi Fedora Tweaks.
 
 - `BEGINNER_QUICK_GUIDE.md` - Fast onboarding for new users
 - `USER_GUIDE.md` - End-user walkthrough (GUI, CLI, modes, workflows)
-- `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and support bundle v7 fields
+- `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and support bundle v8 fields
 - `ADVANCED_ADMIN_GUIDE.md` - Admin/operator runbooks and advanced operations
 - `TROUBLESHOOTING.md` - Common issues and fixes
 - `CONTRIBUTING.md` - Development and contribution workflow
@@ -41,6 +41,6 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are aligned to `v11.0.0 "Harbor"` for unified action previews, daily maintenance diagnostics, focused navigation, Fedora 44 readiness, and Fedora 45 preview checks.
+- User-facing guides are aligned to `v12.0.0 "Lighthouse"` for My Fedora Today snapshots, health timeline recommendations, focused navigation, Fedora 44 readiness, and Fedora 45 preview checks.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.

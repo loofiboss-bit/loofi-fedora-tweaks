@@ -4,6 +4,28 @@
 
 All notable changes to this project will be documented in this file.
 
+## [12.0.0] - 2026-07-03 "Lighthouse"
+
+### Added
+
+- **My Fedora Today timeline**: Added `core.observability` with `HealthSnapshot`, `HealthTimelineStore`, normalized problem fingerprints, trend analysis, and recursive privacy redaction.
+- **Health CLI commands**: Added `health snapshot`, `health timeline --limit`, `maintenance today`, `maintenance today --json`, and `action-center recommendations`.
+- **Read-only daemon/API collection**: Added daemon and authenticated API endpoints for collecting and exporting health snapshots without automatic repair behavior.
+- **Action Center v2 recommendations**: Added trend-aware, deduped, manual-safe recommendations with `dedupe_key`, `correlation_id`, `why_this_matters`, `safe_next_step`, and source metadata.
+- **Support Bundle v8**: Added latest health snapshot, bounded timeline, recurring fingerprints, recommendation summaries, daemon snapshot status, and collection-error context while preserving older bundle keys.
+- **Maintenance UI route**: Added a Maintenance > Health Timeline subroute and a Home card for My Fedora Today.
+
+### Changed
+
+- Bumped runtime, package, workflow, AppStream, README, roadmap, changelog, and release notes metadata to `12.0.0 "Lighthouse"`.
+- Kept Fedora KDE 44 as the stable supported target and Fedora 45 as preview/advisory planning.
+- Preserved existing Action Center, Daily Maintenance, support bundle, CLI, route, plugin, favorites, and settings compatibility.
+
+### Fixed
+
+- Corrupt persisted health timeline JSON now falls back safely instead of crashing GUI, CLI, daemon, API, or support export paths.
+- Snapshot exports redact home paths, emails, hostnames, token-like values, secret keys, and private file content recursively.
+
 ## [11.0.0] - 2026-07-01 "Harbor"
 
 ### Added
