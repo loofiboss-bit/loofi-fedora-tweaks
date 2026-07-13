@@ -11,7 +11,7 @@
 - [x] A40: preserve typed Fedora 44 supported and Fedora 45 preview target registry
 - [x] A22/A32/A41: persistent Action Center v3 lifecycle, recovery audit linkage, and typed capability matrix
 - [x] A50-A52: shared release quality, package/artifact verification, resumable orchestration
-- [ ] A60-A61: final docs/screenshots/wiki/release evidence and live publication
+- [x] A60-A61: final docs/screenshots/wiki/release evidence and live publication
 
 ## Required release exit
 
