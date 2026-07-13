@@ -2,7 +2,7 @@
 
 Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora control center for maintenance, diagnostics, security, performance, and automation.
 
-**Current Version**: v10.0.0 "Waypoint" — Release Upgrade Assistant & Guided UX
+**Current Version**: v13.0.0 "Anchor" — State Integrity & Recovery
 **Screenshots Refreshed**: July 2026
 
 ![Loofi Fedora Tweaks Dashboard](images/hero-home.png)
@@ -14,6 +14,7 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 - **Upgrade Assistant**: Fedora 44 stable readiness and Fedora 45 preview planning are available from Home and Maintenance.
 - **Advanced tools on demand**: AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, Snapshots, and Loofi Link remain searchable and favoriteable without crowding the sidebar.
 - **Safe actions**: Privileged operations use `pkexec`; command preview and execution share the same allowlist, timeout, action metadata, and command-vector checks.
+- **State & Recovery**: Read-only State Doctor, privacy-safe backup, plan-before-apply restore, and collector status live in Settings.
 - **First-Class Atomic Support**: Dedicated `rpm-ostree` diagnostics and upgrade checks for Silverblue/Kinoite.
 - 4 run modes: GUI, CLI (`--json`), daemon scheduler, and Web API.
 - Privileged actions through `pkexec` (never `sudo`).
@@ -88,7 +89,7 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 ## Quick Links
 
 - GitHub Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Latest Release: [v10.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v10.0.0)
+- Latest Release: [v13.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v13.0.0)
 - Issues: [Issue Tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - Main README: [README.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/README.md)
 - Architecture Doc: [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)

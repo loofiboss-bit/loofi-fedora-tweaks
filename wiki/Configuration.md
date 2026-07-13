@@ -4,6 +4,12 @@ Configuration files, themes, and customization options for Loofi Fedora Tweaks.
 
 ---
 
+## State integrity and recovery
+
+v13 centralizes application state under the XDG config, data, cache, and runtime roots. Open **Settings → State & Recovery** to run the read-only State Doctor, create a privacy-safe backup, preview a restore plan, or inspect collector freshness. Backups exclude registered secret domains and restore always requires a generated plan before apply.
+
+The equivalent CLI entry points are `state doctor`, `state backup`, `state restore plan`, and `state restore apply`.
+
 ## Configuration Directory
 
 All user configuration is stored in:

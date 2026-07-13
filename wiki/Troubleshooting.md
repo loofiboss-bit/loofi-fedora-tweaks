@@ -1,5 +1,9 @@
 # Troubleshooting
 
+## State or collector appears degraded
+
+Run `loofi-fedora-tweaks --cli state doctor` or open **Settings → State & Recovery**. State Doctor is read-only: future schema versions remain untouched, corrupt structured state is reported, and collector status distinguishes freshness, ownership, and lock contention. Create a backup before applying a restore plan.
+
 Common issues and solutions for Loofi Fedora Tweaks.
 
 ---

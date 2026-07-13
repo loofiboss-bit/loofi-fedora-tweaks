@@ -21,7 +21,9 @@ permissions:
   checks: write
 
 concurrency:
-  group: auto-release-${{ github.ref }}
+  # A master push and its version-tag push target the same commit. Serialize by
+  # commit so the tag run replaces the branch run instead of publishing twice.
+  group: auto-release-${{ github.sha }}
   cancel-in-progress: true
 
 env:

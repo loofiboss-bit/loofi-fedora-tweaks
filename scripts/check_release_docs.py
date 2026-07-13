@@ -255,12 +255,14 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
 
     roadmap = _read_text(ROADMAP_FILE)
     active_sections = re.findall(r"^## \[ACTIVE\] v[^\n]+", roadmap, flags=re.MULTILINE)
-    if f"## [ACTIVE] {tag}" not in roadmap:
-        errors.append(f"ROADMAP missing ACTIVE section for {tag}")
-    if len(active_sections) != 1:
+    current_active = f"## [ACTIVE] {tag}" in roadmap
+    current_done = f"## [DONE] {tag}" in roadmap
+    if not current_active and not current_done:
+        errors.append(f"ROADMAP missing ACTIVE or DONE section for {tag}")
+    if current_active and len(active_sections) != 1:
         errors.append(f"ROADMAP must have exactly one ACTIVE release section, found {len(active_sections)}")
-    if re.search(r"^## \[ACTIVE\] v(?!%s\b)" % re.escape(version), roadmap, flags=re.MULTILINE):
-        errors.append("ROADMAP has an ACTIVE section for a different release")
+    if current_done and active_sections:
+        errors.append("ROADMAP closed current release but still has an ACTIVE release section")
     if codename and codename not in roadmap:
         errors.append(f"ROADMAP missing codename {codename}")
 

@@ -67,11 +67,11 @@
 | v10.0.0 | Waypoint                        | DONE    | Release Upgrade Assistant, Fedora 45 preview planning, and guided readiness UX              |
 | v11.0.0 | Harbor                          | DONE    | Unified Action Center, daily maintenance UX, rollback guidance, and release trust            |
 | v12.0.0 | Lighthouse                      | DONE    | Proactive health observability, My Fedora Today timeline, and guided recovery                |
-| v13.0.0 | Anchor                          | ACTIVE  | State integrity, recovery, observability convergence, and reproducible releases              |
+| v13.0.0 | Anchor                          | DONE    | State integrity, recovery, observability convergence, and reproducible releases              |
 
 ---
 
-## [ACTIVE] v13.0.0 "Anchor" — State Integrity & Recovery
+## [DONE] v13.0.0 "Anchor" — State Integrity & Recovery
 
 **Theme**: Trustworthy local state, safe recovery, and reproducible Fedora delivery.
 **Focus**: Canonical XDG paths, crash-safe state I/O, migrations, State Doctor, privacy-safe backup/restore planning, collector ownership, and release evidence.
@@ -84,7 +84,7 @@
 - [x] Metric timeline and health snapshot names exposed separately through `ObservabilityService`
 - [x] Authenticated API state status and canonical collector status
 - [x] CLI `state doctor`, `state backup`, `state restore plan`, and explicit `state restore apply`
-- [ ] Full release gates, artifacts, GitHub/COPR readback, and wiki publication
+- [x] Full release gates, artifacts, GitHub/COPR readback, and wiki publication
 
 ### Compatibility
 

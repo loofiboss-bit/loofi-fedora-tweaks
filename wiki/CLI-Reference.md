@@ -30,6 +30,23 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ## System & Health Commands
 
+### `state doctor` and recovery commands
+
+Inspect canonical state without changing it:
+
+```bash
+loofi state doctor
+loofi --json state doctor
+```
+
+Create a privacy-safe archive and use plan-before-apply restore:
+
+```bash
+loofi state backup --output ./loofi-state.zip
+loofi state restore plan ./loofi-state.zip
+loofi state restore apply ./loofi-state.zip --plan-id <PLAN_ID>
+```
+
 ### `info`
 Display system information (version, OS, package manager, Python version).
 

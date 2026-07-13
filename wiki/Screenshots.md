@@ -1,6 +1,12 @@
 # Screenshots
 
-Fresh UI screenshots for **v10.0.0 "Waypoint"**, captured from the real PyQt app in July 2026.
+Fresh UI screenshots for **v13.0.0 "Anchor"**, captured from the real PyQt app in July 2026.
+
+## State & Recovery
+
+| State Doctor | Restore Preview | Collector Status |
+| --- | --- | --- |
+| ![State Doctor](images/state-doctor.png) | ![Restore Preview](images/restore-preview.png) | ![Collector Status](images/collector-status.png) |
 
 ## Navigation and System Workflows
 
