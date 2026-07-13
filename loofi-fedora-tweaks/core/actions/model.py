@@ -63,6 +63,8 @@ class ActionCenterItem:
     dedupe_key: str = ""
     why_this_matters: str = ""
     safe_next_step: str = ""
+    source_snapshot_id: str = ""
+    lifecycle_reason: str = ""
     metadata: dict[str, Any] = field(default_factory=dict)
 
     @property
@@ -95,5 +97,7 @@ class ActionCenterItem:
             "dedupe_key": self.dedupe_key or self.id,
             "why_this_matters": self.why_this_matters,
             "safe_next_step": self.safe_next_step,
+            "source_snapshot_id": self.source_snapshot_id,
+            "lifecycle_reason": self.lifecycle_reason,
             "metadata": dict(self.metadata),
         }

@@ -41,6 +41,17 @@
   </provides>
 
   <releases>
+    <release version="13.0.0" date="2026-07-13">
+      <description>
+        <p>v13.0.0 "Anchor" - State Integrity, Recovery, and Release Reliability</p>
+        <ul>
+          <li>Added a read-only State Doctor for paths, permissions, schemas, locks, SQLite integrity, and corruption</li>
+          <li>Added privacy-safe, hashed backup archives with restore preview and automatic rollback archives</li>
+          <li>Added crash-safe atomic writes, advisory locking, schema migrations, and last-known-good recovery</li>
+          <li>Unified metric and snapshot status across CLI, daemon, API, and support diagnostics</li>
+        </ul>
+      </description>
+    </release>
     <release version="12.0.0" date="2026-07-03">
       <description>
         <p>v12.0.0 "Lighthouse" - Proactive Health Observability</p>

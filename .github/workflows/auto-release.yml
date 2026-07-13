@@ -374,7 +374,6 @@ jobs:
   build_flatpak:
     runs-on: ubuntu-latest
     timeout-minutes: 30
-    continue-on-error: true
     needs: [validate, adapter_drift, lint]
     if: |
       !cancelled() &&
@@ -389,20 +388,27 @@ jobs:
       - name: Add Flathub remote and install SDK
         run: |
           sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.6 org.kde.Sdk//6.6
+          sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.10 org.kde.Sdk//6.10 com.riverbankcomputing.PyQt.BaseApp//6.10
       - name: Build Flatpak
         run: bash scripts/build_flatpak.sh
+      - name: Smoke test installed Flatpak
+        run: |
+          sudo flatpak install -y --noninteractive --reinstall dist/flatpak/*.flatpak
+          set +e
+          QT_QPA_PLATFORM=offscreen timeout 10 flatpak run org.loofi.FedoraTweaks
+          rc=$?
+          set -e
+          test "$rc" -eq 124
       - uses: actions/upload-artifact@v4
         if: always()
         with:
           name: flatpak-package
           path: dist/flatpak/*.flatpak
-          if-no-files-found: warn
+          if-no-files-found: error
 
   build_sdist:
     runs-on: ubuntu-latest
     timeout-minutes: 10
-    continue-on-error: true
     needs: [validate]
     if: |
       !cancelled() &&
@@ -423,13 +429,15 @@ jobs:
         with:
           name: sdist-package
           path: dist/*.tar.gz
-          if-no-files-found: warn
+          if-no-files-found: error
 
   auto_tag:
     if: |
       !cancelled() &&
       needs.build.result == 'success' &&
       needs.rpm_smoke_test.result == 'success' &&
+      needs.build_flatpak.result == 'success' &&
+      needs.build_sdist.result == 'success' &&
       github.ref == 'refs/heads/master' &&
       (github.event_name != 'workflow_dispatch' || !inputs.dry_run)
     runs-on: ubuntu-latest
@@ -463,6 +471,8 @@ jobs:
       !cancelled() &&
       needs.build.result == 'success' &&
       needs.rpm_smoke_test.result == 'success' &&
+      needs.build_flatpak.result == 'success' &&
+      needs.build_sdist.result == 'success' &&
       (github.event_name != 'workflow_dispatch' || !inputs.dry_run) &&
       (startsWith(github.ref, 'refs/tags/v') ||
        (github.event_name == 'workflow_dispatch' && inputs.version != '') ||
@@ -482,25 +492,6 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Delete existing release if present
-        run: |
-          TAG="${{ needs.validate.outputs.tag }}"
-          HTTP_CODE=$(curl -s -o /dev/null -w "%{http_code}" \
-            -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-            "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}")
-          if [ "$HTTP_CODE" = "200" ]; then
-            echo "::notice::Release ${TAG} already exists — deleting to recreate with latest artifacts."
-            RELEASE_ID=$(curl -s \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/tags/${TAG}" | python3 -c "import sys,json; print(json.load(sys.stdin)['id'])")
-            curl -s -X DELETE \
-              -H "Authorization: Bearer ${{ secrets.GITHUB_TOKEN }}" \
-              "https://api.github.com/repos/${{ github.repository }}/releases/${RELEASE_ID}"
-            echo "Deleted existing release ${TAG} (id: ${RELEASE_ID})"
-          else
-            echo "No existing release for ${TAG} — proceeding."
-          fi
-
       - name: Download RPM artifact
         uses: actions/download-artifact@v7
         with:
@@ -508,14 +499,12 @@ jobs:
           path: release-assets
 
       - name: Download Flatpak artifact
-        continue-on-error: true
         uses: actions/download-artifact@v7
         with:
           name: flatpak-package
           path: release-assets
 
       - name: Download sdist artifact
-        continue-on-error: true
         uses: actions/download-artifact@v7
         with:
           name: sdist-package
@@ -525,6 +514,30 @@ jobs:
         run: |
           echo "Release assets:"
           ls -lh release-assets/ 2>/dev/null || echo "No assets found"
+
+      - name: Generate checksums and CycloneDX SBOM
+        run: |
+          cd release-assets
+          find . -maxdepth 1 -type f ! -name 'SHA256SUMS.txt' ! -name 'loofi-fedora-tweaks.cdx.json' -printf '%f\n' | sort | xargs -r sha256sum > SHA256SUMS.txt
+          python3 - <<'PY'
+          import hashlib, json, pathlib, uuid
+          root = pathlib.Path('.')
+          components = []
+          for path in sorted(root.iterdir()):
+              if not path.is_file() or path.name in {'SHA256SUMS.txt', 'loofi-fedora-tweaks.cdx.json'}:
+                  continue
+              components.append({
+                  'type': 'file', 'name': path.name,
+                  'hashes': [{'alg': 'SHA-256', 'content': hashlib.sha256(path.read_bytes()).hexdigest()}],
+              })
+          payload = {
+              'bomFormat': 'CycloneDX', 'specVersion': '1.5', 'serialNumber': f'urn:uuid:{uuid.uuid4()}',
+              'version': 1, 'metadata': {'component': {'type': 'application', 'name': 'loofi-fedora-tweaks'}},
+              'components': components,
+          }
+          pathlib.Path('loofi-fedora-tweaks.cdx.json').write_text(json.dumps(payload, indent=2) + '\n')
+          PY
+          sha256sum -c SHA256SUMS.txt
 
       - name: Resolve release tag
         id: release_meta
@@ -592,6 +605,8 @@ jobs:
             release-assets/*.flatpak
             release-assets/*.AppImage
             release-assets/*.tar.gz
+            release-assets/SHA256SUMS.txt
+            release-assets/*.cdx.json
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

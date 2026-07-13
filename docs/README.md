@@ -9,6 +9,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and support bundle v8 fields
 - `ADVANCED_ADMIN_GUIDE.md` - Admin/operator runbooks and advanced operations
 - `TROUBLESHOOTING.md` - Common issues and fixes
+- `STATE_INTEGRITY.md` - State Doctor, backup, restore planning, schemas, locks, and archive threat model
 - `CONTRIBUTING.md` - Development and contribution workflow
 - `images/user-guide/README.md` - Screenshot catalog and naming map
 - `images/user-guide/` - Current UI screenshots used across user docs

@@ -64,6 +64,7 @@ class ActionCenterService:
                 dedupe_key=dedupe_key,
                 why_this_matters=_why_this_matters(fingerprint.kind),
                 safe_next_step=_safe_next_step(fingerprint.kind),
+                source_snapshot_id=summary.latest_snapshot_id,
                 metadata={
                     "fingerprint_id": fingerprint.id,
                     "fingerprint_kind": fingerprint.kind,
@@ -95,6 +96,7 @@ class ActionCenterService:
             dedupe_key=f"readiness:{target}:{candidate.id}",
             why_this_matters=candidate.explanation,
             safe_next_step="Preview this action, review rollback guidance, then run it only if the command and risk match your intent.",
+            lifecycle_reason="created",
             metadata={"related_check_id": candidate.related_check_id, "group": "readiness"},
         )
 

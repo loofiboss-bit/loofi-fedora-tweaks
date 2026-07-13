@@ -2,6 +2,10 @@
 
 ## Overview
 
+## Persistent state in v13+
+
+Plugin-owned state must be registered as a `StateDomain` with an owner, schema ID/version, sensitivity, retention policy, and recovery strategy. Do not assemble new persistence paths ad hoc; use `StatePaths`. Use the shared atomic I/O and locking primitives for writes. Plugin code and secret-bearing state are excluded from default state archives.
+
 The Loofi Plugin SDK allows developers to extend Loofi Fedora Tweaks with custom
 tabs, CLI commands, and system integrations. Plugins are self-contained Python
 packages that live in the `plugins/` directory and are discovered automatically

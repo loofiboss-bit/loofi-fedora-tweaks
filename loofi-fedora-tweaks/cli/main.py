@@ -390,6 +390,33 @@ def cmd_support_bundle(_args):
     return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
 
 
+def cmd_state(args):
+    """Read-only state diagnostics and explicit backup/restore flows."""
+    from pathlib import Path
+
+    from core.state import StateArchiveService, StateDoctor
+
+    if args.state_action == "doctor":
+        payload = StateDoctor().run()
+    elif args.state_action == "backup":
+        payload = StateArchiveService().backup(Path(args.output).expanduser())
+    elif args.state_action == "restore":
+        service = StateArchiveService()
+        archive = Path(args.archive).expanduser()
+        if args.restore_action == "plan":
+            payload = service.plan_restore(archive)
+        elif not args.plan_id:
+            _print("--plan-id is required for restore apply")
+            return 2
+        else:
+            payload = service.apply_restore(archive, args.plan_id)
+    else:
+        _print("Choose doctor, backup, or restore")
+        return 2
+    _output_json(payload)
+    return 1 if payload.get("status") == "error" else 0
+
+
 def _print_readiness_report(report, *, advanced: bool) -> int:
     """Print a readiness report in CLI text or JSON mode."""
     if _json_output:
@@ -547,13 +574,13 @@ def _cmd_readiness_action(args) -> int:
         return 0
 
     if action == "export":
-        from core.export.support_bundle_v5 import SupportBundleV5
+        from core.export.support_bundle_v9 import SupportBundleV9
 
         path = getattr(args, "path", None) or f"loofi-readiness-{target}.json"
         if _json_output:
-            _output_json(SupportBundleV5.generate_bundle(target=target))
+            _output_json(SupportBundleV9.generate_bundle(target=target))
             return 0
-        SupportBundleV5.save_json(path, target=target)
+        SupportBundleV9.save_json(path, target=target)
         _print(f"Exported readiness support bundle: {path}")
         return 0
 
@@ -1310,6 +1337,19 @@ def main(argv: Optional[List[str]] = None):
     # Support bundle
     subparsers.add_parser("support-bundle", help="Export support bundle ZIP")
 
+    state_parser = subparsers.add_parser("state", help="Inspect, back up, and recover Loofi state")
+    state_subparsers = state_parser.add_subparsers(dest="state_action")
+    state_subparsers.add_parser("doctor", help="Validate state without changing it")
+    state_backup_parser = state_subparsers.add_parser("backup", help="Create a privacy-safe state archive")
+    state_backup_parser.add_argument("--output", required=True, help="Destination ZIP path")
+    state_restore_parser = state_subparsers.add_parser("restore", help="Plan or explicitly apply a restore")
+    state_restore_subparsers = state_restore_parser.add_subparsers(dest="restore_action")
+    state_restore_plan = state_restore_subparsers.add_parser("plan", help="Validate and preview an archive")
+    state_restore_plan.add_argument("archive")
+    state_restore_apply = state_restore_subparsers.add_parser("apply", help="Apply an existing restore plan")
+    state_restore_apply.add_argument("archive")
+    state_restore_apply.add_argument("--plan-id", required=True)
+
     readiness_parser = subparsers.add_parser("readiness", help="Run release readiness diagnostics")
     readiness_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
     readiness_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")
@@ -1676,6 +1716,7 @@ def main(argv: Optional[List[str]] = None):
         "plugins": cmd_plugins,
         "plugin-marketplace": cmd_plugin_marketplace,
         "support-bundle": cmd_support_bundle,
+        "state": cmd_state,
         "readiness": cmd_readiness,
         "action-center": cmd_action_center,
         "fedora44-readiness": cmd_fedora44_readiness,

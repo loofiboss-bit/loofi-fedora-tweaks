@@ -13,7 +13,7 @@ git clone https://github.com/loofiboss-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -e '.[dev]'
 ```
 
 Run from source:

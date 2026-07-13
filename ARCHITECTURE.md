@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 11.0.0 "Lighthouse" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 13.0.0 "Anchor" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 
@@ -27,6 +27,8 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   │   ├── command_facade.py # v9 command-vector preview/execute facade
 │   │   └── command_policy.py # Shared executor/API command allowlist
 │   ├── navigation/           # Route manifest, focused navigation areas, and route validation
+│   ├── state/                # XDG paths, schemas, atomic I/O, migrations, inventory, backup, doctor
+│   ├── observability/        # Metric/snapshot stores behind one status and collector facade
 │   ├── export/               # Diagnostic export services
 │   │   ├── support_bundle_v5.py# Aegis support diagnostics and redaction
 │   │   ├── support_bundle_v4.py# Compatibility wrapper
@@ -140,7 +142,7 @@ The route manifest keeps the stable plugin and subroute contract. `core/navigati
 
 Consolidated tabs use `QTabWidget` for sub-navigation within the tab.
 
-### Sidebar Index And Routes (v12.0.0)
+### Sidebar Index And Routes (v13.0.0)
 
 The sidebar uses a `SidebarIndex` (`dict[str, SidebarEntry]`) keyed by `PluginMetadata.id` for O(1) tab lookups. `SidebarEntry` holds the tree item, page widget, metadata, and status. Route IDs are resolved through `core.navigation`; Favorites v2 persists route/plugin IDs rather than display-name-derived slugs.
 

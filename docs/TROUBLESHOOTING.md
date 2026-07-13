@@ -2,6 +2,15 @@
 
 Common issues and fixes for v9.x.
 
+## State Doctor and recovery (v13)
+
+- **Corrupt JSON or database:** run `loofi-fedora-tweaks --cli --json state doctor`, preserve the reported file, and use its domain-specific recovery guidance. Corruption is never silently treated as healthy empty history.
+- **Disk full:** free space outside Loofi first. Atomic writes leave the canonical file intact when replacement fails.
+- **Permission denied:** verify ownership before restricting the affected file to the current user. Do not run Loofi with `sudo`.
+- **Stale lock:** confirm no GUI, CLI, or daemon owner is active before archiving a lock reported stale. Lock timeout is a busy condition, not corruption.
+- **Failed migration:** retain the legacy file and `.lkg` copy. Future schemas stay read-only; do not downgrade them by hand.
+- **Restore rejected:** do not bypass validation. Check for a mismatched plan ID, tampered hash, unsupported schema, duplicate path, path traversal, or oversized entry.
+
 ---
 
 ## 1) Quick Diagnostics

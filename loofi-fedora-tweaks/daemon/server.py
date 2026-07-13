@@ -359,11 +359,7 @@ def _collect_health_snapshot(target: str = "44") -> dict[str, Any]:
     if target not in {"44", "45-preview"}:
         raise ValidationError("target must be 44 or 45-preview")
     snapshot = HealthTimelineStore().collect_and_append(fedora_target=target)
-    return {
-        "schema_version": 1,
-        "read_only": True,
-        "snapshot": snapshot.to_dict(),
-    }
+    return {"schema_version": 1, "read_only": True, "snapshot": snapshot.to_dict()}
 
 
 def _health_timeline(limit: int = 10) -> dict[str, Any]:

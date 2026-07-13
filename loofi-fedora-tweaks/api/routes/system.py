@@ -84,11 +84,7 @@ def collect_health_snapshot(
     from core.observability import HealthTimelineStore
 
     snapshot = HealthTimelineStore().collect_and_append(fedora_target=target)
-    return {
-        "schema_version": 1,
-        "read_only": True,
-        "snapshot": snapshot.to_dict(),
-    }
+    return {"schema_version": 1, "read_only": True, "snapshot": snapshot.to_dict()}
 
 
 @router.get("/observability/timeline")
@@ -100,3 +96,23 @@ def get_health_timeline(
     from core.observability import HealthTimelineStore
 
     return HealthTimelineStore().export(limit=max(1, min(limit, 30)))
+
+
+@router.get("/observability/status")
+def get_observability_status(
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Return the canonical read-only collector and storage status."""
+    from core.observability import ObservabilityService
+
+    return ObservabilityService().status(source="api").to_dict()
+
+
+@router.get("/state/status")
+def get_state_status(
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Authenticated, read-only State Doctor endpoint."""
+    from core.state import StateDoctor
+
+    return StateDoctor().run()

@@ -211,8 +211,8 @@ class TestPluginIsolationManager(unittest.TestCase):
 
     @patch.object(SandboxManager, 'is_firejail_installed', return_value=True)
     @patch.object(BubblewrapManager, 'is_installed', return_value=False)
-    def test_can_enforce_mode_process_with_firejail(self, mock_bwrap, mock_firejail):
-        self.assertTrue(PluginIsolationManager.can_enforce_mode("process"))
+    def test_process_mode_fails_closed_even_with_firejail(self, mock_bwrap, mock_firejail):
+        self.assertFalse(PluginIsolationManager.can_enforce_mode("process"))
 
     @patch.object(SandboxManager, 'is_firejail_installed', return_value=False)
     @patch.object(BubblewrapManager, 'is_installed', return_value=False)
@@ -220,8 +220,8 @@ class TestPluginIsolationManager(unittest.TestCase):
         self.assertFalse(PluginIsolationManager.can_enforce_mode("process"))
 
     @patch.object(BubblewrapManager, 'is_installed', return_value=True)
-    def test_can_enforce_mode_os_with_bwrap(self, mock_bwrap):
-        self.assertTrue(PluginIsolationManager.can_enforce_mode("os"))
+    def test_os_mode_fails_closed_even_with_bwrap(self, mock_bwrap):
+        self.assertFalse(PluginIsolationManager.can_enforce_mode("os"))
 
     @patch.object(BubblewrapManager, 'is_installed', return_value=False)
     def test_can_enforce_mode_os_without_bwrap(self, mock_bwrap):
@@ -229,11 +229,11 @@ class TestPluginIsolationManager(unittest.TestCase):
 
     @patch.object(SandboxManager, 'is_firejail_installed', return_value=True)
     @patch.object(BubblewrapManager, 'is_installed', return_value=False)
-    def test_enforce_policy_success_path(self, mock_bwrap, mock_firejail):
+    def test_enforce_policy_does_not_mistake_availability_for_enforcement(self, mock_bwrap, mock_firejail):
         policy = MagicMock(plugin_id="plugin-a", mode="process")
         result = PluginIsolationManager.enforce_policy(policy)
-        self.assertTrue(result.success)
-        self.assertIn("enforced", result.message)
+        self.assertFalse(result.success)
+        self.assertIn("cannot be enforced", result.message)
         self.assertEqual(result.data["plugin_id"], "plugin-a")
 
     @patch.object(SandboxManager, 'is_firejail_installed', return_value=False)

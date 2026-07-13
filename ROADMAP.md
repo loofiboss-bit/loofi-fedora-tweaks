@@ -66,11 +66,35 @@
 | v9.0.0  | Keystone                        | DONE    | Whole-app quality, execution consistency, state reliability, and release hygiene             |
 | v10.0.0 | Waypoint                        | DONE    | Release Upgrade Assistant, Fedora 45 preview planning, and guided readiness UX              |
 | v11.0.0 | Harbor                          | DONE    | Unified Action Center, daily maintenance UX, rollback guidance, and release trust            |
-| v12.0.0 | Lighthouse                      | ACTIVE  | Proactive health observability, My Fedora Today timeline, and guided recovery                |
+| v12.0.0 | Lighthouse                      | DONE    | Proactive health observability, My Fedora Today timeline, and guided recovery                |
+| v13.0.0 | Anchor                          | ACTIVE  | State integrity, recovery, observability convergence, and reproducible releases              |
 
 ---
 
-## [ACTIVE] v12.0.0 "Lighthouse" — Proactive Health Observability
+## [ACTIVE] v13.0.0 "Anchor" — State Integrity & Recovery
+
+**Theme**: Trustworthy local state, safe recovery, and reproducible Fedora delivery.
+**Focus**: Canonical XDG paths, crash-safe state I/O, migrations, State Doctor, privacy-safe backup/restore planning, collector ownership, and release evidence.
+
+### Deliverables
+
+- [x] Canonical `core/state` inventory, path, schema, migration, atomic I/O, lock, doctor, and archive contracts
+- [x] Typed busy/future-schema/corrupt-state outcomes and explicit failure-path tests
+- [x] Structured snapshot persistence migrated to atomic writes with last-known-good backup
+- [x] Metric timeline and health snapshot names exposed separately through `ObservabilityService`
+- [x] Authenticated API state status and canonical collector status
+- [x] CLI `state doctor`, `state backup`, `state restore plan`, and explicit `state restore apply`
+- [ ] Full release gates, artifacts, GitHub/COPR readback, and wiki publication
+
+### Compatibility
+
+- Fedora 44 remains supported; Fedora 45 remains preview/advisory until an explicit promotion decision.
+- v12 state is retained, compatibility imports remain valid, and numeric metrics are not converted into snapshots.
+- The daemon remains read-only and never performs upgrades, cleanup, restarts, reset, or restore.
+
+---
+
+## [DONE] v12.0.0 "Lighthouse" — Proactive Health Observability
 
 **Theme**: Proactive Fedora health observability and guided daily recovery.
 **Focus**: My Fedora Today snapshots, trend-aware maintenance, recurring issue detection, Action Center v2 recommendations, daemon read-only collection, Support Bundle v8, and Fedora 45 preview continuity.

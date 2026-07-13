@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v12.0.0 "Lighthouse"
+# Loofi Fedora Tweaks v13.0.0 "Anchor"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v12.0.0">
-    <img src="https://img.shields.io/badge/Release-v12.0.0-blue?style=for-the-badge&logo=github" alt="Release v12.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v13.0.0">
+    <img src="https://img.shields.io/badge/Release-v13.0.0-blue?style=for-the-badge&logo=github" alt="Release v13.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
@@ -41,17 +41,17 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v12.0.0?
+## What's New in v13.0.0?
 
-`v12.0.0 "Lighthouse"` is a proactive health observability release. It keeps Fedora KDE 44 as the stable supported target, keeps Fedora 45 preview advisory, and turns Daily Maintenance plus the Action Center into a persisted My Fedora Today timeline.
+`v13.0.0 "Anchor"` is a state-integrity and recovery release. It keeps Fedora 44 stable and Fedora 45 advisory while making local state inspectable, crash-safe, migratable, and recoverable.
 
-- **My Fedora Today timeline**: Health snapshots are stored locally with bounded retention, schema versioning, corrupt-history fallback, and privacy-safe exports.
-- **Trend-aware maintenance**: Recurring, new, resolved, and worsening signals are detected from normalized failed-service, journal, package, disk, and rollback fingerprints.
-- **Action Center v2 recommendations**: Timeline findings create deduped manual-safe recommendations with source metadata, correlation IDs, and safe next steps.
-- **Support Bundle v8**: Exports now include the latest snapshot, bounded timeline, recurring fingerprints, recommendation summaries, daemon snapshot status, and stronger redaction.
-- **Daemon/API health collection**: Optional daemon and authenticated API routes can collect read-only snapshots without automatic repairs or background upgrades.
+- **State Doctor**: `loofi state doctor` validates paths, permissions, schemas, SQLite integrity, locks, and corruption without changing state.
+- **Safe backup and restore**: privacy-safe ZIP archives include hashes and schema metadata; restore is always previewed and creates a rollback archive.
+- **Crash-safe snapshots**: atomic same-directory writes, fsync, advisory locks, readback verification, and last-known-good backup protect structured history.
+- **One observability contract**: GUI, CLI, daemon, API, and support exports distinguish numeric metrics from structured snapshots while sharing status and freshness.
+- **Fedora continuity**: Fedora 44 stays blocking and Fedora 45 stays preview/advisory.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v12.0.0.md`](docs/releases/RELEASE-NOTES-v12.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v13.0.0.md`](docs/releases/RELEASE-NOTES-v13.0.0.md)
 
 ### Screenshots
 
@@ -86,19 +86,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v12.0.0.md`](docs/releases/RELEASE-NOT
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v12.0.0 "Lighthouse"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v12.0.0.md`)
-- Current stable baseline: **v12.0.0 "Lighthouse"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **12.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
-
----
-
-## What Was New in v2.11.0?
-
-`v2.11.0 "API Migration Slice 7"` focuses on hardening network, firewall, and system service local execution paths.
-
-## What Was New in v1.0.0?
-
-`v1.0.0 "Foundation"` reset the version numbering and established the project baseline with all prior features consolidated under a clean semantic version.
+- Current release: **v13.0.0 "Anchor"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v13.0.0.md`)
+- Previous stable baseline: **v12.0.0 "Lighthouse"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **13.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 
@@ -135,7 +125,7 @@ git clone https://github.com/loofiboss-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
 python3 -m venv .venv
 source .venv/bin/activate
-pip install -r requirements.txt
+python -m pip install -e .
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
 

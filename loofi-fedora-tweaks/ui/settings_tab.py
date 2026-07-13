@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
     QFormLayout,
+    QFileDialog,
     QFrame,
     QGroupBox,
     QLabel,
@@ -22,6 +23,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QTabWidget,
+    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -100,6 +102,8 @@ class SettingsTab(QWidget, PluginInterface):
         tabs.addTab(self._build_appearance_tab(), self.tr("Appearance"))
         tabs.addTab(self._build_behavior_tab(), self.tr("Behavior"))
         tabs.addTab(self._build_advanced_tab(), self.tr("Advanced"))
+        tabs.addTab(self._build_state_tab(), self.tr("State & Recovery"))
+        self.settings_tabs = tabs
         layout.addWidget(tabs)
 
         layout.addStretch()
@@ -257,6 +261,76 @@ class SettingsTab(QWidget, PluginInterface):
 
         layout.addStretch()
         return page
+
+    def _build_state_tab(self) -> QWidget:
+        """State Doctor and safe backup live inside Settings, not the sidebar."""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        intro = QLabel(self.tr(
+            "State Doctor checks Loofi's local files, schemas, locks, permissions, and collector freshness. "
+            "The check is read-only. Backups exclude credentials, raw logs, plugin code, and caches."
+        ))
+        intro.setWordWrap(True)
+        layout.addWidget(intro)
+        self.state_status = QTextEdit()
+        self.state_status.setReadOnly(True)
+        self.state_status.setAccessibleName(self.tr("State Doctor results"))
+        self.state_status.setPlainText(self.tr("Select Run State Doctor to inspect local state."))
+        layout.addWidget(self.state_status)
+        doctor_button = QPushButton(self.tr("Run State Doctor"))
+        doctor_button.clicked.connect(self._run_state_doctor)
+        layout.addWidget(doctor_button)
+        backup_button = QPushButton(self.tr("Create Privacy-Safe Backup…"))
+        backup_button.clicked.connect(self._create_state_backup)
+        layout.addWidget(backup_button)
+        restore_button = QPushButton(self.tr("Preview State Restore…"))
+        restore_button.clicked.connect(self._preview_state_restore)
+        layout.addWidget(restore_button)
+        layout.addStretch()
+        return page
+
+    def _run_state_doctor(self):
+        from core.state import StateDoctor
+
+        result = StateDoctor().run()
+        lines = [self.tr("Overall status: %s") % result["status"], self.tr("Registered domains: %d") % len(result["domains"])]
+        for finding in result["findings"]:
+            lines.append(f"[{finding['severity'].upper()}] {finding['domain']}: {finding['summary']}\n  {finding['next_step']}")
+        if not result["findings"]:
+            lines.append(self.tr("No state integrity problems found."))
+        self.state_status.setPlainText("\n".join(lines))
+
+    def _create_state_backup(self):
+        from pathlib import Path
+        from core.state import StateArchiveService
+
+        destination, _ = QFileDialog.getSaveFileName(self, self.tr("Create State Backup"), "loofi-state.zip", self.tr("ZIP archive (*.zip)"))
+        if not destination:
+            return
+        manifest = StateArchiveService().backup(Path(destination))
+        self.state_status.setPlainText(self.tr("Backup created: %s\nIncluded domains: %d") % (destination, len(manifest["entries"])))
+
+    def _preview_state_restore(self, archive_path: str = ""):
+        from pathlib import Path
+        from core.state import StateArchiveService
+
+        source = archive_path
+        if not source:
+            source, _ = QFileDialog.getOpenFileName(self, self.tr("Preview State Restore"), "", self.tr("ZIP archive (*.zip)"))
+        if not source:
+            return
+        plan = StateArchiveService().plan_restore(Path(source))
+        lines = [self.tr("Restore preview — no state has changed."), self.tr("Plan ID: %s") % plan["plan_id"]]
+        lines.extend(f"{action['status'].upper()}: {action['domain']} → {action['target']}" for action in plan["actions"])
+        self.state_status.setPlainText("\n".join(lines))
+
+    def _show_collector_status(self):
+        from core.observability import ObservabilityService
+
+        status = ObservabilityService().status(source="gui")
+        self.state_status.setPlainText(self.tr(
+            "Collector status\nOwner: %s\nSnapshots: %d\nFreshness: %s\nRecovery: %s"
+        ) % (status.collector_owner, status.snapshot_count, status.freshness_seconds, status.recovery_status))
 
     # ------------------------------------------------------------ Slots --
 

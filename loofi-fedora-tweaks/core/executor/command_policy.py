@@ -54,6 +54,7 @@ COMMAND_ALLOWLIST: FrozenSet[str] = frozenset(
 
 _WRAPPERS: FrozenSet[str] = frozenset({"pkexec", "flatpak-spawn"})
 _REJECTED_EXECUTABLES: FrozenSet[str] = frozenset({"sudo", "sh", "bash", "zsh", "fish", "dash"})
+_RPM_EVALUATION_FLAGS: FrozenSet[str] = frozenset({"--eval", "-E", "--define", "--macros", "--rcfile"})
 
 
 def _reject(message: str) -> None:
@@ -92,6 +93,10 @@ def validate_command(command: str, args: Sequence[str] | None = None) -> None:
         if len(args) < 2 or args[0] != "--host":
             _reject("flatpak-spawn is only allowed as '--host <command>'")
         validate_command(args[1], args[2:])
+        return
+
+    if executable == "rpm" and any(str(arg).split("=", 1)[0] in _RPM_EVALUATION_FLAGS for arg in args):
+        _reject("rpm macro evaluation and configuration flags are rejected by policy")
 
 
 def validate_command_vector(command: Sequence[str]) -> None:

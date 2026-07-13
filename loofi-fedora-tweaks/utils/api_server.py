@@ -51,11 +51,6 @@ class APIServer:
             except (RuntimeError, ValueError, OSError) as e:
                 raise HTTPException(status_code=401, detail=str(e))
 
-        @app.post("/api/key")
-        def generate_key():
-            api_key = AuthManager.generate_api_key()
-            return {"api_key": api_key}
-
         # Static file serving
         web_dir = Path(__file__).parent.parent / "web"
         if web_dir.exists():

@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import json
-import os
 import time
 from pathlib import Path
 from typing import Any
@@ -11,11 +10,12 @@ from typing import Any
 from core.observability.privacy import redact_payload
 from core.observability.snapshot import HealthSnapshot
 from core.observability.trends import MaintenanceTrendAnalyzer
+from core.state.atomic_io import advisory_lock, atomic_write_json
+from core.state.paths import StatePaths
 
 TIMELINE_SCHEMA_VERSION = 1
 DEFAULT_RETENTION = 30
-_DATA_DIR = Path(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))) / "loofi-fedora-tweaks"
-_TIMELINE_FILE = _DATA_DIR / "health_timeline_v12.json"
+_TIMELINE_FILE = StatePaths.from_environment().data / "health_timeline_v12.json"
 
 
 class HealthTimelineStore:
@@ -59,7 +59,8 @@ class HealthTimelineStore:
             "updated_at": time.time(),
             "snapshots": [snapshot.to_dict() for snapshot in bounded],
         }
-        self.path.write_text(json.dumps(redact_payload(payload), indent=2, sort_keys=True), encoding="utf-8")
+        with advisory_lock(self.path):
+            atomic_write_json(self.path, redact_payload(payload))
 
     def append(self, snapshot: HealthSnapshot) -> HealthSnapshot:
         snapshots = self.load()

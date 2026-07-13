@@ -43,10 +43,11 @@ class PluginIsolationManager:
         mode_value = cls._mode_value(mode)
         if mode_value == "advisory":
             return True
-        if mode_value == "process":
-            return SandboxManager.is_firejail_installed() or BubblewrapManager.is_installed()
-        if mode_value == "os":
-            return BubblewrapManager.is_installed()
+        # External plugins are currently imported in the GUI interpreter. Merely
+        # finding an isolation executable does not apply a process boundary.
+        # Fail closed until loading is delegated to an actual isolated host.
+        if mode_value in {"process", "os"}:
+            return False
         return False
 
     @classmethod

@@ -153,6 +153,7 @@ validate-release:
 
 # Validate pyproject package metadata and wheel/sdist contents
 check-packaging:
+    python3 scripts/sync_requirements.py --check
     PYTHONPATH={{src_root}} python3 scripts/check_packaging_manifest.py --build
 
 # Generate workflow reports (test results + run manifest)

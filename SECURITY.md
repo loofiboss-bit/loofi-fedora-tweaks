@@ -4,10 +4,9 @@
 
 | Version | Supported |
 |---------|-----------|
-| v48.x   | Active  |
-| v47.x   | Security fixes only |
-| v46.x   | Security fixes only |
-| < v46   | End of life |
+| 13.x   | Active |
+| 12.x   | Security fixes only |
+| < 12   | End of life |
 
 ## Reporting a Vulnerability
 
@@ -58,6 +57,9 @@ We follow a **90-day responsible disclosure timeline**. If a fix takes longer, w
 - Configuration stored locally at `~/.config/loofi-fedora-tweaks/`
 - Plugin sandbox restricts file system and network access
 - API server binds to localhost by default (requires `--unsafe-expose` for network binding)
+- State backups exclude secrets, API credentials, raw logs, plugin code, and caches by default.
+- Restore rejects zip-slip paths, duplicate entries, oversized payloads, hash mismatches, and unsupported schemas.
+- Restore requires a matching preview plan and creates a local rollback archive before applying domains.
 
 ### Dependencies
 

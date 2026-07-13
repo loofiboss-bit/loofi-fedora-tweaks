@@ -3,13 +3,14 @@
 from __future__ import annotations
 
 import json
-import os
 from pathlib import Path
 from typing import Any
 
+from core.state.atomic_io import advisory_lock, atomic_write_text
+from core.state.paths import StatePaths
+
 MAX_HISTORY = 100
-_DATA_DIR = Path(os.environ.get("XDG_DATA_HOME", os.path.expanduser("~/.local/share"))) / "loofi-fedora-tweaks"
-_HISTORY_FILE = _DATA_DIR / "action_center_history.jsonl"
+_HISTORY_FILE = StatePaths.from_environment().data / "action_center_history.jsonl"
 
 
 class ActionHistoryStore:
@@ -20,10 +21,14 @@ class ActionHistoryStore:
 
     def append(self, item: dict[str, Any]) -> None:
         try:
-            self.path.parent.mkdir(parents=True, exist_ok=True)
-            with self.path.open("a", encoding="utf-8") as handle:
-                handle.write(json.dumps(item, default=str) + "\n")
-            self._trim()
+            with advisory_lock(self.path):
+                try:
+                    lines = self.path.read_text(encoding="utf-8").splitlines()
+                except OSError:
+                    lines = []
+                record = {"action_center_schema_version": 3, **item}
+                lines.append(json.dumps(record, default=str))
+                atomic_write_text(self.path, "\n".join(lines[-MAX_HISTORY:]) + "\n")
         except OSError:
             return
 
@@ -39,14 +44,6 @@ class ActionHistoryStore:
             except json.JSONDecodeError:
                 continue
             if isinstance(payload, dict):
+                payload.pop("action_center_schema_version", None)
                 entries.append(payload)
         return entries
-
-    def _trim(self) -> None:
-        try:
-            lines = self.path.read_text(encoding="utf-8").splitlines()
-        except OSError:
-            return
-        if len(lines) <= MAX_HISTORY:
-            return
-        self.path.write_text("\n".join(lines[-MAX_HISTORY:]) + "\n", encoding="utf-8")

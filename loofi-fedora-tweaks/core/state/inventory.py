@@ -1,0 +1,59 @@
+"""Registry of application-owned persistent domains."""
+
+from __future__ import annotations
+
+from dataclasses import dataclass
+from pathlib import Path
+
+from core.state.paths import StatePaths
+
+
+@dataclass(frozen=True)
+class StateDomain:
+    id: str
+    owner: str
+    path: Path
+    category: str
+    schema_id: str
+    schema_version: int
+    sensitivity: str
+    retention: str
+    recovery: str
+    optional: bool = True
+
+
+class StateInventory:
+    """Single catalog used by doctor, backup and support export."""
+
+    def __init__(self, paths: StatePaths | None = None):
+        self.paths = paths or StatePaths.from_environment()
+        self._domains: dict[str, StateDomain] = {}
+        self._register_defaults()
+
+    def register(self, domain: StateDomain) -> None:
+        if domain.id in self._domains:
+            raise ValueError(f"State domain already registered: {domain.id}")
+        self._domains[domain.id] = domain
+
+    def all(self) -> tuple[StateDomain, ...]:
+        return tuple(self._domains[key] for key in sorted(self._domains))
+
+    def get(self, domain_id: str) -> StateDomain:
+        return self._domains[domain_id]
+
+    def _register_defaults(self) -> None:
+        p = self.paths
+        definitions = (
+            ("settings", "config", p.config / "settings.json", "loofi.settings", 1, "private", "indefinite", "last-known-good"),
+            ("health_snapshots", "observability", p.data / "health_timeline_v12.json", "loofi.health-snapshots", 1, "private", "30 snapshots", "last-known-good"),
+            ("metric_timeline", "observability", p.data / "health_timeline.db", "loofi.metric-timeline", 1, "private", "30 days", "sqlite-integrity"),
+            ("action_history", "action-center", p.data / "action_center_history.jsonl", "loofi.action-history", 3, "private", "100 events", "archive-corrupt"),
+            ("audit_log", "audit", p.data / "audit.jsonl", "loofi.audit-log", 1, "sensitive", "bounded", "archive-corrupt"),
+            ("plugin_state", "plugins", p.config / "plugins.json", "loofi.plugin-state", 1, "private", "indefinite", "last-known-good"),
+            ("auth_state", "api", p.config / "auth.json", "loofi.auth-state", 1, "secret", "indefinite", "manual"),
+            ("cache", "runtime", p.cache, "loofi.cache", 1, "derived", "bounded", "rebuild"),
+            ("collector_lock", "daemon", p.runtime / "collector.lock", "loofi.collector-lease", 1, "private", "runtime", "stale-lock"),
+        )
+        for domain_id, owner, path, schema_id, version, sensitivity, retention, recovery in definitions:
+            category = "runtime" if domain_id == "collector_lock" else ("cache" if domain_id == "cache" else "data")
+            self.register(StateDomain(domain_id, owner, path, category, schema_id, version, sensitivity, retention, recovery))

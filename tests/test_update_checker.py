@@ -424,13 +424,13 @@ class TestArtifactPreference(unittest.TestCase):
 class TestUpdateInfo(unittest.TestCase):
     def test_dataclass_creation(self):
         info = UpdateInfo(
-            current_version="13.0.0",
+            current_version="12.3.4",
             latest_version="14.0.0",
             release_notes="New features",
             download_url="https://example.com",
             is_newer=True,
         )
-        self.assertEqual(info.current_version, "13.0.0")
+        self.assertEqual(info.current_version, "12.3.4")
         self.assertTrue(info.is_newer)
 
     def test_same_version_not_newer(self):
