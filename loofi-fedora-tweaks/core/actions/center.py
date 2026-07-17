@@ -36,6 +36,31 @@ class ActionCenterService:
         plan = ReadinessActionService.build_plan(target)
         return [self.from_readiness_candidate(candidate, target=target) for candidate in plan.candidates]
 
+    def catalog_items(self, target: str = "44") -> list[ActionCenterItem]:
+        """Expose the complete audited v14 catalog without running preflight."""
+        from core.actions.catalog import ActionCatalog
+
+        items: list[ActionCenterItem] = []
+        for definition in ActionCatalog().list():
+            items.append(ActionCenterItem(
+                id=definition.id,
+                title=definition.title,
+                source="catalog:v14",
+                description=definition.description,
+                risk_level=definition.risk_level,
+                privilege="pkexec" if definition.privileged else "none",
+                command_preview=[],
+                rollback_hint=definition.recovery_guidance,
+                manual_only=False,
+                confirmation_required=True,
+                state="planned",
+                correlation_id=f"catalog:{target}:{definition.id}",
+                dedupe_key=f"catalog:{definition.id}",
+                safe_next_step="Create a fresh plan to run preflight and generate the exact command.",
+                metadata={"catalog": "v14", "target": target},
+            ))
+        return items
+
     def recommendations_from_timeline(self, *, limit: int = 30) -> list[ActionCenterItem]:
         """Build deduped, manual-safe recommendations from persisted health trends."""
         from core.observability import HealthTimelineStore, MaintenanceTrendAnalyzer

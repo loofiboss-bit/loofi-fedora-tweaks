@@ -1,8 +1,8 @@
-# Loofi Fedora Tweaks v12.0.0 "Lighthouse" Release Announcement
+# Loofi Fedora Tweaks v14.0.0 "Helm" Release Announcement
 
 ## TL;DR
 
-Loofi Fedora Tweaks v12.0.0 "Lighthouse" is now available with My Fedora Today health snapshots, trend-aware Action Center recommendations, read-only daemon collection, and Support Bundle v8. Fedora KDE 44 remains the stable supported target, while Fedora 45 remains preview-only and advisory.
+Loofi Fedora Tweaks v14.0.0 "Helm" is now available with expiring Action Center plans, explicit confirmation, bounded first-party maintenance actions, separate outcome verification, and exact release-lineage assurance. Fedora KDE 44 remains the stable supported target, while Fedora 45 remains preview-only and advisory.
 
 **Install:**
 
@@ -11,17 +11,17 @@ pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
 ```
 
-**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v12.0.0
+**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v14.0.0
 
 ---
 
 ## What's New
 
-- My Fedora Today health timeline for bounded, privacy-safe snapshots.
-- Trend-aware Action Center recommendations for recurring, new, resolved, and worsening maintenance signals.
-- Read-only daemon/API health snapshot collection without automatic repairs or background upgrades.
-- Support Bundle v8 fields for snapshots, timelines, recurring fingerprints, recommendations, daemon snapshot status, and GitHub issue text export.
-- Release validation for AppStream and workflow spec version/codename drift.
+- Review preflight, command, privilege, risk, rollback readiness, execution, and verification in one Action Center flow.
+- Execute only audited DNF cache, selected failed-service, and supported SSD trim actions.
+- Preserve expiring plans and interrupted runs without automatic retry, rollback, or fix-all behavior.
+- Inspect redacted plan/run evidence through Support Bundle v10 and authenticated read-only API routes.
+- Verify source, tag, GitHub assets, and Fedora 44/COPR packages against the same commit.
 
 ---
 
@@ -52,7 +52,7 @@ loofi-fedora-tweaks --cli info
 
 ## Links
 
-- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v12.0.0
+- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v14.0.0
 - **Full Changelog**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CHANGELOG.md
 - **Architecture Guide**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md
 - **Report Issues**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues

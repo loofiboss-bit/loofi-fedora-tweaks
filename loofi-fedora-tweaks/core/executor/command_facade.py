@@ -119,3 +119,25 @@ class CommandFacade:
             "privileged": request.privileged,
         }
         return result
+
+    def asynchronous_execution_vector(
+        self,
+        vector: Sequence[str],
+        *,
+        privileged: bool = False,
+        action_id: str = "",
+    ) -> list[str]:
+        """Prepare one validated QProcess vector without spawning it.
+
+        Canonical Action Center vectors remain wrapper-free. Privilege is
+        applied exactly once here before ``CommandRunner`` starts the process.
+        """
+        if "pkexec" in [str(part) for part in vector]:
+            raise CommandValidationError("Canonical asynchronous vectors must not contain pkexec.")
+        request = CommandRequest.from_vector(
+            vector,
+            privileged=privileged,
+            action_id=action_id,
+        )
+        prepared = request.vector()
+        return ["pkexec", *prepared] if request.privileged else prepared

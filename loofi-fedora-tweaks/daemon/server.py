@@ -354,11 +354,11 @@ class DaemonService(_DbusObjectBase):  # type: ignore[misc,valid-type]
 
 
 def _collect_health_snapshot(target: str = "44") -> dict[str, Any]:
-    from core.observability import HealthTimelineStore
+    from core.observability import ObservabilityService
 
     if target not in {"44", "45-preview"}:
         raise ValidationError("target must be 44 or 45-preview")
-    snapshot = HealthTimelineStore().collect_and_append(fedora_target=target)
+    snapshot = ObservabilityService().collect_snapshot(target=target, source="daemon-dbus")
     return {"schema_version": 1, "read_only": True, "snapshot": snapshot.to_dict()}
 
 

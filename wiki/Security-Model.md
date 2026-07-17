@@ -1,5 +1,18 @@
 # Security Model
 
+## Helm Action Center
+
+v14 permits mutation only for the audited first-party IDs `dnf-clean-all`,
+`restart-failed-service`, and `fstrim-all`. Every other recommendation or
+command remains manual-only. Plans are parameter-schema validated, digest
+bound, short-lived, and rechecked for system drift before execution. A
+cross-process advisory lease permits only one active mutation, and successful
+execution is not reported as success until the action-specific verifier passes.
+
+The authenticated Web API exposes read-only plan and run status. It does not
+add an Action Center mutation route, and support bundles exclude raw stdout,
+stderr, and secrets.
+
 Security architecture and privilege management in Loofi Fedora Tweaks.
 
 ---

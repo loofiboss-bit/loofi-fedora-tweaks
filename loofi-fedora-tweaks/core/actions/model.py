@@ -17,6 +17,7 @@ ActionState = Literal[
     "failed",
     "verification_failed",
     "cancelled",
+    "interrupted",
     "manual_only",
 ]
 

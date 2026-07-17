@@ -28,3 +28,18 @@ class MigrationRunner:
                     "schema_id": schema_id, "completed_at": time.time(), "schema_version": migrated["schema_version"]
                 }, keep_backup=False)
             return migrated
+
+
+def registry_for_inventory(inventory: Any) -> SchemaRegistry:
+    """Build the canonical registry from the inventory's typed contracts."""
+
+    registry = SchemaRegistry()
+    for domain in inventory.all():
+        registry.register(domain.schema_id, domain.schema_version)
+    if any(domain.schema_id == "loofi.health-snapshots" for domain in inventory.all()):
+        registry.add_migration(
+            "loofi.health-snapshots",
+            0,
+            lambda payload: {**payload, "schema_version": 1},
+        )
+    return registry

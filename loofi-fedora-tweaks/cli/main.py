@@ -236,11 +236,11 @@ def cmd_health(args):
     """Show system health overview."""
     action = getattr(args, "health_action", None)
     if action == "snapshot":
-        from core.observability import HealthSnapshot, HealthTimelineStore, MaintenanceTrendAnalyzer
+        from core.observability import MaintenanceTrendAnalyzer, ObservabilityService
 
-        store = HealthTimelineStore()
-        snapshot = store.append(HealthSnapshot.collect(fedora_target=getattr(args, "target", "44")))
-        timeline = store.load()
+        service = ObservabilityService()
+        snapshot = service.collect_snapshot(target=getattr(args, "target", "44"), source="cli")
+        timeline = service.snapshots.load()
         payload = {
             "schema_version": 1,
             "snapshot": snapshot.to_dict(),
@@ -574,13 +574,13 @@ def _cmd_readiness_action(args) -> int:
         return 0
 
     if action == "export":
-        from core.export.support_bundle_v9 import SupportBundleV9
+        from core.export.support_bundle_v10 import SupportBundleV10
 
         path = getattr(args, "path", None) or f"loofi-readiness-{target}.json"
         if _json_output:
-            _output_json(SupportBundleV9.generate_bundle(target=target))
+            _output_json(SupportBundleV10.generate_bundle(target=target))
             return 0
-        SupportBundleV9.save_json(path, target=target)
+        SupportBundleV10.save_json(path, target=target)
         _print(f"Exported readiness support bundle: {path}")
         return 0
 
@@ -633,12 +633,128 @@ def _cmd_readiness_action(args) -> int:
 
 
 def cmd_action_center(args) -> int:
-    """Preview and inspect unified Action Center candidates."""
-    from core.actions import ActionCenterService
+    """Plan, apply, verify, and inspect Action Center maintenance."""
+    from core.actions import (
+        ActionCenterBusyError,
+        ActionCenterError,
+        ActionCenterOrchestrator,
+        ActionCenterService,
+        ActionPlanRejectedError,
+        ActionPlanStore,
+        ActionRunStore,
+    )
 
-    service = ActionCenterService()
     target = getattr(args, "target", "44")
     action = getattr(args, "action", "list")
+
+    def emit(payload: Dict[str, Any], lines: List[str]) -> None:
+        if _json_output:
+            _output_json(payload)
+        else:
+            for line in lines:
+                _print(line)
+
+    if action in {"plan", "show", "apply", "verify"}:
+        identifier = str(getattr(args, "action_id", "") or "")
+        orchestrator = ActionCenterOrchestrator()
+        try:
+            if action == "plan":
+                parameters = {}
+                service_unit = getattr(args, "service", None)
+                if service_unit:
+                    parameters["service"] = service_unit
+                plan = orchestrator.plan(identifier, parameters, target=target)
+                payload = {
+                    "schema_version": 1,
+                    "plan": plan.to_dict(),
+                    "policy_decision": plan.policy_decision.to_dict(),
+                }
+                emit(
+                    payload,
+                    [
+                        f"Plan {plan.plan_id}: {plan.action_id} [{plan.state}]",
+                        f"Policy: {plan.policy_decision.reason_code} - {plan.policy_decision.explanation}",
+                        f"Preview: {' '.join(plan.preview) if plan.preview else 'manual-only'}",
+                        f"Expires: {plan.expires_at}",
+                    ],
+                )
+                return 0 if plan.state != "blocked" else 1
+
+            if action == "show":
+                plan = orchestrator.get_plan(identifier)
+                payload = {
+                    "schema_version": 1,
+                    "plan": plan.to_dict(),
+                    "policy_decision": plan.policy_decision.to_dict(),
+                }
+                emit(
+                    payload,
+                    [
+                        f"Plan {plan.plan_id}: {plan.action_id} [{plan.state}]",
+                        f"Risk: {plan.risk_level}; privileged: {plan.privileged}",
+                        f"Policy: {plan.policy_decision.reason_code} - {plan.policy_decision.explanation}",
+                        f"Preview: {' '.join(plan.preview) if plan.preview else 'manual-only'}",
+                        f"Recovery: {plan.recovery_guidance}",
+                    ],
+                )
+                return 0
+
+            if action == "apply":
+                plan = orchestrator.get_plan(identifier)
+                run = orchestrator.apply(
+                    identifier,
+                    confirmed=bool(getattr(args, "confirm", False)),
+                    accept_no_rollback=bool(getattr(args, "accept_no_rollback", False)),
+                    timeout=_operation_timeout,
+                )
+                payload = {
+                    "schema_version": 1,
+                    "run": run.to_dict(),
+                    "policy_decision": plan.policy_decision.to_dict(),
+                }
+                emit(
+                    payload,
+                    [
+                        f"Run {run.run_id}: {run.action_id} [{run.state}]",
+                        "Execution recorded. Run the separate verify command if state is verifying.",
+                        f"Recovery: {run.recovery_status}",
+                    ],
+                )
+                return 0 if run.state == "verifying" else 1
+
+            run = orchestrator.verify(identifier)
+            plan = orchestrator.get_plan(run.plan_id)
+            payload = {
+                "schema_version": 1,
+                "run": run.to_dict(),
+                "policy_decision": plan.policy_decision.to_dict(),
+            }
+            emit(
+                payload,
+                [
+                    f"Run {run.run_id}: {run.action_id} [{run.state}]",
+                    f"Recovery: {run.recovery_status}",
+                ],
+            )
+            return 0 if run.state == "succeeded" else 1
+        except ActionPlanRejectedError as exc:
+            payload = {
+                "schema_version": 1,
+                "error": "action_plan_rejected",
+                "policy_decision": exc.decision.to_dict(),
+            }
+            emit(payload, [f"Action blocked: {exc.decision.reason_code} - {exc.decision.explanation}"])
+            return 1
+        except ActionCenterBusyError as exc:
+            payload = {"schema_version": 1, "error": "action_center_busy", "message": str(exc)}
+            emit(payload, [str(exc)])
+            return 1
+        except ActionCenterError as exc:
+            payload = {"schema_version": 1, "error": "action_center_error", "message": str(exc)}
+            emit(payload, [str(exc)])
+            return 1
+
+    service = ActionCenterService()
     candidates = service.candidates_from_readiness(target)
 
     if action == "list":
@@ -684,15 +800,25 @@ def cmd_action_center(args) -> int:
         return _print_action_result(service.preview(preview_item))
 
     if action == "history":
-        payload = {"history": service.recent_history(limit=getattr(args, "limit", 25))}
+        limit = getattr(args, "limit", 25)
+        legacy_history = service.recent_history(limit=limit)
+        plan_history = [plan.to_dict() for plan in ActionPlanStore().list(limit=min(limit, 50))]
+        run_history = [run.to_dict() for run in ActionRunStore().list(limit=min(limit, 100))]
+        payload = {
+            "schema_version": 1,
+            "history": legacy_history,
+            "plans": plan_history,
+            "runs": run_history,
+        }
         if _json_output:
             _output_json(payload)
         else:
-            history = payload["history"]
-            if not history:
+            if not legacy_history and not run_history:
                 _print("No Action Center history recorded.")
-            for entry in history:
+            for entry in legacy_history:
                 _print(json_module.dumps(entry, default=str))
+            for run_entry in run_history:
+                _print(f"{run_entry['run_id']}: {run_entry['action_id']} [{run_entry['state']}]")
         return 0
 
     if _json_output:
@@ -1386,11 +1512,24 @@ def main(argv: Optional[List[str]] = None):
     readiness_verify_parser.add_argument("action_id", help="Readiness action ID")
     readiness_verify_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
 
-    action_center_parser = subparsers.add_parser("action-center", help="List and preview unified Action Center candidates")
-    action_center_parser.add_argument("action", choices=["list", "preview", "history", "recommendations"], nargs="?", default="list", help="Action Center command")
-    action_center_parser.add_argument("action_id", nargs="?", help="Action ID for preview")
+    action_center_parser = subparsers.add_parser("action-center", help="Plan, verify, and inspect guided maintenance actions")
+    action_center_parser.add_argument(
+        "action",
+        choices=["list", "preview", "history", "recommendations", "plan", "show", "apply", "verify"],
+        nargs="?",
+        default="list",
+        help="Action Center command",
+    )
+    action_center_parser.add_argument("action_id", nargs="?", help="Action ID, plan ID, or run ID for the selected command")
     action_center_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
     action_center_parser.add_argument("--limit", type=int, default=25, help="History entry limit")
+    action_center_parser.add_argument("--service", help="Exact failed systemd unit for restart-failed-service")
+    action_center_parser.add_argument("--confirm", action="store_true", help="Explicitly confirm application of the reviewed plan")
+    action_center_parser.add_argument(
+        "--accept-no-rollback",
+        action="store_true",
+        help="Explicitly accept a medium/high-risk action without supported rollback",
+    )
 
     fedora44_parser = subparsers.add_parser("fedora44-readiness", help="Compatibility alias for 'readiness --target 44'")
     fedora44_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")

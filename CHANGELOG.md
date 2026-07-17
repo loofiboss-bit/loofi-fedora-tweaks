@@ -4,6 +4,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [14.0.0] - 2026-07-17 "Helm"
+
+### Added
+
+- Expiring Action Center plans, durable action runs, policy decisions, and verified lifecycle transitions.
+- Deny-by-default DNF cache, selected failed-service, and supported SSD trim action definitions.
+- Action Center plan/show/apply/verify CLI commands, read-only API status, and Support Bundle v10 evidence.
+
+### Changed
+
+- Fedora 44 remains the supported release target while Fedora 45 remains preview/advisory.
+- Release source, tag, artifacts, and COPR publication must resolve to the exact release commit.
+- Coverage release gate raised to 85%.
+
+### Fixed
+
+- State schema validation, inventory paths, collector concurrency, atomic backup, and partial restore recovery.
+- Action Center privilege normalization so `pkexec` is applied exactly once.
+- Interrupted actions are preserved without automatic resume or rollback.
+
+## [13.0.0] - 2026-07-13 "Anchor"
+
+### Added
+
+- Canonical `core.state` contracts for XDG paths, domain inventory, schemas, migrations, atomic I/O, advisory locks, State Doctor, and state archives.
+- CLI state doctor, privacy-safe backup, restore preview, and explicit restore apply commands.
+- Canonical observability status across local, daemon, and authenticated API entry modes.
+
+### Changed
+
+- Structured health snapshots now use same-directory atomic writes, fsync, readback verification, bounded last-known-good backup, and typed busy errors.
+- Fedora 44 remains supported and Fedora 45 remains preview/advisory.
+- Source installation now uses `pyproject.toml` through editable installs.
+
+### Security
+
+- State archives reject path traversal, duplicate domains/entries, oversized data, incompatible schemas, and hash mismatches.
+- Secrets, credentials, plugin code, raw logs, and caches remain excluded from default backup archives.
+
 ## [12.0.0] - 2026-07-03 "Lighthouse"
 
 ### Added
@@ -2521,21 +2560,3 @@ loofi network dns       # Set DNS provider
 - **System Info Tab**: View CPU, RAM, Battery, Disk, Uptime.
 - **HP Tweaks Tab**: Battery charge limits, audio fixes.
 - Basic PyQt6 structure.
-## [13.0.0] - 2026-07-13 "Anchor"
-
-### Added
-
-- Canonical `core.state` contracts for XDG paths, domain inventory, schemas, migrations, atomic I/O, advisory locks, State Doctor, and state archives.
-- CLI state doctor, privacy-safe backup, restore preview, and explicit restore apply commands.
-- Canonical observability status across local, daemon, and authenticated API entry modes.
-
-### Changed
-
-- Structured health snapshots now use same-directory atomic writes, fsync, readback verification, bounded last-known-good backup, and typed busy errors.
-- Fedora 44 remains supported and Fedora 45 remains preview/advisory.
-- Source installation now uses `pyproject.toml` through editable installs.
-
-### Security
-
-- State archives reject path traversal, duplicate domains/entries, oversized data, incompatible schemas, and hash mismatches.
-- Secrets, credentials, plugin code, raw logs, and caches remain excluded from default backup archives.

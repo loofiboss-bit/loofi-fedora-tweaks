@@ -123,6 +123,13 @@ class AtlasDashboardTab(BaseTab):
         health_card.mousePressEvent = lambda event: self._open_route("maintenance:health-timeline")  # type: ignore[method-assign]
         layout.addWidget(health_card)
 
+        action_card = RouteCard(
+            "Verified maintenance",
+            "Open Action Center to review expiring plans, run one audited action, verify its result, and inspect history.",
+        )
+        action_card.mousePressEvent = lambda event: self._open_route("maintenance:action-center")  # type: ignore[method-assign]
+        layout.addWidget(action_card)
+
         upgrade_card = RouteCard(
             "Upgrade Assistant",
             "Review Fedora 44 readiness, Fedora 45 preview changes, safe action previews, verification, and support export.",

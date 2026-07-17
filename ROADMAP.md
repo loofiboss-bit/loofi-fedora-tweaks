@@ -68,6 +68,30 @@
 | v11.0.0 | Harbor                          | DONE    | Unified Action Center, daily maintenance UX, rollback guidance, and release trust            |
 | v12.0.0 | Lighthouse                      | DONE    | Proactive health observability, My Fedora Today timeline, and guided recovery                |
 | v13.0.0 | Anchor                          | DONE    | State integrity, recovery, observability convergence, and reproducible releases              |
+| v14.0.0 | Helm                            | ACTIVE  | Verified guided maintenance, bounded execution, and release lineage assurance                |
+
+---
+
+## [ACTIVE] v14.0.0 "Helm" — Verified Guided Maintenance
+
+**Theme**: Reviewable, explicitly confirmed maintenance with durable plans and verified outcomes.
+**Focus**: Canonical Action Center lifecycle, three deny-by-default actions, state/observability completion, Fedora 44 assurance, and exact release lineage.
+
+### Deliverables
+
+- [ ] Exact tag/source lineage, blocking workflow completion, and Fedora 44 package publication gates
+- [ ] Schema-aware state validation, atomic snapshot-consistent backup/restore, and collector lease convergence
+- [ ] Durable `ActionDefinition`, `ActionPlan`, `ActionRun`, and `PolicyDecision` contracts
+- [ ] Expiring plan, re-preflight, single-mutation lease, verification, and interrupted-run recovery behavior
+- [ ] Audited `dnf-clean-all`, `restart-failed-service`, and `fstrim-all` definitions with Traditional/Atomic policy
+- [ ] Action Center Review/Run/Verify/History GUI and compatible CLI/API/support surfaces
+- [ ] Full local/CI/package/release evidence with 85% coverage and public readback
+
+### Compatibility
+
+- Fedora 44 remains the supported target; Fedora 45 remains preview/advisory.
+- Existing routes, plugins, task IDs, settings, favorites, CLI commands, support fields, API envelopes, and D-Bus methods remain compatible.
+- No autonomous repair, fix-all, automatic rollback/resume, remote mutation expansion, or plugin/AI command execution is introduced.
 
 ---
 

@@ -2,16 +2,39 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QStackedWidget, QProgressBar,
     QFrame, QScrollArea, QCheckBox, QWidget,
-    QApplication
 )
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
+from core.actions import ActionCenterOrchestrator
 from core.diagnostics.health_registry import HealthRegistry
 from core.diagnostics.health_model import HealthResult
 from core.executor.action_model import AtlasActionRegistry, SystemAction
-from core.executor.action_executor import ActionExecutor
+from core.executor.action_result import ActionResult
 from utils.log import get_logger
 
 logger = get_logger(__name__)
+
+
+class _AtlasPlanWorker(QObject):
+    """Create Action Center plans without blocking the wizard UI thread."""
+
+    finished = pyqtSignal(object)
+    failed = pyqtSignal(str)
+
+    def __init__(self, action_center, requests):
+        super().__init__()
+        self._action_center = action_center
+        self._requests = requests
+
+    def run(self):
+        results = []
+        try:
+            for request in self._requests:
+                plan = self._action_center.plan(request["action_id"], request["parameters"], target="44")
+                results.append({**request, "plan": plan})
+        except (OSError, RuntimeError, ValueError, TypeError, AttributeError) as exc:
+            self.failed.emit(str(exc))
+            return
+        self.finished.emit(results)
 
 
 class AtlasTaskWizard(QDialog):
@@ -32,12 +55,14 @@ class AtlasTaskWizard(QDialog):
 
         self.registry = HealthRegistry()
         self.action_registry = AtlasActionRegistry()
-        self.executor = ActionExecutor()
+        self.action_center = ActionCenterOrchestrator()
 
         self.results: list[HealthResult] = []
         self.selected_actions: list[SystemAction] = []
         # Stores {action: SystemAction, result: ActionResult}
         self.repair_results: list[dict] = []
+        self._plan_thread = None
+        self._plan_worker = None
 
         self._setup_ui()
         self._set_step(0)
@@ -329,17 +354,18 @@ class AtlasTaskWizard(QDialog):
 
     def _run_repairs(self):
         """
-        Executes the selected system actions.
-        Provides feedback during execution.
+        Create reviewed Action Center plans for selected repairs.
+
+        Atlas never executes commands directly in v14. Plans remain bounded by
+        Action Center preflight, confirmation, leasing, and verification.
         """
         self.btn_next.setEnabled(False)
         self.btn_back.setEnabled(False)
         self.repair_results = []
 
-        executed_count = 0
-        failed_count = 0
+        requests = []
 
-        for cb in self.action_checkboxes:
+        for index, cb in enumerate(self.action_checkboxes):
             if not cb.isChecked():
                 continue
 
@@ -350,51 +376,80 @@ class AtlasTaskWizard(QDialog):
 
             display_title = cb.text()
             # Update UI for current action
-            cb.setText(f"⌛ Running: {action.title}...")
+            cb.setText(self.tr("⌛ Planning: %1...").replace("%1", action.title))
             cb.repaint()
-            QApplication.processEvents()
+            dyn_args = cb.property("dynamic_args") or []
+            parameters = {"service": str(dyn_args[0])} if aid == "restart-failed-service" and dyn_args else {}
+            requests.append({
+                "index": index,
+                "action_id": aid,
+                "parameters": parameters,
+                "action": action,
+                "display_title": display_title,
+            })
 
-            try:
-                # Support dynamic arguments (e.g., service names)
-                dyn_args = cb.property("dynamic_args") or []
-                final_args = action.args + dyn_args
+        if not requests:
+            self._accept_plans([])
+            return
+        self._plan_thread = QThread(self)
+        self._plan_worker = _AtlasPlanWorker(self.action_center, requests)
+        self._plan_worker.moveToThread(self._plan_thread)
+        self._plan_thread.started.connect(self._plan_worker.run)
+        self._plan_worker.finished.connect(self._accept_plans)
+        self._plan_worker.finished.connect(self._plan_thread.quit)
+        self._plan_worker.failed.connect(self._planning_failed)
+        self._plan_worker.failed.connect(self._plan_thread.quit)
+        self._plan_thread.finished.connect(self._plan_worker.deleteLater)
+        self._plan_thread.finished.connect(self._plan_thread.deleteLater)
+        self._plan_thread.finished.connect(self._clear_plan_worker)
+        self._plan_thread.start()
 
-                res = self.executor.execute(action.command, final_args)
+    def _accept_plans(self, planned):
+        planned_count = 0
+        blocked_count = 0
+        for item in planned:
+            plan = item["plan"]
+            success = plan.state in {"ready", "needs_review"}
+            message = (
+                self.tr("Action Center plan %1 is ready for review; no command was run.").replace("%1", plan.plan_id)
+                if success
+                else self.tr("Action remains manual or blocked: %1").replace("%1", plan.policy_decision.explanation)
+            )
+            result = ActionResult(
+                success=success,
+                message=message,
+                preview=True,
+                action_id=item["action_id"],
+                data={"plan": plan.to_dict(), "policy_decision": plan.policy_decision.to_dict()},
+            )
+            self.repair_results.append({
+                "action": item["action"],
+                "result": result,
+                "display_title": item["display_title"],
+            })
+            checkbox = self.action_checkboxes[item["index"]]
+            if success:
+                checkbox.setText(self.tr("✅ Planned: %1").replace("%1", item["display_title"]))
+                planned_count += 1
+            else:
+                checkbox.setText(self.tr("⚠️ %1 (Manual/Blocked)").replace("%1", item["display_title"]))
+                checkbox.setToolTip(message)
+                blocked_count += 1
+            checkbox.repaint()
 
-                # Store result
-                self.repair_results.append({
-                    "action": action,
-                    "result": res,
-                    "display_title": display_title
-                })
-
-                display_name = display_title.replace("⌛ Running: ", "")
-                if res.success:
-                    cb.setText(f"✅ {display_name}")
-                    executed_count += 1
-                else:
-                    cb.setText(f"❌ {display_name} (Failed)")
-                    cb.setToolTip(res.message)
-                    failed_count += 1
-            except (OSError, RuntimeError, ValueError) as e:
-                logger.error("Action execution error (%s): %s", aid, e)
-                cb.setText(f"❌ Error: {action.title}")
-                failed_count += 1
-                # Mock result for error case
-                from core.executor.action_result import ActionResult
-                self.repair_results.append({
-                    "action": action,
-                    "result": ActionResult(success=False, message=str(e)),
-                    "display_title": display_title
-                })
-
-            cb.repaint()
-            QApplication.processEvents()
-
-        summary = f"Repairs finished. {executed_count} actions succeeded."
-        if failed_count > 0:
-            summary += f" {failed_count} actions failed."
-
+        summary = self.tr("Planning finished. %1 Action Center plans created; no commands were run.").replace("%1", str(planned_count))
+        if blocked_count > 0:
+            summary += self.tr(" %1 actions remain manual or blocked.").replace("%1", str(blocked_count))
         self.result_label.setText(summary)
         self.btn_next.setEnabled(True)
         self._set_step(3)
+
+    def _planning_failed(self, message):
+        logger.error("Action planning failed: %s", message)
+        self.result_label.setText(self.tr("Action Center planning failed: %1").replace("%1", str(message)))
+        self.btn_next.setEnabled(True)
+        self.btn_back.setEnabled(True)
+
+    def _clear_plan_worker(self):
+        self._plan_thread = None
+        self._plan_worker = None

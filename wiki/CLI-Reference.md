@@ -90,6 +90,34 @@ loofi support-bundle
 
 ## Maintenance & Cleanup
 
+### `action-center <command>`
+
+Helm's verified maintenance workflow persists a 30-minute plan before any
+mutation. Applying a plan re-runs preflight and records a run in `verifying`;
+verification is always a separate command.
+
+```bash
+# Review available findings and compatibility recommendations
+loofi action-center list --target 44
+loofi action-center recommendations --limit 10
+
+# Plan one of the three audited v14 actions
+loofi --json action-center plan dnf-clean-all --target 44
+loofi --json action-center plan restart-failed-service --service broken.service
+loofi --json action-center plan fstrim-all
+
+# Review, explicitly apply, then verify
+loofi --json action-center show <PLAN_ID>
+loofi --json action-center apply <PLAN_ID> --confirm
+loofi --json action-center apply <PLAN_ID> --confirm --accept-no-rollback
+loofi --json action-center verify <RUN_ID>
+loofi action-center history --limit 25
+```
+
+Unknown, plugin, gaming, firmware, upgrade, and free-form actions are denied by
+default and remain manual-only. Canonical command previews never include
+`pkexec`; privilege is applied once at the execution boundary.
+
 ### `cleanup <target>`
 Clean up system files and caches.
 

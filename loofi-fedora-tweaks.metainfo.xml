@@ -41,6 +41,17 @@
   </provides>
 
   <releases>
+    <release version="14.0.0" date="2026-07-17">
+      <description>
+        <p>v14.0.0 "Helm" - Verified Guided Maintenance</p>
+        <ul>
+          <li>Added expiring Action Center plans with explicit confirmation and durable run history</li>
+          <li>Added verified DNF cache recovery, failed-service restart, and SSD trim actions</li>
+          <li>Added cross-process mutation locking and interrupted-run recovery without automatic resume</li>
+          <li>Hardened state recovery, exact release-tag lineage, Fedora 44 packaging, and COPR verification</li>
+        </ul>
+      </description>
+    </release>
     <release version="13.0.0" date="2026-07-13">
       <description>
         <p>v13.0.0 "Anchor" - State Integrity, Recovery, and Release Reliability</p>

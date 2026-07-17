@@ -41,7 +41,7 @@ def _write_release_files(
     (root / "README.md").write_text(
         f"# Loofi v{version} \"{codename}\"\n"
         f"https://example.invalid/releases/tag/v{version}\n"
-        "![Coverage](https://img.shields.io/badge/Coverage-84%25-brightgreen)\n",
+        "![Coverage](https://img.shields.io/badge/Coverage-85%25-brightgreen)\n",
         encoding="utf-8",
     )
     (root / "loofi-fedora-tweaks.metainfo.xml").write_text(
@@ -70,13 +70,13 @@ def _write_release_files(
     workflows = root / ".github" / "workflows"
     workflows.mkdir(parents=True, exist_ok=True)
     workflow_text = (
-        'env:\n  COVERAGE_THRESHOLD: "84"\n'
+        'env:\n  COVERAGE_THRESHOLD: "85"\n'
         "jobs:\n  docs_gate:\n    steps:\n"
         "      - run: python3 scripts/check_release_docs.py\n"
     )
     (workflows / "ci.yml").write_text(workflow_text, encoding="utf-8")
     (workflows / "auto-release.yml").write_text(workflow_text, encoding="utf-8")
-    (root / "Justfile").write_text('coverage_min := "84"\n', encoding="utf-8")
+    (root / "Justfile").write_text('coverage_min := "85"\n', encoding="utf-8")
     # Empty tests dir (no stale tests)
     (root / "tests").mkdir(exist_ok=True)
 
@@ -356,7 +356,7 @@ def test_release_doc_check_catches_docs_only_ci_bypass(tmp_path):
     _set_module_paths(module, tmp_path)
     (tmp_path / ".github" / "workflows" / "ci.yml").write_text(
         'on:\n  push:\n    paths-ignore:\n      - "docs/**"\n'
-        'env:\n  COVERAGE_THRESHOLD: "84"\n'
+        'env:\n  COVERAGE_THRESHOLD: "85"\n'
         "jobs:\n  docs_gate:\n    steps:\n"
         "      - run: python3 scripts/check_release_docs.py\n",
         encoding="utf-8",
@@ -421,3 +421,95 @@ def test_release_doc_check_catches_non_blocking_rpm_import_check(tmp_path):
 
     issues = module.validate_release_docs(tmp_path, require_logs=False)
     assert any("RPM import check must be blocking" in item for item in issues)
+
+
+def test_release_doc_check_requires_at_least_one_task_checkbox(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_task_presence",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+
+    issues = module.validate_release_docs(
+        tmp_path,
+        require_logs=False,
+        require_completed_tasks=True,
+    )
+
+    assert any("has no task checkboxes" in item for item in issues)
+
+
+def test_release_doc_check_rejects_unchecked_release_tasks(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_incomplete_tasks",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    tasks_file = tmp_path / ".workflow" / "specs" / "tasks-v26.0.1.md"
+    tasks_file.write_text(
+        '# tasks v26.0.1 "TestRelease"\n\n- [x] Complete\n- [ ] Pending\n',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(
+        tmp_path,
+        require_logs=False,
+        require_completed_tasks=True,
+    )
+
+    assert any("incomplete workflow task" in item for item in issues)
+    assert any("tasks-v26.0.1.md:4" in item for item in issues)
+
+
+def test_release_doc_check_accepts_completed_release_tasks(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_completed_tasks",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    tasks_file = tmp_path / ".workflow" / "specs" / "tasks-v26.0.1.md"
+    tasks_file.write_text(
+        '# tasks v26.0.1 "TestRelease"\n\n- [x] Complete\n* [X] Also complete\n',
+        encoding="utf-8",
+    )
+
+    issues = module.validate_release_docs(
+        tmp_path,
+        require_logs=False,
+        require_completed_tasks=True,
+    )
+
+    assert issues == []
+
+
+def test_release_doc_check_allows_only_tagged_post_publish_task_before_release(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_publish_ready_tasks",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _set_module_paths(module, tmp_path)
+    tasks_file = tmp_path / ".workflow" / "specs" / "tasks-v26.0.1.md"
+    tasks_file.write_text(
+        '# tasks v26.0.1 "TestRelease"\n\n'
+        '- [x] Pre-publication complete\n'
+        '- [ ] [post-publish] Verify public readback\n',
+        encoding="utf-8",
+    )
+
+    publish_issues = module.validate_release_docs(
+        tmp_path,
+        require_logs=False,
+        require_publish_ready_tasks=True,
+    )
+    closure_issues = module.validate_release_docs(
+        tmp_path,
+        require_logs=False,
+        require_completed_tasks=True,
+    )
+
+    assert publish_issues == []
+    assert any("incomplete workflow task" in item for item in closure_issues)

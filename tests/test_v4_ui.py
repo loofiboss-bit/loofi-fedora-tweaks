@@ -1,6 +1,7 @@
 import pytest
 import os
 import sys
+import time
 from unittest.mock import MagicMock, patch
 
 # Add source path to sys.path
@@ -16,6 +17,17 @@ from core.executor.action_result import ActionResult
 app = QApplication.instance()
 if not app:
     app = QApplication(sys.argv)
+
+
+def _wait_for_planning(wizard):
+    deadline = time.monotonic() + 5
+    while wizard._plan_thread is not None and time.monotonic() < deadline:
+        app.processEvents()
+        thread = wizard._plan_thread
+        if thread is not None:
+            thread.wait(10)
+    app.processEvents()
+    assert wizard._plan_thread is None
 
 @patch("core.diagnostics.health_registry.HealthRegistry.run_check")
 def test_task_wizard_initialization(mock_run_check):
@@ -53,13 +65,13 @@ def test_task_wizard_step_navigation():
     assert wizard.stack.currentIndex() == 1
     assert not wizard.btn_back.isHidden()
 
-@patch("core.executor.action_executor.ActionExecutor.execute")
-def test_task_wizard_repair_execution(mock_execute):
-    mock_execute.return_value = ActionResult(
-        success=True, 
-        message="Success", 
-        exit_code=0
-    )
+@patch("core.actions.orchestrator.ActionCenterOrchestrator.plan")
+def test_task_wizard_repair_execution(mock_plan):
+    policy = MagicMock(explanation="ready")
+    policy.to_dict.return_value = {"allowed": True}
+    plan = MagicMock(plan_id="plan-1", state="ready", policy_decision=policy)
+    plan.to_dict.return_value = {"plan_id": "plan-1", "state": "ready"}
+    mock_plan.return_value = plan
     
     wizard = AtlasTaskWizard(
         task_id="task-test",
@@ -76,10 +88,12 @@ def test_task_wizard_repair_execution(mock_execute):
     
     # Run repairs
     wizard._run_repairs()
+    _wait_for_planning(wizard)
     
-    assert "1 actions succeeded" in wizard.result_label.text()
+    assert "1 Action Center plans created" in wizard.result_label.text()
+    assert "no commands were run" in wizard.result_label.text()
     assert wizard.stack.currentIndex() == 3
-    assert mock_execute.called
+    mock_plan.assert_called_once_with("dnf-clean-all", {}, target="44")
 
 def test_task_wizard_risk_ui():
     wizard = AtlasTaskWizard(
@@ -117,9 +131,13 @@ def test_task_wizard_risk_ui():
     assert not preview_lbl.isHidden()
     assert "dnf clean all" in preview_lbl.text()
 
-@patch("core.executor.action_executor.ActionExecutor.execute")
-def test_task_wizard_dynamic_execution_fixed(mock_execute):
-    mock_execute.return_value = ActionResult(success=True, message="OK", exit_code=0)
+@patch("core.actions.orchestrator.ActionCenterOrchestrator.plan")
+def test_task_wizard_dynamic_execution_fixed(mock_plan):
+    policy = MagicMock(explanation="ready")
+    policy.to_dict.return_value = {"allowed": True}
+    plan = MagicMock(plan_id="plan-service", state="needs_review", policy_decision=policy)
+    plan.to_dict.return_value = {"plan_id": "plan-service", "state": "needs_review"}
+    mock_plan.return_value = plan
     
     wizard = AtlasTaskWizard(
         task_id="task-repair",
@@ -146,9 +164,12 @@ def test_task_wizard_dynamic_execution_fixed(mock_execute):
     
     # Run repairs
     wizard._run_repairs()
+    _wait_for_planning(wizard)
     
-    assert mock_execute.call_count == 2
-    assert "2 actions succeeded" in wizard.result_label.text()
+    assert mock_plan.call_count == 2
+    assert mock_plan.call_args_list[0].args[1] == {"service": "s1.service"}
+    assert mock_plan.call_args_list[1].args[1] == {"service": "s2.service"}
+    assert "2 Action Center plans created" in wizard.result_label.text()
 
 @patch("core.export.support_bundle_v5.SupportBundleV5.generate_bundle")
 def test_support_bundle_wizard(mock_generate):
@@ -213,10 +234,10 @@ def test_release_readiness_dialog_groups_and_filters():
 
 
 @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
-@patch("ui.release_readiness_dialog.ReadinessActionService.run", return_value=ActionResult.ok("cleaned"))
+@patch("ui.release_readiness_dialog.ReadinessActionService.preview")
 @patch("ui.release_readiness_dialog.QMessageBox.question", return_value=QMessageBox.StandardButton.Yes)
 @patch("ui.release_readiness_dialog.QMessageBox.information")
-def test_release_readiness_dialog_action_inbox_run_path(mock_info, _mock_question, mock_run, _mock_pm):
+def test_release_readiness_dialog_action_inbox_run_path(mock_info, _mock_question, mock_preview, _mock_pm):
     from ui.release_readiness_dialog import ReleaseReadinessDialog
 
     dialog = ReleaseReadinessDialog(auto_run=False)
@@ -255,14 +276,20 @@ def test_release_readiness_dialog_action_inbox_run_path(mock_info, _mock_questio
     assert "Action Inbox" in labels
     assert "Clean package metadata cache" in labels
     assert "https://example.invalid/readiness" in labels
-    assert "Run..." in buttons
+    assert "Plan in Action Center..." in buttons
     assert "Verify" in buttons
 
+    mock_preview.return_value = ActionResult.ok(
+        "planned",
+        data={
+            "plan": {"plan_id": "plan-1"},
+            "policy_decision": {"allowed": True, "reason_code": "preflight_ok"},
+        },
+    )
     dialog._confirm_and_run_action("readiness-repo-cache-clean")
-    mock_run.assert_called_once_with(
+    mock_preview.assert_called_once_with(
         "readiness-repo-cache-clean",
         target_key="44",
-        confirm=True,
         report=dialog.report,
     )
     mock_info.assert_called_once()
@@ -308,7 +335,7 @@ def test_release_readiness_dialog_manual_action_and_warning_paths(mock_warning, 
     buttons = [button.text() for button in dialog.findChildren(QPushButton)]
 
     assert "Manual only" in labels
-    assert "Run..." not in buttons
+    assert "Plan in Action Center..." not in buttons
 
     dialog._confirm_and_run_action("missing-action")
     dialog._verify_action("readiness-third-party-repos")

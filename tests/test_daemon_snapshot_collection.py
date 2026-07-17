@@ -12,43 +12,44 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-t
 class TestDaemonSnapshotCollection(unittest.TestCase):
     """Daemon observability methods are read-only and rootless."""
 
-    @patch("core.observability.HealthTimelineStore")
-    def test_collect_health_snapshot_envelope(self, mock_store_cls):
+    @patch("core.observability.ObservabilityService.collect_snapshot")
+    def test_collect_health_snapshot_envelope(self, collect_snapshot):
         from daemon.server import _collect_health_snapshot
 
         snapshot = MagicMock()
         snapshot.to_dict.return_value = {"schema_version": 1}
-        mock_store_cls.return_value.collect_and_append.return_value = snapshot
+        collect_snapshot.return_value = snapshot
 
         payload = _collect_health_snapshot("44")
 
         self.assertTrue(payload["read_only"])
         self.assertEqual(payload["snapshot"]["schema_version"], 1)
-        mock_store_cls.return_value.collect_and_append.assert_called_once_with(fedora_target="44")
+        collect_snapshot.assert_called_once_with(target="44", source="daemon-dbus")
 
     @patch("daemon.server.dbus", None)
-    @patch("core.observability.HealthTimelineStore")
-    def test_dbus_method_returns_json_envelope(self, mock_store_cls):
+    @patch("core.observability.ObservabilityService.collect_snapshot")
+    def test_dbus_method_returns_json_envelope(self, collect_snapshot):
         from daemon.server import DaemonService
 
         snapshot = MagicMock()
         snapshot.to_dict.return_value = {"schema_version": 1}
-        mock_store_cls.return_value.collect_and_append.return_value = snapshot
+        collect_snapshot.return_value = snapshot
 
         envelope = json.loads(DaemonService().ObservabilityCollectHealthSnapshot("44"))
 
         self.assertTrue(envelope["ok"])
         self.assertTrue(envelope["data"]["read_only"])
+        collect_snapshot.assert_called_once_with(target="44", source="daemon-dbus")
 
-    @patch("core.observability.HealthTimelineStore")
-    def test_startup_snapshot_failure_is_non_fatal(self, mock_store_cls):
+    @patch("core.observability.ObservabilityService.collect")
+    def test_startup_snapshot_failure_is_non_fatal(self, collect):
         from daemon.runtime import collect_startup_snapshot
 
-        mock_store_cls.return_value.collect_and_append.side_effect = RuntimeError("missing tool")
+        collect.side_effect = RuntimeError("missing tool")
 
         collect_startup_snapshot()
 
-        mock_store_cls.return_value.collect_and_append.assert_called_once_with(fedora_target="44")
+        collect.assert_called_once_with(target="44", source="daemon-startup")
 
     @patch("core.observability.HealthTimelineStore")
     def test_health_timeline_bounds_limit(self, mock_store_cls):

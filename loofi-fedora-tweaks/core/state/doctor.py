@@ -10,6 +10,8 @@ from dataclasses import asdict, dataclass
 from typing import Any
 
 from core.state.inventory import StateDomain, StateInventory
+from core.state.migrations import registry_for_inventory
+from core.state.schema import SchemaRegistry, UnsupportedFutureSchema
 
 
 @dataclass(frozen=True)
@@ -27,8 +29,9 @@ class DoctorFinding:
 class StateDoctor:
     """Produces evidence and guidance without mutating any path."""
 
-    def __init__(self, inventory: StateInventory | None = None):
+    def __init__(self, inventory: StateInventory | None = None, registry: SchemaRegistry | None = None):
         self.inventory = inventory or StateInventory()
+        self.registry = registry or registry_for_inventory(self.inventory)
 
     def run(self) -> dict[str, Any]:
         before = self._fingerprints()
@@ -64,6 +67,14 @@ class StateDoctor:
 
     def _check(self, domain: StateDomain) -> list[DoctorFinding]:
         path = domain.path
+        if path.is_symlink():
+            return [DoctorFinding(
+                domain.id,
+                "error",
+                "Application state is a symbolic link",
+                str(path),
+                "Preserve the link and replace it only through a reviewed recovery plan.",
+            )]
         if not path.exists():
             return [] if domain.optional else [DoctorFinding(domain.id, "warning", "Required state is missing", str(path), "Start the owning component to recreate it.")]
         findings: list[DoctorFinding] = []
@@ -74,11 +85,13 @@ class StateDoctor:
             if path.is_file() and not os.access(path, os.R_OK):
                 findings.append(DoctorFinding(domain.id, "error", "State is unreadable", str(path), "Review file ownership and permissions."))
             if path.suffix == ".json":
-                json.loads(path.read_text(encoding="utf-8"))
+                payload = json.loads(path.read_text(encoding="utf-8"))
+                findings.extend(self._check_schema(domain, payload))
             elif path.suffix == ".jsonl":
                 for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                     if line.strip():
-                        json.loads(line)
+                        payload = json.loads(line)
+                        findings.extend(self._check_schema(domain, payload, line=number))
             elif path.suffix == ".db":
                 connection = sqlite3.connect(f"file:{path}?mode=ro", uri=True)
                 try:
@@ -89,7 +102,54 @@ class StateDoctor:
                     connection.close()
         except (OSError, ValueError, json.JSONDecodeError, sqlite3.DatabaseError) as exc:
             findings.append(DoctorFinding(domain.id, "error", "State validation failed", str(exc), f"Preserve {path} and use a domain-specific recovery plan."))
-        lock = path.with_name(path.name + ".lock")
+        lock = path if domain.category == "runtime" and path.suffix == ".lock" else path.with_name(path.name + ".lock")
         if lock.exists() and time.time() - lock.stat().st_mtime > 3600:
             findings.append(DoctorFinding(domain.id, "warning", "Lock file appears stale", str(lock), "Confirm no owner is active before archiving the stale lock."))
         return findings
+
+    def _check_schema(self, domain: StateDomain, payload: Any, *, line: int | None = None) -> list[DoctorFinding]:
+        if not isinstance(payload, dict):
+            return []
+        version_key = "schema_version"
+        if domain.id == "action_history" and "action_center_schema_version" in payload:
+            version_key = "action_center_schema_version"
+        elif domain.id == "action_runs" and "action_run_schema_version" in payload:
+            version_key = "action_run_schema_version"
+        if version_key not in payload:
+            # Several long-lived v13 JSON/JSONL formats predate an embedded
+            # version. Preserve their compatibility instead of guessing v0.
+            return []
+        try:
+            version = int(payload[version_key])
+            self.registry.validate_version(domain.schema_id, version)
+        except UnsupportedFutureSchema as exc:
+            location = f"{domain.path}:{line}" if line is not None else str(domain.path)
+            return [DoctorFinding(
+                domain.id,
+                "warning",
+                "State uses a newer schema and is read-only",
+                f"{location}: {exc}",
+                "Use a compatible newer application; do not overwrite or restore this state.",
+            )]
+        except (TypeError, ValueError):
+            return [DoctorFinding(
+                domain.id,
+                "error",
+                "State schema version is invalid",
+                repr(payload.get(version_key)),
+                "Preserve the state and use a domain-specific recovery plan.",
+            )]
+        if version < domain.schema_version:
+            try:
+                normalized = dict(payload)
+                normalized["schema_version"] = version
+                self.registry.migrate(domain.schema_id, normalized, dry_run=True)
+            except ValueError as exc:
+                return [DoctorFinding(
+                    domain.id,
+                    "warning",
+                    "State requires an unavailable migration",
+                    str(exc),
+                    "Keep this state read-only until a compatible migration is installed.",
+                )]
+        return []

@@ -85,6 +85,9 @@ class ReadinessActionService:
 
     DEFAULT_TARGET = "44"
     EXECUTABLE_REPO_ACTION_ID = "readiness-repo-cache-clean"
+    _ACTION_CENTER_ADAPTERS = {
+        EXECUTABLE_REPO_ACTION_ID: "dnf-clean-all",
+    }
 
     @classmethod
     def build_plan(
@@ -130,6 +133,19 @@ class ReadinessActionService:
             return ActionResult.fail(f"Readiness action not found: {action_id}", action_id=action_id)
 
         data = {"candidate": candidate.to_dict()}
+        canonical_id = cls._ACTION_CENTER_ADAPTERS.get(candidate.id)
+        if canonical_id:
+            from core.actions import ActionCenterOrchestrator
+
+            orchestrator = ActionCenterOrchestrator()
+            plan = orchestrator.plan(canonical_id, target=target_key)
+            result = orchestrator.preview(plan.plan_id)
+            result.data = {
+                **(result.data or {}),
+                **data,
+                "compatibility_adapter": candidate.id,
+            }
+            return result
         if not candidate.executable:
             return ActionResult(
                 success=True,
@@ -188,15 +204,45 @@ class ReadinessActionService:
                 action_id=candidate.id,
             )
 
-        runner = executor or ActionExecutor()
-        result = runner.execute(
-            candidate.command,
-            candidate.args,
-            privileged=candidate.privileged,
+        canonical_id = cls._ACTION_CENTER_ADAPTERS.get(candidate.id)
+        if canonical_id:
+            from core.actions import ActionCenterOrchestrator, ActionPlanRejectedError
+
+            orchestrator = ActionCenterOrchestrator()
+            plan = orchestrator.plan(canonical_id, target=target_key)
+            try:
+                run = orchestrator.apply(plan.plan_id, confirmed=True)
+            except ActionPlanRejectedError as exc:
+                return ActionResult.fail(
+                    exc.decision.explanation,
+                    action_id=candidate.id,
+                    data={
+                        "candidate": candidate.to_dict(),
+                        "plan": plan.to_dict(),
+                        "policy_decision": exc.decision.to_dict(),
+                        "compatibility_adapter": candidate.id,
+                    },
+                )
+            return ActionResult(
+                success=run.state == "verifying",
+                message="Execution recorded; separate Action Center verification is required.",
+                exit_code=(run.execution_result or {}).get("exit_code"),
+                action_id=candidate.id,
+                data={
+                    "candidate": candidate.to_dict(),
+                    "plan": plan.to_dict(),
+                    "run": run.to_dict(),
+                    "policy_decision": plan.policy_decision.to_dict(),
+                    "compatibility_adapter": candidate.id,
+                },
+            )
+
+        # Non-audited legacy definitions are never promoted to v14 execution.
+        return ActionResult.fail(
+            "This legacy readiness action is manual-only in the v14 deny-by-default catalog.",
             action_id=candidate.id,
+            data={"candidate": candidate.to_dict(), "compatibility_adapter": candidate.id},
         )
-        result.data = {**(result.data or {}), "candidate": candidate.to_dict()}
-        return result
 
     @classmethod
     def verify(
@@ -209,6 +255,37 @@ class ReadinessActionService:
         candidate = cls.get_candidate(action_id, target_key=target_key, report=report)
         if candidate is None:
             return ActionResult.fail(f"Readiness action not found: {action_id}", action_id=action_id)
+
+        canonical_id = cls._ACTION_CENTER_ADAPTERS.get(candidate.id)
+        if canonical_id:
+            from core.actions import ActionCenterOrchestrator, ActionRunStore
+
+            awaiting = next(
+                (
+                    run
+                    for run in reversed(ActionRunStore().list(limit=100))
+                    if run.action_id == canonical_id and run.state == "verifying"
+                ),
+                None,
+            )
+            if awaiting is None:
+                return ActionResult.fail(
+                    "No completed execution is awaiting verification for this readiness action.",
+                    action_id=candidate.id,
+                    data={"candidate": candidate.to_dict(), "compatibility_adapter": candidate.id},
+                )
+            verified = ActionCenterOrchestrator().verify(awaiting.run_id)
+            return ActionResult(
+                success=verified.state == "succeeded",
+                message=(verified.verification_result or {}).get("message", "Verification failed."),
+                exit_code=(verified.verification_result or {}).get("exit_code"),
+                action_id=candidate.id,
+                data={
+                    "candidate": candidate.to_dict(),
+                    "run": verified.to_dict(),
+                    "compatibility_adapter": candidate.id,
+                },
+            )
 
         fresh_report = report or ReleaseReadiness.run(target_key)
         check_id = candidate.verification_check_id or candidate.related_check_id

@@ -4,11 +4,14 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v12.0.0 "Lighthouse"**
-- Full notes: [RELEASE-NOTES-v12.0.0.md](RELEASE-NOTES-v12.0.0.md)
+- **v14.0.0 "Helm"**
+- Full notes: [RELEASE-NOTES-v14.0.0.md](RELEASE-NOTES-v14.0.0.md)
 
 ## Recent Releases
 
+- v13.0.0 "Anchor": [RELEASE-NOTES-v13.0.0.md](RELEASE-NOTES-v13.0.0.md)
+- v12.0.0 "Lighthouse": [RELEASE-NOTES-v12.0.0.md](RELEASE-NOTES-v12.0.0.md)
+- v11.0.0 "Harbor": [RELEASE-NOTES-v11.0.0.md](RELEASE-NOTES-v11.0.0.md)
 - v10.0.0 "Waypoint": [RELEASE-NOTES-v10.0.0.md](RELEASE-NOTES-v10.0.0.md)
 - v9.0.0 "Keystone": [RELEASE-NOTES-v9.0.0.md](RELEASE-NOTES-v9.0.0.md)
 - v8.1.0 "Breeze": [RELEASE-NOTES-v8.1.0.md](RELEASE-NOTES-v8.1.0.md)

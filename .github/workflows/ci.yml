@@ -25,7 +25,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  COVERAGE_THRESHOLD: "84"
+  COVERAGE_THRESHOLD: "85"
   PIP_CACHE_FILES: |
     requirements.txt
     .github/workflows/ci.yml
@@ -68,7 +68,7 @@ jobs:
           cache: "pip"
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
       - run: pip install mypy PyQt6-stubs
-      - run: mypy loofi-fedora-tweaks/services/security loofi-fedora-tweaks/services/network loofi-fedora-tweaks/core/diagnostics loofi-fedora-tweaks/core/export loofi-fedora-tweaks/cli --ignore-missing-imports --no-error-summary --follow-imports=silent
+      - run: mypy loofi-fedora-tweaks/ --ignore-missing-imports --no-error-summary
 
   docs_gate:
     runs-on: ubuntu-latest
@@ -97,15 +97,27 @@ jobs:
   fedora_review:
     runs-on: ubuntu-latest
     container: fedora:44
-    timeout-minutes: 10
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@v6
-      - name: Install Fedora review tool
-        run: dnf install -y python3 fedora-review mock
-      - name: Configure mock group for CI
-        run: usermod -a -G mock "$(whoami)"
-      - name: Fedora review gate
-        run: sg mock -c "python3 scripts/check_fedora_review.py"
+      - name: Install RPM and Fedora review tools
+        run: dnf install -y git rpm-build python3 python3-devel desktop-file-utils libappstream-glib systemd-rpm-macros fedora-review mock
+      - name: Build review artifacts from the checkout
+        run: |
+          bash scripts/build_rpm.sh
+          bash scripts/build_srpm.sh
+      - name: Fedora review tooling gate
+        run: python3 scripts/check_fedora_review.py
+      - name: Review the built RPM and SRPM
+        run: |
+          set -euo pipefail
+          mkdir -p review-input
+          cp rpmbuild/RPMS/noarch/*.rpm rpmbuild/SRPMS/*.src.rpm loofi-fedora-tweaks.spec review-input/
+          useradd --create-home reviewer
+          usermod -a -G mock reviewer
+          chown -R reviewer:reviewer review-input
+          su -s /bin/bash reviewer -c \
+            "cd '${GITHUB_WORKSPACE}/review-input' && fedora-review -n loofi-fedora-tweaks -r -p -m fedora-44-x86_64 --no-colors"
 
   test:
     runs-on: ubuntu-latest
@@ -210,8 +222,17 @@ jobs:
       - run: sudo apt-get update
       - run: sudo apt-get install -y flatpak flatpak-builder
       - run: sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-      - run: sudo flatpak install -y flathub org.kde.Platform//6.6 org.kde.Sdk//6.6
+      - run: sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.10 org.kde.Sdk//6.10 com.riverbankcomputing.PyQt.BaseApp//6.10
       - run: bash scripts/build_flatpak.sh
+      - name: Install and smoke test Flatpak
+        run: |
+          sudo flatpak install -y --noninteractive --reinstall dist/flatpak/*.flatpak
+          flatpak run --command=python3 org.loofi.FedoraTweaks -c "import PyQt6"
+          set +e
+          QT_QPA_PLATFORM=offscreen timeout 10 flatpak run org.loofi.FedoraTweaks
+          rc=$?
+          set -e
+          test "$rc" -eq 124
       - uses: actions/upload-artifact@v4
         if: always()
         with:

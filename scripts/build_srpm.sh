@@ -2,45 +2,79 @@
 # Build an SRPM suitable for Fedora COPR submission.
 # Usage: bash scripts/build_srpm.sh
 #
-# The SRPM is written to rpmbuild/SRPMS/ and can be uploaded to COPR
-# either manually or via the copr-cli tool.
+# The SRPM is written to rpmbuild/SRPMS/ and can be uploaded to COPR.
+# Source bytes always come from the verified checkout commit, never from a
+# mutable release-tag archive or from uncommitted working-tree content.
 set -euo pipefail
 
-VERSION=$(python3 -c "exec(open('loofi-fedora-tweaks/version.py').read()); print(__version__)")
-REPO_URL="https://github.com/loofiboss-bit/loofi-fedora-tweaks"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
+cd "$ROOT_DIR"
 
+# A Git commit is the source-of-truth.  In GitHub Actions, GITHUB_SHA binds the
+# archive to the exact commit which passed the preceding release gates.
+if ! command -v git >/dev/null 2>&1; then
+  echo "Error: git is required to build a commit-bound SRPM" >&2
+  exit 1
+fi
+if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+  echo "Error: SRPM source must be built from a Git checkout" >&2
+  exit 1
+fi
+
+HEAD_SHA="$(git rev-parse --verify 'HEAD^{commit}')"
+EXPECTED_SHA="${EXPECTED_SOURCE_SHA:-${GITHUB_SHA:-}}"
+if [[ -n "$EXPECTED_SHA" ]]; then
+  EXPECTED_SHA_INPUT="$EXPECTED_SHA"
+  if ! EXPECTED_SHA="$(git rev-parse --verify "${EXPECTED_SHA}^{commit}" 2>/dev/null)"; then
+    echo "Error: expected source commit is not available: ${EXPECTED_SHA_INPUT}" >&2
+    exit 1
+  fi
+  if [[ "$HEAD_SHA" != "$EXPECTED_SHA" ]]; then
+    echo "Error: checkout HEAD ${HEAD_SHA} does not match expected source commit ${EXPECTED_SHA}" >&2
+    exit 1
+  fi
+fi
+echo "Verified source commit: ${HEAD_SHA}"
+
+VERSION="$(
+  git show "${HEAD_SHA}:loofi-fedora-tweaks/version.py" |
+    python3 -c "import sys; values = {}; exec(sys.stdin.read(), values); print(values['__version__'])"
+)"
+if [[ -z "$VERSION" ]]; then
+  echo "Error: failed to parse version from commit ${HEAD_SHA}" >&2
+  exit 1
+fi
 echo "Building SRPM for loofi-fedora-tweaks v${VERSION}"
 
-# Setup rpmbuild tree in /tmp to avoid spaces in path
-BUILD_DIR="/tmp/loofi-fedora-tweaks-srpm"
-rm -rf "$BUILD_DIR"
+# Setup an isolated rpmbuild tree.  A caller-provided directory is supported
+# for deterministic tests; normal builds use a unique temporary directory.
+if [[ -n "${SRPM_BUILD_DIR:-}" ]]; then
+  BUILD_DIR="$SRPM_BUILD_DIR"
+  mkdir -p "$BUILD_DIR"
+  CLEAN_BUILD_DIR=0
+else
+  BUILD_DIR="$(mktemp -d -t loofi-fedora-tweaks-srpm.XXXXXXXX)"
+  CLEAN_BUILD_DIR=1
+fi
+cleanup() {
+  if [[ "$CLEAN_BUILD_DIR" -eq 1 ]]; then
+    rm -rf -- "$BUILD_DIR"
+  fi
+}
+trap cleanup EXIT
 mkdir -p "$BUILD_DIR"/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 SOURCE_TARBALL="$BUILD_DIR/rpmbuild/SOURCES/loofi-fedora-tweaks-${VERSION}.tar.gz"
-TARBALL_URL="${REPO_URL}/archive/v${VERSION}/loofi-fedora-tweaks-${VERSION}.tar.gz"
+echo "Archiving verified checkout commit ${HEAD_SHA}"
+git archive \
+  --format=tar.gz \
+  --prefix="loofi-fedora-tweaks-${VERSION}/" \
+  --output="$SOURCE_TARBALL" \
+  "$HEAD_SHA"
 
-# Prefer canonical release source tarball; fall back to local archive when
-# the release tag is not yet available.
-echo "Downloading source tarball: ${TARBALL_URL}"
-if ! curl -fSL -o "$SOURCE_TARBALL" "$TARBALL_URL"; then
-  echo "Release tarball unavailable; creating source tarball from local checkout"
-  if command -v git >/dev/null 2>&1 && git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
-    git archive \
-      --format=tar.gz \
-      --prefix="loofi-fedora-tweaks-${VERSION}/" \
-      -o "$SOURCE_TARBALL" \
-      HEAD
-  else
-    tar \
-      --exclude-vcs \
-      --transform "s#^#loofi-fedora-tweaks-${VERSION}/#" \
-      -czf "$SOURCE_TARBALL" \
-      .
-  fi
-fi
-
-# Copy spec
-cp loofi-fedora-tweaks.spec "$BUILD_DIR/rpmbuild/SPECS/"
+# Extract the spec from the same verified commit as the source archive.
+git show "${HEAD_SHA}:loofi-fedora-tweaks.spec" > "$BUILD_DIR/rpmbuild/SPECS/loofi-fedora-tweaks.spec"
 
 # Build SRPM only (-bs = build source)
 rpmbuild --define "_topdir $BUILD_DIR/rpmbuild" \
@@ -48,9 +82,14 @@ rpmbuild --define "_topdir $BUILD_DIR/rpmbuild" \
 
 # Copy SRPM back to repo tree
 mkdir -p rpmbuild/SRPMS
-cp "$BUILD_DIR"/rpmbuild/SRPMS/*.src.rpm rpmbuild/SRPMS/
+mapfile -t BUILT_SRPMS < <(find "$BUILD_DIR/rpmbuild/SRPMS" -maxdepth 1 -type f -name '*.src.rpm' -print)
+if [[ "${#BUILT_SRPMS[@]}" -ne 1 ]]; then
+  echo "Error: expected exactly one SRPM, found ${#BUILT_SRPMS[@]}" >&2
+  exit 1
+fi
+cp "${BUILT_SRPMS[0]}" rpmbuild/SRPMS/
 
-SRPM_FILE=$(ls rpmbuild/SRPMS/*.src.rpm 2>/dev/null | head -1)
+SRPM_FILE="rpmbuild/SRPMS/$(basename "${BUILT_SRPMS[0]}")"
 echo ""
 echo "SRPM built successfully: ${SRPM_FILE}"
 echo ""

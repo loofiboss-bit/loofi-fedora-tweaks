@@ -1,5 +1,13 @@
 # Changelog
 
+## v14.0.0 — Helm
+
+- Added expiring, digest-bound Action Center plans and separately verified runs.
+- Added a deny-by-default catalog for package-cache cleanup, failed-service restart, and fstrim.
+- Added cross-process mutation leasing and fail-closed interrupted-run recovery.
+- Added authenticated read-only plan/run API endpoints and Support Bundle v10.
+- Hardened state restores, health-timeline locking, exact-tag releases, commit-bound SRPMs, Fedora 44 CI/COPR, and Flatpak 6.10 smoke tests.
+
 <!-- markdownlint-configure-file {"MD032": false, "MD036": false, "MD060": false} -->
 
 Version history highlights for Loofi Fedora Tweaks.

@@ -9,3 +9,4 @@ from core.export.support_bundle_v5 import SupportBundleV5  # noqa: F401
 from core.export.support_bundle_v7 import SupportBundleV7  # noqa: F401
 from core.export.support_bundle_v8 import SupportBundleV8  # noqa: F401
 from core.export.support_bundle_v9 import SupportBundleV9  # noqa: F401
+from core.export.support_bundle_v10 import SupportBundleV10  # noqa: F401

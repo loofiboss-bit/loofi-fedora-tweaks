@@ -23,7 +23,9 @@ class TestStatePathsAndInventory(TestCase):
         })
         inventory = StateInventory(paths)
         self.assertTrue(all("/forbidden" not in str(domain.path) for domain in inventory.all()))
-        self.assertEqual(len(inventory.all()), 9)
+        self.assertEqual(len(inventory.all()), 13)
+        self.assertEqual(inventory.get("audit_log").path, paths.config / "audit.jsonl")
+        self.assertEqual(inventory.get("action_log").path, paths.data / "action_log.jsonl")
 
 
 class TestAtomicIO(TestCase):
@@ -114,8 +116,8 @@ class TestStateArchive(TestCase):
     def test_backup_plan_apply_round_trip_and_rollback(self):
         manifest = self.service.backup(self.archive, ["settings", "auth_state"])
         self.assertEqual([entry["domain"] for entry in manifest["entries"]], ["settings"])
-        plan = self.service.plan_restore(self.archive)
         self.settings.write_text('{"theme":"light"}', encoding="utf-8")
+        plan = self.service.plan_restore(self.archive)
         result = self.service.apply_restore(self.archive, plan["plan_id"])
         self.assertEqual(self.settings.read_text(), '{"theme":"dark"}')
         self.assertTrue(Path(result["rollback_archive"]).exists())

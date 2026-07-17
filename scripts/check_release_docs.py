@@ -9,6 +9,10 @@ Checks performed:
   4. docs/releases/RELEASE-NOTES-vX.Y.Z.md exists and is non-empty
   5. (optional --require-logs) workflow test-results and run-manifest present
   6. No test files contain hardcoded version/codename assertions (stale test check)
+  7. (optional --require-completed-tasks) release task spec contains only
+     completed task checkboxes
+  8. (optional --require-publish-ready-tasks) only explicitly tagged
+     post-publication closure tasks may remain unchecked
 """
 
 from __future__ import annotations
@@ -50,6 +54,10 @@ _HARDCODED_VERSION_RE = re.compile(
 # Matches assertEqual with __version_codename__ and a capitalized word literal.
 _HARDCODED_CODENAME_RE = re.compile(
     r"""assertEqual.*__version_codename__.*["'][A-Z]\w+["']"""
+)
+_TASK_CHECKBOX_RE = re.compile(
+    r"^[ \t]*[-*][ \t]+\[([ xX])\][ \t]+.+$",
+    re.MULTILINE,
 )
 
 
@@ -243,6 +251,27 @@ def _tab_count_claims(text: str) -> List[int]:
     ]
 
 
+def validate_completed_tasks(tasks_file: Path, *, allow_post_publish_pending: bool = False) -> List[str]:
+    """Return errors unless required task checkboxes are completed."""
+    text = _read_text(tasks_file)
+    matches = list(_TASK_CHECKBOX_RE.finditer(text))
+    if not matches:
+        return [f"workflow task spec has no task checkboxes: {tasks_file.name}"]
+
+    errors: List[str] = []
+    for match in matches:
+        if match.group(1).lower() == "x":
+            continue
+        if allow_post_publish_pending and "[post-publish]" in match.group(0).lower():
+            continue
+        line_number = text.count("\n", 0, match.start()) + 1
+        errors.append(
+            f"incomplete workflow task in {tasks_file.name}:{line_number}: "
+            f"{match.group(0).strip()}"
+        )
+    return errors
+
+
 def _validate_release_surface(root: Path, version: str, codename: str | None, notes_file: Path) -> List[str]:
     errors: List[str] = []
     tag = f"v{version}"
@@ -313,8 +342,8 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
         errors.append("auto-release workflow missing COVERAGE_THRESHOLD")
     if thresholds and len(set(thresholds)) != 1:
         errors.append(f"coverage threshold mismatch: values={thresholds}")
-    if thresholds and min(thresholds) < 84:
-        errors.append(f"coverage threshold below 84: values={thresholds}")
+    if thresholds and min(thresholds) < 85:
+        errors.append(f"coverage threshold below 85: values={thresholds}")
 
     ci_text = _read_text(CI_WORKFLOW_FILE)
     if "docs/**" in ci_text or "**/*.md" in ci_text:
@@ -341,7 +370,13 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     return errors
 
 
-def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
+def validate_release_docs(
+    root: Path,
+    *,
+    require_logs: bool,
+    require_completed_tasks: bool = False,
+    require_publish_ready_tasks: bool = False,
+) -> List[str]:
     errors: List[str] = []
 
     try:
@@ -381,6 +416,16 @@ def validate_release_docs(root: Path, *, require_logs: bool) -> List[str]:
         errors.append(f"missing release notes: {expected.relative_to(root)}")
     else:
         errors.extend(_validate_release_surface(root, py_version, codename, notes_file))
+
+    if require_completed_tasks or require_publish_ready_tasks:
+        tasks_file = WORKFLOW_SPECS_DIR / f"tasks-v{py_version}.md"
+        if not tasks_file.exists():
+            errors.append(f"missing workflow task spec: {tasks_file.relative_to(root)}")
+        else:
+            errors.extend(validate_completed_tasks(
+                tasks_file,
+                allow_post_publish_pending=require_publish_ready_tasks and not require_completed_tasks,
+            ))
 
     # --- Workflow artifacts (optional) ---
     if require_logs:
@@ -477,9 +522,24 @@ def main() -> int:
         action="store_true",
         help="Require workflow run/test artifacts",
     )
+    parser.add_argument(
+        "--require-completed-tasks",
+        action="store_true",
+        help="Require at least one release task and no unchecked tasks",
+    )
+    parser.add_argument(
+        "--require-publish-ready-tasks",
+        action="store_true",
+        help="Require pre-publication tasks while allowing tagged [post-publish] closure tasks",
+    )
     args = parser.parse_args()
 
-    issues = validate_release_docs(ROOT, require_logs=args.require_logs)
+    issues = validate_release_docs(
+        ROOT,
+        require_logs=args.require_logs,
+        require_completed_tasks=args.require_completed_tasks,
+        require_publish_ready_tasks=args.require_publish_ready_tasks,
+    )
     if issues:
         print("[release-doc-check] FAILED")
         for issue in issues:

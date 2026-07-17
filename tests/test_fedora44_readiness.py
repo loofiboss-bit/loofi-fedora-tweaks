@@ -586,16 +586,23 @@ class TestReadinessActions(unittest.TestCase):
         self.assertEqual(plan.candidates[0].command_preview[:2], ["pkexec", "dnf"])
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
-    def test_action_preview_does_not_execute(self, _mock_pm):
+    @patch("core.actions.ActionCenterOrchestrator")
+    def test_action_preview_does_not_execute(self, orchestrator_cls, _mock_pm):
         executor = MagicMock()
-        executor.preview.return_value = ActionResult.previewed("pkexec", ["dnf", "clean", "all"], action_id="readiness-repo-cache-clean")
+        plan = MagicMock(plan_id="plan-1")
+        orchestrator_cls.return_value.plan.return_value = plan
+        orchestrator_cls.return_value.preview.return_value = ActionResult.previewed(
+            "dnf", ["clean", "all"], action_id="dnf-clean-all"
+        )
         result = ReadinessActionService.preview(
             "readiness-repo-cache-clean",
             report=self._repo_report(),
             executor=executor,
         )
         self.assertTrue(result.preview)
-        executor.preview.assert_called_once()
+        orchestrator_cls.return_value.plan.assert_called_once_with("dnf-clean-all", target="44")
+        orchestrator_cls.return_value.preview.assert_called_once_with("plan-1")
+        executor.preview.assert_not_called()
         executor.execute.assert_not_called()
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
@@ -647,9 +654,17 @@ class TestReadinessActions(unittest.TestCase):
         executor.execute.assert_not_called()
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
-    def test_confirmed_action_routes_through_executor(self, _mock_pm):
+    @patch("core.actions.ActionCenterOrchestrator")
+    def test_confirmed_action_routes_through_executor(self, orchestrator_cls, _mock_pm):
         executor = MagicMock()
-        executor.execute.return_value = ActionResult.ok("cleaned", action_id="readiness-repo-cache-clean")
+        policy = MagicMock()
+        policy.to_dict.return_value = {"allowed": True, "reason_code": "preflight_ok"}
+        plan = MagicMock(plan_id="plan-1", policy_decision=policy)
+        plan.to_dict.return_value = {"plan_id": "plan-1"}
+        run = MagicMock(state="verifying", execution_result={"exit_code": 0})
+        run.to_dict.return_value = {"run_id": "run-1", "state": "verifying"}
+        orchestrator_cls.return_value.plan.return_value = plan
+        orchestrator_cls.return_value.apply.return_value = run
         result = ReadinessActionService.run(
             "readiness-repo-cache-clean",
             report=self._repo_report(),
@@ -657,22 +672,26 @@ class TestReadinessActions(unittest.TestCase):
             executor=executor,
         )
         self.assertTrue(result.success)
-        executor.execute.assert_called_once_with(
-            "dnf",
-            ["clean", "all"],
-            privileged=True,
-            action_id="readiness-repo-cache-clean",
-        )
+        orchestrator_cls.return_value.plan.assert_called_once_with("dnf-clean-all", target="44")
+        orchestrator_cls.return_value.apply.assert_called_once_with("plan-1", confirmed=True)
+        executor.execute.assert_not_called()
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
     @patch("core.diagnostics.readiness_actions.ReleaseReadiness.run")
-    def test_action_verify_reruns_related_readiness_check(self, mock_run, _mock_pm):
+    @patch("core.actions.ActionRunStore")
+    @patch("core.actions.ActionCenterOrchestrator")
+    def test_action_verify_reruns_related_readiness_check(self, orchestrator_cls, run_store_cls, mock_run, _mock_pm):
         failing = self._repo_report()
-        passing = self._repo_report(status="pass", severity="info")
-        mock_run.side_effect = [failing, passing]
+        mock_run.return_value = failing
+        awaiting = MagicMock(run_id="run-1", action_id="dnf-clean-all", state="verifying")
+        run_store_cls.return_value.list.return_value = [awaiting]
+        verified = MagicMock(state="succeeded", verification_result={"message": "healthy", "exit_code": 0})
+        verified.to_dict.return_value = {"run_id": "run-1", "state": "succeeded"}
+        orchestrator_cls.return_value.verify.return_value = verified
         result = ReadinessActionService.verify("readiness-repo-cache-clean")
         self.assertTrue(result.success)
-        self.assertEqual(mock_run.call_count, 2)
+        orchestrator_cls.return_value.verify.assert_called_once_with("run-1")
+        self.assertEqual(mock_run.call_count, 1)
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
     @patch("core.diagnostics.release_readiness.ReleaseReadiness.run")

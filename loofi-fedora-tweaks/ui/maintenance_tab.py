@@ -10,12 +10,13 @@ The Overlays sub-tab is only shown on Atomic (rpm-ostree) systems.
 from services.system.system import cached_which
 
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFrame,
     QGroupBox,
     QHBoxLayout,
+    QInputDialog,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -781,13 +782,43 @@ class _UpgradeAssistantSubTab(QWidget):
 # ---------------------------------------------------------------------------
 
 
-class _ActionCenterSubTab(QWidget):
-    """Previewable Action Center surface backed by the core action service."""
+class _ActionCenterOperationWorker(QObject):
+    """Run Action Center probes and persistence away from the GUI thread."""
+
+    finished = pyqtSignal(object)
+    failed = pyqtSignal(str)
+
+    def __init__(self, operation):
+        super().__init__()
+        self._operation = operation
+
+    def run(self) -> None:
+        try:
+            self.finished.emit(self._operation())
+        except (OSError, RuntimeError, ValueError, TypeError, AttributeError) as exc:
+            self.failed.emit(str(exc))
+
+
+class _ActionCenterSubTab(BaseTab):
+    """Review, asynchronously run, verify, and inspect v14 action plans."""
+
+    _ACTION_ID_ADAPTERS = {
+        "readiness-repo-cache-clean": "dnf-clean-all",
+    }
 
     def __init__(self):
         super().__init__()
         self._target_key = "44"
         self._items = []
+        self._orchestrator = None
+        self._current_plan = None
+        self._current_run = None
+        self._prepared_run = None
+        self._interrupt_reason = None
+        self._output_chunks = []
+        self._stderr_chunks = []
+        self._operation_thread = None
+        self._operation_worker = None
 
         from core.actions.center import ActionCenterService
 
@@ -803,8 +834,8 @@ class _ActionCenterSubTab(QWidget):
 
         intro = QLabel(
             self.tr(
-                "Review readiness actions with command previews, risk, rollback guidance, "
-                "manual-only status, and recent Action Center history before running anything."
+                "Review preflight, exact command, risk, and recovery guidance. Applying a plan "
+                "runs asynchronously and never counts as success until separate verification passes."
             )
         )
         intro.setWordWrap(True)
@@ -823,6 +854,20 @@ class _ActionCenterSubTab(QWidget):
         preview_button.clicked.connect(self._preview_selected)
         target_row.addWidget(preview_button)
 
+        review_button = QPushButton(self.tr("Review & Plan"))
+        review_button.clicked.connect(self._plan_selected)
+        target_row.addWidget(review_button)
+
+        self.run_button = QPushButton(self.tr("Run Plan"))
+        self.run_button.clicked.connect(self._run_current_plan)
+        self.run_button.setEnabled(False)
+        target_row.addWidget(self.run_button)
+
+        self.verify_button = QPushButton(self.tr("Verify Run"))
+        self.verify_button.clicked.connect(self._verify_current_run)
+        self.verify_button.setEnabled(False)
+        target_row.addWidget(self.verify_button)
+
         history_button = QPushButton(self.tr("Show History"))
         history_button.clicked.connect(self._show_history)
         target_row.addWidget(history_button)
@@ -838,18 +883,42 @@ class _ActionCenterSubTab(QWidget):
         self.detail_area.setAccessibleName(self.tr("Action Center details"))
         layout.addWidget(self.detail_area, 1)
 
+        self.add_output_section(layout)
+        self.runner.output_received.connect(self._capture_output)
+        self.runner.stderr_received.connect(self._capture_stderr)
+
         self._load_target(self._target_key)
+
+    def _orchestrator_instance(self):
+        if self._orchestrator is None:
+            from core.actions import ActionCenterOrchestrator
+
+            self._orchestrator = ActionCenterOrchestrator()
+        return self._orchestrator
 
     def _load_target(self, target_key: str) -> None:
         self._target_key = target_key
+        self._current_plan = None
+        self._current_run = None
+        self.run_button.setEnabled(False)
+        self.verify_button.setEnabled(False)
         self.action_list.clear()
-        try:
-            self._items = self._service.candidates_from_readiness(target_key)
-        except (OSError, RuntimeError, ValueError) as exc:
-            self._items = []
-            QMessageBox.warning(self, self.tr("Action Center Failed"), str(exc))
-            self.detail_area.setPlainText(self.tr("Action Center candidates could not be loaded."))
-            return
+        self.detail_area.setPlainText(self.tr("Loading Action Center candidates..."))
+        self._start_operation(
+            lambda: self._merged_items(target_key),
+            self._accept_loaded_items,
+            self.tr("Action Center Failed"),
+        )
+
+    def _merged_items(self, target_key: str):
+        readiness = self._service.candidates_from_readiness(target_key)
+        catalog = self._service.catalog_items(target_key)
+        catalog_ids = {item.id for item in catalog}
+        adapters = {item.id for item in readiness if self._ACTION_ID_ADAPTERS.get(item.id) in catalog_ids}
+        return [*catalog, *(item for item in readiness if item.id not in adapters)]
+
+    def _accept_loaded_items(self, items) -> None:
+        self._items = list(items)
 
         for item in self._items:
             marker = self.tr("manual") if item.manual_only else item.state
@@ -860,6 +929,29 @@ class _ActionCenterSubTab(QWidget):
             self._show_item(self._items[0])
         else:
             self.detail_area.setPlainText(self.tr("No Action Center candidates are currently available."))
+
+    def _start_operation(self, operation, on_success, failure_title: str) -> None:
+        if self._operation_thread is not None:
+            QMessageBox.warning(self, self.tr("Action Center Busy"), self.tr("Wait for the current Action Center operation to finish."))
+            return
+        thread = QThread(self)
+        worker = _ActionCenterOperationWorker(operation)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.finished.connect(on_success)
+        worker.finished.connect(thread.quit)
+        worker.failed.connect(lambda message: QMessageBox.warning(self, failure_title, message))
+        worker.failed.connect(thread.quit)
+        thread.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+        thread.finished.connect(self._clear_operation_worker)
+        self._operation_thread = thread
+        self._operation_worker = worker
+        thread.start()
+
+    def _clear_operation_worker(self) -> None:
+        self._operation_thread = None
+        self._operation_worker = None
 
     def _selected_item(self):
         row = self.action_list.currentRow()
@@ -893,6 +985,19 @@ class _ActionCenterSubTab(QWidget):
             QMessageBox.warning(self, self.tr("No Action Selected"), self.tr("Select an Action Center item first."))
             return
 
+        if item.source == "catalog:v14":
+            self.detail_area.setPlainText(
+                "\n".join(
+                    [
+                        f"{self.tr('Preview')}: {item.title}",
+                        self.tr("Create a plan to run fresh preflight and generate the exact command."),
+                        f"{self.tr('Risk')}: {item.risk_level}",
+                        f"{self.tr('Recovery')}: {item.rollback_hint}",
+                    ]
+                )
+            )
+            return
+
         result = self._service.preview(item)
         self.detail_area.setPlainText(
             "\n".join(
@@ -906,18 +1011,234 @@ class _ActionCenterSubTab(QWidget):
             )
         )
 
+    def _plan_selected(self) -> None:
+        item = self._selected_item()
+        if item is None:
+            QMessageBox.warning(self, self.tr("No Action Selected"), self.tr("Select an Action Center item first."))
+            return
+
+        action_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
+        parameters = {}
+        if action_id == "restart-failed-service":
+            service = str(item.metadata.get("service", "")) if isinstance(item.metadata, dict) else ""
+            if not service and item.command_preview:
+                service = str(item.command_preview[-1])
+            if not service:
+                service, accepted = QInputDialog.getText(
+                    self,
+                    self.tr("Failed Service"),
+                    self.tr("Enter the exact failed systemd unit (for example, example.service):"),
+                )
+                if not accepted:
+                    return
+            if service:
+                parameters["service"] = service
+
+        orchestrator = self._orchestrator_instance()
+        self._start_operation(
+            lambda: orchestrator.plan(action_id, parameters, target=self._target_key),
+            self._accept_plan,
+            self.tr("Action Plan Failed"),
+        )
+
+    def _accept_plan(self, plan) -> None:
+        self._current_plan = plan
+        self._current_run = None
+        self.run_button.setEnabled(plan.state in {"ready", "needs_review"})
+        self.verify_button.setEnabled(False)
+        self._show_plan(plan)
+
+    def _show_plan(self, plan) -> None:
+        self.detail_area.setPlainText(
+            "\n".join(
+                [
+                    f"{self.tr('Plan')}: {plan.plan_id}",
+                    f"{self.tr('Action')}: {plan.action_id}",
+                    f"{self.tr('State')}: {plan.state}",
+                    f"{self.tr('Risk')}: {plan.risk_level}",
+                    f"{self.tr('Privilege')}: {'pkexec' if plan.privileged else self.tr('none')}",
+                    f"{self.tr('Preflight')}: {plan.policy_decision.reason_code}",
+                    plan.policy_decision.explanation,
+                    f"{self.tr('Command preview')}: {' '.join(plan.preview) if plan.preview else self.tr('Manual-only')}",
+                    f"{self.tr('Recovery')}: {plan.recovery_guidance}",
+                    f"{self.tr('Expires')}: {plan.expires_at}",
+                ]
+            )
+        )
+
+    def _run_current_plan(self) -> None:
+        plan = self._current_plan
+        if plan is None:
+            QMessageBox.warning(self, self.tr("No Plan"), self.tr("Review and create a plan first."))
+            return
+
+        answer = QMessageBox.question(
+            self,
+            self.tr("Confirm Action"),
+            self.tr("Run the reviewed command now? The preflight will be checked again."),
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
+
+        accept_no_rollback = False
+        if plan.risk_level in {"medium", "high"} and not plan.rollback_supported:
+            answer = QMessageBox.question(
+                self,
+                self.tr("No Automatic Rollback"),
+                self.tr("This action has no supported rollback. Accept the recovery guidance and continue?"),
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                return
+            accept_no_rollback = True
+
+        try:
+            orchestrator = self._orchestrator_instance()
+            prepared = orchestrator.prepare_run(
+                plan.plan_id,
+                confirmed=True,
+                accept_no_rollback=accept_no_rollback,
+            )
+            vector = orchestrator.facade.asynchronous_execution_vector(
+                prepared.command,
+                privileged=prepared.privileged,
+                action_id=prepared.action_id,
+            )
+        except (OSError, RuntimeError, ValueError, TypeError) as exc:
+            QMessageBox.warning(self, self.tr("Action Blocked"), str(exc))
+            return
+
+        self._prepared_run = prepared
+        self._output_chunks = []
+        self._stderr_chunks = []
+        self.run_button.setEnabled(False)
+        self.verify_button.setEnabled(False)
+        self.output_area.clear()
+        self.append_output(self.tr("Running reviewed Action Center plan asynchronously...\n"))
+        self.runner.run_command(vector[0], vector[1:])
+
+    def _capture_output(self, text: str) -> None:
+        self._output_chunks.append(str(text))
+
+    def _capture_stderr(self, text: str) -> None:
+        self._stderr_chunks.append(str(text))
+
+    def on_command_finished(self, exit_code):
+        prepared = self._prepared_run
+        if prepared is None:
+            return
+        if self._interrupt_reason is not None:
+            self._finalize_interrupted_run(prepared, self._interrupt_reason)
+            return
+        from core.executor.action_result import ActionResult
+
+        result = ActionResult(
+            success=exit_code == 0,
+            message=self.tr("Execution finished; separate verification is required.") if exit_code == 0 else self.tr("Execution failed."),
+            exit_code=int(exit_code),
+            stdout="".join(self._output_chunks),
+            stderr="".join(self._stderr_chunks),
+            action_id=prepared.action_id,
+        )
+        self._prepared_run = None
+        try:
+            run = self._orchestrator_instance().complete_run(prepared.run_id, result)
+        except (OSError, RuntimeError, ValueError, TypeError) as exc:
+            QMessageBox.warning(self, self.tr("Run Recording Failed"), str(exc))
+            return
+        self._current_run = run
+        self.verify_button.setEnabled(run.state == "verifying")
+        self.append_output(self.tr("\nExecution state: %1\n").replace("%1", run.state))
+        self._show_run(run)
+
+    def on_error(self, error_msg):
+        self.append_output(self.tr("\n[ERROR] %1\n").replace("%1", str(error_msg)))
+        prepared = self._prepared_run
+        if prepared is None:
+            return
+        self._interrupt_reason = "command-runner-error"
+        # Timeout/error signals may arrive while QProcess is still alive. Keep
+        # the cross-process mutation lease until termination is confirmed by
+        # the finished signal. Failed-to-start is already safely not running.
+        if not self.runner.is_running():
+            self._finalize_interrupted_run(prepared, self._interrupt_reason)
+
+    def _cancel_command(self):
+        prepared = self._prepared_run
+        if prepared is not None:
+            self._interrupt_reason = "user-cancelled"
+        self.runner.stop()
+        if prepared is not None and not self.runner.is_running():
+            self._finalize_interrupted_run(prepared, self._interrupt_reason or "user-cancelled")
+
+    def _finalize_interrupted_run(self, prepared, reason: str) -> None:
+        """Persist interruption only after the command process is not running."""
+        self._prepared_run = None
+        self._interrupt_reason = None
+        try:
+            self._current_run = self._orchestrator_instance().interrupt_run(prepared.run_id, reason)
+        except (OSError, RuntimeError, ValueError, TypeError) as exc:
+            QMessageBox.warning(self, self.tr("Run Recording Failed"), str(exc))
+            return
+        self.verify_button.setEnabled(False)
+        self._show_run(self._current_run)
+
+    def _verify_current_run(self) -> None:
+        run = self._current_run
+        if run is None:
+            QMessageBox.warning(self, self.tr("No Run"), self.tr("Run a reviewed plan before verification."))
+            return
+        self.verify_button.setEnabled(False)
+        orchestrator = self._orchestrator_instance()
+        self._start_operation(
+            lambda: orchestrator.verify(run.run_id),
+            self._accept_verification,
+            self.tr("Verification Failed"),
+        )
+
+    def _accept_verification(self, verified) -> None:
+        self._current_run = verified
+        self._show_run(verified)
+
+    def _show_run(self, run) -> None:
+        verification = run.verification_result or {}
+        self.detail_area.setPlainText(
+            "\n".join(
+                [
+                    f"{self.tr('Run')}: {run.run_id}",
+                    f"{self.tr('Plan')}: {run.plan_id}",
+                    f"{self.tr('Action')}: {run.action_id}",
+                    f"{self.tr('State')}: {run.state}",
+                    f"{self.tr('Execution')}: {(run.execution_result or {}).get('message', '')}",
+                    f"{self.tr('Verification')}: {verification.get('message', self.tr('Pending'))}",
+                    f"{self.tr('Recovery')}: {run.recovery_status}",
+                ]
+            )
+        )
+
     def _show_history(self) -> None:
+        from core.actions import ActionPlanStore, ActionRunStore
+
         history = self._service.recent_history(limit=25)
-        if not history:
+        plans = ActionPlanStore().list(limit=25)
+        runs = ActionRunStore().list(limit=25)
+        if not history and not plans and not runs:
             self.detail_area.setPlainText(self.tr("No Action Center history recorded."))
             return
         lines = []
+        for plan in reversed(plans):
+            lines.append(f"{plan.plan_id}: {plan.action_id} [{plan.state}]")
+        for run in reversed(runs):
+            lines.append(f"{run.run_id}: {run.action_id} [{run.state}]")
         for entry in history:
             event = entry.get("event", "event")
             action = entry.get("action", {})
             title = action.get("title", action.get("id", "unknown")) if isinstance(action, dict) else "unknown"
             lines.append(f"{event}: {title}")
         self.detail_area.setPlainText("\n".join(lines))
+        viable = next((plan for plan in reversed(plans) if plan.state in {"ready", "needs_review"} and not plan.is_expired()), None)
+        if viable is not None:
+            self._current_plan = viable
+            self.run_button.setEnabled(True)
 
 
 # ---------------------------------------------------------------------------
@@ -930,9 +1251,10 @@ class _HealthTimelineSubTab(QWidget):
 
     def __init__(self):
         super().__init__()
-        from core.observability import HealthTimelineStore, MaintenanceTrendAnalyzer
+        from core.observability import MaintenanceTrendAnalyzer, ObservabilityService
 
-        self._store = HealthTimelineStore()
+        self._observability = ObservabilityService()
+        self._store = self._observability.snapshots
         self._analyzer_cls = MaintenanceTrendAnalyzer
 
         layout = QVBoxLayout()
@@ -998,7 +1320,7 @@ class _HealthTimelineSubTab(QWidget):
 
     def _record_snapshot(self) -> None:
         try:
-            self._store.collect_and_append(fedora_target="44")
+            self._observability.collect_snapshot(target="44", source="gui")
         except (OSError, RuntimeError, ValueError, TypeError) as exc:
             QMessageBox.warning(self, self.tr("Snapshot Failed"), str(exc))
             return

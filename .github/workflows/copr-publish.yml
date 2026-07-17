@@ -21,19 +21,22 @@ env:
   PYTHON_VERSION: "3.12"
   COPR_OWNER: "loofitheboss"
   COPR_PROJECT: "loofi-fedora-tweaks"
-  COPR_CHROOTS: "fedora-44-x86_64"
+  COPR_PACKAGE: "loofi-fedora-tweaks"
+  COPR_CHROOT: "fedora-44-x86_64"
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     container: fedora:44
-    timeout-minutes: 20
+    timeout-minutes: 90
     steps:
       - name: Install dependencies
         run: |
-          dnf install -y rpm-build python3 curl copr-cli
+          dnf install -y git rpm-build python3 curl copr-cli dnf5-plugins
 
       - uses: actions/checkout@v6
+        with:
+          fetch-depth: 0
 
       - name: Resolve version
         id: version
@@ -55,6 +58,20 @@ jobs:
             exit 1
           fi
 
+      - name: Verify release tag matches checkout
+        run: |
+          set -euo pipefail
+          TAG="v${{ steps.version.outputs.version }}"
+          REMOTE_TAG_SHA="$(
+            git ls-remote --tags origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}" |
+              awk '$2 ~ /\^\{\}$/ { peeled=$1 } $2 !~ /\^\{\}$/ { direct=$1 } END { print peeled ? peeled : direct }'
+          )"
+          if [ -z "$REMOTE_TAG_SHA" ] || [ "$REMOTE_TAG_SHA" != "$GITHUB_SHA" ]; then
+            echo "::error::COPR publish requires ${TAG} to peel to ${GITHUB_SHA}; found ${REMOTE_TAG_SHA:-missing}"
+            exit 1
+          fi
+          echo "Verified ${TAG} -> ${REMOTE_TAG_SHA}"
+
       - name: Build SRPM
         run: bash scripts/build_srpm.sh
 
@@ -70,7 +87,7 @@ jobs:
           EOF
           chmod 600 ~/.config/copr
 
-      - name: Resolve effective COPR chroots
+      - name: Validate exact COPR chroot
         run: |
           set -euo pipefail
           PROJECT_JSON=$(curl -fsSL "https://copr.fedorainfracloud.org/api_3/project?ownername=${COPR_OWNER}&projectname=${COPR_PROJECT}")
@@ -81,52 +98,85 @@ jobs:
             exit 1
           fi
 
-          EFFECTIVE_CHROOTS=""
-          for chroot in ${COPR_CHROOTS}; do
-            for available in ${AVAILABLE_CHROOTS}; do
-              if [ "${chroot}" = "${available}" ]; then
-                EFFECTIVE_CHROOTS="${EFFECTIVE_CHROOTS} ${chroot}"
-              fi
-            done
-          done
-
-          if [ -z "${EFFECTIVE_CHROOTS}" ]; then
-            echo "::warning::Requested chroots '${COPR_CHROOTS}' not configured on ${COPR_OWNER}/${COPR_PROJECT}. Falling back to available chroots: ${AVAILABLE_CHROOTS}"
-            EFFECTIVE_CHROOTS="${AVAILABLE_CHROOTS}"
+          if ! printf '%s\n' ${AVAILABLE_CHROOTS} | grep -Fxq "${COPR_CHROOT}"; then
+            echo "::error::Required COPR chroot ${COPR_CHROOT} is not configured on ${COPR_OWNER}/${COPR_PROJECT}"
+            echo "Available chroots: ${AVAILABLE_CHROOTS}"
+            exit 1
           fi
-
-          EFFECTIVE_CHROOTS=$(echo "${EFFECTIVE_CHROOTS}" | xargs)
-          echo "COPR_CHROOTS_EFFECTIVE=${EFFECTIVE_CHROOTS}" >> "$GITHUB_ENV"
-          echo "Resolved COPR chroots: ${EFFECTIVE_CHROOTS}"
+          echo "Verified exact COPR chroot: ${COPR_CHROOT}"
 
       - name: Test COPR auth
         run: |
-          WHO=$(copr-cli whoami 2>&1) && echo "::notice::COPR auth OK: logged in as ${WHO}" || echo "::error::COPR auth failed: ${WHO}. Check COPR_LOGIN, COPR_TOKEN, COPR_USERNAME secrets."
+          if WHO=$(copr-cli whoami 2>&1); then
+            echo "::notice::COPR auth OK: logged in as ${WHO}"
+          else
+            echo "::error::COPR auth failed: ${WHO}. Check COPR_LOGIN, COPR_TOKEN, COPR_USERNAME secrets."
+            exit 1
+          fi
 
       - name: Submit build to COPR
+        id: copr_build
         run: |
-          SRPM=$(ls rpmbuild/SRPMS/*.src.rpm | head -1)
-          echo "Submitting ${SRPM} to COPR project ${COPR_OWNER}/${COPR_PROJECT}"
-          CHROOT_ARGS=""
-          for chroot in ${COPR_CHROOTS_EFFECTIVE}; do
-            CHROOT_ARGS="${CHROOT_ARGS} --chroot ${chroot}"
-          done
-          echo "Target chroots:${CHROOT_ARGS}"
-          # shellcheck disable=SC2086
-          COPR_OUT=$(copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --nowait ${CHROOT_ARGS} 2>&1)
-          RC=$?
-          echo "${COPR_OUT}"
-          if [ ${RC} -ne 0 ]; then
-            echo "::error::copr-cli build failed (exit ${RC}): ${COPR_OUT}"
-            exit ${RC}
+          set -euo pipefail
+          VER="${{ steps.version.outputs.version }}"
+          SRPM=$(find rpmbuild/SRPMS -maxdepth 1 -type f -name "*-${VER}-*.src.rpm" -print -quit)
+          if [ -z "$SRPM" ]; then
+            echo "::error::No SRPM found for v${VER}"
+            exit 1
           fi
+          echo "Submitting ${SRPM} to COPR project ${COPR_OWNER}/${COPR_PROJECT}"
+          echo "Target chroot: ${COPR_CHROOT}"
+          COPR_OUT=$(copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --chroot "${COPR_CHROOT}" 2>&1)
+          echo "${COPR_OUT}"
+
+          BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's/.*Created builds?:[[:space:]]*([0-9]+).*/\1/p' | tail -1)
+          if [ -z "$BUILD_ID" ]; then
+            BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's#.*[/]build/([0-9]+)/?.*#\1#p' | tail -1)
+          fi
+          if [ -z "$BUILD_ID" ]; then
+            echo "::error::COPR build completed but its build ID could not be parsed"
+            exit 1
+          fi
+
+          STATUS=$(copr-cli status "$BUILD_ID" | tr -d '[:space:]')
+          if [ "$STATUS" != "succeeded" ]; then
+            echo "::error::COPR build ${BUILD_ID} reached terminal status ${STATUS:-unknown}, expected succeeded"
+            exit 1
+          fi
+          echo "build_id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
+          echo "Verified COPR build ${BUILD_ID}: succeeded"
+
+      - name: Verify installed COPR package version
+        run: |
+          set -euo pipefail
+          VER="${{ steps.version.outputs.version }}"
+          dnf copr enable -y "${COPR_OWNER}/${COPR_PROJECT}"
+          INSTALLED=0
+          for attempt in $(seq 1 12); do
+            if dnf --refresh install -y "${COPR_PACKAGE}-${VER}"; then
+              INSTALLED=1
+              break
+            fi
+            echo "COPR repository metadata does not expose v${VER} yet (attempt ${attempt}/12)"
+            sleep 10
+          done
+          if [ "$INSTALLED" -ne 1 ]; then
+            echo "::error::Unable to install ${COPR_PACKAGE}-${VER} from COPR after repository refresh retries"
+            exit 1
+          fi
+          INSTALLED_VER=$(rpm -q --qf '%{VERSION}' "${COPR_PACKAGE}")
+          if [ "$INSTALLED_VER" != "$VER" ]; then
+            echo "::error::COPR installed version ${INSTALLED_VER}, expected ${VER}"
+            exit 1
+          fi
+          echo "Verified installed COPR package version: ${INSTALLED_VER}"
 
       - name: Build summary
         if: always()
         run: |
           VER="${{ steps.version.outputs.version }}"
-          echo "::notice::COPR build submitted for loofi-fedora-tweaks v${VER}"
-          echo "::notice::Target chroots: ${COPR_CHROOTS_EFFECTIVE:-${COPR_CHROOTS}}"
+          echo "::notice::COPR build ${{ steps.copr_build.outputs.build_id }} succeeded for loofi-fedora-tweaks v${VER}"
+          echo "::notice::Target chroot: ${COPR_CHROOT}"
           echo ""
           echo "Track build status at:"
           echo "  https://copr.fedorainfracloud.org/coprs/${COPR_OWNER}/${COPR_PROJECT}/builds/"

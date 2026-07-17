@@ -7,7 +7,7 @@ import json
 import os
 import tempfile
 import time
-from contextlib import contextmanager
+from contextlib import ExitStack, contextmanager
 from pathlib import Path
 from typing import Any, Iterator
 
@@ -41,6 +41,23 @@ def advisory_lock(path: Path, timeout: float = 2.0) -> Iterator[None]:
             fcntl.flock(fd, fcntl.LOCK_UN)
         finally:
             os.close(fd)
+
+
+@contextmanager
+def advisory_locks(paths: Iterator[Path] | list[Path] | tuple[Path, ...], timeout: float = 2.0) -> Iterator[None]:
+    """Acquire multiple state locks in a stable order under one timeout.
+
+    A stable order prevents two restore/backup processes from deadlocking when
+    they operate on overlapping state domains.
+    """
+
+    ordered = sorted({Path(path).absolute() for path in paths}, key=str)
+    deadline = time.monotonic() + max(0.0, timeout)
+    with ExitStack() as stack:
+        for path in ordered:
+            remaining = max(0.0, deadline - time.monotonic())
+            stack.enter_context(advisory_lock(path, timeout=remaining))
+        yield
 
 
 def atomic_write_bytes(path: Path, content: bytes, *, mode: int = 0o600, keep_backup: bool = True) -> None:
@@ -81,3 +98,19 @@ def atomic_write_text(path: Path, content: str, **kwargs: Any) -> None:
 def atomic_write_json(path: Path, payload: Any, **kwargs: Any) -> None:
     encoded = json.dumps(payload, indent=2, sort_keys=True, default=str).encode("utf-8")
     atomic_write_bytes(path, encoded, **kwargs)
+
+
+def durable_unlink(path: Path) -> None:
+    """Remove a file and fsync its parent directory."""
+
+    try:
+        path.unlink(missing_ok=True)
+        if not path.parent.exists():
+            return
+        dir_fd = os.open(path.parent, os.O_RDONLY)
+        try:
+            os.fsync(dir_fd)
+        finally:
+            os.close(dir_fd)
+    except OSError as exc:
+        raise StateWriteError(str(exc)) from exc

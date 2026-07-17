@@ -31,12 +31,17 @@ def _install_maintenance_import_stubs():
     qt_widgets.QListWidgetItem = _Dummy
     qt_widgets.QFrame = _Dummy
     qt_widgets.QMessageBox = _Dummy
+    qt_widgets.QInputDialog = _Dummy
+    qt_widgets.QTableWidget = _Dummy
+    qt_widgets.QTableWidgetItem = _Dummy
+    qt_widgets.QFileDialog = _Dummy
 
     qt_core = types.ModuleType("PyQt6.QtCore")
     qt_core.Qt = types.SimpleNamespace(GlobalColor=types.SimpleNamespace(darkGray=0))
     qt_core.QProcess = _Dummy
     qt_core.pyqtSignal = lambda *a, **kw: MagicMock()
     qt_core.QObject = _Dummy
+    qt_core.QThread = _Dummy
 
     class _StubQTimer(_Dummy):
         singleShot = staticmethod(lambda ms, fn: fn())
@@ -107,6 +112,9 @@ def _install_maintenance_import_stubs():
         },
     )
 
+    services_system_impl_module = types.ModuleType("services.system.system")
+    services_system_impl_module.cached_which = MagicMock(return_value=None)
+
     metadata_module = types.ModuleType("core.plugins.metadata")
 
     class PluginMetadata:
@@ -123,6 +131,7 @@ def _install_maintenance_import_stubs():
     sys.modules["ui.tab_utils"] = tab_utils_module
     sys.modules["utils.command_runner"] = command_runner_module
     sys.modules["services.system"] = services_system_module
+    sys.modules["services.system.system"] = services_system_impl_module
     sys.modules["core.plugins.metadata"] = metadata_module
 
 
@@ -139,6 +148,7 @@ class TestMaintenanceUpdatesRegression(unittest.TestCase):
             "ui.tab_utils",
             "utils.command_runner",
             "services.system",
+            "services.system.system",
             "core.plugins.metadata",
         ):
             cls._module_backup[module_name] = sys.modules.get(module_name)

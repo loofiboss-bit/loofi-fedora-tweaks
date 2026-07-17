@@ -11,6 +11,8 @@ import time
 import unittest
 from unittest.mock import patch
 
+import pytest
+
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
@@ -278,6 +280,23 @@ class TestCommandFacade:
         assert result.success is False
         assert result.exit_code == 126
         mock_run.assert_not_called()
+
+    def test_async_vector_applies_privilege_once(self):
+        from core.executor.command_facade import CommandFacade
+
+        facade = CommandFacade()
+        prepared = facade.asynchronous_execution_vector(
+            ["systemctl", "restart", "broken.service"],
+            privileged=True,
+            action_id="restart-failed-service",
+        )
+
+        assert prepared == ["pkexec", "systemctl", "restart", "broken.service"]
+        with pytest.raises(ValueError):
+            facade.asynchronous_execution_vector(
+                ["pkexec", "systemctl", "restart", "broken.service"],
+                privileged=True,
+            )
 
 
 class TestActionLog:

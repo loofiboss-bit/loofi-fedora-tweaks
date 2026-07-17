@@ -92,6 +92,11 @@ def _install_stubs():
     qt_widgets.QListWidgetItem = _StubQListWidgetItem
     qt_widgets.QFrame = _Dummy
     qt_widgets.QMessageBox = _StubQMessageBox
+    qt_widgets.QInputDialog = type(
+        "QInputDialog",
+        (),
+        {"getText": staticmethod(lambda *a, **kw: ("", False))},
+    )
     qt_widgets.QTableWidget = _Dummy
     qt_widgets.QTableWidgetItem = _Dummy
     qt_widgets.QFileDialog = _Dummy
@@ -104,6 +109,7 @@ def _install_stubs():
     qt_core.QProcess = _Dummy
     qt_core.pyqtSignal = lambda *a, **kw: MagicMock()
     qt_core.QObject = _Dummy
+    qt_core.QThread = _Dummy
 
     class _StubQTimer(_Dummy):
         """QTimer stub with singleShot as a static/class method."""
@@ -285,6 +291,7 @@ _mt = importlib.import_module("ui.maintenance_tab")
 
 # Keep references to stub classes for patching
 _QMessageBox = sys.modules["PyQt6.QtWidgets"].QMessageBox
+_QInputDialog = sys.modules["PyQt6.QtWidgets"].QInputDialog
 _SystemManager = sys.modules["services.system"].SystemManager
 
 # Restore original modules immediately so collection of other test files
@@ -438,6 +445,21 @@ class TestUpgradeAssistantSubTab(unittest.TestCase):
 class TestActionCenterSubTab(unittest.TestCase):
     """Tests for the v11 Action Center GUI surface."""
 
+    def setUp(self):
+        def run_inline(_tab, operation, on_success, _failure_title):
+            on_success(operation())
+
+        self.operation_patcher = patch.object(
+            _mt._ActionCenterSubTab,
+            "_start_operation",
+            autospec=True,
+            side_effect=run_inline,
+        )
+        self.operation_patcher.start()
+
+    def tearDown(self):
+        self.operation_patcher.stop()
+
     def _item(self):
         return SimpleNamespace(
             id="readiness-test",
@@ -451,7 +473,17 @@ class TestActionCenterSubTab(unittest.TestCase):
             rollback_hint="Disable the repository if it causes package issues.",
             manual_only=False,
             state="planned",
+            metadata={},
         )
+
+    def _catalog_item(self, action_id="fstrim-all"):
+        item = self._item()
+        item.id = action_id
+        item.title = action_id
+        item.source = "catalog:v14"
+        item.command_preview = []
+        item.risk_level = "low" if action_id != "restart-failed-service" else "medium"
+        return item
 
     @patch("core.actions.center.ActionCenterService")
     def test_load_target_uses_action_center_service(self, service_cls):
@@ -462,6 +494,22 @@ class TestActionCenterSubTab(unittest.TestCase):
 
         service.candidates_from_readiness.assert_called_with("44")
         self.assertEqual(tab._items[0].id, "readiness-test")
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_merged_items_keeps_full_catalog_without_duplicate_adapter(self, service_cls):
+        service = service_cls.return_value
+        catalog_item = self._catalog_item("dnf-clean-all")
+        adapter = self._item()
+        adapter.id = "readiness-repo-cache-clean"
+        manual = self._item()
+        manual.id = "manual-guidance"
+        service.catalog_items.return_value = [catalog_item]
+        service.candidates_from_readiness.return_value = [adapter, manual]
+        tab = _mt._ActionCenterSubTab()
+
+        items = tab._merged_items("44")
+
+        self.assertEqual([item.id for item in items], ["dnf-clean-all", "manual-guidance"])
 
     @patch("core.actions.center.ActionCenterService")
     def test_preview_selected_uses_preview_not_execution(self, service_cls):
@@ -480,6 +528,213 @@ class TestActionCenterSubTab(unittest.TestCase):
         service.preview.assert_called_once_with(tab._items[0])
         self.assertFalse(service.execute_next.called)
         tab.detail_area.setPlainText.assert_called_once()
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_catalog_preview_defers_exact_command_to_fresh_plan(self, service_cls):
+        service_cls.return_value.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        tab._items = [self._catalog_item()]
+        tab.action_list = MagicMock()
+        tab.action_list.currentRow.return_value = 0
+        tab.detail_area = MagicMock()
+
+        tab._preview_selected()
+
+        service_cls.return_value.preview.assert_not_called()
+        detail = tab.detail_area.setPlainText.call_args.args[0]
+        self.assertIn("fresh preflight", detail)
+
+    @patch.object(_QInputDialog, "getText", staticmethod(lambda *a, **kw: ("broken.service", True)))
+    @patch("core.actions.center.ActionCenterService")
+    def test_restart_catalog_item_prompts_for_exact_service(self, service_cls):
+        service_cls.return_value.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        tab._items = [self._catalog_item("restart-failed-service")]
+        tab.action_list = MagicMock()
+        tab.action_list.currentRow.return_value = 0
+        orchestrator = MagicMock()
+        policy = MagicMock(reason_code="preflight_ok", explanation="ready")
+        orchestrator.plan.return_value = MagicMock(
+            plan_id="plan-service",
+            action_id="restart-failed-service",
+            state="needs_review",
+            risk_level="medium",
+            privileged=True,
+            policy_decision=policy,
+            preview=["systemctl", "restart", "broken.service"],
+            recovery_guidance="Inspect logs.",
+            expires_at=2000.0,
+        )
+        tab._orchestrator = orchestrator
+
+        tab._plan_selected()
+
+        orchestrator.plan.assert_called_once_with(
+            "restart-failed-service",
+            {"service": "broken.service"},
+            target="44",
+        )
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_review_creates_canonical_plan_without_execution(self, service_cls):
+        service_cls.return_value.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        item = self._item()
+        item.id = "readiness-repo-cache-clean"
+        item.metadata = {}
+        tab._items = [item]
+        tab.action_list = MagicMock()
+        tab.action_list.currentRow.return_value = 0
+        tab.detail_area = MagicMock()
+        tab.run_button = MagicMock()
+        tab.verify_button = MagicMock()
+        orchestrator = MagicMock()
+        policy = MagicMock(reason_code="preflight_ok", explanation="ready")
+        orchestrator.plan.return_value = MagicMock(
+            plan_id="plan-1",
+            action_id="dnf-clean-all",
+            state="ready",
+            risk_level="low",
+            privileged=True,
+            policy_decision=policy,
+            preview=["dnf", "clean", "all"],
+            recovery_guidance="Rebuild metadata.",
+            expires_at=2000.0,
+        )
+        tab._orchestrator = orchestrator
+
+        tab._plan_selected()
+
+        orchestrator.plan.assert_called_once_with("dnf-clean-all", {}, target="44")
+        orchestrator.prepare_run.assert_not_called()
+        tab.run_button.setEnabled.assert_called_with(True)
+
+    @patch.object(
+        _QMessageBox,
+        "question",
+        staticmethod(lambda *a, **kw: _QMessageBox.StandardButton.Yes),
+    )
+    @patch("core.actions.center.ActionCenterService")
+    def test_run_plan_uses_async_command_runner_then_records_result(self, service_cls):
+        service_cls.return_value.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        tab.run_button = MagicMock()
+        tab.verify_button = MagicMock()
+        tab._current_plan = MagicMock(
+            plan_id="plan-1",
+            risk_level="low",
+            rollback_supported=True,
+        )
+        prepared = MagicMock(
+            run_id="run-1",
+            action_id="dnf-clean-all",
+            command=("dnf", "clean", "all"),
+            privileged=True,
+        )
+        run = MagicMock(
+            run_id="run-1",
+            plan_id="plan-1",
+            action_id="dnf-clean-all",
+            state="verifying",
+            execution_result={"message": "finished"},
+            verification_result=None,
+            recovery_status="available",
+        )
+        orchestrator = MagicMock()
+        orchestrator.prepare_run.return_value = prepared
+        orchestrator.facade.asynchronous_execution_vector.return_value = ["pkexec", "dnf", "clean", "all"]
+        orchestrator.complete_run.return_value = run
+        tab._orchestrator = orchestrator
+
+        tab._run_current_plan()
+
+        tab.runner.run_command.assert_called_once_with("pkexec", ["dnf", "clean", "all"])
+        orchestrator.complete_run.assert_not_called()
+
+        tab.on_command_finished(0)
+
+        orchestrator.complete_run.assert_called_once()
+        self.assertEqual(tab._current_run.state, "verifying")
+        tab.verify_button.setEnabled.assert_called_with(True)
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_cancel_keeps_lease_until_process_finished(self, service_cls):
+        service_cls.return_value.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        prepared = MagicMock(run_id="run-1", action_id="dnf-clean-all")
+        interrupted = MagicMock(
+            run_id="run-1",
+            plan_id="plan-1",
+            action_id="dnf-clean-all",
+            state="interrupted",
+            execution_result=None,
+            verification_result=None,
+            recovery_status="manual-review-required",
+        )
+        orchestrator = MagicMock()
+        orchestrator.interrupt_run.return_value = interrupted
+        tab._orchestrator = orchestrator
+        tab._prepared_run = prepared
+        tab.runner = MagicMock()
+        tab.runner.is_running.return_value = True
+
+        tab._cancel_command()
+
+        tab.runner.stop.assert_called_once_with()
+        orchestrator.interrupt_run.assert_not_called()
+        self.assertIs(tab._prepared_run, prepared)
+
+        tab.on_command_finished(-15)
+
+        orchestrator.interrupt_run.assert_called_once_with("run-1", "user-cancelled")
+        self.assertIsNone(tab._prepared_run)
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_verify_current_run_uses_background_operation_result(self, service_cls):
+        service_cls.return_value.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        tab.verify_button = MagicMock()
+        tab.detail_area = MagicMock()
+        pending = MagicMock(run_id="run-1")
+        verified = MagicMock(
+            run_id="run-1",
+            plan_id="plan-1",
+            action_id="fstrim-all",
+            state="succeeded",
+            execution_result={"message": "done"},
+            verification_result={"message": "verified"},
+            recovery_status="not-required",
+        )
+        orchestrator = MagicMock()
+        orchestrator.verify.return_value = verified
+        tab._orchestrator = orchestrator
+        tab._current_run = pending
+
+        tab._verify_current_run()
+
+        orchestrator.verify.assert_called_once_with("run-1")
+        self.assertIs(tab._current_run, verified)
+        tab.verify_button.setEnabled.assert_called_with(False)
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_start_operation_wires_worker_thread_lifecycle(self, service_cls):
+        service_cls.return_value.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        self.operation_patcher.stop()
+        tab._operation_thread = None
+
+        tab._start_operation(lambda: "ok", MagicMock(), "failed")
+
+        self.assertIsNotNone(tab._operation_thread)
+        tab._clear_operation_worker()
+        self.assertIsNone(tab._operation_thread)
+        self.operation_patcher.start()
+
+    def test_ui_layer_has_no_subprocess_import(self):
+        from pathlib import Path
+
+        source = Path(_mt.__file__).read_text(encoding="utf-8")
+        self.assertNotIn("import subprocess", source)
 
 
 # ===================================================================
@@ -507,14 +762,14 @@ class TestHealthTimelineSubTab(unittest.TestCase):
         return _Analyzer
 
     @patch("core.observability.MaintenanceTrendAnalyzer")
-    @patch("core.observability.HealthTimelineStore")
-    def test_load_timeline_renders_summary_and_recent_items(self, store_cls, analyzer_cls):
+    @patch("core.observability.ObservabilityService")
+    def test_load_timeline_renders_summary_and_recent_items(self, service_cls, analyzer_cls):
         analyzer_cls.side_effect = self._summary_cls()
         snapshots = [
             SimpleNamespace(timestamp=1.0, problem_fingerprints=[]),
             SimpleNamespace(timestamp=2.0, problem_fingerprints=[object(), object()]),
         ]
-        store_cls.return_value.load.return_value = snapshots
+        service_cls.return_value.snapshots.load.return_value = snapshots
 
         tab = _mt._HealthTimelineSubTab()
         tab.timeline_list = MagicMock()
@@ -532,11 +787,11 @@ class TestHealthTimelineSubTab(unittest.TestCase):
 
     @patch.object(_QMessageBox, "warning")
     @patch("core.observability.MaintenanceTrendAnalyzer")
-    @patch("core.observability.HealthTimelineStore")
-    def test_record_snapshot_handles_collection_failure(self, store_cls, analyzer_cls, warning):
+    @patch("core.observability.ObservabilityService")
+    def test_record_snapshot_handles_collection_failure(self, service_cls, analyzer_cls, warning):
         analyzer_cls.side_effect = self._summary_cls()
-        store_cls.return_value.load.return_value = []
-        store_cls.return_value.collect_and_append.side_effect = RuntimeError("read failed")
+        service_cls.return_value.snapshots.load.return_value = []
+        service_cls.return_value.collect_snapshot.side_effect = RuntimeError("read failed")
 
         tab = _mt._HealthTimelineSubTab()
         tab._load_timeline = MagicMock()
@@ -547,17 +802,17 @@ class TestHealthTimelineSubTab(unittest.TestCase):
         tab._load_timeline.assert_not_called()
 
     @patch("core.observability.MaintenanceTrendAnalyzer")
-    @patch("core.observability.HealthTimelineStore")
-    def test_record_snapshot_refreshes_on_success(self, store_cls, analyzer_cls):
+    @patch("core.observability.ObservabilityService")
+    def test_record_snapshot_refreshes_on_success(self, service_cls, analyzer_cls):
         analyzer_cls.side_effect = self._summary_cls()
-        store_cls.return_value.load.return_value = []
+        service_cls.return_value.snapshots.load.return_value = []
 
         tab = _mt._HealthTimelineSubTab()
         tab._load_timeline = MagicMock()
 
         tab._record_snapshot()
 
-        store_cls.return_value.collect_and_append.assert_called_with(fedora_target="44")
+        service_cls.return_value.collect_snapshot.assert_called_with(target="44", source="gui")
         tab._load_timeline.assert_called_once_with()
 
 

@@ -340,6 +340,16 @@ def test_build_sdist_missing_build_module(tmp_path):
 
 @unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
 def test_build_sdist_success_with_stub_python(tmp_path):
+    project_root = tmp_path / "project"
+    (project_root / "scripts").mkdir(parents=True)
+    egg_info = project_root / "loofi-fedora-tweaks" / "loofi_fedora_tweaks.egg-info"
+    egg_info.mkdir(parents=True)
+    (egg_info / "SOURCES.txt").write_text("ui/removed.py\n", encoding="utf-8")
+    copy2(ROOT / "scripts" / "build_sdist.sh", project_root / "scripts" / "build_sdist.sh")
+    (project_root / "loofi-fedora-tweaks" / "version.py").write_text(
+        '__version__ = "30.0.0"\n', encoding="utf-8"
+    )
+
     bin_dir = tmp_path / "bin"
     bin_dir.mkdir(parents=True, exist_ok=True)
 
@@ -351,7 +361,7 @@ def test_build_sdist_success_with_stub_python(tmp_path):
         "fi\n"
         "if [[ \"$1\" == \"-m\" && \"$2\" == \"build\" ]]; then\n"
         "  mkdir -p dist\n"
-        f"  touch dist/loofi_fedora_tweaks-{_extract_version(ROOT / 'loofi-fedora-tweaks' / 'version.py')}.tar.gz\n"
+        "  touch dist/loofi_fedora_tweaks-30.0.0.tar.gz\n"
         "  exit 0\n"
         "fi\n"
         "exit 0\n",
@@ -360,7 +370,7 @@ def test_build_sdist_success_with_stub_python(tmp_path):
     env = _base_env(tmp_path)
     result = subprocess.run(
         [BASH, "scripts/build_sdist.sh"],
-        cwd=ROOT,
+        cwd=project_root,
         env=env,
         capture_output=True,
         text=True,
@@ -368,5 +378,5 @@ def test_build_sdist_success_with_stub_python(tmp_path):
     )
 
     assert result.returncode == 0
-    version = _extract_version(ROOT / "loofi-fedora-tweaks" / "version.py")
-    assert (ROOT / "dist" / f"loofi_fedora_tweaks-{version}.tar.gz").exists()
+    assert (project_root / "dist" / "loofi_fedora_tweaks-30.0.0.tar.gz").exists()
+    assert not egg_info.exists()

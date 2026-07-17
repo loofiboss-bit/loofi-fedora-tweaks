@@ -6,6 +6,7 @@ from pathlib import Path
 from typing import Optional
 
 import uvicorn
+from api.routes import action_center as action_center_routes
 from api.routes import executor as executor_routes
 from api.routes import profiles as profiles_routes
 from api.routes import system as system_routes
@@ -27,7 +28,9 @@ class APIServer:
         self._thread: Optional[threading.Thread] = None
 
     def _create_app(self) -> FastAPI:
-        app = FastAPI(title="Loofi Web API", version="20.0.0")
+        from version import __version__
+
+        app = FastAPI(title="Loofi Web API", version=__version__)
         configured_origins = os.getenv("LOOFI_CORS_ORIGINS", "").strip()
         default_origins = [
             f"http://{self.host}:{self.port}",
@@ -41,6 +44,7 @@ class APIServer:
         app.include_router(system_routes.router, prefix="/api")
         app.include_router(executor_routes.router, prefix="/api")
         app.include_router(profiles_routes.router, prefix="/api")
+        app.include_router(action_center_routes.router, prefix="/api")
 
         @app.post("/api/token")
         def issue_token(api_key: str = Form(...)):

@@ -3,7 +3,7 @@
 > **Canonical architecture reference.** All agent and instruction files MUST reference this document
 > instead of duplicating architecture details. This file is updated when structure changes.
 >
-> **Version**: 13.0.0 "Anchor" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 14.0.0 "Helm" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
 
 ## Project Structure
 
@@ -142,7 +142,7 @@ The route manifest keeps the stable plugin and subroute contract. `core/navigati
 
 Consolidated tabs use `QTabWidget` for sub-navigation within the tab.
 
-### Sidebar Index And Routes (v13.0.0)
+### Sidebar Index And Routes (v14.0.0)
 
 The sidebar uses a `SidebarIndex` (`dict[str, SidebarEntry]`) keyed by `PluginMetadata.id` for O(1) tab lookups. `SidebarEntry` holds the tree item, page widget, metadata, and status. Route IDs are resolved through `core.navigation`; Favorites v2 persists route/plugin IDs rather than display-name-derived slugs.
 
@@ -297,7 +297,7 @@ Saved UI state must be keyed by stable IDs, never translated labels. Migrations 
 - **Both paths**: Test success AND failure
 - **No root**: Tests run in CI without privileges
 - **Path setup**: `sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))`
-- **Coverage**: 84%+ current gate, 85% stretch goal
+- **Coverage**: 85%+ release gate
 
 ## Adding a Feature
 

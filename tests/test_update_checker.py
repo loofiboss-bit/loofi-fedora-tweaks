@@ -29,7 +29,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(
 
 class TestParseVersion(unittest.TestCase):
     def test_normal_version(self):
-        self.assertEqual(UpdateChecker.parse_version("14.0.0"), (14, 0, 0))
+        self.assertEqual(UpdateChecker.parse_version("38.12.7"), (38, 12, 7))
 
     def test_version_with_v_prefix(self):
         self.assertEqual(UpdateChecker.parse_version("v13.5.0"), (13, 5, 0))

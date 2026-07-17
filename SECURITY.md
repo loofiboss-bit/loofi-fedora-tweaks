@@ -4,9 +4,9 @@
 
 | Version | Supported |
 |---------|-----------|
-| 13.x   | Active |
-| 12.x   | Security fixes only |
-| < 12   | End of life |
+| 14.x   | Active |
+| 13.x   | Security fixes only |
+| < 13   | End of life |
 
 ## Reporting a Vulnerability
 
@@ -60,6 +60,8 @@ We follow a **90-day responsible disclosure timeline**. If a fix takes longer, w
 - State backups exclude secrets, API credentials, raw logs, plugin code, and caches by default.
 - Restore rejects zip-slip paths, duplicate entries, oversized payloads, hash mismatches, and unsupported schemas.
 - Restore requires a matching preview plan and creates a local rollback archive before applying domains.
+- Helm action plans expire, are re-preflighted before execution, and never persist an authoritative command vector.
+- Only one local Action Center mutation may run at a time; interrupted runs never auto-resume.
 
 ### Dependencies
 
@@ -94,8 +96,9 @@ The `--unsafe-expose` flag is required to bind to all interfaces and logs a secu
 | `GET /health` | None | Minimal | Returns `{"status": "ok"}` only — no version leak |
 | `GET /api/info` | Bearer JWT | Low | Read-only system info |
 | `GET /api/agents` | Bearer JWT | Low | Read-only agent list |
-| `POST /api/execute` | Bearer JWT | **Critical** | Command allowlist (30+ approved executables), audit logging, parameter validation |
+| `POST /api/execute` | Bearer JWT | **Critical** | Legacy compatibility surface; command allowlist, audit logging, parameter validation |
 | `POST /api/preview` | Bearer JWT | Medium | Dry-run only, audit-logged |
+| `GET /api/action-center/*` | Bearer JWT | Low | Read-only plan and run status; no remote apply route |
 
 ### Command Allowlist (`POST /execute`)
 

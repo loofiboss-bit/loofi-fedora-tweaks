@@ -81,9 +81,9 @@ def collect_health_snapshot(
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
     """Collect and persist one read-only v12 health snapshot."""
-    from core.observability import HealthTimelineStore
+    from core.observability import ObservabilityService
 
-    snapshot = HealthTimelineStore().collect_and_append(fedora_target=target)
+    snapshot = ObservabilityService().collect_snapshot(target=target, source="api")
     return {"schema_version": 1, "read_only": True, "snapshot": snapshot.to_dict()}
 
 

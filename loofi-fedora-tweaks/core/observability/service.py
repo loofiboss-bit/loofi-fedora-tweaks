@@ -10,8 +10,9 @@ from pathlib import Path
 from typing import Any
 
 from core.diagnostics.health_timeline import HealthTimeline as MetricTimelineStore
+from core.observability.snapshot import HealthSnapshot
 from core.observability.timeline import HealthTimelineStore as HealthSnapshotStore
-from core.state.atomic_io import StateBusyError, advisory_lock
+from core.state.atomic_io import StateBusyError, advisory_lock, atomic_write_text
 from core.state.paths import StatePaths
 
 
@@ -38,10 +39,15 @@ class ObservabilityStatus:
 
 
 class ObservabilityService:
-    def __init__(self, snapshot_store: HealthSnapshotStore | None = None, metric_path: str | None = None):
+    def __init__(
+        self,
+        snapshot_store: HealthSnapshotStore | None = None,
+        metric_path: str | None = None,
+        lease_path: Path | None = None,
+    ):
         self.snapshots = snapshot_store or HealthSnapshotStore()
         self.metric_path = metric_path or MetricTimelineStore.DB_PATH
-        self.lease_path = StatePaths.from_environment().runtime / "collector"
+        self.lease_path = lease_path or StatePaths.from_environment().runtime / "collector"
 
     def status(self, source: str = "local") -> ObservabilityStatus:
         snapshots = self.snapshots.load()
@@ -61,17 +67,30 @@ class ObservabilityService:
 
     def collect(self, target: str = "44", source: str = "daemon") -> ObservabilityStatus:
         try:
-            with advisory_lock(self.lease_path, timeout=0.25):
-                self._write_owner()
-                self.snapshots.collect_and_append(fedora_target=target)
+            self.collect_snapshot(target=target, source=source)
         except StateBusyError:
             status = self.status(source)
             return ObservabilityStatus(**{**status.to_dict(), "warning": "collector-busy", "recovery_status": "busy"})
         return self.status(source)
 
+    def collect_snapshot(self, target: str = "44", source: str = "daemon") -> HealthSnapshot:
+        """Collect through the shared cross-process lease and return the snapshot.
+
+        Entry modes that need the snapshot envelope (rather than only status)
+        use this method so they do not bypass the canonical collector facade.
+        """
+
+        del source  # Reserved for collection audit metadata without changing v13 snapshots.
+        with advisory_lock(self.lease_path, timeout=0.25):
+            self._write_owner()
+            return self.snapshots.collect_and_append(fedora_target=target)
+
     def _write_owner(self) -> None:
-        self.lease_path.parent.mkdir(parents=True, exist_ok=True)
-        self.lease_path.write_text(f"{socket.gethostname()}:{os.getpid()}", encoding="utf-8")
+        atomic_write_text(
+            self.lease_path,
+            f"{socket.gethostname()}:{os.getpid()}",
+            keep_backup=False,
+        )
 
     def _owner(self) -> str:
         try:

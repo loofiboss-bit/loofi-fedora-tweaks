@@ -15,7 +15,7 @@ src_root := "loofi-fedora-tweaks"
 test_dir := "tests"
 
 # Thresholds (single source of truth — CI workflows read these)
-coverage_min := "84"
+coverage_min := "85"
 max_line_length := "150"
 flake8_ignore := "E501,W503,E402,E722,E203"
 

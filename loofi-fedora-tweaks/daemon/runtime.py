@@ -14,9 +14,9 @@ logger = logging.getLogger(__name__)
 def collect_startup_snapshot() -> None:
     """Best-effort read-only daemon startup snapshot."""
     try:
-        from core.observability import HealthTimelineStore
+        from core.observability import ObservabilityService
 
-        HealthTimelineStore().collect_and_append(fedora_target="44")
+        ObservabilityService().collect(target="44", source="daemon-startup")
     except (OSError, RuntimeError, ValueError, TypeError) as exc:
         logger.warning("Loofi daemon health snapshot collection failed: %s", exc)
 

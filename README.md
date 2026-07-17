@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v13.0.0 "Anchor"
+# Loofi Fedora Tweaks v14.0.0 "Helm"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,13 +12,13 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v13.0.0">
-    <img src="https://img.shields.io/badge/Release-v13.0.0-blue?style=for-the-badge&logo=github" alt="Release v13.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v14.0.0">
+    <img src="https://img.shields.io/badge/Release-v14.0.0-blue?style=for-the-badge&logo=github" alt="Release v14.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
   <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
-  <img src="https://img.shields.io/badge/Coverage-84%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 84%"/>
+  <img src="https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 85%"/>
   <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
     <img src="https://img.shields.io/badge/COPR-loofitheboss%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
   </a>
@@ -41,17 +41,17 @@ It is designed to be practical for both casual users and advanced users:
 
 ---
 
-## What's New in v13.0.0?
+## What's New in v14.0.0?
 
-`v13.0.0 "Anchor"` is a state-integrity and recovery release. It keeps Fedora 44 stable and Fedora 45 advisory while making local state inspectable, crash-safe, migratable, and recoverable.
+`v14.0.0 "Helm"` completes the guided-maintenance path. It turns selected findings into expiring, reviewable plans that require explicit confirmation and only report success after a separate verifier passes.
 
-- **State Doctor**: `loofi state doctor` validates paths, permissions, schemas, SQLite integrity, locks, and corruption without changing state.
-- **Safe backup and restore**: privacy-safe ZIP archives include hashes and schema metadata; restore is always previewed and creates a rollback archive.
-- **Crash-safe snapshots**: atomic same-directory writes, fsync, advisory locks, readback verification, and last-known-good backup protect structured history.
-- **One observability contract**: GUI, CLI, daemon, API, and support exports distinguish numeric metrics from structured snapshots while sharing status and freshness.
+- **Verified Action Center**: review preflight, command, privilege, risk, rollback readiness, execution, and verification in one durable lifecycle.
+- **Bounded action catalog**: only DNF cache recovery, an explicitly selected failed service, and supported SSD trim are executable; everything else remains manual-only.
+- **Crash-safe operation state**: plans expire after 30 minutes, one mutation lease spans processes, and interrupted runs never resume automatically.
+- **Release assurance**: source archives, Git tags, GitHub assets, and Fedora 44/COPR publication are tied to the exact release commit.
 - **Fedora continuity**: Fedora 44 stays blocking and Fedora 45 stays preview/advisory.
 
-Full notes: [`docs/releases/RELEASE-NOTES-v13.0.0.md`](docs/releases/RELEASE-NOTES-v13.0.0.md)
+Full notes: [`docs/releases/RELEASE-NOTES-v14.0.0.md`](docs/releases/RELEASE-NOTES-v14.0.0.md)
 
 ### Screenshots
 
@@ -86,9 +86,9 @@ Full notes: [`docs/releases/RELEASE-NOTES-v13.0.0.md`](docs/releases/RELEASE-NOT
 
 Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
 
-- Current release: **v13.0.0 "Anchor"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v13.0.0.md`)
-- Previous stable baseline: **v12.0.0 "Lighthouse"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **13.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
+- Current release: **v14.0.0 "Helm"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v14.0.0.md`)
+- Previous stable baseline: **v13.0.0 "Anchor"** (see `CHANGELOG.md`)
+- Packaged runtime/version files baseline: **14.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
 
 ---
 

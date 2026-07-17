@@ -343,7 +343,7 @@ class ReleaseReadinessDialog(QDialog):
         verify.clicked.connect(lambda _checked=False, action_id=candidate.id: self._verify_action(action_id))
         actions.addWidget(verify)
         if candidate.executable:
-            run = QPushButton(self.tr("Run..."))
+            run = QPushButton(self.tr("Plan in Action Center..."))
             run.clicked.connect(lambda _checked=False, action_id=candidate.id: self._confirm_and_run_action(action_id))
             actions.addWidget(run)
         else:
@@ -360,21 +360,29 @@ class ReleaseReadinessDialog(QDialog):
         if candidate is None:
             QMessageBox.warning(self, self.tr("Action Unavailable"), self.tr("This readiness action is no longer available."))
             return
-        message = self.tr("Run this action?\n\n%1\n\nCommand preview:\n%2").replace("%1", candidate.explanation).replace("%2", " ".join(candidate.command_preview))
+        message = self.tr("Create a reviewed Action Center plan?\n\n%1\n\nCommand preview:\n%2").replace("%1", candidate.explanation).replace("%2", " ".join(candidate.command_preview))
         answer = QMessageBox.question(
             self,
-            self.tr("Confirm Readiness Action"),
+            self.tr("Plan Readiness Action"),
             message,
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
         if answer != QMessageBox.StandardButton.Yes:
             return
-        result = ReadinessActionService.run(action_id, target_key=self.target_key, confirm=True, report=self.report)
-        if result.success:
-            QMessageBox.information(self, self.tr("Action Complete"), result.message)
+        result = ReadinessActionService.preview(action_id, target_key=self.target_key, report=self.report)
+        policy = (result.data or {}).get("policy_decision", {})
+        plan = (result.data or {}).get("plan", {})
+        if result.success and policy.get("allowed", False):
+            plan_id = str(plan.get("plan_id", ""))
+            QMessageBox.information(
+                self,
+                self.tr("Action Plan Ready"),
+                self.tr("Plan %1 is ready. Open Maintenance → Action Center, choose History, and run it asynchronously.").replace("%1", plan_id),
+            )
         else:
-            QMessageBox.warning(self, self.tr("Action Failed"), result.message)
+            explanation = str(policy.get("explanation", result.message))
+            QMessageBox.warning(self, self.tr("Action Plan Blocked"), explanation)
 
     def _verify_action(self, action_id: str) -> None:
         if self.report is None:

@@ -6,7 +6,7 @@ Configuration files, themes, and customization options for Loofi Fedora Tweaks.
 
 ## State integrity and recovery
 
-v13 centralizes application state under the XDG config, data, cache, and runtime roots. Open **Settings → State & Recovery** to run the read-only State Doctor, create a privacy-safe backup, preview a restore plan, or inspect collector freshness. Backups exclude registered secret domains and restore always requires a generated plan before apply.
+v13 centralizes application state under the XDG config, data, cache, and runtime roots. v14 binds restore plans to the archive digest and the current target baseline, expires them after 30 minutes, and rolls back already changed domains if a later domain fails. Open **Settings → State & Recovery** to run the read-only State Doctor, create a privacy-safe backup, preview a restore plan, or inspect collector freshness. Backups exclude registered secret domains and restore always requires a generated plan before apply.
 
 The equivalent CLI entry points are `state doctor`, `state backup`, `state restore plan`, and `state restore apply`.
 
@@ -29,6 +29,15 @@ All user configuration is stored in:
 | `history.json` | Action history with undo commands (max 50) |
 | `profile.json` | User profile from first-run wizard |
 | `profiles/` | Saved user profiles (work, gaming, etc.) |
+| `../share/loofi-fedora-tweaks/action_plans.json` | At most 50 Action Center plans |
+| `../share/loofi-fedora-tweaks/action_runs.jsonl` | At most 100 Action Center run records |
+
+Action plans persist validated parameters, policy facts, digest, preview, and
+expiry. Commands are regenerated from the audited action definition during
+both preview and apply. A persisted `running` record is marked `interrupted`
+after restart and is never retried automatically. A `verifying` record is
+preserved so the user can explicitly run verification after restart; it is
+never verified or resumed automatically.
 
 ---
 

@@ -37,6 +37,14 @@ main() {
   local version
   version="$(extract_version)"
 
+  # setuptools may reuse an ignored, stale SOURCES.txt from an earlier
+  # checkout and then fail while archiving files that no longer exist.
+  # This directory is generated metadata, never a source-of-truth input.
+  local egg_info_dir="${ROOT_DIR}/loofi-fedora-tweaks/loofi_fedora_tweaks.egg-info"
+  if [[ -d "${egg_info_dir}" ]]; then
+    rm -rf -- "${egg_info_dir}"
+  fi
+
   mkdir -p "${DIST_DIR}"
   rm -f "${DIST_DIR}/loofi_fedora_tweaks-${version}.tar.gz"
 

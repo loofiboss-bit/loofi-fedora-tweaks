@@ -1,0 +1,529 @@
+"""Policy-backed v14 Action Center planning, execution, and verification."""
+
+from __future__ import annotations
+
+import hashlib
+import json
+import time
+import uuid
+from contextlib import AbstractContextManager
+from pathlib import Path
+from typing import Any, Callable, Mapping, Sequence
+
+from core.actions.catalog import ActionCatalog, SystemActionRuntime, validate_parameters
+from core.actions.contracts import ActionDefinition, ActionPlan, ActionRun, ActionRuntime, PolicyDecision, PreparedActionRun
+from core.actions.stores import ActionPlanStore, ActionRunStore
+from core.executor.action_result import ActionResult
+from core.executor.command_facade import CommandFacade
+from core.executor.command_policy import CommandValidationError, validate_command_vector
+from core.state.atomic_io import StateBusyError, advisory_lock
+from core.state.paths import StatePaths
+from services.system.system import SystemManager
+
+PLAN_TTL_SECONDS = 30 * 60
+
+
+class ActionCenterError(RuntimeError):
+    """Base error for v14 Action Center orchestration."""
+
+
+class ActionPlanNotFoundError(ActionCenterError):
+    pass
+
+
+class ActionRunNotFoundError(ActionCenterError):
+    pass
+
+
+class ActionCenterBusyError(ActionCenterError):
+    pass
+
+
+class ActionPlanRejectedError(ActionCenterError):
+    """Carries the machine-readable decision which rejected a plan."""
+
+    def __init__(self, decision: PolicyDecision):
+        super().__init__(decision.explanation)
+        self.decision = decision
+
+
+class ActionPlanIntegrityError(ActionCenterError):
+    pass
+
+
+class ActionCenterOrchestrator:
+    """Regenerate commands from definitions and persist every lifecycle boundary."""
+
+    def __init__(
+        self,
+        *,
+        facade: CommandFacade | None = None,
+        catalog: ActionCatalog | None = None,
+        plan_store: ActionPlanStore | None = None,
+        run_store: ActionRunStore | None = None,
+        lease_path: Path | None = None,
+        runtime: ActionRuntime | None = None,
+        system_manager: type[SystemManager] = SystemManager,
+        clock: Callable[[], float] = time.time,
+        id_factory: Callable[[], str] | None = None,
+        recover_interrupted: bool = True,
+    ):
+        self.facade = facade or CommandFacade()
+        self.catalog = catalog or ActionCatalog()
+        self.plan_store = plan_store or ActionPlanStore()
+        self.run_store = run_store or ActionRunStore()
+        self.lease_path = lease_path or (StatePaths.from_environment().runtime / "action_center_mutation")
+        self.runtime = runtime or SystemActionRuntime(self.facade, system_manager)
+        self.clock = clock
+        self.id_factory = id_factory or (lambda: str(uuid.uuid4()))
+        self._held_leases: dict[str, AbstractContextManager[None]] = {}
+        if recover_interrupted:
+            self._recover_interrupted_if_unleased()
+
+    def plan(
+        self,
+        action_id: str,
+        parameters: Mapping[str, Any] | None = None,
+        *,
+        target: str = "44",
+    ) -> ActionPlan:
+        """Create a 30-minute plan after schema validation and fresh preflight."""
+        now = self.clock()
+        normalized = dict(parameters or {})
+        definition = self.catalog.get(action_id)
+        if definition is None:
+            decision = self.catalog.denied(action_id)
+            plan = ActionPlan(
+                plan_id=self.id_factory(),
+                action_id=action_id,
+                parameters=normalized,
+                target=target,
+                digest="",
+                preview=[],
+                policy_decision=decision,
+                risk_level="high",
+                privileged=False,
+                confirmation_policy="explicit-no-rollback",
+                recovery_guidance=decision.alternative,
+                rollback_supported=False,
+                created_at=now,
+                expires_at=now + PLAN_TTL_SECONDS,
+            )
+            plan.digest = self._digest(
+                plan.action_id,
+                plan.parameters,
+                target,
+                plan.preview,
+                decision,
+                self._plan_definition_fields(plan),
+            )
+            plan.transition("blocked", decision.reason_code, at=now)
+            self.plan_store.save(plan)
+            return plan
+
+        parameters_decision = validate_parameters(definition, normalized)
+        preview: list[str] = []
+        if parameters_decision.allowed:
+            try:
+                preview = self._render(definition, normalized)
+                if target == "45-preview":
+                    decision = PolicyDecision(
+                        False,
+                        "preview_target_read_only",
+                        "Fedora 45 remains a read-only preview target in v14.",
+                        "Review preview diagnostics and create a Fedora 44 plan for an audited action.",
+                        {"target": target},
+                    )
+                elif target != "44":
+                    decision = PolicyDecision(
+                        False,
+                        "unsupported_target",
+                        f"Unsupported action target: {target}.",
+                        "Use the Fedora 44 stable target.",
+                        {"target": target},
+                    )
+                else:
+                    host_decision = self._host_target_decision(target)
+                    decision = host_decision or definition.preflight_checker(normalized, self.runtime)
+            except (CommandValidationError, ValueError) as exc:
+                decision = PolicyDecision(False, "command_policy_rejected", str(exc))
+            except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                decision = PolicyDecision(False, "preflight_failed", f"Action preflight failed safely: {exc}")
+        else:
+            decision = parameters_decision
+        plan = ActionPlan(
+            plan_id=self.id_factory(),
+            action_id=action_id,
+            parameters=normalized,
+            target=target,
+            digest="",
+            preview=preview,
+            policy_decision=decision,
+            risk_level=definition.risk_level,
+            privileged=definition.privileged,
+            confirmation_policy=definition.confirmation_policy,
+            recovery_guidance=definition.recovery_guidance,
+            rollback_supported=definition.rollback_supported,
+            created_at=now,
+            expires_at=now + PLAN_TTL_SECONDS,
+        )
+        plan.digest = self._digest(
+            action_id,
+            normalized,
+            target,
+            preview,
+            decision,
+            self._definition_fields(definition),
+        )
+        if not decision.allowed:
+            state = "blocked"
+        elif definition.risk_level in {"medium", "high"}:
+            state = "needs_review"
+        else:
+            state = "ready"
+        plan.transition(state, decision.reason_code, at=now)  # type: ignore[arg-type]
+        self.plan_store.save(plan)
+        return plan
+
+    def get_plan(self, plan_id: str) -> ActionPlan:
+        plan = self.plan_store.get(plan_id)
+        if plan is None:
+            raise ActionPlanNotFoundError(f"Action plan not found: {plan_id}")
+        return plan
+
+    def get_run(self, run_id: str) -> ActionRun:
+        run = self.run_store.get(run_id)
+        if run is None:
+            raise ActionRunNotFoundError(f"Action run not found: {run_id}")
+        return run
+
+    def preview(self, plan_id: str) -> ActionResult:
+        """Regenerate a preview; never execute the vector stored in the plan."""
+        plan = self.get_plan(plan_id)
+        definition = self._definition_for(plan.action_id)
+        self._assert_integrity(plan)
+        command = self._render(definition, plan.parameters)
+        result = self.facade.preview(command, privileged=definition.privileged, action_id=definition.id)
+        result.data = {
+            **(result.data or {}),
+            "schema_version": 1,
+            "plan": plan.to_dict(),
+            "policy_decision": plan.policy_decision.to_dict(),
+        }
+        return result
+
+    def prepare_run(
+        self,
+        plan_id: str,
+        *,
+        confirmed: bool,
+        accept_no_rollback: bool = False,
+    ) -> PreparedActionRun:
+        """Revalidate and hold the cross-process lease for async execution."""
+        lease = self._acquire_lease()
+        run_id = ""
+        try:
+            plan = self.get_plan(plan_id)
+            definition = self._definition_for(plan.action_id)
+            now = self.clock()
+            if plan.state == "blocked":
+                raise ActionPlanRejectedError(plan.policy_decision)
+            if plan.is_expired(now):
+                decision = PolicyDecision(False, "plan_expired", "The 30-minute action plan has expired.", "Create and review a new plan.")
+                self._block_plan(plan, decision, now=now)
+                raise ActionPlanRejectedError(decision)
+            self._assert_integrity(plan)
+            parameter_decision = validate_parameters(definition, plan.parameters)
+            if not parameter_decision.allowed:
+                self._block_plan(plan, parameter_decision, now=now)
+                raise ActionPlanRejectedError(parameter_decision)
+            try:
+                command = self._render(definition, plan.parameters)
+                host_decision = self._host_target_decision(plan.target)
+                current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
+            except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                decision = PolicyDecision(False, "preflight_failed", f"Action preflight failed safely: {exc}")
+                self._block_plan(plan, decision, now=now)
+                raise ActionPlanRejectedError(decision) from exc
+            current_digest = self._digest(
+                plan.action_id,
+                plan.parameters,
+                plan.target,
+                command,
+                current_decision,
+                self._definition_fields(definition),
+            )
+            if current_digest != plan.digest:
+                decision = PolicyDecision(
+                    False,
+                    "system_drift",
+                    "System or policy facts changed after preview.",
+                    "Create and review a fresh plan.",
+                    {"previous_reason": plan.policy_decision.reason_code, "current_reason": current_decision.reason_code},
+                )
+                self._block_plan(plan, decision, now=now)
+                raise ActionPlanRejectedError(decision)
+            if not current_decision.allowed:
+                self._block_plan(plan, current_decision, now=now)
+                raise ActionPlanRejectedError(current_decision)
+            if not confirmed:
+                raise ActionPlanRejectedError(
+                    PolicyDecision(False, "confirmation_required", "Apply requires explicit confirmation.", "Review the exact command and confirm it explicitly.")
+                )
+            if definition.risk_level in {"medium", "high"} and not definition.rollback_supported and not accept_no_rollback:
+                raise ActionPlanRejectedError(
+                    PolicyDecision(
+                        False,
+                        "no_rollback_acceptance_required",
+                        "This medium/high-risk action has no supported rollback.",
+                        "Explicitly accept the lack of rollback after reviewing recovery guidance.",
+                    )
+                )
+            if plan.state == "needs_review":
+                plan.transition("ready", "explicitly-confirmed", at=now)
+                self.plan_store.save(plan)
+            run_id = self.id_factory()
+            correlation_id = self.id_factory()
+            run = ActionRun(
+                run_id=run_id,
+                plan_id=plan.plan_id,
+                action_id=plan.action_id,
+                correlation_id=correlation_id,
+                parameters=dict(plan.parameters),
+                state="running",
+                created_at=now,
+                updated_at=now,
+                started_at=now,
+                recovery_status="available" if definition.rollback_supported else "manual-guidance-only",
+                state_history=[{"state": "running", "reason": "execution-started", "timestamp": now}],
+            )
+            self.run_store.save(run)
+            self._held_leases[run_id] = lease
+            return PreparedActionRun(
+                run_id=run_id,
+                plan_id=plan.plan_id,
+                action_id=plan.action_id,
+                correlation_id=correlation_id,
+                command=tuple(command),
+                privileged=definition.privileged,
+            )
+        finally:
+            if not run_id or run_id not in self._held_leases:
+                lease.__exit__(None, None, None)
+
+    def complete_run(self, run_id: str, result: ActionResult) -> ActionRun:
+        """Persist an externally executed result and release its held lease."""
+        lease = self._held_leases.get(run_id)
+        if lease is None:
+            raise ActionCenterError("Run completion requires the orchestrator that prepared the held lease.")
+        try:
+            run = self.get_run(run_id)
+            if run.state != "running":
+                raise ActionCenterError(f"Run is not awaiting execution completion: {run.state}")
+            run.execution_result = result.to_dict()
+            now = self.clock()
+            if result.success:
+                run.transition("verifying", "execution-succeeded", at=now)
+            elif result.exit_code == 126:
+                run.transition("cancelled", "polkit-cancelled", at=now)
+                run.recovery_status = "not-required"
+            else:
+                run.transition("failed", "execution-failed", at=now)
+                run.recovery_status = "manual-review-required"
+            self.run_store.save(run)
+            return run
+        finally:
+            self._release_lease(run_id)
+
+    def interrupt_run(self, run_id: str, reason: str = "worker-interrupted") -> ActionRun:
+        """Record cancellation/crash without retrying or rolling back automatically."""
+        held = run_id in self._held_leases
+        lease = None if held else self._acquire_lease()
+        try:
+            run = self.get_run(run_id)
+            if run.state not in {"running", "verifying"}:
+                raise ActionCenterError(f"Run cannot be interrupted from state: {run.state}")
+            run.transition("interrupted", reason, at=self.clock())
+            run.recovery_status = "manual-review-required"
+            self.run_store.save(run)
+            return run
+        finally:
+            if held:
+                self._release_lease(run_id)
+            elif lease is not None:
+                lease.__exit__(None, None, None)
+
+    def apply(
+        self,
+        plan_id: str,
+        *,
+        confirmed: bool,
+        accept_no_rollback: bool = False,
+        timeout: int = 120,
+    ) -> ActionRun:
+        """Synchronous CLI wrapper over prepare/execute/complete."""
+        prepared = self.prepare_run(
+            plan_id,
+            confirmed=confirmed,
+            accept_no_rollback=accept_no_rollback,
+        )
+        try:
+            result = self.facade.execute(
+                prepared.command,
+                privileged=prepared.privileged,
+                timeout=timeout,
+                action_id=prepared.action_id,
+            )
+        except (OSError, RuntimeError, TypeError, ValueError) as exc:
+            # Keep an auditable failed run when the execution boundary fails.
+            result = ActionResult.fail(f"Execution boundary failed: {exc}", exit_code=-1, action_id=prepared.action_id)
+        return self.complete_run(prepared.run_id, result)
+
+    def verify(self, run_id: str) -> ActionRun:
+        """Run the definition verifier separately from apply and persist its result."""
+        lease = self._acquire_lease()
+        try:
+            run = self.get_run(run_id)
+            if run.state != "verifying":
+                raise ActionCenterError(f"Run is not awaiting verification: {run.state}")
+            definition = self._definition_for(run.action_id)
+            result = definition.verifier(run, self.runtime)
+            return self._complete_verification_locked(run, result)
+        finally:
+            lease.__exit__(None, None, None)
+
+    def complete_verification(self, run_id: str, result: ActionResult) -> ActionRun:
+        """Accept a verifier result produced by an asynchronous trusted worker."""
+        lease = self._acquire_lease()
+        try:
+            run = self.get_run(run_id)
+            if run.state != "verifying":
+                raise ActionCenterError(f"Run is not awaiting verification: {run.state}")
+            return self._complete_verification_locked(run, result)
+        finally:
+            lease.__exit__(None, None, None)
+
+    def _complete_verification_locked(self, run: ActionRun, result: ActionResult) -> ActionRun:
+        run.verification_result = result.to_dict()
+        if result.success:
+            run.transition("succeeded", "verification-succeeded", at=self.clock())
+            run.recovery_status = "not-required"
+        else:
+            run.transition("verification_failed", "verification-failed", at=self.clock())
+            run.recovery_status = "manual-review-required"
+        self.run_store.save(run)
+        return run
+
+    def _definition_for(self, action_id: str) -> ActionDefinition:
+        definition = self.catalog.get(action_id)
+        if definition is None:
+            raise ActionPlanRejectedError(self.catalog.denied(action_id))
+        return definition
+
+    def _host_target_decision(self, target: str) -> PolicyDecision | None:
+        """Keep Fedora 45+ hosts read-only even if a caller claims target 44."""
+        version_reader = getattr(self.runtime, "fedora_version", None)
+        host_version = str(version_reader() if callable(version_reader) else "").strip()
+        match = host_version.split(".", 1)[0]
+        if target == "44" and match.isdigit() and int(match) >= 45:
+            return PolicyDecision(
+                False,
+                "host_preview_read_only",
+                f"Fedora {host_version} remains read-only for v14 guided maintenance.",
+                "Use Fedora 45 preview diagnostics without applying maintenance actions.",
+                {"target": target, "host_fedora_version": host_version},
+            )
+        return None
+
+    def _render(self, definition: ActionDefinition, parameters: Mapping[str, Any]) -> list[str]:
+        vector = [str(part) for part in definition.command_renderer(parameters, self.runtime)]
+        if "pkexec" in vector:
+            raise CommandValidationError("Canonical Action Center vectors must not contain pkexec.")
+        validate_command_vector(vector)
+        return vector
+
+    @staticmethod
+    def _digest(
+        action_id: str,
+        parameters: Mapping[str, Any],
+        target: str,
+        preview: Sequence[str],
+        decision: PolicyDecision,
+        definition_fields: Mapping[str, Any],
+    ) -> str:
+        canonical = json.dumps(
+            {
+                "action_id": action_id,
+                "parameters": dict(parameters),
+                "target": target,
+                "preview": list(preview),
+                "policy_decision": decision.to_dict(),
+                "definition": dict(definition_fields),
+            },
+            sort_keys=True,
+            separators=(",", ":"),
+            default=str,
+        ).encode("utf-8")
+        return hashlib.sha256(canonical).hexdigest()
+
+    def _assert_integrity(self, plan: ActionPlan) -> None:
+        expected = self._digest(
+            plan.action_id,
+            plan.parameters,
+            plan.target,
+            plan.preview,
+            plan.policy_decision,
+            self._plan_definition_fields(plan),
+        )
+        if not plan.digest or expected != plan.digest:
+            raise ActionPlanIntegrityError("Action plan digest validation failed.")
+
+    @staticmethod
+    def _definition_fields(definition: ActionDefinition) -> dict[str, Any]:
+        return {
+            "risk_level": definition.risk_level,
+            "privileged": definition.privileged,
+            "confirmation_policy": definition.confirmation_policy,
+            "recovery_guidance": definition.recovery_guidance,
+            "rollback_supported": definition.rollback_supported,
+        }
+
+    @staticmethod
+    def _plan_definition_fields(plan: ActionPlan) -> dict[str, Any]:
+        return {
+            "risk_level": plan.risk_level,
+            "privileged": plan.privileged,
+            "confirmation_policy": plan.confirmation_policy,
+            "recovery_guidance": plan.recovery_guidance,
+            "rollback_supported": plan.rollback_supported,
+        }
+
+    def _block_plan(self, plan: ActionPlan, decision: PolicyDecision, *, now: float) -> None:
+        plan.policy_decision = decision
+        if plan.state != "blocked":
+            plan.transition("blocked", decision.reason_code, at=now)
+        self.plan_store.save(plan)
+
+    def _acquire_lease(self) -> AbstractContextManager[None]:
+        lease = advisory_lock(self.lease_path, timeout=0)
+        try:
+            lease.__enter__()
+        except StateBusyError as exc:
+            raise ActionCenterBusyError("Another Action Center operation is active.") from exc
+        return lease
+
+    def _release_lease(self, run_id: str) -> None:
+        lease = self._held_leases.pop(run_id, None)
+        if lease is not None:
+            lease.__exit__(None, None, None)
+
+    def _recover_interrupted_if_unleased(self) -> None:
+        """Recover only when no live process owns the mutation lease."""
+        try:
+            lease = self._acquire_lease()
+        except ActionCenterBusyError:
+            return
+        try:
+            self.run_store.interrupt_incomplete(now=self.clock())
+        finally:
+            lease.__exit__(None, None, None)

@@ -48,12 +48,23 @@ class StateInventory:
             ("health_snapshots", "observability", p.data / "health_timeline_v12.json", "loofi.health-snapshots", 1, "private", "30 snapshots", "last-known-good"),
             ("metric_timeline", "observability", p.data / "health_timeline.db", "loofi.metric-timeline", 1, "private", "30 days", "sqlite-integrity"),
             ("action_history", "action-center", p.data / "action_center_history.jsonl", "loofi.action-history", 3, "private", "100 events", "archive-corrupt"),
-            ("audit_log", "audit", p.data / "audit.jsonl", "loofi.audit-log", 1, "sensitive", "bounded", "archive-corrupt"),
+            ("action_log", "executor", p.data / "action_log.jsonl", "loofi.action-log", 1, "sensitive", "500 events", "archive-corrupt"),
+            ("action_plans", "action-center", p.data / "action_plans.json", "loofi.action-plans", 1, "private", "50 plans", "last-known-good"),
+            ("action_runs", "action-center", p.data / "action_runs.jsonl", "loofi.action-runs", 1, "private", "100 events", "archive-corrupt"),
+            ("audit_log", "audit", p.config / "audit.jsonl", "loofi.audit-log", 1, "sensitive", "bounded", "archive-corrupt"),
             ("plugin_state", "plugins", p.config / "plugins.json", "loofi.plugin-state", 1, "private", "indefinite", "last-known-good"),
             ("auth_state", "api", p.config / "auth.json", "loofi.auth-state", 1, "secret", "indefinite", "manual"),
             ("cache", "runtime", p.cache, "loofi.cache", 1, "derived", "bounded", "rebuild"),
             ("collector_lock", "daemon", p.runtime / "collector.lock", "loofi.collector-lease", 1, "private", "runtime", "stale-lock"),
+            ("action_mutation_lease", "action-center", p.runtime / "action_center_mutation.lock", "loofi.action-mutation-lease", 1, "private", "runtime", "stale-lock"),
         )
         for domain_id, owner, path, schema_id, version, sensitivity, retention, recovery in definitions:
-            category = "runtime" if domain_id == "collector_lock" else ("cache" if domain_id == "cache" else "data")
+            if domain_id in {"collector_lock", "action_mutation_lease"}:
+                category = "runtime"
+            elif domain_id == "cache":
+                category = "cache"
+            elif path.is_relative_to(p.config):
+                category = "config"
+            else:
+                category = "data"
             self.register(StateDomain(domain_id, owner, path, category, schema_id, version, sensitivity, retention, recovery))
