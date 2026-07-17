@@ -232,7 +232,6 @@ jobs:
 
   fedora_review:
     runs-on: ubuntu-latest
-    container: fedora:44
     timeout-minutes: 30
     needs: [build]
     if: |
@@ -240,11 +239,6 @@ jobs:
       needs.build.result == 'success'
     steps:
       - uses: actions/checkout@v6
-      - name: Install Fedora review tool
-        run: >-
-          dnf install -y --setopt=install_weak_deps=False
-          --disablerepo=fedora-cisco-openh264
-          python3 fedora-review mock
       - name: Download built RPM artifact
         uses: actions/download-artifact@v7
         with:
@@ -255,21 +249,26 @@ jobs:
         with:
           name: srpm-package
           path: review-input
-      - name: Create mock-enabled reviewer
+      - name: Run Fedora review in privileged Fedora 44 container
         run: |
-          useradd --create-home reviewer
-          usermod -a -G mock reviewer
-      - name: Fedora review tooling gate
-        run: >-
-          su -s /bin/bash reviewer -c
-          "cd '${GITHUB_WORKSPACE}' && python3 scripts/check_fedora_review.py"
-      - name: Review the built RPM and SRPM
-        run: |
-          set -euo pipefail
-          cp loofi-fedora-tweaks.spec review-input/
-          chown -R reviewer:reviewer review-input
-          su -s /bin/bash reviewer -c \
-            "cd '${GITHUB_WORKSPACE}/review-input' && fedora-review -n loofi-fedora-tweaks -r -p -m fedora-44-x86_64 --no-colors"
+          docker run --rm --privileged \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            fedora:44 \
+            /bin/bash -lc '
+              set -euo pipefail
+              dnf install -y --setopt=install_weak_deps=False \
+                --disablerepo=fedora-cisco-openh264 \
+                python3 fedora-review mock
+              useradd --create-home reviewer
+              usermod -a -G mock reviewer
+              su -s /bin/bash reviewer -c \
+                "cd /workspace && python3 scripts/check_fedora_review.py"
+              cp loofi-fedora-tweaks.spec review-input/
+              chown -R reviewer:reviewer review-input
+              su -s /bin/bash reviewer -c \
+                "cd /workspace/review-input && fedora-review -n loofi-fedora-tweaks -r -p -m fedora-44-x86_64 --no-colors"
+            '
 
   docs_gate:
     runs-on: ubuntu-latest
