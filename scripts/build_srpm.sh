@@ -11,22 +11,29 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 ROOT_DIR="$(cd "${SCRIPT_DIR}/.." && pwd)"
 cd "$ROOT_DIR"
 
+# Container jobs can mount the checkout with a host UID that differs from the
+# container user. Scope Git's ownership exception to this resolved repository
+# only, rather than mutating global Git configuration in the runner.
+git_repo() {
+  command git -c "safe.directory=${ROOT_DIR}" "$@"
+}
+
 # A Git commit is the source-of-truth.  In GitHub Actions, GITHUB_SHA binds the
 # archive to the exact commit which passed the preceding release gates.
 if ! command -v git >/dev/null 2>&1; then
   echo "Error: git is required to build a commit-bound SRPM" >&2
   exit 1
 fi
-if ! git rev-parse --is-inside-work-tree >/dev/null 2>&1; then
+if ! git_repo rev-parse --is-inside-work-tree >/dev/null 2>&1; then
   echo "Error: SRPM source must be built from a Git checkout" >&2
   exit 1
 fi
 
-HEAD_SHA="$(git rev-parse --verify 'HEAD^{commit}')"
+HEAD_SHA="$(git_repo rev-parse --verify 'HEAD^{commit}')"
 EXPECTED_SHA="${EXPECTED_SOURCE_SHA:-${GITHUB_SHA:-}}"
 if [[ -n "$EXPECTED_SHA" ]]; then
   EXPECTED_SHA_INPUT="$EXPECTED_SHA"
-  if ! EXPECTED_SHA="$(git rev-parse --verify "${EXPECTED_SHA}^{commit}" 2>/dev/null)"; then
+  if ! EXPECTED_SHA="$(git_repo rev-parse --verify "${EXPECTED_SHA}^{commit}" 2>/dev/null)"; then
     echo "Error: expected source commit is not available: ${EXPECTED_SHA_INPUT}" >&2
     exit 1
   fi
@@ -38,7 +45,7 @@ fi
 echo "Verified source commit: ${HEAD_SHA}"
 
 VERSION="$(
-  git show "${HEAD_SHA}:loofi-fedora-tweaks/version.py" |
+  git_repo show "${HEAD_SHA}:loofi-fedora-tweaks/version.py" |
     python3 -c "import sys; values = {}; exec(sys.stdin.read(), values); print(values['__version__'])"
 )"
 if [[ -z "$VERSION" ]]; then
@@ -67,14 +74,14 @@ mkdir -p "$BUILD_DIR"/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 SOURCE_TARBALL="$BUILD_DIR/rpmbuild/SOURCES/loofi-fedora-tweaks-${VERSION}.tar.gz"
 echo "Archiving verified checkout commit ${HEAD_SHA}"
-git archive \
+git_repo archive \
   --format=tar.gz \
   --prefix="loofi-fedora-tweaks-${VERSION}/" \
   --output="$SOURCE_TARBALL" \
   "$HEAD_SHA"
 
 # Extract the spec from the same verified commit as the source archive.
-git show "${HEAD_SHA}:loofi-fedora-tweaks.spec" > "$BUILD_DIR/rpmbuild/SPECS/loofi-fedora-tweaks.spec"
+git_repo show "${HEAD_SHA}:loofi-fedora-tweaks.spec" > "$BUILD_DIR/rpmbuild/SPECS/loofi-fedora-tweaks.spec"
 
 # Build SRPM only (-bs = build source)
 rpmbuild --define "_topdir $BUILD_DIR/rpmbuild" \

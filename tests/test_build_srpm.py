@@ -103,6 +103,7 @@ def test_build_srpm_archives_verified_head_not_dirty_worktree(tmp_path):
     script_text = (checkout / "scripts" / "build_srpm.sh").read_text(encoding="utf-8")
     assert "curl" not in script_text
     assert "/archive/v" not in script_text
+    assert 'safe.directory=${ROOT_DIR}' in script_text
 
 
 def test_build_srpm_rejects_checkout_sha_mismatch_before_rpmbuild(tmp_path):
