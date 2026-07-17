@@ -103,7 +103,11 @@ jobs:
         run: dnf install -y git
       - uses: actions/checkout@v6
       - name: Install RPM and Fedora review tools
-        run: dnf install -y rpm-build python3 python3-devel desktop-file-utils libappstream-glib systemd-rpm-macros fedora-review mock
+        run: >-
+          dnf install -y --setopt=install_weak_deps=False
+          --disablerepo=fedora-cisco-openh264
+          rpm-build python3 python3-devel desktop-file-utils libappstream-glib
+          systemd-rpm-macros fedora-review mock
       - name: Build review artifacts from the checkout
         run: |
           bash scripts/build_rpm.sh

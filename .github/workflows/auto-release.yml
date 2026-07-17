@@ -241,7 +241,10 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Install Fedora review tool
-        run: dnf install -y python3 fedora-review mock
+        run: >-
+          dnf install -y --setopt=install_weak_deps=False
+          --disablerepo=fedora-cisco-openh264
+          python3 fedora-review mock
       - name: Download built RPM artifact
         uses: actions/download-artifact@v7
         with:
