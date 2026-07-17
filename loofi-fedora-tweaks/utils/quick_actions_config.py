@@ -8,6 +8,8 @@ import logging
 import os
 from typing import Dict, List
 
+from core.navigation.migrations import migrate_quick_action, migrate_quick_actions
+
 logger = logging.getLogger(__name__)
 
 _CONFIG_DIR = os.path.expanduser("~/.config/loofi-fedora-tweaks")
@@ -59,19 +61,7 @@ class QuickActionsConfig:
     @staticmethod
     def _normalize_action(action: Dict[str, str]) -> Dict[str, str]:
         """Return an action using route_id, migrating legacy target_tab values."""
-        normalized = dict(action)
-        route_id = normalized.get("route_id", "")
-        if not route_id and normalized.get("target_tab"):
-            try:
-                from core.navigation import resolve
-                route = resolve(normalized["target_tab"])
-                route_id = route.id if route else ""
-            except ImportError:
-                route_id = ""
-        if route_id:
-            normalized["route_id"] = route_id
-        normalized.pop("target_tab", None)
-        return normalized
+        return migrate_quick_action(action)
 
     @classmethod
     def get_actions(cls) -> List[Dict[str, str]]:
@@ -87,7 +77,10 @@ class QuickActionsConfig:
                 with open(_ACTIONS_FILE, "r") as f:
                     data = json.load(f)
                 if isinstance(data, list) and len(data) > 0:
-                    return [cls._normalize_action(item) for item in data if isinstance(item, dict)]
+                    normalized = migrate_quick_actions(data)
+                    if normalized != data:
+                        cls.set_actions(normalized)
+                    return normalized
         except (OSError, json.JSONDecodeError) as e:
             logger.warning("Failed to load quick actions config: %s", e)
         return cls.default_actions()

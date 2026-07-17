@@ -16,6 +16,13 @@ from dataclasses import asdict, dataclass, field
 from pathlib import Path
 from typing import Any, Optional
 
+from core.navigation.migrations import (
+    legacy_experience_for_mode,
+    migrate_last_route,
+    migrate_route_references,
+    navigation_mode_from_value,
+)
+
 logger = logging.getLogger(__name__)
 
 CONFIG_DIR = Path.home() / ".config" / "loofi-fedora-tweaks"
@@ -46,21 +53,23 @@ class AppSettings:
 
     # UX
     experience_level: str = "beginner"
+    navigation_mode: str = "standard"
     suppressed_confirmations: list = field(default_factory=list)
     locale: str = "en"
     favorite_routes: list = field(default_factory=list)
     hidden_routes: list = field(default_factory=list)
+    last_route_id: str = "atlas_dashboard"
     window_geometry: dict = field(default_factory=dict)
 
     # Version tracking
     last_seen_version: str = "0.0.0"
-    state_schema_version: int = 1
+    state_schema_version: int = 2
 
 
 # Canonical set of known setting keys (derived from the dataclass).
 _DEFAULTS = AppSettings()
 KNOWN_KEYS = set(asdict(_DEFAULTS).keys())
-STATE_SCHEMA_VERSION = 1
+STATE_SCHEMA_VERSION = 2
 
 
 def _first(raw: dict, *keys: str) -> Any:
@@ -127,10 +136,38 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
             defaults["experience_level"] = value
             migrated = True
 
+    mode_value = _first(raw, "navigation_mode", "ui_mode", "navigation.mode")
+    mode = navigation_mode_from_value(
+        mode_value if mode_value is not None else defaults["experience_level"]
+    )
+    if raw.get("navigation_mode") != mode.value:
+        migrated = True
+    defaults["navigation_mode"] = mode.value
+
+    compatible_experience = legacy_experience_for_mode(mode)
+    if defaults["experience_level"] != compatible_experience:
+        defaults["experience_level"] = compatible_experience
+        migrated = True
+
     favorite_routes = _first(raw, "navigation.favorite_routes", "navigation.favorites", "favorite_tabs", "favorites")
     if "favorite_routes" not in raw and favorite_routes is not None:
         defaults["favorite_routes"] = _string_list(favorite_routes)
         migrated = True
+
+    last_route = _first(
+        raw,
+        "last_route_id",
+        "navigation.last_route_id",
+        "navigation.last_route",
+        "last_active_route",
+        "last_route",
+    )
+    migrated_last_route = migrate_last_route(
+        last_route if last_route is not None else defaults["last_route_id"]
+    )
+    if raw.get("last_route_id") != migrated_last_route:
+        migrated = True
+    defaults["last_route_id"] = migrated_last_route
 
     hidden_routes = _first(raw, "navigation.hidden_routes", "hiddenRoutes", "hidden_routes")
     if "hidden_routes" not in raw and hidden_routes is not None:
@@ -142,8 +179,14 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
         defaults["window_geometry"] = _window_geometry(window_geometry)
         migrated = True
 
-    defaults["favorite_routes"] = _string_list(defaults.get("favorite_routes"))
-    defaults["hidden_routes"] = _string_list(defaults.get("hidden_routes"))
+    favorite_values = _string_list(defaults.get("favorite_routes"))
+    defaults["favorite_routes"] = migrate_route_references(favorite_values)
+    if defaults["favorite_routes"] != favorite_values:
+        migrated = True
+    hidden_values = _string_list(defaults.get("hidden_routes"))
+    defaults["hidden_routes"] = migrate_route_references(hidden_values)
+    if defaults["hidden_routes"] != hidden_values:
+        migrated = True
     defaults["window_geometry"] = _window_geometry(defaults.get("window_geometry"))
     defaults["state_schema_version"] = STATE_SCHEMA_VERSION
 

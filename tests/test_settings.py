@@ -61,6 +61,8 @@ class TestDefaults(unittest.TestCase):
         defaults = AppSettings()
         self.assertEqual(defaults.favorite_routes, [])
         self.assertEqual(defaults.hidden_routes, [])
+        self.assertEqual(defaults.navigation_mode, "standard")
+        self.assertEqual(defaults.last_route_id, "atlas_dashboard")
         self.assertEqual(defaults.window_geometry, {})
         self.assertEqual(defaults.state_schema_version, STATE_SCHEMA_VERSION)
 
@@ -269,7 +271,7 @@ class TestStateMigration(unittest.TestCase):
                 },
             })
 
-            self.assertEqual(mgr.get("favorite_routes"), ["home", "maintenance:updates"])
+            self.assertEqual(mgr.get("favorite_routes"), ["atlas_dashboard", "maintenance:updates"])
             self.assertEqual(mgr.get("hidden_routes"), ["settings:advanced", "system:hardware"])
 
     def test_window_geometry_migrates_from_legacy_list(self):
@@ -300,7 +302,8 @@ class TestStateMigration(unittest.TestCase):
 
             self.assertEqual(first, second)
             self.assertEqual(second["theme"], "highcontrast")
-            self.assertEqual(second["experience_level"], "intermediate")
+            self.assertEqual(second["experience_level"], "advanced")
+            self.assertEqual(second["navigation_mode"], "advanced")
             self.assertEqual(second["favorite_routes"], ["software:apps"])
             self.assertEqual(second["hidden_routes"], ["settings:advanced"])
             self.assertEqual(second["window_geometry"], {"x": 1, "y": 2, "width": 800, "height": 600})

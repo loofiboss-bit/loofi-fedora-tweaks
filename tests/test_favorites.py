@@ -23,9 +23,9 @@ class TestFavoritesManager(unittest.TestCase):
     @patch('builtins.open', mock_open(read_data='["dashboard", "system_info"]'))
     @patch('utils.favorites.os.path.isfile', return_value=True)
     def test_get_favorites_with_file(self, mock_isfile):
-        """Returns favorites from JSON file."""
+        """Compatibility favorites collapse onto their maintained route."""
         result = FavoritesManager.get_favorites()
-        self.assertEqual(result, ["dashboard", "system_info"])
+        self.assertEqual(result, ["system_info"])
 
     @patch('builtins.open', mock_open(read_data='invalid json'))
     @patch('utils.favorites.os.path.isfile', return_value=True)
@@ -52,10 +52,10 @@ class TestFavoritesManager(unittest.TestCase):
     @patch('builtins.open', mock_open(read_data='["Updates", "Cleanup", "stale legacy"]'))
     @patch('utils.favorites.os.path.isfile', return_value=True)
     def test_get_favorites_migrates_legacy_labels(self, mock_isfile, mock_save):
-        """Legacy display labels migrate to stable route IDs, dropping stale values."""
+        """Legacy labels migrate while unknown values remain recoverable."""
         result = FavoritesManager.get_favorites()
-        self.assertEqual(result, ["maintenance:updates", "maintenance:cleanup"])
-        mock_save.assert_called_once_with(["maintenance:updates", "maintenance:cleanup"])
+        self.assertEqual(result, ["maintenance:updates", "maintenance:cleanup", "stale legacy"])
+        mock_save.assert_called_once_with(["maintenance:updates", "maintenance:cleanup", "stale legacy"])
 
     @patch.object(FavoritesManager, '_save')
     @patch.object(FavoritesManager, '_load', return_value=[])
@@ -65,18 +65,18 @@ class TestFavoritesManager(unittest.TestCase):
         mock_save.assert_called_once_with(["maintenance:updates"])
 
     @patch.object(FavoritesManager, '_save')
-    @patch.object(FavoritesManager, '_load', return_value=["dashboard"])
+    @patch.object(FavoritesManager, '_load', return_value=["system_info"])
     def test_add_favorite_no_duplicate(self, mock_load, mock_save):
         """add_favorite does not add duplicates."""
         FavoritesManager.add_favorite("dashboard")
         mock_save.assert_not_called()
 
     @patch.object(FavoritesManager, '_save')
-    @patch.object(FavoritesManager, '_load', return_value=["dashboard", "system_info"])
+    @patch.object(FavoritesManager, '_load', return_value=["system_info"])
     def test_remove_favorite(self, mock_load, mock_save):
         """remove_favorite removes from the list."""
         FavoritesManager.remove_favorite("dashboard")
-        mock_save.assert_called_once_with(["system_info"])
+        mock_save.assert_called_once_with([])
 
     @patch.object(FavoritesManager, '_save')
     @patch.object(FavoritesManager, '_load', return_value=["maintenance:updates", "system_info"])
@@ -92,12 +92,12 @@ class TestFavoritesManager(unittest.TestCase):
         FavoritesManager.remove_favorite("nonexistent")
         mock_save.assert_not_called()
 
-    @patch.object(FavoritesManager, '_load', return_value=["dashboard", "gaming"])
+    @patch.object(FavoritesManager, '_load', return_value=["system_info", "gaming"])
     def test_is_favorite_true(self, mock_load):
         """is_favorite returns True for existing favorite."""
         self.assertTrue(FavoritesManager.is_favorite("dashboard"))
 
-    @patch.object(FavoritesManager, '_load', return_value=["dashboard"])
+    @patch.object(FavoritesManager, '_load', return_value=["system_info"])
     def test_is_favorite_false(self, mock_load):
         """is_favorite returns False for non-favorite."""
         self.assertFalse(FavoritesManager.is_favorite("gaming"))
@@ -116,7 +116,7 @@ class TestFavoritesManager(unittest.TestCase):
         mock_save.assert_called_once()
 
     @patch.object(FavoritesManager, '_save')
-    @patch.object(FavoritesManager, '_load', return_value=["dashboard"])
+    @patch.object(FavoritesManager, '_load', return_value=["system_info"])
     def test_toggle_favorite_remove(self, mock_load, mock_save):
         """toggle_favorite removes and returns False."""
         result = FavoritesManager.toggle_favorite("dashboard")
@@ -132,7 +132,7 @@ class TestFavoritesManager(unittest.TestCase):
         mock_makedirs.assert_called_once()
         handle = mock_file()
         written = "".join(call.args[0] for call in handle.write.call_args_list)
-        self.assertIn('"version": 2', written)
+        self.assertIn('"version": 3', written)
         self.assertIn('"favorites"', written)
 
     @patch('builtins.open', side_effect=OSError("Permission denied"))
