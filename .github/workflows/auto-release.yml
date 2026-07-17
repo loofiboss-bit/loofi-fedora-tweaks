@@ -360,9 +360,11 @@ jobs:
       needs.docs_gate.result == 'success' &&
       needs.security.result == 'success'
     steps:
+      - name: Bootstrap Git for checkout
+        run: dnf install -y git
       - uses: actions/checkout@v6
       - name: Install build deps
-        run: dnf install -y git rpm-build python3 python3-devel desktop-file-utils libappstream-glib systemd-rpm-macros
+        run: dnf install -y rpm-build python3 python3-devel desktop-file-utils libappstream-glib systemd-rpm-macros
       - name: Build RPM
         run: bash scripts/build_rpm.sh
       - name: Build commit-bound SRPM

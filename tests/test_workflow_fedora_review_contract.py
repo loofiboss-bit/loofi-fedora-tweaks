@@ -21,6 +21,7 @@ def test_ci_workflow_has_required_fedora_review_gate():
     assert "python3 scripts/check_fedora_review.py" in text
     assert "fedora-review -n loofi-fedora-tweaks -r -p" in text
     assert "rpmbuild/SRPMS/*.src.rpm" in text
+    assert text.count("name: Bootstrap Git for checkout") == 1
 
 
 def test_ci_workflow_adapter_drift_checks_sync_and_render():
@@ -50,6 +51,7 @@ def test_auto_release_workflow_has_required_fedora_review_gate():
     assert "python3 scripts/check_fedora_review.py" in text
     assert "fedora-review -n loofi-fedora-tweaks -r -p" in text
     assert "name: srpm-package" in text
+    assert text.count("name: Bootstrap Git for checkout") == 1
 
 
 def test_auto_release_rpm_smoke_requires_fedora_review_gate_success():
