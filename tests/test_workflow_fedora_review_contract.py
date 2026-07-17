@@ -24,6 +24,8 @@ def test_ci_workflow_has_required_fedora_review_gate():
     assert text.count("name: Bootstrap Git for checkout") == 1
     assert "--setopt=install_weak_deps=False" in text
     assert "--disablerepo=fedora-cisco-openh264" in text
+    assert text.count("name: Create mock-enabled reviewer") == 1
+    assert 'su -s /bin/bash reviewer -c' in text
 
 
 def test_ci_workflow_adapter_drift_checks_sync_and_render():
@@ -56,6 +58,8 @@ def test_auto_release_workflow_has_required_fedora_review_gate():
     assert text.count("name: Bootstrap Git for checkout") == 1
     assert "--setopt=install_weak_deps=False" in text
     assert "--disablerepo=fedora-cisco-openh264" in text
+    assert text.count("name: Create mock-enabled reviewer") == 1
+    assert 'su -s /bin/bash reviewer -c' in text
 
 
 def test_auto_release_rpm_smoke_requires_fedora_review_gate_success():

@@ -112,15 +112,19 @@ jobs:
         run: |
           bash scripts/build_rpm.sh
           bash scripts/build_srpm.sh
+      - name: Create mock-enabled reviewer
+        run: |
+          useradd --create-home reviewer
+          usermod -a -G mock reviewer
       - name: Fedora review tooling gate
-        run: python3 scripts/check_fedora_review.py
+        run: >-
+          su -s /bin/bash reviewer -c
+          "cd '${GITHUB_WORKSPACE}' && python3 scripts/check_fedora_review.py"
       - name: Review the built RPM and SRPM
         run: |
           set -euo pipefail
           mkdir -p review-input
           cp rpmbuild/RPMS/noarch/*.rpm rpmbuild/SRPMS/*.src.rpm loofi-fedora-tweaks.spec review-input/
-          useradd --create-home reviewer
-          usermod -a -G mock reviewer
           chown -R reviewer:reviewer review-input
           su -s /bin/bash reviewer -c \
             "cd '${GITHUB_WORKSPACE}/review-input' && fedora-review -n loofi-fedora-tweaks -r -p -m fedora-44-x86_64 --no-colors"
