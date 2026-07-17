@@ -350,10 +350,40 @@ class TestMaintenanceTabMetadata(unittest.TestCase):
         labels = [label for label, _factory in self.tab._sub_tab_factories]
         self.assertIn("Action Center", labels)
 
+    @patch("ui.maintenance_tab.SystemManager.is_atomic", return_value=False)
+    def test_action_center_constructs_once_only_after_subroute_opens(self, _atomic):
+        with patch("ui.maintenance_tab._ActionCenterSubTab") as action_center:
+            action_center.return_value = _mt.QWidget()
+            tab = _mt.MaintenanceTab()
+            action_index = next(
+                index
+                for index, (label, _factory) in enumerate(tab._sub_tab_factories)
+                if label == "Action Center"
+            )
+
+            self.assertEqual(set(tab._loaded_tabs), {0})
+            action_center.assert_not_called()
+
+            tab._lazy_load_sub_tab(action_index)
+            tab._lazy_load_sub_tab(action_index)
+
+            action_center.assert_called_once_with()
+
     def test_has_health_timeline_subtab_factory(self):
         """MaintenanceTab exposes the v12 Health Timeline as a Maintenance sub-tab."""
         labels = [label for label, _factory in self.tab._sub_tab_factories]
         self.assertIn("Health Timeline", labels)
+
+    @patch("ui.maintenance_tab.SystemManager.is_atomic", return_value=False)
+    def test_search_preselection_loads_action_center_without_planning(self, _atomic):
+        action_center = MagicMock()
+        action_center.preselect_action.return_value = True
+        with patch("ui.maintenance_tab._ActionCenterSubTab", return_value=action_center):
+            tab = _mt.MaintenanceTab()
+
+            self.assertTrue(tab.preselect_action("fstrim-all"))
+
+        action_center.preselect_action.assert_called_once_with("fstrim-all")
 
 
 # ===================================================================
@@ -528,6 +558,24 @@ class TestActionCenterSubTab(unittest.TestCase):
         service.preview.assert_called_once_with(tab._items[0])
         self.assertFalse(service.execute_next.called)
         tab.detail_area.setPlainText.assert_called_once()
+
+    @patch("core.actions.center.ActionCenterService")
+    def test_search_preselection_never_plans_or_runs(self, service_cls):
+        service = service_cls.return_value
+        item = self._catalog_item("fstrim-all")
+        service.catalog_items.return_value = [item]
+        service.candidates_from_readiness.return_value = []
+        tab = _mt._ActionCenterSubTab()
+        tab.action_list = MagicMock()
+        tab.detail_area = MagicMock()
+        tab._orchestrator = MagicMock()
+
+        self.assertTrue(tab.preselect_action("fstrim-all"))
+
+        tab.action_list.setCurrentRow.assert_called_once_with(0)
+        tab._orchestrator.plan.assert_not_called()
+        tab._orchestrator.prepare_run.assert_not_called()
+        tab.runner.run_command.assert_not_called()
 
     @patch("core.actions.center.ActionCenterService")
     def test_catalog_preview_defers_exact_command_to_fresh_plan(self, service_cls):

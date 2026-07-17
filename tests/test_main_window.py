@@ -11,7 +11,7 @@ import os
 import sys
 import types
 import unittest
-from unittest.mock import patch, MagicMock, mock_open
+from unittest.mock import MagicMock, call, mock_open, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
@@ -772,22 +772,78 @@ def _install_stubs():
     lazy_mod.LazyWidget = _StubLazyWidget
     sys.modules["ui.lazy_widget"] = lazy_mod
 
+    # -- ui.navigation --
+    navigation_ui_mod = types.ModuleType("ui.navigation")
+
+    class _StubDestinationSidebar(_DummyTreeWidget):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.destinationActivated = _DummySignal()
+
+        def set_destinations(self, destinations):
+            self.clear()
+            for destination in destinations:
+                item = _DummyTreeWidgetItem(self)
+                item.setText(0, destination.label)
+                item.setData(0, 0x0100 + 20, destination.id)
+
+        def destination_ids(self):
+            return tuple(
+                item.data(0, 0x0100 + 20) for item in self._items
+            )
+
+        def select_destination(self, destination_id):
+            for item in self._items:
+                if item.data(0, 0x0100 + 20) == destination_id:
+                    self.setCurrentItem(item)
+                    return True
+            return False
+
+        def filter_destinations(self, text):
+            query = str(text).casefold()
+            for item in self._items:
+                item.setHidden(bool(query) and query not in item.text(0).casefold())
+
+        def set_collapsed(self, collapsed):
+            for item in self._items:
+                item.setText(0, "" if collapsed else item.toolTip(0))
+
+        def clear(self):
+            self._items.clear()
+            self._current = None
+
+    class _StubDestinationHost(_DummyFrame):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.routeRequested = _DummySignal()
+            self._visible = False
+
+        def setVisible(self, visible):
+            self._visible = visible
+
+        def isVisible(self):
+            return self._visible
+
+        def set_destination(self, *args, **kwargs):
+            pass
+
+        def set_active_route(self, *args, **kwargs):
+            pass
+
+        def clear_explanation(self):
+            pass
+
+        def show_policy_result(self, result):
+            self._visible = True
+
+    navigation_ui_mod.DestinationSidebar = _StubDestinationSidebar
+    navigation_ui_mod.DestinationHost = _StubDestinationHost
+    sys.modules["ui.navigation"] = navigation_ui_mod
+
     # -- ui.doctor --
     doctor_mod = types.ModuleType("ui.doctor")
     doctor_mod.DependencyDoctor = MagicMock()
     sys.modules["ui.doctor"] = doctor_mod
-
-    # -- ui.command_palette --
-    palette_mod = types.ModuleType("ui.command_palette")
-    palette_mod.CommandPalette = MagicMock()
-    sys.modules["ui.command_palette"] = palette_mod
-
-    # -- ui.quick_actions --
-    qa_mod = types.ModuleType("ui.quick_actions")
-    qa_mod.QuickActionsBar = MagicMock()
-    qa_mod.QuickActionRegistry = MagicMock()
-    qa_mod.register_default_actions = MagicMock()
-    sys.modules["ui.quick_actions"] = qa_mod
 
     # -- ui.notification_toast --
     toast_mod = types.ModuleType("ui.notification_toast")
@@ -906,6 +962,26 @@ def _install_stubs():
 
     nav_mod.NavigationRoute = _StubRoute
     nav_mod.NavigationArea = _StubArea
+    nav_mod.DirectLinkBehavior = types.SimpleNamespace(REDIRECT="redirect")
+    nav_mod.FedoraVariant = types.SimpleNamespace(
+        TRADITIONAL="traditional", ATOMIC="atomic"
+    )
+    nav_mod.NavigationDecision = types.SimpleNamespace(VISIBLE="visible")
+    nav_mod.NavigationMode = types.SimpleNamespace(
+        STANDARD="standard", ADVANCED="advanced"
+    )
+    nav_mod.NavigationContext = lambda **kwargs: types.SimpleNamespace(**kwargs)
+    nav_mod.NavigationPolicy = types.SimpleNamespace(
+        evaluate=lambda route_id, context: types.SimpleNamespace(
+            decision="visible",
+            direct_link_behavior="allow",
+            redirect_route_id=None,
+            destination_id="system",
+        )
+    )
+    nav_mod.destinations_for_mode = lambda mode: ()
+    nav_mod.get_destination = lambda destination_id: None
+    nav_mod.placement_for_route = lambda route_id: None
     nav_mod.resolve = _resolve
     nav_mod.get_route = lambda route_id: _routes.get(route_id)
     nav_mod.all_routes = lambda: tuple(_routes.values())
@@ -1078,9 +1154,8 @@ _MODULE_KEYS = [
     "ui.tab_utils",
     "ui.layout_primitives",
     "ui.lazy_widget",
+    "ui.navigation",
     "ui.doctor",
-    "ui.command_palette",
-    "ui.quick_actions",
     "ui.notification_toast",
     "ui.notification_panel",
     "ui.wizard",
@@ -1116,7 +1191,6 @@ _module_backup = {}
 
 def setUpModule():
     """Install stubs and import ui.main_window."""
-    global _module_backup
     for key in _MODULE_KEYS:
         _module_backup[key] = sys.modules.get(key)
     _install_stubs()
@@ -1165,7 +1239,6 @@ def _make_window(skip_init=False):
         win._auto_sidebar_collapsed = False
         win._sidebar_expanded_width = 210
         win._line_height = 14
-        win.sidebar_search = _DummyLineEdit()
         win.sidebar_footer = _DummyLabel("v99")
         win._status_label = _DummyLabel()
         win._undo_btn = _DummyButton()
@@ -1547,101 +1620,49 @@ class TestSwitchToTab(unittest.TestCase):
         self.assertEqual(self.win._active_route_id, "maintenance:updates")
 
 
-class TestFilterSidebar(unittest.TestCase):
-    """Tests for MainWindow._filter_sidebar()."""
+class TestGlobalSearchConsolidation(unittest.TestCase):
+    """Tests for MainWindow's single navigation-only discovery entry point."""
 
     def setUp(self):
         self.win = _make_window(skip_init=True)
-        self.win.add_page(
-            "Dashboard",
-            "📊",
-            MagicMock(),
-            category="Overview",
-            description="System overview",
+
+    def test_route_result_navigates_without_action_preselection(self):
+        self.win.switch_to_route = MagicMock(return_value=True)
+        self.win._preselect_action_center = MagicMock()
+        result = types.SimpleNamespace(route_id="network:dns", action_id=None)
+
+        self.assertTrue(self.win._activate_global_search_result(result))
+
+        self.win.switch_to_route.assert_called_once_with("network:dns")
+        self.win._preselect_action_center.assert_not_called()
+
+    def test_action_result_navigates_then_preselects_only(self):
+        self.win.switch_to_route = MagicMock(return_value=True)
+        self.win._preselect_action_center = MagicMock(return_value=True)
+        result = types.SimpleNamespace(
+            route_id="maintenance:action-center",
+            action_id="fstrim-all",
         )
-        self.win.add_page(
-            "Network",
-            "🌐",
-            MagicMock(),
-            category="System",
-            description="Network configuration",
+
+        self.assertTrue(self.win._activate_global_search_result(result))
+
+        self.win.switch_to_route.assert_called_once_with("maintenance:action-center")
+        self.win._preselect_action_center.assert_called_once_with("fstrim-all")
+
+    def test_failed_navigation_does_not_preselect(self):
+        self.win.switch_to_route = MagicMock(return_value=False)
+        self.win._preselect_action_center = MagicMock()
+
+        self.assertFalse(
+            self.win._activate_global_search_result(
+                types.SimpleNamespace(
+                    route_id="maintenance:action-center",
+                    action_id="dnf-clean-all",
+                )
+            )
         )
-        self.win.add_page(
-            "Hardware", "🖥️", MagicMock(), category="System", description="Hardware info"
-        )
 
-    def test_filter_shows_matching(self):
-        """Filtering by name shows matching items."""
-        self.win._filter_sidebar("Network")
-        cat = self.win.sidebar.topLevelItem(1)  # System category
-        net_child = cat.child(0)
-        hw_child = cat.child(1)
-        self.assertFalse(net_child.isHidden())
-        self.assertTrue(hw_child.isHidden())
-
-    def test_filter_empty_shows_all(self):
-        """Empty filter text shows all items."""
-        self.win._filter_sidebar("")
-        for i in range(self.win.sidebar.topLevelItemCount()):
-            cat = self.win.sidebar.topLevelItem(i)
-            self.assertFalse(cat.isHidden())
-            for j in range(cat.childCount()):
-                self.assertFalse(cat.child(j).isHidden())
-
-    def test_filter_hides_empty_categories(self):
-        """Category with no matching children gets hidden."""
-        self.win._filter_sidebar("Network")
-        overview_cat = self.win.sidebar.topLevelItem(0)
-        self.assertTrue(overview_cat.isHidden())
-
-    def test_filter_case_insensitive(self):
-        """Filtering is case-insensitive."""
-        self.win._filter_sidebar("dashboard")
-        overview_cat = self.win.sidebar.topLevelItem(0)
-        self.assertFalse(overview_cat.isHidden())
-        child = overview_cat.child(0)
-        self.assertFalse(child.isHidden())
-
-    def test_filter_by_description(self):
-        """Filtering matches description text too."""
-        self.win._filter_sidebar("overview")
-        overview_cat = self.win.sidebar.topLevelItem(0)
-        self.assertFalse(overview_cat.isHidden())
-
-    def test_filter_by_category_name_shows_all_children(self):
-        """Filtering by category name shows all its children."""
-        self.win._filter_sidebar("System")
-        sys_cat = self.win.sidebar.topLevelItem(1)
-        self.assertFalse(sys_cat.isHidden())
-        for j in range(sys_cat.childCount()):
-            self.assertFalse(sys_cat.child(j).isHidden())
-
-    def test_filter_expands_matching_categories(self):
-        """Matching categories are expanded when filter matches."""
-        self.win._filter_sidebar("Hardware")
-        sys_cat = self.win.sidebar.topLevelItem(1)
-        self.assertTrue(sys_cat.isExpanded())
-
-    def test_filter_no_matches_hides_all(self):
-        """Non-matching filter hides all items."""
-        self.win._filter_sidebar("zzzznonexistent")
-        for i in range(self.win.sidebar.topLevelItemCount()):
-            self.assertTrue(self.win.sidebar.topLevelItem(i).isHidden())
-
-    def test_filter_by_badge(self):
-        """Filtering matches badge data."""
-        self.win.add_page(
-            "Recommended", "⭐", MagicMock(), category="Extra", badge="recommended"
-        )
-        self.win._filter_sidebar("recommended")
-        # The "Extra" category should be visible
-        found = False
-        for i in range(self.win.sidebar.topLevelItemCount()):
-            cat = self.win.sidebar.topLevelItem(i)
-            if "Extra" in cat.text(0):
-                self.assertFalse(cat.isHidden())
-                found = True
-        self.assertTrue(found)
+        self.win._preselect_action_center.assert_not_called()
 
 
 class TestToggleSidebar(unittest.TestCase):
@@ -1671,12 +1692,6 @@ class TestToggleSidebar(unittest.TestCase):
         self.win._toggle_sidebar()
         self.assertFalse(self.win._sidebar_collapsed)
 
-    def test_collapse_hides_search(self):
-        """Collapsing sidebar hides the search box."""
-        self.win._sidebar_collapsed = False
-        self.win._toggle_sidebar()
-        self.assertFalse(self.win.sidebar_search.isVisible())
-
     def test_collapse_keeps_icon_only_sidebar_rows(self):
         """Collapsed sidebar keeps rows selectable and preserves tooltips."""
         self.win.add_page("Hardware", "🖥️", MagicMock(), category="System", description="Hardware tools")
@@ -1692,12 +1707,6 @@ class TestToggleSidebar(unittest.TestCase):
 
         self.win._toggle_sidebar()
         self.assertEqual(child.text(0), "Hardware")
-
-    def test_expand_shows_search(self):
-        """Expanding sidebar shows the search box."""
-        self.win._sidebar_collapsed = True
-        self.win._toggle_sidebar()
-        self.assertTrue(self.win.sidebar_search.isVisible())
 
 
 class TestSetStatus(unittest.TestCase):
@@ -2224,36 +2233,58 @@ class TestCommandPalette(unittest.TestCase):
         self.win = _make_window(skip_init=True)
 
     def test_setup_command_palette_shortcut(self):
-        """_setup_command_palette_shortcut completes without error."""
+        """The compatibility setup creates both shared-search shortcuts."""
         self.win._setup_command_palette_shortcut()
+        self.assertEqual(len(self.win._global_search_shortcuts), 2)
+
+    def test_shortcuts_bind_both_filters_to_the_same_surface(self):
+        mod = _get_module()
+        created = []
+
+        class Shortcut:
+            def __init__(self, sequence, parent):
+                self.sequence = sequence
+                self.parent = parent
+                self.activated = _DummySignal()
+                created.append(self)
+
+        self.win._show_global_search = MagicMock()
+        with patch.object(mod, "QKeySequence", side_effect=lambda value: value):
+            with patch.object(mod, "QShortcut", Shortcut):
+                self.win._setup_global_search_shortcuts()
+
+        self.assertEqual([shortcut.sequence for shortcut in created], ["Ctrl+K", "Ctrl+Shift+K"])
+        created[0].activated.emit()
+        created[1].activated.emit()
+        self.assertEqual(
+            self.win._show_global_search.call_args_list,
+            [
+                call(actions_only=False),
+                call(actions_only=True),
+            ],
+        )
 
     def test_show_command_palette(self):
-        """_show_command_palette imports and shows the dialog."""
-        self.win._show_command_palette()  # Should not raise
-
-    def test_show_command_palette_import_error(self):
-        """_show_command_palette handles missing module gracefully."""
-        orig = sys.modules.get("ui.command_palette")
-        sys.modules.pop("ui.command_palette", None)
-        # Create broken module
-        broken = types.ModuleType("ui.command_palette")
-        sys.modules["ui.command_palette"] = broken
-        # Should not raise
+        """The legacy palette entry delegates to unfiltered global search."""
+        self.win._show_global_search = MagicMock()
         self.win._show_command_palette()
-        # Restore
-        if orig:
-            sys.modules["ui.command_palette"] = orig
+        self.win._show_global_search.assert_called_once_with(actions_only=False)
 
 
 class TestQuickActions(unittest.TestCase):
-    """Tests for quick actions setup and display."""
+    """Tests for the legacy action entry adapter."""
 
     def setUp(self):
         self.win = _make_window(skip_init=True)
 
     def test_setup_quick_actions(self):
-        """_setup_quick_actions completes without error."""
+        """The removed independent setup remains a harmless compatibility no-op."""
         self.win._setup_quick_actions()
+
+    def test_show_quick_actions_uses_action_filtered_global_search(self):
+        self.win._show_global_search = MagicMock()
+        self.win._show_quick_actions()
+        self.win._show_global_search.assert_called_once_with(actions_only=True)
 
 
 class TestFavorites(unittest.TestCase):
@@ -2273,14 +2304,14 @@ class TestFavorites(unittest.TestCase):
             self.assertNotIn("Favorites", cat.text(0))
 
     def test_favorites_with_matching_pages(self):
-        """_build_favorites_section creates pinned entries for matching favorites."""
+        """Stored favorites do not create a v15 sidebar category."""
         self.win.add_page("Hardware", "🖥️", MagicMock(), category="System")
         fav_mod = sys.modules["utils.favorites"]
         fav_mod.FavoritesManager.get_favorites = MagicMock(return_value=["hardware"])
         self.win._build_favorites_section()
-        # Favorites category should be at position 0
-        fav_cat = self.win.sidebar.topLevelItem(0)
-        self.assertIn("Favorites", fav_cat.text(0))
+        self.assertEqual(fav_mod.FavoritesManager.get_favorites(), ["hardware"])
+        for index in range(self.win.sidebar.topLevelItemCount()):
+            self.assertNotIn("Favorites", self.win.sidebar.topLevelItem(index).text(0))
 
     def test_favorites_non_matching_ignored(self):
         """_build_favorites_section ignores favorites that don't match pages."""
