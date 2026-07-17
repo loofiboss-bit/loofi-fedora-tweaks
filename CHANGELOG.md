@@ -23,6 +23,7 @@ All notable changes to this project will be documented in this file.
 - State schema validation, inventory paths, collector concurrency, atomic backup, and partial restore recovery.
 - Action Center privilege normalization so `pkexec` is applied exactly once.
 - Interrupted actions are preserved without automatic resume or rollback.
+- API dependency floors exclude vulnerable PyJWT and python-multipart releases.
 
 ## [13.0.0] - 2026-07-13 "Anchor"
 
