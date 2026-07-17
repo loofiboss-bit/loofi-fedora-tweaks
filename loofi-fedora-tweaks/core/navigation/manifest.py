@@ -67,7 +67,7 @@ _ROUTES: tuple[NavigationRoute, ...] = (
         "atlas_dashboard",
         "System",
         "home",
-        "Navigation hub with task cards and release readiness guidance.",
+        "System status, the next useful action, and common Fedora tasks.",
         aliases=("atlas", "atlas-home", "fedora-control-center"),
         keywords=("home", "beacon", "tasks", "readiness"),
         visibility="beginner",

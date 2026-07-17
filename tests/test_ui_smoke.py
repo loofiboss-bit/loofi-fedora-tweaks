@@ -36,11 +36,9 @@ _PLUGINS_DIR = Path(os.path.join(
     os.path.dirname(__file__), '..', 'loofi-fedora-tweaks', 'plugins',
 ))
 
-# The 18 main-window tabs and their expected classes.
-# These match the _lazy_tab loaders in main_window.py plus the two eagerly
-# loaded tabs (dashboard, system_info).
+# Main-window tabs and their expected classes.
 TAB_MODULES = {
-    "ui.dashboard_tab": "DashboardTab",
+    "ui.atlas_dashboard_tab": "AtlasDashboardTab",
     "ui.system_info_tab": "SystemInfoTab",
     "ui.monitor_tab": "MonitorTab",
     "ui.maintenance_tab": "MaintenanceTab",
@@ -77,9 +75,9 @@ LAZY_TAB_KEYS = {
 class TestTabImports(unittest.TestCase):
     """Verify every tab module can be imported and exposes its class."""
 
-    def test_import_dashboard_tab(self):
-        mod = importlib.import_module("ui.dashboard_tab")
-        self.assertTrue(hasattr(mod, "DashboardTab"))
+    def test_import_canonical_home_tab(self):
+        mod = importlib.import_module("ui.atlas_dashboard_tab")
+        self.assertTrue(hasattr(mod, "AtlasDashboardTab"))
 
     def test_import_system_info_tab(self):
         mod = importlib.import_module("ui.system_info_tab")
