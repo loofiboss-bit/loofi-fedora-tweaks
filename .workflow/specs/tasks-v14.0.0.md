@@ -9,7 +9,7 @@
 - [x] H40-H42: converge Action Center GUI, CLI, read-only API, Atlas entry points, and Support Bundle v10
 - [x] H50-H52: preserve Fedora 44 support, Fedora 45 preview status, compatibility IDs, and release documentation
 - [x] H60-H63: pass full type, test, 85% coverage, security, RPM, Flatpak, sdist, and Fedora review gates
-- [ ] [post-publish] H70-H72: publish and read back GitHub, COPR, wiki, checksums, SBOM, provenance, and installed version evidence
+- [x] [post-publish] H70-H72: publish and read back GitHub, COPR, wiki, checksums, SBOM, provenance, and installed version evidence
 
 ## Required release exit
 
