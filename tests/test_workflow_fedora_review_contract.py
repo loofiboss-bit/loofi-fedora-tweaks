@@ -92,6 +92,23 @@ def test_release_workflows_require_exact_peeled_tag_commit():
     assert "COPR publish requires ${TAG} to peel to ${GITHUB_SHA}" in copr_publish
 
 
+def test_copr_tag_lookup_is_independent_of_container_checkout_remote():
+    for workflow in (AUTO_RELEASE_WORKFLOW, COPR_WORKFLOW):
+        text = _read_text(workflow)
+        assert 'REMOTE_URL="https://github.com/${GITHUB_REPOSITORY}.git"' in text
+        assert 'git ls-remote --tags "${REMOTE_URL}"' in text
+
+
+def test_copr_summaries_do_not_claim_success_after_failure():
+    auto_release = _read_text(AUTO_RELEASE_WORKFLOW)
+    copr_publish = _read_text(COPR_WORKFLOW)
+
+    auto_summary = auto_release.split("- name: COPR build summary", 1)[1]
+    copr_summary = copr_publish.split("- name: Build summary", 1)[1]
+    assert "if: always()" not in auto_summary
+    assert "if: always()" not in copr_summary
+
+
 def test_ci_and_release_typecheck_the_full_source_tree():
     for workflow in (CI_WORKFLOW, AUTO_RELEASE_WORKFLOW):
         text = _read_text(workflow)

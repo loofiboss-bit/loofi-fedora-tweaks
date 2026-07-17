@@ -62,8 +62,9 @@ jobs:
         run: |
           set -euo pipefail
           TAG="v${{ steps.version.outputs.version }}"
+          REMOTE_URL="https://github.com/${GITHUB_REPOSITORY}.git"
           REMOTE_TAG_SHA="$(
-            git ls-remote --tags origin "refs/tags/${TAG}" "refs/tags/${TAG}^{}" |
+            git ls-remote --tags "${REMOTE_URL}" "refs/tags/${TAG}" "refs/tags/${TAG}^{}" |
               awk '$2 ~ /\^\{\}$/ { peeled=$1 } $2 !~ /\^\{\}$/ { direct=$1 } END { print peeled ? peeled : direct }'
           )"
           if [ -z "$REMOTE_TAG_SHA" ] || [ "$REMOTE_TAG_SHA" != "$GITHUB_SHA" ]; then
@@ -172,7 +173,6 @@ jobs:
           echo "Verified installed COPR package version: ${INSTALLED_VER}"
 
       - name: Build summary
-        if: always()
         run: |
           VER="${{ steps.version.outputs.version }}"
           echo "::notice::COPR build ${{ steps.copr_build.outputs.build_id }} succeeded for loofi-fedora-tweaks v${VER}"
