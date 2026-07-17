@@ -52,7 +52,11 @@ def test_packaging_manifest_tracks_navigation_and_assets():
     module = _load_packaging_manifest_module()
     expected = set(module.EXPECTED_SOURCE_SUFFIXES)
     assert "core/navigation/areas.py" in expected
+    assert "core/navigation/destinations.py" in expected
     assert "core/navigation/manifest.py" in expected
+    assert "core/navigation/migrations.py" in expected
+    assert "core/navigation/models.py" in expected
+    assert "core/navigation/policy.py" in expected
     assert "core/executor/command_facade.py" in expected
     assert "core/executor/command_policy.py" in expected
     assert "ui/layout_primitives.py" in expected

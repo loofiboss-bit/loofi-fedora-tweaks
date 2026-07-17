@@ -87,8 +87,14 @@ class SystemInfoTab(QWidget, PluginInterface):
         layout.addLayout(export_layout)
         layout.addStretch()
 
-        # Refresh info on load
-        QTimer.singleShot(100, self.refresh_info)
+        self._info_loaded = False
+
+    def on_activate(self) -> None:
+        """Defer system probes until the route is explicitly activated."""
+        if self._info_loaded:
+            return
+        self._info_loaded = True
+        QTimer.singleShot(0, self.refresh_info)
 
     def refresh_info(self):
         try:

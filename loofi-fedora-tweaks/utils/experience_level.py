@@ -11,6 +11,11 @@ from enum import Enum
 from typing import List
 
 from core.navigation import DEFAULT_PLUGIN_IDS, INTERMEDIATE_PLUGIN_IDS
+from core.navigation.migrations import (
+    legacy_experience_for_mode,
+    navigation_mode_from_value,
+)
+from core.navigation.models import NavigationMode
 from utils.log import get_logger
 from utils.settings import SettingsManager
 
@@ -46,12 +51,9 @@ class ExperienceLevelManager:
             Current ExperienceLevel, defaults to BEGINNER if unset.
         """
         mgr = SettingsManager.instance()
-        raw = mgr.get(_SETTINGS_KEY, ExperienceLevel.BEGINNER.value)
-        try:
-            return ExperienceLevel(raw)
-        except ValueError:
-            logger.debug("Unknown experience level '%s', defaulting to BEGINNER", raw)
-            return ExperienceLevel.BEGINNER
+        raw = mgr.get("navigation_mode", NavigationMode.STANDARD.value)
+        mode = navigation_mode_from_value(raw)
+        return ExperienceLevel(legacy_experience_for_mode(mode))
 
     @staticmethod
     def set_level(level: ExperienceLevel) -> None:
@@ -61,9 +63,27 @@ class ExperienceLevelManager:
             level: The experience level to set.
         """
         mgr = SettingsManager.instance()
-        mgr.set(_SETTINGS_KEY, level.value)
+        mode = navigation_mode_from_value(level.value)
+        mgr.set(_SETTINGS_KEY, legacy_experience_for_mode(mode))
+        mgr.set("navigation_mode", mode.value)
         mgr.save()
         logger.info("Experience level set to %s", level.value)
+
+    @staticmethod
+    def get_navigation_mode() -> NavigationMode:
+        """Return the v15 mode while the v14 experience UI remains active."""
+        mgr = SettingsManager.instance()
+        raw = mgr.get("navigation_mode", NavigationMode.STANDARD.value)
+        return navigation_mode_from_value(raw)
+
+    @staticmethod
+    def set_navigation_mode(mode: NavigationMode) -> None:
+        """Persist v15 mode and a compatible value for the current v14 shell."""
+        mgr = SettingsManager.instance()
+        mgr.set("navigation_mode", mode.value)
+        mgr.set(_SETTINGS_KEY, legacy_experience_for_mode(mode))
+        mgr.save()
+        logger.info("Navigation mode set to %s", mode.value)
 
     @staticmethod
     def get_visible_tabs(level: ExperienceLevel) -> List[str]:

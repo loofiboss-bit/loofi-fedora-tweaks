@@ -266,7 +266,7 @@ class TestMainWindowRegistration(unittest.TestCase):
             source = f.read()
         self.assertIn("PluginRegistry", source)
         self.assertIn("PluginLoader", source)
-        self.assertIn("load_builtins(context=context)", source)
+        self.assertIn("register_builtin_specs()", source)
         self.assertIn("_build_sidebar_from_registry", source)
         self.assertIn("CompatibilityDetector", source)
 

@@ -334,10 +334,17 @@ class _PerformanceSubTab(QWidget):
         # Collection timer - fires every 1000ms
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self._on_tick)
-        self.refresh_timer.start(1000)
+        self._has_baseline = False
 
-        # Collect an initial baseline so first real tick has data
-        self.collector.collect_all()
+    def set_active(self, active: bool) -> None:
+        if active:
+            if not self._has_baseline:
+                self.collector.collect_all()
+                self._has_baseline = True
+            if not self.refresh_timer.isActive():
+                self.refresh_timer.start(1000)
+        elif self.refresh_timer.isActive():
+            self.refresh_timer.stop()
 
     def init_ui(self):
         layout = QVBoxLayout()
@@ -596,10 +603,17 @@ class _ProcessesSubTab(QWidget):
         # Auto-refresh timer (3 seconds)
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self.refresh_processes)
-        self.refresh_timer.start(3000)
+        self._has_loaded = False
 
-        # Initial load
-        QTimer.singleShot(100, self.refresh_processes)
+    def set_active(self, active: bool) -> None:
+        if active:
+            if not self._has_loaded:
+                self._has_loaded = True
+                QTimer.singleShot(0, self.refresh_processes)
+            if not self.refresh_timer.isActive():
+                self.refresh_timer.start(3000)
+        elif self.refresh_timer.isActive():
+            self.refresh_timer.stop()
 
     @staticmethod
     def _get_current_username() -> str:
@@ -980,7 +994,23 @@ class MonitorTab(QWidget, PluginInterface):
 
         self.tabs = QTabWidget()
         configure_top_tabs(self.tabs)
-        self.tabs.addTab(_PerformanceSubTab(), self.tr("Performance"))
-        self.tabs.addTab(_ProcessesSubTab(), self.tr("Processes"))
+        self._performance_tab = _PerformanceSubTab()
+        self._processes_tab = _ProcessesSubTab()
+        self.tabs.addTab(self._performance_tab, self.tr("Performance"))
+        self.tabs.addTab(self._processes_tab, self.tr("Processes"))
+        self.tabs.currentChanged.connect(self._sync_timer_lifecycle)
+        self._route_active = False
 
         layout.addWidget(self.tabs)
+
+    def _sync_timer_lifecycle(self, index: int) -> None:
+        self._performance_tab.set_active(self._route_active and index == 0)
+        self._processes_tab.set_active(self._route_active and index == 1)
+
+    def on_activate(self) -> None:
+        self._route_active = True
+        self._sync_timer_lifecycle(self.tabs.currentIndex())
+
+    def on_deactivate(self) -> None:
+        self._route_active = False
+        self._sync_timer_lifecycle(self.tabs.currentIndex())

@@ -86,8 +86,19 @@ class NetworkTab(BaseTab):
         self._monitor_timer = QTimer(self)
         self._monitor_timer.timeout.connect(self._refresh_monitoring)
         self.tabs.currentChanged.connect(self._on_tab_changed)
+        self._network_loaded = False
+        self._route_active = False
 
-        QTimer.singleShot(200, self._initial_load)
+    def on_activate(self) -> None:
+        self._route_active = True
+        if not self._network_loaded:
+            self._network_loaded = True
+            QTimer.singleShot(0, self._initial_load)
+        self._on_tab_changed(self.tabs.currentIndex())
+
+    def on_deactivate(self) -> None:
+        self._route_active = False
+        self._monitor_timer.stop()
 
     # ------------------------------------------------------------------ #
     #  Sub-tab builders
@@ -474,7 +485,7 @@ class NetworkTab(BaseTab):
 
     def _on_tab_changed(self, index):
         """Start/stop monitoring timer based on active sub-tab."""
-        if index == 3:  # Monitoring tab
+        if index == 3 and self._route_active:  # Monitoring tab
             self._refresh_monitoring()
             self._monitor_timer.start(3000)
         else:

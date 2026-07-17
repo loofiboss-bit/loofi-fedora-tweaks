@@ -294,6 +294,7 @@ _MODULE_NAMES = [
     "utils.presets",
     "utils.config_manager",
     "utils.cloud_sync",
+    "services.storage",
     "utils.marketplace",
     "utils.drift",
     "utils.plugin_base",
@@ -359,6 +360,10 @@ _mock_cloud_sync = MagicMock()
 _cloud_mod = types.ModuleType("utils.cloud_sync")
 _cloud_mod.CloudSyncManager = _mock_cloud_sync
 sys.modules["utils.cloud_sync"] = _cloud_mod
+
+_storage_mod = types.ModuleType("services.storage")
+_storage_mod.CloudSyncManager = _mock_cloud_sync
+sys.modules["services.storage"] = _storage_mod
 
 _mock_marketplace_cls = MagicMock()
 _marketplace_mod = types.ModuleType("utils.marketplace")

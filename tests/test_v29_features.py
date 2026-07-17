@@ -3,7 +3,7 @@ Integration tests for v29.0 "Usability & Polish" features.
 
 Covers:
 - SettingsManager.reset_group() method
-- Sidebar filter matches descriptions (MainWindow._filter_sidebar logic)
+- Settings group reset behavior
 - API server CORS origins are restricted (not wildcard)
 """
 
@@ -12,7 +12,7 @@ import os
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -124,162 +124,6 @@ class TestSettingsResetGroup(unittest.TestCase):
             mgr.reset_group([])
 
             self.assertEqual(mgr.get("theme"), "light")
-
-
-# ---------------------------------------------------------------------------
-# Sidebar filter matches descriptions
-# ---------------------------------------------------------------------------
-
-class TestSidebarFilter(unittest.TestCase):
-    """
-    MainWindow._filter_sidebar should match against item text,
-    description data, and badge data.
-    """
-
-    @classmethod
-    def setUpClass(cls):
-        """Ensure a QApplication exists for the lifetime of these tests."""
-        from PyQt6.QtWidgets import QApplication
-        cls._app = QApplication.instance()
-        if cls._app is None:
-            cls._app = QApplication([])
-
-    def _build_tree_with_items(self):
-        """Build a mock QTreeWidget with categories and children."""
-        from PyQt6.QtCore import Qt
-        from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem
-
-        _ROLE_DESC = Qt.ItemDataRole.UserRole + 1
-        _ROLE_BADGE = Qt.ItemDataRole.UserRole + 2
-
-        tree = QTreeWidget()
-        tree.setHeaderHidden(True)
-
-        # Category: System
-        cat = QTreeWidgetItem(tree, ["System"])
-
-        # Child 1: System Info
-        child1 = QTreeWidgetItem(cat, ["🖥 System Info"])
-        child1.setData(0, _ROLE_DESC, "hardware and OS details")
-        child1.setData(0, _ROLE_BADGE, "recommended")
-        child1.setData(0, Qt.ItemDataRole.UserRole, MagicMock())  # page widget
-
-        # Child 2: Maintenance
-        child2 = QTreeWidgetItem(cat, ["🔧 Maintenance"])
-        child2.setData(0, _ROLE_DESC, "updates cleanup overlays")
-        child2.setData(0, _ROLE_BADGE, "")
-        child2.setData(0, Qt.ItemDataRole.UserRole, MagicMock())
-
-        # Category: Tools
-        cat2 = QTreeWidgetItem(tree, ["Tools"])
-
-        child3 = QTreeWidgetItem(cat2, ["🎮 Gaming"])
-        child3.setData(0, _ROLE_DESC, "steam proton gaming setup")
-        child3.setData(0, _ROLE_BADGE, "advanced")
-        child3.setData(0, Qt.ItemDataRole.UserRole, MagicMock())
-
-        return tree, _ROLE_DESC, _ROLE_BADGE
-
-    def _run_filter(self, tree, text):
-        """
-        Simulate _filter_sidebar logic from MainWindow.
-        We replicate the filter logic here to test it independently
-        of the full MainWindow instantiation.
-        """
-        from PyQt6.QtCore import Qt
-
-        _ROLE_DESC = Qt.ItemDataRole.UserRole + 1
-        _ROLE_BADGE = Qt.ItemDataRole.UserRole + 2
-
-        search = text.lower()
-        for i in range(tree.topLevelItemCount()):
-            category = tree.topLevelItem(i)
-            category_visible = False
-            for j in range(category.childCount()):
-                child = category.child(j)
-                name_match = search in child.text(0).lower()
-                desc = (child.data(0, _ROLE_DESC) or "").lower()
-                desc_match = search in desc
-                badge = (child.data(0, _ROLE_BADGE) or "").lower()
-                badge_match = search in badge
-                if name_match or desc_match or badge_match:
-                    child.setHidden(False)
-                    category_visible = True
-                else:
-                    child.setHidden(True)
-            if search in category.text(0).lower():
-                category_visible = True
-                for j in range(category.childCount()):
-                    category.child(j).setHidden(False)
-            category.setHidden(not category_visible)
-
-    def test_filter_by_name(self):
-        tree, _, _ = self._build_tree_with_items()
-        self._run_filter(tree, "gaming")
-
-        cat_system = tree.topLevelItem(0)
-        cat_tools = tree.topLevelItem(1)
-
-        # "Gaming" child should be visible
-        self.assertFalse(cat_tools.child(0).isHidden())
-        # "System Info" and "Maintenance" should be hidden
-        self.assertTrue(cat_system.child(0).isHidden())
-        self.assertTrue(cat_system.child(1).isHidden())
-
-    def test_filter_by_description(self):
-        tree, _, _ = self._build_tree_with_items()
-        self._run_filter(tree, "hardware")
-
-        cat_system = tree.topLevelItem(0)
-        # "System Info" has "hardware" in description
-        self.assertFalse(cat_system.child(0).isHidden())
-        # "Maintenance" does not
-        self.assertTrue(cat_system.child(1).isHidden())
-
-    def test_filter_by_badge(self):
-        tree, _, _ = self._build_tree_with_items()
-        self._run_filter(tree, "recommended")
-
-        cat_system = tree.topLevelItem(0)
-        # "System Info" has badge "recommended"
-        self.assertFalse(cat_system.child(0).isHidden())
-        # "Maintenance" has empty badge
-        self.assertTrue(cat_system.child(1).isHidden())
-
-    def test_filter_by_category_name(self):
-        tree, _, _ = self._build_tree_with_items()
-        self._run_filter(tree, "system")
-
-        cat_system = tree.topLevelItem(0)
-        # Category matches "system", so all children visible
-        self.assertFalse(cat_system.isHidden())
-        self.assertFalse(cat_system.child(0).isHidden())
-        self.assertFalse(cat_system.child(1).isHidden())
-
-    def test_empty_filter_shows_everything(self):
-        tree, _, _ = self._build_tree_with_items()
-        self._run_filter(tree, "")
-
-        for i in range(tree.topLevelItemCount()):
-            cat = tree.topLevelItem(i)
-            self.assertFalse(cat.isHidden())
-            for j in range(cat.childCount()):
-                self.assertFalse(cat.child(j).isHidden())
-
-    def test_no_match_hides_everything(self):
-        tree, _, _ = self._build_tree_with_items()
-        self._run_filter(tree, "zzzzzznotfound")
-
-        for i in range(tree.topLevelItemCount()):
-            cat = tree.topLevelItem(i)
-            self.assertTrue(cat.isHidden())
-
-    def test_case_insensitive_match(self):
-        tree, _, _ = self._build_tree_with_items()
-        self._run_filter(tree, "GAMING")
-
-        cat_tools = tree.topLevelItem(1)
-        self.assertFalse(cat_tools.child(0).isHidden())
 
 
 # ---------------------------------------------------------------------------

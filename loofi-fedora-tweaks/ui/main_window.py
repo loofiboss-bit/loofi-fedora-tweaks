@@ -6,13 +6,20 @@ PluginRegistry layout with route-aware sidebar navigation, breadcrumb, and statu
 import logging
 import os
 from dataclasses import dataclass, field
+from typing import TYPE_CHECKING
 
 from core.navigation import (
+    DirectLinkBehavior,
+    FedoraVariant,
+    NavigationContext,
+    NavigationDecision,
+    NavigationPolicy,
     NavigationRoute,
     area_for_plugin,
-    is_plugin_visible_for_level,
+    destinations_for_mode,
+    get_destination,
+    placement_for_route,
     resolve,
-    sidebar_areas_for_level,
 )
 from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
@@ -23,7 +30,6 @@ from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QMainWindow,
     QPushButton,
     QScrollArea,
@@ -32,7 +38,6 @@ from PyQt6.QtWidgets import (
     QStyledItemDelegate,
     QStyleOptionViewItem,
     QTabWidget,
-    QTreeWidget,
     QTreeWidgetItem,
     QTreeWidgetItemIterator,
     QVBoxLayout,
@@ -44,12 +49,15 @@ from utils.favorites import FavoritesManager
 from utils.focus_mode import FocusMode
 from utils.history import HistoryManager
 from utils.log import get_logger
-from utils.pulse import PulseThread, SystemPulse
 from version import __version__
 
 from ui.icon_pack import get_qicon, icon_tint_variant
 from ui.layout_primitives import LayoutMetrics, PageHeader
 from ui.lazy_widget import LazyWidget
+from ui.navigation import DestinationHost, DestinationSidebar
+
+if TYPE_CHECKING:
+    from core.plugins.spec import PluginSpec
 
 logger = get_logger(__name__)
 
@@ -155,10 +163,14 @@ class MainWindow(QMainWindow):
         self._line_height = self._metrics.line_height
         self._apply_initial_geometry()
 
-        # Initialize Pulse event listener
+        # Optional/background services are initialized only when settings require
+        # them or after the first meaningful Home render.
         self.pulse = None
         self.pulse_thread = None
-        self._start_pulse_listener()
+        self.tray_icon = None
+        self._status_timer = None
+        self._notif_timer = None
+        self._post_render_services_scheduled = False
 
         # Central Widget
         central_widget = QWidget()
@@ -170,7 +182,7 @@ class MainWindow(QMainWindow):
         main_layout.setSpacing(0)
         central_widget.setLayout(main_layout)
 
-        # Sidebar container with search
+        # Sidebar container with compact shell chrome.
         sidebar_container = QWidget()
         sidebar_container.setObjectName("sidebarContainer")
         sidebar_width = self._metrics.sidebar_width
@@ -180,24 +192,19 @@ class MainWindow(QMainWindow):
         sidebar_layout.setContentsMargins(12, 14, 12, 10)
         sidebar_layout.setSpacing(10)
 
-        # Search box
-        self.sidebar_search = QLineEdit()
-        self.sidebar_search.setObjectName("sidebarSearch")
-        self.sidebar_search.setPlaceholderText(self.tr("Search pages..."))
-        self.sidebar_search.setClearButtonEnabled(True)
-        self.sidebar_search.setAccessibleName(self.tr("Search pages"))
-        self.sidebar_search.setAccessibleDescription(self.tr("Filter navigation pages by name or description"))
-        self.sidebar_search.setMinimumHeight(int(self._line_height * 2.4))
-        self.sidebar_search.textChanged.connect(self._filter_sidebar)
-        sidebar_layout.addWidget(self.sidebar_search)
+        sidebar_chrome = QHBoxLayout()
+        sidebar_chrome.setContentsMargins(0, 0, 0, 0)
+        sidebar_chrome.setSpacing(6)
 
         # Sidebar collapse toggle
+        sidebar_chrome.addStretch()
         self._sidebar_toggle = QPushButton("◀")
         self._sidebar_toggle.setObjectName("sidebarToggle")
         self._sidebar_toggle.setMinimumHeight(int(self._line_height * 2.2))
         self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
         self._sidebar_toggle.clicked.connect(self._toggle_sidebar)
-        sidebar_layout.addWidget(self._sidebar_toggle)
+        sidebar_chrome.addWidget(self._sidebar_toggle)
+        sidebar_layout.addLayout(sidebar_chrome)
 
         # Track sidebar expanded width and state
         self._sidebar_container = sidebar_container
@@ -205,31 +212,14 @@ class MainWindow(QMainWindow):
         self._sidebar_collapsed = False
         self._auto_sidebar_collapsed = False
 
-        # Sidebar tree
-        self.sidebar = QTreeWidget()
-        self.sidebar.setObjectName("sidebar")
-        self.sidebar.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        self.sidebar.setHeaderHidden(True)
-        self.sidebar.setAccessibleName(self.tr("Navigation sidebar"))
-        self.sidebar.setIndentation(16)
-        self.sidebar.setRootIsDecorated(True)
-        self.sidebar.setUniformRowHeights(False)
-        self.sidebar.setAnimated(True)
-        self.sidebar.setIconSize(QSize(20, 20))
-        self.sidebar.currentItemChanged.connect(self.change_page)
+        # Flat primary navigation. Existing route IDs remain in the route index,
+        # not as expandable child rows.
+        self.sidebar = DestinationSidebar()
+        self.sidebar.setAccessibleName(self.tr("Navigation destinations"))
+        self.sidebar.destinationActivated.connect(self._activate_destination)
         self.sidebar.currentItemChanged.connect(self._on_sidebar_selection_changed)
         self.sidebar.setItemDelegate(SidebarItemDelegate(self.sidebar))
-        # v31.0: Context menu for favorites
-        self.sidebar.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
-        self.sidebar.customContextMenuRequested.connect(self._sidebar_context_menu)
         sidebar_layout.addWidget(self.sidebar)
-
-        # Sidebar footer
-        self.sidebar_footer = QLabel(f"v{__version__}")
-        self.sidebar_footer.setObjectName("sidebarFooter")
-        self.sidebar_footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.sidebar_footer.setMinimumHeight(self._metrics.status_height)
-        sidebar_layout.addWidget(self.sidebar_footer)
 
         main_layout.addWidget(sidebar_container)
 
@@ -251,6 +241,10 @@ class MainWindow(QMainWindow):
         self._bc_desc = self._breadcrumb_frame.description
         self._bc_desc.setObjectName("bcDesc")
         right_side.addWidget(self._breadcrumb_frame)
+
+        self.destination_host = DestinationHost()
+        self.destination_host.routeRequested.connect(self.switch_to_route)
+        right_side.addWidget(self.destination_host)
 
         # Content Area
         self.content_area = QStackedWidget()
@@ -275,12 +269,7 @@ class MainWindow(QMainWindow):
         sb_layout.addWidget(self._undo_btn)
 
         sb_layout.addStretch()
-        shortcuts_hint = QLabel(self.tr("Ctrl+K Search  |  Ctrl+Shift+K Actions  |  F1 Help"))
-        shortcuts_hint.setObjectName("statusHints")
-        sb_layout.addWidget(shortcuts_hint)
-        version_lbl = QLabel(f"v{__version__}")
-        version_lbl.setObjectName("statusVersion")
-        sb_layout.addWidget(version_lbl)
+        self._status_frame.setVisible(False)
         right_side.addWidget(self._status_frame)
 
         main_layout.addLayout(right_side)
@@ -290,6 +279,12 @@ class MainWindow(QMainWindow):
         self._category_items: dict[str, QTreeWidgetItem] = {}
         self._pages_cache: dict[str, QWidget] | None = None
         self._active_route_id = ""
+        self._active_plugin_id = ""
+        self._active_destination_id = ""
+        self._selecting_destination = False
+        self._shell_uses_destinations = True
+        self._route_history: list[str] = []
+        self._route_history_index = -1
 
         # Build sidebar from PluginRegistry (v25.0 plugin architecture)
         context = {
@@ -299,46 +294,18 @@ class MainWindow(QMainWindow):
         }
         self._build_sidebar_from_registry(context)
 
-        # v31.0: Build favorites section at top of sidebar
-        self._build_favorites_section()
-
-        # Expand first category by default (Dashboard)
+        # Select Home after all lazy route entries are registered.
         if self.sidebar.topLevelItemCount() > 0:
-            first = self.sidebar.topLevelItem(0)
-            first.setExpanded(True)
-            if first.childCount() > 0:
-                self.sidebar.setCurrentItem(first.child(0))
+            self.sidebar.setCurrentItem(self.sidebar.topLevelItem(0))
 
-        # v15.0 Nebula - Quick Actions Bar (Ctrl+Shift+K)
-        self._setup_quick_actions()
+        # Background-only services are conditional on persisted settings.
+        self._initialize_background_services()
 
-        # Select first item
-        if self.sidebar.topLevelItemCount() > 0:
-            first_category = self.sidebar.topLevelItem(0)
-            if first_category.childCount() > 0:
-                self.sidebar.setCurrentItem(first_category.child(0))
-
-        # System Tray
-        self.setup_tray()
-        self.check_dependencies()
-
-        # Ctrl+K Command Palette shortcut
+        # Ctrl+K and Ctrl+Shift+K share one policy-backed discovery surface.
         self._setup_command_palette_shortcut()
 
         # v13.5 UX Polish - keyboard shortcuts
         self._setup_keyboard_shortcuts()
-
-        # v13.5 UX Polish - notification bell
-        self._setup_notification_bell()
-
-        # v29.0 - Status indicators refresh (every 30s)
-        from PyQt6.QtCore import QTimer
-
-        self._status_timer = QTimer(self)
-        self._status_timer.timeout.connect(self._refresh_status_indicators)
-        self._status_timer.start(30000)
-        # Delay initial refresh to avoid startup slowdown
-        QTimer.singleShot(5000, self._refresh_status_indicators)
 
         # First-run wizard
         self._check_first_run()
@@ -383,42 +350,45 @@ class MainWindow(QMainWindow):
         self.resize(target_width, target_height)
 
     def _build_sidebar_from_registry(self, context: dict) -> None:
-        """Source all tabs from PluginRegistry. Replaces 26 hardcoded add_page() calls."""
+        """Build the destination shell from specs without importing plugin UI."""
         from core.plugins.compat import CompatibilityDetector
         from core.plugins.loader import PluginLoader
+        from utils.experience_level import ExperienceLevelManager
 
         detector = CompatibilityDetector()
-        loader = PluginLoader(detector=detector)
-        loader.load_builtins(context=context)
-
         registry = PluginRegistry.instance()
-
-        # Experience level controls visible sidebar rows only; route/index
-        # registration still covers every plugin so command palette, favorites,
-        # and direct route switching keep working.
-        from utils.experience_level import ExperienceLevelManager
-        from utils.favorites import FavoritesManager
+        self._plugin_context = dict(context)
+        if not hasattr(self, "_plugin_loader"):
+            self._plugin_loader = PluginLoader(registry=registry, detector=detector)
+        self._plugin_loader.register_builtin_specs()
 
         level = ExperienceLevelManager.get_level()
+        mode = ExperienceLevelManager.get_navigation_mode()
         favorites = FavoritesManager.get_favorites()
         self._active_experience_level = level
 
-        plugins = list(registry)
-        visible_plugin_ids = {
-            plugin.metadata().id
-            for plugin in plugins
-            if is_plugin_visible_for_level(plugin.metadata().id, level.value, favorites)
-        }
-        for area in sidebar_areas_for_level(level.value):
-            if any(plugin_id in visible_plugin_ids for plugin_id in area.plugin_ids):
-                self._create_area_item(area.id, area.label, area.icon)
+        specs = registry.list_specs()
+        incompatible_plugin_ids: set[str] = set()
+        for spec in specs:
+            meta = spec.metadata()
+            compat = detector.check_plugin_compat(dict(spec.compat))
+            if not compat.compatible:
+                incompatible_plugin_ids.add(spec.id)
+            lazy = self._wrap_spec_in_lazy(spec)
+            self._add_plugin_page(meta, lazy, compat, visible_in_sidebar=False)
 
-        for plugin in plugins:
-            meta = plugin.metadata()
-            compat = plugin.check_compat(detector)
-            lazy = self._wrap_in_lazy(plugin)
-            visible = is_plugin_visible_for_level(meta.id, level.value, favorites)
-            self._add_plugin_page(meta, lazy, compat, visible_in_sidebar=visible)
+        is_atomic = SystemManager.is_atomic()
+        self._navigation_context = NavigationContext(
+            mode=mode,
+            installed_components=frozenset({"core", "specialist"}),
+            fedora_variant=(
+                FedoraVariant.ATOMIC if is_atomic else FedoraVariant.TRADITIONAL
+            ),
+            capabilities=frozenset({"rpm-ostree"} if is_atomic else {"dnf"}),
+            incompatible_plugin_ids=frozenset(incompatible_plugin_ids),
+            favorite_route_ids=frozenset(favorites),
+        )
+        self.sidebar.set_destinations(destinations_for_mode(mode))
 
         # Validate experience level tab lists against registry
         declared_ids = ExperienceLevelManager.get_all_declared_tab_ids()
@@ -429,6 +399,39 @@ class MainWindow(QMainWindow):
         advanced_only = registered_ids - declared_ids
         if advanced_only:
             logger.info("Tabs only visible to ADVANCED users: %s", sorted(advanced_only))
+
+    def _activate_destination(self, destination_id: str) -> None:
+        """Open a destination's policy-approved default route."""
+        if self._selecting_destination:
+            return
+        destination = get_destination(destination_id)
+        if destination is None:
+            return
+        self.switch_to_route(destination.default_route_id)
+
+    def _sync_destination_shell(self, route_id: str) -> None:
+        """Synchronize primary and secondary navigation for a stable route."""
+        placement = placement_for_route(route_id)
+        if placement is None:
+            return
+        destination = get_destination(placement.destination_id)
+        if destination is None:
+            return
+
+        self._selecting_destination = True
+        self.sidebar.select_destination(destination.id)
+        self._selecting_destination = False
+
+        if destination.id != self._active_destination_id:
+            self.destination_host.set_destination(
+                destination,
+                self._navigation_context,
+                route_id,
+            )
+            self._active_destination_id = destination.id
+        else:
+            self.destination_host.clear_explanation()
+            self.destination_host.set_active_route(route_id)
 
     def _find_or_create_area(self, plugin_id: str, fallback_category: str) -> QTreeWidgetItem:
         """Find/create a focused sidebar area for a plugin."""
@@ -457,6 +460,29 @@ class MainWindow(QMainWindow):
     def _wrap_in_lazy(self, plugin: PluginInterface) -> LazyWidget:
         """Wrap plugin.create_widget() in LazyWidget for deferred instantiation."""
         return LazyWidget(plugin.create_widget)
+
+    def _wrap_spec_in_lazy(self, spec: "PluginSpec") -> LazyWidget:
+        """Create a placeholder whose loader imports exactly one plugin on demand."""
+
+        def load_plugin(plugin_id: str = spec.id) -> QWidget:
+            return self._load_plugin_widget(plugin_id)
+
+        return LazyWidget(
+            load_plugin,
+            loading_text=self.tr("Loading %1...").replace("%1", spec.name),
+        )
+
+    def _load_plugin_widget(self, plugin_id: str) -> QWidget:
+        """Import, construct, and cache one plugin when its route is activated."""
+        widget = self._plugin_loader.load_builtin_widget(
+            plugin_id,
+            context=self._plugin_context,
+        )
+        if not isinstance(widget, QWidget):
+            raise TypeError(f"Plugin {plugin_id!r} did not create a QWidget")
+        if plugin_id == "atlas_dashboard":
+            self._schedule_post_render_services()
+        return widget
 
     def _find_or_create_category(self, category: str) -> QTreeWidgetItem:
         """Find or create a category tree item, using cache for O(1) lookup."""
@@ -563,6 +589,8 @@ class MainWindow(QMainWindow):
     def _start_pulse_listener(self):
         """Initialize and start the Pulse event listener."""
         try:
+            from utils.pulse import PulseThread, SystemPulse
+
             self.pulse = SystemPulse()
             self.pulse_thread = PulseThread(self.pulse)
             self.pulse.moveToThread(self.pulse_thread)
@@ -570,45 +598,57 @@ class MainWindow(QMainWindow):
         except (RuntimeError, OSError) as e:
             logger.debug("Failed to start pulse listener: %s", e)
 
-    def _build_favorites_section(self):
-        """Build a Favorites category at the top of the sidebar with pinned tabs."""
-        favorites = FavoritesManager.get_favorites()
-        if not favorites:
+    @staticmethod
+    def _background_services_enabled() -> bool:
+        """Return whether persisted settings require tray/background runtime."""
+        try:
+            from utils.settings import SettingsManager
+
+            return bool(SettingsManager.instance().get("start_minimized", False))
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+            return False
+
+    def _initialize_background_services(self) -> None:
+        """Start tray and Pulse only for an explicitly background-enabled app."""
+        if not self._background_services_enabled():
             return
+        self.setup_tray()
+        self._start_pulse_listener()
 
-        fav_category = QTreeWidgetItem()
-        fav_category.setText(0, "Favorites")
-        fav_category.setData(0, _ROLE_DESC, "Favorites")
-        self._set_tree_item_icon(fav_category, "status-ok")
-        fav_category.setExpanded(True)
-        self.sidebar.insertTopLevelItem(0, fav_category)
+    def _schedule_post_render_services(self) -> None:
+        """Schedule nonessential shell work after meaningful Home exists."""
+        if self._post_render_services_scheduled:
+            return
+        self._post_render_services_scheduled = True
+        QTimer.singleShot(250, self._initialize_post_render_services)
 
-        for fav_id in favorites:
-            route = resolve(fav_id)
-            route_id = route.id if route else fav_id
-            plugin_id = route.plugin_id if route else fav_id
-            entry = self._sidebar_index.get(plugin_id)
-            if not entry:
-                logger.warning("Stale favorite ignored: %s", fav_id)
-                continue
+    def _initialize_post_render_services(self) -> None:
+        """Initialize deferred UI and probes outside the first-render hot path."""
+        self._setup_notification_bell()
+        self._start_status_refresh()
+        QTimer.singleShot(0, self.check_dependencies)
 
-            item = QTreeWidgetItem(fav_category)
-            label = route.label if route and route.subroute else entry.display_name
-            desc = route.description if route else entry.metadata.description
-            item.setText(0, label)
-            item.setData(0, _ROLE_DESC, f"Pinned: {desc or label}")
-            item.setData(0, _ROLE_NAME, label)
-            item.setData(0, _ROLE_ROUTE_ID, route_id)
-            item.setData(0, Qt.ItemDataRole.UserRole, entry.content_widget or entry.page_widget)
-            if entry.tree_item is not None:
-                self._copy_tree_item_icon(entry.tree_item, item)
-            else:
-                self._set_tree_item_icon(item, route.icon if route else entry.metadata.icon)
-            item.setToolTip(0, desc or label)
+    def _start_status_refresh(self) -> None:
+        """Start periodic sidebar status refresh after first render."""
+        if self._status_timer is not None:
+            return
+        self._status_timer = QTimer(self)
+        self._status_timer.timeout.connect(self._refresh_status_indicators)
+        self._status_timer.start(30000)
+        try:
+            from utils.settings import SettingsManager
 
-        self._refresh_sidebar_icon_tints()
-        if self._sidebar_collapsed:
-            self._set_sidebar_icon_only(True)
+            check_on_start = bool(
+                SettingsManager.instance().get("check_updates_on_start", True)
+            )
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+            check_on_start = True
+        if check_on_start:
+            QTimer.singleShot(5000, self._refresh_status_indicators)
+
+    def _build_favorites_section(self):
+        """Compatibility no-op: favorites remain stored outside the v15 sidebar."""
+        return
 
     def _sidebar_context_menu(self, pos):
         """Show context menu for sidebar items with favorite toggle."""
@@ -641,20 +681,18 @@ class MainWindow(QMainWindow):
             self._rebuild_favorites_section()
 
     def _rebuild_favorites_section(self):
-        """Remove and rebuild the favorites section."""
-        # Remove existing favorites category
-        for i in range(self.sidebar.topLevelItemCount()):
-            item = self.sidebar.topLevelItem(i)
-            if item and "Favorites" in item.text(0):
-                self.sidebar.takeTopLevelItem(i)
-                break
-        self._build_favorites_section()
-        self._refresh_sidebar_icon_tints()
-        if self._sidebar_collapsed:
-            self._set_sidebar_icon_only(True)
+        """Compatibility no-op while favorites are stored for later surfaces."""
+        return
 
     def _rebuild_sidebar_for_experience_level(self, level=None):
-        """Rebuild sidebar when experience level changes."""
+        """Rebuild destinations when the compatibility experience value changes."""
+        previous_route = self._active_route_id
+        self._set_active_plugin("")
+        for entry in self._sidebar_index.values():
+            lazy = entry.page_widget
+            realized = getattr(lazy, "get_real_widget", lambda: None)()
+            if isinstance(realized, QWidget):
+                realized.setParent(None)
         self.sidebar.clear()
         self._sidebar_index.clear()
         self._category_items.clear()
@@ -662,10 +700,8 @@ class MainWindow(QMainWindow):
         while self.content_area.count():
             w = self.content_area.widget(0)
             self.content_area.removeWidget(w)
-        try:
-            PluginRegistry.reset()
-        except (AttributeError, RuntimeError):
-            logger.debug("Plugin registry reset unavailable during sidebar rebuild")
+            if hasattr(w, "deleteLater"):
+                w.deleteLater()
         context = {
             "main_window": self,
             "config_manager": ConfigManager,
@@ -673,8 +709,11 @@ class MainWindow(QMainWindow):
         if level is not None:
             self._active_experience_level = level
         self._build_sidebar_from_registry(context)
-        self._build_favorites_section()
-        self._refresh_sidebar_icon_tints()
+        self._active_destination_id = ""
+        if previous_route and self.switch_to_route(previous_route, record_history=False):
+            return
+        if self.sidebar.topLevelItemCount() > 0:
+            self.sidebar.setCurrentItem(self.sidebar.topLevelItem(0))
 
     def add_page(
         self,
@@ -742,6 +781,8 @@ class MainWindow(QMainWindow):
             self.content_area.setCurrentWidget(widget)
             route = resolve(str(current.data(0, _ROLE_ROUTE_ID) or current.data(0, _ROLE_NAME) or ""))
             self._active_route_id = route.id if route else ""
+            if route:
+                self._set_active_plugin(route.plugin_id)
             if route and route.subroute:
                 self._activate_route_widget(route)
             self._update_breadcrumb(current)
@@ -784,8 +825,12 @@ class MainWindow(QMainWindow):
 
     def _update_header_for_route(self, route: NavigationRoute, entry: SidebarEntry | None = None) -> None:
         """Render the focused page header when a route has no visible sidebar row."""
+        placement = placement_for_route(route.id)
+        destination = (
+            get_destination(placement.destination_id) if placement is not None else None
+        )
         area = area_for_plugin(route.plugin_id)
-        category = area.label if area else route.category
+        category = destination.label if destination else (area.label if area else route.category)
         self._bc_category.setText(category)
         self._bc_page.setText(route.label)
         self._bc_desc.setText(route.description)
@@ -813,6 +858,35 @@ class MainWindow(QMainWindow):
             if isinstance(realized, QWidget):
                 return realized
         return widget
+
+    def _set_active_plugin(self, plugin_id: str) -> None:
+        """Run page lifecycle hooks once when the active top-level route changes."""
+        plugin_id = str(plugin_id or "")
+        if plugin_id == self._active_plugin_id:
+            return
+
+        registry = PluginRegistry.instance()
+        get_plugin = getattr(registry, "get", lambda _plugin_id: None)
+        previous = get_plugin(self._active_plugin_id) if self._active_plugin_id else None
+        if previous is not None:
+            try:
+                previous.on_deactivate()
+            except (AttributeError, RuntimeError, OSError, TypeError, ValueError) as exc:
+                logger.debug("Plugin deactivation failed for %s: %s", self._active_plugin_id, exc)
+
+        self._active_plugin_id = plugin_id
+        if not plugin_id:
+            return
+
+        entry = self._sidebar_index.get(plugin_id)
+        if entry is not None:
+            self._real_widget_for_entry(entry)
+        current = get_plugin(plugin_id)
+        if current is not None:
+            try:
+                current.on_activate()
+            except (AttributeError, RuntimeError, OSError, TypeError, ValueError) as exc:
+                logger.debug("Plugin activation failed for %s: %s", plugin_id, exc)
 
     def _activate_route_widget(self, route: NavigationRoute) -> bool:
         """Activate a route's sub-navigation inside the realized plugin widget."""
@@ -907,7 +981,12 @@ class MainWindow(QMainWindow):
         self._refresh_sidebar_icon_tints()
 
     def _on_breadcrumb_category_click(self):
-        """Navigate to the first page of the current breadcrumb category."""
+        """Navigate to the current destination's default route."""
+        if getattr(self, "_shell_uses_destinations", False) is True:
+            destination = get_destination(self._active_destination_id)
+            if destination is not None:
+                self.switch_to_route(destination.default_route_id)
+            return
         parent = getattr(self, "_bc_parent_item", None)
         if parent and parent.childCount() > 0:
             parent.setExpanded(True)
@@ -916,12 +995,14 @@ class MainWindow(QMainWindow):
     def set_status(self, text: str):
         """Set status bar message (can be called from any tab)."""
         self._status_label.setText(text)
+        self._update_status_chrome()
 
     def show_undo_button(self, description: str = ""):
         """Show the undo button in the status bar after an undoable action."""
         if description:
             self._status_label.setText(self.tr("✓ ") + description)
         self._undo_btn.setVisible(True)
+        self._update_status_chrome()
 
     def _on_undo_clicked(self):
         """Execute undo via HistoryManager and update status."""
@@ -936,6 +1017,7 @@ class MainWindow(QMainWindow):
             logger.debug("Undo failed: %s", e)
             self.show_status_toast(self.tr("Undo failed"), error=True)
         self._undo_btn.setVisible(False)
+        self._update_status_chrome()
 
     def show_status_toast(self, message: str, error: bool = False, duration: int = 3000):
         """Show a temporary status-bar toast notification (v38.0)."""
@@ -946,6 +1028,7 @@ class MainWindow(QMainWindow):
             self._status_label.setProperty("toast", "success")
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
+        self._update_status_chrome()
 
         from PyQt6.QtCore import QTimer
 
@@ -957,13 +1040,39 @@ class MainWindow(QMainWindow):
         self._status_label.setProperty("toast", "")
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
+        self._update_status_chrome()
 
-    def switch_to_route(self, route_id: str) -> bool:
-        """Switch to a canonical route ID or route alias."""
+    def _update_status_chrome(self) -> None:
+        """Show activity chrome only while it carries actionable information."""
+        has_message = bool(self._status_label.text().strip())
+        has_undo = self._undo_btn.isVisible()
+        self._status_frame.setVisible(has_message or has_undo)
+
+    def switch_to_route(self, route_id: str, *, record_history: bool = True) -> bool:
+        """Switch through policy to a canonical route ID or compatibility alias."""
         route = resolve(str(route_id))
         if not route:
             logger.debug("switch_to_route: no route for '%s'", route_id)
             return False
+
+        if getattr(self, "_shell_uses_destinations", False) is True:
+            result = NavigationPolicy.evaluate(route.id, self._navigation_context)
+            if (
+                result.direct_link_behavior is DirectLinkBehavior.REDIRECT
+                and result.redirect_route_id
+            ):
+                return self.switch_to_route(
+                    result.redirect_route_id,
+                    record_history=record_history,
+                )
+            if result.decision is not NavigationDecision.VISIBLE:
+                destination = get_destination(result.destination_id)
+                if destination is not None:
+                    self._selecting_destination = True
+                    self.sidebar.select_destination(destination.id)
+                    self._selecting_destination = False
+                self.destination_host.show_policy_result(result)
+                return False
 
         entry = self._sidebar_index.get(route.plugin_id)
         if not entry:
@@ -978,7 +1087,10 @@ class MainWindow(QMainWindow):
             self.sidebar.setCurrentItem(entry.tree_item)
         elif entry.content_widget is not None:
             self.content_area.setCurrentWidget(entry.content_widget)
+        if getattr(self, "_shell_uses_destinations", False) is True:
+            self._sync_destination_shell(route.id)
         self._active_route_id = route.id
+        self._set_active_plugin(route.plugin_id)
         activated = self._activate_route_widget(route)
         if entry.tree_item is not None:
             self._update_breadcrumb(entry.tree_item)
@@ -986,6 +1098,44 @@ class MainWindow(QMainWindow):
             self._update_header_for_route(route, entry)
         if not activated:
             logger.debug("switch_to_route: plugin selected but subroute did not activate: %s", route.id)
+        if record_history:
+            self._record_route_history(route.id)
+        return True
+
+    def _record_route_history(self, route_id: str) -> None:
+        """Record successful route navigation without duplicate adjacent entries."""
+        if not isinstance(getattr(self, "_route_history", None), list):
+            self._route_history = []
+        if not isinstance(getattr(self, "_route_history_index", None), int):
+            self._route_history_index = -1
+        if self._route_history_index >= 0:
+            current = self._route_history[self._route_history_index]
+            if current == route_id:
+                return
+        del self._route_history[self._route_history_index + 1 :]
+        self._route_history.append(route_id)
+        self._route_history_index = len(self._route_history) - 1
+
+    def navigate_back(self) -> bool:
+        """Navigate to the previous successful route."""
+        if self._route_history_index <= 0:
+            return False
+        target_index = self._route_history_index - 1
+        route_id = self._route_history[target_index]
+        if not self.switch_to_route(route_id, record_history=False):
+            return False
+        self._route_history_index = target_index
+        return True
+
+    def navigate_forward(self) -> bool:
+        """Navigate to the next successful route."""
+        if self._route_history_index + 1 >= len(self._route_history):
+            return False
+        target_index = self._route_history_index + 1
+        route_id = self._route_history[target_index]
+        if not self.switch_to_route(route_id, record_history=False):
+            return False
+        self._route_history_index = target_index
         return True
 
     def switch_to_tab(self, name):
@@ -1002,6 +1152,7 @@ class MainWindow(QMainWindow):
             elif entry.content_widget is not None:
                 self.content_area.setCurrentWidget(entry.content_widget)
                 self._active_route_id = entry.plugin_id
+            self._set_active_plugin(entry.plugin_id)
             return True
 
         # Fallback: search by display name
@@ -1019,58 +1170,83 @@ class MainWindow(QMainWindow):
                     self._active_route_id = entry.plugin_id
                     if entry.content_widget is not None:
                         self.content_area.setCurrentWidget(entry.content_widget)
+                self._set_active_plugin(entry.plugin_id)
                 return True
 
         logger.debug("switch_to_tab: no match for '%s'", name)
         return False
 
     def _setup_command_palette_shortcut(self):
-        """Register Ctrl+K shortcut for the command palette."""
-        shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
-        shortcut.activated.connect(self._show_command_palette)
+        """Compatibility name for registering both global-search shortcuts."""
+        self._setup_global_search_shortcuts()
+
+    def _setup_global_search_shortcuts(self) -> None:
+        """Bind route/settings search and action search to the same dialog."""
+        global_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
+        global_shortcut.activated.connect(
+            lambda: self._show_global_search(actions_only=False)
+        )
+        action_shortcut = QShortcut(QKeySequence("Ctrl+Shift+K"), self)
+        action_shortcut.activated.connect(
+            lambda: self._show_global_search(actions_only=True)
+        )
+        self._global_search_shortcuts = (global_shortcut, action_shortcut)
 
     def _show_command_palette(self):
-        """Show the command palette dialog."""
+        """Compatibility entry point for the shared global search."""
+        self._show_global_search(actions_only=False)
+
+    def _setup_quick_actions(self):
+        """Compatibility no-op; action discovery uses global search shortcuts."""
+
+    def _show_quick_actions(self):
+        """Compatibility entry point for action-filtered global search."""
+        self._show_global_search(actions_only=True)
+
+    def _show_global_search(self, *, actions_only: bool = False) -> None:
+        """Show the single policy-backed global discovery surface."""
         try:
-            from ui.command_palette import CommandPalette
+            from core.navigation import GlobalSearchModel, SearchFilter
+            from ui.global_search import GlobalSearchDialog
+            from utils.quick_actions_config import QuickActionsConfig
 
-            palette = CommandPalette(self.switch_to_route, self)
-            palette.exec()
+            context = getattr(self, "_navigation_context", NavigationContext())
+            model = GlobalSearchModel(
+                context,
+                configured_quick_actions=QuickActionsConfig.get_actions(),
+            )
+            dialog = GlobalSearchDialog(
+                model,
+                self._activate_global_search_result,
+                search_filter=(
+                    SearchFilter.ACTIONS if actions_only else SearchFilter.ALL
+                ),
+                parent=self,
+            )
+            dialog.exec()
         except ImportError:
-            logger.debug("Command palette module not available", exc_info=True)
+            logger.debug("Global search module not available", exc_info=True)
 
-    def _filter_sidebar(self, text: str):
-        """Filter sidebar items by name, description, badge, and category."""
-        search = text.lower()
+    def _activate_global_search_result(self, result) -> bool:
+        """Navigate to a result and optionally preselect an Action Center item."""
+        route_id = str(getattr(result, "route_id", "") or "")
+        if not route_id or not self.switch_to_route(route_id):
+            return False
+        action_id = str(getattr(result, "action_id", "") or "")
+        if action_id:
+            self._preselect_action_center(action_id)
+        return True
 
-        # Iterate top-level categories
-        for i in range(self.sidebar.topLevelItemCount()):
-            category = self.sidebar.topLevelItem(i)
-            category_visible = False
-
-            # Check children (name + description + badge data)
-            for j in range(category.childCount()):
-                child = category.child(j)
-                name_match = search in child.text(0).lower()
-                desc = (child.data(0, _ROLE_DESC) or "").lower()
-                desc_match = search in desc
-                badge = (child.data(0, _ROLE_BADGE) or "").lower()
-                badge_match = search in badge
-                if name_match or desc_match or badge_match:
-                    child.setHidden(False)
-                    category_visible = True
-                else:
-                    child.setHidden(True)
-
-            # Check category itself
-            if search in category.text(0).lower():
-                category_visible = True
-                for j in range(category.childCount()):
-                    category.child(j).setHidden(False)
-
-            category.setHidden(not category_visible)
-            if category_visible:
-                category.setExpanded(True)
+    def _preselect_action_center(self, action_id: str) -> bool:
+        """Select an Action Center candidate without planning or running it."""
+        entry = self._sidebar_index.get("maintenance")
+        if entry is None:
+            return False
+        widget = self._real_widget_for_entry(entry)
+        preselect = getattr(widget, "preselect_action", None)
+        if not callable(preselect):
+            return False
+        return bool(preselect(action_id))
 
     def _toggle_sidebar(self):
         """Toggle sidebar between expanded and collapsed states."""
@@ -1082,10 +1258,6 @@ class MainWindow(QMainWindow):
         if not collapsed:
             self._sidebar_container.setFixedWidth(self._sidebar_expanded_width)
             self.sidebar.setVisible(True)
-            self.sidebar_search.setVisible(True)
-            self.sidebar_footer.setVisible(True)
-            self.sidebar.setIndentation(16)
-            self.sidebar.setRootIsDecorated(True)
             self._set_sidebar_icon_only(False)
             self._sidebar_toggle.setText("◀")
             self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
@@ -1094,10 +1266,6 @@ class MainWindow(QMainWindow):
             collapsed_width = getattr(getattr(self, "_metrics", None), "sidebar_collapsed_width", int(self._line_height * 4))
             self._sidebar_container.setFixedWidth(collapsed_width)
             self.sidebar.setVisible(True)
-            self.sidebar_search.setVisible(False)
-            self.sidebar_footer.setVisible(False)
-            self.sidebar.setIndentation(0)
-            self.sidebar.setRootIsDecorated(False)
             self._set_sidebar_icon_only(True)
             self._sidebar_toggle.setText("▶")
             self._sidebar_toggle.setToolTip(self.tr("Expand sidebar"))
@@ -1132,6 +1300,9 @@ class MainWindow(QMainWindow):
 
     def _set_sidebar_icon_only(self, collapsed: bool) -> None:
         """Toggle sidebar labels while keeping icon rows selectable."""
+        if getattr(self, "_shell_uses_destinations", False) is True:
+            self.sidebar.set_collapsed(collapsed)
+            return
         iterator = QTreeWidgetItemIterator(self.sidebar)
         while iterator.value():
             item = iterator.value()
@@ -1144,9 +1315,9 @@ class MainWindow(QMainWindow):
             iterator += 1
 
     def _setup_keyboard_shortcuts(self):
-        """Register keyboard shortcuts for tab navigation."""
-        # Ctrl+1 through Ctrl+9 - switch to category 1-9
-        for i in range(1, 10):
+        """Register destination-aware shell navigation shortcuts."""
+        # Ctrl+1 through Ctrl+7 select stable destinations.
+        for i in range(1, 8):
             shortcut = QShortcut(QKeySequence(f"Ctrl+{i}"), self)
             shortcut.activated.connect(lambda idx=i - 1: self._select_category(idx))
 
@@ -1158,6 +1329,11 @@ class MainWindow(QMainWindow):
         prev_tab = QShortcut(QKeySequence("Ctrl+Shift+Tab"), self)
         prev_tab.activated.connect(self._select_prev_item)
 
+        back = QShortcut(QKeySequence("Alt+Left"), self)
+        back.activated.connect(self.navigate_back)
+        forward = QShortcut(QKeySequence("Alt+Right"), self)
+        forward.activated.connect(self.navigate_forward)
+
         # Ctrl+Q - Quit
         quit_shortcut = QShortcut(QKeySequence("Ctrl+Q"), self)
         quit_shortcut.activated.connect(self.quit_app)
@@ -1167,10 +1343,10 @@ class MainWindow(QMainWindow):
         help_shortcut.activated.connect(self._show_shortcut_help)
 
     def _select_category(self, index: int):
+        """Compatibility name for selecting a flat destination by position."""
         if index < self.sidebar.topLevelItemCount():
             item = self.sidebar.topLevelItem(index)
             self.sidebar.setCurrentItem(item)
-            item.setExpanded(True)
 
     def _select_next_item(self):
         current = self.sidebar.currentItem()
@@ -1196,23 +1372,22 @@ class MainWindow(QMainWindow):
         if prev_item:
             self.sidebar.setCurrentItem(prev_item)
         else:
-            # Wrap around to bottom
-            last_top = self.sidebar.topLevelItem(self.sidebar.topLevelItemCount() - 1)
-            # Find last visible item
-            while last_top.childCount() > 0 and last_top.isExpanded():
-                last_top = last_top.child(last_top.childCount() - 1)
-            self.sidebar.setCurrentItem(last_top)
+            # Wrap around to the last destination.
+            self.sidebar.setCurrentItem(
+                self.sidebar.topLevelItem(self.sidebar.topLevelItemCount() - 1)
+            )
 
     def _show_shortcut_help(self):
         """Show keyboard shortcuts help dialog."""
         from PyQt6.QtWidgets import QMessageBox
 
         shortcuts = (
-            "Ctrl+K — Command Palette\n"
-            "Ctrl+Shift+K — Quick Actions\n"
-            "Ctrl+1..9 — Switch to tab 1-9\n"
-            "Ctrl+Tab — Next tab\n"
-            "Ctrl+Shift+Tab — Previous tab\n"
+            "Ctrl+K — Search routes, settings, and actions\n"
+            "Ctrl+Shift+K — Search actions\n"
+            "Ctrl+1..7 — Switch destination\n"
+            "Ctrl+Tab — Next destination\n"
+            "Ctrl+Shift+Tab — Previous destination\n"
+            "Alt+Left/Right — Route history\n"
             "Ctrl+Q — Quit\n"
             "F1 — This help"
         )
@@ -1372,28 +1547,6 @@ class MainWindow(QMainWindow):
             desc = entry.metadata.description or ""
             entry.tree_item.setToolTip(0, f"{desc}\n[{tooltip}]" if desc else tooltip)
 
-    def _setup_quick_actions(self):
-        """Register Ctrl+Shift+K shortcut for Quick Actions bar."""
-        shortcut = QShortcut(QKeySequence("Ctrl+Shift+K"), self)
-        shortcut.activated.connect(self._show_quick_actions)
-
-    def _show_quick_actions(self):
-        """Show the Quick Actions bar."""
-        try:
-            from ui.quick_actions import (
-                QuickActionRegistry,
-                QuickActionsBar,
-                register_default_actions,
-            )
-
-            registry = QuickActionRegistry.instance()
-            if not registry.get_all():
-                register_default_actions(registry, main_window=self)
-            bar = QuickActionsBar(self)
-            bar.exec()
-        except ImportError:
-            logger.debug("Quick actions module not available", exc_info=True)
-
     def apply_experience_level(self, level=None):
         """Show/hide sidebar tabs based on experience level setting."""
         try:
@@ -1493,6 +1646,7 @@ class MainWindow(QMainWindow):
             )
 
     def quit_app(self):
+        self._set_active_plugin("")
         # Stop Pulse listener
         if self.pulse_thread:
             self.pulse_thread.stop()
@@ -1516,11 +1670,16 @@ class MainWindow(QMainWindow):
             event.ignore()
         else:
             # Clean up page resources (timers, schedulers)
-            for entry in self._sidebar_index.values():
-                page = entry.page_widget
-                if hasattr(page, "cleanup"):
+            self._set_active_plugin("")
+            registry = PluginRegistry.instance()
+            list_all = getattr(registry, "list_all", lambda: [])
+            plugins = list(list_all())
+            if not plugins:
+                plugins = [entry.page_widget for entry in self._sidebar_index.values()]
+            for plugin in plugins:
+                if hasattr(plugin, "cleanup"):
                     try:
-                        page.cleanup()
+                        plugin.cleanup()
                     except (RuntimeError, OSError) as e:
                         logger.debug("Failed to cleanup page on close: %s", e)
             event.accept()

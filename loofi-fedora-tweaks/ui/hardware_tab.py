@@ -59,7 +59,17 @@ class HardwareTab(QWidget, PluginInterface):
         # Auto-refresh timer for dynamic values
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self.refresh_status)
-        self.refresh_timer.start(5000)  # Refresh every 5 seconds
+
+    def on_activate(self) -> None:
+        """Start dynamic hardware probes only while the route is active."""
+        if not self.refresh_timer.isActive():
+            self.refresh_timer.start(5000)
+        QTimer.singleShot(0, self.refresh_status)
+
+    def on_deactivate(self) -> None:
+        """Stop periodic hardware probes while hidden."""
+        if self.refresh_timer.isActive():
+            self.refresh_timer.stop()
 
     def _setup_command_runner(self):
         """Setup CommandRunner for hardware commands (from Tweaks tab)."""

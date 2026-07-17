@@ -111,19 +111,19 @@ class TestPluginLoaderLoadBuiltins:
 
     def test_successful_load_returns_plugin_id(self):
         """When import succeeds, load_builtins returns the plugin's id."""
-        StubClass = _make_plugin_class("dashboard")
+        StubClass = _make_plugin_class("atlas_dashboard")
         fake_mod = _make_fake_module(StubClass)
 
         registry = PluginRegistry.instance()
         loader = PluginLoader(registry=registry)
 
         # Patch _BUILTIN_PLUGINS to a single entry and importlib
-        single_entry = [("ui.dashboard_tab", StubClass.__name__)]
+        single_entry = [("ui.atlas_dashboard_tab", StubClass.__name__)]
         with patch("core.plugins.loader._BUILTIN_PLUGINS", single_entry), \
              patch("importlib.import_module", return_value=fake_mod):
             loaded = loader.load_builtins()
 
-        assert loaded == ["dashboard"]
+        assert loaded == ["atlas_dashboard"]
         assert len(registry) == 1
 
     def test_failed_import_logs_warning_not_raises(self, caplog):

@@ -512,17 +512,17 @@ class TestHealthTimelineTab(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# CommandPalette (ui/command_palette.py)
+# CommandPalette compatibility adapter (ui/command_palette.py)
 # ---------------------------------------------------------------------------
 class TestCommandPalette(unittest.TestCase):
-    """Tests for CommandPalette dialog."""
+    """Tests for the legacy name backed by global search."""
 
     def test_init(self):
         from ui.command_palette import CommandPalette
         callback = MagicMock()
         d = CommandPalette(on_action=callback)
         self.assertIsNotNone(d)
-        self.assertTrue(hasattr(d, '_registry'))
+        self.assertTrue(hasattr(d, '_model'))
         d.close()
 
     def test_populate_empty_filter(self):
@@ -530,7 +530,7 @@ class TestCommandPalette(unittest.TestCase):
         callback = MagicMock()
         d = CommandPalette(on_action=callback)
         d._populate_results("")
-        self.assertGreaterEqual(len(d._visible_entries), 0)
+        self.assertGreaterEqual(len(d._visible_results), 0)
         d.close()
 
     def test_populate_with_filter(self):
@@ -545,9 +545,10 @@ class TestCommandPalette(unittest.TestCase):
         callback = MagicMock()
         d = CommandPalette(on_action=callback)
         # Manually trigger if there are entries
-        if d._results_list.count() > 0:
-            item = d._results_list.item(0)
+        if d.results_list.count() > 0:
+            item = d.results_list.item(0)
             d._activate_item(item)
+            callback.assert_called_once()
         d.close()
 
 
@@ -615,25 +616,24 @@ class TestSnapshotTabSmoke(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# CommandPalette deeper method tests
+# Global-search compatibility adapter tests
 # ---------------------------------------------------------------------------
 class TestCommandPaletteDeep(unittest.TestCase):
-    """Deeper tests for CommandPalette methods."""
+    """The legacy CommandPalette name delegates to global search."""
 
     def test_build_feature_registry(self):
         from ui.command_palette import CommandPalette
         d = CommandPalette(on_action=MagicMock())
-        self.assertIsInstance(d._registry, list)
-        self.assertTrue(len(d._registry) > 0)
+        self.assertTrue(d._model.all_results())
         d.close()
 
     def test_filter_case_insensitive(self):
         from ui.command_palette import CommandPalette
         d = CommandPalette(on_action=MagicMock())
         d._populate_results("SYSTEM")
-        upper_count = len(d._visible_entries)
+        upper_count = len(d._visible_results)
         d._populate_results("system")
-        lower_count = len(d._visible_entries)
+        lower_count = len(d._visible_results)
         self.assertEqual(upper_count, lower_count)
         d.close()
 

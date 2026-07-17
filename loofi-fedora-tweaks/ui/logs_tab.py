@@ -57,8 +57,17 @@ class LogsTab(BaseTab):
         self._live_timer.timeout.connect(self._poll_live_logs)
         self._live_cursor = None
         self._live_row_count = 0
+        self._summary_loaded = False
         self.init_ui()
-        QTimer.singleShot(200, self._load_summary)
+
+    def on_activate(self) -> None:
+        if not self._summary_loaded:
+            self._summary_loaded = True
+            QTimer.singleShot(0, self._load_summary)
+
+    def on_deactivate(self) -> None:
+        if self._live_timer.isActive():
+            self._live_timer.stop()
 
     def init_ui(self):
         layout = QVBoxLayout()

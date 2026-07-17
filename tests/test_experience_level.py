@@ -6,6 +6,7 @@ from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
+from core.navigation.models import NavigationMode
 from utils.experience_level import ExperienceLevel, ExperienceLevelManager
 
 
@@ -43,7 +44,7 @@ class TestExperienceLevelManagerGetLevel(unittest.TestCase):
         result = ExperienceLevelManager.get_level()
 
         self.assertEqual(result, ExperienceLevel.BEGINNER)
-        mock_mgr.get.assert_called_once_with("experience_level", "beginner")
+        mock_mgr.get.assert_called_once_with("navigation_mode", "standard")
 
     @patch('utils.experience_level.SettingsManager')
     def test_get_level_advanced(self, mock_settings_cls):
@@ -90,7 +91,31 @@ class TestExperienceLevelManagerSetLevel(unittest.TestCase):
 
         ExperienceLevelManager.set_level(ExperienceLevel.ADVANCED)
 
-        mock_mgr.set.assert_called_once_with("experience_level", "advanced")
+        mock_mgr.set.assert_any_call("experience_level", "advanced")
+        mock_mgr.set.assert_any_call("navigation_mode", "advanced")
+        self.assertEqual(mock_mgr.set.call_count, 2)
+        mock_mgr.save.assert_called_once()
+
+    @patch('utils.experience_level.SettingsManager')
+    def test_get_navigation_mode_uses_new_contract(self, mock_settings_cls):
+        mock_mgr = MagicMock()
+        mock_mgr.get.return_value = "advanced"
+        mock_settings_cls.instance.return_value = mock_mgr
+
+        result = ExperienceLevelManager.get_navigation_mode()
+
+        self.assertEqual(result, NavigationMode.ADVANCED)
+        mock_mgr.get.assert_called_once_with("navigation_mode", "standard")
+
+    @patch('utils.experience_level.SettingsManager')
+    def test_set_navigation_mode_preserves_v14_shell_adapter(self, mock_settings_cls):
+        mock_mgr = MagicMock()
+        mock_settings_cls.instance.return_value = mock_mgr
+
+        ExperienceLevelManager.set_navigation_mode(NavigationMode.STANDARD)
+
+        mock_mgr.set.assert_any_call("navigation_mode", "standard")
+        mock_mgr.set.assert_any_call("experience_level", "beginner")
         mock_mgr.save.assert_called_once()
 
     @patch('utils.experience_level.SettingsManager')
@@ -101,7 +126,9 @@ class TestExperienceLevelManagerSetLevel(unittest.TestCase):
 
         ExperienceLevelManager.set_level(ExperienceLevel.INTERMEDIATE)
 
-        mock_mgr.set.assert_called_once_with("experience_level", "intermediate")
+        mock_mgr.set.assert_any_call("experience_level", "advanced")
+        mock_mgr.set.assert_any_call("navigation_mode", "advanced")
+        self.assertEqual(mock_mgr.set.call_count, 2)
 
 
 class TestExperienceLevelManagerVisibleTabs(unittest.TestCase):

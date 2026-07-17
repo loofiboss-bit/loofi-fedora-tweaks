@@ -8,11 +8,16 @@ import logging
 import os
 from typing import Iterable, List
 
+from core.navigation.migrations import (
+    canonical_persisted_route,
+    migrate_route_references,
+)
+
 logger = logging.getLogger(__name__)
 
 _CONFIG_DIR = os.path.expanduser("~/.config/loofi-fedora-tweaks")
 _FAVORITES_FILE = os.path.join(_CONFIG_DIR, "favorites.json")
-_FAVORITES_VERSION = 2
+_FAVORITES_VERSION = 3
 
 
 class FavoritesManager:
@@ -21,12 +26,7 @@ class FavoritesManager:
     @staticmethod
     def _stable_id(value: str) -> str:
         """Normalize a favorite value to the canonical route/plugin ID when known."""
-        try:
-            from core.navigation import resolve
-        except ImportError:
-            return value
-        route = resolve(value)
-        return route.id if route else ""
+        return canonical_persisted_route(value, preserve_unknown=True) or ""
 
     @classmethod
     def _normalize_current_id(cls, value: str) -> str:
@@ -35,16 +35,8 @@ class FavoritesManager:
 
     @classmethod
     def _migrate_legacy(cls, values: Iterable[str]) -> List[str]:
-        """Migrate legacy display-name-derived favorites into stable v2 IDs."""
-        migrated: List[str] = []
-        for value in values:
-            stable_id = cls._stable_id(str(value))
-            if not stable_id:
-                logger.warning("Dropping stale legacy favorite: %s", value)
-                continue
-            if stable_id not in migrated:
-                migrated.append(stable_id)
-        return migrated
+        """Migrate legacy display-name-derived favorites into stable v3 IDs."""
+        return migrate_route_references(values)
 
     @classmethod
     def _load(cls) -> List[str]:
@@ -61,13 +53,9 @@ class FavoritesManager:
                 if isinstance(data, dict):
                     version = data.get("version")
                     favorites = data.get("favorites")
-                    if version == _FAVORITES_VERSION and isinstance(favorites, list):
-                        normalized: List[str] = []
-                        for item in favorites:
-                            stable_id = cls._stable_id(str(item)) or str(item)
-                            if stable_id not in normalized:
-                                normalized.append(stable_id)
-                        if normalized != favorites:
+                    if version in {2, _FAVORITES_VERSION} and isinstance(favorites, list):
+                        normalized = migrate_route_references(favorites)
+                        if version != _FAVORITES_VERSION or normalized != favorites:
                             cls._save(normalized)
                         return normalized
         except (OSError, json.JSONDecodeError) as e:

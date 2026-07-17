@@ -50,13 +50,15 @@ class TestQuickActionsConfig(unittest.TestCase):
         self.assertEqual(result[0]["id"], "test")
         self.assertEqual(result[0]["route_id"], "maintenance:cleanup")
 
+    @patch.object(QuickActionsConfig, 'set_actions')
     @patch('builtins.open', mock_open(read_data='[{"id":"legacy","label":"Legacy","icon":"cleanup","color":"#fff","target_tab":"Cleanup"}]'))
     @patch('utils.quick_actions_config.os.path.isfile', return_value=True)
-    def test_get_actions_migrates_legacy_target_tab(self, mock_isfile):
+    def test_get_actions_migrates_legacy_target_tab(self, mock_isfile, mock_set):
         """Legacy target_tab actions are normalized to route IDs."""
         result = QuickActionsConfig.get_actions()
         self.assertEqual(result[0]["route_id"], "maintenance:cleanup")
         self.assertNotIn("target_tab", result[0])
+        mock_set.assert_called_once_with(result)
 
     @patch('builtins.open', mock_open(read_data='[]'))
     @patch('utils.quick_actions_config.os.path.isfile', return_value=True)

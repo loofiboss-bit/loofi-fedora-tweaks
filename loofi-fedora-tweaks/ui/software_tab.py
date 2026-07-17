@@ -9,6 +9,7 @@ original AppsTab and ReposTab.
 import logging
 
 from core.plugins.metadata import PluginMetadata
+from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (
     QCheckBox,
     QFrame,
@@ -125,8 +126,10 @@ class _ApplicationsSubTab(BaseTab):
         self.runner.output_received.connect(self.append_output)
         self.runner.finished.connect(self.command_finished)
 
-        # Load Apps
-        self.apps = self.load_apps()
+        # Loading starts on explicit route activation, never in the constructor.
+        self.apps: list = []
+        self.fetcher = None
+        self._catalog_load_started = False
         self.refresh_list()
 
         layout.addWidget(QLabel(self.tr("Output Log:")))
@@ -141,6 +144,12 @@ class _ApplicationsSubTab(BaseTab):
         self.fetcher.config_error.connect(self.on_apps_error)
         self.fetcher.start()
         return []  # Populated asynchronously
+
+    def on_activate(self) -> None:
+        if self._catalog_load_started:
+            return
+        self._catalog_load_started = True
+        self.apps = self.load_apps()
 
     def on_apps_loaded(self, apps):
         self.apps = apps
@@ -479,11 +488,29 @@ class SoftwareTab(BaseTab):
 
         self.tabs = QTabWidget()
         configure_top_tabs(self.tabs)
-        self.tabs.addTab(_ApplicationsSubTab(), self.tr("Applications"))
+        self._applications_tab = _ApplicationsSubTab()
+        self.tabs.addTab(self._applications_tab, self.tr("Applications"))
         self.tabs.addTab(_RepositoriesSubTab(), self.tr("Repositories"))
         self.tabs.addTab(self._create_flatpak_tab(), self.tr("Flatpak Manager"))
+        self.tabs.currentChanged.connect(self._on_tab_changed)
+        self._route_active = False
 
         layout.addWidget(self.tabs)
+
+    def on_activate(self) -> None:
+        self._route_active = True
+        QTimer.singleShot(0, self._activate_current_subtab)
+
+    def on_deactivate(self) -> None:
+        self._route_active = False
+
+    def _on_tab_changed(self, _index: int) -> None:
+        if self._route_active:
+            self._activate_current_subtab()
+
+    def _activate_current_subtab(self) -> None:
+        if self._route_active and self.tabs.currentIndex() == 0:
+            self._applications_tab.on_activate()
 
     def _create_flatpak_tab(self):
         """Create the Flatpak Manager sub-tab (v37.0 Pinnacle)."""

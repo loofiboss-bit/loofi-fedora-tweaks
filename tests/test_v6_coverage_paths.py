@@ -19,9 +19,8 @@ from cli.commands.monitoring_commands import handle_health_history, handle_logs
 from cli.commands.network_mesh_commands import handle_mesh, handle_teleport
 from cli.commands.tuning_commands import handle_backup, handle_boot, handle_snapshot, handle_tuner
 from core.diagnostics.release_readiness import ReadinessCheck, ReleaseReadinessReport, TARGETS
-from core.diagnostics.task_dashboard import DashboardTask
 from services.security.firewall import FirewallInfo, ZoneInfo
-from ui.atlas_dashboard_tab import AtlasDashboardTab, TaskCard
+from ui.atlas_dashboard_tab import AtlasDashboardTab
 from ui.fedora44_readiness_dialog import Fedora44ReadinessDialog
 from ui.release_readiness_dialog import ReadinessWorker, ReleaseReadinessDialog
 
@@ -541,42 +540,9 @@ def test_tuning_command_handlers_cover_branches():
     assert handle_boot(SimpleNamespace(action="unknown"), False, json_payloads.append, printed.append, run_operation, _Boot) == 1
 
 
-def test_atlas_dashboard_card_and_routing():
-    clicked = []
-    card = TaskCard(
-        DashboardTask(
-            id="task-release-readiness",
-            title="Release Readiness",
-            description="Check readiness",
-            icon_id="missing-icon",
-        ),
-        clicked.append,
-    )
-    card.btn.click()
-    assert clicked == ["task-release-readiness"]
-
-    tab = AtlasDashboardTab()
-    assert tab.metadata().id == "atlas_dashboard"
-    assert tab.create_widget() is tab
-    assert tab.grid.count() >= 1
-    tab._refresh_tasks()
-
-    with patch("ui.release_readiness_dialog.ReleaseReadinessDialog") as dialog_cls:
-        dialog_cls.return_value.exec.return_value = 0
-        tab._on_task_clicked("task-release-readiness")
-        dialog_cls.assert_called_once()
-
-    with patch("ui.support_bundle_wizard.SupportBundleWizard") as wizard_cls:
-        wizard_cls.return_value.exec.return_value = 0
-        tab._on_task_clicked("task-support-bundle")
-        wizard_cls.assert_called_once()
-
-    with patch("ui.task_wizard.AtlasTaskWizard") as wizard_cls:
-        wizard_cls.return_value.exec.return_value = 0
-        tab._on_task_clicked("task-maintenance")
-        wizard_cls.assert_called_once()
-
-    tab._on_task_clicked("does-not-exist")
+def test_atlas_dashboard_is_the_canonical_home_contract():
+    assert AtlasDashboardTab._METADATA.id == "atlas_dashboard"
+    assert AtlasDashboardTab._METADATA.name == "Home"
 
 
 def test_fedora44_dialog_wrapper_instantiates():

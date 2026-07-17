@@ -819,6 +819,7 @@ class _ActionCenterSubTab(BaseTab):
         self._stderr_chunks = []
         self._operation_thread = None
         self._operation_worker = None
+        self._requested_action_id = ""
 
         from core.actions.center import ActionCenterService
 
@@ -925,10 +926,32 @@ class _ActionCenterSubTab(BaseTab):
             self.action_list.addItem(f"{item.title} [{item.risk_level}] - {marker}")
 
         if self._items:
-            self.action_list.setCurrentRow(0)
-            self._show_item(self._items[0])
+            selected = self._select_requested_action()
+            if not selected:
+                self.action_list.setCurrentRow(0)
+                self._show_item(self._items[0])
         else:
             self.detail_area.setPlainText(self.tr("No Action Center candidates are currently available."))
+
+    def preselect_action(self, action_id: str) -> bool:
+        """Preselect a candidate without creating a plan or running anything."""
+        self._requested_action_id = self._ACTION_ID_ADAPTERS.get(
+            str(action_id or ""), str(action_id or "")
+        )
+        if not self._requested_action_id:
+            return False
+        return self._select_requested_action() or not bool(self._items)
+
+    def _select_requested_action(self) -> bool:
+        if not self._requested_action_id:
+            return False
+        for index, item in enumerate(self._items):
+            candidate_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
+            if candidate_id == self._requested_action_id:
+                self.action_list.setCurrentRow(index)
+                self._show_item(item)
+                return True
+        return False
 
     def _start_operation(self, operation, on_success, failure_title: str) -> None:
         if self._operation_thread is not None:
@@ -1400,3 +1423,15 @@ class MaintenanceTab(BaseTab):
             self.tabs.insertTab(index, widget, label)
             self.tabs.setCurrentIndex(index)
             self.tabs.blockSignals(False)
+
+    def preselect_action(self, action_id: str) -> bool:
+        """Open Action Center and preselect one candidate without side effects."""
+        for index, (label, _factory) in enumerate(self._sub_tab_factories):
+            if label != self.tr("Action Center"):
+                continue
+            self.tabs.setCurrentIndex(index)
+            self._lazy_load_sub_tab(index)
+            action_center = self._loaded_tabs.get(index)
+            preselect = getattr(action_center, "preselect_action", None)
+            return bool(preselect(action_id)) if callable(preselect) else False
+        return False
