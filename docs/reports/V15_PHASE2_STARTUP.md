@@ -46,7 +46,7 @@ no telemetry and does not alter the user's persisted profile.
 | Running QThreads at marker | 2 | 0 | eliminated |
 | Subprocess probes before marker | 54 | 0 | eliminated |
 
-All ten measured runs registered 29 data-only specs and exactly one runtime
+All ten measured runs registered 28 data-only specs and exactly one runtime
 plugin instance (`atlas_dashboard`). No specialist UI module was imported.
 
 ## Phase 2 conclusion

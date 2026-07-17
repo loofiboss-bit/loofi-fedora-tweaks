@@ -156,7 +156,7 @@ Home marker as Phase 0.
 | Running QThreads at Home marker | 2 | 0 | Eliminated |
 | Subprocess probes before Home | 54 | 0 | Eliminated |
 
-All ten runs registered 29 data-only specs and constructed only
+All ten runs registered 28 data-only specs and constructed only
 `atlas_dashboard` at the marker. The measured 25% Home-render and 15% RSS targets
 are exceeded.
 
