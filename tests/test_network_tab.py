@@ -189,10 +189,14 @@ class TestNetworkTabInit(unittest.TestCase):
         )
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
-    def test_initial_load_deferred(self, mock_ss):
-        """__init__ schedules _initial_load via QTimer.singleShot."""
-        _create_tab()
-        mock_ss.assert_called()
+    def test_initial_load_waits_for_route_activation(self, mock_ss):
+        """Construction is probe-free; first activation schedules initial load."""
+        tab = _create_tab()
+        mock_ss.assert_not_called()
+
+        tab.on_activate()
+
+        mock_ss.assert_called_once_with(0, tab._initial_load)
 
 
 # =========================================================================
@@ -906,6 +910,7 @@ class TestNetworkTabMonitoring(unittest.TestCase):
     def test_on_tab_changed_monitoring(self, mock_ss):
         """_on_tab_changed starts timer when switching to monitoring tab (index 3)."""
         tab = _create_tab()
+        tab._route_active = True
 
         with patch.object(tab, "_refresh_monitoring") as mock_refresh:
             with patch.object(tab._monitor_timer, "start") as mock_start:

@@ -106,7 +106,7 @@ class TestRoutePlacements(unittest.TestCase):
 
         self.assertIsNotNone(route)
         self.assertEqual(route.id, "dashboard")
-        self.assertEqual(route.plugin_id, "dashboard")
+        self.assertEqual(route.plugin_id, "system_info")
         self.assertEqual(placement.destination_id, "system")
         self.assertEqual(placement.redirect_route_id, "system_info")
         self.assertFalse(placement.discoverable)

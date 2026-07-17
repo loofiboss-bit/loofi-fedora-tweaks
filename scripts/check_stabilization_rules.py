@@ -27,6 +27,7 @@ SUBPROCESS_FUNCS = TIMEOUT_FUNCS | {"Popen"}
 
 ALLOWED_BROAD_EXCEPTIONS = {
     ("loofi-fedora-tweaks/core/workers/base_worker.py", "BaseWorker.run"),
+    ("loofi-fedora-tweaks/ui/lazy_widget.py", "LazyWidget.ensure_loaded"),
     ("loofi-fedora-tweaks/utils/error_handler.py", "_log_error"),
 }
 

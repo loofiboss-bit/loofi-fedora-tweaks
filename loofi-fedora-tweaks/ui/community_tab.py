@@ -105,10 +105,16 @@ class CommunityTab(QWidget, PluginInterface):
         self.selected_marketplace_plugin_id = None
         self.marketplace_plugin_metadata = {}
         self.current_presets = []
+        self._marketplace_load_started = False
         self.init_ui()
 
-        # Load marketplace data
+    def on_activate(self) -> None:
+        """Start optional marketplace work only after explicit activation."""
+        if self._marketplace_load_started:
+            return
+        self._marketplace_load_started = True
         self.refresh_marketplace()
+        QTimer.singleShot(0, self._load_featured_plugins)
 
     def init_ui(self):
         """Initialize the UI with sub-tabs."""
@@ -315,9 +321,6 @@ class CommunityTab(QWidget, PluginInterface):
         self.featured_details.setReadOnly(True)
         self.featured_details.setMaximumHeight(120)
         layout.addWidget(self.featured_details)
-
-        # Load on creation
-        QTimer.singleShot(500, self._load_featured_plugins)
 
         return widget
 

@@ -61,10 +61,16 @@ class PerformanceTab(BaseTab):
         # Auto-refresh workload every 30s
         self._timer = QTimer(self)
         self._timer.timeout.connect(self._detect_workload)
-        self._timer.start(30_000)
 
-        # Initial load
-        QTimer.singleShot(200, self._detect_workload)
+    def on_activate(self) -> None:
+        """Refresh workload data only while this specialist route is active."""
+        if not self._timer.isActive():
+            self._timer.start(30_000)
+        QTimer.singleShot(0, self._detect_workload)
+
+    def on_deactivate(self) -> None:
+        if self._timer.isActive():
+            self._timer.stop()
 
     def init_ui(self):
         layout = QVBoxLayout()

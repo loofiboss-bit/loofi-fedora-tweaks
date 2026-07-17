@@ -103,8 +103,8 @@ _AREA_BY_PLUGIN = {
     for plugin_id in area.plugin_ids
 }
 
-# Keep the everyday view focused.  The live dashboard remains route-addressable
-# but is intentionally not a second Home row in the sidebar.
+# Keep the everyday view focused. Compatibility routes are resolved through the
+# route manifest and are not represented as plugin rows.
 DEFAULT_PLUGIN_IDS: tuple[str, ...] = (
     "atlas_dashboard",
     "software",
@@ -133,7 +133,6 @@ INTERMEDIATE_PLUGIN_IDS: tuple[str, ...] = DEFAULT_PLUGIN_IDS + (
 )
 
 HIDDEN_BY_DEFAULT_PLUGIN_IDS: tuple[str, ...] = (
-    "dashboard",
     "community",
     "logs",
     "mesh",
@@ -185,7 +184,7 @@ def is_plugin_visible_for_level(
         return True
     normalized = str(level or "beginner").lower()
     if normalized == "advanced":
-        return plugin_id != "dashboard"
+        return True
     return plugin_id in plugin_ids_for_level(normalized)
 
 
@@ -214,11 +213,11 @@ def validate_areas(plugin_ids: Iterable[str]) -> list[str]:
         errors.append(f"plugin {plugin_id} appears in multiple navigation areas")
 
     for plugin_id in mapped_plugins:
-        if plugin_id not in known and plugin_id != "dashboard":
+        if plugin_id not in known:
             errors.append(f"area references unknown plugin {plugin_id}")
 
     for plugin_id in DEFAULT_PLUGIN_IDS + INTERMEDIATE_PLUGIN_IDS + HIDDEN_BY_DEFAULT_PLUGIN_IDS:
-        if plugin_id not in known and plugin_id != "dashboard":
+        if plugin_id not in known:
             errors.append(f"visibility list references unknown plugin {plugin_id}")
 
     return errors

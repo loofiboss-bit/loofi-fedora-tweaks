@@ -68,7 +68,16 @@ class AgentsTab(BaseTab):
         self._init_ui()
         self._refresh_timer = QTimer()
         self._refresh_timer.timeout.connect(self._refresh_all)
-        self._refresh_timer.start(REFRESH_INTERVAL_MS)
+
+    def on_activate(self) -> None:
+        """Refresh agent state only while the page is visible."""
+        if not self._refresh_timer.isActive():
+            self._refresh_timer.start(REFRESH_INTERVAL_MS)
+        QTimer.singleShot(0, self._refresh_all)
+
+    def on_deactivate(self) -> None:
+        if self._refresh_timer.isActive():
+            self._refresh_timer.stop()
 
     def _init_ui(self):
         layout = QVBoxLayout(self)

@@ -31,7 +31,7 @@ class TestLoadBuiltins(unittest.TestCase):
     def test_loads_plugins(self, mock_import):
         from core.plugins.loader import PluginLoader
         mock_cls = MagicMock()
-        mock_instance = _make_plugin_interface("dashboard")
+        mock_instance = _make_plugin_interface("atlas_dashboard")
         mock_cls.return_value = mock_instance
 
         # Make issubclass work
@@ -39,7 +39,7 @@ class TestLoadBuiltins(unittest.TestCase):
         mock_cls.__mro__ = (mock_cls, PluginInterface, object)
 
         mock_module = MagicMock()
-        mock_module.DashboardTab = mock_cls
+        mock_module.AtlasDashboardTab = mock_cls
         mock_import.return_value = mock_module
 
         # Use a custom method to check type correctly

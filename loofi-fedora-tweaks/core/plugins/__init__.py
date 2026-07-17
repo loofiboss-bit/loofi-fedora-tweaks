@@ -32,6 +32,7 @@ from core.plugins.registry import PluginRegistry
 from core.plugins.resolver import DependencyResolver, ResolverResult
 from core.plugins.sandbox import PluginSandbox, RestrictedImporter, create_sandbox
 from core.plugins.scanner import PluginScanner
+from core.plugins.spec import BUILTIN_PLUGIN_SPECS, PluginSpec
 
 __all__ = [
     "PluginInterface",
@@ -51,4 +52,6 @@ __all__ = [
     "VerificationResult",
     "DependencyResolver",
     "ResolverResult",
+    "PluginSpec",
+    "BUILTIN_PLUGIN_SPECS",
 ]

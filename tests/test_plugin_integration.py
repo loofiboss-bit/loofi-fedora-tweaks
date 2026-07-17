@@ -31,7 +31,6 @@ from utils.plugin_marketplace import MarketplaceRatingAggregate, MarketplaceResu
 # Category groupings mirror the intended sidebar structure.
 _PLUGIN_INFO: dict[str, tuple[str, str, int]] = {
     "ui.atlas_dashboard_tab": ("atlas_dashboard", "Overview",      0),
-    "ui.dashboard_tab":       ("dashboard",       "Overview",      10),
     "ui.agents_tab":          ("agents",          "AI",            10),
     "ui.automation_tab":      ("automation",      "AI",            20),
     "ui.system_info_tab":     ("system_info",     "System",        10),
@@ -161,9 +160,11 @@ class TestPluginIntegrationLoadBuiltins:
         with patch("importlib.import_module", side_effect=_build_fake_import_function()):
             loader.load_builtins()
 
-        for expected_id in ("atlas_dashboard", "dashboard", "hardware", "network", "security", "settings"):
+        for expected_id in ("atlas_dashboard", "hardware", "network", "security", "settings"):
             plugin = registry.get(expected_id)
             assert plugin is not None, f"Expected plugin '{expected_id}' not found"
+
+        assert registry.get("dashboard") is None
 
     def test_list_all_returns_all_registered_plugins(self):
         """list_all() contains every plugin returned by load_builtins()."""

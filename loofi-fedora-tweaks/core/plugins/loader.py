@@ -18,6 +18,7 @@ from core.plugins.interface import PluginInterface
 from core.plugins.registry import PluginRegistry
 from core.plugins.sandbox import create_sandbox
 from core.plugins.scanner import PluginScanner
+from core.plugins.spec import BUILTIN_PLUGIN_SPECS, BUILTIN_SPEC_BY_ID
 
 log = logging.getLogger(__name__)
 
@@ -26,7 +27,6 @@ log = logging.getLogger(__name__)
 # See core/plugins/registry.py for CATEGORY_ORDER.
 _BUILTIN_PLUGINS: list[tuple[str, str]] = [
     ("ui.atlas_dashboard_tab", "AtlasDashboardTab"),
-    ("ui.dashboard_tab", "DashboardTab"),
     ("ui.agents_tab", "AgentsTab"),
     ("ui.automation_tab", "AutomationTab"),
     ("ui.system_info_tab", "SystemInfoTab"),
@@ -94,12 +94,13 @@ class PluginLoader:
         registry: PluginRegistry | None = None,
         detector: CompatibilityDetector | None = None,
     ) -> None:
-        self._registry = registry or PluginRegistry.instance()
-        self._detector = detector or CompatibilityDetector()
+        self._registry = registry if registry is not None else PluginRegistry.instance()
+        self._detector = detector if detector is not None else CompatibilityDetector()
         self._external_plugin_dirs: dict[str, Path] = {}
         self._external_registry_ids: dict[str, str] = {}
         self._external_snapshots: dict[str, str] = {}
         self._external_context: dict = {}
+        self._builtin_widgets: dict[str, object] = {}
 
     @staticmethod
     def _parse_version(ver_str: str) -> tuple[int, ...]:
@@ -159,6 +160,45 @@ class PluginLoader:
             except (ImportError, AttributeError, TypeError, ValueError) as exc:
                 log.warning("Failed to load plugin %s.%s: %s", module_path, class_name, exc)
         return loaded
+
+    def register_builtin_specs(self) -> list[str]:
+        """Register data-only built-in specs without importing UI modules."""
+        registered: list[str] = []
+        for spec in BUILTIN_PLUGIN_SPECS:
+            existing = self._registry.get_spec(spec.id)
+            if existing is None:
+                self._registry.register_spec(spec)
+                registered.append(spec.id)
+            elif existing != spec:
+                raise ValueError(f"Conflicting plugin spec id: {spec.id!r}")
+        return registered
+
+    def load_builtin(self, plugin_id: str, context: dict | None = None) -> PluginInterface:
+        """Import and construct one built-in plugin, reusing a cached instance."""
+        cached = self._registry.get(plugin_id)
+        if cached is not None:
+            if context:
+                cached.set_context(context)
+            return cached
+
+        spec = self._registry.get_spec(plugin_id) or BUILTIN_SPEC_BY_ID.get(plugin_id)
+        if spec is None:
+            raise KeyError(f"Unknown built-in plugin: {plugin_id!r}")
+        if self._registry.get_spec(plugin_id) is None:
+            self._registry.register_spec(spec)
+
+        plugin = self._import_plugin(spec.module, spec.class_name)
+        if context:
+            plugin.set_context(context)
+        self._registry.cache_builtin(spec, plugin)
+        return plugin
+
+    def load_builtin_widget(self, plugin_id: str, context: dict | None = None):
+        """Return the lazily constructed widget for one built-in specification."""
+        if plugin_id not in self._builtin_widgets:
+            plugin = self.load_builtin(plugin_id, context=context)
+            self._builtin_widgets[plugin_id] = plugin.create_widget()
+        return self._builtin_widgets[plugin_id]
 
     def _import_plugin(self, module_path: str, class_name: str) -> PluginInterface:
         """Import module, instantiate class, validate it implements PluginInterface."""

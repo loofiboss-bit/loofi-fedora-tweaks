@@ -3,10 +3,13 @@ Lazy loading widget for deferred tab initialization.
 Part of v7.1 performance optimization.
 """
 
+import logging
 from typing import Callable
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+
+logger = logging.getLogger(__name__)
 
 
 class LazyWidget(QWidget):
@@ -28,6 +31,7 @@ class LazyWidget(QWidget):
         super().__init__()
         self.loader_fn = loader_fn
         self.real_widget: QWidget | None = None
+        self.load_error: str | None = None
         self._loaded = False
 
         # Minimal placeholder layout
@@ -55,9 +59,15 @@ class LazyWidget(QWidget):
             try:
                 self.real_widget = self.loader_fn()
                 self._layout.addWidget(self.real_widget)
-            except (ImportError, TypeError, RuntimeError, AttributeError) as e:
+            except Exception as e:
                 # Show error if loading fails
-                error_label = QLabel(f"Failed to load: {e}")
+                logger.exception("Lazy page load failed")
+                self.load_error = str(e)
+                error_label = QLabel(
+                    self.tr("This page could not be loaded.\n\n%1").replace(
+                        "%1", self.load_error
+                    )
+                )
                 error_label.setObjectName("errorLabel")
                 error_label.setWordWrap(True)
                 self._layout.addWidget(error_label)
