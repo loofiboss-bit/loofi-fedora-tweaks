@@ -6,7 +6,7 @@ Uses StorageManager from utils/storage.py for lsblk, smartctl, df, and fsck.
 """
 
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QGridLayout,
     QGroupBox,
@@ -26,6 +26,8 @@ from ui.base_tab import BaseTab
 
 class StorageTab(BaseTab):
     """Storage and disk management tab."""
+
+    actionCenterRequested = pyqtSignal(str, object)
 
     _METADATA = PluginMetadata(
         id="storage",
@@ -131,8 +133,8 @@ class StorageTab(BaseTab):
         al_layout = QHBoxLayout()
         action_group.setLayout(al_layout)
 
-        btn_trim = QPushButton(self.tr("✂️ Trim SSDs"))
-        btn_trim.setAccessibleName(self.tr("Trim SSDs"))
+        btn_trim = QPushButton(self.tr("Review SSD Trim"))
+        btn_trim.setAccessibleName(self.tr("Review SSD Trim in Action Center"))
         btn_trim.clicked.connect(self._trim_ssd)
         al_layout.addWidget(btn_trim)
 
@@ -344,23 +346,8 @@ class StorageTab(BaseTab):
             self.append_output(f"SMART error: {exc}\n")
 
     def _trim_ssd(self):
-        """Run fstrim on all SSDs."""
-        confirm = QMessageBox.question(
-            self,
-            self.tr("Trim SSDs"),
-            self.tr("Run fstrim on all mounted filesystems?"),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if confirm != QMessageBox.StandardButton.Yes:
-            return
-
-        self.append_output("Running SSD trim...\n")
-        try:
-            result = StorageManager.trim_ssd()
-            icon = "✅" if result.success else "❌"
-            self.append_output(f"{icon} {result.message}\n")
-        except (RuntimeError, OSError, ValueError) as exc:
-            self.append_output(f"Trim error: {exc}\n")
+        """Open the existing v14 trim plan without planning or executing it."""
+        self.actionCenterRequested.emit("fstrim-all", {})
 
     def _check_filesystem(self):
         """Check filesystem on selected mount."""

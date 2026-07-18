@@ -11,8 +11,16 @@ from services.software.flatpak import (
     FlatpakPermission,
     FlatpakSizeEntry,
 )
+from services.software.applications import (
+    ApplicationOperation,
+    ApplicationOperationService,
+    ApplicationPresentation,
+)
 
 __all__ = [
+    "ApplicationOperation",
+    "ApplicationOperationService",
+    "ApplicationPresentation",
     "FlatpakAppPermissions",
     "FlatpakManager",
     "FlatpakPermission",

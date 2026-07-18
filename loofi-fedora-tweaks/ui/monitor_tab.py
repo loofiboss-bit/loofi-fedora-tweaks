@@ -329,6 +329,8 @@ class _PerformanceSubTab(QWidget):
     def __init__(self):
         super().__init__()
         self.collector = PerformanceCollector()
+        self._slow_worker = None
+        self._slow_action_link = None
         self.init_ui()
 
         # Collection timer - fires every 1000ms
@@ -357,6 +359,30 @@ class _PerformanceSubTab(QWidget):
         header.setObjectName("header")
         layout.addWidget(header)
 
+        slow_group = QGroupBox(self.tr("Diagnose a Slow System"))
+        slow_layout = QVBoxLayout(slow_group)
+        slow_intro = QLabel(self.tr(
+            "Capture one bounded, read-only snapshot of CPU, memory, storage, "
+            "top processes, failed services, and recurring health signals."
+        ))
+        slow_intro.setWordWrap(True)
+        slow_layout.addWidget(slow_intro)
+        self.slow_summary = QLabel(self.tr("Run an analysis while the slowdown is happening."))
+        self.slow_summary.setWordWrap(True)
+        self.slow_summary.setAccessibleName(self.tr("Slow system summary"))
+        slow_layout.addWidget(self.slow_summary)
+        slow_button_row = QHBoxLayout()
+        self.slow_analyze_button = QPushButton(self.tr("Analyze Slow System"))
+        self.slow_analyze_button.clicked.connect(self._analyze_slow_system)
+        slow_button_row.addWidget(self.slow_analyze_button)
+        self.slow_action_button = QPushButton(self.tr("Review Failed Service in Action Center"))
+        self.slow_action_button.clicked.connect(self._open_slow_action)
+        self.slow_action_button.hide()
+        slow_button_row.addWidget(self.slow_action_button)
+        slow_button_row.addStretch()
+        slow_layout.addLayout(slow_button_row)
+        layout.addWidget(slow_group)
+
         # 2x2 Grid of performance cards
         grid = QGridLayout()
         grid.setSpacing(20)
@@ -375,6 +401,79 @@ class _PerformanceSubTab(QWidget):
 
         layout.addLayout(grid)
         layout.addStretch()
+
+    def _analyze_slow_system(self) -> None:
+        if self._slow_worker is not None:
+            return
+        from PyQt6.QtCore import QThread, pyqtSignal
+        from core.workflows import SlowSystemService
+
+        class _SlowSystemWorker(QThread):
+            resultReady = pyqtSignal(object)
+            failed = pyqtSignal(str)
+
+            def run(worker_self) -> None:
+                try:
+                    worker_self.resultReady.emit(SlowSystemService().collect())
+                except (OSError, RuntimeError, ValueError, TypeError) as exc:
+                    worker_self.failed.emit(str(exc))
+
+        self.slow_analyze_button.setEnabled(False)
+        self.slow_summary.setText(self.tr("Collecting a bounded read-only snapshot…"))
+        worker = _SlowSystemWorker(self)
+        worker.resultReady.connect(self._show_slow_summary)
+        worker.failed.connect(self._show_slow_error)
+        worker.finished.connect(self._clear_slow_worker)
+        self._slow_worker = worker
+        worker.start()
+
+    def _show_slow_summary(self, summary) -> None:
+        snapshot = summary.snapshot
+        metrics = self.tr("CPU: %s · Memory: %s · Storage: %s · I/O wait: %s") % (
+            self._percent(snapshot.cpu_percent),
+            self._percent(snapshot.memory_percent),
+            self._percent(snapshot.storage_percent),
+            self._percent(snapshot.io_wait_percent),
+        )
+        processes = ", ".join(
+            f"{item.name} ({item.cpu_percent:.1f}% CPU)"
+            for item in snapshot.top_processes[:3]
+        ) or self.tr("none available")
+        steps = "\n".join(f"• {step}" for step in summary.next_steps)
+        self.slow_summary.setText(
+            f"{summary.bottleneck}\n{summary.explanation}\n{metrics}\n"
+            f"{self.tr('Top processes')}: {processes}\n{steps}"
+        )
+        self._slow_action_link = summary.action_center_link
+        self.slow_action_button.setVisible(summary.action_center_link is not None)
+        if summary.action_center_link is not None:
+            self.slow_action_button.setText(summary.action_center_link.label)
+
+    def _show_slow_error(self, message: str) -> None:
+        self.slow_summary.setText(self.tr("Slow-system analysis failed: %s") % message)
+        self._slow_action_link = None
+        self.slow_action_button.hide()
+
+    def _clear_slow_worker(self) -> None:
+        worker = self._slow_worker
+        self._slow_worker = None
+        self.slow_analyze_button.setEnabled(True)
+        if worker is not None:
+            worker.deleteLater()
+
+    def _open_slow_action(self) -> None:
+        link = self._slow_action_link
+        main_window = self.window() if hasattr(self, "window") else None
+        switch = getattr(main_window, "switch_to_route", None)
+        preselect = getattr(main_window, "_preselect_action_center", None)
+        if link is None or not callable(switch) or not switch(link.route_id):
+            return
+        if callable(preselect):
+            preselect(link.action_id, dict(link.parameters))
+
+    @staticmethod
+    def _percent(value) -> str:
+        return "—" if value is None else f"{float(value):.0f}%"
 
     # ==================== CARD BUILDERS ====================
 

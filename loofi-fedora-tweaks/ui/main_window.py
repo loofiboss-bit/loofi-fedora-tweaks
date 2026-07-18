@@ -480,9 +480,17 @@ class MainWindow(QMainWindow):
         )
         if not isinstance(widget, QWidget):
             raise TypeError(f"Plugin {plugin_id!r} did not create a QWidget")
+        action_request = getattr(widget, "actionCenterRequested", None)
+        if action_request is not None and hasattr(action_request, "connect"):
+            action_request.connect(self._open_action_center_request)
         if plugin_id == "atlas_dashboard":
             self._schedule_post_render_services()
         return widget
+
+    def _open_action_center_request(self, action_id: str, parameters=None) -> None:
+        """Navigate and preselect only; workflow adapters never create a plan."""
+        if self.switch_to_route("maintenance:action-center"):
+            self._preselect_action_center(action_id, parameters)
 
     def _find_or_create_category(self, category: str) -> QTreeWidgetItem:
         """Find or create a category tree item, using cache for O(1) lookup."""
@@ -1237,7 +1245,7 @@ class MainWindow(QMainWindow):
             self._preselect_action_center(action_id)
         return True
 
-    def _preselect_action_center(self, action_id: str) -> bool:
+    def _preselect_action_center(self, action_id: str, parameters=None) -> bool:
         """Select an Action Center candidate without planning or running it."""
         entry = self._sidebar_index.get("maintenance")
         if entry is None:
@@ -1246,7 +1254,9 @@ class MainWindow(QMainWindow):
         preselect = getattr(widget, "preselect_action", None)
         if not callable(preselect):
             return False
-        return bool(preselect(action_id))
+        if parameters is None:
+            return bool(preselect(action_id))
+        return bool(preselect(action_id, parameters))
 
     def _toggle_sidebar(self):
         """Toggle sidebar between expanded and collapsed states."""

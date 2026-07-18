@@ -83,6 +83,7 @@ class _ApplicationsSubTab(BaseTab):
         self.btn_batch_install.setToolTip(SW_BATCH_INSTALL)
         self.btn_batch_install.clicked.connect(self._batch_install)
         self.btn_batch_install.setEnabled(False)
+        self.btn_batch_install.hide()
         batch_layout.addWidget(self.btn_batch_install)
 
         self.btn_batch_remove = QPushButton(self.tr("🗑️ Remove Selected"))
@@ -90,6 +91,7 @@ class _ApplicationsSubTab(BaseTab):
         self.btn_batch_remove.setToolTip(SW_BATCH_REMOVE)
         self.btn_batch_remove.clicked.connect(self._batch_remove)
         self.btn_batch_remove.setEnabled(False)
+        self.btn_batch_remove.hide()
         batch_layout.addWidget(self.btn_batch_remove)
         layout.addLayout(batch_layout)
 
@@ -174,7 +176,9 @@ class _ApplicationsSubTab(BaseTab):
         self._update_batch_buttons()
 
     def add_app_row(self, layout, app_data):
-        """Add a single app row with checkbox, name, description, and install button."""
+        """Add one source-aware app row with a single install/remove action."""
+        from services.software import ApplicationOperationService
+
         row_widget = QFrame()
         row_widget.setFrameShape(QFrame.Shape.StyledPanel)
         row_layout = QHBoxLayout()
@@ -183,16 +187,20 @@ class _ApplicationsSubTab(BaseTab):
         # Defensive access for potentially missing keys
         app_name = app_data.get("name", "Unknown App")
         app_desc = app_data.get("desc", app_data.get("description", ""))
+        presentation = ApplicationOperationService.describe(app_data)
 
         # v31.0: Batch selection checkbox
         chk = QCheckBox()
         chk.setAccessibleName(self.tr("Select {}").format(app_name))
         chk.stateChanged.connect(self._update_batch_buttons)
         row_layout.addWidget(chk)
+        chk.hide()
         self._app_checkboxes.append((chk, app_data))
 
         lbl_name = QLabel(f"<b>{app_name}</b>")
         lbl_desc = QLabel(app_desc)
+        lbl_source = QLabel(self.tr("Source: %s") % presentation.source)
+        lbl_source.setToolTip(presentation.explanation)
 
         btn_install = QPushButton(self.tr("Install"))
         btn_install.setAccessibleName(self.tr("Install {}").format(app_name))
@@ -204,14 +212,30 @@ class _ApplicationsSubTab(BaseTab):
             is_installed = self.check_installed(chk_cmd)
 
         if is_installed:
-            btn_install.setText(self.tr("Installed"))
-            btn_install.setEnabled(False)
+            btn_install.setText(self.tr("Remove"))
+            btn_install.setAccessibleName(self.tr("Remove {}").format(app_name))
             btn_install.setObjectName("swInstalledBtn")
+            btn_install.clicked.connect(
+                lambda checked, app=app_data: self.run_app_action(
+                    app,
+                    installed=True,
+                )
+            )
+        elif not presentation.available:
+            btn_install.setText(self.tr("Source setup required"))
+            btn_install.setToolTip(presentation.explanation)
+            btn_install.setEnabled(False)
         else:
-            btn_install.clicked.connect(lambda checked, app=app_data: self.install_app(app))
+            btn_install.clicked.connect(
+                lambda checked, app=app_data: self.run_app_action(
+                    app,
+                    installed=False,
+                )
+            )
 
         row_layout.addWidget(lbl_name)
         row_layout.addWidget(lbl_desc)
+        row_layout.addWidget(lbl_source)
         row_layout.addStretch()
         row_layout.addWidget(btn_install)
 
@@ -222,9 +246,40 @@ class _ApplicationsSubTab(BaseTab):
         return SoftwareUtils.is_check_command_satisfied(cmd)
 
     def install_app(self, app_data):
+        """Compatibility adapter for callers that still request installation."""
+        self.run_app_action(app_data, installed=False)
+
+    def run_app_action(self, app_data, *, installed: bool) -> None:
+        """Confirm and start one normalized install/remove operation."""
+        from PyQt6.QtWidgets import QMessageBox
+        from services.software import ApplicationOperationService
+
+        try:
+            operation = ApplicationOperationService.operation(
+                app_data,
+                installed=installed,
+            )
+        except ValueError as exc:
+            self.show_error(str(exc))
+            return
+
+        action = self.tr("Remove") if installed else self.tr("Install")
+        name = str(app_data.get("name") or self.tr("application"))
+        detail = operation.description
+        if operation.reboot_expected:
+            detail += "\n" + self.tr(
+                "Atomic Fedora may require a reboot into the new deployment."
+            )
+        answer = QMessageBox.question(
+            self,
+            self.tr("Confirm %s") % action,
+            self.tr("%s %s?\n\n%s") % (action, name, detail),
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            return
         self.output_area.clear()
-        self.append_output(self.tr("Installing {}...\n").format(app_data["name"]))
-        self.runner.run_command(app_data["cmd"], app_data["args"])
+        self.append_output(detail + "\n")
+        self.runner.run_command(operation.binary, list(operation.arguments))
 
     def append_output(self, text):
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)

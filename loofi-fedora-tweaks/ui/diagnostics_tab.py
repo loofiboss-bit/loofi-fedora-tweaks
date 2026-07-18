@@ -67,7 +67,7 @@ class _WatchtowerSubTab(QWidget):
 
         # Header
         header = QLabel(
-            self.tr("\U0001f52d Watchtower - System Diagnostics")
+            self.tr("Health & Troubleshooting")
         )
         header.setObjectName("header")
         layout.addWidget(header)
@@ -239,6 +239,13 @@ class _WatchtowerSubTab(QWidget):
 
         layout.addWidget(journal_group)
 
+        support_note = QLabel(self.tr(
+            "Support export creates privacy-redacted diagnostic evidence for troubleshooting; "
+            "it is not a backup, recovery point, or rollback mechanism."
+        ))
+        support_note.setWordWrap(True)
+        layout.addWidget(support_note)
+
         # Action buttons
         btn_layout = QHBoxLayout()
 
@@ -317,6 +324,15 @@ class _WatchtowerSubTab(QWidget):
 
         menu = QMenu()
 
+        if service.state == UnitState.FAILED and service.scope == UnitScope.SYSTEM:
+            review_action = menu.addAction(
+                self.tr("Review Restart in Action Center")
+            )
+            review_action.triggered.connect(
+                lambda: self._review_failed_service(service.name)
+            )
+            menu.addSeparator()
+
         if service.state == UnitState.ACTIVE:
             stop_action = menu.addAction(
                 self.tr("\u23f9\ufe0f Stop")
@@ -356,6 +372,16 @@ class _WatchtowerSubTab(QWidget):
         )
 
         menu.exec(self.service_tree.viewport().mapToGlobal(position))
+
+    def _review_failed_service(self, unit: str) -> None:
+        """Navigate with an exact unit; never plan or execute from Diagnostics."""
+        main_window = self.window() if hasattr(self, "window") else None
+        switch = getattr(main_window, "switch_to_route", None)
+        preselect = getattr(main_window, "_preselect_action_center", None)
+        if not callable(switch) or not switch("maintenance:action-center"):
+            return
+        if callable(preselect):
+            preselect("restart-failed-service", {"service": str(unit)})
 
     def _service_action(self, action: str, service):
         """Execute a service action."""
@@ -946,7 +972,7 @@ class DiagnosticsTab(BaseTab):
 
     _METADATA = PluginMetadata(
         id="diagnostics",
-        name="Diagnostics",
+        name="Troubleshooting",
         description="System diagnostics including service health, boot analysis, and journal review.",
         category="Maintenance",
         icon="🔭",
@@ -967,7 +993,7 @@ class DiagnosticsTab(BaseTab):
 
         self.tabs = QTabWidget()
         configure_top_tabs(self.tabs)
-        self.tabs.addTab(_WatchtowerSubTab(), self.tr("Watchtower"))
+        self.tabs.addTab(_WatchtowerSubTab(), self.tr("Health & Troubleshooting"))
         self.tabs.addTab(_BootSubTab(), self.tr("Boot"))
 
         layout.addWidget(self.tabs)

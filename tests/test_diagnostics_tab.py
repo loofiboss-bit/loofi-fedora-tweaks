@@ -542,7 +542,6 @@ _module_backup = {}
 
 def setUpModule():
     """Install stubs and import ui.diagnostics_tab."""
-    global _module_backup
     for key in _MODULE_KEYS:
         _module_backup[key] = sys.modules.get(key)
     _install_diagnostics_stubs()
@@ -1680,8 +1679,8 @@ class TestDiagnosticsTabMetadata(unittest.TestCase):
         self.assertIn('id="diagnostics"', self.source)
 
     def test_metadata_name(self):
-        """Metadata name is 'Diagnostics'."""
-        self.assertIn('name="Diagnostics"', self.source)
+        """Metadata name reflects the Phase 6 troubleshooting presentation."""
+        self.assertIn('name="Troubleshooting"', self.source)
 
     def test_metadata_category(self):
         """Metadata category is 'Maintenance'."""

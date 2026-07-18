@@ -64,7 +64,7 @@ class BackupTab(BaseTab):
         layout.setContentsMargins(*CONTENT_MARGINS)
 
         # --- Header ---
-        title = QLabel(self.tr("System Backup Wizard"))
+        title = QLabel(self.tr("Backups"))
         title.setObjectName("sectionTitle")
         layout.addWidget(title)
 
@@ -108,7 +108,8 @@ class BackupTab(BaseTab):
         info = QLabel(
             self.tr(
                 "This wizard helps you create and manage system snapshots.\n"
-                "Supported tools: Timeshift, Snapper."
+                "These recovery points protect system state through Timeshift or Snapper; "
+                "they are not a backup of your personal files."
             )
         )
         info.setWordWrap(True)

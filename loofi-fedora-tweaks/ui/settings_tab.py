@@ -268,7 +268,9 @@ class SettingsTab(QWidget, PluginInterface):
         layout = QVBoxLayout(page)
         intro = QLabel(self.tr(
             "State Doctor checks Loofi's local files, schemas, locks, permissions, and collector freshness. "
-            "The check is read-only. Backups exclude credentials, raw logs, plugin code, and caches."
+            "The check is read-only. This page repairs and archives Loofi application state only; "
+            "it does not create system recovery points, personal-file backups, rollback deployments, "
+            "or support bundles. State backups exclude credentials, raw logs, plugin code, and caches."
         ))
         intro.setWordWrap(True)
         layout.addWidget(intro)

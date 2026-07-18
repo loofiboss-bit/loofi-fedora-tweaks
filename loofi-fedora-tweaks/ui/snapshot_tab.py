@@ -56,9 +56,17 @@ class SnapshotTab(BaseTab):
         layout = QVBoxLayout()
         self.setLayout(layout)
 
-        header = QLabel(self.tr("System Snapshots"))
+        header = QLabel(self.tr("Recovery Points"))
         header.setObjectName("snapHeader")
         layout.addWidget(header)
+
+        explanation = QLabel(self.tr(
+            "Recovery points are system snapshots for rollback. They are managed "
+            "separately from personal-file backups, ordinary cache cleanup, Loofi "
+            "application-state recovery, and support exports."
+        ))
+        explanation.setWordWrap(True)
+        layout.addWidget(explanation)
 
         # ==================== Backend Status ====================
         backend_group = QGroupBox(self.tr("Backends"))
@@ -78,8 +86,8 @@ class SnapshotTab(BaseTab):
         # ==================== Actions ====================
         action_layout = QHBoxLayout()
 
-        btn_create = QPushButton(self.tr("📸 Create Snapshot"))
-        btn_create.setAccessibleName(self.tr("Create Snapshot"))
+        btn_create = QPushButton(self.tr("Create Recovery Point"))
+        btn_create.setAccessibleName(self.tr("Create Recovery Point"))
         btn_create.clicked.connect(self._create_snapshot)
         action_layout.addWidget(btn_create)
 
@@ -96,12 +104,12 @@ class SnapshotTab(BaseTab):
         layout.addLayout(action_layout)
 
         # ==================== Snapshot Timeline ====================
-        snap_group = QGroupBox(self.tr("Snapshot Timeline"))
+        snap_group = QGroupBox(self.tr("Recovery Point Timeline"))
         sl_layout = QVBoxLayout()
         snap_group.setLayout(sl_layout)
 
         self.snap_table = QTableWidget()
-        self.snap_table.setAccessibleName(self.tr("Snapshot Timeline"))
+        self.snap_table.setAccessibleName(self.tr("Recovery Point Timeline"))
         self.snap_table.setColumnCount(5)
         self.snap_table.setHorizontalHeaderLabels(
             [

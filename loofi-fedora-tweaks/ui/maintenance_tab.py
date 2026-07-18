@@ -63,6 +63,14 @@ class _UpdatesSubTab(BaseTab):
         header.setObjectName("header")
         layout.addWidget(header)
 
+        update_guidance = QLabel(self.tr(
+            "Review system, Flatpak, and firmware updates together. Traditional Fedora "
+            "updates the current system; Atomic Fedora creates a new rpm-ostree deployment "
+            "and may require a reboot."
+        ))
+        update_guidance.setWordWrap(True)
+        layout.addWidget(update_guidance)
+
         # Update All Button (Prominent)
         self.btn_update_all = QPushButton(self.tr("\U0001f504 Update All (DNF + Flatpak + Firmware)"))
         self.btn_update_all.setAccessibleName(self.tr("Update All (DNF + Flatpak + Firmware)"))
@@ -114,6 +122,19 @@ class _UpdatesSubTab(BaseTab):
 
         layout.addWidget(kernel_group)
 
+        # Preserve the Smart Updates backend as one advanced section inside
+        # the canonical Updates workflow instead of a duplicate top-level tab.
+        self.advanced_group = QGroupBox(self.tr("Advanced Options"))
+        self.advanced_group.setObjectName("maintAdvancedUpdateOptions")
+        self.advanced_group.setCheckable(True)
+        self.advanced_group.setChecked(False)
+        advanced_layout = QVBoxLayout(self.advanced_group)
+        self.advanced_updates = _SmartUpdatesSubTab()
+        self.advanced_updates.setVisible(False)
+        self.advanced_group.toggled.connect(self.advanced_updates.setVisible)
+        advanced_layout.addWidget(self.advanced_updates)
+        layout.addWidget(self.advanced_group)
+
         # Progress Bar
         self.progress_bar = QProgressBar()
         self.progress_bar.setValue(0)
@@ -130,6 +151,10 @@ class _UpdatesSubTab(BaseTab):
 
         self.update_queue = []
         self.current_update_index = 0
+
+    def reveal_advanced_options(self) -> None:
+        """Reveal the former Smart Updates surface after a compatible deep link."""
+        self.advanced_group.setChecked(True)
 
     # -- Progress ----------------------------------------------------------
 
@@ -279,6 +304,8 @@ class _CleanupSubTab(BaseTab):
     - Output log
     """
 
+    actionCenterRequested = pyqtSignal(str, object)
+
     def __init__(self):
         super().__init__()
         layout = QVBoxLayout()
@@ -292,13 +319,12 @@ class _CleanupSubTab(BaseTab):
         cleanup_layout = QVBoxLayout()
         cleanup_group.setLayout(cleanup_layout)
 
-        btn_dnf_clean = QPushButton(self.tr("Clean DNF Cache"))
-        btn_dnf_clean.setAccessibleName(self.tr("Clean DNF Cache"))
+        btn_dnf_clean = QPushButton(self.tr("Review DNF Cache Cleanup"))
+        btn_dnf_clean.setAccessibleName(self.tr("Review DNF Cache Cleanup in Action Center"))
         btn_dnf_clean.setToolTip(MAINT_CLEANUP)
+        btn_dnf_clean.setObjectName("maintReviewDnfClean")
         btn_dnf_clean.clicked.connect(
-            lambda: self.run_command(
-                *PrivilegedCommand.dnf("clean", "all"),
-            )
+            lambda: self.actionCenterRequested.emit("dnf-clean-all", {})
         )
         cleanup_layout.addWidget(btn_dnf_clean)
 
@@ -322,9 +348,12 @@ class _CleanupSubTab(BaseTab):
         maint_layout = QVBoxLayout()
         maint_group.setLayout(maint_layout)
 
-        btn_trim = QPushButton(self.tr("SSD Trim (fstrim)"))
-        btn_trim.setAccessibleName(self.tr("SSD Trim"))
-        btn_trim.clicked.connect(lambda: self.run_command("pkexec", ["fstrim", "-av"], self.tr("Trimming SSD...")))
+        btn_trim = QPushButton(self.tr("Review SSD Trim"))
+        btn_trim.setAccessibleName(self.tr("Review SSD Trim in Action Center"))
+        btn_trim.setObjectName("maintReviewFstrim")
+        btn_trim.clicked.connect(
+            lambda: self.actionCenterRequested.emit("fstrim-all", {})
+        )
         maint_layout.addWidget(btn_trim)
 
         btn_rpmdb = QPushButton(self.tr("Rebuild RPM Database"))
@@ -341,8 +370,85 @@ class _CleanupSubTab(BaseTab):
         maint_layout.addLayout(ts_layout)
 
         layout.addWidget(maint_group)
+
+        preview_group = QGroupBox(self.tr("Reclaim Preview"))
+        preview_layout = QVBoxLayout(preview_group)
+        preview_intro = QLabel(self.tr(
+            "Analyze package-cache and journal sizes without deleting anything. "
+            "Recovery points are always managed separately."
+        ))
+        preview_intro.setWordWrap(True)
+        preview_layout.addWidget(preview_intro)
+        self.reclaim_result = QLabel(self.tr(
+            "Select Analyze Reclaimable Space to collect bounded size estimates."
+        ))
+        self.reclaim_result.setWordWrap(True)
+        self.reclaim_result.setAccessibleName(self.tr("Reclaim analysis result"))
+        preview_layout.addWidget(self.reclaim_result)
+        self.reclaim_button = QPushButton(self.tr("Analyze Reclaimable Space"))
+        self.reclaim_button.clicked.connect(self._analyze_reclaim)
+        preview_layout.addWidget(self.reclaim_button)
+        layout.addWidget(preview_group)
         layout.addWidget(QLabel(self.tr("Output Log:")))
         layout.addWidget(self.output_area)
+        self._reclaim_thread = None
+        self._reclaim_worker = None
+
+    def _analyze_reclaim(self) -> None:
+        if self._reclaim_thread is not None:
+            return
+        from services.storage import ReclaimProbeService
+
+        self.reclaim_button.setEnabled(False)
+        self.reclaim_result.setText(self.tr("Analyzing reclaimable space…"))
+        thread = QThread(self)
+        worker = _ActionCenterOperationWorker(ReclaimProbeService().analyze)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+        worker.finished.connect(self._show_reclaim_analysis)
+        worker.finished.connect(thread.quit)
+        worker.failed.connect(self._show_reclaim_error)
+        worker.failed.connect(thread.quit)
+        thread.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+        thread.finished.connect(self._clear_reclaim_worker)
+        self._reclaim_thread = thread
+        self._reclaim_worker = worker
+        thread.start()
+
+    def _show_reclaim_analysis(self, analysis) -> None:
+        lines = []
+        for category in analysis.categories:
+            size = self.tr("estimate unavailable")
+            if category.estimated_bytes is not None:
+                size = self._format_bytes(category.estimated_bytes)
+            mode = self.tr("manual-only") if category.manual_only else self.tr("reviewable")
+            lines.append(
+                f"{category.title}: {size} · {category.risk} · {mode}\n"
+                f"{category.guidance}"
+            )
+        lines.append(
+            self.tr("Selected safe estimate: %s")
+            % self._format_bytes(analysis.estimated_selected_bytes)
+        )
+        self.reclaim_result.setText("\n\n".join(lines))
+
+    def _show_reclaim_error(self, message: str) -> None:
+        self.reclaim_result.setText(self.tr("Reclaim analysis failed: %s") % message)
+
+    def _clear_reclaim_worker(self) -> None:
+        self._reclaim_thread = None
+        self._reclaim_worker = None
+        self.reclaim_button.setEnabled(True)
+
+    @staticmethod
+    def _format_bytes(value: int) -> str:
+        size = float(max(0, value))
+        for unit in ("B", "KiB", "MiB", "GiB", "TiB"):
+            if size < 1024 or unit == "TiB":
+                return f"{size:.1f} {unit}"
+            size /= 1024
+        return "0 B"
 
     def check_timeshift(self):
         if cached_which("timeshift"):
@@ -820,6 +926,7 @@ class _ActionCenterSubTab(BaseTab):
         self._operation_thread = None
         self._operation_worker = None
         self._requested_action_id = ""
+        self._requested_parameters = {}
 
         from core.actions.center import ActionCenterService
 
@@ -842,41 +949,56 @@ class _ActionCenterSubTab(BaseTab):
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
-        target_row = QHBoxLayout()
+        target_row = QVBoxLayout()
+        target_row.setObjectName("actionCenterControls")
+        target_load_row = QHBoxLayout()
+        target_review_row = QHBoxLayout()
         load_stable = QPushButton(self.tr("Load Fedora 44 Actions"))
+        self.load_stable_button = load_stable
         load_stable.clicked.connect(lambda: self._load_target("44"))
-        target_row.addWidget(load_stable)
+        target_load_row.addWidget(load_stable)
 
         load_preview = QPushButton(self.tr("Load Fedora 45 Preview Actions"))
+        self.load_preview_button = load_preview
         load_preview.clicked.connect(lambda: self._load_target("45-preview"))
-        target_row.addWidget(load_preview)
+        target_load_row.addWidget(load_preview)
 
         preview_button = QPushButton(self.tr("Preview Selected"))
+        self.preview_button = preview_button
         preview_button.clicked.connect(self._preview_selected)
-        target_row.addWidget(preview_button)
+        target_load_row.addWidget(preview_button)
 
         review_button = QPushButton(self.tr("Review & Plan"))
+        self.review_button = review_button
         review_button.clicked.connect(self._plan_selected)
-        target_row.addWidget(review_button)
+        target_review_row.addWidget(review_button)
 
         self.run_button = QPushButton(self.tr("Run Plan"))
         self.run_button.clicked.connect(self._run_current_plan)
         self.run_button.setEnabled(False)
-        target_row.addWidget(self.run_button)
+        target_review_row.addWidget(self.run_button)
 
         self.verify_button = QPushButton(self.tr("Verify Run"))
         self.verify_button.clicked.connect(self._verify_current_run)
         self.verify_button.setEnabled(False)
-        target_row.addWidget(self.verify_button)
+        target_review_row.addWidget(self.verify_button)
 
         history_button = QPushButton(self.tr("Show History"))
+        self.history_button = history_button
         history_button.clicked.connect(self._show_history)
-        target_row.addWidget(history_button)
-        target_row.addStretch()
+        target_review_row.addWidget(history_button)
+        target_row.addLayout(target_load_row)
+        target_row.addLayout(target_review_row)
         layout.addLayout(target_row)
+
+        self.presentation_status = QLabel(self.tr("Loading Action Center candidates…"))
+        self.presentation_status.setWordWrap(True)
+        self.presentation_status.setAccessibleName(self.tr("Action Center status"))
+        layout.addWidget(self.presentation_status)
 
         self.action_list = QListWidget()
         self.action_list.setAccessibleName(self.tr("Action Center candidates"))
+        self.action_list.currentRowChanged.connect(self._selection_changed)
         layout.addWidget(self.action_list, 1)
 
         self.detail_area = QTextEdit()
@@ -905,6 +1027,8 @@ class _ActionCenterSubTab(BaseTab):
         self.verify_button.setEnabled(False)
         self.action_list.clear()
         self.detail_area.setPlainText(self.tr("Loading Action Center candidates..."))
+        self.presentation_status.setText(self.tr("Loading Action Center candidates…"))
+        self._set_loading(True)
         self._start_operation(
             lambda: self._merged_items(target_key),
             self._accept_loaded_items,
@@ -920,27 +1044,50 @@ class _ActionCenterSubTab(BaseTab):
 
     def _accept_loaded_items(self, items) -> None:
         self._items = list(items)
+        self._set_loading(False)
 
         for item in self._items:
             marker = self.tr("manual") if item.manual_only else item.state
             self.action_list.addItem(f"{item.title} [{item.risk_level}] - {marker}")
 
         if self._items:
+            self.presentation_status.setText(
+                self.tr("%d maintenance items are available. Select one to inspect its lifecycle.")
+                % len(self._items)
+            )
             selected = self._select_requested_action()
             if not selected:
                 self.action_list.setCurrentRow(0)
                 self._show_item(self._items[0])
         else:
+            self.presentation_status.setText(
+                self.tr("No maintenance item needs review right now.")
+            )
             self.detail_area.setPlainText(self.tr("No Action Center candidates are currently available."))
 
-    def preselect_action(self, action_id: str) -> bool:
+    def preselect_action(self, action_id: str, parameters=None) -> bool:
         """Preselect a candidate without creating a plan or running anything."""
         self._requested_action_id = self._ACTION_ID_ADAPTERS.get(
             str(action_id or ""), str(action_id or "")
         )
+        self._requested_parameters = dict(parameters or {})
         if not self._requested_action_id:
             return False
         return self._select_requested_action() or not bool(self._items)
+
+    def _set_loading(self, loading: bool) -> None:
+        for button in (
+            self.load_stable_button,
+            self.load_preview_button,
+            self.preview_button,
+            self.review_button,
+            self.history_button,
+        ):
+            button.setEnabled(not loading)
+
+    def _selection_changed(self, row: int) -> None:
+        if 0 <= row < len(self._items):
+            self._show_item(self._items[row])
 
     def _select_requested_action(self) -> bool:
         if not self._requested_action_id:
@@ -964,6 +1111,7 @@ class _ActionCenterSubTab(BaseTab):
         worker.finished.connect(on_success)
         worker.finished.connect(thread.quit)
         worker.failed.connect(lambda message: QMessageBox.warning(self, failure_title, message))
+        worker.failed.connect(lambda _message: self._set_loading(False))
         worker.failed.connect(thread.quit)
         thread.finished.connect(worker.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -983,6 +1131,14 @@ class _ActionCenterSubTab(BaseTab):
         return self._items[row]
 
     def _show_item(self, item) -> None:
+        self.review_button.setEnabled(not item.manual_only)
+        if item.manual_only:
+            self.presentation_status.setText(
+                self.tr(
+                    "Manual-only recommendation: review the guidance; "
+                    "Action Center will not execute it."
+                )
+            )
         command = " ".join(item.command_preview) if item.command_preview else self.tr("Manual-only")
         verification = " ".join(item.verification_command) if item.verification_command else self.tr("No verification command")
         self.detail_area.setPlainText(
@@ -1043,7 +1199,9 @@ class _ActionCenterSubTab(BaseTab):
         action_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
         parameters = {}
         if action_id == "restart-failed-service":
-            service = str(item.metadata.get("service", "")) if isinstance(item.metadata, dict) else ""
+            service = str(self._requested_parameters.get("service", ""))
+            if not service:
+                service = str(item.metadata.get("service", "")) if isinstance(item.metadata, dict) else ""
             if not service and item.command_preview:
                 service = str(item.command_preview[-1])
             if not service:
@@ -1372,6 +1530,8 @@ class MaintenanceTab(BaseTab):
         order=20,
     )
 
+    actionCenterRequested = pyqtSignal(str, object)
+
     def metadata(self) -> PluginMetadata:
         return self._METADATA
 
@@ -1388,10 +1548,9 @@ class MaintenanceTab(BaseTab):
 
         self._sub_tab_factories = [
             (self.tr("Updates"), _UpdatesSubTab),
-            (self.tr("Cleanup"), _CleanupSubTab),
-            (self.tr("Smart Updates"), _SmartUpdatesSubTab),
-            (self.tr("Health Timeline"), _HealthTimelineSubTab),
             (self.tr("Action Center"), _ActionCenterSubTab),
+            (self.tr("Cleanup"), _CleanupSubTab),
+            (self.tr("Health Timeline"), _HealthTimelineSubTab),
             (self.tr("Upgrade Assistant"), _UpgradeAssistantSubTab),
         ]
 
@@ -1417,6 +1576,9 @@ class MaintenanceTab(BaseTab):
         if index < len(self._sub_tab_factories):
             label, factory = self._sub_tab_factories[index]
             widget = factory()
+            request = getattr(widget, "actionCenterRequested", None)
+            if request is not None and hasattr(request, "connect"):
+                request.connect(self._open_action_center)
             self._loaded_tabs[index] = widget
             self.tabs.blockSignals(True)
             self.tabs.removeTab(index)
@@ -1424,7 +1586,10 @@ class MaintenanceTab(BaseTab):
             self.tabs.setCurrentIndex(index)
             self.tabs.blockSignals(False)
 
-    def preselect_action(self, action_id: str) -> bool:
+    def _open_action_center(self, action_id: str, parameters=None) -> None:
+        self.preselect_action(action_id, parameters)
+
+    def preselect_action(self, action_id: str, parameters=None) -> bool:
         """Open Action Center and preselect one candidate without side effects."""
         for index, (label, _factory) in enumerate(self._sub_tab_factories):
             if label != self.tr("Action Center"):
@@ -1433,5 +1598,40 @@ class MaintenanceTab(BaseTab):
             self._lazy_load_sub_tab(index)
             action_center = self._loaded_tabs.get(index)
             preselect = getattr(action_center, "preselect_action", None)
-            return bool(preselect(action_id)) if callable(preselect) else False
+            if not callable(preselect):
+                return False
+            if parameters is None:
+                return bool(preselect(action_id))
+            return bool(preselect(action_id, parameters))
+        return False
+
+    def activate_route(self, route) -> bool:
+        """Resolve stable Maintenance subroutes after presentation consolidation."""
+        original_subroute = str(getattr(route, "subroute", "") or "")
+        subroute = "updates" if original_subroute == "smart-updates" else original_subroute
+        labels = {
+            "updates": self.tr("Updates"),
+            "cleanup": self.tr("Cleanup"),
+            "health-timeline": self.tr("Health Timeline"),
+            "action-center": self.tr("Action Center"),
+            "upgrade-assistant": self.tr("Upgrade Assistant"),
+            "overlays": self.tr("Overlays"),
+        }
+        wanted = labels.get(subroute)
+        if wanted is None:
+            return not bool(subroute)
+        for index, (label, _factory) in enumerate(self._sub_tab_factories):
+            if label != wanted:
+                continue
+            self.tabs.setCurrentIndex(index)
+            self._lazy_load_sub_tab(index)
+            if original_subroute == "smart-updates":
+                reveal = getattr(
+                    self._loaded_tabs.get(index),
+                    "reveal_advanced_options",
+                    None,
+                )
+                if callable(reveal):
+                    reveal()
+            return True
         return False

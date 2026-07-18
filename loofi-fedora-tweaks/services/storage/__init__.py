@@ -5,9 +5,11 @@ Re-exports from submodules for convenient top-level access:
 """
 
 from services.storage.cloud_sync import CloudSyncManager
+from services.storage.reclaim import ReclaimProbeService
 from services.storage.teleport import StateTeleportManager
 
 __all__ = [
     "CloudSyncManager",
+    "ReclaimProbeService",
     "StateTeleportManager",
 ]

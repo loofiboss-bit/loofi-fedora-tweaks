@@ -81,7 +81,7 @@ class TestRoutePlacements(unittest.TestCase):
         expected = {
             "atlas_dashboard": ("home", "overview"),
             "software:apps": ("software_updates", "applications"),
-            "maintenance:action-center": ("software_updates", "action_center"),
+            "maintenance:action-center": ("software_updates", "maintenance_review"),
             "maintenance:health-timeline": ("system", "system_health_history"),
             "system-monitor:processes": ("system", "processes"),
             "snapshots": ("system", "recovery_points"),
@@ -120,6 +120,24 @@ class TestRoutePlacements(unittest.TestCase):
             placement.allowed_variants,
             frozenset({FedoraVariant.TRADITIONAL, FedoraVariant.ATOMIC}),
         )
+
+    def test_smart_updates_route_redirects_to_canonical_updates_section(self):
+        placement = placement_for_route("maintenance:smart-updates")
+
+        self.assertEqual(placement.section_id, "updates")
+        self.assertEqual(placement.redirect_route_id, "maintenance:updates")
+        self.assertFalse(placement.discoverable)
+
+    def test_health_and_logs_compatibility_routes_converge_on_troubleshooting(self):
+        health = placement_for_route("health")
+        logs = placement_for_route("logs")
+
+        self.assertEqual(health.redirect_route_id, "diagnostics")
+        self.assertEqual(logs.redirect_route_id, "diagnostics:watchtower")
+        self.assertEqual(health.section_id, "troubleshooting")
+        self.assertEqual(logs.section_id, "troubleshooting")
+        self.assertFalse(health.discoverable)
+        self.assertFalse(logs.discoverable)
 
     def test_overlays_are_explicitly_advanced_and_atomic_only(self):
         placement = placement_for_route("maintenance:overlays")
