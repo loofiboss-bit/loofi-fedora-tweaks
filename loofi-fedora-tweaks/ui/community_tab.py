@@ -80,7 +80,7 @@ class CommunityTab(QWidget, PluginInterface):
         name="Community",
         description="Browse and apply community presets and configurations from the marketplace.",
         category="System",
-        icon="🌍",
+        icon="network-connectivity",
         badge="",
         order=40,
     )
@@ -235,8 +235,8 @@ class CommunityTab(QWidget, PluginInterface):
         for plugin in plugins:
             name = plugin["name"]
             enabled = plugin.get("enabled", True)
-            status = "✅" if enabled else "❌"
-            item = QListWidgetItem(f"{status} {name}")
+            status = self.tr("Enabled") if enabled else self.tr("Disabled")
+            item = QListWidgetItem(f"{name} ({status})")
             item.setData(Qt.ItemDataRole.UserRole, plugin)
             self.plugins_list.addItem(item)
 
@@ -332,9 +332,12 @@ class CommunityTab(QWidget, PluginInterface):
             curated = PluginMarketplace.get_curated_plugins()
             self.featured_list.clear()
             for p in curated:
-                badge = "⭐ " if p.featured else ""
-                verified = " ✓" if p.verified else ""
-                item = QListWidgetItem(f"{badge}{p.name} v{p.version} by {p.author}{verified}  (★ {p.rating:.1f}, {p.downloads} downloads)")
+                badge = self.tr("Featured: ") if p.featured else ""
+                verified = self.tr(" (verified)") if p.verified else ""
+                item = QListWidgetItem(
+                    f"{badge}{p.name} v{p.version} by {p.author}{verified}  "
+                    f"({p.rating:.1f}/5, {p.downloads} downloads)"
+                )
                 item.setData(Qt.ItemDataRole.UserRole, p)
                 self.featured_list.addItem(item)
             if not curated:

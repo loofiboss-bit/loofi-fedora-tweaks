@@ -206,7 +206,7 @@ class AtlasTaskWizard(QDialog):
             frame.setObjectName("dashboardCard")
             fl = QVBoxLayout(frame)
 
-            status_text = "✅ SUCCESS" if res.success else "❌ FAILED"
+            status_text = "SUCCESS" if res.success else "FAILED"
             status_color = "#a6e3a1" if res.success else "#e8556d"
 
             header = QLabel(f"{title}: {status_text}")
@@ -376,7 +376,7 @@ class AtlasTaskWizard(QDialog):
 
             display_title = cb.text()
             # Update UI for current action
-            cb.setText(self.tr("⌛ Planning: %1...").replace("%1", action.title))
+            cb.setText(self.tr("Planning: %1...").replace("%1", action.title))
             cb.repaint()
             dyn_args = cb.property("dynamic_args") or []
             parameters = {"service": str(dyn_args[0])} if aid == "restart-failed-service" and dyn_args else {}
@@ -429,10 +429,10 @@ class AtlasTaskWizard(QDialog):
             })
             checkbox = self.action_checkboxes[item["index"]]
             if success:
-                checkbox.setText(self.tr("✅ Planned: %1").replace("%1", item["display_title"]))
+                checkbox.setText(self.tr("Planned: %1").replace("%1", item["display_title"]))
                 planned_count += 1
             else:
-                checkbox.setText(self.tr("⚠️ %1 (Manual/Blocked)").replace("%1", item["display_title"]))
+                checkbox.setText(self.tr("%1 (Manual/Blocked)").replace("%1", item["display_title"]))
                 checkbox.setToolTip(message)
                 blocked_count += 1
             checkbox.repaint()

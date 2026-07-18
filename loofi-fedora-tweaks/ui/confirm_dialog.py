@@ -69,7 +69,7 @@ class ConfirmActionDialog(QDialog):
 
         # Warning icon + action header + risk badge
         header_row = QHBoxLayout()
-        icon_label = QLabel("⚠️")
+        icon_label = QLabel(self.tr("Warning"))
         icon_label.setObjectName("confirmIcon")
         header_row.addWidget(icon_label)
 
@@ -111,7 +111,7 @@ class ConfirmActionDialog(QDialog):
             undo_frame.setObjectName("confirmUndoFrame")
             undo_layout = QHBoxLayout(undo_frame)
             undo_layout.setContentsMargins(10, 8, 10, 8)
-            undo_icon = QLabel("💡")
+            undo_icon = QLabel(self.tr("Undo available"))
             undo_icon.setObjectName("confirmIcon")
             undo_layout.addWidget(undo_icon)
             undo_text = QLabel(undo_hint)
@@ -151,7 +151,7 @@ class ConfirmActionDialog(QDialog):
 
         # Preview button (v35.0 Fortress)
         if command_preview:
-            preview_btn = QPushButton(self.tr("🔍 Preview"))
+            preview_btn = QPushButton(self.tr("Preview"))
             preview_btn.setMinimumWidth(90)
             preview_btn.setToolTip(self.tr("Show the exact command that will run"))
             preview_btn.clicked.connect(self._toggle_preview)

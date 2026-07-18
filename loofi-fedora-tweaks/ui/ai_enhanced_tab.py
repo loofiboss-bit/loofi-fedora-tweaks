@@ -114,7 +114,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         name="AI Lab",
         description="AI model management, voice transcription, and knowledge base indexing.",
         category="Tools",
-        icon="🧠",
+        icon="cpu-performance",
         badge="advanced",
         order=30,
     )

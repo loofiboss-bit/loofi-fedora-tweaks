@@ -29,7 +29,7 @@ class GamingTab(BaseTab):
         name="Gaming",
         description="Gaming optimization tools including driver setup and performance tweaks.",
         category="Hardware",
-        icon="🎮",
+        icon="hardware-performance",
         badge="",
         order=40,
     )
@@ -108,16 +108,16 @@ class GamingTab(BaseTab):
         status = GamingUtils.get_gamemode_status()
         if status == "active":
             self.lbl_gamemode_status.setText(
-                self.tr("GameMode Status: ✅ Active (Service Running)"))
+                self.tr("GameMode Status: Active (Service Running)"))
             self.btn_gamemode.setEnabled(False)
             self.btn_gamemode.setText(self.tr("GameMode Installed"))
         elif status == "installed":
             self.lbl_gamemode_status.setText(
-                self.tr("GameMode Status: ⚠️ Installed but Inactive"))
+                self.tr("GameMode Status: Installed but Inactive"))
             self.btn_gamemode.setText(self.tr("Reinstall GameMode"))
         elif status == "missing":
             self.lbl_gamemode_status.setText(
-                self.tr("GameMode Status: ❌ Not Installed"))
+                self.tr("GameMode Status: Not Installed"))
         else:
             self.lbl_gamemode_status.setText(
                 self.tr("Status check failed"))

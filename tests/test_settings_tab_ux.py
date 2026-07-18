@@ -103,6 +103,8 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
         self.assertEqual(labels, ["Appearance", "Behavior", "Advanced Tools", "Repair Loofi", "About"])
         self.assertEqual(tab.mode_combo.count(), 2)
         self.assertEqual([tab.mode_combo.itemText(index) for index in range(2)], ["Standard", "Advanced"])
+        self.assertTrue(tab.follow_system_cb.isChecked())
+        self.assertFalse(tab.theme_combo.isEnabled())
 
     @patch("utils.navigation_mode.NavigationModeManager.get_mode", return_value=NavigationMode.STANDARD)
     @patch("ui.settings_tab.SettingsManager.instance")

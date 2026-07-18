@@ -366,6 +366,25 @@ def _install_backup_stubs():
     backup_wizard_module = types.ModuleType("utils.backup_wizard")
     backup_wizard_module.BackupWizard = MagicMock()
 
+    class _StubResultBanner(_Dummy):
+        def __init__(self, title="", message="", kind="info", *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.message_label = _DummyLabel(message)
+            self._kind = kind
+
+        def set_result(self, kind, title, message):
+            self._kind = kind
+            self.message_label.setText(message)
+
+        def property(self, name):
+            return self._kind if name == "resultKind" else None
+
+    shared_states_module = types.ModuleType("ui.shared_states")
+    shared_states_module.ResultBanner = _StubResultBanner
+
+    install_hints_module = types.ModuleType("utils.install_hints")
+    install_hints_module.build_install_hint = lambda package: f"pkexec dnf install {package}"
+
     # Register stubs
     sys.modules["PyQt6"] = pyqt
     sys.modules["PyQt6.QtWidgets"] = qt_widgets
@@ -373,6 +392,8 @@ def _install_backup_stubs():
     sys.modules["ui.base_tab"] = base_tab_module
     sys.modules["core.plugins.metadata"] = metadata_module
     sys.modules["utils.backup_wizard"] = backup_wizard_module
+    sys.modules["ui.shared_states"] = shared_states_module
+    sys.modules["utils.install_hints"] = install_hints_module
 
 
 # ---------------------------------------------------------------------------
@@ -387,6 +408,8 @@ _MODULE_KEYS = [
     "ui.base_tab",
     "core.plugins.metadata",
     "utils.backup_wizard",
+    "ui.shared_states",
+    "utils.install_hints",
     "ui.backup_tab",
 ]
 
@@ -748,23 +771,25 @@ class TestDetectTools(unittest.TestCase):
         tab._detect_tools()
         self.assertIn("disk error", tab.tool_status.text())
 
-    def test_detect_checkmark_in_success_status(self):
-        """Successful detection includes checkmark character in status."""
+    def test_detect_success_uses_textual_result_state(self):
+        """Successful detection exposes a semantic state and plain text."""
         tab = _make_tab()
         bw = _get_backup_wizard()
         bw.detect_backup_tool.return_value = "timeshift"
         bw.get_available_tools.return_value = ["timeshift"]
         tab._detect_tools()
-        self.assertIn("\u2713", tab.tool_status.text())
+        self.assertEqual(tab.tool_result.property("resultKind"), "success")
+        self.assertNotIn("\u2713", tab.tool_status.text())
 
-    def test_detect_warning_in_no_tool_status(self):
-        """No tool detected includes warning character in status."""
+    def test_detect_warning_uses_textual_result_state(self):
+        """No tool detected exposes warning state without an emoji label."""
         tab = _make_tab()
         bw = _get_backup_wizard()
         bw.detect_backup_tool.return_value = "none"
         bw.get_available_tools.return_value = []
         tab._detect_tools()
-        self.assertIn("\u26a0", tab.tool_status.text())
+        self.assertEqual(tab.tool_result.property("resultKind"), "warning")
+        self.assertNotIn("\u26a0", tab.tool_status.text())
 
 
 # ===========================================================================
@@ -1307,7 +1332,7 @@ class TestWizardNavigation(unittest.TestCase):
         tab._go_next()  # 0 -> 1
         tab._go_next()  # 1 -> 2
         tab._go_back()  # 2 -> 1
-        self.assertEqual(tab.next_btn.text(), "Next →")
+        self.assertEqual(tab.next_btn.text(), "Next")
 
     def test_go_next_from_0_calls_setup_configure(self):
         """Going from page 0 to page 1 calls _setup_configure_page."""

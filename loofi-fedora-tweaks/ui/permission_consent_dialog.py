@@ -67,7 +67,7 @@ class PermissionConsentDialog(QDialog):
         if any(p in dangerous_perms for p in self.plugin_package.manifest.permissions):
             html_lines.append(
                 "<p style='color: #e8556d; font-weight: bold;'>"
-                "⚠️ Warning: This plugin requests elevated system permissions. "
+                "Warning: This plugin requests elevated system permissions. "
                 "Only grant access if you trust the plugin author."
                 "</p>"
             )

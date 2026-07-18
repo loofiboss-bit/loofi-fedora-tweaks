@@ -28,6 +28,7 @@ EXPECTED_SOURCE_SUFFIXES = (
     "core/executor/command_facade.py",
     "core/executor/command_policy.py",
     "ui/layout_primitives.py",
+    "ui/shared_states.py",
     "ui/main_window.py",
     "assets/modern.qss",
     "assets/icons/icon-map.json",

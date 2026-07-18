@@ -81,7 +81,7 @@ class DevelopmentTab(BaseTab):
         name="Development",
         description="Container management and developer tools including language version managers and VS Code extensions.",
         category="Tools",
-        icon="🛠️",
+        icon="developer-tools",
         badge="",
         order=10,
     )

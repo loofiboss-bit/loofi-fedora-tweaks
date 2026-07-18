@@ -433,7 +433,7 @@ class TestHardwareTabInit(unittest.TestCase):
 
     def test_metadata_icon(self):
         md = self.tab.metadata()
-        self.assertEqual(md.icon, "⚡")
+        self.assertEqual(md.icon, "hardware-performance")
 
     def test_metadata_badge(self):
         md = self.tab.metadata()
@@ -1104,7 +1104,7 @@ class TestListBootKernels(unittest.TestCase):
         output = self.tab.hw_output_area._text
         self.assertIn("Fedora 41", output)
         self.assertIn("6.8.0", output)
-        self.assertIn("→", output)  # default marker
+        self.assertIn("(default)", output)
 
     def test_list_kernels_empty(self):
         boot_mod = types.ModuleType("utils.boot_config")

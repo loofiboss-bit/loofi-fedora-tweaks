@@ -43,7 +43,7 @@ class SettingsTab(QWidget, PluginInterface):
         name="Settings",
         description="Configure appearance, behavior, and advanced application options.",
         category="Appearance",
-        icon="⚙️",
+        icon="settings",
         badge="",
         order=100,
     )
@@ -151,6 +151,7 @@ class SettingsTab(QWidget, PluginInterface):
         self.theme_combo.setAccessibleName(self.tr("Theme selector"))
         self.theme_combo.addItems(["dark", "light", "highcontrast"])
         self.theme_combo.setCurrentText(self._mgr.get("theme"))
+        self.theme_combo.setEnabled(not self._mgr.get("follow_system_theme"))
         self.theme_combo.currentTextChanged.connect(self._on_theme_changed)
         form.addRow(self.tr("Theme:"), self.theme_combo)
 
@@ -162,7 +163,7 @@ class SettingsTab(QWidget, PluginInterface):
         form.addRow("", self.follow_system_cb)
 
         # v29.0: Reset appearance to defaults
-        reset_appearance_btn = QPushButton(self.tr("↩ Reset Appearance"))
+        reset_appearance_btn = QPushButton(self.tr("Reset Appearance"))
         reset_appearance_btn.setAccessibleName(self.tr("Reset Appearance"))
         reset_appearance_btn.setToolTip(self.tr("Reset theme settings to defaults"))
         reset_appearance_btn.clicked.connect(self._reset_appearance)
@@ -210,7 +211,7 @@ class SettingsTab(QWidget, PluginInterface):
         form.addRow("", self.restore_tab_cb)
 
         # v29.0: Reset behavior to defaults
-        reset_behavior_btn = QPushButton(self.tr("↩ Reset Behavior"))
+        reset_behavior_btn = QPushButton(self.tr("Reset Behavior"))
         reset_behavior_btn.setAccessibleName(self.tr("Reset Behavior"))
         reset_behavior_btn.setToolTip(self.tr("Reset behavior settings to defaults"))
         reset_behavior_btn.clicked.connect(self._reset_behavior)
@@ -443,15 +444,19 @@ class SettingsTab(QWidget, PluginInterface):
     def _on_theme_changed(self, theme_name: str):
         self._mgr.set("theme", theme_name)
         self._mgr.save()
-        if self._main_window and hasattr(self._main_window, "load_theme"):
+        if (
+            not self._mgr.get("follow_system_theme")
+            and self._main_window
+            and hasattr(self._main_window, "load_theme")
+        ):
             self._main_window.load_theme(theme_name)
 
     def _on_follow_system_toggled(self, checked: bool):
         self._mgr.set("follow_system_theme", checked)
         self._mgr.save()
-        if checked and self._main_window and hasattr(self._main_window, "detect_system_theme"):
-            system_theme = self._main_window.detect_system_theme()
-            self.theme_combo.setCurrentText(system_theme)
+        self.theme_combo.setEnabled(not checked)
+        if self._main_window and hasattr(self._main_window, "load_theme"):
+            self._main_window.load_theme("system" if checked else self.theme_combo.currentText())
 
     def _toggle_setting(self, key: str, value: bool):
         self._mgr.set(key, value)
@@ -487,7 +492,8 @@ class SettingsTab(QWidget, PluginInterface):
         self._sync_mode_controls()
 
         if self._main_window and hasattr(self._main_window, "load_theme"):
-            self._main_window.load_theme(self._mgr.get("theme"))
+            selected = "system" if self._mgr.get("follow_system_theme") else self._mgr.get("theme")
+            self._main_window.load_theme(selected)
 
     # ---------------------------------------- v29.0 Reset per group --
 
@@ -497,7 +503,8 @@ class SettingsTab(QWidget, PluginInterface):
         self.theme_combo.setCurrentText(self._mgr.get("theme"))
         self.follow_system_cb.setChecked(self._mgr.get("follow_system_theme"))
         if self._main_window and hasattr(self._main_window, "load_theme"):
-            self._main_window.load_theme(self._mgr.get("theme"))
+            selected = "system" if self._mgr.get("follow_system_theme") else self._mgr.get("theme")
+            self._main_window.load_theme(selected)
 
     def _reset_behavior(self):
         """Reset behavior settings to defaults."""

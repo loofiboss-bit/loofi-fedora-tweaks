@@ -27,7 +27,7 @@ class SystemInfoTab(QWidget, PluginInterface):
         name="System Info",
         description="Detailed system information including hardware specs, kernel, and uptime.",
         category="System",
-        icon="ℹ️",
+        icon="info",
         badge="recommended",
         order=20,
     )
@@ -79,7 +79,7 @@ class SystemInfoTab(QWidget, PluginInterface):
         export_layout.addWidget(QLabel(self.tr("Format:")))
         export_layout.addWidget(self.export_format)
 
-        btn_export = QPushButton(self.tr("📄 Export Report"))
+        btn_export = QPushButton(self.tr("Export Report"))
         btn_export.setAccessibleName(self.tr("Export system report"))
         btn_export.clicked.connect(self._export_report)
         export_layout.addWidget(btn_export)

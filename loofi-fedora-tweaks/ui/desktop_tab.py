@@ -49,7 +49,7 @@ class DesktopTab(BaseTab):
         name="Desktop",
         description="Window manager configuration, tiling setup, theming, and dotfile synchronization.",
         category="Appearance",
-        icon="🎨",
+        icon="appearance-theme",
         badge="",
         order=10,
     )
@@ -545,7 +545,7 @@ class DesktopTab(BaseTab):
             displays = WaylandDisplayManager.get_displays()
             self.display_list.clear()
             for d in displays:
-                primary = " ★" if d.primary else ""
+                primary = self.tr(" (Primary)") if d.primary else ""
                 scale_str = f" @{d.scale}x" if d.scale != 1.0 else ""
                 text = f"{d.name}: {d.resolution}{scale_str} @ {d.refresh_rate}Hz{primary}"
                 if d.make or d.model:

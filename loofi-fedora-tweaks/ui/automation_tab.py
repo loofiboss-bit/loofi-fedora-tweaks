@@ -139,7 +139,7 @@ class AutomationTab(BaseTab):
         name="Automation",
         description="Schedule tasks and replicate system configurations automatically.",
         category="Maintenance",
-        icon="⏰",
+        icon="maintenance-health",
         badge="",
         order=50,
     )

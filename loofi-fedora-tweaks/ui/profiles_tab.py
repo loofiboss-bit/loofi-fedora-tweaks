@@ -43,7 +43,7 @@ class ProfilesTab(QWidget, PluginInterface):
         name="Profiles",
         description="System profile quick-switch for applying and managing configuration profiles.",
         category="Appearance",
-        icon="👤",
+        icon="settings",
         badge="",
         order=30,
     )

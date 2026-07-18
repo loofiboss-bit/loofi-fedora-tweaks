@@ -65,7 +65,7 @@ class TourOverlay(QWidget):
 
         btn_row.addStretch()
 
-        self._next_btn = QPushButton(self.tr("Next →"))
+        self._next_btn = QPushButton(self.tr("Next"))
         self._next_btn.setObjectName("tourNextBtn")
         self._next_btn.clicked.connect(self._next_step)
         btn_row.addWidget(self._next_btn)
@@ -98,7 +98,7 @@ class TourOverlay(QWidget):
         if self._current_step == total - 1:
             self._next_btn.setText(self.tr("Finish"))
         else:
-            self._next_btn.setText(self.tr("Next →"))
+            self._next_btn.setText(self.tr("Next"))
 
         # Try to find target widget
         self._target_rect = QRect()

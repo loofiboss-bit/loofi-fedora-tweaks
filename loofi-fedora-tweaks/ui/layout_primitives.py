@@ -4,8 +4,8 @@ from __future__ import annotations
 
 from dataclasses import dataclass
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QFont, QFontMetrics
+from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QFont, QFontMetrics, QKeyEvent, QMouseEvent
 from PyQt6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -128,22 +128,31 @@ class ActionRow(QWidget):
 
 
 class RouteCard(QFrame):
-    """Clickable-looking route card used by home and overview pages."""
+    """Signal-based, keyboard-accessible navigation card."""
+
+    activated = pyqtSignal(str)
 
     def __init__(
         self,
         title: str,
         description: str,
+        route_id: str = "",
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
+        self.route_id = route_id
         self.setObjectName("routeCard")
+        self.setProperty("routeCard", True)
+        self.setProperty("routeId", route_id)
         self.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+        self.setAccessibleName(title)
+        self.setAccessibleDescription(description)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
 
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(8)
+        self.body = QVBoxLayout(self)
+        self.body.setContentsMargins(18, 16, 18, 16)
+        self.body.setSpacing(8)
 
         title_label = QLabel(title)
         title_label.setObjectName("routeCardTitle")
@@ -151,9 +160,26 @@ class RouteCard(QFrame):
         desc_label = QLabel(description)
         desc_label.setObjectName("routeCardDescription")
         desc_label.setWordWrap(True)
-        layout.addWidget(title_label)
-        layout.addWidget(desc_label)
-        layout.addStretch()
+        self.body.addWidget(title_label)
+        self.body.addWidget(desc_label)
+        self.body.addStretch()
+
+    def activate(self) -> None:
+        self.activated.emit(self.route_id)
+
+    def keyPressEvent(self, event: QKeyEvent) -> None:
+        if event.key() in {Qt.Key.Key_Return, Qt.Key.Key_Enter, Qt.Key.Key_Space}:
+            self.activate()
+            event.accept()
+            return
+        super().keyPressEvent(event)
+
+    def mouseReleaseEvent(self, event: QMouseEvent) -> None:
+        if event.button() == Qt.MouseButton.LeftButton and self.rect().contains(event.position().toPoint()):
+            self.activate()
+            event.accept()
+            return
+        super().mouseReleaseEvent(event)
 
 
 class AdaptiveGrid(QWidget):

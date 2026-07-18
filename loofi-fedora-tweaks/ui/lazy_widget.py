@@ -6,8 +6,9 @@ Part of v7.1 performance optimization.
 import logging
 from typing import Callable
 
-from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QVBoxLayout, QWidget
+
+from ui.shared_states import LoadingState, UnavailableState
 
 logger = logging.getLogger(__name__)
 
@@ -40,10 +41,10 @@ class LazyWidget(QWidget):
         self._layout.setSpacing(0)
 
         # Loading indicator (shown briefly)
-        self._loading_label = QLabel(loading_text)
-        self._loading_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self._loading_state = LoadingState(loading_text)
+        self._loading_label = self._loading_state.message_label
         self._loading_label.setObjectName("loadingLabel")
-        self._layout.addWidget(self._loading_label)
+        self._layout.addWidget(self._loading_state)
 
     def ensure_loaded(self) -> QWidget | None:
         """Load and return the real widget without waiting for a show event."""
@@ -51,9 +52,9 @@ class LazyWidget(QWidget):
             self._loaded = True
 
             # Remove loading placeholder
-            self._loading_label.hide()
-            self._layout.removeWidget(self._loading_label)
-            self._loading_label.deleteLater()
+            self._loading_state.hide()
+            self._layout.removeWidget(self._loading_state)
+            self._loading_state.deleteLater()
 
             # Load and add the real widget
             try:
@@ -63,14 +64,15 @@ class LazyWidget(QWidget):
                 # Show error if loading fails
                 logger.exception("Lazy page load failed")
                 self.load_error = str(e)
-                error_label = QLabel(
+                error_state = UnavailableState(
+                    self.tr("Page unavailable"),
                     self.tr("This page could not be loaded.\n\n%1").replace(
                         "%1", self.load_error
-                    )
+                    ),
                 )
+                error_label = error_state.message_label
                 error_label.setObjectName("errorLabel")
-                error_label.setWordWrap(True)
-                self._layout.addWidget(error_label)
+                self._layout.addWidget(error_state)
         return self.real_widget
 
     def showEvent(self, event):

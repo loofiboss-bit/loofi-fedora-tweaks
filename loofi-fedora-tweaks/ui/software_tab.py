@@ -31,6 +31,7 @@ from utils.commands import PrivilegedCommand
 from utils.software_utils import SoftwareUtils
 
 from ui.base_tab import BaseTab
+from ui.shared_states import EmptyState, LoadingState, UnavailableState
 from ui.tab_utils import configure_top_tabs
 from ui.tooltips import (
     SW_BATCH_INSTALL,
@@ -78,7 +79,7 @@ class _ApplicationsSubTab(BaseTab):
         # v31.0: Batch action buttons
         batch_layout = QHBoxLayout()
         batch_layout.addStretch()
-        self.btn_batch_install = QPushButton(self.tr("📥 Install Selected"))
+        self.btn_batch_install = QPushButton(self.tr("Install Selected"))
         self.btn_batch_install.setAccessibleName(self.tr("Install selected packages"))
         self.btn_batch_install.setToolTip(SW_BATCH_INSTALL)
         self.btn_batch_install.clicked.connect(self._batch_install)
@@ -86,7 +87,7 @@ class _ApplicationsSubTab(BaseTab):
         self.btn_batch_install.hide()
         batch_layout.addWidget(self.btn_batch_install)
 
-        self.btn_batch_remove = QPushButton(self.tr("🗑️ Remove Selected"))
+        self.btn_batch_remove = QPushButton(self.tr("Remove Selected"))
         self.btn_batch_remove.setAccessibleName(self.tr("Remove selected packages"))
         self.btn_batch_remove.setToolTip(SW_BATCH_REMOVE)
         self.btn_batch_remove.clicked.connect(self._batch_remove)
@@ -103,6 +104,21 @@ class _ApplicationsSubTab(BaseTab):
         self._search_bar.setClearButtonEnabled(True)
         self._search_bar.textChanged.connect(self._filter_apps)
         layout.addWidget(self._search_bar)
+
+        self.catalog_loading = LoadingState(self.tr("Loading the application catalogue…"))
+        self.catalog_empty = EmptyState(
+            self.tr("No applications to show"),
+            self.tr("The catalogue will load when this page is opened."),
+        )
+        self.catalog_unavailable = UnavailableState(
+            self.tr("Application catalogue unavailable"),
+            self.tr("Use Refresh Status to try the cached or remote catalogue again."),
+        )
+        self.catalog_loading.hide()
+        self.catalog_unavailable.hide()
+        layout.addWidget(self.catalog_loading)
+        layout.addWidget(self.catalog_empty)
+        layout.addWidget(self.catalog_unavailable)
 
         # Scroll Area for apps list
         scroll = QScrollArea()
@@ -151,14 +167,26 @@ class _ApplicationsSubTab(BaseTab):
         if self._catalog_load_started:
             return
         self._catalog_load_started = True
+        self.catalog_empty.hide()
+        self.catalog_unavailable.hide()
+        self.catalog_loading.show()
         self.apps = self.load_apps()
 
     def on_apps_loaded(self, apps):
         self.apps = apps
+        self.catalog_loading.hide()
+        self.catalog_unavailable.hide()
+        self.catalog_empty.setVisible(not bool(apps))
+        if not apps:
+            self.catalog_empty.set_message(self.tr("No applications matched the available catalogue."))
         self.refresh_list()
         self.append_output(self.tr("Apps list updated from remote/cache.\n"))
 
     def on_apps_error(self, error):
+        self.catalog_loading.hide()
+        self.catalog_empty.hide()
+        self.catalog_unavailable.set_message(self.tr("Catalogue loading failed: %s") % error)
+        self.catalog_unavailable.show()
         self.append_output(self.tr("Error loading apps: {}\n").format(error))
 
     def refresh_list(self):
@@ -525,7 +553,7 @@ class SoftwareTab(BaseTab):
         name="Software",
         description="Application installer and repository management for Fedora packages.",
         category="Packages",
-        icon="📦",
+        icon="packages-software",
         badge="recommended",
         order=10,
     )
@@ -651,7 +679,7 @@ class SoftwareTab(BaseTab):
             from services.software import FlatpakManager
 
             orphans = FlatpakManager.find_orphan_runtimes()
-            lines = [f"🗑 {o}" for o in orphans]
+            lines = [str(orphan) for orphan in orphans]
             self._flatpak_output.setPlainText("\n".join(lines) if lines else "No orphan runtimes found.")
         except (RuntimeError, OSError, ValueError) as e:
             self._flatpak_output.setPlainText(f"[ERROR] {e}")

@@ -76,7 +76,7 @@ class FingerprintDialog(QDialog):
                 self.lbl_status.setText("Scan failed - too short or dirty. Try again.")
             elif "enroll-completed" in line:
                 self.progress.setValue(100)
-                self.lbl_status.setText("Enrollment Completed Successfully! 🎉")
+                self.lbl_status.setText(self.tr("Enrollment completed successfully."))
                 self.lbl_steps.setText("Done.")
                 self.btn_start.setText("Enroll Again")
                 self.btn_start.setEnabled(True)

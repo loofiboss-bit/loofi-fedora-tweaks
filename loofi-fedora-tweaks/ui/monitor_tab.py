@@ -41,6 +41,7 @@ from utils.log import get_logger
 from utils.performance import PerformanceCollector
 
 from ui.tab_utils import configure_top_tabs
+from ui.shared_states import ResultBanner
 
 logger = get_logger(__name__)
 
@@ -367,10 +368,13 @@ class _PerformanceSubTab(QWidget):
         ))
         slow_intro.setWordWrap(True)
         slow_layout.addWidget(slow_intro)
-        self.slow_summary = QLabel(self.tr("Run an analysis while the slowdown is happening."))
-        self.slow_summary.setWordWrap(True)
+        self.slow_result = ResultBanner(
+            self.tr("Slow-system analysis"),
+            self.tr("Run an analysis while the slowdown is happening."),
+        )
+        self.slow_summary = self.slow_result.message_label
         self.slow_summary.setAccessibleName(self.tr("Slow system summary"))
-        slow_layout.addWidget(self.slow_summary)
+        slow_layout.addWidget(self.slow_result)
         slow_button_row = QHBoxLayout()
         self.slow_analyze_button = QPushButton(self.tr("Analyze Slow System"))
         self.slow_analyze_button.clicked.connect(self._analyze_slow_system)
@@ -419,7 +423,11 @@ class _PerformanceSubTab(QWidget):
                     worker_self.failed.emit(str(exc))
 
         self.slow_analyze_button.setEnabled(False)
-        self.slow_summary.setText(self.tr("Collecting a bounded read-only snapshot…"))
+        self.slow_result.set_result(
+            "info",
+            self.tr("Collecting system snapshot"),
+            self.tr("Collecting a bounded read-only snapshot…"),
+        )
         worker = _SlowSystemWorker(self)
         worker.resultReady.connect(self._show_slow_summary)
         worker.failed.connect(self._show_slow_error)
@@ -440,9 +448,14 @@ class _PerformanceSubTab(QWidget):
             for item in snapshot.top_processes[:3]
         ) or self.tr("none available")
         steps = "\n".join(f"• {step}" for step in summary.next_steps)
-        self.slow_summary.setText(
+        result_text = (
             f"{summary.bottleneck}\n{summary.explanation}\n{metrics}\n"
             f"{self.tr('Top processes')}: {processes}\n{steps}"
+        )
+        self.slow_result.set_result(
+            "warning" if summary.action_center_link is not None else "success",
+            self.tr("Slow-system analysis complete"),
+            result_text,
         )
         self._slow_action_link = summary.action_center_link
         self.slow_action_button.setVisible(summary.action_center_link is not None)
@@ -450,7 +463,11 @@ class _PerformanceSubTab(QWidget):
             self.slow_action_button.setText(summary.action_center_link.label)
 
     def _show_slow_error(self, message: str) -> None:
-        self.slow_summary.setText(self.tr("Slow-system analysis failed: %s") % message)
+        self.slow_result.set_result(
+            "error",
+            self.tr("Slow-system analysis failed"),
+            str(message),
+        )
         self._slow_action_link = None
         self.slow_action_button.hide()
 
@@ -477,15 +494,15 @@ class _PerformanceSubTab(QWidget):
 
     # ==================== CARD BUILDERS ====================
 
-    def _create_card(self, title: str, icon: str) -> QGroupBox:
-        """Create a styled card group box matching the Catppuccin Mocha theme."""
-        card = QGroupBox(f"{icon} {title}")
+    def _create_card(self, title: str) -> QGroupBox:
+        """Create a text-labelled performance card."""
+        card = QGroupBox(title)
         card.setObjectName("monitorCard")
         return card
 
     def _create_cpu_card(self) -> QGroupBox:
         """Build the CPU usage card with graph and labels."""
-        card = self._create_card(self.tr("CPU Usage"), "\U0001f7e2")
+        card = self._create_card(self.tr("CPU Usage"))
         card_layout = QVBoxLayout(card)
 
         self.cpu_graph = MiniGraph("#3dd68c")
@@ -506,7 +523,7 @@ class _PerformanceSubTab(QWidget):
 
     def _create_memory_card(self) -> QGroupBox:
         """Build the memory usage card with graph and labels."""
-        card = self._create_card(self.tr("Memory Usage"), "\U0001f535")
+        card = self._create_card(self.tr("Memory Usage"))
         card_layout = QVBoxLayout(card)
 
         self.mem_graph = MiniGraph("#39c5cf")
@@ -521,7 +538,7 @@ class _PerformanceSubTab(QWidget):
 
     def _create_network_card(self) -> QGroupBox:
         """Build the network I/O card with dual-line graph and labels."""
-        card = self._create_card(self.tr("Network I/O"), "\U0001f7e3")
+        card = self._create_card(self.tr("Network I/O"))
         card_layout = QVBoxLayout(card)
 
         self.net_graph = DualMiniGraph("#b78eff", "#4dd9e3")
@@ -548,7 +565,7 @@ class _PerformanceSubTab(QWidget):
 
     def _create_disk_card(self) -> QGroupBox:
         """Build the disk I/O card with dual-line graph and labels."""
-        card = self._create_card(self.tr("Disk I/O"), "\U0001f7e1")
+        card = self._create_card(self.tr("Disk I/O"))
         card_layout = QVBoxLayout(card)
 
         self.disk_graph = DualMiniGraph("#e8b84d", "#e89840")
@@ -1075,7 +1092,7 @@ class MonitorTab(QWidget, PluginInterface):
         name="System Monitor",
         description="Live CPU, memory, and process monitoring with performance graphs.",
         category="System",
-        icon="📊",
+        icon="overview-dashboard",
         badge="recommended",
         order=30,
     )

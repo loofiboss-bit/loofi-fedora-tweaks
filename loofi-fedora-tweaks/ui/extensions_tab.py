@@ -37,7 +37,7 @@ class ExtensionsTab(BaseTab):
         name="Extensions",
         description="Manage GNOME Shell and KDE Plasma desktop extensions.",
         category="Appearance",
-        icon="🧩",
+        icon="appearance-theme",
         badge="new",
         order=20,
     )

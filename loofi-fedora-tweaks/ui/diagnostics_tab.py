@@ -77,15 +77,15 @@ class _WatchtowerSubTab(QWidget):
         configure_top_tabs(self.tabs)
         self.tabs.addTab(
             self._create_services_tab(),
-            self.tr("\U0001f527 Services"),
+            self.tr("Services"),
         )
         self.tabs.addTab(
             self._create_boot_tab(),
-            self.tr("\u26a1 Boot Analysis"),
+            self.tr("Boot Analysis"),
         )
         self.tabs.addTab(
             self._create_journal_tab(),
-            self.tr("\U0001f4cb Journal"),
+            self.tr("Journal"),
         )
 
         layout.addWidget(self.tabs)
@@ -104,16 +104,16 @@ class _WatchtowerSubTab(QWidget):
         self.service_filter = QComboBox()
         self.service_filter.setAccessibleName(self.tr("Service filter"))
         self.service_filter.addItem(
-            self.tr("\U0001f3ae Gaming Services"), "gaming"
+            self.tr("Gaming Services"), "gaming"
         )
         self.service_filter.addItem(
-            self.tr("\u274c Failed Services"), "failed"
+            self.tr("Failed Services"), "failed"
         )
         self.service_filter.addItem(
-            self.tr("\u2705 Active Services"), "active"
+            self.tr("Active Services"), "active"
         )
         self.service_filter.addItem(
-            self.tr("\U0001f4e6 All User Services"), "all"
+            self.tr("All User Services"), "all"
         )
         self.service_filter.currentIndexChanged.connect(
             self._refresh_services
@@ -122,7 +122,7 @@ class _WatchtowerSubTab(QWidget):
 
         filter_layout.addStretch()
 
-        refresh_btn = QPushButton(self.tr("\U0001f504 Refresh"))
+        refresh_btn = QPushButton(self.tr("Refresh"))
         refresh_btn.setAccessibleName(self.tr("Refresh services"))
         refresh_btn.clicked.connect(self._refresh_services)
         filter_layout.addWidget(refresh_btn)
@@ -188,7 +188,7 @@ class _WatchtowerSubTab(QWidget):
 
         # Optimisation suggestions
         opt_group = QGroupBox(
-            self.tr("\U0001f4a1 Optimization Suggestions")
+            self.tr("Optimization Suggestions")
         )
         opt_layout = QVBoxLayout(opt_group)
 
@@ -199,7 +199,7 @@ class _WatchtowerSubTab(QWidget):
         layout.addWidget(opt_group)
 
         # Refresh button
-        refresh_btn = QPushButton(self.tr("\U0001f504 Analyze Boot"))
+        refresh_btn = QPushButton(self.tr("Analyze Boot"))
         refresh_btn.setAccessibleName(self.tr("Analyze Boot"))
         refresh_btn.clicked.connect(self._refresh_boot_analysis)
         layout.addWidget(refresh_btn)
@@ -215,7 +215,7 @@ class _WatchtowerSubTab(QWidget):
         layout = QVBoxLayout(widget)
 
         # Quick diagnostic
-        diag_group = QGroupBox(self.tr("\U0001f3e5 Quick Diagnostic"))
+        diag_group = QGroupBox(self.tr("Quick Diagnostic"))
         diag_layout = QHBoxLayout(diag_group)
 
         self.error_count_label = QLabel()
@@ -249,20 +249,20 @@ class _WatchtowerSubTab(QWidget):
         # Action buttons
         btn_layout = QHBoxLayout()
 
-        refresh_btn = QPushButton(self.tr("\U0001f504 Refresh"))
+        refresh_btn = QPushButton(self.tr("Refresh"))
         refresh_btn.setAccessibleName(self.tr("Refresh journal"))
         refresh_btn.clicked.connect(self._refresh_journal)
         btn_layout.addWidget(refresh_btn)
 
         btn_layout.addStretch()
 
-        panic_btn = QPushButton(self.tr("\U0001f198 Export Panic Log"))
+        panic_btn = QPushButton(self.tr("Export Panic Log"))
         panic_btn.setAccessibleName(self.tr("Export Panic Log"))
         panic_btn.setObjectName("diagPanicBtn")
         panic_btn.clicked.connect(self._export_panic_log)
         btn_layout.addWidget(panic_btn)
 
-        bundle_btn = QPushButton(self.tr("\U0001f4e6 Export Support Bundle"))
+        bundle_btn = QPushButton(self.tr("Export Support Bundle"))
         bundle_btn.setAccessibleName(self.tr("Export Support Bundle"))
         bundle_btn.clicked.connect(self._export_support_bundle)
         btn_layout.addWidget(bundle_btn)
@@ -304,13 +304,13 @@ class _WatchtowerSubTab(QWidget):
     def _state_to_emoji(self, state: UnitState) -> str:
         """Convert service state to display string."""
         mapping = {
-            UnitState.ACTIVE: "\u2705 active",
-            UnitState.INACTIVE: "\u26aa inactive",
-            UnitState.FAILED: "\u274c failed",
-            UnitState.ACTIVATING: "\U0001f504 starting",
-            UnitState.UNKNOWN: "\u2753 unknown",
+            UnitState.ACTIVE: "active",
+            UnitState.INACTIVE: "inactive",
+            UnitState.FAILED: "failed",
+            UnitState.ACTIVATING: "starting",
+            UnitState.UNKNOWN: "unknown",
         }
-        return mapping.get(state, "\u2753")
+        return mapping.get(state, "unknown")
 
     def _show_service_menu(self, position):
         """Show context menu for service actions."""
@@ -335,21 +335,21 @@ class _WatchtowerSubTab(QWidget):
 
         if service.state == UnitState.ACTIVE:
             stop_action = menu.addAction(
-                self.tr("\u23f9\ufe0f Stop")
+                self.tr("Stop")
             )
             stop_action.triggered.connect(
                 lambda: self._service_action("stop", service)
             )
 
             restart_action = menu.addAction(
-                self.tr("\U0001f504 Restart")
+                self.tr("Restart")
             )
             restart_action.triggered.connect(
                 lambda: self._service_action("restart", service)
             )
         else:
             start_action = menu.addAction(
-                self.tr("\u25b6\ufe0f Start")
+                self.tr("Start")
             )
             start_action.triggered.connect(
                 lambda: self._service_action("start", service)
@@ -358,14 +358,14 @@ class _WatchtowerSubTab(QWidget):
         menu.addSeparator()
 
         mask_action = menu.addAction(
-            self.tr("\U0001f6ab Mask (Disable)")
+            self.tr("Mask (Disable)")
         )
         mask_action.triggered.connect(
             lambda: self._service_action("mask", service)
         )
 
         unmask_action = menu.addAction(
-            self.tr("\u2705 Unmask")
+            self.tr("Unmask")
         )
         unmask_action.triggered.connect(
             lambda: self._service_action("unmask", service)
@@ -430,7 +430,7 @@ class _WatchtowerSubTab(QWidget):
         slow = BootAnalyzer.get_slow_services()
         if slow:
             slow_text = "\n".join(
-                f"\U0001f422 {s.service}: {s.time_seconds:.1f}s"
+                f"{s.service}: {s.time_seconds:.1f}s"
                 for s in slow[:10]
             )
             self.slow_services_list.setText(slow_text)
@@ -450,10 +450,10 @@ class _WatchtowerSubTab(QWidget):
         diag = JournalManager.get_quick_diagnostic()
 
         self.error_count_label.setText(
-            self.tr("\u26a0\ufe0f Errors: {}").format(diag["error_count"])
+            self.tr("Errors: {}").format(diag["error_count"])
         )
         self.failed_count_label.setText(
-            self.tr("\u274c Failed Services: {}").format(
+            self.tr("Failed Services: {}").format(
                 len(diag["failed_services"])
             )
         )
@@ -564,7 +564,7 @@ class _BootSubTab(QWidget):
 
     def create_kernel_section(self) -> QGroupBox:
         """Create the kernel parameters section."""
-        group = QGroupBox(self.tr("\u2699\ufe0f Kernel Parameters"))
+        group = QGroupBox(self.tr("Kernel Parameters"))
         layout = QVBoxLayout(group)
 
         # Current parameters display
@@ -589,7 +589,7 @@ class _BootSubTab(QWidget):
             ("nvidia-drm.modeset=1",
              self.tr("NVIDIA: Kernel modesetting")),
             ("mitigations=off",
-             self.tr("\u26a0\ufe0f Disable CPU mitigations (unsafe but faster)")),
+             self.tr("Disable CPU mitigations (unsafe but faster)")),
             ("nowatchdog",
              self.tr("Disable watchdog (reduce interrupts)")),
         ]
@@ -628,12 +628,12 @@ class _BootSubTab(QWidget):
 
         # Backup/Restore
         backup_layout = QHBoxLayout()
-        backup_btn = QPushButton(self.tr("\U0001f4e6 Backup GRUB"))
+        backup_btn = QPushButton(self.tr("Backup GRUB"))
         backup_btn.setAccessibleName(self.tr("Backup GRUB"))
         backup_btn.clicked.connect(self.backup_grub)
         backup_layout.addWidget(backup_btn)
 
-        restore_btn = QPushButton(self.tr("\u267b\ufe0f Restore Backup"))
+        restore_btn = QPushButton(self.tr("Restore Backup"))
         restore_btn.setAccessibleName(self.tr("Restore Backup"))
         restore_btn.clicked.connect(self.restore_grub)
         backup_layout.addWidget(restore_btn)
@@ -647,7 +647,7 @@ class _BootSubTab(QWidget):
 
     def create_zram_section(self) -> QGroupBox:
         """Create the ZRAM configuration section."""
-        group = QGroupBox(self.tr("\U0001f4be ZRAM (Compressed Swap)"))
+        group = QGroupBox(self.tr("ZRAM (Compressed Swap)"))
         layout = QVBoxLayout(group)
 
         # Status
@@ -691,7 +691,7 @@ class _BootSubTab(QWidget):
 
         # Apply button
         btn_layout = QHBoxLayout()
-        apply_btn = QPushButton(self.tr("\u2705 Apply ZRAM Settings"))
+        apply_btn = QPushButton(self.tr("Apply ZRAM Settings"))
         apply_btn.setAccessibleName(self.tr("Apply ZRAM Settings"))
         apply_btn.clicked.connect(self.apply_zram)
         btn_layout.addWidget(apply_btn)
@@ -704,7 +704,7 @@ class _BootSubTab(QWidget):
 
     def create_secureboot_section(self) -> QGroupBox:
         """Create the Secure Boot section."""
-        group = QGroupBox(self.tr("\U0001f510 Secure Boot (MOK Management)"))
+        group = QGroupBox(self.tr("Secure Boot (MOK Management)"))
         layout = QVBoxLayout(group)
 
         # Status
@@ -718,12 +718,12 @@ class _BootSubTab(QWidget):
         # Actions
         btn_layout = QHBoxLayout()
 
-        generate_btn = QPushButton(self.tr("\U0001f511 Generate MOK Key"))
+        generate_btn = QPushButton(self.tr("Generate MOK Key"))
         generate_btn.setAccessibleName(self.tr("Generate MOK Key"))
         generate_btn.clicked.connect(self.generate_mok_key)
         btn_layout.addWidget(generate_btn)
 
-        enroll_btn = QPushButton(self.tr("\U0001f4dd Enroll Key"))
+        enroll_btn = QPushButton(self.tr("Enroll Key"))
         enroll_btn.setAccessibleName(self.tr("Enroll Key"))
         enroll_btn.clicked.connect(self.enroll_mok_key)
         btn_layout.addWidget(enroll_btn)
@@ -733,7 +733,7 @@ class _BootSubTab(QWidget):
 
         # Help text
         help_label = QLabel(self.tr(
-            "\u2139\ufe0f MOK keys are needed to sign third-party kernel "
+            "MOK keys are needed to sign third-party kernel "
             "modules (NVIDIA, VirtualBox) when Secure Boot is enabled."
         ))
         help_label.setWordWrap(True)
@@ -771,11 +771,11 @@ class _BootSubTab(QWidget):
 
         status_parts = []
         if config.enabled:
-            status_parts.append(f"\u2705 {self.tr('Active')}")
+            status_parts.append(self.tr("Active"))
             if usage:
                 status_parts.append(f"{usage[0]}MB / {usage[1]}MB")
         else:
-            status_parts.append(f"\u26aa {self.tr('Inactive')}")
+            status_parts.append(self.tr("Inactive"))
 
         status_parts.append(
             f"{config.size_percent}% RAM ({config.size_mb}MB)"
@@ -800,20 +800,20 @@ class _BootSubTab(QWidget):
 
         if status.secure_boot_enabled:
             self.sb_status_label.setText(
-                f"\U0001f512 {self.tr('Secure Boot: Enabled')}"
+                self.tr("Secure Boot: Enabled")
             )
         else:
             self.sb_status_label.setText(
-                f"\U0001f513 {self.tr('Secure Boot: Disabled')}"
+                self.tr("Secure Boot: Disabled")
             )
 
         if SecureBootManager.has_keys():
             self.mok_status_label.setText(
-                f"\U0001f511 {self.tr('MOK Key: Generated')}"
+                self.tr("MOK Key: Generated")
             )
         else:
             self.mok_status_label.setText(
-                f"\u26aa {self.tr('MOK Key: Not generated')}"
+                self.tr("MOK Key: Not generated")
             )
 
         if status.pending_mok:
@@ -975,7 +975,7 @@ class DiagnosticsTab(BaseTab):
         name="Troubleshooting",
         description="System diagnostics including service health, boot analysis, and journal review.",
         category="Maintenance",
-        icon="🔭",
+        icon="maintenance-health",
         badge="",
         order=30,
     )

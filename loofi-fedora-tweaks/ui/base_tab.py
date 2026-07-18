@@ -152,21 +152,21 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         header_row.addStretch()
 
         # Copy button (v38.0)
-        copy_btn = QPushButton(self.tr("📋 Copy"))
+        copy_btn = QPushButton(self.tr("Copy"))
         copy_btn.setObjectName("outputCopyBtn")
         copy_btn.setToolTip(self.tr("Copy output to clipboard"))
         copy_btn.clicked.connect(self._copy_output)
         header_row.addWidget(copy_btn)
 
         # Save button (v38.0)
-        save_btn = QPushButton(self.tr("💾 Save"))
+        save_btn = QPushButton(self.tr("Save"))
         save_btn.setObjectName("outputSaveBtn")
         save_btn.setToolTip(self.tr("Save output to file"))
         save_btn.clicked.connect(self._save_output)
         header_row.addWidget(save_btn)
 
         # Cancel button (v38.0)
-        cancel_btn = QPushButton(self.tr("⏹ Cancel"))
+        cancel_btn = QPushButton(self.tr("Cancel"))
         cancel_btn.setObjectName("outputCancelBtn")
         cancel_btn.setToolTip(self.tr("Cancel running command"))
         cancel_btn.clicked.connect(self._cancel_command)
@@ -282,7 +282,7 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         table.verticalHeader().setVisible(False)
         # Account for fallback glyphs (emoji/status symbols) that can exceed base metrics.
         metrics = table.fontMetrics()
-        probe_height = metrics.boundingRect("Ag 🟢 ✅ ⚠️").height()
+        probe_height = metrics.boundingRect("Ag Status Warning").height()
         row_height = max(44, metrics.height() + 20, probe_height + 20)
         table.verticalHeader().setMinimumSectionSize(row_height)
         table.verticalHeader().setDefaultSectionSize(row_height)

@@ -1,6 +1,7 @@
 """Tests for data-only built-in plugin specifications and lazy instances."""
 
 import ast
+import json
 import sys
 import unittest
 from pathlib import Path
@@ -21,6 +22,12 @@ class TestPluginSpec(unittest.TestCase):
         self.assertNotIn("ui.dashboard_tab", {spec.module for spec in BUILTIN_PLUGIN_SPECS})
         self.assertTrue(all(spec.module.startswith("ui.") for spec in BUILTIN_PLUGIN_SPECS))
         self.assertFalse(any(spec.module == "" for spec in BUILTIN_PLUGIN_SPECS))
+
+    def test_builtin_specs_use_packaged_semantic_icons(self):
+        icon_map_path = Path(__file__).parents[1] / "assets" / "icons" / "icon-map.json"
+        icon_ids = set(json.loads(icon_map_path.read_text()))
+
+        self.assertTrue(all(spec.icon in icon_ids for spec in BUILTIN_PLUGIN_SPECS))
 
     def test_metadata_adapter_preserves_shell_fields(self):
         spec = BUILTIN_PLUGIN_SPECS[0]
@@ -53,6 +60,7 @@ class TestPluginSpec(unittest.TestCase):
                 path = source_root.joinpath(*spec.module.split(".")).with_suffix(".py")
                 tree = ast.parse(path.read_text())
                 runtime_id = None
+                runtime_icon = None
                 for node in tree.body:
                     if isinstance(node, ast.ClassDef) and node.name == spec.class_name:
                         for statement in node.body:
@@ -66,7 +74,10 @@ class TestPluginSpec(unittest.TestCase):
                             for keyword in statement.value.keywords:
                                 if keyword.arg == "id":
                                     runtime_id = ast.literal_eval(keyword.value)
+                                if keyword.arg == "icon":
+                                    runtime_icon = ast.literal_eval(keyword.value)
                 self.assertEqual(runtime_id, spec.id)
+                self.assertEqual(runtime_icon, spec.icon)
 
 
 class TestPluginSpecRegistry(unittest.TestCase):

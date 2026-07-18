@@ -51,7 +51,7 @@ class AgentsTab(BaseTab):
         name="Agents",
         description="Manage autonomous system agents for automated monitoring and maintenance.",
         category="Maintenance",
-        icon="🤖",
+        icon="developer-tools",
         badge="",
         order=40,
     )
@@ -239,11 +239,11 @@ class AgentsTab(BaseTab):
         # Template buttons
         template_layout = QHBoxLayout()
         templates = [
-            ("🏥 Health Monitor", "Keep my system healthy"),
-            ("🛡️ Security Guard", "Watch for security threats"),
-            ("📦 Update Watcher", "Notify me about updates"),
-            ("🧹 Auto Cleanup", "Automatically clean up my system"),
-            ("⚡ Performance", "Optimize system performance automatically"),
+            ("Health Monitor", "Keep my system healthy"),
+            ("Security Guard", "Watch for security threats"),
+            ("Update Watcher", "Notify me about updates"),
+            ("Auto Cleanup", "Automatically clean up my system"),
+            ("Performance", "Optimize system performance automatically"),
         ]
         for label, goal in templates:
             btn = QPushButton(label)
@@ -252,7 +252,7 @@ class AgentsTab(BaseTab):
             template_layout.addWidget(btn)
         goal_layout.addLayout(template_layout)
 
-        btn_plan = QPushButton(self.tr("🤖 Generate Agent Plan"))
+        btn_plan = QPushButton(self.tr("Generate Agent Plan"))
         btn_plan.setAccessibleName(self.tr("Generate Agent Plan"))
         btn_plan.clicked.connect(self._generate_plan)
         goal_layout.addWidget(btn_plan)
@@ -286,7 +286,7 @@ class AgentsTab(BaseTab):
 
         plan_layout.addLayout(opts_layout)
 
-        btn_create = QPushButton(self.tr("✅ Create Agent"))
+        btn_create = QPushButton(self.tr("Create Agent"))
         btn_create.setAccessibleName(self.tr("Create Agent"))
         btn_create.clicked.connect(self._create_agent_from_plan)
         plan_layout.addWidget(btn_create)
@@ -388,8 +388,8 @@ class AgentsTab(BaseTab):
         lines = []
         for item in activity:
             ts = time.strftime("%H:%M:%S", time.localtime(item["timestamp"]))
-            icon = "✅" if item["success"] else "❌"
-            lines.append(f"{ts} {icon} [{item['agent_name']}] {item['message']}")
+            status = self.tr("Success") if item["success"] else self.tr("Failed")
+            lines.append(f"{ts} {status} [{item['agent_name']}] {item['message']}")
         self.activity_preview.setPlainText("\n".join(lines) if lines else self.tr("No recent activity"))
 
     def _refresh_agents_table(self):
@@ -417,11 +417,15 @@ class AgentsTab(BaseTab):
                 last_run = time.strftime("%Y-%m-%d %H:%M", time.localtime(state.last_run))
             self.agent_table.setItem(row, 4, QTableWidgetItem(last_run))
 
-            self.agent_table.setItem(row, 5, QTableWidgetItem("✅" if agent.enabled else "❌"))
+            self.agent_table.setItem(
+                row,
+                5,
+                QTableWidgetItem(self.tr("Enabled") if agent.enabled else self.tr("Disabled")),
+            )
 
             # Notification status
             notif_enabled = agent.notification_config.get("enabled", False)
-            self.agent_table.setItem(row, 6, QTableWidgetItem("🔔" if notif_enabled else "🔕"))
+            self.agent_table.setItem(row, 6, QTableWidgetItem(self.tr("On") if notif_enabled else self.tr("Off")))
 
             # Action buttons
             actions_widget = QWidget()
@@ -438,7 +442,7 @@ class AgentsTab(BaseTab):
             btn_run.clicked.connect(lambda checked, aid=agent.agent_id: self._run_agent_now(aid))
             actions_layout.addWidget(btn_run)
 
-            btn_notify = QPushButton(self.tr("🔕") if notif_enabled else self.tr("🔔"))
+            btn_notify = QPushButton(self.tr("Disable notifications") if notif_enabled else self.tr("Enable notifications"))
             btn_notify.setAccessibleName(self.tr("Toggle notifications"))
             btn_notify.setToolTip(self.tr("Toggle notifications"))
             btn_notify.clicked.connect(lambda checked, aid=agent.agent_id, ne=notif_enabled: self._toggle_notifications(aid, ne))
@@ -465,8 +469,8 @@ class AgentsTab(BaseTab):
         self.append_output(self.tr("Running agent {} now...\n").format(agent_id))
         results = scheduler.run_agent_now(agent_id)
         for r in results:
-            icon = "✅" if r.success else "❌"
-            self.append_output(f"  {icon} {r.message}\n")
+            status = self.tr("Success") if r.success else self.tr("Failed")
+            self.append_output(f"  {status}: {r.message}\n")
         self._refresh_agents_table()
         self._refresh_dashboard()
 
@@ -525,7 +529,7 @@ class AgentsTab(BaseTab):
         registry = self._get_registry()
         registered = registry.register_agent(config)
 
-        self.append_output(self.tr("✅ Agent '{}' created (ID: {})\n").format(registered.name, registered.agent_id))
+        self.append_output(self.tr("Agent '{}' created (ID: {})\n").format(registered.name, registered.agent_id))
         self._current_plan = None
         self.plan_preview.clear()
         self.goal_input.clear()
@@ -543,7 +547,9 @@ class AgentsTab(BaseTab):
             self.activity_table.setItem(row, 1, QTableWidgetItem(item["agent_name"]))
             self.activity_table.setItem(row, 2, QTableWidgetItem(item["action_id"]))
 
-            result_item = QTableWidgetItem("✅" if item["success"] else "❌")
+            result_item = QTableWidgetItem(
+                self.tr("Success") if item["success"] else self.tr("Failed")
+            )
             self.activity_table.setItem(row, 3, result_item)
 
             self.activity_table.setItem(row, 4, QTableWidgetItem(item["message"][:100]))

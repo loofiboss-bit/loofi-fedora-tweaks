@@ -14,7 +14,7 @@ from pathlib import Path
 # Add source path to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
-from utils.settings import SettingsManager, AppSettings, KNOWN_KEYS, STATE_SCHEMA_VERSION
+from utils.settings import SettingsManager, AppSettings, KNOWN_KEYS, STATE_SCHEMA_VERSION, migrate_settings
 
 
 # ---------------------------------------------------------------------------
@@ -39,8 +39,8 @@ class TestDefaults(unittest.TestCase):
     def test_default_theme_is_dark(self):
         self.assertEqual(AppSettings().theme, "dark")
 
-    def test_default_follow_system_is_false(self):
-        self.assertFalse(AppSettings().follow_system_theme)
+    def test_default_follow_system_is_true(self):
+        self.assertTrue(AppSettings().follow_system_theme)
 
     def test_default_start_minimized_is_false(self):
         self.assertFalse(AppSettings().start_minimized)
@@ -70,6 +70,13 @@ class TestDefaults(unittest.TestCase):
         from dataclasses import fields
         field_names = {f.name for f in fields(AppSettings)}
         self.assertEqual(KNOWN_KEYS, field_names)
+
+    def test_legacy_explicit_theme_does_not_switch_to_system_theme(self):
+        migrated, changed = migrate_settings({"theme": "light"})
+
+        self.assertTrue(changed)
+        self.assertEqual(migrated["theme"], "light")
+        self.assertFalse(migrated["follow_system_theme"])
 
 
 # ---------------------------------------------------------------------------

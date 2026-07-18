@@ -491,7 +491,7 @@ def _install_diagnostics_stubs():
     zram_module = types.ModuleType("utils.zram")
     zram_module.ZramManager = MagicMock()
 
-    secureboot_module = types.ModuleType("utils.secureboot")
+    secureboot_module = types.ModuleType("services.security")
     secureboot_module.SecureBootManager = MagicMock()
 
     log_module = types.ModuleType("utils.log")
@@ -510,7 +510,7 @@ def _install_diagnostics_stubs():
     sys.modules["utils.journal"] = journal_module
     sys.modules["utils.kernel"] = kernel_module
     sys.modules["utils.zram"] = zram_module
-    sys.modules["utils.secureboot"] = secureboot_module
+    sys.modules["services.security"] = secureboot_module
     sys.modules["utils.log"] = log_module
 
 
@@ -532,7 +532,7 @@ _MODULE_KEYS = [
     "utils.journal",
     "utils.kernel",
     "utils.zram",
-    "utils.secureboot",
+    "services.security",
     "utils.log",
     "ui.diagnostics_tab",
 ]
@@ -735,7 +735,7 @@ def _make_boot(mock_km, mock_zm, mock_sb):
 
 
 # ===========================================================================
-# _WatchtowerSubTab — _state_to_emoji
+# _WatchtowerSubTab — service state labels
 # ===========================================================================
 
 
@@ -745,8 +745,8 @@ def _make_boot(mock_km, mock_zm, mock_sb):
 @patch(f"{_M}.UnitScope", new_callable=MagicMock)
 @patch(f"{_M}.UnitState", new_callable=MagicMock)
 @patch(f"{_M}.ServiceManager", new_callable=MagicMock)
-class TestStateToEmoji(unittest.TestCase):
-    """Tests for _WatchtowerSubTab._state_to_emoji."""
+class TestServiceStateLabels(unittest.TestCase):
+    """Tests for accessible service state labels."""
 
     def test_active(self, sm, us, usc, ba, jm):
         """Active state returns string containing 'active'."""
@@ -774,9 +774,9 @@ class TestStateToEmoji(unittest.TestCase):
         self.assertIn("unknown", tab._state_to_emoji(FakeUnitState.UNKNOWN))
 
     def test_unmapped_returns_fallback(self, sm, us, usc, ba, jm):
-        """Unmapped state returns question-mark fallback."""
+        """Unmapped state returns a textual fallback."""
         tab = _make_watchtower(sm, ba, jm, us, usc)
-        self.assertEqual("\u2753", tab._state_to_emoji("totally_bogus"))
+        self.assertEqual("unknown", tab._state_to_emoji("totally_bogus"))
 
 
 # ===========================================================================

@@ -181,6 +181,30 @@ def _install_stubs():
     tab_utils_mod = types.ModuleType("ui.tab_utils")
     tab_utils_mod.configure_top_tabs = lambda *a, **kw: None
 
+    # --- ui.shared_states ---
+    class _StubActionProgress(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.progress_bar = MagicMock()
+            self.status_label = MagicMock()
+
+    class _StubResultBanner(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.message_label = MagicMock()
+            self.set_result = MagicMock()
+
+    class _StubDetailsDisclosure(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.details = MagicMock()
+            self.toggle_button = MagicMock()
+
+    shared_states_mod = types.ModuleType("ui.shared_states")
+    shared_states_mod.ActionProgress = _StubActionProgress
+    shared_states_mod.DetailsDisclosure = _StubDetailsDisclosure
+    shared_states_mod.ResultBanner = _StubResultBanner
+
     # --- services.system ---
     services_system_mod = types.ModuleType("services.system")
     services_system_mod.__path__ = []
@@ -261,6 +285,7 @@ def _install_stubs():
         "PyQt6.QtGui": qt_gui,
         "ui.base_tab": base_tab_mod,
         "ui.tab_utils": tab_utils_mod,
+        "ui.shared_states": shared_states_mod,
         "utils.command_runner": cmd_runner_mod,
         "services.system": services_system_mod,
         "services.system.system": services_system_system_mod,

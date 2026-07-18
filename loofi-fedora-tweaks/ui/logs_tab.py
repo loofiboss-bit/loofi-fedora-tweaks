@@ -40,7 +40,7 @@ class LogsTab(BaseTab):
         name="Logs",
         description="Smart log viewer with pattern detection, error summary, and log export.",
         category="Maintenance",
-        icon="📋",
+        icon="logs",
         badge="advanced",
         order=20,
     )
@@ -101,7 +101,7 @@ class LogsTab(BaseTab):
         sg_layout.addWidget(QLabel(self.tr("Errors:")), 1, 2)
         sg_layout.addWidget(self.lbl_errors, 1, 3)
 
-        btn_refresh_summary = QPushButton(self.tr("🔄 Refresh Summary"))
+        btn_refresh_summary = QPushButton(self.tr("Refresh Summary"))
         btn_refresh_summary.setAccessibleName(self.tr("Refresh Summary"))
         btn_refresh_summary.clicked.connect(self._load_summary)
         sg_layout.addWidget(btn_refresh_summary, 2, 0, 1, 4)
@@ -136,7 +136,7 @@ class LogsTab(BaseTab):
         live_group.setLayout(lg_layout)
 
         live_controls = QHBoxLayout()
-        self.btn_live_toggle = QPushButton(self.tr("▶ Start Live"))
+        self.btn_live_toggle = QPushButton(self.tr("Start Live"))
         self.btn_live_toggle.setAccessibleName(self.tr("Start Live"))
         self.btn_live_toggle.clicked.connect(self._toggle_live)
         live_controls.addWidget(self.btn_live_toggle)
@@ -210,12 +210,12 @@ class LogsTab(BaseTab):
         # Buttons
         btn_layout = QHBoxLayout()
 
-        btn_fetch = QPushButton(self.tr("📋 Fetch Logs"))
+        btn_fetch = QPushButton(self.tr("Fetch Logs"))
         btn_fetch.setAccessibleName(self.tr("Fetch Logs"))
         btn_fetch.clicked.connect(self._fetch_logs)
         btn_layout.addWidget(btn_fetch)
 
-        btn_export = QPushButton(self.tr("💾 Export Logs"))
+        btn_export = QPushButton(self.tr("Export Logs"))
         btn_export.setAccessibleName(self.tr("Export Logs"))
         btn_export.clicked.connect(self._export_logs)
         btn_layout.addWidget(btn_export)
@@ -387,14 +387,14 @@ class LogsTab(BaseTab):
         self._live_row_count = 0
         self.live_text.clear()
         self._live_timer.start(interval_ms)
-        self.btn_live_toggle.setText(self.tr("■ Stop Live"))
+        self.btn_live_toggle.setText(self.tr("Stop Live"))
         self.append_output("Live log panel started\n")
         self._poll_live_logs()
 
     def _stop_live(self):
         """Stop live log polling."""
         self._live_timer.stop()
-        self.btn_live_toggle.setText(self.tr("▶ Start Live"))
+        self.btn_live_toggle.setText(self.tr("Start Live"))
         self.append_output("Live log panel stopped\n")
 
     def _poll_live_logs(self):

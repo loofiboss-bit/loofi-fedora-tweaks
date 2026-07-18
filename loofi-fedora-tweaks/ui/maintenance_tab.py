@@ -21,7 +21,6 @@ from PyQt6.QtWidgets import (
     QListWidget,
     QListWidgetItem,
     QMessageBox,
-    QProgressBar,
     QPushButton,
     QTabWidget,
     QTextEdit,
@@ -33,6 +32,7 @@ from utils.command_runner import CommandRunner
 from utils.commands import PrivilegedCommand
 
 from ui.base_tab import BaseTab
+from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
 from ui.tab_utils import configure_top_tabs
 from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
 
@@ -72,7 +72,7 @@ class _UpdatesSubTab(BaseTab):
         layout.addWidget(update_guidance)
 
         # Update All Button (Prominent)
-        self.btn_update_all = QPushButton(self.tr("\U0001f504 Update All (DNF + Flatpak + Firmware)"))
+        self.btn_update_all = QPushButton(self.tr("Update All (DNF + Flatpak + Firmware)"))
         self.btn_update_all.setAccessibleName(self.tr("Update All (DNF + Flatpak + Firmware)"))
         self.btn_update_all.setObjectName("maintUpdateAllBtn")
         self.btn_update_all.clicked.connect(self.run_update_all)
@@ -136,11 +136,13 @@ class _UpdatesSubTab(BaseTab):
         layout.addWidget(self.advanced_group)
 
         # Progress Bar
-        self.progress_bar = QProgressBar()
+        self.action_progress = ActionProgress(self.tr("Waiting for an update action."))
+        self.progress_bar = self.action_progress.progress_bar
+        self.progress_bar.setRange(0, 100)
         self.progress_bar.setValue(0)
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("%p% - %v")
-        layout.addWidget(self.progress_bar)
+        layout.addWidget(self.action_progress)
 
         # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Update output"))
@@ -159,6 +161,7 @@ class _UpdatesSubTab(BaseTab):
     # -- Progress ----------------------------------------------------------
 
     def update_progress(self, percent, status):
+        self.action_progress.status_label.setText(str(status))
         if percent == -1:
             if self.progress_bar.value() == 0 or self.progress_bar.value() == 100:
                 self.progress_bar.setRange(0, 0)  # Indeterminate
@@ -249,6 +252,7 @@ class _UpdatesSubTab(BaseTab):
         self.output_area.clear()
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("%p% - Waiting...")
+        self.action_progress.status_label.setText(self.tr("Update in progress"))
         self.btn_dnf.setEnabled(False)
         self.btn_flatpak.setEnabled(False)
         self.btn_fw.setEnabled(False)
@@ -274,6 +278,9 @@ class _UpdatesSubTab(BaseTab):
             self.btn_update_all.setEnabled(True)
             self.progress_bar.setValue(100)
             self.progress_bar.setFormat(self.tr("100% - Done"))
+            self.action_progress.status_label.setText(
+                self.tr("Update completed") if exit_code == 0 else self.tr("Update failed")
+            )
             if exit_code == 0:
                 self.show_success(self.tr("Update completed successfully"))
             else:
@@ -379,12 +386,13 @@ class _CleanupSubTab(BaseTab):
         ))
         preview_intro.setWordWrap(True)
         preview_layout.addWidget(preview_intro)
-        self.reclaim_result = QLabel(self.tr(
-            "Select Analyze Reclaimable Space to collect bounded size estimates."
-        ))
-        self.reclaim_result.setWordWrap(True)
+        self.reclaim_banner = ResultBanner(
+            self.tr("Reclaim analysis"),
+            self.tr("Select Analyze Reclaimable Space to collect bounded size estimates."),
+        )
+        self.reclaim_result = self.reclaim_banner.message_label
         self.reclaim_result.setAccessibleName(self.tr("Reclaim analysis result"))
-        preview_layout.addWidget(self.reclaim_result)
+        preview_layout.addWidget(self.reclaim_banner)
         self.reclaim_button = QPushButton(self.tr("Analyze Reclaimable Space"))
         self.reclaim_button.clicked.connect(self._analyze_reclaim)
         preview_layout.addWidget(self.reclaim_button)
@@ -400,7 +408,11 @@ class _CleanupSubTab(BaseTab):
         from services.storage import ReclaimProbeService
 
         self.reclaim_button.setEnabled(False)
-        self.reclaim_result.setText(self.tr("Analyzing reclaimable space…"))
+        self.reclaim_banner.set_result(
+            "info",
+            self.tr("Analyzing reclaimable space"),
+            self.tr("Collecting bounded package-cache and journal estimates…"),
+        )
         thread = QThread(self)
         worker = _ActionCenterOperationWorker(ReclaimProbeService().analyze)
         worker.moveToThread(thread)
@@ -431,10 +443,18 @@ class _CleanupSubTab(BaseTab):
             self.tr("Selected safe estimate: %s")
             % self._format_bytes(analysis.estimated_selected_bytes)
         )
-        self.reclaim_result.setText("\n\n".join(lines))
+        self.reclaim_banner.set_result(
+            "success",
+            self.tr("Reclaim analysis complete"),
+            "\n\n".join(lines),
+        )
 
     def _show_reclaim_error(self, message: str) -> None:
-        self.reclaim_result.setText(self.tr("Reclaim analysis failed: %s") % message)
+        self.reclaim_banner.set_result(
+            "error",
+            self.tr("Reclaim analysis failed"),
+            str(message),
+        )
 
     def _clear_reclaim_worker(self) -> None:
         self._reclaim_thread = None
@@ -528,7 +548,7 @@ class _OverlaysSubTab(QWidget):
         info_layout = QVBoxLayout(info_frame)
 
         variant = SystemManager.get_variant_name()
-        info_label = QLabel(self.tr("\U0001f4e6 System: Fedora {} (Immutable)").format(variant))
+        info_label = QLabel(self.tr("System: Fedora {} (Immutable)").format(variant))
         info_label.setObjectName("maintOverlayInfoLabel")
         info_layout.addWidget(info_label)
 
@@ -537,7 +557,7 @@ class _OverlaysSubTab(QWidget):
         info_layout.addWidget(desc_label)
 
         # Pending Reboot Warning
-        self.reboot_warning = QLabel(self.tr("\u26a0\ufe0f Pending changes require reboot!"))
+        self.reboot_warning = QLabel(self.tr("Pending changes require reboot."))
         self.reboot_warning.setObjectName("maintRebootWarning")
         self.reboot_warning.setVisible(False)
         info_layout.addWidget(self.reboot_warning)
@@ -555,12 +575,12 @@ class _OverlaysSubTab(QWidget):
         # Buttons
         btn_layout = QHBoxLayout()
 
-        self.btn_refresh = QPushButton(self.tr("\U0001f504 Refresh"))
+        self.btn_refresh = QPushButton(self.tr("Refresh"))
         self.btn_refresh.setAccessibleName(self.tr("Refresh"))
         self.btn_refresh.clicked.connect(self.refresh_list)
         btn_layout.addWidget(self.btn_refresh)
 
-        self.btn_remove = QPushButton(self.tr("\u2796 Remove Selected"))
+        self.btn_remove = QPushButton(self.tr("Remove Selected"))
         self.btn_remove.setAccessibleName(self.tr("Remove Selected"))
         self.btn_remove.setObjectName("dangerAction")
         self.btn_remove.clicked.connect(self.remove_selected)
@@ -568,7 +588,7 @@ class _OverlaysSubTab(QWidget):
 
         btn_layout.addStretch()
 
-        self.btn_reset = QPushButton(self.tr("\U0001f5d1\ufe0f Reset to Base Image"))
+        self.btn_reset = QPushButton(self.tr("Reset to Base Image"))
         self.btn_reset.setAccessibleName(self.tr("Reset to Base Image"))
         self.btn_reset.setObjectName("dangerAction")
         self.btn_reset.clicked.connect(self.reset_to_base)
@@ -578,7 +598,7 @@ class _OverlaysSubTab(QWidget):
         layout.addWidget(packages_group)
 
         # Reboot Button
-        self.btn_reboot = QPushButton(self.tr("\U0001f501 Reboot to Apply Changes"))
+        self.btn_reboot = QPushButton(self.tr("Reboot to Apply Changes"))
         self.btn_reboot.setAccessibleName(self.tr("Reboot to Apply Changes"))
         self.btn_reboot.setObjectName("maintRebootBtn")
         self.btn_reboot.clicked.connect(self.reboot_system)
@@ -595,7 +615,7 @@ class _OverlaysSubTab(QWidget):
 
         if packages:
             for pkg in packages:
-                item = QListWidgetItem(f"\U0001f4e6 {pkg}")
+                item = QListWidgetItem(str(pkg))
                 self.packages_list.addItem(item)
         else:
             item = QListWidgetItem(self.tr("No layered packages (clean base image)"))
@@ -618,8 +638,9 @@ class _OverlaysSubTab(QWidget):
             )
             return
 
-        # Extract package name (remove emoji prefix)
-        pkg_name = selected.text().replace("\U0001f4e6 ", "").strip()
+        # Accept the pre-v15 decorated value if an existing widget or plugin
+        # supplies it, while new rows remain plain text.
+        pkg_name = selected.text().removeprefix("\U0001f4e6 ").strip()
 
         if "No layered" in pkg_name:
             return
@@ -643,7 +664,7 @@ class _OverlaysSubTab(QWidget):
         """Reset to base image, removing all layered packages."""
         reply = QMessageBox.warning(
             self,
-            self.tr("\u26a0\ufe0f Reset to Base Image"),
+            self.tr("Reset to Base Image"),
             self.tr("This will REMOVE ALL layered packages and reset to the clean base image.\n\nAre you absolutely sure?"),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
@@ -991,20 +1012,26 @@ class _ActionCenterSubTab(BaseTab):
         target_row.addLayout(target_review_row)
         layout.addLayout(target_row)
 
-        self.presentation_status = QLabel(self.tr("Loading Action Center candidates…"))
-        self.presentation_status.setWordWrap(True)
+        self.presentation_banner = ResultBanner(
+            self.tr("Action Center status"),
+            self.tr("Loading Action Center candidates…"),
+        )
+        self.presentation_status = self.presentation_banner.message_label
         self.presentation_status.setAccessibleName(self.tr("Action Center status"))
-        layout.addWidget(self.presentation_status)
+        layout.addWidget(self.presentation_banner)
 
         self.action_list = QListWidget()
         self.action_list.setAccessibleName(self.tr("Action Center candidates"))
         self.action_list.currentRowChanged.connect(self._selection_changed)
         layout.addWidget(self.action_list, 1)
 
-        self.detail_area = QTextEdit()
-        self.detail_area.setReadOnly(True)
+        self.detail_disclosure = DetailsDisclosure(
+            summary=self.tr("Action Center details")
+        )
+        self.detail_area = self.detail_disclosure.details
         self.detail_area.setAccessibleName(self.tr("Action Center details"))
-        layout.addWidget(self.detail_area, 1)
+        self.detail_disclosure.toggle_button.setChecked(True)
+        layout.addWidget(self.detail_disclosure, 1)
 
         self.add_output_section(layout)
         self.runner.output_received.connect(self._capture_output)
@@ -1027,7 +1054,11 @@ class _ActionCenterSubTab(BaseTab):
         self.verify_button.setEnabled(False)
         self.action_list.clear()
         self.detail_area.setPlainText(self.tr("Loading Action Center candidates..."))
-        self.presentation_status.setText(self.tr("Loading Action Center candidates…"))
+        self.presentation_banner.set_result(
+            "info",
+            self.tr("Loading Action Center"),
+            self.tr("Loading Action Center candidates…"),
+        )
         self._set_loading(True)
         self._start_operation(
             lambda: self._merged_items(target_key),
@@ -1051,17 +1082,21 @@ class _ActionCenterSubTab(BaseTab):
             self.action_list.addItem(f"{item.title} [{item.risk_level}] - {marker}")
 
         if self._items:
-            self.presentation_status.setText(
+            self.presentation_banner.set_result(
+                "info",
+                self.tr("Maintenance review available"),
                 self.tr("%d maintenance items are available. Select one to inspect its lifecycle.")
-                % len(self._items)
+                % len(self._items),
             )
             selected = self._select_requested_action()
             if not selected:
                 self.action_list.setCurrentRow(0)
                 self._show_item(self._items[0])
         else:
-            self.presentation_status.setText(
-                self.tr("No maintenance item needs review right now.")
+            self.presentation_banner.set_result(
+                "success",
+                self.tr("Nothing needs review"),
+                self.tr("No maintenance item needs review right now."),
             )
             self.detail_area.setPlainText(self.tr("No Action Center candidates are currently available."))
 
@@ -1525,7 +1560,7 @@ class MaintenanceTab(BaseTab):
         name="Maintenance",
         description="System updates, cache cleanup, and overlay management for Fedora.",
         category="Packages",
-        icon="🔧",
+        icon="maintenance-health",
         badge="recommended",
         order=20,
     )

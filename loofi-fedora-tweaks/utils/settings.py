@@ -34,7 +34,7 @@ class AppSettings:
 
     # Appearance
     theme: str = "dark"
-    follow_system_theme: bool = False
+    follow_system_theme: bool = True
 
     # Behavior
     start_minimized: bool = False
@@ -125,6 +125,13 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
     legacy_theme = _first(raw, "appearance.theme", "ui.theme")
     if "theme" not in raw and legacy_theme in {"dark", "light", "highcontrast"}:
         defaults["theme"] = legacy_theme
+        migrated = True
+    if "follow_system_theme" not in raw and (
+        "theme" in raw or legacy_theme in {"dark", "light", "highcontrast"}
+    ):
+        # A stored theme predates the follow-system setting and represents an
+        # explicit user choice.  Preserve that choice during migration.
+        defaults["follow_system_theme"] = False
         migrated = True
 
     legacy_experience = _first(

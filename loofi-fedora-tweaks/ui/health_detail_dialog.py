@@ -102,7 +102,7 @@ class HealthDetailDialog(QDialog):
             grid.addWidget(weight_label, row, 2)
 
             if comp.recommendation:
-                rec_label = QLabel(f"  ℹ {comp.recommendation}")
+                rec_label = QLabel(self.tr("Recommendation: {} ").format(comp.recommendation).strip())
                 rec_label.setObjectName("healthRecLabel")
                 rec_label.setWordWrap(True)
                 row += 1
@@ -125,12 +125,12 @@ class HealthDetailDialog(QDialog):
 
             for fix in fixes:
                 fix_row = QHBoxLayout()
-                severity_icon = "🔴" if fix.severity == "high" else "🟡"
+                severity_icon = self.tr("High") if fix.severity == "high" else self.tr("Medium")
                 fix_text = QLabel(f"{severity_icon} {fix.description}")
                 fix_text.setWordWrap(True)
                 fix_row.addWidget(fix_text, 1)
 
-                fix_btn = QPushButton(self.tr("Fix it →"))
+                fix_btn = QPushButton(self.tr("Fix it"))
                 fix_btn.setObjectName("healthFixBtn")
                 tab_id = fix.tab_id
                 fix_btn.clicked.connect(lambda checked, t=tab_id: self._navigate(t))

@@ -56,13 +56,13 @@ class TestResetGroupBasic(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             initial = self._defaults()
             initial["theme"] = "light"
-            initial["follow_system_theme"] = True
+            initial["follow_system_theme"] = False
             initial["log_level"] = "DEBUG"
             mgr = _make_manager(tmpdir, initial)
 
             mgr.reset_group(["theme", "follow_system_theme"])
             self.assertEqual(mgr.get("theme"), "dark")
-            self.assertFalse(mgr.get("follow_system_theme"))
+            self.assertTrue(mgr.get("follow_system_theme"))
             # log_level untouched
             self.assertEqual(mgr.get("log_level"), "DEBUG")
 

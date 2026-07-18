@@ -36,7 +36,7 @@ class SnapshotTab(BaseTab):
         name="Snapshots",
         description="Unified snapshot management across Timeshift, Snapper, and Btrfs backends.",
         category="Packages",
-        icon="📸",
+        icon="storage-disk",
         badge="advanced",
         order=30,
     )
@@ -91,12 +91,12 @@ class SnapshotTab(BaseTab):
         btn_create.clicked.connect(self._create_snapshot)
         action_layout.addWidget(btn_create)
 
-        btn_delete = QPushButton(self.tr("🗑️ Delete Selected"))
+        btn_delete = QPushButton(self.tr("Delete Selected"))
         btn_delete.setAccessibleName(self.tr("Delete Selected"))
         btn_delete.clicked.connect(self._delete_snapshot)
         action_layout.addWidget(btn_delete)
 
-        btn_refresh = QPushButton(self.tr("🔄 Refresh"))
+        btn_refresh = QPushButton(self.tr("Refresh"))
         btn_refresh.setAccessibleName(self.tr("Refresh"))
         btn_refresh.clicked.connect(self._refresh_all)
         action_layout.addWidget(btn_refresh)
@@ -156,10 +156,12 @@ class SnapshotTab(BaseTab):
             for name, label in self.backend_labels:
                 b = backend_map.get(name)
                 if b and b.available:
-                    label.setText(f"✅ {b.version or 'installed'}")
+                    label.setText(
+                        self.tr("Available: {}").format(b.version or self.tr("installed"))
+                    )
                     label.setObjectName("snapBackendAvail")
                 else:
-                    label.setText("❌ Not found")
+                    label.setText(self.tr("Not found"))
                     label.setObjectName("snapBackendMissing")
                 if label.style() is not None:
                     label.style().unpolish(label)

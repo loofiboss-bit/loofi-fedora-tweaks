@@ -728,6 +728,8 @@ def _install_stubs():
     qt_gui.QColor = _Dummy
     qt_gui.QPainter = _Dummy
     qt_gui.QFontMetrics = _DummyFontMetrics
+    qt_gui.QKeyEvent = _Dummy
+    qt_gui.QMouseEvent = _Dummy
     qt_gui.QAction = _DummyAction
     qt_gui.QShortcut = _DummyShortcut
     qt_gui.QKeySequence = lambda x: x
@@ -1398,26 +1400,26 @@ class TestAddPage(unittest.TestCase):
         self.assertEqual(self.win.sidebar.topLevelItemCount(), 1)
 
     def test_add_page_with_recommended_badge(self):
-        """add_page appends star badge for recommended plugins."""
+        """add_page appends a textual badge for recommended plugins."""
         self.win.add_page("Top", "⭐", MagicMock(), badge="recommended")
         cat = self.win.sidebar.topLevelItem(0)
         child = cat.child(0)
-        self.assertIn("★", child.text(0))
+        self.assertIn("[recommended]", child.text(0))
 
     def test_add_page_with_advanced_badge(self):
-        """add_page appends gear badge for advanced plugins."""
+        """add_page appends a textual badge for advanced plugins."""
         self.win.add_page("Advanced", "🔧", MagicMock(), badge="advanced")
         cat = self.win.sidebar.topLevelItem(0)
         child = cat.child(0)
-        self.assertIn("⚙", child.text(0))
+        self.assertIn("[advanced]", child.text(0))
 
     def test_add_page_no_badge(self):
         """add_page with no badge omits badge suffix."""
         self.win.add_page("Plain", "📦", MagicMock(), badge="")
         cat = self.win.sidebar.topLevelItem(0)
         child = cat.child(0)
-        self.assertNotIn("★", child.text(0))
-        self.assertNotIn("⚙", child.text(0))
+        self.assertNotIn("[recommended]", child.text(0))
+        self.assertNotIn("[advanced]", child.text(0))
 
     def test_add_page_disabled(self):
         """add_page with disabled=True disables the sidebar item."""
@@ -1645,14 +1647,14 @@ class TestToggleSidebar(unittest.TestCase):
         self.win._sidebar_collapsed = False
         self.win._toggle_sidebar()
         self.assertTrue(self.win._sidebar_collapsed)
-        self.assertEqual(self.win._sidebar_toggle._text, "▶")
+        self.assertEqual(self.win._sidebar_toggle._text, ">")
 
     def test_expand_sidebar(self):
         """Toggle expands collapsed sidebar."""
         self.win._sidebar_collapsed = True
         self.win._toggle_sidebar()
         self.assertFalse(self.win._sidebar_collapsed)
-        self.assertEqual(self.win._sidebar_toggle._text, "◀")
+        self.assertEqual(self.win._sidebar_toggle._text, "<")
 
     def test_toggle_round_trip(self):
         """Double toggle returns to original state."""
@@ -1722,10 +1724,10 @@ class TestShowUndoButton(unittest.TestCase):
         self.win.show_undo_button("")
         self.assertTrue(self.win._undo_btn._visible)
 
-    def test_show_undo_prefixes_checkmark(self):
-        """show_undo_button prefixes description with checkmark."""
+    def test_show_undo_uses_plain_description(self):
+        """show_undo_button keeps the accessible description unchanged."""
         self.win.show_undo_button("Installed package")
-        self.assertTrue(self.win._status_label._text.startswith("✓"))
+        self.assertEqual(self.win._status_label._text, "Installed package")
 
 
 class TestShowStatusToast(unittest.TestCase):
@@ -2245,7 +2247,7 @@ class TestBreadcrumb(unittest.TestCase):
         cat = self.win.sidebar.topLevelItem(0)
         child = cat.child(0)
         self.win._update_breadcrumb(child)
-        self.assertNotIn("★", self.win._bc_page._text)
+        self.assertNotIn("[recommended]", self.win._bc_page._text)
 
     def test_on_breadcrumb_category_click_no_parent(self):
         """_on_breadcrumb_category_click handles no parent gracefully."""

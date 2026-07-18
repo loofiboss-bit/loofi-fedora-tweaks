@@ -45,7 +45,7 @@ class NetworkTab(BaseTab):
         name="Network",
         description="Comprehensive network management including connections, DNS, privacy, and monitoring.",
         category="Network",
-        icon="🌐",
+        icon="network-connectivity",
         badge="recommended",
         order=10,
     )
@@ -73,10 +73,10 @@ class NetworkTab(BaseTab):
         # Sub-tab widget
         self.tabs = QTabWidget()
         configure_top_tabs(self.tabs)
-        self.tabs.addTab(self._build_connections_tab(), self.tr("🔗 Connections"))
-        self.tabs.addTab(self._build_dns_tab(), self.tr("🌐 DNS"))
-        self.tabs.addTab(self._build_privacy_tab(), self.tr("🔒 Privacy"))
-        self.tabs.addTab(self._build_monitoring_tab(), self.tr("📊 Monitoring"))
+        self.tabs.addTab(self._build_connections_tab(), self.tr("Connections"))
+        self.tabs.addTab(self._build_dns_tab(), self.tr("DNS"))
+        self.tabs.addTab(self._build_privacy_tab(), self.tr("Privacy"))
+        self.tabs.addTab(self._build_monitoring_tab(), self.tr("Monitoring"))
         layout.addWidget(self.tabs)
 
         # Output area
@@ -320,7 +320,7 @@ class NetworkTab(BaseTab):
         # Undo
         undo_group = QGroupBox(self.tr("History"))
         undo_layout = QVBoxLayout(undo_group)
-        btn_undo = QPushButton(self.tr("↩ Undo Last Action"))
+        btn_undo = QPushButton(self.tr("Undo Last Action"))
         btn_undo.setAccessibleName(self.tr("Undo last action"))
         btn_undo.clicked.connect(self.undo_last)
         undo_layout.addWidget(btn_undo)
@@ -362,8 +362,8 @@ class NetworkTab(BaseTab):
                 self.tr("Type"),
                 self.tr("Sent"),
                 self.tr("Received"),
-                self.tr("↑ Rate"),
-                self.tr("↓ Rate"),
+                self.tr("Upload Rate"),
+                self.tr("Download Rate"),
             ]
         )
         self.traffic_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
@@ -657,9 +657,9 @@ class NetworkTab(BaseTab):
         """Check whether MAC randomization is enabled."""
         config_file = "/etc/NetworkManager/conf.d/00-mac-randomization.conf"
         if os.path.exists(config_file):
-            self.lbl_mac_status.setText(self.tr("MAC Randomization: ✅ Enabled"))
+            self.lbl_mac_status.setText(self.tr("MAC Randomization: Enabled"))
         else:
-            self.lbl_mac_status.setText(self.tr("MAC Randomization: ❌ Disabled"))
+            self.lbl_mac_status.setText(self.tr("MAC Randomization: Disabled"))
 
     def toggle_mac_randomization(self, enable):
         """Enable or disable MAC randomization via NetworkManager config."""
@@ -711,9 +711,9 @@ class NetworkTab(BaseTab):
             return
         result = NetworkUtils.check_hostname_privacy(conn)
         if result is True:
-            self.lbl_hostname_status.setText(self.tr("Hostname broadcast: ✅ Hidden"))
+            self.lbl_hostname_status.setText(self.tr("Hostname broadcast: Hidden"))
         elif result is False:
-            self.lbl_hostname_status.setText(self.tr("Hostname broadcast: ⚠️ Visible"))
+            self.lbl_hostname_status.setText(self.tr("Hostname broadcast: Visible"))
         else:
             self.lbl_hostname_status.setText(self.tr("Hostname broadcast: unknown"))
 

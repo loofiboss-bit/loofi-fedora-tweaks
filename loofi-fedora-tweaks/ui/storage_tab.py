@@ -34,7 +34,7 @@ class StorageTab(BaseTab):
         name="Storage",
         description="Disk information, SMART health monitoring, and filesystem management.",
         category="Hardware",
-        icon="💾",
+        icon="storage-disk",
         badge="",
         order=40,
     )
@@ -86,12 +86,12 @@ class StorageTab(BaseTab):
         dl_layout.addWidget(self.disk_table)
 
         disk_btn_layout = QHBoxLayout()
-        btn_smart = QPushButton(self.tr("🔍 SMART Health"))
+        btn_smart = QPushButton(self.tr("SMART Health"))
         btn_smart.setAccessibleName(self.tr("Check SMART health"))
         btn_smart.clicked.connect(self._check_smart)
         disk_btn_layout.addWidget(btn_smart)
 
-        btn_refresh_disks = QPushButton(self.tr("🔄 Refresh"))
+        btn_refresh_disks = QPushButton(self.tr("Refresh"))
         btn_refresh_disks.setAccessibleName(self.tr("Refresh disks"))
         btn_refresh_disks.clicked.connect(self._refresh_all)
         disk_btn_layout.addWidget(btn_refresh_disks)
@@ -138,7 +138,7 @@ class StorageTab(BaseTab):
         btn_trim.clicked.connect(self._trim_ssd)
         al_layout.addWidget(btn_trim)
 
-        btn_fsck = QPushButton(self.tr("🔧 Check Filesystem"))
+        btn_fsck = QPushButton(self.tr("Check Filesystem"))
         btn_fsck.setAccessibleName(self.tr("Check filesystem"))
         btn_fsck.clicked.connect(self._check_filesystem)
         al_layout.addWidget(btn_fsck)
@@ -315,10 +315,10 @@ class StorageTab(BaseTab):
             self.lbl_smart_serial.setText(health.serial or "—")
 
             if health.health_passed:
-                self.lbl_smart_health.setText("✅ PASSED")
+                self.lbl_smart_health.setText(self.tr("Passed"))
                 self.lbl_smart_health.setProperty("smartState", "passed")
             else:
-                self.lbl_smart_health.setText("❌ FAILED")
+                self.lbl_smart_health.setText(self.tr("Failed"))
                 self.lbl_smart_health.setProperty("smartState", "failed")
             if self.lbl_smart_health.style() is not None:
                 self.lbl_smart_health.style().unpolish(self.lbl_smart_health)
@@ -373,7 +373,7 @@ class StorageTab(BaseTab):
         self.append_output(f"Checking {device}...\n")
         try:
             result = StorageManager.check_filesystem(device)
-            icon = "✅" if result.success else "⚠️"
-            self.append_output(f"{icon} {result.message}\n")
+            status = self.tr("Completed") if result.success else self.tr("Warning")
+            self.append_output(f"{status}: {result.message}\n")
         except (RuntimeError, OSError, ValueError) as exc:
             self.append_output(f"Check error: {exc}\n")

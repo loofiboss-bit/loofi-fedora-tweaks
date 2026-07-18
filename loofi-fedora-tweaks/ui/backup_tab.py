@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import (
 from utils.install_hints import build_install_hint
 
 from ui.base_tab import BaseTab
+from ui.shared_states import ResultBanner
 
 logger = logging.getLogger(__name__)
 
@@ -42,7 +43,7 @@ class BackupTab(BaseTab):
         name="Backup",
         description="Create, manage, and restore system snapshots via Timeshift or Snapper.",
         category="Security",
-        icon="💾",
+        icon="storage-disk",
         badge="new",
         order=20,
     )
@@ -81,14 +82,14 @@ class BackupTab(BaseTab):
 
         # --- Navigation ---
         nav = QHBoxLayout()
-        self.back_btn = QPushButton(self.tr("← Back"))
+        self.back_btn = QPushButton(self.tr("Back"))
         self.back_btn.clicked.connect(self._go_back)
         self.back_btn.setEnabled(False)
         nav.addWidget(self.back_btn)
 
         nav.addStretch()
 
-        self.next_btn = QPushButton(self.tr("Next →"))
+        self.next_btn = QPushButton(self.tr("Next"))
         self.next_btn.clicked.connect(self._go_next)
         nav.addWidget(self.next_btn)
         layout.addLayout(nav)
@@ -116,9 +117,13 @@ class BackupTab(BaseTab):
         layout.addWidget(info)
 
         # Tool status
-        self.tool_status = QLabel()
+        self.tool_result = ResultBanner(
+            self.tr("Backup tool status"),
+            self.tr("Detect Timeshift or Snapper before creating a recovery point."),
+        )
+        self.tool_status = self.tool_result.message_label
         self.tool_status.setObjectName("toolStatus")
-        layout.addWidget(self.tool_status)
+        layout.addWidget(self.tool_result)
 
         self.detect_btn = QPushButton(self.tr("Detect Backup Tools"))
         self.detect_btn.clicked.connect(self._detect_tools)
@@ -219,7 +224,7 @@ class BackupTab(BaseTab):
         self.next_btn.setText(
             self.tr("Finish")
             if self.stack.currentIndex() == self.stack.count() - 1
-            else self.tr("Next →")
+            else self.tr("Next")
         )
 
     def _go_next(self):
@@ -235,7 +240,7 @@ class BackupTab(BaseTab):
         self.next_btn.setText(
             self.tr("Finish")
             if self.stack.currentIndex() == self.stack.count() - 1
-            else self.tr("Next →")
+            else self.tr("Next")
         )
 
     def showEvent(self, event):
@@ -260,24 +265,26 @@ class BackupTab(BaseTab):
             if tool == "none":
                 install_timeshift = build_install_hint("timeshift")
                 install_snapper = build_install_hint("snapper")
-                self.tool_status.setText(
-                    self.tr(
-                        "⚠ No backup tool found.\n"
-                        "Install timeshift or snapper:\n"
-                        "  {timeshift}\n"
-                        "  {snapper}"
-                    ).format(
-                        timeshift=install_timeshift,
-                        snapper=install_snapper,
-                    )
+                message = self.tr(
+                    "No backup tool found.\n"
+                    "Install timeshift or snapper:\n"
+                    "  {timeshift}\n"
+                    "  {snapper}"
+                ).format(
+                    timeshift=install_timeshift,
+                    snapper=install_snapper,
+                )
+                self.tool_result.set_result(
+                    "warning", self.tr("Backup tool unavailable"), message
                 )
                 self.next_btn.setEnabled(False)
             else:
                 tools_str = ", ".join(available)
-                self.tool_status.setText(
-                    self.tr("✓ Backup tool detected: {}\nAvailable tools: {}").format(
-                        tool, tools_str
-                    )
+                message = self.tr("Backup tool detected: {}\nAvailable tools: {}").format(
+                    tool, tools_str
+                )
+                self.tool_result.set_result(
+                    "success", self.tr("Backup tool ready"), message
                 )
                 self.next_btn.setEnabled(True)
                 self._detected_tool = tool
@@ -285,7 +292,11 @@ class BackupTab(BaseTab):
             self.append_output(self.tr("Tool detection complete: {}\n").format(tool))
         except (RuntimeError, OSError, ValueError) as e:
             logger.error("Tool detection failed: %s", e)
-            self.tool_status.setText(self.tr("Detection failed: {}").format(e))
+            self.tool_result.set_result(
+                "error",
+                self.tr("Backup tool detection failed"),
+                self.tr("Detection failed: {}").format(e),
+            )
 
     def _setup_configure_page(self):
         """Prepare configure page with detected tool info."""

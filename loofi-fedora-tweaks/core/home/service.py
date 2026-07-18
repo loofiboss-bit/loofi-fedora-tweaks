@@ -35,7 +35,7 @@ _COMMON_TASKS = (
     HomeTask("updates", "Update the system", "Review available Fedora updates.", "maintenance:updates", "update"),
     HomeTask("applications", "Install an application", "Find and install Fedora or Flatpak apps.", "software:apps", "packages-software"),
     HomeTask("performance", "Check performance", "Inspect CPU, memory, and running processes.", "monitor", "overview-dashboard"),
-    HomeTask("protection", "Protect or recover", "Review backups and recovery options.", "backup", "backup"),
+    HomeTask("protection", "Protect or recover", "Review backups and recovery options.", "backup", "storage-disk"),
 )
 
 

@@ -135,6 +135,11 @@ def _install_stubs():
     tooltips_mod.SW_RPM_FUSION = ""
     tooltips_mod.SW_SEARCH = ""
 
+    shared_states_mod = types.ModuleType("ui.shared_states")
+    shared_states_mod.EmptyState = _Dummy
+    shared_states_mod.LoadingState = _Dummy
+    shared_states_mod.UnavailableState = _Dummy
+
     module_map = {
         "PyQt6": pyqt,
         "PyQt6.QtWidgets": qt_widgets,
@@ -148,6 +153,7 @@ def _install_stubs():
         "utils.commands": commands_mod,
         "utils.remote_config": remote_config_mod,
         "ui.tooltips": tooltips_mod,
+        "ui.shared_states": shared_states_mod,
     }
 
     for name, mod in module_map.items():

@@ -4,37 +4,36 @@
 QWidget {
     background-color: #eff1f5;
     color: #4c4f69;
-    font-family: 'Inter', 'Segoe UI', 'San Francisco', 'Cantarell', sans-serif;
     font-size: 10.5pt;
 }
 
 /* ===== Sidebar Navigation (QTreeWidget#sidebar) ===== */
 QTreeWidget#sidebar {
-    background-color: #e6e9ef;
+    background-color: #f5f7fa;
     border: none;
     outline: none;
-    padding-top: 8px;
-    font-size: 10.5pt;
+    padding-top: 4px;
+    font-size: 10.75pt;
 }
 
 QTreeWidget#sidebar::item {
-    height: 38px;
-    padding-left: 12px;
-    margin: 1px 8px;
+    height: 44px;
+    padding-left: 14px;
+    margin: 3px 4px;
     border-radius: 8px;
-    color: #6c6f85;
+    color: #4e5969;
     border: none;
 }
 
 QTreeWidget#sidebar::item:hover {
-    background-color: #ccd0da;
-    color: #4c4f69;
+    background-color: #e7ecf3;
+    color: #1e2937;
 }
 
 QTreeWidget#sidebar::item:selected {
-    background-color: #bcc0cc;
-    color: #1e66f5;
-    border-left: 3px solid #1e66f5;
+    background-color: #dfeafa;
+    color: #1f5f91;
+    border-left: 3px solid #3178b8;
 }
 
 QTreeWidget#sidebar::item:disabled {
@@ -523,21 +522,6 @@ QFrame#dashboardCard {
     padding: 12px;
 }
 
-QPushButton#quickActionButton {
-    background-color: #eff1f5;
-    border: 2px solid #1e66f5;
-    color: #1e66f5;
-    border-radius: 12px;
-    padding: 15px;
-    font-size: 16px;
-    font-weight: bold;
-    text-align: left;
-}
-QPushButton#quickActionButton:hover {
-    background-color: #1e66f5;
-    color: #eff1f5;
-}
-
 /* ===== v20.1 Notification Panel ===== */
 QWidget#notificationPanel {
     background-color: #eff1f5;
@@ -924,15 +908,6 @@ QLabel#notificationBadge {
     font-weight: bold;
 }
 
-QListWidget#quickActionsList {
-    font-size: 13px;
-}
-
-QListWidget#quickActionsList::item {
-    padding: 6px 10px;
-}
-
-QLabel#quickActionsStatus,
 QLabel#atlasSubheader {
     color: #6c6f85;
     font-size: 11px;
@@ -942,31 +917,6 @@ QLabel#atlasSubheader {
 QWidget#sidebarContainer {
     background-color: #f5f7fa;
     border-right: 1px solid #d8dee8;
-}
-
-QTreeWidget#sidebar {
-    background-color: #f5f7fa;
-    padding-top: 4px;
-    font-size: 10.75pt;
-}
-
-QTreeWidget#sidebar::item {
-    height: 44px;
-    padding-left: 14px;
-    margin: 3px 4px;
-    border-radius: 8px;
-    color: #4e5969;
-}
-
-QTreeWidget#sidebar::item:hover {
-    background-color: #e7ecf3;
-    color: #1e2937;
-}
-
-QTreeWidget#sidebar::item:selected {
-    background-color: #dfeafa;
-    color: #1f5f91;
-    border-left: 3px solid #3178b8;
 }
 
 QLineEdit#sidebarSearch {
@@ -1051,4 +1001,59 @@ QTabBar::tab {
 
 QScrollArea#pageScroll {
     background-color: #fafbfc;
+}
+
+/* ===== v15 Semantic Components ===== */
+QListWidget#destinationSidebar {
+    background-color: #f5f7fa;
+    border: none;
+    outline: none;
+}
+
+QListWidget#destinationSidebar::item {
+    min-height: 42px;
+    padding: 4px 10px;
+    border-radius: 8px;
+}
+
+QListWidget#destinationSidebar::item:selected {
+    background-color: #dfeafa;
+    color: #17202c;
+}
+
+QFrame[routeCard="true"]:focus {
+    border: 2px solid #3178b8;
+}
+
+QFrame#loadingState,
+QFrame#emptyState,
+QFrame#unavailableState,
+QFrame#resultBanner {
+    background-color: #ffffff;
+    border: 1px solid #d6deea;
+    border-radius: 8px;
+}
+
+QFrame#unavailableState,
+QFrame#resultBanner[resultKind="warning"] {
+    border-left: 4px solid #df8e1d;
+}
+
+QFrame#resultBanner[resultKind="success"] {
+    border-left: 4px solid #40a02b;
+}
+
+QFrame#resultBanner[resultKind="error"] {
+    border-left: 4px solid #d20f39;
+}
+
+QLabel#stateTitle {
+    font-weight: 700;
+}
+
+QToolButton:focus,
+QPushButton:focus,
+QLineEdit:focus,
+QListWidget:focus {
+    border: 2px solid #3178b8;
 }

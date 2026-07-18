@@ -68,6 +68,10 @@ _ROLE_STATUS = Qt.ItemDataRole.UserRole + 3  # "ok" | "warning" | "error" | ""
 _ROLE_NAME = Qt.ItemDataRole.UserRole + 4  # Raw tab name (without badges/status)
 _ROLE_ICON = Qt.ItemDataRole.UserRole + 5  # Semantic icon token
 _ROLE_ROUTE_ID = Qt.ItemDataRole.UserRole + 6  # Stable route/plugin ID
+_BADGE_SUFFIXES = {
+    "recommended": "  [recommended]",
+    "advanced": "  [advanced]",
+}
 
 
 @dataclass
@@ -187,7 +191,7 @@ class MainWindow(QMainWindow):
 
         # Sidebar collapse toggle
         sidebar_chrome.addStretch()
-        self._sidebar_toggle = QPushButton("◀")
+        self._sidebar_toggle = QPushButton("<")
         self._sidebar_toggle.setObjectName("sidebarToggle")
         self._sidebar_toggle.setMinimumHeight(int(self._line_height * 2.2))
         self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
@@ -250,7 +254,7 @@ class MainWindow(QMainWindow):
         sb_layout.addWidget(self._status_label)
 
         # Undo button (v38.0)
-        self._undo_btn = QPushButton(self.tr("↩ Undo"))
+        self._undo_btn = QPushButton(self.tr("Undo"))
         self._undo_btn.setObjectName("undoButton")
         self._undo_btn.setVisible(False)
         self._undo_btn.setToolTip(self.tr("Undo last action"))
@@ -494,11 +498,7 @@ class MainWindow(QMainWindow):
         disabled_reason: str = "",
     ) -> QTreeWidgetItem:
         """Create a sidebar tree item for a tab."""
-        badge_suffix = ""
-        if badge == "recommended":
-            badge_suffix = "  ★"
-        elif badge == "advanced":
-            badge_suffix = "  ⚙"
+        badge_suffix = _BADGE_SUFFIXES.get(badge, "")
 
         item = QTreeWidgetItem(category_item)
         item.setText(0, f"{name}{badge_suffix}")
@@ -647,7 +647,10 @@ class MainWindow(QMainWindow):
         if not tab_id:
             tab_name = item.data(0, _ROLE_NAME)
             if not tab_name:
-                tab_name = item.text(0).replace("  ★", "").replace("  ⚙", "").strip()
+                tab_name = item.text(0)
+                for suffix in _BADGE_SUFFIXES.values():
+                    tab_name = tab_name.replace(suffix, "")
+                tab_name = tab_name.strip()
             route = resolve(str(tab_name))
             tab_id = route.id if route else str(tab_name).lower().replace(" ", "_")
         tab_id = str(tab_id)
@@ -770,8 +773,9 @@ class MainWindow(QMainWindow):
             category = parent.data(0, _ROLE_DESC) or parent.text(0)
         page_name = item.data(0, _ROLE_NAME)
         if not page_name:
-            raw = item.text(0)
-            page_name = raw.replace("  ★", "").replace("  ⚙", "")
+            page_name = item.text(0)
+            for suffix in _BADGE_SUFFIXES.values():
+                page_name = page_name.replace(suffix, "")
         page_name = str(page_name)
         desc = item.data(0, _ROLE_DESC) or ""
         route = resolve(self._active_route_id or str(item.data(0, _ROLE_ROUTE_ID) or ""))
@@ -969,7 +973,7 @@ class MainWindow(QMainWindow):
     def show_undo_button(self, description: str = ""):
         """Show the undo button in the status bar after an undoable action."""
         if description:
-            self._status_label.setText(self.tr("✓ ") + description)
+            self._status_label.setText(description)
         self._undo_btn.setVisible(True)
         self._update_status_chrome()
 
@@ -1230,7 +1234,7 @@ class MainWindow(QMainWindow):
             self._sidebar_container.setFixedWidth(self._sidebar_expanded_width)
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(False)
-            self._sidebar_toggle.setText("◀")
+            self._sidebar_toggle.setText("<")
             self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
             self._sidebar_collapsed = False
         else:
@@ -1238,7 +1242,7 @@ class MainWindow(QMainWindow):
             self._sidebar_container.setFixedWidth(collapsed_width)
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(True)
-            self._sidebar_toggle.setText("▶")
+            self._sidebar_toggle.setText(">")
             self._sidebar_toggle.setToolTip(self.tr("Expand sidebar"))
             self._sidebar_collapsed = True
 
@@ -1261,11 +1265,7 @@ class MainWindow(QMainWindow):
         name = item.data(0, _ROLE_NAME)
         if name:
             badge = item.data(0, _ROLE_BADGE) or ""
-            suffix = ""
-            if badge == "recommended":
-                suffix = "  ★"
-            elif badge == "advanced":
-                suffix = "  ⚙"
+            suffix = _BADGE_SUFFIXES.get(badge, "")
             return f"{name}{suffix}"
         return str(item.data(0, _ROLE_DESC) or item.text(0))
 
@@ -1555,14 +1555,24 @@ class MainWindow(QMainWindow):
 
     # ==================== v13.5 Theme Management ====================
 
-    def load_theme(self, name: str = "dark") -> None:
+    def load_theme(self, name: str = "system") -> None:
         """
         Load and apply a QSS theme by name.
 
-        Supported names: ``"dark"`` (modern.qss), ``"light"`` (light.qss),
-        and ``"highcontrast"`` (highcontrast.qss).
+        ``"system"`` clears application QSS so Qt follows the desktop palette
+        and font. Explicit ``"dark"``, ``"light"``, and ``"highcontrast"``
+        selections continue to load their packaged stylesheets.
         Falls back silently to no stylesheet if the file is missing.
         """
+        from PyQt6.QtWidgets import QApplication
+
+        app = QApplication.instance()
+        if not isinstance(app, QApplication):
+            return
+        if name == "system":
+            app.setStyleSheet("")
+            return
+
         theme_map = {
             "dark": "modern.qss",
             "light": "light.qss",
@@ -1575,11 +1585,7 @@ class MainWindow(QMainWindow):
         try:
             with open(qss_path, "r") as fh:
                 stylesheet = fh.read()
-            from PyQt6.QtWidgets import QApplication
-
-            app = QApplication.instance()
-            if isinstance(app, QApplication):
-                app.setStyleSheet(stylesheet)
+            app.setStyleSheet(stylesheet)
         except OSError:
             logger.debug("Failed to load theme stylesheet", exc_info=True)
 

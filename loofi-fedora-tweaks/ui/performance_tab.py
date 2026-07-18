@@ -41,7 +41,7 @@ class PerformanceTab(BaseTab):
         name="Performance",
         description="Auto-tuner engine for workload detection, kernel tunables, and performance recommendations.",
         category="Hardware",
-        icon="🚀",
+        icon="cpu-performance",
         badge="advanced",
         order=20,
     )
@@ -102,7 +102,7 @@ class PerformanceTab(BaseTab):
         wl_layout.addWidget(QLabel(self.tr("I/O Wait:")), 3, 0)
         wl_layout.addWidget(self.lbl_iowait, 3, 1)
 
-        btn_refresh = QPushButton(self.tr("🔄 Re-detect Workload"))
+        btn_refresh = QPushButton(self.tr("Re-detect Workload"))
         btn_refresh.setAccessibleName(self.tr("Re-detect workload"))
         btn_refresh.clicked.connect(self._detect_workload)
         wl_layout.addWidget(btn_refresh, 4, 0, 1, 2)
@@ -146,7 +146,7 @@ class PerformanceTab(BaseTab):
         self.lbl_rec_details.setObjectName("perfRecDetails")
         rec_layout.addWidget(self.lbl_rec_details)
 
-        btn_apply = QPushButton(self.tr("⚡ Apply Recommendation"))
+        btn_apply = QPushButton(self.tr("Apply Recommendation"))
         btn_apply.setAccessibleName(self.tr("Apply recommendation"))
         btn_apply.clicked.connect(self._apply_recommendation)
         rec_layout.addWidget(btn_apply)
@@ -271,7 +271,7 @@ class PerformanceTab(BaseTab):
                 self.history_table.setItem(row, 0, self.make_table_item(ts))
                 self.history_table.setItem(row, 1, self.make_table_item(entry.workload))
                 self.history_table.setItem(
-                    row, 2, self.make_table_item("✅" if entry.applied else "❌")
+                    row, 2, self.make_table_item(self.tr("Yes") if entry.applied else self.tr("No"))
                 )
                 recs = entry.recommendations
                 summary = f"gov={recs.get('governor', '?')}, swap={recs.get('swappiness', '?')}"

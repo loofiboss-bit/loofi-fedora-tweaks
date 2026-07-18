@@ -184,6 +184,14 @@ def _install_monitor_import_stubs():
     log_module = types.ModuleType("utils.log")
     log_module.get_logger = lambda name: MagicMock()
 
+    class _StubResultBanner(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.message_label = _Dummy()
+
+    shared_states_module = types.ModuleType("ui.shared_states")
+    shared_states_module.ResultBanner = _StubResultBanner
+
     # Register all stubs
     sys.modules["PyQt6"] = pyqt
     sys.modules["PyQt6.QtWidgets"] = qt_widgets
@@ -195,6 +203,7 @@ def _install_monitor_import_stubs():
     sys.modules["utils.performance"] = perf_module
     sys.modules["services.system"] = proc_module
     sys.modules["utils.log"] = log_module
+    sys.modules["ui.shared_states"] = shared_states_module
 
 
 # ---------------------------------------------------------------------------
@@ -267,6 +276,7 @@ _MODULE_KEYS = [
     "utils.performance",
     "services.system",
     "utils.log",
+    "ui.shared_states",
     "ui.monitor_tab",
 ]
 
@@ -331,8 +341,8 @@ class TestMonitorTabMetadata(unittest.TestCase):
         self.assertEqual(self.tab.metadata().category, "System")
 
     def test_metadata_icon(self):
-        """metadata().icon should be the bar-chart emoji."""
-        self.assertIn(self.tab.metadata().icon, "\U0001f4ca")
+        """metadata().icon should use the packaged semantic icon ID."""
+        self.assertEqual(self.tab.metadata().icon, "overview-dashboard")
 
     def test_metadata_order(self):
         """metadata().order should be 30."""

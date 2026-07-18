@@ -40,7 +40,7 @@ class HardwareTab(QWidget, PluginInterface):
         name="Hardware",
         description="Hardware info and settings including CPU governor, GPU mode, fan control, and battery.",
         category="Hardware",
-        icon="⚡",
+        icon="hardware-performance",
         badge="recommended",
         order=10,
     )
@@ -113,7 +113,7 @@ class HardwareTab(QWidget, PluginInterface):
         self.setLayout(layout)
 
         # Header
-        header = QLabel(self.tr("⚡ Hardware Control"))
+        header = QLabel(self.tr("Hardware Control"))
         header.setObjectName("header")
         layout.addWidget(header)
 
@@ -169,15 +169,15 @@ class HardwareTab(QWidget, PluginInterface):
         layout.addStretch()
 
     def create_card(self, title: str, icon: str) -> QGroupBox:
-        """Create a styled card group box."""
-        card = QGroupBox(f"{icon} {title}")
+        """Create a text-labelled card; ``icon`` remains a compatibility input."""
+        card = QGroupBox(title)
         card.setObjectName("hwCard")
         return card
 
     # ==================== CPU GOVERNOR ====================
 
     def create_cpu_card(self) -> QGroupBox:
-        card = self.create_card(self.tr("CPU Governor"), "🔧")
+        card = self.create_card(self.tr("CPU Governor"), "maintenance-health")
         layout = QVBoxLayout(card)
 
         # Current frequency display
@@ -234,11 +234,11 @@ class HardwareTab(QWidget, PluginInterface):
     # ==================== POWER PROFILE ====================
 
     def create_power_profile_card(self) -> QGroupBox:
-        card = self.create_card(self.tr("Power Profile"), "🔋")
+        card = self.create_card(self.tr("Power Profile"), "hardware-performance")
         layout = QVBoxLayout(card)
 
         if not HardwareManager.is_power_profiles_available():
-            layout.addWidget(QLabel(self.tr("❌ power-profiles-daemon not installed")))
+            layout.addWidget(QLabel(self.tr("power-profiles-daemon not installed")))
             return card
 
         # Current profile
@@ -251,9 +251,9 @@ class HardwareTab(QWidget, PluginInterface):
         btn_layout = QHBoxLayout()
 
         profiles = [
-            ("🔋 Saver", "power-saver", "hwPowerSaver"),
-            ("⚖️ Balanced", "balanced", "hwPowerBalanced"),
-            ("⚡ Performance", "performance", "hwPowerPerformance"),
+            ("Power Saver", "power-saver", "hwPowerSaver"),
+            ("Balanced", "balanced", "hwPowerBalanced"),
+            ("Performance", "performance", "hwPowerPerformance"),
         ]
 
         for label, profile, obj_name in profiles:
@@ -283,17 +283,17 @@ class HardwareTab(QWidget, PluginInterface):
     # ==================== GPU MODE ====================
 
     def create_gpu_card(self) -> QGroupBox:
-        card = self.create_card(self.tr("GPU Mode"), "🎮")
+        card = self.create_card(self.tr("GPU Mode"), "hardware-performance")
         layout = QVBoxLayout(card)
 
         if not HardwareManager.is_hybrid_gpu():
-            layout.addWidget(QLabel(self.tr("ℹ️ No hybrid GPU detected")))
+            layout.addWidget(QLabel(self.tr("No hybrid GPU detected")))
             return card
 
         tools = HardwareManager.get_available_gpu_tools()
         if not tools:
-            layout.addWidget(QLabel(self.tr("❌ No GPU switching tool found")))
-            install_btn = QPushButton(self.tr("📦 Install envycontrol"))
+            layout.addWidget(QLabel(self.tr("No GPU switching tool found")))
+            install_btn = QPushButton(self.tr("Install envycontrol"))
             install_btn.setAccessibleName(self.tr("Install envycontrol"))
             install_btn.clicked.connect(self.install_envycontrol)
             layout.addWidget(install_btn)
@@ -309,9 +309,9 @@ class HardwareTab(QWidget, PluginInterface):
         btn_layout = QHBoxLayout()
 
         modes = [
-            ("☀️ Integrated", "integrated", "hwGpuIntegrated"),
-            ("🔀 Hybrid", "hybrid", "hwGpuHybrid"),
-            ("🚀 NVIDIA", "nvidia", "hwGpuNvidia"),
+            ("Integrated", "integrated", "hwGpuIntegrated"),
+            ("Hybrid", "hybrid", "hwGpuHybrid"),
+            ("NVIDIA", "nvidia", "hwGpuNvidia"),
         ]
 
         for label, mode, obj_name in modes:
@@ -324,7 +324,7 @@ class HardwareTab(QWidget, PluginInterface):
         layout.addLayout(btn_layout)
 
         # Warning
-        warn = QLabel(self.tr("⚠️ Requires logout/reboot"))
+        warn = QLabel(self.tr("Requires logout/reboot"))
         warn.setObjectName("hwGpuWarning")
         layout.addWidget(warn)
 
@@ -365,12 +365,12 @@ class HardwareTab(QWidget, PluginInterface):
     # ==================== FAN CONTROL ====================
 
     def create_fan_card(self) -> QGroupBox:
-        card = self.create_card(self.tr("Fan Control"), "🌀")
+        card = self.create_card(self.tr("Fan Control"), "hardware-performance")
         layout = QVBoxLayout(card)
 
         if not HardwareManager.is_nbfc_available():
-            layout.addWidget(QLabel(self.tr("❌ nbfc-linux not installed")))
-            install_btn = QPushButton(self.tr("📦 Learn how to install"))
+            layout.addWidget(QLabel(self.tr("nbfc-linux not installed")))
+            install_btn = QPushButton(self.tr("Learn how to install"))
             install_btn.setAccessibleName(self.tr("Install NBFC"))
             install_btn.clicked.connect(self.show_nbfc_help)
             layout.addWidget(install_btn)
@@ -410,12 +410,12 @@ class HardwareTab(QWidget, PluginInterface):
         # Buttons
         btn_layout = QHBoxLayout()
 
-        btn_apply = QPushButton(self.tr("✅ Apply"))
+        btn_apply = QPushButton(self.tr("Apply"))
         btn_apply.setAccessibleName(self.tr("Apply fan speed"))
         btn_apply.clicked.connect(lambda: self.set_fan_speed(self.slider_fan.value()))
         btn_layout.addWidget(btn_apply)
 
-        btn_auto = QPushButton(self.tr("🔄 Auto"))
+        btn_auto = QPushButton(self.tr("Auto"))
         btn_auto.setAccessibleName(self.tr("Auto fan mode"))
         btn_auto.clicked.connect(lambda: self.set_fan_speed(-1))
         btn_layout.addWidget(btn_auto)
@@ -450,7 +450,7 @@ class HardwareTab(QWidget, PluginInterface):
 
     def create_audio_card(self) -> QGroupBox:
         """Create audio services restart card (from TweaksTab)."""
-        card = self.create_card(self.tr("Audio Services"), "🔊")
+        card = self.create_card(self.tr("Audio Services"), "hardware-performance")
         layout = QVBoxLayout(card)
 
         desc = QLabel(
@@ -477,7 +477,7 @@ class HardwareTab(QWidget, PluginInterface):
 
     def create_battery_limit_card(self) -> QGroupBox:
         """Create battery charge limit card (from TweaksTab)."""
-        card = self.create_card(self.tr("Battery Charge Limit"), "🔋")
+        card = self.create_card(self.tr("Battery Charge Limit"), "hardware-performance")
         layout = QVBoxLayout(card)
 
         desc = QLabel(self.tr("Limit battery charge to extend battery lifespan"))
@@ -534,7 +534,7 @@ class HardwareTab(QWidget, PluginInterface):
 
     def create_fingerprint_card(self) -> QGroupBox:
         """Create fingerprint enrollment card (from TweaksTab)."""
-        card = self.create_card(self.tr("Fingerprint Reader"), "👆")
+        card = self.create_card(self.tr("Fingerprint Reader"), "hardware-performance")
         layout = QVBoxLayout(card)
 
         desc = QLabel(self.tr("Enroll your fingerprint for authentication"))
@@ -560,7 +560,7 @@ class HardwareTab(QWidget, PluginInterface):
 
     def create_bluetooth_card(self) -> QGroupBox:
         """Create Bluetooth management card."""
-        card = self.create_card(self.tr("Bluetooth"), "📶")
+        card = self.create_card(self.tr("Bluetooth"), "network-connectivity")
         layout = QVBoxLayout(card)
 
         # Adapter status
@@ -604,14 +604,14 @@ class HardwareTab(QWidget, PluginInterface):
         try:
             status = BluetoothManager.get_adapter_status()
             if status.adapter_name:
-                power = "🟢 On" if status.powered else "🔴 Off"
+                power = "On" if status.powered else "Off"
                 self.lbl_bt_status.setText(
                     self.tr("Bluetooth: {} | Adapter: {}").format(
                         power, status.adapter_name
                     )
                 )
             else:
-                self.lbl_bt_status.setText(self.tr("Bluetooth: ❌ No adapter found"))
+                self.lbl_bt_status.setText(self.tr("Bluetooth: No adapter found"))
                 return
 
             devices = BluetoothManager.list_devices(paired_only=True)
@@ -628,7 +628,7 @@ class HardwareTab(QWidget, PluginInterface):
         except (RuntimeError, OSError, ValueError) as e:
             logger.debug("Failed to refresh Bluetooth status: %s", e)
             self.lbl_bt_status.setText(
-                self.tr("Bluetooth: ❌ bluetoothctl not available")
+                self.tr("Bluetooth: bluetoothctl not available")
             )
 
     def _bt_power_on(self):
@@ -662,7 +662,7 @@ class HardwareTab(QWidget, PluginInterface):
 
     def create_boot_config_card(self) -> QGroupBox:
         """Create boot configuration management card."""
-        card = self.create_card(self.tr("Boot Configuration"), "🥾")
+        card = self.create_card(self.tr("Boot Configuration"), "settings")
         layout = QVBoxLayout(card)
 
         desc = QLabel(self.tr("Manage GRUB2 bootloader, kernels, and boot parameters."))
@@ -736,7 +736,7 @@ class HardwareTab(QWidget, PluginInterface):
 
             kernels = BootConfigManager.list_kernels()
             lines = [
-                f"{'→ ' if k.is_default else '  '}{k.title} ({k.version})"
+                f"{k.title} ({k.version}){' (default)' if k.is_default else ''}"
                 for k in kernels
             ]
             if hasattr(self, "hw_output_area"):
@@ -813,5 +813,5 @@ class HardwareTab(QWidget, PluginInterface):
         parent = self.window()
         if parent:
             original = parent.windowTitle()
-            parent.setWindowTitle(f"✓ {message}")
+            parent.setWindowTitle(message)
             QTimer.singleShot(2000, lambda: parent.setWindowTitle(original))

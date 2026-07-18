@@ -42,20 +42,20 @@ class TestSettingsResetGroup(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             initial = asdict(AppSettings())
             initial["theme"] = "light"
-            initial["follow_system_theme"] = True
+            initial["follow_system_theme"] = False
             initial["log_level"] = "DEBUG"
             mgr = self._make_manager(tmpdir, initial)
 
             # Confirm customised values
             self.assertEqual(mgr.get("theme"), "light")
-            self.assertTrue(mgr.get("follow_system_theme"))
+            self.assertFalse(mgr.get("follow_system_theme"))
             self.assertEqual(mgr.get("log_level"), "DEBUG")
 
             # Reset only theme-related keys
             mgr.reset_group(["theme", "follow_system_theme"])
 
             self.assertEqual(mgr.get("theme"), "dark")
-            self.assertFalse(mgr.get("follow_system_theme"))
+            self.assertTrue(mgr.get("follow_system_theme"))
 
     def test_reset_group_leaves_other_keys(self):
         """Keys not in the reset group remain unchanged."""

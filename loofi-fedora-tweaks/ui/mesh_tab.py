@@ -41,7 +41,7 @@ class MeshTab(QWidget, PluginInterface):
         name="Loofi Link",
         description="Mesh network device discovery, clipboard sync, and file transfer between peers.",
         category="Network",
-        icon="🔗",
+        icon="network-connectivity",
         badge="advanced",
         order=20,
     )

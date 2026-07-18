@@ -49,7 +49,7 @@ class TeleportTab(QWidget, PluginInterface):
         name="State Teleport",
         description="Capture and restore workspace state including git repos and environment snapshots.",
         category="Maintenance",
-        icon="📡",
+        icon="network-traffic",
         badge="advanced",
         order=60,
     )

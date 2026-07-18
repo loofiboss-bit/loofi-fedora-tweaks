@@ -79,6 +79,29 @@ class TestCheckPyQt6(unittest.TestCase):
         mock_notify.assert_called()
 
 
+class TestStartupTheme(unittest.TestCase):
+    @patch("utils.settings.SettingsManager.instance")
+    def test_system_theme_uses_native_qt_style(self, mock_instance):
+        from main import _startup_theme_name, _theme_file_for
+
+        mock_instance.return_value.get.return_value = True
+
+        self.assertEqual(_startup_theme_name(), "system")
+        self.assertIsNone(_theme_file_for("system"))
+
+    @patch("utils.settings.SettingsManager.instance")
+    def test_explicit_theme_keeps_packaged_stylesheet(self, mock_instance):
+        from main import _startup_theme_name, _theme_file_for
+
+        mock_instance.return_value.get.side_effect = lambda key, default=None: {
+            "follow_system_theme": False,
+            "theme": "light",
+        }.get(key, default)
+
+        self.assertEqual(_startup_theme_name(), "light")
+        self.assertEqual(_theme_file_for("light"), "light.qss")
+
+
 class TestMainDaemon(unittest.TestCase):
     """Tests for main() --daemon mode."""
 

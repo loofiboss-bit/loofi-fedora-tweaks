@@ -63,7 +63,7 @@ class NotificationToast(QWidget):
 
         # Accent bar is painted in paintEvent
 
-        self._icon_label = QLabel("🔔")
+        self._icon_label = QLabel(self.tr("Notification"))
         self._icon_label.setObjectName("toastIcon")
         self._icon_label.setFixedWidth(28)
         layout.addWidget(self._icon_label)
@@ -85,7 +85,7 @@ class NotificationToast(QWidget):
         layout.addLayout(text_col, 1)
 
         # Close button
-        close_btn = QPushButton("✕")
+        close_btn = QPushButton(self.tr("Close"))
         close_btn.setFixedSize(24, 24)
         close_btn.setObjectName("toastCloseBtn")
         close_btn.clicked.connect(self._slide_out)

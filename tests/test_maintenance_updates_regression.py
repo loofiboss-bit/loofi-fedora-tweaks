@@ -96,6 +96,11 @@ def _install_maintenance_import_stubs():
     tab_utils_module = types.ModuleType("ui.tab_utils")
     tab_utils_module.configure_top_tabs = lambda *args, **kwargs: None
 
+    shared_states_module = types.ModuleType("ui.shared_states")
+    shared_states_module.ActionProgress = _Dummy
+    shared_states_module.DetailsDisclosure = _Dummy
+    shared_states_module.ResultBanner = _Dummy
+
     command_runner_module = types.ModuleType("utils.command_runner")
     command_runner_module.CommandRunner = _Dummy
 
@@ -129,6 +134,7 @@ def _install_maintenance_import_stubs():
     sys.modules["PyQt6.QtGui"] = qt_gui
     sys.modules["ui.base_tab"] = base_tab_module
     sys.modules["ui.tab_utils"] = tab_utils_module
+    sys.modules["ui.shared_states"] = shared_states_module
     sys.modules["utils.command_runner"] = command_runner_module
     sys.modules["services.system"] = services_system_module
     sys.modules["services.system.system"] = services_system_impl_module
@@ -146,6 +152,7 @@ class TestMaintenanceUpdatesRegression(unittest.TestCase):
             "PyQt6.QtGui",
             "ui.base_tab",
             "ui.tab_utils",
+            "ui.shared_states",
             "utils.command_runner",
             "services.system",
             "services.system.system",

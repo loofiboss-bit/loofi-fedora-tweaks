@@ -53,7 +53,7 @@ class SecurityTab(QWidget, PluginInterface):
         name="Security & Privacy",
         description="Security hardening including firewall, USB guard, port auditing, and telemetry removal.",
         category="Security",
-        icon="🛡️",
+        icon="security-shield",
         badge="recommended",
         order=10,
     )
@@ -100,7 +100,7 @@ class SecurityTab(QWidget, PluginInterface):
         layout.setSpacing(15)
 
         # Header
-        header = QLabel(self.tr("🛡️ Security Center"))
+        header = QLabel(self.tr("Security Center"))
         header.setObjectName("header")
         layout.addWidget(header)
 
@@ -144,7 +144,7 @@ class SecurityTab(QWidget, PluginInterface):
 
     def _create_score_section(self) -> QGroupBox:
         """Create security score display."""
-        group = QGroupBox(self.tr("🎯 Security Score"))
+        group = QGroupBox(self.tr("Security Score"))
         layout = QVBoxLayout(group)
 
         # Get security score
@@ -177,7 +177,7 @@ class SecurityTab(QWidget, PluginInterface):
         stats_layout.addWidget(QLabel(f"Open Ports: {score_data['open_ports']}"))
         stats_layout.addWidget(QLabel(f"Risky Ports: {score_data['risky_ports']}"))
 
-        fw_status = "✅ Running" if PortAuditor.is_firewalld_running() else "❌ Stopped"
+        fw_status = self.tr("Running") if PortAuditor.is_firewalld_running() else self.tr("Stopped")
         stats_layout.addWidget(QLabel(f"Firewall: {fw_status}"))
         stats_layout.addStretch()
         layout.addLayout(stats_layout)
@@ -189,13 +189,13 @@ class SecurityTab(QWidget, PluginInterface):
             layout.addWidget(rec_label)
 
             for rec in score_data["recommendations"][:3]:  # Limit to 3
-                rec_item = QLabel(f"  ⚠️ {rec}")
+                rec_item = QLabel(self.tr("Warning: {} ").format(rec).strip())
                 rec_item.setObjectName("secRecItem")
                 rec_item.setWordWrap(True)
                 layout.addWidget(rec_item)
 
         # Refresh button
-        refresh_btn = QPushButton(self.tr("🔄 Refresh Score"))
+        refresh_btn = QPushButton(self.tr("Refresh Score"))
         refresh_btn.setAccessibleName(self.tr("Refresh Score"))
         refresh_btn.clicked.connect(self._refresh_score)
         layout.addWidget(refresh_btn)
@@ -204,7 +204,7 @@ class SecurityTab(QWidget, PluginInterface):
 
     def _create_ports_section(self) -> QGroupBox:
         """Create port auditor section."""
-        group = QGroupBox(self.tr("🔌 Port Auditor"))
+        group = QGroupBox(self.tr("Port Auditor"))
         layout = QVBoxLayout(group)
 
         # Port table
@@ -224,12 +224,12 @@ class SecurityTab(QWidget, PluginInterface):
         # Buttons
         btn_layout = QHBoxLayout()
 
-        refresh_btn = QPushButton(self.tr("🔄 Scan Ports"))
+        refresh_btn = QPushButton(self.tr("Scan Ports"))
         refresh_btn.setAccessibleName(self.tr("Scan Ports"))
         refresh_btn.clicked.connect(self._refresh_ports)
         btn_layout.addWidget(refresh_btn)
 
-        block_btn = QPushButton(self.tr("🚫 Block Selected"))
+        block_btn = QPushButton(self.tr("Block Selected"))
         block_btn.setAccessibleName(self.tr("Block Selected port"))
         block_btn.clicked.connect(self._block_port)
         btn_layout.addWidget(block_btn)
@@ -241,19 +241,19 @@ class SecurityTab(QWidget, PluginInterface):
 
     def _create_usb_section(self) -> QGroupBox:
         """Create USB Guard section."""
-        group = QGroupBox(self.tr("🔒 USB Guard"))
+        group = QGroupBox(self.tr("USB Guard"))
         layout = QVBoxLayout(group)
 
         # Status
         installed = USBGuardManager.is_installed()
         running = USBGuardManager.is_running() if installed else False
 
-        status_text = "✅ Active" if running else ("❌ Stopped" if installed else "📥 Not Installed")
+        status_text = "Active" if running else ("Stopped" if installed else "Not installed")
         self.usb_status = QLabel(f"Status: {status_text}")
         layout.addWidget(self.usb_status)
 
         if not installed:
-            install_btn = QPushButton(self.tr("📥 Install USB Guard"))
+            install_btn = QPushButton(self.tr("Install USB Guard"))
             install_btn.setAccessibleName(self.tr("Install USB Guard"))
             install_btn.clicked.connect(self._install_usbguard)
             layout.addWidget(install_btn)
@@ -274,22 +274,22 @@ class SecurityTab(QWidget, PluginInterface):
             btn_layout = QHBoxLayout()
 
             if not running:
-                start_btn = QPushButton(self.tr("▶️ Start Service"))
+                start_btn = QPushButton(self.tr("Start Service"))
                 start_btn.setAccessibleName(self.tr("Start Service"))
                 start_btn.clicked.connect(self._start_usbguard)
                 btn_layout.addWidget(start_btn)
 
-            refresh_btn = QPushButton(self.tr("🔄 Refresh"))
+            refresh_btn = QPushButton(self.tr("Refresh"))
             refresh_btn.setAccessibleName(self.tr("Refresh USB devices"))
             refresh_btn.clicked.connect(self._refresh_usb_devices)
             btn_layout.addWidget(refresh_btn)
 
-            allow_btn = QPushButton(self.tr("✅ Allow Selected"))
+            allow_btn = QPushButton(self.tr("Allow Selected"))
             allow_btn.setAccessibleName(self.tr("Allow Selected"))
             allow_btn.clicked.connect(self._allow_usb)
             btn_layout.addWidget(allow_btn)
 
-            block_btn = QPushButton(self.tr("🚫 Block Selected"))
+            block_btn = QPushButton(self.tr("Block Selected"))
             block_btn.setAccessibleName(self.tr("Block Selected USB device"))
             block_btn.clicked.connect(self._block_usb)
             btn_layout.addWidget(block_btn)
@@ -301,7 +301,7 @@ class SecurityTab(QWidget, PluginInterface):
 
     def _create_sandbox_section(self) -> QGroupBox:
         """Create sandbox manager section."""
-        group = QGroupBox(self.tr("📦 Application Sandbox"))
+        group = QGroupBox(self.tr("Application Sandbox"))
         layout = QVBoxLayout(group)
 
         # Check Firejail
@@ -309,15 +309,15 @@ class SecurityTab(QWidget, PluginInterface):
         bwrap_ok = SandboxManager.is_bubblewrap_installed()
 
         status_layout = QHBoxLayout()
-        fj_icon = "✅" if firejail_ok else "❌"
-        bw_icon = "✅" if bwrap_ok else "❌"
-        status_layout.addWidget(QLabel(f"{fj_icon} Firejail"))
-        status_layout.addWidget(QLabel(f"{bw_icon} Bubblewrap"))
+        firejail_status = self.tr("Available") if firejail_ok else self.tr("Unavailable")
+        bubblewrap_status = self.tr("Available") if bwrap_ok else self.tr("Unavailable")
+        status_layout.addWidget(QLabel(self.tr("Firejail: {}").format(firejail_status)))
+        status_layout.addWidget(QLabel(self.tr("Bubblewrap: {}").format(bubblewrap_status)))
         status_layout.addStretch()
         layout.addLayout(status_layout)
 
         if not firejail_ok:
-            install_btn = QPushButton(self.tr("📥 Install Firejail"))
+            install_btn = QPushButton(self.tr("Install Firejail"))
             install_btn.setAccessibleName(self.tr("Install Firejail"))
             install_btn.clicked.connect(self._install_firejail)
             layout.addWidget(install_btn)
@@ -363,7 +363,7 @@ class SecurityTab(QWidget, PluginInterface):
             self.sandbox_cmd.setMinimumWidth(200)
             custom_layout.addWidget(self.sandbox_cmd)
 
-            run_btn = QPushButton(self.tr("🚀 Run Sandboxed"))
+            run_btn = QPushButton(self.tr("Run Sandboxed"))
             run_btn.setAccessibleName(self.tr("Run Sandboxed"))
             run_btn.clicked.connect(self._run_custom_sandbox)
             custom_layout.addWidget(run_btn)
@@ -399,7 +399,7 @@ class SecurityTab(QWidget, PluginInterface):
             self.port_table.setItem(row, 2, BaseTab.make_table_item(port.address))
             self.port_table.setItem(row, 3, BaseTab.make_table_item(port.process))
 
-            status_item = QTableWidgetItem("⚠️ Risk" if port.is_risky else "✅ OK")
+            status_item = QTableWidgetItem(self.tr("Risk") if port.is_risky else self.tr("OK"))
             if port.is_risky:
                 status_item.setForeground(QColor("#e8556d"))
             self.port_table.setItem(row, 4, status_item)
@@ -445,7 +445,7 @@ class SecurityTab(QWidget, PluginInterface):
             self.usb_list.addItem(item)
         else:
             for dev in devices:
-                icon = "✅" if dev.policy == "allow" else "🚫"
+                icon = self.tr("Allowed") if dev.policy == "allow" else self.tr("Blocked")
                 item = QListWidgetItem(f"{icon} {dev.name} ({dev.policy})")
                 item.setData(Qt.ItemDataRole.UserRole, dev.id)
                 self.usb_list.addItem(item)

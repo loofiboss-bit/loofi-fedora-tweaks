@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-from collections.abc import Callable
 from typing import Protocol
 
 from PyQt6.QtCore import QTimer
@@ -21,10 +20,10 @@ from core.home import AttentionItem, HomeSummary, HomeTask, Recommendation
 from core.plugins.metadata import PluginMetadata
 
 from .base_tab import BaseTab
-from .layout_primitives import AdaptiveGrid, make_page_title
+from .layout_primitives import AdaptiveGrid, RouteCard, make_page_title
 
 
-class _NavigationCard(QFrame):
+class _NavigationCard(RouteCard):
     """Compact navigation-only card; it never owns domain actions."""
 
     def __init__(
@@ -32,31 +31,15 @@ class _NavigationCard(QFrame):
         title: str,
         description: str,
         route_id: str,
-        callback: Callable[[str], None],
+        callback,
         *,
         object_name: str,
         button_text: str,
         parent: QWidget | None = None,
     ) -> None:
-        super().__init__(parent)
-        self.route_id = route_id
+        super().__init__(title, description, route_id, parent)
         self.setObjectName(object_name)
-        self.setProperty("routeId", route_id)
-
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(18, 16, 18, 16)
-        layout.setSpacing(8)
-
-        title_label = QLabel(title)
-        title_label.setObjectName("homeCardTitle")
-        title_label.setWordWrap(True)
-        layout.addWidget(title_label)
-
-        description_label = QLabel(description)
-        description_label.setObjectName("homeCardDescription")
-        description_label.setWordWrap(True)
-        layout.addWidget(description_label)
-        layout.addStretch()
+        self.activated.connect(callback)
 
         self.open_button = QPushButton(button_text)
         self.open_button.setAccessibleName(button_text)
@@ -64,7 +47,7 @@ class _NavigationCard(QFrame):
         if route_id == "maintenance:action-center":
             self.open_button.setObjectName("homeActionCenterLink")
         self.open_button.clicked.connect(lambda _checked=False: callback(route_id))
-        layout.addWidget(self.open_button)
+        self.body.addWidget(self.open_button)
 
 
 class _HomeSummaryProvider(Protocol):
