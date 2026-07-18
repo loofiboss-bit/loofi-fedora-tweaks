@@ -1,0 +1,1659 @@
+{
+  "capture_policy": {
+    "backend": "offscreen",
+    "background_services_disabled": true,
+    "catalog_seeded_from_packaged_config": true,
+    "host_display_probe_stubbed": true,
+    "mutating_subprocesses_rejected": true,
+    "navigation_mode": "standard",
+    "raw_frames_retained": false,
+    "raw_storage": "not committed; hashes and compact contact sheets are retained",
+    "real_main_window": true,
+    "temporary_home_and_xdg": true,
+    "theme": "system"
+  },
+  "captured_product_version": "15.0.0 Essentials",
+  "captures": [
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/home__860x720__font-100.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "731d84329c7079c90e856a6d1ecd9cc01d65811b65060cbca332aeafad8e0e47",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/software_updates__860x720__font-100.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "18bc710e85c4f4bc46c027fd1f2fe7c3f83298c2164374b82afe843d082ffe2a",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/system__860x720__font-100.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "54b28c3da3b2c4c53bc56ff93430312af7faa84dbd711ca3ab3050021a43127b",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/network_security__860x720__font-100.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "da2dd1be9ee3177dcb00a522f312cb06f0998bd776af813632a0f2e367b7f956",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/desktop__860x720__font-100.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "d6ee965b7e201616a0240cd2a611e8e408e515a4c1e776ea0787d20e871e80b7",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/settings__860x720__font-100.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "97657ee148e030bbb57a341235ed411d52af20a81473dac797bfb734433d136b",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/home__1366x768__font-100.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "b3402f2e9d50ba9a60f42fe0f3dcca3e65b762ba613dc105e9633601d7495ff2",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/software_updates__1366x768__font-100.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "2ed314e2151a1cc12d09324288852f7bd381c4827d9e1d7e94e31b2b62452fbc",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/system__1366x768__font-100.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "a4913ad26bf694b8ba95cd049100690f7530805e91915465dd427ef021a2eddf",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/network_security__1366x768__font-100.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "bcebb59d4f1ad41544fd8d03bbf2b253c0e0fa6745698b3030729453c202ba65",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/desktop__1366x768__font-100.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "04a86928d19e6e86c6bfd533dc0cde566e0076791b362648f5f1009005883100",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/settings__1366x768__font-100.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "982655a5fe1c6ff564c977c011019c74aaa1ffcbcb5077cd7b4ba5522f1ebd2b",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/home__1920x1080__font-100.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "168d8648d31736d7f5ffd4597ce5687168e9bbdebbbb2c515b3b407cbca642af",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/software_updates__1920x1080__font-100.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "5380e1a68aebc4960a11154d6af9ee4d35f4e48c0c86a3c0eb5f232b1bc21c01",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/system__1920x1080__font-100.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "d3b236df5f32e07f8fbfff1206f8e0caee586d52c39b45e2b0e13cb27a8a8176",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/network_security__1920x1080__font-100.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "700fa1663e10b2f15d0eebbac0baa2f4e1df0ebb219eaec617c7ea42017b4386",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/desktop__1920x1080__font-100.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "72da003730800e577eb09f510fe5e8c2e8599afe805e0c8d147db7d50b3fe8ed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v16/phase0/raw/settings__1920x1080__font-100.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "d63933273c5b3522d4326e4c463aaf4f19fc23847977d29b4c2688b123f07958",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/home__860x720__font-125.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "c7555a8819c6a720a539961fd274b0eabbdfbb854f536746592be72c9598067c",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/software_updates__860x720__font-125.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "14da20d82b43d1d3fa307de44a8bfdc025cd632799023a0797c7c65b77ae55f3",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/system__860x720__font-125.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "14e65facb090db0d9c1420453d05e39d7b9c9c949c55e23005599002aa5217d6",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/network_security__860x720__font-125.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "a8323b5a15f2e20e1a1eaa958e00ca6e21a4b888e838d057a4ad2b99a742b643",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/desktop__860x720__font-125.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "7eada020826f9755904d00314eb2fe7cd0fd2714959a2a2f92717d263b595fb4",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/settings__860x720__font-125.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "cc4ce8c8b761706828934e3f5990f92ee2dc1b022d1ffd0e78fa9e8ed4a4479f",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/home__1366x768__font-125.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "42e00f9702a1e4b36f936b845215bb55d6cacbd9f4871465a9b32f280e82046d",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/software_updates__1366x768__font-125.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "00b57e42bbffed760ca62bf85b034215b6099a1aad46376a7d9d114fae185141",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/system__1366x768__font-125.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "024996933be2f0d7eef589d1e8ca8e77772135461a7764f9a7de6594f0e1242a",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/network_security__1366x768__font-125.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "080a35036009505b74cde4f79acd43285bac81193bb5fcb64ed4b32b8415bd07",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/desktop__1366x768__font-125.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "2c38fb07e92421eff04013331411f3fa6bbdc48d3a10198cf3241c05009f54e5",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/settings__1366x768__font-125.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "4692f7f1e2fae72edd4a30f54062ef4c0c0ea675033bf54d3525639c586725f6",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/home__1920x1080__font-125.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "8fedb81bcdef2e9588732902f8a892fc0efcec7af28c26ca1217b6142182be52",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/software_updates__1920x1080__font-125.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "5911e80909a3029d8a061d2b62823149cc0ad46790626cabfc7eca5ff2766b84",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/system__1920x1080__font-125.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "4d183aae87496f83633102796d5e8065dae8860ba0cea841c3a342cf2e48002a",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/network_security__1920x1080__font-125.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "4f3c60aeb79891f3fd4ff907fc73fe392c58f73f58715aea6040c58a94e15ef0",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/desktop__1920x1080__font-125.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "b2cadcd2fcd2fdb38a4b61aaaec17bf05cb49047a8213f2e12d5aa85a4d53183",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 125,
+      "path": "docs/images/v16/phase0/raw/settings__1920x1080__font-125.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "bb05cb927cbfac777b9858f4aea79c4638949918a8556b9695d2395abfa79760",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/home__860x720__font-140.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "b71a7c1ed82b888c755d4d492443713294c2555c4050325f31a59ef8ffb8c749",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/software_updates__860x720__font-140.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "3524293ade020d374363f1031b69a1df267461dc9acce6da482e125ae34b9984",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/system__860x720__font-140.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "266167ee7bca9a3e3ecb99d231e79122682f07d3cf55c2f5c74c3f35867ae06c",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/network_security__860x720__font-140.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "35e034abe41349829deb3f8346841afeeb522e7939c16b78a9f13dc37a0d70cd",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/desktop__860x720__font-140.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "3f62dafe725db708ed247086555889af46ec386445368f1e66eb83b25930d29d",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/settings__860x720__font-140.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "ab7fa0befca06a2d0076cd40dd2e2424c34151cef1d89407f04764b06af84c2c",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/home__1366x768__font-140.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "7d46c2cca437bb2e57bf6075157cc96af33457f23cead8c7e482dd3d75d7f41d",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/software_updates__1366x768__font-140.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "ef04b7f7046d7888ff7ed39105371d32e643db016498ccd6363d07d9e28c4f9d",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/system__1366x768__font-140.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "b5a0f853b4e1c55b9ba88bf61c2dd64108bec42a1e334895ea24051fd5a38fb8",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/network_security__1366x768__font-140.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "ebcb9bc7339ae843393a23f4570e7719ddace820b0fdd3f76b93f5f7738d4bcd",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/desktop__1366x768__font-140.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "9dd30ed3e0f02d4e5b6ab0fc245b32fb4a683b8d9726aa598cde32112ae20435",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/settings__1366x768__font-140.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "39ec1eb5ede21b7b682e7a10534071496bf2ddc3949b11c0a31f896875bdd43d",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/home__1920x1080__font-140.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "34cde5ef0c69949f72d4cdfca80c3d78bf5c4deb683fc3590cf8143a226a2e4b",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/software_updates__1920x1080__font-140.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "2ae5af93a192420e975168218f828ca899bd1f99f56121939a5ca98faf46a846",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/system__1920x1080__font-140.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "0c1c290d774daf5efb3b9737186526009b53204cb0b93591e3a7910647029e22",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/network_security__1920x1080__font-140.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "7640d4d7d3cb610f004670eee1bca379d4dfc1dfb7568dec51a3ff3dad3d3e64",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/desktop__1920x1080__font-140.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "09809a040c8eab2987f5a2a425cc9b9e922445517a18c993cbb2558f131cc917",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 140,
+      "path": "docs/images/v16/phase0/raw/settings__1920x1080__font-140.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "bafa8c361fb08b5f59dbd981f971b7bb1bf06c56639e80498bda901b624beee2",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/home__860x720__font-150.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "3b32b6aaa5eee603de28c0419540dfa51c05f8f280193cb0178fb9ecf594d52f",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/software_updates__860x720__font-150.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "fffb3a8d6600b2629cbd9a1fdf9cfb6d87ebaa69e618bbc7f800b69c8fc4d2ce",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/system__860x720__font-150.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "9b040c17baa1fa9668024ce3786bd1076373f9cf2fe42ed8154a855e78375216",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/network_security__860x720__font-150.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "8a6789cb422b1f83c1948b25edcce4e5d3dd729c1e53ffd21361f4f8b2d742f0",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/desktop__860x720__font-150.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "fef135a59d56c9e79b70036df271926d5b44bcd9d7002fef4b70125c03dbe537",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/settings__860x720__font-150.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "4c745fd9a3172298a8a70c0f5c261f325c99a98a2f1ec30476e4021e057d0f78",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/home__1366x768__font-150.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "02f204ee86406943a623ba8de4f23ef1ea4282ec8d10edbbb44a0dab4c8357e6",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/software_updates__1366x768__font-150.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "8e3125c697585f69de4fa073c01817e17d278aa2c05a853de53e5c6494a20e70",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/system__1366x768__font-150.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "815477a758558736a9976737efd4b19f39bc6ec88cd218ac1dbc91bb66542f25",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/network_security__1366x768__font-150.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "98162b15ecb97c005b9f30b542f3726336671a7e5eef8e9bd431803cae7feb0e",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/desktop__1366x768__font-150.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "5254e5f1d1888a9084872ac5c7c00985db24facd0918bd6a44061c6319871c5a",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/settings__1366x768__font-150.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "bc4d90f67391d3c95ac5b67c46f0341ddbad20d0ec13475e4c984b9e1d3e5a7c",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/home__1920x1080__font-150.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "a1a1f20ddf64c95a5828ab88e12ab64869f862cae977dc05e85431f9e0ace5cb",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/software_updates__1920x1080__font-150.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "5f5580beb354a8f649bad95fb6e03b497bf2348ded9734e7c7707d7e90a10533",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/system__1920x1080__font-150.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "54f1e9a61e2d9f7db41e52f93215872dc54d09a6d10d5ab7612723ec2456ff86",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/network_security__1920x1080__font-150.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "a6a1cd170256f217edae845b62db33229f8cdf7b0832cbe6024d2bfadc4de1de",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/desktop__1920x1080__font-150.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "8cd5c77101c57c462d9c8d3b9decfdccdf7d0cbe583f915d55651affa6467555",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 150,
+      "path": "docs/images/v16/phase0/raw/settings__1920x1080__font-150.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "17e0cb5bafaf310984bad24311375b8ff1befd3afdde2d68d0534dcbf3ba1519",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 200,
+      "path": "docs/images/v16/phase0/raw/home__2560x1440__font-200.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "42c262eb644b549a7f0a1796608ba8f8697cc9f2f1281f8d75adbd02aba2529e",
+      "theme": "system",
+      "viewport": [
+        2560,
+        1440
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "destination_id": "software_updates",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 200,
+      "path": "docs/images/v16/phase0/raw/software_updates__2560x1440__font-200.png",
+      "retained": false,
+      "route_id": "software:apps",
+      "sha256": "e6b8e20d3f8dd6f68135537dc7ac6e608d646a485e18bda9ba03acbc5dc45ad3",
+      "theme": "system",
+      "viewport": [
+        2560,
+        1440
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "destination_id": "system",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 200,
+      "path": "docs/images/v16/phase0/raw/system__2560x1440__font-200.png",
+      "retained": false,
+      "route_id": "system_info",
+      "sha256": "e0194bdc17099c3106cb743c4cdba05d8a2ff79fdbd52e12e26ecf7a4f55bdba",
+      "theme": "system",
+      "viewport": [
+        2560,
+        1440
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "destination_id": "network_security",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 200,
+      "path": "docs/images/v16/phase0/raw/network_security__2560x1440__font-200.png",
+      "retained": false,
+      "route_id": "network",
+      "sha256": "1336950320e5428c40cd24d10be5c0949f8e171af8f4557ec3552341a32c5792",
+      "theme": "system",
+      "viewport": [
+        2560,
+        1440
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "destination_id": "desktop",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 200,
+      "path": "docs/images/v16/phase0/raw/desktop__2560x1440__font-200.png",
+      "retained": false,
+      "route_id": "desktop",
+      "sha256": "0625c572debf146e7741af9d41b574d0cbc20c007aebe6bc88308c77cc650ff0",
+      "theme": "system",
+      "viewport": [
+        2560,
+        1440
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "destination_id": "settings",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 200,
+      "path": "docs/images/v16/phase0/raw/settings__2560x1440__font-200.png",
+      "retained": false,
+      "route_id": "settings",
+      "sha256": "c8a1dca53aaac5bf278670254b9e679e8443570569d2031cb8112d63cf26df20",
+      "theme": "system",
+      "viewport": [
+        2560,
+        1440
+      ]
+    }
+  ],
+  "contact_sheets": [
+    {
+      "destination_id": "home",
+      "frame_count": 13,
+      "path": "docs/images/v16/phase0/contact-sheets/home.png",
+      "sha256": "365cc7ea1d7fc758f5856d443679be9f61aa3d81adf3517755f3d0ee5332de8e"
+    },
+    {
+      "destination_id": "software_updates",
+      "frame_count": 13,
+      "path": "docs/images/v16/phase0/contact-sheets/software_updates.png",
+      "sha256": "b2f920b413972715a693cf4cccb0eb99424fe357fade2d68d4731a65baa2d2b3"
+    },
+    {
+      "destination_id": "system",
+      "frame_count": 13,
+      "path": "docs/images/v16/phase0/contact-sheets/system.png",
+      "sha256": "845a564ade43fe6c04f7b23b903f514ea4cfd175ed5e022655ab1ad16f55314c"
+    },
+    {
+      "destination_id": "network_security",
+      "frame_count": 13,
+      "path": "docs/images/v16/phase0/contact-sheets/network_security.png",
+      "sha256": "44c810f359d1c7f6717ad3a45b30c91d2edb826baf84aef0d0018f215981a7ed"
+    },
+    {
+      "destination_id": "desktop",
+      "frame_count": 13,
+      "path": "docs/images/v16/phase0/contact-sheets/desktop.png",
+      "sha256": "ff6ce93690eb6742c4ed09434207da065eaacc2325026beb828ecfe7d1b6ec1d"
+    },
+    {
+      "destination_id": "settings",
+      "frame_count": 13,
+      "path": "docs/images/v16/phase0/contact-sheets/settings.png",
+      "sha256": "3e6ee3359d60d44d52c84c28a460f2b8aaaf8d6add7ee4696646de5bd5aa9128"
+    }
+  ],
+  "destinations": [
+    {
+      "destination_id": "home",
+      "route_id": "atlas_dashboard"
+    },
+    {
+      "destination_id": "software_updates",
+      "route_id": "software:apps"
+    },
+    {
+      "destination_id": "system",
+      "route_id": "system_info"
+    },
+    {
+      "destination_id": "network_security",
+      "route_id": "network"
+    },
+    {
+      "destination_id": "desktop",
+      "route_id": "desktop"
+    },
+    {
+      "destination_id": "settings",
+      "route_id": "settings"
+    }
+  ],
+  "font_scaling": {
+    "limitation": "Offscreen QApplication font scaling is a deterministic proxy only; real Wayland and X11 compositor scaling is deferred to Phase 7.",
+    "method": "QApplication font point-size proxy"
+  },
+  "generated_at": "2026-07-18T04:49:47.395117+00:00",
+  "git_commit": "b96eafec85a3d7e55535201dd7459ef5c9de46b1",
+  "phase": 0,
+  "reference_screenshots": [
+    {
+      "finding": "Home hierarchy and full-width nested actions in system-theme mode",
+      "height": 1018,
+      "path": "docs/images/v16/phase0/home-system-theme.png",
+      "sha256": "9614465e0c9e65259a83f77d9c7d914916a98b95872eb1a64c2fb468a254a53b",
+      "source_filename": "8abef557-d0cf-4cbe-904d-b96b8f2af36c.png",
+      "width": 1918
+    },
+    {
+      "finding": "System peer-section labels remain elided at a 1918 px shell width",
+      "height": 1018,
+      "path": "docs/images/v16/phase0/system-section-overflow.png",
+      "sha256": "c59acd6a67232452e0e050a413c529ae54b40b0d54cf76fd8e4fb698c866cd52",
+      "source_filename": "ddb44c74-4ae5-4c7a-b857-2cb9de09ef82.png",
+      "width": 1918
+    }
+  ],
+  "release": "v16.0.0 Clarity",
+  "reproduction_command": "PYTHONPATH=loofi-fedora-tweaks QT_QPA_PLATFORM=offscreen python3 scripts/capture_v16_phase0.py",
+  "schema_version": 1,
+  "viewport_scale_matrix": [
+    {
+      "height": 720,
+      "scale_percent": 100,
+      "width": 860
+    },
+    {
+      "height": 768,
+      "scale_percent": 100,
+      "width": 1366
+    },
+    {
+      "height": 1080,
+      "scale_percent": 100,
+      "width": 1920
+    },
+    {
+      "height": 720,
+      "scale_percent": 125,
+      "width": 860
+    },
+    {
+      "height": 768,
+      "scale_percent": 125,
+      "width": 1366
+    },
+    {
+      "height": 1080,
+      "scale_percent": 125,
+      "width": 1920
+    },
+    {
+      "height": 720,
+      "scale_percent": 140,
+      "width": 860
+    },
+    {
+      "height": 768,
+      "scale_percent": 140,
+      "width": 1366
+    },
+    {
+      "height": 1080,
+      "scale_percent": 140,
+      "width": 1920
+    },
+    {
+      "height": 720,
+      "scale_percent": 150,
+      "width": 860
+    },
+    {
+      "height": 768,
+      "scale_percent": 150,
+      "width": 1366
+    },
+    {
+      "height": 1080,
+      "scale_percent": 150,
+      "width": 1920
+    },
+    {
+      "height": 1440,
+      "scale_percent": 200,
+      "width": 2560
+    }
+  ]
+}

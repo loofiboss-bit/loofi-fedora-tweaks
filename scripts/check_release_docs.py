@@ -59,6 +59,10 @@ _TASK_CHECKBOX_RE = re.compile(
     r"^[ \t]*[-*][ \t]+\[([ xX])\][ \t]+.+$",
     re.MULTILINE,
 )
+_ROADMAP_RELEASE_RE = re.compile(
+    r'^## \[(ACTIVE|DONE)\] v(\d+\.\d+\.\d+)(?:\s+"([^"]+)")?',
+    re.MULTILINE,
+)
 
 
 def extract_version() -> str:
@@ -251,6 +255,33 @@ def _tab_count_claims(text: str) -> List[int]:
     ]
 
 
+def _version_tuple(version: str) -> tuple[int, int, int]:
+    """Return a comparable tuple for a canonical X.Y.Z release version."""
+    major, minor, patch = version.split(".")
+    return int(major), int(minor), int(patch)
+
+
+def _validate_workflow_specs(
+    root: Path,
+    tag: str,
+    codename: str | None,
+) -> List[str]:
+    """Validate the task and architecture contracts for one workflow target."""
+    errors: List[str] = []
+    tasks_file = WORKFLOW_SPECS_DIR / f"tasks-{tag}.md"
+    arch_file = WORKFLOW_SPECS_DIR / f"arch-{tag}.md"
+    for path in (tasks_file, arch_file):
+        if not path.exists() or not _read_text(path).strip():
+            errors.append(f"missing workflow spec: {path.relative_to(root)}")
+            continue
+        spec_text = _read_text(path)
+        if tag not in spec_text:
+            errors.append(f"workflow spec {path.name} missing {tag}")
+        if codename and codename not in spec_text:
+            errors.append(f"workflow spec {path.name} missing codename {codename}")
+    return errors
+
+
 def validate_completed_tasks(tasks_file: Path, *, allow_post_publish_pending: bool = False) -> List[str]:
     """Return errors unless required task checkboxes are completed."""
     text = _read_text(tasks_file)
@@ -283,17 +314,44 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
         errors.append(f"README release badge/link missing {tag}")
 
     roadmap = _read_text(ROADMAP_FILE)
-    active_sections = re.findall(r"^## \[ACTIVE\] v[^\n]+", roadmap, flags=re.MULTILINE)
-    current_active = f"## [ACTIVE] {tag}" in roadmap
-    current_done = f"## [DONE] {tag}" in roadmap
+    releases = [
+        (status, release_version, release_codename)
+        for status, release_version, release_codename in _ROADMAP_RELEASE_RE.findall(roadmap)
+    ]
+    active_releases = [release for release in releases if release[0] == "ACTIVE"]
+    current_active = any(
+        status == "ACTIVE" and release_version == version
+        for status, release_version, _codename in releases
+    )
+    current_done = any(
+        status == "DONE" and release_version == version
+        for status, release_version, _codename in releases
+    )
     if not current_active and not current_done:
         errors.append(f"ROADMAP missing ACTIVE or DONE section for {tag}")
-    if current_active and len(active_sections) != 1:
-        errors.append(f"ROADMAP must have exactly one ACTIVE release section, found {len(active_sections)}")
-    if current_done and active_sections:
-        errors.append("ROADMAP closed current release but still has an ACTIVE release section")
+    if current_active and current_done:
+        errors.append(f"ROADMAP marks {tag} as both ACTIVE and DONE")
+    if len(active_releases) > 1:
+        errors.append(
+            "ROADMAP must have at most one ACTIVE release section, "
+            f"found {len(active_releases)}"
+        )
     if codename and codename not in roadmap:
         errors.append(f"ROADMAP missing codename {codename}")
+
+    workflow_tag = tag
+    workflow_codename = codename
+    workflow_is_active = current_active
+    if current_done and len(active_releases) == 1:
+        _status, active_version, active_codename = active_releases[0]
+        if _version_tuple(active_version) <= _version_tuple(version):
+            errors.append(
+                f"ROADMAP ACTIVE release v{active_version} must be newer than completed {tag}"
+            )
+        else:
+            workflow_tag = f"v{active_version}"
+            workflow_codename = active_codename or None
+            workflow_is_active = True
 
     changelog = _read_text(CHANGELOG_FILE)
     if codename and f'"{codename}"' not in changelog:
@@ -309,17 +367,11 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     if codename and codename not in notes:
         errors.append(f"release notes missing codename {codename}")
 
-    tasks_file = WORKFLOW_SPECS_DIR / f"tasks-{tag}.md"
-    arch_file = WORKFLOW_SPECS_DIR / f"arch-{tag}.md"
-    for path in (tasks_file, arch_file):
-        if not path.exists() or not _read_text(path).strip():
-            errors.append(f"missing workflow spec: {path.relative_to(root)}")
-            continue
-        spec_text = _read_text(path)
-        if tag not in spec_text:
-            errors.append(f"workflow spec {path.name} missing {tag}")
-        if codename and codename not in spec_text:
-            errors.append(f"workflow spec {path.name} missing codename {codename}")
+    errors.extend(_validate_workflow_specs(root, tag, codename))
+    if workflow_tag != tag:
+        errors.extend(
+            _validate_workflow_specs(root, workflow_tag, workflow_codename)
+        )
 
     if not RACE_LOCK_FILE.exists():
         errors.append(f"missing race lock: {RACE_LOCK_FILE.relative_to(root)}")
@@ -329,8 +381,15 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
         except json.JSONDecodeError:
             errors.append(f"invalid race lock JSON: {RACE_LOCK_FILE.relative_to(root)}")
         else:
-            if lock.get("version") != tag or lock.get("target_version") != tag:
-                errors.append(f"race lock does not target {tag}")
+            if (
+                lock.get("version") != workflow_tag
+                or lock.get("target_version") != workflow_tag
+            ):
+                errors.append(f"race lock does not target {workflow_tag}")
+            if workflow_is_active and lock.get("status") != "active":
+                errors.append(
+                    f"race lock for ACTIVE release {workflow_tag} must have status=active"
+                )
 
     ci_threshold = _workflow_threshold(CI_WORKFLOW_FILE)
     release_threshold = _workflow_threshold(AUTO_RELEASE_WORKFLOW_FILE)

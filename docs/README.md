@@ -18,7 +18,10 @@ Central documentation map for Loofi Fedora Tweaks.
 ## Product and Release Docs
 
 - `../README.md` - Project overview and quick start
+- `../ROADMAP.md` - Current and future release-status index
 - `../CHANGELOG.md` - Full change history
+- `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
+- `reports/V16_PHASE0_BASELINE.md` - Exact v15 baseline, UI debt inventory, measurements, and Phase 0 verification
 - `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
 - `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
 - `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist
@@ -34,6 +37,8 @@ Central documentation map for Loofi Fedora Tweaks.
 
 - Canonical latest release index: `releases/RELEASE_NOTES.md`
 - Compatibility aliases: `releases/release_notes.md`, `release_notes.md`
+- `archive/ROADMAP_HISTORY_THROUGH_V15.md` - Full historical roadmap through v15
+- `archive/ROADMAP_V15_NEBULA_LEGACY.md` - Obsolete pre-renormalization Nebula plan
 
 ## Planning and Reports
 
