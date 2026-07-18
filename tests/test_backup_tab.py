@@ -382,6 +382,16 @@ def _install_backup_stubs():
     shared_states_module = types.ModuleType("ui.shared_states")
     shared_states_module.ResultBanner = _StubResultBanner
 
+    class _StubPageScaffold(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.content_layout = _Dummy()
+
+    components_module = types.ModuleType("ui.components")
+    components_module.PageScaffold = _StubPageScaffold
+    components_module.InlineNotice = _Dummy
+    components_module.ActionBar = _Dummy
+
     install_hints_module = types.ModuleType("utils.install_hints")
     install_hints_module.build_install_hint = lambda package: f"pkexec dnf install {package}"
 
@@ -393,6 +403,7 @@ def _install_backup_stubs():
     sys.modules["core.plugins.metadata"] = metadata_module
     sys.modules["utils.backup_wizard"] = backup_wizard_module
     sys.modules["ui.shared_states"] = shared_states_module
+    sys.modules["ui.components"] = components_module
     sys.modules["utils.install_hints"] = install_hints_module
 
 
@@ -409,6 +420,7 @@ _MODULE_KEYS = [
     "core.plugins.metadata",
     "utils.backup_wizard",
     "ui.shared_states",
+    "ui.components",
     "utils.install_hints",
     "ui.backup_tab",
 ]

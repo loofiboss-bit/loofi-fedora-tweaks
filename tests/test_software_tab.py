@@ -37,6 +37,7 @@ def _install_stubs():
     qt_widgets.QTextEdit = _Dummy
     qt_widgets.QGroupBox = _Dummy
     qt_widgets.QTabWidget = _Dummy
+    qt_widgets.QStackedWidget = _Dummy
     qt_widgets.QFrame = _Dummy
     qt_widgets.QCheckBox = _Dummy
     qt_widgets.QLineEdit = _Dummy
@@ -140,6 +141,10 @@ def _install_stubs():
     shared_states_mod.LoadingState = _Dummy
     shared_states_mod.UnavailableState = _Dummy
 
+    components_mod = types.ModuleType("ui.components")
+    components_mod.PageScaffold = _Dummy
+    components_mod.DetailsDisclosure = _Dummy
+
     module_map = {
         "PyQt6": pyqt,
         "PyQt6.QtWidgets": qt_widgets,
@@ -154,6 +159,7 @@ def _install_stubs():
         "utils.remote_config": remote_config_mod,
         "ui.tooltips": tooltips_mod,
         "ui.shared_states": shared_states_mod,
+        "ui.components": components_mod,
     }
 
     for name, mod in module_map.items():

@@ -23,7 +23,7 @@
   while preserving all routes, aliases, migrations, and lazy loading.
 - [x] P4: redesign Home and System, moving the existing Export Report action
   without adding new System Information behavior.
-- [ ] P5: redesign Software & Updates, Network & Security, Desktop, and Settings.
+- [x] P5: redesign Software & Updates, Network & Security, Desktop, and Settings.
 - [ ] P6: adopt shared components in Advanced and remove superseded legacy UI
   and styling only after compatibility coverage exists.
 - [ ] P7: complete real-shell responsive, theme, keyboard, accessibility,

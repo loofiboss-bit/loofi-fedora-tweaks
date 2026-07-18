@@ -55,13 +55,14 @@ class _UpdatesSubTab(BaseTab):
     def __init__(self):
         super().__init__()
         self.package_manager = SystemManager.get_package_manager()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("System Updates"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Updates"),
+            self.tr("Review system, Flatpak, and firmware updates before applying changes."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         update_guidance = QLabel(self.tr(
             "Review system, Flatpak, and firmware updates together. Traditional Fedora "
@@ -147,7 +148,7 @@ class _UpdatesSubTab(BaseTab):
         # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Update output"))
         self.output_area.setMaximumHeight(16777215)
-        layout.addWidget(self.output_area)
+        self.add_output_disclosure(layout, self.tr("Show update command output"))
 
         self.runner.progress_update.connect(self.update_progress)
 
@@ -315,8 +316,14 @@ class _CleanupSubTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Cleanup"),
+            self.tr("Analyze reclaimable data separately from confirmed maintenance actions."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Cleanup output"))
@@ -397,8 +404,7 @@ class _CleanupSubTab(BaseTab):
         self.reclaim_button.clicked.connect(self._analyze_reclaim)
         preview_layout.addWidget(self.reclaim_button)
         layout.addWidget(preview_group)
-        layout.addWidget(QLabel(self.tr("Output Log:")))
-        layout.addWidget(self.output_area)
+        self.add_output_disclosure(layout, self.tr("Show cleanup command output"))
         self._reclaim_thread = None
         self._reclaim_worker = None
 
@@ -532,15 +538,14 @@ class _OverlaysSubTab(QWidget):
             QTimer.singleShot(0, self.refresh_list)
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(20)
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("System Overlays (rpm-ostree)"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Atomic Overlays"),
+            self.tr("Review layered packages and pending deployments on Atomic Fedora."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # Info Card
         info_frame = QFrame()
@@ -710,12 +715,8 @@ class _SmartUpdatesSubTab(QWidget):
     def __init__(self):
         super().__init__()
         self._loaded = False
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Smart Updates"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Check Updates
         check_group = QGroupBox(self.tr("Available Updates"))
@@ -763,7 +764,9 @@ class _SmartUpdatesSubTab(QWidget):
         self.output_area.setReadOnly(True)
         self.output_area.setMaximumHeight(150)
         self.output_area.setAccessibleName(self.tr("Smart updates output"))
-        layout.addWidget(self.output_area)
+        self.output_details = DetailsDisclosure(summary=self.tr("Show smart update output"))
+        self.output_details.add_widget(self.output_area)
+        layout.addWidget(self.output_details)
 
         self.runner = CommandRunner()
         self.runner.output_received.connect(self._append_output)
@@ -841,13 +844,14 @@ class _UpgradeAssistantSubTab(QWidget):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        layout.setSpacing(14)
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Upgrade Assistant"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Fedora Upgrade"),
+            self.tr("Review release readiness and export support evidence before upgrading Fedora."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         intro = QLabel(
             self.tr(
@@ -953,13 +957,14 @@ class _ActionCenterSubTab(BaseTab):
 
         self._service = ActionCenterService()
 
-        layout = QVBoxLayout()
-        layout.setSpacing(12)
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Action Center"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Action Center"),
+            self.tr("Review, plan, run, verify, and inspect maintenance actions."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         intro = QLabel(
             self.tr(
@@ -1033,7 +1038,7 @@ class _ActionCenterSubTab(BaseTab):
         self.detail_disclosure.toggle_button.setChecked(True)
         layout.addWidget(self.detail_disclosure, 1)
 
-        self.add_output_section(layout)
+        self.add_output_disclosure(layout, self.tr("Show Action Center command output"))
         self.runner.output_received.connect(self._capture_output)
         self.runner.stderr_received.connect(self._capture_stderr)
 

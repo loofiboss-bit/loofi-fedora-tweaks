@@ -9,7 +9,7 @@ from unittest.mock import MagicMock
 
 from PyQt6.QtCore import Qt, QThread, QTimer
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QWidget
 
 TEST_ROOT = os.path.dirname(__file__)
 sys.path.insert(0, TEST_ROOT)
@@ -80,6 +80,19 @@ class TestFeedbackAccessibility(unittest.TestCase):
         self.assertEqual(progress.status_label.text(), "Finished")
         self.assertIn("100", progress.accessibleDescription())
         self.assertIn("Finished", progress.accessibleDescription())
+
+    def test_disclosure_can_own_caller_content_without_changing_behavior(self) -> None:
+        disclosure = DetailsDisclosure(summary="Show command output")
+        output = QWidget()
+        disclosure.add_widget(output)
+        disclosure.show()
+        self.app.processEvents()
+
+        self.assertFalse(output.isVisible())
+        disclosure.toggle_button.click()
+        self.app.processEvents()
+        self.assertTrue(output.isVisible())
+        self.assertFalse(disclosure.details.isVisible())
 
 
 class TestComponentGalleryMatrix(unittest.TestCase):

@@ -2,8 +2,8 @@
 Software Tab - Consolidated tab merging Applications and Repositories.
 Part of v11.0 "Aurora Update".
 
-Uses QTabWidget for sub-navigation to preserve all features from the
-original AppsTab and ReposTab.
+Uses a route-owned stack so the application shell remains the only owner of
+section navigation.
 """
 
 import logging
@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
     QListWidget,
     QPushButton,
     QScrollArea,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -31,8 +31,8 @@ from utils.commands import PrivilegedCommand
 from utils.software_utils import SoftwareUtils
 
 from ui.base_tab import BaseTab
+from ui.components import DetailsDisclosure, PageScaffold
 from ui.shared_states import EmptyState, LoadingState, UnavailableState
-from ui.tab_utils import configure_top_tabs
 from ui.tooltips import (
     SW_BATCH_INSTALL,
     SW_BATCH_REMOVE,
@@ -63,8 +63,14 @@ class _ApplicationsSubTab(BaseTab):
 
     def __init__(self) -> None:
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Applications"),
+            self.tr("Search the application catalogue and review install state before changing packages."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # Header with Refresh Button
         header_layout = QHBoxLayout()
@@ -150,8 +156,9 @@ class _ApplicationsSubTab(BaseTab):
         self._catalog_load_started = False
         self.refresh_list()
 
-        layout.addWidget(QLabel(self.tr("Output Log:")))
-        layout.addWidget(self.output_area)
+        self.output_details = DetailsDisclosure(summary=self.tr("Show application command output"))
+        self.output_details.add_widget(self.output_area)
+        layout.addWidget(self.output_details)
 
     def load_apps(self):
         """Start asynchronous loading of the app catalogue."""
@@ -405,13 +412,14 @@ class _RepositoriesSubTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("Repository Management"))
-        header.setObjectName("swReposHeader")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Repositories"),
+            self.tr("Review software sources before enabling repositories or installing codecs."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # RPM Fusion Group
         fusion_group = QGroupBox(self.tr("RPM Fusion (Essential for media codecs & drivers)"))
@@ -464,11 +472,12 @@ class _RepositoriesSubTab(BaseTab):
         layout.addWidget(copr_group)
 
         # Output Area
-        layout.addWidget(QLabel(self.tr("Output Log:")))
         self.output_area = QTextEdit()
         self.output_area.setReadOnly(True)
         self.output_area.setMaximumHeight(200)
-        layout.addWidget(self.output_area)
+        self.output_details = DetailsDisclosure(summary=self.tr("Show repository command output"))
+        self.output_details.add_widget(self.output_area)
+        layout.addWidget(self.output_details)
 
         self.runner = CommandRunner()
         self.runner.output_received.connect(self.append_output)
@@ -544,8 +553,7 @@ class _RepositoriesSubTab(BaseTab):
 class SoftwareTab(BaseTab):
     """Consolidated software tab merging Applications and Repositories.
 
-    Uses a QTabWidget for sub-navigation between the app installer
-    and the repository manager.
+    Stable routes select pages in a stack owned by the application shell.
     """
 
     _METADATA = PluginMetadata(
@@ -566,15 +574,15 @@ class SoftwareTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
+        self.tabs = QStackedWidget()
+        self.tabs.setObjectName("softwareRouteStack")
         self._applications_tab = _ApplicationsSubTab()
-        self.tabs.addTab(self._applications_tab, self.tr("Applications"))
-        self.tabs.addTab(_RepositoriesSubTab(), self.tr("Repositories"))
-        self.tabs.addTab(self._create_flatpak_tab(), self.tr("Flatpak Manager"))
+        self.tabs.addWidget(self._applications_tab)
+        self.tabs.addWidget(_RepositoriesSubTab())
+        self.tabs.addWidget(self._create_flatpak_tab())
         self.tabs.currentChanged.connect(self._on_tab_changed)
         self._route_active = False
 
@@ -595,17 +603,33 @@ class SoftwareTab(BaseTab):
         if self._route_active and self.tabs.currentIndex() == 0:
             self._applications_tab.on_activate()
 
+    def activate_route(self, route) -> bool:
+        """Select a Software & Updates page from a stable route ID."""
+        route_to_index = {
+            "software": 0,
+            "software:apps": 0,
+            "software:repos": 1,
+            "software:flatpak": 2,
+        }
+        index = route_to_index.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.tabs.setCurrentIndex(index)
+        self._on_tab_changed(index)
+        return True
+
     def _create_flatpak_tab(self):
         """Create the Flatpak Manager sub-tab (v37.0 Pinnacle)."""
 
         widget = QWidget()
-        layout = QVBoxLayout(widget)
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(15)
-
-        header = QLabel(self.tr("Flatpak Manager"))
-        header.setObjectName("swFlatpakHeader")
-        layout.addWidget(header)
+        root = QVBoxLayout(widget)
+        root.setContentsMargins(0, 0, 0, 0)
+        scaffold = PageScaffold(
+            self.tr("Flatpak"),
+            self.tr("Inspect Flatpak storage and permissions before running cleanup actions."),
+        )
+        root.addWidget(scaffold)
+        layout = scaffold.content_layout
 
         # Size overview
         size_group = QGroupBox(self.tr("Flatpak Storage"))
@@ -653,7 +677,9 @@ class SoftwareTab(BaseTab):
         self._flatpak_output = QTextEdit()
         self._flatpak_output.setReadOnly(True)
         self._flatpak_output.setMaximumHeight(120)
-        layout.addWidget(self._flatpak_output)
+        self._flatpak_details = DetailsDisclosure(summary=self.tr("Show Flatpak command output"))
+        self._flatpak_details.add_widget(self._flatpak_output)
+        layout.addWidget(self._flatpak_details)
 
         self._flatpak_runner = CommandRunner()
         self._flatpak_runner.output_received.connect(lambda t: self._flatpak_output.insertPlainText(t))

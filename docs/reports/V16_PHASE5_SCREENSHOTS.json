@@ -1,0 +1,131 @@
+{
+  "capture_policy": {
+    "backend": "offscreen",
+    "background_services_disabled": true,
+    "host_probes_disabled": true,
+    "mutating_subprocesses_rejected": true,
+    "navigation_mode": "standard",
+    "real_main_window": true,
+    "temporary_home_and_xdg": true,
+    "theme": "system"
+  },
+  "captures": [
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination": "software-updates",
+      "path": "docs/images/v16/phase5/software-updates__860x720.png",
+      "route_id": "software:apps",
+      "sha256": "c3aad38c5b8d8120ee22491def791c1a7182e25511c028105c9b4ff1e1a2f7c5",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination": "network-security",
+      "path": "docs/images/v16/phase5/network-security__860x720.png",
+      "route_id": "network",
+      "sha256": "fb37e8df698e4135ca0ccbaedb97f778adfb398deae66cce01ffe72e12b8e096",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination": "desktop",
+      "path": "docs/images/v16/phase5/desktop__860x720.png",
+      "route_id": "desktop",
+      "sha256": "ed29878bc842890d06382d79bb7afdd9bf7c1d3f0a4c943ebcbf58092ebc9137",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination": "settings",
+      "path": "docs/images/v16/phase5/settings__860x720.png",
+      "route_id": "settings",
+      "sha256": "0c8ea2ff3fefa44e56d4c30fd8a425e622d5be44664bd02b26393d9823b2b6ae",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "captured_dimensions": [
+        1918,
+        1018
+      ],
+      "destination": "software-updates",
+      "path": "docs/images/v16/phase5/software-updates__1918x1018.png",
+      "route_id": "software:apps",
+      "sha256": "52d7131b8a0ec5ad0fb4c3acc2c1049df474dcd3dcdbe7004cee63d2ee546d1d",
+      "viewport": [
+        1918,
+        1018
+      ]
+    },
+    {
+      "captured_dimensions": [
+        1918,
+        1018
+      ],
+      "destination": "network-security",
+      "path": "docs/images/v16/phase5/network-security__1918x1018.png",
+      "route_id": "network",
+      "sha256": "af297618ac54b47f24a2326cd1a6ab76a58e883469ec45d32e489fbcff916229",
+      "viewport": [
+        1918,
+        1018
+      ]
+    },
+    {
+      "captured_dimensions": [
+        1918,
+        1018
+      ],
+      "destination": "desktop",
+      "path": "docs/images/v16/phase5/desktop__1918x1018.png",
+      "route_id": "desktop",
+      "sha256": "3c1ed3187cc0a4bb1dc7d13548aa29bb3e3cb720f2ff6112e322d7d8e311b462",
+      "viewport": [
+        1918,
+        1018
+      ]
+    },
+    {
+      "captured_dimensions": [
+        1918,
+        1018
+      ],
+      "destination": "settings",
+      "path": "docs/images/v16/phase5/settings__1918x1018.png",
+      "route_id": "settings",
+      "sha256": "f262ee3382746ec9b98d323249d6ef236faa30de7813ea01621129db709f6aa2",
+      "viewport": [
+        1918,
+        1018
+      ]
+    }
+  ],
+  "generated_at": "2026-07-18T08:29:06.133613+00:00",
+  "phase": 5,
+  "release": "v16.0.0 Clarity",
+  "reproduction_command": "PYTHONPATH=loofi-fedora-tweaks QT_QPA_PLATFORM=offscreen python3 scripts/capture_v16_phase5.py",
+  "schema_version": 1
+}

@@ -2,7 +2,7 @@
 Settings Tab - User-facing preferences UI.
 Part of v13.5 "UX Polish" update.
 
-Five stable subroutes inside an internal QTabWidget:
+Five stable subroutes selected by the application section navigator:
   Appearance, Behavior, Advanced Tools, Repair Loofi, and About.
 """
 
@@ -22,9 +22,8 @@ from PyQt6.QtWidgets import (
     QGroupBox,
     QLabel,
     QMessageBox,
-    QPushButton,
     QScrollArea,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -32,7 +31,7 @@ from PyQt6.QtWidgets import (
 from utils.settings import SettingsManager
 from version import __app_name__, __version__, __version_codename__
 
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
+from ui.components import ActionBar, DangerButton, PageScaffold, SecondaryButton
 
 
 class SettingsTab(QWidget, PluginInterface):
@@ -77,43 +76,50 @@ class SettingsTab(QWidget, PluginInterface):
         self._ui_initialized = True
 
         outer = QVBoxLayout(self)
-        outer.setContentsMargins(*CONTENT_MARGINS)
+        outer.setContentsMargins(0, 0, 0, 0)
 
+        tabs = QStackedWidget()
+        tabs.setObjectName("settingsRouteStack")
+        tabs.addWidget(self._scaffold_page(
+            self._build_appearance_tab(),
+            self.tr("Appearance"),
+            self.tr("Choose the application theme. Changes are saved automatically."),
+        ))
+        tabs.addWidget(self._scaffold_page(
+            self._build_behavior_tab(),
+            self.tr("Behavior"),
+            self.tr("Configure startup, notifications, confirmations, and route restoration."),
+        ))
+        tabs.addWidget(self._scaffold_page(
+            self._build_advanced_tab(),
+            self.tr("Advanced Tools"),
+            self.tr("Choose Standard or Advanced navigation without weakening safety checks."),
+        ))
+        tabs.addWidget(self._scaffold_page(
+            self._build_state_tab(),
+            self.tr("Repair Loofi"),
+            self.tr("Inspect local state before exporting or resetting application data."),
+        ))
+        tabs.addWidget(self._scaffold_page(
+            self._build_about_tab(),
+            self.tr("About"),
+            self.tr("Review application, runtime, support, and compatibility information."),
+        ))
+        self.settings_tabs = tabs
+        outer.addWidget(tabs)
+
+    @staticmethod
+    def _scaffold_page(page: QWidget, accessible_name: str, description: str) -> QScrollArea:
+        """Wrap one settings route in the shared bounded page scaffold."""
+        scaffold = PageScaffold(accessible_name, description)
+        scaffold.add_widget(page)
+        scaffold.content_layout.addStretch()
         scroll = QScrollArea()
+        scroll.setObjectName("settingsRouteScroll")
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
-
-        container = QWidget()
-        layout = QVBoxLayout(container)
-        layout.setSpacing(15)
-
-        # Header
-        header = QLabel(self.tr("Settings"))
-        header.setObjectName("settingsHeader")
-        layout.addWidget(header)
-
-        desc = QLabel(self.tr(
-            "Configure appearance, behavior, and advanced options. "
-            "Changes are saved automatically."
-        ))
-        desc.setWordWrap(True)
-        desc.setObjectName("settingsDesc")
-        layout.addWidget(desc)
-
-        # Internal sub-tabs
-        tabs = QTabWidget()
-        configure_top_tabs(tabs)
-        tabs.addTab(self._build_appearance_tab(), self.tr("Appearance"))
-        tabs.addTab(self._build_behavior_tab(), self.tr("Behavior"))
-        tabs.addTab(self._build_advanced_tab(), self.tr("Advanced Tools"))
-        tabs.addTab(self._build_state_tab(), self.tr("Repair Loofi"))
-        tabs.addTab(self._build_about_tab(), self.tr("About"))
-        self.settings_tabs = tabs
-        layout.addWidget(tabs)
-
-        layout.addStretch()
-        scroll.setWidget(container)
-        outer.addWidget(scroll)
+        scroll.setWidget(scaffold)
+        return scroll
 
     def activate_route(self, route) -> bool:
         """Activate stable settings subroutes without relying on translated labels."""
@@ -163,11 +169,13 @@ class SettingsTab(QWidget, PluginInterface):
         form.addRow("", self.follow_system_cb)
 
         # v29.0: Reset appearance to defaults
-        reset_appearance_btn = QPushButton(self.tr("Reset Appearance"))
+        reset_appearance_btn = SecondaryButton(self.tr("Reset Appearance"))
         reset_appearance_btn.setAccessibleName(self.tr("Reset Appearance"))
         reset_appearance_btn.setToolTip(self.tr("Reset theme settings to defaults"))
         reset_appearance_btn.clicked.connect(self._reset_appearance)
-        form.addRow("", reset_appearance_btn)
+        appearance_actions = ActionBar()
+        appearance_actions.add_action(reset_appearance_btn)
+        form.addRow("", appearance_actions)
 
         return page
 
@@ -211,11 +219,13 @@ class SettingsTab(QWidget, PluginInterface):
         form.addRow("", self.restore_tab_cb)
 
         # v29.0: Reset behavior to defaults
-        reset_behavior_btn = QPushButton(self.tr("Reset Behavior"))
+        reset_behavior_btn = SecondaryButton(self.tr("Reset Behavior"))
         reset_behavior_btn.setAccessibleName(self.tr("Reset Behavior"))
         reset_behavior_btn.setToolTip(self.tr("Reset behavior settings to defaults"))
         reset_behavior_btn.clicked.connect(self._reset_behavior)
-        form.addRow("", reset_behavior_btn)
+        behavior_actions = ActionBar()
+        behavior_actions.add_action(reset_behavior_btn)
+        form.addRow("", behavior_actions)
 
         return page
 
@@ -282,11 +292,12 @@ class SettingsTab(QWidget, PluginInterface):
         # Reset
         reset_group = QGroupBox(self.tr("Reset"))
         reset_layout = QVBoxLayout(reset_group)
-        reset_btn = QPushButton(self.tr("Reset All Settings to Defaults"))
+        reset_btn = DangerButton(self.tr("Reset All Settings to Defaults"))
         reset_btn.setAccessibleName(self.tr("Reset All Settings to Defaults"))
-        reset_btn.setObjectName("dangerAction")
         reset_btn.clicked.connect(self._on_reset)
-        reset_layout.addWidget(reset_btn)
+        reset_actions = ActionBar()
+        reset_actions.add_action(reset_btn, primary=True)
+        reset_layout.addWidget(reset_actions)
         layout.addWidget(reset_group)
 
         layout.addStretch()
@@ -309,15 +320,17 @@ class SettingsTab(QWidget, PluginInterface):
         self.state_status.setAccessibleName(self.tr("Repair Loofi results"))
         self.state_status.setPlainText(self.tr("Select Inspect Loofi State to run the read-only check."))
         layout.addWidget(self.state_status)
-        doctor_button = QPushButton(self.tr("Inspect Loofi State"))
+        doctor_button = SecondaryButton(self.tr("Inspect Loofi State"))
         doctor_button.clicked.connect(self._run_state_doctor)
-        layout.addWidget(doctor_button)
-        backup_button = QPushButton(self.tr("Create Privacy-Safe Backup…"))
+        backup_button = SecondaryButton(self.tr("Create Privacy-Safe Backup…"))
         backup_button.clicked.connect(self._create_state_backup)
-        layout.addWidget(backup_button)
-        restore_button = QPushButton(self.tr("Preview State Restore…"))
+        restore_button = SecondaryButton(self.tr("Preview State Restore…"))
         restore_button.clicked.connect(self._preview_state_restore)
-        layout.addWidget(restore_button)
+        state_actions = ActionBar()
+        state_actions.add_action(doctor_button)
+        state_actions.add_action(backup_button)
+        state_actions.add_action(restore_button)
+        layout.addWidget(state_actions)
         layout.addStretch()
         return page
 
@@ -326,10 +339,6 @@ class SettingsTab(QWidget, PluginInterface):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setSpacing(12)
-
-        intro = QLabel(self.tr("About Loofi Fedora Tweaks"))
-        intro.setObjectName("settingsHeader")
-        layout.addWidget(intro)
 
         form = QFormLayout()
         form.addRow(self.tr("Application:"), QLabel(__app_name__))

@@ -271,9 +271,11 @@ class DetailsDisclosure(QWidget):
         self.details.setReadOnly(True)
         self.details.setAccessibleName(self.tr("Technical details"))
         self.details.setVisible(False)
+        self._content_widgets: list[QWidget] = []
         self.toggle_button.toggled.connect(self._set_expanded)
         layout.addWidget(self.toggle_button)
         layout.addWidget(self.details)
+        self.content_layout = layout
         self.setAccessibleName(summary or self.tr("Technical details"))
 
     def set_details(self, details: str) -> None:
@@ -281,9 +283,19 @@ class DetailsDisclosure(QWidget):
         self.details.setAccessibleDescription(details)
         self.setAccessibleDescription(details)
 
+    def add_widget(self, widget: QWidget) -> None:
+        """Add caller-owned technical content behind the same disclosure."""
+        if not self._content_widgets:
+            self.details.hide()
+        self._content_widgets.append(widget)
+        widget.setVisible(self.toggle_button.isChecked())
+        self.content_layout.addWidget(widget)
+
     def _set_expanded(self, expanded: bool) -> None:
         self.setProperty("expanded", expanded)
-        self.details.setVisible(expanded)
+        self.details.setVisible(expanded and not self._content_widgets)
+        for widget in self._content_widgets:
+            widget.setVisible(expanded)
         collapsed_text = self._summary or self.tr("Show details")
         text = self.tr("Hide details") if expanded else collapsed_text
         self.toggle_button.setText(text)

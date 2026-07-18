@@ -79,22 +79,34 @@ class TestTabMargins(unittest.TestCase):
         tab.close()
 
     def test_desktop_tab_margins(self):
-        """Verify desktop tab has positive content margins."""
+        """Verify Desktop delegates spacing to route page scaffolds."""
         mod = importlib.import_module("ui.desktop_tab")
         DesktopTab = mod.DesktopTab
+        from ui.components import PageScaffold
 
         tab = DesktopTab()
-        self._assert_positive_root_margins(tab, "DesktopTab")
+        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
+        scaffolds = tab.findChildren(PageScaffold)
+        self.assertEqual(len(scaffolds), 3)
+        for scaffold in scaffolds:
+            left, top, right, bottom = scaffold.content_layout.getContentsMargins()
+            self.assertGreater(min(left, top, right, bottom), 0)
 
         tab.close()
 
     def test_security_tab_margins(self):
-        """Verify security tab has positive content margins."""
+        """Verify Security delegates spacing to route page scaffolds."""
         mod = importlib.import_module("ui.security_tab")
         SecurityTab = mod.SecurityTab
+        from ui.components import PageScaffold
 
         tab = SecurityTab()
-        self._assert_positive_root_margins(tab, "SecurityTab")
+        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
+        scaffolds = tab.findChildren(PageScaffold)
+        self.assertEqual(len(scaffolds), 4)
+        for scaffold in scaffolds:
+            left, top, right, bottom = scaffold.content_layout.getContentsMargins()
+            self.assertGreater(min(left, top, right, bottom), 0)
 
         tab.close()
 
@@ -112,7 +124,7 @@ class TestTabMargins(unittest.TestCase):
         tab.close()
 
     def test_settings_tab_margins(self):
-        """Verify settings tab has positive content margins."""
+        """Verify Settings delegates spacing to route page scaffolds."""
         # Mock SettingsManager with proper return types per key
         defaults = {
             "theme": "dark",
@@ -132,9 +144,15 @@ class TestTabMargins(unittest.TestCase):
 
             mod = importlib.import_module("ui.settings_tab")
             SettingsTab = mod.SettingsTab
+            from ui.components import PageScaffold
 
             tab = SettingsTab()
-            self._assert_positive_root_margins(tab, "SettingsTab")
+            self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
+            scaffolds = tab.findChildren(PageScaffold)
+            self.assertEqual(len(scaffolds), 5)
+            for scaffold in scaffolds:
+                left, top, right, bottom = scaffold.content_layout.getContentsMargins()
+                self.assertGreater(min(left, top, right, bottom), 0)
 
             tab.close()
 
