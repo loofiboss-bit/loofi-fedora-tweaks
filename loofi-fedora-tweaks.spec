@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        15.0.0
+Version:        16.0.0
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -161,6 +161,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Sat Jul 18 2026 Loofi <loofi@example.com> - 16.0.0-1
+- v16.0.0 "Clarity" - Responsive section navigation, shared page components, semantic themes, and complete accessibility validation
+
 * Sat Jul 18 2026 Loofi <loofi@example.com> - 15.0.0-1
 - v15.0.0 "Essentials" - Six destinations, canonical Home, true lazy loading, logical component isolation, and preserved v14 trust contracts
 

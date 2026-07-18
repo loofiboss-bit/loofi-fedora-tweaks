@@ -4,11 +4,12 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v15.0.0 "Essentials"**
-- Full notes: [RELEASE-NOTES-v15.0.0.md](RELEASE-NOTES-v15.0.0.md)
+- **v16.0.0 "Clarity"**
+- Full notes: [RELEASE-NOTES-v16.0.0.md](RELEASE-NOTES-v16.0.0.md)
 
 ## Recent Releases
 
+- v15.0.0 "Essentials": [RELEASE-NOTES-v15.0.0.md](RELEASE-NOTES-v15.0.0.md)
 - v14.0.0 "Helm": [RELEASE-NOTES-v14.0.0.md](RELEASE-NOTES-v14.0.0.md)
 - v13.0.0 "Anchor": [RELEASE-NOTES-v13.0.0.md](RELEASE-NOTES-v13.0.0.md)
 - v12.0.0 "Lighthouse": [RELEASE-NOTES-v12.0.0.md](RELEASE-NOTES-v12.0.0.md)

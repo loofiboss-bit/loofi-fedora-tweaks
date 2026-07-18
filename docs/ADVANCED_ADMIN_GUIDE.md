@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 15.0.0 "Essentials"
+> Version 16.0.0 "Clarity"
 
 Operational runbook for power users and Fedora administrators.
 

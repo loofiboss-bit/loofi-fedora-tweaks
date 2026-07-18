@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 15.0.0 "Essentials" — focused navigation, on-demand plugins, and preserved v14 safety
+> Version 16.0.0 "Clarity" — responsive navigation, consistent pages, and preserved safety contracts
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
@@ -140,7 +140,7 @@ Doctor and archive services.
 ## 5) Action Center Safety
 
 **Software & Updates → Action Center** remains the only plan/run/verify GUI.
-The v15 shell changes its placement and presentation, not its domain contract.
+The v16 shell changes its placement and presentation, not its domain contract.
 
 - The executable catalog is deny-by-default and remains limited to
   `dnf-clean-all`, `restart-failed-service`, and `fstrim-all`.
@@ -168,8 +168,8 @@ See `docs/VERIFIED_MAINTENANCE.md` for the complete lifecycle.
 
 ## 6) Core and Specialist Components
 
-v15 introduces logical component isolation, not a physical `-extras` RPM. The
-base RPM still ships the built-in source tree. Core startup does not import
+v16 preserves logical component isolation and does not add a physical `-extras`
+RPM. The base RPM still ships the built-in source tree. Core startup does not import
 specialist UI modules, and specialist pages load on demand after route
 activation.
 
@@ -250,7 +250,7 @@ loofi --json readiness --target 44
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-v15 preserves v14 settings, favorites, stable route IDs, Action Center plans,
+v16 preserves settings, favorites, stable route IDs, Action Center plans,
 runs and history, state schemas, and observability data.
 
 ---

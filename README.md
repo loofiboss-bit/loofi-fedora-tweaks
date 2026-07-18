@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v15.0.0 "Essentials"
+# Loofi Fedora Tweaks v16.0.0 "Clarity"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,36 +12,36 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0">
-    <img src="https://img.shields.io/badge/Release-v15.0.0-blue?style=for-the-badge&logo=github" alt="Release v15.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v16.0.0">
+    <img src="https://img.shields.io/badge/Release-v16.0.0-blue?style=for-the-badge&logo=github" alt="Release v16.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 85%"/>
 </p>
 
-## What Essentials changes
+## What Clarity changes
 
-v15 makes the existing application easier to navigate and much cheaper to
-start. It does not replace the trusted v14 maintenance and state backends.
+v16 gives the existing application one responsive shell and one shared visual
+language. It changes presentation without replacing the trusted maintenance,
+state, route, CLI, API, daemon, or IPC contracts.
 
-- Standard mode has exactly six destinations: **Home**, **Software & Updates**,
-  **System**, **Network & Security**, **Desktop**, and **Settings**.
-- Advanced mode adds one **Advanced** destination for specialist tools.
-- Home is one read-only summary built from existing health, state, update,
-  backup, history, and Action Center data.
-- `Ctrl+K` opens the single global route/settings/action search.
-  `Ctrl+Shift+K` opens the same model filtered to actions.
-- Built-in plugin metadata is data-only. A plugin is imported and constructed
-  only when its route opens.
-- Traditional Fedora uses DNF behavior. Atomic Fedora uses rpm-ostree or clear
-  manual-only guidance where mutation is not supported.
+- Full-label section navigation reflows from a rail to a compact selector at
+  smaller window sizes instead of clipping application-level tabs.
+- Standard and Advanced pages use the same page scaffold, cards, notices,
+  actions, states, spacing, and visible focus treatment.
+- System, dark, light, and high-contrast modes retain structural styling and
+  semantic colors.
+- The real application shell is validated across supported sizes, 100-200%
+  font scaling, Wayland/X11 paths, keyboard input, and accessibility surfaces.
+- Standard mode still has exactly six destinations, Advanced remains optional,
+  and built-in pages still load only when opened.
 
-The recorded final v15 benchmark renders meaningful Home 96.66% faster than the
-v14 baseline, uses 29.20% less RSS, constructs one plugin instead of 29, and
-starts with no subprocess probes, active timers, or worker threads.
+The recorded v16 release benchmark renders meaningful Home in 181.011 ms,
+within the 182.309 ms same-host limit. It constructs one plugin and starts with
+no subprocess probes, active hidden-page timers, or worker threads.
 
-Full details: [v15 release notes](docs/releases/RELEASE-NOTES-v15.0.0.md).
+Full details: [v16 release notes](docs/releases/RELEASE-NOTES-v16.0.0.md).
 
 ## The six destinations
 
@@ -74,7 +74,7 @@ and search can open it, but never create or execute a plan.
 
 <table>
   <tr>
-    <td width="50%"><img src="docs/images/user-guide/home-dashboard.png" alt="Essentials canonical Home with six-destination sidebar"/></td>
+    <td width="50%"><img src="docs/images/user-guide/home-dashboard.png" alt="Clarity Home with responsive six-destination sidebar"/></td>
     <td width="50%"><img src="docs/images/user-guide/maintenance-updates.png" alt="Software and Updates maintenance workflow"/></td>
   </tr>
   <tr>
@@ -168,8 +168,8 @@ The global `--json` option appears before the CLI command.
 - State schemas, atomic writes, backup/restore planning, redaction, routes,
   aliases, favorites, first-run sentinels, CLI JSON, API, daemon, and IPC remain
   compatible with v14.
-- Specialist tools are logically isolated but remain in the v15 base RPM. A
-  physical extras RPM is deferred until v16 ownership boundaries are safe.
+- Specialist tools are logically isolated but remain in the v16 base RPM. A
+  physical extras RPM is deferred to v17 pending a safe ownership boundary.
 
 ## Development
 
@@ -202,10 +202,10 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v15.0.0 "Essentials"` is available from the GitHub release and the Fedora 44
-COPR repository. The historical pre-renormalization `v15.0.0 "Nebula"` tag is
-preserved as `legacy-v15.0.0-nebula`; the canonical `v15.0.0` tag points to the
-exact Essentials release commit.
+`v16.0.0 "Clarity"` is available from the GitHub release and the Fedora 44 COPR
+repository. The historical `v16.0.0 "Horizon"` tag is preserved as
+`legacy-v16.0.0-horizon`; the canonical `v16.0.0` tag points to the exact
+Clarity release commit.
 
 ## License
 

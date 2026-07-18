@@ -4,6 +4,44 @@
 
 All notable changes to this project will be documented in this file.
 
+## [16.0.0] - 2026-07-18 "Clarity"
+
+### Added
+
+- Responsive section navigation with explicit data-only section metadata and a
+  compact selector below 900 DIP.
+- One canonical component library for page scaffolds, cards, actions, notices,
+  states, property rows, responsive grids, and accessible route activation.
+- Structural system, dark, light, and high-contrast themes backed by semantic
+  palettes, stable geometry tokens, and visible focus treatment.
+- Real-shell validation across themes, Standard/Advanced modes, supported
+  viewports, 100-200% font scales, Wayland/X11 paths, keyboard input, contrast,
+  AT-SPI surfaces, and release screenshots.
+
+### Changed
+
+- Migrated all six Standard destinations and Advanced routes to the shared
+  shell and component language without adding product features.
+- Replaced application-level horizontal route tabs and broad inline styling
+  with responsive section presentation and centralized semantic styling.
+- Removed incomplete runtime locale loading and standardized the shipped UI and
+  validation fixtures on complete English copy.
+
+### Compatibility
+
+- Preserved routes, aliases, redirects, lazy loading, settings, favorites,
+  state archives, Action Center lifecycle, Traditional/Atomic behavior, CLI,
+  API, daemon, D-Bus, IPC, and plugin contracts.
+- Kept meaningful Home within the 182.309 ms same-host limit with one startup
+  plugin instance and no subprocess probes, active timers, or QThreads.
+
+### Release
+
+- Added Clarity release notes, AppStream metadata, architecture and user-guide
+  updates, exact-build screenshots, startup evidence, and Fedora packaging.
+- Preserved the historical `v16.0.0 "Horizon"` tag as
+  `legacy-v16.0.0-horizon` before assigning the canonical tag to Clarity.
+
 ## [15.0.0] - 2026-07-18 "Essentials"
 
 ### Added
@@ -1835,7 +1873,12 @@ All notable changes to this project will be documented in this file.
 - `tests/test_v17_atlas.py` — GUI tab instantiation tests
 - `tests/test_v17_cli.py` — CLI bluetooth/storage command tests
 
-## [16.0.0] - 2025-07-23 "Horizon"
+## [16.0.0-legacy-horizon] - 2025-07-23 "Horizon" (historical pre-renormalization line)
+
+This historical release predates the epoch-backed SemVer renormalization. Its
+original `v16.0.0` tag collides with the current Clarity release name and is
+retained here under an explicit legacy heading so the two lineages are not
+mistaken for one another.
 
 ### Added
 

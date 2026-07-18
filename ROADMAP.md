@@ -44,7 +44,7 @@ control center without changing trusted system-operation behavior.
 | 5 — Remaining Standard | DONE | [Software, Network/Security, Desktop, and Settings](docs/reports/V16_PHASE5_STANDARD_DESTINATIONS.md) |
 | 6 — Advanced and cleanup | DONE | [Shared-system adoption and legacy presentation removal](docs/reports/V16_PHASE6_ADVANCED_CLEANUP.md) |
 | 7 — UI/accessibility validation | DONE | [Real-shell responsive, theme, input, and accessibility matrices](docs/reports/V16_PHASE7_UI_ACCESSIBILITY.md) |
-| 8 — Regression and release | PENDING | Full gates, packaging, version bump, publication |
+| 8 — Regression and release | DONE | [Full gates, packaging, version bump, and publication readiness](docs/reports/V16_PHASE8_RELEASE_READINESS.md) |
 
 The complete scope, gates, and acceptance criteria are defined only in
 [the canonical v16 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md).

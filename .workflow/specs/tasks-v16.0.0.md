@@ -28,13 +28,15 @@
   and styling only after compatibility coverage exists.
 - [x] P7: complete real-shell responsive, theme, keyboard, accessibility,
   contrast, Wayland/X11, and compositor-scaling validation.
-- [ ] P8: run full regression, startup/resource, Traditional/Atomic, packaging,
+- [x] P8: run full regression, startup/resource, Traditional/Atomic, packaging,
   release-evidence, and security gates; then bump to v16 only when every gate
   passes.
+- [ ] [post-publish] P8-POST: verify the exact GitHub release commit, assets,
+  checksums, SBOM, provenance, COPR build, Fedora 44 public-package install,
+  wiki readback, and close the roadmap and race lock.
 
 ## Completion contract
 
-Unchecked v16 tasks represent later development phases and must not affect
-`--require-completed-tasks` or `--require-publish-ready-tasks` while the code
-version remains the completed v15.0.0 release. Those flags continue to validate
-`tasks-v15.0.0.md` until the deliberate Phase 8 version bump.
+Local publication readiness allows only explicitly tagged `[post-publish]`
+closure work to remain unchecked. Full completion requires that final public
+readback task to be checked after the exact release is live.

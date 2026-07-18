@@ -29,6 +29,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V16_PHASE5_STANDARD_DESTINATIONS.md` - Shared shell and component contracts across all remaining Standard destinations
 - `reports/V16_PHASE6_ADVANCED_CLEANUP.md` - Advanced shell adoption, retained local tabs, and legacy presentation cleanup
 - `reports/V16_PHASE7_UI_ACCESSIBILITY.md` - Real-shell responsive, theme, input, contrast, and accessibility validation
+- `reports/V16_PHASE8_RELEASE_READINESS.md` - Full regression, startup, packaging, security, and publication evidence
 - `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
 - `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
 - `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist
@@ -56,6 +57,6 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are aligned to `v15.0.0 "Essentials"`: six Standard destinations, optional Advanced mode, canonical Home and search, verified Action Center maintenance, state recovery, Fedora 44 support, and Fedora 45 preview checks.
+- User-facing guides are aligned to `v16.0.0 "Clarity"`: responsive section navigation, shared page components, six Standard destinations, optional Advanced mode, verified Action Center maintenance, Fedora 44 support, and Fedora 45 preview checks.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.
