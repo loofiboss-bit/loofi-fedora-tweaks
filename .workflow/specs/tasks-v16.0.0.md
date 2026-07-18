@@ -26,7 +26,7 @@
 - [x] P5: redesign Software & Updates, Network & Security, Desktop, and Settings.
 - [x] P6: adopt shared components in Advanced and remove superseded legacy UI
   and styling only after compatibility coverage exists.
-- [ ] P7: complete real-shell responsive, theme, keyboard, accessibility,
+- [x] P7: complete real-shell responsive, theme, keyboard, accessibility,
   contrast, Wayland/X11, and compositor-scaling validation.
 - [ ] P8: run full regression, startup/resource, Traditional/Atomic, packaging,
   release-evidence, and security gates; then bump to v16 only when every gate

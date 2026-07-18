@@ -125,7 +125,10 @@ class ContentColumn(QWidget):
         tokens = DesignTokens()
         self.setObjectName("contentColumn")
         self.setMaximumWidth(tokens.content_max_width)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.MinimumExpanding)
+        # Responsive pages must be allowed to shrink below their current
+        # multi-column size hint so child grids can reflow before the shared
+        # vertical scroll area calculates its range.
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.MinimumExpanding)
         self.body = QVBoxLayout(self)
         self.body.setContentsMargins(tokens.space_6, tokens.space_6, tokens.space_6, tokens.space_8)
         self.body.setSpacing(tokens.space_4)
@@ -149,6 +152,7 @@ class PageScaffold(QWidget):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("pageScaffold")
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
         outer = QVBoxLayout(self)
         outer.setContentsMargins(0, 0, 0, 0)
         outer.setSpacing(0)
@@ -190,6 +194,7 @@ class AdaptiveGrid(QWidget):
         self.column_breakpoints = tuple(sorted(column_breakpoints))
         self._items: list[QWidget] = []
         self._columns = 0
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Minimum)
         self.grid = QGridLayout(self)
         self.grid.setContentsMargins(0, 0, 0, 0)
         self.grid.setHorizontalSpacing(16)

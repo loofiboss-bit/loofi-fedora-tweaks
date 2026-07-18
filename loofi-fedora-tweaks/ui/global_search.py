@@ -50,6 +50,10 @@ class GlobalSearchDialog(QDialog):
         self.setWindowTitle(
             self.tr("Search Actions") if actions_only else self.tr("Search Loofi")
         )
+        self.setAccessibleName(self.windowTitle())
+        self.setAccessibleDescription(
+            self.tr("Search available routes, settings, and safe action entry points")
+        )
         self.setObjectName("globalSearch")
         self.setMinimumSize(620, 420)
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Popup)

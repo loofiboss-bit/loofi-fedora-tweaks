@@ -496,7 +496,7 @@ Automated matrix:
 - Standard and Advanced modes;
 - 860×720, 1280×720, 1366×768, 1920×1080, 2560×1440;
 - 100%, 125%, 140%, 150%, and 200% font/scale fixtures;
-- long Swedish strings and English strings;
+- English source strings and deliberately long English stress strings;
 - keyboard-only navigation and visible focus;
 - route labels, controls, dialogs, loading/error/empty states;
 - no unintended horizontal scrolling or geometry overflow.
@@ -561,7 +561,7 @@ Gate:
 - Keyboard can reach and activate every destination, section, card, action, disclosure, and dialog control.
 - Focus is always visible.
 - Result, severity, and availability are communicated through text/icon plus color.
-- Long English and Swedish labels remain readable.
+- Standard and deliberately long English labels remain readable.
 - Live screen-reader smoke is recorded for the primary workflows.
 
 ### Stability and compatibility

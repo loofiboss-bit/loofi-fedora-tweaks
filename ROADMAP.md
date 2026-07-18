@@ -43,7 +43,7 @@ control center without changing trusted system-operation behavior.
 | 4 — Home and System | DONE | [Priority destination redesigns](docs/reports/V16_PHASE4_HOME_SYSTEM.md) |
 | 5 — Remaining Standard | DONE | [Software, Network/Security, Desktop, and Settings](docs/reports/V16_PHASE5_STANDARD_DESTINATIONS.md) |
 | 6 — Advanced and cleanup | DONE | [Shared-system adoption and legacy presentation removal](docs/reports/V16_PHASE6_ADVANCED_CLEANUP.md) |
-| 7 — UI/accessibility validation | PENDING | Automated and live Fedora KDE matrices |
+| 7 — UI/accessibility validation | DONE | [Real-shell responsive, theme, input, and accessibility matrices](docs/reports/V16_PHASE7_UI_ACCESSIBILITY.md) |
 | 8 — Regression and release | PENDING | Full gates, packaging, version bump, publication |
 
 The complete scope, gates, and acceptance criteria are defined only in

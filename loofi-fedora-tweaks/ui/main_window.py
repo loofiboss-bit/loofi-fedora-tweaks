@@ -149,6 +149,10 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, False)
         self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, False)
         self.setWindowTitle(self.tr("Loofi Fedora Tweaks v%1").replace("%1", __version__))
+        self.setAccessibleName(self.tr("Loofi Fedora Tweaks"))
+        self.setAccessibleDescription(
+            self.tr("Fedora system settings and maintenance control center")
+        )
 
         # HiDPI/Wayland safety: use Qt device-independent units and derive
         # shell dimensions from the active font and available screen size.
@@ -276,6 +280,7 @@ class MainWindow(QMainWindow):
         sb_layout.setContentsMargins(12, 0, 12, 0)
         self._status_label = QLabel("")
         self._status_label.setObjectName("statusText")
+        self._status_label.setAccessibleName(self.tr("Activity status"))
         sb_layout.addWidget(self._status_label)
 
         # Undo button (v38.0)
@@ -770,7 +775,7 @@ class MainWindow(QMainWindow):
         scroll.setObjectName("pageScroll")
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         scroll.setWidget(widget)
@@ -1037,12 +1042,14 @@ class MainWindow(QMainWindow):
     def set_status(self, text: str):
         """Set status bar message (can be called from any tab)."""
         self._status_label.setText(text)
+        self._status_label.setAccessibleDescription(text)
         self._update_status_chrome()
 
     def show_undo_button(self, description: str = ""):
         """Show the undo button in the status bar after an undoable action."""
         if description:
             self._status_label.setText(description)
+            self._status_label.setAccessibleDescription(description)
         self._undo_btn.setVisible(True)
         self._update_status_chrome()
 
@@ -1064,6 +1071,7 @@ class MainWindow(QMainWindow):
     def show_status_toast(self, message: str, error: bool = False, duration: int = 3000):
         """Show a temporary status-bar toast notification (v38.0)."""
         self._status_label.setText(message)
+        self._status_label.setAccessibleDescription(message)
         if error:
             self._status_label.setProperty("toast", "error")
         else:
@@ -1079,6 +1087,7 @@ class MainWindow(QMainWindow):
     def _clear_toast(self):
         """Clear toast styling from the status bar."""
         self._status_label.setText("")
+        self._status_label.setAccessibleDescription("")
         self._status_label.setProperty("toast", "")
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)

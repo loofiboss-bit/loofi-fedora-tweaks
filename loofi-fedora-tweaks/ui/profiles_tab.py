@@ -11,6 +11,7 @@ Provides:
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -25,6 +26,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -32,6 +34,7 @@ from PyQt6.QtWidgets import (
 from utils.profiles import ProfileManager
 
 from ui.components import PageScaffold
+from ui.components.layout import AdaptiveGrid
 
 
 class ProfilesTab(QWidget, PluginInterface):
@@ -62,8 +65,13 @@ class ProfilesTab(QWidget, PluginInterface):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
 
         container = QWidget()
+        container.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.MinimumExpanding,
+        )
         layout = QVBoxLayout(container)
         layout.setSpacing(15)
 
@@ -79,34 +87,36 @@ class ProfilesTab(QWidget, PluginInterface):
         layout.addWidget(cards_group)
 
         # Action buttons
-        btn_layout = QHBoxLayout()
+        actions = AdaptiveGrid(
+            min_column_width=160,
+            column_breakpoints=((0, 1), (360, 2), (720, 3), (1000, 5)),
+        )
+        actions.setObjectName("profileActions")
         refresh_btn = QPushButton(self.tr("Refresh"))
         refresh_btn.setAccessibleName(self.tr("Refresh profiles"))
         refresh_btn.clicked.connect(self._refresh_profiles)
-        btn_layout.addWidget(refresh_btn)
+        actions.add_card(refresh_btn)
 
         create_btn = QPushButton(self.tr("Create Custom Profile"))
         create_btn.setAccessibleName(self.tr("Create Custom Profile"))
         create_btn.clicked.connect(self._show_create_dialog)
-        btn_layout.addWidget(create_btn)
+        actions.add_card(create_btn)
 
         capture_btn = QPushButton(self.tr("Capture Current State"))
         capture_btn.setAccessibleName(self.tr("Capture Current State"))
         capture_btn.clicked.connect(self._capture_current)
-        btn_layout.addWidget(capture_btn)
+        actions.add_card(capture_btn)
 
         export_all_btn = QPushButton(self.tr("Export All"))
         export_all_btn.setAccessibleName(self.tr("Export All profiles"))
         export_all_btn.clicked.connect(self._export_all_profiles)
-        btn_layout.addWidget(export_all_btn)
+        actions.add_card(export_all_btn)
 
         import_all_btn = QPushButton(self.tr("Import Bundle"))
         import_all_btn.setAccessibleName(self.tr("Import Bundle"))
         import_all_btn.clicked.connect(self._import_bundle)
-        btn_layout.addWidget(import_all_btn)
-
-        btn_layout.addStretch()
-        layout.addLayout(btn_layout)
+        actions.add_card(import_all_btn)
+        layout.addWidget(actions)
 
         # Output log
         log_group = QGroupBox(self.tr("Output Log"))

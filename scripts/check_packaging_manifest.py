@@ -43,7 +43,6 @@ EXPECTED_SOURCE_SUFFIXES = (
     "assets/icons/icon-map.json",
     "assets/icons/svg/update.svg",
     "resources/translations/en.ts",
-    "resources/translations/sv.ts",
     "config/org.loofi.fedora-tweaks.policy",
     "agents/cleanup.json",
 )

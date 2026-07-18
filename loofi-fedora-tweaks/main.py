@@ -162,7 +162,6 @@ def main():
             sys.exit(1)
 
         try:
-            from PyQt6.QtCore import QLocale, QTranslator
             from PyQt6.QtWidgets import QApplication, QMessageBox
             from ui.main_window import MainWindow
         except ImportError as exc:
@@ -177,20 +176,6 @@ def main():
             from utils.error_handler import install_error_handler
 
             install_error_handler()
-
-            # Load translations based on system locale
-            locale = QLocale.system().name()
-            translator = QTranslator()
-            translations_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "resources",
-                "translations",
-            )
-
-            if translator.load(f"loofi_{locale}", translations_path):
-                app.installTranslator(translator)
-            elif translator.load(f"loofi_{locale.split('_')[0]}", translations_path):
-                app.installTranslator(translator)
 
             # Always load structural styling; ThemeManager only changes palette tokens.
             theme_name = _startup_theme_name()

@@ -57,6 +57,11 @@ class ConfirmActionDialog(QDialog):
     ):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Confirm Action"))
+        accessible_action = action or self.tr("Are you sure?")
+        self.setAccessibleName(self.tr("Confirm action: %1").replace("%1", accessible_action))
+        self.setAccessibleDescription(
+            description or self.tr("Review the action before confirming or cancelling")
+        )
         self.setMinimumWidth(440)
         self.setMaximumWidth(600)
         self._snapshot_requested = False
@@ -73,9 +78,10 @@ class ConfirmActionDialog(QDialog):
         icon_label.setObjectName("confirmIcon")
         header_row.addWidget(icon_label)
 
-        action_label = QLabel(action or self.tr("Are you sure?"))
+        action_label = QLabel(accessible_action)
         action_label.setObjectName("confirmAction")
         action_label.setWordWrap(True)
+        action_label.setAccessibleName(accessible_action)
         header_row.addWidget(action_label, 1)
 
         # Risk level badge (v38.0)
@@ -88,6 +94,9 @@ class ConfirmActionDialog(QDialog):
             risk_badge = QLabel(badge_text)
             risk_badge.setObjectName("riskBadge")
             risk_badge.setProperty("level", risk_level)
+            risk_badge.setAccessibleName(
+                self.tr("Risk level: %1").replace("%1", badge_text)
+            )
             header_row.addWidget(risk_badge)
 
         layout.addLayout(header_row)

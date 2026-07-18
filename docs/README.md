@@ -28,6 +28,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V16_PHASE4_HOME_SYSTEM.md` - Home and System redesign, responsive properties, and startup-safety evidence
 - `reports/V16_PHASE5_STANDARD_DESTINATIONS.md` - Shared shell and component contracts across all remaining Standard destinations
 - `reports/V16_PHASE6_ADVANCED_CLEANUP.md` - Advanced shell adoption, retained local tabs, and legacy presentation cleanup
+- `reports/V16_PHASE7_UI_ACCESSIBILITY.md` - Real-shell responsive, theme, input, contrast, and accessibility validation
 - `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
 - `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
 - `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist

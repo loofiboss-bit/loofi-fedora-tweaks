@@ -4,8 +4,6 @@ Tests for I18nManager — v31.0 Smart UX
 import unittest
 import sys
 import os
-import json
-import tempfile
 from unittest.mock import patch, MagicMock
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
@@ -27,28 +25,8 @@ class TestI18nManager(unittest.TestCase):
         self.assertIsInstance(result, str)
         self.assertIn("translations", result)
 
-    @patch('os.path.isdir', return_value=False)
-    def test_available_locales_no_dir(self, mock_isdir):
-        """Returns ['en'] if translations dir doesn't exist."""
-        locales = I18nManager.available_locales()
-        self.assertEqual(locales, ["en"])
-
-    @patch('os.listdir', return_value=["en.qm", "sv.qm", "README.md"])
-    @patch('os.path.isdir', return_value=True)
-    def test_available_locales_with_files(self, mock_isdir, mock_listdir):
-        """Returns locale codes from .qm files."""
-        locales = I18nManager.available_locales()
-        self.assertIn("en", locales)
-        self.assertIn("sv", locales)
-        self.assertNotIn("README", locales)
-
-    @patch('os.listdir', return_value=["sv.qm"])
-    @patch('os.path.isdir', return_value=True)
-    def test_available_locales_adds_en_if_missing(self, mock_isdir, mock_listdir):
-        """English is always included even without en.qm."""
-        locales = I18nManager.available_locales()
-        self.assertIn("en", locales)
-        self.assertEqual(locales[0], "en")
+    def test_available_locales_is_english_only(self):
+        self.assertEqual(I18nManager.available_locales(), ["en"])
 
     def test_set_locale_english(self):
         """Setting locale to 'en' always succeeds."""
@@ -59,13 +37,12 @@ class TestI18nManager(unittest.TestCase):
         self.assertEqual(I18nManager.get_locale(), "en")
         app.removeTranslator.assert_called_once()
 
-    @patch('os.path.isfile', return_value=False)
-    def test_set_locale_missing_file(self, mock_isfile):
-        """Setting locale to missing file returns False."""
+    def test_set_locale_rejects_non_english(self):
         app = MagicMock()
         I18nManager._translator = None
-        result = I18nManager.set_locale(app, "fr")
+        result = I18nManager.set_locale(app, "sv")
         self.assertFalse(result)
+        self.assertEqual(I18nManager.get_locale(), "en")
 
     @patch('os.path.isfile', return_value=True)
     @patch('os.path.expanduser', return_value="/tmp/test_settings.json")
@@ -75,19 +52,8 @@ class TestI18nManager(unittest.TestCase):
         locale = I18nManager.get_preferred_locale()
         self.assertEqual(locale, "en")
 
-    def test_get_preferred_locale_from_file(self):
-        """Reads locale from settings file."""
-        with tempfile.NamedTemporaryFile(mode='w', suffix='.json', delete=False) as f:
-            json.dump({"locale": "sv"}, f)
-            temp_path = f.name
-        try:
-            with patch('os.path.expanduser', return_value=temp_path):
-                with patch('os.path.isfile', return_value=True):
-                    with patch('builtins.open', unittest.mock.mock_open(read_data=json.dumps({"locale": "sv"}))):
-                        locale = I18nManager.get_preferred_locale()
-                        self.assertEqual(locale, "sv")
-        finally:
-            os.unlink(temp_path)
+    def test_get_preferred_locale_ignores_stale_non_english_state(self):
+        self.assertEqual(I18nManager.get_preferred_locale(), "en")
 
     @patch('builtins.open', side_effect=OSError("IO error"))
     @patch('os.path.isfile', return_value=True)
@@ -102,7 +68,7 @@ class TestI18nManager(unittest.TestCase):
     @patch('os.makedirs')
     @patch('os.path.expanduser', return_value="/tmp/config/settings.json")
     def test_save_preferred_locale(self, mock_expand, mock_makedirs, mock_isfile, mock_open):
-        """Saves locale preference to settings file."""
+        """Normalizes a legacy locale request to English."""
         I18nManager.save_preferred_locale("sv")
         mock_open.assert_called()
 

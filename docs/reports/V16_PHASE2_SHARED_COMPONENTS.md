@@ -62,7 +62,7 @@ registration, and packaged product modules.
 
 The offscreen gallery is exercised with system, dark, light, and high-contrast
 themes at 100%, 125%, 140%, 150%, and 200% font scales. It includes long English
-and Swedish section/property labels, both navigator modes, every button role,
+and deliberately long English section/property labels, both navigator modes, every button role,
 all status kinds, workflow states, progress, and disclosure.
 
 ## Verification
