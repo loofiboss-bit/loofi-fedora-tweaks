@@ -47,6 +47,14 @@ class _HistorySource:
         return self.entries[:count]
 
 
+class _NotificationSource:
+    def __init__(self, entries=()):
+        self.entries = list(entries)
+
+    def get_recent(self, limit=1):
+        return self.entries[:limit]
+
+
 def _snapshot(now: float, **overrides) -> HealthSnapshot:
     values = {
         "timestamp": now,
@@ -61,13 +69,16 @@ def _snapshot(now: float, **overrides) -> HealthSnapshot:
     return HealthSnapshot(**values)
 
 
-def _service(*, now=100_000.0, snapshots=(), findings=(), plans=(), runs=(), history=(), snapshot_error=None):
+def _service(
+    *, now=100_000.0, snapshots=(), findings=(), plans=(), runs=(), history=(), notifications=(), snapshot_error=None
+):
     return HomeService(
         snapshot_store=_ListSource(snapshots, snapshot_error),
         state_source=_StateSource(findings),
         plan_store=_ListSource(plans),
         run_store=_ListSource(runs),
         history_source=_HistorySource(history),
+        notification_source=_NotificationSource(notifications),
         clock=lambda: now,
     )
 
@@ -166,6 +177,20 @@ class TestHomeServiceStates(unittest.TestCase):
 
         self.assertEqual(summary.recent_change.id, "change-1")
         self.assertTrue(summary.recent_change.undo_available)
+
+    def test_newer_notification_reuses_single_read_only_activity_slot(self):
+        entry = SimpleNamespace(id="change-1", timestamp="1970-01-02T00:00:00+00:00", description="Changed theme", undo_command=[])
+        notification = SimpleNamespace(id="notice-1", timestamp=90_000.0, title="Agent failed", message="Review the saved error")
+
+        summary = _service(
+            snapshots=[_snapshot(100_000.0)],
+            history=[entry],
+            notifications=[notification],
+        ).summary()
+
+        self.assertEqual(summary.recent_change.id, "notification:notice-1")
+        self.assertEqual(summary.recent_change.description, "Agent failed: Review the saved error")
+        self.assertFalse(summary.recent_change.undo_available)
 
 
 if __name__ == "__main__":

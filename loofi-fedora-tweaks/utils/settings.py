@@ -17,7 +17,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 from core.navigation.migrations import (
-    legacy_experience_for_mode,
     migrate_last_route,
     migrate_route_references,
     navigation_mode_from_value,
@@ -52,7 +51,6 @@ class AppSettings:
     plugin_analytics_endpoint: str = "https://api.loofi.software/marketplace/v1/analytics/events"
 
     # UX
-    experience_level: str = "beginner"
     navigation_mode: str = "standard"
     suppressed_confirmations: list = field(default_factory=list)
     locale: str = "en"
@@ -129,24 +127,22 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
         defaults["theme"] = legacy_theme
         migrated = True
 
-    legacy_experience = _first(raw, "experience", "experienceLevel", "ui.experience_level")
-    if "experience_level" not in raw and legacy_experience is not None:
-        value = str(legacy_experience).lower()
-        if value in {"beginner", "intermediate", "advanced"}:
-            defaults["experience_level"] = value
-            migrated = True
-
+    legacy_experience = _first(
+        raw,
+        "experience_level",
+        "experience",
+        "experienceLevel",
+        "ui.experience_level",
+    )
     mode_value = _first(raw, "navigation_mode", "ui_mode", "navigation.mode")
     mode = navigation_mode_from_value(
-        mode_value if mode_value is not None else defaults["experience_level"]
+        mode_value if mode_value is not None else legacy_experience
     )
     if raw.get("navigation_mode") != mode.value:
         migrated = True
     defaults["navigation_mode"] = mode.value
 
-    compatible_experience = legacy_experience_for_mode(mode)
-    if defaults["experience_level"] != compatible_experience:
-        defaults["experience_level"] = compatible_experience
+    if "experience_level" in raw or legacy_experience is not None:
         migrated = True
 
     favorite_routes = _first(raw, "navigation.favorite_routes", "navigation.favorites", "favorite_tabs", "favorites")

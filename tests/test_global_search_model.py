@@ -50,7 +50,7 @@ class TestGlobalSearchModel(unittest.TestCase):
         route_ids = {result.route_id for result in model.all_results()}
 
         self.assertNotIn("gaming", route_ids)
-        self.assertNotIn("settings:advanced", route_ids)
+        self.assertIn("settings:advanced", route_ids)
 
     def test_missing_specialist_component_removes_results_and_pins_do_not_bypass(self):
         context = NavigationContext(

@@ -5,7 +5,7 @@ PluginRegistry layout with route-aware sidebar navigation, breadcrumb, and statu
 
 import logging
 import os
-from dataclasses import dataclass, field
+from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
 from core.navigation import (
@@ -24,7 +24,7 @@ from core.navigation import (
 from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
 from core.plugins.registry import CATEGORY_ICONS
-from PyQt6.QtCore import QRect, QSize, Qt, QTimer
+from PyQt6.QtCore import QRect, Qt, QTimer
 from PyQt6.QtGui import QColor, QKeySequence, QPainter, QShortcut
 from PyQt6.QtWidgets import (
     QFrame,
@@ -138,18 +138,6 @@ class MainWindow(QMainWindow):
         # Initialize logger for this class
         self.logger = logging.getLogger(__name__)
 
-        # Check frameless mode feature flag
-        frameless_enabled = self._get_frameless_mode_flag()
-
-        if frameless_enabled:
-            self.logger.warning(
-                "Frameless mode requested but not yet fully implemented. "
-                "Using native title bar. Set ui.frameless_mode=false or "
-                "unset LOOFI_FRAMELESS to disable this warning."
-            )
-            # Stub: future frameless implementation would go here
-            # For now, keep native title bar even when flag is True
-
         # Keep native title-bar decorations enabled.
         # This avoids KDE/Wayland/X11 edge-cases where client content can
         # appear to bleed into the top chrome when frameless/custom hints are used.
@@ -169,7 +157,8 @@ class MainWindow(QMainWindow):
         self.pulse_thread = None
         self.tray_icon = None
         self._status_timer = None
-        self._notif_timer = None
+        self.notif_panel = None
+        self._toast_widget = None
         self._post_render_services_scheduled = False
 
         # Central Widget
@@ -353,7 +342,7 @@ class MainWindow(QMainWindow):
         """Build the destination shell from specs without importing plugin UI."""
         from core.plugins.compat import CompatibilityDetector
         from core.plugins.loader import PluginLoader
-        from utils.experience_level import ExperienceLevelManager
+        from utils.navigation_mode import NavigationModeManager
 
         detector = CompatibilityDetector()
         registry = PluginRegistry.instance()
@@ -362,10 +351,9 @@ class MainWindow(QMainWindow):
             self._plugin_loader = PluginLoader(registry=registry, detector=detector)
         self._plugin_loader.register_builtin_specs()
 
-        level = ExperienceLevelManager.get_level()
-        mode = ExperienceLevelManager.get_navigation_mode()
+        mode = NavigationModeManager.get_mode()
         favorites = FavoritesManager.get_favorites()
-        self._active_experience_level = level
+        self._active_navigation_mode = mode
 
         specs = registry.list_specs()
         incompatible_plugin_ids: set[str] = set()
@@ -389,16 +377,6 @@ class MainWindow(QMainWindow):
             favorite_route_ids=frozenset(favorites),
         )
         self.sidebar.set_destinations(destinations_for_mode(mode))
-
-        # Validate experience level tab lists against registry
-        declared_ids = ExperienceLevelManager.get_all_declared_tab_ids()
-        registered_ids = set(self._sidebar_index.keys())
-        orphaned = declared_ids - registered_ids
-        for tab_id in sorted(orphaned):
-            logger.warning("Experience level references unknown tab: %s", tab_id)
-        advanced_only = registered_ids - declared_ids
-        if advanced_only:
-            logger.info("Tabs only visible to ADVANCED users: %s", sorted(advanced_only))
 
     def _activate_destination(self, destination_id: str) -> None:
         """Open a destination's policy-approved default route."""
@@ -632,7 +610,6 @@ class MainWindow(QMainWindow):
 
     def _initialize_post_render_services(self) -> None:
         """Initialize deferred UI and probes outside the first-render hot path."""
-        self._setup_notification_bell()
         self._start_status_refresh()
         QTimer.singleShot(0, self.check_dependencies)
 
@@ -692,31 +669,15 @@ class MainWindow(QMainWindow):
         """Compatibility no-op while favorites are stored for later surfaces."""
         return
 
-    def _rebuild_sidebar_for_experience_level(self, level=None):
-        """Rebuild destinations when the compatibility experience value changes."""
+    def _rebuild_sidebar_for_navigation_mode(self, mode=None):
+        """Refresh policy and destination rows without rebuilding page widgets."""
+        from utils.navigation_mode import NavigationModeManager
+
+        mode = mode or NavigationModeManager.get_mode()
         previous_route = self._active_route_id
-        self._set_active_plugin("")
-        for entry in self._sidebar_index.values():
-            lazy = entry.page_widget
-            realized = getattr(lazy, "get_real_widget", lambda: None)()
-            if isinstance(realized, QWidget):
-                realized.setParent(None)
-        self.sidebar.clear()
-        self._sidebar_index.clear()
-        self._category_items.clear()
-        self._pages_cache = None
-        while self.content_area.count():
-            w = self.content_area.widget(0)
-            self.content_area.removeWidget(w)
-            if hasattr(w, "deleteLater"):
-                w.deleteLater()
-        context = {
-            "main_window": self,
-            "config_manager": ConfigManager,
-        }
-        if level is not None:
-            self._active_experience_level = level
-        self._build_sidebar_from_registry(context)
+        self._active_navigation_mode = mode
+        self._navigation_context = replace(self._navigation_context, mode=mode)
+        self.sidebar.set_destinations(destinations_for_mode(mode))
         self._active_destination_id = ""
         if previous_route and self.switch_to_route(previous_route, record_history=False):
             return
@@ -1403,100 +1364,6 @@ class MainWindow(QMainWindow):
         )
         QMessageBox.information(self, self.tr("Keyboard Shortcuts"), shortcuts)
 
-    def _setup_notification_bell(self):
-        """Add notification bell with unread count badge to the breadcrumb bar."""
-        from PyQt6.QtWidgets import QToolButton
-
-        self.notif_panel = None
-        self._toast_widget = None
-
-        # Bell button
-        self.notif_bell = QToolButton()
-        self.notif_bell.setObjectName("notificationBell")
-        self.notif_bell.setText("")
-        self.notif_bell.setIcon(get_qicon("notifications", size=17))
-        self.notif_bell.setIconSize(QSize(17, 17))
-        self.notif_bell.clicked.connect(self._toggle_notification_panel)
-
-        # Unread count badge (overlays bell button)
-        self._notif_badge = QLabel("0")
-        self._notif_badge.setObjectName("notificationBadge")
-        self._notif_badge.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self._notif_badge.setFixedHeight(16)
-        self._notif_badge.setVisible(False)
-
-        # Add bell first, then badge — badge appears as overlay to the right
-        bc_layout = getattr(self._breadcrumb_frame, "actions_layout", None)
-        if bc_layout is None or not hasattr(bc_layout, "addWidget"):
-            bc_layout = self._breadcrumb_frame.layout()
-        if bc_layout:
-            bc_layout.addWidget(self.notif_bell)
-            bc_layout.addWidget(self._notif_badge)
-
-        # Timer to refresh unread count (every 5s)
-        from PyQt6.QtCore import QTimer
-
-        self._notif_timer = QTimer(self)
-        self._notif_timer.timeout.connect(self._refresh_notif_badge)
-        self._notif_timer.start(5000)
-        self._refresh_notif_badge()
-
-    def _toggle_notification_panel(self):
-        """Toggle the notification panel."""
-        if self.notif_panel is None:
-            from ui.notification_panel import NotificationPanel
-
-            self.notif_panel = NotificationPanel(self)
-
-        if self.notif_panel.isVisible():
-            self.notif_panel.hide()
-        else:
-            self.notif_panel.refresh()
-
-            # v35.0 Fortress: Improved edge-clipping prevention
-            panel = self.notif_panel
-            panel_w = panel.PANEL_WIDTH
-            margin = panel.EDGE_MARGIN
-            breadcrumb_bottom = self._breadcrumb_frame.geometry().bottom()
-            status_height = self._status_frame.height() if hasattr(self, "_status_frame") else 0
-            window_w = self.width()
-            window_h = self.height()
-
-            # X: right-aligned, clamped to window edges
-            x = max(margin, window_w - panel_w - margin)
-
-            # Y: below breadcrumb bar
-            y = breadcrumb_bottom + margin
-
-            # Available height: from y to bottom minus status bar and margin
-            available_h = window_h - y - status_height - margin
-            capped_h = max(
-                panel.MIN_HEIGHT,
-                min(panel.sizeHint().height(), available_h, panel.MAX_HEIGHT),
-            )
-
-            panel.setFixedHeight(capped_h)
-            panel.move(x, y)
-            panel.show()
-            panel.raise_()
-        self._refresh_notif_badge()
-
-    def _refresh_notif_badge(self):
-        """Update the unread notification count badge."""
-        try:
-            from utils.notification_center import NotificationCenter
-
-            nc = NotificationCenter()
-            count = nc.get_unread_count()
-            if count > 0:
-                self._notif_badge.setText(str(min(count, 99)))
-                self._notif_badge.setVisible(True)
-            else:
-                self._notif_badge.setVisible(False)
-        except (RuntimeError, ValueError, TypeError) as e:
-            logger.debug("Failed to refresh notification badge: %s", e)
-            self._notif_badge.setVisible(False)
-
     def show_toast(self, title: str, message: str, category: str = "general"):
         """Show an animated toast notification at the top-right."""
         try:
@@ -1505,8 +1372,6 @@ class MainWindow(QMainWindow):
             if self._toast_widget is None:
                 self._toast_widget = NotificationToast(self)
             self._toast_widget.show_toast(title, message, category)
-            # Refresh badge since a new notification likely exists
-            self._refresh_notif_badge()
         except (RuntimeError, ImportError) as e:
             logger.debug("Failed to show toast notification: %s", e)
 
@@ -1557,54 +1422,34 @@ class MainWindow(QMainWindow):
             desc = entry.metadata.description or ""
             entry.tree_item.setToolTip(0, f"{desc}\n[{tooltip}]" if desc else tooltip)
 
-    def apply_experience_level(self, level=None):
-        """Show/hide sidebar tabs based on experience level setting."""
+    def apply_navigation_mode(self, mode=None):
+        """Apply the canonical Standard/Advanced navigation mode."""
         try:
-            from utils.experience_level import ExperienceLevelManager
+            from utils.navigation_mode import NavigationModeManager
 
-            if level is None:
-                level = ExperienceLevelManager.get_level()
-            if getattr(self, "_active_experience_level", None) == level:
+            if mode is None:
+                mode = NavigationModeManager.get_mode()
+            if getattr(self, "_active_navigation_mode", None) == mode:
                 return
-            self._rebuild_sidebar_for_experience_level(level)
+            self._rebuild_sidebar_for_navigation_mode(mode)
         except (ImportError, AttributeError, ValueError, RuntimeError) as e:
-            logger.debug("Experience level filtering unavailable: %s", e)
+            logger.debug("Navigation mode refresh unavailable: %s", e)
 
     def _check_first_run(self):
-        """Show first-run wizard if this is the first launch."""
-        config_dir = os.path.expanduser("~/.config/loofi-fedora-tweaks")
-        first_run_file = os.path.join(config_dir, "first_run_complete")
-
-        if not os.path.exists(first_run_file):
-            try:
-                from ui.wizard import FirstRunWizard
-
-                wizard = FirstRunWizard(self)
-                wizard.exec()
-                self.apply_experience_level()
-            except ImportError:
-                logger.debug("First-run wizard module not available", exc_info=True)
-        else:
-            self.apply_experience_level()
-
-        # Launch guided tour if not yet completed (v47.0)
+        """Show the single welcome surface only when its sentinel is absent."""
         try:
-            from utils.guided_tour import GuidedTourManager
+            from ui.wizard import FirstRunWelcome, needs_first_run
 
-            if GuidedTourManager.needs_tour():
-                from ui.tour_overlay import TourOverlay
-
-                self._tour_overlay = TourOverlay(self)
-                self._tour_overlay.tour_completed.connect(
-                    lambda: self.show_toast(
-                        self.tr("Welcome"),
-                        self.tr("Tour complete! Explore at your own pace."),
-                        "general",
-                    )
-                )
-                QTimer.singleShot(500, self._tour_overlay.start)
-        except (ImportError, RuntimeError) as e:
-            logger.debug("Guided tour not available: %s", e)
+            welcome = None
+            if needs_first_run():
+                welcome = FirstRunWelcome(self)
+                welcome.exec()
+            self.apply_navigation_mode()
+            requested_route = str(getattr(welcome, "requested_route", "") or "")
+            if requested_route:
+                self.switch_to_route(requested_route)
+        except ImportError:
+            logger.debug("First-run welcome module not available", exc_info=True)
 
     def setup_tray(self):
         from PyQt6.QtGui import QAction, QIcon
@@ -1749,25 +1594,3 @@ class MainWindow(QMainWindow):
         from services.desktop import DesktopUtils
 
         return DesktopUtils.detect_color_scheme()
-
-    def _get_frameless_mode_flag(self) -> bool:
-        """
-        Check if frameless window mode is requested.
-
-        Priority:
-        1. Config file: ui.frameless_mode key
-        2. Environment variable: LOOFI_FRAMELESS=1
-
-        Returns:
-            True if frameless mode is enabled, False otherwise (default).
-        """
-        # Check config file first
-        config = ConfigManager.load_config()
-        if config is not None:
-            ui_settings = config.get("ui", {})
-            if "frameless_mode" in ui_settings:
-                return bool(ui_settings["frameless_mode"])
-
-        # Fallback to environment variable
-        env_value = os.environ.get("LOOFI_FRAMELESS", "").strip()
-        return env_value == "1"

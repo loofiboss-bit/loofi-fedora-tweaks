@@ -39,7 +39,6 @@ def _prepare_profile(profile: Path) -> None:
     (config / "settings.json").write_text(
         json.dumps(
             {
-                "experience_level": "beginner",
                 "navigation_mode": "standard",
                 "favorite_routes": [],
                 "hidden_routes": [],

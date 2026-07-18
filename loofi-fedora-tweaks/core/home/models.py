@@ -48,7 +48,7 @@ class HomeTask:
 
 @dataclass(frozen=True)
 class RecentChange:
-    """The latest existing history entry; Home never executes its undo."""
+    """The latest saved activity; Home never mutates or executes its undo."""
 
     id: str
     description: str

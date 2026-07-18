@@ -22,7 +22,6 @@ from core.navigation import (
 )
 from core.plugins.registry import PluginRegistry
 from ui.main_window import MainWindow
-from utils.experience_level import ExperienceLevel
 
 
 class _RouteWidget(QWidget):
@@ -53,12 +52,10 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     @patch("ui.main_window.MainWindow._initialize_background_services")
     @patch("ui.main_window.SystemManager.is_atomic", return_value=False)
     @patch("ui.main_window.FavoritesManager.get_favorites", return_value=[])
-    @patch("utils.experience_level.ExperienceLevelManager.get_level")
-    @patch("utils.experience_level.ExperienceLevelManager.get_navigation_mode")
+    @patch("utils.navigation_mode.NavigationModeManager.get_mode")
     def _build_window(
         self,
         mock_mode,
-        mock_level,
         mock_favorites,
         mock_atomic,
         mock_background,
@@ -69,11 +66,6 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         del mock_favorites, mock_atomic, mock_background, mock_first_run
         PluginRegistry.reset()
         mock_mode.return_value = mode
-        mock_level.return_value = (
-            ExperienceLevel.ADVANCED
-            if mode is NavigationMode.ADVANCED
-            else ExperienceLevel.BEGINNER
-        )
         window = MainWindow()
         route_widgets: dict[str, _RouteWidget] = {}
 
@@ -124,6 +116,25 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
         self.assertEqual(window.sidebar.topLevelItemCount(), 7)
         self.assertEqual(window.sidebar.destination_ids()[-1], "advanced")
+
+    def test_mode_refresh_preserves_lazy_pages_and_toggles_six_to_seven(self):
+        window = self._build_window(mode=NavigationMode.STANDARD)
+        pages_before = {
+            plugin_id: entry.page_widget
+            for plugin_id, entry in window._sidebar_index.items()
+        }
+        load_calls_before = window._plugin_loader.load_builtin_widget.call_count
+
+        window._rebuild_sidebar_for_navigation_mode(NavigationMode.ADVANCED)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
+        self.assertEqual(
+            pages_before,
+            {plugin_id: entry.page_widget for plugin_id, entry in window._sidebar_index.items()},
+        )
+        self.assertEqual(window._plugin_loader.load_builtin_widget.call_count, load_calls_before)
+
+        window._rebuild_sidebar_for_navigation_mode(NavigationMode.STANDARD)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
         self.assertTrue(
             all(
                 window.sidebar.topLevelItem(index).childCount() == 0
@@ -228,7 +239,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 self.assertTrue(window.destination_host.explanation.isVisible())
                 gated += 1
 
-        self.assertEqual(opened + gated, 78)
+        self.assertEqual(opened + gated, 80)
         self.assertGreater(opened, 0)
         self.assertGreater(gated, 0)
 

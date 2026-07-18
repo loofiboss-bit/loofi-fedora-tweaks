@@ -212,7 +212,7 @@ class TestNavigationPolicyCoverage(unittest.TestCase):
                     self.assertIsInstance(result.decision, NavigationDecision)
                     outcomes += 1
 
-        self.assertEqual(outcomes, 78 * 4)
+        self.assertEqual(outcomes, 80 * 4)
         self.assertEqual(validate_navigation_policy(), [])
 
     def test_standard_mode_never_exposes_advanced_routes_through_favorites(self):

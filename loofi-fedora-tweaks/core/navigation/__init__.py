@@ -1,17 +1,11 @@
 """Navigation route manifest for Beacon UX surfaces."""
 
 from core.navigation.areas import (
-    DEFAULT_PLUGIN_IDS,
-    HIDDEN_BY_DEFAULT_PLUGIN_IDS,
-    INTERMEDIATE_PLUGIN_IDS,
     NavigationArea,
     all_areas,
     area_for_plugin,
     default_areas,
     get_area,
-    is_plugin_visible_for_level,
-    plugin_ids_for_level,
-    sidebar_areas_for_level,
     validate_areas,
 )
 from core.navigation.manifest import (
@@ -34,7 +28,6 @@ from core.navigation.destinations import (
 )
 from core.navigation.migrations import (
     canonical_persisted_route,
-    legacy_experience_for_mode,
     migrate_last_route,
     migrate_quick_action,
     migrate_quick_actions,
@@ -60,14 +53,11 @@ from core.navigation.search import (
 )
 
 __all__ = [
-    "DEFAULT_PLUGIN_IDS",
     "ADVANCED_DESTINATION",
     "STANDARD_DESTINATIONS",
     "Destination",
     "DirectLinkBehavior",
     "FedoraVariant",
-    "HIDDEN_BY_DEFAULT_PLUGIN_IDS",
-    "INTERMEDIATE_PLUGIN_IDS",
     "NavigationArea",
     "NavigationContext",
     "NavigationDecision",
@@ -90,19 +80,15 @@ __all__ = [
     "get_area",
     "get_destination",
     "get_route",
-    "is_plugin_visible_for_level",
-    "legacy_experience_for_mode",
     "migrate_last_route",
     "migrate_quick_action",
     "migrate_quick_actions",
     "migrate_route_references",
     "navigation_mode_from_value",
     "placement_for_route",
-    "plugin_ids_for_level",
     "resolve",
     "routes_for_palette",
     "routes_for_quick_actions",
-    "sidebar_areas_for_level",
     "validate_areas",
     "validate_destinations",
     "validate_navigation_policy",

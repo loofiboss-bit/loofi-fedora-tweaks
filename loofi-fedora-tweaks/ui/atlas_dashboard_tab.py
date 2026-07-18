@@ -182,7 +182,7 @@ class AtlasDashboardTab(BaseTab):
         self.tasks_container.addWidget(task_grid)
 
         if summary.recent_change is not None:
-            self.recent_container.addWidget(self._section_label(self.tr("Recent change")))
+            self.recent_container.addWidget(self._section_label(self.tr("Recent activity")))
             recent = QFrame()
             recent.setObjectName("homeRecentChange")
             layout = QHBoxLayout(recent)

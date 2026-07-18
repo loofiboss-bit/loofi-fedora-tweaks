@@ -28,13 +28,6 @@ def navigation_mode_from_value(value: object) -> NavigationMode:
     )
 
 
-def legacy_experience_for_mode(mode: NavigationMode) -> str:
-    """Return a safe v14-shell adapter value for a v15 navigation mode."""
-    if mode is NavigationMode.ADVANCED:
-        return "advanced"
-    return "beginner"
-
-
 def canonical_persisted_route(
     value: object,
     *,

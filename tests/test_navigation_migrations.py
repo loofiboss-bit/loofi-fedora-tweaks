@@ -7,7 +7,6 @@ from pathlib import Path
 
 from core.navigation.migrations import (
     canonical_persisted_route,
-    legacy_experience_for_mode,
     migrate_last_route,
     migrate_quick_action,
     migrate_quick_actions,
@@ -40,17 +39,6 @@ class TestModeMigration(unittest.TestCase):
                     navigation_mode_from_value(mode.value),
                     mode,
                 )
-
-    def test_v14_shell_adapter_is_explicit(self):
-        self.assertEqual(
-            legacy_experience_for_mode(NavigationMode.STANDARD),
-            "beginner",
-        )
-        self.assertEqual(
-            legacy_experience_for_mode(NavigationMode.ADVANCED),
-            "advanced",
-        )
-
 
 class TestRouteMigration(unittest.TestCase):
     def test_aliases_become_canonical_routes(self):
@@ -133,7 +121,7 @@ class TestSettingsNavigationMigration(unittest.TestCase):
         )
 
         self.assertTrue(changed)
-        self.assertEqual(migrated["experience_level"], "advanced")
+        self.assertNotIn("experience_level", migrated)
         self.assertEqual(migrated["navigation_mode"], "advanced")
         self.assertEqual(migrated["last_route_id"], "system_info")
         self.assertEqual(
@@ -149,8 +137,10 @@ class TestSettingsNavigationMigration(unittest.TestCase):
             {"navigation_mode": "advanced", "experience_level": "beginner"}
         )
 
-        self.assertEqual(standard["experience_level"], "beginner")
-        self.assertEqual(advanced["experience_level"], "advanced")
+        self.assertEqual(standard["navigation_mode"], "standard")
+        self.assertEqual(advanced["navigation_mode"], "advanced")
+        self.assertNotIn("experience_level", standard)
+        self.assertNotIn("experience_level", advanced)
 
     def test_hidden_routes_use_same_idempotent_route_adapter(self):
         first, _ = migrate_settings(

@@ -124,12 +124,9 @@ _PLACEMENTS: tuple[RoutePlacement, ...] = (
     _placement("settings", "settings", "appearance"),
     _placement("settings:appearance", "settings", "appearance"),
     _placement("settings:behavior", "settings", "behavior"),
-    _placement(
-        "settings:advanced",
-        "settings",
-        "advanced",
-        advanced_only=True,
-    ),
+    _placement("settings:advanced", "settings", "advanced"),
+    _placement("settings:repair", "settings", "repair"),
+    _placement("settings:about", "settings", "about"),
     # Advanced specialist routes.  The logical component boundary is used by
     # policy now; any physical package split remains a Phase 9 decision.
     _placement("performance", "advanced", "performance_tuning", advanced_only=True, component_id="specialist"),

@@ -50,6 +50,7 @@ class HomeService:
         plan_store: Any | None = None,
         run_store: Any | None = None,
         history_source: Any | None = None,
+        notification_source: Any | None = None,
         clock: Callable[[], float] = time.time,
         stale_after_seconds: float = _STALE_AFTER_SECONDS,
     ) -> None:
@@ -63,6 +64,10 @@ class HomeService:
             self.history_source = HistoryManager()
         else:
             self.history_source = None
+        if notification_source is not None:
+            self.notification_source = notification_source
+        else:
+            self.notification_source = self._default_notification_source()
         self.clock = clock
         self.stale_after_seconds = max(0.0, float(stale_after_seconds))
 
@@ -82,6 +87,7 @@ class HomeService:
         plans = self._read_source("Action Center plans", lambda: self.plan_store.list(limit=25), errors, default=[])
         runs = self._read_source("Action Center runs", lambda: self.run_store.list(limit=25), errors, default=[])
         history = self._read_history(errors)
+        notifications = self._read_notifications(errors)
 
         latest = max(snapshots, key=lambda item: float(getattr(item, "timestamp", 0.0)), default=None)
         data_state = self._data_state(now, latest, errors)
@@ -121,7 +127,7 @@ class HomeService:
             primary_recommendation=primary,
             attention_items=attention,
             common_tasks=_COMMON_TASKS,
-            recent_change=self._recent_change(history),
+            recent_change=self._recent_activity(history, notifications),
             source_errors=tuple(dict.fromkeys(errors)),
         )
 
@@ -137,6 +143,28 @@ class HomeService:
         if self.history_source is None:
             return []
         return list(self._read_source("recent changes", lambda: self.history_source.get_recent(count=1), errors, default=[]))
+
+    def _read_notifications(self, errors: list[str]) -> list[Any]:
+        if self.notification_source is None:
+            return []
+        return list(
+            self._read_source(
+                "recent notifications",
+                lambda: self.notification_source.get_recent(limit=1),
+                errors,
+                default=[],
+            )
+        )
+
+    @staticmethod
+    def _default_notification_source() -> Any | None:
+        """Open existing local notification history only when Home is loaded."""
+        try:
+            from utils.notification_center import NOTIFICATIONS_FILE, NotificationCenter
+
+            return NotificationCenter() if NOTIFICATIONS_FILE.exists() else None
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return None
 
     def _data_state(
         self,
@@ -168,7 +196,7 @@ class HomeService:
             items.append(Recommendation(
                 "state-integrity", "state_integrity", "Repair Loofi state",
                 str(first.get("summary") or "Local application state failed validation."),
-                "settings", "critical", len(critical_findings),
+                "settings:repair", "critical", len(critical_findings),
             ))
 
         problematic_runs = [
@@ -290,21 +318,51 @@ class HomeService:
         return bool(percentages and max(percentages) >= 90)
 
     @staticmethod
-    def _recent_change(history: Sequence[Any]) -> RecentChange | None:
-        if not history:
-            return None
-        entry = history[0]
+    def _recent_activity(history: Sequence[Any], notifications: Sequence[Any]) -> RecentChange | None:
+        entry = history[0] if history else None
         raw_timestamp = str(getattr(entry, "timestamp", "") or "")
         try:
             occurred_at = datetime.fromisoformat(raw_timestamp) if raw_timestamp else None
         except ValueError:
             occurred_at = None
+        history_timestamp = HomeService._datetime_timestamp(occurred_at)
+
+        notification = notifications[0] if notifications else None
+        try:
+            notification_timestamp = float(getattr(notification, "timestamp", 0.0) or 0.0)
+        except (TypeError, ValueError):
+            notification_timestamp = 0.0
+
+        if notification is not None and (entry is None or notification_timestamp > history_timestamp):
+            title = str(getattr(notification, "title", "") or "").strip()
+            message = str(getattr(notification, "message", "") or "").strip()
+            description = ": ".join(part for part in (title, message) if part) or "Recent notification"
+            return RecentChange(
+                id=f"notification:{getattr(notification, 'id', 'recent')}",
+                description=description,
+                occurred_at=(
+                    datetime.fromtimestamp(notification_timestamp, timezone.utc)
+                    if notification_timestamp > 0.0
+                    else None
+                ),
+                undo_available=False,
+            )
+        if entry is None:
+            return None
         return RecentChange(
             id=str(getattr(entry, "id", "recent-change")),
             description=str(getattr(entry, "description", "Recent change")),
             occurred_at=occurred_at,
             undo_available=bool(getattr(entry, "undo_command", [])),
         )
+
+    @staticmethod
+    def _datetime_timestamp(value: datetime | None) -> float:
+        if value is None:
+            return 0.0
+        if value.tzinfo is None:
+            value = value.replace(tzinfo=timezone.utc)
+        return value.timestamp()
 
     @staticmethod
     def _overall_state(

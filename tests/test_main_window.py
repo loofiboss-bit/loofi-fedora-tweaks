@@ -858,6 +858,8 @@ def _install_stubs():
     # -- ui.wizard --
     wizard_mod = types.ModuleType("ui.wizard")
     wizard_mod.FirstRunWizard = MagicMock()
+    wizard_mod.FirstRunWelcome = MagicMock()
+    wizard_mod.needs_first_run = MagicMock(return_value=False)
     sys.modules["ui.wizard"] = wizard_mod
 
     # -- core.plugins --
@@ -1254,11 +1256,8 @@ def _make_window(skip_init=False):
         win.tray_icon = None
         win.pulse = None
         win.pulse_thread = None
-        win._notif_badge = _DummyLabel()
-        win._notif_badge._visible = False
         win.notif_panel = None
         win._toast_widget = None
-        win.notif_bell = _DummyToolButton()
         return win
     else:
         return mod.MainWindow()
@@ -1326,28 +1325,13 @@ class TestMainWindowInstantiation(unittest.TestCase):
     @patch("ui.main_window.MainWindow.check_dependencies")
     @patch("ui.main_window.MainWindow.setup_tray")
     @patch("ui.main_window.MainWindow._check_first_run")
-    @patch("ui.main_window.MainWindow._setup_notification_bell")
     @patch("ui.main_window.MainWindow._setup_keyboard_shortcuts")
     @patch("ui.main_window.MainWindow._setup_command_palette_shortcut")
     @patch("ui.main_window.MainWindow._setup_quick_actions")
     @patch("ui.main_window.MainWindow._build_favorites_section")
     @patch("ui.main_window.MainWindow._build_sidebar_from_registry")
     @patch("ui.main_window.MainWindow._start_pulse_listener")
-    @patch("ui.main_window.MainWindow._get_frameless_mode_flag", return_value=False)
-    def test_basic_instantiation(
-        self,
-        mock_frameless,
-        mock_pulse,
-        mock_registry,
-        mock_fav,
-        mock_qa,
-        mock_palette,
-        mock_kb,
-        mock_notif,
-        mock_first,
-        mock_tray,
-        mock_deps,
-    ):
+    def test_basic_instantiation(self, *mocks):
         """MainWindow instantiation completes without error."""
         mod = _get_module()
         win = mod.MainWindow()
@@ -1357,44 +1341,29 @@ class TestMainWindowInstantiation(unittest.TestCase):
     @patch("ui.main_window.MainWindow.check_dependencies")
     @patch("ui.main_window.MainWindow.setup_tray")
     @patch("ui.main_window.MainWindow._check_first_run")
-    @patch("ui.main_window.MainWindow._setup_notification_bell")
     @patch("ui.main_window.MainWindow._setup_keyboard_shortcuts")
     @patch("ui.main_window.MainWindow._setup_command_palette_shortcut")
     @patch("ui.main_window.MainWindow._setup_quick_actions")
     @patch("ui.main_window.MainWindow._build_favorites_section")
     @patch("ui.main_window.MainWindow._build_sidebar_from_registry")
     @patch("ui.main_window.MainWindow._start_pulse_listener")
-    @patch("ui.main_window.MainWindow._get_frameless_mode_flag", return_value=True)
-    def test_frameless_mode_warning(
-        self,
-        mock_frameless,
-        mock_pulse,
-        mock_registry,
-        mock_fav,
-        mock_qa,
-        mock_palette,
-        mock_kb,
-        mock_notif,
-        mock_first,
-        mock_tray,
-        mock_deps,
-    ):
-        """MainWindow logs warning when frameless mode is requested."""
+    def test_native_window_has_no_frameless_or_notification_bell_hooks(self, *mocks):
+        """The shell keeps native chrome and has no permanent bell hooks."""
         mod = _get_module()
         win = mod.MainWindow()
         self.assertIsNotNone(win)
+        self.assertFalse(hasattr(mod.MainWindow, "_get_frameless_mode_flag"))
+        self.assertFalse(hasattr(mod.MainWindow, "_setup_notification_bell"))
 
     @patch("ui.main_window.MainWindow.check_dependencies")
     @patch("ui.main_window.MainWindow.setup_tray")
     @patch("ui.main_window.MainWindow._check_first_run")
-    @patch("ui.main_window.MainWindow._setup_notification_bell")
     @patch("ui.main_window.MainWindow._setup_keyboard_shortcuts")
     @patch("ui.main_window.MainWindow._setup_command_palette_shortcut")
     @patch("ui.main_window.MainWindow._setup_quick_actions")
     @patch("ui.main_window.MainWindow._build_favorites_section")
     @patch("ui.main_window.MainWindow._build_sidebar_from_registry")
     @patch("ui.main_window.MainWindow._start_pulse_listener")
-    @patch("ui.main_window.MainWindow._get_frameless_mode_flag", return_value=False)
     def test_pages_dict_initialized_empty(self, *mocks):
         """MainWindow.pages starts as empty dict before registry loads."""
         mod = _get_module()
@@ -1789,14 +1758,12 @@ class TestShowToast(unittest.TestCase):
     def setUp(self):
         self.win = _make_window(skip_init=True)
 
-    @patch("ui.main_window.MainWindow._refresh_notif_badge")
-    def test_show_toast_creates_widget(self, mock_refresh):
+    def test_show_toast_creates_widget(self):
         """show_toast creates NotificationToast on first call."""
         self.win.show_toast("Title", "Message", "general")
         self.assertIsNotNone(self.win._toast_widget)
 
-    @patch("ui.main_window.MainWindow._refresh_notif_badge")
-    def test_show_toast_reuses_widget(self, mock_refresh):
+    def test_show_toast_reuses_widget(self):
         """show_toast reuses existing toast widget."""
         self.win.show_toast("First", "Msg1")
         first_widget = self.win._toast_widget
@@ -1942,93 +1909,6 @@ class TestDetectSystemTheme(unittest.TestCase):
         mod = _get_module()
         # Should be callable on class without instantiation
         self.assertTrue(callable(mod.MainWindow.detect_system_theme))
-
-
-class TestGetFramelessModeFlag(unittest.TestCase):
-    """Tests for MainWindow._get_frameless_mode_flag()."""
-
-    def setUp(self):
-        self.win = _make_window(skip_init=True)
-
-    def test_config_frameless_true(self):
-        """Config file frameless_mode=True returns True."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(
-            return_value={"ui": {"frameless_mode": True}}
-        )
-        result = self.win._get_frameless_mode_flag()
-        self.assertTrue(result)
-
-    def test_config_frameless_false(self):
-        """Config file frameless_mode=False returns False."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(
-            return_value={"ui": {"frameless_mode": False}}
-        )
-        result = self.win._get_frameless_mode_flag()
-        self.assertFalse(result)
-
-    @patch.dict(os.environ, {"LOOFI_FRAMELESS": "1"})
-    def test_env_frameless_enabled(self):
-        """Environment LOOFI_FRAMELESS=1 returns True when no config."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(return_value=None)
-        result = self.win._get_frameless_mode_flag()
-        self.assertTrue(result)
-
-    @patch.dict(os.environ, {"LOOFI_FRAMELESS": "0"})
-    def test_env_frameless_disabled(self):
-        """Environment LOOFI_FRAMELESS=0 returns False."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(return_value=None)
-        result = self.win._get_frameless_mode_flag()
-        self.assertFalse(result)
-
-    @patch.dict(os.environ, {}, clear=True)
-    def test_no_config_no_env_returns_false(self):
-        """No config and no env var returns False (default)."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(return_value=None)
-        # Remove LOOFI_FRAMELESS from env
-        os.environ.pop("LOOFI_FRAMELESS", None)
-        result = self.win._get_frameless_mode_flag()
-        self.assertFalse(result)
-
-    def test_config_no_ui_section(self):
-        """Config without 'ui' section falls back to env."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(return_value={"other": {}})
-        os.environ.pop("LOOFI_FRAMELESS", None)
-        result = self.win._get_frameless_mode_flag()
-        self.assertFalse(result)
-
-    def test_config_ui_without_frameless_key(self):
-        """Config with 'ui' section but no 'frameless_mode' key falls back to env."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(
-            return_value={"ui": {"theme": "dark"}}
-        )
-        os.environ.pop("LOOFI_FRAMELESS", None)
-        result = self.win._get_frameless_mode_flag()
-        self.assertFalse(result)
-
-    @patch.dict(os.environ, {"LOOFI_FRAMELESS": "1"})
-    def test_config_priority_over_env(self):
-        """Config file setting takes priority over environment variable."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(
-            return_value={"ui": {"frameless_mode": False}}
-        )
-        result = self.win._get_frameless_mode_flag()
-        self.assertFalse(result)
-
-    @patch.dict(os.environ, {"LOOFI_FRAMELESS": "  1  "})
-    def test_env_whitespace_stripped(self):
-        """Environment variable value is stripped before comparison."""
-        config_mod = sys.modules["utils.config_manager"]
-        config_mod.ConfigManager.load_config = MagicMock(return_value=None)
-        result = self.win._get_frameless_mode_flag()
-        self.assertTrue(result)
 
 
 class TestSetupTray(unittest.TestCase):
@@ -2341,81 +2221,6 @@ class TestFavorites(unittest.TestCase):
         self.assertLessEqual(final_count, initial_count)
 
 
-class TestNotificationBadge(unittest.TestCase):
-    """Tests for MainWindow._refresh_notif_badge()."""
-
-    def setUp(self):
-        self.win = _make_window(skip_init=True)
-
-    def test_badge_visible_with_unread(self):
-        """Badge becomes visible when there are unread notifications."""
-        nc_mod = sys.modules["utils.notification_center"]
-        mock_nc_instance = MagicMock()
-        mock_nc_instance.get_unread_count.return_value = 5
-        nc_mod.NotificationCenter = MagicMock(return_value=mock_nc_instance)
-        self.win._refresh_notif_badge()
-        self.assertTrue(self.win._notif_badge._visible)
-        self.assertEqual(self.win._notif_badge._text, "5")
-
-    def test_badge_hidden_when_zero(self):
-        """Badge is hidden when unread count is zero."""
-        nc_mod = sys.modules["utils.notification_center"]
-        mock_nc_instance = MagicMock()
-        mock_nc_instance.get_unread_count.return_value = 0
-        nc_mod.NotificationCenter = MagicMock(return_value=mock_nc_instance)
-        self.win._refresh_notif_badge()
-        self.assertFalse(self.win._notif_badge._visible)
-
-    def test_badge_caps_at_99(self):
-        """Badge text caps at 99 for large counts."""
-        nc_mod = sys.modules["utils.notification_center"]
-        mock_nc_instance = MagicMock()
-        mock_nc_instance.get_unread_count.return_value = 150
-        nc_mod.NotificationCenter = MagicMock(return_value=mock_nc_instance)
-        self.win._refresh_notif_badge()
-        self.assertEqual(self.win._notif_badge._text, "99")
-
-    def test_badge_hidden_on_exception(self):
-        """Badge is hidden when notification center raises."""
-        nc_mod = sys.modules["utils.notification_center"]
-        nc_mod.NotificationCenter = MagicMock(side_effect=RuntimeError("DB error"))
-        self.win._notif_badge._visible = True
-        self.win._refresh_notif_badge()
-        self.assertFalse(self.win._notif_badge._visible)
-
-    def test_badge_count_one(self):
-        """Badge shows '1' for single unread notification."""
-        nc_mod = sys.modules["utils.notification_center"]
-        mock_nc_instance = MagicMock()
-        mock_nc_instance.get_unread_count.return_value = 1
-        nc_mod.NotificationCenter = MagicMock(return_value=mock_nc_instance)
-        self.win._refresh_notif_badge()
-        self.assertEqual(self.win._notif_badge._text, "1")
-        self.assertTrue(self.win._notif_badge._visible)
-
-
-class TestSetupNotificationBell(unittest.TestCase):
-    """Tests for MainWindow._setup_notification_bell()."""
-
-    def setUp(self):
-        self.win = _make_window(skip_init=True)
-
-    def test_setup_creates_bell(self):
-        """_setup_notification_bell creates notification bell widgets."""
-        self.win._setup_notification_bell()
-        self.assertIsNotNone(self.win.notif_bell)
-        self.assertIsNotNone(self.win._notif_badge)
-
-    def test_setup_badge_initially_hidden(self):
-        """Notification badge is initially hidden (zero count assumed)."""
-        nc_mod = sys.modules["utils.notification_center"]
-        mock_nc_instance = MagicMock()
-        mock_nc_instance.get_unread_count.return_value = 0
-        nc_mod.NotificationCenter = MagicMock(return_value=mock_nc_instance)
-        self.win._setup_notification_bell()
-        self.assertFalse(self.win._notif_badge._visible)
-
-
 class TestBreadcrumb(unittest.TestCase):
     """Tests for breadcrumb bar updates."""
 
@@ -2593,17 +2398,35 @@ class TestCheckFirstRun(unittest.TestCase):
     def setUp(self):
         self.win = _make_window(skip_init=True)
 
-    @patch("os.path.exists", return_value=True)
-    def test_not_first_run(self, mock_exists):
+    def test_not_first_run(self):
         """_check_first_run does nothing when first_run_complete exists."""
+        wizard_mod = sys.modules["ui.wizard"]
+        wizard_mod.needs_first_run.return_value = False
+        wizard_mod.FirstRunWelcome.reset_mock()
+        self.win.apply_navigation_mode = MagicMock()
         self.win._check_first_run()
-        # Should not attempt to show wizard
+        wizard_mod.FirstRunWelcome.assert_not_called()
+        self.win.apply_navigation_mode.assert_called_once_with()
 
-    @patch("os.path.exists", return_value=False)
-    def test_first_run_shows_wizard(self, mock_exists):
+    def test_first_run_shows_welcome(self):
         """_check_first_run shows wizard on first launch."""
+        wizard_mod = sys.modules["ui.wizard"]
+        wizard_mod.needs_first_run.return_value = True
+        welcome = MagicMock(requested_route="")
+        wizard_mod.FirstRunWelcome.return_value = welcome
+        self.win.apply_navigation_mode = MagicMock()
         self.win._check_first_run()
-        # Should not raise (wizard is mocked)
+        welcome.exec.assert_called_once_with()
+        self.win.apply_navigation_mode.assert_called_once_with()
+
+    def test_system_details_uses_canonical_route(self):
+        wizard_mod = sys.modules["ui.wizard"]
+        wizard_mod.needs_first_run.return_value = True
+        wizard_mod.FirstRunWelcome.return_value = MagicMock(requested_route="system_info")
+        self.win.apply_navigation_mode = MagicMock()
+        self.win.switch_to_route = MagicMock()
+        self.win._check_first_run()
+        self.win.switch_to_route.assert_called_once_with("system_info")
 
 
 class TestSidebarContextMenu(unittest.TestCase):
@@ -2788,39 +2611,6 @@ class TestAddPluginPage(unittest.TestCase):
         cat = self.win.sidebar.topLevelItem(0)
         child = cat.child(0)
         self.assertTrue(child.isDisabled())
-
-
-class TestToggleNotificationPanel(unittest.TestCase):
-    """Tests for MainWindow._toggle_notification_panel()."""
-
-    def setUp(self):
-        self.win = _make_window(skip_init=True)
-        self.win._refresh_notif_badge = MagicMock()
-
-    def test_toggle_creates_panel_on_first_call(self):
-        """_toggle_notification_panel creates panel on first call."""
-        self.win.notif_panel = None
-        panel_mod = sys.modules["ui.notification_panel"]
-        mock_panel = MagicMock()
-        mock_panel.isVisible.return_value = False
-        mock_panel.PANEL_WIDTH = 300
-        mock_panel.EDGE_MARGIN = 8
-        mock_panel.MIN_HEIGHT = 200
-        mock_panel.MAX_HEIGHT = 500
-        mock_panel.sizeHint.return_value = MagicMock(height=MagicMock(return_value=400))
-        panel_mod.NotificationPanel = MagicMock(return_value=mock_panel)
-        self.win.width = MagicMock(return_value=1100)
-        self.win.height = MagicMock(return_value=700)
-        self.win._toggle_notification_panel()
-        self.assertIsNotNone(self.win.notif_panel)
-
-    def test_toggle_hides_visible_panel(self):
-        """_toggle_notification_panel hides panel when visible."""
-        mock_panel = MagicMock()
-        mock_panel.isVisible.return_value = True
-        self.win.notif_panel = mock_panel
-        self.win._toggle_notification_panel()
-        mock_panel.hide.assert_called_once()
 
 
 if __name__ == "__main__":

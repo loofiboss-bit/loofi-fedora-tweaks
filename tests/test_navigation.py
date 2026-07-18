@@ -106,26 +106,12 @@ class TestNavigationManifest(unittest.TestCase):
             ],
         )
 
-    def test_area_visibility_keeps_advanced_routes_searchable(self):
-        from core.navigation import (
-            HIDDEN_BY_DEFAULT_PLUGIN_IDS,
-            is_plugin_visible_for_level,
-            routes_for_palette,
-        )
+    def test_legacy_area_visibility_lists_are_removed(self):
+        import core.navigation as navigation
 
-        self.assertFalse(is_plugin_visible_for_level("ai_lab", "beginner"))
-        self.assertFalse(is_plugin_visible_for_level("agents", "beginner"))
-        palette_plugin_ids = {route.plugin_id for route in routes_for_palette()}
-        for plugin_id in HIDDEN_BY_DEFAULT_PLUGIN_IDS:
-            self.assertIn(plugin_id, palette_plugin_ids)
-
-    def test_visible_plugin_ids_match_real_plugin_ids(self):
-        from core.navigation import DEFAULT_PLUGIN_IDS, INTERMEDIATE_PLUGIN_IDS
-
-        self.assertIn("system_info", DEFAULT_PLUGIN_IDS)
-        self.assertNotIn("system-info", DEFAULT_PLUGIN_IDS)
-        self.assertIn("snapshots", INTERMEDIATE_PLUGIN_IDS)
-        self.assertNotIn("snapshot", INTERMEDIATE_PLUGIN_IDS)
+        self.assertFalse(hasattr(navigation, "DEFAULT_PLUGIN_IDS"))
+        self.assertFalse(hasattr(navigation, "INTERMEDIATE_PLUGIN_IDS"))
+        self.assertFalse(hasattr(navigation, "HIDDEN_BY_DEFAULT_PLUGIN_IDS"))
 
     @patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"})
     def test_manifest_validates_against_live_builtin_registry_and_icons(self):
@@ -148,7 +134,6 @@ class TestNavigationManifest(unittest.TestCase):
     @patch.dict(os.environ, {"QT_QPA_PLATFORM": "offscreen"})
     def test_route_plugin_trust_contract_covers_palette_quick_actions_and_metadata(self):
         from core.navigation import (
-            HIDDEN_BY_DEFAULT_PLUGIN_IDS,
             all_routes,
             routes_for_palette,
             routes_for_quick_actions,
@@ -168,8 +153,6 @@ class TestNavigationManifest(unittest.TestCase):
             self.assertEqual(palette_ids, route_ids)
             self.assertEqual(quick_action_ids, route_ids)
             self.assertTrue(loaded.issubset(plugin_ids))
-            self.assertTrue(set(HIDDEN_BY_DEFAULT_PLUGIN_IDS).issubset(plugin_ids))
-
             for plugin in PluginRegistry.instance():
                 meta = plugin.metadata()
                 self.assertIn(meta.id, plugin_ids)

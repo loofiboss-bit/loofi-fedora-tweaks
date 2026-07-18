@@ -121,6 +121,12 @@ class TestGetSet(unittest.TestCase):
             with self.assertRaises(KeyError):
                 mgr.set("nonexistent_key", 42)
 
+    def test_legacy_experience_key_is_no_longer_writable(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            mgr = _make_manager(tmpdir)
+            with self.assertRaises(KeyError):
+                mgr.set("experience_level", "advanced")
+
     def test_get_unknown_key_raises(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = _make_manager(tmpdir)
@@ -259,7 +265,8 @@ class TestStateMigration(unittest.TestCase):
             })
 
             self.assertEqual(mgr.get("theme"), "light")
-            self.assertEqual(mgr.get("experience_level"), "advanced")
+            self.assertEqual(mgr.get("navigation_mode"), "advanced")
+            self.assertNotIn("experience_level", mgr.all())
             self.assertEqual(mgr.get("state_schema_version"), STATE_SCHEMA_VERSION)
 
     def test_favorites_and_hidden_routes_migrate_from_navigation_state(self):
@@ -302,7 +309,6 @@ class TestStateMigration(unittest.TestCase):
 
             self.assertEqual(first, second)
             self.assertEqual(second["theme"], "highcontrast")
-            self.assertEqual(second["experience_level"], "advanced")
             self.assertEqual(second["navigation_mode"], "advanced")
             self.assertEqual(second["favorite_routes"], ["software:apps"])
             self.assertEqual(second["hidden_routes"], ["settings:advanced"])

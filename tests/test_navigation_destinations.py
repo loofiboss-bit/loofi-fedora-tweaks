@@ -72,9 +72,9 @@ class TestRoutePlacements(unittest.TestCase):
         routes = all_routes()
         placements = [placement_for_route(route.id) for route in routes]
 
-        self.assertEqual(len(routes), 78)
+        self.assertEqual(len(routes), 80)
         self.assertTrue(all(placement is not None for placement in placements))
-        self.assertEqual(len({placement.route_id for placement in placements}), 78)
+        self.assertEqual(len({placement.route_id for placement in placements}), 80)
         self.assertEqual(validate_destinations(), [])
 
     def test_representative_sections_match_phase_one_contract(self):
@@ -88,6 +88,8 @@ class TestRoutePlacements(unittest.TestCase):
             "security:firewall": ("network_security", "firewall"),
             "desktop:display": ("desktop", "displays"),
             "settings:behavior": ("settings", "behavior"),
+            "settings:repair": ("settings", "repair"),
+            "settings:about": ("settings", "about"),
             "development:containers": ("advanced", "development"),
             "profiles": ("advanced", "profiles"),
         }

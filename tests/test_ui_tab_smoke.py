@@ -387,14 +387,23 @@ class TestNotificationCard(unittest.TestCase):
 # FirstRunWizard (ui/wizard.py) — module-level functions too
 # ---------------------------------------------------------------------------
 class TestFirstRunWizard(unittest.TestCase):
-    """Tests for FirstRunWizard dialog."""
+    """Compatibility smoke tests for the one-page welcome dialog."""
 
-    @patch("services.hardware.hardware_profiles.detect_hardware_profile", return_value="generic")
-    def test_init(self, mock_detect):
+    @patch("ui.wizard.collect_welcome_system_summary")
+    def test_init(self, mock_summary):
+        mock_summary.return_value = MagicMock(
+            fedora_name="Fedora 44",
+            variant="Workstation",
+            package_manager="dnf",
+            deployment_mode="Traditional",
+            support_status="Supported",
+            behavior="Traditional behavior",
+            support_detail="Verified target",
+        )
         from ui.wizard import FirstRunWizard
         w = FirstRunWizard()
         self.assertIsNotNone(w)
-        self.assertEqual(w._selected_use_case, "daily")
+        self.assertEqual(w.requested_route, "")
         w.close()
 
     @patch("ui.wizard._FIRST_RUN_SENTINEL")
@@ -411,62 +420,13 @@ class TestFirstRunWizard(unittest.TestCase):
         result = needs_first_run()
         self.assertFalse(result)
 
-    @patch("builtins.open", side_effect=OSError("fail"))
-    @patch("os.makedirs")
-    def test_mark_first_run_complete_oserror(self, mock_mkdirs, mock_open):
-        from ui.wizard import _mark_first_run_complete
-        _mark_first_run_complete()  # Should handle error gracefully
-
-    @patch("builtins.open", MagicMock())
-    @patch("os.makedirs")
-    def test_mark_first_run_complete_ok(self, mock_mkdirs):
+    @patch("ui.wizard._FIRST_RUN_SENTINEL")
+    @patch("ui.wizard._CONFIG_DIR")
+    def test_mark_first_run_complete_uses_existing_sentinel(self, mock_config, mock_sentinel):
         from ui.wizard import _mark_first_run_complete
         _mark_first_run_complete()
-
-    @patch("builtins.open", side_effect=FileNotFoundError)
-    def test_detect_cpu_model_no_file(self, mock_open):
-        from ui.wizard import _detect_cpu_model
-        result = _detect_cpu_model()
-        self.assertIsInstance(result, str)
-
-    @patch("builtins.open", MagicMock(
-        return_value=MagicMock(
-            __enter__=MagicMock(return_value=MagicMock(
-                read=MagicMock(return_value="model name : Intel Core i7-1234\nprocessor : 0\n")
-            )),
-            __exit__=MagicMock(return_value=False)
-        )
-    ))
-    def test_detect_cpu_model_found(self):
-        from ui.wizard import _detect_cpu_model
-        result = _detect_cpu_model()
-        self.assertIsInstance(result, str)
-
-    @patch("subprocess.check_output", return_value="NVIDIA Corporation")
-    def test_detect_gpu_vendor_nvidia(self, mock_co):
-        from ui.wizard import _detect_gpu_vendor
-        result = _detect_gpu_vendor()
-        self.assertIsInstance(result, str)
-
-    @patch("subprocess.check_output", side_effect=Exception("no lspci"))
-    def test_detect_gpu_vendor_error(self, mock_co):
-        from ui.wizard import _detect_gpu_vendor
-        result = _detect_gpu_vendor()
-        self.assertIsInstance(result, str)
-
-    @patch("os.path.exists", return_value=True)
-    def test_has_battery_true(self, mock_exists):
-        from ui.wizard import _has_battery
-        result = _has_battery()
-        # may depend on implementation — just verify no crash
-        self.assertIsInstance(result, bool)
-
-    @patch("os.path.exists", return_value=False)
-    @patch("os.listdir", return_value=[])
-    def test_has_battery_false(self, mock_listdir, mock_exists):
-        from ui.wizard import _has_battery
-        result = _has_battery()
-        self.assertIsInstance(result, bool)
+        mock_config.mkdir.assert_called_once_with(parents=True, exist_ok=True)
+        mock_sentinel.touch.assert_called_once_with()
 
 
 # ---------------------------------------------------------------------------

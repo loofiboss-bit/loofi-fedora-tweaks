@@ -8,9 +8,7 @@ route manifest as the canonical navigation contract.
 from __future__ import annotations
 
 from dataclasses import dataclass
-from typing import Iterable, Literal
-
-ExperienceLevelName = Literal["beginner", "intermediate", "advanced"]
+from typing import Iterable
 
 
 @dataclass(frozen=True)
@@ -103,45 +101,6 @@ _AREA_BY_PLUGIN = {
     for plugin_id in area.plugin_ids
 }
 
-# Keep the everyday view focused. Compatibility routes are resolved through the
-# route manifest and are not represented as plugin rows.
-DEFAULT_PLUGIN_IDS: tuple[str, ...] = (
-    "atlas_dashboard",
-    "software",
-    "maintenance",
-    "system_info",
-    "monitor",
-    "hardware",
-    "storage",
-    "health",
-    "diagnostics",
-    "network",
-    "security",
-    "backup",
-    "desktop",
-    "settings",
-)
-
-INTERMEDIATE_PLUGIN_IDS: tuple[str, ...] = DEFAULT_PLUGIN_IDS + (
-    "snapshots",
-    "virtualization",
-    "performance",
-    "gaming",
-    "profiles",
-    "extensions",
-    "development",
-)
-
-HIDDEN_BY_DEFAULT_PLUGIN_IDS: tuple[str, ...] = (
-    "community",
-    "logs",
-    "mesh",
-    "ai_lab",
-    "agents",
-    "automation",
-    "teleport",
-)
-
 
 def all_areas() -> tuple[NavigationArea, ...]:
     """Return every focused navigation area in display order."""
@@ -163,39 +122,6 @@ def area_for_plugin(plugin_id: str) -> NavigationArea | None:
     return _AREA_BY_PLUGIN.get(str(plugin_id))
 
 
-def plugin_ids_for_level(level: str) -> tuple[str, ...]:
-    """Return plugin IDs visible in the sidebar for an experience level."""
-    normalized = str(level or "beginner").lower()
-    if normalized == "advanced":
-        return ()
-    if normalized == "intermediate":
-        return INTERMEDIATE_PLUGIN_IDS
-    return DEFAULT_PLUGIN_IDS
-
-
-def is_plugin_visible_for_level(
-    plugin_id: str,
-    level: str,
-    favorites: Iterable[str] | None = None,
-) -> bool:
-    """Return whether a plugin should get a visible sidebar row."""
-    plugin_id = str(plugin_id)
-    if favorites and plugin_id in {str(item) for item in favorites}:
-        return True
-    normalized = str(level or "beginner").lower()
-    if normalized == "advanced":
-        return True
-    return plugin_id in plugin_ids_for_level(normalized)
-
-
-def sidebar_areas_for_level(level: str) -> tuple[NavigationArea, ...]:
-    """Return areas that can be visible for a level before empty-area pruning."""
-    normalized = str(level or "beginner").lower()
-    if normalized == "advanced":
-        return _AREAS
-    return default_areas()
-
-
 def validate_areas(plugin_ids: Iterable[str]) -> list[str]:
     """Return consistency errors for area/plugin drift."""
     errors: list[str] = []
@@ -215,9 +141,5 @@ def validate_areas(plugin_ids: Iterable[str]) -> list[str]:
     for plugin_id in mapped_plugins:
         if plugin_id not in known:
             errors.append(f"area references unknown plugin {plugin_id}")
-
-    for plugin_id in DEFAULT_PLUGIN_IDS + INTERMEDIATE_PLUGIN_IDS + HIDDEN_BY_DEFAULT_PLUGIN_IDS:
-        if plugin_id not in known:
-            errors.append(f"visibility list references unknown plugin {plugin_id}")
 
     return errors

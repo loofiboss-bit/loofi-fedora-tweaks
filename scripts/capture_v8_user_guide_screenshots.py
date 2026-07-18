@@ -73,7 +73,7 @@ def _screenshot_home() -> Iterator[None]:
                 "{\n"
                 '  "theme": "dark",\n'
                 '  "follow_system_theme": false,\n'
-                '  "experience_level": "beginner",\n'
+                '  "navigation_mode": "standard",\n'
                 '  "restore_last_tab": false,\n'
                 '  "last_tab_index": 0\n'
                 "}\n"

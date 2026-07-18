@@ -2,14 +2,16 @@
 Settings Tab - User-facing preferences UI.
 Part of v13.5 "UX Polish" update.
 
-Three sub-tabs inside an internal QTabWidget:
-  Appearance  - theme selector, follow-system toggle
-  Behavior    - startup, notifications, confirm-dangerous
-  Advanced    - reset-to-defaults, log-level
+Five stable subroutes inside an internal QTabWidget:
+  Appearance, Behavior, Advanced Tools, Repair Loofi, and About.
 """
 
+import platform
+
+from core.navigation.models import NavigationMode
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -28,12 +30,13 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from utils.settings import SettingsManager
+from version import __app_name__, __version__, __version_codename__
 
 from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
 
 
 class SettingsTab(QWidget, PluginInterface):
-    """Application settings tab with Appearance / Behavior / Advanced sub-tabs."""
+    """Application settings, local state repair, and build information."""
 
     _METADATA = PluginMetadata(
         id="settings",
@@ -64,6 +67,7 @@ class SettingsTab(QWidget, PluginInterface):
         self._main_window = context.get("main_window")
         if not self._ui_initialized:
             self._init_ui()
+        self._update_component_status()
 
     # ------------------------------------------------------------------ UI --
 
@@ -101,14 +105,31 @@ class SettingsTab(QWidget, PluginInterface):
         configure_top_tabs(tabs)
         tabs.addTab(self._build_appearance_tab(), self.tr("Appearance"))
         tabs.addTab(self._build_behavior_tab(), self.tr("Behavior"))
-        tabs.addTab(self._build_advanced_tab(), self.tr("Advanced"))
-        tabs.addTab(self._build_state_tab(), self.tr("State & Recovery"))
+        tabs.addTab(self._build_advanced_tab(), self.tr("Advanced Tools"))
+        tabs.addTab(self._build_state_tab(), self.tr("Repair Loofi"))
+        tabs.addTab(self._build_about_tab(), self.tr("About"))
         self.settings_tabs = tabs
         layout.addWidget(tabs)
 
         layout.addStretch()
         scroll.setWidget(container)
         outer.addWidget(scroll)
+
+    def activate_route(self, route) -> bool:
+        """Activate stable settings subroutes without relying on translated labels."""
+        route_to_index = {
+            "settings": 0,
+            "settings:appearance": 0,
+            "settings:behavior": 1,
+            "settings:advanced": 2,
+            "settings:repair": 3,
+            "settings:about": 4,
+        }
+        index = route_to_index.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.settings_tabs.setCurrentIndex(index)
+        return True
 
     # --------------------------------------------------------- Appearance --
 
@@ -155,22 +176,6 @@ class SettingsTab(QWidget, PluginInterface):
         page = QWidget()
         form = QFormLayout(page)
         form.setSpacing(12)
-
-        # Experience Level selector (v47.0)
-        from utils.experience_level import ExperienceLevelManager
-        self.experience_combo = QComboBox()
-        self.experience_combo.setAccessibleName(self.tr("Experience level"))
-        self.experience_combo.addItems(["Beginner", "Intermediate", "Advanced"])
-        current_level = ExperienceLevelManager.get_level()
-        level_index = {"beginner": 0, "intermediate": 1, "advanced": 2}
-        self.experience_combo.setCurrentIndex(level_index.get(current_level.value, 0))
-        self.experience_combo.currentIndexChanged.connect(self._on_experience_level_changed)
-        form.addRow(self.tr("Experience Level:"), self.experience_combo)
-
-        self._experience_desc = QLabel(self._experience_description(current_level))
-        self._experience_desc.setWordWrap(True)
-        self._experience_desc.setObjectName("settingsHelpText")
-        form.addRow("", self._experience_desc)
 
         self.start_minimized_cb = QCheckBox(self.tr("Start minimized to tray"))
         self.start_minimized_cb.setAccessibleName(self.tr("Start minimized to tray"))
@@ -229,6 +234,30 @@ class SettingsTab(QWidget, PluginInterface):
         help_label.setObjectName("settingsHelpText")
         layout.addWidget(help_label)
 
+        mode_group = QGroupBox(self.tr("Advanced Tools"))
+        mode_form = QFormLayout(mode_group)
+        from utils.navigation_mode import NavigationModeManager
+
+        self.mode_combo = QComboBox()
+        self.mode_combo.setAccessibleName(self.tr("Navigation mode"))
+        self.mode_combo.addItems([self.tr("Standard"), self.tr("Advanced")])
+        current_mode = NavigationModeManager.get_mode()
+        self.mode_combo.setCurrentIndex(1 if current_mode is NavigationMode.ADVANCED else 0)
+        self.mode_combo.currentIndexChanged.connect(self._on_navigation_mode_changed)
+        mode_form.addRow(self.tr("Mode:"), self.mode_combo)
+
+        self._mode_desc = QLabel(self._mode_description(current_mode))
+        self._mode_desc.setWordWrap(True)
+        self._mode_desc.setObjectName("settingsHelpText")
+        mode_form.addRow("", self._mode_desc)
+
+        self._component_status = QLabel()
+        self._component_status.setWordWrap(True)
+        self._component_status.setObjectName("settingsHelpText")
+        mode_form.addRow(self.tr("Components:"), self._component_status)
+        self._update_component_status()
+        layout.addWidget(mode_group)
+
         # Log level
         log_group = QGroupBox(self.tr("Logging"))
         log_form = QFormLayout(log_group)
@@ -263,11 +292,11 @@ class SettingsTab(QWidget, PluginInterface):
         return page
 
     def _build_state_tab(self) -> QWidget:
-        """State Doctor and safe backup live inside Settings, not the sidebar."""
+        """Repair Loofi presentation over the unchanged v14 state services."""
         page = QWidget()
         layout = QVBoxLayout(page)
         intro = QLabel(self.tr(
-            "State Doctor checks Loofi's local files, schemas, locks, permissions, and collector freshness. "
+            "Repair Loofi checks local files, schemas, locks, permissions, and collector freshness. "
             "The check is read-only. This page repairs and archives Loofi application state only; "
             "it does not create system recovery points, personal-file backups, rollback deployments, "
             "or support bundles. State backups exclude credentials, raw logs, plugin code, and caches."
@@ -276,10 +305,10 @@ class SettingsTab(QWidget, PluginInterface):
         layout.addWidget(intro)
         self.state_status = QTextEdit()
         self.state_status.setReadOnly(True)
-        self.state_status.setAccessibleName(self.tr("State Doctor results"))
-        self.state_status.setPlainText(self.tr("Select Run State Doctor to inspect local state."))
+        self.state_status.setAccessibleName(self.tr("Repair Loofi results"))
+        self.state_status.setPlainText(self.tr("Select Inspect Loofi State to run the read-only check."))
         layout.addWidget(self.state_status)
-        doctor_button = QPushButton(self.tr("Run State Doctor"))
+        doctor_button = QPushButton(self.tr("Inspect Loofi State"))
         doctor_button.clicked.connect(self._run_state_doctor)
         layout.addWidget(doctor_button)
         backup_button = QPushButton(self.tr("Create Privacy-Safe Backup…"))
@@ -288,6 +317,42 @@ class SettingsTab(QWidget, PluginInterface):
         restore_button = QPushButton(self.tr("Preview State Restore…"))
         restore_button.clicked.connect(self._preview_state_restore)
         layout.addWidget(restore_button)
+        layout.addStretch()
+        return page
+
+    def _build_about_tab(self) -> QWidget:
+        """Build static version, runtime, and support information."""
+        page = QWidget()
+        layout = QVBoxLayout(page)
+        layout.setSpacing(12)
+
+        intro = QLabel(self.tr("About Loofi Fedora Tweaks"))
+        intro.setObjectName("settingsHeader")
+        layout.addWidget(intro)
+
+        form = QFormLayout()
+        form.addRow(self.tr("Application:"), QLabel(__app_name__))
+        form.addRow(self.tr("Version:"), QLabel(__version__))
+        form.addRow(self.tr("Build identity:"), QLabel(__version_codename__))
+        form.addRow(self.tr("Python:"), QLabel(platform.python_version()))
+        form.addRow(self.tr("Qt:"), QLabel(QT_VERSION_STR))
+        form.addRow(self.tr("PyQt:"), QLabel(PYQT_VERSION_STR))
+        layout.addLayout(form)
+
+        support = QLabel(self.tr(
+            "Fedora 44 is the supported target. Fedora 45 remains preview/advisory and capability-aware."
+        ))
+        support.setObjectName("settingsHelpText")
+        support.setWordWrap(True)
+        layout.addWidget(support)
+
+        links = QLabel(
+            '<a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/wiki">Documentation</a>'
+            ' · <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues">Support and issues</a>'
+        )
+        links.setAccessibleName(self.tr("Documentation and support links"))
+        links.setOpenExternalLinks(True)
+        layout.addWidget(links)
         layout.addStretch()
         return page
 
@@ -336,31 +401,44 @@ class SettingsTab(QWidget, PluginInterface):
 
     # ------------------------------------------------------------ Slots --
 
-    def _experience_description(self, level) -> str:
-        """Return a user-friendly description for the experience level."""
-        from utils.experience_level import ExperienceLevel
+    def _mode_description(self, mode: NavigationMode) -> str:
+        """Return a concise description for the canonical navigation mode."""
         descriptions = {
-            ExperienceLevel.BEGINNER: self.tr(
-                "Simplified view with essential tools — ideal for new Fedora users."
+            NavigationMode.STANDARD: self.tr(
+                "Standard keeps normal Fedora maintenance focused on the six core destinations."
             ),
-            ExperienceLevel.INTERMEDIATE: self.tr(
-                "Core tools plus development and customization options."
-            ),
-            ExperienceLevel.ADVANCED: self.tr(
-                "Full access to all tabs and features."
+            NavigationMode.ADVANCED: self.tr(
+                "Advanced adds specialist routes without changing confirmations or safety rules."
             ),
         }
-        return descriptions.get(level, "")
+        return str(descriptions.get(mode, ""))
 
-    def _on_experience_level_changed(self, index: int):
-        """Handle experience level combo box change."""
-        from utils.experience_level import ExperienceLevel, ExperienceLevelManager
-        level_map = {0: ExperienceLevel.BEGINNER, 1: ExperienceLevel.INTERMEDIATE, 2: ExperienceLevel.ADVANCED}
-        level = level_map.get(index, ExperienceLevel.BEGINNER)
-        ExperienceLevelManager.set_level(level)
-        self._experience_desc.setText(self._experience_description(level))
-        if self._main_window and hasattr(self._main_window, "apply_experience_level"):
-            self._main_window.apply_experience_level(level)
+    def _on_navigation_mode_changed(self, index: int):
+        """Persist and immediately apply Standard or Advanced mode."""
+        from utils.navigation_mode import NavigationModeManager
+
+        mode = NavigationMode.ADVANCED if index == 1 else NavigationMode.STANDARD
+        NavigationModeManager.set_mode(mode)
+        self._mode_desc.setText(self._mode_description(mode))
+        if self._main_window and hasattr(self._main_window, "apply_navigation_mode"):
+            self._main_window.apply_navigation_mode(mode)
+
+    def _update_component_status(self) -> None:
+        """Explain logical component availability without installing anything."""
+        label = getattr(self, "_component_status", None)
+        if label is None:
+            return
+        context = getattr(self._main_window, "_navigation_context", None)
+        installed = getattr(context, "installed_components", frozenset({"core", "specialist"}))
+        if "specialist" in installed:
+            text = self.tr(
+                "Core and specialist tools are included in this build. Changing mode never installs packages."
+            )
+        else:
+            text = self.tr(
+                "This build does not include specialist tools. Your distribution may provide them as an optional component."
+            )
+        label.setText(text)
 
     def _on_theme_changed(self, theme_name: str):
         self._mgr.set("theme", theme_name)
@@ -406,6 +484,7 @@ class SettingsTab(QWidget, PluginInterface):
         self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
         self.log_combo.setCurrentText(self._mgr.get("log_level"))
         self.updates_cb.setChecked(self._mgr.get("check_updates_on_start"))
+        self._sync_mode_controls()
 
         if self._main_window and hasattr(self._main_window, "load_theme"):
             self._main_window.load_theme(self._mgr.get("theme"))
@@ -430,3 +509,11 @@ class SettingsTab(QWidget, PluginInterface):
         self.notifications_cb.setChecked(self._mgr.get("show_notifications"))
         self.confirm_cb.setChecked(self._mgr.get("confirm_dangerous_actions"))
         self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
+
+    def _sync_mode_controls(self) -> None:
+        """Refresh mode widgets after a settings reset."""
+        from utils.navigation_mode import NavigationModeManager
+
+        mode = NavigationModeManager.get_mode()
+        self.mode_combo.setCurrentIndex(1 if mode is NavigationMode.ADVANCED else 0)
+        self._mode_desc.setText(self._mode_description(mode))
