@@ -8,7 +8,7 @@ Next/Skip buttons.
 """
 
 from PyQt6.QtCore import QPoint, QRect, Qt, pyqtSignal
-from PyQt6.QtGui import QColor, QPainter, QRegion
+from PyQt6.QtGui import QPainter, QRegion
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QLabel,
@@ -17,6 +17,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from utils.guided_tour import GuidedTourManager, TourStep
+from ui.design import semantic_qcolor
 
 
 class TourOverlay(QWidget):
@@ -165,7 +166,7 @@ class TourOverlay(QWidget):
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
         # Semi-transparent background
-        overlay_color = QColor(0, 0, 0, 160)
+        overlay_color = semantic_qcolor("window", alpha=160)
 
         if self._target_rect.isValid():
             # Create region with cutout
@@ -178,7 +179,7 @@ class TourOverlay(QWidget):
         if self._target_rect.isValid():
             painter.setClipping(False)
             # Draw highlight border around target
-            painter.setPen(QColor("#39c5cf"))
+            painter.setPen(semantic_qcolor("focus"))
             painter.drawRoundedRect(
                 self._target_rect.adjusted(-4, -4, 4, 4), 4, 4
             )

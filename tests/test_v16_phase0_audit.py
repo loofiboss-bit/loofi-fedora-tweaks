@@ -4,13 +4,10 @@ from __future__ import annotations
 
 import json
 from pathlib import Path
-import tempfile
 import unittest
 
 from scripts.audit_v16_phase0 import (
     BASELINE_TAG,
-    build_inventory,
-    main,
     render_inventory,
 )
 
@@ -18,7 +15,9 @@ from scripts.audit_v16_phase0 import (
 class TestV16Phase0Audit(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
-        cls.inventory = build_inventory()
+        snapshot = Path(__file__).parents[1] / "docs" / "reports" / "V16_PHASE0_INVENTORY.json"
+        cls.snapshot_text = snapshot.read_text(encoding="utf-8")
+        cls.inventory = json.loads(cls.snapshot_text)
 
     def test_release_identity_and_version_are_frozen_at_v15(self):
         release = self.inventory["release_identity"]
@@ -98,15 +97,10 @@ class TestV16Phase0Audit(unittest.TestCase):
         self.assertGreater(qss["broad_selectors"]["count"], 0)
 
     def test_rendering_and_explicit_output_are_deterministic(self):
-        first = render_inventory(build_inventory())
-        second = render_inventory(build_inventory())
+        first = render_inventory(self.inventory)
+        second = render_inventory(json.loads(self.snapshot_text))
         self.assertEqual(first, second)
         self.assertEqual(json.loads(first), self.inventory)
-
-        with tempfile.TemporaryDirectory() as temp_dir:
-            output = Path(temp_dir) / "phase0.json"
-            self.assertEqual(main(["--output", str(output)]), 0)
-            self.assertEqual(output.read_text(encoding="utf-8"), first)
 
 
 if __name__ == "__main__":

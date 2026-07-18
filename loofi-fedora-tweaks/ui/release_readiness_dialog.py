@@ -58,12 +58,12 @@ class ReadinessWorker(QObject):
 class ReleaseReadinessDialog(QDialog):
     """Dashboard-launched detail view for release readiness."""
 
-    _STATUS_COLORS = {
-        "pass": "#2f855a",
-        "info": "#2563eb",
-        "warning": "#b45309",
-        "error": "#b91c1c",
-        "critical": "#991b1b",
+    _STATUS_ROLES = {
+        "pass": "success",
+        "info": "accent",
+        "warning": "warning",
+        "error": "error",
+        "critical": "error",
     }
 
     _CATEGORY_LABELS = {
@@ -303,7 +303,8 @@ class ReleaseReadinessDialog(QDialog):
 
         mode = self.tr("MANUAL") if candidate.manual_only else self.tr("CONFIRM")
         badge = QLabel(f"{candidate.risk_level.upper()} / {mode}")
-        badge.setStyleSheet("color: #2563eb; border: 1px solid #2563eb; border-radius: 4px; font-size: 10px; font-weight: bold; padding: 2px 5px;")
+        badge.setObjectName("readinessBadge")
+        badge.setProperty("severity", candidate.risk_level if candidate.risk_level in {"low", "medium", "high"} else "info")
         top.addWidget(badge)
         layout.addLayout(top)
 
@@ -321,14 +322,14 @@ class ReleaseReadinessDialog(QDialog):
             facts.append(self.tr("Verification: %1").replace("%1", " ".join(candidate.verification_command)))
         details = QLabel("\n".join(facts))
         details.setWordWrap(True)
-        details.setStyleSheet("color: #cbd5e1;")
+        details.setObjectName("readinessMuted")
         layout.addWidget(details)
 
         if candidate.command_preview:
             cmd = QLabel("<code>" + " ".join(candidate.command_preview) + "</code>")
             cmd.setWordWrap(True)
             cmd.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            cmd.setStyleSheet("background: #111827; color: #f8fafc; padding: 5px; border-radius: 4px; font-family: monospace;")
+            cmd.setObjectName("readinessCommand")
             layout.addWidget(cmd)
 
         if candidate.docs_link:
@@ -348,7 +349,7 @@ class ReleaseReadinessDialog(QDialog):
             actions.addWidget(run)
         else:
             manual = QLabel(self.tr("Manual only"))
-            manual.setStyleSheet("color: #9ca3af;")
+            manual.setObjectName("readinessMuted")
             actions.addWidget(manual)
         layout.addLayout(actions)
         return frame
@@ -406,11 +407,8 @@ class ReleaseReadinessDialog(QDialog):
         top.addWidget(title, 1)
 
         badge = QLabel(check.status.upper())
-        color = self._STATUS_COLORS.get(check.severity, "#475569")
-        badge.setStyleSheet(
-            f"color: {color}; border: 1px solid {color}; border-radius: 4px; "
-            "font-size: 10px; font-weight: bold; padding: 2px 5px;"
-        )
+        badge.setObjectName("readinessBadge")
+        badge.setProperty("severity", self._STATUS_ROLES.get(check.severity, "text_muted"))
         top.addWidget(badge)
         layout.addLayout(top)
 
@@ -420,7 +418,7 @@ class ReleaseReadinessDialog(QDialog):
 
         guidance = QLabel(check.beginner_guidance)
         guidance.setWordWrap(True)
-        guidance.setStyleSheet("color: #9ca3af;")
+        guidance.setObjectName("readinessMuted")
         layout.addWidget(guidance)
 
         if check.recommendation:
@@ -439,7 +437,7 @@ class ReleaseReadinessDialog(QDialog):
             cmd = QLabel("<code>" + " ".join(check.command_preview) + "</code>")
             cmd.setWordWrap(True)
             cmd.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            cmd.setStyleSheet("background: #111827; color: #f8fafc; padding: 5px; border-radius: 4px; font-family: monospace;")
+            cmd.setObjectName("readinessCommand")
             layout.addWidget(cmd)
         if check.recommendation:
             action = check.recommendation
@@ -454,13 +452,13 @@ class ReleaseReadinessDialog(QDialog):
             action_label = QLabel("\n".join(details))
             action_label.setWordWrap(True)
             action_label.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            action_label.setStyleSheet("font-family: monospace; font-size: 11px; color: #cbd5e1;")
+            action_label.setObjectName("readinessCode")
             layout.addWidget(action_label)
         if check.advanced_detail:
             detail = QLabel(check.advanced_detail)
             detail.setWordWrap(True)
             detail.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
-            detail.setStyleSheet("font-family: monospace; font-size: 11px; color: #cbd5e1;")
+            detail.setObjectName("readinessCode")
             layout.addWidget(detail)
 
     def copy_support_summary(self) -> None:

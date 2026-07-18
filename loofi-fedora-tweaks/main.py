@@ -84,14 +84,8 @@ def _startup_theme_name() -> str:
 
 
 def _theme_file_for(name: str) -> str | None:
-    """Return the QSS filename for a theme name."""
-    if name == "system":
-        return None
-    return {
-        "dark": "modern.qss",
-        "light": "light.qss",
-        "highcontrast": "highcontrast.qss",
-    }.get(name, "modern.qss")
+    """Return the shared structural QSS filename for GUI theme startup."""
+    return "base.qss"
 
 
 def main():
@@ -198,18 +192,11 @@ def main():
             elif translator.load(f"loofi_{locale.split('_')[0]}", translations_path):
                 app.installTranslator(translator)
 
-            # Load QSS Stylesheet from saved/system preference.
+            # Always load structural styling; ThemeManager only changes palette tokens.
             theme_name = _startup_theme_name()
-            theme_file = _theme_file_for(theme_name)
-            if theme_file is not None:
-                style_file = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    "assets",
-                    theme_file,
-                )
-                if os.path.exists(style_file):
-                    with open(style_file, "r") as f:
-                        app.setStyleSheet(f.read())
+            from ui.design import ThemeManager
+
+            ThemeManager().apply(app, theme_name)
 
             window = MainWindow()
             window.show()

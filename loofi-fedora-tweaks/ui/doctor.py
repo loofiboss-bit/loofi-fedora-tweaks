@@ -12,7 +12,7 @@ for i18n readiness.
 
 from services.system.system import cached_which
 
-from PyQt6.QtGui import QColor, QIcon
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QDialog,
     QHBoxLayout,
@@ -26,6 +26,7 @@ from PyQt6.QtWidgets import (
 from services.system import SystemManager
 from utils.command_runner import CommandRunner
 from utils.commands import PrivilegedCommand
+from ui.design import semantic_qcolor
 
 
 class DependencyDoctor(QDialog):
@@ -99,10 +100,10 @@ class DependencyDoctor(QDialog):
 
             if path:
                 item.setIcon(QIcon.fromTheme("emblem-default"))
-                item.setForeground(QColor("#3dd68c"))
+                item.setForeground(semantic_qcolor("success"))
             else:
                 item.setIcon(QIcon.fromTheme("emblem-important"))
-                item.setForeground(QColor("#e8556d"))
+                item.setForeground(semantic_qcolor("error"))
                 self.missing_tools.append(tool)
 
             self.tool_list.addItem(item)

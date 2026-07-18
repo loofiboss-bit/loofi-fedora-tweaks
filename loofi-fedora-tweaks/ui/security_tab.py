@@ -14,7 +14,6 @@ Features:
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -42,6 +41,7 @@ from services.security import SandboxManager
 from services.security import USBGuardManager
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_qcolor
 from ui.tab_utils import CONTENT_MARGINS
 
 
@@ -401,7 +401,7 @@ class SecurityTab(QWidget, PluginInterface):
 
             status_item = QTableWidgetItem(self.tr("Risk") if port.is_risky else self.tr("OK"))
             if port.is_risky:
-                status_item.setForeground(QColor("#e8556d"))
+                status_item.setForeground(semantic_qcolor("error"))
             self.port_table.setItem(row, 4, status_item)
 
         normalize = getattr(BaseTab, "ensure_table_row_heights", None)

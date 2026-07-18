@@ -11,7 +11,6 @@ from services.system.system import cached_which
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFrame,
     QGroupBox,
@@ -32,6 +31,7 @@ from utils.command_runner import CommandRunner
 from utils.commands import PrivilegedCommand
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_qcolor
 from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
 from ui.tab_utils import configure_top_tabs
 from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
@@ -619,7 +619,7 @@ class _OverlaysSubTab(QWidget):
                 self.packages_list.addItem(item)
         else:
             item = QListWidgetItem(self.tr("No layered packages (clean base image)"))
-            item.setForeground(QColor("#9da7bf"))
+            item.setForeground(semantic_qcolor("text_muted"))
             self.packages_list.addItem(item)
 
         # Check for pending reboot

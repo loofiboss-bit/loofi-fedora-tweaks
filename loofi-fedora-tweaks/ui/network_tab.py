@@ -14,7 +14,6 @@ import os
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QComboBox,
     QGroupBox,
@@ -33,6 +32,7 @@ from services.network import NetworkMonitor, NetworkUtils
 from utils.history import HistoryManager
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_qcolor
 from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
 from ui.tooltips import DIAG_NETWORK
 
@@ -469,7 +469,7 @@ class NetworkTab(BaseTab):
         """Create a table item with explicit readable foreground color."""
         item = QTableWidgetItem(str(text))
         item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        item.setForeground(QColor("#e4e8f4"))
+        item.setForeground(semantic_qcolor("text"))
         return item
 
     def _set_empty_table_state(self, table: QTableWidget, message: str):

@@ -29,6 +29,7 @@ from utils.auto_tuner import (
 from utils.log import get_logger
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_color
 
 logger = get_logger(__name__)
 
@@ -284,5 +285,5 @@ class PerformanceTab(BaseTab):
             self.set_table_empty_state(
                 self.history_table,
                 self.tr("Failed to load tuning history"),
-                color="#e8556d",
+                color=semantic_color("error"),
             )

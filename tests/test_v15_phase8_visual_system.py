@@ -138,21 +138,16 @@ class TestQssContracts(unittest.TestCase):
             with self.subTest(task=task.id):
                 self.assertIsNotNone(resolve_icon_path(task.icon_id))
 
-    def test_themes_use_system_font_and_drop_deleted_quick_actions(self):
+    def test_structural_theme_uses_system_font_and_real_sidebar_type(self):
         root = Path(__file__).parents[1] / "loofi-fedora-tweaks" / "assets"
-
-        for name in ("modern.qss", "light.qss", "highcontrast.qss"):
-            with self.subTest(theme=name):
-                text = (root / name).read_text()
-                global_widget_rule = text.split("QWidget {", 1)[1].split("}", 1)[0]
-                self.assertNotIn("font-family:", global_widget_rule)
-                self.assertNotIn("quickActionButton", text)
-                self.assertNotIn("quickActionsList", text)
-                self.assertEqual(text.count("QTreeWidget#sidebar {"), 1)
-                self.assertEqual(text.count("QTreeWidget#sidebar::item {"), 1)
-                self.assertIn("QListWidget#destinationSidebar", text)
-                self.assertIn('QFrame[routeCard="true"]:focus', text)
-                self.assertIn("QFrame#resultBanner", text)
+        text = (root / "base.qss").read_text()
+        global_widget_rule = text.split("QWidget {", 1)[1].split("}", 1)[0]
+        self.assertNotIn("font-family:", global_widget_rule)
+        self.assertNotIn("font-size:", global_widget_rule)
+        self.assertNotIn("QListWidget#destinationSidebar", text)
+        self.assertIn("QTreeWidget#destinationSidebar", text)
+        self.assertIn('QFrame[routeCard="true"]:focus', text)
+        self.assertIn("QFrame#resultBanner", text)
 
     def test_ui_labels_do_not_embed_ordinary_emoji(self):
         ui_root = Path(__file__).parents[1] / "loofi-fedora-tweaks" / "ui"

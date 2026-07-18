@@ -37,7 +37,7 @@ control center without changing trusted system-operation behavior.
 | Phase | Status | Deliverable |
 | --- | --- | --- |
 | 0 — Baseline and scope lock | DONE | Exact v15 evidence, canonical authority, inventories, screenshot matrix |
-| 1 — Theme engine and tokens | PENDING | Structural QSS plus semantic palettes |
+| 1 — Theme engine and tokens | DONE | [Structural QSS plus semantic palettes](docs/reports/V16_PHASE1_THEME_ENGINE.md) |
 | 2 — Shared components | PENDING | Accessible reusable page and control primitives |
 | 3 — Application shell | PENDING | Responsive section navigation and sidebar behavior |
 | 4 — Home and System | PENDING | Priority destination redesigns |

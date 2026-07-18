@@ -8,7 +8,6 @@ and log export. Uses SmartLogViewer from utils/smart_logs.py.
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import QTimer
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -28,6 +27,7 @@ from utils.log import get_logger
 from utils.smart_logs import SmartLogViewer
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_color, semantic_qcolor
 
 logger = get_logger(__name__)
 
@@ -295,7 +295,7 @@ class LogsTab(BaseTab):
             self.set_table_empty_state(
                 self.pattern_table,
                 self.tr("Failed to load log summary"),
-                color="#e8556d",
+                color=semantic_color("error"),
             )
             self.append_output(f"Error loading summary: {exc}\n")
 
@@ -330,14 +330,14 @@ class LogsTab(BaseTab):
 
                 prio_item = self.make_table_item(entry.priority_label)
                 if entry.priority <= 2:
-                    prio_item.setForeground(QColor("#e8556d"))
+                    prio_item.setForeground(semantic_qcolor("error"))
                 elif entry.priority <= 4:
-                    prio_item.setForeground(QColor("#e89840"))
+                    prio_item.setForeground(semantic_qcolor("warning"))
                 self.log_table.setItem(row, 2, prio_item)
 
                 msg_item = self.make_table_item(entry.message[:200])
                 if entry.pattern_match:
-                    msg_item.setForeground(QColor("#e8556d"))
+                    msg_item.setForeground(semantic_qcolor("error"))
                     msg_item.setToolTip(f"Pattern: {entry.pattern_match}")
                 self.log_table.setItem(row, 3, msg_item)
             normalize = getattr(BaseTab, "ensure_table_row_heights", None)
@@ -347,7 +347,9 @@ class LogsTab(BaseTab):
             self.append_output(f"Fetched {len(entries)} log entries\n")
         except (RuntimeError, OSError, ValueError) as exc:
             self.set_table_empty_state(
-                self.log_table, self.tr("Failed to fetch logs"), color="#e8556d"
+                self.log_table,
+                self.tr("Failed to fetch logs"),
+                color=semantic_color("error"),
             )
             self.append_output(f"Error fetching logs: {exc}\n")
 

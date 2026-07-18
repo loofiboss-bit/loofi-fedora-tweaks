@@ -36,6 +36,7 @@ loofi-fedora-tweaks/
 ├── services/               # Domain services; no PyQt imports
 ├── utils/                  # Shared infrastructure and compatibility shims
 ├── ui/                     # PyQt6 widgets and presentation only
+│   └── design/             # Semantic palettes, stable geometry, QSS rendering
 ├── cli/                    # CLI argument parsing and service calls
 ├── daemon/                 # D-Bus runtime
 └── api/                    # Read-only HTTP routes
@@ -212,8 +213,15 @@ restarts services.
   activation, visible focus, accessible name, and accessible description.
 - Standard workflows reuse shared loading, empty, unavailable, result, progress,
   and details components without replacing domain state machines.
-- New profiles follow the Qt/KDE system palette and font. Explicit dark, light,
-  and high-contrast QSS remain user choices.
+- `ui/design/tokens.py` owns stable spacing, geometry, and typography roles.
+  Themes may change semantic colors but never component geometry or hierarchy.
+- `ui/design/theme_manager.py` maps system, dark, light, and high-contrast
+  palettes onto one structural `assets/base.qss` source. System mode derives
+  colors from `QPalette` while retaining named component selectors and the
+  Qt/KDE system font.
+- Runtime UI code consumes semantic color roles. Direct product colors belong
+  only in the design palette source; dynamic widgets resolve roles when they
+  paint so theme changes apply without reconstruction.
 - Semantic icon IDs resolve through `ui/icon_pack.py`; text carries status so
   color and icons are never the only signal.
 

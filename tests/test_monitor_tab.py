@@ -285,7 +285,6 @@ _module_backup = {}
 
 def setUpModule():
     """Install stubs and import ui.monitor_tab."""
-    global _module_backup
     for key in _MODULE_KEYS:
         _module_backup[key] = sys.modules.get(key)
     _install_monitor_import_stubs()
@@ -367,7 +366,7 @@ class TestMiniGraph(unittest.TestCase):
         mod = _get_module()
         graph = mod.MiniGraph.__new__(mod.MiniGraph)
         # Manually initialise the fields that __init__ would set
-        graph._color = _Dummy("#3dd68c")
+        graph._color_role = "success"
         graph._values = deque(maxlen=mod.MiniGraph.MAX_POINTS)
         graph._max_value = 100.0
         return graph
@@ -438,8 +437,8 @@ class TestDualMiniGraph(unittest.TestCase):
         """Create a DualMiniGraph instance with stubbed fields."""
         mod = _get_module()
         graph = mod.DualMiniGraph.__new__(mod.DualMiniGraph)
-        graph._color_a = _Dummy("#b78eff")
-        graph._color_b = _Dummy("#4dd9e3")
+        graph._color_role_a = "accent"
+        graph._color_role_b = "focus"
         graph._values_a = deque(maxlen=mod.DualMiniGraph.MAX_POINTS)
         graph._values_b = deque(maxlen=mod.DualMiniGraph.MAX_POINTS)
         graph._max_value = 1024.0
@@ -1185,48 +1184,17 @@ class TestProcessesSubTabContextMenu(unittest.TestCase):
 
 
 # ===================================================================
-# Tests for colour constants
+# Tests for semantic colour ownership
 # ===================================================================
 
 
-class TestProcessesSubTabConstants(unittest.TestCase):
-    """Tests for Catppuccin Mocha colour constants on _ProcessesSubTab."""
+class TestProcessesSubTabColours(unittest.TestCase):
+    """Process presentation must use the shared semantic palette."""
 
-    def test_colour_constants_exist(self):
-        """All expected colour constants should be defined."""
+    def test_legacy_colour_constants_are_removed(self):
         mod = _get_module()
         cls = mod._ProcessesSubTab
-        expected = [
-            "COLOR_BASE",
-            "COLOR_SURFACE0",
-            "COLOR_SURFACE1",
-            "COLOR_SUBTEXT0",
-            "COLOR_TEXT",
-            "COLOR_BLUE",
-            "COLOR_GREEN",
-            "COLOR_RED",
-            "COLOR_YELLOW",
-            "COLOR_MAUVE",
-            "COLOR_PEACH",
-        ]
-        for name in expected:
-            self.assertTrue(
-                hasattr(cls, name),
-                f"Missing colour constant: {name}",
-            )
-
-    def test_colour_constants_are_hex(self):
-        """All colour constants should be valid hex colour strings."""
-        mod = _get_module()
-        cls = mod._ProcessesSubTab
-        for name in dir(cls):
-            if name.startswith("COLOR_"):
-                value = getattr(cls, name)
-                self.assertIsInstance(value, str)
-                self.assertTrue(
-                    value.startswith("#") and len(value) == 7,
-                    f"{name} = {value!r} is not a valid hex colour",
-                )
+        self.assertFalse(any(name.startswith("COLOR_") for name in dir(cls)))
 
 
 if __name__ == "__main__":

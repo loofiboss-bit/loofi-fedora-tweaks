@@ -94,6 +94,28 @@ class DestinationSidebar(QTreeWidget):
             item.setText(0, "" if self._collapsed else label)
             item.setToolTip(0, label)
 
+    def refresh_icon_tints(self) -> None:
+        """Rebuild icon colours after a live semantic theme change."""
+        selected = self.current_destination_id()
+        for index in range(self.topLevelItemCount()):
+            item = self.topLevelItem(index)
+            if item is None:
+                continue
+            icon_name = str(item.data(0, DESTINATION_ICON_ROLE) or "")
+            if not icon_name:
+                continue
+            item.setIcon(
+                0,
+                get_qicon(
+                    icon_name,
+                    size=20,
+                    tint=icon_tint_variant(
+                        icon_name,
+                        selected=item.data(0, DESTINATION_ID_ROLE) == selected,
+                    ),
+                ),
+            )
+
     def _emit_destination(self, current, previous) -> None:
         del previous
         if current is None:

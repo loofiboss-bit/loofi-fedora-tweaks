@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
 from utils.storage import StorageManager
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_color
 
 
 class StorageTab(BaseTab):
@@ -252,7 +253,9 @@ class StorageTab(BaseTab):
             self._fit_table_height(self.disk_table, max_visible_rows=3)
         except (RuntimeError, OSError, ValueError) as exc:
             self.set_table_empty_state(
-                self.disk_table, self.tr("Failed to load disks"), color="#e8556d"
+                self.disk_table,
+                self.tr("Failed to load disks"),
+                color=semantic_color("error"),
             )
             self._fit_table_height(self.disk_table, max_visible_rows=3)
             self.append_output(f"Error listing disks: {exc}\n")
@@ -290,7 +293,7 @@ class StorageTab(BaseTab):
             self.set_table_empty_state(
                 self.mount_table,
                 self.tr("Failed to load mount points"),
-                color="#e8556d",
+                color=semantic_color("error"),
             )
             self._fit_table_height(self.mount_table, max_visible_rows=3)
             self.append_output(f"Error listing mounts: {exc}\n")

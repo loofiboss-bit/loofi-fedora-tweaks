@@ -17,7 +17,7 @@
 
 ## Implementation phases
 
-- [ ] P1: introduce the structural theme engine and semantic design tokens.
+- [x] P1: introduce the structural theme engine and semantic design tokens.
 - [ ] P2: implement and test the shared component library and page scaffold.
 - [ ] P3: redesign the application shell and responsive section navigation
   while preserving all routes, aliases, migrations, and lazy loading.

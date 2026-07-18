@@ -12,7 +12,6 @@ import uuid
 from core.export import AnsibleExporter, KickstartGenerator
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -35,6 +34,7 @@ from PyQt6.QtWidgets import (
 from utils.scheduler import ScheduledTask, TaskAction, TaskSchedule, TaskScheduler
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_qcolor
 from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
 
 
@@ -293,7 +293,7 @@ class AutomationTab(BaseTab):
 
         if not tasks:
             item = QListWidgetItem(self.tr("No scheduled tasks. Click 'Add Task' to create one."))
-            item.setForeground(QColor("#9da7bf"))
+            item.setForeground(semantic_qcolor("text_muted"))
             self.task_list.addItem(item)
             return
 

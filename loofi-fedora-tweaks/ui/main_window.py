@@ -25,7 +25,7 @@ from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
 from core.plugins.registry import CATEGORY_ICONS
 from PyQt6.QtCore import QRect, Qt, QTimer
-from PyQt6.QtGui import QColor, QKeySequence, QPainter, QShortcut
+from PyQt6.QtGui import QKeySequence, QPainter, QShortcut
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -52,6 +52,7 @@ from utils.log import get_logger
 from version import __version__
 
 from ui.icon_pack import get_qicon, icon_tint_variant
+from ui.design import semantic_qcolor
 from ui.layout_primitives import LayoutMetrics, PageHeader
 from ui.lazy_widget import LazyWidget
 from ui.navigation import DestinationHost, DestinationSidebar
@@ -92,10 +93,10 @@ class SidebarEntry:
 class SidebarItemDelegate(QStyledItemDelegate):
     """Custom delegate that renders status dots on sidebar tab items."""
 
-    _STATUS_COLORS = {
-        "ok": QColor(76, 175, 80),  # green
-        "warning": QColor(255, 193, 7),  # amber
-        "error": QColor(244, 67, 54),  # red
+    _STATUS_ROLES = {
+        "ok": "success",
+        "warning": "warning",
+        "error": "error",
     }
 
     def paint(self, painter: "QPainter | None", option: QStyleOptionViewItem, index) -> None:
@@ -106,10 +107,10 @@ class SidebarItemDelegate(QStyledItemDelegate):
             return
 
         status = index.data(_ROLE_STATUS)
-        if not status or status not in self._STATUS_COLORS:
+        if not status or status not in self._STATUS_ROLES:
             return
 
-        color = self._STATUS_COLORS[status]
+        color = semantic_qcolor(self._STATUS_ROLES[status])
         dot_size = 8
         x = option.rect.right() - dot_size - 8
         y = option.rect.center().y() - dot_size // 2
@@ -1554,41 +1555,30 @@ class MainWindow(QMainWindow):
         doctor = DependencyDoctor(self)
         doctor.exec()
 
-    # ==================== v13.5 Theme Management ====================
+    # ==================== Theme Management ====================
 
     def load_theme(self, name: str = "system") -> None:
         """
-        Load and apply a QSS theme by name.
+        Apply invariant component structure with the requested semantic palette.
 
-        ``"system"`` clears application QSS so Qt follows the desktop palette
-        and font. Explicit ``"dark"``, ``"light"``, and ``"highcontrast"``
-        selections continue to load their packaged stylesheets.
-        Falls back silently to no stylesheet if the file is missing.
+        System mode derives colours from ``QPalette`` while retaining the same
+        card, state, navigation, control, and focus geometry as explicit themes.
         """
         from PyQt6.QtWidgets import QApplication
 
         app = QApplication.instance()
         if not isinstance(app, QApplication):
             return
-        if name == "system":
-            app.setStyleSheet("")
-            return
+        from ui.design import ThemeManager
 
-        theme_map = {
-            "dark": "modern.qss",
-            "light": "light.qss",
-            "highcontrast": "highcontrast.qss",
-        }
-        filename = theme_map.get(name, "modern.qss")
-        assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
-        qss_path = os.path.join(assets_dir, filename)
-
-        try:
-            with open(qss_path, "r") as fh:
-                stylesheet = fh.read()
-            app.setStyleSheet(stylesheet)
-        except OSError:
-            logger.debug("Failed to load theme stylesheet", exc_info=True)
+        if ThemeManager().apply(app, name):
+            sidebar = getattr(self, "sidebar", None)
+            refresh_destination_icons = getattr(sidebar, "refresh_icon_tints", None)
+            if callable(refresh_destination_icons):
+                refresh_destination_icons()
+            if sidebar is not None and not callable(refresh_destination_icons):
+                self._refresh_sidebar_icon_tints()
+            self.update()
 
     @staticmethod
     def detect_system_theme() -> str:

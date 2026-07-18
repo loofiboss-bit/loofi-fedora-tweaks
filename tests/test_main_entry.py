@@ -54,6 +54,7 @@ class TestCheckPyQt6(unittest.TestCase):
 
         # Patch the inner import
         original_import = __builtins__.__import__ if hasattr(__builtins__, '__import__') else __import__
+
         def mock_import(name, *args, **kwargs):
             if name == "PyQt6.QtWidgets":
                 raise ImportError("No module named 'PyQt6'")
@@ -81,16 +82,16 @@ class TestCheckPyQt6(unittest.TestCase):
 
 class TestStartupTheme(unittest.TestCase):
     @patch("utils.settings.SettingsManager.instance")
-    def test_system_theme_uses_native_qt_style(self, mock_instance):
+    def test_system_theme_uses_structural_stylesheet(self, mock_instance):
         from main import _startup_theme_name, _theme_file_for
 
         mock_instance.return_value.get.return_value = True
 
         self.assertEqual(_startup_theme_name(), "system")
-        self.assertIsNone(_theme_file_for("system"))
+        self.assertEqual(_theme_file_for("system"), "base.qss")
 
     @patch("utils.settings.SettingsManager.instance")
-    def test_explicit_theme_keeps_packaged_stylesheet(self, mock_instance):
+    def test_explicit_theme_uses_same_structural_stylesheet(self, mock_instance):
         from main import _startup_theme_name, _theme_file_for
 
         mock_instance.return_value.get.side_effect = lambda key, default=None: {
@@ -99,7 +100,7 @@ class TestStartupTheme(unittest.TestCase):
         }.get(key, default)
 
         self.assertEqual(_startup_theme_name(), "light")
-        self.assertEqual(_theme_file_for("light"), "light.qss")
+        self.assertEqual(_theme_file_for("light"), "base.qss")
 
 
 class TestMainDaemon(unittest.TestCase):

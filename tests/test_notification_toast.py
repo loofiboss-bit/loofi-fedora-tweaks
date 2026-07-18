@@ -21,38 +21,34 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
 
-class TestCategoryColorMapping(unittest.TestCase):
-    """Category → accent colour mapping module-level dict."""
+class TestCategoryRoleMapping(unittest.TestCase):
+    """Category to semantic accent role mapping."""
 
-    def test_all_categories_have_colours(self):
-        from ui.notification_toast import _CATEGORY_COLORS
+    def test_all_categories_have_roles(self):
+        from ui.notification_toast import _CATEGORY_ROLES
         expected = {
             "general", "health", "profile", "security", "system",
             "overview", "manage", "hardware", "network & security",
             "personalize", "developer", "automation", "health & logs",
         }
-        self.assertEqual(set(_CATEGORY_COLORS.keys()), expected)
+        self.assertEqual(set(_CATEGORY_ROLES.keys()), expected)
 
-    def test_colours_are_valid_hex(self):
-        from ui.notification_toast import _CATEGORY_COLORS
-        for category, colour in _CATEGORY_COLORS.items():
-            self.assertRegex(
-                colour, r'^#[0-9a-fA-F]{6}$',
-                f"Category '{category}' has invalid colour: {colour}",
-            )
+    def test_roles_are_semantic(self):
+        from ui.notification_toast import _CATEGORY_ROLES
+        for role in _CATEGORY_ROLES.values():
+            self.assertIn(role, {"accent", "success", "warning", "error"})
 
-    def test_security_is_red_ish(self):
-        from ui.notification_toast import _CATEGORY_COLORS
-        # Security should use a coral/red colour (Abyss palette)
-        self.assertEqual(_CATEGORY_COLORS["security"], "#e8556d")
+    def test_security_is_error(self):
+        from ui.notification_toast import _CATEGORY_ROLES
+        self.assertEqual(_CATEGORY_ROLES["security"], "error")
 
-    def test_health_is_green_ish(self):
-        from ui.notification_toast import _CATEGORY_COLORS
-        self.assertEqual(_CATEGORY_COLORS["health"], "#3dd68c")
+    def test_health_is_success(self):
+        from ui.notification_toast import _CATEGORY_ROLES
+        self.assertEqual(_CATEGORY_ROLES["health"], "success")
 
-    def test_system_is_yellow_ish(self):
-        from ui.notification_toast import _CATEGORY_COLORS
-        self.assertEqual(_CATEGORY_COLORS["system"], "#e8b84d")
+    def test_system_is_warning(self):
+        from ui.notification_toast import _CATEGORY_ROLES
+        self.assertEqual(_CATEGORY_ROLES["system"], "warning")
 
 
 class TestNotificationToastConstants(unittest.TestCase):
@@ -105,7 +101,7 @@ class TestShowToastLogic(unittest.TestCase):
         toast.DISPLAY_MS = 4000
         toast._title_label = MagicMock()
         toast._message_label = MagicMock()
-        toast._accent_color = None
+        toast._accent_role = "accent"
         toast._auto_hide_timer = MagicMock()
         toast.parent.return_value = None
         toast.show = MagicMock()
@@ -144,21 +140,19 @@ class TestShowToastLogic(unittest.TestCase):
         NotificationToast.show_toast(toast, "Title", "Msg", "general")
         toast._auto_hide_timer.start.assert_called_once_with(4000)
 
-    def test_show_toast_uses_category_colour(self):
+    def test_show_toast_uses_category_role(self):
         from ui.notification_toast import NotificationToast
 
         toast = self._make_mock_toast()
         NotificationToast.show_toast(toast, "Alert", "Sec issue", "security")
-        # The accent color should be set to the security colour
-        self.assertIsNotNone(toast._accent_color)
+        self.assertEqual(toast._accent_role, "error")
 
     def test_show_toast_unknown_category_uses_default(self):
         from ui.notification_toast import NotificationToast
 
         toast = self._make_mock_toast()
         NotificationToast.show_toast(toast, "Title", "Msg", "nonexistent")
-        # Should fall back to default (#39c5cf) without crashing
-        self.assertIsNotNone(toast._accent_color)
+        self.assertEqual(toast._accent_role, "accent")
 
     def test_show_toast_with_parent_positions_correctly(self):
         from ui.notification_toast import NotificationToast

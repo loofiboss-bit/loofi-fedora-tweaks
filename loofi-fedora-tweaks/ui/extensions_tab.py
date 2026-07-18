@@ -23,6 +23,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_color
 
 logger = logging.getLogger(__name__)
 
@@ -177,7 +178,7 @@ class ExtensionsTab(BaseTab):
                 )
                 # Status
                 status = self.tr("Enabled") if ext.enabled else self.tr("Disabled")
-                color = "#4caf50" if ext.enabled else "#ff9800"
+                color = semantic_color("success" if ext.enabled else "warning")
                 self.table.setItem(row, 1, BaseTab.make_table_item(status, color=color))
                 # Desktop
                 self.table.setItem(row, 2, BaseTab.make_table_item(ext.desktop.upper()))

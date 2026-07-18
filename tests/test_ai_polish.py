@@ -425,6 +425,7 @@ class TestContextRAGManager(unittest.TestCase):
         chunks = ContextRAGManager._chunk_text(text)
         self.assertGreater(len(chunks), 1)
 
+    @patch('core.ai.context_rag.INDEXABLE_PATHS', ['/nonexistent-loofi-rag-fixture'])
     def test_scan_indexable_files_returns_list(self):
         """scan_indexable_files returns a list of dicts."""
         files = ContextRAGManager.scan_indexable_files()

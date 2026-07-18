@@ -1,0 +1,413 @@
+/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+/* Hallmark · PyQt control-center · restrained native · blue anchor · destination shell */
+/* Loofi Clarity structural theme. Palette values are substituted by ThemeManager. */
+
+/* Minimal application baseline: retain the QApplication system font. */
+QWidget {
+    background-color: $color_window;
+    color: $color_text;
+}
+
+QDialog, QMenu, QToolTip {
+    background-color: $color_surface;
+    color: $color_text;
+    border: $border_width solid $color_border;
+}
+
+QToolTip {
+    padding: $space_2;
+    border-radius: $radius_control;
+}
+
+/* Shell and navigation */
+QWidget#sidebarContainer,
+QTreeWidget#sidebar,
+QTreeWidget#destinationSidebar {
+    background-color: $color_surface;
+    border: none;
+    outline: none;
+}
+
+QTreeWidget#sidebar::item,
+QTreeWidget#destinationSidebar::item {
+    min-height: $navigation_row_min_height;
+    padding: 0 $space_3;
+    margin: $space_1;
+    border-radius: $radius_control;
+    color: $color_text_muted;
+}
+
+QTreeWidget#sidebar::item:hover,
+QTreeWidget#destinationSidebar::item:hover {
+    background-color: $color_hover;
+    color: $color_text;
+}
+
+QTreeWidget#sidebar::item:selected,
+QTreeWidget#destinationSidebar::item:selected {
+    background-color: $color_selected;
+    color: $color_accent;
+    border-left: $focus_width solid $color_accent;
+}
+
+QTreeWidget#sidebar::item:disabled,
+QTreeWidget#destinationSidebar::item:disabled {
+    background-color: $color_disabled_surface;
+    color: $color_disabled_text;
+}
+
+QFrame#pageHeader,
+QFrame#breadcrumbBar,
+QFrame#statusBar {
+    background-color: $color_surface;
+    border-bottom: $border_width solid $color_border;
+}
+
+QLabel#pageHeaderTitle {
+    color: $color_text;
+    font-weight: $page_title_weight;
+}
+
+QLabel#pageHeaderDescription,
+QLabel#bcDesc,
+QLabel[objectName="descriptionText"],
+QLabel[objectName="mutedText"] {
+    color: $color_text_muted;
+    font-weight: $supporting_weight;
+}
+
+/* Cards and named content surfaces */
+QFrame#contentSection,
+QFrame#dashboardCard,
+QFrame#routeCard,
+QFrame[routeCard="true"],
+QFrame#homeState,
+QFrame#profileCard,
+QFrame#monitorCard,
+QFrame#hwCard {
+    background-color: $color_surface;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+}
+
+QFrame#routeCard:hover,
+QFrame[routeCard="true"]:hover {
+    background-color: $color_hover;
+    border-color: $color_accent;
+}
+
+QFrame#routeCard:focus,
+QFrame[routeCard="true"]:focus {
+    border: $focus_width solid $color_focus;
+}
+
+QLabel#sectionTitle,
+QLabel#routeCardTitle,
+QLabel#stateTitle,
+QLabel#homeSectionTitle {
+    color: $color_text;
+    font-weight: $section_title_weight;
+}
+
+QLabel#routeCardDescription,
+QLabel#stateMessage,
+QLabel#homeSubheader,
+QLabel#supportBundleDescription {
+    color: $color_text_muted;
+}
+
+/* Controls: geometry is shared, semantic roles carry emphasis. */
+QPushButton,
+QToolButton,
+QLineEdit,
+QTextEdit,
+QPlainTextEdit,
+QComboBox,
+QSpinBox,
+QDoubleSpinBox {
+    min-height: $control_min_height;
+    padding: 0 $space_3;
+    border: $border_width solid $color_border;
+    border-radius: $radius_control;
+    background-color: $color_surface_raised;
+    color: $color_text;
+}
+
+QPushButton,
+QToolButton {
+    font-weight: $control_weight;
+}
+
+QPushButton:hover,
+QToolButton:hover,
+QLineEdit:hover,
+QTextEdit:hover,
+QPlainTextEdit:hover,
+QComboBox:hover {
+    background-color: $color_hover;
+    border-color: $color_accent;
+}
+
+QPushButton:pressed,
+QToolButton:pressed {
+    background-color: $color_selected;
+}
+
+QPushButton:disabled,
+QToolButton:disabled,
+QLineEdit:disabled,
+QTextEdit:disabled,
+QPlainTextEdit:disabled,
+QComboBox:disabled {
+    background-color: $color_disabled_surface;
+    color: $color_disabled_text;
+    border-color: $color_disabled_text;
+}
+
+QPushButton:focus,
+QToolButton:focus,
+QLineEdit:focus,
+QTextEdit:focus,
+QPlainTextEdit:focus,
+QComboBox:focus,
+QSpinBox:focus,
+QDoubleSpinBox:focus,
+QCheckBox:focus,
+QRadioButton:focus,
+QListWidget:focus,
+QTreeWidget:focus,
+QTableView:focus {
+    border: $focus_width solid $color_focus;
+}
+
+QPushButton[objectName="primaryAction"] {
+    background-color: $color_accent;
+    color: $color_accent_text;
+    border-color: $color_accent;
+}
+
+QPushButton[objectName="primaryAction"]:hover {
+    background-color: $color_selected;
+    color: $color_text;
+}
+
+QPushButton[objectName="dangerAction"] {
+    background-color: $color_error_surface;
+    color: $color_error_text;
+    border-color: $color_error;
+}
+
+QPushButton[objectName="dangerAction"]:hover {
+    background-color: $color_error;
+    color: $color_window;
+}
+
+/* Content-level tabs remain supported until the shared component phase. */
+QTabWidget::pane {
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+    background-color: $color_surface;
+}
+
+QTabBar::tab {
+    min-height: $control_min_height;
+    padding: 0 $space_4;
+    color: $color_text_muted;
+    border-bottom: $focus_width solid transparent;
+}
+
+QTabBar::tab:hover:!selected {
+    background-color: $color_hover;
+    color: $color_text;
+}
+
+QTabBar::tab:selected {
+    color: $color_accent;
+    border-bottom-color: $color_accent;
+}
+
+/* Status and feedback: text remains present; colour is supplementary. */
+QFrame#resultBanner,
+QFrame#rebootBanner,
+QFrame[presentationState="loading"],
+QFrame[presentationState="empty"],
+QFrame[presentationState="unavailable"] {
+    background-color: $color_surface_raised;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+}
+
+QFrame#resultBanner[resultKind="success"],
+QFrame[presentationState="success"] {
+    background-color: $color_success_surface;
+    color: $color_success_text;
+    border-color: $color_success;
+}
+
+QFrame#resultBanner[resultKind="warning"],
+QFrame[presentationState="warning"] {
+    background-color: $color_warning_surface;
+    color: $color_warning_text;
+    border-color: $color_warning;
+}
+
+QFrame#resultBanner[resultKind="error"],
+QFrame[presentationState="error"] {
+    background-color: $color_error_surface;
+    color: $color_error_text;
+    border-color: $color_error;
+}
+
+QLabel#riskBadge[level="low"] {
+    background-color: $color_success_surface;
+    color: $color_success_text;
+    border: $border_width solid $color_success;
+}
+
+QLabel#riskBadge[level="medium"] {
+    background-color: $color_warning_surface;
+    color: $color_warning_text;
+    border: $border_width solid $color_warning;
+}
+
+QLabel#riskBadge[level="high"],
+QLabel#statusText[toast="error"] {
+    background-color: $color_error_surface;
+    color: $color_error_text;
+    border: $border_width solid $color_error;
+}
+
+QLabel#statusText[toast="success"] {
+    background-color: $color_success_surface;
+    color: $color_success_text;
+    border: $border_width solid $color_success;
+}
+
+QLabel#taskResultHeader,
+QLabel#taskRiskBadge {
+    font-weight: $section_title_weight;
+}
+
+QLabel#taskResultHeader[resultKind="success"],
+QLabel#taskRiskBadge[riskLevel="low"] {
+    color: $color_success_text;
+    border-color: $color_success;
+}
+
+QLabel#taskResultHeader[resultKind="error"],
+QLabel#taskRiskBadge[riskLevel="high"] {
+    color: $color_error_text;
+    border-color: $color_error;
+}
+
+QLabel#taskRiskBadge[riskLevel="medium"],
+QLabel#taskRollbackHint {
+    color: $color_warning_text;
+    border-color: $color_warning;
+}
+
+QLabel#taskRiskBadge[riskLevel="info"] {
+    color: $color_text_muted;
+    border-color: $color_border;
+}
+
+QLabel#taskRiskBadge {
+    padding: $space_1;
+    border: $border_width solid $color_border;
+    border-radius: $radius_control;
+}
+
+QLabel#taskResultMessage {
+    color: $color_text_muted;
+}
+
+QLabel#taskCommandPreview {
+    padding: $space_2;
+    border-radius: $radius_control;
+    background-color: $color_surface_raised;
+    color: $color_text;
+    font-family: $code_family;
+}
+
+QPushButton#taskCommandPreviewToggle {
+    min-height: 0;
+    padding: 0;
+    color: $color_accent;
+    border: none;
+    background: transparent;
+    text-align: left;
+}
+
+QLabel#readinessBadge {
+    padding: $space_1 $space_2;
+    border: $border_width solid $color_border;
+    border-radius: $radius_control;
+    font-weight: $section_title_weight;
+}
+
+QLabel#readinessBadge[severity="success"],
+QLabel#readinessBadge[severity="low"] {
+    color: $color_success_text;
+    border-color: $color_success;
+}
+
+QLabel#readinessBadge[severity="warning"],
+QLabel#readinessBadge[severity="medium"] {
+    color: $color_warning_text;
+    border-color: $color_warning;
+}
+
+QLabel#readinessBadge[severity="error"],
+QLabel#readinessBadge[severity="high"] {
+    color: $color_error_text;
+    border-color: $color_error;
+}
+
+QLabel#readinessBadge[severity="accent"],
+QLabel#readinessBadge[severity="info"] {
+    color: $color_accent;
+    border-color: $color_accent;
+}
+
+QLabel#readinessMuted,
+QLabel#readinessCode {
+    color: $color_text_muted;
+}
+
+QLabel#readinessCommand,
+QLabel#readinessCode {
+    font-family: $code_family;
+}
+
+QLabel#readinessCommand {
+    padding: $space_2;
+    border-radius: $radius_control;
+    background-color: $color_surface_raised;
+    color: $color_text;
+}
+
+QProgressBar {
+    min-height: $space_3;
+    border: $border_width solid $color_border;
+    border-radius: $radius_control;
+    background-color: $color_surface_raised;
+    color: $color_text;
+    text-align: center;
+}
+
+QProgressBar::chunk {
+    background-color: $color_accent;
+    border-radius: $radius_control;
+}
+
+QTextEdit#outputArea,
+QTextEdit#confirmPreview,
+QTextEdit#supportBundlePreview,
+QLabel[code="true"] {
+    font-family: $code_family;
+}
+
+QTextEdit#supportBundlePreview {
+    background-color: $color_surface_raised;
+    color: $color_text_muted;
+}

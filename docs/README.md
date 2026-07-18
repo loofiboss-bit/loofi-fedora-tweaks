@@ -22,6 +22,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `../CHANGELOG.md` - Full change history
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `reports/V16_PHASE0_BASELINE.md` - Exact v15 baseline, UI debt inventory, measurements, and Phase 0 verification
+- `reports/V16_PHASE1_THEME_ENGINE.md` - Structural QSS, semantic palettes, token contracts, and Phase 1 verification
 - `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
 - `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
 - `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist

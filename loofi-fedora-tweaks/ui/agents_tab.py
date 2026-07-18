@@ -14,7 +14,7 @@ import time
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QCheckBox,
     QGridLayout,
@@ -35,6 +35,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.base_tab import BaseTab
+from ui.design import semantic_qcolor
 from ui.tab_utils import configure_top_tabs
 
 logger = logging.getLogger(__name__)
@@ -405,9 +406,9 @@ class AgentsTab(BaseTab):
 
             status_item = QTableWidgetItem(state.status.value)
             if state.status.value == "running":
-                status_item.setForeground(QColor("#3dd68c"))
+                status_item.setForeground(semantic_qcolor("success"))
             elif state.status.value == "error":
-                status_item.setForeground(QColor("#e8556d"))
+                status_item.setForeground(semantic_qcolor("error"))
             self.agent_table.setItem(row, 2, status_item)
 
             self.agent_table.setItem(row, 3, QTableWidgetItem(str(state.run_count)))

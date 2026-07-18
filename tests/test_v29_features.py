@@ -253,12 +253,12 @@ class TestErrorHandlerIntegration(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestNotificationToastCategoryFallback(unittest.TestCase):
-    """Unknown categories should gracefully fall back to default colour."""
+    """Unknown categories should gracefully fall back to the accent role."""
 
-    def test_unknown_category_returns_default_colour(self):
-        from ui.notification_toast import _CATEGORY_COLORS
-        default = "#39c5cf"
-        result = _CATEGORY_COLORS.get("totally_unknown", default)
+    def test_unknown_category_returns_default_role(self):
+        from ui.notification_toast import _CATEGORY_ROLES
+        default = "accent"
+        result = _CATEGORY_ROLES.get("totally_unknown", default)
         self.assertEqual(result, default)
 
 
