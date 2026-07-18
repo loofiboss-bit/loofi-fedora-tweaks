@@ -11,10 +11,10 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
-| v16.0.0 | Clarity | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
+| v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
 | v17.0.0 | Unnamed | FUTURE | Reassess physical component packaging only after v16 consolidation evidence |
 
-## [ACTIVE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
+## [DONE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
 
 **Objective:** make the PyQt application feel like a focused Fedora-native
 control center without changing trusted system-operation behavior.
@@ -48,6 +48,12 @@ control center without changing trusted system-operation behavior.
 
 The complete scope, gates, and acceptance criteria are defined only in
 [the canonical v16 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md).
+
+The canonical annotated tag `v16.0.0` peels to release commit
+`56007bf7e5c046f189d2e2284740320ca3e1ebad`. Auto Release Pipeline run
+`29641341177`, COPR build `10740581`, the public Fedora 44 package install,
+release asset evidence, and wiki readback all passed. The historical Horizon
+tag object remains available as `legacy-v16.0.0-horizon`.
 
 ## [DONE] v15.0.0 "Essentials" — Product Simplification
 

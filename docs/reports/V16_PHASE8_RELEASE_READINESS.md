@@ -2,14 +2,14 @@
 
 Date: 2026-07-18
 Release: `v16.0.0 "Clarity"`
-Status: locally publish-ready; public readback pending
+Status: released and publicly verified
 
 ## Outcome
 
-Phase 8 completes the regression, performance, compatibility, packaging,
+Phase 8 completed the regression, performance, compatibility, packaging,
 security, documentation, screenshot, and installed-package gates for Clarity.
-The product version is synchronized at 16.0.0 and the release tree is ready for
-the exact-commit GitHub/COPR publication workflow.
+The exact release tree is published on GitHub and COPR, and every public
+readback gate passed.
 
 ## Regression and compatibility
 
@@ -70,11 +70,41 @@ method used for v15. Raw evidence is in `V16_PHASE8_STARTUP.json`.
   announcement, workflow specs, and version metadata describe Clarity.
 - Canonical user-guide screenshots were regenerated from the exact 16.0.0 tree
   and visually inspected after capture.
-- The historical `v16.0.0 "Horizon"` tag must be preserved as
-  `legacy-v16.0.0-horizon` before the canonical tag is assigned to Clarity.
+- The historical `v16.0.0 "Horizon"` annotated tag object is preserved as
+  `legacy-v16.0.0-horizon`; the canonical tag now identifies Clarity.
 
-## Publication closure
+## Public release evidence
 
-The GitHub release, release assets, checksums, CycloneDX SBOM, in-toto/SLSA
-provenance, terminal Actions state, COPR build, public Fedora 44 package install,
-wiki readback, and roadmap/race-lock closure are recorded here after publication.
+- Pull request `#34` merged as release commit
+  `56007bf7e5c046f189d2e2284740320ca3e1ebad`.
+- The annotated `v16.0.0` tag peels to that exact commit. The GitHub release is
+  public, non-draft, non-prerelease, and titled `Loofi Fedora Tweaks v16.0.0 —
+  Clarity`.
+- Auto Release Pipeline run `29641341177`: all 17 jobs passed, including full
+  tests, security, Flatpak, sdist, RPM, Fedora Review, RPM smoke, exact tag,
+  release, and COPR publication.
+- All eight public assets were downloaded. SHA-256 verification passed, and the
+  CycloneDX SBOM plus in-toto/SLSA provenance match the artifact set, release
+  commit, tag, repository, and workflow run.
+- COPR build `10740581`, chroot `fedora-44-x86_64`: succeeded with package
+  `1:16.0.0-1`. The workflow installed it from the public repository and
+  verified application version `16.0.0`.
+- Publish Wiki run `29641877579`: succeeded. Public wiki commit
+  `e569292bbd1d083932b55d9c6f9eb0b1c750dca3` identifies Clarity as current,
+  links the v16 release, and matches all 12 canonical screenshot files
+  byte-for-byte.
+
+Public asset SHA-256 digests:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| Base RPM | `3de0eb532d6e95706af938f991b7dfb4de670d3135677505525dac06a55b1703` |
+| API RPM | `d2c0df45c6fc728923971e7b888ca97bb0f226f2319f81f28dd7f7f692aa558e` |
+| Daemon RPM | `fba8ffad27fdc12b3a06d99456e73ed9ba45c486ba11bb583214b31943a35590` |
+| Flatpak | `d1ec749cfe7b5eb3b36e64b5105f9b26a29ad6eff23a07c3286e0b78e69b1d28` |
+| CycloneDX SBOM | `a87a3c4a6b760ef3ff49fcf4a6967f76de1e172977d5ce7bf9227048232a0af8` |
+| in-toto provenance | `32c531f67374367b2651268d629536ad01f7340aa672d787c74d5a08d2ed21a2` |
+| Source distribution | `b490cd3a32bc4b5566fbdbd9783bc45329f45e9f17e03d7a5ee61962cab6d0d8` |
+
+No release blocker remains. GitHub, COPR, the Fedora 44 package path, and the
+wiki are live and publicly verified.

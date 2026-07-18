@@ -31,12 +31,12 @@
 - [x] P8: run full regression, startup/resource, Traditional/Atomic, packaging,
   release-evidence, and security gates; then bump to v16 only when every gate
   passes.
-- [ ] [post-publish] P8-POST: verify the exact GitHub release commit, assets,
+- [x] [post-publish] P8-POST: verify the exact GitHub release commit, assets,
   checksums, SBOM, provenance, COPR build, Fedora 44 public-package install,
   wiki readback, and close the roadmap and race lock.
 
 ## Completion contract
 
-Local publication readiness allows only explicitly tagged `[post-publish]`
-closure work to remain unchecked. Full completion requires that final public
-readback task to be checked after the exact release is live.
+The exact release commit, public artifacts, COPR package, Fedora 44 install,
+and wiki readback are verified. All v16 implementation and publication tasks
+are complete.
