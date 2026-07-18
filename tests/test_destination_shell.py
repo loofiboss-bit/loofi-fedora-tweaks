@@ -3,6 +3,7 @@
 import os
 import sys
 import unittest
+from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(
@@ -10,8 +11,9 @@ sys.path.insert(
     os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"),
 )
 
-from PyQt6.QtGui import QFont
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtGui import QFont, QIcon
+from PyQt6.QtCore import Qt
+from PyQt6.QtWidgets import QApplication, QTabBar
 
 from core.navigation import (
     NavigationContext,
@@ -80,6 +82,9 @@ class TestDestinationSidebar(_QtTestCase):
             item = self.sidebar.topLevelItem(index)
             self.assertEqual(item.text(0), "")
             self.assertTrue(item.toolTip(0))
+            self.assertTrue(
+                item.data(0, Qt.ItemDataRole.AccessibleTextRole)
+            )
 
     def test_sidebar_has_no_independent_filter_surface(self):
         self.assertFalse(hasattr(DestinationSidebar, "filter_destinations"))
@@ -153,8 +158,8 @@ class TestDestinationHost(_QtTestCase):
         self.host.set_active_route("maintenance:action-center")
 
         self.assertEqual(
-            self.host.tabs.tabData(self.host.tabs.currentIndex()),
-            "maintenance:action-center",
+            self.host.navigator.active_section_id(),
+            "maintenance_review",
         )
 
     def test_gated_route_has_safe_explanation(self):
@@ -166,17 +171,54 @@ class TestDestinationHost(_QtTestCase):
         self.assertTrue(self.host.explanation.isVisible())
         self.assertIn("Advanced", self.host.explanation.text())
 
-    def test_secondary_navigation_has_narrow_overflow_and_scaled_height(self):
+    def test_host_uses_section_navigator_without_application_tab_bar(self):
         destination = get_destination("system")
-        self.host.resize(360, 100)
         self.host.set_destination(destination, self.standard)
 
-        self.assertTrue(self.host.tabs.usesScrollButtons())
-        self.assertFalse(self.host.tabs.expanding())
-        self.assertGreaterEqual(
-            self.host.tabs.minimumHeight(),
-            max(36, int(self.host.fontMetrics().height() * 2.2)),
+        self.assertEqual(self.host.findChildren(QTabBar), [])
+        self.assertFalse(self.host.navigator.is_compact())
+        self.assertEqual(
+            self.host.navigator.section_ids(),
+            tuple(route.section_id for route in self.host._routes),
         )
+
+    def test_compact_selector_keeps_complete_section_labels(self):
+        destination = get_destination("system")
+        self.host.set_destination(destination, self.standard)
+        self.host.set_compact(True)
+
+        self.assertTrue(self.host.navigator.is_compact())
+        self.assertTrue(self.host.navigator.selector.isVisible())
+        labels = [
+            self.host.navigator.selector.itemText(index)
+            for index in range(self.host.navigator.selector.count())
+        ]
+        self.assertIn("Hardware & Power", labels)
+        self.assertIn("Health History", labels)
+        self.assertTrue(all(label and "…" not in label for label in labels))
+
+    def test_section_activation_requests_explicit_default_route(self):
+        destination = get_destination("software_updates")
+        requested: list[str] = []
+        self.host.routeRequested.connect(requested.append)
+        self.host.set_destination(destination, self.standard)
+
+        updates_index = self.host.navigator.section_ids().index("updates")
+        self.host.navigator.rail.setCurrentRow(updates_index)
+
+        self.assertEqual(requested[-1], "maintenance")
+
+    def test_theme_change_rebuilds_every_section_icon(self):
+        destination = get_destination("system")
+        self.host.set_destination(destination, self.standard)
+
+        with patch(
+            "ui.components.navigation.get_qicon",
+            return_value=QIcon(),
+        ) as get_qicon:
+            self.host.refresh_icon_tints()
+
+        self.assertEqual(get_qicon.call_count, len(self.host._routes))
 
 
 if __name__ == "__main__":

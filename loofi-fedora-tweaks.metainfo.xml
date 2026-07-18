@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="16.0.0" date="2026-07-18">
+      <description>
+        <p>v16.0.0 "Clarity" - Responsive, Consistent Fedora Control Center</p>
+        <ul>
+          <li>Replaced crowded application-level tabs with responsive full-label section navigation</li>
+          <li>Unified Standard and Advanced pages on one shared scaffold and component language</li>
+          <li>Kept structural styling across system, dark, light, and high-contrast themes</li>
+          <li>Validated the real shell across supported sizes, font scales, keyboard input, Wayland/X11 paths, and accessibility surfaces</li>
+          <li>Preserved startup budgets, lazy loading, routes, state, Action Center, Traditional/Atomic, CLI, API, daemon, and IPC contracts</li>
+        </ul>
+      </description>
+    </release>
     <release version="15.0.0" date="2026-07-18">
       <description>
         <p>v15.0.0 "Essentials" - Product Simplification and Startup Efficiency</p>

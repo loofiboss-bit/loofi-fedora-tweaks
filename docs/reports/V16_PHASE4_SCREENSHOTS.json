@@ -1,0 +1,75 @@
+{
+  "capture_policy": {
+    "backend": "offscreen",
+    "background_services_disabled": true,
+    "deterministic_home_and_system_data": true,
+    "mutating_subprocesses_rejected": true,
+    "navigation_mode": "standard",
+    "real_main_window": true,
+    "temporary_home_and_xdg": true,
+    "theme": "system"
+  },
+  "captures": [
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination": "home",
+      "path": "docs/images/v16/phase4/home__860x720.png",
+      "route_id": "atlas_dashboard",
+      "sha256": "8ea5cf364cb34d5458e1092aa94caf03ca4e9fa2dfcd00505677b7b8c417e3b5",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination": "system-info",
+      "path": "docs/images/v16/phase4/system-info__860x720.png",
+      "route_id": "system_info",
+      "sha256": "f9ee17e85499489f2c9b9373d332c4126004e799a8a20d9d6e8f94da27c07c18",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "captured_dimensions": [
+        1918,
+        1018
+      ],
+      "destination": "home",
+      "path": "docs/images/v16/phase4/home__1918x1018.png",
+      "route_id": "atlas_dashboard",
+      "sha256": "24bace66cc8c2337ee567cc33b064b00b61d984cbb79ce50ac78a3cd83a67114",
+      "viewport": [
+        1918,
+        1018
+      ]
+    },
+    {
+      "captured_dimensions": [
+        1918,
+        1018
+      ],
+      "destination": "system-info",
+      "path": "docs/images/v16/phase4/system-info__1918x1018.png",
+      "route_id": "system_info",
+      "sha256": "5f6f99962016cc707e0d8bfe6043599b3a71e186b9906e192872f964c17934c7",
+      "viewport": [
+        1918,
+        1018
+      ]
+    }
+  ],
+  "generated_at": "2026-07-18T07:52:08.139938+00:00",
+  "phase": 4,
+  "release": "v16.0.0 Clarity",
+  "reproduction_command": "PYTHONPATH=loofi-fedora-tweaks QT_QPA_PLATFORM=offscreen python3 scripts/capture_v16_phase4.py",
+  "schema_version": 1
+}

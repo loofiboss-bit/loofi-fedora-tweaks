@@ -12,9 +12,6 @@ from unittest.mock import patch, MagicMock, mock_open
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
-from ui.tab_utils import CONTENT_MARGINS
-
-
 def _make_iface(
     name="wlp2s0",
     itype="wifi",
@@ -174,8 +171,10 @@ class TestNetworkTabInit(unittest.TestCase):
         self.assertIsNotNone(tab._monitor_timer)
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
-    def test_layout_uses_content_margins(self, mock_ss):
-        """Root layout applies standard content margins for safe scrolling."""
+    def test_layout_delegates_margins_to_page_scaffolds(self, mock_ss):
+        """The plugin root is flush and each route owns one shared scaffold."""
+        from ui.components import PageScaffold
+
         tab = _create_tab()
         margins = tab.layout().contentsMargins()
         self.assertEqual(
@@ -185,8 +184,9 @@ class TestNetworkTabInit(unittest.TestCase):
                 margins.right(),
                 margins.bottom(),
             ),
-            CONTENT_MARGINS,
+            (0, 0, 0, 0),
         )
+        self.assertEqual(len(tab.findChildren(PageScaffold)), 4)
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     def test_initial_load_waits_for_route_activation(self, mock_ss):
@@ -235,8 +235,8 @@ class TestNetworkTabStaticHelpers(unittest.TestCase):
         item = tab._make_table_item(42)
         self.assertEqual(item.text(), "42")
 
-    def test_make_container_sets_scroll_and_margins(self):
-        """_make_container wraps layout with scroll area and standard margins."""
+    def test_make_container_sets_scroll_and_scaffold(self):
+        """_make_container wraps route content with one bounded scaffold."""
         from PyQt6.QtCore import Qt
         from PyQt6.QtWidgets import (
             QAbstractScrollArea,
@@ -246,19 +246,13 @@ class TestNetworkTabStaticHelpers(unittest.TestCase):
         )
 
         from ui.network_tab import NetworkTab
+        from ui.components import PageScaffold
 
         layout = QVBoxLayout()
         scroll = NetworkTab._make_container(layout)
-        margins = layout.contentsMargins()
-        self.assertEqual(
-            (
-                margins.left(),
-                margins.top(),
-                margins.right(),
-                margins.bottom(),
-            ),
-            CONTENT_MARGINS,
-        )
+        self.assertIsInstance(scroll.widget(), PageScaffold)
+        margins = scroll.widget().content_layout.contentsMargins()
+        self.assertGreater(min(margins.left(), margins.top(), margins.right(), margins.bottom()), 0)
         self.assertIsInstance(scroll, QScrollArea)
         self.assertEqual(
             scroll.sizeAdjustPolicy(),

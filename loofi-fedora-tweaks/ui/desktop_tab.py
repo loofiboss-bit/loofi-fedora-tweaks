@@ -1,5 +1,5 @@
 """
-Desktop Tab - Consolidated Window Management + Theming interface.
+Desktop Tab - Consolidated shell-owned Window Management + Theming interface.
 Part of v11.0 "Aurora Update" - merges Director and Theming tabs.
 
 Sub-tabs:
@@ -24,7 +24,7 @@ from PyQt6.QtWidgets import (  # noqa: E402
     QListWidget,
     QPushButton,
     QScrollArea,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -37,7 +37,7 @@ from services.desktop import (  # noqa: E402
 from utils.commands import PrivilegedCommand  # noqa: E402
 
 from ui.base_tab import BaseTab  # noqa: E402
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs  # noqa: E402
+from ui.components import PageScaffold  # noqa: E402
 from ui.tooltips import DESK_FONTS, DESK_THEME  # noqa: F401, E402
 
 
@@ -65,26 +65,33 @@ class DesktopTab(BaseTab):
         self.init_ui()
 
     def init_ui(self):
-        """Initialize the UI with sub-tabs."""
+        """Initialize Desktop routes under the application section navigator."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*CONTENT_MARGINS)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        # Sub-tab widget
-        self.sub_tabs = QTabWidget()
-        configure_top_tabs(self.sub_tabs)
+        self.sub_tabs = QStackedWidget()
+        self.sub_tabs.setObjectName("desktopRouteStack")
         layout.addWidget(self.sub_tabs)
 
-        # Sub-tab 1: Window Manager (from DirectorTab)
-        self.sub_tabs.addTab(self._create_wm_tab(), self.tr("Window Manager"))
+        self.sub_tabs.addWidget(self._create_wm_tab())
+        self.sub_tabs.addWidget(self._create_theming_tab())
+        self.sub_tabs.addWidget(self._create_display_tab())
 
-        # Sub-tab 2: Theming (from ThemingTab)
-        self.sub_tabs.addTab(self._create_theming_tab(), self.tr("Theming"))
+        self.add_output_disclosure(layout, self.tr("Show desktop command output"))
 
-        # Sub-tab 3: Display Configuration (v37.0 Pinnacle)
-        self.sub_tabs.addTab(self._create_display_tab(), self.tr("Display"))
-
-        # Shared output area at bottom
-        self.add_output_section(layout)
+    def activate_route(self, route) -> bool:
+        """Select a Desktop page from a stable route ID."""
+        route_to_index = {
+            "desktop": 1,
+            "desktop:director": 0,
+            "desktop:theming": 1,
+            "desktop:display": 2,
+        }
+        index = route_to_index.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.sub_tabs.setCurrentIndex(index)
+        return True
 
     # ================================================================
     # WINDOW MANAGER SUB-TAB (from DirectorTab)
@@ -96,14 +103,11 @@ class DesktopTab(BaseTab):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
 
-        container = QWidget()
-        wm_layout = QVBoxLayout(container)
-        wm_layout.setSpacing(15)
-
-        # Header
-        header = QLabel(self.tr("Window Management"))
-        header.setObjectName("header")
-        wm_layout.addWidget(header)
+        scaffold = PageScaffold(
+            self.tr("Window Behavior"),
+            self.tr("Preview compositor, tiling, workspace, and dotfile choices before applying them."),
+        )
+        wm_layout = scaffold.content_layout
 
         # Compositor detection
         wm_layout.addWidget(self._create_compositor_section())
@@ -118,7 +122,7 @@ class DesktopTab(BaseTab):
         wm_layout.addWidget(self._create_dotfiles_section())
 
         wm_layout.addStretch()
-        scroll.setWidget(container)
+        scroll.setWidget(scaffold)
         return scroll
 
     def _create_compositor_section(self) -> QGroupBox:
@@ -371,9 +375,11 @@ class DesktopTab(BaseTab):
 
     def _create_theming_tab(self) -> QWidget:
         """Create the Theming sub-tab content."""
-        widget = QWidget()
-        layout = QVBoxLayout(widget)
-        layout.setSpacing(15)
+        widget = PageScaffold(
+            self.tr("Appearance"),
+            self.tr("Review desktop themes, icons, and fonts before applying or installing them."),
+        )
+        layout = widget.content_layout
 
         # KDE Global Theme Group
         theme_group = QGroupBox(self.tr("KDE Plasma Global Theme"))
@@ -478,13 +484,11 @@ class DesktopTab(BaseTab):
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
 
-        container = QWidget()
-        layout = QVBoxLayout(container)
-        layout.setSpacing(15)
-
-        header = QLabel(self.tr("Display Configuration"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        scaffold = PageScaffold(
+            self.tr("Displays"),
+            self.tr("Review connected displays and session state before changing scaling behavior."),
+        )
+        layout = scaffold.content_layout
 
         # Session Info
         self.display_session_info = QLabel(self.tr("Detecting session..."))
@@ -529,7 +533,7 @@ class DesktopTab(BaseTab):
         layout.addWidget(scale_group)
 
         layout.addStretch()
-        scroll.setWidget(container)
+        scroll.setWidget(scaffold)
 
         # Auto-detect on creation
         QTimer.singleShot(500, self._detect_displays)

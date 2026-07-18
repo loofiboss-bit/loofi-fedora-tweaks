@@ -18,7 +18,18 @@ Central documentation map for Loofi Fedora Tweaks.
 ## Product and Release Docs
 
 - `../README.md` - Project overview and quick start
+- `../ROADMAP.md` - Current and future release-status index
 - `../CHANGELOG.md` - Full change history
+- `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
+- `reports/V16_PHASE0_BASELINE.md` - Exact v15 baseline, UI debt inventory, measurements, and Phase 0 verification
+- `reports/V16_PHASE1_THEME_ENGINE.md` - Structural QSS, semantic palettes, token contracts, and Phase 1 verification
+- `reports/V16_PHASE2_SHARED_COMPONENTS.md` - Shared page, navigation, card, action, status, and accessibility component contracts
+- `reports/V16_PHASE3_APPLICATION_SHELL.md` - Responsive application shell, explicit section metadata, and startup/compatibility verification
+- `reports/V16_PHASE4_HOME_SYSTEM.md` - Home and System redesign, responsive properties, and startup-safety evidence
+- `reports/V16_PHASE5_STANDARD_DESTINATIONS.md` - Shared shell and component contracts across all remaining Standard destinations
+- `reports/V16_PHASE6_ADVANCED_CLEANUP.md` - Advanced shell adoption, retained local tabs, and legacy presentation cleanup
+- `reports/V16_PHASE7_UI_ACCESSIBILITY.md` - Real-shell responsive, theme, input, contrast, and accessibility validation
+- `reports/V16_PHASE8_RELEASE_READINESS.md` - Full regression, startup, packaging, security, and publication evidence
 - `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
 - `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
 - `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist
@@ -34,6 +45,8 @@ Central documentation map for Loofi Fedora Tweaks.
 
 - Canonical latest release index: `releases/RELEASE_NOTES.md`
 - Compatibility aliases: `releases/release_notes.md`, `release_notes.md`
+- `archive/ROADMAP_HISTORY_THROUGH_V15.md` - Full historical roadmap through v15
+- `archive/ROADMAP_V15_NEBULA_LEGACY.md` - Obsolete pre-renormalization Nebula plan
 
 ## Planning and Reports
 
@@ -44,6 +57,6 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are aligned to `v15.0.0 "Essentials"`: six Standard destinations, optional Advanced mode, canonical Home and search, verified Action Center maintenance, state recovery, Fedora 44 support, and Fedora 45 preview checks.
+- User-facing guides are aligned to `v16.0.0 "Clarity"`: responsive section navigation, shared page components, six Standard destinations, optional Advanced mode, verified Action Center maintenance, Fedora 44 support, and Fedora 45 preview checks.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.

@@ -175,6 +175,22 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         layout.addLayout(header_row)
         layout.addWidget(self.output_area)
 
+    def add_output_disclosure(self, layout, summary: str = ""):
+        """Keep technical command output available without dominating the page."""
+        from ui.components.feedback import DetailsDisclosure
+
+        container = QWidget()
+        container_layout = QVBoxLayout(container)
+        container_layout.setContentsMargins(0, 0, 0, 0)
+        self.add_output_section(container_layout)
+        disclosure = DetailsDisclosure(
+            summary=summary or self.tr("Show technical output")
+        )
+        disclosure.add_widget(container)
+        layout.addWidget(disclosure)
+        self.output_disclosure = disclosure
+        return disclosure
+
     def _copy_output(self):
         """Copy the output area text to clipboard."""
         text = self.output_area.toPlainText()

@@ -9,6 +9,8 @@ from typing import Literal
 HomeOverallState = Literal["good", "attention", "critical", "unknown"]
 HomeDataState = Literal["fresh", "stale", "error", "empty"]
 AttentionSeverity = Literal["info", "attention", "critical"]
+HomeStatusState = Literal["good", "attention", "critical", "unknown"]
+HomeStatusId = Literal["health", "updates", "storage", "recovery"]
 
 
 @dataclass(frozen=True)
@@ -57,6 +59,17 @@ class RecentChange:
 
 
 @dataclass(frozen=True)
+class HomeStatus:
+    """One truthful status derived from already-saved Home sources."""
+
+    id: HomeStatusId
+    title: str
+    state: HomeStatusState
+    summary: str
+    route_id: str
+
+
+@dataclass(frozen=True)
 class HomeSummary:
     """Complete, bounded payload consumed by the canonical Home UI."""
 
@@ -69,9 +82,13 @@ class HomeSummary:
     common_tasks: tuple[HomeTask, ...]
     recent_change: RecentChange | None
     source_errors: tuple[str, ...] = ()
+    status_items: tuple[HomeStatus, ...] = ()
 
     def __post_init__(self) -> None:
         if len(self.attention_items) > 3:
             raise ValueError("Home may show at most three attention items")
         if len(self.common_tasks) > 4:
             raise ValueError("Home may show at most four common tasks")
+        status_ids = tuple(item.id for item in self.status_items)
+        if len(status_ids) > 4 or len(set(status_ids)) != len(status_ids):
+            raise ValueError("Home status items must contain at most four unique areas")

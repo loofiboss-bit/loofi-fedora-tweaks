@@ -4,9 +4,14 @@
 
 **Reviewed repository:** `loofiboss-bit/loofi-fedora-tweaks`  
 **Reviewed revision:** `36de3862ccb87c6c163e5c72a484be62beae6a0d` (`master`, 2026-07-18)  
+**Phase 0 authority baseline:** `b96eafec85a3d7e55535201dd7459ef5c9de46b1` (`master`, 2026-07-18)
+
 **Current release:** v15.0.0 "Essentials"  
 **Proposed release:** v16.0.0 "Clarity"  
 **Primary objective:** a complete, professional, responsive UI/UX redesign without changing trusted system-operation behavior.
+
+This file is the sole v16 scope authority. The earlier review filename was
+renamed during Phase 0; do not create a second v16 plan.
 
 ---
 
@@ -50,7 +55,12 @@ The best v16 is therefore a design-and-consolidation release. It should add no m
 - [v15 validation report](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/36de3862ccb87c6c163e5c72a484be62beae6a0d/docs/reports/V15_PHASE8_VALIDATION.md)
 - [v15 component/package decision](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/36de3862ccb87c6c163e5c72a484be62beae6a0d/docs/reports/V15_PHASE9_PACKAGING.md)
 - [CI workflow](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/36de3862ccb87c6c163e5c72a484be62beae6a0d/.github/workflows/ci.yml)
-- the two supplied v15 screenshots at 1918×1018.
+- the two supplied v15 screenshots at 1918×1018, preserved as
+  `docs/images/v16/phase0/home-system-theme.png` and
+  `docs/images/v16/phase0/system-section-overflow.png`.
+- [Phase 0 baseline and audit report](../reports/V16_PHASE0_BASELINE.md)
+- [Phase 0 machine-readable inventory](../reports/V16_PHASE0_INVENTORY.json)
+- [Phase 0 screenshot manifest](../reports/V16_PHASE0_SCREENSHOTS.json)
 
 ---
 
@@ -69,7 +79,7 @@ These contracts must be frozen during v16.
 ### 3.2 Architecture
 
 - PyQt presentation, services, core policy, utilities, CLI, API, and daemon have documented boundaries.
-- Stable route IDs provide a good base for a shell redesign without breaking deep links or saved state.
+- The 80 stable route IDs and 438 accepted alias keys provide a good base for a shell redesign without breaking deep links or saved state.
 - Data-only plugin specifications and route-time construction are the correct direction.
 - Standard and Advanced modes reduce normal-user cognitive load without weakening safety.
 
@@ -229,6 +239,9 @@ Make Loofi Fedora Tweaks feel like a focused Fedora-native control center: calm,
 ### Navigation rules
 
 - Replace `DestinationHost.tabs` with a `SectionNavigator` backed by the existing destination, placement, route, and policy models.
+- Add explicit data-only section presentation metadata for label, icon, order,
+  and default route. Do not derive section labels from the first route in a
+  section, and do not replace stable route or placement identities.
 - Desktop/wide: full-label vertical list with icons and optional textual status.
 - Narrow: accessible combo/menu selector with full labels; no ellipsis-only entries.
 - Preserve route activation, history, back/forward, search, policy explanations, lazy construction, and deep links.
@@ -297,7 +310,9 @@ Rules:
 
 ### 8.2 System Information
 
-- Move Refresh, Copy Summary, and Export Report into the page header/action bar.
+- Move the existing Export Report control into the page header/action bar.
+- Do not add Refresh or Copy Summary in v16; neither action exists in the v15
+  baseline, and this release does not expand System Information behavior.
 - Replace the wide `QGroupBox` grid with responsive property cards:
   - Operating system: hostname, Fedora version, kernel;
   - Hardware: CPU, RAM, battery;
@@ -348,7 +363,7 @@ Rules:
 
 Tasks:
 
-- Create `docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` from this plan.
+- Keep this canonical `docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` as the sole v16 authority.
 - Record exact v15 commit/tag, startup/RSS measurements, workflow counts, and route inventory.
 - Capture the six Standard destinations at 860×720, 1366×768, 1920×1080 at 100/125/140/150%, and 2560×1440 at 200% where possible.
 - Inventory every `QTabWidget`, `QTabBar`, page title, root margin, broad QSS selector, hardcoded color, and full-width action button.
@@ -481,7 +496,7 @@ Automated matrix:
 - Standard and Advanced modes;
 - 860×720, 1280×720, 1366×768, 1920×1080, 2560×1440;
 - 100%, 125%, 140%, 150%, and 200% font/scale fixtures;
-- long Swedish strings and English strings;
+- English source strings and deliberately long English stress strings;
 - keyboard-only navigation and visible focus;
 - route labels, controls, dialogs, loading/error/empty states;
 - no unintended horizontal scrolling or geometry overflow.
@@ -514,7 +529,7 @@ Tasks:
 Gate:
 
 - full suite green and coverage at least 85%;
-- meaningful Home median no slower than 225 ms and no more than 20% slower than the recorded v15 baseline on the same host;
+- meaningful Home median no slower than 225 ms and no more than 20% slower than the historical 151.924 ms v15 baseline on the same host; the binding relative limit is therefore 182.309 ms;
 - RSS no more than 15% above v15 on the same host;
 - one startup plugin instance, zero startup subprocess probes, zero active hidden-page timers, and zero running worker threads;
 - no route/state/Action Center/CLI/API/daemon/IPC compatibility regression;
@@ -546,7 +561,7 @@ Gate:
 - Keyboard can reach and activate every destination, section, card, action, disclosure, and dialog control.
 - Focus is always visible.
 - Result, severity, and availability are communicated through text/icon plus color.
-- Long English and Swedish labels remain readable.
+- Standard and deliberately long English labels remain readable.
 - Live screen-reader smoke is recorded for the primary workflows.
 
 ### Stability and compatibility

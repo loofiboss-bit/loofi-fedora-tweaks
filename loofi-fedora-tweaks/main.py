@@ -84,14 +84,8 @@ def _startup_theme_name() -> str:
 
 
 def _theme_file_for(name: str) -> str | None:
-    """Return the QSS filename for a theme name."""
-    if name == "system":
-        return None
-    return {
-        "dark": "modern.qss",
-        "light": "light.qss",
-        "highcontrast": "highcontrast.qss",
-    }.get(name, "modern.qss")
+    """Return the shared structural QSS filename for GUI theme startup."""
+    return "base.qss"
 
 
 def main():
@@ -168,7 +162,6 @@ def main():
             sys.exit(1)
 
         try:
-            from PyQt6.QtCore import QLocale, QTranslator
             from PyQt6.QtWidgets import QApplication, QMessageBox
             from ui.main_window import MainWindow
         except ImportError as exc:
@@ -184,32 +177,11 @@ def main():
 
             install_error_handler()
 
-            # Load translations based on system locale
-            locale = QLocale.system().name()
-            translator = QTranslator()
-            translations_path = os.path.join(
-                os.path.dirname(os.path.abspath(__file__)),
-                "resources",
-                "translations",
-            )
-
-            if translator.load(f"loofi_{locale}", translations_path):
-                app.installTranslator(translator)
-            elif translator.load(f"loofi_{locale.split('_')[0]}", translations_path):
-                app.installTranslator(translator)
-
-            # Load QSS Stylesheet from saved/system preference.
+            # Always load structural styling; ThemeManager only changes palette tokens.
             theme_name = _startup_theme_name()
-            theme_file = _theme_file_for(theme_name)
-            if theme_file is not None:
-                style_file = os.path.join(
-                    os.path.dirname(os.path.abspath(__file__)),
-                    "assets",
-                    theme_file,
-                )
-                if os.path.exists(style_file):
-                    with open(style_file, "r") as f:
-                        app.setStyleSheet(f.read())
+            from ui.design import ThemeManager
+
+            ThemeManager().apply(app, theme_name)
 
             window = MainWindow()
             window.show()

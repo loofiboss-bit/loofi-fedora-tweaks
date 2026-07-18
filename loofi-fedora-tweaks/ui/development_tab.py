@@ -1,8 +1,7 @@
 """
-Development Tab - Consolidated Containers + Developer Tools interface.
-Part of v11.0 "Aurora Update" - merges Containers and Developer tabs.
+Consolidated Containers and Developer Tools interface.
 
-Sub-tabs:
+Route pages:
 - Containers: Distrobox container management
 - Developer Tools: Language version managers, VS Code extensions
 """
@@ -26,7 +25,7 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QScrollArea,
-    QTabWidget,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -37,7 +36,7 @@ from utils.devtools import DevToolsManager
 from utils.vscode import VSCodeManager
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
+from ui.components import PageScaffold
 from ui.tooltips import DEV_CONTAINERS, DEV_LANGUAGES, DEV_VSCODE  # noqa: F401 — DEV_TOOLBOX reserved
 
 
@@ -106,27 +105,48 @@ class DevelopmentTab(BaseTab):
         self.refresh_dev_status()
 
     def init_ui(self):
-        """Initialize the UI with sub-tabs."""
+        """Initialize shell-selected Development route pages."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*CONTENT_MARGINS)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        # Sub-tab widget
-        self.sub_tabs = QTabWidget()
-        configure_top_tabs(self.sub_tabs)
+        self.sub_tabs = QStackedWidget()
+        self.sub_tabs.setObjectName("developmentPages")
         layout.addWidget(self.sub_tabs)
 
-        # Sub-tab 1: Containers (from ContainersTab)
-        self.sub_tabs.addTab(
-            self._create_containers_tab(), self.tr("Containers")
+        self.sub_tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Development containers"),
+                self.tr("Create and manage isolated developer environments."),
+                self._create_containers_tab(),
+            )
+        )
+        self.sub_tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Developer tools"),
+                self.tr("Manage language runtimes and editor tooling."),
+                self._create_developer_tab(),
+            )
         )
 
-        # Sub-tab 2: Developer Tools (from DeveloperTab)
-        self.sub_tabs.addTab(
-            self._create_developer_tab(), self.tr("Developer Tools")
-        )
+        self.add_output_disclosure(layout, self.tr("Show developer operation output"))
 
-        # Shared output area at bottom
-        self.add_output_section(layout)
+    @staticmethod
+    def _scaffold_route(name: str, description: str, content: QWidget) -> PageScaffold:
+        scaffold = PageScaffold(name, description)
+        scaffold.add_widget(content, 1)
+        return scaffold
+
+    def activate_route(self, route) -> bool:
+        """Select a Development page from a stable route ID."""
+        index = {
+            "development": 0,
+            "development:containers": 0,
+            "development:developer": 1,
+        }.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.sub_tabs.setCurrentIndex(index)
+        return True
 
     # ================================================================
     # CONTAINERS SUB-TAB (from ContainersTab)
@@ -140,14 +160,11 @@ class DevelopmentTab(BaseTab):
 
         container = QWidget()
         ct_layout = QVBoxLayout(container)
+        ct_layout.setContentsMargins(0, 0, 0, 0)
         ct_layout.setSpacing(15)
 
-        # Header with status
+        # Current container runtime status
         header_layout = QHBoxLayout()
-        header = QLabel(self.tr("Container Management"))
-        header.setObjectName("header")
-        header_layout.addWidget(header)
-
         self.container_status_label = QLabel()
         self.container_status_label.setObjectName("devContainerStatus")
         header_layout.addWidget(self.container_status_label)
@@ -483,12 +500,8 @@ class DevelopmentTab(BaseTab):
 
         container = QWidget()
         dev_layout = QVBoxLayout(container)
+        dev_layout.setContentsMargins(0, 0, 0, 0)
         dev_layout.setSpacing(15)
-
-        # Header
-        header = QLabel(self.tr("Developer Tools"))
-        header.setObjectName("header")
-        dev_layout.addWidget(header)
 
         # Language Version Managers
         dev_layout.addWidget(self._create_language_section())

@@ -60,7 +60,8 @@ def test_packaging_manifest_tracks_navigation_and_assets():
     assert "core/executor/command_facade.py" in expected
     assert "core/executor/command_policy.py" in expected
     assert "ui/layout_primitives.py" in expected
-    assert "assets/modern.qss" in expected
+    assert "assets/base.qss" in expected
+    assert "ui/design/theme_manager.py" in expected
     assert "resources/translations/en.ts" in expected
 
 

@@ -63,7 +63,7 @@ Application-wide settings:
 ```
 
 **Key settings:**
-- `theme`: `"dark"` or `"light"`
+- `theme`: `"system"`, `"dark"`, `"light"`, or `"highcontrast"`
 - `language`: Locale code (currently only `en_US`)
 - `auto_update_check`: Check for app updates on startup
 - `notification_level`: `"minimal"`, `"normal"`, or `"verbose"`
@@ -186,23 +186,24 @@ User profile from first-run wizard:
 
 | Theme | Description | Palette |
 |-------|-------------|---------|
-| **Abyss Dark** | Default dark theme | Deep ocean-inspired (#0b0e14 base, #39c5cf accent) |
-| **Abyss Light** | Light theme | Clean light palette (#f4f6f9 base, #0e8a93 accent) |
+| **System** | Follows the active Qt/KDE palette | Derived from `QPalette` with contrast guards |
+| **Abyss Dark** | Default dark theme | Dark surfaces with a restrained blue accent |
+| **Abyss Light** | Light theme | Light surfaces with a deep blue accent |
+| **High Contrast** | Explicit high-contrast theme | Black, white, yellow, and semantic status colors |
 
-### Theme Files
+### Theme Structure
 
-Themes are QSS (Qt Style Sheets) files:
+All themes use one structural QSS template. The application injects a semantic
+palette for the selected theme at runtime:
 
 **System-wide** (installed via RPM):
 ```
-/usr/share/loofi-fedora-tweaks/assets/modern.qss  # Dark theme
-/usr/share/loofi-fedora-tweaks/assets/light.qss   # Light theme
+/usr/share/loofi-fedora-tweaks/assets/base.qss
 ```
 
 **Source tree**:
 ```
-loofi-fedora-tweaks/assets/modern.qss
-loofi-fedora-tweaks/assets/light.qss
+loofi-fedora-tweaks/assets/base.qss
 ```
 
 ### Switch Theme
@@ -216,7 +217,7 @@ nano ~/.config/loofi-fedora-tweaks/settings.json
 
 # Change theme field
 {
-  "theme": "light"  # or "dark"
+  "theme": "system"
 }
 ```
 
@@ -226,67 +227,63 @@ Restart app to apply.
 
 ## QSS Styling Rules
 
-### Custom QSS
-
-You can create custom themes by copying and modifying existing QSS files.
-
-**Load custom QSS**:
-1. Copy `modern.qss` or `light.qss` to a new file
-2. Modify colors and styles
-3. Update Settings tab to load custom QSS (future feature)
+`base.qss` owns component structure. Theme colors come from semantic roles in
+`ui/design/theme_manager.py`, so adding a maintained palette requires code and
+contrast-test updates rather than copying the structural stylesheet. Arbitrary
+custom QSS loading is not a supported configuration contract.
 
 ### Common Selectors
 
 **Sidebar:**
 ```css
 QTreeWidget#sidebar {
-    background-color: #0b0e14;
-    color: #e4e8f4;
+    background-color: $color_surface;
+    color: $color_text_muted;
 }
 
 QTreeWidget#sidebar::item:selected {
-    background-color: #39c5cf;
-    color: #0b0e14;
+    background-color: $color_selected;
+    color: $color_accent;
 }
 ```
 
 **Buttons:**
 ```css
 QPushButton {
-    background-color: #39c5cf;
-    color: #0b0e14;
-    border-radius: 4px;
-    padding: 8px 16px;
+    background-color: $color_surface_raised;
+    color: $color_text;
+    border-radius: $radius_control;
+    padding: $space_2 $space_4;
 }
 
 QPushButton:hover {
-    background-color: #4dd5df;
+    background-color: $color_hover;
 }
 ```
 
 **Cards:**
 ```css
-QFrame[class="card"] {
-    background-color: #151a21;
-    border-radius: 8px;
-    padding: 16px;
+QFrame[routeCard="true"] {
+    background-color: $color_surface;
+    border-radius: $radius_card;
+    padding: $space_4;
 }
 ```
 
 **Tables:**
 ```css
 QTableWidget::item {
-    color: #e4e8f4;
-    padding: 8px;
+    color: $color_text;
+    padding: $space_2;
 }
 
 QTableWidget::item:alternate {
-    background-color: #151a21;
+    background-color: $color_surface_raised;
 }
 
 QTableWidget::item:selected {
-    background-color: #39c5cf;
-    color: #0b0e14;
+    background-color: $color_selected;
+    color: $color_text;
 }
 ```
 
@@ -296,13 +293,14 @@ Many widgets use `setObjectName()` for precise styling:
 
 ```python
 # In Python code
-button.setObjectName("dangerButton")
+button.setObjectName("dangerAction")
 ```
 
 ```css
 /* In QSS */
-QPushButton#dangerButton {
-    background-color: #f38ba8;
+QPushButton[objectName="dangerAction"] {
+    background-color: $color_error_surface;
+    color: $color_error_text;
 }
 ```
 

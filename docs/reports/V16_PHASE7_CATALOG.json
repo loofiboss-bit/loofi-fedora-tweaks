@@ -1,0 +1,393 @@
+{
+  "backend": "offscreen",
+  "cases": [],
+  "catalog_frames": [
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "case_id": "system__standard__860x720__scale-100__en__atlas_dashboard",
+      "group": "system__standard",
+      "label": "atlas_dashboard \u00b7 860x720 \u00b7 100% \u00b7 en",
+      "sha256": "25b5dea69fe0201793eecae6218eca5b2e37e68f188e7377d0d99fb92300dec9"
+    },
+    {
+      "captured_dimensions": [
+        1280,
+        720
+      ],
+      "case_id": "system__standard__1280x720__scale-125__en-long__software-apps",
+      "group": "system__standard",
+      "label": "software:apps \u00b7 1280x720 \u00b7 125% \u00b7 en-long",
+      "sha256": "260674e5712ddf791c7ebe5a961ad6a33163a895777ba0ce95711a9b38513ffe"
+    },
+    {
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "case_id": "system__standard__1366x768__scale-140__en__system_info",
+      "group": "system__standard",
+      "label": "system_info \u00b7 1366x768 \u00b7 140% \u00b7 en",
+      "sha256": "492423abc5a2be6cfe503cc7b95c348ffc1c2b2054472d46cdce85d4c1e1e39a"
+    },
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "case_id": "system__advanced__860x720__scale-100__en-long__performance",
+      "group": "system__advanced",
+      "label": "performance \u00b7 860x720 \u00b7 100% \u00b7 en-long",
+      "sha256": "393603adb34677ec504750cbe13cec51282e0af366ee564004125cb1d37462c6"
+    },
+    {
+      "captured_dimensions": [
+        1280,
+        720
+      ],
+      "case_id": "system__advanced__1280x720__scale-125__en__development",
+      "group": "system__advanced",
+      "label": "development \u00b7 1280x720 \u00b7 125% \u00b7 en",
+      "sha256": "2af2f432663ad30b07c143d8b3a0bb2d3ab6f7d6089b41fb9c88a0e68bd8145d"
+    },
+    {
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "case_id": "system__advanced__1366x768__scale-140__en-long__profiles",
+      "group": "system__advanced",
+      "label": "profiles \u00b7 1366x768 \u00b7 140% \u00b7 en-long",
+      "sha256": "bd945f99220374528d73338cf3bc7866986643d3f799d9221119d13fda6d2887"
+    },
+    {
+      "captured_dimensions": [
+        1280,
+        720
+      ],
+      "case_id": "dark__standard__1280x720__scale-125__en-long__network",
+      "group": "dark__standard",
+      "label": "network \u00b7 1280x720 \u00b7 125% \u00b7 en-long",
+      "sha256": "dfb2ba10a695d0786ba7d9067dfd495a0bedc4fd01b2dddf4cd28753d1496d42"
+    },
+    {
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "case_id": "dark__standard__1366x768__scale-140__en__desktop",
+      "group": "dark__standard",
+      "label": "desktop \u00b7 1366x768 \u00b7 140% \u00b7 en",
+      "sha256": "78b7a505b0092c86f396d92897cff5a8669f519a922df0f0ecbeb2f04b78683a"
+    },
+    {
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "case_id": "dark__standard__1920x1080__scale-150__en-long__settings",
+      "group": "dark__standard",
+      "label": "settings \u00b7 1920x1080 \u00b7 150% \u00b7 en-long",
+      "sha256": "ee7a31794236e3763bc73d916f1483f110608c35f8d48f5a9c1ab0ba98f539c0"
+    },
+    {
+      "captured_dimensions": [
+        1280,
+        720
+      ],
+      "case_id": "dark__advanced__1280x720__scale-125__en__community",
+      "group": "dark__advanced",
+      "label": "community \u00b7 1280x720 \u00b7 125% \u00b7 en",
+      "sha256": "9045ab6ee14db4c8f3c69becdfdfc608546608e6bdb1a3e4e1ba84265d604501"
+    },
+    {
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "case_id": "dark__advanced__1366x768__scale-140__en-long__ai-lab",
+      "group": "dark__advanced",
+      "label": "ai-lab \u00b7 1366x768 \u00b7 140% \u00b7 en-long",
+      "sha256": "ba1b057f2415541164b915382737b82b5b61cc576ce5df5c3849f835ca5f3d1d"
+    },
+    {
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "case_id": "dark__advanced__1920x1080__scale-150__en__virtualization",
+      "group": "dark__advanced",
+      "label": "virtualization \u00b7 1920x1080 \u00b7 150% \u00b7 en",
+      "sha256": "ad5cd1fee1a76c9455b3f0f91e18be3c4f910ae2ad867e0a102ed2ec7a82751b"
+    },
+    {
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "case_id": "light__standard__1366x768__scale-140__en__atlas_dashboard",
+      "group": "light__standard",
+      "label": "atlas_dashboard \u00b7 1366x768 \u00b7 140% \u00b7 en",
+      "sha256": "9077ba5127345a443f1ba3577419333eef9a9b8ba0fc430cc6567bb299c73eb9"
+    },
+    {
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "case_id": "light__standard__1920x1080__scale-150__en-long__software-apps",
+      "group": "light__standard",
+      "label": "software:apps \u00b7 1920x1080 \u00b7 150% \u00b7 en-long",
+      "sha256": "ada4eb2aa5252cf4af1cd670f5811fd516e8f53c816de810d718e63f2ab9bf40"
+    },
+    {
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "case_id": "light__standard__2560x1440__scale-200__en__system_info",
+      "group": "light__standard",
+      "label": "system_info \u00b7 2560x1440 \u00b7 200% \u00b7 en",
+      "sha256": "ea4fbe8649f3477082761436c0c25559390a6b54b10486ef22a6338bd3fae0ee"
+    },
+    {
+      "captured_dimensions": [
+        1366,
+        768
+      ],
+      "case_id": "light__advanced__1366x768__scale-140__en-long__performance",
+      "group": "light__advanced",
+      "label": "performance \u00b7 1366x768 \u00b7 140% \u00b7 en-long",
+      "sha256": "c07f307c6bafb92b8c1f594d7df2abcb2fdb9ff5c7b86a188fc0be3efdad2b86"
+    },
+    {
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "case_id": "light__advanced__1920x1080__scale-150__en__development",
+      "group": "light__advanced",
+      "label": "development \u00b7 1920x1080 \u00b7 150% \u00b7 en",
+      "sha256": "4927429a72c1b3e52393853f8fdfb4cbb5d70fff0fec610d9eaca516e090384b"
+    },
+    {
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "case_id": "light__advanced__2560x1440__scale-200__en-long__profiles",
+      "group": "light__advanced",
+      "label": "profiles \u00b7 2560x1440 \u00b7 200% \u00b7 en-long",
+      "sha256": "36dc7e27740d361a9f2027844f44ece055e9614a24f52868fbe5cbfc47b22505"
+    },
+    {
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "case_id": "highcontrast__standard__1920x1080__scale-150__en-long__network",
+      "group": "highcontrast__standard",
+      "label": "network \u00b7 1920x1080 \u00b7 150% \u00b7 en-long",
+      "sha256": "f8ba1cc69946245fb9603df369e4777ff0fb0bfaac4968f6dace348b4662575b"
+    },
+    {
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "case_id": "highcontrast__standard__2560x1440__scale-200__en__desktop",
+      "group": "highcontrast__standard",
+      "label": "desktop \u00b7 2560x1440 \u00b7 200% \u00b7 en",
+      "sha256": "0052039a27d0df8eb18d71ed93c0387e81565ec916a354077de4afa3338aab7d"
+    },
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "case_id": "highcontrast__standard__860x720__scale-100__en-long__settings",
+      "group": "highcontrast__standard",
+      "label": "settings \u00b7 860x720 \u00b7 100% \u00b7 en-long",
+      "sha256": "b25fbbd17fa8f0f2506ae1c736c566c497959fb1b6e2bc5910a28368b5ca7c80"
+    },
+    {
+      "captured_dimensions": [
+        1920,
+        1080
+      ],
+      "case_id": "highcontrast__advanced__1920x1080__scale-150__en__community",
+      "group": "highcontrast__advanced",
+      "label": "community \u00b7 1920x1080 \u00b7 150% \u00b7 en",
+      "sha256": "fd6ee17c05e34a6c0b46b20a8aa7988dbe490e054c8eee1cecce84ffd1bd41fa"
+    },
+    {
+      "captured_dimensions": [
+        2560,
+        1440
+      ],
+      "case_id": "highcontrast__advanced__2560x1440__scale-200__en-long__ai-lab",
+      "group": "highcontrast__advanced",
+      "label": "ai-lab \u00b7 2560x1440 \u00b7 200% \u00b7 en-long",
+      "sha256": "4fb649d4de8f075e5aa5ae246169f9f1dc9039cefe4534e928c87af275f2e147"
+    },
+    {
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "case_id": "highcontrast__advanced__860x720__scale-100__en__virtualization",
+      "group": "highcontrast__advanced",
+      "label": "virtualization \u00b7 860x720 \u00b7 100% \u00b7 en",
+      "sha256": "5a6ed3848fa505158b8492de72aa7c51cfe20592e220c7c6dae5401577c5a7dc"
+    }
+  ],
+  "contact_sheets": [
+    {
+      "frame_count": 3,
+      "group": "dark__advanced",
+      "path": "docs/images/v16/phase7/contact-sheets/dark__advanced.png",
+      "sha256": "8562f0c2d88718677223b2b786f6683fde055b2df922e5e0e264ff2a2f6f5b9c"
+    },
+    {
+      "frame_count": 3,
+      "group": "dark__standard",
+      "path": "docs/images/v16/phase7/contact-sheets/dark__standard.png",
+      "sha256": "d9723bada9258b3505c3073ba0504a531c8fb2269ac3225608ff631789055724"
+    },
+    {
+      "frame_count": 3,
+      "group": "highcontrast__advanced",
+      "path": "docs/images/v16/phase7/contact-sheets/highcontrast__advanced.png",
+      "sha256": "9b484ba23234eaa586121ec63fc9e422bda31befbf867c2334c7d9dfd1720218"
+    },
+    {
+      "frame_count": 3,
+      "group": "highcontrast__standard",
+      "path": "docs/images/v16/phase7/contact-sheets/highcontrast__standard.png",
+      "sha256": "1ebe001a436d1a19ac3d0850d3c720d96f936f8ea7e9dd8a450ff3c7a7ff4911"
+    },
+    {
+      "frame_count": 3,
+      "group": "light__advanced",
+      "path": "docs/images/v16/phase7/contact-sheets/light__advanced.png",
+      "sha256": "d99818839d7ab31bcd0a40acc5410ac504c826028f9945b689219c34af416c32"
+    },
+    {
+      "frame_count": 3,
+      "group": "light__standard",
+      "path": "docs/images/v16/phase7/contact-sheets/light__standard.png",
+      "sha256": "b76a607ea5dffb3dfdf0da58c3c1fa58cfc368a9a56571183fce0e7d78f977a5"
+    },
+    {
+      "frame_count": 3,
+      "group": "system__advanced",
+      "path": "docs/images/v16/phase7/contact-sheets/system__advanced.png",
+      "sha256": "1373e7d9e266303561445827e63138b68dda5d40cc52a1142a53dd51ccb789d0"
+    },
+    {
+      "frame_count": 3,
+      "group": "system__standard",
+      "path": "docs/images/v16/phase7/contact-sheets/system__standard.png",
+      "sha256": "420f598fcb16cdafb84326ae37212f9d61279016037b37992f5a172bc65601f4"
+    }
+  ],
+  "contrast": {
+    "interactive_focus_minimum": 3.0,
+    "status": "passed",
+    "text_minimum": 4.5
+  },
+  "errors": [],
+  "generated_at": "2026-07-18T09:57:29.552184+00:00",
+  "git_commit": "8d4bc2593000912f58d814590abc833543eb97b8",
+  "git_worktree_clean": false,
+  "host": {
+    "atspi_python": "available",
+    "declared_compositor_scale_percent": null,
+    "desktop": "KDE",
+    "device_pixel_ratio": 1.0,
+    "display": ":0",
+    "hostname": "fedora",
+    "kscreen": "",
+    "orca": "Orca version 50.2, AT-SPI2 version: 2.60.5, Session: wayland KDE",
+    "platform": "Linux-7.1.3-201.fc44.x86_64-x86_64-with-glibc2.43",
+    "qt_platform": "offscreen",
+    "qt_scale_factor": "",
+    "screen_geometry": [
+      800,
+      800
+    ],
+    "session_type": "wayland",
+    "wayland_display": "wayland-0",
+    "xrandr": "Screen 0: minimum 16 x 16, current 1920 x 1080, maximum 32767 x 32767\neDP-1 connected primary 1920x1080+0+0 (normal left inverted right x axis y axis) 309mm x 174mm\n   1920x1080     59.96*+\n   1440x1080     59.99  \n   1400x1050     59.98  \n   1280x1024     59.89  \n   1280x960      59.94  \n   1152x864      59.96  \n   1024x768      59.92  \n   800x600       59.86  \n   640x480       59.38  \n   320x240       59.52  \n   1680x1050     59.95  \n   1440x900      59.89  \n   1280x800      59.81  \n   1152x720      59.97  \n   960x600       59.96  \n   928x580       59.88  \n   800x500       59.50  \n   768x480       59.90  \n   720x480       59.71  \n   640x400       59.95  \n   320x200       58.96  \n   1600x900      59.95  \n   1368x768      59.88  \n   1280x720      59.86  \n   1024x576      59.90  \n   864x486       59.92  \n   720x400       59.55  \n   640x350       59.77"
+  },
+  "interaction": {
+    "confirmation_dialog": "passed",
+    "errors": [],
+    "keyboard_navigation": "passed",
+    "mouse": "passed",
+    "resize": "passed",
+    "touchpad_wheel_equivalent": "passed",
+    "visible_focus": "passed"
+  },
+  "matrix_contract": {
+    "complete_automated_cells": 400,
+    "executed_cells": 0,
+    "font_scales": [
+      100,
+      125,
+      140,
+      150,
+      200
+    ],
+    "locale_fixtures": [
+      "en",
+      "en-long"
+    ],
+    "navigation_modes": [
+      "standard",
+      "advanced"
+    ],
+    "real_main_window": true,
+    "themes": [
+      "system",
+      "dark",
+      "light",
+      "highcontrast"
+    ],
+    "viewports": [
+      [
+        860,
+        720
+      ],
+      [
+        1280,
+        720
+      ],
+      [
+        1366,
+        768
+      ],
+      [
+        1920,
+        1080
+      ],
+      [
+        2560,
+        1440
+      ]
+    ]
+  },
+  "phase": 7,
+  "release": "v16.0.0 Clarity",
+  "safety": {
+    "asynchronous_commands_rejected": true,
+    "background_services_disabled": true,
+    "mutating_subprocesses_rejected": true,
+    "temporary_home_and_xdg": true
+  },
+  "schema_version": 1,
+  "scope": "catalog",
+  "status": "passed"
+}

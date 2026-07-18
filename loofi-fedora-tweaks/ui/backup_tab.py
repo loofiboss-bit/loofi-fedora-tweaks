@@ -28,11 +28,13 @@ from PyQt6.QtWidgets import (
 from utils.install_hints import build_install_hint
 
 from ui.base_tab import BaseTab
+from ui.components import ActionBar, InlineNotice, PageScaffold
 from ui.shared_states import ResultBanner
 
 logger = logging.getLogger(__name__)
 
-CONTENT_MARGINS = (16, 16, 16, 16)
+# Kept for downstream imports; PageScaffold now owns visible page spacing.
+CONTENT_MARGINS = (0, 0, 0, 0)
 
 
 class BackupTab(BaseTab):
@@ -61,13 +63,21 @@ class BackupTab(BaseTab):
 
     def init_ui(self):
         """Build the backup wizard UI."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(*CONTENT_MARGINS)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Backups"),
+            self.tr("Create and restore backup snapshots separately from Loofi recovery points."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
-        # --- Header ---
-        title = QLabel(self.tr("Backups"))
-        title.setObjectName("sectionTitle")
-        layout.addWidget(title)
+        self.scope_notice = InlineNotice(
+            self.tr("Backups and recovery points are separate"),
+            self.tr("This page manages Timeshift, Snapper, and Btrfs backups. Loofi recovery points remain under System."),
+            kind="info",
+        )
+        layout.addWidget(self.scope_notice)
 
         # --- Wizard Stack ---
         self.stack = QStackedWidget()
@@ -81,21 +91,24 @@ class BackupTab(BaseTab):
         self.stack.addWidget(self._create_manage_page())
 
         # --- Navigation ---
-        nav = QHBoxLayout()
+        nav = ActionBar()
         self.back_btn = QPushButton(self.tr("Back"))
         self.back_btn.clicked.connect(self._go_back)
         self.back_btn.setEnabled(False)
-        nav.addWidget(self.back_btn)
-
-        nav.addStretch()
+        nav.add_action(self.back_btn)
 
         self.next_btn = QPushButton(self.tr("Next"))
         self.next_btn.clicked.connect(self._go_next)
-        nav.addWidget(self.next_btn)
-        layout.addLayout(nav)
+        nav.add_action(self.next_btn, primary=True)
+        layout.addWidget(nav)
 
         # --- Output ---
-        self.add_output_section(layout)
+        self.add_output_disclosure(layout, self.tr("Show backup command output"))
+
+    @staticmethod
+    def activate_route(route) -> bool:
+        """Accept the stable Backup route without introducing sub-navigation."""
+        return str(getattr(route, "id", route)) == "backup"
 
     # ================================================================
     # PAGES

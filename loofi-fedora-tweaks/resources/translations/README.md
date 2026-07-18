@@ -1,51 +1,13 @@
-# Translations
+# English source strings
 
-This directory contains translation files for Loofi Fedora Tweaks.
+Loofi Fedora Tweaks ships an English-only interface. This directory retains
+the Qt Linguist source catalog only as an inventory of English UI strings.
 
 ## Files
 
-- `en.ts` - English (source strings, 414 entries)
-- `sv.ts` - Swedish (copy for translation)
+- `en.ts` - English source-string inventory
 
-## Translation Workflow
+The application does not load system-locale translations and does not package
+non-English catalogs. Long-text UI validation uses English stress strings.
 
-### 1. Install Qt Linguist Tools
-
-```bash
-sudo dnf install qt6-linguist
-```
-
-### 2. Edit Translations
-
-```bash
-linguist resources/translations/sv.ts
-```
-
-### 3. Compile to Binary
-
-```bash
-lrelease resources/translations/*.ts
-```
-
-### 4. Test
-
-```bash
-LANG=sv_SE.UTF-8 python3 main.py
-```
-
-## For Translators
-
-1. Open `sv.ts` in Qt Linguist
-2. Translate strings (keep `{}` placeholders)
-3. Mark translations as "Finished"
-4. Save and compile
-
-## Adding New Languages
-
-```bash
-# Copy English source
-cp en.ts de.ts  # German example
-
-# Edit language attribute
-# Change: language="en_US" → language="de_DE"
-```
+Do not add or compile another locale without an explicit product-scope change.

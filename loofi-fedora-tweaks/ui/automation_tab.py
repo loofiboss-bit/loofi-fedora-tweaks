@@ -1,8 +1,7 @@
 """
-Automation Tab - Consolidated Scheduler + Replicator interface.
-Part of v11.0 "Aurora Update" - merges Scheduler and Replicator tabs.
+Consolidated Scheduler and Replicator interface.
 
-Sub-tabs:
+Route pages:
 - Scheduler: Manage scheduled automation tasks (cleanup, updates, sync, presets)
 - Replicator: Export system config as Ansible playbooks and Kickstart files
 """
@@ -12,7 +11,6 @@ import uuid
 from core.export import AnsibleExporter, KickstartGenerator
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -28,14 +26,15 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QPushButton,
     QScrollArea,
-    QTabWidget,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
 from utils.scheduler import ScheduledTask, TaskAction, TaskSchedule, TaskScheduler
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
+from ui.components import PageScaffold
+from ui.design import semantic_qcolor
 
 
 class AddTaskDialog(QDialog):
@@ -158,23 +157,48 @@ class AutomationTab(BaseTab):
         self.refresh_all()
 
     def init_ui(self):
-        """Initialize the UI with sub-tabs."""
+        """Initialize shell-selected Automation route pages."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*CONTENT_MARGINS)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        # Sub-tab widget
-        self.sub_tabs = QTabWidget()
-        configure_top_tabs(self.sub_tabs)
+        self.sub_tabs = QStackedWidget()
+        self.sub_tabs.setObjectName("automationPages")
         layout.addWidget(self.sub_tabs)
 
-        # Sub-tab 1: Scheduler (from SchedulerTab)
-        self.sub_tabs.addTab(self._create_scheduler_tab(), self.tr("Scheduler"))
+        self.sub_tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Automation scheduler"),
+                self.tr("Schedule existing maintenance and synchronization tasks."),
+                self._create_scheduler_tab(),
+            )
+        )
+        self.sub_tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Configuration replicator"),
+                self.tr("Export system configuration for reproducible setup."),
+                self._create_replicator_tab(),
+            )
+        )
 
-        # Sub-tab 2: Replicator (from ReplicatorTab)
-        self.sub_tabs.addTab(self._create_replicator_tab(), self.tr("Replicator"))
+        self.add_output_disclosure(layout, self.tr("Show automation output"))
 
-        # Shared output area at bottom
-        self.add_output_section(layout)
+    @staticmethod
+    def _scaffold_route(name: str, description: str, content: QWidget) -> PageScaffold:
+        scaffold = PageScaffold(name, description)
+        scaffold.add_widget(content, 1)
+        return scaffold
+
+    def activate_route(self, route) -> bool:
+        """Select an Automation page from a stable route ID."""
+        index = {
+            "automation": 0,
+            "automation:scheduler": 0,
+            "automation:replicator": 1,
+        }.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.sub_tabs.setCurrentIndex(index)
+        return True
 
     # ================================================================
     # SCHEDULER SUB-TAB (from SchedulerTab)
@@ -184,13 +208,8 @@ class AutomationTab(BaseTab):
         """Create the Scheduler sub-tab content."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(20)
-
-        # Header
-        header = QLabel(self.tr("Scheduler"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         layout.addWidget(QLabel(self.tr("Automate tasks like cleanup, updates, and syncing.")))
 
@@ -293,7 +312,7 @@ class AutomationTab(BaseTab):
 
         if not tasks:
             item = QListWidgetItem(self.tr("No scheduled tasks. Click 'Add Task' to create one."))
-            item.setForeground(QColor("#9da7bf"))
+            item.setForeground(semantic_qcolor("text_muted"))
             self.task_list.addItem(item)
             return
 
@@ -464,12 +483,8 @@ class AutomationTab(BaseTab):
 
         container = QWidget()
         rep_layout = QVBoxLayout(container)
+        rep_layout.setContentsMargins(0, 0, 0, 0)
         rep_layout.setSpacing(15)
-
-        # Header
-        header = QLabel(self.tr("Replicator - Infrastructure as Code"))
-        header.setObjectName("header")
-        rep_layout.addWidget(header)
 
         info = QLabel(
             self.tr("Export your system configuration to recreate it on any machine.\nNo Loofi needed on the target - just standard tools.")

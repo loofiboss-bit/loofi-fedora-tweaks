@@ -23,7 +23,9 @@ from core.navigation.destinations import (
     all_destinations,
     destinations_for_mode,
     get_destination,
+    get_section,
     placement_for_route,
+    sections_for_destination,
     validate_destinations,
 )
 from core.navigation.migrations import (
@@ -43,6 +45,7 @@ from core.navigation.models import (
     NavigationMode,
     NavigationPolicyResult,
     RoutePlacement,
+    SectionDefinition,
 )
 from core.navigation.policy import NavigationPolicy, validate_navigation_policy
 from core.navigation.search import (
@@ -70,6 +73,7 @@ __all__ = [
     "SearchResult",
     "SearchResultKind",
     "RoutePlacement",
+    "SectionDefinition",
     "all_areas",
     "all_destinations",
     "all_routes",
@@ -79,6 +83,7 @@ __all__ = [
     "canonical_persisted_route",
     "get_area",
     "get_destination",
+    "get_section",
     "get_route",
     "migrate_last_route",
     "migrate_quick_action",
@@ -86,6 +91,7 @@ __all__ = [
     "migrate_route_references",
     "navigation_mode_from_value",
     "placement_for_route",
+    "sections_for_destination",
     "resolve",
     "routes_for_palette",
     "routes_for_quick_actions",

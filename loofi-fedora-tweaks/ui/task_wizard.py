@@ -207,23 +207,22 @@ class AtlasTaskWizard(QDialog):
             fl = QVBoxLayout(frame)
 
             status_text = "SUCCESS" if res.success else "FAILED"
-            status_color = "#a6e3a1" if res.success else "#e8556d"
 
             header = QLabel(f"{title}: {status_text}")
-            header.setStyleSheet(f"font-weight: bold; color: {status_color};")
+            header.setObjectName("taskResultHeader")
+            header.setProperty("resultKind", "success" if res.success else "error")
             fl.addWidget(header)
 
             if res.message:
                 msg = QLabel(res.message)
                 msg.setWordWrap(True)
-                msg.setStyleSheet("font-size: 11px; color: #bac2de;")
+                msg.setObjectName("taskResultMessage")
                 fl.addWidget(msg)
 
             if action.revert_hint:
                 hint = QLabel(f"Rollback hint: {action.revert_hint}")
                 hint.setWordWrap(True)
-                hint.setStyleSheet(
-                    "font-size: 11px; font-style: italic; color: #fab387; margin-top: 5px;")
+                hint.setObjectName("taskRollbackHint")
                 fl.addWidget(hint)
 
             self.log_layout.insertWidget(self.log_layout.count() - 1, frame)
@@ -280,14 +279,6 @@ class AtlasTaskWizard(QDialog):
 
         self.action_checkboxes = []
 
-        # Risk color map
-        risk_colors = {
-            "info": "#6c7086",
-            "low": "#a6e3a1",
-            "medium": "#fab387",
-            "high": "#e8556d"
-        }
-
         for aid in self.action_ids:
             action = self.action_registry.get_action(aid)
             if not action:
@@ -310,15 +301,14 @@ class AtlasTaskWizard(QDialog):
 
                 # Risk Badge
                 risk_lbl = QLabel(risk.upper())
-                risk_lbl.setStyleSheet(
-                    f"color: {risk_colors.get(risk, '#6c7086')}; font-weight: bold; font-size: 10px; border: 1px solid {risk_colors.get(risk, '#6c7086')}; border-radius: 4px; padding: 2px 4px;")
+                risk_lbl.setObjectName("taskRiskBadge")
+                risk_lbl.setProperty("riskLevel", risk if risk in {"info", "low", "medium", "high"} else "info")
                 row.addWidget(risk_lbl)
                 cl.addLayout(row)
 
                 # Command Preview (Hidden by default)
                 preview_lbl = QLabel(f"<code>{command_preview}</code>")
-                preview_lbl.setStyleSheet(
-                    "background: #1c2030; padding: 5px; border-radius: 4px; font-family: monospace; font-size: 11px;")
+                preview_lbl.setObjectName("taskCommandPreview")
                 preview_lbl.setWordWrap(True)
                 preview_lbl.setVisible(False)
                 cl.addWidget(preview_lbl)
@@ -326,8 +316,7 @@ class AtlasTaskWizard(QDialog):
                 # Preview Toggle
                 preview_btn = QPushButton("Show Command")
                 preview_btn.setFlat(True)
-                preview_btn.setStyleSheet(
-                    "text-align: left; color: #39c5cf; font-size: 11px; padding: 0;")
+                preview_btn.setObjectName("taskCommandPreviewToggle")
                 preview_btn.setCursor(Qt.CursorShape.PointingHandCursor)
                 preview_btn.clicked.connect(
                     lambda: preview_lbl.setVisible(not preview_lbl.isVisible()))

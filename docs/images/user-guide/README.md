@@ -2,7 +2,7 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v15.0.0 "Essentials" on 2026-07-18
+**Last verified**: v16.0.0 "Clarity" on 2026-07-18
 
 **Status**: Screenshot filenames remain stable for user docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
 
@@ -46,7 +46,7 @@ For manual verification after regeneration:
 
 1. Launch the app: `./run.sh` or `PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py`
 2. Set the window to a consistent size (e.g., 1280x800).
-3. Use the default dark theme (Abyss Dark / `modern.qss`).
+3. Use the default dark theme (Abyss Dark through the semantic theme engine).
 4. Navigate to each tab listed above and capture the screenshot.
 5. Save with the **same filename** to avoid breaking doc references.
 6. Optimize images: `optipng -o5 *.png` or similar.

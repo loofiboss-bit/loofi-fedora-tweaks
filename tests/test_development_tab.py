@@ -360,6 +360,7 @@ def _install_stubs():
     qt_widgets.QScrollArea = _Dummy
     qt_widgets.QFrame = _Dummy
     qt_widgets.QTabWidget = _Dummy
+    qt_widgets.QStackedWidget = _Dummy
     qt_widgets.QComboBox = _DummyComboBox
     qt_widgets.QLineEdit = _DummyLineEdit
     qt_widgets.QListWidget = _DummyListWidget
@@ -416,7 +417,14 @@ def _install_stubs():
         def add_output_section(self, layout):
             pass
 
+        def add_output_disclosure(self, layout, summary=""):
+            return _Dummy()
+
     base_tab_module.BaseTab = _BaseTab
+
+    # -- ui.components --
+    components_module = types.ModuleType("ui.components")
+    components_module.PageScaffold = _Dummy
 
     # -- ui.tab_utils --
     tab_utils_module = types.ModuleType("ui.tab_utils")
@@ -474,6 +482,7 @@ def _install_stubs():
     sys.modules["PyQt6.QtCore"] = qt_core
     sys.modules["PyQt6.QtGui"] = qt_gui
     sys.modules["ui.base_tab"] = base_tab_module
+    sys.modules["ui.components"] = components_module
     sys.modules["ui.tab_utils"] = tab_utils_module
     sys.modules["core.plugins.interface"] = interface_module
     sys.modules["core.plugins.metadata"] = metadata_module
@@ -495,6 +504,7 @@ _MODULE_KEYS = [
     "PyQt6.QtGui",
     "ui",
     "ui.base_tab",
+    "ui.components",
     "ui.tab_utils",
     "core.plugins.interface",
     "core.plugins.metadata",

@@ -1,5 +1,5 @@
 """
-Network Tab - Comprehensive network management with sub-tabs.
+Network Tab - Comprehensive network management with shell-owned sections.
 Part of v17.0 "Atlas" — overhauled from v4.7 thin DNS/MAC tab.
 
 Sub-tabs:
@@ -14,7 +14,6 @@ import os
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QComboBox,
     QGroupBox,
@@ -25,7 +24,7 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QTableWidget,
     QTableWidgetItem,
-    QTabWidget,
+    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -33,7 +32,8 @@ from services.network import NetworkMonitor, NetworkUtils
 from utils.history import HistoryManager
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
+from ui.components import PageScaffold
+from ui.design import semantic_qcolor
 from ui.tooltips import DIAG_NETWORK
 
 logger = logging.getLogger(__name__)
@@ -56,31 +56,24 @@ class NetworkTab(BaseTab):
     def create_widget(self) -> QWidget:
         return self
 
-    """Network management with Connections, DNS, Privacy, and Monitoring sub-tabs."""
+    """Network management with Connections, DNS, Privacy, and Monitoring routes."""
 
     def __init__(self):
         super().__init__()
         self.history = HistoryManager()
 
-        layout = QVBoxLayout()
-        layout.setContentsMargins(*CONTENT_MARGINS)
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        header = QLabel(self.tr("Network"))
-        header.setObjectName("header")
-        layout.addWidget(header)
-
-        # Sub-tab widget
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
-        self.tabs.addTab(self._build_connections_tab(), self.tr("Connections"))
-        self.tabs.addTab(self._build_dns_tab(), self.tr("DNS"))
-        self.tabs.addTab(self._build_privacy_tab(), self.tr("Privacy"))
-        self.tabs.addTab(self._build_monitoring_tab(), self.tr("Monitoring"))
+        self.tabs = QStackedWidget()
+        self.tabs.setObjectName("networkRouteStack")
+        self.tabs.addWidget(self._build_connections_tab())
+        self.tabs.addWidget(self._build_dns_tab())
+        self.tabs.addWidget(self._build_privacy_tab())
+        self.tabs.addWidget(self._build_monitoring_tab())
         layout.addWidget(self.tabs)
 
-        # Output area
-        self.add_output_section(layout)
+        self.add_output_disclosure(layout, self.tr("Show network command output"))
 
         # Auto-refresh timer for monitoring
         self._monitor_timer = QTimer(self)
@@ -99,6 +92,22 @@ class NetworkTab(BaseTab):
     def on_deactivate(self) -> None:
         self._route_active = False
         self._monitor_timer.stop()
+
+    def activate_route(self, route) -> bool:
+        """Select a Network page from a stable route ID."""
+        route_to_index = {
+            "network": 0,
+            "network:connections": 0,
+            "network:dns": 1,
+            "network:privacy": 2,
+            "network:monitoring": 3,
+        }
+        index = route_to_index.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.tabs.setCurrentIndex(index)
+        self._on_tab_changed(index)
+        return True
 
     # ------------------------------------------------------------------ #
     #  Sub-tab builders
@@ -206,7 +215,11 @@ class NetworkTab(BaseTab):
         container.addWidget(vpn_group)
 
         container.addStretch()
-        return self._make_container(container)
+        return self._make_container(
+            container,
+            self.tr("Connections"),
+            self.tr("Review current interfaces, Wi-Fi networks, and VPN connections."),
+        )
 
     def _build_dns_tab(self):
         """DNS provider switching."""
@@ -255,7 +268,11 @@ class NetworkTab(BaseTab):
         container.addWidget(test_group)
 
         container.addStretch()
-        return self._make_container(container)
+        return self._make_container(
+            container,
+            self.tr("DNS"),
+            self.tr("Review the current resolver before applying a provider to the active connection."),
+        )
 
     def _build_privacy_tab(self):
         """MAC randomization and hostname privacy."""
@@ -327,7 +344,11 @@ class NetworkTab(BaseTab):
         container.addWidget(undo_group)
 
         container.addStretch()
-        return self._make_container(container)
+        return self._make_container(
+            container,
+            self.tr("Network Privacy"),
+            self.tr("Review current identity exposure before changing MAC or hostname behavior."),
+        )
 
     def _build_monitoring_tab(self):
         """Real-time traffic and active connections."""
@@ -406,7 +427,11 @@ class NetworkTab(BaseTab):
         container.addWidget(conn_group)
 
         container.addStretch()
-        return self._make_container(container)
+        return self._make_container(
+            container,
+            self.tr("Network Monitoring"),
+            self.tr("Inspect current traffic and active connections without changing the host."),
+        )
 
     # ------------------------------------------------------------------ #
     #  Helpers
@@ -436,20 +461,22 @@ class NetworkTab(BaseTab):
         table.setMaximumHeight(max_height)
 
     @staticmethod
-    def _make_container(layout):
-        """Wrap a QVBoxLayout into a plain QWidget for use as a tab page."""
+    def _make_container(
+        layout,
+        accessible_name: str = "Page content",
+        description: str = "",
+    ):
+        """Wrap route content in the shared page scaffold and one scroll owner."""
         from PyQt6.QtCore import Qt
         from PyQt6.QtWidgets import (
             QAbstractScrollArea,
             QScrollArea,
-            QWidget,
         )
 
-        layout.setContentsMargins(*CONTENT_MARGINS)
-        inner = QWidget()
-        inner.setLayout(layout)
+        page = PageScaffold(accessible_name, description)
+        page.add_layout(layout)
         scroll = QScrollArea()
-        scroll.setWidget(inner)
+        scroll.setWidget(page)
         scroll.setWidgetResizable(True)
         scroll.setSizeAdjustPolicy(QAbstractScrollArea.SizeAdjustPolicy.AdjustIgnored)
         scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
@@ -469,7 +496,7 @@ class NetworkTab(BaseTab):
         """Create a table item with explicit readable foreground color."""
         item = QTableWidgetItem(str(text))
         item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        item.setForeground(QColor("#e4e8f4"))
+        item.setForeground(semantic_qcolor("text"))
         return item
 
     def _set_empty_table_state(self, table: QTableWidget, message: str):

@@ -14,7 +14,6 @@ Features:
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -27,9 +26,9 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QPushButton,
     QScrollArea,
+    QStackedWidget,
     QTableWidget,
     QTableWidgetItem,
-    QTextEdit,
     QVBoxLayout,
     QWidget,
 )
@@ -42,7 +41,8 @@ from services.security import SandboxManager
 from services.security import USBGuardManager
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import CONTENT_MARGINS
+from ui.components import DetailsDisclosure, PageScaffold
+from ui.design import semantic_qcolor
 
 
 class SecurityTab(QWidget, PluginInterface):
@@ -90,57 +90,82 @@ class SecurityTab(QWidget, PluginInterface):
         self.privacy_runner.run_command(cmd, args)
 
     def init_ui(self):
-        """Initialize the UI."""
+        """Initialize route-owned security pages under the shared shell."""
+        main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+
+        self.pages = QStackedWidget()
+        self.pages.setObjectName("securityRouteStack")
+        self.pages.addWidget(
+            self._route_page(
+                self.tr("Security Overview"),
+                self.tr("Review the current security posture before opening a focused control."),
+                self._create_score_section(),
+                self._create_security_updates_section(),
+            )
+        )
+        self.pages.addWidget(
+            self._route_page(
+                self.tr("Firewall"),
+                self.tr("Review firewalld state before enabling or disabling the service."),
+                self._create_firewall_section(),
+            )
+        )
+        self.pages.addWidget(
+            self._route_page(
+                self.tr("Privacy"),
+                self.tr("Review device, sandbox, and telemetry controls before making changes."),
+                self._create_usb_section(),
+                self._create_sandbox_section(),
+                self._create_telemetry_section(),
+            )
+        )
+        self.pages.addWidget(
+            self._route_page(
+                self.tr("Open Ports"),
+                self.tr("Inspect exposed listening ports before blocking a selected service."),
+                self._create_ports_section(),
+            )
+        )
+        main_layout.addWidget(self.pages, 1)
+
+        self.activity_details = DetailsDisclosure(summary=self.tr("Show activity log"))
+        self.log_text = self.activity_details.details
+        self.log_text.setAccessibleName(self.tr("Activity log"))
+        main_layout.addWidget(self.activity_details)
+
+    @staticmethod
+    def _route_page(
+        accessible_name: str,
+        description: str,
+        *sections: QWidget,
+    ) -> QScrollArea:
+        """Create one bounded, scrollable security route page."""
+        scaffold = PageScaffold(accessible_name, description)
+        for section in sections:
+            scaffold.add_widget(section)
+        scaffold.content_layout.addStretch()
         scroll = QScrollArea()
+        scroll.setObjectName("securityRouteScroll")
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        scroll.setWidget(scaffold)
+        return scroll
 
-        container = QWidget()
-        layout = QVBoxLayout(container)
-        layout.setSpacing(15)
-
-        # Header
-        header = QLabel(self.tr("Security Center"))
-        header.setObjectName("header")
-        layout.addWidget(header)
-
-        # Security Score
-        layout.addWidget(self._create_score_section())
-
-        # Port Auditor
-        layout.addWidget(self._create_ports_section())
-
-        # USB Guard
-        layout.addWidget(self._create_usb_section())
-
-        # Sandbox Manager
-        layout.addWidget(self._create_sandbox_section())
-
-        # Firewall Control (absorbed from Privacy tab)
-        layout.addWidget(self._create_firewall_section())
-
-        # Telemetry & Tracking (absorbed from Privacy tab)
-        layout.addWidget(self._create_telemetry_section())
-
-        # Security Updates Check (absorbed from Privacy tab)
-        layout.addWidget(self._create_security_updates_section())
-
-        # Log
-        log_group = QGroupBox(self.tr("Activity Log"))
-        log_layout = QVBoxLayout(log_group)
-        self.log_text = QTextEdit()
-        self.log_text.setReadOnly(True)
-        self.log_text.setMaximumHeight(100)
-        self.log_text.setAccessibleName(self.tr("Activity log"))
-        log_layout.addWidget(self.log_text)
-        layout.addWidget(log_group)
-
-        layout.addStretch()
-        scroll.setWidget(container)
-
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*CONTENT_MARGINS)
-        main_layout.addWidget(scroll)
+    def activate_route(self, route) -> bool:
+        """Select a Security page from a stable route ID."""
+        route_to_index = {
+            "security": 0,
+            "security:overview": 0,
+            "security:firewall": 1,
+            "security:privacy": 2,
+            "security:ports": 3,
+        }
+        index = route_to_index.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.pages.setCurrentIndex(index)
+        return True
 
     def _create_score_section(self) -> QGroupBox:
         """Create security score display."""
@@ -401,7 +426,7 @@ class SecurityTab(QWidget, PluginInterface):
 
             status_item = QTableWidgetItem(self.tr("Risk") if port.is_risky else self.tr("OK"))
             if port.is_risky:
-                status_item.setForeground(QColor("#e8556d"))
+                status_item.setForeground(semantic_qcolor("error"))
             self.port_table.setItem(row, 4, status_item)
 
         normalize = getattr(BaseTab, "ensure_table_row_heights", None)

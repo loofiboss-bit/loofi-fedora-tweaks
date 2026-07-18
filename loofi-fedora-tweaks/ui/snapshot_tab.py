@@ -26,6 +26,8 @@ from PyQt6.QtWidgets import (
 from utils.snapshot_manager import SnapshotManager
 
 from ui.base_tab import BaseTab
+from ui.components import PageScaffold
+from ui.design import semantic_color
 
 
 class SnapshotTab(BaseTab):
@@ -53,12 +55,14 @@ class SnapshotTab(BaseTab):
         QTimer.singleShot(200, self._refresh_backends)
 
     def init_ui(self) -> None:
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Recovery Points"))
-        header.setObjectName("snapHeader")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Recovery Points"),
+            self.tr("Create and manage system recovery points."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         explanation = QLabel(self.tr(
             "Recovery points are system snapshots for rollback. They are managed "
@@ -205,7 +209,9 @@ class SnapshotTab(BaseTab):
             self.append_output(f"Found {count} snapshot(s)\n")
         except (RuntimeError, OSError, ValueError) as exc:
             self.set_table_empty_state(
-                self.snap_table, self.tr("Failed to load snapshots"), color="#e8556d"
+                self.snap_table,
+                self.tr("Failed to load snapshots"),
+                color=semantic_color("error"),
             )
             self.append_output(f"Error listing snapshots: {exc}\n")
 

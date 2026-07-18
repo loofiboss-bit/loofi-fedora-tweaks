@@ -2,8 +2,8 @@
 Monitor Tab - Consolidated tab merging Performance and Processes.
 Part of v11.0 "Aurora Update".
 
-Uses QTabWidget for sub-navigation to preserve all features from the
-original PerformanceTab and ProcessesTab.
+Uses a route-owned stack to preserve all features from the original
+PerformanceTab and ProcessesTab without duplicating shell navigation.
 
 Does NOT inherit BaseTab because both sub-tabs have their own
 refresh timers and custom rendering logic rather than CommandRunner
@@ -30,7 +30,7 @@ from PyQt6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
-    QTabWidget,
+    QStackedWidget,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -40,8 +40,9 @@ from services.system import ProcessManager
 from utils.log import get_logger
 from utils.performance import PerformanceCollector
 
-from ui.tab_utils import configure_top_tabs
+from ui.components.layout import PageScaffold
 from ui.shared_states import ResultBanner
+from ui.design import semantic_qcolor
 
 logger = get_logger(__name__)
 
@@ -65,9 +66,9 @@ class MiniGraph(QWidget):
 
     MAX_POINTS = 60
 
-    def __init__(self, color: str, parent=None):
+    def __init__(self, color_role: str, parent=None):
         super().__init__(parent)
-        self._color = QColor(color)
+        self._color_role = color_role
         self._values: deque = deque(maxlen=self.MAX_POINTS)
         self._max_value: float = 100.0
         self.setFixedHeight(80)
@@ -94,10 +95,10 @@ class MiniGraph(QWidget):
         h = self.height()
 
         # Background
-        painter.fillRect(0, 0, w, h, QColor("#0b0e14"))
+        painter.fillRect(0, 0, w, h, semantic_qcolor("surface"))
 
         # Subtle horizontal grid lines
-        grid_pen = QPen(QColor("#2d3348"))
+        grid_pen = QPen(semantic_qcolor("border"))
         grid_pen.setWidth(1)
         painter.setPen(grid_pen)
         for i in range(1, 4):
@@ -106,11 +107,12 @@ class MiniGraph(QWidget):
 
         values = list(self._values)
         count = len(values)
+        color = semantic_qcolor(self._color_role)
         if count < 2:
             # Single point: draw a horizontal line at that value
             y_pos = h - (values[0] / self._max_value) * h
             y_pos = max(0, min(h, y_pos))
-            line_pen = QPen(self._color)
+            line_pen = QPen(color)
             line_pen.setWidth(2)
             painter.setPen(line_pen)
             painter.drawLine(0, int(y_pos), w, int(y_pos))
@@ -144,10 +146,10 @@ class MiniGraph(QWidget):
 
         # Gradient fill under the line
         gradient = QLinearGradient(0, 0, 0, h)
-        fill_color = QColor(self._color)
+        fill_color = QColor(color)
         fill_color.setAlpha(80)
         gradient.setColorAt(0.0, fill_color)
-        fill_color_bottom = QColor(self._color)
+        fill_color_bottom = QColor(color)
         fill_color_bottom.setAlpha(10)
         gradient.setColorAt(1.0, fill_color_bottom)
         painter.setBrush(gradient)
@@ -155,7 +157,7 @@ class MiniGraph(QWidget):
         painter.drawPath(fill_path)
 
         # Draw the line itself
-        line_pen = QPen(self._color)
+        line_pen = QPen(color)
         line_pen.setWidth(2)
         painter.setPen(line_pen)
         painter.setBrush(Qt.BrushStyle.NoBrush)
@@ -173,10 +175,10 @@ class DualMiniGraph(QWidget):
 
     MAX_POINTS = 60
 
-    def __init__(self, color_a: str, color_b: str, parent=None):
+    def __init__(self, color_role_a: str, color_role_b: str, parent=None):
         super().__init__(parent)
-        self._color_a = QColor(color_a)
-        self._color_b = QColor(color_b)
+        self._color_role_a = color_role_a
+        self._color_role_b = color_role_b
         self._values_a: deque = deque(maxlen=self.MAX_POINTS)
         self._values_b: deque = deque(maxlen=self.MAX_POINTS)
         self._max_value: float = 1024.0  # Auto-scales
@@ -252,10 +254,10 @@ class DualMiniGraph(QWidget):
         h = self.height()
 
         # Background
-        painter.fillRect(0, 0, w, h, QColor("#0b0e14"))
+        painter.fillRect(0, 0, w, h, semantic_qcolor("surface"))
 
         # Grid lines
-        grid_pen = QPen(QColor("#2d3348"))
+        grid_pen = QPen(semantic_qcolor("border"))
         grid_pen.setWidth(1)
         painter.setPen(grid_pen)
         for i in range(1, 4):
@@ -263,8 +265,20 @@ class DualMiniGraph(QWidget):
             painter.drawLine(0, y, w, y)
 
         # Draw series B first (behind), then A (in front)
-        self._draw_series(painter, list(self._values_b), self._color_b, w, h)
-        self._draw_series(painter, list(self._values_a), self._color_a, w, h)
+        self._draw_series(
+            painter,
+            list(self._values_b),
+            semantic_qcolor(self._color_role_b),
+            w,
+            h,
+        )
+        self._draw_series(
+            painter,
+            list(self._values_a),
+            semantic_qcolor(self._color_role_a),
+            w,
+            h,
+        )
 
         painter.end()
 
@@ -296,17 +310,17 @@ class _CoreBar(QWidget):
         h = self.height()
 
         # Background slot
-        painter.fillRect(0, 0, w, h, QColor("#0b0e14"))
+        painter.fillRect(0, 0, w, h, semantic_qcolor("surface"))
 
         # Filled portion from bottom
         fill_h = int(h * self._value / 100.0)
         if fill_h > 0:
             if self._value < 60:
-                color = QColor("#3dd68c")
+                color = semantic_qcolor("success")
             elif self._value < 85:
-                color = QColor("#e8b84d")
+                color = semantic_qcolor("warning")
             else:
-                color = QColor("#e8556d")
+                color = semantic_qcolor("error")
             painter.fillRect(0, h - fill_h, w, fill_h, color)
 
         painter.end()
@@ -350,15 +364,15 @@ class _PerformanceSubTab(QWidget):
             self.refresh_timer.stop()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Performance"),
+            self.tr("Current resource use and performance diagnostics."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(20)
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("Performance Monitor"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         slow_group = QGroupBox(self.tr("Diagnose a Slow System"))
         slow_layout = QVBoxLayout(slow_group)
@@ -505,7 +519,7 @@ class _PerformanceSubTab(QWidget):
         card = self._create_card(self.tr("CPU Usage"))
         card_layout = QVBoxLayout(card)
 
-        self.cpu_graph = MiniGraph("#3dd68c")
+        self.cpu_graph = MiniGraph("success")
         self.cpu_graph.set_max_value(100.0)
         card_layout.addWidget(self.cpu_graph)
 
@@ -526,7 +540,7 @@ class _PerformanceSubTab(QWidget):
         card = self._create_card(self.tr("Memory Usage"))
         card_layout = QVBoxLayout(card)
 
-        self.mem_graph = MiniGraph("#39c5cf")
+        self.mem_graph = MiniGraph("accent")
         self.mem_graph.set_max_value(100.0)
         card_layout.addWidget(self.mem_graph)
 
@@ -541,7 +555,7 @@ class _PerformanceSubTab(QWidget):
         card = self._create_card(self.tr("Network I/O"))
         card_layout = QVBoxLayout(card)
 
-        self.net_graph = DualMiniGraph("#b78eff", "#4dd9e3")
+        self.net_graph = DualMiniGraph("accent", "focus")
         card_layout.addWidget(self.net_graph)
 
         # Legend
@@ -568,7 +582,7 @@ class _PerformanceSubTab(QWidget):
         card = self._create_card(self.tr("Disk I/O"))
         card_layout = QVBoxLayout(card)
 
-        self.disk_graph = DualMiniGraph("#e8b84d", "#e89840")
+        self.disk_graph = DualMiniGraph("warning", "warning_text")
         card_layout.addWidget(self.disk_graph)
 
         # Legend
@@ -696,19 +710,6 @@ class _ProcessesSubTab(QWidget):
     - Catppuccin Mocha colour coding (zombies red, high-CPU yellow)
     """
 
-    # Catppuccin Mocha colour constants
-    COLOR_BASE = "#0b0e14"
-    COLOR_SURFACE0 = "#1c2030"
-    COLOR_SURFACE1 = "#2d3348"
-    COLOR_SUBTEXT0 = "#9da7bf"
-    COLOR_TEXT = "#e6edf3"
-    COLOR_BLUE = "#39c5cf"
-    COLOR_GREEN = "#3dd68c"
-    COLOR_RED = "#e8556d"
-    COLOR_YELLOW = "#e8b84d"
-    COLOR_MAUVE = "#b78eff"
-    COLOR_PEACH = "#e89840"
-
     def __init__(self):
         super().__init__()
         self._show_all = True  # True = all processes, False = my only
@@ -754,15 +755,15 @@ class _ProcessesSubTab(QWidget):
 
     def init_ui(self):
         """Initialise the UI components."""
-        layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Processes"),
+            self.tr("Inspect running processes and process resource use."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(15)
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("Process Monitor"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         # Summary bar
         self.summary_frame = QFrame()
@@ -919,8 +920,8 @@ class _ProcessesSubTab(QWidget):
         self.process_tree.clear()
         new_selected_item = None
 
-        red_brush = QBrush(QColor(self.COLOR_RED))
-        yellow_brush = QBrush(QColor(self.COLOR_YELLOW))
+        red_brush = QBrush(semantic_qcolor("error"))
+        yellow_brush = QBrush(semantic_qcolor("warning"))
 
         for proc in processes:
             memory_human = ProcessManager.bytes_to_human(proc.memory_bytes)
@@ -1082,7 +1083,7 @@ class _ProcessesSubTab(QWidget):
 class MonitorTab(QWidget, PluginInterface):
     """Consolidated monitor tab merging Performance and Processes.
 
-    Uses a QTabWidget for sub-navigation.  Does not inherit BaseTab
+    Uses a route-owned QStackedWidget.  Does not inherit BaseTab
     because both sub-tabs rely on their own QTimer-based refresh
     cycles rather than the CommandRunner pattern.
     """
@@ -1105,19 +1106,29 @@ class MonitorTab(QWidget, PluginInterface):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
+        self.pages = QStackedWidget()
+        self.pages.setObjectName("systemMonitorRouteStack")
         self._performance_tab = _PerformanceSubTab()
         self._processes_tab = _ProcessesSubTab()
-        self.tabs.addTab(self._performance_tab, self.tr("Performance"))
-        self.tabs.addTab(self._processes_tab, self.tr("Processes"))
-        self.tabs.currentChanged.connect(self._sync_timer_lifecycle)
+        self.pages.addWidget(self._performance_tab)
+        self.pages.addWidget(self._processes_tab)
+        self.pages.currentChanged.connect(self._sync_timer_lifecycle)
         self._route_active = False
 
-        layout.addWidget(self.tabs)
+        layout.addWidget(self.pages)
+
+    def activate_route(self, route) -> bool:
+        """Select Performance or Processes from the stable shell route."""
+        subroute = str(getattr(route, "subroute", "") or "")
+        if subroute not in {"", "performance", "processes"}:
+            return False
+        index = 1 if subroute == "processes" else 0
+        self.pages.setCurrentIndex(index)
+        self._sync_timer_lifecycle(index)
+        return True
 
     def _sync_timer_lifecycle(self, index: int) -> None:
         self._performance_tab.set_active(self._route_active and index == 0)
@@ -1125,8 +1136,8 @@ class MonitorTab(QWidget, PluginInterface):
 
     def on_activate(self) -> None:
         self._route_active = True
-        self._sync_timer_lifecycle(self.tabs.currentIndex())
+        self._sync_timer_lifecycle(self.pages.currentIndex())
 
     def on_deactivate(self) -> None:
         self._route_active = False
-        self._sync_timer_lifecycle(self.tabs.currentIndex())
+        self._sync_timer_lifecycle(self.pages.currentIndex())

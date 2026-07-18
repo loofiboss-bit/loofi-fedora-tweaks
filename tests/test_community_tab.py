@@ -253,6 +253,7 @@ def _install_qt_stubs():
     qt_widgets.QFileDialog = MagicMock()
     qt_widgets.QGroupBox = _Dummy
     qt_widgets.QTabWidget = _Dummy
+    qt_widgets.QStackedWidget = _Dummy
     qt_widgets.QLineEdit = _DummyLineEdit
     qt_widgets.QComboBox = _DummyComboBox
     qt_widgets.QTextEdit = _DummyTextEdit
@@ -287,6 +288,7 @@ _MODULE_NAMES = [
     "PyQt6.QtWidgets",
     "PyQt6.QtCore",
     "ui.community_tab",
+    "ui.components",
     "ui.tab_utils",
     "ui.permission_consent_dialog",
     "core.plugins.interface",
@@ -306,6 +308,11 @@ _MODULE_NAMES = [
 _originals = {name: sys.modules.get(name) for name in _MODULE_NAMES}
 
 qt_widgets = _install_qt_stubs()
+
+# Stub the shared scaffold without importing the full Qt component package.
+_components_mod = types.ModuleType("ui.components")
+_components_mod.PageScaffold = _Dummy
+sys.modules["ui.components"] = _components_mod
 
 # Stub ui.tab_utils
 _tab_utils_mod = types.ModuleType("ui.tab_utils")

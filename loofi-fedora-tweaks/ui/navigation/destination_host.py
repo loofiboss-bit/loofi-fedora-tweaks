@@ -1,4 +1,4 @@
-"""Shared secondary navigation host for stable v15 route IDs."""
+"""Responsive section-navigation host for stable route IDs."""
 
 from __future__ import annotations
 
@@ -12,9 +12,12 @@ from core.navigation import (
     NavigationPolicyResult,
     get_route,
     placement_for_route,
+    sections_for_destination,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QFrame, QLabel, QTabBar, QVBoxLayout
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout
+
+from ui.components.navigation import SectionItem, SectionNavigator
 
 
 @dataclass(frozen=True)
@@ -25,6 +28,7 @@ class SecondaryRoute:
     route_id: str
     label: str
     description: str
+    icon: str = ""
 
 
 def secondary_routes_for_destination(
@@ -32,30 +36,40 @@ def secondary_routes_for_destination(
     context: NavigationContext,
 ) -> tuple[SecondaryRoute, ...]:
     """Return one visible canonical route per destination section."""
-    visible_by_section: dict[str, SecondaryRoute] = {}
-    ordered_route_ids = (destination.default_route_id,) + tuple(
-        route_id
-        for route_id in destination.route_ids
-        if route_id != destination.default_route_id
-    )
-    for route_id in ordered_route_ids:
-        route = get_route(route_id)
-        placement = placement_for_route(route_id)
-        if route is None or placement is None:
-            continue
-        result = NavigationPolicy.evaluate(route_id, context)
-        if result.decision is not NavigationDecision.VISIBLE:
-            continue
-        visible_by_section.setdefault(
-            placement.section_id,
-            SecondaryRoute(
-                section_id=placement.section_id,
-                route_id=route.id,
-                label=route.label,
-                description=route.description,
-            ),
+    routes: list[SecondaryRoute] = []
+    for section in sections_for_destination(destination.id):
+        route_ids = (section.default_route_id,) + tuple(
+            route_id
+            for route_id in destination.route_ids
+            if route_id != section.default_route_id
+            and _route_belongs_to_section(route_id, section.id)
         )
-    return tuple(visible_by_section.values())
+        visible_route_id = ""
+        for route_id in route_ids:
+            result = NavigationPolicy.evaluate(route_id, context)
+            if result.decision is NavigationDecision.VISIBLE:
+                visible_route_id = route_id
+                break
+        if not visible_route_id:
+            continue
+        route = get_route(visible_route_id)
+        if route is None:
+            continue
+        routes.append(
+            SecondaryRoute(
+                section_id=section.id,
+                route_id=route.id,
+                label=section.label,
+                description=section.description,
+                icon=section.icon,
+            )
+        )
+    return tuple(routes)
+
+
+def _route_belongs_to_section(route_id: str, section_id: str) -> bool:
+    placement = placement_for_route(route_id)
+    return placement is not None and placement.section_id == section_id
 
 
 class DestinationHost(QFrame):
@@ -73,17 +87,9 @@ class DestinationHost(QFrame):
         layout.setContentsMargins(16, 8, 16, 8)
         layout.setSpacing(6)
 
-        self.tabs = QTabBar(self)
-        self.tabs.setObjectName("secondaryNavigation")
-        self.tabs.setAccessibleName(self.tr("Sections"))
-        self.tabs.setDocumentMode(True)
-        self.tabs.setMovable(False)
-        self.tabs.setExpanding(False)
-        self.tabs.setUsesScrollButtons(True)
-        self.tabs.setElideMode(Qt.TextElideMode.ElideRight)
-        self.tabs.setMinimumHeight(max(36, int(self.fontMetrics().height() * 2.2)))
-        self.tabs.currentChanged.connect(self._on_current_changed)
-        layout.addWidget(self.tabs)
+        self.navigator = SectionNavigator(self)
+        self.navigator.sectionActivated.connect(self._on_section_activated)
+        layout.addWidget(self.navigator)
 
         self.explanation = QLabel(self)
         self.explanation.setObjectName("navigationExplanation")
@@ -102,13 +108,18 @@ class DestinationHost(QFrame):
     ) -> None:
         """Populate the shared section bar from policy-approved routes."""
         self._suppress_signal = True
-        while self.tabs.count():
-            self.tabs.removeTab(0)
         self._routes = secondary_routes_for_destination(destination, context)
-        for route in self._routes:
-            index = self.tabs.addTab(route.label)
-            self.tabs.setTabData(index, route.route_id)
-            self.tabs.setTabToolTip(index, route.description or route.label)
+        self.navigator.set_sections(
+            [
+                SectionItem(
+                    section_id=route.section_id,
+                    label=route.label,
+                    description=route.description,
+                    icon=route.icon,
+                )
+                for route in self._routes
+            ]
+        )
         self._suppress_signal = False
         self.clear_explanation()
         self.set_active_route(active_route_id or destination.default_route_id)
@@ -123,11 +134,19 @@ class DestinationHost(QFrame):
         if placement is None:
             return
         self._suppress_signal = True
-        for index, route in enumerate(self._routes):
-            if route.section_id == placement.section_id:
-                self.tabs.setCurrentIndex(index)
-                break
+        self.navigator.set_active_section(placement.section_id)
         self._suppress_signal = False
+
+    def set_compact(self, compact: bool) -> None:
+        """Select full-label rail or narrow selector presentation."""
+        self.navigator.set_compact(compact)
+
+    def is_compact(self) -> bool:
+        return self.navigator.is_compact()
+
+    def refresh_icon_tints(self) -> None:
+        """Refresh section icons after the semantic palette changes."""
+        self.navigator.refresh_icons()
 
     def show_policy_result(self, result: NavigationPolicyResult) -> None:
         """Show a compact safe explanation for gated or unavailable deep links."""
@@ -139,9 +158,10 @@ class DestinationHost(QFrame):
         self.explanation.clear()
         self.explanation.hide()
 
-    def _on_current_changed(self, index: int) -> None:
-        if self._suppress_signal or index < 0:
+    def _on_section_activated(self, section_id: str) -> None:
+        if self._suppress_signal:
             return
-        route_id = self.tabs.tabData(index)
-        if route_id:
-            self.routeRequested.emit(str(route_id))
+        for route in self._routes:
+            if route.section_id == section_id:
+                self.routeRequested.emit(route.route_id)
+                return

@@ -2,9 +2,8 @@
 Diagnostics Tab - Consolidated tab merging Watchtower and Boot.
 Part of v11.0 "Aurora Update".
 
-Uses QTabWidget for sub-navigation to preserve all features from the
-original WatchtowerTab (services, boot analysis, journal) and
-BootTab (kernel parameters, ZRAM, Secure Boot).
+Uses a route-owned stack for Troubleshooting and Boot while preserving
+Watchtower's content tabs (services, boot analysis, journal).
 """
 
 from core.plugins.metadata import PluginMetadata
@@ -12,7 +11,6 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
-    QFrame,
     QGroupBox,
     QHBoxLayout,
     QInputDialog,
@@ -21,8 +19,8 @@ from PyQt6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
-    QScrollArea,
     QSlider,
+    QStackedWidget,
     QTabWidget,
     QTextEdit,
     QTreeWidget,
@@ -38,7 +36,8 @@ from services.security import SecureBootManager
 from utils.zram import ZramManager
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
+from ui.components.layout import PageScaffold
+from ui.tab_utils import configure_top_tabs
 
 # ---------------------------------------------------------------------------
 # Sub-tab: Watchtower
@@ -62,15 +61,14 @@ class _WatchtowerSubTab(QWidget):
 
     def init_ui(self):
         """Initialise the UI components."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        # Header
-        header = QLabel(
-            self.tr("Health & Troubleshooting")
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Troubleshooting"),
+            self.tr("Diagnose system issues and inspect supporting evidence."),
         )
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # Internal sub-tabs for different diagnostic areas
         self.tabs = QTabWidget()
@@ -526,12 +524,14 @@ class _BootSubTab(QWidget):
 
     def init_ui(self):
         """Initialise the UI components."""
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setFrameShape(QFrame.Shape.NoFrame)
-
-        container = QWidget()
-        layout = QVBoxLayout(container)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Boot Diagnostics"),
+            self.tr("Inspect and manage boot-time configuration and security."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(15)
 
         # Kernel Parameters Section
@@ -553,12 +553,6 @@ class _BootSubTab(QWidget):
         layout.addWidget(output_group)
 
         layout.addStretch()
-
-        scroll.setWidget(container)
-
-        main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*CONTENT_MARGINS)
-        main_layout.addWidget(scroll)
 
     # ==================== Kernel Section ==================================
 
@@ -965,9 +959,8 @@ class _BootSubTab(QWidget):
 class DiagnosticsTab(BaseTab):
     """Consolidated diagnostics tab merging Watchtower and Boot.
 
-    Uses a QTabWidget for sub-navigation between the Watchtower
-    diagnostic suite (services, boot analysis, journal) and the Boot
-    configuration panel (kernel params, ZRAM, Secure Boot).
+    Uses a route-owned stack between the Watchtower diagnostic suite
+    and Boot configuration without duplicating shell navigation.
     """
 
     _METADATA = PluginMetadata(
@@ -988,12 +981,20 @@ class DiagnosticsTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
-        self.tabs.addTab(_WatchtowerSubTab(), self.tr("Health & Troubleshooting"))
-        self.tabs.addTab(_BootSubTab(), self.tr("Boot"))
+        self.pages = QStackedWidget()
+        self.pages.setObjectName("diagnosticsRouteStack")
+        self.pages.addWidget(_WatchtowerSubTab())
+        self.pages.addWidget(_BootSubTab())
 
-        layout.addWidget(self.tabs)
+        layout.addWidget(self.pages)
+
+    def activate_route(self, route) -> bool:
+        """Select Troubleshooting or Boot from the stable shell route."""
+        subroute = str(getattr(route, "subroute", "") or "")
+        if subroute not in {"", "watchtower", "boot"}:
+            return False
+        self.pages.setCurrentIndex(1 if subroute == "boot" else 0)
+        return True

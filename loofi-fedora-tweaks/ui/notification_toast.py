@@ -13,24 +13,26 @@ Usage::
 """
 
 from PyQt6.QtCore import QEasingCurve, QPoint, QPropertyAnimation, Qt, QTimer
-from PyQt6.QtGui import QColor, QPainter, QPainterPath
+from PyQt6.QtGui import QPainter, QPainterPath
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QPushButton, QWidget
 
-# Category → accent color mapping (Abyss palette)
-_CATEGORY_COLORS = {
-    "general": "#39c5cf",       # teal accent
-    "overview": "#39c5cf",      # teal
-    "manage": "#b78eff",        # purple
-    "hardware": "#e8b84d",      # amber
-    "network & security": "#e8556d",  # coral
-    "personalize": "#b78eff",   # purple
-    "developer": "#3dd68c",     # green
-    "automation": "#39c5cf",    # teal
-    "health & logs": "#3dd68c",  # green
-    "health": "#3dd68c",
-    "profile": "#b78eff",
-    "security": "#e8556d",
-    "system": "#e8b84d",
+from ui.design import semantic_qcolor
+
+# Categories resolve through semantic roles so live theme changes stay coherent.
+_CATEGORY_ROLES = {
+    "general": "accent",
+    "overview": "accent",
+    "manage": "accent",
+    "hardware": "warning",
+    "network & security": "error",
+    "personalize": "accent",
+    "developer": "success",
+    "automation": "accent",
+    "health & logs": "success",
+    "health": "success",
+    "profile": "accent",
+    "security": "error",
+    "system": "warning",
 }
 
 
@@ -52,7 +54,7 @@ class NotificationToast(QWidget):
         self.setAttribute(Qt.WidgetAttribute.WA_TranslucentBackground)
         self.setAttribute(Qt.WidgetAttribute.WA_ShowWithoutActivating)
 
-        self._accent_color = QColor("#39c5cf")
+        self._accent_role = "accent"
         self._auto_hide_timer = QTimer(self)
         self._auto_hide_timer.setSingleShot(True)
         self._auto_hide_timer.timeout.connect(self._slide_out)
@@ -100,7 +102,7 @@ class NotificationToast(QWidget):
         """Display a toast notification with slide-in animation."""
         self._title_label.setText(title)
         self._message_label.setText(message[:120])  # Truncate long messages
-        self._accent_color = QColor(_CATEGORY_COLORS.get(category, "#39c5cf"))
+        self._accent_role = _CATEGORY_ROLES.get(category, "accent")
 
         # Position at top-right of parent
         if self.parent():
@@ -152,15 +154,15 @@ class NotificationToast(QWidget):
         # Background
         path = QPainterPath()
         path.addRoundedRect(0.0, 0.0, float(self.width()), float(self.height()), 10.0, 10.0)
-        painter.fillPath(path, QColor("#1c2030"))
+        painter.fillPath(path, semantic_qcolor("surface"))
 
         # Left accent bar
         accent_path = QPainterPath()
         accent_path.addRoundedRect(0.0, 0.0, 4.0, float(self.height()), 2.0, 2.0)
-        painter.fillPath(accent_path, self._accent_color)
+        painter.fillPath(accent_path, semantic_qcolor(self._accent_role))
 
         # Border
-        painter.setPen(QColor("#2d3348"))
+        painter.setPen(semantic_qcolor("border"))
         painter.drawPath(path)
 
         painter.end()

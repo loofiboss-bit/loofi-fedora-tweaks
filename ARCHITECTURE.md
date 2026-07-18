@@ -3,7 +3,7 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Version**: 15.0.0 "Essentials" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Version**: 16.0.0 "Clarity" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 
 ## Runtime entry modes
 
@@ -36,6 +36,7 @@ loofi-fedora-tweaks/
 ├── services/               # Domain services; no PyQt imports
 ├── utils/                  # Shared infrastructure and compatibility shims
 ├── ui/                     # PyQt6 widgets and presentation only
+│   └── design/             # Semantic palettes, stable geometry, QSS rendering
 ├── cli/                    # CLI argument parsing and service calls
 ├── daemon/                 # D-Bus runtime
 └── api/                    # Read-only HTTP routes
@@ -61,8 +62,9 @@ enforced by `tests/test_architecture_imports.py`:
 ## Destination and route architecture
 
 Stable route IDs in `core/navigation/manifest.py` remain canonical.
-`core/navigation/destinations.py` groups them into the v15 shell; it does not
-replace them with a parallel namespace.
+`core/navigation/destinations.py` groups them into the v16 shell and owns
+explicit, data-only presentation metadata for all 61 destination sections; it
+does not replace routes or section IDs with a parallel namespace.
 
 Standard mode contains exactly:
 
@@ -76,8 +78,17 @@ Standard mode contains exactly:
 | 6 | `settings` | Settings | `settings` |
 
 Advanced mode adds one `advanced` destination. The shared
-`DestinationSidebar` owns primary selection and `DestinationHost` owns secondary
-route selection. Standard mode does not render a nested plugin tree.
+`DestinationSidebar` owns primary selection and `DestinationHost` maps the
+responsive `SectionNavigator` between explicit section IDs and stable routes.
+At 1180 DIP and above the primary navigation is expanded; from 900 through 1179
+DIP it is a 64–72 DIP icon rail; below 900 DIP the section rail becomes a
+full-width selector above content. Standard mode does not render a nested
+plugin tree or an application-level horizontal route tab bar.
+
+Advanced routes use the same shell-selected `QStackedWidget` and
+`PageScaffold` contract as Standard routes. Local tabs are allowed only for
+small same-context view sets; Community Presets is the single retained
+three-view local tab group.
 
 `NavigationPolicy` evaluates navigation mode, Fedora variant, capability,
 component availability, and compatibility redirects. Missing or incomplete
@@ -212,8 +223,25 @@ restarts services.
   activation, visible focus, accessible name, and accessible description.
 - Standard workflows reuse shared loading, empty, unavailable, result, progress,
   and details components without replacing domain state machines.
-- New profiles follow the Qt/KDE system palette and font. Explicit dark, light,
-  and high-contrast QSS remain user choices.
+- `ui/components/` is the single canonical presentation-only component library.
+  It exposes page/content scaffolding, section presentation, cards and property
+  rows, notices and states, action bars, and semantic button roles without
+  importing domain services or command infrastructure.
+- The shell owns `PageHeader`; `PageScaffold` owns only the bounded content
+  hierarchy below it. `SectionNavigator` accepts data-only presentation items,
+  emits opaque section IDs, and relies on shell policy to select rail or compact
+  mode. Route and policy integration remains outside the component layer.
+- `ui/layout_primitives.py` and `ui/shared_states.py` are compatibility import
+  surfaces that point to the canonical components while older pages migrate.
+- `ui/design/tokens.py` owns stable spacing, geometry, and typography roles.
+  Themes may change semantic colors but never component geometry or hierarchy.
+- `ui/design/theme_manager.py` maps system, dark, light, and high-contrast
+  palettes onto one structural `assets/base.qss` source. System mode derives
+  colors from `QPalette` while retaining named component selectors and the
+  Qt/KDE system font.
+- Runtime UI code consumes semantic color roles. Direct product colors belong
+  only in the design palette source; dynamic widgets resolve roles when they
+  paint so theme changes apply without reconstruction.
 - Semantic icon IDs resolve through `ui/icon_pack.py`; text carries status so
   color and icons are never the only signal.
 

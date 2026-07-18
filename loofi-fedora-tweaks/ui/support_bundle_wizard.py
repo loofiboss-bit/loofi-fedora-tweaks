@@ -39,7 +39,7 @@ class SupportBundleWizard(QDialog):
             "Personal data, tokens, and private files have been excluded."
         )
         desc.setWordWrap(True)
-        desc.setStyleSheet("color: #6c7086; margin-bottom: 10px;")
+        desc.setObjectName("supportBundleDescription")
         layout.addWidget(desc)
 
         layout.addWidget(QLabel("Data Preview:"))
@@ -47,7 +47,7 @@ class SupportBundleWizard(QDialog):
         # Preview Area
         self.preview = QTextEdit()
         self.preview.setReadOnly(True)
-        self.preview.setStyleSheet("font-family: monospace; font-size: 11px; background: #1c2030; color: #bac2de;")
+        self.preview.setObjectName("supportBundlePreview")
         layout.addWidget(self.preview, 1)
 
         # Buttons

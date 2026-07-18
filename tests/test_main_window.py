@@ -469,7 +469,7 @@ class _DummyVBoxLayout:
     def __init__(self, *args, **kwargs):
         pass
 
-    def addWidget(self, w):
+    def addWidget(self, w, *args):
         pass
 
     def addLayout(self, layout):
@@ -696,6 +696,12 @@ def _install_stubs():
     )
     qt_widgets.QStyledItemDelegate = _Dummy
     qt_widgets.QStyleOptionViewItem = _Dummy
+    qt_widgets.QStyle = types.SimpleNamespace(
+        StandardPixmap=types.SimpleNamespace(
+            SP_ArrowLeft=1,
+            SP_ArrowRight=2,
+        )
+    )
 
     # -- PyQt6.QtCore --
     qt_core = types.ModuleType("PyQt6.QtCore")
@@ -756,6 +762,45 @@ def _install_stubs():
         },
     )
     sys.modules["ui.base_tab"] = base_tab_mod
+
+    # -- ui.layout_primitives --
+    layout_mod = types.ModuleType("ui.layout_primitives")
+
+    class _StubLayoutMetrics:
+        @classmethod
+        def from_widget(cls, widget):
+            del widget
+            return types.SimpleNamespace(
+                line_height=14,
+                sidebar_width=248,
+                sidebar_collapsed_width=64,
+                header_height=68,
+                status_height=28,
+            )
+
+    class _StubPageHeader(_DummyFrame):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.eyebrow = _DummyButton()
+            self.title = _DummyLabel()
+            self.description = _DummyLabel()
+            self.actions = []
+
+        def set_content(self, area, title, description=""):
+            self.eyebrow.setText(area)
+            self.eyebrow.setVisible(bool(area) and area != title)
+            self.title.setText(title)
+            self.description.setText(description)
+
+        def clear_actions(self):
+            self.actions.clear()
+
+        def add_action(self, widget, *, primary=False):
+            self.actions.append((widget, primary))
+
+    layout_mod.LayoutMetrics = _StubLayoutMetrics
+    layout_mod.PageHeader = _StubPageHeader
+    sys.modules["ui.layout_primitives"] = layout_mod
 
     # -- ui.tab_utils --
     tab_utils_mod = types.ModuleType("ui.tab_utils")
@@ -1200,7 +1245,6 @@ def setUpModule():
     _install_stubs()
     # Force re-import so stubs are used
     sys.modules.pop("ui.main_window", None)
-    sys.modules.pop("ui.layout_primitives", None)
     sys.modules.pop("ui", None)
     importlib.import_module("ui.main_window")
 
@@ -1238,11 +1282,14 @@ def _make_window(skip_init=False):
         win.sidebar = _DummyTreeWidget()
         win.content_area = _DummyStackedWidget()
         win._sidebar_container = _Dummy()
+        win._sidebar_layout = _DummyVBoxLayout()
         win._sidebar_toggle = _DummyButton()
+        win._global_search_button = _DummyButton()
         win._sidebar_collapsed = False
         win._auto_sidebar_collapsed = False
         win._sidebar_expanded_width = 210
         win._line_height = 14
+        win._metrics = types.SimpleNamespace(sidebar_collapsed_width=64)
         win.sidebar_footer = _DummyLabel("v99")
         win._status_label = _DummyLabel()
         win._undo_btn = _DummyButton()
@@ -1647,14 +1694,14 @@ class TestToggleSidebar(unittest.TestCase):
         self.win._sidebar_collapsed = False
         self.win._toggle_sidebar()
         self.assertTrue(self.win._sidebar_collapsed)
-        self.assertEqual(self.win._sidebar_toggle._text, ">")
+        self.assertEqual(self.win._sidebar_toggle._text, "")
 
     def test_expand_sidebar(self):
         """Toggle expands collapsed sidebar."""
         self.win._sidebar_collapsed = True
         self.win._toggle_sidebar()
         self.assertFalse(self.win._sidebar_collapsed)
-        self.assertEqual(self.win._sidebar_toggle._text, "<")
+        self.assertEqual(self.win._sidebar_toggle._text, "")
 
     def test_toggle_round_trip(self):
         """Double toggle returns to original state."""
@@ -1847,7 +1894,7 @@ class TestLoadTheme(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data="QWidget { color: white; }"))
     def test_load_dark_theme(self):
-        """load_theme('dark') reads modern.qss."""
+        """load_theme('dark') renders the structural theme template."""
         app_mock = _DummyQApplication()
         app_mock.setStyleSheet = MagicMock()
         _DummyQApplication._instance = app_mock
@@ -1856,7 +1903,7 @@ class TestLoadTheme(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data="QWidget { color: black; }"))
     def test_load_light_theme(self):
-        """load_theme('light') reads light.qss."""
+        """load_theme('light') renders the structural theme template."""
         app_mock = _DummyQApplication()
         app_mock.setStyleSheet = MagicMock()
         _DummyQApplication._instance = app_mock
@@ -1871,7 +1918,7 @@ class TestLoadTheme(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data="body {}"))
     def test_load_theme_unknown_name_defaults_dark(self):
-        """Unknown theme name falls back to modern.qss."""
+        """Unknown theme name falls back to the dark semantic palette."""
         app_mock = _DummyQApplication()
         app_mock.setStyleSheet = MagicMock()
         _DummyQApplication._instance = app_mock

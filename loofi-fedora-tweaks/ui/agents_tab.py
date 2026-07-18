@@ -1,6 +1,5 @@
 """
-Agents Tab — GUI for managing autonomous system agents.
-Part of v19.0 "Vanguard".
+GUI for managing autonomous system agents.
 
 Provides:
 - Agent dashboard (summary, active agents, recent activity)
@@ -14,7 +13,7 @@ import time
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import Qt, QTimer
-from PyQt6.QtGui import QColor, QFont
+from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
     QCheckBox,
     QGridLayout,
@@ -28,14 +27,15 @@ from PyQt6.QtWidgets import (
     QSpinBox,
     QTableWidget,
     QTableWidgetItem,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import configure_top_tabs
+from ui.components import PageScaffold
+from ui.design import semantic_qcolor
 
 logger = logging.getLogger(__name__)
 
@@ -81,25 +81,61 @@ class AgentsTab(BaseTab):
 
     def _init_ui(self):
         layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
-        # Sub-tabs
-        tabs = QTabWidget()
-        configure_top_tabs(tabs)
-        tabs.addTab(self._build_dashboard_tab(), self.tr("Dashboard"))
-        tabs.addTab(self._build_agents_tab(), self.tr("My Agents"))
-        tabs.addTab(self._build_create_tab(), self.tr("Create Agent"))
-        tabs.addTab(self._build_activity_tab(), self.tr("Activity Log"))
-        layout.addWidget(tabs)
+        self.tabs = QStackedWidget()
+        self.tabs.setObjectName("agentPages")
+        self.tabs.addWidget(self._scaffold_route(
+            self.tr("Agent dashboard"),
+            self.tr("Review scheduler state and recent agent results."),
+            self._build_dashboard_tab(),
+        ))
+        self.tabs.addWidget(self._scaffold_route(
+            self.tr("My agents"),
+            self.tr("Review and manage configured local agents."),
+            self._build_agents_tab(),
+        ))
+        self.tabs.addWidget(self._scaffold_route(
+            self.tr("Create agent"),
+            self.tr("Create a local agent from a goal or template."),
+            self._build_create_tab(),
+        ))
+        self.tabs.addWidget(self._scaffold_route(
+            self.tr("Agent activity"),
+            self.tr("Inspect recent agent runs and results."),
+            self._build_activity_tab(),
+        ))
+        layout.addWidget(self.tabs)
 
-        # Output area
-        self.add_output_section(layout)
+        self.add_output_disclosure(layout, self.tr("Show agent output"))
+
+    @staticmethod
+    def _scaffold_route(name: str, description: str, content: QWidget) -> PageScaffold:
+        scaffold = PageScaffold(name, description)
+        scaffold.add_widget(content, 1)
+        return scaffold
+
+    def activate_route(self, route) -> bool:
+        """Select an Agents page from a stable route ID."""
+        index = {
+            "agents": 0,
+            "agents:dashboard": 0,
+            "agents:my-agents": 1,
+            "agents:create": 2,
+            "agents:activity": 3,
+        }.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.tabs.setCurrentIndex(index)
+        return True
 
     # ==================== Dashboard Sub-Tab ====================
 
     def _build_dashboard_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Summary cards
         cards = QGridLayout()
@@ -181,6 +217,7 @@ class AgentsTab(BaseTab):
     def _build_agents_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Agent table
         self.agent_table = QTableWidget()
@@ -224,6 +261,7 @@ class AgentsTab(BaseTab):
     def _build_create_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Goal input
         goal_box = QGroupBox(self.tr("Create Agent from Goal"))
@@ -300,6 +338,7 @@ class AgentsTab(BaseTab):
     def _build_activity_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         self.activity_table = QTableWidget()
         self.activity_table.setColumnCount(5)
@@ -405,9 +444,9 @@ class AgentsTab(BaseTab):
 
             status_item = QTableWidgetItem(state.status.value)
             if state.status.value == "running":
-                status_item.setForeground(QColor("#3dd68c"))
+                status_item.setForeground(semantic_qcolor("success"))
             elif state.status.value == "error":
-                status_item.setForeground(QColor("#e8556d"))
+                status_item.setForeground(semantic_qcolor("error"))
             self.agent_table.setItem(row, 2, status_item)
 
             self.agent_table.setItem(row, 3, QTableWidgetItem(str(state.run_count)))

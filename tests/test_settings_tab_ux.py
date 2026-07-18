@@ -99,7 +99,10 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
         mock_instance.return_value = self._manager()
         tab = SettingsTab()
 
-        labels = [tab.settings_tabs.tabText(index) for index in range(tab.settings_tabs.count())]
+        labels = [
+            tab.settings_tabs.widget(index).widget().accessibleName()
+            for index in range(tab.settings_tabs.count())
+        ]
         self.assertEqual(labels, ["Appearance", "Behavior", "Advanced Tools", "Repair Loofi", "About"])
         self.assertEqual(tab.mode_combo.count(), 2)
         self.assertEqual([tab.mode_combo.itemText(index) for index in range(2)], ["Standard", "Advanced"])

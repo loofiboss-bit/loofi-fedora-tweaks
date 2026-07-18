@@ -62,7 +62,8 @@ def _write_release_files(
     specs = root / ".workflow" / "specs"
     specs.mkdir(parents=True, exist_ok=True)
     (specs / ".race-lock.json").write_text(
-        f'{{"version": "v{version}", "target_version": "v{version}"}}\n',
+        f'{{"version": "v{version}", "target_version": "v{version}", '
+        '"status": "active"}\n',
         encoding="utf-8",
     )
     (specs / f"tasks-v{version}.md").write_text(f'# tasks v{version} "{codename}"\n', encoding="utf-8")
@@ -366,7 +367,7 @@ def test_release_doc_check_catches_docs_only_ci_bypass(tmp_path):
     assert any("docs-only" in item for item in issues)
 
 
-def test_release_doc_check_requires_exactly_one_active_release(tmp_path):
+def test_release_doc_check_rejects_multiple_active_releases(tmp_path):
     module = _load_module(
         "check_release_docs_test_one_active",
         Path("scripts/check_release_docs.py"),
@@ -381,7 +382,98 @@ def test_release_doc_check_requires_exactly_one_active_release(tmp_path):
     )
 
     issues = module.validate_release_docs(tmp_path, require_logs=False)
-    assert any("exactly one ACTIVE" in item for item in issues)
+    assert any("at most one ACTIVE" in item for item in issues)
+
+
+def _activate_next_release(root: Path, version: str = "27.0.0") -> None:
+    roadmap = root / "ROADMAP.md"
+    roadmap.write_text(
+        roadmap.read_text(encoding="utf-8")
+        .replace("| TestRelease | ACTIVE |", "| TestRelease | DONE |")
+        .replace(
+            '## [ACTIVE] v26.0.1 "TestRelease"',
+            '## [DONE] v26.0.1 "TestRelease"',
+        )
+        + f'\n## [ACTIVE] v{version} "NextRelease"\n',
+        encoding="utf-8",
+    )
+    specs = root / ".workflow" / "specs"
+    (specs / f"tasks-v{version}.md").write_text(
+        f'# tasks v{version} "NextRelease"\n',
+        encoding="utf-8",
+    )
+    (specs / f"arch-v{version}.md").write_text(
+        f'# arch v{version} "NextRelease"\n',
+        encoding="utf-8",
+    )
+    (specs / ".race-lock.json").write_text(
+        f'{{"version": "v{version}", "target_version": "v{version}", '
+        '"status": "active"}\n',
+        encoding="utf-8",
+    )
+
+
+def test_release_doc_check_accepts_completed_current_with_newer_active(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_next_active",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _activate_next_release(tmp_path)
+    _set_module_paths(module, tmp_path)
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+
+    assert issues == []
+
+
+def test_release_doc_check_rejects_non_newer_active_release(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_non_newer_active",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _activate_next_release(tmp_path, version="25.0.0")
+    _set_module_paths(module, tmp_path)
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+
+    assert any("must be newer" in item for item in issues)
+
+
+def test_release_doc_check_requires_next_active_specs(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_next_active_specs",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _activate_next_release(tmp_path)
+    (tmp_path / ".workflow" / "specs" / "arch-v27.0.0.md").unlink()
+    _set_module_paths(module, tmp_path)
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+
+    assert any("missing workflow spec" in item and "arch-v27.0.0.md" in item for item in issues)
+
+
+def test_release_doc_check_requires_race_lock_to_target_next_active(tmp_path):
+    module = _load_module(
+        "check_release_docs_test_next_active_lock",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _activate_next_release(tmp_path)
+    lock_file = tmp_path / ".workflow" / "specs" / ".race-lock.json"
+    lock_file.write_text(
+        '{"version": "v26.0.1", "target_version": "v26.0.1", '
+        '"status": "completed"}\n',
+        encoding="utf-8",
+    )
+    _set_module_paths(module, tmp_path)
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+
+    assert any("race lock does not target v27.0.0" in item for item in issues)
 
 
 def test_release_doc_check_catches_current_tab_count_drift(tmp_path):

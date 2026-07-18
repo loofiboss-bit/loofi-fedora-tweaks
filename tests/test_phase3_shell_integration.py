@@ -11,7 +11,9 @@ sys.path.insert(
     os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"),
 )
 
-from PyQt6.QtWidgets import QApplication, QWidget
+from PyQt6.QtCore import QCoreApplication, QEvent
+from PyQt6.QtGui import QFont
+from PyQt6.QtWidgets import QApplication, QToolButton, QWidget
 
 from core.navigation import (
     DirectLinkBehavior,
@@ -22,6 +24,7 @@ from core.navigation import (
 )
 from core.plugins.registry import PluginRegistry
 from ui.main_window import MainWindow
+from ui.layout_primitives import LayoutMetrics
 
 
 class _RouteWidget(QWidget):
@@ -46,6 +49,9 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         window = getattr(self, "window", None)
         if window is not None:
             window.deleteLater()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            self.app.processEvents()
+            self.window = None
         PluginRegistry.reset()
 
     @patch("ui.main_window.MainWindow._check_first_run")
@@ -203,6 +209,70 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         window.resize(1280, 720)
         self.app.processEvents()
         self.assertFalse(window._sidebar_collapsed)
+
+    def test_minimum_and_wide_width_switch_section_presentation(self):
+        window = self._build_window()
+        window.switch_to_route("system_info")
+
+        window.resize(860, 720)
+        self.app.processEvents()
+        self.assertTrue(window._sidebar_collapsed)
+        self.assertTrue(window.destination_host.is_compact())
+        labels = [
+            window.destination_host.navigator.selector.itemText(index)
+            for index in range(
+                window.destination_host.navigator.selector.count()
+            )
+        ]
+        self.assertIn("System Information", labels)
+        self.assertTrue(all(label and "…" not in label for label in labels))
+
+        window.resize(1180, 720)
+        self.app.processEvents()
+        self.assertFalse(window._sidebar_collapsed)
+        self.assertFalse(window.destination_host.is_compact())
+
+    def test_sidebar_metrics_are_clamped_at_large_fonts(self):
+        widget = QWidget()
+        font = QFont(widget.font())
+        font.setPointSizeF(36.0)
+        widget.setFont(font)
+
+        metrics = LayoutMetrics.from_widget(widget)
+
+        self.assertGreaterEqual(metrics.sidebar_width, 232)
+        self.assertLessEqual(metrics.sidebar_width, 288)
+        self.assertGreaterEqual(metrics.sidebar_collapsed_width, 64)
+        self.assertLessEqual(metrics.sidebar_collapsed_width, 72)
+        widget.deleteLater()
+
+    def test_visible_search_affordance_opens_shared_global_search(self):
+        window = self._build_window()
+        window._show_global_search = MagicMock()
+
+        window._global_search_button.click()
+
+        window._show_global_search.assert_called_once_with(actions_only=False)
+        self.assertTrue(window._global_search_button.isVisible())
+        self.assertIn("Ctrl+K", window._global_search_button.toolTip())
+
+    def test_sidebar_toggle_is_compact_semantic_icon_control(self):
+        window = self._build_window()
+
+        self.assertIsInstance(window._sidebar_toggle, QToolButton)
+        self.assertEqual(window._sidebar_toggle.text(), "")
+        self.assertFalse(window._sidebar_toggle.icon().isNull())
+        self.assertTrue(window._sidebar_toggle.accessibleName())
+        self.assertGreaterEqual(window._sidebar_toggle.width(), 36)
+        self.assertGreaterEqual(window._sidebar_toggle.height(), 36)
+
+    def test_redundant_destination_eyebrow_is_hidden(self):
+        window = self._build_window()
+
+        self.assertTrue(window.switch_to_route("settings"))
+
+        self.assertEqual(window._bc_page.text(), "Settings")
+        self.assertFalse(window._bc_category.isVisible())
 
     def test_activity_chrome_is_conditional(self):
         window = self._build_window()

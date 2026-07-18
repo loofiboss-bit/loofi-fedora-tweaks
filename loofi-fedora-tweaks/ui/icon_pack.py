@@ -9,6 +9,8 @@ from typing import cast
 
 from PyQt6.QtGui import QIcon
 
+from ui.design import semantic_color
+
 _ICON_SIZES = {16, 20, 24, 32}
 _ICON_NAMES = (
     "appearance-theme",
@@ -133,83 +135,15 @@ _ICON_GROUPS: dict[str, str] = {
 }
 
 
-_LIGHT_ICON_TINTS: dict[str, str] = {
-    "overview-dashboard": "#4D6F9E",
-    "home": "#4A78A8",
-    "info": "#4B7E98",
-    "terminal-console": "#636F7F",
-    "logs": "#677487",
-    "search": "#3D7E90",
-    "notifications": "#3E8699",
-    "network-connectivity": "#3E889D",
-    "network-traffic": "#3A8094",
-    "packages-software": "#A4782F",
-    "install": "#A6813A",
-    "update": "#A2752D",
-    "hardware-performance": "#2F8A66",
-    "cpu-performance": "#32856B",
-    "memory-ram": "#3B826D",
-    "storage-disk": "#3C8764",
-    "maintenance-health": "#5B8E3B",
-    "cleanup": "#5A8A35",
-    "restart": "#648E3D",
-    "status-ok": "#4F8C44",
-    "security-shield": "#9A6664",
-    "appearance-theme": "#3F8178",
-    "developer-tools": "#5F7289",
-    "settings": "#5E7687",
-}
-
-
-_DARK_ICON_TINTS: dict[str, str] = {
-    "overview-dashboard": "#9CB8E8",
-    "home": "#A4C1ED",
-    "info": "#9FD0E4",
-    "terminal-console": "#C1CDDD",
-    "logs": "#C5D1E2",
-    "search": "#9CD9E6",
-    "notifications": "#A0E0ED",
-    "network-connectivity": "#9DDDEA",
-    "network-traffic": "#95D4E3",
-    "packages-software": "#E5C188",
-    "install": "#E7C993",
-    "update": "#E1BA7B",
-    "hardware-performance": "#8EE0BD",
-    "cpu-performance": "#86D8BE",
-    "memory-ram": "#9AE1CA",
-    "storage-disk": "#93D8B4",
-    "maintenance-health": "#B3D87C",
-    "cleanup": "#A9D06E",
-    "restart": "#B8DA85",
-    "status-ok": "#9ED37E",
-    "security-shield": "#E1ACAA",
-    "appearance-theme": "#87D4C6",
-    "developer-tools": "#BECBE0",
-    "settings": "#BDD4E1",
-}
-
-
-_LIGHT_PALETTE: dict[str, str] = {
-    "appearance": "#357A73",
-    "hardware": "#2A8B66",
-    "maintenance": "#4A8C2F",
-    "network": "#2D7893",
-    "packages": "#A27114",
-    "security": "#9B5E5E",
-    "system": "#466A9E",
-    "tools": "#5E6D84",
-}
-
-
-_DARK_PALETTE: dict[str, str] = {
-    "appearance": "#61CFC1",
-    "hardware": "#74D5A6",
-    "maintenance": "#9BCF5F",
-    "network": "#79D2E3",
-    "packages": "#E0B267",
-    "security": "#E19A9A",
-    "system": "#8FB0E4",
-    "tools": "#B0BED5",
+_GROUP_ROLES: dict[str, str] = {
+    "appearance": "accent",
+    "hardware": "success",
+    "maintenance": "success",
+    "network": "accent",
+    "packages": "warning",
+    "security": "error",
+    "system": "accent",
+    "tools": "text_muted",
 }
 
 
@@ -217,7 +151,7 @@ def icon_tint(icon_value: str) -> str:
     """Return the base theme-aware tint for an icon token."""
     icon_name = resolve_icon_name(icon_value)
     if not icon_name:
-        return _DARK_PALETTE["tools"] if _is_dark_theme() else _LIGHT_PALETTE["tools"]
+        return semantic_color("text_muted")
     return _default_tint(icon_name)
 
 
@@ -344,17 +278,8 @@ def _is_dark_theme() -> bool:
 
 def _default_tint(icon_name: str) -> str:
     """Return a subtle group tint color for icon integration."""
-    dark_theme = _is_dark_theme()
-    if dark_theme:
-        if icon_name in _DARK_ICON_TINTS:
-            return _DARK_ICON_TINTS[icon_name]
-    else:
-        if icon_name in _LIGHT_ICON_TINTS:
-            return _LIGHT_ICON_TINTS[icon_name]
-
     group = _ICON_GROUPS.get(icon_name, "tools")
-    palette = _DARK_PALETTE if dark_theme else _LIGHT_PALETTE
-    return palette.get(group, palette["tools"])
+    return semantic_color(_GROUP_ROLES.get(group, "text_muted"))
 
 
 def _tinted_icon(path: str, size: int, tint: str) -> QIcon | None:

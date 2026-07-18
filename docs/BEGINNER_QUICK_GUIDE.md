@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 15.0.0 "Essentials" — six destinations, on-demand tools, and verified maintenance
+> Version 16.0.0 "Clarity" — responsive destinations, on-demand tools, and verified maintenance
 
 Use this guide for a safe first run in under 10 minutes.
 

@@ -1,4 +1,9 @@
-# Loofi Fedora Tweaks v15.0.0 "Nebula" — Roadmap
+# Legacy Roadmap — Pre-renormalization v15.0.0 "Nebula"
+
+> Historical archive only. This roadmap predates the canonical v15.0.0
+> "Essentials" release and must not be used as current planning authority.
+> Use `../../ROADMAP.md` and
+> `../plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` instead.
 
 ## Vision
 

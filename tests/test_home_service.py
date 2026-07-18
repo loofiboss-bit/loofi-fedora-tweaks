@@ -106,6 +106,49 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.overall_state, "good")
         self.assertEqual(summary.primary_recommendation.kind, "no_action")
         self.assertEqual(len(summary.common_tasks), 4)
+        self.assertEqual(
+            [(item.id, item.state) for item in summary.status_items],
+            [
+                ("health", "good"),
+                ("updates", "unknown"),
+                ("storage", "unknown"),
+                ("recovery", "unknown"),
+            ],
+        )
+
+    def test_explicit_saved_payloads_drive_four_truthful_status_areas(self):
+        snapshot = _snapshot(
+            100_000.0,
+            daily_maintenance={
+                "cards": [{"id": "system-updates", "state": "current", "summary": "Up to date"}],
+            },
+            package_manager_health_summary={"state": "healthy", "summary": "Package manager healthy"},
+            disk_usage_summary={"state": "good", "summary": "Disk use is healthy"},
+            rollback_snapshot_availability={"state": "available", "summary": "Recovery point available"},
+        )
+
+        summary = _service(snapshots=[snapshot]).summary()
+
+        self.assertEqual(
+            [(item.id, item.state) for item in summary.status_items],
+            [
+                ("health", "good"),
+                ("updates", "good"),
+                ("storage", "good"),
+                ("recovery", "good"),
+            ],
+        )
+
+    def test_stale_snapshot_never_promotes_unsignaled_status_to_good(self):
+        snapshot = _snapshot(
+            1.0,
+            disk_usage_summary={"state": "good", "summary": "Previously healthy"},
+        )
+
+        summary = _service(snapshots=[snapshot]).summary()
+
+        self.assertTrue(all(item.state != "good" for item in summary.status_items))
+        self.assertEqual(summary.status_items[2].state, "unknown")
 
     def test_stale_snapshot_is_explicit_without_collecting(self):
         summary = _service(snapshots=[_snapshot(1.0)]).summary()

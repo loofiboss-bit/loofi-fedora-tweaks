@@ -44,6 +44,7 @@ class TestStartupBenchmark(unittest.TestCase):
         self.assertEqual(run["plugin_spec_count"], 28)
         self.assertEqual(run["installed_components"], ["core", "specialist"])
         self.assertEqual(run["running_qthreads"], 0)
+        self.assertEqual(run["active_timer_intervals_ms"], [])
         self.assertEqual(run["subprocess_probes"], [])
         self.assertNotIn("ui.dashboard_tab", run["imports"]["ui_modules"])
         specialist = {

@@ -2,7 +2,7 @@
 Maintenance Tab - Consolidated tab merging Updates, Cleanup, and Overlays.
 Part of v11.0 "Aurora Update".
 
-Uses QTabWidget for sub-navigation to preserve all features from the
+Uses a lazy route-owned stack to preserve all features from the
 original UpdatesTab, CleanupTab, and OverlaysTab.
 The Overlays sub-tab is only shown on Atomic (rpm-ostree) systems.
 """
@@ -11,7 +11,6 @@ from services.system.system import cached_which
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
-from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFrame,
     QGroupBox,
@@ -22,7 +21,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -32,8 +31,9 @@ from utils.command_runner import CommandRunner
 from utils.commands import PrivilegedCommand
 
 from ui.base_tab import BaseTab
+from ui.components.layout import PageScaffold
+from ui.design import semantic_qcolor
 from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
-from ui.tab_utils import configure_top_tabs
 from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
 
 # ---------------------------------------------------------------------------
@@ -55,13 +55,14 @@ class _UpdatesSubTab(BaseTab):
     def __init__(self):
         super().__init__()
         self.package_manager = SystemManager.get_package_manager()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("System Updates"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Updates"),
+            self.tr("Review system, Flatpak, and firmware updates before applying changes."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         update_guidance = QLabel(self.tr(
             "Review system, Flatpak, and firmware updates together. Traditional Fedora "
@@ -147,7 +148,7 @@ class _UpdatesSubTab(BaseTab):
         # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Update output"))
         self.output_area.setMaximumHeight(16777215)
-        layout.addWidget(self.output_area)
+        self.add_output_disclosure(layout, self.tr("Show update command output"))
 
         self.runner.progress_update.connect(self.update_progress)
 
@@ -315,8 +316,14 @@ class _CleanupSubTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Cleanup"),
+            self.tr("Analyze reclaimable data separately from confirmed maintenance actions."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Cleanup output"))
@@ -397,8 +404,7 @@ class _CleanupSubTab(BaseTab):
         self.reclaim_button.clicked.connect(self._analyze_reclaim)
         preview_layout.addWidget(self.reclaim_button)
         layout.addWidget(preview_group)
-        layout.addWidget(QLabel(self.tr("Output Log:")))
-        layout.addWidget(self.output_area)
+        self.add_output_disclosure(layout, self.tr("Show cleanup command output"))
         self._reclaim_thread = None
         self._reclaim_worker = None
 
@@ -532,15 +538,14 @@ class _OverlaysSubTab(QWidget):
             QTimer.singleShot(0, self.refresh_list)
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
-        layout.setSpacing(20)
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("System Overlays (rpm-ostree)"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Atomic Overlays"),
+            self.tr("Review layered packages and pending deployments on Atomic Fedora."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # Info Card
         info_frame = QFrame()
@@ -619,7 +624,7 @@ class _OverlaysSubTab(QWidget):
                 self.packages_list.addItem(item)
         else:
             item = QListWidgetItem(self.tr("No layered packages (clean base image)"))
-            item.setForeground(QColor("#9da7bf"))
+            item.setForeground(semantic_qcolor("text_muted"))
             self.packages_list.addItem(item)
 
         # Check for pending reboot
@@ -710,12 +715,8 @@ class _SmartUpdatesSubTab(QWidget):
     def __init__(self):
         super().__init__()
         self._loaded = False
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Smart Updates"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Check Updates
         check_group = QGroupBox(self.tr("Available Updates"))
@@ -763,7 +764,9 @@ class _SmartUpdatesSubTab(QWidget):
         self.output_area.setReadOnly(True)
         self.output_area.setMaximumHeight(150)
         self.output_area.setAccessibleName(self.tr("Smart updates output"))
-        layout.addWidget(self.output_area)
+        self.output_details = DetailsDisclosure(summary=self.tr("Show smart update output"))
+        self.output_details.add_widget(self.output_area)
+        layout.addWidget(self.output_details)
 
         self.runner = CommandRunner()
         self.runner.output_received.connect(self._append_output)
@@ -841,13 +844,14 @@ class _UpgradeAssistantSubTab(QWidget):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        layout.setSpacing(14)
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Upgrade Assistant"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Fedora Upgrade"),
+            self.tr("Review release readiness and export support evidence before upgrading Fedora."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         intro = QLabel(
             self.tr(
@@ -953,13 +957,14 @@ class _ActionCenterSubTab(BaseTab):
 
         self._service = ActionCenterService()
 
-        layout = QVBoxLayout()
-        layout.setSpacing(12)
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Action Center"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Action Center"),
+            self.tr("Review, plan, run, verify, and inspect maintenance actions."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         intro = QLabel(
             self.tr(
@@ -1033,7 +1038,7 @@ class _ActionCenterSubTab(BaseTab):
         self.detail_disclosure.toggle_button.setChecked(True)
         layout.addWidget(self.detail_disclosure, 1)
 
-        self.add_output_section(layout)
+        self.add_output_disclosure(layout, self.tr("Show Action Center command output"))
         self.runner.output_received.connect(self._capture_output)
         self.runner.stderr_received.connect(self._capture_stderr)
 
@@ -1473,13 +1478,15 @@ class _HealthTimelineSubTab(QWidget):
         self._store = self._observability.snapshots
         self._analyzer_cls = MaintenanceTrendAnalyzer
 
-        layout = QVBoxLayout()
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Health History"),
+            self.tr("Review recorded system-health events and recurring issues."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(12)
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("My Fedora Today"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         button_row = QHBoxLayout()
         refresh_button = QPushButton(self.tr("Refresh"))
@@ -1551,8 +1558,8 @@ class _HealthTimelineSubTab(QWidget):
 class MaintenanceTab(BaseTab):
     """Consolidated maintenance tab merging Updates, Cleanup, and Overlays.
 
-    Uses a QTabWidget for sub-navigation.  The Overlays sub-tab is only
-    shown when the system is detected as Atomic (rpm-ostree based).
+    Uses a lazy route-owned stack. The Overlays page is only present when
+    the system is detected as Atomic (rpm-ostree based).
     """
 
     _METADATA = PluginMetadata(
@@ -1575,11 +1582,11 @@ class MaintenanceTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
+        self.tabs = QStackedWidget()
+        self.tabs.setObjectName("maintenanceRouteStack")
 
         self._sub_tab_factories = [
             (self.tr("Updates"), _UpdatesSubTab),
@@ -1594,9 +1601,9 @@ class MaintenanceTab(BaseTab):
 
         self._loaded_tabs = {}
 
-        for label, _ in self._sub_tab_factories:
+        for _label, _factory in self._sub_tab_factories:
             placeholder = QWidget()
-            self.tabs.addTab(placeholder, label)
+            self.tabs.addWidget(placeholder)
 
         self.tabs.currentChanged.connect(self._lazy_load_sub_tab)
         self._lazy_load_sub_tab(0)
@@ -1609,15 +1616,17 @@ class MaintenanceTab(BaseTab):
             return
 
         if index < len(self._sub_tab_factories):
-            label, factory = self._sub_tab_factories[index]
+            _label, factory = self._sub_tab_factories[index]
             widget = factory()
             request = getattr(widget, "actionCenterRequested", None)
             if request is not None and hasattr(request, "connect"):
                 request.connect(self._open_action_center)
             self._loaded_tabs[index] = widget
             self.tabs.blockSignals(True)
-            self.tabs.removeTab(index)
-            self.tabs.insertTab(index, widget, label)
+            placeholder = self.tabs.widget(index)
+            self.tabs.removeWidget(placeholder)
+            placeholder.deleteLater()
+            self.tabs.insertWidget(index, widget)
             self.tabs.setCurrentIndex(index)
             self.tabs.blockSignals(False)
 
@@ -1654,7 +1663,11 @@ class MaintenanceTab(BaseTab):
         }
         wanted = labels.get(subroute)
         if wanted is None:
-            return not bool(subroute)
+            if subroute:
+                return False
+            self.tabs.setCurrentIndex(0)
+            self._lazy_load_sub_tab(0)
+            return True
         for index, (label, _factory) in enumerate(self._sub_tab_factories):
             if label != wanted:
                 continue

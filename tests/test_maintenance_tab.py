@@ -27,10 +27,12 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-t
 # ---------------------------------------------------------------------------
 
 _original_modules = {}
+_page_scaffold_stub = None
 
 
 def _install_stubs():
     """Replace PyQt6 and direct dependencies with lightweight stubs."""
+    global _page_scaffold_stub
 
     class _Dummy:
         """Dummy widget/object that accepts any constructor args.
@@ -48,6 +50,8 @@ def _install_stubs():
             if name == "tr":
                 return lambda text, *a, **kw: text
             return MagicMock()
+
+    _page_scaffold_stub = _Dummy
 
     # --- QMessageBox stub with StandardButton enum ---
     class _StubStandardButton:
@@ -88,6 +92,7 @@ def _install_stubs():
     qt_widgets.QGroupBox = _Dummy
     qt_widgets.QProgressBar = _Dummy
     qt_widgets.QTabWidget = _Dummy
+    qt_widgets.QStackedWidget = _Dummy
     qt_widgets.QListWidget = _Dummy
     qt_widgets.QListWidgetItem = _StubQListWidgetItem
     qt_widgets.QFrame = _Dummy
@@ -309,10 +314,16 @@ def _uninstall_stubs():
             sys.modules[name] = mod
 
 
-# Install stubs before importing the module under test
+# Install stubs before importing the module under test. Patch the already-loaded
+# layout module in place so collection never swaps the shared package in
+# ``sys.modules``.
+_components_layout_module = importlib.import_module("ui.components.layout")
+_original_page_scaffold = _components_layout_module.PageScaffold
 _install_stubs()
+_components_layout_module.PageScaffold = _page_scaffold_stub
 sys.modules.pop("ui.maintenance_tab", None)
 _mt = importlib.import_module("ui.maintenance_tab")
+_components_layout_module.PageScaffold = _original_page_scaffold
 
 # Keep references to stub classes for patching
 _QMessageBox = sys.modules["PyQt6.QtWidgets"].QMessageBox
@@ -1966,9 +1977,8 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
 
 
 def tearDownModule():
-    """Restore original sys.modules entries."""
+    """Remove the stubbed module without replaying stale collection snapshots."""
     sys.modules.pop("ui.maintenance_tab", None)
-    _uninstall_stubs()
 
 
 if __name__ == "__main__":

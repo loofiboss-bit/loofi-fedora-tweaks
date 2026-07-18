@@ -35,7 +35,7 @@ class TestPhase6UiAdapters(unittest.TestCase):
     def test_updates_owns_advanced_options_and_action_center_is_dedicated(self, _atomic, _manager):
         tab = self.MaintenanceTab()
 
-        labels = [tab.tabs.tabText(index) for index in range(tab.tabs.count())]
+        labels = [label for label, _factory in tab._sub_tab_factories]
         self.assertEqual(labels[:3], ["Updates", "Action Center", "Cleanup"])
         self.assertNotIn("Smart Updates", labels)
         updates = tab._loaded_tabs[0]

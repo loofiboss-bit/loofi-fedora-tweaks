@@ -121,17 +121,17 @@ class TestSidebarItemDelegate(unittest.TestCase):
         from ui.main_window import SidebarItemDelegate
         self.assertTrue(callable(SidebarItemDelegate))
 
-    def test_status_colors_defined(self):
+    def test_status_roles_defined(self):
         from ui.main_window import SidebarItemDelegate
         delegate = SidebarItemDelegate()
-        self.assertIn("ok", delegate._STATUS_COLORS)
-        self.assertIn("warning", delegate._STATUS_COLORS)
-        self.assertIn("error", delegate._STATUS_COLORS)
+        self.assertEqual(delegate._STATUS_ROLES["ok"], "success")
+        self.assertEqual(delegate._STATUS_ROLES["warning"], "warning")
+        self.assertEqual(delegate._STATUS_ROLES["error"], "error")
 
-    def test_status_colors_are_three_values(self):
+    def test_status_roles_are_three_values(self):
         from ui.main_window import SidebarItemDelegate
         delegate = SidebarItemDelegate()
-        self.assertEqual(len(delegate._STATUS_COLORS), 3)
+        self.assertEqual(len(delegate._STATUS_ROLES), 3)
 
     def test_delegate_inherits_qstyleditemdelegate(self):
         from PyQt6.QtWidgets import QStyledItemDelegate

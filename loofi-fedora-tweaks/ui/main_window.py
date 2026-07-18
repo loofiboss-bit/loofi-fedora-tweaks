@@ -1,7 +1,4 @@
-"""
-Main Window - v25.0 "Plugin Architecture"
-PluginRegistry layout with route-aware sidebar navigation, breadcrumb, and status bar.
-"""
+"""Route-aware application shell with lazy destination navigation."""
 
 import logging
 import os
@@ -25,9 +22,10 @@ from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
 from core.plugins.registry import CATEGORY_ICONS
 from PyQt6.QtCore import QRect, Qt, QTimer
-from PyQt6.QtGui import QColor, QKeySequence, QPainter, QShortcut
+from PyQt6.QtGui import QKeySequence, QPainter, QShortcut
 from PyQt6.QtWidgets import (
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -36,10 +34,12 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QStackedWidget,
     QStyledItemDelegate,
+    QStyle,
     QStyleOptionViewItem,
     QTabWidget,
     QTreeWidgetItem,
     QTreeWidgetItemIterator,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -52,6 +52,7 @@ from utils.log import get_logger
 from version import __version__
 
 from ui.icon_pack import get_qicon, icon_tint_variant
+from ui.design import semantic_qcolor
 from ui.layout_primitives import LayoutMetrics, PageHeader
 from ui.lazy_widget import LazyWidget
 from ui.navigation import DestinationHost, DestinationSidebar
@@ -92,10 +93,10 @@ class SidebarEntry:
 class SidebarItemDelegate(QStyledItemDelegate):
     """Custom delegate that renders status dots on sidebar tab items."""
 
-    _STATUS_COLORS = {
-        "ok": QColor(76, 175, 80),  # green
-        "warning": QColor(255, 193, 7),  # amber
-        "error": QColor(244, 67, 54),  # red
+    _STATUS_ROLES = {
+        "ok": "success",
+        "warning": "warning",
+        "error": "error",
     }
 
     def paint(self, painter: "QPainter | None", option: QStyleOptionViewItem, index) -> None:
@@ -106,10 +107,10 @@ class SidebarItemDelegate(QStyledItemDelegate):
             return
 
         status = index.data(_ROLE_STATUS)
-        if not status or status not in self._STATUS_COLORS:
+        if not status or status not in self._STATUS_ROLES:
             return
 
-        color = self._STATUS_COLORS[status]
+        color = semantic_qcolor(self._STATUS_ROLES[status])
         dot_size = 8
         x = option.rect.right() - dot_size - 8
         y = option.rect.center().y() - dot_size // 2
@@ -148,6 +149,10 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, False)
         self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, False)
         self.setWindowTitle(self.tr("Loofi Fedora Tweaks v%1").replace("%1", __version__))
+        self.setAccessibleName(self.tr("Loofi Fedora Tweaks"))
+        self.setAccessibleDescription(
+            self.tr("Fedora system settings and maintenance control center")
+        )
 
         # HiDPI/Wayland safety: use Qt device-independent units and derive
         # shell dimensions from the active font and available screen size.
@@ -184,26 +189,41 @@ class MainWindow(QMainWindow):
         sidebar_layout = QVBoxLayout(sidebar_container)
         sidebar_layout.setContentsMargins(12, 14, 12, 10)
         sidebar_layout.setSpacing(10)
+        self._sidebar_layout = sidebar_layout
 
         sidebar_chrome = QHBoxLayout()
         sidebar_chrome.setContentsMargins(0, 0, 0, 0)
         sidebar_chrome.setSpacing(6)
 
-        # Sidebar collapse toggle
+        # Compact semantic sidebar control.
         sidebar_chrome.addStretch()
-        self._sidebar_toggle = QPushButton("<")
+        self._sidebar_toggle = QToolButton()
         self._sidebar_toggle.setObjectName("sidebarToggle")
-        self._sidebar_toggle.setMinimumHeight(int(self._line_height * 2.2))
-        self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
+        self._sidebar_toggle.setFixedSize(36, 36)
         self._sidebar_toggle.clicked.connect(self._toggle_sidebar)
         sidebar_chrome.addWidget(self._sidebar_toggle)
         sidebar_layout.addLayout(sidebar_chrome)
+
+        self._global_search_button = QPushButton(self.tr("Search  Ctrl+K"))
+        self._global_search_button.setObjectName("globalSearchAffordance")
+        self._global_search_button.setIcon(get_qicon("search", size=18))
+        self._global_search_button.setAccessibleName(
+            self.tr("Search routes, settings, and actions")
+        )
+        self._global_search_button.setToolTip(
+            self.tr("Search routes, settings, and actions (Ctrl+K)")
+        )
+        self._global_search_button.clicked.connect(
+            lambda: self._show_global_search(actions_only=False)
+        )
+        sidebar_layout.addWidget(self._global_search_button)
 
         # Track sidebar expanded width and state
         self._sidebar_container = sidebar_container
         self._sidebar_expanded_width = sidebar_width
         self._sidebar_collapsed = False
         self._auto_sidebar_collapsed = False
+        self._set_sidebar_toggle_state(False)
 
         # Flat primary navigation. Existing route IDs remain in the route index,
         # not as expandable child rows.
@@ -235,13 +255,22 @@ class MainWindow(QMainWindow):
         self._bc_desc.setObjectName("bcDesc")
         right_side.addWidget(self._breadcrumb_frame)
 
+        shell_body = QWidget()
+        shell_body.setObjectName("shellBody")
+        self._shell_body_layout = QGridLayout(shell_body)
+        self._shell_body_layout.setContentsMargins(0, 0, 0, 0)
+        self._shell_body_layout.setSpacing(0)
+
         self.destination_host = DestinationHost()
         self.destination_host.routeRequested.connect(self.switch_to_route)
-        right_side.addWidget(self.destination_host)
 
         # Content Area
         self.content_area = QStackedWidget()
-        right_side.addWidget(self.content_area)
+        self._shell_body_layout.addWidget(self.destination_host, 0, 0)
+        self._shell_body_layout.addWidget(self.content_area, 0, 1)
+        self._shell_body_layout.setColumnStretch(1, 1)
+        self._section_navigation_compact = False
+        right_side.addWidget(shell_body, 1)
 
         # Status bar
         self._status_frame = QFrame()
@@ -251,6 +280,7 @@ class MainWindow(QMainWindow):
         sb_layout.setContentsMargins(12, 0, 12, 0)
         self._status_label = QLabel("")
         self._status_label.setObjectName("statusText")
+        self._status_label.setAccessibleName(self.tr("Activity status"))
         sb_layout.addWidget(self._status_label)
 
         # Undo button (v38.0)
@@ -272,6 +302,7 @@ class MainWindow(QMainWindow):
         self._category_items: dict[str, QTreeWidgetItem] = {}
         self._pages_cache: dict[str, QWidget] | None = None
         self._active_route_id = ""
+        self._page_header_action_owner: QWidget | None = None
         self._active_plugin_id = ""
         self._active_destination_id = ""
         self._selecting_destination = False
@@ -286,6 +317,11 @@ class MainWindow(QMainWindow):
             "executor": None,  # populated after executor init
         }
         self._build_sidebar_from_registry(context)
+        try:
+            initial_shell_width = int(self.width())
+        except (TypeError, ValueError, AttributeError):
+            initial_shell_width = 1180
+        self._apply_responsive_shell(initial_shell_width)
 
         # Select Home after all lazy route entries are registered.
         if self.sidebar.topLevelItemCount() > 0:
@@ -739,7 +775,7 @@ class MainWindow(QMainWindow):
         scroll.setObjectName("pageScroll")
         scroll.setFrameShape(QFrame.Shape.NoFrame)
         scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        scroll.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         scroll.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Expanding)
         scroll.setWidget(widget)
@@ -758,6 +794,7 @@ class MainWindow(QMainWindow):
                 self._set_active_plugin(route.plugin_id)
             if route and route.subroute:
                 self._activate_route_widget(route)
+            self._sync_page_header_actions(route)
             self._update_breadcrumb(current)
         else:
             # Category item: expand and auto-select first child
@@ -811,6 +848,42 @@ class MainWindow(QMainWindow):
         if hasattr(self._breadcrumb_frame, "set_content"):
             self._breadcrumb_frame.set_content(category, route.label, route.description)
         self._bc_parent_item = entry.tree_item.parent() if entry and entry.tree_item else None
+
+    def _sync_page_header_actions(self, route: NavigationRoute | None) -> None:
+        """Populate the shell header from an optional route-owned action provider."""
+        header = getattr(self, "_breadcrumb_frame", None)
+        clear_actions = getattr(header, "clear_actions", None)
+        widget: QWidget | None = None
+        actions: tuple[object, ...] = ()
+        if route is not None:
+            entry = self._sidebar_index.get(route.plugin_id)
+            if entry is not None:
+                widget = self._real_widget_for_entry(entry)
+                provider = getattr(widget, "page_header_actions", None)
+                if callable(provider):
+                    try:
+                        actions = tuple(provider(route))
+                    except (AttributeError, RuntimeError, TypeError, ValueError) as exc:
+                        logger.debug("Page header actions failed for %s: %s", route.id, exc)
+
+        if getattr(self, "_page_header_action_owner", None) is None and not actions:
+            return
+        if callable(clear_actions):
+            clear_actions()
+        self._page_header_action_owner = None
+        if not actions:
+            return
+        add_action = getattr(header, "add_action", None)
+        if not callable(add_action):
+            return
+        for action in actions:
+            control = action
+            primary = False
+            if isinstance(action, tuple) and len(action) == 2:
+                control, primary = action
+            if isinstance(control, QWidget):
+                add_action(control, primary=bool(primary))
+        self._page_header_action_owner = widget
 
     @staticmethod
     def _normalize_route_label(value: str) -> str:
@@ -969,12 +1042,14 @@ class MainWindow(QMainWindow):
     def set_status(self, text: str):
         """Set status bar message (can be called from any tab)."""
         self._status_label.setText(text)
+        self._status_label.setAccessibleDescription(text)
         self._update_status_chrome()
 
     def show_undo_button(self, description: str = ""):
         """Show the undo button in the status bar after an undoable action."""
         if description:
             self._status_label.setText(description)
+            self._status_label.setAccessibleDescription(description)
         self._undo_btn.setVisible(True)
         self._update_status_chrome()
 
@@ -996,6 +1071,7 @@ class MainWindow(QMainWindow):
     def show_status_toast(self, message: str, error: bool = False, duration: int = 3000):
         """Show a temporary status-bar toast notification (v38.0)."""
         self._status_label.setText(message)
+        self._status_label.setAccessibleDescription(message)
         if error:
             self._status_label.setProperty("toast", "error")
         else:
@@ -1011,6 +1087,7 @@ class MainWindow(QMainWindow):
     def _clear_toast(self):
         """Clear toast styling from the status bar."""
         self._status_label.setText("")
+        self._status_label.setAccessibleDescription("")
         self._status_label.setProperty("toast", "")
         self._status_label.style().unpolish(self._status_label)
         self._status_label.style().polish(self._status_label)
@@ -1040,6 +1117,7 @@ class MainWindow(QMainWindow):
                     record_history=record_history,
                 )
             if result.decision is not NavigationDecision.VISIBLE:
+                self._sync_page_header_actions(None)
                 destination = get_destination(result.destination_id)
                 if destination is not None:
                     self._selecting_destination = True
@@ -1066,6 +1144,7 @@ class MainWindow(QMainWindow):
         self._active_route_id = route.id
         self._set_active_plugin(route.plugin_id)
         activated = self._activate_route_widget(route)
+        self._sync_page_header_actions(route)
         if entry.tree_item is not None:
             self._update_breadcrumb(entry.tree_item)
         else:
@@ -1229,34 +1308,82 @@ class MainWindow(QMainWindow):
         self._auto_sidebar_collapsed = False
         self._set_sidebar_collapsed(not self._sidebar_collapsed)
 
+    def _set_sidebar_toggle_state(self, collapsed: bool) -> None:
+        """Apply a native semantic direction icon and accessible control text."""
+        action = self.tr("Expand sidebar") if collapsed else self.tr("Collapse sidebar")
+        standard_icon = (
+            QStyle.StandardPixmap.SP_ArrowRight
+            if collapsed
+            else QStyle.StandardPixmap.SP_ArrowLeft
+        )
+        self._sidebar_toggle.setText("")
+        style = self.style()
+        if style is not None:
+            self._sidebar_toggle.setIcon(style.standardIcon(standard_icon))
+        self._sidebar_toggle.setToolTip(action)
+        self._sidebar_toggle.setAccessibleName(action)
+
     def _set_sidebar_collapsed(self, collapsed: bool) -> None:
         """Apply sidebar collapsed/expanded state without changing route data."""
         if not collapsed:
             self._sidebar_container.setFixedWidth(self._sidebar_expanded_width)
+            self._sidebar_layout.setContentsMargins(12, 14, 12, 10)
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(False)
-            self._sidebar_toggle.setText("<")
-            self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
+            self._global_search_button.setText(self.tr("Search  Ctrl+K"))
+            self._set_sidebar_toggle_state(False)
             self._sidebar_collapsed = False
         else:
             collapsed_width = getattr(getattr(self, "_metrics", None), "sidebar_collapsed_width", int(self._line_height * 4))
             self._sidebar_container.setFixedWidth(collapsed_width)
+            self._sidebar_layout.setContentsMargins(8, 14, 8, 10)
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(True)
-            self._sidebar_toggle.setText(">")
-            self._sidebar_toggle.setToolTip(self.tr("Expand sidebar"))
+            self._global_search_button.setText("")
+            self._set_sidebar_toggle_state(True)
             self._sidebar_collapsed = True
+
+    def _set_section_navigation_compact(self, compact: bool) -> None:
+        """Move section navigation above content at the minimum layout."""
+        compact = bool(compact)
+        if compact == getattr(self, "_section_navigation_compact", None):
+            set_compact = getattr(self.destination_host, "set_compact", None)
+            if callable(set_compact):
+                set_compact(compact)
+            return
+        self._shell_body_layout.removeWidget(self.destination_host)
+        self._shell_body_layout.removeWidget(self.content_area)
+        if compact:
+            self._shell_body_layout.addWidget(self.destination_host, 0, 0, 1, 2)
+            self._shell_body_layout.addWidget(self.content_area, 1, 0, 1, 2)
+            self._shell_body_layout.setColumnStretch(0, 1)
+            self._shell_body_layout.setColumnStretch(1, 0)
+        else:
+            self._shell_body_layout.addWidget(self.destination_host, 0, 0)
+            self._shell_body_layout.addWidget(self.content_area, 0, 1)
+            self._shell_body_layout.setColumnStretch(0, 0)
+            self._shell_body_layout.setColumnStretch(1, 1)
+        set_compact = getattr(self.destination_host, "set_compact", None)
+        if callable(set_compact):
+            set_compact(compact)
+        self._section_navigation_compact = compact
+
+    def _apply_responsive_shell(self, width: int) -> None:
+        """Apply the v16 wide, medium, and minimum shell breakpoints."""
+        compact_sections = width < 900
+        self._set_section_navigation_compact(compact_sections)
+        if width < 1180 and not self._sidebar_collapsed:
+            self._auto_sidebar_collapsed = True
+            self._set_sidebar_collapsed(True)
+        elif width >= 1180 and self._auto_sidebar_collapsed:
+            self._auto_sidebar_collapsed = False
+            self._set_sidebar_collapsed(False)
 
     def resizeEvent(self, event) -> None:
         """Apply responsive sidebar breakpoints as the window changes size."""
         try:
             width = int(self.width())
-            if width < 900 and not self._sidebar_collapsed:
-                self._auto_sidebar_collapsed = True
-                self._set_sidebar_collapsed(True)
-            elif width > 1120 and self._auto_sidebar_collapsed:
-                self._auto_sidebar_collapsed = False
-                self._set_sidebar_collapsed(False)
+            self._apply_responsive_shell(width)
         except (TypeError, ValueError, AttributeError, RuntimeError):
             logger.debug("Responsive sidebar resize update failed", exc_info=True)
         super().resizeEvent(event)
@@ -1554,41 +1681,37 @@ class MainWindow(QMainWindow):
         doctor = DependencyDoctor(self)
         doctor.exec()
 
-    # ==================== v13.5 Theme Management ====================
+    # ==================== Theme Management ====================
 
     def load_theme(self, name: str = "system") -> None:
         """
-        Load and apply a QSS theme by name.
+        Apply invariant component structure with the requested semantic palette.
 
-        ``"system"`` clears application QSS so Qt follows the desktop palette
-        and font. Explicit ``"dark"``, ``"light"``, and ``"highcontrast"``
-        selections continue to load their packaged stylesheets.
-        Falls back silently to no stylesheet if the file is missing.
+        System mode derives colours from ``QPalette`` while retaining the same
+        card, state, navigation, control, and focus geometry as explicit themes.
         """
         from PyQt6.QtWidgets import QApplication
 
         app = QApplication.instance()
         if not isinstance(app, QApplication):
             return
-        if name == "system":
-            app.setStyleSheet("")
-            return
+        from ui.design import ThemeManager
 
-        theme_map = {
-            "dark": "modern.qss",
-            "light": "light.qss",
-            "highcontrast": "highcontrast.qss",
-        }
-        filename = theme_map.get(name, "modern.qss")
-        assets_dir = os.path.join(os.path.dirname(__file__), "..", "assets")
-        qss_path = os.path.join(assets_dir, filename)
-
-        try:
-            with open(qss_path, "r") as fh:
-                stylesheet = fh.read()
-            app.setStyleSheet(stylesheet)
-        except OSError:
-            logger.debug("Failed to load theme stylesheet", exc_info=True)
+        if ThemeManager().apply(app, name):
+            sidebar = getattr(self, "sidebar", None)
+            refresh_destination_icons = getattr(sidebar, "refresh_icon_tints", None)
+            if callable(refresh_destination_icons):
+                refresh_destination_icons()
+            if sidebar is not None and not callable(refresh_destination_icons):
+                self._refresh_sidebar_icon_tints()
+            refresh_section_icons = getattr(
+                getattr(self, "destination_host", None),
+                "refresh_icon_tints",
+                None,
+            )
+            if callable(refresh_section_icons):
+                refresh_section_icons()
+            self.update()
 
     @staticmethod
     def detect_system_theme() -> str:
