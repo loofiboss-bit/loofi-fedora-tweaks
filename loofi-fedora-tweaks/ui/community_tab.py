@@ -1,8 +1,7 @@
 """
-Community Tab - Consolidated Presets + Marketplace interface.
-Part of v11.0 "Aurora Update" - merges Presets and Marketplace tabs.
+Consolidated community presets, marketplace, and plugin interface.
 
-Sub-tabs:
+Route pages:
 - Presets: Local presets, community presets, backup/sync
 - Marketplace: Browse, search, download community presets with drift detection
 """
@@ -23,6 +22,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
+    QStackedWidget,
     QTabWidget,
     QTextEdit,
     QVBoxLayout,
@@ -40,6 +40,7 @@ from utils.presets import PresetManager
 from utils.settings import SettingsManager
 
 from ui.permission_consent_dialog import PermissionConsentDialog
+from ui.components import PageScaffold
 from ui.tab_utils import configure_top_tabs
 
 
@@ -96,7 +97,7 @@ class CommunityTab(QWidget, PluginInterface):
         self.manager = PresetManager()
         self.marketplace = PresetMarketplace()
         self.drift_detector = DriftDetector()
-        # v26 compatibility: plugin marketplace helpers used by CLI/UI tests.
+        # Compatibility helpers used by CLI and UI marketplace callers.
         self.plugin_marketplace = PluginMarketplace()
         self.plugin_installer = PluginInstaller()
         self.settings_manager = SettingsManager.instance()
@@ -117,26 +118,54 @@ class CommunityTab(QWidget, PluginInterface):
         QTimer.singleShot(0, self._load_featured_plugins)
 
     def init_ui(self):
-        """Initialize the UI with sub-tabs."""
+        """Initialize shell-selected Community route pages."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
-        # Sub-tab widget
-        self.sub_tabs = QTabWidget()
-        configure_top_tabs(self.sub_tabs)
+        self.sub_tabs = QStackedWidget()
+        self.sub_tabs.setObjectName("communityPages")
         layout.addWidget(self.sub_tabs)
 
-        # Sub-tab 1: Presets (from PresetsTab)
-        self.sub_tabs.addTab(self._create_presets_tab(), self.tr("Presets"))
+        self.sub_tabs.addWidget(self._scaffold_route(
+            self.tr("Community presets"),
+            self.tr("Save, share, and synchronize configuration presets."),
+            self._create_presets_tab(),
+        ))
+        self.sub_tabs.addWidget(self._scaffold_route(
+            self.tr("Preset marketplace"),
+            self.tr("Browse and review presets shared by the community."),
+            self._create_marketplace_tab(),
+        ))
+        self.sub_tabs.addWidget(self._scaffold_route(
+            self.tr("Plugin manager"),
+            self.tr("Enable or disable installed plugins."),
+            self._create_plugins_tab(),
+        ))
+        self.sub_tabs.addWidget(self._scaffold_route(
+            self.tr("Featured plugins"),
+            self.tr("Review curated community plugins."),
+            self._create_featured_tab(),
+        ))
 
-        # Sub-tab 2: Marketplace (from MarketplaceTab)
-        self.sub_tabs.addTab(self._create_marketplace_tab(), self.tr("Marketplace"))
+    @staticmethod
+    def _scaffold_route(name: str, description: str, content: QWidget) -> PageScaffold:
+        scaffold = PageScaffold(name, description)
+        scaffold.add_widget(content, 1)
+        return scaffold
 
-        # Sub-tab 3: Plugins
-        self.sub_tabs.addTab(self._create_plugins_tab(), self.tr("Plugins"))
-
-        # Sub-tab 4: Featured Plugins (v37.0 Pinnacle)
-        self.sub_tabs.addTab(self._create_featured_tab(), self.tr("Featured"))
+    def activate_route(self, route) -> bool:
+        """Select a Community page from a stable route ID."""
+        index = {
+            "community": 0,
+            "community:presets": 0,
+            "community:marketplace": 1,
+            "community:plugins": 2,
+            "community:featured": 3,
+        }.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.sub_tabs.setCurrentIndex(index)
+        return True
 
     # ================================================================
     # PRESETS SUB-TAB (from PresetsTab)
@@ -146,13 +175,8 @@ class CommunityTab(QWidget, PluginInterface):
         """Create the Presets sub-tab with its own inner tabs."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(20)
-
-        # Header
-        header = QLabel(self.tr("Presets & Sync"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         # Inner tab widget for preset sections
         preset_tabs = QTabWidget()
@@ -178,12 +202,8 @@ class CommunityTab(QWidget, PluginInterface):
         """Create the plugins sub-tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(20)
-
-        header = QLabel(self.tr("Plugin Manager"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         desc = QLabel(self.tr("Enable or disable installed plugins."))
         layout.addWidget(desc)
@@ -287,19 +307,15 @@ class CommunityTab(QWidget, PluginInterface):
         self.refresh_plugins()
 
     # ================================================================
-    # FEATURED PLUGINS SUB-TAB (v37.0 Pinnacle)
+    # FEATURED PLUGINS ROUTE
     # ================================================================
 
     def _create_featured_tab(self) -> QWidget:
         """Create the featured/curated plugins showcase tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
-        layout.setContentsMargins(30, 30, 30, 30)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(20)
-
-        header = QLabel(self.tr("Featured Plugins"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         desc = QLabel(self.tr("Curated, high-quality plugins from the community."))
         layout.addWidget(desc)
@@ -766,12 +782,8 @@ class CommunityTab(QWidget, PluginInterface):
         """Create the Marketplace sub-tab content."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(15)
-
-        # Header
-        header = QLabel(self.tr("Community Preset Marketplace"))
-        header.setObjectName("communityMarketplaceHeader")
-        layout.addWidget(header)
 
         # Search and Filter
         search_layout = QHBoxLayout()
@@ -964,7 +976,7 @@ class CommunityTab(QWidget, PluginInterface):
         return widget
 
     def _search_marketplace_plugins(self):
-        """Compatibility helper for v26 plugin marketplace tests."""
+        """Compatibility helper for plugin marketplace callers."""
         if hasattr(self.plugin_marketplace, "search_plugins"):
             results = self.plugin_marketplace.search_plugins()
         else:
@@ -976,7 +988,7 @@ class CommunityTab(QWidget, PluginInterface):
         return results
 
     def _install_marketplace_plugin(self):
-        """Compatibility helper for v26 plugin marketplace tests."""
+        """Compatibility helper for plugin marketplace callers."""
         plugin_package = self.selected_marketplace_plugin
         if not plugin_package:
             return None

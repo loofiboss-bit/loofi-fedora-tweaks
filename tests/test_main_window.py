@@ -1894,7 +1894,7 @@ class TestLoadTheme(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data="QWidget { color: white; }"))
     def test_load_dark_theme(self):
-        """load_theme('dark') reads modern.qss."""
+        """load_theme('dark') renders the structural theme template."""
         app_mock = _DummyQApplication()
         app_mock.setStyleSheet = MagicMock()
         _DummyQApplication._instance = app_mock
@@ -1903,7 +1903,7 @@ class TestLoadTheme(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data="QWidget { color: black; }"))
     def test_load_light_theme(self):
-        """load_theme('light') reads light.qss."""
+        """load_theme('light') renders the structural theme template."""
         app_mock = _DummyQApplication()
         app_mock.setStyleSheet = MagicMock()
         _DummyQApplication._instance = app_mock
@@ -1918,7 +1918,7 @@ class TestLoadTheme(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data="body {}"))
     def test_load_theme_unknown_name_defaults_dark(self):
-        """Unknown theme name falls back to modern.qss."""
+        """Unknown theme name falls back to the dark semantic palette."""
         app_mock = _DummyQApplication()
         app_mock.setStyleSheet = MagicMock()
         _DummyQApplication._instance = app_mock

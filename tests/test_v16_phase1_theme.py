@@ -186,6 +186,7 @@ class TestThemeManager(unittest.TestCase):
         )
         for legacy_name in ("modern.qss", "light.qss", "highcontrast.qss"):
             self.assertNotIn(legacy_name, runtime_source)
+            self.assertFalse((source_root / "assets" / legacy_name).exists())
 
 
 if __name__ == "__main__":

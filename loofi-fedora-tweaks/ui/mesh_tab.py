@@ -1,8 +1,7 @@
 """
-Loofi Link tab — mesh device discovery, clipboard sync, and File Drop.
-Part of v12.0 "Sovereign Update".
+Loofi Link device discovery, clipboard sync, and File Drop UI.
 
-Provides a three-sub-tab interface:
+Provides three shell-selected route pages:
   Devices    — discovered peers, scan/refresh, online status
   Clipboard  — clipboard preview, sync-to-device, pairing code
   File Drop  — drag-and-drop file sending, transfer progress, incoming acceptance
@@ -21,7 +20,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QProgressBar,
     QPushButton,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -30,7 +29,7 @@ from services.network import MeshDiscovery
 from utils.clipboard_sync import ClipboardSync
 from utils.file_drop import FileDropManager
 
-from ui.tab_utils import configure_top_tabs
+from ui.components import DetailsDisclosure, PageScaffold
 
 
 class MeshTab(QWidget, PluginInterface):
@@ -67,6 +66,7 @@ class MeshTab(QWidget, PluginInterface):
     def init_ui(self):
         """Build the complete tab layout."""
         main_layout = QVBoxLayout(self)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(10)
 
         # ---- Top banner: device name + local IPs ----
@@ -84,14 +84,25 @@ class MeshTab(QWidget, PluginInterface):
         self.lbl_local_ips = QLabel(self.tr("Local IPs: {}").format(ip_text))
         banner_layout.addWidget(self.lbl_local_ips)
 
-        main_layout.addWidget(banner)
-
-        # ---- Sub-tabs ----
-        self.sub_tabs = QTabWidget()
-        configure_top_tabs(self.sub_tabs)
-        self.sub_tabs.addTab(self._build_devices_tab(), self.tr("Devices"))
-        self.sub_tabs.addTab(self._build_clipboard_tab(), self.tr("Clipboard"))
-        self.sub_tabs.addTab(self._build_filedrop_tab(), self.tr("File Drop"))
+        self.sub_tabs = QStackedWidget()
+        self.sub_tabs.setObjectName("loofiLinkPages")
+        devices_page = PageScaffold(
+            self.tr("Loofi Link devices"),
+            self.tr("Discover and pair devices on the local network."),
+        )
+        devices_page.add_widget(banner)
+        devices_page.add_widget(self._build_devices_tab(), 1)
+        self.sub_tabs.addWidget(devices_page)
+        self.sub_tabs.addWidget(self._scaffold_route(
+            self.tr("Shared clipboard"),
+            self.tr("Send clipboard content to a paired device."),
+            self._build_clipboard_tab(),
+        ))
+        self.sub_tabs.addWidget(self._scaffold_route(
+            self.tr("File drop"),
+            self.tr("Send and receive files with paired devices."),
+            self._build_filedrop_tab(),
+        ))
         main_layout.addWidget(self.sub_tabs)
 
         # ---- Output log ----
@@ -101,7 +112,28 @@ class MeshTab(QWidget, PluginInterface):
         self.output_text.setReadOnly(True)
         self.output_text.setMaximumHeight(120)
         log_layout.addWidget(self.output_text)
-        main_layout.addWidget(log_group)
+        output_details = DetailsDisclosure(self.tr("Show Loofi Link output"))
+        output_details.add_widget(log_group)
+        main_layout.addWidget(output_details)
+
+    @staticmethod
+    def _scaffold_route(name: str, description: str, content: QWidget) -> PageScaffold:
+        scaffold = PageScaffold(name, description)
+        scaffold.add_widget(content, 1)
+        return scaffold
+
+    def activate_route(self, route) -> bool:
+        """Select a Loofi Link page from a stable route ID."""
+        index = {
+            "mesh": 0,
+            "loofi-link:devices": 0,
+            "loofi-link:clipboard": 1,
+            "loofi-link:file-drop": 2,
+        }.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.sub_tabs.setCurrentIndex(index)
+        return True
 
     # ------------------------------------------------------------------
     # Sub-tab: Devices
@@ -111,6 +143,7 @@ class MeshTab(QWidget, PluginInterface):
         """Construct the Devices sub-tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Peer list
         peer_group = QGroupBox(self.tr("Discovered Peers"))
@@ -152,6 +185,7 @@ class MeshTab(QWidget, PluginInterface):
         """Construct the Clipboard sub-tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Clipboard preview
         clip_group = QGroupBox(self.tr("Clipboard Preview"))
@@ -215,6 +249,7 @@ class MeshTab(QWidget, PluginInterface):
         """Construct the File Drop sub-tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Drop zone
         drop_group = QGroupBox(self.tr("Send File"))

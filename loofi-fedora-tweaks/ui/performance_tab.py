@@ -1,10 +1,4 @@
-"""
-Performance Tab — GUI for the Auto-Tuner engine.
-Part of v17.0 "Atlas".
-
-Displays current workload detection, kernel tunables, recommendations,
-and tuning history. Uses AutoTuner from utils/auto_tuner.py.
-"""
+"""Performance Auto-Tuner presentation for workload-guided tuning."""
 
 import time
 
@@ -29,6 +23,7 @@ from utils.auto_tuner import (
 from utils.log import get_logger
 
 from ui.base_tab import BaseTab
+from ui.components import PageScaffold
 from ui.design import semantic_color
 
 logger = get_logger(__name__)
@@ -74,12 +69,14 @@ class PerformanceTab(BaseTab):
             self._timer.stop()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Performance Auto-Tuner"))
-        header.setObjectName("perfHeader")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Performance tuning"),
+            self.tr("Detect the current workload and review tuning recommendations."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # ==================== Workload Detection ====================
         workload_group = QGroupBox(self.tr("Current Workload"))
@@ -180,8 +177,7 @@ class PerformanceTab(BaseTab):
 
         layout.addWidget(history_group)
 
-        # Output area from BaseTab
-        layout.addWidget(self.output_area)
+        self.add_output_disclosure(layout, self.tr("Show performance operation output"))
         layout.addStretch()
 
     # ============================================================

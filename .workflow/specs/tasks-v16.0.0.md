@@ -24,7 +24,7 @@
 - [x] P4: redesign Home and System, moving the existing Export Report action
   without adding new System Information behavior.
 - [x] P5: redesign Software & Updates, Network & Security, Desktop, and Settings.
-- [ ] P6: adopt shared components in Advanced and remove superseded legacy UI
+- [x] P6: adopt shared components in Advanced and remove superseded legacy UI
   and styling only after compatibility coverage exists.
 - [ ] P7: complete real-shell responsive, theme, keyboard, accessibility,
   contrast, Wayland/X11, and compositor-scaling validation.

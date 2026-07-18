@@ -1,6 +1,5 @@
 """
-Extensions Tab — Desktop shell extension management.
-Part of v37.0.0 "Pinnacle" — T8.
+Desktop shell extension management.
 
 Provides a UI for browsing, installing, enabling, disabling, and
 removing GNOME Shell and KDE Plasma extensions.
@@ -23,11 +22,10 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.base_tab import BaseTab
+from ui.components import PageScaffold
 from ui.design import semantic_color
 
 logger = logging.getLogger(__name__)
-
-CONTENT_MARGINS = (16, 16, 16, 16)
 
 
 class ExtensionsTab(BaseTab):
@@ -56,14 +54,16 @@ class ExtensionsTab(BaseTab):
 
     def init_ui(self):
         """Build the extensions management UI."""
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(*CONTENT_MARGINS)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Desktop extensions"),
+            self.tr("Browse and manage supported desktop-shell extensions."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
-        # --- Header ---
         header = QHBoxLayout()
-        title = QLabel(self.tr("Desktop Extensions"))
-        title.setObjectName("sectionTitle")
-        header.addWidget(title)
         header.addStretch()
 
         self.de_label = QLabel()
@@ -129,8 +129,7 @@ class ExtensionsTab(BaseTab):
         actions.addStretch()
         layout.addLayout(actions)
 
-        # --- Output ---
-        self.add_output_section(layout)
+        self.add_output_disclosure(layout, self.tr("Show extension operation output"))
 
         # Detect desktop and load
         self._detect_desktop()

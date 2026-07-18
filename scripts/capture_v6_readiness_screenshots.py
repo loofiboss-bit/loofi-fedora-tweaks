@@ -25,6 +25,7 @@ from core.diagnostics.release_readiness import (  # noqa: E402
     TARGETS,
 )
 from ui.atlas_dashboard_tab import AtlasDashboardTab  # noqa: E402
+from ui.design import ThemeManager  # noqa: E402
 from ui.release_readiness_dialog import ReleaseReadinessDialog  # noqa: E402
 
 
@@ -153,9 +154,8 @@ def main() -> int:
     OUT.mkdir(parents=True, exist_ok=True)
     app = QApplication.instance() or QApplication(sys.argv)
     app.setStyle("Fusion")
-    qss_path = SRC / "assets" / "modern.qss"
-    if qss_path.exists():
-        app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+    if not ThemeManager().apply(app, "dark"):
+        raise RuntimeError("failed to apply the semantic dark theme")
 
     dashboard = AtlasDashboardTab()
     dashboard.setWindowFlag(Qt.WindowType.FramelessWindowHint, True)

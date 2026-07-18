@@ -42,7 +42,7 @@ control center without changing trusted system-operation behavior.
 | 3 — Application shell | DONE | [Responsive section navigation and sidebar behavior](docs/reports/V16_PHASE3_APPLICATION_SHELL.md) |
 | 4 — Home and System | DONE | [Priority destination redesigns](docs/reports/V16_PHASE4_HOME_SYSTEM.md) |
 | 5 — Remaining Standard | DONE | [Software, Network/Security, Desktop, and Settings](docs/reports/V16_PHASE5_STANDARD_DESTINATIONS.md) |
-| 6 — Advanced and cleanup | PENDING | Shared-system adoption and legacy presentation removal |
+| 6 — Advanced and cleanup | DONE | [Shared-system adoption and legacy presentation removal](docs/reports/V16_PHASE6_ADVANCED_CLEANUP.md) |
 | 7 — UI/accessibility validation | PENDING | Automated and live Fedora KDE matrices |
 | 8 — Regression and release | PENDING | Full gates, packaging, version bump, publication |
 

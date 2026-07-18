@@ -1,12 +1,4 @@
-"""
-Virtualization Tab - VM management, GPU passthrough, and disposable VMs.
-Part of v11.5 "Hypervisor Update".
-
-Three sub-tabs wrapped in a QTabWidget:
-  1. VMs       - list, start/stop/delete, Quick-Create wizard
-  2. GPU Passthrough - VFIO readiness checklist + step-by-step plan
-  3. Disposable      - base image status, launch/cleanup disposable VMs
-"""
+"""Virtualization UI for VMs, GPU passthrough, and disposable environments."""
 
 import logging
 
@@ -31,7 +23,7 @@ from PyQt6.QtWidgets import (
     QScrollArea,
     QSpinBox,
     QTableWidget,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QTreeWidget,
     QTreeWidgetItem,
@@ -41,7 +33,7 @@ from PyQt6.QtWidgets import (
 from services.virtualization import VM_FLAVORS, DisposableVMManager, VFIOAssistant, VirtualizationManager, VMManager
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
+from ui.components import DetailsDisclosure, PageScaffold
 
 logger = logging.getLogger(__name__)
 
@@ -72,7 +64,7 @@ class VirtualizationTab(QWidget, PluginInterface):
     def init_ui(self):
         """Initialize the UI components."""
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*CONTENT_MARGINS)
+        main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(10)
 
         # ---- Output log (created early so sub-tab builders can call self.log()) ----
@@ -85,24 +77,56 @@ class VirtualizationTab(QWidget, PluginInterface):
         self.banner_label = QLabel(self.tr("Loading virtualization status..."))
         self.banner_label.setObjectName("virtBanner")
         self.banner_label.setWordWrap(True)
-        main_layout.addWidget(self.banner_label)
-
-        # ---- Sub-tab widget ----
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
-        self.tabs.addTab(self._create_vms_tab(), self.tr("VMs"))
-        self.tabs.addTab(self._create_gpu_passthrough_tab(), self.tr("GPU Passthrough"))
-        self.tabs.addTab(self._create_disposable_tab(), self.tr("Disposable"))
+        self.tabs = QStackedWidget()
+        self.tabs.setObjectName("virtualizationPages")
+        vms_page = PageScaffold(
+            self.tr("Virtual machines"),
+            self.tr("Create and manage virtual machines."),
+        )
+        vms_page.add_widget(self.banner_label)
+        vms_page.add_widget(self._create_vms_tab(), 1)
+        self.tabs.addWidget(vms_page)
+        self.tabs.addWidget(self._scaffold_route(
+            self.tr("GPU passthrough"),
+            self.tr("Review VFIO readiness and generate setup guidance."),
+            self._create_gpu_passthrough_tab(),
+        ))
+        self.tabs.addWidget(self._scaffold_route(
+            self.tr("Disposable virtual machines"),
+            self.tr("Create and manage short-lived virtual environments."),
+            self._create_disposable_tab(),
+        ))
         main_layout.addWidget(self.tabs)
 
         # ---- Output log (add to layout) ----
         log_group = QGroupBox(self.tr("Output Log:"))
         log_layout = QVBoxLayout(log_group)
         log_layout.addWidget(self.output_text)
-        main_layout.addWidget(log_group)
+        output_details = DetailsDisclosure(self.tr("Show virtualization output"))
+        output_details.add_widget(log_group)
+        main_layout.addWidget(output_details)
 
         # Deferred data load
         self._refresh_banner()
+
+    @staticmethod
+    def _scaffold_route(name: str, description: str, content: QWidget) -> PageScaffold:
+        scaffold = PageScaffold(name, description)
+        scaffold.add_widget(content, 1)
+        return scaffold
+
+    def activate_route(self, route) -> bool:
+        """Select a Virtualization page from a stable route ID."""
+        index = {
+            "virtualization": 0,
+            "virtualization:vms": 0,
+            "virtualization:gpu-passthrough": 1,
+            "virtualization:disposable": 2,
+        }.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.tabs.setCurrentIndex(index)
+        return True
 
     # ==================================================================
     # Banner
@@ -124,6 +148,7 @@ class VirtualizationTab(QWidget, PluginInterface):
     def _create_vms_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Toolbar
         toolbar = QHBoxLayout()
@@ -382,6 +407,7 @@ class VirtualizationTab(QWidget, PluginInterface):
 
         container = QWidget()
         layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Readiness checklist
         checklist_group = QGroupBox(self.tr("VFIO Readiness Checklist"))
@@ -495,6 +521,7 @@ class VirtualizationTab(QWidget, PluginInterface):
     def _create_disposable_tab(self) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
+        layout.setContentsMargins(0, 0, 0, 0)
 
         # Base image status
         base_group = QGroupBox(self.tr("Base Image"))

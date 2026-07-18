@@ -1,6 +1,5 @@
 """
-Profiles Tab - System profile quick-switch UI.
-Part of v13.0 "Nexus Update".
+System profile quick-switch UI.
 
 Provides:
 - Profile cards grid showing built-in and custom profiles
@@ -32,7 +31,7 @@ from PyQt6.QtWidgets import (
 )
 from utils.profiles import ProfileManager
 
-from ui.tab_utils import CONTENT_MARGINS
+from ui.components import PageScaffold
 
 
 class ProfilesTab(QWidget, PluginInterface):
@@ -67,20 +66,6 @@ class ProfilesTab(QWidget, PluginInterface):
         container = QWidget()
         layout = QVBoxLayout(container)
         layout.setSpacing(15)
-
-        # Header
-        header = QLabel(self.tr("System Profiles"))
-        header.setObjectName("header")
-        layout.addWidget(header)
-
-        description = QLabel(self.tr(
-            "Quick-switch between optimised system configurations. "
-            "Select a profile to adjust CPU governor, services, "
-            "notifications, and more."
-        ))
-        description.setWordWrap(True)
-        description.setObjectName("profileDesc")
-        layout.addWidget(description)
 
         # Active profile indicator
         self.active_label = QLabel(self.tr("Active profile: None"))
@@ -137,8 +122,16 @@ class ProfilesTab(QWidget, PluginInterface):
         scroll.setWidget(container)
 
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*CONTENT_MARGINS)
-        main_layout.addWidget(scroll)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("System profiles"),
+            self.tr(
+                "Apply and manage reusable system configurations for power, "
+                "services, notifications, and related settings."
+            ),
+        )
+        self.scaffold.add_widget(scroll, 1)
+        main_layout.addWidget(self.scaffold)
 
         # Initial data load
         self._refresh_profiles()

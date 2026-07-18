@@ -1,8 +1,4 @@
-"""
-Gaming Tab - Gaming optimization tools.
-Normalized to BaseTab in v17.0 "Atlas".
-Uses PrivilegedCommand for package installation.
-"""
+"""Gaming optimization tools and package operations."""
 
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtWidgets import (
@@ -18,6 +14,7 @@ from utils.gaming_utils import GamingUtils
 from utils.log import get_logger
 
 from ui.base_tab import BaseTab
+from ui.components import PageScaffold
 
 logger = get_logger(__name__)
 
@@ -42,13 +39,14 @@ class GamingTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("Gaming Optimizations"))
-        header.setObjectName("gamingHeader")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Gaming tools"),
+            self.tr("Install optional performance and compatibility tools for games."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # Performance Tools Group
         perf_group = QGroupBox(self.tr("Performance Tools"))
@@ -91,8 +89,7 @@ class GamingTab(BaseTab):
 
         layout.addWidget(steam_group)
 
-        # Output area
-        self.add_output_section(layout)
+        self.add_output_disclosure(layout, self.tr("Show gaming operation output"))
         layout.addStretch()
 
         # Check status

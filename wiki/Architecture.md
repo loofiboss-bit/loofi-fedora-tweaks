@@ -38,7 +38,7 @@ loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 │   └── plugins/              # Plugin engine (LoofiPlugin ABC)
 ├── services/                 # Service layer (future expansion)
 ├── config/                   # apps.json, polkit policy, systemd unit
-├── assets/                   # modern.qss, icons, resources
+├── assets/                   # base.qss, icons, resources
 ├── agents/                   # Agent runtime (in-app AI orchestration)
 ├── api/                      # REST API server
 ├── web/                      # Web dashboard
@@ -310,7 +310,8 @@ bash scripts/build_rpm.sh
 
 - **Config directory**: `~/.config/loofi-fedora-tweaks/`
 - **App catalog**: `config/apps.json` (fetched remotely via `utils/remote_config.py`)
-- **QSS themes**: `assets/modern.qss` (dark), `assets/light.qss` (light)
+- **Theme engine**: one structural `assets/base.qss` template rendered with
+  system, dark, light, or high-contrast semantic palettes
 - **Icon pack**: `assets/icons/` + `loofi-fedora-tweaks/assets/icons/` (`svg/`, `png/`, `icon-map.json`)
 - **i18n**: `self.tr("...")` for all user-visible strings
 - **Plugins**: Extend `LoofiPlugin` ABC from `utils/plugin_base.py`

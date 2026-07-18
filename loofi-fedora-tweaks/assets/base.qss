@@ -120,7 +120,6 @@ QFrame[routeCard="true"]:focus {
     border: $focus_width solid $color_focus;
 }
 
-QLabel#sectionTitle,
 QLabel#routeCardTitle,
 QLabel#stateTitle,
 QLabel#homeSectionTitle {

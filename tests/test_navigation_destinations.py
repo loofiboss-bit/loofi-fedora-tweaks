@@ -86,7 +86,7 @@ class TestRoutePlacements(unittest.TestCase):
             for section in sections_for_destination(destination.id)
         ]
 
-        self.assertEqual(len(sections), 47)
+        self.assertEqual(len(sections), 61)
         for route in all_routes():
             placement = placement_for_route(route.id)
             with self.subTest(route_id=route.id):

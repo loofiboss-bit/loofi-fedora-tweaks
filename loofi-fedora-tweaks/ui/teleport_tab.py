@@ -1,6 +1,5 @@
 """
-Teleport Tab - State Teleport UI for capturing and restoring workspace state.
-Part of v12.0 "Sovereign Update".
+State Teleport UI for capturing and restoring workspace state.
 
 Provides:
 - Workspace state capture with git repo auto-detection
@@ -36,7 +35,7 @@ from services.storage import StateTeleportManager
 from utils.file_drop import FileDropManager
 
 from ui.base_tab import BaseTab
-from ui.tab_utils import CONTENT_MARGINS
+from ui.components import PageScaffold
 
 logger = logging.getLogger(__name__)
 
@@ -75,22 +74,6 @@ class TeleportTab(QWidget, PluginInterface):
         layout = QVBoxLayout(container)
         layout.setSpacing(15)
 
-        # Header
-        header = QLabel(self.tr("State Teleport"))
-        header.setObjectName("header")
-        layout.addWidget(header)
-
-        description = QLabel(
-            self.tr(
-                "Capture your development workspace state and restore it "
-                "on another device. Includes git branch, VS Code workspace, "
-                "terminal state, and environment."
-            )
-        )
-        description.setWordWrap(True)
-        description.setObjectName("teleportDesc")
-        layout.addWidget(description)
-
         # Capture section
         layout.addWidget(self._create_capture_section())
 
@@ -114,8 +97,16 @@ class TeleportTab(QWidget, PluginInterface):
         scroll.setWidget(container)
 
         main_layout = QVBoxLayout(self)
-        main_layout.setContentsMargins(*CONTENT_MARGINS)
-        main_layout.addWidget(scroll)
+        main_layout.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("State Teleport"),
+            self.tr(
+                "Capture a development workspace and restore compatible state "
+                "on another device."
+            ),
+        )
+        self.scaffold.add_widget(scroll, 1)
+        main_layout.addWidget(self.scaffold)
 
     # ==================== CAPTURE SECTION ====================
 

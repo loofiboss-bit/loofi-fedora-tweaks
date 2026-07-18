@@ -114,12 +114,18 @@ class TestTabMargins(unittest.TestCase):
     @patch("ui.ai_enhanced_tab.AIEnhancedTab._create_voice_tab", side_effect=_stub_widget)
     @patch("ui.ai_enhanced_tab.AIEnhancedTab._create_knowledge_tab", side_effect=_stub_widget)
     def test_ai_enhanced_tab_margins(self, *_mocks):
-        """Verify AI Lab tab has positive content margins."""
+        """Verify AI Lab delegates spacing to route page scaffolds."""
         mod = importlib.import_module("ui.ai_enhanced_tab")
         AIEnhancedTab = mod.AIEnhancedTab
+        from ui.components import PageScaffold
 
         tab = AIEnhancedTab()
-        self._assert_positive_root_margins(tab, "AIEnhancedTab")
+        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
+        scaffolds = tab.findChildren(PageScaffold)
+        self.assertEqual(len(scaffolds), 3)
+        for scaffold in scaffolds:
+            left, top, right, bottom = scaffold.content_layout.getContentsMargins()
+            self.assertGreater(min(left, top, right, bottom), 0)
 
         tab.close()
 

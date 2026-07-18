@@ -20,6 +20,7 @@ sys.path.insert(0, str(SRC))
 
 from PyQt6.QtCore import QSize, Qt  # noqa: E402
 from PyQt6.QtWidgets import QApplication, QDialog, QScrollArea  # noqa: E402
+from ui.design import ThemeManager  # noqa: E402
 
 
 WINDOW_SIZE = QSize(1400, 900)
@@ -155,9 +156,8 @@ def main() -> int:
         app = QApplication.instance() or QApplication(sys.argv)
         app.setStyle("Fusion")
 
-        qss_path = SRC / "assets" / "modern.qss"
-        if qss_path.exists():
-            app.setStyleSheet(qss_path.read_text(encoding="utf-8"))
+        if not ThemeManager().apply(app, "dark"):
+            raise RuntimeError("failed to apply the semantic dark theme")
 
         _capture_main_window(app)
         _capture_release_readiness(app)

@@ -1,11 +1,10 @@
 """
-AI Enhanced Tab - Consolidated "AI Lab" with sub-tabs for Models, Voice, and Knowledge.
-Part of v11.1-v11.3 "AI Polish" updates.
+Consolidated AI Lab for Models, Voice, and Knowledge.
 
 Provides:
-- Models sub-tab: installed/available models, RAM estimates, download buttons
-- Voice sub-tab: microphone status, record button, transcription output
-- Knowledge sub-tab: indexing status, index/clear buttons, search field
+- Models: installed/available models, RAM estimates, download buttons
+- Voice: microphone status, record button, transcription output
+- Knowledge: indexing status, index/clear buttons, search field
 """
 
 from core.ai import RECOMMENDED_MODELS, AIModelManager, ContextRAGManager
@@ -26,14 +25,14 @@ from PyQt6.QtWidgets import (
     QPushButton,
     QScrollArea,
     QSpinBox,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 from utils.voice import WHISPER_MODELS, VoiceManager
 
-from ui.tab_utils import CONTENT_MARGINS, configure_top_tabs
+from ui.components import DetailsDisclosure, PageScaffold
 
 # ---------------------------------------------------------------------------
 # Background workers
@@ -132,22 +131,27 @@ class AIEnhancedTab(QWidget, PluginInterface):
         self._init_ui()
 
     def _init_ui(self):
-        """Initialize the UI with sub-tab navigation."""
+        """Initialize shell-selected AI Lab route pages."""
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(*CONTENT_MARGINS)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        # Header
-        header = QLabel(self.tr("AI Lab - Enhanced"))
-        header.setObjectName("aiHeader")
-        layout.addWidget(header)
-
-        # Sub-tab widget
-        self.tab_widget = QTabWidget()
-        configure_top_tabs(self.tab_widget)
-        self.tab_widget.setObjectName("aiEnhancedTabs")
-        self.tab_widget.addTab(self._create_models_tab(), self.tr("Models"))
-        self.tab_widget.addTab(self._create_voice_tab(), self.tr("Voice"))
-        self.tab_widget.addTab(self._create_knowledge_tab(), self.tr("Knowledge"))
+        self.tab_widget = QStackedWidget()
+        self.tab_widget.setObjectName("aiLabPages")
+        self.tab_widget.addWidget(self._scaffold_route(
+            self.tr("Local AI models"),
+            self.tr("Review and manage models available on this device."),
+            self._create_models_tab(),
+        ))
+        self.tab_widget.addWidget(self._scaffold_route(
+            self.tr("Local voice tools"),
+            self.tr("Record and transcribe speech on this device."),
+            self._create_voice_tab(),
+        ))
+        self.tab_widget.addWidget(self._scaffold_route(
+            self.tr("Local knowledge"),
+            self.tr("Build and search a local knowledge index."),
+            self._create_knowledge_tab(),
+        ))
         layout.addWidget(self.tab_widget)
 
         # Shared output log
@@ -157,7 +161,28 @@ class AIEnhancedTab(QWidget, PluginInterface):
         self.output_text.setReadOnly(True)
         self.output_text.setMaximumHeight(120)
         log_layout.addWidget(self.output_text)
-        layout.addWidget(log_group)
+        output_details = DetailsDisclosure(self.tr("Show AI Lab output"))
+        output_details.add_widget(log_group)
+        layout.addWidget(output_details)
+
+    @staticmethod
+    def _scaffold_route(name: str, description: str, content: QWidget) -> PageScaffold:
+        scaffold = PageScaffold(name, description)
+        scaffold.add_widget(content, 1)
+        return scaffold
+
+    def activate_route(self, route) -> bool:
+        """Select an AI Lab page from a stable route ID."""
+        index = {
+            "ai_lab": 0,
+            "ai-lab:models": 0,
+            "ai-lab:voice": 1,
+            "ai-lab:knowledge": 2,
+        }.get(str(getattr(route, "id", route)))
+        if index is None:
+            return False
+        self.tab_widget.setCurrentIndex(index)
+        return True
 
     # ------------------------------------------------------------------
     # Models sub-tab
@@ -171,6 +196,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
 
         container = QWidget()
         layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(15)
 
         # System RAM info
@@ -289,6 +315,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
 
         container = QWidget()
         layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(15)
 
         # Status section
@@ -434,6 +461,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
 
         container = QWidget()
         layout = QVBoxLayout(container)
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(15)
 
         # Index status
