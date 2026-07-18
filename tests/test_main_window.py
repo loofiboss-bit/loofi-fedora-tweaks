@@ -784,12 +784,19 @@ def _install_stubs():
             self.eyebrow = _DummyButton()
             self.title = _DummyLabel()
             self.description = _DummyLabel()
+            self.actions = []
 
         def set_content(self, area, title, description=""):
             self.eyebrow.setText(area)
             self.eyebrow.setVisible(bool(area) and area != title)
             self.title.setText(title)
             self.description.setText(description)
+
+        def clear_actions(self):
+            self.actions.clear()
+
+        def add_action(self, widget, *, primary=False):
+            self.actions.append((widget, primary))
 
     layout_mod.LayoutMetrics = _StubLayoutMetrics
     layout_mod.PageHeader = _StubPageHeader

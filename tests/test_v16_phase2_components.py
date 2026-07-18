@@ -9,13 +9,14 @@ from unittest.mock import MagicMock
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QLabel, QPushButton
+from PyQt6.QtWidgets import QApplication, QLabel, QPushButton, QWidget
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
 import ui.components as components
 from ui import layout_primitives, shared_states
 from ui.components import (
+    ActionBar,
     ClickableCard,
     DangerButton,
     DefinitionList,
@@ -27,6 +28,7 @@ from ui.components import (
     SectionItem,
     SectionNavigator,
 )
+from ui.components.layout import AdaptiveGrid
 
 
 class TestCanonicalComponentApi(unittest.TestCase):
@@ -195,6 +197,31 @@ class TestContentComponents(unittest.TestCase):
 
         header.set_content("Software & Updates", "Updates", "Review available updates")
         self.assertFalse(header.eyebrow.isHidden())
+
+    def test_action_bar_clear_restores_caller_ownership_and_allows_reuse(self) -> None:
+        owner = QWidget()
+        action = SecondaryButton("Export", parent=owner)
+        bar = ActionBar()
+
+        bar.add_action(action, primary=True)
+        self.assertIs(action.parentWidget(), bar)
+        bar.clear_actions()
+        self.assertIs(action.parentWidget(), owner)
+        self.assertFalse(action.isVisible())
+        bar.add_action(action, primary=True)
+        self.assertIs(action.parentWidget(), bar)
+
+    def test_adaptive_grid_supports_explicit_responsive_breakpoints(self) -> None:
+        grid = AdaptiveGrid(column_breakpoints=((0, 1), (360, 2), (760, 4)))
+        for index in range(4):
+            grid.add_card(QLabel(str(index)))
+
+        grid._reflow(320)
+        self.assertEqual(grid._columns, 1)
+        grid._reflow(600)
+        self.assertEqual(grid._columns, 2)
+        grid._reflow(900)
+        self.assertEqual(grid._columns, 4)
 
     def test_definition_rows_keep_labels_near_selectable_values(self) -> None:
         definitions = DefinitionList("System properties")

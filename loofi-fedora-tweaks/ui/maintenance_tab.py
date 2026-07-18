@@ -2,7 +2,7 @@
 Maintenance Tab - Consolidated tab merging Updates, Cleanup, and Overlays.
 Part of v11.0 "Aurora Update".
 
-Uses QTabWidget for sub-navigation to preserve all features from the
+Uses a lazy route-owned stack to preserve all features from the
 original UpdatesTab, CleanupTab, and OverlaysTab.
 The Overlays sub-tab is only shown on Atomic (rpm-ostree) systems.
 """
@@ -21,7 +21,7 @@ from PyQt6.QtWidgets import (
     QListWidgetItem,
     QMessageBox,
     QPushButton,
-    QTabWidget,
+    QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -31,9 +31,9 @@ from utils.command_runner import CommandRunner
 from utils.commands import PrivilegedCommand
 
 from ui.base_tab import BaseTab
+from ui.components.layout import PageScaffold
 from ui.design import semantic_qcolor
 from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
-from ui.tab_utils import configure_top_tabs
 from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
 
 # ---------------------------------------------------------------------------
@@ -1473,13 +1473,15 @@ class _HealthTimelineSubTab(QWidget):
         self._store = self._observability.snapshots
         self._analyzer_cls = MaintenanceTrendAnalyzer
 
-        layout = QVBoxLayout()
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Health History"),
+            self.tr("Review recorded system-health events and recurring issues."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(12)
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("My Fedora Today"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         button_row = QHBoxLayout()
         refresh_button = QPushButton(self.tr("Refresh"))
@@ -1551,8 +1553,8 @@ class _HealthTimelineSubTab(QWidget):
 class MaintenanceTab(BaseTab):
     """Consolidated maintenance tab merging Updates, Cleanup, and Overlays.
 
-    Uses a QTabWidget for sub-navigation.  The Overlays sub-tab is only
-    shown when the system is detected as Atomic (rpm-ostree based).
+    Uses a lazy route-owned stack. The Overlays page is only present when
+    the system is detected as Atomic (rpm-ostree based).
     """
 
     _METADATA = PluginMetadata(
@@ -1575,11 +1577,11 @@ class MaintenanceTab(BaseTab):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
+        self.tabs = QStackedWidget()
+        self.tabs.setObjectName("maintenanceRouteStack")
 
         self._sub_tab_factories = [
             (self.tr("Updates"), _UpdatesSubTab),
@@ -1594,9 +1596,9 @@ class MaintenanceTab(BaseTab):
 
         self._loaded_tabs = {}
 
-        for label, _ in self._sub_tab_factories:
+        for _label, _factory in self._sub_tab_factories:
             placeholder = QWidget()
-            self.tabs.addTab(placeholder, label)
+            self.tabs.addWidget(placeholder)
 
         self.tabs.currentChanged.connect(self._lazy_load_sub_tab)
         self._lazy_load_sub_tab(0)
@@ -1609,15 +1611,17 @@ class MaintenanceTab(BaseTab):
             return
 
         if index < len(self._sub_tab_factories):
-            label, factory = self._sub_tab_factories[index]
+            _label, factory = self._sub_tab_factories[index]
             widget = factory()
             request = getattr(widget, "actionCenterRequested", None)
             if request is not None and hasattr(request, "connect"):
                 request.connect(self._open_action_center)
             self._loaded_tabs[index] = widget
             self.tabs.blockSignals(True)
-            self.tabs.removeTab(index)
-            self.tabs.insertTab(index, widget, label)
+            placeholder = self.tabs.widget(index)
+            self.tabs.removeWidget(placeholder)
+            placeholder.deleteLater()
+            self.tabs.insertWidget(index, widget)
             self.tabs.setCurrentIndex(index)
             self.tabs.blockSignals(False)
 
@@ -1654,7 +1658,11 @@ class MaintenanceTab(BaseTab):
         }
         wanted = labels.get(subroute)
         if wanted is None:
-            return not bool(subroute)
+            if subroute:
+                return False
+            self.tabs.setCurrentIndex(0)
+            self._lazy_load_sub_tab(0)
+            return True
         for index, (label, _factory) in enumerate(self._sub_tab_factories):
             if label != wanted:
                 continue

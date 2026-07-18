@@ -94,7 +94,7 @@ def _install_monitor_import_stubs():
         "QHeaderView",
         "QGridLayout",
         "QGroupBox",
-        "QTabWidget",
+        "QStackedWidget",
     ):
         setattr(qt_widgets, name, _Dummy)
 
@@ -192,6 +192,9 @@ def _install_monitor_import_stubs():
     shared_states_module = types.ModuleType("ui.shared_states")
     shared_states_module.ResultBanner = _StubResultBanner
 
+    components_module = types.ModuleType("ui.components.layout")
+    components_module.PageScaffold = _Dummy
+
     # Register all stubs
     sys.modules["PyQt6"] = pyqt
     sys.modules["PyQt6.QtWidgets"] = qt_widgets
@@ -204,6 +207,7 @@ def _install_monitor_import_stubs():
     sys.modules["services.system"] = proc_module
     sys.modules["utils.log"] = log_module
     sys.modules["ui.shared_states"] = shared_states_module
+    sys.modules["ui.components.layout"] = components_module
 
 
 # ---------------------------------------------------------------------------
@@ -277,6 +281,7 @@ _MODULE_KEYS = [
     "services.system",
     "utils.log",
     "ui.shared_states",
+    "ui.components.layout",
     "ui.monitor_tab",
 ]
 

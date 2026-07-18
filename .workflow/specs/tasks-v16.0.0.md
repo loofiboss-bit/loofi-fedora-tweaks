@@ -21,7 +21,7 @@
 - [x] P2: implement and test the shared component library and page scaffold.
 - [x] P3: redesign the application shell and responsive section navigation
   while preserving all routes, aliases, migrations, and lazy loading.
-- [ ] P4: redesign Home and System, moving the existing Export Report action
+- [x] P4: redesign Home and System, moving the existing Export Report action
   without adding new System Information behavior.
 - [ ] P5: redesign Software & Updates, Network & Security, Desktop, and Settings.
 - [ ] P6: adopt shared components in Advanced and remove superseded legacy UI

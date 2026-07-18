@@ -230,6 +230,7 @@ _MODULE_KEYS = [
     "ui.tooltips",
     "utils.command_runner",
     "utils.log",
+    "ui.components.layout",
     "ui.hardware_tab",
     "ui",
 ]
@@ -327,9 +328,12 @@ def _install_stubs():
     _tooltips.HW_FAN_MODE = "Fan mode tooltip"
     _log_mod = types.ModuleType("utils.log")
     _log_mod.get_logger = MagicMock(return_value=MagicMock())
+    _components_layout = types.ModuleType("ui.components.layout")
+    _components_layout.PageScaffold = _Dummy
     sys.modules["ui.tooltips"] = _tooltips
     sys.modules["utils.command_runner"] = _cmd_runner_mod
     sys.modules["utils.log"] = _log_mod
+    sys.modules["ui.components.layout"] = _components_layout
 
     HardwareManager = _hw_mod.HardwareManager
     BluetoothManager = _hw_mod.BluetoothManager

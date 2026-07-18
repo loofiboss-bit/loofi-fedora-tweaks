@@ -6,6 +6,7 @@ from typing import Any
 
 from .models import (
     AttentionItem,
+    HomeStatus,
     HomeSummary,
     HomeTask,
     RecentChange,
@@ -16,6 +17,7 @@ from .recommendations import recommendation_priority, select_primary_recommendat
 __all__ = [
     "AttentionItem",
     "HomeService",
+    "HomeStatus",
     "HomeSummary",
     "HomeTask",
     "RecentChange",

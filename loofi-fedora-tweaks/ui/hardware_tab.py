@@ -28,6 +28,7 @@ from utils.command_runner import CommandRunner
 from utils.log import get_logger
 
 from ui.tooltips import HW_CPU_GOVERNOR, HW_FAN_MODE
+from ui.components.layout import PageScaffold
 
 logger = get_logger(__name__)
 
@@ -107,15 +108,15 @@ class HardwareTab(QWidget, PluginInterface):
         self.hw_runner.run_command(cmd, args)
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Hardware & Power"),
+            self.tr("Hardware devices, batteries, and power state."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(20)
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("Hardware Control"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         # Grid for cards
         grid = QGridLayout()

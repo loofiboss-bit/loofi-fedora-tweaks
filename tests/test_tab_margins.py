@@ -63,12 +63,18 @@ class TestTabMargins(unittest.TestCase):
         self.assertGreater(bottom, 0, "Bottom margin should be > 0")
 
     def test_diagnostics_tab_margins(self):
-        """Verify diagnostics tab has positive content margins."""
+        """Verify Diagnostics delegates spacing to its route page scaffolds."""
         mod = importlib.import_module("ui.diagnostics_tab")
         DiagnosticsTab = mod.DiagnosticsTab
+        from ui.components import PageScaffold
 
         tab = DiagnosticsTab()
-        self._assert_positive_root_margins(tab, "DiagnosticsTab")
+        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
+        scaffolds = tab.findChildren(PageScaffold)
+        self.assertEqual(len(scaffolds), 2)
+        for scaffold in scaffolds:
+            left, top, right, bottom = scaffold.content_layout.getContentsMargins()
+            self.assertGreater(min(left, top, right, bottom), 0)
 
         tab.close()
 

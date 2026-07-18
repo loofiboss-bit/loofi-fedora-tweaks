@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import (
 from utils.storage import StorageManager
 
 from ui.base_tab import BaseTab
+from ui.components import PageScaffold
 from ui.design import semantic_color
 
 
@@ -52,12 +53,14 @@ class StorageTab(BaseTab):
         QTimer.singleShot(200, self._refresh_all)
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        self.setLayout(layout)
-
-        header = QLabel(self.tr("Storage & Disks"))
-        header.setObjectName("header")
-        layout.addWidget(header)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Storage"),
+            self.tr("Disk use, mount points, storage health, and filesystem actions."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
 
         # ==================== Disks ====================
         disk_group = QGroupBox(self.tr("Physical Disks"))

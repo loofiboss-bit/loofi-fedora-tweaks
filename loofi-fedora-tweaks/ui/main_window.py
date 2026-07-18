@@ -297,6 +297,7 @@ class MainWindow(QMainWindow):
         self._category_items: dict[str, QTreeWidgetItem] = {}
         self._pages_cache: dict[str, QWidget] | None = None
         self._active_route_id = ""
+        self._page_header_action_owner: QWidget | None = None
         self._active_plugin_id = ""
         self._active_destination_id = ""
         self._selecting_destination = False
@@ -788,6 +789,7 @@ class MainWindow(QMainWindow):
                 self._set_active_plugin(route.plugin_id)
             if route and route.subroute:
                 self._activate_route_widget(route)
+            self._sync_page_header_actions(route)
             self._update_breadcrumb(current)
         else:
             # Category item: expand and auto-select first child
@@ -841,6 +843,42 @@ class MainWindow(QMainWindow):
         if hasattr(self._breadcrumb_frame, "set_content"):
             self._breadcrumb_frame.set_content(category, route.label, route.description)
         self._bc_parent_item = entry.tree_item.parent() if entry and entry.tree_item else None
+
+    def _sync_page_header_actions(self, route: NavigationRoute | None) -> None:
+        """Populate the shell header from an optional route-owned action provider."""
+        header = getattr(self, "_breadcrumb_frame", None)
+        clear_actions = getattr(header, "clear_actions", None)
+        widget: QWidget | None = None
+        actions: tuple[object, ...] = ()
+        if route is not None:
+            entry = self._sidebar_index.get(route.plugin_id)
+            if entry is not None:
+                widget = self._real_widget_for_entry(entry)
+                provider = getattr(widget, "page_header_actions", None)
+                if callable(provider):
+                    try:
+                        actions = tuple(provider(route))
+                    except (AttributeError, RuntimeError, TypeError, ValueError) as exc:
+                        logger.debug("Page header actions failed for %s: %s", route.id, exc)
+
+        if getattr(self, "_page_header_action_owner", None) is None and not actions:
+            return
+        if callable(clear_actions):
+            clear_actions()
+        self._page_header_action_owner = None
+        if not actions:
+            return
+        add_action = getattr(header, "add_action", None)
+        if not callable(add_action):
+            return
+        for action in actions:
+            control = action
+            primary = False
+            if isinstance(action, tuple) and len(action) == 2:
+                control, primary = action
+            if isinstance(control, QWidget):
+                add_action(control, primary=bool(primary))
+        self._page_header_action_owner = widget
 
     @staticmethod
     def _normalize_route_label(value: str) -> str:
@@ -1070,6 +1108,7 @@ class MainWindow(QMainWindow):
                     record_history=record_history,
                 )
             if result.decision is not NavigationDecision.VISIBLE:
+                self._sync_page_header_actions(None)
                 destination = get_destination(result.destination_id)
                 if destination is not None:
                     self._selecting_destination = True
@@ -1096,6 +1135,7 @@ class MainWindow(QMainWindow):
         self._active_route_id = route.id
         self._set_active_plugin(route.plugin_id)
         activated = self._activate_route_widget(route)
+        self._sync_page_header_actions(route)
         if entry.tree_item is not None:
             self._update_breadcrumb(entry.tree_item)
         else:

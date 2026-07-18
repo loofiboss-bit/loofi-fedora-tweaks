@@ -19,6 +19,7 @@ from .models import (
     AttentionItem,
     HomeDataState,
     HomeOverallState,
+    HomeStatus,
     HomeSummary,
     HomeTask,
     RecentChange,
@@ -129,6 +130,12 @@ class HomeService:
             common_tasks=_COMMON_TASKS,
             recent_change=self._recent_activity(history, notifications),
             source_errors=tuple(dict.fromkeys(errors)),
+            status_items=self._build_status_items(
+                data_state,
+                latest,
+                state,
+                ordered,
+            ),
         )
 
     @staticmethod
@@ -316,6 +323,139 @@ class HomeService:
         text = " ".join(str(disk.get(key, "")) for key in ("summary", "details"))
         percentages = [int(value) for value in re.findall(r"(?<!\d)(\d{1,3})%", text)]
         return bool(percentages and max(percentages) >= 90)
+
+    @classmethod
+    def _build_status_items(
+        cls,
+        data_state: HomeDataState,
+        latest: Any | None,
+        state: Mapping[str, Any],
+        recommendations: Sequence[Recommendation],
+    ) -> tuple[HomeStatus, ...]:
+        """Derive the four Home status areas from sources already read once."""
+        cards = cls._card_map(latest) if latest is not None else {}
+        update = cards.get("system-updates", {})
+        package = (
+            cls._mapping(getattr(latest, "package_manager_health_summary", {}))
+            if latest is not None
+            else {}
+        ) or cards.get("package-health", {})
+        disk = (
+            cls._mapping(getattr(latest, "disk_usage_summary", {}))
+            if latest is not None
+            else {}
+        ) or cards.get("disk-usage", {})
+        recovery = (
+            cls._mapping(getattr(latest, "rollback_snapshot_availability", {}))
+            if latest is not None
+            else {}
+        ) or cards.get("rollback", {})
+
+        definitions = (
+            ("health", "System health", "maintenance:health-timeline", (), ()),
+            ("updates", "Updates", "maintenance:updates", (update, package), ("pending_updates", "pending_reboot", "failed_update")),
+            ("storage", "Storage", "storage", (disk,), ("disk_pressure",)),
+            ("recovery", "Recovery protection", "backup", (recovery,), ("missing_backup",)),
+        )
+        statuses: list[HomeStatus] = []
+        for status_id, title, route_id, payloads, kinds in definitions:
+            signal = cls._status_recommendation(
+                status_id,
+                recommendations,
+                kinds,
+            )
+            if signal is not None:
+                statuses.append(HomeStatus(
+                    status_id,  # type: ignore[arg-type]
+                    title,
+                    "critical" if signal.severity == "critical" else "attention",
+                    signal.summary,
+                    route_id,
+                ))
+                continue
+
+            if status_id == "health" and data_state == "fresh":
+                state_name = str(state.get("status", "")).strip().lower()
+                if state_name in {"good", "healthy", "ok"}:
+                    statuses.append(HomeStatus(
+                        "health",
+                        title,
+                        "good",
+                        "The latest saved health and application-state checks report no issue.",
+                        route_id,
+                    ))
+                    continue
+
+            payload_state = cls._combined_payload_state(payloads)
+            if data_state == "fresh" and payload_state == "good":
+                summary = next(
+                    (str(payload.get("summary")) for payload in payloads if payload.get("summary")),
+                    "The latest saved status reports no issue.",
+                )
+                statuses.append(HomeStatus(
+                    status_id,  # type: ignore[arg-type]
+                    title,
+                    "good",
+                    summary,
+                    route_id,
+                ))
+                continue
+
+            statuses.append(HomeStatus(
+                status_id,  # type: ignore[arg-type]
+                title,
+                "unknown",
+                cls._unknown_status_summary(data_state),
+                route_id,
+            ))
+        return tuple(statuses)
+
+    @staticmethod
+    def _status_recommendation(
+        status_id: str,
+        recommendations: Sequence[Recommendation],
+        kinds: Sequence[str],
+    ) -> Recommendation | None:
+        for recommendation in recommendations:
+            if recommendation.kind == "no_action":
+                continue
+            if status_id == "health" and recommendation.kind in {
+                "state_integrity",
+                "action_run_review",
+                "repeated_health",
+                "source_error",
+                "stale_data",
+            }:
+                return recommendation
+            if recommendation.kind in kinds:
+                if status_id != "recovery" or recommendation.route_id == "backup":
+                    return recommendation
+            if status_id == "recovery" and recommendation.route_id == "backup":
+                return recommendation
+        return None
+
+    @classmethod
+    def _combined_payload_state(cls, payloads: Sequence[Mapping[str, Any]]) -> str:
+        present = [payload for payload in payloads if payload]
+        if not present:
+            return "unknown"
+        states = {cls._state(payload) for payload in present}
+        if states & {"blocked", "critical", "error", "failed"}:
+            return "critical"
+        if states & {"attention", "pending", "updates_available", "warning", "unsupported"}:
+            return "attention"
+        if states and states <= {"available", "current", "good", "healthy", "ok", "ready", "up_to_date"}:
+            return "good"
+        return "unknown"
+
+    @staticmethod
+    def _unknown_status_summary(data_state: HomeDataState) -> str:
+        return {
+            "stale": "The saved status is too old to confirm this area.",
+            "error": "This saved status could not be read reliably.",
+            "empty": "No saved status is available for this area.",
+            "fresh": "The latest saved snapshot does not report this area.",
+        }[data_state]
 
     @staticmethod
     def _recent_activity(history: Sequence[Any], notifications: Sequence[Any]) -> RecentChange | None:

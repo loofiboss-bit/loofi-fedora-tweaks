@@ -474,6 +474,12 @@ QFrame[clickableCard="true"]:disabled {
     border-color: $color_disabled_text;
 }
 
+QFrame#homePrimaryRecommendation {
+    background-color: $color_selected;
+    border: $focus_width solid $color_accent;
+    border-radius: $radius_card;
+}
+
 QLabel#cardTitle,
 QLabel#noticeTitle,
 QLabel#definitionLabel {

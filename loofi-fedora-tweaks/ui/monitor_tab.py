@@ -2,8 +2,8 @@
 Monitor Tab - Consolidated tab merging Performance and Processes.
 Part of v11.0 "Aurora Update".
 
-Uses QTabWidget for sub-navigation to preserve all features from the
-original PerformanceTab and ProcessesTab.
+Uses a route-owned stack to preserve all features from the original
+PerformanceTab and ProcessesTab without duplicating shell navigation.
 
 Does NOT inherit BaseTab because both sub-tabs have their own
 refresh timers and custom rendering logic rather than CommandRunner
@@ -30,7 +30,7 @@ from PyQt6.QtWidgets import (
     QMenu,
     QMessageBox,
     QPushButton,
-    QTabWidget,
+    QStackedWidget,
     QTreeWidget,
     QTreeWidgetItem,
     QVBoxLayout,
@@ -40,7 +40,7 @@ from services.system import ProcessManager
 from utils.log import get_logger
 from utils.performance import PerformanceCollector
 
-from ui.tab_utils import configure_top_tabs
+from ui.components.layout import PageScaffold
 from ui.shared_states import ResultBanner
 from ui.design import semantic_qcolor
 
@@ -364,15 +364,15 @@ class _PerformanceSubTab(QWidget):
             self.refresh_timer.stop()
 
     def init_ui(self):
-        layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Performance"),
+            self.tr("Current resource use and performance diagnostics."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(20)
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("Performance Monitor"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         slow_group = QGroupBox(self.tr("Diagnose a Slow System"))
         slow_layout = QVBoxLayout(slow_group)
@@ -755,15 +755,15 @@ class _ProcessesSubTab(QWidget):
 
     def init_ui(self):
         """Initialise the UI components."""
-        layout = QVBoxLayout()
-        layout.setContentsMargins(30, 30, 30, 30)
+        root = QVBoxLayout(self)
+        root.setContentsMargins(0, 0, 0, 0)
+        self.scaffold = PageScaffold(
+            self.tr("Processes"),
+            self.tr("Inspect running processes and process resource use."),
+        )
+        root.addWidget(self.scaffold)
+        layout = self.scaffold.content_layout
         layout.setSpacing(15)
-        self.setLayout(layout)
-
-        # Header
-        header = QLabel(self.tr("Process Monitor"))
-        header.setObjectName("header")
-        layout.addWidget(header)
 
         # Summary bar
         self.summary_frame = QFrame()
@@ -1083,7 +1083,7 @@ class _ProcessesSubTab(QWidget):
 class MonitorTab(QWidget, PluginInterface):
     """Consolidated monitor tab merging Performance and Processes.
 
-    Uses a QTabWidget for sub-navigation.  Does not inherit BaseTab
+    Uses a route-owned QStackedWidget.  Does not inherit BaseTab
     because both sub-tabs rely on their own QTimer-based refresh
     cycles rather than the CommandRunner pattern.
     """
@@ -1106,19 +1106,29 @@ class MonitorTab(QWidget, PluginInterface):
 
     def __init__(self):
         super().__init__()
-        layout = QVBoxLayout()
-        self.setLayout(layout)
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        self.tabs = QTabWidget()
-        configure_top_tabs(self.tabs)
+        self.pages = QStackedWidget()
+        self.pages.setObjectName("systemMonitorRouteStack")
         self._performance_tab = _PerformanceSubTab()
         self._processes_tab = _ProcessesSubTab()
-        self.tabs.addTab(self._performance_tab, self.tr("Performance"))
-        self.tabs.addTab(self._processes_tab, self.tr("Processes"))
-        self.tabs.currentChanged.connect(self._sync_timer_lifecycle)
+        self.pages.addWidget(self._performance_tab)
+        self.pages.addWidget(self._processes_tab)
+        self.pages.currentChanged.connect(self._sync_timer_lifecycle)
         self._route_active = False
 
-        layout.addWidget(self.tabs)
+        layout.addWidget(self.pages)
+
+    def activate_route(self, route) -> bool:
+        """Select Performance or Processes from the stable shell route."""
+        subroute = str(getattr(route, "subroute", "") or "")
+        if subroute not in {"", "performance", "processes"}:
+            return False
+        index = 1 if subroute == "processes" else 0
+        self.pages.setCurrentIndex(index)
+        self._sync_timer_lifecycle(index)
+        return True
 
     def _sync_timer_lifecycle(self, index: int) -> None:
         self._performance_tab.set_active(self._route_active and index == 0)
@@ -1126,8 +1136,8 @@ class MonitorTab(QWidget, PluginInterface):
 
     def on_activate(self) -> None:
         self._route_active = True
-        self._sync_timer_lifecycle(self.tabs.currentIndex())
+        self._sync_timer_lifecycle(self.pages.currentIndex())
 
     def on_deactivate(self) -> None:
         self._route_active = False
-        self._sync_timer_lifecycle(self.tabs.currentIndex())
+        self._sync_timer_lifecycle(self.pages.currentIndex())

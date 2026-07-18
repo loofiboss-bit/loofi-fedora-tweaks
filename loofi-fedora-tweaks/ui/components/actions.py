@@ -110,13 +110,25 @@ class ActionBar(QWidget):
         self.row_layout.setContentsMargins(0, 0, 0, 0)
         self.row_layout.setSpacing(8)
         self.row_layout.setAlignment(Qt.AlignmentFlag.AlignVCenter)
-        self._stretch_index = 0
+        self._supporting_count = 0
+        self._action_owners: dict[QWidget, QWidget | None] = {}
         self.row_layout.addStretch()
 
     def add_action(self, widget: QWidget, *, primary: bool = False) -> None:
         """Add a caller-owned control without attaching domain behavior."""
+        self._action_owners[widget] = widget.parentWidget()
         if primary:
             self.row_layout.addWidget(widget)
         else:
-            self.row_layout.insertWidget(self._stretch_index, widget)
-            self._stretch_index += 1
+            self.row_layout.insertWidget(self._supporting_count, widget)
+            self._supporting_count += 1
+        widget.show()
+
+    def clear_actions(self) -> None:
+        """Detach caller-owned controls and restore the supporting/primary split."""
+        for widget, owner in tuple(self._action_owners.items()):
+            self.row_layout.removeWidget(widget)
+            widget.hide()
+            widget.setParent(owner)
+        self._action_owners.clear()
+        self._supporting_count = 0

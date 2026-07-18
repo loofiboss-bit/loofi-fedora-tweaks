@@ -408,6 +408,7 @@ def _install_diagnostics_stubs():
     qt_widgets.QScrollArea = _Dummy
     qt_widgets.QFrame = _Dummy
     qt_widgets.QTabWidget = _Dummy
+    qt_widgets.QStackedWidget = _Dummy
     qt_widgets.QTreeWidget = _DummyTreeWidget
     qt_widgets.QTreeWidgetItem = _DummyTreeWidgetItem
     qt_widgets.QComboBox = _DummyComboBox
@@ -445,6 +446,9 @@ def _install_diagnostics_stubs():
             "tr": lambda self, text: text,
         },
     )
+
+    components_module = types.ModuleType("ui.components.layout")
+    components_module.PageScaffold = _Dummy
 
     # -- ui.tab_utils --
     tab_utils_module = types.ModuleType("ui.tab_utils")
@@ -502,6 +506,7 @@ def _install_diagnostics_stubs():
     sys.modules["PyQt6.QtWidgets"] = qt_widgets
     sys.modules["PyQt6.QtCore"] = qt_core
     sys.modules["ui.base_tab"] = base_tab_module
+    sys.modules["ui.components.layout"] = components_module
     sys.modules["ui.tab_utils"] = tab_utils_module
     sys.modules["core.plugins.interface"] = interface_module
     sys.modules["core.plugins.metadata"] = metadata_module
@@ -524,6 +529,7 @@ _MODULE_KEYS = [
     "PyQt6.QtCore",
     "ui",
     "ui.base_tab",
+    "ui.components.layout",
     "ui.tab_utils",
     "core.plugins.interface",
     "core.plugins.metadata",

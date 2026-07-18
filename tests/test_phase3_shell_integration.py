@@ -11,6 +11,7 @@ sys.path.insert(
     os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"),
 )
 
+from PyQt6.QtCore import QCoreApplication, QEvent
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication, QToolButton, QWidget
 
@@ -48,6 +49,9 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         window = getattr(self, "window", None)
         if window is not None:
             window.deleteLater()
+            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            self.app.processEvents()
+            self.window = None
         PluginRegistry.reset()
 
     @patch("ui.main_window.MainWindow._check_first_run")

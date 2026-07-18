@@ -112,6 +112,10 @@ class PageHeader(QFrame):
     def add_action(self, widget: QWidget, *, primary: bool = False) -> None:
         self.action_bar.add_action(widget, primary=primary)
 
+    def clear_actions(self) -> None:
+        """Detach route-owned actions before the shell changes page."""
+        self.action_bar.clear_actions()
+
 
 class ContentColumn(QWidget):
     """Centered bounded content area that never owns domain behavior."""
@@ -174,9 +178,16 @@ class PageScaffold(QWidget):
 class AdaptiveGrid(QWidget):
     """Responsive one-to-three-column grid for shared cards."""
 
-    def __init__(self, min_column_width: int = 260, parent: QWidget | None = None) -> None:
+    def __init__(
+        self,
+        min_column_width: int = 260,
+        parent: QWidget | None = None,
+        *,
+        column_breakpoints: tuple[tuple[int, int], ...] = (),
+    ) -> None:
         super().__init__(parent)
         self.min_column_width = min_column_width
+        self.column_breakpoints = tuple(sorted(column_breakpoints))
         self._items: list[QWidget] = []
         self._columns = 0
         self.grid = QGridLayout(self)
@@ -199,7 +210,13 @@ class AdaptiveGrid(QWidget):
         super().resizeEvent(event)
 
     def _reflow(self, width: int) -> None:
-        columns = max(1, min(3, width // self.min_column_width))
+        if self.column_breakpoints:
+            columns = 1
+            for minimum_width, count in self.column_breakpoints:
+                if width >= minimum_width:
+                    columns = max(1, count)
+        else:
+            columns = max(1, min(3, width // self.min_column_width))
         if columns == self._columns and self.grid.count() == len(self._items):
             return
         self._columns = columns
