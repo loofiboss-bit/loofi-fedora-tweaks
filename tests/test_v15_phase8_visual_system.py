@@ -86,6 +86,16 @@ class TestAccessibleRouteCard(unittest.TestCase):
         self.assertEqual(card.focusPolicy(), Qt.FocusPolicy.StrongFocus)
         self.assertEqual(card.accessibleName(), "Updates")
 
+    def test_optional_qt_events_are_ignored_safely(self):
+        card = RouteCard("Updates", "Review available updates", "maintenance:updates")
+        callback = MagicMock()
+        card.activated.connect(callback)
+
+        card.keyPressEvent(None)
+        card.mouseReleaseEvent(None)
+
+        callback.assert_not_called()
+
 
 class TestResponsiveMatrix(unittest.TestCase):
     @classmethod
