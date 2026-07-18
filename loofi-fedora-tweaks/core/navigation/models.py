@@ -52,6 +52,19 @@ class Destination:
 
 
 @dataclass(frozen=True)
+class SectionDefinition:
+    """Data-only presentation metadata for one destination section."""
+
+    id: str
+    destination_id: str
+    label: str
+    icon: str
+    order: int
+    default_route_id: str
+    description: str = ""
+
+
+@dataclass(frozen=True)
 class RoutePlacement:
     """Destination, section, and compatibility metadata for one route."""
 

@@ -24,6 +24,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V16_PHASE0_BASELINE.md` - Exact v15 baseline, UI debt inventory, measurements, and Phase 0 verification
 - `reports/V16_PHASE1_THEME_ENGINE.md` - Structural QSS, semantic palettes, token contracts, and Phase 1 verification
 - `reports/V16_PHASE2_SHARED_COMPONENTS.md` - Shared page, navigation, card, action, status, and accessibility component contracts
+- `reports/V16_PHASE3_APPLICATION_SHELL.md` - Responsive application shell, explicit section metadata, and startup/compatibility verification
 - `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
 - `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
 - `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist

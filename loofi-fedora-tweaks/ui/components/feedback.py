@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QFrame,
     QHBoxLayout,
@@ -33,7 +34,17 @@ def _status_icon(widget: QWidget, kind: str):
         "error": QStyle.StandardPixmap.SP_MessageBoxCritical,
         "neutral": QStyle.StandardPixmap.SP_FileDialogInfoView,
     }
-    return widget.style().standardIcon(icon_by_kind[_normalized_kind(kind)])
+    style = widget.style()
+    if style is None:
+        return QIcon()
+    return style.standardIcon(icon_by_kind[_normalized_kind(kind)])
+
+
+def _repolish(widget: QWidget) -> None:
+    style = widget.style()
+    if style is not None:
+        style.unpolish(widget)
+        style.polish(widget)
 
 
 class StatusBadge(QFrame):
@@ -68,8 +79,7 @@ class StatusBadge(QFrame):
         self.icon_label.setPixmap(_status_icon(self, normalized).pixmap(16, 16))
         self.setAccessibleName(text)
         self.setAccessibleDescription(description or normalized)
-        self.style().unpolish(self)
-        self.style().polish(self)
+        _repolish(self)
 
 
 class InlineNotice(QFrame):
@@ -116,8 +126,7 @@ class InlineNotice(QFrame):
         self.message_label.setVisible(bool(message))
         self.setAccessibleName(title)
         self.setAccessibleDescription(message or normalized)
-        self.style().unpolish(self)
-        self.style().polish(self)
+        _repolish(self)
 
     def set_result(self, kind: str, title: str, message: str) -> None:
         """Update a caller-owned operation result."""

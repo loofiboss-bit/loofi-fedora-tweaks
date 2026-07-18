@@ -149,8 +149,10 @@ class ClickableCard(Card):
 
     def _set_interaction_state(self, state: str) -> None:
         self.setProperty("interactionState", state)
-        self.style().unpolish(self)
-        self.style().polish(self)
+        style = self.style()
+        if style is not None:
+            style.unpolish(self)
+            style.polish(self)
 
 
 class DefinitionRow(QWidget):

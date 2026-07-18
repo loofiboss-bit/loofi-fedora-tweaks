@@ -19,7 +19,7 @@
 
 - [x] P1: introduce the structural theme engine and semantic design tokens.
 - [x] P2: implement and test the shared component library and page scaffold.
-- [ ] P3: redesign the application shell and responsive section navigation
+- [x] P3: redesign the application shell and responsive section navigation
   while preserving all routes, aliases, migrations, and lazy loading.
 - [ ] P4: redesign Home and System, moving the existing Export Report action
   without adding new System Information behavior.

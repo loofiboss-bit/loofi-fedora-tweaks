@@ -48,8 +48,8 @@ class LayoutMetrics:
             spacing_medium=max(10, int(line_height * 0.75)),
             spacing_large=max(18, int(line_height * 1.3)),
             page_margin=max(24, int(line_height * 1.8)),
-            sidebar_width=max(248, int(line_height * 17)),
-            sidebar_collapsed_width=max(58, int(line_height * 4)),
+            sidebar_width=min(272, max(248, int(line_height * 17))),
+            sidebar_collapsed_width=min(72, max(64, int(line_height * 4))),
             header_height=max(68, int(line_height * 4.8)),
             status_height=max(28, int(line_height * 2.1)),
         )
@@ -78,10 +78,10 @@ class PageHeader(QFrame):
         self.eyebrow.setVisible(False)
         top_row.addWidget(self.eyebrow)
         top_row.addStretch()
-        self.actions = ActionBar(self)
-        self.actions.setAccessibleName(self.tr("Page actions"))
-        self.actions_layout = self.actions.row_layout
-        top_row.addWidget(self.actions)
+        self.action_bar = ActionBar(self)
+        self.action_bar.setAccessibleName(self.tr("Page actions"))
+        self.actions_layout = self.action_bar.row_layout
+        top_row.addWidget(self.action_bar)
 
         self.title = QLabel("")
         self.title.setObjectName("pageHeaderTitle")
@@ -98,7 +98,11 @@ class PageHeader(QFrame):
     def set_content(self, area: str, title: str, description: str = "") -> None:
         self.eyebrow.setText(area)
         self.eyebrow.setAccessibleName(area)
-        self.eyebrow.setVisible(bool(area) and area != title)
+        normalized_area = " ".join(str(area).split()).casefold()
+        normalized_title = " ".join(str(title).split()).casefold()
+        self.eyebrow.setVisible(
+            bool(normalized_area) and normalized_area != normalized_title
+        )
         self.title.setText(title)
         self.description.setText(description)
         self.description.setVisible(bool(description))
@@ -106,7 +110,7 @@ class PageHeader(QFrame):
         self.setAccessibleDescription(description)
 
     def add_action(self, widget: QWidget, *, primary: bool = False) -> None:
-        self.actions.add_action(widget, primary=primary)
+        self.action_bar.add_action(widget, primary=primary)
 
 
 class ContentColumn(QWidget):

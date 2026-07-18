@@ -30,12 +30,13 @@ class _RoleButton(QPushButton):
         self.setAccessibleName(text)
         self.setAccessibleDescription(description)
 
-    def setText(self, text: str) -> None:  # noqa: N802 - Qt API compatibility
-        super().setText(text)
+    def setText(self, text: str | None) -> None:  # noqa: N802 - Qt API compatibility
+        normalized_text = text or ""
+        super().setText(normalized_text)
         if not self.accessibleName() or self.accessibleName() == self._default_text:
-            self.setAccessibleName(text)
+            self.setAccessibleName(normalized_text)
         if self.property("interactionState") == "default":
-            self._default_text = text
+            self._default_text = normalized_text
 
     def set_state(self, state: str, message: str = "") -> None:
         """Apply a presentation state without owning any async operation."""
@@ -59,8 +60,10 @@ class _RoleButton(QPushButton):
                     "%2", message or self._default_text
                 )
             )
-        self.style().unpolish(self)
-        self.style().polish(self)
+        style = self.style()
+        if style is not None:
+            style.unpolish(self)
+            style.polish(self)
 
     def set_loading(self, loading: bool, message: str = "") -> None:
         self.set_state("loading" if loading else "default", message)

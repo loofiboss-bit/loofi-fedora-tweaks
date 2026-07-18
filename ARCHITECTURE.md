@@ -62,8 +62,9 @@ enforced by `tests/test_architecture_imports.py`:
 ## Destination and route architecture
 
 Stable route IDs in `core/navigation/manifest.py` remain canonical.
-`core/navigation/destinations.py` groups them into the v15 shell; it does not
-replace them with a parallel namespace.
+`core/navigation/destinations.py` groups them into the v16 shell and owns
+explicit, data-only presentation metadata for all 47 destination sections; it
+does not replace routes or section IDs with a parallel namespace.
 
 Standard mode contains exactly:
 
@@ -77,8 +78,12 @@ Standard mode contains exactly:
 | 6 | `settings` | Settings | `settings` |
 
 Advanced mode adds one `advanced` destination. The shared
-`DestinationSidebar` owns primary selection and `DestinationHost` owns secondary
-route selection. Standard mode does not render a nested plugin tree.
+`DestinationSidebar` owns primary selection and `DestinationHost` maps the
+responsive `SectionNavigator` between explicit section IDs and stable routes.
+At 1180 DIP and above the primary navigation is expanded; from 900 through 1179
+DIP it is a 64–72 DIP icon rail; below 900 DIP the section rail becomes a
+full-width selector above content. Standard mode does not render a nested
+plugin tree or an application-level horizontal route tab bar.
 
 `NavigationPolicy` evaluates navigation mode, Fedora variant, capability,
 component availability, and compatibility redirects. Missing or incomplete

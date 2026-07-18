@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from core.navigation.models import Destination
-from PyQt6.QtCore import QSize, Qt, pyqtSignal
+from PyQt6.QtCore import QEvent, QSize, Qt, pyqtSignal
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
 from ui.icon_pack import get_qicon, icon_tint_variant
@@ -45,6 +45,16 @@ class DestinationSidebar(QTreeWidget):
             item.setData(0, DESTINATION_ID_ROLE, destination.id)
             item.setData(0, DESTINATION_LABEL_ROLE, destination.label)
             item.setData(0, DESTINATION_ICON_ROLE, destination.icon)
+            item.setData(
+                0,
+                Qt.ItemDataRole.AccessibleTextRole,
+                destination.label,
+            )
+            item.setData(
+                0,
+                Qt.ItemDataRole.AccessibleDescriptionRole,
+                self.tr("Open %1").replace("%1", destination.label),
+            )
             item.setText(0, "" if self._collapsed else destination.label)
             item.setToolTip(0, destination.label)
             item.setSizeHint(0, QSize(0, minimum_height))
@@ -58,6 +68,11 @@ class DestinationSidebar(QTreeWidget):
             )
         if selected:
             self.select_destination(selected)
+
+    def changeEvent(self, event) -> None:
+        if event is not None and event.type() == QEvent.Type.FontChange:
+            self._refresh_row_sizes()
+        super().changeEvent(event)
 
     def destination_ids(self) -> tuple[str, ...]:
         """Return displayed destination IDs in visual order."""
@@ -86,6 +101,7 @@ class DestinationSidebar(QTreeWidget):
     def set_collapsed(self, collapsed: bool) -> None:
         """Render icon-only rows while preserving labels as tooltips."""
         self._collapsed = bool(collapsed)
+        self.setProperty("collapsed", self._collapsed)
         for index in range(self.topLevelItemCount()):
             item = self.topLevelItem(index)
             if item is None:
@@ -93,6 +109,17 @@ class DestinationSidebar(QTreeWidget):
             label = str(item.data(0, DESTINATION_LABEL_ROLE) or "")
             item.setText(0, "" if self._collapsed else label)
             item.setToolTip(0, label)
+        style = self.style()
+        if style is not None:
+            style.unpolish(self)
+            style.polish(self)
+
+    def _refresh_row_sizes(self) -> None:
+        minimum_height = max(44, int(self.fontMetrics().height() * 2.35))
+        for index in range(self.topLevelItemCount()):
+            item = self.topLevelItem(index)
+            if item is not None:
+                item.setSizeHint(0, QSize(0, minimum_height))
 
     def refresh_icon_tints(self) -> None:
         """Rebuild icon colours after a live semantic theme change."""

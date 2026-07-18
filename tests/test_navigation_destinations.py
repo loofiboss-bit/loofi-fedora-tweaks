@@ -8,7 +8,9 @@ from core.navigation.destinations import (
     STANDARD_DESTINATIONS,
     all_destinations,
     destinations_for_mode,
+    get_section,
     placement_for_route,
+    sections_for_destination,
     validate_destinations,
 )
 from core.navigation.manifest import all_routes, resolve
@@ -76,6 +78,62 @@ class TestRoutePlacements(unittest.TestCase):
         self.assertTrue(all(placement is not None for placement in placements))
         self.assertEqual(len({placement.route_id for placement in placements}), 80)
         self.assertEqual(validate_destinations(), [])
+
+    def test_every_placement_has_explicit_section_metadata(self):
+        sections = [
+            section
+            for destination in all_destinations()
+            for section in sections_for_destination(destination.id)
+        ]
+
+        self.assertEqual(len(sections), 47)
+        for route in all_routes():
+            placement = placement_for_route(route.id)
+            with self.subTest(route_id=route.id):
+                self.assertIsNotNone(
+                    get_section(
+                        placement.destination_id,
+                        placement.section_id,
+                    )
+                )
+
+    def test_section_metadata_has_stable_order_and_valid_defaults(self):
+        for destination in all_destinations():
+            sections = sections_for_destination(destination.id)
+            with self.subTest(destination=destination.id):
+                self.assertEqual(
+                    [section.order for section in sections],
+                    sorted(section.order for section in sections),
+                )
+                self.assertEqual(
+                    len({section.order for section in sections}),
+                    len(sections),
+                )
+            for section in sections:
+                placement = placement_for_route(section.default_route_id)
+                with self.subTest(
+                    destination=destination.id,
+                    section=section.id,
+                ):
+                    self.assertEqual(placement.destination_id, destination.id)
+                    self.assertEqual(placement.section_id, section.id)
+                    self.assertTrue(section.label)
+                    self.assertTrue(section.description)
+                    self.assertTrue(section.icon)
+
+    def test_section_labels_are_not_inherited_from_root_routes(self):
+        expected = {
+            ("software_updates", "updates"): "Updates",
+            ("settings", "appearance"): "Appearance",
+            ("desktop", "appearance"): "Appearance",
+            ("network_security", "connections"): "Connections",
+            ("network_security", "network_privacy"): "Connection Privacy",
+            ("network_security", "privacy"): "System Privacy",
+        }
+
+        for key, label in expected.items():
+            with self.subTest(section=key):
+                self.assertEqual(get_section(*key).label, label)
 
     def test_representative_sections_match_phase_one_contract(self):
         expected = {

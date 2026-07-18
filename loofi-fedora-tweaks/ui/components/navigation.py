@@ -7,6 +7,8 @@ from dataclasses import dataclass
 from PyQt6.QtCore import QEvent, QRect, QSize, Qt, pyqtSignal
 from PyQt6.QtWidgets import QComboBox, QFrame, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
 
+from ui.icon_pack import get_qicon
+
 
 @dataclass(frozen=True)
 class SectionItem:
@@ -16,6 +18,7 @@ class SectionItem:
     label: str
     description: str = ""
     status: str = ""
+    icon: str = ""
 
 
 class SectionNavigator(QFrame):
@@ -71,9 +74,15 @@ class SectionNavigator(QFrame):
                 section.description or section.status,
             )
             item.setToolTip(section.description or section.label)
+            if section.icon:
+                icon = get_qicon(section.icon, size=20)
+                item.setIcon(icon)
             item.setSizeHint(item.sizeHint().expandedTo(self._minimum_row_size(visible_label)))
             self.rail.addItem(item)
-            self.selector.addItem(section.label, section.section_id)
+            if section.icon:
+                self.selector.addItem(icon, section.label, section.section_id)
+            else:
+                self.selector.addItem(section.label, section.section_id)
             index = self.selector.count() - 1
             self.selector.setItemData(index, section.description or section.label, Qt.ItemDataRole.ToolTipRole)
             self.selector.setItemData(index, section.label, Qt.ItemDataRole.AccessibleTextRole)
@@ -112,6 +121,17 @@ class SectionNavigator(QFrame):
         """Select rail or compact mode from shell-owned responsive policy."""
         self._compact = compact
         self._apply_mode(compact)
+
+    def refresh_icons(self) -> None:
+        """Rebuild semantic icon tints after a live theme change."""
+        for index, section in enumerate(self._sections):
+            if not section.icon:
+                continue
+            icon = get_qicon(section.icon, size=20)
+            rail_item = self.rail.item(index)
+            if rail_item is not None:
+                rail_item.setIcon(icon)
+            self.selector.setItemIcon(index, icon)
 
     def is_compact(self) -> bool:
         return self._compact

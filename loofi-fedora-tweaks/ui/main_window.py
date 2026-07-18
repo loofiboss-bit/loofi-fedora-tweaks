@@ -1,7 +1,4 @@
-"""
-Main Window - v25.0 "Plugin Architecture"
-PluginRegistry layout with route-aware sidebar navigation, breadcrumb, and status bar.
-"""
+"""Route-aware application shell with lazy destination navigation."""
 
 import logging
 import os
@@ -28,6 +25,7 @@ from PyQt6.QtCore import QRect, Qt, QTimer
 from PyQt6.QtGui import QKeySequence, QPainter, QShortcut
 from PyQt6.QtWidgets import (
     QFrame,
+    QGridLayout,
     QHBoxLayout,
     QLabel,
     QMainWindow,
@@ -36,10 +34,12 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QStackedWidget,
     QStyledItemDelegate,
+    QStyle,
     QStyleOptionViewItem,
     QTabWidget,
     QTreeWidgetItem,
     QTreeWidgetItemIterator,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -185,26 +185,41 @@ class MainWindow(QMainWindow):
         sidebar_layout = QVBoxLayout(sidebar_container)
         sidebar_layout.setContentsMargins(12, 14, 12, 10)
         sidebar_layout.setSpacing(10)
+        self._sidebar_layout = sidebar_layout
 
         sidebar_chrome = QHBoxLayout()
         sidebar_chrome.setContentsMargins(0, 0, 0, 0)
         sidebar_chrome.setSpacing(6)
 
-        # Sidebar collapse toggle
+        # Compact semantic sidebar control.
         sidebar_chrome.addStretch()
-        self._sidebar_toggle = QPushButton("<")
+        self._sidebar_toggle = QToolButton()
         self._sidebar_toggle.setObjectName("sidebarToggle")
-        self._sidebar_toggle.setMinimumHeight(int(self._line_height * 2.2))
-        self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
+        self._sidebar_toggle.setFixedSize(36, 36)
         self._sidebar_toggle.clicked.connect(self._toggle_sidebar)
         sidebar_chrome.addWidget(self._sidebar_toggle)
         sidebar_layout.addLayout(sidebar_chrome)
+
+        self._global_search_button = QPushButton(self.tr("Search  Ctrl+K"))
+        self._global_search_button.setObjectName("globalSearchAffordance")
+        self._global_search_button.setIcon(get_qicon("search", size=18))
+        self._global_search_button.setAccessibleName(
+            self.tr("Search routes, settings, and actions")
+        )
+        self._global_search_button.setToolTip(
+            self.tr("Search routes, settings, and actions (Ctrl+K)")
+        )
+        self._global_search_button.clicked.connect(
+            lambda: self._show_global_search(actions_only=False)
+        )
+        sidebar_layout.addWidget(self._global_search_button)
 
         # Track sidebar expanded width and state
         self._sidebar_container = sidebar_container
         self._sidebar_expanded_width = sidebar_width
         self._sidebar_collapsed = False
         self._auto_sidebar_collapsed = False
+        self._set_sidebar_toggle_state(False)
 
         # Flat primary navigation. Existing route IDs remain in the route index,
         # not as expandable child rows.
@@ -236,13 +251,22 @@ class MainWindow(QMainWindow):
         self._bc_desc.setObjectName("bcDesc")
         right_side.addWidget(self._breadcrumb_frame)
 
+        shell_body = QWidget()
+        shell_body.setObjectName("shellBody")
+        self._shell_body_layout = QGridLayout(shell_body)
+        self._shell_body_layout.setContentsMargins(0, 0, 0, 0)
+        self._shell_body_layout.setSpacing(0)
+
         self.destination_host = DestinationHost()
         self.destination_host.routeRequested.connect(self.switch_to_route)
-        right_side.addWidget(self.destination_host)
 
         # Content Area
         self.content_area = QStackedWidget()
-        right_side.addWidget(self.content_area)
+        self._shell_body_layout.addWidget(self.destination_host, 0, 0)
+        self._shell_body_layout.addWidget(self.content_area, 0, 1)
+        self._shell_body_layout.setColumnStretch(1, 1)
+        self._section_navigation_compact = False
+        right_side.addWidget(shell_body, 1)
 
         # Status bar
         self._status_frame = QFrame()
@@ -287,6 +311,11 @@ class MainWindow(QMainWindow):
             "executor": None,  # populated after executor init
         }
         self._build_sidebar_from_registry(context)
+        try:
+            initial_shell_width = int(self.width())
+        except (TypeError, ValueError, AttributeError):
+            initial_shell_width = 1180
+        self._apply_responsive_shell(initial_shell_width)
 
         # Select Home after all lazy route entries are registered.
         if self.sidebar.topLevelItemCount() > 0:
@@ -1230,34 +1259,82 @@ class MainWindow(QMainWindow):
         self._auto_sidebar_collapsed = False
         self._set_sidebar_collapsed(not self._sidebar_collapsed)
 
+    def _set_sidebar_toggle_state(self, collapsed: bool) -> None:
+        """Apply a native semantic direction icon and accessible control text."""
+        action = self.tr("Expand sidebar") if collapsed else self.tr("Collapse sidebar")
+        standard_icon = (
+            QStyle.StandardPixmap.SP_ArrowRight
+            if collapsed
+            else QStyle.StandardPixmap.SP_ArrowLeft
+        )
+        self._sidebar_toggle.setText("")
+        style = self.style()
+        if style is not None:
+            self._sidebar_toggle.setIcon(style.standardIcon(standard_icon))
+        self._sidebar_toggle.setToolTip(action)
+        self._sidebar_toggle.setAccessibleName(action)
+
     def _set_sidebar_collapsed(self, collapsed: bool) -> None:
         """Apply sidebar collapsed/expanded state without changing route data."""
         if not collapsed:
             self._sidebar_container.setFixedWidth(self._sidebar_expanded_width)
+            self._sidebar_layout.setContentsMargins(12, 14, 12, 10)
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(False)
-            self._sidebar_toggle.setText("<")
-            self._sidebar_toggle.setToolTip(self.tr("Collapse sidebar"))
+            self._global_search_button.setText(self.tr("Search  Ctrl+K"))
+            self._set_sidebar_toggle_state(False)
             self._sidebar_collapsed = False
         else:
             collapsed_width = getattr(getattr(self, "_metrics", None), "sidebar_collapsed_width", int(self._line_height * 4))
             self._sidebar_container.setFixedWidth(collapsed_width)
+            self._sidebar_layout.setContentsMargins(8, 14, 8, 10)
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(True)
-            self._sidebar_toggle.setText(">")
-            self._sidebar_toggle.setToolTip(self.tr("Expand sidebar"))
+            self._global_search_button.setText("")
+            self._set_sidebar_toggle_state(True)
             self._sidebar_collapsed = True
+
+    def _set_section_navigation_compact(self, compact: bool) -> None:
+        """Move section navigation above content at the minimum layout."""
+        compact = bool(compact)
+        if compact == getattr(self, "_section_navigation_compact", None):
+            set_compact = getattr(self.destination_host, "set_compact", None)
+            if callable(set_compact):
+                set_compact(compact)
+            return
+        self._shell_body_layout.removeWidget(self.destination_host)
+        self._shell_body_layout.removeWidget(self.content_area)
+        if compact:
+            self._shell_body_layout.addWidget(self.destination_host, 0, 0, 1, 2)
+            self._shell_body_layout.addWidget(self.content_area, 1, 0, 1, 2)
+            self._shell_body_layout.setColumnStretch(0, 1)
+            self._shell_body_layout.setColumnStretch(1, 0)
+        else:
+            self._shell_body_layout.addWidget(self.destination_host, 0, 0)
+            self._shell_body_layout.addWidget(self.content_area, 0, 1)
+            self._shell_body_layout.setColumnStretch(0, 0)
+            self._shell_body_layout.setColumnStretch(1, 1)
+        set_compact = getattr(self.destination_host, "set_compact", None)
+        if callable(set_compact):
+            set_compact(compact)
+        self._section_navigation_compact = compact
+
+    def _apply_responsive_shell(self, width: int) -> None:
+        """Apply the v16 wide, medium, and minimum shell breakpoints."""
+        compact_sections = width < 900
+        self._set_section_navigation_compact(compact_sections)
+        if width < 1180 and not self._sidebar_collapsed:
+            self._auto_sidebar_collapsed = True
+            self._set_sidebar_collapsed(True)
+        elif width >= 1180 and self._auto_sidebar_collapsed:
+            self._auto_sidebar_collapsed = False
+            self._set_sidebar_collapsed(False)
 
     def resizeEvent(self, event) -> None:
         """Apply responsive sidebar breakpoints as the window changes size."""
         try:
             width = int(self.width())
-            if width < 900 and not self._sidebar_collapsed:
-                self._auto_sidebar_collapsed = True
-                self._set_sidebar_collapsed(True)
-            elif width > 1120 and self._auto_sidebar_collapsed:
-                self._auto_sidebar_collapsed = False
-                self._set_sidebar_collapsed(False)
+            self._apply_responsive_shell(width)
         except (TypeError, ValueError, AttributeError, RuntimeError):
             logger.debug("Responsive sidebar resize update failed", exc_info=True)
         super().resizeEvent(event)
@@ -1578,6 +1655,13 @@ class MainWindow(QMainWindow):
                 refresh_destination_icons()
             if sidebar is not None and not callable(refresh_destination_icons):
                 self._refresh_sidebar_icon_tints()
+            refresh_section_icons = getattr(
+                getattr(self, "destination_host", None),
+                "refresh_icon_tints",
+                None,
+            )
+            if callable(refresh_section_icons):
+                refresh_section_icons()
             self.update()
 
     @staticmethod

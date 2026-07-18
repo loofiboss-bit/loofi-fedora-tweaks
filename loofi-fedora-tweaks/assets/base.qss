@@ -60,6 +60,21 @@ QTreeWidget#destinationSidebar::item:disabled {
     color: $color_disabled_text;
 }
 
+QTreeWidget#destinationSidebar[collapsed="true"]::item {
+    padding: 0;
+    margin: $space_1;
+}
+
+QToolButton#sidebarToggle,
+QPushButton#globalSearchAffordance {
+    min-width: $control_min_height;
+    min-height: $control_min_height;
+}
+
+QPushButton#globalSearchAffordance {
+    text-align: left;
+}
+
 QFrame#pageHeader,
 QFrame#breadcrumbBar,
 QFrame#statusBar {
