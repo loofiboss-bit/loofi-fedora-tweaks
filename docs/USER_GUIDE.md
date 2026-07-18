@@ -1,30 +1,26 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 12.0.0 "Lighthouse" — My Fedora Today and Health Timeline Trust
+> Version 15.0.0 "Essentials" — focused navigation, on-demand plugins, and preserved v14 safety
 
-This guide covers daily use of Loofi Fedora Tweaks in GUI and CLI mode.
-
-For quick onboarding use `docs/BEGINNER_QUICK_GUIDE.md`.
-For admin workflows use `docs/ADVANCED_ADMIN_GUIDE.md`.
+This guide covers daily use in GUI and CLI mode. For a short first run, see
+`docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
+`docs/ADVANCED_ADMIN_GUIDE.md`.
 
 ---
 
 ## 1) What Loofi Does
 
-Loofi Fedora Tweaks is a Fedora control center with three entry modes:
+Loofi Fedora Tweaks is a Fedora control center with four entry modes:
 
-- GUI (`loofi-fedora-tweaks`)
-- CLI (`loofi-fedora-tweaks --cli ...`)
-- Daemon (`loofi-fedora-tweaks --daemon`)
+- GUI: `loofi-fedora-tweaks`
+- CLI: `loofi-fedora-tweaks --cli ...`
+- daemon: `loofi-fedora-tweaks --daemon`
+- optional Web API: `loofi-fedora-tweaks --web`
 
-Core behavior:
-
-- Focused navigation areas backed by stable plugin and route IDs
-- Plugin-based pages loaded via registry and lazy widgets
-- Privileged actions executed with `pkexec` (never `sudo`)
-- Automatic Fedora mode detection (`dnf` vs `rpm-ostree`)
-- Safety confirmations for dangerous operations
-- Fedora KDE 44 readiness diagnostics with beginner, advanced, and guided action views
+The GUI groups stable route IDs into six Standard destinations. Built-in pages
+are registered from data-only specifications and their UI modules are imported
+only when needed. Privileged operations use `pkexec`, never `sudo`, and preserve
+Traditional Fedora DNF and Atomic Fedora rpm-ostree behavior.
 
 ---
 
@@ -44,13 +40,13 @@ pkexec dnf install loofi-fedora-tweaks-api
 pkexec dnf install loofi-fedora-tweaks-daemon
 ```
 
-Or download the RPM from the [Releases](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases) page:
+Or install a downloaded release RPM:
 
 ```bash
 pkexec dnf install ./loofi-fedora-tweaks-*.noarch.rpm
 ```
 
-Launch:
+Launch the GUI:
 
 ```bash
 loofi-fedora-tweaks
@@ -64,135 +60,127 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ---
 
-## 3) UI Layout and Navigation
+## 3) Navigation and Search
 
-Main areas:
+Standard mode always presents these six destinations:
 
-- Sidebar: five focused areas by default, with search and favorites
-- Header area: current page title, route context, and actions
-- Main pane: active tools with roomier sections and adaptive cards
-- Footer: compact app state and shortcuts
+| Destination | Everyday purpose |
+| --- | --- |
+| **Home** | Prioritized status, recommendations, and safe links |
+| **Software & Updates** | Applications, repositories, updates, cleanup, upgrades, and Action Center |
+| **System** | System information, performance, processes, hardware, storage, diagnostics, and recovery points |
+| **Network & Security** | Connections, DNS, privacy, firewall, exposure, and backups |
+| **Desktop** | Appearance, windows, and displays |
+| **Settings** | Appearance, behavior, Advanced mode, Repair Loofi, and About |
+
+Enable the optional **Advanced** destination from **Settings → Advanced Tools**.
+It exposes specialist routes such as Performance Tuning, Gaming, Development,
+Community, Loofi Link, AI Lab, Agents, Automation, State Teleport, and
+Virtualization. Profiles and Extensions also remain Advanced-only. Switching
+mode changes discovery, not safety or confirmation requirements.
 
 Primary shortcuts:
 
-- `Ctrl+K` command palette
-- `Ctrl+Shift+K` quick actions
-- `Ctrl+Tab` / `Ctrl+Shift+Tab` next/previous tab
-- `F1` shortcuts help
-- `Ctrl+Q` quit
+- `Ctrl+K`: global route, setting, and safe-action search.
+- `Ctrl+Shift+K`: the same search model filtered to actions.
+- `Ctrl+Tab` / `Ctrl+Shift+Tab`: next or previous destination.
+- `F1`: shortcut help.
+- `Ctrl+Q`: quit.
 
-Default sidebar areas:
+Global search applies `NavigationPolicy` before showing or activating a result.
+It cannot bypass Standard/Advanced mode, unavailable components, Fedora variant
+constraints, required capabilities, or Action Center safety. An Action Center
+result may navigate and preselect only; it cannot plan, run, or verify.
 
-- Home
-- Software & Updates
-- System & Hardware
-- Network & Security
-- Desktop & Settings
-
-Advanced and specialized pages are not removed. AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, Snapshots, and Loofi Link remain available from search, favorites, command palette, direct routes, and Advanced mode.
-
-![Home Dashboard](images/user-guide/home-dashboard.png)
+![Home](images/user-guide/home-dashboard.png)
 
 ---
 
-## 4) Recommended Workflows
+## 4) Five Core Workflows
 
-### Daily (2–3 minutes)
+### Update the system
 
-1. Check **Home → Upgrade Assistant** or **Home → Release Readiness** after install or system upgrades.
-2. Check **System & Hardware → System Monitor** for abnormal CPU/RAM/process usage.
-3. Check **Network & Security → Security & Privacy** if score dropped or alerts appear.
-
-![Release Readiness](images/user-guide/release-readiness.png)
-
-![Upgrade Assistant](images/user-guide/upgrade-assistant.png)
-
-![System Monitor](images/user-guide/system-monitor.png)
-
-### Weekly Maintenance
-
-1. Run updates from **Software & Updates → Maintenance → Updates**.
-2. Run cleanup actions from **Software & Updates → Maintenance → Cleanup**.
-3. Validate security score and firewall status.
-4. Refresh snapshots before risky changes from search, favorites, or Advanced mode.
+Open **Software & Updates → Updates**, review the available updates, and confirm
+the operation. Traditional Fedora uses DNF. Atomic Fedora follows the existing
+rpm-ostree-aware or manual guidance path.
 
 ![Maintenance Updates](images/user-guide/maintenance-updates.png)
 
-### Before Risky Changes
+### Install an application
 
-1. Create a snapshot.
-2. Export profile(s).
-3. Create support bundle if troubleshooting baseline is needed:
+Open **Software & Updates → Applications**, choose an application, and confirm
+the installation. The application workflow retains package-source and
+Traditional/Atomic policy checks.
+
+### Diagnose a slow system
+
+Open **System → Performance** and select **Analyze Slow System**. Loofi takes a
+bounded, read-only snapshot of CPU, memory, storage, I/O wait, processes, failed
+services, and recurring health signals. It explains the strongest signal before
+offering a safe next route.
+
+![System Monitor](images/user-guide/system-monitor.png)
+
+### Free disk space
+
+Open **Software & Updates → Cleanup** and run the reclaim analysis. Package
+cache, journal retention, and filesystem trim remain separate categories with
+their own risk and availability guidance. Atomic Fedora keeps DNF cache cleanup
+manual-only.
+
+### Protect or recover the system
+
+Open **System → Recovery Points** to inspect or create Timeshift, Snapper, or
+Btrfs snapshots. Open **Network & Security → Backups** for guided backup and
+restore. Repair Loofi remains available from Settings and reuses the v14 State
+Doctor and archive services.
+
+---
+
+## 5) Action Center Safety
+
+**Software & Updates → Action Center** remains the only plan/run/verify GUI.
+The v15 shell changes its placement and presentation, not its domain contract.
+
+- The executable catalog is deny-by-default and remains limited to
+  `dnf-clean-all`, `restart-failed-service`, and `fstrim-all`.
+- Plans expire and are re-preflighted before execution.
+- Execution requires explicit confirmation and, when applicable, explicit
+  acknowledgement that rollback is unavailable.
+- A cross-process lease permits only one mutation at a time.
+- Verification is separate; command exit code zero is not sufficient.
+- Interrupted runs remain recorded and never resume, retry, or roll back
+  automatically.
+- Home, global search, deep links, CLI listing, API status, and recommendations
+  do not silently execute actions.
+
+Read-only inspection:
 
 ```bash
-loofi support-bundle
+loofi action-center list --target 44
+loofi action-center history --limit 10
+loofi action-center recommendations --target 44
 ```
 
----
-
-## 5) Areas and Routes
-
-## Home
-
-- **Home**: health score, quick status, fast navigation
-- **Release Readiness**: Home card for Fedora KDE 44 support checks and safe guided action planning
-
-## Software & Updates
-
-- **Software**: applications, repositories, Flatpak, RPM Fusion, Flathub, and COPR sources
-- **Maintenance**: updates, cleanup, smart updates, and Atomic overlays
-- **Snapshots**: create/delete/refresh snapshot timeline, visible in Advanced mode or by search/favorite
-- **Virtualization**: VM operations, passthrough checks, and disposable flows, visible in Advanced mode or by search/favorite
-
-## System & Hardware
-
-- **System Info**: OS/kernel/hardware/system metadata
-- **System Monitor**: performance and process analysis
-- **Hardware**: power/governor/fan/audio/Bluetooth helper controls
-- **Storage**: disk usage, SMART, TRIM, filesystem checks
-- **Health**: historical health timeline/trends
-- **Diagnostics**: service/system checks and support actions
-- **Performance** and **Gaming**: advanced tuning shortcuts, visible in Advanced mode or by search/favorite
-
-## Network & Security
-
-- **Network**: connections, DNS, privacy, monitoring
-- **Security & Privacy**: score, firewall, telemetry, hardening actions
-- **Backup**: guided backup and restore workflows
-- **Loofi Link**: local peer discovery, clipboard, file drop, visible in Advanced mode or by search/favorite
-
-![Network Overview](images/user-guide/network-overview.png)
-
-![Security and Privacy](images/user-guide/security-privacy.png)
-
-## Desktop & Settings
-
-- **Desktop**: desktop/theming controls
-- **Settings**: appearance, behavior, advanced options
-- **Profiles**: save/apply/import/export profile states, visible in Advanced mode or by search/favorite
-- **Extensions**: desktop extension compatibility, visible in Advanced mode or by search/favorite
-- **Development Tools**: containers and developer setup, visible in Intermediate/Advanced mode or by search/favorite
-
-![Settings Appearance](images/user-guide/settings-appearance.png)
-
-## More and Advanced
-
-- **AI Lab**: models, voice, and knowledge indexing
-- **Agents**: local agent dashboard and controls
-- **Automation**: scheduler and replicator workflows
-- **Community**: presets and marketplace actions
-- **Logs**: filtered log inspection and export tools
-- **State Teleport**: capture/restore workspace state packages
-
-![AI Lab Models](images/user-guide/ai-lab-models.png)
-
-![Community Presets](images/user-guide/community-presets.png)
-
-![Community Marketplace](images/user-guide/community-marketplace.png)
+See `docs/VERIFIED_MAINTENANCE.md` for the complete lifecycle.
 
 ---
 
-## 6) CLI by Task
+## 6) Core and Specialist Components
+
+v15 introduces logical component isolation, not a physical `-extras` RPM. The
+base RPM still ships the built-in source tree. Core startup does not import
+specialist UI modules, and specialist pages load on demand after route
+activation.
+
+If a specialist component is missing or incomplete, policy marks its routes
+unavailable while the six Standard destinations, Home, the five core workflows,
+and Action Center remain usable. The API and daemon keep their existing
+subpackage boundaries and exact base-package dependency.
+
+---
+
+## 7) CLI by Task
 
 System and diagnostics:
 
@@ -207,10 +195,6 @@ loofi doctor
 loofi support-bundle
 ```
 
-Advanced readiness details show the read-only probe command and manual recommendation metadata. Action Inbox commands show reviewable action candidates and require confirmation before any supported mutating action can run:
-
-![Release Readiness Advanced](images/user-guide/release-readiness-advanced.png)
-
 Maintenance:
 
 ```bash
@@ -220,7 +204,7 @@ loofi tuner analyze
 loofi tuner apply
 ```
 
-Services/packages/logs:
+Services, packages, and logs:
 
 ```bash
 loofi service list --filter failed
@@ -229,7 +213,7 @@ loofi package search --query firefox --source all
 loofi logs errors --since "2h ago"
 ```
 
-Security/network/storage:
+Security, network, and storage:
 
 ```bash
 loofi security-audit
@@ -238,7 +222,8 @@ loofi network dns --provider cloudflare
 loofi storage usage
 ```
 
-Automation and advanced:
+Specialist CLI contracts remain available independently of whether the GUI is
+currently in Standard or Advanced mode:
 
 ```bash
 loofi agent list
@@ -258,16 +243,19 @@ loofi --json readiness --target 44
 
 ---
 
-## 7) Data Locations
+## 8) Data Locations
 
 - `~/.config/loofi-fedora-tweaks/settings.json`
 - `~/.config/loofi-fedora-tweaks/profile.json`
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
+v15 preserves v14 settings, favorites, stable route IDs, Action Center plans,
+runs and history, state schemas, and observability data.
+
 ---
 
-## 8) Troubleshooting and Support
+## 9) Troubleshooting and Support
 
 First-line diagnostics:
 
@@ -277,22 +265,15 @@ loofi info
 loofi support-bundle
 ```
 
-Then review `docs/TROUBLESHOOTING.md`.
-
-If opening an issue, include:
-
-1. Fedora version and desktop environment
-2. Exact tab/action or command
-3. Full error output
-4. Reproduction steps
-5. Support bundle path
+Then review `docs/TROUBLESHOOTING.md`. When opening an issue, include the Fedora
+variant, exact route or command, full error output, reproduction steps, and
+support-bundle path.
 
 Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
 
 ---
 
-## 9) Screenshot Catalog
+## 10) Screenshot Catalog
 
-All current user-guide screenshots are tracked in:
-
-- `docs/images/user-guide/README.md`
+Current user-guide screenshots are tracked in
+`docs/images/user-guide/README.md`.

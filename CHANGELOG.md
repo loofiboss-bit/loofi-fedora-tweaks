@@ -4,6 +4,45 @@
 
 All notable changes to this project will be documented in this file.
 
+## [15.0.0] - 2026-07-18 "Essentials"
+
+### Added
+
+- Six Standard destinations, an optional Advanced destination, pure navigation
+  policy, stable route placement, and idempotent settings/favorites migration.
+- Data-only built-in plugin specifications, deferred UI imports and instances,
+  deterministic startup measurements, and logical core/specialist discovery.
+- One canonical read-only Home, one policy-backed global search surface, and
+  five guided Fedora workflows.
+- Accessible shared loading, empty, unavailable, result, progress, disclosure,
+  and route-card components.
+
+### Changed
+
+- Replaced Beginner/Intermediate/Advanced presentation with Standard/Advanced
+  while retaining legacy values as migration input.
+- Consolidated duplicate Home, search, quick-action, update, health, and shell
+  presentation without removing their trusted backends or stable routes.
+- Reduced base Python/RPM dependencies and clarified core versus specialist
+  capability; a physical extras RPM remains deferred to v16.
+- Improved meaningful Home startup by 96.66% and reduced measured RSS by 29.20%
+  against the recorded v14 baseline.
+
+### Compatibility
+
+- Preserved the v14 Action Center lifecycle and deny-by-default three-action
+  catalog, state integrity, route/favorite migrations, Traditional/Atomic
+  behavior, CLI JSON, authenticated read-only API, daemon, and IPC contracts.
+- Preserved existing user state and first-run/profile data across upgrade.
+
+### Release
+
+- Added v15 architecture/tasks, release notes, migration guidance, AppStream
+  metadata, package descriptions, and canonical real-app screenshots.
+- Preserved the historical pre-renormalization `v15.0.0 "Nebula"` tag object as
+  `legacy-v15.0.0-nebula` and deliberately freed the canonical tag for the exact
+  Essentials release commit.
+
 ## [14.0.0] - 2026-07-17 "Helm"
 
 ### Added
@@ -1840,7 +1879,12 @@ All notable changes to this project will be documented in this file.
 - 148 new tests across `test_service_explorer.py`, `test_package_explorer.py`, and `test_firewall_manager.py`.
 - Full suite: **1420 passed**, 22 skipped.
 
-## [15.0.0] - 2026-02-08 "Nebula"
+## [15.0.0-legacy-nebula] - 2026-02-08 "Nebula" (historical pre-renormalization line)
+
+This historical release predates the epoch-backed SemVer renormalization. Its
+original `v15.0.0` tag collides with the current Essentials release name and is
+retained here under an explicit legacy heading so the two lineages are not
+mistaken for one another.
 
 ### Added
 

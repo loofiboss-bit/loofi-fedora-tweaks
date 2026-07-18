@@ -2,7 +2,7 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v11.0.0 "Harbor"
+**Last verified**: v15.0.0 "Essentials" on 2026-07-18
 
 **Status**: Screenshot filenames remain stable for user docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
 
@@ -12,14 +12,14 @@ Canonical screenshot assets for user-facing docs.
 - `upgrade-assistant.png` -- Software & Updates > Maintenance > Upgrade Assistant
 - `release-readiness.png` -- Home > Release Readiness
 - `release-readiness-advanced.png` -- Release Readiness advanced details
-- `system-monitor.png` -- System & Hardware > System Monitor
+- `system-monitor.png` -- System > Performance and processes
 - `maintenance-updates.png` -- Software & Updates > Maintenance updates workflow
 - `network-overview.png` -- Network tab overview
 - `security-privacy.png` -- Security & Privacy tab
 - `ai-lab-models.png` -- Advanced route > AI Lab models view
 - `community-presets.png` -- Advanced route > Community presets view
 - `community-marketplace.png` -- Advanced route > Community marketplace view
-- `settings-appearance.png` -- Desktop & Settings > Settings appearance
+- `settings-appearance.png` -- Settings > Appearance
 
 ## Referenced By
 
@@ -36,7 +36,11 @@ User-guide screenshots can be regenerated from real PyQt widgets:
 PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v8_user_guide_screenshots.py
 ```
 
-The capture script uses a temporary clean profile by default so first-run wizard, guided tour, favorites, and local experience-level settings do not affect release images. Set `LOOFI_SCREENSHOT_REAL_HOME=1` only when intentionally capturing a local user profile.
+The capture script uses a temporary clean profile by default so onboarding,
+favorites, and local navigation-mode settings do not affect release images. It
+captures Standard routes first, then switches the same real application window
+to Advanced for specialist routes. Set `LOOFI_SCREENSHOT_REAL_HOME=1` only when
+intentionally capturing a local user profile.
 
 For manual verification after regeneration:
 
@@ -52,18 +56,18 @@ For manual verification after regeneration:
 
 | Screenshot | Navigate To | Notes |
 |------------|-------------|-------|
-| `home-dashboard.png` | Home | Show focused sidebar, v10 release title, and Upgrade Assistant entry |
+| `home-dashboard.png` | Home | Show canonical Home and the six-destination Standard sidebar |
 | `upgrade-assistant.png` | Software & Updates > Maintenance > Upgrade Assistant | Show Fedora 44 stable and Fedora 45 preview planning |
 | `release-readiness.png` | Home > Release Readiness | Show grouped beginner readiness findings |
 | `release-readiness-advanced.png` | Home > Release Readiness > Advanced | Show command/recommendation metadata |
-| `system-monitor.png` | System & Hardware > System Monitor | Show CPU/RAM/process data |
+| `system-monitor.png` | System > Performance | Show CPU/RAM/process data |
 | `maintenance-updates.png` | Software & Updates > Maintenance > Updates | Show update workflow |
 | `network-overview.png` | Network & Security > Network | Show connections view |
 | `security-privacy.png` | Network & Security > Security | Show security score |
 | `ai-lab-models.png` | Search/direct route > AI Lab | Show models list |
 | `community-presets.png` | Search/direct route > Community | Show presets tab |
 | `community-marketplace.png` | Search/direct route > Community | Show marketplace tab |
-| `settings-appearance.png` | Desktop & Settings > Settings | Show appearance options |
+| `settings-appearance.png` | Settings > Appearance | Show appearance options |
 
 ### Additional screenshots to consider next
 

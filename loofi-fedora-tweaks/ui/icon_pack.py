@@ -234,7 +234,7 @@ def icon_tint_variant(icon_value: str, selected: bool = False) -> str:
         else:
             color = color.darker(100 if _is_dark_theme() else 104)
             color.setAlpha(212 if _is_dark_theme() else 194)
-        return color.name(QColor.NameFormat.HexArgb)
+        return str(color.name(QColor.NameFormat.HexArgb))
     except (ImportError, AttributeError, RuntimeError, TypeError, ValueError):
         return base_hex
 

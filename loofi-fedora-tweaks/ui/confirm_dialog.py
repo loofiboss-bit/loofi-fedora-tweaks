@@ -252,4 +252,4 @@ class ConfirmActionDialog(QDialog):
             risk_level=risk_level,
             action_key=action_key,
         )
-        return dialog.exec() == QDialog.DialogCode.Accepted
+        return bool(dialog.exec() == QDialog.DialogCode.Accepted)

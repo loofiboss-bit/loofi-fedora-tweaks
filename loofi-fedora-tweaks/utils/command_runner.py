@@ -47,7 +47,7 @@ class CommandRunner(QObject):
 
     def is_running(self) -> bool:
         """Check if a command is currently running."""
-        return self.process.state() == QProcess.ProcessState.Running
+        return bool(self.process.state() == QProcess.ProcessState.Running)
 
     def run_command(self, command, args):
         """Start a command. Wraps with flatpak-spawn if in Flatpak sandbox."""

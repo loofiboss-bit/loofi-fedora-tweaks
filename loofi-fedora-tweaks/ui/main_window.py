@@ -345,6 +345,7 @@ class MainWindow(QMainWindow):
     def _build_sidebar_from_registry(self, context: dict) -> None:
         """Build the destination shell from specs without importing plugin UI."""
         from core.plugins.compat import CompatibilityDetector
+        from core.plugins.components import discover_builtin_components
         from core.plugins.loader import PluginLoader
         from utils.navigation_mode import NavigationModeManager
 
@@ -372,7 +373,7 @@ class MainWindow(QMainWindow):
         is_atomic = SystemManager.is_atomic()
         self._navigation_context = NavigationContext(
             mode=mode,
-            installed_components=frozenset({"core", "specialist"}),
+            installed_components=discover_builtin_components(specs),
             fedora_variant=(
                 FedoraVariant.ATOMIC if is_atomic else FedoraVariant.TRADITIONAL
             ),

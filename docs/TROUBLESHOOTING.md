@@ -1,17 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and fixes for v9.x.
-
-## State Doctor and recovery (v13)
-
-- **Corrupt JSON or database:** run `loofi-fedora-tweaks --cli --json state doctor`, preserve the reported file, and use its domain-specific recovery guidance. Corruption is never silently treated as healthy empty history.
-- **Disk full:** free space outside Loofi first. Atomic writes leave the canonical file intact when replacement fails.
-- **Permission denied:** verify ownership before restricting the affected file to the current user. Do not run Loofi with `sudo`.
-- **Stale lock:** confirm no GUI, CLI, or daemon owner is active before archiving a lock reported stale. Lock timeout is a busy condition, not corruption.
-- **Failed migration:** retain the legacy file and `.lkg` copy. Future schemas stay read-only; do not downgrade them by hand.
-- **Restore rejected:** do not bypass validation. Check for a mismatched plan ID, tampered hash, unsupported schema, duplicate path, path traversal, or oversized entry.
-
----
+Common issues and recovery steps for v15.0.0 "Essentials".
 
 ## 1) Quick Diagnostics
 
@@ -28,6 +17,9 @@ Optional alias:
 ```bash
 alias loofi='loofi-fedora-tweaks --cli'
 ```
+
+Do not run Loofi with `sudo`. Privileged operations request authorization
+through `pkexec` and polkit.
 
 ---
 
@@ -46,41 +38,63 @@ pkexec dnf install qt6-qtwayland
 QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
 ```
 
-### Startup crash without clear UI message
+### Startup crash without a clear UI message
 
 ```bash
 tail -n 200 ~/.local/share/loofi-fedora-tweaks/startup.log
 ```
 
+v15 loads built-in pages on demand. A failing specialist page should not stop
+Home or the six Standard destinations from opening. Include the exact route and
+startup log when reporting an import failure.
+
 ---
 
-## 3) CLI Command Fails
+## 3) A Route Is Missing or Unavailable
 
-### Command not found
+Standard mode shows exactly Home, Software & Updates, System, Network &
+Security, Desktop, and Settings. Specialist routes are not deleted; enable the
+optional **Advanced** destination from **Settings → Advanced Tools**.
 
-Use full command:
+Use `Ctrl+K` to search routes and settings. `Ctrl+Shift+K` uses the same search
+model filtered to actions. Both shortcuts use this unified search surface.
+Policy may keep a result unavailable when:
+
+- Advanced mode is required;
+- a logical specialist component is missing or incomplete;
+- the route is incompatible with Traditional or Atomic Fedora;
+- a required host capability is absent.
+
+Do not bypass the unavailable state by importing a UI module directly. v15
+ships logical core/specialist isolation in the base RPM; there is no physical
+`loofi-fedora-tweaks-extras` package.
+
+---
+
+## 4) CLI Command Fails
+
+Use the full command:
 
 ```bash
 loofi-fedora-tweaks --cli info
 ```
 
-### Source-run import errors
+For a source checkout:
 
 ```bash
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --cli info
 ```
 
+GUI Standard/Advanced mode does not remove CLI commands. If a specialist CLI
+command fails, inspect its reported host dependency rather than changing GUI
+mode.
+
 ---
 
-## 4) Privileged Actions Fail
+## 5) Privileged Actions Fail
 
-Symptoms:
-
-- updates/install/remove fail
-- service/firewall actions fail
-- no auth prompt appears
-
-Checks:
+Symptoms include failed package/service/firewall operations or a missing auth
+prompt.
 
 ```bash
 which pkexec
@@ -88,103 +102,126 @@ pkexec true
 ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 ```
 
-Confirm a desktop polkit agent is running.
-
-v9 commands are expected to pass through list-based executor policy. If an action reports "command is not in allowlist" or "command is rejected by policy", check the command preview and route the action through the supported GUI/CLI workflow rather than a shell string.
+Confirm that a desktop polkit agent is running. Supported commands use
+list-based executor policy. If the preview reports that a command is rejected
+or not allowlisted, use the supported GUI or CLI workflow instead of a shell
+string.
 
 ---
 
-## 5) Atomic vs Traditional Behavior Differences
+## 6) Action Center Does Not Run or Verify
 
-On Atomic Fedora, maintenance and package behavior uses `rpm-ostree` semantics.
+Action Center is intentionally fail-closed. Common outcomes:
 
-Check detected mode:
+- **Plan expired:** create and review a fresh plan. Plans are not reusable after
+  expiry.
+- **Preflight changed:** review the new system state before confirming again.
+- **Confirmation required:** apply only the exact reviewed plan with explicit
+  confirmation.
+- **No rollback acknowledgement required:** read the warning and acknowledge it
+  separately only if you accept the risk.
+- **Mutation lease busy:** another GUI or CLI process owns the single-mutation
+  lease; wait for it to finish or inspect the recorded owner.
+- **Interrupted run:** inspect history. Loofi never resumes, retries, or rolls
+  back automatically.
+- **Verification failed:** treat the run as unverified even when the command
+  exited successfully.
+- **Manual-only:** the recommendation is outside the three-action executable
+  catalog or is unavailable for this Fedora variant.
+
+Read-only inspection:
+
+```bash
+loofi-fedora-tweaks --cli action-center list --target 44
+loofi-fedora-tweaks --cli action-center history --limit 20
+```
+
+Home and global search may open or preselect an Action Center item, but they
+cannot create a plan or execute it.
+
+---
+
+## 7) Traditional vs Atomic Fedora
+
+Check the detected system:
 
 ```bash
 loofi-fedora-tweaks --cli info
 ```
 
+Traditional Fedora uses DNF. Atomic Fedora uses rpm-ostree-aware paths and
+keeps operations manual-only when the DNF contract is not safe. In particular,
+do not force Traditional package-cache commands on an Atomic host. Review the
+unavailable explanation and follow the documented rpm-ostree guidance.
+
 ---
 
-## 6) Plugin Marketplace Issues
+## 8) State Doctor and Recovery
 
-Search test:
+- **Corrupt JSON or database:** run
+  `loofi-fedora-tweaks --cli --json state doctor`, preserve the reported file,
+  and follow its domain-specific guidance. Corruption is never silently treated
+  as healthy empty history.
+- **Disk full:** free space outside Loofi first. Atomic writes leave the
+  canonical file intact when replacement fails.
+- **Permission denied:** verify ownership before restricting the file to the
+  current user. Do not run Loofi with `sudo`.
+- **Stale lock:** confirm no GUI, CLI, or daemon owner is active before archiving
+  a lock reported stale. Lock timeout is a busy condition, not corruption.
+- **Failed migration:** retain the legacy file and `.lkg` copy. Future schemas
+  stay read-only; do not downgrade them by hand.
+- **Restore rejected:** do not bypass validation. Check the plan ID, hashes,
+  schema, duplicate paths, traversal checks, and size limits.
+
+v15 preserves v14 settings, favorites, routes, Action Center records, and state
+formats. Package installation does not migrate per-user XDG files.
+
+---
+
+## 9) Plugin Marketplace Issues
 
 ```bash
 loofi-fedora-tweaks --cli plugin-marketplace search --query monitor
-```
-
-Install with explicit permissions acceptance:
-
-```bash
+loofi-fedora-tweaks --cli plugin-marketplace info <plugin-id>
 loofi-fedora-tweaks --cli plugin-marketplace install <plugin-id> --accept-permissions
 ```
 
-Inspect metadata first:
-
-```bash
-loofi-fedora-tweaks --cli plugin-marketplace info <plugin-id>
-```
+Marketplace routes require Advanced mode in the GUI. External plugin
+compatibility and permission checks remain separate from the built-in logical
+core/specialist component boundary.
 
 ---
 
-## 7) Virtualization Problems
+## 10) Specialist Tool Checks
 
-libvirt status:
+Virtualization:
 
 ```bash
 systemctl status libvirtd
-pkexec systemctl enable --now libvirtd
-```
-
-KVM capability:
-
-```bash
 lscpu | grep -i virtualization
 lsmod | grep -i kvm
 ```
 
----
-
-## 8) Loofi Link Discovery Fails
-
-Check Avahi:
+Loofi Link:
 
 ```bash
 systemctl status avahi-daemon
 pkexec dnf install avahi avahi-tools nss-mdns
-pkexec systemctl enable --now avahi-daemon
 ```
 
-Firewall mDNS allowance:
-
-```bash
-pkexec firewall-cmd --permanent --add-service=mdns
-pkexec firewall-cmd --reload
-```
-
----
-
-## 9) AI Lab Issues
-
-Check Ollama:
+AI Lab:
 
 ```bash
 ollama --version
 ollama list
 ```
 
-Check config/data write access:
-
-```bash
-ls -la ~/.config/loofi-fedora-tweaks/
-```
+These tools live under the optional Advanced destination and may report an
+unavailable state when their host dependencies are absent.
 
 ---
 
-## 10) Logs and Support Bundle
-
-Export diagnostics:
+## 11) Logs and Support Bundle
 
 ```bash
 loofi-fedora-tweaks --cli support-bundle
@@ -193,14 +230,14 @@ journalctl --user --since "1 hour ago"
 
 ---
 
-## 11) Reporting Issues
+## 12) Reporting Issues
 
 Include:
 
-1. Fedora version and desktop environment
-2. exact tab/action or command
-3. full error output
-4. reproduction steps
-5. support bundle path
+1. Fedora version and whether it is Traditional or Atomic
+2. Standard or Advanced mode
+3. exact route, action, or command
+4. full error output and reproduction steps
+5. support-bundle path
 
 Issues: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>

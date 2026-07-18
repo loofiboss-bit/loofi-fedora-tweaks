@@ -119,6 +119,9 @@ def _child_measurement() -> dict[str, Any]:
             },
             "runtime_plugin_ids": [plugin.metadata().id for plugin in registry.list_all()],
             "plugin_spec_count": len(registry.list_specs()),
+            "installed_components": sorted(
+                window._navigation_context.installed_components
+            ),
             "qt_widget_count": len(app.allWidgets()),
             "active_timer_intervals_ms": sorted(active_timers),
             "running_qthreads": running_threads,

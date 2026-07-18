@@ -25,16 +25,16 @@ from PyQt6.QtWidgets import QApplication, QDialog, QScrollArea  # noqa: E402
 WINDOW_SIZE = QSize(1400, 900)
 
 ROUTE_SCREENSHOTS = [
-    ("home-dashboard.png", ""),
-    ("upgrade-assistant.png", "maintenance:upgrade-assistant"),
-    ("system-monitor.png", "system-monitor:processes"),
-    ("maintenance-updates.png", "maintenance:updates"),
-    ("network-overview.png", "network:connections"),
-    ("security-privacy.png", "security:privacy"),
-    ("settings-appearance.png", "settings:appearance"),
-    ("ai-lab-models.png", "ai-lab:models"),
-    ("community-presets.png", "community:presets"),
-    ("community-marketplace.png", "community:marketplace"),
+    ("home-dashboard.png", "", False),
+    ("upgrade-assistant.png", "maintenance:upgrade-assistant", False),
+    ("system-monitor.png", "system-monitor:processes", False),
+    ("maintenance-updates.png", "maintenance:updates", False),
+    ("network-overview.png", "network:connections", False),
+    ("security-privacy.png", "security:privacy", False),
+    ("settings-appearance.png", "settings:appearance", False),
+    ("ai-lab-models.png", "ai-lab:models", True),
+    ("community-presets.png", "community:presets", True),
+    ("community-marketplace.png", "community:marketplace", True),
 ]
 
 
@@ -90,6 +90,7 @@ def _screenshot_home() -> Iterator[None]:
 
 
 def _capture_main_window(app: QApplication) -> None:
+    from core.navigation.models import NavigationMode
     from ui.main_window import MainWindow
 
     window = MainWindow()
@@ -97,7 +98,12 @@ def _capture_main_window(app: QApplication) -> None:
     window.show()
     _settle(app, 1.5)
 
-    for filename, route_id in ROUTE_SCREENSHOTS:
+    advanced_enabled = False
+    for filename, route_id, requires_advanced in ROUTE_SCREENSHOTS:
+        if requires_advanced and not advanced_enabled:
+            window.apply_navigation_mode(NavigationMode.ADVANCED)
+            advanced_enabled = True
+            _settle(app, 0.5)
         if route_id and not window.switch_to_route(route_id):
             raise RuntimeError(f"route did not resolve in MainWindow: {route_id}")
         _settle(app, 1.0)

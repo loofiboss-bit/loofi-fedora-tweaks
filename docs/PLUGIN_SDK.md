@@ -161,25 +161,19 @@ def on_unload(self) -> None:
     logger.info("Plugin unloading, cleaning up")
 ```
 
-### Optional: Quick Actions (v15.0)
+### Discovery and actions in v15
 
-Plugins can register custom actions in the Quick Actions Bar (`Ctrl+Shift+K`):
+The separate Quick Actions registry was retired in v15. Plugin routes remain
+discoverable through the single policy-backed global search after their plugin
+metadata and route are registered. `Ctrl+K` searches all visible routes and
+settings; `Ctrl+Shift+K` filters the same model to safe application-owned action
+entries.
 
-```python
-def on_load(self) -> None:
-    from ui.quick_actions import QuickActionRegistry, QuickAction
-    
-    registry = QuickActionRegistry()
-    registry.register(QuickAction(
-        name="My Plugin Action",
-        description="Run my plugin's main feature",
-        category="My Plugin",
-        callback=self._run_feature,
-        icon="🔧"
-    ))
-```
-
-Actions appear in the Quick Actions palette alongside built-in actions and support fuzzy search.
+External plugins cannot register executable Action Center definitions or inject
+command callbacks into global search. Keep plugin commands behind the plugin's
+own reviewed UI or declared CLI surface and use the standard command, permission,
+confirmation, and timeout boundaries. Plugin content may link to
+`maintenance:action-center`, but it cannot create or apply a plan.
 
 ---
 

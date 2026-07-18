@@ -10,7 +10,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `ADVANCED_ADMIN_GUIDE.md` - Admin/operator runbooks and advanced operations
 - `TROUBLESHOOTING.md` - Common issues and fixes
 - `STATE_INTEGRITY.md` - State Doctor, backup, restore planning, schemas, locks, and archive threat model
-- `VERIFIED_MAINTENANCE.md` - Helm Action Center planning, confirmation, verification, interruption, and recovery behavior
+- `VERIFIED_MAINTENANCE.md` - Action Center planning, confirmation, verification, interruption, and recovery behavior
 - `CONTRIBUTING.md` - Development and contribution workflow
 - `images/user-guide/README.md` - Screenshot catalog and naming map
 - `images/user-guide/` - Current UI screenshots used across user docs
@@ -21,6 +21,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `../CHANGELOG.md` - Full change history
 - `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
 - `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
+- `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist
 - `RELEASE_CHECKLIST.md` - Release execution checklist
 - `checklists/DEPLOYMENT-CHECKLIST.md` - Deployment readiness checklist
 
@@ -43,6 +44,6 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are aligned to `v14.0.0 "Helm"` for verified Action Center maintenance, state recovery, Fedora 44 support, and Fedora 45 preview checks.
+- User-facing guides are aligned to `v15.0.0 "Essentials"`: six Standard destinations, optional Advanced mode, canonical Home and search, verified Action Center maintenance, state recovery, Fedora 44 support, and Fedora 45 preview checks.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.

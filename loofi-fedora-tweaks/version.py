@@ -3,6 +3,6 @@ Centralized version information for Loofi Fedora Tweaks.
 All version references should import from this module.
 """
 
-__version__ = "14.0.0"
-__version_codename__ = "Helm"
+__version__ = "15.0.0"
+__version_codename__ = "Essentials"
 __app_name__ = "Loofi Fedora Tweaks"

@@ -69,6 +69,47 @@
 | v12.0.0 | Lighthouse                      | DONE    | Proactive health observability, My Fedora Today timeline, and guided recovery                |
 | v13.0.0 | Anchor                          | DONE    | State integrity, recovery, observability convergence, and reproducible releases              |
 | v14.0.0 | Helm                            | DONE    | Verified guided maintenance, bounded execution, and release lineage assurance                |
+| v15.0.0 | Essentials                      | ACTIVE  | Six-destination UX, canonical Home, true lazy loading, and logical component isolation        |
+
+---
+
+## [ACTIVE] v15.0.0 "Essentials" — Product Simplification
+
+**Theme**: Make normal Fedora maintenance obvious while preserving every v14
+trust and compatibility contract.
+**Focus**: Six destinations, one Home, one search surface, Standard/Advanced
+modes, five core workflows, startup efficiency, and logical component isolation.
+
+### Delivered locally
+
+- [x] Six flat Standard destinations and one optional Advanced destination
+- [x] Central navigation policy with stable route, favorite, alias, and deep-link compatibility
+- [x] Data-only plugin specifications, true top-level lazy loading, and conditional startup services
+- [x] One canonical Home and one policy-backed route/settings/action search surface
+- [x] Five guided workflows with Action Center kept as the sole plan/run/verify UI
+- [x] Standard/Advanced migration, responsive welcome, Repair Loofi, About, and simplified shell
+- [x] System-default visual foundation, semantic icons, accessible shared states, and responsive validation
+- [x] Logical core/specialist discovery, reduced base dependencies, preserved API/daemon packages, and extras NO-GO evidence
+- [x] v15 metadata, architecture, guides, release notes, AppStream descriptions, and real-app screenshots
+- [ ] Exact release commit, CI/COPR/install-upgrade gates, publication, and public readback
+
+### Compatibility
+
+- The v14 Action Center catalog, plans, confirmation, verification, leases,
+  history, and interrupted-run behavior are unchanged.
+- Existing settings, profiles, first-run sentinels, state schemas, routes,
+  favorites, CLI JSON, API, daemon, IPC, Traditional, and Atomic behavior remain
+  compatible.
+- Specialist tools remain in the base RPM and load on demand. A physical extras
+  RPM is deferred to v16 because package ownership and non-GUI dependency
+  closures still overlap.
+
+### Release lineage
+
+The historical pre-renormalization `v15.0.0 "Nebula"` tag object is preserved
+on origin as `legacy-v15.0.0-nebula`, and the conflicting canonical tag was
+removed deliberately. Essentials stays ACTIVE until the new exact release
+commit, terminal publication gates, and public readback are complete.
 
 ---
 

@@ -5,23 +5,22 @@
   <project_license>MIT</project_license>
 
   <name>Loofi Fedora Tweaks</name>
-  <summary>Complete Fedora system management with AI, security, and window management</summary>
+  <summary>Fedora maintenance and desktop control center</summary>
 
   <description>
     <p>
-      A comprehensive GUI control center for Fedora KDE 44 covering system maintenance,
-      developer tooling, AI integration, security hardening, window management,
-      virtualization, mesh networking, and workspace state management.
+      A focused GUI control center for Fedora KDE 44 covering software, maintenance,
+      system inspection, security, recovery, desktop configuration, and application
+      settings.
     </p>
     <p>Features include:</p>
     <ul>
       <li>Fedora KDE 44 Readiness Center — diagnostics for Plasma, Wayland, DNF5, Flatpak, NVIDIA, and more</li>
       <li>Security Center with polkit-managed privileged operations</li>
-      <li>VM Quick-Create and VFIO GPU Passthrough</li>
-      <li>AI Lab integration</li>
-      <li>Loofi Link Mesh networking</li>
-      <li>State Teleport workspace snapshots</li>
-      <li>Replicator IaC / Ansible export</li>
+      <li>Verified Action Center planning, confirmation, execution, and outcome checks</li>
+      <li>Software installation, updates, package cleanup, and repository management</li>
+      <li>System inspection, performance diagnosis, storage, security, and recovery tools</li>
+      <li>Specialist development, AI, virtualization, automation, and sharing tools available through Advanced routes</li>
       <li>Optional headless Web API and user daemon</li>
     </ul>
   </description>
@@ -41,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="15.0.0" date="2026-07-18">
+      <description>
+        <p>v15.0.0 "Essentials" - Product Simplification and Startup Efficiency</p>
+        <ul>
+          <li>Replaced the default tree with six clear destinations and one optional Advanced destination</li>
+          <li>Added one canonical Home and one policy-backed route, setting, and action search surface</li>
+          <li>Deferred built-in plugin imports and construction until their routes are opened</li>
+          <li>Preserved verified Action Center, state, Traditional/Atomic, route, CLI, API, and daemon contracts</li>
+          <li>Added logical core and specialist isolation while deferring a physical extras RPM until its ownership boundary is safe</li>
+        </ul>
+      </description>
+    </release>
     <release version="14.0.0" date="2026-07-17">
       <description>
         <p>v14.0.0 "Helm" - Verified Guided Maintenance</p>

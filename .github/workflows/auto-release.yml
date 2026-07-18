@@ -581,29 +581,17 @@ jobs:
           echo "Release assets:"
           ls -lh release-assets/ 2>/dev/null || echo "No assets found"
 
-      - name: Generate checksums and CycloneDX SBOM
+      - name: Generate checksums, CycloneDX SBOM, and in-toto provenance
         run: |
-          cd release-assets
-          find . -maxdepth 1 -type f ! -name 'SHA256SUMS.txt' ! -name 'loofi-fedora-tweaks.cdx.json' -printf '%f\n' | sort | xargs -r sha256sum > SHA256SUMS.txt
-          python3 - <<'PY'
-          import hashlib, json, pathlib, uuid
-          root = pathlib.Path('.')
-          components = []
-          for path in sorted(root.iterdir()):
-              if not path.is_file() or path.name in {'SHA256SUMS.txt', 'loofi-fedora-tweaks.cdx.json'}:
-                  continue
-              components.append({
-                  'type': 'file', 'name': path.name,
-                  'hashes': [{'alg': 'SHA-256', 'content': hashlib.sha256(path.read_bytes()).hexdigest()}],
-              })
-          payload = {
-              'bomFormat': 'CycloneDX', 'specVersion': '1.5', 'serialNumber': f'urn:uuid:{uuid.uuid4()}',
-              'version': 1, 'metadata': {'component': {'type': 'application', 'name': 'loofi-fedora-tweaks'}},
-              'components': components,
-          }
-          pathlib.Path('loofi-fedora-tweaks.cdx.json').write_text(json.dumps(payload, indent=2) + '\n')
-          PY
-          sha256sum -c SHA256SUMS.txt
+          TAG="v$(python3 -c "import sys; sys.path.insert(0,'loofi-fedora-tweaks'); from version import __version__; print(__version__)")"
+          RUN_URL="${GITHUB_SERVER_URL}/${GITHUB_REPOSITORY}/actions/runs/${GITHUB_RUN_ID}"
+          python3 scripts/generate_release_evidence.py release-assets \
+            --source-sha "$GITHUB_SHA" \
+            --tag "$TAG" \
+            --repository "$GITHUB_REPOSITORY" \
+            --workflow-run "$RUN_URL"
+          python3 scripts/generate_release_evidence.py release-assets \
+            --verify --source-sha "$GITHUB_SHA" --tag "$TAG"
 
       - name: Resolve release tag
         id: release_meta
@@ -680,6 +668,7 @@ jobs:
             release-assets/*.tar.gz
             release-assets/SHA256SUMS.txt
             release-assets/*.cdx.json
+            release-assets/*.intoto.jsonl
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
 

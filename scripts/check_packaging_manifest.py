@@ -25,6 +25,7 @@ EXPECTED_SOURCE_SUFFIXES = (
     "core/navigation/models.py",
     "core/navigation/policy.py",
     "core/plugins/spec.py",
+    "core/plugins/components.py",
     "core/executor/command_facade.py",
     "core/executor/command_policy.py",
     "ui/layout_primitives.py",

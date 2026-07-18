@@ -1,15 +1,19 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v12.0.0 "Lighthouse" includes a read-only release readiness center, guided Upgrade Assistant, Unified Action Center preview flow, and My Fedora Today health timeline. Fedora KDE 44 is the supported stable target. Fedora 45 remains preview-only and advisory.
+Loofi Fedora Tweaks v15.0.0 "Essentials" keeps the read-only release
+readiness center, guided Upgrade Assistant, verified Action Center entry points,
+and health history inside the six-destination shell. Fedora KDE 44 is the
+supported stable target. Fedora 45 remains preview-only and advisory.
 
 ## Run It
 
 GUI:
 
-- Open **Home**.
-- Choose **Upgrade Assistant** for guided planning or **Release Readiness** for the detailed report.
-- Review beginner guidance first.
-- Use **Advanced** only when you need raw command/status details.
+- Open **Software & Updates → Upgrade Assistant**, or use global search for
+  **Release Readiness**.
+- Review the summary guidance first.
+- Expand advanced report details only when you need raw command/status context;
+  this is independent of the application's Standard/Advanced navigation mode.
 - Use **Action Inbox** to review candidate actions. There is no fix-all action.
 
 CLI:
@@ -75,7 +79,7 @@ Rules:
 - Manual-only recommendations cannot be executed.
 - Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 
-## Support Bundle v8
+## Support Bundle v10
 
 Support bundles now include privacy-masked generic `release_readiness` data, release planning metadata, guided action context, Action Center context, and My Fedora Today observability context:
 

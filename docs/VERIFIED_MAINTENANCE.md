@@ -1,8 +1,8 @@
 # Verified Maintenance
 
-v14.0.0 "Helm" makes a small set of maintenance actions reviewable and
-verifiable without adding automatic repair behavior. Fedora 44 is the
-supported target; Fedora 45 remains preview/advisory.
+v15.0.0 "Essentials" preserves the complete v14 verified-maintenance contract
+while simplifying where it appears. Fedora 44 is the supported target; Fedora
+45 remains preview/advisory.
 
 ## Action Center workflow
 
@@ -47,7 +47,7 @@ plan, policy, run, and verification envelopes.
 | `restart-failed-service` | Unit must be present in a fresh failed-unit list | Unit is active and no longer failed |
 | `fstrim-all` | Requires discard support and the `fstrim` binary | Successful per-filesystem trim result |
 
-All other recommendations remain manual-only. Helm does not provide fix-all,
+All other recommendations remain manual-only. Essentials does not provide fix-all,
 scheduled repair, automatic rollback, automatic retry, remote API apply, or
 plugin/AI-provided executable actions.
 
@@ -57,3 +57,7 @@ Plans expire after 30 minutes and are re-preflighted before execution. Only one
 Action Center mutation can run across GUI and CLI processes. The read-only API
 can inspect plans and runs, and Support Bundle v10 exports redacted lifecycle
 evidence linked by run ID without raw command output or secrets.
+
+Home and global search may show attention or action entry points, but activation
+only opens `maintenance:action-center`. They never create, apply, verify, retry,
+or resume a plan. Standard and Advanced mode use the same safety policy.

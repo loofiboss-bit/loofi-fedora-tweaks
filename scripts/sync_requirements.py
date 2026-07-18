@@ -15,7 +15,12 @@ OUTPUT = ROOT / "requirements.txt"
 def render() -> str:
     data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     project = data["project"]
-    dependencies = [*project.get("dependencies", []), *project.get("optional-dependencies", {}).get("api", [])]
+    optional = project.get("optional-dependencies", {})
+    dependencies = [
+        *project.get("dependencies", []),
+        *optional.get("api", []),
+        *optional.get("daemon", []),
+    ]
     return "# Generated from pyproject.toml by scripts/sync_requirements.py; do not edit.\n" + "\n".join(dependencies) + "\n"
 
 

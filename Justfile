@@ -81,11 +81,11 @@ test-ci:
 
 # Lint with flake8
 lint:
-    flake8 {{src_root}}/ --max-line-length={{max_line_length}} --ignore={{flake8_ignore}}
+    if [ -x .venv/bin/flake8 ]; then .venv/bin/flake8 {{src_root}}/ --max-line-length={{max_line_length}} --ignore={{flake8_ignore}}; else flake8 {{src_root}}/ --max-line-length={{max_line_length}} --ignore={{flake8_ignore}}; fi
 
 # Type check with mypy
 typecheck:
-    mypy {{src_root}}/ --ignore-missing-imports --no-error-summary
+    if [ -x .venv/bin/mypy ]; then .venv/bin/mypy {{src_root}}/ --ignore-missing-imports --no-error-summary; else mypy {{src_root}}/ --ignore-missing-imports --no-error-summary; fi
 
 # Run pre-commit hooks on all files
 pre-commit:

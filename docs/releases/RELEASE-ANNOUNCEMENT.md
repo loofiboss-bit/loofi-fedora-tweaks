@@ -1,58 +1,53 @@
-# Loofi Fedora Tweaks v14.0.0 "Helm" Release Announcement
+# Loofi Fedora Tweaks v15.0.0 "Essentials" Release Announcement
 
 ## TL;DR
 
-Loofi Fedora Tweaks v14.0.0 "Helm" is now available with expiring Action Center plans, explicit confirmation, bounded first-party maintenance actions, separate outcome verification, and exact release-lineage assurance. Fedora KDE 44 remains the stable supported target, while Fedora 45 remains preview-only and advisory.
+Essentials gives Loofi Fedora Tweaks a smaller, faster default experience: six
+destinations, one Home, one search surface, and Standard or Advanced mode. The
+v14 Action Center, state integrity, Fedora safety, routes, CLI, API, and daemon
+contracts remain intact.
 
-**Install:**
+Publication is pending exact release-tag lineage and the remaining remote
+release gates. This file is the prepared announcement, not a claim that v15 is
+already live.
+
+## Highlights
+
+- Six Standard destinations: Home, Software & Updates, System, Network &
+  Security, Desktop, and Settings.
+- One optional Advanced destination for specialist tools.
+- One read-only Home and one policy-backed route/settings/action search surface.
+- Meaningful Home measured 96.66% faster with 29.20% lower RSS than the recorded
+  v14 baseline.
+- Five clearer workflows for updates, application installation, slow-system
+  diagnosis, disk reclaim analysis, and recovery protection.
+- Logical core/specialist isolation without an unsafe physical RPM split.
+- The verified Action Center remains explicit, plan-based, deny-by-default, and
+  separately verified.
+
+## Install or upgrade
+
+After the release is published:
 
 ```bash
 pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
-pkexec dnf install loofi-fedora-tweaks
+pkexec dnf upgrade loofi-fedora-tweaks
 ```
 
-**GitHub Release:** https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v14.0.0
-
----
-
-## What's New
-
-- Review preflight, command, privilege, risk, rollback readiness, execution, and verification in one Action Center flow.
-- Execute only audited DNF cache, selected failed-service, and supported SSD trim actions.
-- Preserve expiring plans and interrupted runs without automatic retry, rollback, or fix-all behavior.
-- Inspect redacted plan/run evidence through Support Bundle v10 and authenticated read-only API routes.
-- Verify source, tag, GitHub assets, and Fedora 44/COPR packages against the same commit.
-
----
-
-## Installation & Usage
-
-**Fedora 44 via COPR:**
-
-```bash
-pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
-pkexec dnf install loofi-fedora-tweaks
-```
-
-**Optional runtimes:**
+Optional runtimes remain separate:
 
 ```bash
 pkexec dnf install loofi-fedora-tweaks-api
 pkexec dnf install loofi-fedora-tweaks-daemon
 ```
 
-**Run the app or CLI:**
-
-```bash
-loofi-fedora-tweaks
-loofi-fedora-tweaks --cli info
-```
-
----
-
 ## Links
 
-- **GitHub Release**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v14.0.0
-- **Full Changelog**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CHANGELOG.md
-- **Architecture Guide**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md
-- **Report Issues**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues
+- **Release notes**: `docs/releases/RELEASE-NOTES-v15.0.0.md`
+- **Changelog**: `CHANGELOG.md`
+- **Architecture**: `ARCHITECTURE.md`
+- **Issue tracker**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
+
+The GitHub release URL will be
+<https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0>
+after exact-lineage publication succeeds.

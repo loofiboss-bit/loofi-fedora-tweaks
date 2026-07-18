@@ -1,8 +1,8 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        14.0.0
+Version:        15.0.0
 Release:        1%{?dist}
-Summary:        Complete Fedora system management with AI, security, and window management
+Summary:        Fedora maintenance and desktop control center
 
 License:        MIT
 URL:            https://github.com/loofiboss-bit/loofi-fedora-tweaks
@@ -22,22 +22,21 @@ Requires:       mesa-libEGL
 Requires:       polkit
 Requires:       /usr/bin/notify-send
 Requires:       hicolor-icon-theme
-Requires:       google-noto-color-emoji-fonts
 
 # Version renormalization: 50.0.0 → 1:1.0.0
 Obsoletes:      loofi-fedora-tweaks < 1:1.0.0
 Provides:       loofi-fedora-tweaks = 1:%{version}-%{release}
 
 %description
-A comprehensive GUI application for Fedora KDE with
-system maintenance, developer tooling, AI integration,
-security hardening, window management, virtualization,
-mesh networking, and workspace state teleportation.
+A Fedora KDE control center for software, maintenance, system inspection,
+security, recovery, desktop configuration, and application settings. The base
+package includes the GUI and CLI. Specialist tools such as development, local
+AI, virtualization, automation, and device sharing are logically isolated and
+loaded only when their Advanced routes are opened.
 
-v14.0.0 Helm adds expiring Action Center plans, explicit
-confirmation, bounded first-party actions, verified outcomes,
-and release-lineage assurance while keeping Fedora KDE 44 as
-the stable supported target and Fedora 45 as preview-only.
+The verified Action Center keeps planning, confirmation, execution, and outcome
+verification separate. Fedora KDE 44 remains the stable supported target and
+Fedora 45 remains preview-only.
 
 %package api
 Summary:        Optional Loofi Fedora Tweaks Web API runtime
@@ -162,6 +161,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Sat Jul 18 2026 Loofi <loofi@example.com> - 15.0.0-1
+- v15.0.0 "Essentials" - Six destinations, canonical Home, true lazy loading, logical component isolation, and preserved v14 trust contracts
+
 * Fri Jul 17 2026 Loofi <loofi@example.com> - 14.0.0-1
 - v14.0.0 "Helm" - Verified guided maintenance, bounded actions, durable plans, outcome verification, and exact release lineage
 
@@ -371,8 +373,8 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 * Sun Feb 08 2026 Loofi <loofi@example.com> - 17.0.0-1
 - v17.0 Atlas: Performance, Snapshots, Smart Logs, Storage, Network
 
-* Sun Feb 08 2026 Loofi <loofi@example.com> - 15.0.0-1
-- v15.0 Nebula: Auto-Tuner, Snapshot Timeline, Smart Logs
+* Sun Feb 08 2026 Loofi <loofi@example.com> - 15.0.0-1 [legacy pre-renormalization]
+- Historical v15.0 Nebula line: Auto-Tuner, Snapshot Timeline, Smart Logs
 
 * Sun Feb 08 2026 Loofi <loofi@example.com> - 13.5.0-1
 - UX Polish: Settings system, light theme, keyboard shortcuts

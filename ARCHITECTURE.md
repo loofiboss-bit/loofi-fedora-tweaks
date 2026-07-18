@@ -1,342 +1,257 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> **Canonical architecture reference.** All agent and instruction files MUST reference this document
-> instead of duplicating architecture details. This file is updated when structure changes.
+> Canonical architecture reference. Agent and instruction files link here
+> instead of duplicating project structure and invariants.
 >
-> **Version**: 14.0.0 "Helm" | **Python**: 3.12+ | **Framework**: PyQt6 | **Platform**: Fedora KDE 44
+> **Version**: 15.0.0 "Essentials" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 
-## Project Structure
+## Runtime entry modes
+
+All entry modes start in `loofi-fedora-tweaks/main.py`.
+
+| Mode | Flag | Boundary |
+| --- | --- | --- |
+| GUI | default | `ui.main_window.MainWindow` and lazy PyQt widgets |
+| CLI | `--cli` | `cli.main`; parsing and service/core calls only |
+| Daemon | `--daemon` | `daemon.runtime`; D-Bus host and compatibility fallback |
+| Web API | `--web` | Authenticated read-only HTTP inspection API |
+
+The CLI never imports UI. API and daemon subpackages retain separate runtime
+dependencies and require the exact base RPM EVR.
+
+## Source layout and layer rules
 
 ```text
-loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
-├── main.py                   # Entry point — GUI (default), CLI (--cli), Daemon (--daemon)
-├── version.py                # __version__, __version_codename__, __app_name__
-├── core/                     # Business logic and system services [v4.0 Hub]
-│   ├── diagnostics/          # Health & Repair Autopilot (HRA)
-│   │   ├── health_registry.py# Central registry for system checks
-│   │   ├── health_model.py   # Structured HealthCheck/HealthResult schemas
-│   │   ├── release_readiness.py# Fedora KDE 44 release readiness aggregation
-│   │   ├── readiness_actions.py# v7 safe action planning bridge
-│   │   ├── fedora44_readiness.py# Compatibility facade
-│   │   ├── upgrade_checker.py# Fedora version transition assistant
-│   │   ├── task_dashboard.py # Goal-oriented task logic
-│   │   └── gaming_audit.py   # Specialized hardware/gaming diagnostics
-│   ├── executor/             # Action execution and safety
-│   │   ├── action_model.py   # SystemAction with risk/rollback metadata
-│   │   ├── action_executor.py# Centralized safe command runner
-│   │   ├── command_facade.py # v9 command-vector preview/execute facade
-│   │   └── command_policy.py # Shared executor/API command allowlist
-│   ├── navigation/           # Route manifest, focused navigation areas, and route validation
-│   ├── state/                # XDG paths, schemas, atomic I/O, migrations, inventory, backup, doctor
-│   ├── observability/        # Metric/snapshot stores behind one status and collector facade
-│   ├── export/               # Diagnostic export services
-│   │   ├── support_bundle_v5.py# Aegis support diagnostics and redaction
-│   │   ├── support_bundle_v4.py# Compatibility wrapper
-│   │   └── ansible_exporter.py # ANSIBLE export logic
-│   ├── plugins/              # Plugin discovery and loading logic
-│   ├── agents/               # AgentRegistry, AgentPlanner, AgentExecutor
-│   └── ai/                   # AI logic and prompt templates
-├── ui/                       # PyQt6 widgets — Feature tabs + base class
-│   ├── base_tab.py           # BaseTab ABC — shared CommandRunner wiring
-│   ├── atlas_dashboard_tab.py# v4.0 Home - Task-based entry point
-│   ├── task_wizard.py        # v4.0 Guided 4-step repair lifecycle
-│   ├── support_bundle_wizard.py# v4.0 Export UI
-│   ├── main_window.py        # MainWindow with sidebar + lazy-loaded tab stack
-│   ├── icon_pack.py          # Semantic icon resolver + theme-aware tinting
-│   ├── lazy_widget.py        # Lazy tab loader
-│   ├── wizard.py             # First-run wizard
-│   └── ...                   # Feature tabs (maintenance, software, etc.)
-├── utils/                    # Shared utilities
-│   ├── commands.py           # PrivilegedCommand builder (pkexec)
-│   ├── command_runner.py     # CommandRunner (QProcess async wrapper)
-│   ├── system.py             # SystemManager (Atomic detection, etc.)
-│   ├── experience_level.py   # Beginner/Intermediate/Advanced modes
-│   └── ...
-├── services/                 # Legacy/Niche domain services
-├── cli/                      # CLI subcommands
-├── config/                   # Apps and polkit policies
-└── web/                      # Web dashboard logic
+loofi-fedora-tweaks/
+├── main.py                 # Entry-mode dispatch
+├── version.py              # Version and codename authority
+├── core/
+│   ├── actions/            # Verified Action Center contracts and lifecycle
+│   ├── home/               # PyQt-free Home composition and recommendations
+│   ├── navigation/         # Destinations, routes, policy, search, migrations
+│   ├── observability/      # Health metrics/snapshots and read-only status
+│   ├── plugins/            # Data-only specs, discovery, registry, lazy loader
+│   ├── state/              # XDG inventory, schemas, atomic I/O, backup/restore
+│   └── workflows/          # Five canonical workflow contracts
+├── services/               # Domain services; no PyQt imports
+├── utils/                  # Shared infrastructure and compatibility shims
+├── ui/                     # PyQt6 widgets and presentation only
+├── cli/                    # CLI argument parsing and service calls
+├── daemon/                 # D-Bus runtime
+└── api/                    # Read-only HTTP routes
 ```
 
-## Three Entry Modes
+| Layer | Allowed | Forbidden |
+| --- | --- | --- |
+| `ui/*_tab.py` | PyQt widgets, signals, `BaseTab`, `CommandRunner` | `subprocess`, domain policy, shell execution |
+| `services/` | Domain logic and typed operations | PyQt and UI references |
+| `core/` | Domain models, policy, orchestration, persistence | PyQt and UI references |
+| `utils/` | Commands, runners, errors, shared infrastructure, compatibility adapters | Feature-specific UI ownership |
+| `cli/main.py` | Parsing and calls into services/core/utils | UI imports |
 
-
-| Mode       | Flag       | Module                   | Purpose                                    |
-| ---------- | ---------- | ------------------------ | ------------------------------------------ |
-| **GUI**    | (default)  | `main.py` → `MainWindow` | PyQt6 desktop app with registry-loaded tabs |
-| **CLI**    | `--cli`    | `cli/main.py`            | Subcommands with `--json` output           |
-| **Daemon** | `--daemon` | `daemon/runtime.py`      | D-Bus daemon host + legacy fallback        |
-
-## Layer Rules (STRICT)
-
-| Layer        | Path          | Allowed                                             | Forbidden                     |
-| ------------ | ------------- | --------------------------------------------------- | ----------------------------- |
-| **UI**       | `ui/*_tab.py` | PyQt6 widgets, signals, BaseTab                     | `subprocess`, business logic  |
-| **Services** | `services/*/` | Domain services (security, network, storage, etc.)  | `import PyQt6`, UI references |
-| **Core**     | `core/*/`     | Domain modules (agents, ai, diagnostics, export)    | `import PyQt6`, UI references |
-| **Utils**    | `utils/*.py`  | Shared ops, commands, errors; backward-compat shims | `import PyQt6`, UI references |
-| **CLI**      | `cli/main.py` | Argument parsing, calls services/core/utils         | `import ui`, PyQt6            |
-
-**Key rule**: `services/` and `core/` hold domain logic. `utils/` retains shared infrastructure (`commands.py`, `errors.py`, `operations.py`) and backward-compatible shims. GUI and CLI are consumers only.
-
-### Explicit Qt Runtime Exceptions
-
-Most `core/` and `services/` code must remain PyQt-free. The allowed PyQt imports are bridge modules that exist to host or type UI workers/plugins, plus one legacy service confirmation bridge kept for backward compatibility:
+Qt imports in `core/` or `services/` are restricted to the bridge allowlist
+enforced by `tests/test_architecture_imports.py`:
 
 - `core/workers/base_worker.py`
 - `core/workers/command_worker.py`
 - `core/plugins/interface.py`
 - `core/plugins/adapter.py`
-- `services/security/safety.py` (`SafetyManager.confirm_action()` legacy UI confirmation bridge)
+- `services/security/safety.py`
 
-`tests/test_architecture_imports.py` enforces this allowlist. New domain logic must not add PyQt imports to `core/` or `services/`.
+## Destination and route architecture
 
-## Tab Layout And Routes
+Stable route IDs in `core/navigation/manifest.py` remain canonical.
+`core/navigation/destinations.py` groups them into the v15 shell; it does not
+replace them with a parallel namespace.
 
-Built-in feature tabs are sourced from `core/plugins/loader.py` and `PluginRegistry`; release gates validate the live loader count instead of relying on prose counts. Route-level navigation is defined in `core/navigation/manifest.py`, where plugin routes and subroutes such as `maintenance:updates`, `software:apps`, and `system-monitor:processes` are stable IDs.
+Standard mode contains exactly:
 
-### Focused Navigation Areas
+| Order | Destination ID | Label | Default route |
+| ---: | --- | --- | --- |
+| 1 | `home` | Home | `atlas_dashboard` |
+| 2 | `software_updates` | Software & Updates | `software:apps` |
+| 3 | `system` | System | `system_info` |
+| 4 | `network_security` | Network & Security | `network` |
+| 5 | `desktop` | Desktop | `desktop` |
+| 6 | `settings` | Settings | `settings` |
 
-The route manifest keeps the stable plugin and subroute contract. `core/navigation/areas.py` groups those routes into the focused sidebar without importing PyQt.
+Advanced mode adds one `advanced` destination. The shared
+`DestinationSidebar` owns primary selection and `DestinationHost` owns secondary
+route selection. Standard mode does not render a nested plugin tree.
 
-| Order | Area               | Icon                   | Default role                              |
-| ----- | ------------------ | ---------------------- | ----------------------------------------- |
-| 1     | Home               | `home`                 | Launch page, task cards, readiness        |
-| 2     | Software & Updates | `packages-software`    | Apps, repositories, updates, maintenance  |
-| 3     | System & Hardware  | `hardware-performance` | System info, monitoring, hardware, disks  |
-| 4     | Network & Security | `security-shield`      | Connectivity, privacy, firewall, backup   |
-| 5     | Desktop & Settings | `appearance-theme`     | Desktop, app settings, profiles, tooling  |
-| 6     | More               | `developer-tools`      | Advanced, automation, community, and logs |
+`NavigationPolicy` evaluates navigation mode, Fedora variant, capability,
+component availability, and compatibility redirects. Missing or incomplete
+specialist components fail closed with an unavailable/explanation result.
+Aliases, favorites, saved last routes, direct links, and `switch_to_route()`
+continue to resolve through compatibility mappings.
 
-| Route/plugin ID    | Tab                | File                     | Consolidates                             |
-| ------------------ | ------------------ | ------------------------ | ---------------------------------------- |
-| `atlas_dashboard`  | Home               | `atlas_dashboard_tab.py` | Task cards and guided entry              |
-| `dashboard`        | Live Overview      | `dashboard_tab.py`       | Dashboard                                |
-| `system_info`      | System Info        | `system_info_tab.py`     | System details                           |
-| `monitor`          | System Monitor     | `monitor_tab.py`         | Performance + Processes                  |
-| `maintenance`      | Maintenance        | `maintenance_tab.py`     | Updates + Cleanup + Overlays             |
-| `hardware`         | Hardware           | `hardware_tab.py`        | Hardware + HP Tweaks + Bluetooth         |
-| `software`         | Software           | `software_tab.py`        | Apps + Repos                             |
-| `security`         | Security & Privacy | `security_tab.py`        | Security + Privacy                       |
-| `network`          | Network            | `network_tab.py`         | Connections + DNS + Privacy + Monitoring |
-| `gaming`           | Gaming             | `gaming_tab.py`          | Gaming setup                             |
-| `desktop`          | Desktop            | `desktop_tab.py`         | Director + Theming                       |
-| `development`      | Development        | `development_tab.py`     | Containers + Developer tools             |
-| `ai_lab`           | AI Lab             | `ai_enhanced_tab.py`     | AI features                              |
-| `automation`       | Automation         | `automation_tab.py`      | Scheduler + Replicator + Pulse           |
-| `community`        | Community          | `community_tab.py`       | Presets + Marketplace                    |
-| `diagnostics`      | Diagnostics        | `diagnostics_tab.py`     | Watchtower + Boot                        |
-| `virtualization`   | Virtualization     | `virtualization_tab.py`  | VMs + VFIO + Disposable                  |
-| `mesh`             | Loofi Link         | `mesh_tab.py`            | Mesh + Clipboard + File Drop             |
-| `teleport`         | State Teleport     | `teleport_tab.py`        | Workspace Capture/Restore                |
-| `performance`      | Performance        | `performance_tab.py`     | Auto-Tuner                               |
-| `snapshots`        | Snapshots          | `snapshot_tab.py`        | Snapshot Timeline                        |
-| `logs`             | Logs               | `logs_tab.py`            | Smart Log Viewer                         |
-| `storage`          | Storage            | `storage_tab.py`         | Disks + Mounts + SMART                   |
-| `health`           | Health Timeline    | `health_timeline_tab.py` | System health over time                  |
-| `profiles`         | Profiles           | `profiles_tab.py`        | User profiles management                 |
-| `extensions`       | Extensions         | `extensions_tab.py`      | GNOME/KDE extensions browser             |
-| `backup`           | Backup             | `backup_tab.py`          | Backup wizard + Timeshift/Snapper        |
-| `agents`           | Agents             | `agents_tab.py`          | AI agent management                      |
-| `settings`         | Settings           | `settings_tab.py`        | App settings                             |
+## Standard and Advanced modes
 
-Consolidated tabs use `QTabWidget` for sub-navigation within the tab.
+`utils/navigation_mode.py` is the sole post-migration settings authority:
 
-### Sidebar Index And Routes (v14.0.0)
-
-The sidebar uses a `SidebarIndex` (`dict[str, SidebarEntry]`) keyed by `PluginMetadata.id` for O(1) tab lookups. `SidebarEntry` holds the tree item, page widget, metadata, and status. Route IDs are resolved through `core.navigation`; Favorites v2 persists route/plugin IDs rather than display-name-derived slugs.
-
-Key methods:
-
-- `_find_or_create_category(category)` — cached category item lookup
-- `_create_tab_item(...)` — creates tree item with badge and icon
-- `_register_in_index(plugin_id, entry)` — populates index and content area
-- `add_page(...)` — public API orchestrator (backward-compatible)
-- `switch_to_route(route_id)` — canonical route/plugin navigation with subroute activation
-- `switch_to_tab(name)` — backward-compatible alias wrapper
-- `_set_tab_status(tab_id, status)` — O(1) status update via data role
-
-Status rendering uses `SidebarItemDelegate` with colored dots instead of text markers.
-
-## Critical Patterns
-
-### 1. PrivilegedCommand (ALWAYS unpack)
-
-```python
-from utils.commands import PrivilegedCommand
-
-binary, args, desc = PrivilegedCommand.dnf("install", "package")
-cmd = [binary] + args  # ["pkexec", "dnf", "install", "-y", "package"]
-# ⚠️ Never pass the raw tuple to subprocess.run()
+```text
+navigation_mode = standard | advanced
 ```
 
-- Returns `Tuple[str, List[str], str]` — binary, args, description
-- Auto-detects Atomic (rpm-ostree) vs Traditional (dnf)
-- `dnf()` adds `-y` internally — don't duplicate
+Legacy Beginner/Intermediate/Advanced values are accepted only by idempotent
+migration adapters. Standard is the default. Advanced reveals policy-approved
+specialist routes but never changes confirmation, privilege, or execution
+rules. Returning to Standard preserves hidden settings and pins.
 
-### 2. BaseTab for UI Tabs
+## Plugin and component lifecycle
 
-```python
-from ui.base_tab import BaseTab
+`core/plugins/spec.py` defines immutable, data-only `PluginSpec` objects for all
+built-ins. A spec contains labels, route/destination metadata, module/class
+names, visibility, and `core` or `specialist` component membership. Reading a
+spec never imports its UI module.
 
-class MyTab(BaseTab):
-    def __init__(self):
-        super().__init__()
-        # Provides: self.output_area, self.runner (CommandRunner),
-        # self.run_command(), self.append_output(), self.add_section()
-```
+Startup sequence:
 
-### 3. CommandRunner (Async GUI)
+1. Register specs.
+2. Discover complete installed components from module files.
+3. Build destination and secondary navigation from specs and policy.
+4. Construct canonical Home only.
+5. On route activation, `PluginLoader` imports and constructs that plugin.
+6. Cache one instance and stop owned timers/threads on teardown.
 
-```python
-from utils.command_runner import CommandRunner
-self.runner = CommandRunner()
-self.runner.finished.connect(self.on_done)
-self.runner.run_command("pkexec", ["dnf", "update", "-y"])
-```
+The initial Home marker performs no subprocess probes or mutations and owns no
+running worker thread or active timer. `scripts/benchmark_startup.py` records
+milestones, RSS, imports, plugin instances, widgets, timers, threads, probes,
+and installed components.
 
-Never block the GUI thread with synchronous subprocess calls.
+v15 keeps specialist modules in the base RPM. Static analysis found overlapping
+core/specialist and CLI/API/daemon closures, so a physical extras RPM is unsafe
+until v16 defines non-overlapping file ownership.
 
-### 3b. CommandFacade (Shared Preview/Execute Boundary)
+## Canonical Home
 
-```python
-from core.executor import CommandFacade
+`core/home` is PyQt-free. `HomeService` reads existing persisted health, state,
+history, notification, Action Center plan/run, and backup-related sources once
+and returns a bounded `HomeSummary`. It does not collect new metrics or mutate
+the host.
 
-result = CommandFacade().preview(["dnf", "check-update"], action_id="updates-preview")
-result = CommandFacade().execute(["dnf", "clean", "all"], privileged=True, timeout=120)
-```
+Recommendations are deterministic and prioritize state corruption,
+interrupted/failed Action Center runs, pending reboot, security/health problems,
+updates, stale data, and ready plans. Home may link to
+`maintenance:action-center`; it never embeds its planner or executes an action.
+The legacy `dashboard` route redirects to System and is not a second Home.
 
-Use list-based command vectors. The facade delegates to `ActionExecutor` and `command_policy`, preserving allowlist validation, `pkexec`, timeout handling, action IDs, and audit metadata. Do not pass shell strings.
+## Global search
 
-### 4. Operations Tuple Pattern
+`core/navigation/search.py` owns the single PyQt-free search index for routes,
+settings, configured migrated actions, and the three Action Center entry
+points. Every result passes `NavigationPolicy`.
 
-```python
-@staticmethod
-def clean_cache() -> Tuple[str, List[str], str]:
-    pm = SystemManager.get_package_manager()
-    if pm == "rpm-ostree":
-        return ("pkexec", ["rpm-ostree", "cleanup", "--base"], "Cleaning...")
-    return ("pkexec", ["dnf", "clean", "all"], "Cleaning...")
-```
+- `Ctrl+K`: all policy-visible results.
+- `Ctrl+Shift+K`: the same model filtered to actions.
+- Activation returns a route and optional preselection metadata only.
+- No result carries a command vector or executable callback.
 
-### 5. Error Framework
+## Core workflows
 
-```python
-from utils.errors import LoofiError, DnfLockedError, CommandFailedError
-raise DnfLockedError(hint="Package manager is busy.")
-# Each error has: code, hint, recoverable attributes
-```
+`core/workflows` defines five canonical entry contracts:
 
-### 6. Confirm Dialog (Dangerous Ops)
+- update the system;
+- install an application;
+- diagnose a slow system;
+- analyze reclaimable disk space;
+- protect the system with backup/recovery.
 
-```python
-from ui.confirm_dialog import ConfirmActionDialog
-if ConfirmActionDialog.confirm(self, "Delete snapshots", "Cannot be undone"):
-    # proceed
-```
+UI presentation may reuse existing tabs and services, but workflow decisions,
+Traditional/Atomic branches, confirmations, and safe alternatives remain in
+their established domain layers. `scripts/validate_v15_phase6_workflows.py`
+verifies the five routes without host probes or mutations.
 
-### 7. Atomic Fedora
+## Action Center invariants
 
-```python
-pm = SystemManager.get_package_manager()  # "dnf" or "rpm-ostree"
-if SystemManager.is_atomic():
-    # rpm-ostree path
-```
+`core/actions` remains protected v14 architecture. v15 changes placement and
+presentation only.
 
-Always use `SystemManager.get_package_manager()` — **never hardcode `dnf`**.
+- `maintenance:action-center` is the only Review/Plan/Run/Verify/History UI.
+- The executable catalog remains `dnf-clean-all`,
+  `restart-failed-service`, and `fstrim-all`.
+- Plans store validated action IDs/parameters, not authoritative command vectors.
+- Apply regenerates commands, runs fresh preflight, enforces expiry and explicit
+  confirmation, then executes through the existing privilege boundary.
+- Medium-risk actions without rollback require explicit acknowledgement.
+- `succeeded` requires the action verifier; exit code zero is insufficient.
+- One cross-process mutation lease is allowed. Interrupted runs are inspectable
+  and never auto-resume.
+- Home, search, API, plugins, and AI content cannot execute or expand the
+  catalog. The authenticated API remains read-only.
 
-### 8. Privilege Escalation
+## State and observability
 
-**Only `pkexec`** — never `sudo`. Policy: `config/org.loofi.fedora-tweaks.policy`.
+`core/state` owns XDG path inventory, schema migrations, atomic I/O, locks,
+State Doctor, privacy-safe archives, restore plans, and rollback archives.
+Unsupported future schemas are read-only. Writes use same-directory temporary
+files, `fsync`, atomic replace, readback, private permissions, and bounded
+last-known-good copies.
 
-### 9. Lazy Tab Loading
+`core/observability` keeps numeric SQLite metrics and structured JSON health
+snapshots distinct behind `ObservabilityService`. The daemon collector is
+read-only and never upgrades, cleans, resets, restores, flashes firmware, or
+restarts services.
 
-```python
-from core.plugins.loader import PluginLoader
-from core.plugins.registry import PluginRegistry
-from ui.lazy_widget import LazyWidget
+## Commands, privilege, and Fedora variants
 
-loader = PluginLoader(detector=detector)
-loader.load_builtins(context=context)
-for plugin in PluginRegistry.instance():
-    meta = plugin.metadata()
-    lazy_widget = LazyWidget(plugin.create_widget)
-    self.add_page(name=meta.name, icon=meta.icon, widget=lazy_widget, category=meta.category)
-```
+- Never use `sudo`; privileged GUI/CLI operations use typed `pkexec` boundaries.
+- Never use `shell=True`; commands are list-based.
+- Every subprocess call has a timeout.
+- Always unpack `PrivilegedCommand` before execution.
+- Use `SystemManager.get_package_manager()` and `SystemManager.is_atomic()`;
+  never hardcode DNF behavior for Atomic Fedora.
+- GUI commands run asynchronously through `BaseTab` and `CommandRunner`.
+- Shared preview/execute flows use `CommandFacade`, the central executor, and
+  command policy so allowlist, audit, timeout, and privilege metadata converge.
 
-### 10. Safety & History
+## UI conventions
 
-- `SafetyManager.confirm_action()` — snapshot prompt before risky ops
-- `HistoryManager.log_change()` — action log with undo commands (max 50)
+- User-facing strings use `self.tr("...")`.
+- Route cards expose a typed activation signal, stable route ID, keyboard
+  activation, visible focus, accessible name, and accessible description.
+- Standard workflows reuse shared loading, empty, unavailable, result, progress,
+  and details components without replacing domain state machines.
+- New profiles follow the Qt/KDE system palette and font. Explicit dark, light,
+  and high-contrast QSS remain user choices.
+- Semantic icon IDs resolve through `ui/icon_pack.py`; text carries status so
+  color and icons are never the only signal.
 
-### 10b. Settings And State Migration
+## Testing and release gates
 
-Saved UI state must be keyed by stable IDs, never translated labels. Migrations must be idempotent and tolerate missing legacy values for:
+New tests use `unittest` and `unittest.mock` style under pytest. Mock subprocess,
+file, OS, and network probes; use `@patch` decorators; cover Traditional and
+Atomic paths; keep tests rootless and deterministic.
 
-- theme and system-theme preference
-- experience level
-- favorite route/plugin IDs
-- hidden/default route visibility
-- main-window geometry and sidebar state
-
-### 11. Icon System (Semantic IDs + Theme Tint)
-
-- Sidebar, dashboard, and quick actions use semantic icon IDs (for example `home`, `update`, `security-shield`) instead of emoji glyphs.
-- Runtime loading and tinting are centralized in `ui/icon_pack.py`.
-- Icon roots are checked in this order:
-  - `assets/icons/`
-  - `loofi-fedora-tweaks/assets/icons/`
-- `icon-map.json` maps semantic IDs to assets; SVG is preferred with PNG fallback (`16`, `20`, `24`, `32`).
-- Main sidebar applies selection-aware tint variants so active rows are brighter and inactive rows stay integrated with the theme.
-
-## Testing Rules
-
-- **Framework**: `unittest` + `unittest.mock`
-- **Decorators only**: `@patch`, never context managers
-- **Mock everything**: `subprocess.run`, `check_output`, `shutil.which`, `os.path.exists`, `builtins.open`
-- **Both paths**: Test success AND failure
-- **No root**: Tests run in CI without privileges
-- **Path setup**: `sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))`
-- **Coverage**: 85%+ release gate
-
-## Adding a Feature
-
-1. **Logic**: `utils/new_feature.py` — `@staticmethod`, return ops tuples
-2. **UI**: `ui/new_feature_tab.py` — inherit `BaseTab`
-3. **CLI**: Subcommand in `cli/main.py` with `--json`
-4. **Test**: `tests/test_new_feature.py` — mock all system calls
-5. **Register**: plugin metadata + registry category with semantic `icon="..."` token (no emoji)
-6. **Docs**: `CHANGELOG.md`, `README.md`
-
-## Version Management
-
-Three files MUST stay in sync (use `scripts/bump_version.py` for cascade):
-
-- `loofi-fedora-tweaks/version.py` — `__version__`, `__version_codename__`
-- `loofi-fedora-tweaks.spec` — `Version:`
-- `pyproject.toml` — `version`
-
-## Build & Run
+Primary commands:
 
 ```bash
-./run.sh                                                    # Dev run
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v   # Tests
-bash scripts/build_rpm.sh                                   # Build RPM
-flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722,E203
+just test
+just test-coverage
+just lint
+just typecheck
+just verify
+just validate-release
+just check-packaging
+just check-drift
+just build-rpm
+just build-flatpak
+just build-sdist
 ```
 
-## Config & Conventions
+Coverage must remain at or above 85%. Release completion additionally requires
+Fedora review, Fedora 44 RPM install/upgrade, exact tag/source/artifact lineage,
+checksums, SBOM, CI/COPR terminal success, GitHub asset readback, and wiki
+readback.
 
-- **Config dir**: `~/.config/loofi-fedora-tweaks/`
-- **App catalog**: `config/apps.json`
-- **QSS**: `assets/modern.qss` — use `setObjectName()` for targeting
-- **Icon pack**: `assets/icons/` + `loofi-fedora-tweaks/assets/icons/` (`svg/`, `png/`, `icon-map.json`)
-- **i18n**: `self.tr("...")` for all user-visible strings
-- **Naming**: `ui/*_tab.py` → `*Tab`; `utils/*.py` → `*Manager`/`*Ops` with `@staticmethod`
-- **Plugins**: Extend `LoofiPlugin` ABC, place in `plugins/<name>/plugin.py`
-├── daemon/                   # D-Bus daemon host + validators + handlers (v2.4.0)
-│   ├── runtime.py            # Daemon bootstrap and GLib main loop
-│   ├── server.py             # D-Bus object methods (org.loofi.FedoraTweaks.Daemon1)
-│   ├── contracts.py          # Standard JSON response envelope
-│   ├── validators.py         # Input validation for privileged operations
-│   └── handlers/             # Network/firewall/port-audit execution handlers
+Version changes use only:
+
+```bash
+PYTHONPATH=loofi-fedora-tweaks \
+python3 scripts/bump_version.py VERSION --codename CODENAME
+```
+
+This synchronizes `version.py`, `loofi-fedora-tweaks.spec`, `pyproject.toml`,
+the workflow race lock, project statistics, release notes scaffolding, and
+workflow specifications. Hand-written release content and public gates remain
+separate review steps.

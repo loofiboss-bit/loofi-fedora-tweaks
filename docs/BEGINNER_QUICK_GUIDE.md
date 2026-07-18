@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 12.0.0 "Lighthouse" — My Fedora Today, Action Center, and Safe Guided Actions
+> Version 15.0.0 "Essentials" — six destinations, on-demand tools, and verified maintenance
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -20,109 +20,115 @@ Optional CLI alias:
 alias loofi='loofi-fedora-tweaks --cli'
 ```
 
+Loofi detects the Fedora variant automatically. Traditional Fedora uses DNF;
+Atomic Fedora uses rpm-ostree-aware or manual-only paths where an operation is
+not safe to automate.
+
 ---
 
 ## 2) Learn the UI in 30 Seconds
 
-- Sidebar = five focused areas plus search and favorites
-- Main panel = active tools with larger sections and clearer cards
-- Footer = compact status and shortcuts
+Standard mode has exactly six destinations:
+
+1. **Home**
+2. **Software & Updates**
+3. **System**
+4. **Network & Security**
+5. **Desktop**
+6. **Settings**
+
+Pages inside a destination load when you open them. Enable the optional
+**Advanced** destination from **Settings → Advanced Tools** when you need
+specialist development, AI, virtualization, automation, community, or sharing
+tools. Standard mode remains the default.
 
 Useful shortcuts:
 
-- `Ctrl+K` command palette
-- `Ctrl+Shift+K` quick actions
-- `F1` help
+- `Ctrl+K` opens global search for routes, settings, and safe action entries.
+- `Ctrl+Shift+K` opens the same policy-backed search model filtered to actions.
+- `F1` opens shortcut help.
 
-![Home Dashboard](images/user-guide/home-dashboard.png)
+Search results obey the same mode, Fedora-variant, component, and safety policy
+as normal navigation. Search may open or preselect an Action Center item, but it
+never plans or runs an action.
+
+![Home](images/user-guide/home-dashboard.png)
 
 ---
 
-## 3) First 5 Actions
+## 3) Five Core Workflows
 
-### Action 1 — Plan Updates With Upgrade Assistant
+### Update the system
 
-Open:
-
-- **Home**
-- **Upgrade Assistant**
-
-Review Fedora 44 readiness, Fedora 45 preview notes, the next safe action, and support export.
-
-![Upgrade Assistant](images/user-guide/upgrade-assistant.png)
-
-Then open **Release Readiness** when you want the detailed score, filters, and Action Inbox.
-
-![Release Readiness](images/user-guide/release-readiness.png)
-
-CLI equivalent:
-
-```bash
-loofi readiness --target 44
-loofi readiness plan --target 45-preview
-loofi action-center list --target 44
-```
-
-### Action 2 — Check Health
-
-Open:
-
-- **System & Hardware → System Monitor**
-
-Look for high CPU/RAM/process spikes.
-
-![System Monitor](images/user-guide/system-monitor.png)
-
-### Action 3 — Run Updates
-
-Open **Software & Updates → Maintenance → Updates** and run **Update All**.
-
-Notes:
-
-- Admin prompt uses `pkexec`
-- Atomic systems use `rpm-ostree` behavior automatically
+Open **Software & Updates → Updates**, review the available updates, and confirm
+the update when prompted.
 
 ![Maintenance Updates](images/user-guide/maintenance-updates.png)
 
-### Action 4 — Clean Up
+### Install an application
 
-Open **Software & Updates → Maintenance → Cleanup** and run:
+Open **Software & Updates → Applications**, select an application, and confirm
+the installation.
 
-- cache clean
-- journal vacuum
-- SSD trim (if applicable)
+### Diagnose a slow system
 
-### Action 5 — Security Pass
+Open **System → Performance** and run **Analyze Slow System**. The result uses a
+bounded, read-only snapshot and links to supporting process or storage details.
 
-Open **Network & Security → Security & Privacy**:
+![System Monitor](images/user-guide/system-monitor.png)
 
-- refresh score
-- verify firewall status
-- run port scan if needed
+### Free disk space
 
-![Security and Privacy](images/user-guide/security-privacy.png)
+Open **Software & Updates → Cleanup** and run the reclaim analysis before
+deleting or trimming anything. Review each category separately.
 
-### Action 6 — Save Preferences
+### Protect or recover the system
 
-Open **Desktop & Settings → Settings** and configure:
-
-- update checks on startup
-- safety confirmations enabled
-
-![Settings Appearance](images/user-guide/settings-appearance.png)
+Open **System → Recovery Points** to create or inspect snapshots. Use
+**Network & Security → Backups** for guided backup and restore workflows.
 
 ---
 
-## 4) Weekly Routine
+## 4) Verified Maintenance
 
-1. Run updates
-2. Run cleanup
-3. Refresh security score
-4. Quick check System Monitor
+Open **Software & Updates → Action Center** for supported maintenance actions.
+Action Center keeps the v14 safety lifecycle:
+
+1. Review the exact action and preflight evidence.
+2. Create an expiring plan.
+3. Confirm the reviewed plan explicitly.
+4. Accept missing rollback only when the UI requires it.
+5. Run one bounded mutation at a time.
+6. Verify the outcome separately.
+
+The executable catalog remains deny-by-default and limited to supported DNF
+cache cleanup, an explicitly selected failed service, and supported filesystem
+trim. Other recommendations remain manual-only. Loofi never treats command exit
+code zero as verified success by itself.
+
+Read-only CLI examples:
+
+```bash
+loofi action-center list --target 44
+loofi action-center history --limit 10
+loofi readiness --target 44
+loofi readiness plan --target 45-preview
+```
 
 ---
 
-## 5) Useful CLI Commands
+## 5) Weekly Routine
+
+1. Check Home for prioritized attention items.
+2. Review and install system updates.
+3. Run reclaim analysis instead of direct broad cleanup.
+4. Check System performance and storage when something feels slow.
+5. Create a recovery point before risky work.
+6. Review Action Center history after verified maintenance.
+
+---
+
+## 6) Useful CLI Commands
 
 ```bash
 loofi info
@@ -132,13 +138,15 @@ loofi readiness actions --target 44
 loofi doctor
 loofi cleanup all
 loofi security-audit
+loofi support-bundle
 ```
 
 ---
 
-## 6) Next Docs
+## 7) Next Docs
 
 - Full user guide: `docs/USER_GUIDE.md`
 - Fedora KDE 44 readiness: `docs/FEDORA_KDE_44_READINESS.md`
+- Verified maintenance: `docs/VERIFIED_MAINTENANCE.md`
 - Advanced operations: `docs/ADVANCED_ADMIN_GUIDE.md`
 - Troubleshooting: `docs/TROUBLESHOOTING.md`

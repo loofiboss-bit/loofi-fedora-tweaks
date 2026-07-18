@@ -1,422 +1,211 @@
-# Loofi Fedora Tweaks v14.0.0 "Helm"
+# Loofi Fedora Tweaks v15.0.0 "Essentials"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
 <p align="center">
-  <img src="loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png" alt="Loofi Fedora Tweaks Logo" width="128"/>
+  <img src="loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png" alt="Loofi Fedora Tweaks logo" width="128"/>
 </p>
 
 <p align="center">
-  <strong>Fedora system management in one place</strong><br>
-  GUI + CLI + daemon modes, plugin-based tabs, hardware-aware defaults, Atomic-aware behavior.
+  <strong>A focused Fedora maintenance and desktop control center</strong><br>
+  Six destinations, one Home, one search surface, safe system operations.
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v14.0.0">
-    <img src="https://img.shields.io/badge/Release-v14.0.0-blue?style=for-the-badge&logo=github" alt="Release v14.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0">
+    <img src="https://img.shields.io/badge/Target-v15.0.0-blue?style=for-the-badge&logo=github" alt="Target v15.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
-  <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python"/>
-  <img src="https://img.shields.io/badge/Package-RPM-orange?style=for-the-badge&logo=redhat" alt="RPM package"/>
-  <img src="https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage 85%"/>
-  <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
-    <img src="https://img.shields.io/badge/COPR-loofitheboss%2Floofi--fedora--tweaks-blue?style=for-the-badge&logo=fedora" alt="COPR"/>
-  </a>
+  <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
+  <img src="https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 85%"/>
 </p>
 
----
+## What Essentials changes
 
-## What Is Loofi Fedora Tweaks?
+v15 makes the existing application easier to navigate and much cheaper to
+start. It does not replace the trusted v14 maintenance and state backends.
 
-Loofi Fedora Tweaks is a desktop control center for Fedora Linux that combines day-to-day maintenance, diagnostics, tuning, networking, security, and automation in one app.
+- Standard mode has exactly six destinations: **Home**, **Software & Updates**,
+  **System**, **Network & Security**, **Desktop**, and **Settings**.
+- Advanced mode adds one **Advanced** destination for specialist tools.
+- Home is one read-only summary built from existing health, state, update,
+  backup, history, and Action Center data.
+- `Ctrl+K` opens the single global route/settings/action search.
+  `Ctrl+Shift+K` opens the same model filtered to actions.
+- Built-in plugin metadata is data-only. A plugin is imported and constructed
+  only when its route opens.
+- Traditional Fedora uses DNF behavior. Atomic Fedora uses rpm-ostree or clear
+  manual-only guidance where mutation is not supported.
 
-It is designed to be practical for both casual users and advanced users:
+The recorded final v15 benchmark renders meaningful Home 96.66% faster than the
+v14 baseline, uses 29.20% less RSS, constructs one plugin instead of 29, and
+starts with no subprocess probes, active timers, or worker threads.
 
-- Focused 5-area sidebar with search, favorites, direct routes, and advanced tools available on demand.
-- CLI mode for scripting and remote administration.
-- Daemon mode for background automation.
-- Optional headless web API mode.
-- Privileged actions routed through `pkexec` prompts.
-- Automatic detection of Traditional Fedora (`dnf`) and Atomic Fedora (`rpm-ostree`).
+Full details: [v15 release notes](docs/releases/RELEASE-NOTES-v15.0.0.md).
 
----
+## The six destinations
 
-## What's New in v14.0.0?
+| Destination | What belongs there |
+| --- | --- |
+| Home | Current state, the next useful action, attention items, and common tasks |
+| Software & Updates | Applications, repositories, updates, cleanup, Fedora upgrade, and Action Center |
+| System | System details, performance, processes, hardware, storage, diagnostics, health history, and recovery points |
+| Network & Security | Connections, DNS, privacy, firewall, exposure, and backups |
+| Desktop | Appearance, displays, and window behavior |
+| Settings | Appearance and behavior settings, Standard/Advanced mode, Repair Loofi, and About |
 
-`v14.0.0 "Helm"` completes the guided-maintenance path. It turns selected findings into expiring, reviewable plans that require explicit confirmation and only report success after a separate verifier passes.
+Advanced contains development, local AI, agents, automation, virtualization,
+gaming, community, device sharing, profiles, extensions, and workspace tools.
+These routes remain discoverable when policy and component availability allow;
+Advanced mode never weakens confirmation or privilege rules.
 
-- **Verified Action Center**: review preflight, command, privilege, risk, rollback readiness, execution, and verification in one durable lifecycle.
-- **Bounded action catalog**: only DNF cache recovery, an explicitly selected failed service, and supported SSD trim are executable; everything else remains manual-only.
-- **Crash-safe operation state**: plans expire after 30 minutes, one mutation lease spans processes, and interrupted runs never resume automatically.
-- **Release assurance**: source archives, Git tags, GitHub assets, and Fedora 44/COPR publication are tied to the exact release commit.
-- **Fedora continuity**: Fedora 44 stays blocking and Fedora 45 stays preview/advisory.
+## Five common workflows
 
-Full notes: [`docs/releases/RELEASE-NOTES-v14.0.0.md`](docs/releases/RELEASE-NOTES-v14.0.0.md)
+1. **Update Fedora:** Home → Updates → Update All → confirm.
+2. **Install an application:** Home → Applications → Install → confirm.
+3. **Diagnose a slow system:** Home → Check performance → Analyze Slow System.
+4. **Find reclaimable disk space:** Software & Updates → Cleanup → Analyze.
+5. **Protect the system:** Home → Protect or recover → create a recovery point.
 
-### Screenshots
+Action Center remains a separate Review/Plan/Run/Verify/History workflow. Home
+and search can open it, but never create or execute a plan.
+
+## Screenshots
 
 <table>
   <tr>
-    <td width="50%">
-      <img src="docs/images/user-guide/home-dashboard.png" alt="Lighthouse home dashboard with My Fedora Today and maintenance guidance"/>
-    </td>
-    <td width="50%">
-      <img src="docs/images/user-guide/system-monitor.png" alt="System Monitor process view with live process data"/>
-    </td>
+    <td width="50%"><img src="docs/images/user-guide/home-dashboard.png" alt="Essentials canonical Home with six-destination sidebar"/></td>
+    <td width="50%"><img src="docs/images/user-guide/maintenance-updates.png" alt="Software and Updates maintenance workflow"/></td>
   </tr>
   <tr>
-    <td><strong>Focused Home dashboard</strong></td>
-    <td><strong>Live system monitoring</strong></td>
+    <td><strong>Canonical Home</strong></td>
+    <td><strong>Updates and maintenance</strong></td>
   </tr>
   <tr>
-    <td>
-      <img src="docs/images/user-guide/maintenance-updates.png" alt="Maintenance updates route with DNF, Flatpak, firmware, and kernel tools"/>
-    </td>
-    <td>
-      <img src="docs/images/user-guide/security-privacy.png" alt="Security and privacy center with firewall and port audit panels"/>
-    </td>
+    <td><img src="docs/images/user-guide/system-monitor.png" alt="System performance and processes"/></td>
+    <td><img src="docs/images/user-guide/settings-appearance.png" alt="Settings appearance page"/></td>
   </tr>
   <tr>
-    <td><strong>Safe maintenance routes</strong></td>
-    <td><strong>Security and privacy controls</strong></td>
+    <td><strong>System diagnosis</strong></td>
+    <td><strong>Settings</strong></td>
   </tr>
 </table>
 
-## Current Development Cycle
+The complete, reproducible screenshot catalog is in
+[docs/images/user-guide/README.md](docs/images/user-guide/README.md).
 
-Follow [`ROADMAP.md`](ROADMAP.md) for the active release branch and current implementation slice.
+## Install
 
-- Current release: **v14.0.0 "Helm"** (see `ROADMAP.md` and `docs/releases/RELEASE-NOTES-v14.0.0.md`)
-- Previous stable baseline: **v13.0.0 "Anchor"** (see `CHANGELOG.md`)
-- Packaged runtime/version files baseline: **14.0.0** (see `loofi-fedora-tweaks/version.py`, `pyproject.toml`, and `loofi-fedora-tweaks.spec`)
-
----
-
-## Installation
-
-### Install from COPR (Recommended)
-
-The package is published on [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/). This gives you automatic updates via `dnf`.
+The supported package source is the Fedora COPR repository:
 
 ```bash
 pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
 ```
 
-To uninstall:
+Optional runtimes remain separate:
 
 ```bash
-pkexec dnf remove loofi-fedora-tweaks
-pkexec dnf copr remove loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks-api
+pkexec dnf install loofi-fedora-tweaks-daemon
 ```
 
-### Install from a Release RPM
+Never run the application with `sudo`. Privileged operations use explicit
+Polkit prompts through `pkexec`.
 
-Download the `.noarch.rpm` from the [Releases](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases) page:
-
-```bash
-pkexec dnf install ./loofi-fedora-tweaks-*.noarch.rpm
-```
-
-### Run from Source
+### Run from source
 
 ```bash
 git clone https://github.com/loofiboss-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e .
+python -m pip install -e '.[api,daemon,dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
 
----
+## Entry modes
 
-## Run Modes
+| Mode | Command | Contract |
+| --- | --- | --- |
+| GUI | `loofi-fedora-tweaks` | Desktop control center |
+| CLI | `loofi-fedora-tweaks --cli <command>` | Scriptable commands and stable JSON envelopes |
+| Daemon | `loofi-fedora-tweaks --daemon` | Optional D-Bus host with preserved compatibility methods |
+| Web API | `loofi-fedora-tweaks --web` | Authenticated read-only status and inspection API |
 
-| Mode    | Command                               | Use case                    |
-| ------- | ------------------------------------- | --------------------------- |
-| GUI     | `loofi-fedora-tweaks`                 | Daily desktop usage         |
-| CLI     | `loofi-fedora-tweaks --cli <command>` | Scripting and quick actions |
-| Daemon  | `loofi-fedora-tweaks --daemon`        | Background scheduled tasks  |
-| Web API | `loofi-fedora-tweaks --web`           | Headless/remote integration |
+The API binds to `127.0.0.1:8000` by default. Configure
+`LOOFI_API_HOST`, `LOOFI_API_PORT`, and the comma-separated
+`LOOFI_CORS_ORIGINS` allowlist when a different trusted interface is required.
 
-### Web API network configuration
-
-The Web API reads these optional environment variables:
-
-- `LOOFI_API_HOST` (default: `127.0.0.1`)
-- `LOOFI_API_PORT` (default: `8000`)
-- `LOOFI_CORS_ORIGINS` (comma-separated origin allowlist)
-
-Example for LAN host `192.168.1.3`:
-
-```bash
-export LOOFI_API_HOST=0.0.0.0
-export LOOFI_API_PORT=18001
-export LOOFI_CORS_ORIGINS="http://192.168.1.3:18001"
-loofi-fedora-tweaks --web
-```
-
-Optional shell alias for convenience:
+## CLI examples
 
 ```bash
 alias loofi='loofi-fedora-tweaks --cli'
-```
 
----
-
-## Icon System
-
-- Semantic icon IDs are used across sidebar categories, tabs, dashboard quick actions, and command surfaces.
-- Runtime icon resolution/tinting is handled by `loofi-fedora-tweaks/ui/icon_pack.py`.
-- Asset locations (kept mirrored for dev/runtime packaging):
-  - `assets/icons/`
-  - `loofi-fedora-tweaks/assets/icons/`
-- Pack structure:
-  - `svg/` source icons
-  - `png/16`, `png/20`, `png/24`, `png/32` raster fallbacks
-  - `icon-map.json` semantic id map
-
----
-
-## Navigation Areas
-
-| Default Area          | Everyday Pages                                  |
-| --------------------- | ----------------------------------------------- |
-| Home                  | Home dashboard and guided launch cards          |
-| Software & Updates    | Software, Maintenance                           |
-| System & Hardware     | System Info, System Monitor, Hardware, Storage, Health, Diagnostics |
-| Network & Security    | Network, Security & Privacy, Backup             |
-| Desktop & Settings    | Desktop, Settings                               |
-
-Advanced and specialized pages remain available through search, favorites, direct route IDs, and the Advanced experience level.
-
----
-
-## Screenshots
-
-Current UI screenshots are captured from the real PyQt app and maintained in:
-
-- [`docs/images/user-guide/README.md`](docs/images/user-guide/README.md)
-
-Preview gallery:
-
-<table>
-  <tr>
-    <td width="33%">
-      <img src="docs/images/user-guide/release-readiness.png" alt="Release Readiness grouped findings"/>
-    </td>
-    <td width="33%">
-      <img src="docs/images/user-guide/community-marketplace.png" alt="Community marketplace route"/>
-    </td>
-    <td width="33%">
-      <img src="docs/images/user-guide/settings-appearance.png" alt="Settings appearance route"/>
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Readiness checks</strong></td>
-    <td><strong>Community marketplace</strong></td>
-    <td><strong>Appearance settings</strong></td>
-  </tr>
-  <tr>
-    <td>
-      <img src="docs/images/user-guide/network-overview.png" alt="Network connections overview"/>
-    </td>
-    <td>
-      <img src="docs/images/user-guide/ai-lab-models.png" alt="AI Lab models route"/>
-    </td>
-    <td>
-      <img src="docs/images/user-guide/community-presets.png" alt="Community presets route"/>
-    </td>
-  </tr>
-  <tr>
-    <td><strong>Network overview</strong></td>
-    <td><strong>AI Lab</strong></td>
-    <td><strong>Presets</strong></td>
-  </tr>
-</table>
-
----
-
-## CLI Quick Examples
-
-All commands below assume either:
-
-- `loofi-fedora-tweaks --cli ...`, or
-- alias `loofi='loofi-fedora-tweaks --cli'`
-
-### System and Health
-
-```bash
 loofi info
 loofi health
 loofi doctor
-loofi hardware
 loofi support-bundle
+loofi readiness --target 44
+loofi action-center list
+loofi action-center plan dnf-clean-all
+loofi action-center show PLAN_ID
+loofi action-center apply PLAN_ID --confirm
+loofi action-center verify RUN_ID
+loofi --json state doctor
 ```
 
-### Maintenance and Tuning
+The global `--json` option appears before the CLI command.
+
+## Safety and compatibility
+
+- Action Center still exposes only `dnf-clean-all`,
+  `restart-failed-service`, and `fstrim-all` as executable definitions.
+- Plans expire and are re-preflighted. Exit code zero is not success until the
+  verifier passes. Interrupted runs never resume automatically.
+- Commands are list-based, allowlisted, timeout-bounded, audit-linked, and never
+  use `shell=True`.
+- State schemas, atomic writes, backup/restore planning, redaction, routes,
+  aliases, favorites, first-run sentinels, CLI JSON, API, daemon, and IPC remain
+  compatible with v14.
+- Specialist tools are logically isolated but remain in the v15 base RPM. A
+  physical extras RPM is deferred until v16 ownership boundaries are safe.
+
+## Development
+
+Use the repository command surface:
 
 ```bash
-loofi cleanup all
-loofi cleanup journal --days 7
-loofi tweak power --profile balanced
-loofi tuner analyze
-loofi tuner apply
+just test
+just test-coverage
+just lint
+just typecheck
+just verify
+just check-packaging
+just validate-release
+just build-rpm
 ```
 
-### Logs, Services, Packages
-
-```bash
-loofi logs errors --since "2h ago"
-loofi service list --filter failed
-loofi service restart sshd
-loofi package search --query firefox --source all
-```
-
-### Security, Network, Storage
-
-```bash
-loofi security-audit
-loofi network dns --provider cloudflare
-loofi storage usage
-loofi firewall ports
-```
-
-### Plugins and Marketplace
-
-```bash
-loofi plugins list
-loofi plugin-marketplace search --query monitor
-loofi plugin-marketplace info cool-plugin
-loofi plugin-marketplace install cool-plugin --accept-permissions
-loofi plugin-marketplace reviews cool-plugin --limit 10
-loofi plugin-marketplace rating cool-plugin
-```
-
-### JSON Output for Automation
-
-```bash
-loofi --json info
-loofi --json health
-loofi --json package search --query vim
-```
-
----
-
-## Requirements
-
-- Fedora KDE 44 supported target
-- Fedora 43 best-effort compatibility
-- Python 3.12+
-- PyQt6
-- polkit (`pkexec`)
-
-Optional features may require extra packages (for example: virtualization tools, Ollama, firewalld, avahi).
-
----
+See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
+[CONTRIBUTING.md](CONTRIBUTING.md) before changing code.
 
 ## Documentation
 
-- Beginner quick guide: [`docs/BEGINNER_QUICK_GUIDE.md`](docs/BEGINNER_QUICK_GUIDE.md)
-- User guide: [`docs/USER_GUIDE.md`](docs/USER_GUIDE.md)
-- Advanced admin guide: [`docs/ADVANCED_ADMIN_GUIDE.md`](docs/ADVANCED_ADMIN_GUIDE.md)
-- Troubleshooting: [`docs/TROUBLESHOOTING.md`](docs/TROUBLESHOOTING.md)
-- Contributing: [`docs/CONTRIBUTING.md`](docs/CONTRIBUTING.md)
-- Plugin SDK: [`docs/PLUGIN_SDK.md`](docs/PLUGIN_SDK.md)
-- Changelog: [`CHANGELOG.md`](CHANGELOG.md)
-- Documentation index: [`docs/README.md`](docs/README.md)
+- [Beginner quick guide](docs/BEGINNER_QUICK_GUIDE.md)
+- [Full user guide](docs/USER_GUIDE.md)
+- [Advanced administration](docs/ADVANCED_ADMIN_GUIDE.md)
+- [Verified maintenance](docs/VERIFIED_MAINTENANCE.md)
+- [State integrity and recovery](docs/STATE_INTEGRITY.md)
+- [Troubleshooting](docs/TROUBLESHOOTING.md)
+- [Documentation index](docs/README.md)
+- [Changelog](CHANGELOG.md)
 
----
+## Release status
 
-## Development Quick Start
-
-Run tests:
-
-```bash
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v
-```
-
-### Windows developers: run tests in Linux (Docker-first primary path)
-
-Some tests rely on Linux-specific APIs (`/proc`, `statvfs`, `getloadavg`, `system tools`) and can fail on native Windows runs.
-Use the Linux-backed runner instead:
-
-```bash
-# Auto: try Docker first, fallback to WSL
-just test-linux
-
-# Force Docker backend
-just test-linux-docker
-
-# Force WSL backend
-just test-linux-wsl
-```
-
-VS Code tasks are also available:
-
-- `Dev: Run Tests (Linux Auto: Docker→WSL)`
-- `Dev: Run Tests (Linux WSL)`
-- `Dev: Run Tests (Linux venv Docker, Primary)`
-
-Lint:
-
-```bash
-flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722,E203
-```
-
-Type check:
-
-```bash
-mypy loofi-fedora-tweaks/ --ignore-missing-imports --no-error-summary --warn-return-any
-```
-
-Security scan:
-
-```bash
-bandit -r loofi-fedora-tweaks/ -ll -ii --skip B103,B104,B108,B310,B404,B603,B602
-```
-
-Build RPM:
-
-```bash
-bash scripts/build_rpm.sh
-```
-
----
-
-## CI/CD Pipeline
-
-Every push to `master` and every pull request runs through two pipelines:
-
-| Pipeline | File | Purpose |
-| --- | --- | --- |
-| CI | `.github/workflows/ci.yml` | Lint, typecheck, test, security, and Fedora review gate |
-| Auto Release | `.github/workflows/auto-release.yml` | Validate, gate checks, build, tag, GitHub release, then integrated COPR submit |
-| COPR Publish | `.github/workflows/copr-publish.yml` | Standalone/manual COPR publishing workflow |
-
-### Auto Release Flow
-
-```text
-push to master
-  → validate (version alignment, packaging scripts)
-  → adapter_drift, lint, typecheck, test, security, docs_gate, fedora_review (parallel)
-  → build (RPM in Fedora 44 container)
-  → auto_tag (creates vX.Y.Z tag if missing)
-  → release (publishes GitHub Release with RPM/Flatpak/sdist artifacts)
-  → copr_publish (builds SRPM and submits to Fedora COPR)
-```
-
-`fedora_review` runs `python3 scripts/check_fedora_review.py`, which requires `fedora-review`
-and validates lightweight health probes (`fedora-review -V` and `fedora-review -d`).
-
-The pipeline automatically tags and publishes releases when code lands on `master` with a new version in `version.py`. No manual tagging required.
-
-### Manual Release
-
-Use **workflow_dispatch** with the version number for manual control. Set `dry_run: true` to validate without publishing.
-
----
+The implementation target is `v15.0.0 "Essentials"`. The historical
+pre-renormalization `v15.0.0 "Nebula"` tag is preserved as
+`legacy-v15.0.0-nebula`; the canonical `v15.0.0` slot is reserved for the exact
+Essentials release commit.
 
 ## License
 

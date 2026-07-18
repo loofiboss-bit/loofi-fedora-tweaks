@@ -1053,7 +1053,7 @@ class CommunityTab(QWidget, PluginInterface):
     def _build_badge_rating_summary(self, plugin_meta) -> str:
         """Build compact badge/rating summary for list rows."""
         if not plugin_meta:
-            return self.tr("Unverified | No rating")
+            return str(self.tr("Unverified | No rating"))
 
         verified = bool(getattr(plugin_meta, "verified_publisher", False))
         badge = getattr(plugin_meta, "publisher_badge", "") or ""

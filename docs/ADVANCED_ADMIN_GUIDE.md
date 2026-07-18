@@ -1,8 +1,8 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 12.0.0 "Lighthouse"
+> Version 15.0.0 "Essentials"
 
-Operational runbook for power users and Fedora admins.
+Operational runbook for power users and Fedora administrators.
 
 ---
 
@@ -12,23 +12,33 @@ Loofi entry modes:
 
 - GUI: `loofi-fedora-tweaks`
 - CLI: `loofi-fedora-tweaks --cli ...`
-- Daemon: `loofi-fedora-tweaks --daemon`
-- Web API: `loofi-fedora-tweaks --web`
+- daemon: `loofi-fedora-tweaks --daemon`
+- optional Web API: `loofi-fedora-tweaks --web`
+
+Standard mode exposes Home, Software & Updates, System, Network & Security,
+Desktop, and Settings. Enable the optional Advanced destination from
+**Settings → Advanced Tools** for specialist GUI routes. `Ctrl+K` searches all
+policy-visible routes and settings; `Ctrl+Shift+K` uses the same search model
+filtered to actions.
+
+The base package uses logical core/specialist isolation. It does not ship a
+physical `-extras` RPM. Core startup registers data-only plugin specifications
+without importing specialist UI modules, and page instances are created on
+demand. CLI, API, daemon, IPC, and stable route contracts remain independent of
+the selected GUI mode.
 
 Platform behavior:
 
-- Traditional Fedora uses `dnf`
-- Atomic Fedora variants use `rpm-ostree`
+- Traditional Fedora uses DNF.
+- Atomic Fedora uses rpm-ostree-aware paths and keeps unsupported mutations
+  manual-only.
 
 ---
 
 ## 2) Privilege and Safety
 
-Privileged workflows rely on:
-
-- `pkexec`
-- polkit desktop agent
-- installed policy file (`org.loofi.fedora-tweaks.policy`)
+Privileged workflows rely on `pkexec`, the desktop polkit agent, and the
+installed `org.loofi.fedora-tweaks.policy` file. Never run Loofi with `sudo`.
 
 Verification:
 
@@ -38,16 +48,40 @@ pkexec true
 ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 ```
 
+Action Center remains the only GUI that owns the verified maintenance
+plan/run/verify lifecycle. Home and global search may navigate or preselect,
+but cannot plan or execute. The catalog remains limited to `dnf-clean-all`,
+`restart-failed-service`, and `fstrim-all`.
+
+Operational invariants:
+
+- plans expire and receive a fresh apply-time preflight;
+- execution requires explicit confirmation;
+- medium/high-risk no-rollback paths require a separate acknowledgement;
+- a cross-process lease allows one mutation at a time;
+- verification is separate from command execution;
+- interrupted runs are preserved without automatic resume, retry, or rollback.
+
+Read-only review commands:
+
+```bash
+loofi action-center list --target 44
+loofi action-center history --limit 20
+loofi action-center recommendations --target 44
+```
+
 ---
 
 ## 3) Weekly Maintenance Window
 
-1. Create snapshot baseline
-2. Review **Software & Updates → Maintenance → Upgrade Assistant** and `loofi action-center list --target 44` for Fedora 44 readiness, Action Center previews, and Fedora 45 preview risk
-3. Run **Software & Updates → Maintenance → Updates**
-4. Run **Software & Updates → Maintenance → Cleanup**
-5. Validate **Security & Privacy** score/firewall
-6. Review **System & Hardware → System Monitor** and **Logs** from search, favorites, or Advanced mode for regressions
+1. Create a recovery point from **System → Recovery Points**.
+2. Review Home attention items and **Software & Updates → Upgrade Assistant**.
+3. Inspect supported maintenance in **Software & Updates → Action Center**.
+4. Run **Software & Updates → Updates**.
+5. Run reclaim analysis from **Software & Updates → Cleanup**.
+6. Validate **Network & Security → Security** and firewall state.
+7. Review **System → Performance**, Processes, Storage, and Troubleshooting for
+   regressions.
 
 ![Upgrade Assistant](images/user-guide/upgrade-assistant.png)
 
@@ -57,26 +91,51 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 
 ---
 
-## 4) Performance Investigation Runbook
+## 4) Core Workflow Runbooks
 
-1. Inspect **System & Hardware → System Monitor** for process pressure
-2. Inspect **Logs** from search, favorites, or Advanced mode for recurring faults
-3. Check **Performance** from search, favorites, or Advanced mode for tuning recommendations
-4. Check **System & Hardware → Storage** for disk/SMART concerns
+### Update the system
+
+Use **Software & Updates → Updates**. Preserve preview and confirmation steps.
+On Atomic Fedora, follow rpm-ostree guidance rather than forcing a DNF path.
+
+### Install an application
+
+Use **Software & Updates → Applications**. Confirm package source and requested
+change before installation.
+
+### Diagnose a slow system
+
+Run **System → Performance → Analyze Slow System** while the problem is active.
+Use the bounded snapshot to select the next inspection route. Do not tune,
+restart, or delete based on a single metric.
 
 ![System Monitor](images/user-guide/system-monitor.png)
 
+### Free disk space
+
+Run **Software & Updates → Cleanup → Analyze Reclaimable Space**. Treat package
+cache, journal retention, and trim separately. DNF cache cleanup is
+manual-only on Atomic Fedora.
+
+### Protect or recover
+
+Use **System → Recovery Points** for snapshots, **Network & Security → Backups**
+for guided backup/restore, and **Settings → Repair Loofi** for state inspection.
+These surfaces reuse the v14 state, archive, and recovery contracts.
+
 ---
 
-## 5) Preset and Drift Control
+## 5) Advanced and Specialist Operations
 
-1. Use **Community** from search, favorites, or Advanced mode to apply controlled presets
-2. Re-check drift after major package/config changes
-3. Export profiles before broad rollout
+Enable Advanced mode only when specialist routes are needed. Performance
+Tuning, Gaming, Development, Community, Loofi Link, AI Lab, Agents, Automation,
+State Teleport, and Virtualization belong to the logical specialist component.
+Profiles and Extensions are also Advanced-only routes.
 
-![Community Presets](images/user-guide/community-presets.png)
-
-![Community Marketplace](images/user-guide/community-marketplace.png)
+If a specialist component is unavailable, the route remains fail-closed with
+an explanation. The six Standard destinations and five core workflows must
+remain usable. Do not work around an unavailable result by importing a missing
+UI module manually.
 
 ---
 
@@ -88,22 +147,23 @@ Alias:
 alias loofi='loofi-fedora-tweaks --cli'
 ```
 
-Health snapshot:
+Health snapshots:
 
 ```bash
 loofi --json info > /tmp/loofi-info.json
 loofi --json health > /tmp/loofi-health.json
 ```
 
-Maintenance pipeline:
+Maintenance inspection:
 
 ```bash
-loofi cleanup all
+loofi action-center list --target 44
+loofi readiness --target 44 --advanced
 loofi logs errors --since "24h ago"
 loofi security-audit
 ```
 
-Service/package triage:
+Service and package triage:
 
 ```bash
 loofi service list --filter failed
@@ -111,61 +171,62 @@ loofi service status sshd
 loofi package recent --days 7
 ```
 
+Use `--json` for automation and `--dry-run` where the command supports a
+preview. Do not strip Action Center confirmation flags or reuse expired plan
+IDs in scripts.
+
 ---
 
 ## 7) Daemon and Web API Notes
 
-Daemon mode:
-
 ```bash
 loofi-fedora-tweaks --daemon
-```
-
-Web API mode:
-
-```bash
 loofi-fedora-tweaks --web
 ```
 
-Admin guidance:
-
-- bind to trusted interfaces only
-- enforce network controls and logging
-- monitor for unusual execute patterns
+The daemon and API retain their v14 package names and exact base-package EVR
+dependency. Keep the API on trusted interfaces, preserve authentication, and
+monitor logs. The daemon remains bounded by its existing D-Bus and read-only
+collection contracts; GUI mode selection does not broaden either surface.
 
 ---
 
 ## 8) Incident Response Quick Playbooks
 
-App fails to start:
+Application failure:
 
 ```bash
 tail -n 200 ~/.local/share/loofi-fedora-tweaks/startup.log
 loofi doctor
 ```
 
-Privilege failures:
+Privilege failure:
 
 ```bash
 which pkexec
 pkexec true
 ```
 
-Escalation bundle:
+State and support evidence:
 
 ```bash
+loofi --json state doctor
 loofi support-bundle
 journalctl --user --since "2 hours ago"
 ```
 
 ---
 
-## 9) Data Paths
+## 9) Data Paths and Upgrade Integrity
 
 - `~/.config/loofi-fedora-tweaks/settings.json`
 - `~/.config/loofi-fedora-tweaks/profile.json`
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
+
+The v15 upgrade preserves v14 settings, navigation migration inputs, favorites,
+stable routes, Action Center plans/runs/history, state schemas, and
+observability data. RPM scriptlets do not own or migrate per-user XDG state.
 
 ---
 
@@ -173,4 +234,5 @@ journalctl --user --since "2 hours ago"
 
 - Beginner: `docs/BEGINNER_QUICK_GUIDE.md`
 - Full user guide: `docs/USER_GUIDE.md`
+- Verified maintenance: `docs/VERIFIED_MAINTENANCE.md`
 - Troubleshooting: `docs/TROUBLESHOOTING.md`
