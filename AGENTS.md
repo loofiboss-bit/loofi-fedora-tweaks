@@ -96,9 +96,3 @@ Prefer linking to these instead of duplicating them in new instructions or promp
 - `docs/TROUBLESHOOTING.md` — operational issues
 - `CHANGELOG.md` and `docs/releases/` — release history
 - `.github/instructions/` — specialized repo rules by concern and file area
-
-## Agent and customization notes
-
-- Use the repo agents in `.github/agents/` and `.github/claude-agents/` for multi-step work.
-- Keep new workspace instructions minimal and broadly applicable.
-- Prefer file-specific instructions under `.github/instructions/` for narrow domains instead of growing this file.
