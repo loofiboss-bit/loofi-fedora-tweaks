@@ -213,6 +213,16 @@ restarts services.
   activation, visible focus, accessible name, and accessible description.
 - Standard workflows reuse shared loading, empty, unavailable, result, progress,
   and details components without replacing domain state machines.
+- `ui/components/` is the single canonical presentation-only component library.
+  It exposes page/content scaffolding, section presentation, cards and property
+  rows, notices and states, action bars, and semantic button roles without
+  importing domain services or command infrastructure.
+- The shell owns `PageHeader`; `PageScaffold` owns only the bounded content
+  hierarchy below it. `SectionNavigator` accepts data-only presentation items,
+  emits opaque section IDs, and relies on shell policy to select rail or compact
+  mode. Route and policy integration remains outside the component layer.
+- `ui/layout_primitives.py` and `ui/shared_states.py` are compatibility import
+  surfaces that point to the canonical components while older pages migrate.
 - `ui/design/tokens.py` owns stable spacing, geometry, and typography roles.
   Themes may change semantic colors but never component geometry or hierarchy.
 - `ui/design/theme_manager.py` maps system, dark, light, and high-contrast

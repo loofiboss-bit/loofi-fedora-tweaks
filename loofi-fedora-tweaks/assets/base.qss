@@ -1,4 +1,8 @@
 /* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
+/* Hallmark · component: shared-system · genre: technical · theme: semantic-native
+ * states: default · hover · focus · active · disabled · loading · error · success
+ * contrast: pass (semantic palette contract)
+ */
 /* Hallmark · PyQt control-center · restrained native · blue anchor · destination shell */
 /* Loofi Clarity structural theme. Palette values are substituted by ThemeManager. */
 
@@ -410,4 +414,216 @@ QLabel[code="true"] {
 QTextEdit#supportBundlePreview {
     background-color: $color_surface_raised;
     color: $color_text_muted;
+}
+
+/* Shared v16 component library. */
+QWidget#pageScaffold,
+QWidget#contentColumn,
+QWidget#actionBar {
+    background-color: transparent;
+}
+
+QFrame#componentCard,
+QFrame#clickableCard,
+QFrame#definitionList,
+QFrame[componentCard="true"] {
+    background-color: $color_surface;
+    color: $color_text;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+}
+
+QFrame#clickableCard:hover,
+QFrame[clickableCard="true"]:hover {
+    background-color: $color_hover;
+    color: $color_text;
+    border-color: $color_accent;
+}
+
+QFrame#clickableCard:focus,
+QFrame[clickableCard="true"]:focus {
+    border: $focus_width solid $color_focus;
+}
+
+QFrame#clickableCard[interactionState="active"],
+QFrame[clickableCard="true"][interactionState="active"] {
+    background-color: $color_selected;
+    color: $color_text;
+    border-color: $color_accent;
+}
+
+QFrame#clickableCard:disabled,
+QFrame[clickableCard="true"]:disabled {
+    background-color: $color_disabled_surface;
+    color: $color_disabled_text;
+    border-color: $color_disabled_text;
+}
+
+QLabel#cardTitle,
+QLabel#noticeTitle,
+QLabel#definitionLabel {
+    color: $color_text;
+    font-weight: $section_title_weight;
+}
+
+QLabel#cardDescription,
+QLabel#noticeMessage,
+QLabel#definitionValue {
+    color: $color_text_muted;
+}
+
+QWidget#definitionRow {
+    background-color: transparent;
+    border-bottom: $border_width solid $color_border;
+}
+
+QPushButton#componentButton[buttonRole="primary"] {
+    background-color: $color_accent;
+    color: $color_accent_text;
+    border-color: $color_accent;
+}
+
+QPushButton#componentButton[buttonRole="secondary"] {
+    background-color: $color_surface_raised;
+    color: $color_text;
+    border-color: $color_border;
+}
+
+QPushButton#componentButton[buttonRole="ghost"],
+QToolButton[buttonRole="ghost"] {
+    background-color: transparent;
+    color: $color_accent;
+    border-color: transparent;
+}
+
+QPushButton#componentButton[buttonRole="danger"] {
+    background-color: $color_error_surface;
+    color: $color_error_text;
+    border-color: $color_error;
+}
+
+QPushButton#componentButton[buttonRole="primary"]:hover,
+QPushButton#componentButton[buttonRole="secondary"]:hover,
+QPushButton#componentButton[buttonRole="ghost"]:hover,
+QToolButton[buttonRole="ghost"]:hover {
+    background-color: $color_hover;
+    color: $color_text;
+    border-color: $color_accent;
+}
+
+QPushButton#componentButton[buttonRole="danger"]:hover {
+    background-color: $color_error_surface;
+    color: $color_error_text;
+}
+
+QPushButton#componentButton[interactionState="loading"] {
+    background-color: $color_disabled_surface;
+    color: $color_disabled_text;
+    border-color: $color_border;
+}
+
+QPushButton#componentButton[interactionState="error"] {
+    background-color: $color_error_surface;
+    color: $color_error_text;
+    border-color: $color_error;
+}
+
+QPushButton#componentButton[interactionState="success"] {
+    background-color: $color_success_surface;
+    color: $color_success_text;
+    border-color: $color_success;
+}
+
+QFrame#sectionNavigator {
+    background-color: transparent;
+    color: $color_text;
+    border: none;
+}
+
+QListWidget#sectionRail {
+    background-color: $color_surface;
+    color: $color_text;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+    outline: none;
+}
+
+QListWidget#sectionRail::item {
+    min-height: $navigation_row_min_height;
+    padding: 0 $space_3;
+    margin: $space_1;
+    border-radius: $radius_control;
+    color: $color_text_muted;
+}
+
+QListWidget#sectionRail::item:hover {
+    background-color: $color_hover;
+    color: $color_text;
+}
+
+QListWidget#sectionRail::item:selected {
+    background-color: $color_selected;
+    color: $color_accent;
+    border-left: $focus_width solid $color_accent;
+}
+
+QComboBox#sectionSelector {
+    min-height: $navigation_row_min_height;
+}
+
+QFrame#statusBadge,
+QFrame#inlineNotice {
+    background-color: $color_surface_raised;
+    color: $color_text;
+    border: $border_width solid $color_border;
+    border-radius: $radius_control;
+}
+
+QFrame#inlineNotice {
+    border-radius: $radius_card;
+}
+
+QFrame#statusBadge[statusKind="success"],
+QFrame#inlineNotice[noticeKind="success"] {
+    background-color: $color_success_surface;
+    color: $color_success_text;
+    border-color: $color_success;
+}
+
+QFrame#statusBadge[statusKind="success"] QLabel,
+QFrame#inlineNotice[noticeKind="success"] QLabel {
+    color: $color_success_text;
+}
+
+QFrame#statusBadge[statusKind="warning"],
+QFrame#inlineNotice[noticeKind="warning"] {
+    background-color: $color_warning_surface;
+    color: $color_warning_text;
+    border-color: $color_warning;
+}
+
+QFrame#statusBadge[statusKind="warning"] QLabel,
+QFrame#inlineNotice[noticeKind="warning"] QLabel {
+    color: $color_warning_text;
+}
+
+QFrame#statusBadge[statusKind="error"],
+QFrame#inlineNotice[noticeKind="error"] {
+    background-color: $color_error_surface;
+    color: $color_error_text;
+    border-color: $color_error;
+}
+
+QFrame#statusBadge[statusKind="error"] QLabel,
+QFrame#inlineNotice[noticeKind="error"] QLabel {
+    color: $color_error_text;
+}
+
+QFrame#statusBadge[statusKind="info"],
+QFrame#inlineNotice[noticeKind="info"] {
+    border-color: $color_accent;
+}
+
+QToolButton#disclosureButton {
+    text-align: left;
 }
