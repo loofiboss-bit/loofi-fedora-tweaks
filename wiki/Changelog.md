@@ -1,5 +1,13 @@
 # Changelog
 
+## v16.0.0 — Clarity
+
+- Replaced crowded application-level tab rows with responsive, full-label section navigation.
+- Unified Standard and Advanced pages around one scaffold and one shared component language.
+- Added semantic system, dark, light, and high-contrast themes without changing structural layout.
+- Validated the real application shell across supported sizes, font scales, input paths, and accessibility surfaces.
+- Preserved stable routes, state, Action Center, Traditional/Atomic, CLI, API, daemon, IPC, and plugin contracts.
+
 ## v15.0.0 — Essentials
 
 - Reorganized Standard mode into six destinations with one canonical Home and one policy-backed search surface.
@@ -25,6 +33,18 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 ---
 
 ## Latest Release
+
+### v16.0.0 "Clarity" (2026-07-18)
+
+**Responsive UI consolidation** with full-label section navigation, shared page
+components, semantic themes, and complete real-shell accessibility validation.
+
+**Release evidence**: 7,722 tests passed with 86.51% coverage. GitHub assets
+include Fedora 44 RPMs, Flatpak, sdist, SHA-256 checksums, CycloneDX SBOM, and
+in-toto/SLSA provenance. COPR build `10740581` passed and the public package
+reported version 16.0.0.
+
+---
 
 ### v10.0.0 "Waypoint" (2026-07-01)
 

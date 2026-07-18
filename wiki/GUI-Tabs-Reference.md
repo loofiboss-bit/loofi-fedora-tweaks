@@ -1,6 +1,6 @@
 # GUI Tabs Reference
 
-Reference for Loofi Fedora Tweaks v15.0.0 "Essentials" navigation.
+Reference for Loofi Fedora Tweaks v16.0.0 "Clarity" navigation.
 
 ---
 

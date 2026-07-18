@@ -2,7 +2,7 @@
 
 Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora control center for maintenance, diagnostics, security, performance, and automation.
 
-**Current Version**: v15.0.0 "Essentials" — Product Simplification
+**Current Version**: v16.0.0 "Clarity" — Responsive UI Consolidation
 **Screenshots Refreshed**: July 2026
 
 ![Loofi Fedora Tweaks Dashboard](images/hero-home.png)
@@ -10,6 +10,8 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 ## At a Glance
 
 - **Focused navigation**: Standard mode has six destinations: Home, Software & Updates, System, Network & Security, Desktop, and Settings.
+- **Responsive sections**: Full-label section navigation reflows for smaller windows and larger font scales instead of clipping.
+- **Shared interface**: Standard and Advanced pages use the same page scaffold, cards, notices, actions, states, and focus treatment.
 - **One Home**: Saved health, state, update, backup, history, and Action Center signals are summarized without probing or mutating the host at startup.
 - **One search surface**: `Ctrl+K` finds routes, settings, and safe action entry points while respecting availability and Standard/Advanced policy.
 - **Advanced tools on demand**: AI Lab, Agents, Automation, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, and Loofi Link remain available through the optional Advanced destination.
@@ -90,7 +92,7 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 ## Quick Links
 
 - GitHub Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Latest Release: [v15.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0)
+- Latest Release: [v16.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v16.0.0)
 - Issues: [Issue Tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - Main README: [README.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/README.md)
 - Architecture Doc: [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)
