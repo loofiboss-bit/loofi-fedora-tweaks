@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0">
-    <img src="https://img.shields.io/badge/Target-v15.0.0-blue?style=for-the-badge&logo=github" alt="Target v15.0.0"/>
+    <img src="https://img.shields.io/badge/Release-v15.0.0-blue?style=for-the-badge&logo=github" alt="Release v15.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -202,10 +202,10 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-The implementation target is `v15.0.0 "Essentials"`. The historical
-pre-renormalization `v15.0.0 "Nebula"` tag is preserved as
-`legacy-v15.0.0-nebula`; the canonical `v15.0.0` slot is reserved for the exact
-Essentials release commit.
+`v15.0.0 "Essentials"` is available from the GitHub release and the Fedora 44
+COPR repository. The historical pre-renormalization `v15.0.0 "Nebula"` tag is
+preserved as `legacy-v15.0.0-nebula`; the canonical `v15.0.0` tag points to the
+exact Essentials release commit.
 
 ## License
 

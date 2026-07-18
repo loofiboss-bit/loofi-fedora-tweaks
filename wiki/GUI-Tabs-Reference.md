@@ -1,6 +1,6 @@
 # GUI Tabs Reference
 
-Complete reference for the focused navigation areas in Loofi Fedora Tweaks v10.0.0 "Waypoint".
+Reference for Loofi Fedora Tweaks v15.0.0 "Essentials" navigation.
 
 ---
 
@@ -8,11 +8,12 @@ Complete reference for the focused navigation areas in Loofi Fedora Tweaks v10.0
 
 The default sidebar intentionally stays small:
 
-1. **Home** — Home dashboard, Upgrade Assistant entry, and release readiness guidance.
-2. **Software & Updates** — Software, Maintenance, Snapshots, and Virtualization.
-3. **System & Hardware** — System Info, System Monitor, Hardware, Storage, Health, Diagnostics, Performance, and Gaming.
-4. **Network & Security** — Network, Security & Privacy, Backup, and Loofi Link.
-5. **Desktop & Settings** — Desktop, Settings, Profiles, Extensions, and Development Tools.
+1. **Home** — Prioritized status, recommendations, and safe workflow links.
+2. **Software & Updates** — Applications, repositories, updates, cleanup, upgrades, and Action Center.
+3. **System** — System information, performance, processes, hardware, storage, diagnostics, and recovery points.
+4. **Network & Security** — Connections, DNS, privacy, firewall, exposure, and backups.
+5. **Desktop** — Appearance, windows, and displays.
+6. **Settings** — Appearance, behavior, Advanced mode, Repair Loofi, and About.
 
 ## Home
 
@@ -25,7 +26,7 @@ The default sidebar intentionally stays small:
 4. Snapshots (`snapshot_tab.py`) — Advanced/search/favorite route by default.
 5. Virtualization (`virtualization_tab.py`) — Advanced/search/favorite route by default.
 
-## System & Hardware
+## System
 
 6. System Info (`system_info_tab.py`)
 7. System Monitor (`monitor_tab.py`)
@@ -43,7 +44,7 @@ The default sidebar intentionally stays small:
 16. Backup (`backup_tab.py`)
 17. Loofi Link (`mesh_tab.py`) — Advanced/search/favorite route by default.
 
-## Desktop & Settings
+## Desktop and Settings
 
 18. Desktop (`desktop_tab.py`)
 19. Settings (`settings_tab.py`)
@@ -51,7 +52,7 @@ The default sidebar intentionally stays small:
 21. Extensions (`extensions_tab.py`) — Advanced/search/favorite route by default.
 22. Development Tools (`development_tab.py`) — Intermediate/Advanced/search/favorite route by default.
 
-## More and Advanced Tools
+## Advanced Tools
 
 23. Live Overview (`dashboard_tab.py`) — Route-addressable system overview.
 24. Community (`community_tab.py`) — Presets, marketplace, plugins, and featured content.
@@ -65,7 +66,7 @@ The default sidebar intentionally stays small:
 
 ## Navigation Tips
 
-- Use sidebar search to filter routes by name, aliases, and description.
+- Press `Ctrl+K` to search routes, settings, and safe action entry points.
 - Use Favorites to pin stable plugin or route IDs, including hidden default routes.
-- Press `Ctrl+K` to open the command palette.
-- Switch to Advanced mode to expose the **More** area in the sidebar.
+- Press `Ctrl+Shift+K` to filter search to actions. Search can navigate and preselect, but cannot plan or execute an action.
+- Enable Advanced mode from Settings to expose the **Advanced** destination.

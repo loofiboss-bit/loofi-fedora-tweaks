@@ -232,7 +232,9 @@ for plugin in PluginRegistry.instance():
     self.add_page(name=meta.name, icon=meta.icon, widget=lazy_widget, category=meta.category)
 ```
 
-Only `DashboardTab` and `SystemInfoTab` are eagerly imported.
+v15 registers data-only plugin specifications and wraps top-level pages in
+`LazyWidget`. A route's UI module and widget are loaded when that route is first
+opened, while stable IDs and aliases remain registered from startup.
 
 ### 10. Safety & History
 

@@ -69,11 +69,11 @@
 | v12.0.0 | Lighthouse                      | DONE    | Proactive health observability, My Fedora Today timeline, and guided recovery                |
 | v13.0.0 | Anchor                          | DONE    | State integrity, recovery, observability convergence, and reproducible releases              |
 | v14.0.0 | Helm                            | DONE    | Verified guided maintenance, bounded execution, and release lineage assurance                |
-| v15.0.0 | Essentials                      | ACTIVE  | Six-destination UX, canonical Home, true lazy loading, and logical component isolation        |
+| v15.0.0 | Essentials                      | DONE    | Six-destination UX, canonical Home, true lazy loading, and logical component isolation        |
 
 ---
 
-## [ACTIVE] v15.0.0 "Essentials" — Product Simplification
+## [DONE] v15.0.0 "Essentials" — Product Simplification
 
 **Theme**: Make normal Fedora maintenance obvious while preserving every v14
 trust and compatibility contract.
@@ -91,7 +91,7 @@ modes, five core workflows, startup efficiency, and logical component isolation.
 - [x] System-default visual foundation, semantic icons, accessible shared states, and responsive validation
 - [x] Logical core/specialist discovery, reduced base dependencies, preserved API/daemon packages, and extras NO-GO evidence
 - [x] v15 metadata, architecture, guides, release notes, AppStream descriptions, and real-app screenshots
-- [ ] Exact release commit, CI/COPR/install-upgrade gates, publication, and public readback
+- [x] Exact release commit, CI/COPR/install-upgrade gates, publication, and public readback
 
 ### Compatibility
 
@@ -108,8 +108,8 @@ modes, five core workflows, startup efficiency, and logical component isolation.
 
 The historical pre-renormalization `v15.0.0 "Nebula"` tag object is preserved
 on origin as `legacy-v15.0.0-nebula`, and the conflicting canonical tag was
-removed deliberately. Essentials stays ACTIVE until the new exact release
-commit, terminal publication gates, and public readback are complete.
+removed deliberately. The canonical tag now peels to the exact Essentials
+release commit, and the terminal publication gates and public readback passed.
 
 ---
 

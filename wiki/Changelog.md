@@ -1,5 +1,13 @@
 # Changelog
 
+## v15.0.0 — Essentials
+
+- Reorganized Standard mode into six destinations with one canonical Home and one policy-backed search surface.
+- Added true top-level lazy loading and conditional startup services; startup host probes, timers, and worker threads are eliminated.
+- Added five guided workflows while keeping Action Center as the only plan/run/verify surface.
+- Added Standard/Advanced migration and logical core/specialist discovery without splitting the base RPM.
+- Preserved v14 routes, state, Traditional/Atomic behavior, CLI, API, daemon, IPC, and Action Center contracts.
+
 ## v14.0.0 — Helm
 
 - Added expiring, digest-bound Action Center plans and separately verified runs.

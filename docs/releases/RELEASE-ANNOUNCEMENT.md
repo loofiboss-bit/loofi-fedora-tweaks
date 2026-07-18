@@ -7,9 +7,9 @@ destinations, one Home, one search surface, and Standard or Advanced mode. The
 v14 Action Center, state integrity, Fedora safety, routes, CLI, API, and daemon
 contracts remain intact.
 
-Publication is pending exact release-tag lineage and the remaining remote
-release gates. This file is the prepared announcement, not a claim that v15 is
-already live.
+The release is live on GitHub and the Fedora 44 COPR repository. Checksums,
+CycloneDX SBOM, in-toto/SLSA provenance, RPMs, Flatpak, and source distribution
+were read back and verified against the exact release commit.
 
 ## Highlights
 
@@ -27,8 +27,6 @@ already live.
 
 ## Install or upgrade
 
-After the release is published:
-
 ```bash
 pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf upgrade loofi-fedora-tweaks
@@ -43,11 +41,8 @@ pkexec dnf install loofi-fedora-tweaks-daemon
 
 ## Links
 
-- **Release notes**: `docs/releases/RELEASE-NOTES-v15.0.0.md`
-- **Changelog**: `CHANGELOG.md`
-- **Architecture**: `ARCHITECTURE.md`
+- **GitHub release**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0>
+- **Release notes**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v15.0.0.md>
+- **COPR packages**: <https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/>
+- **Wiki**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/wiki>
 - **Issue tracker**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
-
-The GitHub release URL will be
-<https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0>
-after exact-lineage publication succeeds.

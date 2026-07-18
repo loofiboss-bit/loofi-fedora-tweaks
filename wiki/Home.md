@@ -2,20 +2,20 @@
 
 Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora control center for maintenance, diagnostics, security, performance, and automation.
 
-**Current Version**: v14.0.0 "Helm" — Verified, Guided Maintenance
+**Current Version**: v15.0.0 "Essentials" — Product Simplification
 **Screenshots Refreshed**: July 2026
 
 ![Loofi Fedora Tweaks Dashboard](images/hero-home.png)
 
 ## At a Glance
 
-- **Focused navigation**: The app uses five default areas for everyday Fedora workflows while preserving stable route IDs for search, favorites, quick actions, breadcrumbs, and dashboard cards.
-- **Task-based Home**: Home cards route users into focused maintenance, readiness, and safety workflows.
-- **Upgrade Assistant**: Fedora 44 stable readiness and Fedora 45 preview planning are available from Home and Maintenance.
-- **Advanced tools on demand**: AI Lab, Agents, Automation, Logs, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, Snapshots, and Loofi Link remain searchable and favoriteable without crowding the sidebar.
+- **Focused navigation**: Standard mode has six destinations: Home, Software & Updates, System, Network & Security, Desktop, and Settings.
+- **One Home**: Saved health, state, update, backup, history, and Action Center signals are summarized without probing or mutating the host at startup.
+- **One search surface**: `Ctrl+K` finds routes, settings, and safe action entry points while respecting availability and Standard/Advanced policy.
+- **Advanced tools on demand**: AI Lab, Agents, Automation, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, and Loofi Link remain available through the optional Advanced destination.
 - **Safe actions**: Privileged operations use `pkexec`; command preview and execution share the same allowlist, timeout, action metadata, and command-vector checks.
 - **State & Recovery**: Read-only State Doctor, privacy-safe backup, plan-before-apply restore, and collector status live in Settings.
-- **Verified maintenance**: Maintenance → Action Center creates expiring plans, rechecks preflight before apply, serializes mutations, and records separate execution and verification results. Interrupted runs never resume automatically.
+- **Verified maintenance**: Software & Updates → Action Center creates expiring plans, rechecks preflight before apply, serializes mutations, and records separate execution and verification results. Interrupted runs never resume automatically.
 - **First-Class Atomic Support**: Dedicated `rpm-ostree` diagnostics and upgrade checks for Silverblue/Kinoite.
 - 4 run modes: GUI, CLI (`--json`), daemon scheduler, and Web API.
 - Privileged actions through `pkexec` (never `sudo`).
@@ -90,7 +90,7 @@ Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora con
 ## Quick Links
 
 - GitHub Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Latest Release: [v14.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v14.0.0)
+- Latest Release: [v15.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v15.0.0)
 - Issues: [Issue Tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - Main README: [README.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/README.md)
 - Architecture Doc: [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)

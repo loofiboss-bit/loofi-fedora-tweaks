@@ -15,7 +15,7 @@
 - [x] E100-E107: synchronize `15.0.0 "Essentials"` metadata, roadmap, architecture, user guides, release notes, migration guidance, AppStream, and canonical screenshots
 - [x] E108: run local full-suite, coverage, lint, release-doc, packaging, Fedora-readiness, RPM, Flatpak, sdist, SBOM/checksum, security, and workflow-report gates
 - [x] E109: preserve the old Nebula tag object as `legacy-v15.0.0-nebula` and deliberately free the conflicting remote `v15.0.0` tag before publication
-- [ ] [post-publish] E110: commit the exact release tree, publish/read back GitHub assets and provenance, complete COPR/Fedora 44 install-upgrade evidence, and publish/read back the wiki
+- [x] [post-publish] E110: commit the exact release tree, publish/read back GitHub assets and provenance, complete COPR/Fedora 44 install-upgrade evidence, and publish/read back the wiki
 
 ## Required release exit
 
@@ -30,4 +30,4 @@ Public completion additionally requires one exact release commit, a remote
 Fedora 44 install/upgrade evidence, GitHub release asset readback, and wiki
 readback. The historical 2026-02-08 Nebula tag collision must be remediated
 without losing its commit before the exact-lineage gate can pass. That
-remediation is complete; publication and readback remain open.
+remediation, publication, and public readback are complete.

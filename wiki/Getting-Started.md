@@ -47,23 +47,24 @@ The wizard creates a profile at `~/.config/loofi-fedora-tweaks/profile.json` and
 
 ### Focused Sidebar
 
-The main window uses five default navigation areas:
+Standard mode uses six destinations:
 
 | Area | Purpose |
 |------|---------|
-| **Home** | Launch dashboard, task cards, and release readiness |
-| **Software & Updates** | Software, repositories, maintenance, snapshots, and virtualization |
-| **System & Hardware** | System information, monitoring, hardware, storage, health, and diagnostics |
-| **Network & Security** | Network settings, backup, firewall, privacy, and hardening |
-| **Desktop & Settings** | Desktop customization, app settings, profiles, extensions, and developer tools |
+| **Home** | Prioritized status, recommendations, and safe links |
+| **Software & Updates** | Applications, repositories, updates, cleanup, upgrades, and Action Center |
+| **System** | System information, performance, processes, hardware, storage, diagnostics, and recovery points |
+| **Network & Security** | Connections, DNS, privacy, firewall, exposure, and backups |
+| **Desktop** | Appearance, windows, and displays |
+| **Settings** | Appearance, behavior, Advanced mode, Repair Loofi, and About |
 
-Advanced tools such as AI Lab, Agents, Automation, Logs, Community, Teleport, Gaming, Performance, Profiles, Extensions, Snapshots, Virtualization, and Loofi Link are available through search, favorites, command palette, direct routes, or Advanced mode.
+Enable **Settings → Advanced Tools** to add the Advanced destination. Specialist routes remain available without changing their safety or confirmation requirements.
 
 ### Key UI Features
 
-- **Sidebar Search**: Type to filter tabs by name
+- **Global Search**: Press `Ctrl+K` to find routes, settings, and safe action entry points
 - **Favorites**: Pin any route, including advanced routes hidden from the default sidebar
-- **Command Palette**: Press `Ctrl+K` to open the global command palette for quick navigation and actions
+- **Action Search**: Press `Ctrl+Shift+K` to filter the same search model to safe action entry points
 - **Page Header**: Shows current area, route context, and common actions
 - **Toast Notifications**: Transient success/error messages appear in the status bar
 - **Status Bar Undo**: Click the undo button to revert the last privileged action (via `HistoryManager`)

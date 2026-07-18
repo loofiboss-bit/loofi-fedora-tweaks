@@ -2,18 +2,18 @@
 
 Date: 2026-07-18
 Release: `v15.0.0 "Essentials"`
-Status: local release gates passed; public publication pending
+Status: released and publicly verified
 
 ## Outcome
 
-The v15 implementation is locally publish-ready. Documentation, metadata,
+The v15 implementation is published. Documentation, metadata,
 screenshots, package descriptions, and workflow specs describe the shipped
 six-destination Standard experience, optional Advanced destination, logical
 core/specialist isolation, and preserved v14 trust contracts.
 
 The historical pre-renormalization `v15.0.0 "Nebula"` annotated tag object is
-preserved on origin as `legacy-v15.0.0-nebula`. The conflicting canonical tag
-was removed deliberately before the Essentials release commit is created.
+preserved on origin as `legacy-v15.0.0-nebula`. The canonical `v15.0.0` tag now
+peels to release commit `17aa8aa78cd3ac51d1d63da336ee25d4e5e3b4c1`.
 
 ## Compatibility preserved
 
@@ -69,17 +69,38 @@ DNS component-id warning and informational metadata suggestions. The desktop
 validator reports the existing multiple-main-category hint. These do not block
 the repository's established Fedora release gate.
 
-## Publication gates
+## Public release evidence
 
-The following are intentionally performed only after the exact release commit
-exists:
+- GitHub release: `v15.0.0`, published 2026-07-18, not a draft or prerelease.
+- Release commit: `17aa8aa78cd3ac51d1d63da336ee25d4e5e3b4c1`.
+- CI run `29628964016`, CodeQL run `29628963858`, and Auto Release Pipeline
+  run `29628964018`: terminal success.
+- Public assets: three RPMs, Flatpak, sdist, SHA256SUMS, CycloneDX SBOM, and
+  in-toto/SLSA provenance downloaded and verified.
+- Provenance: five subjects, source digest bound to the release commit, tag
+  `v15.0.0`; SBOM metadata identifies version `15.0.0` with five components.
+- Public RPM transaction dry-run from installed `1:14.0.0-1.fc44` to the
+  downloaded base/API/daemon `1:15.0.0-1.fc44` set: passed without mutation.
+- COPR build `10739754`, chroot `fedora-44-x86_64`: succeeded. The release
+  workflow installed the public package and verified version `15.0.0`.
+- Wiki commit `d0ecb6228d4fb8a089de99d9d3bd7de134212b93`: public Home text and canonical
+  hero screenshot read back byte-for-byte.
 
-1. build and verify checksums, CycloneDX SBOM, and in-toto/SLSA provenance
-   against that commit;
-2. push the exact commit and create the canonical `v15.0.0` tag;
-3. wait for terminal GitHub Actions and COPR results;
-4. verify Fedora 44 install/upgrade evidence and public release assets;
-5. publish and read back the wiki and final release announcement.
+Public asset SHA-256 digests:
+
+| Artifact | SHA-256 |
+| --- | --- |
+| Base RPM | `fe6dc7a6dcb79e76988fd302f97557a2674036b0ab1c0db74faf41ea0a2ecf52` |
+| API RPM | `551545348d18b7a546fc0061fefb9de9b1e516f5c8416589e13be9c07f617307` |
+| Daemon RPM | `75de590c163900f574d33abc6f9c46c42ad9ec56726528d5ec113e65e7191c30` |
+| Flatpak | `0a40c5b10fd8cd747f6439ea085cb9307cd6ec73f587f3021f66906f351a98ac` |
+| sdist | `16d2b6206cac55d93470cf8b62d9874bc88bb641601fc86fab3725f6b6696ec4` |
+
+## Remaining and deferred
 
 No physical extras RPM ships in v15. The evidence-backed Phase 9 NO-GO remains
 deferred to v16; logical component isolation is the shipped boundary.
+
+The existing AppStream reverse-DNS warning, informational metadata suggestions,
+and desktop multiple-main-category hint remain non-blocking under the
+repository's established Fedora release gate. No other release issue remains.
