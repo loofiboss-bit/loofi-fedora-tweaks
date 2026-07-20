@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 16.0.0 "Clarity" — responsive navigation, consistent pages, and preserved safety contracts
+> Version 17.0.0 "Assurance" — verified core workflows and preserved responsive navigation
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see

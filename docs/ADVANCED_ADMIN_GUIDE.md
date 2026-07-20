@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 16.0.0 "Clarity"
+> Version 17.0.0 "Assurance"
 
 Operational runbook for power users and Fedora administrators.
 

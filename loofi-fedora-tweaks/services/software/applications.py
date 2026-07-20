@@ -69,7 +69,8 @@ class ApplicationOperationService:
 
         install_target = arguments[-1] if arguments else package_id
         atomic = SystemManager.is_atomic()
-        source = "Vendor RPM" if install_target.startswith(("http://", "https://")) else "Fedora RPM"
+        external_rpm = install_target.startswith(("http://", "https://"))
+        source = "Vendor RPM" if external_rpm else "Fedora RPM"
         explanation = (
             "rpm-ostree layers this package into a new deployment; a reboot may be required."
             if atomic
@@ -81,8 +82,8 @@ class ApplicationOperationService:
             source,
             package_id,
             install_target,
-            True,
-            explanation,
+            not external_rpm,
+            "External RPM URLs remain manual-only in Assurance." if external_rpm else explanation,
         )
 
     @staticmethod

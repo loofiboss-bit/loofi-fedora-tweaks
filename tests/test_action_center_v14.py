@@ -102,7 +102,19 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
 
         self.assertEqual(
             [definition.id for definition in catalog.list()],
-            ["dnf-clean-all", "fstrim-all", "restart-failed-service"],
+            [
+                "autoremove-packages",
+                "create-recovery-point",
+                "dnf-clean-all",
+                "fstrim-all",
+                "install-application",
+                "remove-application",
+                "restart-failed-service",
+                "update-fedora-system",
+                "update-firmware",
+                "update-flatpaks",
+                "vacuum-journal",
+            ],
         )
         self.assertFalse(catalog.denied("gaming-install-tools").allowed)
         self.assertEqual(catalog.denied("gaming-install-tools").reason_code, "manual_only")
@@ -202,6 +214,7 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
         result = self.orchestrator.preview(plan.plan_id)
 
         self.assertTrue(result.preview)
+        self.assertEqual(result.data["schema_version"], 2)
         self.facade.preview.assert_called_once_with(
             ["dnf", "clean", "all"], privileged=True, action_id="dnf-clean-all"
         )
@@ -228,7 +241,7 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
             rollback_supported=True,
             command_renderer=lambda _parameters, _runtime: ["pkexec", "dnf", "clean", "all"],
             preflight_checker=lambda _parameters, _runtime: PolicyDecision(True, "preflight_ok", "ok"),
-            verifier=lambda _run, _runtime: ActionResult.ok("ok"),
+            verifier=lambda _run, _plan, _runtime: ActionResult.ok("ok"),
         )
         catalog = ActionCatalog([definition])
         orchestrator = ActionCenterOrchestrator(
@@ -329,8 +342,8 @@ class TestSystemActionRuntime(unittest.TestCase):
     def test_action_center_service_exposes_complete_catalog_without_preflight(self):
         items = ActionCenterService(facade=MagicMock(), history=MagicMock(), queue=MagicMock()).catalog_items("45-preview")
 
-        self.assertEqual([item.id for item in items], ["dnf-clean-all", "fstrim-all", "restart-failed-service"])
-        self.assertTrue(all(item.source == "catalog:v14" for item in items))
+        self.assertEqual([item.id for item in items], [definition.id for definition in ActionCatalog().list()])
+        self.assertTrue(all(item.source == "catalog:v17" for item in items))
         self.assertTrue(all(item.metadata["target"] == "45-preview" for item in items))
         self.assertTrue(all(not item.manual_only for item in items))
 

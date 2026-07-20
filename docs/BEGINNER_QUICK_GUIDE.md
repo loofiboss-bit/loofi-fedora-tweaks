@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 16.0.0 "Clarity" — responsive destinations, on-demand tools, and verified maintenance
+> Version 17.0.0 "Assurance" — preview-first plans, explicit confirmation, and verified maintenance
 
 Use this guide for a safe first run in under 10 minutes.
 

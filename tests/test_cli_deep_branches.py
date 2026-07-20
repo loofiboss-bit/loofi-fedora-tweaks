@@ -86,27 +86,29 @@ class TestRunOperation(unittest.TestCase):
 
 
 class TestCmdCleanup(unittest.TestCase):
-    @patch("cli.main.run_operation", return_value=True)
+    @patch("cli.main._emit_legacy_plans", return_value=0)
+    @patch("cli.main._create_action_center_plan")
     @patch("cli.main._print")
-    def test_cleanup_all(self, mock_print, mock_run):
+    def test_cleanup_all(self, mock_print, mock_plan, mock_emit):
         _set_json(False)
         r = cmd_cleanup(_ns(action="all", days=14))
         self.assertEqual(r, 0)
-        self.assertEqual(mock_run.call_count, 3)
+        self.assertEqual(mock_plan.call_count, 3)
 
-    @patch("cli.main.run_operation", return_value=True)
+    @patch("cli.main._emit_legacy_plans", return_value=0)
+    @patch("cli.main._create_action_center_plan")
     @patch("cli.main._print")
-    def test_cleanup_autoremove(self, mock_print, mock_run):
+    def test_cleanup_autoremove(self, mock_print, mock_plan, mock_emit):
         _set_json(False)
         r = cmd_cleanup(_ns(action="autoremove", days=14))
         self.assertEqual(r, 0)
+        mock_plan.assert_called_once_with("autoremove-packages", {})
 
-    @patch("cli.main.run_operation", return_value=True)
     @patch("cli.main._print")
-    def test_cleanup_rpmdb(self, mock_print, mock_run):
+    def test_cleanup_rpmdb(self, mock_print):
         _set_json(False)
         r = cmd_cleanup(_ns(action="rpmdb", days=14))
-        self.assertEqual(r, 0)
+        self.assertEqual(r, 1)
 
 
 # ── cmd_tweak ──────────────────────────────────────────────────────
@@ -954,11 +956,11 @@ class TestCmdPackage(unittest.TestCase):
         )
         self.assertEqual(r, 1)
 
+    @patch("cli.main._emit_legacy_plans", return_value=0)
+    @patch("cli.main._create_action_center_plan")
     @patch("cli.main._print")
-    @patch("utils.package_explorer.PackageExplorer.remove")
-    def test_package_remove(self, mock_remove, mock_print):
+    def test_package_remove(self, mock_print, mock_plan, mock_emit):
         _set_json(False)
-        mock_remove.return_value = SimpleNamespace(success=True, message="removed")
         r = cmd_package(
             _ns(
                 action="remove",
@@ -970,6 +972,7 @@ class TestCmdPackage(unittest.TestCase):
             )
         )
         self.assertEqual(r, 0)
+        mock_plan.assert_called_once_with("remove-application", {"source": "fedora", "package_id": "vim"})
 
     @patch("cli.main._print")
     @patch("utils.package_explorer.PackageExplorer.list_installed")

@@ -12,7 +12,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | --- | --- | --- | --- |
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
-| v17.0.0 | Unnamed | FUTURE | Reassess physical component packaging only after v16 consolidation evidence |
+| v17.0.0 | Assurance | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
 
 ## [DONE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
 
@@ -65,11 +65,17 @@ tag `v15.0.0` peels to `17aa8aa78cd3ac51d1d63da336ee25d4e5e3b4c1`.
 See [v15 release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) and
 [v15 release readiness](docs/reports/V15_PHASE10_RELEASE_READINESS.md).
 
-## [FUTURE] v17.0.0 — Post-consolidation Decisions
+## [ACTIVE] v17.0.0 "Assurance" — Verified Core Workflows
 
-- Reassess a physical `-extras` package only if v16 reduces shared ownership and
-  CLI/API/daemon dependency overlap enough to make upgrades safe.
-- Choose codename and scope only after v16 evidence and release retrospection.
+- Converge the five canonical workflows on preview, explicit confirmation,
+  audit, and outcome verification through Action Center.
+- Add durable reboot-aware verification for Atomic Fedora and firmware work.
+- Enforce the published read-only Web API boundary.
+- Keep physical specialist packaging out of scope because ownership and runtime
+  overlap remain too high for safe upgrades.
+
+The sole scope authority is the
+[canonical v17 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md).
 
 ## Execution Rules
 

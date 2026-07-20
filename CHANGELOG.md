@@ -4,6 +4,36 @@
 
 All notable changes to this project will be documented in this file.
 
+## [17.0.0] - 2026-07-20 "Assurance"
+
+### Added
+
+- Eight single-action, preview-first Action Center definitions for Fedora,
+  Flatpak, firmware, application, cleanup, and recovery-point workflows.
+- Plan-aware verification decisions with durable `awaiting_reboot`, boot ID,
+  verification-attempt, and reboot-state evidence.
+- Atomic, backed-up schema-v2 migration for Action Center plans and runs while
+  retaining v1 read compatibility and future-schema read-only behavior.
+
+### Changed
+
+- Converted the five canonical UI and legacy-CLI mutation flows to plan
+  creation followed by separate, explicitly confirmed Action Center apply.
+- Enforced the authenticated HTTP API as read-only except for token issuance.
+
+### Security
+
+- Added closed per-definition parameter validation and rejected URLs,
+  option-like package identifiers, invalid retention values, and unsupported
+  snapshot backends before command construction.
+
+### Release
+
+- Validated Fedora KDE 44 Traditional behavior, Fedora Kinoite 44 staged
+  deployment and reboot readback, and fwupd host emulation.
+- Kept the physical `-extras` split deferred after component analysis confirmed
+  continued core/specialist ownership and runtime overlap.
+
 ## [16.0.0] - 2026-07-18 "Clarity"
 
 ### Added

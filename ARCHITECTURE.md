@@ -3,7 +3,7 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Version**: 16.0.0 "Clarity" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Released version**: 17.0.0 "Assurance" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 
 ## Runtime entry modes
 
@@ -175,21 +175,33 @@ verifies the five routes without host probes or mutations.
 
 ## Action Center invariants
 
-`core/actions` remains protected v14 architecture. v15 changes placement and
-presentation only.
+`core/actions` retains the protected v14 planning boundary and extends it with
+the v17 schema-v2, reboot-aware verification contract.
 
 - `maintenance:action-center` is the only Review/Plan/Run/Verify/History UI.
-- The executable catalog remains `dnf-clean-all`,
-  `restart-failed-service`, and `fstrim-all`.
+- The legacy `dnf-clean-all`, `restart-failed-service`, and `fstrim-all`
+  definitions remain unchanged. Assurance adds independent Fedora, Flatpak,
+  firmware, application, cleanup, and recovery-point definitions.
 - Plans store validated action IDs/parameters, not authoritative command vectors.
+- Every definition accepts a closed parameter schema and may add stricter typed
+  validation. Every plan contains exactly one action and one command vector.
 - Apply regenerates commands, runs fresh preflight, enforces expiry and explicit
   confirmation, then executes through the existing privilege boundary.
 - Medium-risk actions without rollback require explicit acknowledgement.
-- `succeeded` requires the action verifier; exit code zero is insufficient.
+- Verification receives both the durable run and its original digest-protected
+  plan. `succeeded` requires the action verifier; exit code zero is insufficient.
+- Runs may enter `awaiting_reboot`; verification resumes explicitly and compares
+  boot/deployment facts without automatic reboot, retry, rollback, or resume.
 - One cross-process mutation lease is allowed. Interrupted runs are inspectable
   and never auto-resume.
 - Home, search, API, plugins, and AI content cannot execute or expand the
   catalog. The authenticated API remains read-only.
+
+Action plans and runs use schema v2. v1 state is migrated with atomic replace,
+last-known-good backup, and readback. Unknown future schemas remain read-only.
+The HTTP route table permits mutation only for token issuance; system,
+observability, profile, Action Center, and export surfaces are authenticated
+GET inspection endpoints.
 
 ## State and observability
 

@@ -11,7 +11,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Optional, cast
 
-from core.executor.operations import AdvancedOps, CleanupOps, NetworkOps, TweakOps
+from core.executor.operations import AdvancedOps, NetworkOps, TweakOps
 
 logger = logging.getLogger(__name__)
 
@@ -41,7 +41,6 @@ from cli.commands.system_commands import (  # noqa: E402
 )
 from cli.commands.ops_commands import (  # noqa: E402
     handle_advanced,
-    handle_cleanup,
     handle_network,
     handle_tweak,
 )
@@ -191,9 +190,43 @@ def run_operation(op_result, timeout=None):
         return False
 
 
+def _create_action_center_plan(action_id: str, parameters: Dict[str, Any]):
+    from core.actions import ActionCenterOrchestrator
+
+    return ActionCenterOrchestrator().plan(action_id, parameters)
+
+
+def _emit_legacy_plans(plans) -> int:
+    payload = {
+        "schema_version": 2,
+        "plans": [plan.to_dict() for plan in plans],
+        "auto_apply": False,
+    }
+    if _json_output:
+        _output_json(payload)
+    else:
+        for plan in plans:
+            _print(f"Plan {plan.plan_id}: {plan.action_id} [{plan.state}]")
+            _print(f"  {plan.policy_decision.explanation}")
+            if plan.state != "blocked":
+                _print(f"  Apply separately: loofi --cli action-center apply {plan.plan_id} --confirm")
+    return 0 if all(plan.state != "blocked" for plan in plans) else 1
+
+
 def cmd_cleanup(args):
-    """Handle cleanup subcommand."""
-    return handle_cleanup(args=args, run_operation=run_operation, cleanup_ops_cls=CleanupOps)
+    """Create independent cleanup plans; never auto-apply legacy commands."""
+    mapping = {
+        "dnf": ("dnf-clean-all", {}),
+        "journal": ("vacuum-journal", {"days": args.days}),
+        "trim": ("fstrim-all", {}),
+        "autoremove": ("autoremove-packages", {}),
+    }
+    if args.action == "rpmdb":
+        _print("RPM database repair is manual-only under Troubleshooting.")
+        return 1
+    actions = ["dnf", "journal", "trim"] if args.action == "all" else [args.action]
+    plans = [_create_action_center_plan(*mapping[action]) for action in actions]
+    return _emit_legacy_plans(plans)
 
 
 def cmd_tweak(args):
@@ -663,9 +696,20 @@ def cmd_action_center(args) -> int:
                 service_unit = getattr(args, "service", None)
                 if service_unit:
                     parameters["service"] = service_unit
+                for argument, parameter in (
+                    ("package_id", "package_id"),
+                    ("source", "source"),
+                    ("backend", "backend"),
+                    ("description", "description"),
+                    ("days", "days"),
+                ):
+                    value = getattr(args, argument, None)
+                    expected_type = int if argument == "days" else str
+                    if isinstance(value, expected_type) and not isinstance(value, bool) and value != "":
+                        parameters[parameter] = value
                 plan = orchestrator.plan(identifier, parameters, target=target)
                 payload = {
-                    "schema_version": 1,
+                    "schema_version": 2,
                     "plan": plan.to_dict(),
                     "policy_decision": plan.policy_decision.to_dict(),
                 }
@@ -683,7 +727,7 @@ def cmd_action_center(args) -> int:
             if action == "show":
                 plan = orchestrator.get_plan(identifier)
                 payload = {
-                    "schema_version": 1,
+                    "schema_version": 2,
                     "plan": plan.to_dict(),
                     "policy_decision": plan.policy_decision.to_dict(),
                 }
@@ -708,7 +752,7 @@ def cmd_action_center(args) -> int:
                     timeout=_operation_timeout,
                 )
                 payload = {
-                    "schema_version": 1,
+                    "schema_version": 2,
                     "run": run.to_dict(),
                     "policy_decision": plan.policy_decision.to_dict(),
                 }
@@ -725,7 +769,7 @@ def cmd_action_center(args) -> int:
             run = orchestrator.verify(identifier)
             plan = orchestrator.get_plan(run.plan_id)
             payload = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "run": run.to_dict(),
                 "policy_decision": plan.policy_decision.to_dict(),
             }
@@ -736,21 +780,21 @@ def cmd_action_center(args) -> int:
                     f"Recovery: {run.recovery_status}",
                 ],
             )
-            return 0 if run.state == "succeeded" else 1
+            return 0 if run.state in {"succeeded", "awaiting_reboot"} else 1
         except ActionPlanRejectedError as exc:
             payload = {
-                "schema_version": 1,
+                "schema_version": 2,
                 "error": "action_plan_rejected",
                 "policy_decision": exc.decision.to_dict(),
             }
             emit(payload, [f"Action blocked: {exc.decision.reason_code} - {exc.decision.explanation}"])
             return 1
         except ActionCenterBusyError as exc:
-            payload = {"schema_version": 1, "error": "action_center_busy", "message": str(exc)}
+            payload = {"schema_version": 2, "error": "action_center_busy", "message": str(exc)}
             emit(payload, [str(exc)])
             return 1
         except ActionCenterError as exc:
-            payload = {"schema_version": 1, "error": "action_center_error", "message": str(exc)}
+            payload = {"schema_version": 2, "error": "action_center_error", "message": str(exc)}
             emit(payload, [str(exc)])
             return 1
 
@@ -758,7 +802,7 @@ def cmd_action_center(args) -> int:
     candidates = service.candidates_from_readiness(target)
 
     if action == "list":
-        payload = {"target": target, "candidates": [item.to_dict() for item in candidates]}
+        payload = {"schema_version": 2, "target": target, "candidates": [item.to_dict() for item in candidates]}
         if _json_output:
             _output_json(payload)
             return 0
@@ -776,7 +820,7 @@ def cmd_action_center(args) -> int:
 
     if action == "recommendations":
         recommendations = service.recommendations_from_timeline(limit=getattr(args, "limit", 25))
-        payload = {"schema_version": 1, "recommendations": [item.to_dict() for item in recommendations]}
+        payload = {"schema_version": 2, "recommendations": [item.to_dict() for item in recommendations]}
         if _json_output:
             _output_json(payload)
         else:
@@ -793,7 +837,7 @@ def cmd_action_center(args) -> int:
         preview_item = next((candidate for candidate in candidates if candidate.id == action_id), None)
         if preview_item is None:
             if _json_output:
-                _output_json({"error": "not_found", "action_id": action_id})
+                _output_json({"schema_version": 2, "error": "not_found", "action_id": action_id})
             else:
                 _print(f"Action Center item not found: {action_id}")
             return 1
@@ -805,7 +849,7 @@ def cmd_action_center(args) -> int:
         plan_history = [plan.to_dict() for plan in ActionPlanStore().list(limit=min(limit, 50))]
         run_history = [run.to_dict() for run in ActionRunStore().list(limit=min(limit, 100))]
         payload = {
-            "schema_version": 1,
+            "schema_version": 2,
             "history": legacy_history,
             "plans": plan_history,
             "runs": run_history,
@@ -822,7 +866,7 @@ def cmd_action_center(args) -> int:
         return 0
 
     if _json_output:
-        _output_json({"error": "unknown_action_center_command", "action": action})
+        _output_json({"schema_version": 2, "error": "unknown_action_center_command", "action": action})
     else:
         _print(f"Unknown Action Center command: {action}")
     return 1
@@ -1072,6 +1116,16 @@ def cmd_tuner(args):
 
 def cmd_snapshot(args):
     """Handle snapshot subcommand."""
+    if args.action == "create":
+        backend = getattr(args, "backend", None)
+        if backend not in {"timeshift", "snapper"}:
+            _print("Snapshot creation requires --backend timeshift|snapper; raw Btrfs remains manual-only.")
+            return 1
+        plan = _create_action_center_plan(
+            "create-recovery-point",
+            {"backend": backend, "description": args.label or "manual-snapshot"},
+        )
+        return _emit_legacy_plans([plan])
     from utils.snapshot_manager import SnapshotManager
     return handle_snapshot(args, _json_output, _output_json, _print, run_operation, SnapshotManager)
 
@@ -1143,6 +1197,17 @@ def cmd_service(args):
 
 def cmd_package(args):
     """Handle package subcommand."""
+    if args.action in {"install", "remove"}:
+        if not args.name:
+            _print("Package name required")
+            return 1
+        source = {"dnf": "fedora", "flatpak": "flatpak"}.get(getattr(args, "source", None) or "dnf")
+        if source is None:
+            _print("Install/remove requires an explicit --source dnf|flatpak.")
+            return 1
+        action_id = "install-application" if args.action == "install" else "remove-application"
+        plan = _create_action_center_plan(action_id, {"source": source, "package_id": args.name})
+        return _emit_legacy_plans([plan])
     return handle_package(args, _json_output, _output_json, _print, run_operation, PackageExplorer)
 
 
@@ -1266,7 +1331,11 @@ def cmd_backup(args):
     elif args.action == "create":
         desc = getattr(args, "description", None) or "CLI backup"
         tool = getattr(args, "tool", None)
-        return 0 if run_operation(BackupWizard.create_snapshot(tool=tool, description=desc)) else 1
+        if tool not in {"timeshift", "snapper"}:
+            _print("Backup creation requires --tool timeshift|snapper.")
+            return 1
+        plan = _create_action_center_plan("create-recovery-point", {"backend": tool, "description": desc})
+        return _emit_legacy_plans([plan])
 
     elif args.action == "list":
         tool = getattr(args, "tool", None)
@@ -1387,7 +1456,7 @@ def main(argv: Optional[List[str]] = None):
         nargs="?",
         help="Cleanup action to perform",
     )
-    cleanup_parser.add_argument("--days", type=int, default=14, help="Days to keep journal")
+    cleanup_parser.add_argument("--days", type=int, choices=[7, 14, 30], default=14, help="Days to keep journal")
 
     # Tweak subcommand
     tweak_parser = subparsers.add_parser("tweak", help="Hardware tweaks (power, audio, battery)")
@@ -1524,6 +1593,11 @@ def main(argv: Optional[List[str]] = None):
     action_center_parser.add_argument("--target", choices=["44", "45-preview"], default="44", help="Readiness target profile")
     action_center_parser.add_argument("--limit", type=int, default=25, help="History entry limit")
     action_center_parser.add_argument("--service", help="Exact failed systemd unit for restart-failed-service")
+    action_center_parser.add_argument("--package-id", help="Exact Fedora package name or Flatpak reference")
+    action_center_parser.add_argument("--source", choices=["fedora", "flatpak"], help="Application package source")
+    action_center_parser.add_argument("--backend", choices=["timeshift", "snapper"], help="Recovery-point backend")
+    action_center_parser.add_argument("--description", help="Recovery-point description")
+    action_center_parser.add_argument("--days", type=int, choices=[7, 14, 30], help="Journal retention in days")
     action_center_parser.add_argument("--confirm", action="store_true", help="Explicitly confirm application of the reviewed plan")
     action_center_parser.add_argument(
         "--accept-no-rollback",
@@ -1631,6 +1705,7 @@ def main(argv: Optional[List[str]] = None):
         help="Snapshot action",
     )
     snapshot_parser.add_argument("--label", help="Snapshot label (for create)")
+    snapshot_parser.add_argument("--backend", choices=["timeshift", "snapper"], help="Verified backend for create")
     snapshot_parser.add_argument("snapshot_id", nargs="?", help="Snapshot ID (for delete)")
 
     # Smart log viewer

@@ -13,6 +13,7 @@ PlanState = Literal["planned", "ready", "needs_review", "blocked"]
 RunState = Literal[
     "running",
     "verifying",
+    "awaiting_reboot",
     "succeeded",
     "failed",
     "verification_failed",
@@ -35,7 +36,8 @@ PLAN_TRANSITIONS: dict[str, frozenset[str]] = {
 
 RUN_TRANSITIONS: dict[str, frozenset[str]] = {
     "running": frozenset({"verifying", "failed", "cancelled", "interrupted"}),
-    "verifying": frozenset({"succeeded", "verification_failed", "interrupted"}),
+    "verifying": frozenset({"awaiting_reboot", "succeeded", "verification_failed", "interrupted"}),
+    "awaiting_reboot": frozenset({"verifying", "interrupted"}),
     "succeeded": frozenset(),
     "failed": frozenset(),
     "verification_failed": frozenset(),
@@ -92,6 +94,9 @@ class ActionRuntime(Protocol):
     def fedora_version(self) -> str:
         ...
 
+    def boot_id(self) -> str:
+        ...
+
     def package_manager_busy(self) -> bool:
         ...
 
@@ -107,7 +112,46 @@ class ActionRuntime(Protocol):
 
 CommandRenderer = Callable[[Mapping[str, Any], ActionRuntime], Sequence[str]]
 PreflightChecker = Callable[[Mapping[str, Any], ActionRuntime], PolicyDecision]
-ActionVerifier = Callable[["ActionRun", ActionRuntime], ActionResult]
+ParameterValidator = Callable[[Mapping[str, Any]], PolicyDecision]
+PrivilegeResolver = Callable[[Mapping[str, Any], ActionRuntime], bool]
+
+
+VerificationState = Literal["succeeded", "awaiting_reboot", "failed"]
+
+
+@dataclass(frozen=True)
+class VerificationDecision:
+    """Typed verification result, including durable reboot hand-off."""
+
+    state: VerificationState
+    message: str
+    data: dict[str, Any] = field(default_factory=dict)
+    exit_code: int | None = None
+
+    @classmethod
+    def succeeded(cls, message: str, **data: Any) -> "VerificationDecision":
+        return cls("succeeded", message, data)
+
+    @classmethod
+    def awaiting_reboot(cls, message: str, **data: Any) -> "VerificationDecision":
+        return cls("awaiting_reboot", message, data)
+
+    @classmethod
+    def failed(cls, message: str, *, exit_code: int | None = None, **data: Any) -> "VerificationDecision":
+        return cls("failed", message, data, exit_code)
+
+    def to_result(self, *, action_id: str) -> ActionResult:
+        return ActionResult(
+            success=self.state == "succeeded",
+            message=self.message,
+            exit_code=self.exit_code,
+            data={"verification_state": self.state, **self.data},
+            needs_reboot=self.state == "awaiting_reboot",
+            action_id=action_id,
+        )
+
+
+ActionVerifier = Callable[["ActionRun", "ActionPlan", ActionRuntime], VerificationDecision | ActionResult]
 
 
 @dataclass(frozen=True)
@@ -127,6 +171,8 @@ class ActionDefinition:
     command_renderer: CommandRenderer = field(repr=False, compare=False)
     preflight_checker: PreflightChecker = field(repr=False, compare=False)
     verifier: ActionVerifier = field(repr=False, compare=False)
+    parameter_validator: ParameterValidator | None = field(default=None, repr=False, compare=False)
+    privilege_resolver: PrivilegeResolver | None = field(default=None, repr=False, compare=False)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -234,6 +280,10 @@ class ActionRun:
     execution_result: dict[str, Any] | None = None
     verification_result: dict[str, Any] | None = None
     recovery_status: str = "not-required"
+    execution_boot_id: str = ""
+    reboot_required: bool = False
+    verification_attempts: int = 0
+    last_verified_at: float | None = None
     state_history: list[dict[str, Any]] = field(default_factory=list)
 
     def transition(self, target: RunState, reason: str, *, at: float | None = None) -> None:
@@ -262,6 +312,10 @@ class ActionRun:
             "execution_result": dict(self.execution_result) if self.execution_result else None,
             "verification_result": dict(self.verification_result) if self.verification_result else None,
             "recovery_status": self.recovery_status,
+            "execution_boot_id": self.execution_boot_id,
+            "reboot_required": self.reboot_required,
+            "verification_attempts": self.verification_attempts,
+            "last_verified_at": self.last_verified_at,
             "state_history": [dict(entry) for entry in self.state_history],
         }
 
@@ -284,6 +338,10 @@ class ActionRun:
             execution_result=dict(execution) if isinstance(execution, Mapping) else None,
             verification_result=dict(verification) if isinstance(verification, Mapping) else None,
             recovery_status=str(payload.get("recovery_status", "not-required")),
+            execution_boot_id=str(payload.get("execution_boot_id", "")),
+            reboot_required=bool(payload.get("reboot_required", False)),
+            verification_attempts=int(payload.get("verification_attempts", 0)),
+            last_verified_at=float(payload["last_verified_at"]) if payload.get("last_verified_at") is not None else None,
             state_history=[dict(entry) for entry in history if isinstance(entry, Mapping)],
         )
 

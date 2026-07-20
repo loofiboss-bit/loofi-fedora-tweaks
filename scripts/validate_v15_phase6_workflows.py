@@ -28,9 +28,10 @@ def validate() -> list[str]:
         if resolve(workflow.preferred_route_id) is None:
             errors.append(f"workflow {workflow.id} has an unknown preferred route")
 
-    catalog_ids = [definition.id for definition in ActionCatalog().list()]
-    if catalog_ids != ["dnf-clean-all", "fstrim-all", "restart-failed-service"]:
-        errors.append("the v14 executable catalog changed")
+    catalog_ids = {definition.id for definition in ActionCatalog().list()}
+    legacy_ids = {"dnf-clean-all", "fstrim-all", "restart-failed-service"}
+    if not legacy_ids.issubset(catalog_ids):
+        errors.append("the v14 executable catalog is no longer preserved")
 
     expected_routes = {
         "maintenance:action-center": ("software_updates", "maintenance_review", None),

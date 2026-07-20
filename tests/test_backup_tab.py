@@ -294,6 +294,7 @@ def _install_backup_stubs():
     qt_core.Qt = types.SimpleNamespace(
         Orientation=types.SimpleNamespace(Horizontal=1, Vertical=2),
     )
+    qt_core.pyqtSignal = _DummySignal
 
     # -- PyQt6 package --
     pyqt = types.ModuleType("PyQt6")
@@ -1524,13 +1525,13 @@ class TestSignalConnections(unittest.TestCase):
         bw.detect_backup_tool.assert_called()
 
     def test_create_button_fires_create_snapshot(self):
-        """Clicking create button calls _create_snapshot."""
+        """Clicking create hands one plan to Action Center."""
         tab = _make_tab()
-        bw = _get_backup_wizard()
-        bw.create_snapshot.return_value = ("pkexec", [], "Creating")
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
         tab._detected_tool = "timeshift"
         tab.create_btn.clicked.emit()
-        bw.create_snapshot.assert_called()
+        self.assertEqual(requests[-1][0], "create-recovery-point")
 
 
 # ===========================================================================
@@ -1617,6 +1618,48 @@ class TestEdgeCases(unittest.TestCase):
         tab._output_text = ""
         tab._delete_selected()
         self.assertIn("Select a snapshot", tab._output_text)
+
+
+for _legacy_test in (
+    "test_calls_backup_wizard_create",
+    "test_runs_command_with_returned_tuple",
+    "test_uses_default_description_when_empty",
+    "test_uses_none_tool_when_not_detected",
+    "test_exception_appends_error",
+    "test_preserves_custom_description",
+):
+    setattr(
+        TestCreateSnapshot,
+        _legacy_test,
+        unittest.skip("v17 creation is delegated to Action Center")(getattr(TestCreateSnapshot, _legacy_test)),
+    )
+
+TestEdgeCases.test_create_snapshot_with_empty_string_desc = unittest.skip(
+    "v17 creation is delegated to Action Center"
+)(TestEdgeCases.test_create_snapshot_with_empty_string_desc)
+
+
+class TestAssuranceCreateSnapshot(unittest.TestCase):
+    def test_timeshift_creation_emits_one_action_center_request(self):
+        tab = _make_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
+        tab._detected_tool = "timeshift"
+        tab.desc_input.setText("Before update")
+
+        tab._create_snapshot()
+
+        self.assertEqual(requests[-1], ("create-recovery-point", {"backend": "timeshift", "description": "Before update"}))
+
+    def test_unknown_backend_is_manual_only(self):
+        tab = _make_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
+        tab._detected_tool = "btrfs"
+
+        tab._create_snapshot()
+
+        self.assertEqual(requests, [])
 
 
 if __name__ == "__main__":

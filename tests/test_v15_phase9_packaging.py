@@ -197,13 +197,11 @@ class TestV14UpgradeCompatibility(unittest.TestCase):
             self.assertEqual(runs[0].state, "verifying")
             self.assertEqual(history[0]["event"], "run-awaiting-verification")
             self.assertNotEqual(doctor["status"], "error")
-            self.assertEqual(
-                before,
-                {
-                    path: path.read_bytes()
-                    for path in (plan_path, run_path, history_path)
-                },
-            )
+            self.assertEqual(json.loads(plan_path.read_text(encoding="utf-8"))["schema_version"], 2)
+            self.assertEqual(json.loads(run_path.read_text(encoding="utf-8"))["action_run_schema_version"], 2)
+            self.assertEqual(history_path.read_bytes(), before[history_path])
+            self.assertEqual(plan_path.with_suffix(".json.lkg").read_bytes(), before[plan_path])
+            self.assertEqual(run_path.with_suffix(".jsonl.lkg").read_bytes(), before[run_path])
 
 
 if __name__ == "__main__":

@@ -187,14 +187,14 @@ class TestCLIExtendedHandlers(unittest.TestCase):
         result = cmd_snapshot(args)
         self.assertEqual(result, 0)
 
-    @patch('cli.main.run_operation', return_value=True)
-    @patch('utils.snapshot_manager.SnapshotManager.create_snapshot', return_value=("pkexec", ["cmd"], "create"))
-    @patch('cli.main._print')
-    def test_snapshot_create_success(self, mock_print, mock_create, mock_run_op):
-        """snapshot create success path exits 0."""
-        args = argparse.Namespace(action="create", label="manual", snapshot_id=None)
+    @patch('cli.main._emit_legacy_plans', return_value=0)
+    @patch('cli.main._create_action_center_plan')
+    def test_snapshot_create_success(self, mock_plan, mock_emit):
+        """snapshot create produces a plan without applying it."""
+        args = argparse.Namespace(action="create", label="manual", snapshot_id=None, backend="snapper")
         result = cmd_snapshot(args)
         self.assertEqual(result, 0)
+        mock_plan.assert_called_once_with("create-recovery-point", {"backend": "snapper", "description": "manual"})
 
     @patch('cli.main._print')
     def test_snapshot_delete_requires_id(self, mock_print):

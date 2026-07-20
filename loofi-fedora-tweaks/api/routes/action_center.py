@@ -1,4 +1,4 @@
-"""Authenticated, read-only v14 Action Center API routes."""
+"""Authenticated, read-only v17 Action Center API routes."""
 
 from __future__ import annotations
 
@@ -30,7 +30,7 @@ def list_action_plans(
     """Return bounded plan metadata; this endpoint never executes actions."""
     plans = ActionPlanStore().list(limit=limit)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "read_only": True,
         "plans": [plan.to_dict() for plan in plans],
     }
@@ -46,7 +46,7 @@ def get_action_plan(
     if plan is None:
         raise HTTPException(status_code=404, detail="Action Center plan not found")
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "read_only": True,
         "plan": plan.to_dict(),
         "policy_decision": plan.policy_decision.to_dict(),
@@ -61,7 +61,7 @@ def list_action_runs(
     """Return bounded execution and verification status metadata."""
     runs = ActionRunStore().list(limit=limit)
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "read_only": True,
         "runs": [_run_status(run) for run in runs],
     }
@@ -77,7 +77,7 @@ def get_action_run(
     if run is None:
         raise HTTPException(status_code=404, detail="Action Center run not found")
     return {
-        "schema_version": 1,
+        "schema_version": 2,
         "read_only": True,
         "run": _run_status(run),
     }

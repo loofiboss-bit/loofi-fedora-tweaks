@@ -1,6 +1,7 @@
-"""Comprehensive security tests for API server."""
+"""Security and read-only contract tests for the Web API."""
 
-from unittest.mock import MagicMock, patch
+import unittest
+from unittest.mock import patch
 
 import pytest
 
@@ -13,539 +14,66 @@ except ImportError:
 pytestmark = pytest.mark.skipif(not _HAS_FASTAPI, reason="fastapi not installed")
 
 if _HAS_FASTAPI:
-    from core.executor.action_result import ActionResult
     from utils.api_server import APIServer
     from utils.auth import AuthManager
 
 
-@pytest.fixture
-def test_client():
-    """Provide a FastAPI test client for the API server."""
-    server = APIServer()
-    return TestClient(server.app)
-
-
-@pytest.fixture
-def valid_api_key():
-    """Generate and return a valid API key."""
-    return AuthManager.generate_api_key()
-
-
-@pytest.fixture
-def valid_token(test_client, valid_api_key):
-    """Generate and return a valid JWT token."""
-    response = test_client.post("/api/token", data={"api_key": valid_api_key})
-    assert response.status_code == 200
-    return response.json()["access_token"]
-
-
-@pytest.fixture
-def mock_action_executor():
-    """Mock ActionExecutor.run to prevent actual system execution."""
-    with patch("core.executor.action_executor.ActionExecutor.run") as mock_run:
-        mock_run.return_value = ActionResult(
-            success=True,
-            message="Mock execution successful",
-            exit_code=0,
-            stdout="mock output",
-            stderr="",
-            preview=True,
-            action_id="test-action",
-        )
-        yield mock_run
-
-
-# ============================================================================
-# Basic Functionality Tests
-# ============================================================================
-
-
-def test_health_endpoint(test_client):
-    """Health endpoint should work without authentication (no version leak)."""
-    response = test_client.get("/api/health")
-    assert response.status_code == 200
-    payload = response.json()
-    assert payload["status"] == "ok"
-    # Hardened: /health no longer exposes version or codename
-    assert "version" not in payload
-    assert "codename" not in payload
-
-
-def test_token_flow(test_client, valid_api_key, mock_action_executor):
-    """Test complete token generation and execution flow."""
-    token_resp = test_client.post("/api/token", data={"api_key": valid_api_key})
-    assert token_resp.status_code == 200
-    token = token_resp.json()["access_token"]
-
-    # Use allowlisted command (echo is not in COMMAND_ALLOWLIST)
-    exec_resp = test_client.post(
-        "/api/execute",
-        json={"command": "uname", "args": ["-r"], "preview": True},
-        headers={"Authorization": f"Bearer {token}"},
-    )
-    assert exec_resp.status_code == 200
-    data = exec_resp.json()
-    assert data["preview"]["preview"] is True
-
-
-# ============================================================================
-# Authentication Security Tests
-# ============================================================================
-
-
-class TestAuthenticationSecurity:
-    """Tests for authentication security mechanisms."""
-
-    def test_execute_without_bearer_token(self, test_client):
-        """Accessing /api/execute without Bearer token should return 401."""
-        response = test_client.post(
-            "/api/execute",
-            json={"command": "echo", "args": ["test"], "preview": True},
-        )
-        assert response.status_code == 401
-        assert "Missing bearer token" in response.json()["detail"]
-
-    def test_execute_with_invalid_token_format(self, test_client):
-        """Accessing /api/execute with invalid token format should return 401."""
-        response = test_client.post(
-            "/api/execute",
-            json={"command": "echo", "args": ["test"], "preview": True},
-            headers={"Authorization": "Bearer invalid-token-format"},
-        )
-        assert response.status_code == 401
-        assert "Invalid token" in response.json()["detail"]
-
-    def test_execute_with_malformed_bearer_header(self, test_client):
-        """Malformed Authorization header should return 401."""
-        response = test_client.post(
-            "/api/execute",
-            json={"command": "echo", "args": ["test"], "preview": True},
-            headers={"Authorization": "NotBearer some-token"},
-        )
-        assert response.status_code == 401
-
-    def test_execute_with_expired_token(self, test_client, valid_api_key):
-        """Expired token should return 401."""
-        # Mock jwt.encode to create an expired token
-        with patch("utils.auth.jwt.encode") as mock_encode:
-            # Create a token that expired 1 hour ago
-            mock_encode.return_value = "expired.token.here"
-
-            # Mock jwt.decode to raise exception for expired token
-            with patch("utils.auth.jwt.decode") as mock_decode:
-                import jwt
-                mock_decode.side_effect = jwt.ExpiredSignatureError("Token expired")
-
-                response = test_client.post(
-                    "/api/execute",
-                    json={"command": "echo", "args": ["test"], "preview": True},
-                    headers={"Authorization": "Bearer expired.token.here"},
-                )
-                assert response.status_code == 401
-
-    def test_token_generation_with_wrong_api_key(self, test_client):
-        """Token generation with invalid API key should return 401."""
-        response = test_client.post(
-            "/api/token",
-            data={"api_key": "wrong-api-key-12345"},
-        )
-        assert response.status_code == 401
-        assert "Invalid API key" in response.json()["detail"]
-
-    def test_token_generation_without_api_key(self, test_client):
-        """Token generation without API key should return 422 validation error."""
-        response = test_client.post("/api/token", data={})
-        assert response.status_code == 422  # FastAPI validation error for missing required field
-
-
-# ============================================================================
-# Input Validation Tests
-# ============================================================================
-
-
-class TestInputValidation:
-    """Tests for input validation and sanitization."""
-
-    def test_command_injection_attempt(self, test_client, valid_token, mock_action_executor):
-        """Command injection attempts should be blocked by allowlist."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "; rm -rf /",
-                "args": ["test"],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        # Hardened: command not in COMMAND_ALLOWLIST → 403
-        assert response.status_code == 403
-        mock_action_executor.assert_not_called()
-
-    def test_path_traversal_in_args(self, test_client, valid_token, mock_action_executor):
-        """Path traversal attempts in args pass through to executor (command must be allowlisted)."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "uname",
-                "args": ["../../etc/passwd"],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        assert response.status_code == 200
-        # Verify args were passed through
-        mock_action_executor.assert_called()
-        call_args = mock_action_executor.call_args[0]
-        assert "../../etc/passwd" in call_args[1]
-
-    def test_non_allowlisted_command_rejected(self, test_client, valid_token, mock_action_executor):
-        """Commands not in COMMAND_ALLOWLIST should be rejected with 403."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "cat",
-                "args": ["/etc/passwd"],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        assert response.status_code == 403
-        mock_action_executor.assert_not_called()
-
-    def test_malformed_json_payload(self, test_client, valid_token):
-        """Malformed JSON should return 422."""
-        response = test_client.post(
-            "/api/execute",
-            content=b"not-valid-json{{{",
-            headers={
-                "Authorization": f"Bearer {valid_token}",
-                "Content-Type": "application/json",
-            },
-        )
-        assert response.status_code == 422
-
-    def test_missing_required_field_command(self, test_client, valid_token):
-        """Missing required 'command' field should return 422."""
-        response = test_client.post(
-            "/api/execute",
-            json={"args": ["test"], "preview": True},
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        assert response.status_code == 422
-
-    def test_extremely_long_command(self, test_client, valid_token, mock_action_executor):
-        """Extremely long command should be rejected by allowlist."""
-        long_command = "a" * 10000
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": long_command,
-                "args": ["test"],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        # Hardened: not in COMMAND_ALLOWLIST → 403
-        assert response.status_code == 403
-        mock_action_executor.assert_not_called()
-
-    def test_extremely_long_args(self, test_client, valid_token, mock_action_executor):
-        """Extremely long args array should be handled for allowlisted commands."""
-        long_args = ["arg" + str(i) for i in range(1000)]
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "uname",
-                "args": long_args,
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        assert response.status_code == 200
-
-    def test_null_values_in_payload(self, test_client, valid_token):
-        """Null values in optional fields should be handled."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "echo",
-                "args": None,  # Should default to empty list
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        # Pydantic validation should handle this
-        assert response.status_code in [200, 422]
-
-
-# ============================================================================
-# Authorization Tests
-# ============================================================================
-
-
-class TestAuthorization:
-    """Tests for authorization and access control."""
-
-    def test_pkexec_requires_auth(self, test_client, valid_token, mock_action_executor):
-        """pkexec=true requires valid authentication."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "dnf",
-                "args": ["clean", "all"],
-                "pkexec": True,
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        assert response.status_code == 200
-        # Verify pkexec flag was passed to executor
-        call_kwargs = mock_action_executor.call_args[1]
-        assert call_kwargs.get("pkexec") is True
-
-    def test_pkexec_without_auth_fails(self, test_client):
-        """pkexec=true without auth should return 401."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "dnf",
-                "args": ["clean", "all"],
-                "pkexec": True,
-                "preview": True,
-            },
-        )
-        assert response.status_code == 401
-
-    def test_preview_mode_requires_auth(self, test_client):
-        """Preview mode requires authentication."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "echo",
-                "args": ["test"],
-                "preview": True,
-            },
-        )
-        assert response.status_code == 401
-
-    def test_execute_mode_requires_auth(self, test_client):
-        """Execute mode (preview=false) requires authentication."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "echo",
-                "args": ["test"],
-                "preview": False,
-            },
-        )
-        assert response.status_code == 401
-
-    def test_info_endpoint_without_auth(self, test_client):
-        """Read-only /api/info now requires Bearer JWT (hardened)."""
-        response = test_client.get("/api/info")
-        # Hardened: /info requires authentication
-        assert response.status_code in [401, 403]
-
-    def test_info_endpoint_with_auth(self, test_client, valid_token):
-        """Authenticated /api/info should return system data."""
-        with patch("utils.monitor.SystemMonitor.get_system_health") as mock_health:
-            mock_health.return_value = MagicMock(
-                hostname="test-host",
-                uptime=12345,
-                memory=MagicMock(used_human="1GB", total_human="8GB", percent_used=12.5),
-                cpu=MagicMock(load_1min=0.5, load_5min=0.6, load_15min=0.7, core_count=4, load_percent=15.0),
-                memory_status="good",
-                cpu_status="good",
-            )
-
-            response = test_client.get(
-                "/api/info",
-                headers={"Authorization": f"Bearer {valid_token}"},
-            )
-            assert response.status_code == 200
-            data = response.json()
-            assert "version" in data
-            assert "system_type" in data
-
-
-# ============================================================================
-# Error Handling Tests
-# ============================================================================
-
-
-class TestErrorHandling:
-    """Tests for error handling and response serialization."""
-
-    def test_invalid_command_execution(self, test_client, valid_token):
-        """Non-allowlisted commands should be rejected with 403."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "invalid-command-xyz",
-                "args": [],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        # Hardened: command not in allowlist → 403
-        assert response.status_code == 403
-
-    def test_allowlisted_command_failure(self, test_client, valid_token):
-        """ActionExecutor should handle allowlisted command failure gracefully."""
-        with patch("core.executor.action_executor.ActionExecutor.run") as mock_run:
-            mock_run.return_value = ActionResult(
-                success=False,
-                message="Command failed",
-                exit_code=127,
-                stdout="",
-                stderr="command not found",
-                preview=True,
-            )
-
-            response = test_client.post(
-                "/api/execute",
-                json={
-                    "command": "uname",
-                    "args": [],
-                    "preview": True,
-                },
-                headers={"Authorization": f"Bearer {valid_token}"},
-            )
-            assert response.status_code == 200
-            data = response.json()
-            assert data["preview"]["success"] is False
-
-    def test_executor_exception_handling(self, test_client, valid_token):
-        """ActionExecutor exceptions should propagate as 500 errors."""
-        with patch("core.executor.action_executor.ActionExecutor.run") as mock_run:
-            mock_run.side_effect = Exception("Unexpected executor error")
-
-            # Use allowlisted command to pass the allowlist check
-            with pytest.raises(Exception):
-                test_client.post(
-                    "/api/execute",
-                    json={
-                        "command": "uname",
-                        "args": ["-r"],
-                        "preview": True,
-                    },
-                    headers={"Authorization": f"Bearer {valid_token}"},
-                )
-
-    def test_action_result_serialization(self, test_client, valid_token):
-        """ActionResult should serialize correctly with all fields."""
-        with patch("core.executor.action_executor.ActionExecutor.run") as mock_run:
-            mock_run.return_value = ActionResult(
-                success=True,
-                message="Test action completed",
-                exit_code=0,
-                stdout="test output",
-                stderr="test warning",
-                preview=True,
-                needs_reboot=True,
-                action_id="test-123",
-            )
-
-            # Use allowlisted command
-            response = test_client.post(
-                "/api/execute",
-                json={
-                    "command": "uname",
-                    "args": [],
-                    "preview": True,
-                },
-                headers={"Authorization": f"Bearer {valid_token}"},
-            )
-            assert response.status_code == 200
-            data = response.json()
-            assert "result" in data
-            assert "preview" in data
-            assert data["preview"]["success"] is True
-            assert data["preview"]["needs_reboot"] is True
-            assert data["preview"]["action_id"] == "test-123"
-
-    def test_network_timeout_simulation(self, test_client, valid_token):
-        """Simulate network timeout during execution."""
-        with patch("core.executor.action_executor.ActionExecutor.run") as mock_run:
-            import subprocess
-            mock_run.side_effect = subprocess.TimeoutExpired("test", 120)
-
-            # Use allowlisted command to pass the allowlist check
-            with pytest.raises(subprocess.TimeoutExpired):
-                test_client.post(
-                    "/api/execute",
-                    json={
-                        "command": "uname",
-                        "args": ["-a"],
-                        "preview": True,
-                    },
-                    headers={"Authorization": f"Bearer {valid_token}"},
-                )
-
-
-# ============================================================================
-# Additional Security Tests
-# ============================================================================
-
-
-class TestAdditionalSecurity:
-    """Additional security edge cases."""
-
-    def test_empty_command(self, test_client, valid_token):
-        """Empty command string should be rejected by allowlist."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "",
-                "args": ["test"],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        # Empty string not in allowlist → 403
-        assert response.status_code in [403, 422]
-
-    def test_special_characters_in_command(self, test_client, valid_token, mock_action_executor):
-        """Special characters in command should be blocked by allowlist."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "test & echo",
-                "args": ["$(whoami)"],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        # Hardened: not in COMMAND_ALLOWLIST → 403
-        assert response.status_code == 403
-        mock_action_executor.assert_not_called()
-
-    def test_unicode_in_payload(self, test_client, valid_token, mock_action_executor):
-        """Unicode characters should be handled correctly for allowlisted commands."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "uname",
-                "args": ["你好", "мир", "🚀"],
-                "preview": True,
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        assert response.status_code == 200
-
-    def test_action_id_validation(self, test_client, valid_token, mock_action_executor):
-        """Action ID should be passed through correctly for allowlisted commands."""
-        response = test_client.post(
-            "/api/execute",
-            json={
-                "command": "uname",
-                "args": ["-r"],
-                "preview": True,
-                "action_id": "custom-action-123",
-            },
-            headers={"Authorization": f"Bearer {valid_token}"},
-        )
-        assert response.status_code == 200
-        # Verify action_id was passed to executor
-        call_kwargs = mock_action_executor.call_args[1]
-        assert call_kwargs.get("action_id") == "custom-action-123"
+class TestReadOnlyAPI(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        cls.server = APIServer()
+        cls.server.app.dependency_overrides[AuthManager.verify_bearer_token] = lambda: "test-token"
+        cls.client = TestClient(cls.server.app)
+
+    def test_health_is_public_without_version_leak(self):
+        response = self.client.get("/api/health")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_only_token_is_a_non_read_method(self):
+        non_read = []
+        for route in self.server.app.routes:
+            path = getattr(route, "path", "")
+            if not path.startswith("/api"):
+                continue
+            methods = set(getattr(route, "methods", set()) or set()) - {"GET", "HEAD", "OPTIONS"}
+            if methods:
+                non_read.append((path, methods))
+        self.assertEqual(non_read, [("/api/token", {"POST"})])
+
+    def test_removed_mutation_routes_are_absent(self):
+        paths = {getattr(route, "path", "") for route in self.server.app.routes}
+        self.assertNotIn("/api/execute", paths)
+        self.assertNotIn("/api/profiles/apply", paths)
+        self.assertNotIn("/api/profiles/import", paths)
+        self.assertNotIn("/api/profiles/import-all", paths)
+        self.assertNotIn("/api/observability/snapshot", paths)
+
+    @patch("core.observability.snapshot.HealthSnapshot.collect")
+    def test_current_observability_is_not_persisted(self, collect):
+        collect.return_value.to_dict.return_value = {"schema_version": 1}
+        response = self.client.get("/api/observability/current?target=44")
+        self.assertEqual(response.status_code, 200)
+        self.assertTrue(response.json()["read_only"])
+        collect.assert_called_once_with(fedora_target="44")
+
+    def test_info_requires_authentication_without_override(self):
+        server = APIServer()
+        response = TestClient(server.app).get("/api/info")
+        self.assertEqual(response.status_code, 401)
+
+    def test_token_rejects_missing_and_invalid_api_keys(self):
+        server = APIServer()
+        client = TestClient(server.app)
+        self.assertEqual(client.post("/api/token", data={}).status_code, 422)
+        response = client.post("/api/token", data={"api_key": "invalid"})
+        self.assertEqual(response.status_code, 401)
+
+    def test_authenticated_info_remains_read_only(self):
+        response = self.client.get("/api/info")
+        self.assertEqual(response.status_code, 200)
+        self.assertIn("system_type", response.json())
+
+
+if __name__ == "__main__":
+    unittest.main()

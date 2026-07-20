@@ -9,9 +9,8 @@ section navigation.
 import logging
 
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
-    QCheckBox,
     QFrame,
     QGroupBox,
     QHBoxLayout,
@@ -25,7 +24,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from utils.batch_ops import BatchOpsManager
 from utils.command_runner import CommandRunner
 from utils.commands import PrivilegedCommand
 from utils.software_utils import SoftwareUtils
@@ -34,8 +32,6 @@ from ui.base_tab import BaseTab
 from ui.components import DetailsDisclosure, PageScaffold
 from ui.shared_states import EmptyState, LoadingState, UnavailableState
 from ui.tooltips import (
-    SW_BATCH_INSTALL,
-    SW_BATCH_REMOVE,
     SW_CODECS,
     SW_FLATHUB,
     SW_RPM_FUSION,
@@ -61,6 +57,8 @@ class _ApplicationsSubTab(BaseTab):
     - Output log with command feedback
     """
 
+    actionCenterRequested = pyqtSignal(str, object)
+
     def __init__(self) -> None:
         super().__init__()
         root = QVBoxLayout(self)
@@ -81,26 +79,6 @@ class _ApplicationsSubTab(BaseTab):
         btn_refresh.clicked.connect(self.refresh_list)
         header_layout.addWidget(btn_refresh)
         layout.addLayout(header_layout)
-
-        # v31.0: Batch action buttons
-        batch_layout = QHBoxLayout()
-        batch_layout.addStretch()
-        self.btn_batch_install = QPushButton(self.tr("Install Selected"))
-        self.btn_batch_install.setAccessibleName(self.tr("Install selected packages"))
-        self.btn_batch_install.setToolTip(SW_BATCH_INSTALL)
-        self.btn_batch_install.clicked.connect(self._batch_install)
-        self.btn_batch_install.setEnabled(False)
-        self.btn_batch_install.hide()
-        batch_layout.addWidget(self.btn_batch_install)
-
-        self.btn_batch_remove = QPushButton(self.tr("Remove Selected"))
-        self.btn_batch_remove.setAccessibleName(self.tr("Remove selected packages"))
-        self.btn_batch_remove.setToolTip(SW_BATCH_REMOVE)
-        self.btn_batch_remove.clicked.connect(self._batch_remove)
-        self.btn_batch_remove.setEnabled(False)
-        self.btn_batch_remove.hide()
-        batch_layout.addWidget(self.btn_batch_remove)
-        layout.addLayout(batch_layout)
 
         # v42.0: Search/filter bar
         self._search_bar = QLineEdit()
@@ -136,19 +114,10 @@ class _ApplicationsSubTab(BaseTab):
 
         layout.addWidget(scroll)
 
-        # Track checkboxes for batch selection
-        self._app_checkboxes: list = []
-
-        layout.addWidget(scroll)
-
         # Output Area (Shared)
         self.output_area = QTextEdit()
         self.output_area.setReadOnly(True)
         self.output_area.setMaximumHeight(200)
-
-        self.runner = CommandRunner()
-        self.runner.output_received.connect(self.append_output)
-        self.runner.finished.connect(self.command_finished)
 
         # Loading starts on explicit route activation, never in the constructor.
         self.apps: list = []
@@ -204,11 +173,9 @@ class _ApplicationsSubTab(BaseTab):
             if widget:
                 widget.deleteLater()
 
-        self._app_checkboxes.clear()
         for app in self.apps:
             self.add_app_row(self.scroll_layout, app)
         self.scroll_layout.addStretch()
-        self._update_batch_buttons()
 
     def add_app_row(self, layout, app_data):
         """Add one source-aware app row with a single install/remove action."""
@@ -223,14 +190,6 @@ class _ApplicationsSubTab(BaseTab):
         app_name = app_data.get("name", "Unknown App")
         app_desc = app_data.get("desc", app_data.get("description", ""))
         presentation = ApplicationOperationService.describe(app_data)
-
-        # v31.0: Batch selection checkbox
-        chk = QCheckBox()
-        chk.setAccessibleName(self.tr("Select {}").format(app_name))
-        chk.stateChanged.connect(self._update_batch_buttons)
-        row_layout.addWidget(chk)
-        chk.hide()
-        self._app_checkboxes.append((chk, app_data))
 
         lbl_name = QLabel(f"<b>{app_name}</b>")
         lbl_desc = QLabel(app_desc)
@@ -285,36 +244,19 @@ class _ApplicationsSubTab(BaseTab):
         self.run_app_action(app_data, installed=False)
 
     def run_app_action(self, app_data, *, installed: bool) -> None:
-        """Confirm and start one normalized install/remove operation."""
-        from PyQt6.QtWidgets import QMessageBox
+        """Hand one normalized install/remove operation to Action Center."""
         from services.software import ApplicationOperationService
 
-        try:
-            operation = ApplicationOperationService.operation(
-                app_data,
-                installed=installed,
-            )
-        except ValueError as exc:
-            self.show_error(str(exc))
+        presentation = ApplicationOperationService.describe(app_data)
+        if not presentation.available or presentation.source not in {"Fedora RPM", "Flathub (Flatpak)"}:
+            self.show_error(presentation.explanation)
             return
-
-        action = self.tr("Remove") if installed else self.tr("Install")
-        name = str(app_data.get("name") or self.tr("application"))
-        detail = operation.description
-        if operation.reboot_expected:
-            detail += "\n" + self.tr(
-                "Atomic Fedora may require a reboot into the new deployment."
-            )
-        answer = QMessageBox.question(
-            self,
-            self.tr("Confirm %s") % action,
-            self.tr("%s %s?\n\n%s") % (action, name, detail),
+        source = "flatpak" if presentation.source == "Flathub (Flatpak)" else "fedora"
+        action_id = "remove-application" if installed else "install-application"
+        self.actionCenterRequested.emit(
+            action_id,
+            {"source": source, "package_id": presentation.package_id},
         )
-        if answer != QMessageBox.StandardButton.Yes:
-            return
-        self.output_area.clear()
-        self.append_output(detail + "\n")
-        self.runner.run_command(operation.binary, list(operation.arguments))
 
     def append_output(self, text):
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
@@ -329,50 +271,6 @@ class _ApplicationsSubTab(BaseTab):
             self.refresh_list()
         else:
             self.show_error(self.tr("Operation failed (exit code {})").format(exit_code))
-
-    # v31.0: Batch operations
-
-    def _update_batch_buttons(self, _state=None):
-        """Enable/disable batch buttons based on selection."""
-        selected = self._get_selected_packages()
-        has_selection = len(selected) > 0
-        self.btn_batch_install.setEnabled(has_selection)
-        self.btn_batch_remove.setEnabled(has_selection)
-
-    def _get_selected_packages(self) -> list:
-        """Return list of package names from checked checkboxes."""
-        packages = []
-        for chk, app_data in self._app_checkboxes:
-            if chk.isChecked():
-                # Use cmd args to extract package name, fallback to app name
-                name = app_data.get("name", "")
-                args = app_data.get("args", [])
-                if args:
-                    # Last arg is usually the package name
-                    packages.append(args[-1])
-                elif name:
-                    packages.append(name.lower().replace(" ", "-"))
-        return packages
-
-    def _batch_install(self):
-        """Install all selected packages."""
-        packages = self._get_selected_packages()
-        if not packages:
-            return
-        self.output_area.clear()
-        self.append_output(self.tr("Batch installing: {}\n").format(", ".join(packages)))
-        binary, args, desc = BatchOpsManager.batch_install(packages)
-        self.runner.run_command(binary, args)
-
-    def _batch_remove(self):
-        """Remove all selected packages."""
-        packages = self._get_selected_packages()
-        if not packages:
-            return
-        self.output_area.clear()
-        self.append_output(self.tr("Batch removing: {}\n").format(", ".join(packages)))
-        binary, args, desc = BatchOpsManager.batch_remove(packages)
-        self.runner.run_command(binary, args)
 
     def _filter_apps(self, text: str):
         """Filter visible app rows by name or description (case-insensitive)."""
@@ -566,6 +464,8 @@ class SoftwareTab(BaseTab):
         order=10,
     )
 
+    actionCenterRequested = pyqtSignal(str, object)
+
     def metadata(self) -> PluginMetadata:
         return self._METADATA
 
@@ -580,6 +480,7 @@ class SoftwareTab(BaseTab):
         self.tabs = QStackedWidget()
         self.tabs.setObjectName("softwareRouteStack")
         self._applications_tab = _ApplicationsSubTab()
+        self._applications_tab.actionCenterRequested.connect(self.actionCenterRequested.emit)
         self.tabs.addWidget(self._applications_tab)
         self.tabs.addWidget(_RepositoriesSubTab())
         self.tabs.addWidget(self._create_flatpak_tab())

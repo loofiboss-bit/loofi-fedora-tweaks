@@ -12,19 +12,19 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-t
 class TestObservabilityApiRoutes(unittest.TestCase):
     """API routes expose bounded, authenticated v12 observability payloads."""
 
-    @patch("core.observability.ObservabilityService.collect_snapshot")
+    @patch("core.observability.HealthSnapshot.collect")
     def test_collect_health_snapshot_returns_read_only_envelope(self, collect_snapshot):
-        from api.routes.system import collect_health_snapshot
+        from api.routes.system import get_current_health_snapshot
 
         snapshot = MagicMock()
         snapshot.to_dict.return_value = {"schema_version": 1, "fedora_target": "45-preview"}
         collect_snapshot.return_value = snapshot
 
-        payload = collect_health_snapshot(target="45-preview", _auth="token")
+        payload = get_current_health_snapshot(target="45-preview", _auth="token")
 
         self.assertTrue(payload["read_only"])
         self.assertEqual(payload["snapshot"]["fedora_target"], "45-preview")
-        collect_snapshot.assert_called_once_with(target="45-preview", source="api")
+        collect_snapshot.assert_called_once_with(fedora_target="45-preview")
 
     @patch("core.observability.HealthTimelineStore")
     def test_get_health_timeline_clamps_limit(self, mock_store_cls):

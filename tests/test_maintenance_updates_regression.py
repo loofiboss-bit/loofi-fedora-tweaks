@@ -180,40 +180,28 @@ class TestMaintenanceUpdatesRegression(unittest.TestCase):
             else:
                 sys.modules[module_name] = module_value
 
-    def test_system_update_step_dnf(self):
-        cmd, args, desc = self.updates_tab_cls._system_update_step("dnf")
-        self.assertEqual(cmd, "pkexec")
-        self.assertEqual(args, ["dnf", "update", "-y"])
-        self.assertEqual(desc, "Starting System Update...")
+    def test_direct_system_update_builder_is_removed(self):
+        self.assertFalse(hasattr(self.updates_tab_cls, "_system_update_step"))
 
-    def test_system_update_step_rpm_ostree(self):
-        cmd, args, desc = self.updates_tab_cls._system_update_step("rpm-ostree")
-        self.assertEqual(cmd, "pkexec")
-        self.assertEqual(args, ["rpm-ostree", "upgrade"])
-        self.assertEqual(desc, "Starting System Upgrade...")
+    def test_update_methods_do_not_call_command_runner(self):
+        signal = types.SimpleNamespace(emit=MagicMock())
+        fake_self = types.SimpleNamespace(actionCenterRequested=signal)
 
-    @patch("utils.safety.SafetyManager.confirm_action", return_value=True)
-    @patch("utils.safety.SafetyManager.check_dnf_lock", return_value=False)
-    def test_run_update_all_starts_with_system_step(self, _mock_lock, _mock_confirm):
+        self.updates_tab_cls.run_dnf_update(fake_self)
+        self.updates_tab_cls.run_flatpak_update(fake_self)
+        self.updates_tab_cls.run_fw_update(fake_self)
+
+        self.assertEqual(signal.emit.call_count, 3)
+
+    def test_update_all_is_information_only(self):
         fake_self = types.SimpleNamespace(
-            package_manager="dnf",
-            update_queue=[],
-            current_update_index=0,
-            runner=types.SimpleNamespace(run_command=MagicMock()),
-            start_process=MagicMock(),
-            append_output=MagicMock(),
+            output_area=types.SimpleNamespace(setPlainText=MagicMock()),
             tr=lambda x: x,
-            _system_update_step=self.updates_tab_cls._system_update_step,
         )
 
         self.updates_tab_cls.run_update_all(fake_self)
 
-        fake_self.start_process.assert_called_once()
-        fake_self.runner.run_command.assert_called_once_with(
-            "pkexec",
-            ["dnf", "update", "-y"],
-        )
-        self.assertEqual(len(fake_self.update_queue), 3)
+        fake_self.output_area.setPlainText.assert_called_once()
 
 
 if __name__ == "__main__":

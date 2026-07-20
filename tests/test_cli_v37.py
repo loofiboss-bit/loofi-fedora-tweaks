@@ -306,14 +306,13 @@ class TestCmdBackup(unittest.TestCase):
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 0)
 
-    @patch('cli.main.run_operation')
-    @patch('utils.backup_wizard.BackupWizard.create_snapshot')
-    def test_create(self, mock_create, mock_run):
-        mock_create.return_value = ("pkexec", ["timeshift", "--create"], "Create")
-        mock_run.return_value = True
-        args = argparse.Namespace(action="create", description="test", tool=None)
+    @patch('cli.main._emit_legacy_plans', return_value=0)
+    @patch('cli.main._create_action_center_plan')
+    def test_create(self, mock_plan, mock_emit):
+        args = argparse.Namespace(action="create", description="test", tool="timeshift")
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 0)
+        mock_plan.assert_called_once_with("create-recovery-point", {"backend": "timeshift", "description": "test"})
 
     @patch('utils.backup_wizard.BackupWizard.list_snapshots')
     def test_list_empty(self, mock_list):

@@ -1,5 +1,18 @@
 # Changelog
 
+## v17.0.0 — Assurance
+
+- Added eight single-action definitions for independent Fedora, Flatpak, and
+  firmware updates, application install/remove, cleanup, and recovery points.
+- Added exact plan-aware verification and durable `awaiting_reboot` runs for
+  Atomic Fedora and reboot-requiring firmware.
+- Added atomic schema-v2 migration while retaining readable v1 history and
+  future-schema read-only safety.
+- Converted the five canonical GUI and legacy-CLI flows to plan creation with
+  separate explicit apply confirmation.
+- Removed system and profile mutations from the Web API; token issuance is its
+  only mutating method.
+
 ## v16.0.0 — Clarity
 
 - Replaced crowded application-level tab rows with responsive, full-label section navigation.
@@ -34,15 +47,16 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ## Latest Release
 
-### v16.0.0 "Clarity" (2026-07-18)
+### v17.0.0 "Assurance" (2026-07-20)
 
-**Responsive UI consolidation** with full-label section navigation, shared page
-components, semantic themes, and complete real-shell accessibility validation.
+**Verified core workflows** with preview-first plans, explicit confirmation,
+action-specific readback, reboot-aware completion, and a read-only Web API.
 
-**Release evidence**: 7,722 tests passed with 86.51% coverage. GitHub assets
+**Release evidence**: 7,683 tests passed with 86.23% coverage before the final
+version bump. GitHub assets
 include Fedora 44 RPMs, Flatpak, sdist, SHA-256 checksums, CycloneDX SBOM, and
-in-toto/SLSA provenance. COPR build `10740581` passed and the public package
-reported version 16.0.0.
+in-toto/SLSA provenance. Exact public pipeline and COPR identifiers are recorded
+in the repository release-readiness report.
 
 ---
 

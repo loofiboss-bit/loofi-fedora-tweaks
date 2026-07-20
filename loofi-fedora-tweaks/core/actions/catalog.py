@@ -1,9 +1,10 @@
-"""Deny-by-default v14 catalog for audited first-party maintenance actions."""
+"""Deny-by-default catalog for audited first-party maintenance actions."""
 
 from __future__ import annotations
 
 import re
 import platform
+from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 from core.actions.contracts import ActionDefinition, ActionRun, ActionRuntime, PolicyDecision
@@ -37,6 +38,13 @@ class SystemActionRuntime:
         if release.get("ID", "").lower() != "fedora":
             return ""
         return str(release.get("VERSION_ID", "")).strip()
+
+    def boot_id(self) -> str:
+        """Return the kernel boot identity without probing a subprocess."""
+        try:
+            return Path("/proc/sys/kernel/random/boot_id").read_text(encoding="utf-8").strip()
+        except OSError:
+            return ""
 
     def execute_read_only(self, vector: Sequence[str], *, action_id: str, timeout: int = 30) -> ActionResult:
         return self.facade.execute(vector, privileged=False, timeout=timeout, action_id=action_id)
@@ -94,10 +102,15 @@ class SystemActionRuntime:
 
 
 class ActionCatalog:
-    """Fixed v14 catalog. Unknown, plugin, and free-form actions stay manual-only."""
+    """Fixed v17 catalog. Unknown, plugin, and free-form actions stay manual-only."""
 
     def __init__(self, definitions: Sequence[ActionDefinition] | None = None):
-        selected = list(definitions) if definitions is not None else _first_party_definitions()
+        if definitions is None:
+            from core.actions.assurance import assurance_definitions
+
+            selected = [*_first_party_definitions(), *assurance_definitions()]
+        else:
+            selected = list(definitions)
         self._definitions = {definition.id: definition for definition in selected}
 
     def get(self, action_id: str) -> ActionDefinition | None:
@@ -111,14 +124,14 @@ class ActionCatalog:
         return PolicyDecision(
             allowed=False,
             reason_code="manual_only",
-            explanation=f"Action '{action_id}' has no audited v14 first-party definition.",
+            explanation=f"Action '{action_id}' has no audited v17 first-party definition.",
             alternative="Review the recommendation and perform any follow-up manually.",
-            facts={"action_id": action_id, "catalog": "v14-deny-by-default"},
+            facts={"action_id": action_id, "catalog": "v17-deny-by-default"},
         )
 
 
 def validate_parameters(definition: ActionDefinition, parameters: Mapping[str, Any]) -> PolicyDecision:
-    """Validate the deliberately small v14 parameter schema without coercion."""
+    """Validate the deliberately small v17 parameter schema without coercion."""
     unknown = sorted(set(parameters) - set(definition.parameter_schema))
     if unknown:
         return PolicyDecision(
@@ -142,6 +155,8 @@ def validate_parameters(definition: ActionDefinition, parameters: Mapping[str, A
                 "Select an exact unit from the fresh failed-service list.",
                 {"parameter": name},
             )
+    if definition.parameter_validator is not None:
+        return definition.parameter_validator(parameters)
     return PolicyDecision(True, "parameters_valid", "Parameters are valid.")
 
 
@@ -235,7 +250,7 @@ def _preflight_dnf_clean(_parameters: Mapping[str, Any], runtime: ActionRuntime)
     )
 
 
-def _verify_dnf_clean(_run: ActionRun, runtime: ActionRuntime) -> ActionResult:
+def _verify_dnf_clean(_run: ActionRun, _plan: object, runtime: ActionRuntime) -> ActionResult:
     manager = runtime.package_manager()
     if manager not in {"dnf", "dnf5"}:
         return ActionResult.fail("Package manager changed after execution.", action_id="dnf-clean-all")
@@ -279,7 +294,7 @@ def _preflight_service_restart(parameters: Mapping[str, Any], runtime: ActionRun
     return PolicyDecision(True, "preflight_ok", f"{selected} is currently failed.", facts=facts)
 
 
-def _verify_service_restart(run: ActionRun, runtime: ActionRuntime) -> ActionResult:
+def _verify_service_restart(run: ActionRun, _plan: object, runtime: ActionRuntime) -> ActionResult:
     service = str(run.parameters.get("service", ""))
     if not service or not _UNIT_PATTERN.fullmatch(service):
         return ActionResult.fail("The persisted service parameter is invalid.", action_id="restart-failed-service")
@@ -312,7 +327,7 @@ def _preflight_fstrim(_parameters: Mapping[str, Any], runtime: ActionRuntime) ->
     return PolicyDecision(True, "preflight_ok", "fstrim and discard support were verified.", facts=facts)
 
 
-def _verify_fstrim(run: ActionRun, _runtime: ActionRuntime) -> ActionResult:
+def _verify_fstrim(run: ActionRun, _plan: object, _runtime: ActionRuntime) -> ActionResult:
     execution = run.execution_result or {}
     output = str(execution.get("stdout", ""))
     validated = [line.strip() for line in output.splitlines() if _TRIMMED_PATTERN.search(line)]

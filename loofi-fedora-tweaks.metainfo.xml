@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="17.0.0" date="2026-07-20">
+      <description>
+        <p>v17.0.0 "Assurance" - Verified Core Workflows</p>
+        <ul>
+          <li>Converged five canonical maintenance workflows on preview-first, explicitly confirmed Action Center plans</li>
+          <li>Added exact action-specific verification for Fedora, Flatpak, firmware, applications, cleanup, and recovery points</li>
+          <li>Added durable reboot-aware verification for Atomic Fedora and firmware operations</li>
+          <li>Introduced schema-v2 run history with atomic v1 migration and future-schema read-only safety</li>
+          <li>Enforced the authenticated Web API as read-only except for token issuance</li>
+        </ul>
+      </description>
+    </release>
     <release version="16.0.0" date="2026-07-18">
       <description>
         <p>v16.0.0 "Clarity" - Responsive, Consistent Fedora Control Center</p>

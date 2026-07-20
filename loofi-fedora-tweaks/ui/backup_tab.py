@@ -12,6 +12,7 @@ Step 4: View results + existing snapshots
 import logging
 
 from core.plugins.metadata import PluginMetadata
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QGroupBox,
@@ -49,6 +50,8 @@ class BackupTab(BaseTab):
         badge="new",
         order=20,
     )
+
+    actionCenterRequested = pyqtSignal(str, object)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -211,11 +214,11 @@ class BackupTab(BaseTab):
 
         # Action buttons
         actions = QHBoxLayout()
-        self.restore_btn = QPushButton(self.tr("Restore Selected"))
+        self.restore_btn = QPushButton(self.tr("Manual High-Risk Restore"))
         self.restore_btn.clicked.connect(self._restore_selected)
         actions.addWidget(self.restore_btn)
 
-        self.delete_btn = QPushButton(self.tr("Delete Selected"))
+        self.delete_btn = QPushButton(self.tr("Manual Irreversible Delete"))
         self.delete_btn.clicked.connect(self._delete_selected)
         actions.addWidget(self.delete_btn)
 
@@ -317,18 +320,16 @@ class BackupTab(BaseTab):
         self.tool_info.setText(self.tr("Using backup tool: {}").format(tool))
 
     def _create_snapshot(self):
-        """Create a system snapshot."""
-        try:
-            from utils.backup_wizard import BackupWizard
-
-            desc = self.desc_input.text().strip() or "Loofi backup"
-            tool = getattr(self, "_detected_tool", None)
-            binary, args, description = BackupWizard.create_snapshot(
-                tool=tool, description=desc
-            )
-            self.run_command(binary, args, description)
-        except (RuntimeError, OSError, ValueError) as e:
-            self.append_output(f"[ERROR] {e}\n")
+        """Hand recovery-point creation to Action Center."""
+        tool = str(getattr(self, "_detected_tool", "") or "")
+        if tool not in {"timeshift", "snapper"}:
+            self.append_output(self.tr("Only Timeshift and Snapper creation can be verified.\n"))
+            return
+        desc = self.desc_input.text().strip() or "Loofi backup"
+        self.actionCenterRequested.emit(
+            "create-recovery-point",
+            {"backend": tool, "description": desc},
+        )
 
     def _load_snapshots(self):
         """Load existing snapshots into the table."""

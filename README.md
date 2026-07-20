@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v16.0.0 "Clarity"
+# Loofi Fedora Tweaks v17.0.0 "Assurance"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,36 +12,36 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v16.0.0">
-    <img src="https://img.shields.io/badge/Release-v16.0.0-blue?style=for-the-badge&logo=github" alt="Release v16.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v17.0.0">
+    <img src="https://img.shields.io/badge/Release-v17.0.0-blue?style=for-the-badge&logo=github" alt="Release v17.0.0"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 85%"/>
 </p>
 
-## What Clarity changes
+## What Assurance changes
 
-v16 gives the existing application one responsive shell and one shared visual
-language. It changes presentation without replacing the trusted maintenance,
-state, route, CLI, API, daemon, or IPC contracts.
+v17 converges the five canonical maintenance workflows on preview-first,
+explicitly confirmed, audited, and outcome-verified Action Center plans.
 
-- Full-label section navigation reflows from a rail to a compact selector at
-  smaller window sizes instead of clipping application-level tabs.
-- Standard and Advanced pages use the same page scaffold, cards, notices,
-  actions, states, spacing, and visible focus treatment.
-- System, dark, light, and high-contrast modes retain structural styling and
-  semantic colors.
-- The real application shell is validated across supported sizes, 100-200%
-  font scaling, Wayland/X11 paths, keyboard input, and accessibility surfaces.
-- Standard mode still has exactly six destinations, Advanced remains optional,
-  and built-in pages still load only when opened.
+- Fedora, Flatpak, and firmware updates create independent, single-action plans
+  with exact preflight facts and action-specific readback verification.
+- Application install/remove, cleanup, and recovery-point creation use the same
+  plan, confirm, apply, verify, and history lifecycle.
+- Atomic Fedora and reboot-requiring firmware runs pause durably at
+  `awaiting_reboot` and verify the expected deployment after restart.
+- Action Center schema v2 preserves readable v1 history and migrates writable
+  stores atomically with a verified backup.
+- The authenticated Web API is read-only except for token issuance.
+- The v16 responsive shell, stable routes, Home, search, CLI, daemon, IPC, and
+  original three Action Center definitions remain compatible.
 
-The recorded v16 release benchmark renders meaningful Home in 181.011 ms,
-within the 182.309 ms same-host limit. It constructs one plugin and starts with
-no subprocess probes, active hidden-page timers, or worker threads.
+The recorded v17 release benchmark renders meaningful Home in 160.268 ms and
+uses 78,092 KiB RSS. It constructs one plugin and starts with no subprocess
+probes, active hidden-page timers, or worker threads.
 
-Full details: [v16 release notes](docs/releases/RELEASE-NOTES-v16.0.0.md).
+Full details: [v17 release notes](docs/releases/RELEASE-NOTES-v17.0.0.md).
 
 ## The six destinations
 
@@ -61,14 +61,15 @@ Advanced mode never weakens confirmation or privilege rules.
 
 ## Five common workflows
 
-1. **Update Fedora:** Home → Updates → Update All → confirm.
-2. **Install an application:** Home → Applications → Install → confirm.
+1. **Update Fedora:** Home → Updates → review Fedora → create plan → confirm in Action Center.
+2. **Install an application:** Home → Applications → Install → review and confirm the generated plan.
 3. **Diagnose a slow system:** Home → Check performance → Analyze Slow System.
 4. **Find reclaimable disk space:** Software & Updates → Cleanup → Analyze.
 5. **Protect the system:** Home → Protect or recover → create a recovery point.
 
-Action Center remains a separate Review/Plan/Run/Verify/History workflow. Home
-and search can open it, but never create or execute a plan.
+The five canonical surfaces may create one exact Action Center plan and open it
+for review. They never apply it automatically; apply remains a separate,
+explicitly confirmed operation.
 
 ## Screenshots
 
@@ -159,8 +160,9 @@ The global `--json` option appears before the CLI command.
 
 ## Safety and compatibility
 
-- Action Center still exposes only `dnf-clean-all`,
-  `restart-failed-service`, and `fstrim-all` as executable definitions.
+- Action Center exposes the original three definitions plus eight Assurance
+  definitions for independent updates, application operations, cleanup, and
+  recovery-point creation.
 - Plans expire and are re-preflighted. Exit code zero is not success until the
   verifier passes. Interrupted runs never resume automatically.
 - Commands are list-based, allowlisted, timeout-bounded, audit-linked, and never
@@ -168,8 +170,8 @@ The global `--json` option appears before the CLI command.
 - State schemas, atomic writes, backup/restore planning, redaction, routes,
   aliases, favorites, first-run sentinels, CLI JSON, API, daemon, and IPC remain
   compatible with v14.
-- Specialist tools are logically isolated but remain in the v16 base RPM. A
-  physical extras RPM is deferred to v17 pending a safe ownership boundary.
+- Specialist tools are logically isolated but remain in the base RPM. Current
+  ownership and runtime overlap keep a physical extras RPM out of v17 scope.
 
 ## Development
 
@@ -202,10 +204,9 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v16.0.0 "Clarity"` is available from the GitHub release and the Fedora 44 COPR
-repository. The historical `v16.0.0 "Horizon"` tag is preserved as
-`legacy-v16.0.0-horizon`; the canonical `v16.0.0` tag points to the exact
-Clarity release commit.
+`v17.0.0 "Assurance"` is the current release for Fedora KDE 44. The canonical
+tag, GitHub release assets, checksums, SBOM/provenance, and Fedora 44 COPR build
+are produced from one exact release commit.
 
 ## License
 

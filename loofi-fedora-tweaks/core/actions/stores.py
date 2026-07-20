@@ -11,8 +11,8 @@ from core.actions.contracts import ActionPlan, ActionRun
 from core.state.atomic_io import advisory_lock, atomic_write_json, atomic_write_text
 from core.state.paths import StatePaths
 
-ACTION_PLAN_SCHEMA_VERSION = 1
-ACTION_RUN_SCHEMA_VERSION = 1
+ACTION_PLAN_SCHEMA_VERSION = 2
+ACTION_RUN_SCHEMA_VERSION = 2
 MAX_ACTION_PLANS = 50
 MAX_ACTION_RUNS = 100
 
@@ -38,7 +38,7 @@ class ActionPlanStore:
         if not isinstance(payload, Mapping):
             return []
         version = int(payload.get("schema_version", 0))
-        if version > ACTION_PLAN_SCHEMA_VERSION:
+        if version not in {1, ACTION_PLAN_SCHEMA_VERSION}:
             raise ActionStoreVersionError(f"Unsupported action plan schema version: {version}")
         raw_plans = payload.get("plans", [])
         if not isinstance(raw_plans, list):
@@ -51,7 +51,18 @@ class ActionPlanStore:
                 plans.append(ActionPlan.from_dict(raw))
             except (KeyError, TypeError, ValueError):
                 continue
+        if version == 1:
+            self._write_unlocked(plans)
         return plans
+
+    def _write_unlocked(self, plans: list[ActionPlan]) -> None:
+        atomic_write_json(
+            self.path,
+            {
+                "schema_version": ACTION_PLAN_SCHEMA_VERSION,
+                "plans": [candidate.to_dict() for candidate in plans[-self.max_plans :]],
+            },
+        )
 
     def list(self, *, limit: int | None = None) -> list[ActionPlan]:
         with advisory_lock(self.path):
@@ -65,13 +76,7 @@ class ActionPlanStore:
         with advisory_lock(self.path):
             plans = [candidate for candidate in self._load_unlocked() if candidate.plan_id != plan.plan_id]
             plans.append(plan)
-            atomic_write_json(
-                self.path,
-                {
-                    "schema_version": ACTION_PLAN_SCHEMA_VERSION,
-                    "plans": [candidate.to_dict() for candidate in plans[-self.max_plans :]],
-                },
-            )
+            self._write_unlocked(plans)
 
 
 class ActionRunStore:
@@ -87,6 +92,7 @@ class ActionRunStore:
         except OSError:
             return []
         runs: list[ActionRun] = []
+        migration_required = False
         for line in lines:
             try:
                 raw = json.loads(line)
@@ -95,12 +101,15 @@ class ActionRunStore:
             if not isinstance(raw, Mapping):
                 continue
             version = int(raw.get("action_run_schema_version", 0))
-            if version > ACTION_RUN_SCHEMA_VERSION:
+            if version not in {1, ACTION_RUN_SCHEMA_VERSION}:
                 raise ActionStoreVersionError(f"Unsupported action run schema version: {version}")
+            migration_required = migration_required or version == 1
             try:
                 runs.append(ActionRun.from_dict(raw))
             except (KeyError, TypeError, ValueError):
                 continue
+        if migration_required:
+            self._write_unlocked(runs)
         return runs
 
     def _write_unlocked(self, runs: list[ActionRun]) -> None:

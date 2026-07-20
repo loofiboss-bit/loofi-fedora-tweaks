@@ -75,15 +75,15 @@ def get_agents(
     }
 
 
-@router.post("/observability/snapshot")
-def collect_health_snapshot(
+@router.get("/observability/current")
+def get_current_health_snapshot(
     target: str = "44",
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
-    """Collect and persist one read-only v12 health snapshot."""
-    from core.observability import ObservabilityService
+    """Collect one bounded snapshot without persisting API-triggered state."""
+    from core.observability import HealthSnapshot
 
-    snapshot = ObservabilityService().collect_snapshot(target=target, source="api")
+    snapshot = HealthSnapshot.collect(fedora_target=target)
     return {"schema_version": 1, "read_only": True, "snapshot": snapshot.to_dict()}
 
 

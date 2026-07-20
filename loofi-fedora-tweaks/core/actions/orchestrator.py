@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from core.actions.catalog import ActionCatalog, SystemActionRuntime, validate_parameters
-from core.actions.contracts import ActionDefinition, ActionPlan, ActionRun, ActionRuntime, PolicyDecision, PreparedActionRun
+from core.actions.contracts import ActionDefinition, ActionPlan, ActionRun, ActionRuntime, PolicyDecision, PreparedActionRun, VerificationDecision
 from core.actions.stores import ActionPlanStore, ActionRunStore
 from core.executor.action_result import ActionResult
 from core.executor.command_facade import CommandFacade
@@ -130,7 +130,7 @@ class ActionCenterOrchestrator:
                     decision = PolicyDecision(
                         False,
                         "preview_target_read_only",
-                        "Fedora 45 remains a read-only preview target in v14.",
+                        "Fedora 45 remains a read-only preview target in v17.",
                         "Review preview diagnostics and create a Fedora 44 plan for an audited action.",
                         {"target": target},
                     )
@@ -160,7 +160,7 @@ class ActionCenterOrchestrator:
             preview=preview,
             policy_decision=decision,
             risk_level=definition.risk_level,
-            privileged=definition.privileged,
+            privileged=self._is_privileged(definition, normalized),
             confirmation_policy=definition.confirmation_policy,
             recovery_guidance=definition.recovery_guidance,
             rollback_supported=definition.rollback_supported,
@@ -173,7 +173,7 @@ class ActionCenterOrchestrator:
             target,
             preview,
             decision,
-            self._definition_fields(definition),
+            self._definition_fields(definition, normalized),
         )
         if not decision.allowed:
             state = "blocked"
@@ -203,10 +203,10 @@ class ActionCenterOrchestrator:
         definition = self._definition_for(plan.action_id)
         self._assert_integrity(plan)
         command = self._render(definition, plan.parameters)
-        result = self.facade.preview(command, privileged=definition.privileged, action_id=definition.id)
+        result = self.facade.preview(command, privileged=plan.privileged, action_id=definition.id)
         result.data = {
             **(result.data or {}),
-            "schema_version": 1,
+            "schema_version": 2,
             "plan": plan.to_dict(),
             "policy_decision": plan.policy_decision.to_dict(),
         }
@@ -251,7 +251,7 @@ class ActionCenterOrchestrator:
                 plan.target,
                 command,
                 current_decision,
-                self._definition_fields(definition),
+                self._definition_fields(definition, plan.parameters),
             )
             if current_digest != plan.digest:
                 decision = PolicyDecision(
@@ -295,6 +295,7 @@ class ActionCenterOrchestrator:
                 updated_at=now,
                 started_at=now,
                 recovery_status="available" if definition.rollback_supported else "manual-guidance-only",
+                execution_boot_id=self._boot_id(),
                 state_history=[{"state": "running", "reason": "execution-started", "timestamp": now}],
             )
             self.run_store.save(run)
@@ -305,7 +306,7 @@ class ActionCenterOrchestrator:
                 action_id=plan.action_id,
                 correlation_id=correlation_id,
                 command=tuple(command),
-                privileged=definition.privileged,
+                privileged=plan.privileged,
             )
         finally:
             if not run_id or run_id not in self._held_leases:
@@ -384,10 +385,13 @@ class ActionCenterOrchestrator:
         lease = self._acquire_lease()
         try:
             run = self.get_run(run_id)
-            if run.state != "verifying":
+            if run.state not in {"verifying", "awaiting_reboot"}:
                 raise ActionCenterError(f"Run is not awaiting verification: {run.state}")
+            if run.state == "awaiting_reboot":
+                run.transition("verifying", "verification-resumed", at=self.clock())
             definition = self._definition_for(run.action_id)
-            result = definition.verifier(run, self.runtime)
+            plan = self.get_plan(run.plan_id)
+            result = definition.verifier(run, plan, self.runtime)
             return self._complete_verification_locked(run, result)
         finally:
             lease.__exit__(None, None, None)
@@ -403,16 +407,33 @@ class ActionCenterOrchestrator:
         finally:
             lease.__exit__(None, None, None)
 
-    def _complete_verification_locked(self, run: ActionRun, result: ActionResult) -> ActionRun:
-        run.verification_result = result.to_dict()
-        if result.success:
+    def _complete_verification_locked(self, run: ActionRun, result: ActionResult | VerificationDecision) -> ActionRun:
+        decision = result if isinstance(result, VerificationDecision) else VerificationDecision(
+            "succeeded" if result.success else "failed",
+            result.message,
+            dict(result.data or {}),
+            result.exit_code,
+        )
+        normalized = decision.to_result(action_id=run.action_id)
+        run.verification_result = normalized.to_dict()
+        run.verification_attempts += 1
+        run.last_verified_at = self.clock()
+        run.reboot_required = decision.state == "awaiting_reboot"
+        if decision.state == "succeeded":
             run.transition("succeeded", "verification-succeeded", at=self.clock())
             run.recovery_status = "not-required"
+        elif decision.state == "awaiting_reboot":
+            run.transition("awaiting_reboot", "reboot-required", at=self.clock())
+            run.recovery_status = "reboot-required"
         else:
             run.transition("verification_failed", "verification-failed", at=self.clock())
             run.recovery_status = "manual-review-required"
         self.run_store.save(run)
         return run
+
+    def _boot_id(self) -> str:
+        reader = getattr(self.runtime, "boot_id", None)
+        return str(reader() if callable(reader) else "").strip()
 
     def _definition_for(self, action_id: str) -> ActionDefinition:
         definition = self.catalog.get(action_id)
@@ -429,7 +450,7 @@ class ActionCenterOrchestrator:
             return PolicyDecision(
                 False,
                 "host_preview_read_only",
-                f"Fedora {host_version} remains read-only for v14 guided maintenance.",
+                f"Fedora {host_version} remains read-only for v17 guided maintenance.",
                 "Use Fedora 45 preview diagnostics without applying maintenance actions.",
                 {"target": target, "host_fedora_version": host_version},
             )
@@ -478,15 +499,18 @@ class ActionCenterOrchestrator:
         if not plan.digest or expected != plan.digest:
             raise ActionPlanIntegrityError("Action plan digest validation failed.")
 
-    @staticmethod
-    def _definition_fields(definition: ActionDefinition) -> dict[str, Any]:
+    def _definition_fields(self, definition: ActionDefinition, parameters: Mapping[str, Any]) -> dict[str, Any]:
         return {
             "risk_level": definition.risk_level,
-            "privileged": definition.privileged,
+            "privileged": self._is_privileged(definition, parameters),
             "confirmation_policy": definition.confirmation_policy,
             "recovery_guidance": definition.recovery_guidance,
             "rollback_supported": definition.rollback_supported,
         }
+
+    def _is_privileged(self, definition: ActionDefinition, parameters: Mapping[str, Any]) -> bool:
+        resolver = definition.privilege_resolver
+        return bool(resolver(parameters, self.runtime)) if resolver is not None else definition.privileged
 
     @staticmethod
     def _plan_definition_fields(plan: ActionPlan) -> dict[str, Any]:

@@ -9,6 +9,7 @@ from core.actions.contracts import (  # noqa: F401
     ActionRun,
     PolicyDecision,
     PreparedActionRun,
+    VerificationDecision,
 )
 from core.actions.history import ActionHistoryStore  # noqa: F401
 from core.actions.model import ActionCenterItem, ActionRisk, ActionState, RollbackGuidance  # noqa: F401

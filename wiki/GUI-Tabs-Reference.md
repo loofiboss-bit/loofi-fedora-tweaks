@@ -1,6 +1,7 @@
 # GUI Tabs Reference
 
-Reference for Loofi Fedora Tweaks v16.0.0 "Clarity" navigation.
+Reference for Loofi Fedora Tweaks v17.0.0 "Assurance" navigation. The v16 route
+and responsive-shell structure remains stable.
 
 ---
 

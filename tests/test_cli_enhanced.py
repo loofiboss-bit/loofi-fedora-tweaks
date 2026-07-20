@@ -163,44 +163,27 @@ class TestCLIInfoCommand(unittest.TestCase):
 class TestCLICleanupCommand(unittest.TestCase):
     """Tests for the 'cleanup' CLI subcommand."""
 
-    @patch("subprocess.run")
-    @patch(
-        "cli.main.CleanupOps.clean_dnf_cache",
-        return_value=("pkexec", ["dnf", "clean", "all"], "Cleaning..."),
-    )
-    @patch(
-        "cli.main.CleanupOps.vacuum_journal",
-        return_value=("pkexec", ["journalctl", "--vacuum-time=14d"], "Vacuuming..."),
-    )
-    @patch(
-        "cli.main.CleanupOps.trim_ssd",
-        return_value=("pkexec", ["fstrim", "-av"], "Trimming..."),
-    )
-    def test_cleanup_all(self, mock_trim, mock_journal, mock_dnf, mock_run):
-        """'cleanup all' runs dnf + journal + trim in sequence."""
-        mock_run.return_value = MagicMock(returncode=0, stdout="OK\n", stderr="")
+    @patch("cli.main._emit_legacy_plans", return_value=0)
+    @patch("cli.main._create_action_center_plan")
+    def test_cleanup_all(self, mock_plan, mock_emit):
+        """'cleanup all' creates three independent plans."""
         import argparse
 
         args = argparse.Namespace(action="all", days=14)
         result = cmd_cleanup(args)
         self.assertEqual(result, 0)
-        # Should have called subprocess.run 3 times (dnf, journal, trim)
-        self.assertEqual(mock_run.call_count, 3)
+        self.assertEqual(mock_plan.call_count, 3)
 
-    @patch("subprocess.run")
-    @patch(
-        "cli.main.CleanupOps.clean_dnf_cache",
-        return_value=("pkexec", ["dnf", "clean", "all"], "Cleaning..."),
-    )
-    def test_cleanup_dnf_only(self, mock_dnf, mock_run):
-        """'cleanup dnf' runs only DNF cache clean."""
-        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+    @patch("cli.main._emit_legacy_plans", return_value=0)
+    @patch("cli.main._create_action_center_plan")
+    def test_cleanup_dnf_only(self, mock_plan, mock_emit):
+        """'cleanup dnf' creates only a cache-clean plan."""
         import argparse
 
         args = argparse.Namespace(action="dnf", days=14)
         result = cmd_cleanup(args)
         self.assertEqual(result, 0)
-        self.assertEqual(mock_run.call_count, 1)
+        mock_plan.assert_called_once_with("dnf-clean-all", {})
 
 
 class TestCLITweakCommand(unittest.TestCase):

@@ -1,0 +1,157 @@
+{
+  "components": {
+    "core": {
+      "entry_module_count": 17,
+      "entry_modules": [
+        "ui.atlas_dashboard_tab",
+        "ui.backup_tab",
+        "ui.desktop_tab",
+        "ui.diagnostics_tab",
+        "ui.extensions_tab",
+        "ui.hardware_tab",
+        "ui.health_timeline_tab",
+        "ui.maintenance_tab",
+        "ui.monitor_tab",
+        "ui.network_tab",
+        "ui.profiles_tab",
+        "ui.security_tab",
+        "ui.settings_tab",
+        "ui.snapshot_tab",
+        "ui.software_tab",
+        "ui.storage_tab",
+        "ui.system_info_tab"
+      ],
+      "plugin_ids": [
+        "atlas_dashboard",
+        "backup",
+        "desktop",
+        "diagnostics",
+        "extensions",
+        "hardware",
+        "health",
+        "maintenance",
+        "monitor",
+        "network",
+        "profiles",
+        "security",
+        "settings",
+        "snapshots",
+        "software",
+        "storage",
+        "system_info"
+      ]
+    },
+    "specialist": {
+      "entry_module_count": 11,
+      "entry_modules": [
+        "ui.agents_tab",
+        "ui.ai_enhanced_tab",
+        "ui.automation_tab",
+        "ui.community_tab",
+        "ui.development_tab",
+        "ui.gaming_tab",
+        "ui.logs_tab",
+        "ui.mesh_tab",
+        "ui.performance_tab",
+        "ui.teleport_tab",
+        "ui.virtualization_tab"
+      ],
+      "plugin_ids": [
+        "agents",
+        "ai_lab",
+        "automation",
+        "community",
+        "development",
+        "gaming",
+        "logs",
+        "mesh",
+        "performance",
+        "teleport",
+        "virtualization"
+      ]
+    }
+  },
+  "graph": {
+    "core_reachable_count": 173,
+    "core_to_specialist_entry_edges": [],
+    "internal_edge_count": 955,
+    "missing_entry_modules": [],
+    "project_module_count": 374,
+    "shared_reachable_count": 114,
+    "specialist_exclusive_count": 50,
+    "specialist_reachable_count": 164
+  },
+  "rpm": {
+    "api_requires_exact_base": true,
+    "base_owns_complete_application_tree": true,
+    "daemon_requires_exact_base": true,
+    "extras_subpackage_defined": false
+  },
+  "schema_version": 1,
+  "surface_reachability": {
+    "api": {
+      "reachable_count": 88,
+      "specialist_exclusive_count": 9,
+      "specialist_exclusive_modules": [
+        "core.agents",
+        "core.agents.agent_notifications",
+        "core.agents.agent_planner",
+        "core.agents.agent_runner",
+        "core.agents.agents",
+        "utils.arbitrator",
+        "utils.config_manager",
+        "utils.notifications",
+        "utils.pulse"
+      ]
+    },
+    "cli": {
+      "reachable_count": 159,
+      "specialist_exclusive_count": 26,
+      "specialist_exclusive_modules": [
+        "core.agents",
+        "core.agents.agent_notifications",
+        "core.agents.agent_planner",
+        "core.agents.agent_runner",
+        "core.agents.agents",
+        "core.ai",
+        "core.ai.ai",
+        "core.ai.ai_models",
+        "core.ai.context_rag",
+        "core.plugins.integrity",
+        "core.plugins.package",
+        "core.plugins.resolver",
+        "services.virtualization",
+        "services.virtualization.disposable_vm",
+        "services.virtualization.vfio",
+        "services.virtualization.virtualization",
+        "services.virtualization.vm_manager",
+        "utils.arbitrator",
+        "utils.notifications",
+        "utils.plugin_base",
+        "utils.plugin_cdn_client",
+        "utils.plugin_installer",
+        "utils.plugin_marketplace",
+        "utils.presets",
+        "utils.pulse",
+        "utils.smart_logs"
+      ]
+    },
+    "daemon": {
+      "reachable_count": 101,
+      "specialist_exclusive_count": 11,
+      "specialist_exclusive_modules": [
+        "core.plugins.integrity",
+        "core.plugins.package",
+        "core.plugins.resolver",
+        "utils.config_manager",
+        "utils.notifications",
+        "utils.plugin_base",
+        "utils.plugin_cdn_client",
+        "utils.plugin_installer",
+        "utils.plugin_marketplace",
+        "utils.presets",
+        "utils.scheduler"
+      ]
+    }
+  }
+}

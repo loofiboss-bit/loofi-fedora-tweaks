@@ -21,6 +21,14 @@ Central documentation map for Loofi Fedora Tweaks.
 - `../ROADMAP.md` - Current and future release-status index
 - `../CHANGELOG.md` - Full change history
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
+- `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
+- `reports/V17_PHASE0_BASELINE.md` - v16 release baseline, scope lock, and mutation inventory
+- `reports/V17_PHASE1_CORE_API.md` - schema-v2 lifecycle, validation, migration, and read-only API
+- `reports/V17_PHASE2_UPDATES.md` - independent Fedora, Flatpak, and firmware verification
+- `reports/V17_PHASE3_APPLICATIONS.md` - RPM and Flatpak application plan convergence
+- `reports/V17_PHASE4_CLEANUP.md` - diagnosis handoffs and verified cleanup actions
+- `reports/V17_PHASE5_RECOVERY.md` - shared Timeshift/Snapper recovery-point contract
+- `reports/V17_PHASE6_RELEASE_READINESS.md` - regression, physical validation, packaging, and publication evidence
 - `reports/V16_PHASE0_BASELINE.md` - Exact v15 baseline, UI debt inventory, measurements, and Phase 0 verification
 - `reports/V16_PHASE1_THEME_ENGINE.md` - Structural QSS, semantic palettes, token contracts, and Phase 1 verification
 - `reports/V16_PHASE2_SHARED_COMPONENTS.md` - Shared page, navigation, card, action, status, and accessibility component contracts
@@ -57,6 +65,8 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are aligned to `v16.0.0 "Clarity"`: responsive section navigation, shared page components, six Standard destinations, optional Advanced mode, verified Action Center maintenance, Fedora 44 support, and Fedora 45 preview checks.
+- Released user-facing guides are aligned to `v17.0.0 "Assurance"`. The
+  canonical plan and `reports/V17_PHASE*.md` retain implementation and gate
+  evidence; historical v16 reports remain immutable release records.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.

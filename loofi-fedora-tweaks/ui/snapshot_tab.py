@@ -9,7 +9,7 @@ Uses SnapshotManager from utils/snapshot_manager.py.
 from datetime import datetime
 
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QGridLayout,
     QGroupBox,
@@ -42,6 +42,8 @@ class SnapshotTab(BaseTab):
         badge="advanced",
         order=30,
     )
+
+    actionCenterRequested = pyqtSignal(str, object)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -95,8 +97,8 @@ class SnapshotTab(BaseTab):
         btn_create.clicked.connect(self._create_snapshot)
         action_layout.addWidget(btn_create)
 
-        btn_delete = QPushButton(self.tr("Delete Selected"))
-        btn_delete.setAccessibleName(self.tr("Delete Selected"))
+        btn_delete = QPushButton(self.tr("Manual Irreversible Delete"))
+        btn_delete.setAccessibleName(self.tr("Manual Irreversible Delete"))
         btn_delete.clicked.connect(self._delete_snapshot)
         action_layout.addWidget(btn_delete)
 
@@ -216,7 +218,7 @@ class SnapshotTab(BaseTab):
             self.append_output(f"Error listing snapshots: {exc}\n")
 
     def _create_snapshot(self):
-        """Create a new snapshot."""
+        """Create a verified Timeshift or Snapper plan."""
         label, ok = QInputDialog.getText(
             self, self.tr("Create Snapshot"), self.tr("Snapshot label:")
         )
@@ -224,9 +226,26 @@ class SnapshotTab(BaseTab):
             return
 
         try:
-            binary, args, desc = SnapshotManager.create_snapshot(label.strip())
-            self.run_command(binary, args, desc)
-            QTimer.singleShot(3000, self._refresh_snapshots)
+            available = [item.name for item in SnapshotManager.detect_backends() if item.available and item.name in {"timeshift", "snapper"}]
+            if not available:
+                self.append_output(self.tr("Timeshift or Snapper is required for verified creation. Raw Btrfs remains manual-only.\n"))
+                return
+            backend = available[0]
+            if len(available) > 1:
+                backend, accepted = QInputDialog.getItem(
+                    self,
+                    self.tr("Recovery Backend"),
+                    self.tr("Backend:"),
+                    available,
+                    0,
+                    False,
+                )
+                if not accepted:
+                    return
+            self.actionCenterRequested.emit(
+                "create-recovery-point",
+                {"backend": str(backend), "description": label.strip()},
+            )
         except (RuntimeError, OSError, ValueError) as exc:
             self.append_output(f"Error creating snapshot: {exc}\n")
 

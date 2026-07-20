@@ -45,7 +45,7 @@ class ActionCenterService:
             items.append(ActionCenterItem(
                 id=definition.id,
                 title=definition.title,
-                source="catalog:v14",
+                source="catalog:v17",
                 description=definition.description,
                 risk_level=definition.risk_level,
                 privilege="pkexec" if definition.privileged else "none",

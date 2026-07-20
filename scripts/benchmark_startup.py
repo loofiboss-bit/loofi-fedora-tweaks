@@ -166,17 +166,27 @@ def _run_parent(warmups: int, run_count: int, output: Path | None) -> dict[str, 
         environment["LOOFI_BENCHMARK_PROFILE"] = str(profile)
         environment["QT_QPA_PLATFORM"] = "offscreen"
         environment["PYTHONDONTWRITEBYTECODE"] = "1"
+        source_root = environment.get(
+            "LOOFI_SOURCE_ROOT",
+            str(Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks"),
+        )
+        existing_pythonpath = environment.get("PYTHONPATH", "")
+        environment["PYTHONPATH"] = source_root + (os.pathsep + existing_pythonpath if existing_pythonpath else "")
         command = [sys.executable, str(Path(__file__).resolve()), "--child"]
 
         for index in range(warmups + run_count):
-            completed = subprocess.run(
-                command,
-                check=True,
-                capture_output=True,
-                text=True,
-                env=environment,
-                timeout=30,
-            )
+            try:
+                completed = subprocess.run(
+                    command,
+                    check=True,
+                    capture_output=True,
+                    text=True,
+                    env=environment,
+                    timeout=30,
+                )
+            except subprocess.CalledProcessError as exc:
+                details = (exc.stderr or exc.stdout or "no child output").strip()
+                raise RuntimeError(f"Startup benchmark child failed: {details}") from exc
             measurement = json.loads(completed.stdout)
             if index >= warmups:
                 runs.append(measurement)

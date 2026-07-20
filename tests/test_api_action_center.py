@@ -25,7 +25,7 @@ class TestActionCenterApi(TestCase):
 
         payload = get_action_plan("plan-1", _auth="token")
 
-        self.assertEqual(payload["schema_version"], 1)
+        self.assertEqual(payload["schema_version"], 2)
         self.assertTrue(payload["read_only"])
         self.assertEqual(payload["plan"]["plan_id"], "plan-1")
         self.assertEqual(payload["policy_decision"]["reason_code"], "ready")
@@ -44,7 +44,7 @@ class TestActionCenterApi(TestCase):
 
         payload = get_action_run("run-1", _auth="token")
 
-        self.assertEqual(payload["schema_version"], 1)
+        self.assertEqual(payload["schema_version"], 2)
         self.assertTrue(payload["read_only"])
         self.assertNotIn("stdout", payload["run"]["execution_result"])
         self.assertNotIn("stderr", payload["run"]["verification_result"])

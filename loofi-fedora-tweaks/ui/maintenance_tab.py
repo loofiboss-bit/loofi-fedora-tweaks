@@ -42,15 +42,9 @@ from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
 
 
 class _UpdatesSubTab(BaseTab):
-    """Sub-tab containing all system update functionality.
+    """Preview-first entry point for independent verified update plans."""
 
-    Preserves every feature from the original UpdatesTab:
-    - Update All (DNF + Flatpak + Firmware) with sequential queue
-    - Individual DNF / Flatpak / Firmware update buttons
-    - Kernel Management (list / remove old kernels)
-    - Progress bar with status text
-    - Output log
-    """
+    actionCenterRequested = pyqtSignal(str, object)
 
     def __init__(self):
         super().__init__()
@@ -72,9 +66,8 @@ class _UpdatesSubTab(BaseTab):
         update_guidance.setWordWrap(True)
         layout.addWidget(update_guidance)
 
-        # Update All Button (Prominent)
-        self.btn_update_all = QPushButton(self.tr("Update All (DNF + Flatpak + Firmware)"))
-        self.btn_update_all.setAccessibleName(self.tr("Update All (DNF + Flatpak + Firmware)"))
+        self.btn_update_all = QPushButton(self.tr("Review updates independently"))
+        self.btn_update_all.setAccessibleName(self.tr("Review independent update plans"))
         self.btn_update_all.setObjectName("maintUpdateAllBtn")
         self.btn_update_all.clicked.connect(self.run_update_all)
         layout.addWidget(self.btn_update_all)
@@ -83,20 +76,20 @@ class _UpdatesSubTab(BaseTab):
         btn_layout = QHBoxLayout()
 
         if self.package_manager == "rpm-ostree":
-            self.btn_dnf = QPushButton(self.tr("Update System (rpm-ostree)"))
+            self.btn_dnf = QPushButton(self.tr("Review System Update (rpm-ostree)"))
         else:
-            self.btn_dnf = QPushButton(self.tr("Update System (DNF)"))
-        self.btn_dnf.setAccessibleName(self.tr("Update System"))
+            self.btn_dnf = QPushButton(self.tr("Review System Update (DNF)"))
+        self.btn_dnf.setAccessibleName(self.tr("Review System Update"))
         self.btn_dnf.clicked.connect(self.run_dnf_update)
         btn_layout.addWidget(self.btn_dnf)
 
-        self.btn_flatpak = QPushButton(self.tr("Update Flatpaks"))
-        self.btn_flatpak.setAccessibleName(self.tr("Update Flatpaks"))
+        self.btn_flatpak = QPushButton(self.tr("Review Flatpak Updates"))
+        self.btn_flatpak.setAccessibleName(self.tr("Review Flatpak Updates"))
         self.btn_flatpak.clicked.connect(self.run_flatpak_update)
         btn_layout.addWidget(self.btn_flatpak)
 
-        self.btn_fw = QPushButton(self.tr("Update Firmware"))
-        self.btn_fw.setAccessibleName(self.tr("Update Firmware"))
+        self.btn_fw = QPushButton(self.tr("Review Firmware Updates"))
+        self.btn_fw.setAccessibleName(self.tr("Review Firmware Updates"))
         self.btn_fw.clicked.connect(self.run_fw_update)
         btn_layout.addWidget(self.btn_fw)
 
@@ -152,9 +145,6 @@ class _UpdatesSubTab(BaseTab):
 
         self.runner.progress_update.connect(self.update_progress)
 
-        self.update_queue = []
-        self.current_update_index = 0
-
     def reveal_advanced_options(self) -> None:
         """Reveal the former Smart Updates surface after a compatible deep link."""
         self.advanced_group.setChecked(True)
@@ -174,78 +164,22 @@ class _UpdatesSubTab(BaseTab):
 
     # -- Individual update actions -----------------------------------------
 
-    @staticmethod
-    def _system_update_step(package_manager):
-        if package_manager == "rpm-ostree":
-            return ("pkexec", ["rpm-ostree", "upgrade"], "Starting System Upgrade...")
-        return (
-            "pkexec",
-            [package_manager, "update", "-y"],
-            "Starting System Update...",
-        )
-
     def run_dnf_update(self):
-        from services.security import SafetyManager
-
-        if self.package_manager == "dnf" and SafetyManager.check_dnf_lock():
-            QMessageBox.warning(
-                self,
-                self.tr("Update Locked"),
-                self.tr("Another package manager (DNF/RPM) is currently running.\nPlease wait for it to finish."),
-            )
-            return
-
-        action_name = self.tr("System Upgrade (rpm-ostree)") if self.package_manager == "rpm-ostree" else self.tr("System Update (DNF)")
-
-        if not SafetyManager.confirm_action(self, action_name):
-            return
-
-        self.start_process()
-        cmd, args, desc = self._system_update_step(self.package_manager)
-        self.append_output(self.tr(desc) + "\n")
-        self.runner.run_command(cmd, args)
+        self.actionCenterRequested.emit("update-fedora-system", {})
 
     def run_flatpak_update(self):
-        self.start_process()
-        self.append_output(self.tr("Starting Flatpak Update...\n"))
-        self.runner.run_command("flatpak", ["update", "-y"])
+        self.actionCenterRequested.emit("update-flatpaks", {})
 
     def run_fw_update(self):
-        from services.security import SafetyManager
-
-        if not SafetyManager.confirm_action(self, self.tr("Firmware Update")):
-            return
-
-        self.start_process()
-        self.append_output(self.tr("Starting Firmware Update...\n"))
-        self.runner.run_command("pkexec", ["fwupdmgr", "update", "-y"])
+        self.actionCenterRequested.emit("update-firmware", {})
 
     # -- Update All (sequential queue) -------------------------------------
 
     def run_update_all(self):
-        from services.security import SafetyManager
-
-        if self.package_manager == "dnf" and SafetyManager.check_dnf_lock():
-            QMessageBox.warning(
-                self,
-                self.tr("Update Locked"),
-                self.tr("Another package manager is running.\nPlease wait."),
-            )
-            return
-
-        if not SafetyManager.confirm_action(self, self.tr("Full System Update")):
-            return
-
-        self.start_process()
-        self.update_queue = [
-            self._system_update_step(self.package_manager),
-            ("flatpak", ["update", "-y"], self.tr("Starting Flatpak Update...")),
-            ("pkexec", ["fwupdmgr", "update", "-y"], self.tr("Starting Firmware Update...")),
-        ]
-        self.current_update_index = 0
-        cmd, args, desc = self.update_queue[0]
-        self.append_output(self.tr(desc) + "\n")
-        self.runner.run_command(cmd, args)
+        self.output_area.setPlainText(self.tr(
+            "Assurance keeps Fedora, Flatpak, and firmware updates independent. "
+            "Choose one review button to create one auditable plan."
+        ))
 
     # -- Helpers -----------------------------------------------------------
 
@@ -262,30 +196,15 @@ class _UpdatesSubTab(BaseTab):
     def on_command_finished(self, exit_code):
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
 
-        # Handle sequential update-all queue
-        if self.update_queue and self.current_update_index < len(self.update_queue) - 1:
-            self.current_update_index += 1
-            cmd, args, desc = self.update_queue[self.current_update_index]
-            self.append_output(f"\n\n{desc}\n")
-            self.progress_bar.setValue(0)
-            self.progress_bar.setFormat(f"0% - {desc}")
-            self.runner.run_command(cmd, args)
-        else:
-            self.update_queue = []
-            self.current_update_index = 0
-            self.btn_dnf.setEnabled(True)
-            self.btn_flatpak.setEnabled(True)
-            self.btn_fw.setEnabled(True)
-            self.btn_update_all.setEnabled(True)
-            self.progress_bar.setValue(100)
-            self.progress_bar.setFormat(self.tr("100% - Done"))
-            self.action_progress.status_label.setText(
-                self.tr("Update completed") if exit_code == 0 else self.tr("Update failed")
-            )
-            if exit_code == 0:
-                self.show_success(self.tr("Update completed successfully"))
-            else:
-                self.show_error(self.tr("Update failed (exit code {})").format(exit_code))
+        self.btn_dnf.setEnabled(True)
+        self.btn_flatpak.setEnabled(True)
+        self.btn_fw.setEnabled(True)
+        self.btn_update_all.setEnabled(True)
+        self.progress_bar.setValue(100)
+        self.progress_bar.setFormat(self.tr("100% - Done"))
+        self.action_progress.status_label.setText(
+            self.tr("Advanced operation completed") if exit_code == 0 else self.tr("Advanced operation failed")
+        )
 
     def run_single_command(self, cmd, args, description):
         self.output_area.clear()
@@ -342,17 +261,17 @@ class _CleanupSubTab(BaseTab):
         )
         cleanup_layout.addWidget(btn_dnf_clean)
 
-        btn_autoremove = QPushButton(self.tr("Remove Unused Packages (Risky)"))
+        btn_autoremove = QPushButton(self.tr("Review Unused Packages"))
         btn_autoremove.setAccessibleName(self.tr("Remove Unused Packages"))
         btn_autoremove.setObjectName("maintAutoremoveBtn")
         btn_autoremove.setToolTip(MAINT_ORPHANS)
         btn_autoremove.clicked.connect(self.run_autoremove)
         cleanup_layout.addWidget(btn_autoremove)
 
-        btn_journal = QPushButton(self.tr("Vacuum Journal (2 weeks)"))
+        btn_journal = QPushButton(self.tr("Review Journal Retention"))
         btn_journal.setAccessibleName(self.tr("Vacuum Journal"))
         btn_journal.setToolTip(MAINT_JOURNAL)
-        btn_journal.clicked.connect(lambda: self.run_command("pkexec", ["journalctl", "--vacuum-time=2weeks"], self.tr("Vacuuming Journal...")))
+        btn_journal.clicked.connect(self._review_journal)
         cleanup_layout.addWidget(btn_journal)
 
         layout.addWidget(cleanup_group)
@@ -372,7 +291,7 @@ class _CleanupSubTab(BaseTab):
 
         btn_rpmdb = QPushButton(self.tr("Rebuild RPM Database"))
         btn_rpmdb.setAccessibleName(self.tr("Rebuild RPM Database"))
-        btn_rpmdb.clicked.connect(lambda: self.run_command("pkexec", ["rpm", "--rebuilddb"], self.tr("Rebuilding RPM Database...")))
+        btn_rpmdb.clicked.connect(self._show_rpmdb_manual_guidance)
         maint_layout.addWidget(btn_rpmdb)
 
         # Timeshift Check
@@ -483,20 +402,27 @@ class _CleanupSubTab(BaseTab):
             self.append_output(self.tr("Timeshift not found. Please install it for system safety.\n"))
 
     def run_autoremove(self):
-        from services.security import SafetyManager
+        self.actionCenterRequested.emit("autoremove-packages", {})
 
-        if SafetyManager.check_dnf_lock():
-            QMessageBox.warning(
-                self,
-                self.tr("Update Locked"),
-                self.tr("Another package manager is running."),
-            )
-            return
+    def _review_journal(self) -> None:
+        value, accepted = QInputDialog.getItem(
+            self,
+            self.tr("Journal Retention"),
+            self.tr("Keep journal entries for:"),
+            [self.tr("7 days"), self.tr("14 days"), self.tr("30 days")],
+            1,
+            False,
+        )
+        if accepted:
+            days = int(str(value).split()[0])
+            self.actionCenterRequested.emit("vacuum-journal", {"days": days})
 
-        if SafetyManager.confirm_action(self, self.tr("Remove Unused Packages (Risky)")):
-            self.run_command(
-                *PrivilegedCommand.dnf("autoremove"),
-            )
+    def _show_rpmdb_manual_guidance(self) -> None:
+        QMessageBox.information(
+            self,
+            self.tr("Manual Troubleshooting Action"),
+            self.tr("RPM database repair is available only as a manual high-risk troubleshooting step."),
+        )
 
     def on_command_finished(self, exit_code):
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
@@ -931,7 +857,7 @@ class _ActionCenterOperationWorker(QObject):
 
 
 class _ActionCenterSubTab(BaseTab):
-    """Review, asynchronously run, verify, and inspect v14 action plans."""
+    """Review, asynchronously run, verify, and inspect v17 action plans."""
 
     _ACTION_ID_ADAPTERS = {
         "readiness-repo-cache-clean": "dnf-clean-all",
@@ -1204,7 +1130,7 @@ class _ActionCenterSubTab(BaseTab):
             QMessageBox.warning(self, self.tr("No Action Selected"), self.tr("Select an Action Center item first."))
             return
 
-        if item.source == "catalog:v14":
+        if item.source == "catalog:v17":
             self.detail_area.setPlainText(
                 "\n".join(
                     [
@@ -1237,9 +1163,9 @@ class _ActionCenterSubTab(BaseTab):
             return
 
         action_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
-        parameters = {}
+        parameters = dict(self._requested_parameters)
         if action_id == "restart-failed-service":
-            service = str(self._requested_parameters.get("service", ""))
+            service = str(parameters.get("service", ""))
             if not service:
                 service = str(item.metadata.get("service", "")) if isinstance(item.metadata, dict) else ""
             if not service and item.command_preview:
@@ -1418,6 +1344,7 @@ class _ActionCenterSubTab(BaseTab):
 
     def _accept_verification(self, verified) -> None:
         self._current_run = verified
+        self.verify_button.setEnabled(verified.state == "awaiting_reboot")
         self._show_run(verified)
 
     def _show_run(self, run) -> None:
@@ -1431,6 +1358,8 @@ class _ActionCenterSubTab(BaseTab):
                     f"{self.tr('State')}: {run.state}",
                     f"{self.tr('Execution')}: {(run.execution_result or {}).get('message', '')}",
                     f"{self.tr('Verification')}: {verification.get('message', self.tr('Pending'))}",
+                    f"{self.tr('Verification attempts')}: {getattr(run, 'verification_attempts', 0)}",
+                    f"{self.tr('Reboot required')}: {getattr(run, 'reboot_required', False)}",
                     f"{self.tr('Recovery')}: {run.recovery_status}",
                 ]
             )

@@ -17,7 +17,7 @@ import sys
 import types
 import unittest
 from types import SimpleNamespace
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
@@ -546,7 +546,7 @@ class TestActionCenterSubTab(unittest.TestCase):
         item = self._item()
         item.id = action_id
         item.title = action_id
-        item.source = "catalog:v14"
+        item.source = "catalog:v17"
         item.command_preview = []
         item.risk_level = "low" if action_id != "restart-failed-service" else "medium"
         return item
@@ -1974,6 +1974,64 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
 # ===================================================================
 # Cleanup stubs on module unload
 # ===================================================================
+
+
+TestUpdatesSubTabSystemUpdateStep = unittest.skip(
+    "v17 removed direct update command construction"
+)(TestUpdatesSubTabSystemUpdateStep)
+
+for _legacy_update_test in (
+    "test_run_flatpak_update_starts_process",
+    "test_run_flatpak_update_runs_flatpak",
+    "test_run_fw_update_confirmed",
+    "test_run_dnf_update_success",
+    "test_run_dnf_update_rpm_ostree",
+    "test_run_update_all_builds_queue",
+    "test_run_update_all_starts_first_command",
+    "test_run_update_all_queue_contains_flatpak",
+    "test_run_update_all_queue_contains_firmware",
+    "test_on_command_finished_mid_queue_advances",
+    "test_on_command_finished_mid_queue_second_to_third",
+    "test_on_command_finished_clears_queue",
+    "test_on_command_finished_success_calls_show_success",
+    "test_on_command_finished_failure_calls_show_error",
+):
+    setattr(
+        TestUpdatesSubTabInstance,
+        _legacy_update_test,
+        unittest.skip("v17 delegates canonical updates to Action Center")(getattr(TestUpdatesSubTabInstance, _legacy_update_test)),
+    )
+
+TestCleanupSubTab.test_run_autoremove_success = unittest.skip(
+    "v17 delegates autoremove to Action Center"
+)(TestCleanupSubTab.test_run_autoremove_success)
+
+
+class TestAssuranceHandoffs(unittest.TestCase):
+    def test_update_buttons_emit_independent_action_ids(self):
+        tab = _mt._UpdatesSubTab()
+        tab.actionCenterRequested.emit = MagicMock()
+
+        tab.run_dnf_update()
+        tab.run_flatpak_update()
+        tab.run_fw_update()
+
+        self.assertEqual(
+            tab.actionCenterRequested.emit.call_args_list,
+            [
+                call("update-fedora-system", {}),
+                call("update-flatpaks", {}),
+                call("update-firmware", {}),
+            ],
+        )
+
+    def test_autoremove_emits_one_review_request(self):
+        tab = _mt._CleanupSubTab()
+        tab.actionCenterRequested.emit = MagicMock()
+
+        tab.run_autoremove()
+
+        tab.actionCenterRequested.emit.assert_called_once_with("autoremove-packages", {})
 
 
 def tearDownModule():

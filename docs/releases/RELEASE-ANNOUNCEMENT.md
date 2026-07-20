@@ -1,11 +1,11 @@
-# Loofi Fedora Tweaks v16.0.0 "Clarity" Release Announcement
+# Loofi Fedora Tweaks v17.0.0 "Assurance" Release Announcement
 
 ## TL;DR
 
-Clarity gives Loofi Fedora Tweaks one responsive shell and one consistent page
-language. Full-label section navigation, shared components, semantic themes,
-and accessible focus behavior now cover Standard and Advanced without changing
-trusted system operations.
+Assurance makes the five canonical system-changing workflows preview-first,
+explicitly confirmed, audited, and verified. Fedora, Flatpak, firmware,
+application, cleanup, and recovery-point operations now converge on Action
+Center without adding automatic retry, reboot, rollback, or remote apply.
 
 The release is live on GitHub and the Fedora 44 COPR repository. Checksums,
 CycloneDX SBOM, in-toto/SLSA provenance, RPMs, Flatpak, and source distribution
@@ -13,16 +13,16 @@ were read back and verified against the exact release commit.
 
 ## Highlights
 
-- Responsive section rails collapse to a compact selector on small windows.
-- All six Standard destinations and Advanced use the shared page scaffold,
-  cards, actions, states, and spacing.
-- System, dark, light, and high-contrast themes keep structural styling.
-- The real shell passed 400 automated layout/theme/font cells plus live Wayland,
-  Qt `xcb`, keyboard, contrast, and AT-SPI validation.
-- Meaningful Home remains within the same-host release budget with one startup
-  plugin and no startup probes, active timers, or worker threads.
-- Routes, state, Action Center, Fedora variants, CLI, API, daemon, and IPC remain
-  compatible.
+- Eleven deny-by-default Action Center definitions retain one action and one
+  command vector per plan.
+- Exact planned RPM identities, Flatpak refs/commits, firmware facts, cleanup
+  targets, and recovery-point evidence drive outcome verification.
+- Atomic Fedora and firmware operations persist safely across required reboots.
+- Schema-v2 history migrates v1 stores atomically and keeps future schemas
+  read-only.
+- The Web API route table is read-only except for token issuance.
+- The v16 shell, routes, state, CLI, daemon, IPC, and original Action Center
+  definitions remain compatible.
 
 ## Install or upgrade
 
@@ -40,8 +40,8 @@ pkexec dnf install loofi-fedora-tweaks-daemon
 
 ## Links
 
-- **GitHub release**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v16.0.0>
-- **Release notes**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v16.0.0.md>
+- **GitHub release**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v17.0.0>
+- **Release notes**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v17.0.0.md>
 - **COPR packages**: <https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/>
 - **Wiki**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/wiki>
 - **Issue tracker**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>

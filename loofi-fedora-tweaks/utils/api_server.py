@@ -7,7 +7,6 @@ from typing import Optional
 
 import uvicorn
 from api.routes import action_center as action_center_routes
-from api.routes import executor as executor_routes
 from api.routes import profiles as profiles_routes
 from api.routes import system as system_routes
 from fastapi import FastAPI, Form, HTTPException
@@ -42,7 +41,6 @@ class APIServer:
 
         # API routes
         app.include_router(system_routes.router, prefix="/api")
-        app.include_router(executor_routes.router, prefix="/api")
         app.include_router(profiles_routes.router, prefix="/api")
         app.include_router(action_center_routes.router, prefix="/api")
 

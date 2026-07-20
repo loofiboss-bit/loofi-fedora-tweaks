@@ -47,6 +47,7 @@ def _install_stubs():
     qt_core = types.ModuleType("PyQt6.QtCore")
     qt_core.Qt = types.SimpleNamespace()
     qt_core.QTimer = MagicMock()
+    qt_core.pyqtSignal = lambda *args, **kwargs: MagicMock()
 
     pyqt = types.ModuleType("PyQt6")
     pyqt.QtWidgets = qt_widgets
