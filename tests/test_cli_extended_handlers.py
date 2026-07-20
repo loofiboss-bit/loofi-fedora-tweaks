@@ -50,14 +50,15 @@ class TestCLIExtendedHandlers(unittest.TestCase):
         result = cmd_package(args)
         self.assertEqual(result, 1)
 
+    @patch('cli.main._emit_legacy_plans', return_value=0)
+    @patch('cli.main._create_action_center_plan')
     @patch('cli.main._print')
-    @patch('cli.main.PackageExplorer.install')
-    def test_package_install_success(self, mock_install, mock_print):
-        """Install path returns success code."""
-        mock_install.return_value = MagicMock(success=True, message="ok")
+    def test_package_install_success(self, mock_print, mock_plan, mock_emit):
+        """Install path creates a plan without applying it."""
         args = argparse.Namespace(action="install", name="htop", query=None, source=None, search=None, days=7)
         result = cmd_package(args)
         self.assertEqual(result, 0)
+        mock_plan.assert_called_once_with("install-application", {"source": "fedora", "package_id": "htop"})
 
     @patch('cli.main._print')
     @patch('cli.main.FirewallManager.is_available', return_value=False)

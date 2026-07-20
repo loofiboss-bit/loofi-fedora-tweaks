@@ -170,7 +170,7 @@ class Daemon:
     def check_plugin_updates(cls):
         """Check for plugin updates and auto-update if enabled."""
         # Check if auto-update is enabled in config
-        config = ConfigManager.load_config()
+        config = ConfigManager.load_config() or {}
         if not config.get("plugin_auto_update", False):
             return
 

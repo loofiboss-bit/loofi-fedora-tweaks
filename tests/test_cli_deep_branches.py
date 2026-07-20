@@ -924,11 +924,11 @@ class TestCmdPackage(unittest.TestCase):
         )
         self.assertEqual(r, 1)
 
+    @patch("cli.main._emit_legacy_plans", return_value=0)
+    @patch("cli.main._create_action_center_plan")
     @patch("cli.main._print")
-    @patch("utils.package_explorer.PackageExplorer.install")
-    def test_package_install(self, mock_install, mock_print):
+    def test_package_install(self, mock_print, mock_plan, mock_emit):
         _set_json(False)
-        mock_install.return_value = SimpleNamespace(success=True, message="installed")
         r = cmd_package(
             _ns(
                 action="install",
@@ -940,6 +940,7 @@ class TestCmdPackage(unittest.TestCase):
             )
         )
         self.assertEqual(r, 0)
+        mock_plan.assert_called_once_with("install-application", {"source": "fedora", "package_id": "htop"})
 
     @patch("cli.main._print")
     def test_package_install_no_name(self, mock_print):
