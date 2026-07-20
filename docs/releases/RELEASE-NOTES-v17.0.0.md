@@ -1,6 +1,6 @@
 # Release Notes -- v17.0.0 "Assurance"
 
-**Status:** locally verified release candidate; public readback pending
+**Status:** released and independently verified
 **Codename:** Assurance
 **Supported target:** Fedora KDE 44
 
@@ -57,6 +57,10 @@ daemon. No physical `-extras` package is created.
 - Local RPM, Flatpak, and sdist builds identify version 17.0.0. Version metadata
   is aligned across the Python package, RPM spec, and `pyproject.toml`.
 
-Public status is established only after exact tag/commit lineage, canonical CI,
-GitHub assets and checksums, SBOM/provenance, COPR Fedora 44 installation, and
-wiki readback have all been independently verified.
+## Publication
+
+The annotated `v17.0.0` tag, canonical workflow, GitHub assets and checksums,
+CycloneDX SBOM, in-toto provenance, COPR Fedora 44 build and clean installation,
+and public wiki were independently read back successfully. The release commit is
+`758e7528558daa200989b2d16a333039c020a4dd`, the workflow is `29716217083`,
+and the COPR build is `10748977`.

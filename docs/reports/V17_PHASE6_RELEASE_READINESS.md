@@ -1,7 +1,7 @@
 # v17 Phase 6 -- Local Release Readiness
 
 Date: 2026-07-20
-Status: local release gates passed; public readback pending
+Status: released and independently verified
 
 ## Green gates
 
@@ -55,8 +55,19 @@ from CLI/API/daemon. `-extras` remains NO-GO. Raw evidence is in
   machine-readable firmware path without claiming physical hardware coverage;
   see `V17_PHASE6_FWUPD_EMULATION.md`.
 
-## Remaining publication gates
+## Publication evidence
 
-The release commit is locally ready. Exact GitHub tag lineage, canonical CI,
-release assets and checksums, SBOM/provenance verification, COPR Fedora 44
-install/readback, and public wiki readback must be completed after publication.
+- Annotated tag `v17.0.0` peels to
+  `758e7528558daa200989b2d16a333039c020a4dd`.
+- Auto Release Pipeline run `29716217083` passed every required job, including
+  Fedora Review, RPM and Flatpak smoke tests, release publication, and COPR.
+- All eight public release assets passed `SHA256SUMS.txt` readback. The
+  CycloneDX 1.5 SBOM reports version 17.0.0, and the SLSA/in-toto provenance
+  binds five package subjects to the exact release commit and workflow run.
+- COPR build `10748977` succeeded. An independent clean `fedora:44` container
+  installed `loofi-fedora-tweaks 1:17.0.0-1.fc44 noarch`; both binary and CLI
+  version readback returned 17.0.0.
+- Public wiki commit `7cead0f3c8cba3833dad42e0b8464b103457aef2`
+  exposes the v17 Home, changelog, and GUI reference.
+- The historical Atlas tag is retained as `legacy-v17.0.0-atlas` at
+  `97fa3654776fcbf420773ffadbe4bfc0e83447b2`.

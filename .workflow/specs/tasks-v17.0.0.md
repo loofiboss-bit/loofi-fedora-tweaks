@@ -21,7 +21,11 @@ The user separately authorized full GitHub and COPR publication. Local release
 gates, physical Fedora Atomic 44 reboot/readback, and fwupd host emulation are
 complete. The following evidence is intentionally collected after publication:
 
-- [ ] [post-publish] Verify exact GitHub tag/release lineage, assets, checksums,
+- [x] [post-publish] Verify exact GitHub tag/release lineage, assets, checksums,
   SBOM, and provenance.
-- [ ] [post-publish] Verify the canonical workflow, COPR Fedora 44
+- [x] [post-publish] Verify the canonical workflow, COPR Fedora 44
   install/readback, and public wiki.
+
+Public evidence: release commit `758e7528558daa200989b2d16a333039c020a4dd`,
+Auto Release Pipeline `29716217083`, COPR build `10748977`, and wiki commit
+`7cead0f3c8cba3833dad42e0b8464b103457aef2`.

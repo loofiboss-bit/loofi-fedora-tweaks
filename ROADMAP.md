@@ -12,7 +12,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | --- | --- | --- | --- |
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
-| v17.0.0 | Assurance | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
+| v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
 
 ## [DONE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
 
@@ -65,7 +65,7 @@ tag `v15.0.0` peels to `17aa8aa78cd3ac51d1d63da336ee25d4e5e3b4c1`.
 See [v15 release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) and
 [v15 release readiness](docs/reports/V15_PHASE10_RELEASE_READINESS.md).
 
-## [ACTIVE] v17.0.0 "Assurance" — Verified Core Workflows
+## [DONE] v17.0.0 "Assurance" — Verified Core Workflows
 
 - Converge the five canonical workflows on preview, explicit confirmation,
   audit, and outcome verification through Action Center.
@@ -76,6 +76,12 @@ See [v15 release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) and
 
 The sole scope authority is the
 [canonical v17 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md).
+
+The canonical annotated tag `v17.0.0` peels to release commit
+`758e7528558daa200989b2d16a333039c020a4dd`. Auto Release Pipeline run
+`29716217083`, COPR build `10748977`, the public Fedora 44 package install,
+release asset evidence, and wiki readback all passed. The historical Atlas tag
+remains available as `legacy-v17.0.0-atlas`.
 
 ## Execution Rules
 
