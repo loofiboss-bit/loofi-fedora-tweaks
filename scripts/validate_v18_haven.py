@@ -5,15 +5,52 @@ from __future__ import annotations
 
 import ast
 import sys
+import types
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
 SOURCE = ROOT / "loofi-fedora-tweaks"
 sys.path.insert(0, str(SOURCE))
 
-from core.actions.catalog import ActionCatalog  # noqa: E402
+import core  # noqa: E402
+import services  # noqa: E402
+
 from core.execution_policy import classify_command, presentation_operation_class  # noqa: E402
 from core.product_catalog import product_catalog, validate_product_catalog  # noqa: E402
+
+
+def _action_definitions() -> list[object]:
+    """Load the pure catalog without requiring PyQt in the dependency-free CI gate."""
+    if "core.actions" in sys.modules:
+        from core.actions.catalog import ActionCatalog
+
+        return list(ActionCatalog().list())
+
+    actions_package = types.ModuleType("core.actions")
+    actions_package.__path__ = [str(SOURCE / "core" / "actions")]
+    actions_package.__package__ = "core"
+    system_package = types.ModuleType("services.system")
+    system_package.__path__ = [str(SOURCE / "services" / "system")]
+    system_package.__package__ = "services"
+    sys.modules["core.actions"] = actions_package
+    sys.modules["services.system"] = system_package
+    try:
+        from core.actions.assurance import assurance_definitions
+        from core.actions.catalog import ActionCatalog, _first_party_definitions
+        from core.actions.metadata import with_haven_metadata
+
+        definitions = [
+            with_haven_metadata(definition)
+            for definition in [*_first_party_definitions(), *assurance_definitions()]
+        ]
+        return list(ActionCatalog(definitions).list())
+    finally:
+        sys.modules.pop("core.actions", None)
+        sys.modules.pop("services.system", None)
+        if getattr(core, "actions", None) is actions_package:
+            delattr(core, "actions")
+        if getattr(services, "system", None) is system_package:
+            delattr(services, "system")
 
 BANNED_MODULES = {
     "core.plugins.adapter",
@@ -231,7 +268,7 @@ def validate() -> list[str]:
     if len({entry.route_id for entry in entries}) != 80:
         errors.append(f"stable route count changed: expected 80, got {len(entries)}")
 
-    for definition in ActionCatalog().list():
+    for definition in _action_definitions():
         if definition.operation_class not in {"host", "app_state", "session", "manual_only"}:
             errors.append(f"action {definition.id} has no valid operation class")
         if not definition.supported_variants:
