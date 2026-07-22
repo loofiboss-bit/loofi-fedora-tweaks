@@ -47,7 +47,7 @@ class HardwareTab(QWidget, PluginInterface):
         return typing.cast(PluginMetadata, self._METADATA)
 
     def create_widget(self: typing.Any) -> QWidget:
-        return self
+        return typing.cast(QWidget, self)
 
     def __init__(self: typing.Any) -> None:
         super().__init__()
@@ -165,7 +165,7 @@ class HardwareTab(QWidget, PluginInterface):
         """Create a text-labelled card; ``icon`` remains a compatibility input."""
         card = QGroupBox(title)
         card.setObjectName("hwCard")
-        return card
+        return typing.cast(QGroupBox, card)
 
     # ==================== CPU GOVERNOR ====================
 
@@ -203,7 +203,7 @@ class HardwareTab(QWidget, PluginInterface):
         desc.setObjectName("hwCpuDesc")
         layout.addWidget(desc)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def on_governor_changed(self: typing.Any, governor: str) -> typing.Any:
         """Route a governor change to the shared review boundary."""
@@ -217,7 +217,7 @@ class HardwareTab(QWidget, PluginInterface):
 
         if not HardwareManager.is_power_profiles_available():
             layout.addWidget(QLabel(self.tr("power-profiles-daemon not installed")))
-            return card
+            return typing.cast(QGroupBox, card)
 
         # Current profile
         current = HardwareManager.get_power_profile()
@@ -242,7 +242,7 @@ class HardwareTab(QWidget, PluginInterface):
             btn_layout.addWidget(btn)
 
         layout.addLayout(btn_layout)
-        return card
+        return typing.cast(QGroupBox, card)
 
     def set_power_profile(self: typing.Any, profile: str) -> typing.Any:
         self.actionCenterRequested.emit("set-power-profile", {"profile": profile})
@@ -255,7 +255,7 @@ class HardwareTab(QWidget, PluginInterface):
 
         if not HardwareManager.is_hybrid_gpu():
             layout.addWidget(QLabel(self.tr("No hybrid GPU detected")))
-            return card
+            return typing.cast(QGroupBox, card)
 
         tools = HardwareManager.get_available_gpu_tools()
         if not tools:
@@ -264,7 +264,7 @@ class HardwareTab(QWidget, PluginInterface):
             install_btn.setAccessibleName(self.tr("Install envycontrol"))
             install_btn.clicked.connect(self.install_envycontrol)
             layout.addWidget(install_btn)
-            return card
+            return typing.cast(QGroupBox, card)
 
         # Current mode
         current = HardwareManager.get_gpu_mode()
@@ -295,7 +295,7 @@ class HardwareTab(QWidget, PluginInterface):
         warn.setObjectName("hwGpuWarning")
         layout.addWidget(warn)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def set_gpu_mode(self: typing.Any, mode: str) -> typing.Any:
         self.actionCenterRequested.emit("set-gpu-mode", {"mode": mode})
@@ -322,7 +322,7 @@ class HardwareTab(QWidget, PluginInterface):
             install_btn.setAccessibleName(self.tr("Install NBFC"))
             install_btn.clicked.connect(self.show_nbfc_help)
             layout.addWidget(install_btn)
-            return card
+            return typing.cast(QGroupBox, card)
 
         # Current status
         status = HardwareManager.get_fan_status()
@@ -363,7 +363,7 @@ class HardwareTab(QWidget, PluginInterface):
         btn_layout.addWidget(btn_auto)
 
         layout.addLayout(btn_layout)
-        return card
+        return typing.cast(QGroupBox, card)
 
     def set_fan_speed(self: typing.Any, speed: int) -> typing.Any:
         self.actionCenterRequested.emit("set-fan-speed", {"speed": speed})
@@ -400,7 +400,7 @@ class HardwareTab(QWidget, PluginInterface):
         )
         layout.addWidget(btn_restart_audio)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     # ==================== BATTERY LIMIT (from Tweaks tab) ====================
 
@@ -428,7 +428,7 @@ class HardwareTab(QWidget, PluginInterface):
 
         layout.addLayout(btn_layout)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _set_battery_limit(self: typing.Any, limit: typing.Any) -> typing.Any:
         """Route persistent battery service/sysfs changes to manual review."""
@@ -454,7 +454,7 @@ class HardwareTab(QWidget, PluginInterface):
         btn_enroll_finger.clicked.connect(self._enroll_fingerprint)
         layout.addWidget(btn_enroll_finger)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _enroll_fingerprint(self: typing.Any) -> typing.Any:
         """Route authentication enrollment to manual security review."""
@@ -501,7 +501,7 @@ class HardwareTab(QWidget, PluginInterface):
         # Initial status check
         QTimer.singleShot(500, self._bt_refresh_status)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _bt_refresh_status(self: typing.Any) -> typing.Any:
         """Refresh Bluetooth adapter and device status."""
@@ -609,7 +609,7 @@ class HardwareTab(QWidget, PluginInterface):
         # Load initial info
         QTimer.singleShot(1000, self._load_boot_info)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _load_boot_info(self: typing.Any) -> typing.Any:
         """Load current kernel info."""

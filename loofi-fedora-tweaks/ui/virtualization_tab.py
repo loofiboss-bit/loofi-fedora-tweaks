@@ -50,7 +50,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         return typing.cast(PluginMetadata, self._METADATA)
 
     def create_widget(self: typing.Any) -> QWidget:
-        return self
+        return typing.cast(QWidget, self)
 
     def __init__(self: typing.Any) -> None:
         super().__init__()

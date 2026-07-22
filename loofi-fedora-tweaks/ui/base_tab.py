@@ -279,7 +279,7 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
 
     def create_widget(self: typing.Any) -> QWidget:
         """Default: return self. Tabs that need fresh instances must override."""
-        return self
+        return typing.cast(QWidget, self)
 
     def set_context(self: typing.Any, context: dict) -> None:
         """Store context for tabs that need MainWindow or executor references."""

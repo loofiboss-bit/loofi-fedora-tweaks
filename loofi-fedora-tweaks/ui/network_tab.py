@@ -50,7 +50,7 @@ class NetworkTab(BaseTab):
         return typing.cast(PluginMetadata, self._METADATA)
 
     def create_widget(self: typing.Any) -> QWidget:
-        return self
+        return typing.cast(QWidget, self)
 
     """Network management with Connections, DNS, Privacy, and Monitoring routes."""
 

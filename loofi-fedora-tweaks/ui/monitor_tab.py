@@ -510,7 +510,7 @@ class _PerformanceSubTab(QWidget):
         """Create a text-labelled performance card."""
         card = QGroupBox(title)
         card.setObjectName("monitorCard")
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _create_cpu_card(self: typing.Any) -> QGroupBox:
         """Build the CPU usage card with graph and labels."""
@@ -531,7 +531,7 @@ class _PerformanceSubTab(QWidget):
         self.lbl_cpu.setObjectName("monitorCpuLabel")
         card_layout.addWidget(self.lbl_cpu)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _create_memory_card(self: typing.Any) -> QGroupBox:
         """Build the memory usage card with graph and labels."""
@@ -546,7 +546,7 @@ class _PerformanceSubTab(QWidget):
         self.lbl_mem.setObjectName("monitorMemLabel")
         card_layout.addWidget(self.lbl_mem)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _create_network_card(self: typing.Any) -> QGroupBox:
         """Build the network I/O card with dual-line graph and labels."""
@@ -573,7 +573,7 @@ class _PerformanceSubTab(QWidget):
         self.lbl_net.setObjectName("monitorNetLabel")
         card_layout.addWidget(self.lbl_net)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     def _create_disk_card(self: typing.Any) -> QGroupBox:
         """Build the disk I/O card with dual-line graph and labels."""
@@ -600,7 +600,7 @@ class _PerformanceSubTab(QWidget):
         self.lbl_disk.setObjectName("monitorDiskLabel")
         card_layout.addWidget(self.lbl_disk)
 
-        return card
+        return typing.cast(QGroupBox, card)
 
     # ==================== PER-CORE BARS ====================
 
@@ -1032,7 +1032,7 @@ class MonitorTab(QWidget, PluginInterface):
         return typing.cast(PluginMetadata, self._METADATA)
 
     def create_widget(self: typing.Any) -> QWidget:
-        return self
+        return typing.cast(QWidget, self)
 
     def __init__(self: typing.Any) -> None:
         super().__init__()
