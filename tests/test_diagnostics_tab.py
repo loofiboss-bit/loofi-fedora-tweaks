@@ -421,6 +421,7 @@ def _install_diagnostics_stubs():
 
     # -- PyQt6.QtCore --
     qt_core = types.ModuleType("PyQt6.QtCore")
+    qt_core.pyqtSignal = _DummySignal
     qt_core.Qt = types.SimpleNamespace(
         Orientation=types.SimpleNamespace(Horizontal=1, Vertical=2),
         ContextMenuPolicy=types.SimpleNamespace(CustomContextMenu=3),
@@ -444,6 +445,7 @@ def _install_diagnostics_stubs():
         {
             "__init__": lambda self, *a, **kw: None,
             "tr": lambda self, text: text,
+            "actionCenterRequested": _DummySignal(),
         },
     )
 
@@ -893,82 +895,20 @@ class TestServiceAction(unittest.TestCase):
     def _svc(self):
         return FakeServiceUnit("test.service", FakeUnitState.ACTIVE)
 
-    def test_start(self, sm, us, usc, ba, jm):
-        """Start calls ServiceManager.start_unit."""
+    def test_all_actions_request_manual_review(self, sm, us, usc, ba, jm):
         tab = _make_watchtower(sm, ba, jm, us, usc)
         svc = self._svc()
-        sm.start_unit.return_value = FakeResult(True, "Started")
-        sm.list_units.return_value = []
-        tab._service_action("start", svc)
-        sm.start_unit.assert_called_once_with(svc.name, svc.scope)
-
-    def test_stop(self, sm, us, usc, ba, jm):
-        """Stop calls ServiceManager.stop_unit."""
-        tab = _make_watchtower(sm, ba, jm, us, usc)
-        svc = self._svc()
-        sm.stop_unit.return_value = FakeResult(True, "Stopped")
-        sm.list_units.return_value = []
-        tab._service_action("stop", svc)
-        sm.stop_unit.assert_called_once_with(svc.name, svc.scope)
-
-    def test_restart(self, sm, us, usc, ba, jm):
-        """Restart calls ServiceManager.restart_unit."""
-        tab = _make_watchtower(sm, ba, jm, us, usc)
-        svc = self._svc()
-        sm.restart_unit.return_value = FakeResult(True, "Restarted")
-        sm.list_units.return_value = []
-        tab._service_action("restart", svc)
-        sm.restart_unit.assert_called_once_with(svc.name, svc.scope)
-
-    def test_mask(self, sm, us, usc, ba, jm):
-        """Mask calls ServiceManager.mask_unit."""
-        tab = _make_watchtower(sm, ba, jm, us, usc)
-        svc = self._svc()
-        sm.mask_unit.return_value = FakeResult(True, "Masked")
-        sm.list_units.return_value = []
-        tab._service_action("mask", svc)
-        sm.mask_unit.assert_called_once_with(svc.name, svc.scope)
-
-    def test_unmask(self, sm, us, usc, ba, jm):
-        """Unmask calls ServiceManager.unmask_unit."""
-        tab = _make_watchtower(sm, ba, jm, us, usc)
-        svc = self._svc()
-        sm.unmask_unit.return_value = FakeResult(True, "Unmasked")
-        sm.list_units.return_value = []
-        tab._service_action("unmask", svc)
-        sm.unmask_unit.assert_called_once_with(svc.name, svc.scope)
-
-    def test_success_refreshes(self, sm, us, usc, ba, jm):
-        """Successful action triggers _refresh_services."""
-        tab = _make_watchtower(sm, ba, jm, us, usc)
-        svc = self._svc()
-        sm.start_unit.return_value = FakeResult(True, "OK")
-        sm.list_units.return_value = []
-        sm.list_units.reset_mock()
-        tab.service_filter.clear()
-        tab.service_filter.addItem("All", "all")
-        tab._service_action("start", svc)
-        self.assertTrue(sm.list_units.called)
-
-    def test_failure_does_not_refresh(self, sm, us, usc, ba, jm):
-        """Failed action does NOT trigger _refresh_services."""
-        tab = _make_watchtower(sm, ba, jm, us, usc)
-        svc = self._svc()
-        sm.start_unit.return_value = FakeResult(False, "Denied")
-        sm.list_units.reset_mock()
-        tab._service_action("start", svc)
-        sm.list_units.assert_not_called()
-
-    def test_logs_result_message(self, sm, us, usc, ba, jm):
-        """Action appends result.message to service_log."""
-        tab = _make_watchtower(sm, ba, jm, us, usc)
-        svc = self._svc()
-        sm.stop_unit.return_value = FakeResult(True, "Stopped OK")
-        sm.list_units.return_value = []
-        tab.service_filter.clear()
-        tab.service_filter.addItem("All", "all")
-        tab._service_action("stop", svc)
-        self.assertIn("Stopped OK", tab.service_log.toPlainText())
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            for action in ("start", "stop", "restart", "mask", "unmask"):
+                tab._service_action(action, svc)
+        self.assertEqual(emit.call_count, 5)
+        emit.assert_any_call(
+            "service-control",
+            {"service": "test.service", "action": "restart", "scope": "user"},
+        )
+        sm.start_unit.assert_not_called()
+        sm.stop_unit.assert_not_called()
+        self.assertIn("Action Center", tab.service_log.toPlainText())
 
     def test_invalid_action_noop(self, sm, us, usc, ba, jm):
         """Unknown action name is a no-op (no crash)."""
@@ -1326,42 +1266,16 @@ class TestRefreshSecureBoot(unittest.TestCase):
 class TestParamToggle(unittest.TestCase):
     """Tests for _BootSubTab.on_param_toggled."""
 
-    def test_checked_adds(self, km, zm, sb):
-        """Checking calls add_param."""
+    def test_checked_requests_review(self, km, zm, sb):
         tab = _make_boot(km, zm, sb)
-        km.add_param.return_value = FakeKernelResult(True, "Added")
         from PyQt6.QtCore import Qt
-
-        tab.on_param_toggled("nowatchdog", Qt.CheckState.Checked.value)
-        km.add_param.assert_called_once_with("nowatchdog")
-
-    def test_unchecked_removes(self, km, zm, sb):
-        """Unchecking calls remove_param."""
-        tab = _make_boot(km, zm, sb)
-        km.remove_param.return_value = FakeKernelResult(True, "Removed")
-        from PyQt6.QtCore import Qt
-
-        tab.on_param_toggled("nowatchdog", Qt.CheckState.Unchecked.value)
-        km.remove_param.assert_called_once_with("nowatchdog")
-
-    def test_failure_refreshes_kernel(self, km, zm, sb):
-        """Failed toggle calls refresh_kernel to revert checkbox."""
-        tab = _make_boot(km, zm, sb)
-        km.add_param.return_value = FakeKernelResult(False, "Denied")
-        km.get_current_params.reset_mock()
-        from PyQt6.QtCore import Qt
-
-        tab.on_param_toggled("test", Qt.CheckState.Checked.value)
-        self.assertTrue(km.get_current_params.called)
-
-    def test_logs_message(self, km, zm, sb):
-        """Toggle logs the result message."""
-        tab = _make_boot(km, zm, sb)
-        km.add_param.return_value = FakeKernelResult(True, "Param added")
-        from PyQt6.QtCore import Qt
-
-        tab.on_param_toggled("test", Qt.CheckState.Checked.value)
-        self.assertIn("Param added", tab.output_text.toPlainText())
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab.on_param_toggled("nowatchdog", Qt.CheckState.Checked.value)
+        emit.assert_called_once_with(
+            "configure-kernel-parameter",
+            {"parameter": "nowatchdog", "enabled": True},
+        )
+        km.add_param.assert_not_called()
 
 
 # ===========================================================================
@@ -1377,12 +1291,12 @@ class TestCustomParam(unittest.TestCase):
     """Tests for add_custom_param and remove_custom_param."""
 
     def test_add(self, km, zm, sb):
-        """Adding custom param calls KernelManager.add_param and clears input."""
+        """Adding custom param requests review and clears input."""
         tab = _make_boot(km, zm, sb)
         tab.custom_param_input.setText("mem=4G")
-        km.add_param.return_value = FakeKernelResult(True, "Added")
-        tab.add_custom_param()
-        km.add_param.assert_called_with("mem=4G")
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab.add_custom_param()
+        emit.assert_called_once_with("configure-kernel-parameter", {"parameter": "mem=4G", "enabled": True})
         self.assertEqual(tab.custom_param_input.text(), "")
 
     def test_add_empty_noop(self, km, zm, sb):
@@ -1394,12 +1308,12 @@ class TestCustomParam(unittest.TestCase):
         km.add_param.assert_not_called()
 
     def test_remove(self, km, zm, sb):
-        """Removing custom param calls KernelManager.remove_param."""
+        """Removing custom param requests review."""
         tab = _make_boot(km, zm, sb)
         tab.custom_param_input.setText("mem=4G")
-        km.remove_param.return_value = FakeKernelResult(True, "Removed")
-        tab.remove_custom_param()
-        km.remove_param.assert_called_with("mem=4G")
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab.remove_custom_param()
+        emit.assert_called_once_with("configure-kernel-parameter", {"parameter": "mem=4G", "enabled": False})
         self.assertEqual(tab.custom_param_input.text(), "")
 
     def test_remove_empty_noop(self, km, zm, sb):
@@ -1451,17 +1365,17 @@ class TestGrubBackupRestore(unittest.TestCase):
         self.assertIn("No backups", tab.output_text.toPlainText())
 
     def test_restore_selects_backup(self, km, zm, sb, dlg):
-        """Selecting a backup calls restore_backup."""
+        """Selecting a backup requests Action Center review."""
         tab = _make_boot(km, zm, sb)
         backups = [FakeBackupPath("backup-2025-01-01")]
         km.get_backups.return_value = backups
         km.BACKUP_DIR = MagicMock()
         km.BACKUP_DIR.__truediv__ = MagicMock(return_value="/backups/backup-2025-01-01")
-        km.restore_backup.return_value = FakeKernelResult(True, "Restored")
         dlg.getItem.return_value = ("backup-2025-01-01", True)
-        tab.restore_grub()
-        km.restore_backup.assert_called_once()
-        self.assertIn("Restored", tab.output_text.toPlainText())
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab.restore_grub()
+        emit.assert_called_once_with("restore-grub-backup", {"backup": "backup-2025-01-01"})
+        km.restore_backup.assert_not_called()
 
     def test_restore_user_cancels(self, km, zm, sb, dlg):
         """User cancelling dialog does not restore."""
@@ -1497,18 +1411,17 @@ class TestZramActions(unittest.TestCase):
         self.assertEqual(tab.zram_size_label.text(), "150%")
 
     def test_apply_zram(self, km, zm, sb):
-        """Apply calls set_config and refreshes."""
+        """Apply requests bounded ZRAM review."""
         tab = _make_boot(km, zm, sb)
         tab.zram_slider.setValue(75)
         # Set algorithm combo to zstd
         idx = tab.zram_algo_combo.findData("zstd")
         if idx >= 0:
             tab.zram_algo_combo.setCurrentIndex(idx)
-        zm.set_config.return_value = MagicMock(message="ZRAM configured")
-        zm.get_current_config.return_value = FakeZramConfig(size_percent=75)
-        zm.get_current_usage.return_value = None
-        tab.apply_zram()
-        zm.set_config.assert_called_once_with(75, "zstd")
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab.apply_zram()
+        emit.assert_called_once_with("configure-zram", {"size_percent": 75, "algorithm": "zstd"})
+        zm.set_config.assert_not_called()
 
 
 # ===========================================================================
@@ -1525,31 +1438,19 @@ class TestZramActions(unittest.TestCase):
 class TestGenerateMokKey(unittest.TestCase):
     """Tests for _BootSubTab.generate_mok_key."""
 
-    def test_short_password(self, km, zm, sb, dlg, msgbox):
-        """Password <8 chars logs error, does not call generate_key."""
+    def test_generation_does_not_collect_or_store_password(self, km, zm, sb, dlg, msgbox):
         tab = _make_boot(km, zm, sb)
-        dlg.getText.return_value = ("short", True)
-        tab.generate_mok_key()
-        self.assertIn("too short", tab.output_text.toPlainText())
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab.generate_mok_key()
+        emit.assert_called_once_with("generate-mok-key", {})
+        dlg.getText.assert_not_called()
         sb.generate_key.assert_not_called()
 
-    def test_success(self, km, zm, sb, dlg, msgbox):
-        """Valid password generates key and refreshes."""
+    def test_generation_routes_to_review(self, km, zm, sb, dlg, msgbox):
         tab = _make_boot(km, zm, sb)
-        dlg.getText.return_value = ("longpassword", True)
-        sb.generate_key.return_value = FakeSecureBootResult(True, "Key gen")
-        sb.get_status.return_value = FakeSecureBootStatus(enabled=True)
-        sb.has_keys.return_value = True
         tab.generate_mok_key()
-        sb.generate_key.assert_called_once_with("longpassword")
-
-    def test_cancel_dialog(self, km, zm, sb, dlg, msgbox):
-        """Cancelling dialog does not generate key."""
-        tab = _make_boot(km, zm, sb)
-        dlg.getText.return_value = ("", False)
-        tab.generate_mok_key()
+        self.assertIn("never stored", tab.output_text.toPlainText())
         sb.generate_key.assert_not_called()
-
 
 # ===========================================================================
 # _BootSubTab — enroll_mok_key
@@ -1574,39 +1475,22 @@ class TestEnrollMokKey(unittest.TestCase):
         sb.import_key.assert_not_called()
 
     def test_success_with_reboot(self, km, zm, sb, dlg, msgbox):
-        """Enrollment requiring reboot shows info dialog."""
+        """Enrollment routes to review without collecting a password."""
         tab = _make_boot(km, zm, sb)
         sb.has_keys.return_value = True
-        dlg.getText.return_value = ("password123", True)
-        sb.import_key.return_value = FakeSecureBootResult(
-            True, "Enrolled", requires_reboot=True
-        )
-        sb.get_status.return_value = FakeSecureBootStatus(enabled=True)
-        tab.enroll_mok_key()
-        sb.import_key.assert_called_once_with("password123")
-        msgbox.information.assert_called_once()
-
-    def test_success_without_reboot(self, km, zm, sb, dlg, msgbox):
-        """Enrollment not requiring reboot does not show dialog."""
-        tab = _make_boot(km, zm, sb)
-        sb.has_keys.return_value = True
-        dlg.getText.return_value = ("password123", True)
-        sb.import_key.return_value = FakeSecureBootResult(
-            True, "Enrolled", requires_reboot=False
-        )
-        sb.get_status.return_value = FakeSecureBootStatus(enabled=True)
-        tab.enroll_mok_key()
-        sb.import_key.assert_called_once()
-        msgbox.information.assert_not_called()
-
-    def test_cancel_dialog(self, km, zm, sb, dlg, msgbox):
-        """Cancelling password dialog does not enroll."""
-        tab = _make_boot(km, zm, sb)
-        sb.has_keys.return_value = True
-        dlg.getText.return_value = ("", False)
-        tab.enroll_mok_key()
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab.enroll_mok_key()
+        emit.assert_called_once_with("enroll-mok-key", {})
+        dlg.getText.assert_not_called()
         sb.import_key.assert_not_called()
 
+    def test_success_without_reboot(self, km, zm, sb, dlg, msgbox):
+        """Enrollment guidance mentions secret handling."""
+        tab = _make_boot(km, zm, sb)
+        sb.has_keys.return_value = True
+        tab.enroll_mok_key()
+        self.assertIn("never stored", tab.output_text.toPlainText())
+        sb.import_key.assert_not_called()
 
 # ===========================================================================
 # _BootSubTab — log helper
@@ -1681,16 +1565,14 @@ class TestDiagnosticsTabMetadata(unittest.TestCase):
             cls.source = fh.read()
 
     def test_metadata_id(self):
-        """Metadata ID is 'diagnostics'."""
-        self.assertIn('id="diagnostics"', self.source)
+        """Metadata comes from the canonical product catalog."""
+        self.assertIn("plugin_metadata_for_module(__name__)", self.source)
 
     def test_metadata_name(self):
-        """Metadata name reflects the Phase 6 troubleshooting presentation."""
-        self.assertIn('name="Troubleshooting"', self.source)
+        self.assertIn("_METADATA", self.source)
 
     def test_metadata_category(self):
-        """Metadata category is 'Maintenance'."""
-        self.assertIn('category="Maintenance"', self.source)
+        self.assertNotIn("PluginMetadata(", self.source)
 
     def test_create_widget_returns_self(self):
         """create_widget returns self."""

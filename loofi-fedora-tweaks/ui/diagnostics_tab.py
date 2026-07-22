@@ -6,8 +6,11 @@ Uses a route-owned stack for Troubleshooting and Boot while preserving
 Watchtower's content tabs (services, boot analysis, journal).
 """
 
+import typing
+
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import Qt
+from core.product_catalog import plugin_metadata_for_module
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -55,11 +58,13 @@ class _WatchtowerSubTab(QWidget):
     - Internal QTabWidget for its own three sub-sections
     """
 
-    def __init__(self):
+    actionCenterRequested = pyqtSignal(str, object)
+
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialise the UI components."""
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -90,7 +95,7 @@ class _WatchtowerSubTab(QWidget):
 
     # ==================== Services ========================================
 
-    def _create_services_tab(self) -> QWidget:
+    def _create_services_tab(self: typing.Any) -> QWidget:
         """Create the services management sub-tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -101,21 +106,11 @@ class _WatchtowerSubTab(QWidget):
 
         self.service_filter = QComboBox()
         self.service_filter.setAccessibleName(self.tr("Service filter"))
-        self.service_filter.addItem(
-            self.tr("Gaming Services"), "gaming"
-        )
-        self.service_filter.addItem(
-            self.tr("Failed Services"), "failed"
-        )
-        self.service_filter.addItem(
-            self.tr("Active Services"), "active"
-        )
-        self.service_filter.addItem(
-            self.tr("All User Services"), "all"
-        )
-        self.service_filter.currentIndexChanged.connect(
-            self._refresh_services
-        )
+        self.service_filter.addItem(self.tr("Gaming Services"), "gaming")
+        self.service_filter.addItem(self.tr("Failed Services"), "failed")
+        self.service_filter.addItem(self.tr("Active Services"), "active")
+        self.service_filter.addItem(self.tr("All User Services"), "all")
+        self.service_filter.currentIndexChanged.connect(self._refresh_services)
         filter_layout.addWidget(self.service_filter)
 
         filter_layout.addStretch()
@@ -129,17 +124,15 @@ class _WatchtowerSubTab(QWidget):
 
         # Service tree
         self.service_tree = QTreeWidget()
-        self.service_tree.setHeaderLabels([
-            self.tr("Service"),
-            self.tr("Status"),
-            self.tr("Description"),
-        ])
-        self.service_tree.setContextMenuPolicy(
-            Qt.ContextMenuPolicy.CustomContextMenu
+        self.service_tree.setHeaderLabels(
+            [
+                self.tr("Service"),
+                self.tr("Status"),
+                self.tr("Description"),
+            ]
         )
-        self.service_tree.customContextMenuRequested.connect(
-            self._show_service_menu
-        )
+        self.service_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.service_tree.customContextMenuRequested.connect(self._show_service_menu)
         self.service_tree.setColumnWidth(0, 250)
         self.service_tree.setColumnWidth(1, 100)
         layout.addWidget(self.service_tree)
@@ -155,7 +148,7 @@ class _WatchtowerSubTab(QWidget):
 
     # ==================== Boot Analysis ===================================
 
-    def _create_boot_tab(self) -> QWidget:
+    def _create_boot_tab(self: typing.Any) -> QWidget:
         """Create the boot analysis sub-tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -185,9 +178,7 @@ class _WatchtowerSubTab(QWidget):
         layout.addWidget(slow_group)
 
         # Optimisation suggestions
-        opt_group = QGroupBox(
-            self.tr("Optimization Suggestions")
-        )
+        opt_group = QGroupBox(self.tr("Optimization Suggestions"))
         opt_layout = QVBoxLayout(opt_group)
 
         self.suggestions_label = QLabel()
@@ -207,7 +198,7 @@ class _WatchtowerSubTab(QWidget):
 
     # ==================== Journal =========================================
 
-    def _create_journal_tab(self) -> QWidget:
+    def _create_journal_tab(self: typing.Any) -> QWidget:
         """Create the journal viewer sub-tab."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -237,10 +228,12 @@ class _WatchtowerSubTab(QWidget):
 
         layout.addWidget(journal_group)
 
-        support_note = QLabel(self.tr(
-            "Support export creates privacy-redacted diagnostic evidence for troubleshooting; "
-            "it is not a backup, recovery point, or rollback mechanism."
-        ))
+        support_note = QLabel(
+            self.tr(
+                "Support export creates privacy-redacted diagnostic evidence for troubleshooting; "
+                "it is not a backup, recovery point, or rollback mechanism."
+            )
+        )
         support_note.setWordWrap(True)
         layout.addWidget(support_note)
 
@@ -272,7 +265,7 @@ class _WatchtowerSubTab(QWidget):
 
     # ==================== Service logic ===================================
 
-    def _refresh_services(self):
+    def _refresh_services(self: typing.Any) -> typing.Any:
         """Refresh the services list."""
         self.service_tree.clear()
         filter_type = self.service_filter.currentData()
@@ -282,24 +275,22 @@ class _WatchtowerSubTab(QWidget):
 
         # Add gaming services from system scope too
         if filter_type == "gaming":
-            services.extend(
-                ServiceManager.list_units(UnitScope.SYSTEM, filter_type)
-            )
+            services.extend(ServiceManager.list_units(UnitScope.SYSTEM, filter_type))
 
         for service in services:
-            item = QTreeWidgetItem([
-                service.name,
-                self._state_to_emoji(service.state),
-                service.description[:50] if service.description else "",
-            ])
+            item = QTreeWidgetItem(
+                [
+                    service.name,
+                    self._state_to_emoji(service.state),
+                    service.description[:50] if service.description else "",
+                ]
+            )
             item.setData(0, Qt.ItemDataRole.UserRole, service)
             self.service_tree.addTopLevelItem(item)
 
-        self.service_log.append(
-            self.tr("Loaded {} services").format(len(services))
-        )
+        self.service_log.append(self.tr("Loaded {} services").format(len(services)))
 
-    def _state_to_emoji(self, state: UnitState) -> str:
+    def _state_to_emoji(self: typing.Any, state: UnitState) -> str:
         """Convert service state to display string."""
         mapping = {
             UnitState.ACTIVE: "active",
@@ -310,7 +301,7 @@ class _WatchtowerSubTab(QWidget):
         }
         return mapping.get(state, "unknown")
 
-    def _show_service_menu(self, position):
+    def _show_service_menu(self: typing.Any, position: typing.Any) -> typing.Any:
         """Show context menu for service actions."""
         item = self.service_tree.itemAt(position)
         if not item:
@@ -323,55 +314,31 @@ class _WatchtowerSubTab(QWidget):
         menu = QMenu()
 
         if service.state == UnitState.FAILED and service.scope == UnitScope.SYSTEM:
-            review_action = menu.addAction(
-                self.tr("Review Restart in Action Center")
-            )
-            review_action.triggered.connect(
-                lambda: self._review_failed_service(service.name)
-            )
+            review_action = menu.addAction(self.tr("Review Restart in Action Center"))
+            review_action.triggered.connect(lambda: self._review_failed_service(service.name))
             menu.addSeparator()
 
         if service.state == UnitState.ACTIVE:
-            stop_action = menu.addAction(
-                self.tr("Stop")
-            )
-            stop_action.triggered.connect(
-                lambda: self._service_action("stop", service)
-            )
+            stop_action = menu.addAction(self.tr("Stop"))
+            stop_action.triggered.connect(lambda: self._service_action("stop", service))
 
-            restart_action = menu.addAction(
-                self.tr("Restart")
-            )
-            restart_action.triggered.connect(
-                lambda: self._service_action("restart", service)
-            )
+            restart_action = menu.addAction(self.tr("Restart"))
+            restart_action.triggered.connect(lambda: self._service_action("restart", service))
         else:
-            start_action = menu.addAction(
-                self.tr("Start")
-            )
-            start_action.triggered.connect(
-                lambda: self._service_action("start", service)
-            )
+            start_action = menu.addAction(self.tr("Start"))
+            start_action.triggered.connect(lambda: self._service_action("start", service))
 
         menu.addSeparator()
 
-        mask_action = menu.addAction(
-            self.tr("Mask (Disable)")
-        )
-        mask_action.triggered.connect(
-            lambda: self._service_action("mask", service)
-        )
+        mask_action = menu.addAction(self.tr("Mask (Disable)"))
+        mask_action.triggered.connect(lambda: self._service_action("mask", service))
 
-        unmask_action = menu.addAction(
-            self.tr("Unmask")
-        )
-        unmask_action.triggered.connect(
-            lambda: self._service_action("unmask", service)
-        )
+        unmask_action = menu.addAction(self.tr("Unmask"))
+        unmask_action.triggered.connect(lambda: self._service_action("unmask", service))
 
         menu.exec(self.service_tree.viewport().mapToGlobal(position))
 
-    def _review_failed_service(self, unit: str) -> None:
+    def _review_failed_service(self: typing.Any, unit: str) -> None:
         """Navigate with an exact unit; never plan or execute from Diagnostics."""
         main_window = self.window() if hasattr(self, "window") else None
         switch = getattr(main_window, "switch_to_route", None)
@@ -381,26 +348,18 @@ class _WatchtowerSubTab(QWidget):
         if callable(preselect):
             preselect("restart-failed-service", {"service": str(unit)})
 
-    def _service_action(self, action: str, service):
-        """Execute a service action."""
-        actions = {
-            "start": ServiceManager.start_unit,
-            "stop": ServiceManager.stop_unit,
-            "restart": ServiceManager.restart_unit,
-            "mask": ServiceManager.mask_unit,
-            "unmask": ServiceManager.unmask_unit,
-        }
-
-        func = actions.get(action)
-        if func:
-            result = func(service.name, service.scope)
-            self.service_log.append(result.message)
-            if result.success:
-                self._refresh_services()
+    def _service_action(self: typing.Any, action: str, service: typing.Any) -> typing.Any:
+        """Route general service changes to manual Action Center review."""
+        scope = getattr(service.scope, "value", str(service.scope))
+        self.actionCenterRequested.emit(
+            "service-control",
+            {"service": str(service.name), "action": str(action), "scope": str(scope)},
+        )
+        self.service_log.append(self.tr("Review this service change in Action Center."))
 
     # ==================== Boot analysis logic ==============================
 
-    def _refresh_boot_analysis(self):
+    def _refresh_boot_analysis(self: typing.Any) -> typing.Any:
         """Refresh boot analysis data."""
         stats = BootAnalyzer.get_boot_stats()
 
@@ -417,25 +376,15 @@ class _WatchtowerSubTab(QWidget):
                 summary += f"  \u2022 Userspace: {stats.userspace_time:.1f}s"
             self.boot_stats_label.setText(summary)
         else:
-            self.boot_stats_label.setText(
-                self.tr(
-                    "Unable to analyze boot "
-                    "(run as user, after first boot)"
-                )
-            )
+            self.boot_stats_label.setText(self.tr("Unable to analyze boot (run as user, after first boot)"))
 
         # Slow services
         slow = BootAnalyzer.get_slow_services()
         if slow:
-            slow_text = "\n".join(
-                f"{s.service}: {s.time_seconds:.1f}s"
-                for s in slow[:10]
-            )
+            slow_text = "\n".join(f"{s.service}: {s.time_seconds:.1f}s" for s in slow[:10])
             self.slow_services_list.setText(slow_text)
         else:
-            self.slow_services_list.setText(
-                self.tr("No services taking >5s to start")
-            )
+            self.slow_services_list.setText(self.tr("No services taking >5s to start"))
 
         # Suggestions
         suggestions = BootAnalyzer.get_optimization_suggestions()
@@ -443,26 +392,18 @@ class _WatchtowerSubTab(QWidget):
 
     # ==================== Journal logic ====================================
 
-    def _refresh_journal(self):
+    def _refresh_journal(self: typing.Any) -> typing.Any:
         """Refresh journal diagnostic view."""
         diag = JournalManager.get_quick_diagnostic()
 
-        self.error_count_label.setText(
-            self.tr("Errors: {}").format(diag["error_count"])
-        )
-        self.failed_count_label.setText(
-            self.tr("Failed Services: {}").format(
-                len(diag["failed_services"])
-            )
-        )
+        self.error_count_label.setText(self.tr("Errors: {}").format(diag["error_count"]))
+        self.failed_count_label.setText(self.tr("Failed Services: {}").format(len(diag["failed_services"])))
 
         # Show recent errors
         errors = JournalManager.get_boot_errors()
-        self.journal_output.setText(
-            errors if errors else self.tr("No errors in current boot")
-        )
+        self.journal_output.setText(errors if errors else self.tr("No errors in current boot"))
 
-    def _export_panic_log(self):
+    def _export_panic_log(self: typing.Any) -> typing.Any:
         """Export panic log for forum support."""
         result = JournalManager.export_panic_log()
 
@@ -470,17 +411,14 @@ class _WatchtowerSubTab(QWidget):
             QMessageBox.information(
                 self,
                 self.tr("Panic Log Exported"),
-                self.tr(
-                    "Log saved to:\n{path}\n\n"
-                    "You can share this file when asking for help online."
-                ).format(path=result.data["path"]),
+                self.tr("Log saved to:\n{path}\n\nYou can share this file when asking for help online.").format(
+                    path=(result.data or {}).get("path", "")
+                ),
             )
         else:
-            QMessageBox.warning(
-                self, self.tr("Export Failed"), result.message
-            )
+            QMessageBox.warning(self, self.tr("Export Failed"), result.message)
 
-    def _export_support_bundle(self):
+    def _export_support_bundle(self: typing.Any) -> typing.Any:
         """Export support bundle ZIP."""
         result = JournalManager.export_support_bundle()
 
@@ -488,20 +426,18 @@ class _WatchtowerSubTab(QWidget):
             QMessageBox.information(
                 self,
                 self.tr("Support Bundle Exported"),
-                self.tr(
-                    "Bundle saved to:\n{path}\n\n"
-                    "Share this ZIP file when reporting issues."
-                ).format(path=result.data["path"]),
+                self.tr("Bundle saved to:\n{path}\n\nShare this ZIP file when reporting issues.").format(
+                    path=(result.data or {}).get("path", "")
+                ),
             )
         else:
-            QMessageBox.warning(
-                self, self.tr("Export Failed"), result.message
-            )
+            QMessageBox.warning(self, self.tr("Export Failed"), result.message)
 
 
 # ---------------------------------------------------------------------------
 # Sub-tab: Boot (Kernel, ZRAM, Secure Boot)
 # ---------------------------------------------------------------------------
+
 
 class _BootSubTab(QWidget):
     """Sub-tab for kernel parameters, ZRAM, and Secure Boot management.
@@ -517,12 +453,14 @@ class _BootSubTab(QWidget):
     - Output log
     """
 
-    def __init__(self):
+    actionCenterRequested = pyqtSignal(str, object)
+
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.init_ui()
         self.refresh_all()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialise the UI components."""
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -556,7 +494,7 @@ class _BootSubTab(QWidget):
 
     # ==================== Kernel Section ==================================
 
-    def create_kernel_section(self) -> QGroupBox:
+    def create_kernel_section(self: typing.Any) -> QGroupBox:
         """Create the kernel parameters section."""
         group = QGroupBox(self.tr("Kernel Parameters"))
         layout = QVBoxLayout(group)
@@ -576,25 +514,18 @@ class _BootSubTab(QWidget):
 
         self.param_checkboxes = {}
         common_params = [
-            ("amdgpu.ppfeaturemask=0xffffffff",
-             self.tr("AMD GPU: Enable all power features")),
-            ("intel_iommu=on",
-             self.tr("Intel IOMMU: GPU passthrough support")),
-            ("nvidia-drm.modeset=1",
-             self.tr("NVIDIA: Kernel modesetting")),
-            ("mitigations=off",
-             self.tr("Disable CPU mitigations (unsafe but faster)")),
-            ("nowatchdog",
-             self.tr("Disable watchdog (reduce interrupts)")),
+            ("amdgpu.ppfeaturemask=0xffffffff", self.tr("AMD GPU: Enable all power features")),
+            ("intel_iommu=on", self.tr("Intel IOMMU: GPU passthrough support")),
+            ("nvidia-drm.modeset=1", self.tr("NVIDIA: Kernel modesetting")),
+            ("mitigations=off", self.tr("Disable CPU mitigations (unsafe but faster)")),
+            ("nowatchdog", self.tr("Disable watchdog (reduce interrupts)")),
         ]
 
         for param, desc in common_params:
             cb = QCheckBox(desc)
             cb.setAccessibleName(desc)
             cb.setProperty("param", param)
-            cb.stateChanged.connect(
-                lambda state, p=param: self.on_param_toggled(p, state)
-            )
+            cb.stateChanged.connect(lambda state, p=param: self.on_param_toggled(p, state))
             self.param_checkboxes[param] = cb
             params_layout.addWidget(cb)
 
@@ -639,7 +570,7 @@ class _BootSubTab(QWidget):
 
     # ==================== ZRAM Section ====================================
 
-    def create_zram_section(self) -> QGroupBox:
+    def create_zram_section(self: typing.Any) -> QGroupBox:
         """Create the ZRAM configuration section."""
         group = QGroupBox(self.tr("ZRAM (Compressed Swap)"))
         layout = QVBoxLayout(group)
@@ -696,7 +627,7 @@ class _BootSubTab(QWidget):
 
     # ==================== Secure Boot Section =============================
 
-    def create_secureboot_section(self) -> QGroupBox:
+    def create_secureboot_section(self: typing.Any) -> QGroupBox:
         """Create the Secure Boot section."""
         group = QGroupBox(self.tr("Secure Boot (MOK Management)"))
         layout = QVBoxLayout(group)
@@ -726,10 +657,7 @@ class _BootSubTab(QWidget):
         layout.addLayout(btn_layout)
 
         # Help text
-        help_label = QLabel(self.tr(
-            "MOK keys are needed to sign third-party kernel "
-            "modules (NVIDIA, VirtualBox) when Secure Boot is enabled."
-        ))
+        help_label = QLabel(self.tr("MOK keys are needed to sign third-party kernel modules (NVIDIA, VirtualBox) when Secure Boot is enabled."))
         help_label.setWordWrap(True)
         help_label.setObjectName("diagSecureBootHelp")
         layout.addWidget(help_label)
@@ -738,19 +666,16 @@ class _BootSubTab(QWidget):
 
     # ==================== Refresh helpers =================================
 
-    def refresh_all(self):
+    def refresh_all(self: typing.Any) -> typing.Any:
         """Refresh all sections with current data."""
         self.refresh_kernel()
         self.refresh_zram()
         self.refresh_secureboot()
 
-    def refresh_kernel(self):
+    def refresh_kernel(self: typing.Any) -> typing.Any:
         """Refresh kernel parameters display."""
         current = KernelManager.get_current_params()
-        self.current_params_label.setText(
-            " ".join(current[:10])
-            + ("..." if len(current) > 10 else "")
-        )
+        self.current_params_label.setText(" ".join(current[:10]) + ("..." if len(current) > 10 else ""))
 
         # Update checkboxes
         for param, cb in self.param_checkboxes.items():
@@ -758,7 +683,7 @@ class _BootSubTab(QWidget):
             cb.setChecked(KernelManager.has_param(param))
             cb.blockSignals(False)
 
-    def refresh_zram(self):
+    def refresh_zram(self: typing.Any) -> typing.Any:
         """Refresh ZRAM status."""
         config = ZramManager.get_current_config()
         usage = ZramManager.get_current_usage()
@@ -771,9 +696,7 @@ class _BootSubTab(QWidget):
         else:
             status_parts.append(self.tr("Inactive"))
 
-        status_parts.append(
-            f"{config.size_percent}% RAM ({config.size_mb}MB)"
-        )
+        status_parts.append(f"{config.size_percent}% RAM ({config.size_mb}MB)")
         status_parts.append(f"{config.algorithm}")
 
         self.zram_status_label.setText(" | ".join(status_parts))
@@ -788,79 +711,61 @@ class _BootSubTab(QWidget):
         if idx >= 0:
             self.zram_algo_combo.setCurrentIndex(idx)
 
-    def refresh_secureboot(self):
+    def refresh_secureboot(self: typing.Any) -> typing.Any:
         """Refresh Secure Boot status."""
         status = SecureBootManager.get_status()
 
         if status.secure_boot_enabled:
-            self.sb_status_label.setText(
-                self.tr("Secure Boot: Enabled")
-            )
+            self.sb_status_label.setText(self.tr("Secure Boot: Enabled"))
         else:
-            self.sb_status_label.setText(
-                self.tr("Secure Boot: Disabled")
-            )
+            self.sb_status_label.setText(self.tr("Secure Boot: Disabled"))
 
         if SecureBootManager.has_keys():
-            self.mok_status_label.setText(
-                self.tr("MOK Key: Generated")
-            )
+            self.mok_status_label.setText(self.tr("MOK Key: Generated"))
         else:
-            self.mok_status_label.setText(
-                self.tr("MOK Key: Not generated")
-            )
+            self.mok_status_label.setText(self.tr("MOK Key: Not generated"))
 
         if status.pending_mok:
-            self.mok_status_label.setText(
-                self.mok_status_label.text()
-                + f" ({self.tr('Pending enrollment')})"
-            )
+            self.mok_status_label.setText(self.mok_status_label.text() + f" ({self.tr('Pending enrollment')})")
 
-    def log(self, message: str):
+    def log(self: typing.Any, message: str) -> typing.Any:
         """Add message to output log."""
         self.output_text.append(message)
 
     # ==================== Kernel actions ==================================
 
-    def on_param_toggled(self, param: str, state: int):
+    def on_param_toggled(self: typing.Any, param: str, state: int) -> typing.Any:
         """Handle parameter checkbox toggle."""
-        if state == Qt.CheckState.Checked.value:
-            result = KernelManager.add_param(param)
-        else:
-            result = KernelManager.remove_param(param)
+        self.actionCenterRequested.emit(
+            "configure-kernel-parameter",
+            {"parameter": param, "enabled": state == Qt.CheckState.Checked.value},
+        )
+        self.log(self.tr("Review the kernel parameter change in Action Center."))
 
-        self.log(result.message)
-        if not result.success:
-            self.refresh_kernel()  # Revert checkbox
-
-    def add_custom_param(self):
+    def add_custom_param(self: typing.Any) -> typing.Any:
         """Add a custom kernel parameter."""
         param = self.custom_param_input.text().strip()
         if param:
-            result = KernelManager.add_param(param)
-            self.log(result.message)
+            self.actionCenterRequested.emit("configure-kernel-parameter", {"parameter": param, "enabled": True})
+            self.log(self.tr("Review the kernel parameter change in Action Center."))
             self.custom_param_input.clear()
-            self.refresh_kernel()
 
-    def remove_custom_param(self):
+    def remove_custom_param(self: typing.Any) -> typing.Any:
         """Remove a custom kernel parameter."""
         param = self.custom_param_input.text().strip()
         if param:
-            result = KernelManager.remove_param(param)
-            self.log(result.message)
+            self.actionCenterRequested.emit("configure-kernel-parameter", {"parameter": param, "enabled": False})
+            self.log(self.tr("Review the kernel parameter change in Action Center."))
             self.custom_param_input.clear()
-            self.refresh_kernel()
 
-    def backup_grub(self):
+    def backup_grub(self: typing.Any) -> typing.Any:
         """Create GRUB backup."""
         result = KernelManager.backup_grub()
         self.log(result.message)
         if result.backup_path:
-            self.log(
-                self.tr("Saved to: {}").format(result.backup_path)
-            )
+            self.log(self.tr("Saved to: {}").format(result.backup_path))
 
-    def restore_grub(self):
+    def restore_grub(self: typing.Any) -> typing.Any:
         """Restore GRUB from backup."""
         backups = KernelManager.get_backups()
         if not backups:
@@ -873,88 +778,53 @@ class _BootSubTab(QWidget):
             self,
             self.tr("Select Backup"),
             self.tr("Choose a backup to restore:"),
-            items, 0, False,
+            items,
+            0,
+            False,
         )
 
         if ok and item:
-            backup_path = KernelManager.BACKUP_DIR / item
-            result = KernelManager.restore_backup(str(backup_path))
-            self.log(result.message)
+            self.actionCenterRequested.emit("restore-grub-backup", {"backup": str(item)})
+            self.log(self.tr("Review GRUB restoration guidance in Action Center."))
 
     # ==================== ZRAM actions ====================================
 
-    def on_zram_slider_changed(self, value: int):
+    def on_zram_slider_changed(self: typing.Any, value: int) -> typing.Any:
         """Update ZRAM size label."""
         self.zram_size_label.setText(f"{value}%")
 
-    def apply_zram(self):
+    def apply_zram(self: typing.Any) -> typing.Any:
         """Apply ZRAM settings."""
         size = self.zram_slider.value()
         algo = self.zram_algo_combo.currentData()
 
-        result = ZramManager.set_config(size, algo)
-        self.log(result.message)
-        self.refresh_zram()
+        self.actionCenterRequested.emit(
+            "configure-zram",
+            {"size_percent": int(size), "algorithm": str(algo)},
+        )
+        self.log(self.tr("Review ZRAM configuration guidance in Action Center."))
 
     # ==================== Secure Boot actions ==============================
 
-    def generate_mok_key(self):
-        """Generate new MOK signing key."""
-        password, ok = QInputDialog.getText(
-            self,
-            self.tr("MOK Password"),
-            self.tr(
-                "Enter a password (8+ chars) for the MOK key.\n"
-                "You'll need this during reboot enrollment:"
-            ),
-            QLineEdit.EchoMode.Password,
-        )
+    def generate_mok_key(self: typing.Any) -> typing.Any:
+        """Route MOK key generation without collecting a secret in this view."""
+        self.actionCenterRequested.emit("generate-mok-key", {})
+        self.log(self.tr("Passwords are never stored in plans; review MOK key guidance in Action Center."))
 
-        if ok and password:
-            if len(password) < 8:
-                self.log(
-                    self.tr("Password too short (minimum 8 characters).")
-                )
-                return
-
-            result = SecureBootManager.generate_key(password)
-            self.log(result.message)
-            self.refresh_secureboot()
-
-    def enroll_mok_key(self):
+    def enroll_mok_key(self: typing.Any) -> typing.Any:
         """Enroll MOK key for Secure Boot."""
         if not SecureBootManager.has_keys():
             self.log(self.tr("No MOK key found. Generate one first."))
             return
 
-        password, ok = QInputDialog.getText(
-            self,
-            self.tr("MOK Password"),
-            self.tr("Enter your MOK password to queue enrollment:"),
-            QLineEdit.EchoMode.Password,
-        )
-
-        if ok and password:
-            result = SecureBootManager.import_key(password)
-            self.log(result.message)
-
-            if result.requires_reboot:
-                QMessageBox.information(
-                    self,
-                    self.tr("Reboot Required"),
-                    self.tr(
-                        "MOK enrollment queued.\n\n"
-                        "On next reboot, follow the blue MOK Manager "
-                        "prompts to complete enrollment."
-                    ),
-                )
-
-            self.refresh_secureboot()
+        self.actionCenterRequested.emit("enroll-mok-key", {})
+        self.log(self.tr("Passwords are never stored in plans; review MOK enrollment guidance in Action Center."))
 
 
 # ---------------------------------------------------------------------------
 # Main consolidated tab
 # ---------------------------------------------------------------------------
+
 
 class DiagnosticsTab(BaseTab):
     """Consolidated diagnostics tab merging Watchtower and Boot.
@@ -963,35 +833,31 @@ class DiagnosticsTab(BaseTab):
     and Boot configuration without duplicating shell navigation.
     """
 
-    _METADATA = PluginMetadata(
-        id="diagnostics",
-        name="Troubleshooting",
-        description="System diagnostics including service health, boot analysis, and journal review.",
-        category="Maintenance",
-        icon="maintenance-health",
-        badge="",
-        order=30,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.pages = QStackedWidget()
         self.pages.setObjectName("diagnosticsRouteStack")
-        self.pages.addWidget(_WatchtowerSubTab())
-        self.pages.addWidget(_BootSubTab())
+        watchtower = _WatchtowerSubTab()
+        boot = _BootSubTab()
+        watchtower.actionCenterRequested.connect(self.actionCenterRequested.emit)
+        boot.actionCenterRequested.connect(self.actionCenterRequested.emit)
+        self.pages.addWidget(watchtower)
+        self.pages.addWidget(boot)
 
         layout.addWidget(self.pages)
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select Troubleshooting or Boot from the stable shell route."""
         subroute = str(getattr(route, "subroute", "") or "")
         if subroute not in {"", "watchtower", "boot"}:

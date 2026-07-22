@@ -6,10 +6,13 @@ Route pages:
 - Developer Tools: Language version managers, VS Code extensions
 """
 
+import typing
+
 from services.system.system import cached_which
 
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import Qt, QThread, pyqtSignal
+from core.product_catalog import plugin_metadata_for_module
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -29,8 +32,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from utils.command_runner import CommandRunner
-from utils.commands import PrivilegedCommand
 from utils.containers import ContainerManager, ContainerStatus
 from utils.devtools import DevToolsManager
 from utils.vscode import VSCodeManager
@@ -40,61 +41,21 @@ from ui.components import PageScaffold
 from ui.tooltips import DEV_CONTAINERS, DEV_LANGUAGES, DEV_VSCODE  # noqa: F401 — DEV_TOOLBOX reserved
 
 
-class InstallWorker(QThread):
-    """Background worker for developer tool installations."""
-    finished = pyqtSignal(str, bool, str)  # tool, success, message
-
-    def __init__(self, tool: str, extra_args: dict = None):  # type: ignore[assignment]
-        super().__init__()
-        self.tool = tool
-        self.extra_args = extra_args or {}
-
-    def run(self):
-        try:
-            if self.tool == "pyenv":
-                result = DevToolsManager.install_pyenv(
-                    self.extra_args.get("python_version", "3.12")
-                )
-            elif self.tool == "nvm":
-                result = DevToolsManager.install_nvm(
-                    self.extra_args.get("node_version", "lts")
-                )
-            elif self.tool == "rustup":
-                result = DevToolsManager.install_rustup()
-            elif self.tool.startswith("vscode_"):
-                profile = self.tool.replace("vscode_", "")
-                result = VSCodeManager.install_profile(profile)
-            else:
-                result = type('Result', (), {'success': False, 'message': 'Unknown tool'})()
-
-            self.finished.emit(self.tool, result.success, result.message)
-        except (RuntimeError, OSError, ValueError, TypeError) as e:
-            self.finished.emit(self.tool, False, str(e))
-
-
 class DevelopmentTab(BaseTab):
     """Consolidated Development tab: Containers + Developer Tools."""
 
-    _METADATA = PluginMetadata(
-        id="development",
-        name="Development",
-        description="Container management and developer tools including language version managers and VS Code extensions.",
-        category="Tools",
-        icon="developer-tools",
-        badge="",
-        order=10,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.container_list = None
-        self.workers = []
+        self.workers: list[typing.Any] = []
         self.init_ui()
 
         # Only refresh containers if distrobox is available
@@ -104,7 +65,7 @@ class DevelopmentTab(BaseTab):
         # Refresh developer tool statuses
         self.refresh_dev_status()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialize shell-selected Development route pages."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -136,7 +97,7 @@ class DevelopmentTab(BaseTab):
         scaffold.add_widget(content, 1)
         return scaffold
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select a Development page from a stable route ID."""
         index = {
             "development": 0,
@@ -152,7 +113,7 @@ class DevelopmentTab(BaseTab):
     # CONTAINERS SUB-TAB (from ContainersTab)
     # ================================================================
 
-    def _create_containers_tab(self) -> QWidget:
+    def _create_containers_tab(self: typing.Any) -> QWidget:
         """Create the Containers sub-tab content."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -186,16 +147,18 @@ class DevelopmentTab(BaseTab):
         scroll.setWidget(container)
         return scroll
 
-    def _create_install_section(self) -> QGroupBox:
+    def _create_install_section(self: typing.Any) -> QGroupBox:
         """Create install distrobox section for when it's not available."""
         group = QGroupBox(self.tr("Distrobox Not Installed"))
         layout = QVBoxLayout(group)
 
-        info_label = QLabel(self.tr(
-            "Distrobox is not installed on your system. It allows you to run "
-            "containers based on different Linux distributions (Ubuntu, Arch, Alpine, etc.) "
-            "seamlessly integrated with your desktop."
-        ))
+        info_label = QLabel(
+            self.tr(
+                "Distrobox is not installed on your system. It allows you to run "
+                "containers based on different Linux distributions (Ubuntu, Arch, Alpine, etc.) "
+                "seamlessly integrated with your desktop."
+            )
+        )
         info_label.setWordWrap(True)
         layout.addWidget(info_label)
 
@@ -209,7 +172,7 @@ class DevelopmentTab(BaseTab):
 
         return group
 
-    def _create_container_list_section(self) -> QGroupBox:
+    def _create_container_list_section(self: typing.Any) -> QGroupBox:
         """Create the container list section."""
         group = QGroupBox(self.tr("Your Containers"))
         layout = QVBoxLayout(group)
@@ -256,7 +219,7 @@ class DevelopmentTab(BaseTab):
 
         return group
 
-    def _create_new_container_section(self) -> QGroupBox:
+    def _create_new_container_section(self: typing.Any) -> QGroupBox:
         """Create the new container section."""
         group = QGroupBox(self.tr("Create New Container"))
         layout = QVBoxLayout(group)
@@ -291,10 +254,7 @@ class DevelopmentTab(BaseTab):
         layout.addLayout(form_layout)
 
         # Help text
-        help_label = QLabel(self.tr(
-            "Containers share your home directory by default. "
-            "Double-click a container to enter it."
-        ))
+        help_label = QLabel(self.tr("Containers share your home directory by default. Double-click a container to enter it."))
         help_label.setObjectName("devContainerHelp")
         help_label.setWordWrap(True)
         layout.addWidget(help_label)
@@ -303,7 +263,7 @@ class DevelopmentTab(BaseTab):
 
     # -- Container actions --
 
-    def refresh_containers(self):
+    def refresh_containers(self: typing.Any) -> typing.Any:
         """Refresh the container list."""
         if self.container_list is None:
             return
@@ -333,11 +293,9 @@ class DevelopmentTab(BaseTab):
             item.setData(Qt.ItemDataRole.UserRole, ct.name)
             self.container_list.addItem(item)
 
-        self.container_status_label.setText(
-            self.tr("{} containers").format(len(containers))
-        )
+        self.container_status_label.setText(self.tr("{} containers").format(len(containers)))
 
-    def _get_selected_container(self) -> str | None:
+    def _get_selected_container(self: typing.Any) -> str | None:
         """Get the currently selected container name."""
         current = self.container_list.currentItem()
         if current:
@@ -345,7 +303,7 @@ class DevelopmentTab(BaseTab):
             return str(value) if value is not None else None
         return None
 
-    def _show_context_menu(self, position):
+    def _show_context_menu(self: typing.Any, position: typing.Any) -> typing.Any:
         """Show context menu for container list."""
         container_name = self._get_selected_container()
         if not container_name:
@@ -373,7 +331,7 @@ class DevelopmentTab(BaseTab):
 
         menu.exec(self.container_list.mapToGlobal(position))
 
-    def _enter_container(self):
+    def _enter_container(self: typing.Any) -> typing.Any:
         """Enter the selected container."""
         container_name = self._get_selected_container()
         if not container_name:
@@ -382,9 +340,10 @@ class DevelopmentTab(BaseTab):
 
         self._open_terminal(container_name)
 
-    def _open_terminal(self, container_name: str):
+    def _open_terminal(self: typing.Any, container_name: str) -> typing.Any:
         """Open a terminal inside the container."""
         from PyQt6.QtCore import QProcess
+
         cmd = ContainerManager.get_enter_command(container_name)
 
         # Try different terminal emulators
@@ -399,21 +358,15 @@ class DevelopmentTab(BaseTab):
             if cached_which(term_name):
                 try:
                     QProcess.startDetached(term_cmd[0], term_cmd[1:])
-                    self.append_output(
-                        self.tr("Opened terminal in container '{}'.\n").format(container_name)
-                    )
+                    self.append_output(self.tr("Opened terminal in container '{}'.\n").format(container_name))
                     return
                 except (RuntimeError, OSError, ValueError, TypeError) as e:
-                    self.append_output(
-                        self.tr("Failed to open {}: {}\n").format(term_name, e)
-                    )
+                    self.append_output(self.tr("Failed to open {}: {}\n").format(term_name, e))
 
         # Fallback: show command
-        self.append_output(
-            self.tr("No terminal emulator found. Run manually: {}\n").format(cmd)
-        )
+        self.append_output(self.tr("No terminal emulator found. Run manually: {}\n").format(cmd))
 
-    def _stop_container(self):
+    def _stop_container(self: typing.Any) -> typing.Any:
         """Stop the selected container."""
         container_name = self._get_selected_container()
         if not container_name:
@@ -425,7 +378,7 @@ class DevelopmentTab(BaseTab):
         if result.success:
             self.refresh_containers()
 
-    def _delete_container(self):
+    def _delete_container(self: typing.Any) -> typing.Any:
         """Delete the selected container."""
         container_name = self._get_selected_container()
         if not container_name:
@@ -436,7 +389,7 @@ class DevelopmentTab(BaseTab):
             self,
             self.tr("Confirm Delete"),
             self.tr("Are you sure you want to delete container '{}'?").format(container_name),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
@@ -445,7 +398,7 @@ class DevelopmentTab(BaseTab):
             if result.success:
                 self.refresh_containers()
 
-    def _create_container(self):
+    def _create_container(self: typing.Any) -> typing.Any:
         """Create a new container."""
         name = self.name_input.text().strip()
         if not name:
@@ -454,9 +407,7 @@ class DevelopmentTab(BaseTab):
 
         image = self.image_combo.currentData()
 
-        self.append_output(
-            self.tr("Creating container '{}' from {}...\n").format(name, image)
-        )
+        self.append_output(self.tr("Creating container '{}' from {}...\n").format(name, image))
 
         result = ContainerManager.create_container(name, image)
         self.append_output(result.message + "\n")
@@ -465,34 +416,28 @@ class DevelopmentTab(BaseTab):
             self.name_input.clear()
             self.refresh_containers()
 
-    def _install_distrobox(self):
+    def _install_distrobox(self: typing.Any) -> typing.Any:
         """Install distrobox via package manager."""
-        binary, args, desc = PrivilegedCommand.dnf("install", "distrobox")
-        self._distrobox_runner = CommandRunner()
-        self._distrobox_runner.finished.connect(self._on_distrobox_install_finished)
-        self._distrobox_runner.output_received.connect(lambda t: self.append_output(t))
-        self._distrobox_runner.run_command(binary, args)
-        self.append_output(self.tr("Installing Distrobox...\n"))
+        self.actionCenterRequested.emit(
+            "install-application",
+            {"source": "fedora", "package_id": "distrobox"},
+        )
 
-    def _on_distrobox_install_finished(self, exit_code: int):
+    def _on_distrobox_install_finished(self: typing.Any, exit_code: int) -> typing.Any:
         """Handle distrobox installation completion."""
         if exit_code == 0:
             self.append_output(self.tr("Distrobox installed successfully! Please restart the tab.\n"))
             QMessageBox.information(
-                self,
-                self.tr("Installation Complete"),
-                self.tr("Distrobox has been installed. Please switch to another tab and back to refresh.")
+                self, self.tr("Installation Complete"), self.tr("Distrobox has been installed. Please switch to another tab and back to refresh.")
             )
         else:
-            self.append_output(
-                self.tr("Installation failed with exit code {}.\n").format(exit_code)
-            )
+            self.append_output(self.tr("Installation failed with exit code {}.\n").format(exit_code))
 
     # ================================================================
     # DEVELOPER TOOLS SUB-TAB (from DeveloperTab)
     # ================================================================
 
-    def _create_developer_tab(self) -> QWidget:
+    def _create_developer_tab(self: typing.Any) -> QWidget:
         """Create the Developer Tools sub-tab content."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -514,14 +459,12 @@ class DevelopmentTab(BaseTab):
         scroll.setWidget(container)
         return scroll
 
-    def _create_language_section(self) -> QGroupBox:
+    def _create_language_section(self: typing.Any) -> QGroupBox:
         """Create language version managers section."""
         group = QGroupBox(self.tr("Language Version Managers"))
         layout = QVBoxLayout(group)
 
-        info_label = QLabel(self.tr(
-            "Install version managers to run multiple language versions without affecting system packages."
-        ))
+        info_label = QLabel(self.tr("Install version managers to run multiple language versions without affecting system packages."))
         info_label.setWordWrap(True)
         info_label.setObjectName("devLangInfo")
         layout.addWidget(info_label)
@@ -567,23 +510,19 @@ class DevelopmentTab(BaseTab):
 
         return group
 
-    def _create_vscode_section(self) -> QGroupBox:
+    def _create_vscode_section(self: typing.Any) -> QGroupBox:
         """Create VS Code extensions section."""
         group = QGroupBox(self.tr("VS Code Extensions"))
         layout = QVBoxLayout(group)
 
         # Check availability
         if not VSCodeManager.is_available():
-            not_found = QLabel(self.tr(
-                "VS Code not found. Install VS Code, VSCodium, or Code OSS to use this feature."
-            ))
+            not_found = QLabel(self.tr("VS Code not found. Install VS Code, VSCodium, or Code OSS to use this feature."))
             not_found.setWordWrap(True)
             layout.addWidget(not_found)
             return group
 
-        info_label = QLabel(self.tr(
-            "Install recommended extensions for different development profiles."
-        ))
+        info_label = QLabel(self.tr("Install recommended extensions for different development profiles."))
         info_label.setWordWrap(True)
         info_label.setObjectName("devVscodeInfo")
         layout.addWidget(info_label)
@@ -595,10 +534,7 @@ class DevelopmentTab(BaseTab):
         self.profile_combo = QComboBox()
         self.profile_combo.setAccessibleName(self.tr("VS Code extension profile"))
         for profile in VSCodeManager.get_available_profiles():
-            self.profile_combo.addItem(
-                f"{profile['name']} ({profile['extension_count']} extensions)",
-                profile['key']
-            )
+            self.profile_combo.addItem(f"{profile['name']} ({profile['extension_count']} extensions)", profile["key"])
         profile_layout.addWidget(self.profile_combo, 1)
 
         install_btn = QPushButton(self.tr("Install Extensions"))
@@ -623,7 +559,7 @@ class DevelopmentTab(BaseTab):
 
     # -- Developer Tool actions --
 
-    def refresh_dev_status(self):
+    def refresh_dev_status(self: typing.Any) -> typing.Any:
         """Refresh the status of all developer tools."""
         tools_status = DevToolsManager.get_all_status()
 
@@ -651,24 +587,12 @@ class DevelopmentTab(BaseTab):
         else:
             self.rust_status.setText(self.tr("Rustup: {}").format(version))
 
-    def _install_tool(self, tool: str):
-        """Start background installation of a tool."""
-        self.append_output(self.tr("Installing {}... This may take a few minutes.\n").format(tool))
+    def _install_tool(self: typing.Any, tool: str) -> typing.Any:
+        """Preselect a bounded manual developer-tool plan."""
+        self.actionCenterRequested.emit("install-developer-tool", {"tool": tool})
+        self.append_output(self.tr("Review developer tool installation guidance in Action Center.\n"))
 
-        # Disable button during install
-        if tool == "pyenv":
-            self.pyenv_btn.setEnabled(False)
-        elif tool == "nvm":
-            self.nvm_btn.setEnabled(False)
-        elif tool == "rustup":
-            self.rust_btn.setEnabled(False)
-
-        worker = InstallWorker(tool)
-        worker.finished.connect(self._on_install_finished)
-        self.workers.append(worker)
-        worker.start()
-
-    def _on_install_finished(self, tool: str, success: bool, message: str):
+    def _on_install_finished(self: typing.Any, tool: str, success: bool, message: str) -> typing.Any:
         """Handle installation completion."""
         self.append_output(message + "\n")
 
@@ -685,36 +609,19 @@ class DevelopmentTab(BaseTab):
         if success:
             self.refresh_dev_status()
             if not tool.startswith("vscode_"):
-                QMessageBox.information(
-                    self,
-                    self.tr("Installation Complete"),
-                    self.tr("Please restart your terminal to use the new tools.")
-                )
+                QMessageBox.information(self, self.tr("Installation Complete"), self.tr("Please restart your terminal to use the new tools."))
 
-    def _install_vscode_profile(self):
-        """Install VS Code extensions for selected profile."""
+    def _install_vscode_profile(self: typing.Any) -> typing.Any:
+        """Preselect a bounded VS Code extension plan."""
         profile = self.profile_combo.currentData()
-        self.append_output(
-            self.tr("Installing VS Code {} extensions...\n").format(profile)
-        )
+        self.actionCenterRequested.emit("install-developer-tool", {"tool": f"vscode_{profile}"})
+        self.append_output(self.tr("Review VS Code extension installation guidance in Action Center.\n"))
 
-        self.vscode_progress.setVisible(True)
-        self.vscode_progress.setRange(0, 0)  # Indeterminate
-
-        worker = InstallWorker(f"vscode_{profile}")
-        worker.finished.connect(self._on_install_finished)
-        self.workers.append(worker)
-        worker.start()
-
-    def _apply_vscode_settings(self):
+    def _apply_vscode_settings(self: typing.Any) -> typing.Any:
         """Apply VS Code settings for selected profile."""
         profile = self.profile_combo.currentData()
         result = VSCodeManager.inject_settings(profile)
         self.append_output(result.message + "\n")
 
         if result.success:
-            QMessageBox.information(
-                self,
-                self.tr("Settings Applied"),
-                self.tr("VS Code settings have been updated. Restart VS Code to apply.")
-            )
+            QMessageBox.information(self, self.tr("Settings Applied"), self.tr("VS Code settings have been updated. Restart VS Code to apply."))

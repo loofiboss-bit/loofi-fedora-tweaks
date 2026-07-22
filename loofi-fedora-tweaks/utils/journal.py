@@ -302,12 +302,16 @@ class JournalManager:
                 # System info
                 (tmp / "system-info.txt").write_text(cls._get_system_info() or "No system info")
 
-                # Release readiness support bundle v5 payload, plus v4 filename alias
+                # Current release-readiness payload plus explicit legacy aliases.
                 try:
-                    from core.export.support_bundle_v5 import SupportBundleV5
+                    from core.export.support_bundle import SupportBundleWriter
 
-                    bundle_v5 = SupportBundleV5.generate_bundle()
-                    bundle_text = __import__("json").dumps(bundle_v5, indent=2, default=str)
+                    bundle = SupportBundleWriter.generate_bundle()
+                    bundle_text = __import__("json").dumps(bundle, indent=2, default=str)
+                    (tmp / "support-bundle.json").write_text(
+                        bundle_text,
+                        encoding="utf-8",
+                    )
                     (tmp / "support-bundle-v5.json").write_text(
                         bundle_text,
                         encoding="utf-8",
@@ -317,7 +321,7 @@ class JournalManager:
                         encoding="utf-8",
                     )
                 except (ImportError, OSError, RuntimeError, ValueError, TypeError, AttributeError) as e:
-                    logger.debug("Failed to include support bundle v5 payload: %s", e)
+                    logger.debug("Failed to include support bundle payload: %s", e)
                     fallback = '{"v": "7.0.0-aegis-support-v5", "error": "unavailable"}'
                     (tmp / "support-bundle-v5.json").write_text(
                         fallback,

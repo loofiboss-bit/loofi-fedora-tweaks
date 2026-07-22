@@ -1,277 +1,171 @@
-"""Tests for utils/auth.py — AuthManager JWT and API key operations."""
+"""Haven authentication and Secret Service contracts."""
 
-import sys
-import os
 import unittest
-from unittest.mock import patch, MagicMock
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from unittest.mock import MagicMock, patch
 
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
+from fastapi import HTTPException
 
-# Pre-mock optional dependencies that may not be installed in test environments
-# Create real exception classes for assertRaises compatibility
-
-
-class _MockHTTPException(Exception):
-    def __init__(self, status_code=500, detail=None):
-        self.status_code = status_code
-        self.detail = detail
-        super().__init__(detail)
+from core.secrets import SecretStore
+from utils.auth import AuthManager
 
 
-class _MockInvalidTokenError(Exception):
-    pass
+class TestAuthStorage(unittest.TestCase):
+    def setUp(self):
+        SecretStore._session.clear()
 
-_fastapi_mock = MagicMock()
-_fastapi_mock.HTTPException = _MockHTTPException
-_fastapi_mock.Depends = lambda x: x
-_fastapi_mock.status = MagicMock(HTTP_401_UNAUTHORIZED=401)
+    def tearDown(self):
+        SecretStore._session.clear()
 
-_jwt_mock = MagicMock()
-_jwt_mock.InvalidTokenError = _MockInvalidTokenError
+    @patch("utils.auth.SecretStore")
+    def test_legacy_jwt_secret_is_migrated_out_of_config(self, secret_store):
+        secret_store.get.return_value = None
+        secret_store.get_persistent.side_effect = [None, "legacy"]
+        secret_store.set.return_value = MagicMock(success=True, persistent=True)
+        data = {"jwt_secret": "legacy", "api_key_hash": "hash"}
 
-for _mod in [
-    'bcrypt',
-    'PyQt6', 'PyQt6.QtCore', 'PyQt6.QtWidgets', 'PyQt6.QtGui',
-    'PyQt6.QtNetwork', 'PyQt6.QtSvg', 'PyQt6.QtSvgWidgets',
-]:
-    if _mod not in sys.modules:
-        sys.modules[_mod] = MagicMock()
-
-if 'fastapi' not in sys.modules:
-    sys.modules['fastapi'] = _fastapi_mock
-    sys.modules['fastapi.security'] = MagicMock()
-if 'jwt' not in sys.modules:
-    sys.modules['jwt'] = _jwt_mock
-
-from utils.auth import AuthManager  # noqa: E402
-
-
-class TestAuthManagerHashKey(unittest.TestCase):
-    """Tests for _hash_key bcrypt operations."""
-
-    @patch('utils.auth.bcrypt')
-    def test_hash_key_returns_string(self, mock_bcrypt):
-        mock_bcrypt.gensalt.return_value = b'$2b$12$salt'
-        mock_bcrypt.hashpw.return_value = b'$2b$12$hashedkey'
-        result = AuthManager._hash_key("test-api-key")
-        self.assertIsInstance(result, str)
-        mock_bcrypt.hashpw.assert_called_once()
-
-    @patch('utils.auth.bcrypt')
-    def test_hash_key_encodes_utf8(self, mock_bcrypt):
-        mock_bcrypt.gensalt.return_value = b'$2b$12$salt'
-        mock_bcrypt.hashpw.return_value = b'$2b$12$hash'
-        AuthManager._hash_key("my-key")
-        call_args = mock_bcrypt.hashpw.call_args
-        self.assertEqual(call_args[0][0], b"my-key")
-
-
-class TestAuthManagerEnsureSecret(unittest.TestCase):
-    """Tests for _ensure_secret method."""
-
-    def test_generates_secret_when_missing(self):
-        data = {}
         result = AuthManager._ensure_secret(data)
-        self.assertIn("jwt_secret", result)
-        self.assertGreater(len(result["jwt_secret"]), 0)
 
-    def test_preserves_existing_secret(self):
-        data = {"jwt_secret": "existing-secret-value"}
-        result = AuthManager._ensure_secret(data)
-        self.assertEqual(result["jwt_secret"], "existing-secret-value")
+        self.assertNotIn("jwt_secret", result)
+        secret_store.set.assert_any_call(AuthManager._JWT_ACCOUNT, "legacy")
 
-    def test_replaces_empty_string_secret(self):
-        data = {"jwt_secret": ""}
-        result = AuthManager._ensure_secret(data)
-        self.assertNotEqual(result["jwt_secret"], "")
-
-
-class TestAuthManagerLoadSave(unittest.TestCase):
-    """Tests for _load_auth_data and _save_auth_data."""
-
-    @patch('utils.auth.ConfigManager')
-    def test_load_auth_data_creates_dirs(self, mock_cm):
-        mock_cm.load_config.return_value = {}
-        AuthManager._load_auth_data()
-        mock_cm.ensure_dirs.assert_called_once()
-
-    @patch('utils.auth.ConfigManager')
-    def test_load_auth_data_returns_dict(self, mock_cm):
-        mock_cm.load_config.return_value = {
-            "api_auth": {"jwt_secret": "test-secret"}
+    @patch("utils.auth.ConfigManager")
+    @patch("utils.auth.SecretStore")
+    def test_load_rewrites_plaintext_secret_only_as_non_secret_config(self, secret_store, config):
+        secret_store.get.return_value = "stored"
+        secret_store.get_persistent.return_value = "stored"
+        config.load_config.return_value = {
+            "api_auth": {"jwt_secret": "legacy", "api_key_hash": "hash"}
         }
+
         result = AuthManager._load_auth_data()
-        self.assertIsInstance(result, dict)
-        self.assertEqual(result["jwt_secret"], "test-secret")
 
-    @patch('utils.auth.ConfigManager')
-    def test_load_auth_data_handles_none_config(self, mock_cm):
-        mock_cm.load_config.return_value = None
+        self.assertEqual(result, {"api_key_hash": "hash"})
+        saved = config.save_config.call_args.args[0]
+        self.assertNotIn("jwt_secret", saved["api_auth"])
+
+    @patch("utils.auth.ConfigManager")
+    @patch("utils.auth.SecretStore")
+    def test_load_keeps_plaintext_until_persistent_readback(self, secret_store, config):
+        secret_store.get.return_value = "legacy"
+        secret_store.get_persistent.return_value = None
+        secret_store.set.return_value = MagicMock(success=True, persistent=False)
+        config.load_config.return_value = {
+            "api_auth": {"jwt_secret": "legacy", "api_key_hash": "hash"}
+        }
+
         result = AuthManager._load_auth_data()
-        self.assertIsInstance(result, dict)
-        self.assertIn("jwt_secret", result)
 
-    @patch('utils.auth.ConfigManager')
-    def test_save_auth_data_writes_config(self, mock_cm):
-        mock_cm.load_config.return_value = {}
-        mock_cm.CONFIG_DIR = MagicMock()
-        auth_path = MagicMock()
-        mock_cm.CONFIG_DIR.__truediv__ = MagicMock(return_value=auth_path)
-        data = {"jwt_secret": "s", "api_key_hash": "h"}
-        AuthManager._save_auth_data(data)
-        mock_cm.save_config.assert_called_once()
-        saved = mock_cm.save_config.call_args[0][0]
-        self.assertEqual(saved["api_auth"], data)
+        self.assertEqual(result["jwt_secret"], "legacy")
+        config.save_config.assert_not_called()
 
-    @patch('utils.auth.ConfigManager')
-    def test_save_auth_data_handles_write_error(self, mock_cm):
-        mock_cm.load_config.return_value = {}
-        mock_cm.CONFIG_DIR = MagicMock()
-        auth_path = MagicMock()
-        auth_path.write_text.side_effect = OSError("disk full")
-        mock_cm.CONFIG_DIR.__truediv__ = MagicMock(return_value=auth_path)
-        # Should not raise — logs and continues
-        AuthManager._save_auth_data({"jwt_secret": "s"})
+    @patch("utils.auth.ConfigManager")
+    def test_auth_config_contains_hash_only(self, config):
+        config.load_config.return_value = {}
+
+        AuthManager._save_auth_data({"api_key_hash": "hash"})
+
+        self.assertEqual(config.save_config.call_args.args[0]["api_auth"], {"api_key_hash": "hash"})
 
 
-class TestAuthManagerGenerateApiKey(unittest.TestCase):
-    """Tests for generate_api_key."""
+class TestApiKeyLifecycle(unittest.TestCase):
+    @patch.object(AuthManager, "_save_auth_data")
+    @patch.object(AuthManager, "_load_auth_data", return_value={})
+    @patch.object(AuthManager, "_hash_key", return_value="hashed")
+    def test_generate_rotates_api_key_hash(self, _hash, _load, save):
+        api_key = AuthManager.generate_api_key()
 
-    @patch.object(AuthManager, '_save_auth_data')
-    @patch.object(AuthManager, '_load_auth_data')
-    @patch('utils.auth.bcrypt')
-    def test_generate_api_key_returns_string(self, mock_bcrypt, mock_load, mock_save):
-        mock_load.return_value = {"jwt_secret": "test"}
-        mock_bcrypt.gensalt.return_value = b'$2b$12$salt'
-        mock_bcrypt.hashpw.return_value = b'$2b$12$hash'
-        key = AuthManager.generate_api_key()
-        self.assertIsInstance(key, str)
-        self.assertGreater(len(key), 20)
+        self.assertGreater(len(api_key), 20)
+        self.assertEqual(save.call_args.args[0]["api_key_hash"], "hashed")
 
-    @patch.object(AuthManager, '_save_auth_data')
-    @patch.object(AuthManager, '_load_auth_data')
-    @patch('utils.auth.bcrypt')
-    def test_generate_api_key_saves_hash(self, mock_bcrypt, mock_load, mock_save):
-        mock_load.return_value = {"jwt_secret": "test"}
-        mock_bcrypt.gensalt.return_value = b'$2b$12$salt'
-        mock_bcrypt.hashpw.return_value = b'$2b$12$hashed'
-        AuthManager.generate_api_key()
-        mock_save.assert_called_once()
-        saved_data = mock_save.call_args[0][0]
-        self.assertIn("api_key_hash", saved_data)
+    @patch.object(AuthManager, "_save_auth_data")
+    @patch.object(AuthManager, "_load_auth_data", return_value={"api_key_hash": "hashed"})
+    @patch("utils.auth.SecretStore")
+    def test_revoke_removes_hash_and_rotates_jwt_secret(self, secret_store, _load, save):
+        AuthManager.revoke_api_key()
 
+        self.assertNotIn("api_key_hash", save.call_args.args[0])
+        secret_store.delete.assert_called_once_with(AuthManager._JWT_ACCOUNT)
+        secret_store.set.assert_called_once()
 
-class TestAuthManagerIssueToken(unittest.TestCase):
-    """Tests for issue_token JWT generation."""
+    @patch.object(AuthManager, "_jwt_secret", return_value="jwt-secret")
+    @patch.object(AuthManager, "_load_auth_data", return_value={"api_key_hash": "stored"})
+    @patch("utils.auth.bcrypt.checkpw", return_value=True)
+    @patch("utils.auth.jwt.encode", return_value="token")
+    def test_issue_token_uses_secret_store_material(self, encode, _check, _load, _secret):
+        self.assertEqual(AuthManager.issue_token("api-key"), "token")
+        self.assertEqual(encode.call_args.args[1], "jwt-secret")
 
-    @patch.object(AuthManager, '_load_auth_data')
-    @patch('utils.auth.bcrypt')
-    @patch('utils.auth.jwt')
-    def test_issue_token_success(self, mock_jwt, mock_bcrypt, mock_load):
-        mock_load.return_value = {
-            "jwt_secret": "secret123",
-            "api_key_hash": "$2b$12$validhash",
-        }
-        mock_bcrypt.checkpw.return_value = True
-        mock_jwt.encode.return_value = "jwt.token.value"
-        token = AuthManager.issue_token("valid-key")
-        self.assertEqual(token, "jwt.token.value")
-        mock_jwt.encode.assert_called_once()
+    @patch.object(AuthManager, "_load_auth_data", return_value={})
+    def test_issue_token_requires_active_api_key(self, _load):
+        with self.assertRaises(HTTPException) as context:
+            AuthManager.issue_token("api-key")
+        self.assertEqual(context.exception.status_code, 401)
 
-    @patch.object(AuthManager, '_load_auth_data')
-    @patch('utils.auth.bcrypt')
-    def test_issue_token_invalid_key_raises_401(self, mock_bcrypt, mock_load):
-        mock_load.return_value = {
-            "jwt_secret": "secret123",
-            "api_key_hash": "$2b$12$validhash",
-        }
-        mock_bcrypt.checkpw.return_value = False
-        from fastapi import HTTPException
-        with self.assertRaises(HTTPException) as ctx:
-            AuthManager.issue_token("wrong-key")
-        self.assertEqual(ctx.exception.status_code, 401)
+    @patch.object(AuthManager, "_jwt_secret", return_value="jwt-secret")
+    @patch.object(AuthManager, "_load_auth_data", return_value={})
+    @patch("utils.auth.jwt.decode", return_value={"sub": "loofi-api"})
+    def test_verify_token_uses_secret_store_material(self, decode, _load, _secret):
+        AuthManager.verify_token("token")
+        decode.assert_called_once_with("token", "jwt-secret", algorithms=["HS256"])
 
-    @patch.object(AuthManager, '_load_auth_data')
-    def test_issue_token_no_stored_hash_raises_401(self, mock_load):
-        mock_load.return_value = {"jwt_secret": "secret123"}
-        from fastapi import HTTPException
-        with self.assertRaises(HTTPException) as ctx:
-            AuthManager.issue_token("any-key")
-        self.assertEqual(ctx.exception.status_code, 401)
-
-
-class TestAuthManagerVerifyToken(unittest.TestCase):
-    """Tests for verify_token JWT verification."""
-
-    @patch.object(AuthManager, '_load_auth_data')
-    @patch('utils.auth.jwt')
-    def test_verify_token_success(self, mock_jwt, mock_load):
-        mock_load.return_value = {"jwt_secret": "secret"}
-        mock_jwt.decode.return_value = {"sub": "loofi-api"}
-        # Should not raise
-        AuthManager.verify_token("valid-token")
-        mock_jwt.decode.assert_called_once()
-
-    @patch.object(AuthManager, '_load_auth_data')
-    @patch('utils.auth.jwt')
-    def test_verify_token_expired_raises_401(self, mock_jwt, mock_load):
-        mock_load.return_value = {"jwt_secret": "secret"}
-        mock_jwt.decode.side_effect = _MockInvalidTokenError("expired")
-        mock_jwt.InvalidTokenError = _MockInvalidTokenError
-        from fastapi import HTTPException
-        with self.assertRaises(HTTPException) as ctx:
-            AuthManager.verify_token("expired-token")
-        self.assertEqual(ctx.exception.status_code, 401)
-
-    @patch.object(AuthManager, '_load_auth_data')
-    @patch('utils.auth.jwt')
-    def test_verify_token_malformed_raises_401(self, mock_jwt, mock_load):
-        mock_load.return_value = {"jwt_secret": "secret"}
-        mock_jwt.InvalidTokenError = _MockInvalidTokenError
-        mock_jwt.decode.side_effect = ValueError("bad format")
-        from fastapi import HTTPException
-        with self.assertRaises(HTTPException) as ctx:
-            AuthManager.verify_token("garbage")
-        self.assertEqual(ctx.exception.status_code, 401)
-
-
-class TestAuthManagerVerifyBearerToken(unittest.TestCase):
-    """Tests for verify_bearer_token FastAPI dependency."""
-
-    @patch.object(AuthManager, 'verify_token')
-    def test_verify_bearer_success(self, mock_verify):
-        creds = MagicMock()
-        creds.scheme = "Bearer"
-        creds.credentials = "valid-jwt"
-        result = AuthManager.verify_bearer_token(creds)
-        self.assertEqual(result, "valid-jwt")
-        mock_verify.assert_called_once_with("valid-jwt")
-
-    def test_verify_bearer_missing_creds_raises_401(self):
-        from fastapi import HTTPException
-        with self.assertRaises(HTTPException) as ctx:
+    def test_missing_bearer_token_is_rejected(self):
+        with self.assertRaises(HTTPException) as context:
             AuthManager.verify_bearer_token(None)
-        self.assertEqual(ctx.exception.status_code, 401)
-
-    def test_verify_bearer_wrong_scheme_raises_401(self):
-        creds = MagicMock()
-        creds.scheme = "Basic"
-        from fastapi import HTTPException
-        with self.assertRaises(HTTPException) as ctx:
-            AuthManager.verify_bearer_token(creds)
-        self.assertEqual(ctx.exception.status_code, 401)
+        self.assertEqual(context.exception.status_code, 401)
 
 
-class TestAuthManagerAuthPath(unittest.TestCase):
-    """Tests for _auth_path configuration."""
+class TestSecretStoreFallback(unittest.TestCase):
+    def setUp(self):
+        SecretStore._session.clear()
 
-    @patch('utils.auth.ConfigManager')
-    def test_auth_path_uses_config_dir(self, mock_cm):
-        mock_cm.CONFIG_DIR = MagicMock()
-        expected = MagicMock()
-        mock_cm.CONFIG_DIR.__truediv__ = MagicMock(return_value=expected)
-        path = AuthManager._auth_path()
-        self.assertIsNotNone(path)
+    def tearDown(self):
+        SecretStore._session.clear()
+
+    @patch.object(SecretStore, "_keyring", return_value=None)
+    def test_missing_secret_service_uses_session_only(self, _keyring):
+        result = SecretStore.set("account", "secret")
+
+        self.assertTrue(result.success)
+        self.assertFalse(result.persistent)
+        self.assertEqual(SecretStore.get("account"), "secret")
+
+    @patch.object(SecretStore, "_keyring")
+    def test_verified_keyring_write_is_persistent(self, keyring_factory):
+        keyring = MagicMock()
+        keyring.get_password.return_value = "secret"
+        keyring_factory.return_value = keyring
+
+        result = SecretStore.set("account", "secret")
+
+        self.assertTrue(result.persistent)
+        keyring.set_password.assert_called_once_with(SecretStore.SERVICE, "account", "secret")
+
+    @patch.object(SecretStore, "_keyring")
+    def test_plaintext_is_removed_only_after_persistent_readback(self, keyring_factory):
+        keyring = MagicMock()
+        keyring.get_password.return_value = "legacy-secret"
+        keyring_factory.return_value = keyring
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "token"
+            path.write_text("legacy-secret")
+
+            result = SecretStore.migrate_plaintext("account", path)
+
+            self.assertTrue(result and result.persistent)
+            self.assertFalse(path.exists())
+
+    @patch.object(SecretStore, "_keyring", return_value=None)
+    def test_session_migration_preserves_plaintext_for_recovery(self, _keyring):
+        with TemporaryDirectory() as directory:
+            path = Path(directory) / "token"
+            path.write_text("legacy-secret")
+
+            result = SecretStore.migrate_plaintext("account", path)
+
+            self.assertTrue(result and not result.persistent)
+            self.assertTrue(path.exists())
 
 
 if __name__ == "__main__":

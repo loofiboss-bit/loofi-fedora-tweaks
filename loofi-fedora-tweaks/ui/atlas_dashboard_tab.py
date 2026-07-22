@@ -9,6 +9,7 @@ from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLayout, QVBoxLayout, QWidget
 
 from core.home import AttentionItem, HomeStatus, HomeSummary, HomeTask, Recommendation
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 
 from .base_tab import BaseTab
 from .components import (
@@ -33,15 +34,7 @@ class _HomeSummaryProvider(Protocol):
 class AtlasDashboardTab(BaseTab):
     """One bounded, read-only Home with navigation to maintained workflows."""
 
-    _METADATA = PluginMetadata(
-        id="atlas_dashboard",
-        name="Home",
-        description="System status, the next useful action, and common Fedora tasks.",
-        category="System",
-        icon="home",
-        badge="recommended",
-        order=0,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     _STATUS_ORDER = (
         ("health", "System health"),

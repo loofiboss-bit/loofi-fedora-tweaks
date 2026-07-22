@@ -9,6 +9,7 @@ from typing import Any
 
 from core.observability.privacy import redact_payload
 from core.observability.snapshot import HealthSnapshot
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from core.observability.trends import MaintenanceTrendAnalyzer
 from core.state.atomic_io import advisory_lock, atomic_write_json
 from core.state.migrations import MigrationRunner
@@ -97,7 +98,7 @@ class HealthTimelineStore:
             self._save_unlocked(snapshots)
         return snapshot
 
-    def collect_and_append(self, *, fedora_target: str = "44") -> HealthSnapshot:
+    def collect_and_append(self, *, fedora_target: str = FEDORA_RELEASE_POLICY.stable_target) -> HealthSnapshot:
         return self.append(HealthSnapshot.collect(fedora_target=fedora_target))
 
     def latest(self) -> HealthSnapshot | None:

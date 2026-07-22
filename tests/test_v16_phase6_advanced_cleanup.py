@@ -41,7 +41,7 @@ class TestV16Phase6Validator(unittest.TestCase):
         self.assertEqual(payload["advanced_routes"], 33)
         self.assertEqual(payload["advanced_sections"], 26)
         self.assertEqual(payload["application_navigation_qtabwidgets"], 0)
-        self.assertEqual(payload["local_tab_views"], 3)
+        self.assertEqual(payload["local_tab_views"], 0)
         self.assertEqual(payload["host_probes"], 0)
         self.assertEqual(payload["mutations"], 0)
         self.assertEqual(payload["status"], "passed")

@@ -6,9 +6,12 @@ Uses a route-owned stack so the application shell remains the only owner of
 section navigation.
 """
 
+import typing
+
 import logging
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QFrame,
@@ -25,7 +28,6 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from utils.command_runner import CommandRunner
-from utils.commands import PrivilegedCommand
 from utils.software_utils import SoftwareUtils
 
 from ui.base_tab import BaseTab
@@ -59,7 +61,7 @@ class _ApplicationsSubTab(BaseTab):
 
     actionCenterRequested = pyqtSignal(str, object)
 
-    def __init__(self) -> None:
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -129,7 +131,7 @@ class _ApplicationsSubTab(BaseTab):
         self.output_details.add_widget(self.output_area)
         layout.addWidget(self.output_details)
 
-    def load_apps(self):
+    def load_apps(self: typing.Any) -> typing.Any:
         """Start asynchronous loading of the app catalogue."""
         from utils.remote_config import AppConfigFetcher
 
@@ -139,7 +141,7 @@ class _ApplicationsSubTab(BaseTab):
         self.fetcher.start()
         return []  # Populated asynchronously
 
-    def on_activate(self) -> None:
+    def on_activate(self: typing.Any) -> None:
         if self._catalog_load_started:
             return
         self._catalog_load_started = True
@@ -148,7 +150,7 @@ class _ApplicationsSubTab(BaseTab):
         self.catalog_loading.show()
         self.apps = self.load_apps()
 
-    def on_apps_loaded(self, apps):
+    def on_apps_loaded(self: typing.Any, apps: typing.Any) -> typing.Any:
         self.apps = apps
         self.catalog_loading.hide()
         self.catalog_unavailable.hide()
@@ -158,14 +160,14 @@ class _ApplicationsSubTab(BaseTab):
         self.refresh_list()
         self.append_output(self.tr("Apps list updated from remote/cache.\n"))
 
-    def on_apps_error(self, error):
+    def on_apps_error(self: typing.Any, error: typing.Any) -> typing.Any:
         self.catalog_loading.hide()
         self.catalog_empty.hide()
         self.catalog_unavailable.set_message(self.tr("Catalogue loading failed: %s") % error)
         self.catalog_unavailable.show()
         self.append_output(self.tr("Error loading apps: {}\n").format(error))
 
-    def refresh_list(self):
+    def refresh_list(self: typing.Any) -> typing.Any:
         """Clear and rebuild the apps list."""
         while self.scroll_layout.count():
             item = self.scroll_layout.takeAt(0)
@@ -177,7 +179,7 @@ class _ApplicationsSubTab(BaseTab):
             self.add_app_row(self.scroll_layout, app)
         self.scroll_layout.addStretch()
 
-    def add_app_row(self, layout, app_data):
+    def add_app_row(self: typing.Any, layout: typing.Any, app_data: typing.Any) -> typing.Any:
         """Add one source-aware app row with a single install/remove action."""
         from services.software import ApplicationOperationService
 
@@ -235,15 +237,15 @@ class _ApplicationsSubTab(BaseTab):
 
         layout.addWidget(row_widget)
 
-    def check_installed(self, cmd):
+    def check_installed(self: typing.Any, cmd: typing.Any) -> typing.Any:
         """Run a check command silently to determine installation status."""
         return SoftwareUtils.is_check_command_satisfied(cmd)
 
-    def install_app(self, app_data):
+    def install_app(self: typing.Any, app_data: typing.Any) -> typing.Any:
         """Compatibility adapter for callers that still request installation."""
         self.run_app_action(app_data, installed=False)
 
-    def run_app_action(self, app_data, *, installed: bool) -> None:
+    def run_app_action(self: typing.Any, app_data: typing.Any, *, installed: bool) -> None:
         """Hand one normalized install/remove operation to Action Center."""
         from services.software import ApplicationOperationService
 
@@ -258,12 +260,12 @@ class _ApplicationsSubTab(BaseTab):
             {"source": source, "package_id": presentation.package_id},
         )
 
-    def append_output(self, text):
+    def append_output(self: typing.Any, text: typing.Any) -> typing.Any:
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
         self.output_area.insertPlainText(text)
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
 
-    def command_finished(self, exit_code):
+    def command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
         # Refresh list to update status if installation succeeded
         if exit_code == 0:
@@ -272,7 +274,7 @@ class _ApplicationsSubTab(BaseTab):
         else:
             self.show_error(self.tr("Operation failed (exit code {})").format(exit_code))
 
-    def _filter_apps(self, text: str):
+    def _filter_apps(self: typing.Any, text: str) -> typing.Any:
         """Filter visible app rows by name or description (case-insensitive)."""
         query = text.strip().lower()
         for i in range(self.scroll_layout.count()):
@@ -298,6 +300,7 @@ class _ApplicationsSubTab(BaseTab):
 
 
 class _RepositoriesSubTab(BaseTab):
+    actionCenterRequested = pyqtSignal(str, object)
     """Sub-tab containing all repository management functionality.
 
     Preserves every feature from the original ReposTab:
@@ -308,7 +311,7 @@ class _RepositoriesSubTab(BaseTab):
     - Output log
     """
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -361,9 +364,7 @@ class _RepositoriesSubTab(BaseTab):
         self.btn_copr_loofi = QPushButton(self.tr("Enable Loofi Fedora Tweaks COPR"))
         self.btn_copr_loofi.setAccessibleName(self.tr("Enable Loofi COPR"))
         self.btn_copr_loofi.clicked.connect(
-            lambda: self.run_command(
-                *PrivilegedCommand.dnf("copr enable", "loofitheboss/loofi-fedora-tweaks"),
-            )
+            lambda: self.actionCenterRequested.emit("enable-loofi-copr", {})
         )
         copr_layout.addWidget(self.btn_copr_loofi)
 
@@ -377,65 +378,25 @@ class _RepositoriesSubTab(BaseTab):
         self.output_details.add_widget(self.output_area)
         layout.addWidget(self.output_details)
 
-        self.runner = CommandRunner()
-        self.runner.output_received.connect(self.append_output)
-        self.runner.finished.connect(self.command_finished)
-
     # -- Repository actions ------------------------------------------------
 
-    def enable_rpm_fusion(self):
-        fedora_ver = SoftwareUtils.get_fedora_version()
+    def enable_rpm_fusion(self: typing.Any) -> typing.Any:
+        self.actionCenterRequested.emit("enable-rpm-fusion", {})
 
-        free_url = f"https://mirrors.rpmfusion.org/free/fedora/rpmfusion-free-release-{fedora_ver}.noarch.rpm"
-        nonfree_url = f"https://mirrors.rpmfusion.org/nonfree/fedora/rpmfusion-nonfree-release-{fedora_ver}.noarch.rpm"
-        binary, args, desc = PrivilegedCommand.dnf("install", free_url, nonfree_url)
-        self.run_command(
-            binary,
-            args,
-            self.tr("Enabling RPM Fusion repositories..."),
-        )
+    def install_multimedia_codecs(self: typing.Any) -> typing.Any:
+        self.actionCenterRequested.emit("install-multimedia-codecs", {})
 
-    def install_multimedia_codecs(self):
-        binary, args, desc = PrivilegedCommand.dnf(
-            "install",
-            "@multimedia",
-            "@sound-and-video",
-            flags=[
-                "--setopt=install_weak_deps=False",
-                "--exclude=PackageKit-gstreamer-plugin",
-            ],
-        )
-        self.run_command(
-            binary,
-            args,
-            self.tr("Installing Multimedia Codecs..."),
-        )
-
-    def enable_flathub(self):
-        self.run_command(
-            "flatpak",
-            [
-                "remote-add",
-                "--if-not-exists",
-                "flathub",
-                "https://flathub.org/repo/flathub.flatpakrepo",
-            ],
-            self.tr("Enabling Flathub..."),
-        )
+    def enable_flathub(self: typing.Any) -> typing.Any:
+        self.actionCenterRequested.emit("enable-flathub", {})
 
     # -- Helpers -----------------------------------------------------------
 
-    def run_command(self, cmd, args, description):
-        self.output_area.clear()
-        self.append_output(f"{description}\n")
-        self.runner.run_command(cmd, args)
-
-    def append_output(self, text):
+    def append_output(self: typing.Any, text: typing.Any) -> typing.Any:
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
         self.output_area.insertPlainText(text)
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
 
-    def command_finished(self, exit_code):
+    def command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
         if exit_code == 0:
             self.show_success(self.tr("Operation completed successfully"))
@@ -454,25 +415,17 @@ class SoftwareTab(BaseTab):
     Stable routes select pages in a stack owned by the application shell.
     """
 
-    _METADATA = PluginMetadata(
-        id="software",
-        name="Software",
-        description="Application installer and repository management for Fedora packages.",
-        category="Packages",
-        icon="packages-software",
-        badge="recommended",
-        order=10,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     actionCenterRequested = pyqtSignal(str, object)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -482,29 +435,31 @@ class SoftwareTab(BaseTab):
         self._applications_tab = _ApplicationsSubTab()
         self._applications_tab.actionCenterRequested.connect(self.actionCenterRequested.emit)
         self.tabs.addWidget(self._applications_tab)
-        self.tabs.addWidget(_RepositoriesSubTab())
+        self._repositories_tab = _RepositoriesSubTab()
+        self._repositories_tab.actionCenterRequested.connect(self.actionCenterRequested.emit)
+        self.tabs.addWidget(self._repositories_tab)
         self.tabs.addWidget(self._create_flatpak_tab())
         self.tabs.currentChanged.connect(self._on_tab_changed)
         self._route_active = False
 
         layout.addWidget(self.tabs)
 
-    def on_activate(self) -> None:
+    def on_activate(self: typing.Any) -> None:
         self._route_active = True
         QTimer.singleShot(0, self._activate_current_subtab)
 
-    def on_deactivate(self) -> None:
+    def on_deactivate(self: typing.Any) -> None:
         self._route_active = False
 
-    def _on_tab_changed(self, _index: int) -> None:
+    def _on_tab_changed(self: typing.Any, _index: int) -> None:
         if self._route_active:
             self._activate_current_subtab()
 
-    def _activate_current_subtab(self) -> None:
+    def _activate_current_subtab(self: typing.Any) -> None:
         if self._route_active and self.tabs.currentIndex() == 0:
             self._applications_tab.on_activate()
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select a Software & Updates page from a stable route ID."""
         route_to_index = {
             "software": 0,
@@ -519,7 +474,7 @@ class SoftwareTab(BaseTab):
         self._on_tab_changed(index)
         return True
 
-    def _create_flatpak_tab(self):
+    def _create_flatpak_tab(self: typing.Any) -> typing.Any:
         """Create the Flatpak Manager sub-tab (v37.0 Pinnacle)."""
 
         widget = QWidget()
@@ -589,7 +544,7 @@ class SoftwareTab(BaseTab):
         layout.addStretch()
         return widget
 
-    def _show_flatpak_sizes(self):
+    def _show_flatpak_sizes(self: typing.Any) -> typing.Any:
         try:
             from services.software import FlatpakManager
 
@@ -601,7 +556,7 @@ class SoftwareTab(BaseTab):
         except (RuntimeError, OSError, ValueError) as e:
             self._flatpak_output.setPlainText(f"[ERROR] {e}")
 
-    def _find_orphans(self):
+    def _find_orphans(self: typing.Any) -> typing.Any:
         try:
             from services.software import FlatpakManager
 
@@ -611,18 +566,11 @@ class SoftwareTab(BaseTab):
         except (RuntimeError, OSError, ValueError) as e:
             self._flatpak_output.setPlainText(f"[ERROR] {e}")
 
-    def _cleanup_flatpaks(self):
-        try:
-            from services.software import FlatpakManager
+    def _cleanup_flatpaks(self: typing.Any) -> typing.Any:
+        self.actionCenterRequested.emit("remove-unused-flatpaks", {})
+        self._flatpak_output.setPlainText(self.tr("Review the exact Flatpak cleanup guidance in Action Center."))
 
-            binary, args, desc = FlatpakManager.cleanup_unused()
-            self._flatpak_output.clear()
-            self._flatpak_output.setPlainText(f"{desc}\n")
-            self._flatpak_runner.run_command(binary, args)
-        except (RuntimeError, OSError, ValueError) as e:
-            self._flatpak_output.setPlainText(f"[ERROR] {e}")
-
-    def _show_permissions(self):
+    def _show_permissions(self: typing.Any) -> typing.Any:
         try:
             from services.software import FlatpakManager
 

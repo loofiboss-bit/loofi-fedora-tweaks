@@ -1832,91 +1832,23 @@ class TestCmdLogs(unittest.TestCase):
 
 
 class TestCmdPluginMarketplaceExtra(unittest.TestCase):
-    @patch("cli.main.PluginInstaller")
-    @patch("cli.main.PluginMarketplace")
-    def test_marketplace_uninstall(self, mock_mp, mock_installer):
+    @patch("cli.main._print")
+    def test_marketplace_uninstall_is_retired(self, mock_print):
         _set_json(False)
-        inst = MagicMock()
-        inst.uninstall.return_value = SimpleNamespace(success=True, error=None)
-        mock_installer.return_value = inst
-        mock_mp.return_value = MagicMock()
         r = cmd_plugin_marketplace(
-            _ns(
-                action="uninstall",
-                plugin_id="test-plugin",
-                plugin=None,
-                json=False,
-                category=None,
-                query=None,
-                limit=20,
-                offset=0,
-                reviewer=None,
-                rating=None,
-                title=None,
-                comment=None,
-                accept_permissions=False,
-            )
+            _ns(action="uninstall", plugin_id="test-plugin")
         )
-        self.assertEqual(r, 0)
+        self.assertEqual(r, 2)
+        self.assertIn("retired", " ".join(call.args[0] for call in mock_print.call_args_list).lower())
 
-    @patch("cli.main.PluginInstaller")
-    @patch("cli.main.PluginMarketplace")
-    def test_marketplace_update(self, mock_mp, mock_installer):
+    @patch("cli.main._output_json")
+    def test_marketplace_json_has_stable_feature_retired_error(self, mock_output):
+        _set_json(True)
+        self.assertEqual(cmd_plugin_marketplace(_ns(action="update")), 2)
+        payload = mock_output.call_args.args[0]
+        self.assertEqual(payload["schema_version"], 3)
+        self.assertEqual(payload["error"], "feature_retired")
         _set_json(False)
-        inst = MagicMock()
-        inst.check_update.return_value = SimpleNamespace(
-            success=True, data={"update_available": True}
-        )
-        inst.update.return_value = SimpleNamespace(success=True, error=None)
-        mock_installer.return_value = inst
-        mock_mp.return_value = MagicMock()
-        r = cmd_plugin_marketplace(
-            _ns(
-                action="update",
-                plugin_id="test-plugin",
-                plugin=None,
-                json=False,
-                category=None,
-                query=None,
-                limit=20,
-                offset=0,
-                reviewer=None,
-                rating=None,
-                title=None,
-                comment=None,
-                accept_permissions=False,
-            )
-        )
-        self.assertEqual(r, 0)
-
-    @patch("cli.main.PluginInstaller")
-    @patch("cli.main.PluginMarketplace")
-    def test_marketplace_list_installed(self, mock_mp, mock_installer):
-        _set_json(False)
-        inst = MagicMock()
-        inst.list_installed.return_value = SimpleNamespace(
-            data=[{"name": "test", "id": "test", "version": "1.0"}]
-        )
-        mock_installer.return_value = inst
-        mock_mp.return_value = MagicMock()
-        r = cmd_plugin_marketplace(
-            _ns(
-                action="list-installed",
-                plugin_id=None,
-                plugin=None,
-                json=False,
-                category=None,
-                query=None,
-                limit=20,
-                offset=0,
-                reviewer=None,
-                rating=None,
-                title=None,
-                comment=None,
-                accept_permissions=False,
-            )
-        )
-        self.assertEqual(r, 0)
 
 
 # ── main() entrypoint ─────────────────────────────────────────────

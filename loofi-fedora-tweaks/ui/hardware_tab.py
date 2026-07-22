@@ -7,9 +7,13 @@ Expanded in v10.0 "Zenith" to absorb Tweaks tab features:
 - Fingerprint enrollment
 """
 
+import typing
+
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import Qt, QTimer
+from core.product_catalog import plugin_metadata_for_module
+from core.execution_policy import classify_command
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QGridLayout,
@@ -36,23 +40,16 @@ logger = get_logger(__name__)
 class HardwareTab(QWidget, PluginInterface):
     """Consolidated hardware control tab."""
 
-    _METADATA = PluginMetadata(
-        id="hardware",
-        name="Hardware",
-        description="Hardware info and settings including CPU governor, GPU mode, fan control, and battery.",
-        category="Hardware",
-        icon="hardware-performance",
-        badge="recommended",
-        order=10,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
+    actionCenterRequested = pyqtSignal(str, object)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self._setup_command_runner()
         self.init_ui()
@@ -61,53 +58,48 @@ class HardwareTab(QWidget, PluginInterface):
         self.refresh_timer = QTimer()
         self.refresh_timer.timeout.connect(self.refresh_status)
 
-    def on_activate(self) -> None:
+    def on_activate(self: typing.Any) -> None:
         """Start dynamic hardware probes only while the route is active."""
         if not self.refresh_timer.isActive():
             self.refresh_timer.start(5000)
         QTimer.singleShot(0, self.refresh_status)
 
-    def on_deactivate(self) -> None:
+    def on_deactivate(self: typing.Any) -> None:
         """Stop periodic hardware probes while hidden."""
         if self.refresh_timer.isActive():
             self.refresh_timer.stop()
 
-    def _setup_command_runner(self):
+    def _setup_command_runner(self: typing.Any) -> typing.Any:
         """Setup CommandRunner for hardware commands (from Tweaks tab)."""
         self.hw_runner = CommandRunner()
         self.hw_runner.output_received.connect(self._on_hw_output)
         self.hw_runner.finished.connect(self._on_hw_command_finished)
 
-    def _on_hw_output(self, text):
+    def _on_hw_output(self: typing.Any, text: typing.Any) -> typing.Any:
         """Handle output from hardware commands."""
         if hasattr(self, "hw_output_area"):
-            self.hw_output_area.moveCursor(
-                self.hw_output_area.textCursor().MoveOperation.End
-            )
+            self.hw_output_area.moveCursor(self.hw_output_area.textCursor().MoveOperation.End)
             self.hw_output_area.insertPlainText(text)
-            self.hw_output_area.moveCursor(
-                self.hw_output_area.textCursor().MoveOperation.End
-            )
+            self.hw_output_area.moveCursor(self.hw_output_area.textCursor().MoveOperation.End)
 
-    def _on_hw_command_finished(self, exit_code):
+    def _on_hw_command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
         """Handle hardware command completion."""
         if hasattr(self, "hw_output_area"):
-            self.hw_output_area.moveCursor(
-                self.hw_output_area.textCursor().MoveOperation.End
-            )
-            self.hw_output_area.insertPlainText(
-                self.tr("\nCommand finished with exit code: {}\n").format(exit_code)
-            )
+            self.hw_output_area.moveCursor(self.hw_output_area.textCursor().MoveOperation.End)
+            self.hw_output_area.insertPlainText(self.tr("\nCommand finished with exit code: {}\n").format(exit_code))
 
-    def _run_hw_command(self, cmd, args, description=""):
+    def _run_hw_command(self: typing.Any, cmd: typing.Any, args: typing.Any, description: typing.Any = "") -> typing.Any:
         """Execute a hardware command with output logging."""
         if hasattr(self, "hw_output_area"):
             self.hw_output_area.clear()
             if description:
                 self.hw_output_area.setPlainText(description + "\n")
+        if classify_command(cmd, args) not in {"read_only", "session"}:
+            self.actionCenterRequested.emit("legacy-ui-manual-review", {})
+            return
         self.hw_runner.run_command(cmd, args)
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
@@ -169,7 +161,7 @@ class HardwareTab(QWidget, PluginInterface):
 
         layout.addStretch()
 
-    def create_card(self, title: str, icon: str) -> QGroupBox:
+    def create_card(self: typing.Any, title: str, icon: str) -> QGroupBox:
         """Create a text-labelled card; ``icon`` remains a compatibility input."""
         card = QGroupBox(title)
         card.setObjectName("hwCard")
@@ -177,15 +169,13 @@ class HardwareTab(QWidget, PluginInterface):
 
     # ==================== CPU GOVERNOR ====================
 
-    def create_cpu_card(self) -> QGroupBox:
+    def create_cpu_card(self: typing.Any) -> QGroupBox:
         card = self.create_card(self.tr("CPU Governor"), "maintenance-health")
         layout = QVBoxLayout(card)
 
         # Current frequency display
         freq = HardwareManager.get_cpu_frequency()
-        self.lbl_cpu_freq = QLabel(
-            self.tr("Current: {} MHz / {} MHz").format(freq["current"], freq["max"])
-        )
+        self.lbl_cpu_freq = QLabel(self.tr("Current: {} MHz / {} MHz").format(freq["current"], freq["max"]))
         self.lbl_cpu_freq.setObjectName("hwCpuFreq")
         layout.addWidget(self.lbl_cpu_freq)
 
@@ -215,26 +205,13 @@ class HardwareTab(QWidget, PluginInterface):
 
         return card
 
-    def on_governor_changed(self, governor: str):
-        """Handle governor change."""
-        success = HardwareManager.set_governor(governor)
-        if success:
-            self.show_toast(self.tr("CPU Governor set to '{}'").format(governor))
-        else:
-            QMessageBox.warning(
-                self,
-                self.tr("Error"),
-                self.tr("Failed to set governor to '{}'").format(governor),
-            )
-            # Revert combo box
-            current = HardwareManager.get_current_governor()
-            self.combo_governor.blockSignals(True)
-            self.combo_governor.setCurrentText(current)
-            self.combo_governor.blockSignals(False)
+    def on_governor_changed(self: typing.Any, governor: str) -> typing.Any:
+        """Route a governor change to the shared review boundary."""
+        self.actionCenterRequested.emit("set-cpu-governor", {"governor": governor})
 
     # ==================== POWER PROFILE ====================
 
-    def create_power_profile_card(self) -> QGroupBox:
+    def create_power_profile_card(self: typing.Any) -> QGroupBox:
         card = self.create_card(self.tr("Power Profile"), "hardware-performance")
         layout = QVBoxLayout(card)
 
@@ -267,23 +244,12 @@ class HardwareTab(QWidget, PluginInterface):
         layout.addLayout(btn_layout)
         return card
 
-    def set_power_profile(self, profile: str):
-        success = HardwareManager.set_power_profile(profile)
-        if success:
-            self.lbl_power_profile.setText(
-                self.tr("Current: {}").format(profile.title())
-            )
-            self.show_toast(self.tr("Power profile set to '{}'").format(profile))
-        else:
-            QMessageBox.warning(
-                self,
-                self.tr("Error"),
-                self.tr("Failed to set power profile to '{}'").format(profile),
-            )
+    def set_power_profile(self: typing.Any, profile: str) -> typing.Any:
+        self.actionCenterRequested.emit("set-power-profile", {"profile": profile})
 
     # ==================== GPU MODE ====================
 
-    def create_gpu_card(self) -> QGroupBox:
+    def create_gpu_card(self: typing.Any) -> QGroupBox:
         card = self.create_card(self.tr("GPU Mode"), "hardware-performance")
         layout = QVBoxLayout(card)
 
@@ -331,41 +297,22 @@ class HardwareTab(QWidget, PluginInterface):
 
         return card
 
-    def set_gpu_mode(self, mode: str):
-        reply = QMessageBox.question(
-            self,
-            self.tr("Confirm GPU Mode Change"),
-            self.tr(
-                "Switch GPU to '{}' mode?\n\nThis requires a logout or reboot."
-            ).format(mode.title()),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
+    def set_gpu_mode(self: typing.Any, mode: str) -> typing.Any:
+        self.actionCenterRequested.emit("set-gpu-mode", {"mode": mode})
 
-        if reply == QMessageBox.StandardButton.Yes:
-            success, message = HardwareManager.set_gpu_mode(mode)
-            if success:
-                self.lbl_gpu_mode.setText(
-                    self.tr("Current: {} (pending)").format(mode.title())
-                )
-                QMessageBox.information(self, self.tr("Success"), message)
-            else:
-                QMessageBox.warning(self, self.tr("Error"), message)
-
-    def install_envycontrol(self):
+    def install_envycontrol(self: typing.Any) -> typing.Any:
         """Guide user to install envycontrol."""
         QMessageBox.information(
             self,
             self.tr("Install envycontrol"),
             self.tr(
-                "To control GPU modes, install envycontrol:\n\n"
-                "pip install --user envycontrol\n\n"
-                "Or visit: https://github.com/bayasdev/envycontrol"
+                "To control GPU modes, install envycontrol:\n\npip install --user envycontrol\n\nOr visit: https://github.com/bayasdev/envycontrol"
             ),
         )
 
     # ==================== FAN CONTROL ====================
 
-    def create_fan_card(self) -> QGroupBox:
+    def create_fan_card(self: typing.Any) -> QGroupBox:
         card = self.create_card(self.tr("Fan Control"), "hardware-performance")
         layout = QVBoxLayout(card)
 
@@ -379,11 +326,7 @@ class HardwareTab(QWidget, PluginInterface):
 
         # Current status
         status = HardwareManager.get_fan_status()
-        self.lbl_fan_status = QLabel(
-            self.tr("Speed: {}% | Temp: {}°C").format(
-                int(status["speed"]), int(status["temperature"])
-            )
-        )
+        self.lbl_fan_status = QLabel(self.tr("Speed: {}% | Temp: {}°C").format(int(status["speed"]), int(status["temperature"])))
         self.lbl_fan_status.setObjectName("hwFanStatus")
         layout.addWidget(self.lbl_fan_status)
 
@@ -403,9 +346,7 @@ class HardwareTab(QWidget, PluginInterface):
         self.lbl_fan_percent = QLabel("50%")
         slider_layout.addWidget(self.lbl_fan_percent)
 
-        self.slider_fan.valueChanged.connect(
-            lambda v: self.lbl_fan_percent.setText(f"{v}%")
-        )
+        self.slider_fan.valueChanged.connect(lambda v: self.lbl_fan_percent.setText(f"{v}%"))
         layout.addLayout(slider_layout)
 
         # Buttons
@@ -424,17 +365,10 @@ class HardwareTab(QWidget, PluginInterface):
         layout.addLayout(btn_layout)
         return card
 
-    def set_fan_speed(self, speed: int):
-        success = HardwareManager.set_fan_speed(speed)
-        if success:
-            mode = self.tr("Auto") if speed < 0 else f"{speed}%"
-            self.show_toast(self.tr("Fan speed set to {}").format(mode))
-        else:
-            QMessageBox.warning(
-                self, self.tr("Error"), self.tr("Failed to set fan speed")
-            )
+    def set_fan_speed(self: typing.Any, speed: int) -> typing.Any:
+        self.actionCenterRequested.emit("set-fan-speed", {"speed": speed})
 
-    def show_nbfc_help(self):
+    def show_nbfc_help(self: typing.Any) -> typing.Any:
         QMessageBox.information(
             self,
             self.tr("Install nbfc-linux"),
@@ -449,14 +383,12 @@ class HardwareTab(QWidget, PluginInterface):
 
     # ==================== AUDIO (from Tweaks tab) ====================
 
-    def create_audio_card(self) -> QGroupBox:
+    def create_audio_card(self: typing.Any) -> QGroupBox:
         """Create audio services restart card (from TweaksTab)."""
         card = self.create_card(self.tr("Audio Services"), "hardware-performance")
         layout = QVBoxLayout(card)
 
-        desc = QLabel(
-            self.tr("Restart Pipewire audio services if sound is not working")
-        )
+        desc = QLabel(self.tr("Restart Pipewire audio services if sound is not working"))
         desc.setObjectName("hwAudioDesc")
         desc.setWordWrap(True)
         layout.addWidget(desc)
@@ -464,11 +396,7 @@ class HardwareTab(QWidget, PluginInterface):
         btn_restart_audio = QPushButton(self.tr("Restart Audio Services (Pipewire)"))
         btn_restart_audio.setAccessibleName(self.tr("Restart audio"))
         btn_restart_audio.clicked.connect(
-            lambda: self._run_hw_command(
-                "systemctl",
-                ["--user", "restart", "pipewire", "pipewire-pulse", "wireplumber"],
-                self.tr("Restarting Audio Services..."),
-            )
+            lambda: self.actionCenterRequested.emit("restart-audio-session", {})
         )
         layout.addWidget(btn_restart_audio)
 
@@ -476,7 +404,7 @@ class HardwareTab(QWidget, PluginInterface):
 
     # ==================== BATTERY LIMIT (from Tweaks tab) ====================
 
-    def create_battery_limit_card(self) -> QGroupBox:
+    def create_battery_limit_card(self: typing.Any) -> QGroupBox:
         """Create battery charge limit card (from TweaksTab)."""
         card = self.create_card(self.tr("Battery Charge Limit"), "hardware-performance")
         layout = QVBoxLayout(card)
@@ -502,38 +430,16 @@ class HardwareTab(QWidget, PluginInterface):
 
         return card
 
-    def _set_battery_limit(self, limit):
-        """Set battery charge limit using BatteryManager."""
-        from services.hardware import BatteryManager
-
-        manager = BatteryManager()
-        cmd, args = manager.set_limit(limit)
-
-        if cmd and cmd == "echo":
-            # Steps were run internally; show the result message
-            if hasattr(self, "hw_output_area"):
-                self.hw_output_area.setPlainText(
-                    self.tr("Setting Battery Limit to {}% (Persistent)...\n").format(
-                        limit
-                    )
-                    + " ".join(args)
-                    + "\n"
-                )
-        elif cmd:
-            self._run_hw_command(
-                cmd,
-                args,
-                self.tr("Setting Battery Limit to {}% (Persistent)...").format(limit),
-            )
-        else:
-            if hasattr(self, "hw_output_area"):
-                self.hw_output_area.setPlainText(
-                    self.tr("Failed to prepare battery script.\n")
-                )
+    def _set_battery_limit(self: typing.Any, limit: typing.Any) -> typing.Any:
+        """Route persistent battery service/sysfs changes to manual review."""
+        action_id = "set-battery-limit-80" if int(limit) == 80 else "set-battery-limit-100"
+        self.actionCenterRequested.emit(action_id, {})
+        if hasattr(self, "hw_output_area"):
+            self.hw_output_area.setPlainText(self.tr("Review the persistent battery limit guidance in Action Center.\n"))
 
     # ==================== FINGERPRINT (from Tweaks tab) ====================
 
-    def create_fingerprint_card(self) -> QGroupBox:
+    def create_fingerprint_card(self: typing.Any) -> QGroupBox:
         """Create fingerprint enrollment card (from TweaksTab)."""
         card = self.create_card(self.tr("Fingerprint Reader"), "hardware-performance")
         layout = QVBoxLayout(card)
@@ -550,16 +456,13 @@ class HardwareTab(QWidget, PluginInterface):
 
         return card
 
-    def _enroll_fingerprint(self):
-        """Open the fingerprint enrollment dialog."""
-        from ui.fingerprint_dialog import FingerprintDialog
-
-        dialog = FingerprintDialog(self)
-        dialog.exec()
+    def _enroll_fingerprint(self: typing.Any) -> typing.Any:
+        """Route authentication enrollment to manual security review."""
+        self.actionCenterRequested.emit("enroll-fingerprint", {})
 
     # ==================== BLUETOOTH (v17.0 Atlas) ====================
 
-    def create_bluetooth_card(self) -> QGroupBox:
+    def create_bluetooth_card(self: typing.Any) -> QGroupBox:
         """Create Bluetooth management card."""
         card = self.create_card(self.tr("Bluetooth"), "network-connectivity")
         layout = QVBoxLayout(card)
@@ -600,39 +503,28 @@ class HardwareTab(QWidget, PluginInterface):
 
         return card
 
-    def _bt_refresh_status(self):
+    def _bt_refresh_status(self: typing.Any) -> typing.Any:
         """Refresh Bluetooth adapter and device status."""
         try:
             status = BluetoothManager.get_adapter_status()
             if status.adapter_name:
                 power = "On" if status.powered else "Off"
-                self.lbl_bt_status.setText(
-                    self.tr("Bluetooth: {} | Adapter: {}").format(
-                        power, status.adapter_name
-                    )
-                )
+                self.lbl_bt_status.setText(self.tr("Bluetooth: {} | Adapter: {}").format(power, status.adapter_name))
             else:
                 self.lbl_bt_status.setText(self.tr("Bluetooth: No adapter found"))
                 return
 
             devices = BluetoothManager.list_devices(paired_only=True)
             if devices:
-                names = [
-                    f"{d.name} ({'connected' if d.connected else 'paired'})"
-                    for d in devices[:5]
-                ]
-                self.lbl_bt_devices.setText(
-                    self.tr("Paired devices: {}").format(", ".join(names))
-                )
+                names = [f"{d.name} ({'connected' if d.connected else 'paired'})" for d in devices[:5]]
+                self.lbl_bt_devices.setText(self.tr("Paired devices: {}").format(", ".join(names)))
             else:
                 self.lbl_bt_devices.setText(self.tr("Paired devices: none"))
         except (RuntimeError, OSError, ValueError) as e:
             logger.debug("Failed to refresh Bluetooth status: %s", e)
-            self.lbl_bt_status.setText(
-                self.tr("Bluetooth: bluetoothctl not available")
-            )
+            self.lbl_bt_status.setText(self.tr("Bluetooth: bluetoothctl not available"))
 
-    def _bt_power_on(self):
+    def _bt_power_on(self: typing.Any) -> typing.Any:
         """Turn Bluetooth adapter on."""
         result = BluetoothManager.power_on()
         if result.success:
@@ -641,7 +533,7 @@ class HardwareTab(QWidget, PluginInterface):
             QMessageBox.warning(self, self.tr("Error"), result.message)
         QTimer.singleShot(500, self._bt_refresh_status)
 
-    def _bt_power_off(self):
+    def _bt_power_off(self: typing.Any) -> typing.Any:
         """Turn Bluetooth adapter off."""
         result = BluetoothManager.power_off()
         if result.success:
@@ -650,7 +542,7 @@ class HardwareTab(QWidget, PluginInterface):
             QMessageBox.warning(self, self.tr("Error"), result.message)
         QTimer.singleShot(500, self._bt_refresh_status)
 
-    def _bt_scan(self):
+    def _bt_scan(self: typing.Any) -> typing.Any:
         """Scan for nearby Bluetooth devices."""
         self._run_hw_command(
             "bluetoothctl",
@@ -661,7 +553,7 @@ class HardwareTab(QWidget, PluginInterface):
 
     # ==================== BOOT CONFIGURATION (v37.0 Pinnacle) ====================
 
-    def create_boot_config_card(self) -> QGroupBox:
+    def create_boot_config_card(self: typing.Any) -> QGroupBox:
         """Create boot configuration management card."""
         card = self.create_card(self.tr("Boot Configuration"), "settings")
         layout = QVBoxLayout(card)
@@ -719,7 +611,7 @@ class HardwareTab(QWidget, PluginInterface):
 
         return card
 
-    def _load_boot_info(self):
+    def _load_boot_info(self: typing.Any) -> typing.Any:
         """Load current kernel info."""
         try:
             from utils.boot_config import BootConfigManager
@@ -731,24 +623,23 @@ class HardwareTab(QWidget, PluginInterface):
             logger.debug("Failed to load boot info: %s", e)
             self.lbl_boot_info.setText(self.tr("Current kernel: detection failed"))
 
-    def _list_boot_kernels(self):
+    def _list_boot_kernels(self: typing.Any) -> typing.Any:
         try:
             from utils.boot_config import BootConfigManager
 
             kernels = BootConfigManager.list_kernels()
             lines = [
-                f"{k.title} ({k.version}){' (default)' if k.is_default else ''}"
+                f"{k.title} ({getattr(k, 'version', '') or getattr(k, 'kernel', '')})"
+                f"{' (default)' if bool(getattr(k, 'is_default', getattr(k, 'default', False))) else ''}"
                 for k in kernels
             ]
             if hasattr(self, "hw_output_area"):
-                self.hw_output_area.setPlainText(
-                    "\n".join(lines) or "No kernels found."
-                )
+                self.hw_output_area.setPlainText("\n".join(lines) or "No kernels found.")
         except (RuntimeError, OSError, ValueError) as e:
             if hasattr(self, "hw_output_area"):
                 self.hw_output_area.setPlainText(f"[ERROR] {e}")
 
-    def _show_grub_config(self):
+    def _show_grub_config(self: typing.Any) -> typing.Any:
         try:
             from utils.boot_config import BootConfigManager
 
@@ -765,50 +656,30 @@ class HardwareTab(QWidget, PluginInterface):
             if hasattr(self, "hw_output_area"):
                 self.hw_output_area.setPlainText(f"[ERROR] {e}")
 
-    def _set_boot_timeout(self):
-        try:
-            from utils.boot_config import BootConfigManager
+    def _set_boot_timeout(self: typing.Any) -> typing.Any:
+        seconds = self.boot_timeout_spin.value()
+        self.actionCenterRequested.emit("set-grub-timeout", {"seconds": seconds})
 
-            seconds = self.boot_timeout_spin.value()
-            binary, args, desc = BootConfigManager.set_timeout(seconds)
-            self._run_hw_command(binary, args, desc)
-        except (RuntimeError, OSError, ValueError) as e:
-            if hasattr(self, "hw_output_area"):
-                self.hw_output_area.setPlainText(f"[ERROR] {e}")
-
-    def _apply_grub(self):
-        try:
-            from utils.boot_config import BootConfigManager
-
-            binary, args, desc = BootConfigManager.apply_grub_changes()
-            self._run_hw_command(binary, args, desc)
-        except (RuntimeError, OSError, ValueError) as e:
-            if hasattr(self, "hw_output_area"):
-                self.hw_output_area.setPlainText(f"[ERROR] {e}")
+    def _apply_grub(self: typing.Any) -> typing.Any:
+        self.actionCenterRequested.emit("apply-grub-config", {})
 
     # ==================== UTILITIES ====================
 
-    def refresh_status(self):
+    def refresh_status(self: typing.Any) -> typing.Any:
         """Refresh dynamic values."""
         try:
             # CPU frequency
             freq = HardwareManager.get_cpu_frequency()
-            self.lbl_cpu_freq.setText(
-                self.tr("Current: {} MHz / {} MHz").format(freq["current"], freq["max"])
-            )
+            self.lbl_cpu_freq.setText(self.tr("Current: {} MHz / {} MHz").format(freq["current"], freq["max"]))
 
             # Fan status
             if HardwareManager.is_nbfc_available():
                 status = HardwareManager.get_fan_status()
-                self.lbl_fan_status.setText(
-                    self.tr("Speed: {}% | Temp: {}°C").format(
-                        int(status["speed"]), int(status["temperature"])
-                    )
-                )
+                self.lbl_fan_status.setText(self.tr("Speed: {}% | Temp: {}°C").format(int(status["speed"]), int(status["temperature"])))
         except (RuntimeError, OSError, ValueError) as e:
             logger.debug("Failed to refresh hardware status: %s", e)
 
-    def show_toast(self, message: str):
+    def show_toast(self: typing.Any, message: str) -> typing.Any:
         """Show a quick toast notification (status bar style)."""
         # For now, just update window title briefly
         parent = self.window()

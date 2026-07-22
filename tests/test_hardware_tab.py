@@ -8,6 +8,7 @@ import unittest
 from unittest.mock import patch, MagicMock
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
+_REAL_PRODUCT_CATALOG = importlib.import_module("core.product_catalog")
 
 
 # ── PyQt6 Stubs ──────────────────────────────────────────────────────────────
@@ -225,6 +226,7 @@ _MODULE_KEYS = [
     "core.plugins",
     "core.plugins.interface",
     "core.plugins.metadata",
+    "core.product_catalog",
     "services",
     "services.hardware",
     "ui.tooltips",
@@ -289,6 +291,7 @@ def _install_stubs():
     _qtcore = types.ModuleType("PyQt6.QtCore")
     _qtcore.Qt = _Dummy()
     _qtcore.QTimer = MagicMock()
+    _qtcore.pyqtSignal = _DummySignal
 
     _qtgui = types.ModuleType("PyQt6.QtGui")
     _qtgui.QIcon = _Dummy
@@ -311,6 +314,7 @@ def _install_stubs():
     sys.modules["core.plugins"] = _core_plugins
     sys.modules["core.plugins.interface"] = _plugin_interface
     sys.modules["core.plugins.metadata"] = _plugin_metadata
+    sys.modules["core.product_catalog"] = _REAL_PRODUCT_CATALOG
 
     # Service / util stubs
     _hw_mod = types.ModuleType("services.hardware")
@@ -506,30 +510,11 @@ class TestOnGovernorChanged(unittest.TestCase):
     def setUp(self):
         self.tab = _make_tab()
 
-    def test_governor_change_success(self):
-        HardwareManager.set_governor.return_value = True
-        self.tab.on_governor_changed("performance")
-        HardwareManager.set_governor.assert_called_with("performance")
-
-    def test_governor_change_failure_reverts_combo(self):
-        HardwareManager.set_governor.return_value = False
-        HardwareManager.get_current_governor.return_value = "powersave"
-        self.tab.on_governor_changed("performance")
-        self.assertEqual(self.tab.combo_governor.currentText(), "powersave")
-
-    def test_governor_change_failure_shows_warning(self):
-        HardwareManager.set_governor.return_value = False
-        HardwareManager.get_current_governor.return_value = "powersave"
-        _qtwidgets.QMessageBox.warning.reset_mock()
-        self.tab.on_governor_changed("performance")
-        _qtwidgets.QMessageBox.warning.assert_called_once()
-
-    def test_governor_change_success_calls_show_toast(self):
-        HardwareManager.set_governor.return_value = True
-        with patch.object(self.tab, "show_toast") as mock_toast:
+    def test_governor_change_requests_review(self):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
             self.tab.on_governor_changed("performance")
-            mock_toast.assert_called_once()
-            self.assertIn("performance", mock_toast.call_args[0][0])
+        emit.assert_called_once_with("set-cpu-governor", {"governor": "performance"})
+        HardwareManager.set_governor.assert_not_called()
 
 
 class TestCreatePowerProfileCard(unittest.TestCase):
@@ -561,35 +546,11 @@ class TestSetPowerProfile(unittest.TestCase):
     def setUp(self):
         self.tab = _make_tab()
 
-    def test_set_power_profile_success(self):
-        HardwareManager.set_power_profile.return_value = True
-        self.tab.set_power_profile("power-saver")
-        HardwareManager.set_power_profile.assert_called_with("power-saver")
-
-    def test_set_power_profile_updates_label(self):
-        HardwareManager.set_power_profile.return_value = True
-        self.tab.set_power_profile("performance")
-        self.assertIn("Performance", self.tab.lbl_power_profile._text)
-
-    def test_set_power_profile_failure_shows_warning(self):
-        HardwareManager.set_power_profile.return_value = False
-        _qtwidgets.QMessageBox.warning.reset_mock()
-        self.tab.set_power_profile("performance")
-        _qtwidgets.QMessageBox.warning.assert_called_once()
-
-    def test_set_power_profile_success_shows_toast(self):
-        HardwareManager.set_power_profile.return_value = True
-        with patch.object(self.tab, "show_toast") as mock_toast:
-            self.tab.set_power_profile("balanced")
-            mock_toast.assert_called_once()
-            self.assertIn("balanced", mock_toast.call_args[0][0])
-
-    def test_set_power_profile_failure_does_not_update_label(self):
-        HardwareManager.set_power_profile.return_value = False
-        original = self.tab.lbl_power_profile._text
-        self.tab.set_power_profile("power-saver")
-        # Label should not have been updated to power-saver
-        self.assertEqual(self.tab.lbl_power_profile._text, original)
+    def test_set_power_profile_requests_review(self):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
+            self.tab.set_power_profile("power-saver")
+        emit.assert_called_once_with("set-power-profile", {"profile": "power-saver"})
+        HardwareManager.set_power_profile.assert_not_called()
 
 
 class TestCreateGpuCard(unittest.TestCase):
@@ -626,47 +587,11 @@ class TestSetGpuMode(unittest.TestCase):
     def setUp(self):
         self.tab = _make_tab()
 
-    def test_set_gpu_mode_confirmed_success(self):
-        _qtwidgets.QMessageBox.question.return_value = (
-            _qtwidgets.QMessageBox.StandardButton.Yes
-        )
-        HardwareManager.set_gpu_mode.return_value = (True, "GPU switched to integrated")
-        self.tab.set_gpu_mode("integrated")
-        HardwareManager.set_gpu_mode.assert_called_with("integrated")
-
-    def test_set_gpu_mode_confirmed_updates_label(self):
-        _qtwidgets.QMessageBox.question.return_value = (
-            _qtwidgets.QMessageBox.StandardButton.Yes
-        )
-        HardwareManager.set_gpu_mode.return_value = (True, "OK")
-        self.tab.set_gpu_mode("nvidia")
-        self.assertIn("pending", self.tab.lbl_gpu_mode._text)
-
-    def test_set_gpu_mode_confirmed_failure(self):
-        _qtwidgets.QMessageBox.question.return_value = (
-            _qtwidgets.QMessageBox.StandardButton.Yes
-        )
-        HardwareManager.set_gpu_mode.return_value = (False, "envycontrol error")
-        _qtwidgets.QMessageBox.warning.reset_mock()
-        self.tab.set_gpu_mode("nvidia")
-        _qtwidgets.QMessageBox.warning.assert_called_once()
-
-    def test_set_gpu_mode_declined_does_nothing(self):
-        _qtwidgets.QMessageBox.question.return_value = (
-            _qtwidgets.QMessageBox.StandardButton.No
-        )
-        HardwareManager.set_gpu_mode.reset_mock()
-        self.tab.set_gpu_mode("nvidia")
+    def test_set_gpu_mode_requests_review(self):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
+            self.tab.set_gpu_mode("integrated")
+        emit.assert_called_once_with("set-gpu-mode", {"mode": "integrated"})
         HardwareManager.set_gpu_mode.assert_not_called()
-
-    def test_set_gpu_mode_success_shows_info_dialog(self):
-        _qtwidgets.QMessageBox.question.return_value = (
-            _qtwidgets.QMessageBox.StandardButton.Yes
-        )
-        HardwareManager.set_gpu_mode.return_value = (True, "Done")
-        _qtwidgets.QMessageBox.information.reset_mock()
-        self.tab.set_gpu_mode("hybrid")
-        _qtwidgets.QMessageBox.information.assert_called_once()
 
 
 class TestInstallEnvycontrol(unittest.TestCase):
@@ -735,31 +660,16 @@ class TestSetFanSpeed(unittest.TestCase):
     def setUp(self):
         self.tab = _make_tab()
 
-    def test_set_fan_speed_success(self):
-        HardwareManager.set_fan_speed.return_value = True
-        with patch.object(self.tab, "show_toast") as mock_toast:
+    def test_set_fan_speed_requests_review(self):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
             self.tab.set_fan_speed(75)
-            HardwareManager.set_fan_speed.assert_called_with(75)
-            mock_toast.assert_called_once()
+        emit.assert_called_once_with("set-fan-speed", {"speed": 75})
+        HardwareManager.set_fan_speed.assert_not_called()
 
-    def test_set_fan_speed_auto_mode(self):
-        HardwareManager.set_fan_speed.return_value = True
-        with patch.object(self.tab, "show_toast") as mock_toast:
+    def test_set_fan_speed_auto_mode_requests_review(self):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
             self.tab.set_fan_speed(-1)
-            HardwareManager.set_fan_speed.assert_called_with(-1)
-            self.assertIn("Auto", mock_toast.call_args[0][0])
-
-    def test_set_fan_speed_failure(self):
-        HardwareManager.set_fan_speed.return_value = False
-        _qtwidgets.QMessageBox.warning.reset_mock()
-        self.tab.set_fan_speed(50)
-        _qtwidgets.QMessageBox.warning.assert_called_once()
-
-    def test_set_fan_speed_percentage_in_toast(self):
-        HardwareManager.set_fan_speed.return_value = True
-        with patch.object(self.tab, "show_toast") as mock_toast:
-            self.tab.set_fan_speed(80)
-            self.assertIn("80%", mock_toast.call_args[0][0])
+        emit.assert_called_once_with("set-fan-speed", {"speed": -1})
 
 
 class TestShowNbfcHelp(unittest.TestCase):
@@ -803,42 +713,32 @@ class TestSetBatteryLimit(unittest.TestCase):
         self.tab = _make_tab()
 
     def test_set_battery_limit_with_cmd(self):
-        mock_manager = MagicMock()
-        mock_manager.set_limit.return_value = ("pkexec", ["bash", "/tmp/battery.sh"])
-        batt_mod = types.ModuleType("services.hardware")
-        batt_mod.BatteryManager = MagicMock(return_value=mock_manager)
-        with patch.dict(sys.modules, {"services.hardware": batt_mod}):
-            with patch.object(self.tab, "_run_hw_command") as mock_run:
-                self.tab._set_battery_limit(80)
-                mock_manager.set_limit.assert_called_with(80)
-                mock_run.assert_called_once()
+        requests = []
+        self.tab.actionCenterRequested = _DummySignal()
+        self.tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
+
+        self.tab._set_battery_limit(80)
+
+        self.assertEqual(requests, [("set-battery-limit-80", {})])
 
     def test_set_battery_limit_echo_cmd(self):
-        mock_manager = MagicMock()
-        mock_manager.set_limit.return_value = ("echo", ["Battery limit set to 80%"])
-        batt_mod = types.ModuleType("services.hardware")
-        batt_mod.BatteryManager = MagicMock(return_value=mock_manager)
-        with patch.dict(sys.modules, {"services.hardware": batt_mod}):
-            self.tab._set_battery_limit(80)
-        self.assertIn("80%", self.tab.hw_output_area._text)
+        self.tab.actionCenterRequested = _DummySignal()
+        self.tab._set_battery_limit(80)
+        self.assertIn("Action Center", self.tab.hw_output_area._text)
 
     def test_set_battery_limit_none_cmd(self):
-        mock_manager = MagicMock()
-        mock_manager.set_limit.return_value = (None, None)
-        batt_mod = types.ModuleType("services.hardware")
-        batt_mod.BatteryManager = MagicMock(return_value=mock_manager)
-        with patch.dict(sys.modules, {"services.hardware": batt_mod}):
-            self.tab._set_battery_limit(80)
-        self.assertIn("Failed", self.tab.hw_output_area._text)
+        self.tab.actionCenterRequested = _DummySignal()
+        self.tab._set_battery_limit(80)
+        self.assertNotIn("Failed", self.tab.hw_output_area._text)
 
     def test_set_battery_limit_100(self):
-        mock_manager = MagicMock()
-        mock_manager.set_limit.return_value = ("echo", ["Battery limit set to 100%"])
-        batt_mod = types.ModuleType("services.hardware")
-        batt_mod.BatteryManager = MagicMock(return_value=mock_manager)
-        with patch.dict(sys.modules, {"services.hardware": batt_mod}):
-            self.tab._set_battery_limit(100)
-        mock_manager.set_limit.assert_called_with(100)
+        requests = []
+        self.tab.actionCenterRequested = _DummySignal()
+        self.tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
+
+        self.tab._set_battery_limit(100)
+
+        self.assertEqual(requests, [("set-battery-limit-100", {})])
 
 
 class TestCreateFingerprintCard(unittest.TestCase):
@@ -858,16 +758,10 @@ class TestEnrollFingerprint(unittest.TestCase):
     def setUp(self):
         self.tab = _make_tab()
 
-    def test_enroll_fingerprint_opens_dialog(self):
-        mock_dialog_cls = MagicMock()
-        mock_dialog_inst = MagicMock()
-        mock_dialog_cls.return_value = mock_dialog_inst
-        fp_mod = types.ModuleType("ui.fingerprint_dialog")
-        fp_mod.FingerprintDialog = mock_dialog_cls
-        with patch.dict(sys.modules, {"ui.fingerprint_dialog": fp_mod}):
+    def test_enroll_fingerprint_requests_review(self):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
             self.tab._enroll_fingerprint()
-        mock_dialog_cls.assert_called_once_with(self.tab)
-        mock_dialog_inst.exec.assert_called_once()
+        emit.assert_called_once_with("enroll-fingerprint", {})
 
 
 class TestCreateBluetoothCard(unittest.TestCase):
@@ -1186,28 +1080,14 @@ class TestSetBootTimeout(unittest.TestCase):
 
     def test_set_boot_timeout_success(self):
         self.tab.boot_timeout_spin._value = 10
-        boot_mod = types.ModuleType("utils.boot_config")
-        mock_bcm = MagicMock()
-        mock_bcm.set_timeout.return_value = (
-            "pkexec",
-            ["sed", "-i", "..."],
-            "Setting timeout",
-        )
-        boot_mod.BootConfigManager = mock_bcm
-        with patch.dict(sys.modules, {"utils.boot_config": boot_mod}):
-            with patch.object(self.tab, "_run_hw_command") as mock_run:
-                self.tab._set_boot_timeout()
-                mock_bcm.set_timeout.assert_called_with(10)
-                mock_run.assert_called_once()
-
-    def test_set_boot_timeout_exception(self):
-        boot_mod = types.ModuleType("utils.boot_config")
-        mock_bcm = MagicMock()
-        mock_bcm.set_timeout.side_effect = ValueError("invalid")
-        boot_mod.BootConfigManager = mock_bcm
-        with patch.dict(sys.modules, {"utils.boot_config": boot_mod}):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
             self.tab._set_boot_timeout()
-        self.assertIn("ERROR", self.tab.hw_output_area._text)
+        emit.assert_called_once_with("set-grub-timeout", {"seconds": 10})
+
+    def test_set_boot_timeout_does_not_run_legacy_command(self):
+        with patch.object(self.tab, "_run_hw_command") as run:
+            self.tab._set_boot_timeout()
+        run.assert_not_called()
 
 
 class TestApplyGrub(unittest.TestCase):
@@ -1217,31 +1097,14 @@ class TestApplyGrub(unittest.TestCase):
         self.tab = _make_tab()
 
     def test_apply_grub_success(self):
-        boot_mod = types.ModuleType("utils.boot_config")
-        mock_bcm = MagicMock()
-        mock_bcm.apply_grub_changes.return_value = (
-            "pkexec",
-            ["grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"],
-            "Rebuilding GRUB",
-        )
-        boot_mod.BootConfigManager = mock_bcm
-        with patch.dict(sys.modules, {"utils.boot_config": boot_mod}):
-            with patch.object(self.tab, "_run_hw_command") as mock_run:
-                self.tab._apply_grub()
-                mock_run.assert_called_once_with(
-                    "pkexec",
-                    ["grub2-mkconfig", "-o", "/boot/grub2/grub.cfg"],
-                    "Rebuilding GRUB",
-                )
-
-    def test_apply_grub_exception(self):
-        boot_mod = types.ModuleType("utils.boot_config")
-        mock_bcm = MagicMock()
-        mock_bcm.apply_grub_changes.side_effect = OSError("permission denied")
-        boot_mod.BootConfigManager = mock_bcm
-        with patch.dict(sys.modules, {"utils.boot_config": boot_mod}):
+        with patch.object(self.tab.actionCenterRequested, "emit") as emit:
             self.tab._apply_grub()
-        self.assertIn("ERROR", self.tab.hw_output_area._text)
+        emit.assert_called_once_with("apply-grub-config", {})
+
+    def test_apply_grub_does_not_run_legacy_command(self):
+        with patch.object(self.tab, "_run_hw_command") as run:
+            self.tab._apply_grub()
+        run.assert_not_called()
 
 
 class TestRefreshStatus(unittest.TestCase):

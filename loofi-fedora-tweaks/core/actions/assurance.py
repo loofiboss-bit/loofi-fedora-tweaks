@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import re
-from typing import Any, Mapping
+from typing import Any, Callable, Literal, Mapping
 
 from core.actions.contracts import (
     ActionDefinition,
@@ -15,6 +15,7 @@ from core.actions.contracts import (
     VerificationDecision,
 )
 from core.executor.action_result import ActionResult
+from core.local_profiles import validate_local_profile
 
 _PACKAGE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+._-]{0,127}$")
 _FLATPAK_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,255}$")
@@ -96,7 +97,405 @@ def assurance_definitions() -> list[ActionDefinition]:
             preflight_checker=_preflight_recovery_point, verifier=_verify_recovery_point,
             parameter_validator=_validate_recovery_point,
         ),
+        _manual_definition(
+            "enable-rpm-fusion",
+            "Enable RPM Fusion",
+            "RPM Fusion enablement requires distribution-specific repository review in v18.",
+            "Follow the RPM Fusion Fedora setup guide, verify repository URLs, and return to Software after completion.",
+            ("repositories", "packages"),
+        ),
+        _manual_definition(
+            "install-multimedia-codecs",
+            "Install multimedia codecs",
+            "Codec groups vary by enabled repositories and remain guided manual work in v18.",
+            "Review the exact package groups and repository trust before installing codecs manually.",
+            ("packages", "multimedia"),
+        ),
+        _manual_definition(
+            "enable-flathub",
+            "Enable Flathub",
+            "Adding a new software trust source remains a guided manual operation in v18.",
+            "Verify the Flathub repository URL and scope before adding the remote manually.",
+            ("flatpak-remotes",),
+        ),
+        _manual_definition(
+            "enable-loofi-copr",
+            "Enable Loofi COPR",
+            "Enabling a third-party COPR remains a guided manual operation in v18.",
+            "Inspect the COPR project and signing metadata before enabling it manually.",
+            ("repositories", "packages"),
+        ),
+        *_manual_boundary_definitions(),
     ]
+
+
+def _manual_definition(
+    action_id: str,
+    title: str,
+    description: str,
+    recovery_guidance: str,
+    affected_resources: tuple[str, ...],
+    *,
+    parameter_schema: Mapping[str, Mapping[str, Any]] | None = None,
+    parameter_validator: Callable[[Mapping[str, Any]], PolicyDecision] | None = None,
+    reboot_policy: Literal["none", "may_require", "required"] = "none",
+) -> ActionDefinition:
+    return ActionDefinition(
+        id=action_id,
+        capability_id=f"manual.{action_id}",
+        title=title,
+        description=description,
+        parameter_schema={name: dict(schema) for name, schema in (parameter_schema or {}).items()},
+        risk_level="medium",
+        privileged=False,
+        confirmation_policy="explicit-no-rollback",
+        recovery_guidance=recovery_guidance,
+        rollback_supported=False,
+        command_renderer=lambda _parameters, _runtime: [],
+        preflight_checker=lambda _parameters, _runtime: _blocked("manual_only", description),
+        verifier=lambda _run, _plan, _runtime: VerificationDecision.failed("Manual-only actions are never executed by Loofi."),
+        operation_class="manual_only",
+        supported_variants=frozenset({"traditional", "atomic"}),
+        reboot_policy=reboot_policy,
+        affected_resources=affected_resources,
+        parameter_validator=parameter_validator,
+    )
+
+
+def _manual_boundary_definitions() -> list[ActionDefinition]:
+    specs = (
+        ("remove-old-kernels", "Remove old kernels", "Kernel removal requires manual boot and rollback review.", ("packages", "boot-state")),
+        ("enable-mac-randomization", "Enable MAC randomization", "Persistent NetworkManager privacy configuration remains guided manual work.", ("networkmanager-config",)),
+        ("disable-mac-randomization", "Disable MAC randomization", "Persistent NetworkManager privacy configuration remains guided manual work.", ("networkmanager-config",)),
+        ("set-battery-limit-80", "Set battery charge limit to 80%", "Persistent battery sysfs and service changes remain guided manual work.", ("battery", "systemd-unit")),
+        ("set-battery-limit-100", "Set battery charge limit to 100%", "Persistent battery sysfs and service changes remain guided manual work.", ("battery", "systemd-unit")),
+        ("restart-audio-session", "Restart audio session", "Restarting user audio services remains an explicit session operation.", ("user-services", "audio")),
+        ("apply-grub-config", "Apply boot-loader configuration", "Boot-loader regeneration remains guided manual work in v18.", ("bootloader", "boot-state")),
+        ("apply-performance-tuning", "Apply performance tuning", "Multi-resource kernel tuning remains guided manual work in v18.", ("kernel-tunables", "power-profile")),
+        ("restore-recovery-point", "Restore recovery point", "Recovery-point restore remains guided manual work in v18.", ("recovery-points", "filesystem")),
+        ("delete-recovery-point", "Delete recovery point", "Recovery-point deletion is destructive and remains guided manual work in v18.", ("recovery-points",)),
+        ("enable-desktop-extension", "Enable desktop extension", "Desktop extension state changes remain guided manual work in v18.", ("desktop-extensions",)),
+        ("disable-desktop-extension", "Disable desktop extension", "Desktop extension state changes remain guided manual work in v18.", ("desktop-extensions",)),
+        ("install-desktop-extension", "Install desktop extension", "Desktop extension installation remains guided manual work in v18.", ("desktop-extensions",)),
+        ("remove-desktop-extension", "Remove desktop extension", "Desktop extension removal remains guided manual work in v18.", ("desktop-extensions",)),
+        ("start-usbguard-service", "Start USBGuard service", "USBGuard service activation remains guided manual work in v18.", ("usbguard", "system-services")),
+        ("enable-firewall-service", "Enable firewall service", "Persistent firewall activation remains guided manual work in v18.", ("firewall", "system-services")),
+        ("disable-firewall-service", "Disable firewall service", "Disabling the host firewall remains guided manual work in v18.", ("firewall", "system-services")),
+        ("remove-fedora-telemetry", "Remove Fedora telemetry packages", "Telemetry package removal requires an exact package review in v18.", ("packages", "telemetry")),
+        ("legacy-cli-manual-review", "Review legacy CLI operation", "Legacy host commands are never executed directly and require a named Action Center workflow.", ("host-system",)),
+        ("legacy-ui-manual-review", "Review legacy interface operation", "This host operation has no executable Haven workflow and remains guided manual work.", ("host-system",)),
+        ("remove-unused-flatpaks", "Remove unused Flatpak runtimes", "Flatpak runtime cleanup remains guided manual work until the exact unused set can be verified.", ("flatpak-runtimes",)),
+        ("enroll-fingerprint", "Enroll fingerprint", "Authentication enrollment remains guided manual work in v18.", ("authentication", "fingerprint-reader")),
+        ("generate-mok-key", "Generate MOK signing key", "Secure Boot key creation remains guided manual work in v18.", ("secure-boot", "signing-keys")),
+        ("enroll-mok-key", "Enroll MOK signing key", "Secure Boot key enrollment requires guided reboot-time verification.", ("secure-boot", "mok-database")),
+    )
+    definitions = [
+        _manual_definition(action_id, title, description, description, resources)
+        for action_id, title, description, resources in specs
+    ]
+    definitions.extend(
+        [
+            _manual_definition(
+                "local-profile-review",
+                "Review imported local profile",
+                "Imported profile data is validated and preserved as a non-executable Action Center review plan.",
+                "Review each setting and use its owning first-party Action Center workflow; profiles never execute commands.",
+                ("local-profiles", "host-system"),
+                parameter_schema={
+                    "profile": {"type": "string", "required": True},
+                    "settings": {"type": "object", "required": True},
+                },
+                parameter_validator=_validate_local_profile,
+            ),
+            _manual_definition(
+                "block-firewall-port",
+                "Block firewall port",
+                "Firewall rule changes require guided review until exact rollback verification is available.",
+                "Review the selected port and protocol, then apply and verify the rule manually.",
+                ("firewall", "network-ports"),
+                parameter_schema={
+                    "port": {"type": "integer", "required": True},
+                    "protocol": {"type": "string", "required": True},
+                },
+                parameter_validator=_validate_firewall_port,
+            ),
+            _manual_definition(
+                "allow-usb-device",
+                "Allow USB device",
+                "Permanent USB device policy changes remain guided manual work in v18.",
+                "Review the exact USBGuard device identifier before changing policy manually.",
+                ("usbguard", "usb-devices"),
+                parameter_schema={"device_id": {"type": "string", "required": True}},
+                parameter_validator=_validate_usb_device,
+            ),
+            _manual_definition(
+                "block-usb-device",
+                "Block USB device",
+                "Permanent USB device policy changes remain guided manual work in v18.",
+                "Review the exact USBGuard device identifier before changing policy manually.",
+                ("usbguard", "usb-devices"),
+                parameter_schema={"device_id": {"type": "string", "required": True}},
+                parameter_validator=_validate_usb_device,
+            ),
+            _manual_definition(
+                "set-grub-timeout",
+                "Set boot menu timeout",
+                "Boot-loader configuration remains guided manual work in v18.",
+                "Review the selected timeout and current boot configuration before editing GRUB manually.",
+                ("bootloader",),
+                parameter_schema={"seconds": {"type": "integer", "required": True}},
+                parameter_validator=_validate_grub_timeout,
+            ),
+            _choice_manual_definition(
+                "set-cpu-governor",
+                "Set CPU governor",
+                "governor",
+                {"conservative", "ondemand", "performance", "powersave", "schedutil", "userspace"},
+                ("cpu-governor",),
+            ),
+            _choice_manual_definition(
+                "set-power-profile",
+                "Set power profile",
+                "profile",
+                {"power-saver", "balanced", "performance"},
+                ("power-profile",),
+            ),
+            _choice_manual_definition(
+                "set-gpu-mode",
+                "Set GPU mode",
+                "mode",
+                {"integrated", "hybrid", "nvidia"},
+                ("gpu-mode", "login-session"),
+                reboot_policy="required",
+            ),
+            _manual_definition(
+                "set-fan-speed",
+                "Set fan control mode",
+                "Direct fan-controller changes remain guided manual work in v18.",
+                "Review hardware compatibility and thermal recovery guidance before applying fan changes manually.",
+                ("fan-controller", "thermal-policy"),
+                parameter_schema={"speed": {"type": "integer", "required": True}},
+                parameter_validator=_validate_fan_speed,
+            ),
+            _choice_manual_definition(
+                "install-developer-tool",
+                "Install developer tool",
+                "tool",
+                {"nvm", "pyenv", "rustup", "vscode_cpp", "vscode_go", "vscode_python", "vscode_rust", "vscode_web"},
+                ("user-development-environment",),
+            ),
+            _manual_definition(
+                "apply-system-profile",
+                "Apply system profile",
+                "Profiles may combine host changes and must remain guided manual plans in v18.",
+                "Review every setting in the selected local profile and create separate executable plans where available.",
+                ("system-profile", "host-system"),
+                parameter_schema={"profile": {"type": "string", "required": True}},
+                parameter_validator=lambda values: _validate_identifier(values, "profile"),
+            ),
+            _manual_definition(
+                "configure-hostname-privacy",
+                "Configure DHCP hostname privacy",
+                "Persistent NetworkManager connection changes remain guided manual work in v18.",
+                "Review the exact connection and DHCP hostname policy before changing it manually.",
+                ("network-connections", "dhcp"),
+                parameter_schema={
+                    "connection": {"type": "string", "required": True},
+                    "hidden": {"type": "boolean", "required": True},
+                },
+                parameter_validator=_validate_hostname_privacy,
+            ),
+            _manual_definition(
+                "configure-network-dns",
+                "Configure connection DNS",
+                "Connection-specific DNS changes remain guided manual work in v18.",
+                "Review the exact connection and resolver addresses before changing NetworkManager manually.",
+                ("network-connections", "dns"),
+                parameter_schema={
+                    "connection": {"type": "string", "required": True},
+                    "dns": {"type": "string", "required": True},
+                },
+                parameter_validator=_validate_network_dns,
+            ),
+            _manual_definition(
+                "service-control",
+                "Control system service",
+                "General service state changes remain guided manual work; failed-service restart has a separate verified workflow.",
+                "Review the exact unit, scope, dependencies, and journal before changing service state manually.",
+                ("system-services",),
+                parameter_schema={
+                    "service": {"type": "string", "required": True},
+                    "action": {"type": "string", "required": True},
+                    "scope": {"type": "string", "required": True},
+                },
+                parameter_validator=_validate_service_control,
+            ),
+            _manual_definition(
+                "configure-kernel-parameter",
+                "Configure kernel parameter",
+                "Kernel command-line changes remain guided manual work in v18.",
+                "Review the exact parameter and a tested boot recovery path before editing the kernel command line.",
+                ("kernel-command-line", "boot-state"),
+                parameter_schema={
+                    "parameter": {"type": "string", "required": True},
+                    "enabled": {"type": "boolean", "required": True},
+                },
+                parameter_validator=_validate_kernel_parameter,
+                reboot_policy="required",
+            ),
+            _manual_definition(
+                "restore-grub-backup",
+                "Restore GRUB backup",
+                "Boot-loader restoration is destructive and remains guided manual work in v18.",
+                "Verify the selected backup outside the active boot path and retain recovery media before restoring manually.",
+                ("bootloader", "boot-state"),
+                parameter_schema={"backup": {"type": "string", "required": True}},
+                parameter_validator=lambda values: _validate_identifier(values, "backup"),
+                reboot_policy="required",
+            ),
+            _manual_definition(
+                "configure-zram",
+                "Configure ZRAM",
+                "Persistent ZRAM generator changes remain guided manual work in v18.",
+                "Review memory pressure and recovery guidance before changing ZRAM configuration manually.",
+                ("zram", "system-services"),
+                parameter_schema={
+                    "size_percent": {"type": "integer", "required": True},
+                    "algorithm": {"type": "string", "required": True},
+                },
+                parameter_validator=_validate_zram,
+                reboot_policy="may_require",
+            ),
+        ]
+    )
+    return definitions
+
+
+def _choice_manual_definition(
+    action_id: str,
+    title: str,
+    parameter: str,
+    allowed: set[str],
+    resources: tuple[str, ...],
+    *,
+    reboot_policy: Literal["none", "may_require", "required"] = "none",
+) -> ActionDefinition:
+    description = f"{title} remains guided manual work until preflight and verification are hardware-aware."
+    return _manual_definition(
+        action_id,
+        title,
+        description,
+        description,
+        resources,
+        parameter_schema={parameter: {"type": "string", "required": True}},
+        parameter_validator=lambda values: _validate_choice(values, parameter, allowed),
+        reboot_policy=reboot_policy,
+    )
+
+
+def _validate_choice(parameters: Mapping[str, Any], name: str, allowed: set[str]) -> PolicyDecision:
+    if parameters.get(name) not in allowed:
+        return _blocked("invalid_choice", f"Parameter '{name}' must be one of: {', '.join(sorted(allowed))}.")
+    return _allowed("parameters_valid", f"Parameter '{name}' is valid.")
+
+
+def _validate_fan_speed(parameters: Mapping[str, Any]) -> PolicyDecision:
+    speed = parameters.get("speed")
+    if not isinstance(speed, int) or isinstance(speed, bool) or not -1 <= speed <= 100:
+        return _blocked("invalid_fan_speed", "Fan speed must be -1 for automatic mode or 0-100 percent.")
+    return _allowed("parameters_valid", "Fan control value is valid.")
+
+
+def _validate_identifier(parameters: Mapping[str, Any], name: str) -> PolicyDecision:
+    value = parameters.get(name)
+    if not isinstance(value, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", value):
+        return _blocked("invalid_identifier", f"Parameter '{name}' contains rejected characters.")
+    return _allowed("parameters_valid", f"Parameter '{name}' is valid.")
+
+
+def _validate_hostname_privacy(parameters: Mapping[str, Any]) -> PolicyDecision:
+    connection = parameters.get("connection")
+    hidden = parameters.get("hidden")
+    if not isinstance(connection, str) or not _DESCRIPTION_PATTERN.fullmatch(connection):
+        return _blocked("invalid_connection", "Connection name must contain 1-80 printable characters.")
+    if not isinstance(hidden, bool):
+        return _blocked("invalid_privacy_value", "Hostname privacy value must be boolean.")
+    return _allowed("parameters_valid", "Hostname privacy parameters are valid.")
+
+
+def _validate_network_dns(parameters: Mapping[str, Any]) -> PolicyDecision:
+    connection = parameters.get("connection")
+    dns = parameters.get("dns")
+    if not isinstance(connection, str) or not _DESCRIPTION_PATTERN.fullmatch(connection):
+        return _blocked("invalid_connection", "Connection name must contain 1-80 printable characters.")
+    if not isinstance(dns, str) or not re.fullmatch(r"(?:auto|[0-9A-Fa-f:.]+(?:[ ,]+[0-9A-Fa-f:.]+)*)", dns):
+        return _blocked("invalid_dns", "DNS value must be auto or a comma-separated list of IP addresses.")
+    return _allowed("parameters_valid", "DNS parameters are valid.")
+
+
+def _validate_service_control(parameters: Mapping[str, Any]) -> PolicyDecision:
+    action = _validate_choice(parameters, "action", {"start", "stop", "restart", "mask", "unmask"})
+    if not action.allowed:
+        return action
+    if parameters.get("scope") not in {"system", "user"}:
+        return _blocked("invalid_service_scope", "Service scope must be system or user.")
+    return _allowed("parameters_valid", "Service control parameters are valid.")
+
+
+def _validate_kernel_parameter(parameters: Mapping[str, Any]) -> PolicyDecision:
+    parameter = parameters.get("parameter")
+    enabled = parameters.get("enabled")
+    if not isinstance(parameter, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._=-]{0,127}", parameter):
+        return _blocked("invalid_kernel_parameter", "Kernel parameter contains rejected characters.")
+    if not isinstance(enabled, bool):
+        return _blocked("invalid_kernel_state", "Kernel parameter state must be boolean.")
+    return _allowed("parameters_valid", "Kernel parameter request is valid.")
+
+
+def _validate_zram(parameters: Mapping[str, Any]) -> PolicyDecision:
+    size = parameters.get("size_percent")
+    algorithm = parameters.get("algorithm")
+    if not isinstance(size, int) or isinstance(size, bool) or not 10 <= size <= 200:
+        return _blocked("invalid_zram_size", "ZRAM size must be between 10 and 200 percent.")
+    if algorithm not in {"lzo", "lzo-rle", "lz4", "zstd"}:
+        return _blocked("invalid_zram_algorithm", "Unsupported ZRAM algorithm.")
+    return _allowed("parameters_valid", "ZRAM parameters are valid.")
+
+
+def _validate_firewall_port(parameters: Mapping[str, Any]) -> PolicyDecision:
+    port = parameters.get("port")
+    protocol = parameters.get("protocol")
+    if not isinstance(port, int) or isinstance(port, bool) or not 1 <= port <= 65535:
+        return _blocked("invalid_port", "Port must be an integer between 1 and 65535.")
+    if protocol not in {"tcp", "udp"}:
+        return _blocked("invalid_protocol", "Protocol must be tcp or udp.")
+    return _allowed("parameters_valid", "Firewall rule parameters are valid.")
+
+
+def _validate_local_profile(parameters: Mapping[str, Any]) -> PolicyDecision:
+    profile = parameters.get("profile")
+    settings = parameters.get("settings")
+    if not isinstance(profile, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", profile):
+        return _blocked("invalid_profile", "The local profile name contains rejected characters.")
+    try:
+        validate_local_profile(settings)
+    except ValueError as exc:
+        return _blocked("invalid_profile", str(exc))
+    return _allowed("parameters_valid", "Local profile parameters are valid.")
+
+
+def _validate_usb_device(parameters: Mapping[str, Any]) -> PolicyDecision:
+    device_id = parameters.get("device_id")
+    if not isinstance(device_id, str) or not re.fullmatch(r"[A-Za-z0-9:_-]{1,128}", device_id):
+        return _blocked("invalid_usb_device", "USB device identifier is invalid.")
+    return _allowed("parameters_valid", "USB device identifier is valid.")
+
+
+def _validate_grub_timeout(parameters: Mapping[str, Any]) -> PolicyDecision:
+    seconds = parameters.get("seconds")
+    if not isinstance(seconds, int) or isinstance(seconds, bool) or not 0 <= seconds <= 60:
+        return _blocked("invalid_grub_timeout", "Boot timeout must be between 0 and 60 seconds.")
+    return _allowed("parameters_valid", "Boot timeout is valid.")
 
 
 def _application_definition(action_id: str, *, installing: bool) -> ActionDefinition:

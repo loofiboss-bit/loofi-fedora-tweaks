@@ -33,6 +33,7 @@ from typing import Any, Dict, List, Optional
 from core.executor.action_result import ActionResult
 from core.executor.base_executor import BaseActionExecutor
 from core.executor.command_policy import CommandValidationError, validate_command
+from core.execution_policy import ExecutionAuthority, blocked_execution_message, execution_allowed
 
 logger = logging.getLogger(__name__)
 
@@ -74,6 +75,7 @@ class ActionExecutor(BaseActionExecutor):
         timeout: int = COMMAND_TIMEOUT,
         action_id: str = "",
         env: Optional[Dict[str, str]] = None,
+        authority: ExecutionAuthority = "legacy",
     ) -> ActionResult:
         """
         Execute a system command and return a structured result.
@@ -90,6 +92,16 @@ class ActionExecutor(BaseActionExecutor):
             ActionResult containing success status, output, and metadata.
         """
         args = args or []
+
+        if not execution_allowed(command, args, authority=authority):
+            result = ActionResult.fail(
+                blocked_execution_message(command, args),
+                exit_code=126,
+                action_id=action_id,
+                data={"execution_policy": "blocked", "authority": authority},
+            )
+            self._log_action([command, *args], result)
+            return result
 
         # Global dry-run intercept
         if self._dry_run_global:
@@ -160,6 +172,7 @@ class ActionExecutor(BaseActionExecutor):
         timeout: int = COMMAND_TIMEOUT,
         action_id: str = "",
         env: Optional[Dict[str, str]] = None,
+        authority: ExecutionAuthority = "legacy",
     ) -> ActionResult:
         """
         Legacy classmethod API for backward compatibility.
@@ -188,6 +201,7 @@ class ActionExecutor(BaseActionExecutor):
                 timeout=timeout,
                 action_id=action_id,
                 env=env,
+                authority=authority,
             )
 
     def _build_command(

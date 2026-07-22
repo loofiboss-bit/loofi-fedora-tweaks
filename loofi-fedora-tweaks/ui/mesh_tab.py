@@ -9,6 +9,7 @@ Provides three shell-selected route pages:
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -35,15 +36,7 @@ from ui.components import DetailsDisclosure, PageScaffold
 class MeshTab(QWidget, PluginInterface):
     """Loofi Link tab with Devices, Clipboard, and File Drop sub-tabs."""
 
-    _METADATA = PluginMetadata(
-        id="mesh",
-        name="Loofi Link",
-        description="Mesh network device discovery, clipboard sync, and file transfer between peers.",
-        category="Network",
-        icon="network-connectivity",
-        badge="advanced",
-        order=20,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA

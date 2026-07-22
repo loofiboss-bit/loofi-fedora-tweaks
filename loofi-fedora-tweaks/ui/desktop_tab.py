@@ -7,6 +7,8 @@ Sub-tabs:
 - Theming: KDE global themes, icon themes, fonts
 """
 
+import typing
+
 import logging
 from pathlib import Path
 
@@ -14,6 +16,7 @@ from PyQt6.QtCore import QTimer
 
 logger = logging.getLogger(__name__)
 from core.plugins.metadata import PluginMetadata  # noqa: E402
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtWidgets import (  # noqa: E402
     QComboBox,
     QFrame,
@@ -34,7 +37,6 @@ from services.desktop import (  # noqa: E402
     KWinManager,  # noqa: E402
     TilingManager,
 )
-from utils.commands import PrivilegedCommand  # noqa: E402
 
 from ui.base_tab import BaseTab  # noqa: E402
 from ui.components import PageScaffold  # noqa: E402
@@ -44,27 +46,19 @@ from ui.tooltips import DESK_FONTS, DESK_THEME  # noqa: F401, E402
 class DesktopTab(BaseTab):
     """Consolidated Desktop tab: Window Manager + Theming."""
 
-    _METADATA = PluginMetadata(
-        id="desktop",
-        name="Desktop",
-        description="Window manager configuration, tiling setup, theming, and dotfile synchronization.",
-        category="Appearance",
-        icon="appearance-theme",
-        badge="",
-        order=10,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialize Desktop routes under the application section navigator."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -79,7 +73,7 @@ class DesktopTab(BaseTab):
 
         self.add_output_disclosure(layout, self.tr("Show desktop command output"))
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select a Desktop page from a stable route ID."""
         route_to_index = {
             "desktop": 1,
@@ -97,7 +91,7 @@ class DesktopTab(BaseTab):
     # WINDOW MANAGER SUB-TAB (from DirectorTab)
     # ================================================================
 
-    def _create_wm_tab(self) -> QWidget:
+    def _create_wm_tab(self: typing.Any) -> QWidget:
         """Create the Window Manager sub-tab content."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -125,7 +119,7 @@ class DesktopTab(BaseTab):
         scroll.setWidget(scaffold)
         return scroll
 
-    def _create_compositor_section(self) -> QGroupBox:
+    def _create_compositor_section(self: typing.Any) -> QGroupBox:
         """Create compositor detection section."""
         group = QGroupBox(self.tr("Compositor"))
         layout = QVBoxLayout(group)
@@ -168,7 +162,7 @@ class DesktopTab(BaseTab):
 
         return group
 
-    def _create_tiling_section(self) -> QGroupBox:
+    def _create_tiling_section(self: typing.Any) -> QGroupBox:
         """Create tiling configuration section."""
         group = QGroupBox(self.tr("Tiling Configuration"))
         layout = QVBoxLayout(group)
@@ -223,7 +217,7 @@ class DesktopTab(BaseTab):
 
         return group
 
-    def _create_workspaces_section(self) -> QGroupBox:
+    def _create_workspaces_section(self: typing.Any) -> QGroupBox:
         """Create workspace templates section."""
         group = QGroupBox(self.tr("Workspace Templates"))
         layout = QVBoxLayout(group)
@@ -260,7 +254,7 @@ class DesktopTab(BaseTab):
 
         return group
 
-    def _create_dotfiles_section(self) -> QGroupBox:
+    def _create_dotfiles_section(self: typing.Any) -> QGroupBox:
         """Create dotfiles sync section."""
         group = QGroupBox(self.tr("Dotfile Sync"))
         layout = QVBoxLayout(group)
@@ -301,7 +295,7 @@ class DesktopTab(BaseTab):
 
     # -- Window Manager actions --
 
-    def _apply_keybinding_preset(self):
+    def _apply_keybinding_preset(self: typing.Any) -> typing.Any:
         """Apply selected keybinding preset."""
         preset = self.preset_combo.currentData()
 
@@ -313,27 +307,27 @@ class DesktopTab(BaseTab):
 
         self.append_output(result.message + "\n")
 
-    def _enable_kde_tiling(self):
+    def _enable_kde_tiling(self: typing.Any) -> typing.Any:
         """Enable KDE quick tiling."""
         result = KWinManager.enable_quick_tiling()
         self.append_output(result.message + "\n")
 
-    def _install_kwin_script(self):
+    def _install_kwin_script(self: typing.Any) -> typing.Any:
         """Install KWin tiling script."""
         result = KWinManager.install_tiling_script()
         self.append_output(result.message + "\n")
 
-    def _reconfigure_kwin(self):
+    def _reconfigure_kwin(self: typing.Any) -> typing.Any:
         """Reconfigure KWin."""
         result = KWinManager.reconfigure_kwin()
         self.append_output(result.message + "\n")
 
-    def _reload_wm_config(self):
+    def _reload_wm_config(self: typing.Any) -> typing.Any:
         """Reload tiling WM config."""
         result = TilingManager.reload_config()
         self.append_output(result.message + "\n")
 
-    def _preview_template(self):
+    def _preview_template(self: typing.Any) -> typing.Any:
         """Preview workspace template."""
         template_key = self.template_combo.currentData()
         template = TilingManager.WORKSPACE_TEMPLATES.get(template_key, {})
@@ -346,24 +340,24 @@ class DesktopTab(BaseTab):
 
         self.template_preview.setText("\n".join(preview_lines))
 
-    def _generate_template_config(self):
+    def _generate_template_config(self: typing.Any) -> typing.Any:
         """Generate config for selected template."""
         template_key = self.template_combo.currentData()
         result = TilingManager.generate_workspace_template(template_key)
 
         if result.success:
-            self.template_preview.setText(result.data.get("config", ""))
+            self.template_preview.setText((result.data or {}).get("config", ""))
             self.append_output(self.tr("Config generated for {}. Copy to your config file.\n").format(template_key))
         else:
             self.append_output(result.message + "\n")
 
-    def _create_dotfile_repo(self):
+    def _create_dotfile_repo(self: typing.Any) -> typing.Any:
         """Create dotfile repository."""
         repo_path = Path(self.dotfile_path.text())
         result = DotfileManager.create_dotfile_repo(repo_path)
         self.append_output(result.message + "\n")
 
-    def _sync_dotfile(self, name: str):
+    def _sync_dotfile(self: typing.Any, name: str) -> typing.Any:
         """Sync a dotfile to repo."""
         repo_path = Path(self.dotfile_path.text())
         result = DotfileManager.sync_dotfile(name, repo_path)
@@ -373,7 +367,7 @@ class DesktopTab(BaseTab):
     # THEMING SUB-TAB (from ThemingTab)
     # ================================================================
 
-    def _create_theming_tab(self) -> QWidget:
+    def _create_theming_tab(self: typing.Any) -> QWidget:
         """Create the Theming sub-tab content."""
         widget = PageScaffold(
             self.tr("Appearance"),
@@ -415,8 +409,8 @@ class DesktopTab(BaseTab):
         btn_papirus = QPushButton(self.tr("Install Papirus Icons"))
         btn_papirus.setAccessibleName(self.tr("Install Papirus Icons"))
         btn_papirus.clicked.connect(
-            lambda: self.run_command(
-                *PrivilegedCommand.dnf("install", "papirus-icon-theme"),
+            lambda: self.actionCenterRequested.emit(
+                "install-application", {"source": "fedora", "package_id": "papirus-icon-theme"}
             )
         )
         icon_layout.addWidget(btn_papirus)
@@ -424,8 +418,8 @@ class DesktopTab(BaseTab):
         btn_tela = QPushButton(self.tr("Install Tela Icons"))
         btn_tela.setAccessibleName(self.tr("Install Tela Icons"))
         btn_tela.clicked.connect(
-            lambda: self.run_command(
-                *PrivilegedCommand.dnf("install", "tela-icon-theme"),
+            lambda: self.actionCenterRequested.emit(
+                "install-application", {"source": "fedora", "package_id": "tela-icon-theme"}
             )
         )
         icon_layout.addWidget(btn_tela)
@@ -441,8 +435,8 @@ class DesktopTab(BaseTab):
         btn_firacode.setAccessibleName(self.tr("FiraCode Nerd Font"))
         btn_firacode.setToolTip(DESK_FONTS)
         btn_firacode.clicked.connect(
-            lambda: self.run_command(
-                *PrivilegedCommand.dnf("install", "fira-code-fonts"),
+            lambda: self.actionCenterRequested.emit(
+                "install-application", {"source": "fedora", "package_id": "fira-code-fonts"}
             )
         )
         fonts_layout.addWidget(btn_firacode)
@@ -451,8 +445,8 @@ class DesktopTab(BaseTab):
         btn_jetbrains.setAccessibleName(self.tr("JetBrains Mono"))
         btn_jetbrains.setToolTip(DESK_FONTS)
         btn_jetbrains.clicked.connect(
-            lambda: self.run_command(
-                *PrivilegedCommand.dnf("install", "jetbrains-mono-fonts"),
+            lambda: self.actionCenterRequested.emit(
+                "install-application", {"source": "fedora", "package_id": "jetbrains-mono-fonts"}
             )
         )
         fonts_layout.addWidget(btn_jetbrains)
@@ -464,7 +458,7 @@ class DesktopTab(BaseTab):
 
     # -- Theming actions --
 
-    def _apply_theme(self):
+    def _apply_theme(self: typing.Any) -> typing.Any:
         """Apply the selected KDE global theme."""
         theme_name = self.theme_combo.currentText()
         theme_id = self.themes.get(theme_name, "org.kde.breeze.desktop")
@@ -478,7 +472,7 @@ class DesktopTab(BaseTab):
     # DISPLAY CONFIGURATION SUB-TAB (v37.0 Pinnacle)
     # ================================================================
 
-    def _create_display_tab(self) -> QWidget:
+    def _create_display_tab(self: typing.Any) -> QWidget:
         """Create the display/monitor configuration sub-tab."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -541,7 +535,7 @@ class DesktopTab(BaseTab):
 
         return scroll
 
-    def _detect_displays(self):
+    def _detect_displays(self: typing.Any) -> typing.Any:
         """Detect connected displays."""
         try:
             from services.desktop import WaylandDisplayManager
@@ -562,7 +556,7 @@ class DesktopTab(BaseTab):
             self.display_list.clear()
             self.display_list.addItem(f"Error: {e}")
 
-    def _load_session_info(self):
+    def _load_session_info(self: typing.Any) -> typing.Any:
         """Load session type info."""
         try:
             from services.desktop import WaylandDisplayManager
@@ -579,7 +573,7 @@ class DesktopTab(BaseTab):
             logger.debug("Failed to load session info: %s", e)
             self.display_session_info.setText(self.tr("Session info unavailable"))
 
-    def _enable_fractional(self):
+    def _enable_fractional(self: typing.Any) -> typing.Any:
         """Enable fractional scaling."""
         try:
             from services.desktop import WaylandDisplayManager
@@ -589,7 +583,7 @@ class DesktopTab(BaseTab):
         except (RuntimeError, OSError, ValueError) as e:
             self.append_output(f"[ERROR] {e}\n")
 
-    def _disable_fractional(self):
+    def _disable_fractional(self: typing.Any) -> typing.Any:
         """Disable fractional scaling."""
         try:
             from services.desktop import WaylandDisplayManager

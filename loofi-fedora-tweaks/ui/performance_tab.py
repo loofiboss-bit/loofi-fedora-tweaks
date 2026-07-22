@@ -1,9 +1,8 @@
 """Performance Auto-Tuner presentation for workload-guided tuning."""
 
-import time
-
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import QTimer
+from core.product_catalog import plugin_metadata_for_module
+from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QGridLayout,
     QGroupBox,
@@ -16,7 +15,6 @@ from PyQt6.QtWidgets import (
 )
 from utils.auto_tuner import (
     AutoTuner,
-    TuningHistoryEntry,
     TuningRecommendation,
     WorkloadProfile,
 )
@@ -32,15 +30,8 @@ logger = get_logger(__name__)
 class PerformanceTab(BaseTab):
     """Performance auto-tuner tab with workload detection and tuning."""
 
-    _METADATA = PluginMetadata(
-        id="performance",
-        name="Performance",
-        description="Auto-tuner engine for workload detection, kernel tunables, and performance recommendations.",
-        category="Hardware",
-        icon="cpu-performance",
-        badge="advanced",
-        order=20,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
+    actionCenterRequested = pyqtSignal(str, object)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -224,26 +215,8 @@ class PerformanceTab(BaseTab):
             self.append_output("No recommendation to apply. Detect workload first.\n")
             return
 
-        rec = self._current_rec
-        binary, args, desc = AutoTuner.apply_recommendation(rec)
-        self.run_command(binary, args, desc)
-
-        # Log to history
-        entry = TuningHistoryEntry(
-            timestamp=time.time(),
-            workload=rec.workload,
-            recommendations={
-                "governor": rec.governor,
-                "swappiness": rec.swappiness,
-                "io_scheduler": rec.io_scheduler,
-                "thp": rec.thp,
-            },
-            applied=True,
-        )
-        try:
-            AutoTuner.save_tuning_entry(entry)
-        except (OSError, IOError) as e:
-            logger.debug("Failed to save tuning history entry: %s", e)
+        self.actionCenterRequested.emit("apply-performance-tuning", {})
+        self.append_output(self.tr("Review the multi-resource tuning guidance in Action Center.\n"))
 
     def _refresh_history(self):
         """Update the history table."""

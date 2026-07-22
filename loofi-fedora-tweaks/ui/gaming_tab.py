@@ -1,6 +1,8 @@
 """Gaming optimization tools and package operations."""
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QGroupBox,
     QLabel,
@@ -9,7 +11,6 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
     QWidget,
 )
-from utils.commands import PrivilegedCommand
 from utils.gaming_utils import GamingUtils
 from utils.log import get_logger
 
@@ -21,15 +22,9 @@ logger = get_logger(__name__)
 
 class GamingTab(BaseTab):
 
-    _METADATA = PluginMetadata(
-        id="gaming",
-        name="Gaming",
-        description="Gaming optimization tools including driver setup and performance tweaks.",
-        category="Hardware",
-        icon="hardware-performance",
-        badge="",
-        order=40,
-    )
+    actionCenterRequested = pyqtSignal(str, object)
+
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -96,10 +91,8 @@ class GamingTab(BaseTab):
         self.check_gamemode_status()
 
     def install_gamemode(self):
-        binary, args, desc = PrivilegedCommand.dnf("install", "gamemode")
-        self.run_command(binary, args, desc)
-        QMessageBox.information(self, self.tr("Installing"),
-                                self.tr("GameMode installation started."))
+        self.actionCenterRequested.emit("install-application", {"source": "fedora", "package_id": "gamemode"})
+        QMessageBox.information(self, self.tr("Review required"), self.tr("Review the GameMode install plan in Action Center."))
 
     def check_gamemode_status(self):
         status = GamingUtils.get_gamemode_status()
@@ -120,20 +113,20 @@ class GamingTab(BaseTab):
                 self.tr("Status check failed"))
 
     def install_mangohud(self):
-        binary, args, desc = PrivilegedCommand.dnf("install", "mangohud", "goverlay")
-        self.run_command(binary, args, desc)
-        QMessageBox.information(self, self.tr("Installing"),
-                                self.tr("MangoHud & Goverlay installation started."))
+        self.actionCenterRequested.emit("install-application", {"source": "fedora", "package_id": "mangohud"})
+        QMessageBox.information(
+            self,
+            self.tr("Review required"),
+            self.tr("Review the MangoHud install plan in Action Center. Goverlay can be planned separately."),
+        )
 
     def install_protonup(self):
-        self.run_command("flatpak",
-                         ["install", "flathub", "net.davidotek.pupgui2", "-y"],
-                         self.tr("Installing ProtonUp-Qt..."))
-        QMessageBox.information(self, self.tr("Installing"),
-                                self.tr("ProtonUp-Qt installation started."))
+        self.actionCenterRequested.emit(
+            "install-application",
+            {"source": "flatpak", "package_id": "net.davidotek.pupgui2"},
+        )
+        QMessageBox.information(self, self.tr("Review required"), self.tr("Review the ProtonUp-Qt install plan in Action Center."))
 
     def install_steam_devices(self):
-        binary, args, desc = PrivilegedCommand.dnf("install", "steam-devices")
-        self.run_command(binary, args, desc)
-        QMessageBox.information(self, self.tr("Installing"),
-                                self.tr("Steam Devices support installation started."))
+        self.actionCenterRequested.emit("install-application", {"source": "fedora", "package_id": "steam-devices"})
+        QMessageBox.information(self, self.tr("Review required"), self.tr("Review the Steam Devices install plan in Action Center."))

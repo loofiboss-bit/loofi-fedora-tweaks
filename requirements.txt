@@ -1,5 +1,6 @@
 # Generated from pyproject.toml by scripts/sync_requirements.py; do not edit.
 PyQt6>=6.7
+keyring>=25.0
 fastapi>=0.128
 uvicorn>=0.30
 PyJWT>=2.13.0

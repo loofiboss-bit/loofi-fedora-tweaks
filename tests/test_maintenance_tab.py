@@ -96,6 +96,7 @@ def _install_stubs():
     qt_widgets.QListWidget = _Dummy
     qt_widgets.QListWidgetItem = _StubQListWidgetItem
     qt_widgets.QFrame = _Dummy
+    qt_widgets.QComboBox = _Dummy
     qt_widgets.QMessageBox = _StubQMessageBox
     qt_widgets.QInputDialog = type(
         "QInputDialog",
@@ -319,6 +320,9 @@ def _uninstall_stubs():
 # ``sys.modules``.
 _components_layout_module = importlib.import_module("ui.components.layout")
 _original_page_scaffold = _components_layout_module.PageScaffold
+for _split_module in ("ui.maintenance_updates", "ui.maintenance_action_center"):
+    _original_modules[_split_module] = sys.modules.get(_split_module)
+    sys.modules.pop(_split_module, None)
 _install_stubs()
 _components_layout_module.PageScaffold = _page_scaffold_stub
 sys.modules.pop("ui.maintenance_tab", None)
@@ -388,7 +392,7 @@ class TestMaintenanceTabMetadata(unittest.TestCase):
 
     @patch("ui.maintenance_tab.SystemManager.is_atomic", return_value=False)
     def test_action_center_constructs_once_only_after_subroute_opens(self, _atomic):
-        with patch("ui.maintenance_tab._ActionCenterSubTab") as action_center:
+        with patch.object(_mt, "_ActionCenterSubTab") as action_center:
             action_center.return_value = _mt.QWidget()
             tab = _mt.MaintenanceTab()
             action_index = next(
@@ -414,7 +418,7 @@ class TestMaintenanceTabMetadata(unittest.TestCase):
     def test_search_preselection_loads_action_center_without_planning(self, _atomic):
         action_center = MagicMock()
         action_center.preselect_action.return_value = True
-        with patch("ui.maintenance_tab._ActionCenterSubTab", return_value=action_center):
+        with patch.object(_mt, "_ActionCenterSubTab", return_value=action_center):
             tab = _mt.MaintenanceTab()
 
             self.assertTrue(tab.preselect_action("fstrim-all"))
@@ -546,7 +550,7 @@ class TestActionCenterSubTab(unittest.TestCase):
         item = self._item()
         item.id = action_id
         item.title = action_id
-        item.source = "catalog:v17"
+        item.source = "catalog:v18"
         item.command_preview = []
         item.risk_level = "low" if action_id != "restart-failed-service" else "medium"
         return item
@@ -732,7 +736,9 @@ class TestActionCenterSubTab(unittest.TestCase):
 
         tab._run_current_plan()
 
-        tab.runner.run_command.assert_called_once_with("pkexec", ["dnf", "clean", "all"])
+        tab.runner.run_command.assert_called_once_with(
+            "pkexec", ["dnf", "clean", "all"], authority="action_center"
+        )
         orchestrator.complete_run.assert_not_called()
 
         tab.on_command_finished(0)
@@ -1312,21 +1318,21 @@ class TestCleanupSubTab(unittest.TestCase):
 
     # -- check_timeshift --
 
-    @patch("ui.maintenance_tab.cached_which", return_value="/usr/bin/timeshift")
-    def test_check_timeshift_found(self, mock_which):
+    def test_check_timeshift_found(self):
         """check_timeshift() runs timeshift --list when installed."""
         self.tab.run_command = MagicMock()
-        self.tab.check_timeshift()
+        with patch.dict(self.tab.check_timeshift.__globals__, {"cached_which": MagicMock(return_value="/usr/bin/timeshift")}):
+            self.tab.check_timeshift()
         self.tab.run_command.assert_called_once()
         args = self.tab.run_command.call_args[0]
-        self.assertEqual(args[0], "pkexec")
-        self.assertIn("timeshift", args[1])
+        self.assertEqual(args[0], "timeshift")
+        self.assertIn("--list", args[1])
 
-    @patch("ui.maintenance_tab.cached_which", return_value=None)
-    def test_check_timeshift_not_found(self, mock_which):
+    def test_check_timeshift_not_found(self):
         """check_timeshift() reports not found when timeshift missing."""
         self.tab.append_output = MagicMock()
-        self.tab.check_timeshift()
+        with patch.dict(self.tab.check_timeshift.__globals__, {"cached_which": MagicMock(return_value=None)}):
+            self.tab.check_timeshift()
         call_args = self.tab.append_output.call_args[0][0]
         self.assertIn("not found", call_args.lower())
 
@@ -1538,30 +1544,31 @@ class TestOverlaysSubTab(unittest.TestCase):
         "get_layered_packages",
         staticmethod(lambda: []),
     )
-    def test_remove_selected_confirm_yes_success(self):
-        """remove_selected() calls pkg_manager.remove on confirmation."""
+    def test_remove_selected_confirm_yes_creates_action_center_request(self):
+        """Overlay removal requests a bounded Action Center plan."""
         tab, mock_pm = self._make_tab()
+        tab.actionCenterRequested.emit.reset_mock()
         mock_item = MagicMock()
         mock_item.text.return_value = "\U0001f4e6 vim"
         tab.packages_list.currentItem.return_value = mock_item
-        mock_pm.remove.return_value = MagicMock(success=True, message="OK")
         tab.remove_selected()
-        mock_pm.remove.assert_called_once_with(["vim"])
+        mock_pm.remove.assert_not_called()
+        tab.actionCenterRequested.emit.assert_called_once_with(
+            "remove-application", {"source": "fedora", "package_id": "vim"}
+        )
 
     @patch.object(
         _QMessageBox,
         "question",
         staticmethod(lambda *a, **kw: _QMessageBox.StandardButton.Yes),
     )
-    def test_remove_selected_confirm_yes_failure(self):
-        """remove_selected() shows error on removal failure."""
+    def test_remove_selected_does_not_execute_legacy_failure_path(self):
         tab, mock_pm = self._make_tab()
         mock_item = MagicMock()
         mock_item.text.return_value = "\U0001f4e6 vim"
         tab.packages_list.currentItem.return_value = mock_item
-        mock_pm.remove.return_value = MagicMock(success=False, message="Permission denied")
         tab.remove_selected()
-        mock_pm.remove.assert_called_once_with(["vim"])
+        mock_pm.remove.assert_not_called()
 
     # -- reset_to_base --
 
@@ -1591,24 +1598,20 @@ class TestOverlaysSubTab(unittest.TestCase):
         "get_layered_packages",
         staticmethod(lambda: []),
     )
-    def test_reset_to_base_confirm_yes_success(self):
-        """reset_to_base() calls pkg_manager.reset_to_base on confirmation."""
+    def test_reset_to_base_confirm_yes_remains_manual_only(self):
         tab, mock_pm = self._make_tab()
-        mock_pm.reset_to_base.return_value = MagicMock(success=True, message="Reset complete")
         tab.reset_to_base()
-        mock_pm.reset_to_base.assert_called_once()
+        mock_pm.reset_to_base.assert_not_called()
 
     @patch.object(
         _QMessageBox,
         "warning",
         staticmethod(lambda *a, **kw: _QMessageBox.StandardButton.Yes),
     )
-    def test_reset_to_base_confirm_yes_failure(self):
-        """reset_to_base() shows error dialog on failure."""
+    def test_reset_to_base_has_no_legacy_execution_path(self):
         tab, mock_pm = self._make_tab()
-        mock_pm.reset_to_base.return_value = MagicMock(success=False, message="Error resetting")
         tab.reset_to_base()
-        mock_pm.reset_to_base.assert_called_once()
+        mock_pm.reset_to_base.assert_not_called()
 
     # -- reboot_system --
 
@@ -1628,11 +1631,11 @@ class TestOverlaysSubTab(unittest.TestCase):
         "question",
         staticmethod(lambda *a, **kw: _QMessageBox.StandardButton.Yes),
     )
-    def test_reboot_system_confirm_yes(self):
-        """reboot_system() runs pkexec systemctl reboot when confirmed."""
+    def test_reboot_system_confirm_yes_remains_manual(self):
+        """Haven never initiates reboot from the application."""
         tab, _ = self._make_tab()
         tab.reboot_system()
-        tab.reboot_runner.run_command.assert_called_once_with("pkexec", ["systemctl", "reboot"])
+        tab.reboot_runner.run_command.assert_not_called()
 
 
 # ===================================================================
@@ -1756,14 +1759,15 @@ class TestSmartUpdatesSubTab(unittest.TestCase):
     @patch("utils.update_manager.UpdateManager.get_schedule_commands")
     @patch("utils.update_manager.UpdateManager.schedule_update")
     def test_schedule_update_success(self, mock_schedule, mock_cmds):
-        """_schedule_update() runs schedule commands on success."""
+        """Scheduling is retired and never runs commands."""
         mock_schedule.return_value = MagicMock()
         mock_cmds.return_value = [
             ("pkexec", ["systemctl", "enable", "test.timer"], "Enabling timer"),
         ]
         self.tab._append_output = MagicMock()
         self.tab._schedule_update()
-        self.tab.runner.run_command.assert_called_once_with("pkexec", ["systemctl", "enable", "test.timer"])
+        self.tab.runner.run_command.assert_not_called()
+        mock_schedule.assert_not_called()
 
     @patch("utils.update_manager.UpdateManager.get_schedule_commands")
     @patch("utils.update_manager.UpdateManager.schedule_update")
@@ -1776,7 +1780,7 @@ class TestSmartUpdatesSubTab(unittest.TestCase):
         ]
         self.tab._append_output = MagicMock()
         self.tab._schedule_update()
-        self.assertEqual(self.tab.runner.run_command.call_count, 2)
+        self.tab.runner.run_command.assert_not_called()
 
     @patch(
         "utils.update_manager.UpdateManager.schedule_update",
@@ -1787,7 +1791,7 @@ class TestSmartUpdatesSubTab(unittest.TestCase):
         self.tab._append_output = MagicMock()
         self.tab._schedule_update()
         call_args = self.tab._append_output.call_args[0][0]
-        self.assertIn("ERROR", call_args)
+        self.assertIn("disabled", call_args)
 
     # -- _rollback_last --
 
@@ -1801,7 +1805,8 @@ class TestSmartUpdatesSubTab(unittest.TestCase):
         )
         self.tab._append_output = MagicMock()
         self.tab._rollback_last()
-        self.tab.runner.run_command.assert_called_once_with("pkexec", ["dnf", "history", "undo", "last", "-y"])
+        self.tab.runner.run_command.assert_not_called()
+        mock_rollback.assert_not_called()
 
     @patch("utils.update_manager.UpdateManager.rollback_last")
     def test_rollback_last_appends_description(self, mock_rollback):
@@ -1814,7 +1819,7 @@ class TestSmartUpdatesSubTab(unittest.TestCase):
         self.tab._append_output = MagicMock()
         self.tab._rollback_last()
         desc_call = self.tab._append_output.call_args[0][0]
-        self.assertIn("Rolling back", desc_call)
+        self.assertIn("manual-only", desc_call)
 
     @patch(
         "utils.update_manager.UpdateManager.rollback_last",
@@ -1825,7 +1830,7 @@ class TestSmartUpdatesSubTab(unittest.TestCase):
         self.tab._append_output = MagicMock()
         self.tab._rollback_last()
         call_args = self.tab._append_output.call_args[0][0]
-        self.assertIn("ERROR", call_args)
+        self.assertIn("manual-only", call_args)
 
 
 # ===================================================================
@@ -1918,24 +1923,28 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        path = os.path.join(
+        ui_root = os.path.join(
             os.path.dirname(__file__),
             "..",
             "loofi-fedora-tweaks",
             "ui",
-            "maintenance_tab.py",
         )
-        with open(path, "r", encoding="utf-8") as fh:
-            cls.source = fh.read()
+        cls.source = "\n".join(
+            open(os.path.join(ui_root, name), "r", encoding="utf-8").read()
+            for name in (
+                "maintenance_tab.py",
+                "maintenance_updates.py",
+                "maintenance_action_center.py",
+            )
+        )
 
     def test_inherits_base_tab(self):
         """MaintenanceTab inherits from BaseTab."""
         self.assertIn("class MaintenanceTab(BaseTab)", self.source)
 
     def test_has_metadata(self):
-        """MaintenanceTab defines _METADATA."""
-        self.assertIn("_METADATA", self.source)
-        self.assertIn('"maintenance"', self.source)
+        """MaintenanceTab projects metadata from the canonical catalog."""
+        self.assertIn("_METADATA = plugin_metadata_for_module(__name__)", self.source)
 
     def test_has_updates_subtab(self):
         """Module contains _UpdatesSubTab class."""
@@ -1953,9 +1962,9 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
         """Module contains _SmartUpdatesSubTab class."""
         self.assertIn("class _SmartUpdatesSubTab", self.source)
 
-    def test_uses_command_runner(self):
-        """Module uses CommandRunner."""
-        self.assertIn("CommandRunner", self.source)
+    def test_action_center_is_the_only_execution_authority(self):
+        """Maintenance host execution declares the Action Center authority."""
+        self.assertIn('authority="action_center"', self.source)
 
     def test_uses_pkexec_not_sudo(self):
         """Module uses pkexec, never sudo."""
@@ -2036,7 +2045,21 @@ class TestAssuranceHandoffs(unittest.TestCase):
 
 def tearDownModule():
     """Remove the stubbed module without replaying stale collection snapshots."""
-    sys.modules.pop("ui.maintenance_tab", None)
+    for name in (
+        "ui.maintenance_tab",
+        "ui.maintenance_updates",
+        "ui.maintenance_action_center",
+    ):
+        sys.modules.pop(name, None)
+    ui_package = sys.modules.get("ui")
+    if ui_package is not None:
+        for attribute in (
+            "maintenance_tab",
+            "maintenance_updates",
+            "maintenance_action_center",
+        ):
+            if hasattr(ui_package, attribute):
+                delattr(ui_package, attribute)
 
 
 if __name__ == "__main__":

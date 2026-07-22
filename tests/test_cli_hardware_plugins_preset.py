@@ -49,66 +49,43 @@ class TestHardwareCommand(unittest.TestCase):
 
 
 class TestPluginsCommand(unittest.TestCase):
-    """Tests for cmd_plugins."""
+    """Tests for read-only legacy extension inventory."""
 
     @patch('cli.main._print')
-    @patch('cli.main.PluginLoader')
-    def test_cmd_plugins_list_text(self, mock_loader_cls, mock_print):
-        mock_loader = MagicMock()
-        mock_loader.list_plugins.return_value = [
-            {
-                'name': 'demo',
-                'enabled': True,
-                'manifest': {'version': '1.2.3', 'description': 'Demo plugin'},
-            }
-        ]
-        mock_loader_cls.return_value = mock_loader
-
+    @patch('cli.main.LegacyExtensionService.list_extensions', return_value=[])
+    def test_cmd_plugins_list_text(self, mock_extensions, mock_print):
         with patch('cli.main._json_output', False):
             rc = cmd_plugins(argparse.Namespace(action='list', name=None))
 
         self.assertEqual(rc, 0)
-        self.assertTrue(mock_print.called)
+        self.assertIn('execution disabled', mock_print.call_args_list[0].args[0])
 
     @patch('cli.main._output_json')
-    @patch('cli.main.PluginLoader')
-    def test_cmd_plugins_list_json(self, mock_loader_cls, mock_output_json):
-        mock_loader = MagicMock()
-        mock_loader.list_plugins.return_value = []
-        mock_loader_cls.return_value = mock_loader
-
+    @patch('cli.main.LegacyExtensionService.list_extensions', return_value=[])
+    def test_cmd_plugins_list_json(self, mock_extensions, mock_output_json):
         with patch('cli.main._json_output', True):
             rc = cmd_plugins(argparse.Namespace(action='list', name=None))
 
         self.assertEqual(rc, 0)
-        mock_output_json.assert_called_once_with({'plugins': []})
+        self.assertEqual(mock_output_json.call_args.args[0]['execution'], 'disabled')
 
     @patch('cli.main._print')
-    @patch('cli.main.PluginLoader')
-    def test_cmd_plugins_enable_missing_name(self, mock_loader_cls, mock_print):
-        mock_loader_cls.return_value = MagicMock()
+    def test_cmd_plugins_enable_missing_name(self, mock_print):
         with patch('cli.main._json_output', False):
             rc = cmd_plugins(argparse.Namespace(action='enable', name=None))
-        self.assertEqual(rc, 1)
+        self.assertEqual(rc, 2)
 
     @patch('cli.main._output_json')
-    @patch('cli.main.PluginLoader')
-    def test_cmd_plugins_disable_json(self, mock_loader_cls, mock_output_json):
-        mock_loader = MagicMock()
-        mock_loader_cls.return_value = mock_loader
-
+    def test_cmd_plugins_disable_json(self, mock_output_json):
         with patch('cli.main._json_output', True):
             rc = cmd_plugins(argparse.Namespace(action='disable', name='demo'))
 
-        self.assertEqual(rc, 0)
-        mock_loader.set_enabled.assert_called_once_with('demo', False)
-        mock_output_json.assert_called_once_with({'plugin': 'demo', 'enabled': False})
+        self.assertEqual(rc, 2)
+        self.assertEqual(mock_output_json.call_args.args[0]['error'], 'feature_retired')
 
-    @patch('cli.main.PluginLoader')
-    def test_cmd_plugins_unknown_action(self, mock_loader_cls):
-        mock_loader_cls.return_value = MagicMock()
+    def test_cmd_plugins_unknown_action(self):
         rc = cmd_plugins(argparse.Namespace(action='unknown', name=None))
-        self.assertEqual(rc, 1)
+        self.assertEqual(rc, 2)
 
 
 class TestPresetCommand(unittest.TestCase):
@@ -131,7 +108,9 @@ class TestPresetCommand(unittest.TestCase):
     @patch('cli.main.PresetManager')
     def test_cmd_preset_apply_json_success(self, mock_manager_cls, mock_output_json):
         manager = MagicMock()
-        manager.load_preset.return_value = {'cpu_governor': 'performance'}
+        manager.create_review_plan.return_value = MagicMock(
+            plan_id="plan-1", to_dict=MagicMock(return_value={"plan_id": "plan-1"})
+        )
         mock_manager_cls.return_value = manager
 
         with patch('cli.main._json_output', True):
@@ -139,12 +118,13 @@ class TestPresetCommand(unittest.TestCase):
 
         self.assertEqual(rc, 0)
         mock_output_json.assert_called_once()
+        self.assertFalse(mock_output_json.call_args.args[0]["applied"])
 
     @patch('cli.main._output_json')
     @patch('cli.main.PresetManager')
     def test_cmd_preset_apply_json_not_found(self, mock_manager_cls, mock_output_json):
         manager = MagicMock()
-        manager.load_preset.return_value = None
+        manager.create_review_plan.side_effect = ValueError("Local profile 'missing' is missing or invalid.")
         mock_manager_cls.return_value = manager
 
         with patch('cli.main._json_output', True):
@@ -164,7 +144,7 @@ class TestPresetCommand(unittest.TestCase):
     @patch('cli.main.PresetManager')
     def test_cmd_preset_export_success(self, mock_manager_cls, _mock_print):
         manager = MagicMock()
-        manager.load_preset.return_value = {'foo': 'bar'}
+        manager.export_preset.return_value = True
         mock_manager_cls.return_value = manager
 
         # Windows locks NamedTemporaryFile while open — close before writing
@@ -181,11 +161,10 @@ class TestPresetCommand(unittest.TestCase):
     @patch('cli.main.PresetManager')
     def test_cmd_preset_export_write_error(self, mock_manager_cls, _mock_print):
         manager = MagicMock()
-        manager.load_preset.return_value = {'foo': 'bar'}
+        manager.export_preset.return_value = False
         mock_manager_cls.return_value = manager
 
-        with patch('builtins.open', side_effect=OSError('nope')):
-            rc = cmd_preset(argparse.Namespace(action='export', name='gaming', path='/tmp/x.json'))
+        rc = cmd_preset(argparse.Namespace(action='export', name='gaming', path='/tmp/x.json'))
 
         self.assertEqual(rc, 1)
 

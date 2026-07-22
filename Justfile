@@ -15,7 +15,7 @@ src_root := "loofi-fedora-tweaks"
 test_dir := "tests"
 
 # Thresholds (single source of truth — CI workflows read these)
-coverage_min := "85"
+coverage_min := "86"
 max_line_length := "150"
 flake8_ignore := "E501,W503,E402,E722,E203"
 
@@ -99,6 +99,9 @@ verify:
     @echo "=== Type Check ==="
     just typecheck
     @echo ""
+    @echo "=== v18 Architecture ==="
+    just validate-architecture
+    @echo ""
     @echo "=== Tests + Coverage ==="
     just test-coverage
     @echo ""
@@ -145,7 +148,13 @@ sync-agents:
 
 # Check for adapter drift (CI mode — fails if out of sync)
 check-drift:
-    python3 scripts/sync_ai_adapters.py --check
+	python3 scripts/sync_ai_adapters.py --check
+
+validate-haven:
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v18_haven.py
+
+validate-architecture:
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v18_architecture.py
 
 # Validate release documentation
 validate-release:

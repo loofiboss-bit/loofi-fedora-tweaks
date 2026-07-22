@@ -100,24 +100,40 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
     def test_catalog_is_deny_by_default_and_has_only_audited_ids(self):
         catalog = ActionCatalog()
 
-        self.assertEqual(
-            [definition.id for definition in catalog.list()],
-            [
+        definitions = catalog.list()
+        ids = [definition.id for definition in definitions]
+        self.assertEqual(ids, sorted(set(ids)))
+        self.assertTrue(
+            {
                 "autoremove-packages",
                 "create-recovery-point",
                 "dnf-clean-all",
-                "fstrim-all",
                 "install-application",
-                "remove-application",
                 "restart-failed-service",
                 "update-fedora-system",
                 "update-firmware",
                 "update-flatpaks",
                 "vacuum-journal",
-            ],
+            }.issubset(ids)
+        )
+        self.assertTrue(
+            {
+                "configure-network-dns",
+                "delete-recovery-point",
+                "enable-flathub",
+                "apply-performance-tuning",
+            }.issubset({definition.id for definition in definitions if definition.operation_class == "manual_only"})
         )
         self.assertFalse(catalog.denied("gaming-install-tools").allowed)
         self.assertEqual(catalog.denied("gaming-install-tools").reason_code, "manual_only")
+
+    def test_catalog_manual_only_actions_create_blocked_guidance_plans(self):
+        plan = self.orchestrator.plan("enable-flathub")
+
+        self.assertEqual(plan.state, "blocked")
+        self.assertEqual(plan.operation_class, "manual_only")
+        self.assertEqual(plan.preview, [])
+        self.assertEqual(plan.policy_decision.reason_code, "manual_only")
 
     def test_plan_has_thirty_minute_expiry_and_no_pkexec_in_vector(self):
         plan = self.orchestrator.plan("dnf-clean-all")
@@ -137,6 +153,41 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
         self.assertEqual(plan.state, "blocked")
         self.assertEqual(plan.policy_decision.reason_code, "atomic_manual_only")
         self.assertIn("rpm-ostree", plan.policy_decision.alternative)
+
+    def test_declared_variant_policy_is_enforced_even_when_preflight_allows(self):
+        definition = ActionDefinition(
+            id="traditional-only-test",
+            capability_id="test.variant",
+            title="Traditional-only test",
+            description="Exercise central Fedora variant enforcement.",
+            parameter_schema={},
+            risk_level="low",
+            privileged=False,
+            confirmation_policy="explicit",
+            recovery_guidance="No recovery is required.",
+            rollback_supported=True,
+            command_renderer=lambda _parameters, _runtime: ["fstrim", "-av"],
+            preflight_checker=lambda _parameters, _runtime: PolicyDecision(True, "preflight_ok", "Ready."),
+            verifier=lambda _run, _plan, _runtime: ActionResult.ok("verified"),
+            supported_variants=frozenset({"traditional"}),
+            affected_resources=("test-resource",),
+        )
+        self.runtime.atomic = True
+        orchestrator = ActionCenterOrchestrator(
+            facade=self.facade,
+            catalog=ActionCatalog([definition]),
+            plan_store=self.plan_store,
+            run_store=self.run_store,
+            lease_path=self.lease_path,
+            runtime=self.runtime,
+            id_factory=lambda: next(self.ids),
+        )
+
+        plan = orchestrator.plan(definition.id)
+
+        self.assertEqual(plan.state, "blocked")
+        self.assertEqual(plan.policy_decision.reason_code, "atomic_manual_only")
+        self.assertEqual(plan.policy_decision.facts["supported_variants"], ["traditional"])
 
     def test_fedora_45_host_is_read_only_even_with_default_target(self):
         self.runtime.host_version = "45"
@@ -214,7 +265,7 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
         result = self.orchestrator.preview(plan.plan_id)
 
         self.assertTrue(result.preview)
-        self.assertEqual(result.data["schema_version"], 2)
+        self.assertEqual(result.data["schema_version"], 3)
         self.facade.preview.assert_called_once_with(
             ["dnf", "clean", "all"], privileged=True, action_id="dnf-clean-all"
         )
@@ -343,9 +394,10 @@ class TestSystemActionRuntime(unittest.TestCase):
         items = ActionCenterService(facade=MagicMock(), history=MagicMock(), queue=MagicMock()).catalog_items("45-preview")
 
         self.assertEqual([item.id for item in items], [definition.id for definition in ActionCatalog().list()])
-        self.assertTrue(all(item.source == "catalog:v17" for item in items))
+        self.assertTrue(all(item.source == "catalog:v18" for item in items))
         self.assertTrue(all(item.metadata["target"] == "45-preview" for item in items))
-        self.assertTrue(all(not item.manual_only for item in items))
+        self.assertTrue(any(item.manual_only for item in items))
+        self.assertTrue(all(item.manual_only == (definition.operation_class == "manual_only") for item, definition in zip(items, ActionCatalog().list())))
 
 
 class TestV14ExecutionLifecycle(OrchestratorFixture):
@@ -396,6 +448,7 @@ class TestV14ExecutionLifecycle(OrchestratorFixture):
             privileged=True,
             timeout=5,
             action_id="restart-failed-service",
+            authority="action_center",
         )
         self.runtime.failed = []
         verified = self.orchestrator.verify(run.run_id)

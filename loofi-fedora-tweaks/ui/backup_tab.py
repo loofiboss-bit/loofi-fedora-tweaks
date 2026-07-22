@@ -12,6 +12,7 @@ Step 4: View results + existing snapshots
 import logging
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -41,15 +42,7 @@ CONTENT_MARGINS = (0, 0, 0, 0)
 class BackupTab(BaseTab):
     """System backup wizard with step-by-step flow."""
 
-    _METADATA = PluginMetadata(
-        id="backup",
-        name="Backup",
-        description="Create, manage, and restore system snapshots via Timeshift or Snapper.",
-        category="Security",
-        icon="storage-disk",
-        badge="new",
-        order=20,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     actionCenterRequested = pyqtSignal(str, object)
 
@@ -370,20 +363,11 @@ class BackupTab(BaseTab):
             return
 
         snap_id = self.snap_table.item(row, 0)
-        tool_item = self.snap_table.item(row, 3)
         if not snap_id:
             return
 
-        try:
-            from utils.backup_wizard import BackupWizard
-
-            tool = tool_item.text() if tool_item else None
-            binary, args, desc = BackupWizard.restore_snapshot(
-                snap_id.text(), tool=tool
-            )
-            self.run_command(binary, args, desc)
-        except (RuntimeError, OSError, ValueError) as e:
-            self.append_output(f"[ERROR] {e}\n")
+        self.actionCenterRequested.emit("restore-recovery-point", {})
+        self.append_output(self.tr("Review recovery-point restore guidance in Action Center.\n"))
 
     def _delete_selected(self):
         """Delete selected snapshot."""
@@ -393,15 +377,8 @@ class BackupTab(BaseTab):
             return
 
         snap_id = self.snap_table.item(row, 0)
-        tool_item = self.snap_table.item(row, 3)
         if not snap_id:
             return
 
-        try:
-            from utils.backup_wizard import BackupWizard
-
-            tool = tool_item.text() if tool_item else None
-            binary, args, desc = BackupWizard.delete_snapshot(snap_id.text(), tool=tool)
-            self.run_command(binary, args, desc)
-        except (RuntimeError, OSError, ValueError) as e:
-            self.append_output(f"[ERROR] {e}\n")
+        self.actionCenterRequested.emit("delete-recovery-point", {})
+        self.append_output(self.tr("Review destructive recovery-point deletion guidance in Action Center.\n"))

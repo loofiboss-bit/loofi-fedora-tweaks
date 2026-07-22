@@ -8,6 +8,7 @@ from typing import Any, Callable, Literal, Mapping, Protocol, Sequence
 
 from core.actions.model import ActionRisk
 from core.executor.action_result import ActionResult
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 
 PlanState = Literal["planned", "ready", "needs_review", "blocked"]
 RunState = Literal[
@@ -21,6 +22,31 @@ RunState = Literal[
     "interrupted",
 ]
 ConfirmationPolicy = Literal["explicit", "explicit-no-rollback"]
+OperationClass = Literal["host", "app_state", "session", "manual_only"]
+SupportedVariant = Literal["traditional", "atomic"]
+RebootPolicy = Literal["none", "may_require", "required"]
+
+_RISK_LEVELS = frozenset({"low", "medium", "high", "critical"})
+_CONFIRMATION_POLICIES = frozenset({"explicit", "explicit-no-rollback"})
+_OPERATION_CLASSES = frozenset({"host", "app_state", "session", "manual_only"})
+_SUPPORTED_VARIANTS = frozenset({"traditional", "atomic"})
+_REBOOT_POLICIES = frozenset({"none", "may_require", "required"})
+
+
+def _validated_value(value: Any, allowed: frozenset[str], field_name: str) -> str:
+    normalized = str(value)
+    if normalized not in allowed:
+        raise ValueError(f"Invalid persisted {field_name}: {normalized}")
+    return normalized
+
+
+def _validated_variants(value: Any) -> frozenset[SupportedVariant]:
+    if not isinstance(value, (list, tuple, set, frozenset)):
+        raise ValueError("Persisted supported_variants must be a collection.")
+    variants = frozenset(str(item) for item in value)
+    if not variants.issubset(_SUPPORTED_VARIANTS):
+        raise ValueError("Persisted supported_variants contain an unsupported variant.")
+    return variants  # type: ignore[return-value]
 
 
 class ActionLifecycleError(ValueError):
@@ -171,6 +197,12 @@ class ActionDefinition:
     command_renderer: CommandRenderer = field(repr=False, compare=False)
     preflight_checker: PreflightChecker = field(repr=False, compare=False)
     verifier: ActionVerifier = field(repr=False, compare=False)
+    operation_class: OperationClass = "host"
+    supported_variants: frozenset[SupportedVariant] = field(
+        default_factory=lambda: frozenset({"traditional", "atomic"})
+    )
+    reboot_policy: RebootPolicy = "none"
+    affected_resources: tuple[str, ...] = ()
     parameter_validator: ParameterValidator | None = field(default=None, repr=False, compare=False)
     privilege_resolver: PrivilegeResolver | None = field(default=None, repr=False, compare=False)
 
@@ -186,6 +218,10 @@ class ActionDefinition:
             "confirmation_policy": self.confirmation_policy,
             "recovery_guidance": self.recovery_guidance,
             "rollback_supported": self.rollback_supported,
+            "operation_class": self.operation_class,
+            "supported_variants": sorted(self.supported_variants),
+            "reboot_policy": self.reboot_policy,
+            "affected_resources": list(self.affected_resources),
         }
 
 
@@ -205,6 +241,12 @@ class ActionPlan:
     confirmation_policy: ConfirmationPolicy
     recovery_guidance: str
     rollback_supported: bool
+    operation_class: OperationClass = "host"
+    supported_variants: frozenset[SupportedVariant] = field(
+        default_factory=lambda: frozenset({"traditional", "atomic"})
+    )
+    reboot_policy: RebootPolicy = "none"
+    affected_resources: tuple[str, ...] = ()
     state: PlanState = "planned"
     created_at: float = field(default_factory=time.time)
     expires_at: float = 0.0
@@ -233,6 +275,10 @@ class ActionPlan:
             "confirmation_policy": self.confirmation_policy,
             "recovery_guidance": self.recovery_guidance,
             "rollback_supported": self.rollback_supported,
+            "operation_class": self.operation_class,
+            "supported_variants": sorted(self.supported_variants),
+            "reboot_policy": self.reboot_policy,
+            "affected_resources": list(self.affected_resources),
             "state": self.state,
             "created_at": self.created_at,
             "expires_at": self.expires_at,
@@ -247,15 +293,21 @@ class ActionPlan:
             plan_id=str(payload["plan_id"]),
             action_id=str(payload["action_id"]),
             parameters=dict(parameters) if isinstance(parameters, Mapping) else {},
-            target=str(payload.get("target", "44")),
+            target=str(payload.get("target", FEDORA_RELEASE_POLICY.stable_target)),
             digest=str(payload.get("digest", "")),
             preview=[str(part) for part in payload.get("preview", [])],
             policy_decision=PolicyDecision.from_dict(payload.get("policy_decision", {})),
-            risk_level=str(payload.get("risk_level", "low")),  # type: ignore[arg-type]
+            risk_level=_validated_value(payload.get("risk_level", "low"), _RISK_LEVELS, "risk_level"),  # type: ignore[arg-type]
             privileged=bool(payload.get("privileged", False)),
-            confirmation_policy=str(payload.get("confirmation_policy", "explicit")),  # type: ignore[arg-type]
+            confirmation_policy=_validated_value(payload.get("confirmation_policy", "explicit"), _CONFIRMATION_POLICIES, "confirmation_policy"),  # type: ignore[arg-type]
             recovery_guidance=str(payload.get("recovery_guidance", "")),
             rollback_supported=bool(payload.get("rollback_supported", False)),
+            operation_class=_validated_value(payload.get("operation_class", "host"), _OPERATION_CLASSES, "operation_class"),  # type: ignore[arg-type]
+            supported_variants=_validated_variants(
+                payload.get("supported_variants", ["traditional", "atomic"])
+            ),
+            reboot_policy=_validated_value(payload.get("reboot_policy", "none"), _REBOOT_POLICIES, "reboot_policy"),  # type: ignore[arg-type]
+            affected_resources=tuple(str(item) for item in payload.get("affected_resources", [])),
             state=str(payload.get("state", "blocked")),  # type: ignore[arg-type]
             created_at=float(payload.get("created_at", 0.0)),
             expires_at=float(payload.get("expires_at", 0.0)),
@@ -272,6 +324,12 @@ class ActionRun:
     action_id: str
     correlation_id: str
     parameters: dict[str, Any] = field(default_factory=dict)
+    operation_class: OperationClass = "host"
+    supported_variants: frozenset[SupportedVariant] = field(
+        default_factory=lambda: frozenset({"traditional", "atomic"})
+    )
+    reboot_policy: RebootPolicy = "none"
+    affected_resources: tuple[str, ...] = ()
     state: RunState = "running"
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -304,6 +362,10 @@ class ActionRun:
             "action_id": self.action_id,
             "correlation_id": self.correlation_id,
             "parameters": dict(self.parameters),
+            "operation_class": self.operation_class,
+            "supported_variants": sorted(self.supported_variants),
+            "reboot_policy": self.reboot_policy,
+            "affected_resources": list(self.affected_resources),
             "state": self.state,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
@@ -330,6 +392,12 @@ class ActionRun:
             action_id=str(payload["action_id"]),
             correlation_id=str(payload.get("correlation_id", payload["run_id"])),
             parameters=dict(payload.get("parameters", {})) if isinstance(payload.get("parameters", {}), Mapping) else {},
+            operation_class=_validated_value(payload.get("operation_class", "host"), _OPERATION_CLASSES, "operation_class"),  # type: ignore[arg-type]
+            supported_variants=_validated_variants(
+                payload.get("supported_variants", ["traditional", "atomic"])
+            ),
+            reboot_policy=_validated_value(payload.get("reboot_policy", "none"), _REBOOT_POLICIES, "reboot_policy"),  # type: ignore[arg-type]
+            affected_resources=tuple(str(item) for item in payload.get("affected_resources", [])),
             state=str(payload.get("state", "interrupted")),  # type: ignore[arg-type]
             created_at=float(payload.get("created_at", 0.0)),
             updated_at=float(payload.get("updated_at", 0.0)),

@@ -35,7 +35,7 @@ ROUTE_SCREENSHOTS = [
     ("settings-appearance.png", "settings:appearance", False),
     ("ai-lab-models.png", "ai-lab:models", True),
     ("community-presets.png", "community:presets", True),
-    ("community-marketplace.png", "community:marketplace", True),
+    ("community-legacy-extensions.png", "community:presets", True),
 ]
 
 

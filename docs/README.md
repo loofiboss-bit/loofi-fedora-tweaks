@@ -22,6 +22,9 @@ Central documentation map for Loofi Fedora Tweaks.
 - `../CHANGELOG.md` - Full change history
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
+- `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Active v18.0.0 "Haven" implementation scope and release gates
+- `reports/V18_PHASE0_BASELINE.md` - Haven authority, performance, route, state, module, and mutation baseline
+- `reports/V18_PHASE6_RELEASE_READINESS.md` - Haven local regression, security, performance, packaging, and remaining physical release gates
 - `reports/V17_PHASE0_BASELINE.md` - v16 release baseline, scope lock, and mutation inventory
 - `reports/V17_PHASE1_CORE_API.md` - schema-v2 lifecycle, validation, migration, and read-only API
 - `reports/V17_PHASE2_UPDATES.md` - independent Fedora, Flatpak, and firmware verification
@@ -46,7 +49,7 @@ Central documentation map for Loofi Fedora Tweaks.
 
 ## Developer Docs
 
-- `PLUGIN_SDK.md` - External plugin model and marketplace integration
+- `PLUGIN_SDK.md` - Built-in page-provider contract and external extension retirement
 - `reports/` - Historical implementation/test summaries
 
 ## Legacy/Archive Notes
@@ -55,6 +58,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - Compatibility aliases: `releases/release_notes.md`, `release_notes.md`
 - `archive/ROADMAP_HISTORY_THROUGH_V15.md` - Full historical roadmap through v15
 - `archive/ROADMAP_V15_NEBULA_LEGACY.md` - Obsolete pre-renormalization Nebula plan
+- `archive/ROADMAP_V18_SENTINEL.md` - Superseded historical Sentinel plan
 
 ## Planning and Reports
 
@@ -66,7 +70,7 @@ These legacy files are kept for compatibility and historical context.
 ## Documentation Maintenance Notes
 
 - Released user-facing guides are aligned to `v17.0.0 "Assurance"`. The
-  canonical plan and `reports/V17_PHASE*.md` retain implementation and gate
-  evidence; historical v16 reports remain immutable release records.
+  active Haven plan documents unreleased behavior. Historical v16/v17 reports
+  remain immutable release records.
 - Screenshot paths are standardized to `docs/images/user-guide/*.png`.
 - When replacing screenshots, keep filenames stable or update all guide references.

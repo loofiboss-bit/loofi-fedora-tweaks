@@ -5,6 +5,7 @@ from __future__ import annotations
 from services.network.network import NetworkUtils
 
 from daemon.validators import validate_boolean, validate_connection_name, validate_dns_servers, validate_interface_name, validate_ssid
+from daemon.plan_boundary import create_manual_plan
 
 
 class NetworkHandler:
@@ -38,28 +39,37 @@ class NetworkHandler:
         return bool(result)
 
     @staticmethod
-    def reactivate_connection(connection_name: str) -> bool:
+    def reactivate_connection(connection_name: str) -> dict:
         valid_name = validate_connection_name(connection_name)
-        return NetworkUtils.reactivate_connection_local(valid_name)
+        return create_manual_plan("network-reactivate", {"connection": valid_name})
 
     @staticmethod
-    def connect_wifi(ssid: str) -> bool:
+    def connect_wifi(ssid: str) -> dict:
         valid_ssid = validate_ssid(ssid)
-        return NetworkUtils.connect_wifi_local(valid_ssid)
+        return create_manual_plan("network-connect-wifi", {"ssid": valid_ssid})
 
     @staticmethod
-    def disconnect_wifi(interface_name: str = "wlan0") -> bool:
+    def disconnect_wifi(interface_name: str = "wlan0") -> dict:
         valid_interface_name = validate_interface_name(interface_name)
-        return NetworkUtils.disconnect_wifi_local(valid_interface_name)
+        return create_manual_plan(
+            "network-disconnect-wifi",
+            {"interface": valid_interface_name},
+        )
 
     @staticmethod
-    def apply_dns(connection_name: str, dns_servers: str) -> bool:
+    def apply_dns(connection_name: str, dns_servers: str) -> dict:
         valid_name = validate_connection_name(connection_name)
         valid_dns_servers = validate_dns_servers(dns_servers)
-        return NetworkUtils.apply_dns_local(valid_name, valid_dns_servers)
+        return create_manual_plan(
+            "network-apply-dns",
+            {"connection": valid_name, "dns_servers": valid_dns_servers},
+        )
 
     @staticmethod
-    def set_hostname_privacy(connection_name: str, hide: bool) -> bool:
+    def set_hostname_privacy(connection_name: str, hide: bool) -> dict:
         valid_name = validate_connection_name(connection_name)
         valid_hide = validate_boolean(hide, "hide")
-        return NetworkUtils.set_hostname_privacy_local(valid_name, valid_hide)
+        return create_manual_plan(
+            "network-hostname-privacy",
+            {"connection": valid_name, "hide": valid_hide},
+        )

@@ -9,6 +9,7 @@ Uses SnapshotManager from utils/snapshot_manager.py.
 from datetime import datetime
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QGridLayout,
@@ -33,15 +34,7 @@ from ui.design import semantic_color
 class SnapshotTab(BaseTab):
     """Snapshot timeline management tab."""
 
-    _METADATA = PluginMetadata(
-        id="snapshots",
-        name="Snapshots",
-        description="Unified snapshot management across Timeshift, Snapper, and Btrfs backends.",
-        category="Packages",
-        icon="storage-disk",
-        badge="advanced",
-        order=30,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     actionCenterRequested = pyqtSignal(str, object)
 
@@ -270,9 +263,5 @@ class SnapshotTab(BaseTab):
         if confirm != QMessageBox.StandardButton.Yes:
             return
 
-        try:
-            binary, args, desc = SnapshotManager.delete_snapshot(snap_id, backend)
-            self.run_command(binary, args, desc)
-            QTimer.singleShot(3000, self._refresh_snapshots)
-        except (RuntimeError, OSError, ValueError) as exc:
-            self.append_output(f"Error deleting snapshot: {exc}\n")
+        self.actionCenterRequested.emit("delete-recovery-point", {})
+        self.append_output(self.tr("Review destructive recovery-point deletion guidance in Action Center.\n"))

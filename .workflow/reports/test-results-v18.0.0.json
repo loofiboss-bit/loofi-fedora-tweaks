@@ -1,0 +1,34 @@
+{
+  "version": "v18.0.0",
+  "phase": "P6_LOCAL_VERIFY",
+  "date": "2026-07-22",
+  "scope": "v18.0.0 Haven local full test suite",
+  "status": "pass",
+  "test_count": 6864,
+  "coverage_percent": 86.24,
+  "summary": {
+    "total_tests": 6864,
+    "passed": 6796,
+    "failed": 0,
+    "skipped": 68,
+    "errors": 0,
+    "duration_seconds": 85.39
+  },
+  "commands": [
+    {
+      "cmd": "PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -q --tb=short --cov=loofi-fedora-tweaks --cov-report=term --cov-fail-under=86",
+      "result": "passed",
+      "passed": 6796,
+      "failed": 0
+    },
+    {
+      "cmd": "PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ --cov=loofi-fedora-tweaks --cov-fail-under=86",
+      "result": "passed",
+      "coverage_percent": 86.24
+    }
+  ],
+  "release_gate": {
+    "status": "LOCAL_PASS",
+    "notes": "Local code, architecture, security, performance, and package gates passed. Version bump and release remain blocked on canonical CodeQL, physical Fedora and display certification, tag preservation, and explicit publication approval."
+  }
+}

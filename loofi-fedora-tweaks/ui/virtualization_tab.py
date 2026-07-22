@@ -1,9 +1,12 @@
 """Virtualization UI for VMs, GPU passthrough, and disposable environments."""
 
+import typing
+
 import logging
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -41,27 +44,19 @@ logger = logging.getLogger(__name__)
 class VirtualizationTab(QWidget, PluginInterface):
     """Virtualization management tab with VM, VFIO, and Disposable sub-tabs."""
 
-    _METADATA = PluginMetadata(
-        id="virtualization",
-        name="Virtualization",
-        description="VM lifecycle management, GPU passthrough setup, and disposable virtual machines.",
-        category="Tools",
-        icon="terminal-console",
-        badge="advanced",
-        order=20,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.init_ui()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialize the UI components."""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -86,16 +81,20 @@ class VirtualizationTab(QWidget, PluginInterface):
         vms_page.add_widget(self.banner_label)
         vms_page.add_widget(self._create_vms_tab(), 1)
         self.tabs.addWidget(vms_page)
-        self.tabs.addWidget(self._scaffold_route(
-            self.tr("GPU passthrough"),
-            self.tr("Review VFIO readiness and generate setup guidance."),
-            self._create_gpu_passthrough_tab(),
-        ))
-        self.tabs.addWidget(self._scaffold_route(
-            self.tr("Disposable virtual machines"),
-            self.tr("Create and manage short-lived virtual environments."),
-            self._create_disposable_tab(),
-        ))
+        self.tabs.addWidget(
+            self._scaffold_route(
+                self.tr("GPU passthrough"),
+                self.tr("Review VFIO readiness and generate setup guidance."),
+                self._create_gpu_passthrough_tab(),
+            )
+        )
+        self.tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Disposable virtual machines"),
+                self.tr("Create and manage short-lived virtual environments."),
+                self._create_disposable_tab(),
+            )
+        )
         main_layout.addWidget(self.tabs)
 
         # ---- Output log (add to layout) ----
@@ -115,7 +114,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         scaffold.add_widget(content, 1)
         return scaffold
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select a Virtualization page from a stable route ID."""
         index = {
             "virtualization": 0,
@@ -132,7 +131,7 @@ class VirtualizationTab(QWidget, PluginInterface):
     # Banner
     # ==================================================================
 
-    def _refresh_banner(self):
+    def _refresh_banner(self: typing.Any) -> typing.Any:
         """Refresh the top-level virt status banner."""
         try:
             summary = VirtualizationManager.get_summary()
@@ -145,7 +144,7 @@ class VirtualizationTab(QWidget, PluginInterface):
     # Sub-tab 1: VMs
     # ==================================================================
 
-    def _create_vms_tab(self) -> QWidget:
+    def _create_vms_tab(self: typing.Any) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -216,7 +215,7 @@ class VirtualizationTab(QWidget, PluginInterface):
 
         return widget
 
-    def _refresh_vm_list(self):
+    def _refresh_vm_list(self: typing.Any) -> typing.Any:
         """Reload the VM table from virsh."""
         self.vm_table.clearSpans()
         self.vm_table.setRowCount(0)
@@ -237,7 +236,7 @@ class VirtualizationTab(QWidget, PluginInterface):
             normalize(self.vm_table)
         self.log(self.tr("VM list refreshed ({} VMs).").format(len(vms)))
 
-    def _get_selected_vm_name(self) -> str:
+    def _get_selected_vm_name(self: typing.Any) -> str:
         """Return the name of the currently selected VM, or empty string."""
         row = self.vm_table.currentRow()
         if row < 0:
@@ -245,7 +244,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         item = self.vm_table.item(row, 0)
         return item.text() if item else ""
 
-    def _start_selected_vm(self):
+    def _start_selected_vm(self: typing.Any) -> typing.Any:
         name = self._get_selected_vm_name()
         if not name:
             self.log(self.tr("No VM selected."))
@@ -255,7 +254,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         if result.success:
             self._refresh_vm_list()
 
-    def _stop_selected_vm(self):
+    def _stop_selected_vm(self: typing.Any) -> typing.Any:
         name = self._get_selected_vm_name()
         if not name:
             self.log(self.tr("No VM selected."))
@@ -265,7 +264,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         if result.success:
             self._refresh_vm_list()
 
-    def _force_stop_selected_vm(self):
+    def _force_stop_selected_vm(self: typing.Any) -> typing.Any:
         name = self._get_selected_vm_name()
         if not name:
             self.log(self.tr("No VM selected."))
@@ -275,7 +274,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         if result.success:
             self._refresh_vm_list()
 
-    def _delete_selected_vm(self):
+    def _delete_selected_vm(self: typing.Any) -> typing.Any:
         name = self._get_selected_vm_name()
         if not name:
             self.log(self.tr("No VM selected."))
@@ -292,7 +291,7 @@ class VirtualizationTab(QWidget, PluginInterface):
             if result.success:
                 self._refresh_vm_list()
 
-    def _show_quick_create_dialog(self):
+    def _show_quick_create_dialog(self: typing.Any) -> typing.Any:
         """Open a dialog for Quick-Create VM with flavour selection."""
         dialog = QDialog(self)
         dialog.setWindowTitle(self.tr("Quick Create VM"))
@@ -337,7 +336,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         iso_layout.addWidget(iso_browse)
         form.addRow(self.tr("ISO:"), iso_layout)
 
-        def browse_iso():
+        def browse_iso() -> typing.Any:
             path, _ = QFileDialog.getOpenFileName(dialog, self.tr("Select ISO"), "", self.tr("ISO Images (*.iso)"))
             if path:
                 iso_edit.setText(path)
@@ -345,7 +344,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         iso_browse.clicked.connect(browse_iso)
 
         # Sync defaults when flavour changes
-        def on_flavor_changed(index):
+        def on_flavor_changed(index: typing.Any) -> typing.Any:
             key = flavor_combo.currentData()
             f = VM_FLAVORS.get(key, {})
             ram_spin.setValue(f.get("ram_mb", 2048))
@@ -367,7 +366,7 @@ class VirtualizationTab(QWidget, PluginInterface):
 
         cancel_btn.clicked.connect(dialog.reject)
 
-        def do_create():
+        def do_create() -> typing.Any:
             vm_name = name_edit.text().strip()
             if not vm_name:
                 QMessageBox.warning(dialog, self.tr("Error"), self.tr("Please enter a VM name."))
@@ -399,7 +398,7 @@ class VirtualizationTab(QWidget, PluginInterface):
     # Sub-tab 2: GPU Passthrough
     # ==================================================================
 
-    def _create_gpu_passthrough_tab(self) -> QWidget:
+    def _create_gpu_passthrough_tab(self: typing.Any) -> QWidget:
         widget = QWidget()
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -469,7 +468,7 @@ class VirtualizationTab(QWidget, PluginInterface):
         outer.addWidget(scroll)
         return widget
 
-    def _check_vfio_prerequisites(self):
+    def _check_vfio_prerequisites(self: typing.Any) -> typing.Any:
         prereqs = VFIOAssistant.check_prerequisites()
         for key, lbl in self.vfio_checklist_labels.items():
             status = prereqs.get(key, False)
@@ -480,7 +479,7 @@ class VirtualizationTab(QWidget, PluginInterface):
             lbl.setText(f"[ {icon} ] {text}")
         self.log(self.tr("VFIO prerequisite check complete."))
 
-    def _detect_gpus(self):
+    def _detect_gpus(self: typing.Any) -> typing.Any:
         self.gpu_list.clear()
         self._gpu_candidates = VFIOAssistant.get_passthrough_candidates()
         if not self._gpu_candidates:
@@ -493,7 +492,7 @@ class VirtualizationTab(QWidget, PluginInterface):
             self.gpu_list.addItem(item)
         self.log(self.tr("{} GPU candidate(s) detected.").format(len(self._gpu_candidates)))
 
-    def _generate_vfio_plan(self):
+    def _generate_vfio_plan(self: typing.Any) -> typing.Any:
         current = self.gpu_list.currentItem()
         if not current:
             self.log(self.tr("No GPU selected."))
@@ -518,7 +517,7 @@ class VirtualizationTab(QWidget, PluginInterface):
     # Sub-tab 3: Disposable VMs
     # ==================================================================
 
-    def _create_disposable_tab(self) -> QWidget:
+    def _create_disposable_tab(self: typing.Any) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -564,14 +563,14 @@ class VirtualizationTab(QWidget, PluginInterface):
         self._refresh_disposable_list()
         return widget
 
-    def _refresh_base_status(self):
+    def _refresh_base_status(self: typing.Any) -> typing.Any:
         if DisposableVMManager.is_base_image_available():
             path = DisposableVMManager.get_base_image_path()
             self.base_status_label.setText(self.tr("Base image ready: {}").format(path))
         else:
             self.base_status_label.setText(self.tr("No base image found. Create one to use disposable VMs."))
 
-    def _create_base_image(self):
+    def _create_base_image(self: typing.Any) -> typing.Any:
         iso_path, _ = QFileDialog.getOpenFileName(
             self,
             self.tr("Select ISO for Base Image"),
@@ -584,13 +583,13 @@ class VirtualizationTab(QWidget, PluginInterface):
         self.log(result.message)
         self._refresh_base_status()
 
-    def _launch_disposable(self):
+    def _launch_disposable(self: typing.Any) -> typing.Any:
         result = DisposableVMManager.launch_disposable()
         self.log(result.message)
         if result.success:
             self._refresh_disposable_list()
 
-    def _refresh_disposable_list(self):
+    def _refresh_disposable_list(self: typing.Any) -> typing.Any:
         self.disposable_list.clear()
         names = DisposableVMManager.list_active_disposables()
         if not names:
@@ -603,6 +602,6 @@ class VirtualizationTab(QWidget, PluginInterface):
     # Output log helper
     # ==================================================================
 
-    def log(self, message: str):
+    def log(self: typing.Any, message: str) -> typing.Any:
         """Append a message to the output log."""
         self.output_text.append(message)

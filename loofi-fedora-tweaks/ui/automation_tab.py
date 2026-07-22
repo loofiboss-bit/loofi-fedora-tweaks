@@ -6,10 +6,13 @@ Route pages:
 - Replicator: Export system config as Ansible playbooks and Kickstart files
 """
 
+import typing
+
 import uuid
 
 from core.export import AnsibleExporter, KickstartGenerator
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -40,7 +43,7 @@ from ui.design import semantic_qcolor
 class AddTaskDialog(QDialog):
     """Dialog for adding a new scheduled task."""
 
-    def __init__(self, parent=None):
+    def __init__(self: typing.Any, parent: typing.Any = None) -> None:
         super().__init__(parent)
         self.setWindowTitle(self.tr("Add Scheduled Task"))
         self.setMinimumWidth(400)
@@ -100,7 +103,7 @@ class AddTaskDialog(QDialog):
         btn_layout.addWidget(btn_add)
         layout.addRow(btn_layout)
 
-    def load_presets(self):
+    def load_presets(self: typing.Any) -> typing.Any:
         """Load available presets into combo box."""
         from utils.presets import PresetManager
 
@@ -108,13 +111,13 @@ class AddTaskDialog(QDialog):
         presets = manager.list_presets()
         self.cmb_preset.addItems(presets)
 
-    def on_action_changed(self, index):
+    def on_action_changed(self: typing.Any, index: typing.Any) -> typing.Any:
         """Show/hide preset selector based on action."""
         is_preset = self.cmb_action.currentData() == TaskAction.APPLY_PRESET.value
         self.cmb_preset.setVisible(is_preset)
         self.lbl_preset.setVisible(is_preset)
 
-    def get_task(self) -> ScheduledTask:
+    def get_task(self: typing.Any) -> ScheduledTask:
         """Get the configured task."""
         preset_name = None
         if self.cmb_action.currentData() == TaskAction.APPLY_PRESET.value:
@@ -133,30 +136,22 @@ class AddTaskDialog(QDialog):
 class AutomationTab(BaseTab):
     """Consolidated Automation tab: Scheduler + Replicator."""
 
-    _METADATA = PluginMetadata(
-        id="automation",
-        name="Automation",
-        description="Schedule tasks and replicate system configurations automatically.",
-        category="Maintenance",
-        icon="maintenance-health",
-        badge="",
-        order=50,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.init_ui()
 
         # Refresh scheduler data
         self.refresh_all()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialize shell-selected Automation route pages."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -188,7 +183,7 @@ class AutomationTab(BaseTab):
         scaffold.add_widget(content, 1)
         return scaffold
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select an Automation page from a stable route ID."""
         index = {
             "automation": 0,
@@ -204,7 +199,7 @@ class AutomationTab(BaseTab):
     # SCHEDULER SUB-TAB (from SchedulerTab)
     # ================================================================
 
-    def _create_scheduler_tab(self) -> QWidget:
+    def _create_scheduler_tab(self: typing.Any) -> QWidget:
         """Create the Scheduler sub-tab content."""
         widget = QWidget()
         layout = QVBoxLayout(widget)
@@ -222,7 +217,7 @@ class AutomationTab(BaseTab):
         layout.addStretch()
         return widget
 
-    def _create_service_section(self, parent_layout):
+    def _create_service_section(self: typing.Any, parent_layout: typing.Any) -> typing.Any:
         """Create the service status section."""
         group = QGroupBox(self.tr("Background Service"))
         layout = QHBoxLayout(group)
@@ -240,7 +235,7 @@ class AutomationTab(BaseTab):
 
         parent_layout.addWidget(group)
 
-    def _create_tasks_section(self, parent_layout):
+    def _create_tasks_section(self: typing.Any, parent_layout: typing.Any) -> typing.Any:
         """Create the task list section."""
         group = QGroupBox(self.tr("Scheduled Tasks"))
         layout = QVBoxLayout(group)
@@ -278,12 +273,12 @@ class AutomationTab(BaseTab):
 
     # -- Scheduler actions --
 
-    def refresh_all(self):
+    def refresh_all(self: typing.Any) -> typing.Any:
         """Refresh service status and task list."""
         self.refresh_service_status()
         self.refresh_task_list()
 
-    def refresh_service_status(self):
+    def refresh_service_status(self: typing.Any) -> typing.Any:
         """Update service status display."""
         is_enabled = TaskScheduler.is_service_enabled()
         is_running = TaskScheduler.is_service_running()
@@ -304,7 +299,7 @@ class AutomationTab(BaseTab):
             self.lbl_service_status.style().unpolish(self.lbl_service_status)
             self.lbl_service_status.style().polish(self.lbl_service_status)
 
-    def refresh_task_list(self):
+    def refresh_task_list(self: typing.Any) -> typing.Any:
         """Update task list display."""
         self.task_list.clear()
 
@@ -337,7 +332,7 @@ class AutomationTab(BaseTab):
             item.setData(Qt.ItemDataRole.UserRole, task)
             self.task_list.addItem(item)
 
-    def _get_schedule_icon(self, schedule: str) -> str:
+    def _get_schedule_icon(self: typing.Any, schedule: str) -> str:
         """Get icon for schedule type."""
         icons = {
             "hourly": "Hourly",
@@ -349,7 +344,7 @@ class AutomationTab(BaseTab):
         }
         return icons.get(schedule, schedule)
 
-    def _get_action_icon(self, action: str) -> str:
+    def _get_action_icon(self: typing.Any, action: str) -> str:
         """Get icon for action type."""
         icons = {
             "cleanup": "Cleanup",
@@ -359,7 +354,7 @@ class AutomationTab(BaseTab):
         }
         return icons.get(action, action)
 
-    def toggle_service(self):
+    def toggle_service(self: typing.Any) -> typing.Any:
         """Toggle the background service."""
         if TaskScheduler.is_service_running() or TaskScheduler.is_service_enabled():
             if TaskScheduler.disable_service():
@@ -386,7 +381,7 @@ class AutomationTab(BaseTab):
 
         self.refresh_service_status()
 
-    def add_task(self):
+    def add_task(self: typing.Any) -> typing.Any:
         """Open dialog to add a new task."""
         dialog = AddTaskDialog(self)
 
@@ -407,7 +402,7 @@ class AutomationTab(BaseTab):
             else:
                 QMessageBox.warning(self, self.tr("Error"), self.tr("Failed to add task."))
 
-    def toggle_task(self):
+    def toggle_task(self: typing.Any) -> typing.Any:
         """Toggle the selected task on/off."""
         item = self.task_list.currentItem()
         if not item:
@@ -423,7 +418,7 @@ class AutomationTab(BaseTab):
         else:
             QMessageBox.warning(self, self.tr("Error"), self.tr("Failed to toggle task."))
 
-    def run_task_now(self):
+    def run_task_now(self: typing.Any) -> typing.Any:
         """Run the selected task immediately."""
         item = self.task_list.currentItem()
         if not item:
@@ -449,7 +444,7 @@ class AutomationTab(BaseTab):
 
             self.refresh_task_list()
 
-    def delete_task(self):
+    def delete_task(self: typing.Any) -> typing.Any:
         """Delete the selected task."""
         item = self.task_list.currentItem()
         if not item:
@@ -475,7 +470,7 @@ class AutomationTab(BaseTab):
     # REPLICATOR SUB-TAB (from ReplicatorTab)
     # ================================================================
 
-    def _create_replicator_tab(self) -> QWidget:
+    def _create_replicator_tab(self: typing.Any) -> QWidget:
         """Create the Replicator sub-tab content."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -504,7 +499,7 @@ class AutomationTab(BaseTab):
         scroll.setWidget(container)
         return scroll
 
-    def _create_ansible_section(self) -> QGroupBox:
+    def _create_ansible_section(self: typing.Any) -> QGroupBox:
         """Create Ansible export section."""
         group = QGroupBox(self.tr("Ansible Playbook"))
         layout = QVBoxLayout(group)
@@ -558,7 +553,7 @@ class AutomationTab(BaseTab):
 
         return group
 
-    def _create_kickstart_section(self) -> QGroupBox:
+    def _create_kickstart_section(self: typing.Any) -> QGroupBox:
         """Create Kickstart export section."""
         group = QGroupBox(self.tr("Kickstart File"))
         layout = QVBoxLayout(group)
@@ -605,7 +600,7 @@ class AutomationTab(BaseTab):
 
     # -- Replicator actions --
 
-    def _preview_ansible(self):
+    def _preview_ansible(self: typing.Any) -> typing.Any:
         """Preview the generated Ansible playbook."""
         content = AnsibleExporter.generate_playbook(
             include_packages=self.ansible_packages.isChecked(),
@@ -615,7 +610,7 @@ class AutomationTab(BaseTab):
         self.output_area.setText(content[:3000] + "\n\n... (truncated)")
         self.append_output(self.tr("\nPreview generated. Full content will be in exported file."))
 
-    def _export_ansible(self):
+    def _export_ansible(self: typing.Any) -> typing.Any:
         """Export Ansible playbook to file."""
         result = AnsibleExporter.save_playbook(
             include_packages=self.ansible_packages.isChecked(),
@@ -630,11 +625,11 @@ class AutomationTab(BaseTab):
                 self,
                 self.tr("Ansible Playbook Exported"),
                 self.tr("Playbook saved to:\n{}\n\nRun with:\n  cd ~/loofi-playbook\n  ansible-playbook site.yml --ask-become-pass").format(
-                    result.data["path"]
+                    (result.data or {}).get("path", "")
                 ),
             )
 
-    def _preview_kickstart(self):
+    def _preview_kickstart(self: typing.Any) -> typing.Any:
         """Preview the generated Kickstart file."""
         content = KickstartGenerator.generate_kickstart(
             include_packages=self.ks_packages.isChecked(),
@@ -643,7 +638,7 @@ class AutomationTab(BaseTab):
         self.output_area.setText(content[:3000] + "\n\n... (truncated)")
         self.append_output(self.tr("\nPreview generated. Full content will be in exported file."))
 
-    def _export_kickstart(self):
+    def _export_kickstart(self: typing.Any) -> typing.Any:
         """Export Kickstart file."""
         result = KickstartGenerator.save_kickstart(
             include_packages=self.ks_packages.isChecked(),
@@ -656,5 +651,7 @@ class AutomationTab(BaseTab):
             QMessageBox.information(
                 self,
                 self.tr("Kickstart File Exported"),
-                self.tr("Kickstart saved to:\n{}\n\nUse during installation with:\n  inst.ks=file:///path/to/loofi.ks").format(result.data["path"]),
+                self.tr("Kickstart saved to:\n{}\n\nUse during installation with:\n  inst.ks=file:///path/to/loofi.ks").format(
+                    (result.data or {}).get("path", "")
+                ),
             )

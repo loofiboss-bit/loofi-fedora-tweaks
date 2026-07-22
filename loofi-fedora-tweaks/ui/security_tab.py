@@ -11,9 +11,13 @@ Features:
 - Security updates check (from Privacy tab)
 """
 
+import typing
+
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import Qt
+from core.product_catalog import plugin_metadata_for_module
+from core.execution_policy import classify_command
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QCheckBox,
     QComboBox,
@@ -36,7 +40,6 @@ from services.network import PortAuditor
 from services.security import FirewallManager
 from services.system import SystemManager
 from utils.command_runner import CommandRunner
-from utils.commands import PrivilegedCommand
 from services.security import SandboxManager
 from services.security import USBGuardManager
 
@@ -48,48 +51,60 @@ from ui.design import semantic_qcolor
 class SecurityTab(QWidget, PluginInterface):
     """Security tab for system hardening and auditing."""
 
-    _METADATA = PluginMetadata(
-        id="security",
-        name="Security & Privacy",
-        description="Security hardening including firewall, USB guard, port auditing, and telemetry removal.",
-        category="Security",
-        icon="security-shield",
-        badge="recommended",
-        order=10,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
+    actionCenterRequested = pyqtSignal(str, object)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self._setup_command_runner()
         self.init_ui()
 
-    def _setup_command_runner(self):
+    def _setup_command_runner(self: typing.Any) -> typing.Any:
         """Setup CommandRunner for privacy-related commands."""
         self.privacy_runner = CommandRunner()
         self.privacy_runner.output_received.connect(self._on_privacy_output)
         self.privacy_runner.finished.connect(self._on_privacy_command_finished)
 
-    def _on_privacy_output(self, text):
+    def _on_privacy_output(self: typing.Any, text: typing.Any) -> typing.Any:
         """Handle output from privacy commands."""
         self.log(text.rstrip("\n"))
 
-    def _on_privacy_command_finished(self, exit_code):
+    def _on_privacy_command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
         """Handle privacy command completion."""
         self.log(self.tr("Command finished with exit code: {}").format(exit_code))
 
-    def _run_privacy_command(self, cmd, args, description=""):
+    def _run_privacy_command(self: typing.Any, cmd: typing.Any, args: typing.Any, description: typing.Any = "") -> typing.Any:
         """Execute a privacy-related command with output logging."""
         if description:
             self.log(description)
+        operation_class = classify_command(cmd, args)
+        if operation_class in {"host", "manual_only"}:
+            self._open_action_center(self.tr("This security change requires a reviewed Action Center plan or manual guidance."))
+            return
         self.privacy_runner.run_command(cmd, args)
 
-    def init_ui(self):
+    def _open_action_center(self: typing.Any, message: str) -> None:
+        """Route host changes to the shared review flow without executing."""
+        self.log(message)
+        widget = self.parent()
+        while widget is not None:
+            if hasattr(widget, "switch_to_route"):
+                widget.switch_to_route("maintenance:action-center")
+                return
+            widget = widget.parent() if hasattr(widget, "parent") else None
+
+    def _request_action(self, action_id: str, parameters: dict[str, object], message: str) -> None:
+        """Preselect one named Action Center workflow without executing it."""
+        self.log(message)
+        self.actionCenterRequested.emit(action_id, parameters)
+
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialize route-owned security pages under the shared shell."""
         main_layout = QVBoxLayout(self)
         main_layout.setContentsMargins(0, 0, 0, 0)
@@ -152,7 +167,7 @@ class SecurityTab(QWidget, PluginInterface):
         scroll.setWidget(scaffold)
         return scroll
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select a Security page from a stable route ID."""
         route_to_index = {
             "security": 0,
@@ -167,7 +182,7 @@ class SecurityTab(QWidget, PluginInterface):
         self.pages.setCurrentIndex(index)
         return True
 
-    def _create_score_section(self) -> QGroupBox:
+    def _create_score_section(self: typing.Any) -> QGroupBox:
         """Create security score display."""
         group = QGroupBox(self.tr("Security Score"))
         layout = QVBoxLayout(group)
@@ -227,7 +242,7 @@ class SecurityTab(QWidget, PluginInterface):
 
         return group
 
-    def _create_ports_section(self) -> QGroupBox:
+    def _create_ports_section(self: typing.Any) -> QGroupBox:
         """Create port auditor section."""
         group = QGroupBox(self.tr("Port Auditor"))
         layout = QVBoxLayout(group)
@@ -264,7 +279,7 @@ class SecurityTab(QWidget, PluginInterface):
 
         return group
 
-    def _create_usb_section(self) -> QGroupBox:
+    def _create_usb_section(self: typing.Any) -> QGroupBox:
         """Create USB Guard section."""
         group = QGroupBox(self.tr("USB Guard"))
         layout = QVBoxLayout(group)
@@ -324,7 +339,7 @@ class SecurityTab(QWidget, PluginInterface):
 
         return group
 
-    def _create_sandbox_section(self) -> QGroupBox:
+    def _create_sandbox_section(self: typing.Any) -> QGroupBox:
         """Create sandbox manager section."""
         group = QGroupBox(self.tr("Application Sandbox"))
         layout = QVBoxLayout(group)
@@ -398,13 +413,13 @@ class SecurityTab(QWidget, PluginInterface):
 
         return group
 
-    def _refresh_score(self):
+    def _refresh_score(self: typing.Any) -> typing.Any:
         """Refresh security score."""
         self.log("Rescanning security...")
         # Would need to rebuild the section - simplified for now
         self.log("Security scan complete.")
 
-    def _refresh_ports(self):
+    def _refresh_ports(self: typing.Any) -> typing.Any:
         """Refresh port list."""
         self.port_table.clearSpans()
         self.port_table.setRowCount(0)
@@ -433,7 +448,7 @@ class SecurityTab(QWidget, PluginInterface):
         if callable(normalize):
             normalize(self.port_table)
 
-    def _block_port(self):
+    def _block_port(self: typing.Any) -> typing.Any:
         """Block selected port."""
         row = self.port_table.currentRow()
         if row < 0:
@@ -443,21 +458,25 @@ class SecurityTab(QWidget, PluginInterface):
         port = int(self.port_table.item(row, 0).text())
         protocol = self.port_table.item(row, 1).text().lower()
 
-        result = PortAuditor.block_port(port, protocol)
-        self.log(result.message)
+        self._request_action(
+            "block-firewall-port",
+            {"port": port, "protocol": protocol},
+            self.tr("Blocking %s/%s remains manual-only until its exact firewall rule can be verified.") % (port, protocol),
+        )
 
-    def _install_usbguard(self):
+    def _install_usbguard(self: typing.Any) -> typing.Any:
         """Install USBGuard."""
-        self.log("Installing USBGuard...")
-        result = USBGuardManager.install()
-        self.log(result.message)
+        self._request_action(
+            "install-application",
+            {"source": "fedora", "package_id": "usbguard"},
+            self.tr("USBGuard installation requires an audited package plan."),
+        )
 
-    def _start_usbguard(self):
+    def _start_usbguard(self: typing.Any) -> typing.Any:
         """Start USBGuard service."""
-        result = USBGuardManager.start_service()
-        self.log(result.message)
+        self._request_action("start-usbguard-service", {}, self.tr("Starting USBGuard requires an audited service plan."))
 
-    def _refresh_usb_devices(self):
+    def _refresh_usb_devices(self: typing.Any) -> typing.Any:
         """Refresh USB device list."""
         if not hasattr(self, "usb_list"):
             return
@@ -475,7 +494,7 @@ class SecurityTab(QWidget, PluginInterface):
                 item.setData(Qt.ItemDataRole.UserRole, dev.id)
                 self.usb_list.addItem(item)
 
-    def _allow_usb(self):
+    def _allow_usb(self: typing.Any) -> typing.Any:
         """Allow selected USB device."""
         current = self.usb_list.currentItem()
         if not current:
@@ -484,11 +503,13 @@ class SecurityTab(QWidget, PluginInterface):
 
         device_id = current.data(Qt.ItemDataRole.UserRole)
         if device_id:
-            result = USBGuardManager.allow_device(device_id, permanent=True)
-            self.log(result.message)
-            self._refresh_usb_devices()
+            self._request_action(
+                "allow-usb-device",
+                {"device_id": str(device_id)},
+                self.tr("Permanent USB policy changes remain manual-only in Haven."),
+            )
 
-    def _block_usb(self):
+    def _block_usb(self: typing.Any) -> typing.Any:
         """Block selected USB device."""
         current = self.usb_list.currentItem()
         if not current:
@@ -497,17 +518,21 @@ class SecurityTab(QWidget, PluginInterface):
 
         device_id = current.data(Qt.ItemDataRole.UserRole)
         if device_id:
-            result = USBGuardManager.block_device(device_id, permanent=True)
-            self.log(result.message)
-            self._refresh_usb_devices()
+            self._request_action(
+                "block-usb-device",
+                {"device_id": str(device_id)},
+                self.tr("Permanent USB policy changes remain manual-only in Haven."),
+            )
 
-    def _install_firejail(self):
+    def _install_firejail(self: typing.Any) -> typing.Any:
         """Install Firejail."""
-        self.log("Installing Firejail...")
-        result = SandboxManager.install_firejail()
-        self.log(result.message)
+        self._request_action(
+            "install-application",
+            {"source": "fedora", "package_id": "firejail"},
+            self.tr("Firejail installation requires an audited package plan."),
+        )
 
-    def _launch_sandboxed(self, app: str):
+    def _launch_sandboxed(self: typing.Any, app: str) -> typing.Any:
         """Launch an app in sandbox."""
         no_net = self.no_network_check.isChecked() if hasattr(self, "no_network_check") else False
         private = self.private_home_check.isChecked() if hasattr(self, "private_home_check") else False
@@ -515,7 +540,7 @@ class SecurityTab(QWidget, PluginInterface):
         result = SandboxManager.run_sandboxed([app], no_network=no_net, private_home=private)
         self.log(result.message)
 
-    def _run_custom_sandbox(self):
+    def _run_custom_sandbox(self: typing.Any) -> typing.Any:
         """Run custom command in sandbox."""
         cmd = self.sandbox_cmd.currentText().strip()
         if not cmd:
@@ -530,7 +555,7 @@ class SecurityTab(QWidget, PluginInterface):
 
     # ==================== FIREWALL (from Privacy tab) ====================
 
-    def _create_firewall_section(self) -> QGroupBox:
+    def _create_firewall_section(self: typing.Any) -> QGroupBox:
         """Create firewall control section (absorbed from PrivacyTab)."""
         group = QGroupBox(self.tr("Firewall (firewalld)"))
         fw_layout = QHBoxLayout(group)
@@ -552,25 +577,23 @@ class SecurityTab(QWidget, PluginInterface):
 
         return group
 
-    def _check_firewall_status(self):
+    def _check_firewall_status(self: typing.Any) -> typing.Any:
         """Log current firewall status using service layer."""
         status = FirewallManager.get_status()
         self.log(f"Firewall running: {status.running}")
         self.log(f"Default zone: {status.default_zone or 'unknown'}")
 
-    def _enable_firewall(self):
+    def _enable_firewall(self: typing.Any) -> typing.Any:
         """Enable firewalld via service layer."""
-        result = FirewallManager.start_firewall()
-        self.log(result.message)
+        self._request_action("enable-firewall-service", {}, self.tr("Enabling firewalld requires an audited service plan."))
 
-    def _disable_firewall(self):
+    def _disable_firewall(self: typing.Any) -> typing.Any:
         """Disable firewalld via service layer."""
-        result = FirewallManager.stop_firewall()
-        self.log(result.message)
+        self._request_action("disable-firewall-service", {}, self.tr("Disabling firewalld requires an audited service plan."))
 
     # ==================== TELEMETRY (from Privacy tab) ====================
 
-    def _create_telemetry_section(self) -> QGroupBox:
+    def _create_telemetry_section(self: typing.Any) -> QGroupBox:
         """Create telemetry removal section (absorbed from PrivacyTab)."""
         group = QGroupBox(self.tr("Telemetry & Tracking"))
         tele_layout = QVBoxLayout(group)
@@ -578,8 +601,10 @@ class SecurityTab(QWidget, PluginInterface):
         btn_remove_tele = QPushButton(self.tr("Remove Fedora Telemetry Packages"))
         btn_remove_tele.setAccessibleName(self.tr("Remove Fedora Telemetry Packages"))
         btn_remove_tele.clicked.connect(
-            lambda: self._run_privacy_command(
-                *PrivilegedCommand.dnf("remove", "abrt", "gnome-abrt"),
+            lambda: self._request_action(
+                "remove-fedora-telemetry",
+                {},
+                self.tr("Telemetry package removal requires an audited package plan."),
             )
         )
         tele_layout.addWidget(btn_remove_tele)
@@ -588,7 +613,7 @@ class SecurityTab(QWidget, PluginInterface):
 
     # ==================== SECURITY UPDATES (from Privacy tab) ====================
 
-    def _create_security_updates_section(self) -> QGroupBox:
+    def _create_security_updates_section(self: typing.Any) -> QGroupBox:
         """Create security updates check section (absorbed from PrivacyTab)."""
         group = QGroupBox(self.tr("Security Checks"))
         sec_layout = QVBoxLayout(group)
@@ -600,7 +625,7 @@ class SecurityTab(QWidget, PluginInterface):
 
         return group
 
-    def _check_security_updates(self):
+    def _check_security_updates(self: typing.Any) -> typing.Any:
         """Check for security updates using the appropriate package manager."""
         pm = SystemManager.get_package_manager()
         if pm == "rpm-ostree":
@@ -616,6 +641,6 @@ class SecurityTab(QWidget, PluginInterface):
                 self.tr("Checking for Security Updates..."),
             )
 
-    def log(self, message: str):
+    def log(self: typing.Any, message: str) -> typing.Any:
         """Add message to log."""
         self.log_text.append(message)

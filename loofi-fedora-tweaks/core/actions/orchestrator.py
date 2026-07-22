@@ -16,6 +16,7 @@ from core.actions.stores import ActionPlanStore, ActionRunStore
 from core.executor.action_result import ActionResult
 from core.executor.command_facade import CommandFacade
 from core.executor.command_policy import CommandValidationError, validate_command_vector
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY, FedoraReleasePolicy
 from core.state.atomic_io import StateBusyError, advisory_lock
 from core.state.paths import StatePaths
 from services.system.system import SystemManager
@@ -67,6 +68,7 @@ class ActionCenterOrchestrator:
         clock: Callable[[], float] = time.time,
         id_factory: Callable[[], str] | None = None,
         recover_interrupted: bool = True,
+        release_policy: FedoraReleasePolicy = FEDORA_RELEASE_POLICY,
     ):
         self.facade = facade or CommandFacade()
         self.catalog = catalog or ActionCatalog()
@@ -76,6 +78,7 @@ class ActionCenterOrchestrator:
         self.runtime = runtime or SystemActionRuntime(self.facade, system_manager)
         self.clock = clock
         self.id_factory = id_factory or (lambda: str(uuid.uuid4()))
+        self.release_policy = release_policy
         self._held_leases: dict[str, AbstractContextManager[None]] = {}
         if recover_interrupted:
             self._recover_interrupted_if_unleased()
@@ -85,7 +88,7 @@ class ActionCenterOrchestrator:
         action_id: str,
         parameters: Mapping[str, Any] | None = None,
         *,
-        target: str = "44",
+        target: str = FEDORA_RELEASE_POLICY.stable_target,
     ) -> ActionPlan:
         """Create a 30-minute plan after schema validation and fresh preflight."""
         now = self.clock()
@@ -106,6 +109,10 @@ class ActionCenterOrchestrator:
                 confirmation_policy="explicit-no-rollback",
                 recovery_guidance=decision.alternative,
                 rollback_supported=False,
+                operation_class="manual_only",
+                supported_variants=frozenset(),
+                reboot_policy="none",
+                affected_resources=(),
                 created_at=now,
                 expires_at=now + PLAN_TTL_SECONDS,
             )
@@ -125,26 +132,32 @@ class ActionCenterOrchestrator:
         preview: list[str] = []
         if parameters_decision.allowed:
             try:
-                preview = self._render(definition, normalized)
-                if target == "45-preview":
+                if definition.operation_class == "manual_only":
+                    decision = definition.preflight_checker(normalized, self.runtime)
+                else:
+                    preview = self._render(definition, normalized)
+                    decision = definition.preflight_checker(normalized, self.runtime)
+                    if decision.allowed:
+                        decision = self._variant_decision(definition) or decision
+                if self.release_policy.is_preview_target(target):
                     decision = PolicyDecision(
                         False,
                         "preview_target_read_only",
-                        "Fedora 45 remains a read-only preview target in v17.",
-                        "Review preview diagnostics and create a Fedora 44 plan for an audited action.",
+                        f"Fedora {self.release_policy.preview_release} remains a read-only preview target.",
+                        f"Review preview diagnostics and create a Fedora {self.release_policy.stable_release} plan for an audited action.",
                         {"target": target},
                     )
-                elif target != "44":
+                elif not self.release_policy.is_stable_target(target):
                     decision = PolicyDecision(
                         False,
                         "unsupported_target",
                         f"Unsupported action target: {target}.",
-                        "Use the Fedora 44 stable target.",
+                        f"Use the Fedora {self.release_policy.stable_release} stable target.",
                         {"target": target},
                     )
                 else:
                     host_decision = self._host_target_decision(target)
-                    decision = host_decision or definition.preflight_checker(normalized, self.runtime)
+                    decision = host_decision or decision
             except (CommandValidationError, ValueError) as exc:
                 decision = PolicyDecision(False, "command_policy_rejected", str(exc))
             except (OSError, RuntimeError, TypeError, ValueError) as exc:
@@ -164,6 +177,10 @@ class ActionCenterOrchestrator:
             confirmation_policy=definition.confirmation_policy,
             recovery_guidance=definition.recovery_guidance,
             rollback_supported=definition.rollback_supported,
+            operation_class=definition.operation_class,
+            supported_variants=definition.supported_variants,
+            reboot_policy=definition.reboot_policy,
+            affected_resources=definition.affected_resources,
             created_at=now,
             expires_at=now + PLAN_TTL_SECONDS,
         )
@@ -206,7 +223,7 @@ class ActionCenterOrchestrator:
         result = self.facade.preview(command, privileged=plan.privileged, action_id=definition.id)
         result.data = {
             **(result.data or {}),
-            "schema_version": 2,
+            "schema_version": 3,
             "plan": plan.to_dict(),
             "policy_decision": plan.policy_decision.to_dict(),
         }
@@ -241,6 +258,8 @@ class ActionCenterOrchestrator:
                 command = self._render(definition, plan.parameters)
                 host_decision = self._host_target_decision(plan.target)
                 current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
+                if current_decision.allowed:
+                    current_decision = self._variant_decision(definition) or current_decision
             except (OSError, RuntimeError, TypeError, ValueError) as exc:
                 decision = PolicyDecision(False, "preflight_failed", f"Action preflight failed safely: {exc}")
                 self._block_plan(plan, decision, now=now)
@@ -290,6 +309,10 @@ class ActionCenterOrchestrator:
                 action_id=plan.action_id,
                 correlation_id=correlation_id,
                 parameters=dict(plan.parameters),
+                operation_class=plan.operation_class,
+                supported_variants=plan.supported_variants,
+                reboot_policy=plan.reboot_policy,
+                affected_resources=plan.affected_resources,
                 state="running",
                 created_at=now,
                 updated_at=now,
@@ -374,6 +397,7 @@ class ActionCenterOrchestrator:
                 privileged=prepared.privileged,
                 timeout=timeout,
                 action_id=prepared.action_id,
+                authority="action_center",
             )
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
             # Keep an auditable failed run when the execution boundary fails.
@@ -442,19 +466,35 @@ class ActionCenterOrchestrator:
         return definition
 
     def _host_target_decision(self, target: str) -> PolicyDecision | None:
-        """Keep Fedora 45+ hosts read-only even if a caller claims target 44."""
+        """Keep preview hosts read-only even if a caller claims the stable target."""
         version_reader = getattr(self.runtime, "fedora_version", None)
         host_version = str(version_reader() if callable(version_reader) else "").strip()
-        match = host_version.split(".", 1)[0]
-        if target == "44" and match.isdigit() and int(match) >= 45:
+        if self.release_policy.is_stable_target(target) and self.release_policy.host_is_preview(host_version):
             return PolicyDecision(
                 False,
                 "host_preview_read_only",
-                f"Fedora {host_version} remains read-only for v17 guided maintenance.",
-                "Use Fedora 45 preview diagnostics without applying maintenance actions.",
+                f"Fedora {host_version} remains read-only until its release policy is certified.",
+                f"Use Fedora {self.release_policy.preview_release} preview diagnostics without applying maintenance actions.",
                 {"target": target, "host_fedora_version": host_version},
             )
         return None
+
+    def _variant_decision(self, definition: ActionDefinition) -> PolicyDecision | None:
+        """Reject an action when its declared Fedora variant excludes this host."""
+        variant = "atomic" if self.runtime.is_atomic() else "traditional"
+        if variant in definition.supported_variants:
+            return None
+        reason_code = "atomic_manual_only" if variant == "atomic" else "unsupported_variant"
+        return PolicyDecision(
+            False,
+            reason_code,
+            f"{definition.id} is not executable on {variant.title()} Fedora.",
+            "Review the action manually or use a supported Fedora variant.",
+            {
+                "variant": variant,
+                "supported_variants": sorted(definition.supported_variants),
+            },
+        )
 
     def _render(self, definition: ActionDefinition, parameters: Mapping[str, Any]) -> list[str]:
         vector = [str(part) for part in definition.command_renderer(parameters, self.runtime)]
@@ -506,6 +546,10 @@ class ActionCenterOrchestrator:
             "confirmation_policy": definition.confirmation_policy,
             "recovery_guidance": definition.recovery_guidance,
             "rollback_supported": definition.rollback_supported,
+            "operation_class": definition.operation_class,
+            "supported_variants": sorted(definition.supported_variants),
+            "reboot_policy": definition.reboot_policy,
+            "affected_resources": list(definition.affected_resources),
         }
 
     def _is_privileged(self, definition: ActionDefinition, parameters: Mapping[str, Any]) -> bool:
@@ -520,6 +564,10 @@ class ActionCenterOrchestrator:
             "confirmation_policy": plan.confirmation_policy,
             "recovery_guidance": plan.recovery_guidance,
             "rollback_supported": plan.rollback_supported,
+            "operation_class": plan.operation_class,
+            "supported_variants": sorted(plan.supported_variants),
+            "reboot_policy": plan.reboot_policy,
+            "affected_resources": list(plan.affected_resources),
         }
 
     def _block_plan(self, plan: ActionPlan, decision: PolicyDecision, *, now: float) -> None:

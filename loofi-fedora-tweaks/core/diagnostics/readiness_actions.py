@@ -13,6 +13,7 @@ from core.diagnostics.release_readiness import (
 )
 from core.executor.action_executor import ActionExecutor
 from core.executor.action_result import ActionResult
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from services.system.system import SystemManager
 
 
@@ -83,7 +84,7 @@ class ReadinessActionPlan:
 class ReadinessActionService:
     """Bridge read-only readiness findings to explicit, confirmed actions."""
 
-    DEFAULT_TARGET = "44"
+    DEFAULT_TARGET = FEDORA_RELEASE_POLICY.stable_target
     EXECUTABLE_REPO_ACTION_ID = "readiness-repo-cache-clean"
     _ACTION_CENTER_ADAPTERS = {
         EXECUTABLE_REPO_ACTION_ID: "dnf-clean-all",

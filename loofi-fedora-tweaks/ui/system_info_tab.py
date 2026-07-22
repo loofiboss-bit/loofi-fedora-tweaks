@@ -7,6 +7,7 @@ import os
 from core.export import ReportExporter
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QApplication, QComboBox, QFileDialog, QLabel, QVBoxLayout, QWidget
 from utils import system_info_utils
@@ -21,15 +22,7 @@ logger = get_logger(__name__)
 class SystemInfoTab(QWidget, PluginInterface):
     """System facts grouped into compact, copyable responsive property cards."""
 
-    _METADATA = PluginMetadata(
-        id="system_info",
-        name="System Info",
-        description="Detailed system information including hardware specs, kernel, and uptime.",
-        category="System",
-        icon="info",
-        badge="recommended",
-        order=20,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA

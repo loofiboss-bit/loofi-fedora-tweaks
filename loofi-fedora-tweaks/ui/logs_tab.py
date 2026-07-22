@@ -7,6 +7,7 @@ and log export. Uses SmartLogViewer from utils/smart_logs.py.
 """
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -35,15 +36,7 @@ logger = get_logger(__name__)
 class LogsTab(BaseTab):
     """Smart log viewer tab with pattern detection."""
 
-    _METADATA = PluginMetadata(
-        id="logs",
-        name="Logs",
-        description="Smart log viewer with pattern detection, error summary, and log export.",
-        category="Maintenance",
-        icon="logs",
-        badge="advanced",
-        order=20,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA

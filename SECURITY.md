@@ -2,150 +2,78 @@
 
 ## Supported Versions
 
-| Version | Supported |
-|---------|-----------|
-| 14.x   | Active |
-| 13.x   | Security fixes only |
-| < 13   | End of life |
+| Version | Support |
+|---|---|
+| 17.x | Current stable security support |
+| 16.x | Critical security fixes only |
+| < 16 | End of life |
+
+v18.0.0 "Haven" is under development and is not a supported release until its
+release gates, tag, and public artifacts have been independently verified.
 
 ## Reporting a Vulnerability
 
-We take security seriously. If you discover a security vulnerability in Loofi Fedora Tweaks, please report it responsibly.
+Use a private [GitHub Security Advisory](https://github.com/loofiboss-bit/loofi-fedora-tweaks/security/advisories/new).
+Include affected versions, reproduction steps, impact, and any suggested
+mitigation. Do not open a public issue for an unpatched vulnerability.
 
-### How to Report
+## Current Security Boundaries
 
-1. **GitHub Security Advisories (preferred)**: [Create a private security advisory](https://github.com/loofiboss-bit/loofi-fedora-tweaks/security/advisories/new)
-2. **Email**: security@loofi.dev (if available)
+### Host mutations
 
-### What to Include
+- Privileged commands use Polkit (`pkexec`), never `sudo`.
+- Commands use argument vectors, never `shell=True`, and subprocess calls have
+  explicit timeouts.
+- Action Center plans expire, are re-preflighted before execution, and never
+  persist an authoritative command vector.
+- GUI, CLI, daemon, automation, and agent entrypoints may create plans, but host
+  changes require an explicit local Action Center confirmation.
+- Reboot, rollback, and distribution upgrade are never started automatically.
 
-- Description of the vulnerability
-- Steps to reproduce
-- Affected version(s)
-- Potential impact assessment
-- Any suggested fixes (optional)
+### Extensions and presets
 
-### What to Expect
+- Only application-owned, built-in page providers are importable.
+- External Python extension directories are not scanned or imported.
+- Existing third-party files remain user-owned and are never deleted
+  automatically. The Legacy Extensions view can inventory and export them.
+- The public Marketplace, reviews, analytics, updater, dependency resolver, and
+  executable preset distribution are retired.
+- Local preset files are data only. They must pass schema and path validation
+  and become reviewable plans before any host change.
 
-| Timeline | Action |
-|----------|--------|
-| 48 hours | Acknowledgment of your report |
-| 7 days   | Initial assessment and severity classification |
-| 30 days  | Fix developed and tested |
-| 90 days  | Public disclosure (coordinated with reporter) |
+### Secrets and state
 
-We follow a **90-day responsible disclosure timeline**. If a fix takes longer, we will communicate the timeline and provide interim mitigations.
+- Gist tokens and JWT signing secrets use Secret Service through `keyring`.
+- Legacy plaintext secrets are removed only after a persistent readback succeeds.
+- If Secret Service is unavailable, secrets remain in memory for the current
+  process; there is no plaintext file fallback.
+- API key hashes and other sensitive configuration use atomic writes with mode
+  `0600`.
+- State restore rejects path traversal, duplicate entries, unsupported schemas,
+  oversized data, and hash mismatches.
 
-## Security Architecture
+### Local Web API
 
-### Privilege Escalation
+- The optional API accepts only loopback hosts. A non-loopback
+  `LOOFI_API_HOST` stops startup.
+- The API is read-only except for token issuance.
+- Token issuance is rate-limited. API keys can be rotated or revoked locally.
+- Authenticated `GET` routes expose status and inspection data; there is no
+  remote mutation endpoint.
 
-- All privileged operations use **Polkit (`pkexec`)** — never `sudo`
-- Granular Polkit policies per capability (firewall, network, storage, etc.)
-- `PrivilegedCommand` builder validates parameters before execution
-- All privileged actions are audit-logged to `~/.config/loofi-fedora-tweaks/audit.jsonl`
+## Security Testing
 
-### Subprocess Safety
-
-- All `subprocess.run()` and `subprocess.check_output()` calls include `timeout` parameter
-- No shell string interpolation — commands use argument lists
-- `CommandRunner` wraps `QProcess` for async GUI operations
-
-### Data Handling
-
-- No telemetry or data collection
-- Configuration stored locally at `~/.config/loofi-fedora-tweaks/`
-- Plugin sandbox restricts file system and network access
-- API server binds to localhost by default (requires `--unsafe-expose` for network binding)
-- State backups exclude secrets, API credentials, raw logs, plugin code, and caches by default.
-- Restore rejects zip-slip paths, duplicate entries, oversized payloads, hash mismatches, and unsupported schemas.
-- Restore requires a matching preview plan and creates a local rollback archive before applying domains.
-- Helm action plans expire, are re-preflighted before execution, and never persist an authoritative command vector.
-- Only one local Action Center mutation may run at a time; interrupted runs never auto-resume.
-
-### Dependencies
-
-- Minimal dependency footprint (PyQt6, standard library)
-- Dependabot monitors for vulnerable dependencies
-- CI runs Bandit, pip-audit, and Trivy on every PR
-
-## API Threat Model
-
-The optional REST API server (`--api` mode) exposes system operations over HTTP. It is designed for local automation and must never be exposed to untrusted networks.
-
-### Binding & Network Exposure
-
-| Setting | Binding | Risk Level |
-|---------|---------|------------|
-| Default | `127.0.0.1:8000` | Low — localhost only |
-| `--unsafe-expose` | `0.0.0.0:8000` | **High** — network-accessible |
-
-The `--unsafe-expose` flag is required to bind to all interfaces and logs a security warning on startup.
-
-### Authentication
-
-- **JWT HS256** tokens with 3600s (1 hour) lifetime
-- **bcrypt** hashed API keys stored in `~/.config/loofi-fedora-tweaks/auth.json`
-- Bearer token required on all endpoints except `GET /health`
-- No token revocation (tokens expire naturally)
-
-### Endpoint Security
-
-| Endpoint | Auth | Risk | Mitigations |
-|----------|------|------|-------------|
-| `GET /health` | None | Minimal | Returns `{"status": "ok"}` only — no version leak |
-| `GET /api/info` | Bearer JWT | Low | Read-only system info |
-| `GET /api/agents` | Bearer JWT | Low | Read-only agent list |
-| `POST /api/execute` | Bearer JWT | **Critical** | Legacy compatibility surface; command allowlist, audit logging, parameter validation |
-| `POST /api/preview` | Bearer JWT | Medium | Dry-run only, audit-logged |
-| `GET /api/action-center/*` | Bearer JWT | Low | Read-only plan and run status; no remote apply route |
-
-### Command Allowlist (`POST /execute`)
-
-The executor enforces a `COMMAND_ALLOWLIST` frozenset. Only executables listed in the allowlist (derived from `PrivilegedCommand` builders + read-only diagnostics) can be invoked. Disallowed commands return HTTP 403 with an audit log entry.
-
-Allowlisted categories:
-- **Package management**: `dnf`, `rpm-ostree`, `flatpak`, `rpm`
-- **System services**: `systemctl`, `journalctl`, `loginctl`, `hostnamectl`, `timedatectl`
-- **Hardware/firmware**: `fwupdmgr`, `fstrim`, `lsblk`, `lspci`, `lsusb`, `lscpu`, `sensors`
-- **Network**: `nmcli`, `firewall-cmd`, `ip`, `ss`, `resolvectl`
-- **Privilege**: `pkexec` (Polkit escalation)
-- **Diagnostics**: `uname`, `cat`, `grep`, `free`, `df`, `findmnt`, `sysctl`
-
-### Known Limitations
-
-- No rate limiting on API endpoints (mitigated by localhost-only default)
-- No token revocation mechanism (1-hour expiry is the only control)
-- No TLS by default (acceptable for localhost; not for `--unsafe-expose`)
-
-### Recommendations for Operators
-
-1. **Never** use `--unsafe-expose` on machines accessible from untrusted networks
-2. Rotate API keys periodically via `AuthManager.generate_api_key()`
-3. Monitor `audit.jsonl` for unexpected command patterns
-4. Consider a reverse proxy with TLS if remote access is required
+The repository runs unit and integration tests, architecture and trust-boundary
+checks, lint, type checking, Bandit, dependency audit, CodeQL, package builds,
+and SBOM generation as release gates. A green unit suite alone is not sufficient
+release evidence.
 
 ## Scope
 
-The following are **in scope** for security reports:
+In scope: privilege-boundary bypasses, command or argument injection, external
+code execution, secret disclosure, API authentication/binding bypasses, unsafe
+state restore, and Action Center confirmation bypasses.
 
-- Privilege escalation beyond intended Polkit policies
-- Command injection via parameter validation bypass
-- Unauthorized file access or modification
-- Plugin sandbox escape
-- API authentication bypass
-- Information disclosure of sensitive system data
-
-The following are **out of scope**:
-
-- Attacks requiring physical access to the machine
-- Social engineering
-- Denial of service against local-only services
-- Issues in upstream dependencies (report to upstream maintainers)
-
-## Security Updates
-
-Security fixes are released as patch versions (e.g., v35.0.1) and announced via:
-- GitHub Releases
-- CHANGELOG.md
-- GitHub Security Advisories
+Out of scope: attacks requiring physical access, social engineering, local
+denial of service without a boundary bypass, and vulnerabilities wholly owned by
+an upstream dependency (report those upstream as well).

@@ -9,11 +9,14 @@ Sub-tabs:
   - Monitoring: Real-time traffic, active connections
 """
 
+import typing
+
 import logging
 import os
 
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import Qt, QTimer
+from core.product_catalog import plugin_metadata_for_module
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QGroupBox,
@@ -40,25 +43,18 @@ logger = logging.getLogger(__name__)
 
 
 class NetworkTab(BaseTab):
-    _METADATA = PluginMetadata(
-        id="network",
-        name="Network",
-        description="Comprehensive network management including connections, DNS, privacy, and monitoring.",
-        category="Network",
-        icon="network-connectivity",
-        badge="recommended",
-        order=10,
-    )
+    actionCenterRequested = pyqtSignal(str, object)
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
     """Network management with Connections, DNS, Privacy, and Monitoring routes."""
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.history = HistoryManager()
 
@@ -82,18 +78,18 @@ class NetworkTab(BaseTab):
         self._network_loaded = False
         self._route_active = False
 
-    def on_activate(self) -> None:
+    def on_activate(self: typing.Any) -> None:
         self._route_active = True
         if not self._network_loaded:
             self._network_loaded = True
             QTimer.singleShot(0, self._initial_load)
         self._on_tab_changed(self.tabs.currentIndex())
 
-    def on_deactivate(self) -> None:
+    def on_deactivate(self: typing.Any) -> None:
         self._route_active = False
         self._monitor_timer.stop()
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select a Network page from a stable route ID."""
         route_to_index = {
             "network": 0,
@@ -113,7 +109,7 @@ class NetworkTab(BaseTab):
     #  Sub-tab builders
     # ------------------------------------------------------------------ #
 
-    def _build_connections_tab(self):
+    def _build_connections_tab(self: typing.Any) -> typing.Any:
         """Interfaces + WiFi + VPN overview."""
         container = QVBoxLayout()
 
@@ -221,7 +217,7 @@ class NetworkTab(BaseTab):
             self.tr("Review current interfaces, Wi-Fi networks, and VPN connections."),
         )
 
-    def _build_dns_tab(self):
+    def _build_dns_tab(self: typing.Any) -> typing.Any:
         """DNS provider switching."""
         container = QVBoxLayout()
 
@@ -274,7 +270,7 @@ class NetworkTab(BaseTab):
             self.tr("Review the current resolver before applying a provider to the active connection."),
         )
 
-    def _build_privacy_tab(self):
+    def _build_privacy_tab(self: typing.Any) -> typing.Any:
         """MAC randomization and hostname privacy."""
         container = QVBoxLayout()
 
@@ -350,7 +346,7 @@ class NetworkTab(BaseTab):
             self.tr("Review current identity exposure before changing MAC or hostname behavior."),
         )
 
-    def _build_monitoring_tab(self):
+    def _build_monitoring_tab(self: typing.Any) -> typing.Any:
         """Real-time traffic and active connections."""
         container = QVBoxLayout()
 
@@ -462,10 +458,10 @@ class NetworkTab(BaseTab):
 
     @staticmethod
     def _make_container(
-        layout,
+        layout: typing.Any,
         accessible_name: str = "Page content",
         description: str = "",
-    ):
+    ) -> typing.Any:
         """Wrap route content in the shared page scaffold and one scroll owner."""
         from PyQt6.QtCore import Qt
         from PyQt6.QtWidgets import (
@@ -483,7 +479,7 @@ class NetworkTab(BaseTab):
         scroll.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
         return scroll
 
-    def _initial_load(self):
+    def _initial_load(self: typing.Any) -> typing.Any:
         """Load initial data for all sub-tabs."""
         self._load_interfaces()
         self._load_vpn()
@@ -499,7 +495,7 @@ class NetworkTab(BaseTab):
         item.setForeground(semantic_qcolor("text"))
         return item
 
-    def _set_empty_table_state(self, table: QTableWidget, message: str):
+    def _set_empty_table_state(self: typing.Any, table: QTableWidget, message: str) -> typing.Any:
         """Render a visible one-row empty state message for table bodies."""
         table.clearSpans()
         table.setRowCount(1)
@@ -510,7 +506,7 @@ class NetworkTab(BaseTab):
         if callable(normalize):
             normalize(table)
 
-    def _on_tab_changed(self, index):
+    def _on_tab_changed(self: typing.Any, index: typing.Any) -> typing.Any:
         """Start/stop monitoring timer based on active sub-tab."""
         if index == 3 and self._route_active:  # Monitoring tab
             self._refresh_monitoring()
@@ -522,7 +518,7 @@ class NetworkTab(BaseTab):
     #  Connections sub-tab
     # ------------------------------------------------------------------ #
 
-    def _load_interfaces(self):
+    def _load_interfaces(self: typing.Any) -> typing.Any:
         """Load network interfaces from NetworkMonitor."""
         try:
             interfaces = NetworkMonitor.get_all_interfaces()
@@ -548,7 +544,7 @@ class NetworkTab(BaseTab):
             self._set_empty_table_state(self.iface_table, self.tr("Failed to load interfaces"))
 
     @staticmethod
-    def _get_mac_address(iface_name):
+    def _get_mac_address(iface_name: typing.Any) -> typing.Any:
         """Read MAC address from /sys/class/net/<iface>/address."""
         try:
             with open(f"/sys/class/net/{iface_name}/address", "r") as f:
@@ -557,7 +553,7 @@ class NetworkTab(BaseTab):
             logger.debug("Failed to read MAC address for %s: %s", iface_name, e)
             return "—"
 
-    def _scan_wifi(self):
+    def _scan_wifi(self: typing.Any) -> typing.Any:
         """Scan for available WiFi networks via nmcli."""
         rows = NetworkUtils.scan_wifi()
         self.wifi_table.clearSpans()
@@ -575,7 +571,7 @@ class NetworkTab(BaseTab):
                 normalize(self.wifi_table)
         self.append_output(self.tr("WiFi scan complete. {} networks found.\n").format(len(rows)))
 
-    def _connect_wifi(self):
+    def _connect_wifi(self: typing.Any) -> typing.Any:
         """Connect to selected WiFi network."""
         row = self.wifi_table.currentRow()
         if row < 0:
@@ -593,13 +589,13 @@ class NetworkTab(BaseTab):
         success = NetworkUtils.connect_wifi(ssid)
         self.append_output(self.tr("Connected.\n") if success else self.tr("Connection failed.\n"))
 
-    def _disconnect_wifi(self):
+    def _disconnect_wifi(self: typing.Any) -> typing.Any:
         """Disconnect WiFi."""
         self.append_output(self.tr("Disconnecting WiFi..."))
         success = NetworkUtils.disconnect_wifi("wlan0")
         self.append_output(self.tr("Disconnected.\n") if success else self.tr("Disconnect failed.\n"))
 
-    def _load_vpn(self):
+    def _load_vpn(self: typing.Any) -> typing.Any:
         """Load VPN connections from NetworkManager."""
         vpn_rows = NetworkUtils.load_vpn_connections()
         self.vpn_table.clearSpans()
@@ -618,7 +614,7 @@ class NetworkTab(BaseTab):
     #  DNS sub-tab
     # ------------------------------------------------------------------ #
 
-    def _detect_current_dns(self):
+    def _detect_current_dns(self: typing.Any) -> typing.Any:
         """Detect and display the current DNS servers."""
         dns_str = NetworkUtils.detect_current_dns()
         if dns_str:
@@ -626,11 +622,11 @@ class NetworkTab(BaseTab):
         else:
             self.lbl_current_dns.setText(self.tr("Current DNS: (DHCP default)"))
 
-    def get_active_connection(self):
+    def get_active_connection(self: typing.Any) -> typing.Any:
         """Return the connection name of the active WiFi or Ethernet connection."""
         return NetworkUtils.get_active_connection()
 
-    def apply_dns(self):
+    def apply_dns(self: typing.Any) -> typing.Any:
         """Apply selected DNS provider to active connection."""
         dns_servers = self.dns_combo.currentData()
         conn_name = self.get_active_connection()
@@ -645,20 +641,18 @@ class NetworkTab(BaseTab):
 
         message = self.tr("Resetting DNS to DHCP default...") if dns_servers == "auto" else self.tr("Applying DNS: {}").format(dns_servers)
         self.append_output(message)
-        success = NetworkUtils.apply_dns(conn_name, dns_servers)
-        self.append_output(self.tr("DNS updated.\n") if success else self.tr("DNS update failed.\n"))
-
-        # Reapply connection in background
-        NetworkUtils.reactivate_connection(conn_name)
-
-        QTimer.singleShot(1000, self._detect_current_dns)
+        self.actionCenterRequested.emit(
+            "configure-network-dns",
+            {"connection": str(conn_name), "dns": str(dns_servers)},
+        )
+        self.append_output(self.tr("Review the connection-specific DNS guidance in Action Center.\n"))
         QMessageBox.information(
             self,
-            self.tr("Success"),
-            self.tr("DNS settings applied to '{}'.").format(conn_name),
+            self.tr("Review required"),
+            self.tr("DNS changes for '{}' require Action Center review.").format(conn_name),
         )
 
-    def _test_dns(self):
+    def _test_dns(self: typing.Any) -> typing.Any:
         """Test DNS resolution speed."""
         self.run_command(
             "bash",
@@ -680,7 +674,7 @@ class NetworkTab(BaseTab):
     #  Privacy sub-tab
     # ------------------------------------------------------------------ #
 
-    def check_mac_status(self):
+    def check_mac_status(self: typing.Any) -> typing.Any:
         """Check whether MAC randomization is enabled."""
         config_file = "/etc/NetworkManager/conf.d/00-mac-randomization.conf"
         if os.path.exists(config_file):
@@ -688,49 +682,17 @@ class NetworkTab(BaseTab):
         else:
             self.lbl_mac_status.setText(self.tr("MAC Randomization: Disabled"))
 
-    def toggle_mac_randomization(self, enable):
+    def toggle_mac_randomization(self: typing.Any, enable: typing.Any) -> typing.Any:
         """Enable or disable MAC randomization via NetworkManager config."""
-        config_file = "/etc/NetworkManager/conf.d/00-mac-randomization.conf"
-        content = "[device]\nwifi.scan-rand-mac-address=yes\n\n[connection]\nwifi.cloned-mac-address=random\nethernet.cloned-mac-address=random\n"
+        action_id = "enable-mac-randomization" if enable else "disable-mac-randomization"
+        self.actionCenterRequested.emit(action_id, {})
+        QMessageBox.information(
+            self,
+            self.tr("Review required"),
+            self.tr("Persistent MAC randomization changes require Action Center review."),
+        )
 
-        if enable:
-            tmp_file = "/tmp/00-mac-randomization.conf"
-            try:
-                with open(tmp_file, "w") as f:
-                    f.write(content)
-            except OSError as e:
-                self.append_output(self.tr("Failed to write temp file: {}\n").format(e))
-                return
-
-            self.run_command(
-                "pkexec",
-                ["mv", tmp_file, config_file],
-                self.tr("Enabling MAC randomization..."),
-            )
-            self.history.log_change(
-                self.tr("Enabled MAC Randomization"),
-                ["pkexec", "rm", "-f", config_file],
-            )
-            QMessageBox.information(
-                self,
-                self.tr("Enabled"),
-                self.tr("MAC Randomization enabled. Restart NetworkManager to apply."),
-            )
-        else:
-            self.run_command(
-                "pkexec",
-                ["rm", "-f", config_file],
-                self.tr("Disabling MAC randomization..."),
-            )
-            QMessageBox.information(
-                self,
-                self.tr("Disabled"),
-                self.tr("MAC Randomization disabled. Restart NetworkManager to apply."),
-            )
-
-        QTimer.singleShot(500, self.check_mac_status)
-
-    def _check_hostname_privacy(self):
+    def _check_hostname_privacy(self: typing.Any) -> typing.Any:
         """Check if hostname is hidden from DHCP broadcasts."""
         conn = self.get_active_connection()
         if not conn:
@@ -744,30 +706,18 @@ class NetworkTab(BaseTab):
         else:
             self.lbl_hostname_status.setText(self.tr("Hostname broadcast: unknown"))
 
-    def _toggle_hostname_privacy(self, hide):
+    def _toggle_hostname_privacy(self: typing.Any, hide: typing.Any) -> typing.Any:
         """Hide or show hostname in DHCP requests."""
         conn = self.get_active_connection()
         if not conn:
             QMessageBox.warning(self, self.tr("Error"), self.tr("No active connection found."))
             return
 
-        self.append_output(self.tr("Setting hostname visibility to {}...").format("hidden" if hide else "visible"))
-        success = NetworkUtils.set_hostname_privacy(conn, hide)
-        self.append_output(self.tr("Hostname privacy updated.\n") if success else self.tr("Hostname privacy update failed.\n"))
-
-        action = self.tr("Hidden hostname from DHCP") if hide else self.tr("Restored hostname to DHCP")
-        undo_value = "yes" if hide else "no"
-        self.history.log_change(
-            action,
-            [
-                "nmcli",
-                "connection",
-                "modify",
-                conn,
-                "ipv4.dhcp-send-hostname",
-                undo_value,
-            ],
+        self.actionCenterRequested.emit(
+            "configure-hostname-privacy",
+            {"connection": str(conn), "hidden": bool(hide)},
         )
+        self.append_output(self.tr("Review the persistent DHCP hostname policy in Action Center.\n"))
 
         QTimer.singleShot(500, self._check_hostname_privacy)
         QMessageBox.information(
@@ -776,7 +726,7 @@ class NetworkTab(BaseTab):
             self.tr("Hostname privacy updated. Reconnect to apply."),
         )
 
-    def undo_last(self):
+    def undo_last(self: typing.Any) -> typing.Any:
         """Undo the last network privacy action."""
         success, msg = self.history.undo_last_action()
         if success:
@@ -790,7 +740,7 @@ class NetworkTab(BaseTab):
     #  Monitoring sub-tab
     # ------------------------------------------------------------------ #
 
-    def _refresh_monitoring(self):
+    def _refresh_monitoring(self: typing.Any) -> typing.Any:
         """Refresh bandwidth and connection data from NetworkMonitor."""
         try:
             # Bandwidth summary

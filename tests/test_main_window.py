@@ -1232,6 +1232,8 @@ _MODULE_KEYS = [
     "services.hardware",
     "services.hardware.disk",
     "version",
+    "ui.main_window_interactions",
+    "ui.main_window_services",
     "ui.main_window",
 ]
 
@@ -1244,6 +1246,8 @@ def setUpModule():
         _module_backup[key] = sys.modules.get(key)
     _install_stubs()
     # Force re-import so stubs are used
+    sys.modules.pop("ui.main_window_interactions", None)
+    sys.modules.pop("ui.main_window_services", None)
     sys.modules.pop("ui.main_window", None)
     sys.modules.pop("ui", None)
     importlib.import_module("ui.main_window")
@@ -2167,7 +2171,7 @@ class TestCommandPalette(unittest.TestCase):
         self.assertEqual(len(self.win._global_search_shortcuts), 2)
 
     def test_shortcuts_bind_both_filters_to_the_same_surface(self):
-        mod = _get_module()
+        mod = sys.modules["ui.main_window_interactions"]
         created = []
 
         class Shortcut:

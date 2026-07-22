@@ -42,4 +42,16 @@ def registry_for_inventory(inventory: Any) -> SchemaRegistry:
             0,
             lambda payload: {**payload, "schema_version": 1},
         )
+    for schema_id in ("loofi.action-plans", "loofi.action-runs"):
+        if any(domain.schema_id == schema_id for domain in inventory.all()):
+            registry.add_migration(
+                schema_id,
+                1,
+                lambda payload: {**payload, "schema_version": 2},
+            )
+            registry.add_migration(
+                schema_id,
+                2,
+                lambda payload: {**payload, "schema_version": 3},
+            )
     return registry

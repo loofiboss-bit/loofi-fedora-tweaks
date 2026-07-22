@@ -1,10 +1,20 @@
+import typing
 from PyQt6.QtWidgets import (
-    QDialog, QVBoxLayout, QHBoxLayout, QLabel,
-    QPushButton, QStackedWidget, QProgressBar,
-    QFrame, QScrollArea, QCheckBox, QWidget,
+    QDialog,
+    QVBoxLayout,
+    QHBoxLayout,
+    QLabel,
+    QPushButton,
+    QStackedWidget,
+    QProgressBar,
+    QFrame,
+    QScrollArea,
+    QCheckBox,
+    QWidget,
 )
 from PyQt6.QtCore import QObject, Qt, QThread, QTimer, pyqtSignal
 from core.actions import ActionCenterOrchestrator
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from core.diagnostics.health_registry import HealthRegistry
 from core.diagnostics.health_model import HealthResult
 from core.executor.action_model import AtlasActionRegistry, SystemAction
@@ -20,16 +30,20 @@ class _AtlasPlanWorker(QObject):
     finished = pyqtSignal(object)
     failed = pyqtSignal(str)
 
-    def __init__(self, action_center, requests):
+    def __init__(self: typing.Any, action_center: typing.Any, requests: typing.Any) -> None:
         super().__init__()
         self._action_center = action_center
         self._requests = requests
 
-    def run(self):
+    def run(self: typing.Any) -> typing.Any:
         results = []
         try:
             for request in self._requests:
-                plan = self._action_center.plan(request["action_id"], request["parameters"], target="44")
+                plan = self._action_center.plan(
+                    request["action_id"],
+                    request["parameters"],
+                    target=FEDORA_RELEASE_POLICY.stable_target,
+                )
                 results.append({**request, "plan": plan})
         except (OSError, RuntimeError, ValueError, TypeError, AttributeError) as exc:
             self.failed.emit(str(exc))
@@ -47,7 +61,7 @@ class AtlasTaskWizard(QDialog):
     3: Result Summary
     """
 
-    def __init__(self, task_id: str, check_ids: list, action_ids: list, parent=None):
+    def __init__(self: typing.Any, task_id: str, check_ids: list, action_ids: list, parent: typing.Any = None) -> None:
         super().__init__(parent)
         self.task_id = task_id
         self.check_ids = check_ids
@@ -67,9 +81,8 @@ class AtlasTaskWizard(QDialog):
         self._setup_ui()
         self._set_step(0)
 
-    def _setup_ui(self):
-        self.setWindowTitle(
-            f"Atlas Assistant - {self.task_id.replace('task-', '').title()}")
+    def _setup_ui(self: typing.Any) -> typing.Any:
+        self.setWindowTitle(f"Atlas Assistant - {self.task_id.replace('task-', '').title()}")
         self.setMinimumSize(600, 500)
 
         layout = QVBoxLayout(self)
@@ -109,7 +122,7 @@ class AtlasTaskWizard(QDialog):
 
         layout.addLayout(nav)
 
-    def _build_scan_step(self):
+    def _build_scan_step(self: typing.Any) -> typing.Any:
         page = QWidget()
         layout = QVBoxLayout(page)
         self.scan_label = QLabel("Running system diagnostics...")
@@ -119,7 +132,7 @@ class AtlasTaskWizard(QDialog):
         layout.addStretch()
         return page
 
-    def _build_findings_step(self):
+    def _build_findings_step(self: typing.Any) -> typing.Any:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.addWidget(QLabel("Diagnostic Findings:"))
@@ -133,7 +146,7 @@ class AtlasTaskWizard(QDialog):
         layout.addWidget(scroll)
         return page
 
-    def _build_execution_step(self):
+    def _build_execution_step(self: typing.Any) -> typing.Any:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.addWidget(QLabel("Recommended Repairs:"))
@@ -147,14 +160,13 @@ class AtlasTaskWizard(QDialog):
         layout.addWidget(scroll)
         return page
 
-    def _build_result_step(self):
+    def _build_result_step(self: typing.Any) -> typing.Any:
         page = QWidget()
         layout = QVBoxLayout(page)
 
         self.result_label = QLabel("All tasks completed.")
         self.result_label.setAlignment(Qt.AlignmentFlag.AlignCenter)
-        self.result_label.setStyleSheet(
-            "font-weight: bold; margin-bottom: 10px;")
+        self.result_label.setStyleSheet("font-weight: bold; margin-bottom: 10px;")
         layout.addWidget(self.result_label)
 
         layout.addWidget(QLabel("Execution Log:"))
@@ -169,7 +181,7 @@ class AtlasTaskWizard(QDialog):
 
         return page
 
-    def _set_step(self, index: int):
+    def _set_step(self: typing.Any, index: int) -> typing.Any:
         self.stack.setCurrentIndex(index)
         self.progress_bar.setValue((index + 1) * 25)
         self.btn_back.setVisible(index > 0 and index < 3)
@@ -191,7 +203,7 @@ class AtlasTaskWizard(QDialog):
             self.btn_next.setText("Finish")
             self._populate_log()
 
-    def _populate_log(self):
+    def _populate_log(self: typing.Any) -> typing.Any:
         while self.log_layout.count() > 1:
             item = self.log_layout.takeAt(0)
             if item.widget():
@@ -227,7 +239,7 @@ class AtlasTaskWizard(QDialog):
 
             self.log_layout.insertWidget(self.log_layout.count() - 1, frame)
 
-    def _go_next(self):
+    def _go_next(self: typing.Any) -> typing.Any:
         idx = self.stack.currentIndex()
         if idx == 2:
             self._run_repairs()
@@ -236,21 +248,20 @@ class AtlasTaskWizard(QDialog):
         else:
             self._set_step(idx + 1)
 
-    def _go_back(self):
+    def _go_back(self: typing.Any) -> typing.Any:
         idx = self.stack.currentIndex()
         self._set_step(idx - 1)
 
-    def _run_diagnostics(self):
+    def _run_diagnostics(self: typing.Any) -> typing.Any:
         self.results = []
         for cid in self.check_ids:
             res = self.registry.run_check(cid)
             self.results.append(res)
 
-        self.scan_label.setText(
-            f"Scan complete. Found {len([r for r in self.results if r.status != 'healthy'])} issues.")
+        self.scan_label.setText(f"Scan complete. Found {len([r for r in self.results if r.status != 'healthy'])} issues.")
         self.btn_next.setEnabled(True)
 
-    def _populate_findings(self):
+    def _populate_findings(self: typing.Any) -> typing.Any:
         while self.findings_layout.count() > 1:
             item = self.findings_layout.takeAt(0)
             if item.widget():
@@ -262,22 +273,20 @@ class AtlasTaskWizard(QDialog):
             frame.setObjectName("dashboardCard")
             fl = QVBoxLayout(frame)
 
-            title = QLabel(
-                f"{check.title if check else res.check_id}: {res.status.upper()}")
+            title = QLabel(f"{check.title if check else res.check_id}: {res.status.upper()}")
             title.setStyleSheet("font-weight: bold;")
             fl.addWidget(title)
             fl.addWidget(QLabel(res.message))
 
-            self.findings_layout.insertWidget(
-                self.findings_layout.count() - 1, frame)
+            self.findings_layout.insertWidget(self.findings_layout.count() - 1, frame)
 
-    def _populate_actions(self):
+    def _populate_actions(self: typing.Any) -> typing.Any:
         while self.actions_layout.count() > 1:
             item = self.actions_layout.takeAt(0)
             if item.widget():
                 item.widget().deleteLater()
 
-        self.action_checkboxes = []
+        self.action_checkboxes: list[typing.Any] = []
 
         for aid in self.action_ids:
             action = self.action_registry.get_action(aid)
@@ -285,7 +294,7 @@ class AtlasTaskWizard(QDialog):
                 continue
 
             # Helper to create styled action widget
-            def add_action_widget(title, risk, command_preview, dyn_args=[]):
+            def add_action_widget(title: typing.Any, risk: typing.Any, command_preview: typing.Any, dyn_args: typing.Any = []) -> typing.Any:
                 container = QFrame()
                 container.setObjectName("dashboardCard")
                 cl = QVBoxLayout(container)
@@ -318,30 +327,26 @@ class AtlasTaskWizard(QDialog):
                 preview_btn.setFlat(True)
                 preview_btn.setObjectName("taskCommandPreviewToggle")
                 preview_btn.setCursor(Qt.CursorShape.PointingHandCursor)
-                preview_btn.clicked.connect(
-                    lambda: preview_lbl.setVisible(not preview_lbl.isVisible()))
+                preview_btn.clicked.connect(lambda: preview_lbl.setVisible(not preview_lbl.isVisible()))
                 cl.addWidget(preview_btn)
 
-                self.actions_layout.insertWidget(
-                    self.actions_layout.count() - 1, container)
+                self.actions_layout.insertWidget(self.actions_layout.count() - 1, container)
                 self.action_checkboxes.append(cb)
 
             # Dynamic Handling
             if aid == "restart-failed-service":
-                service_result = next(
-                    (r for r in self.results if r.check_id == "failed-services"), None)
+                service_result = next((r for r in self.results if r.check_id == "failed-services"), None)
                 if service_result and service_result.affected_entities:
                     for svc in service_result.affected_entities:
                         full_cmd = f"{action.command} {' '.join(action.args)} {svc}"
-                        add_action_widget(
-                            f"Restart {svc}", action.risk_level, full_cmd, [svc])
+                        add_action_widget(f"Restart {svc}", action.risk_level, full_cmd, [svc])
                     continue
 
             # Standard Handling
             full_cmd = f"{action.command} {' '.join(action.args)}"
             add_action_widget(action.title, action.risk_level, full_cmd)
 
-    def _run_repairs(self):
+    def _run_repairs(self: typing.Any) -> typing.Any:
         """
         Create reviewed Action Center plans for selected repairs.
 
@@ -369,13 +374,15 @@ class AtlasTaskWizard(QDialog):
             cb.repaint()
             dyn_args = cb.property("dynamic_args") or []
             parameters = {"service": str(dyn_args[0])} if aid == "restart-failed-service" and dyn_args else {}
-            requests.append({
-                "index": index,
-                "action_id": aid,
-                "parameters": parameters,
-                "action": action,
-                "display_title": display_title,
-            })
+            requests.append(
+                {
+                    "index": index,
+                    "action_id": aid,
+                    "parameters": parameters,
+                    "action": action,
+                    "display_title": display_title,
+                }
+            )
 
         if not requests:
             self._accept_plans([])
@@ -393,7 +400,7 @@ class AtlasTaskWizard(QDialog):
         self._plan_thread.finished.connect(self._clear_plan_worker)
         self._plan_thread.start()
 
-    def _accept_plans(self, planned):
+    def _accept_plans(self: typing.Any, planned: typing.Any) -> typing.Any:
         planned_count = 0
         blocked_count = 0
         for item in planned:
@@ -411,11 +418,13 @@ class AtlasTaskWizard(QDialog):
                 action_id=item["action_id"],
                 data={"plan": plan.to_dict(), "policy_decision": plan.policy_decision.to_dict()},
             )
-            self.repair_results.append({
-                "action": item["action"],
-                "result": result,
-                "display_title": item["display_title"],
-            })
+            self.repair_results.append(
+                {
+                    "action": item["action"],
+                    "result": result,
+                    "display_title": item["display_title"],
+                }
+            )
             checkbox = self.action_checkboxes[item["index"]]
             if success:
                 checkbox.setText(self.tr("Planned: %1").replace("%1", item["display_title"]))
@@ -433,12 +442,12 @@ class AtlasTaskWizard(QDialog):
         self.btn_next.setEnabled(True)
         self._set_step(3)
 
-    def _planning_failed(self, message):
+    def _planning_failed(self: typing.Any, message: typing.Any) -> typing.Any:
         logger.error("Action planning failed: %s", message)
         self.result_label.setText(self.tr("Action Center planning failed: %1").replace("%1", str(message)))
         self.btn_next.setEnabled(True)
         self.btn_back.setEnabled(True)
 
-    def _clear_plan_worker(self):
+    def _clear_plan_worker(self: typing.Any) -> typing.Any:
         self._plan_thread = None
         self._plan_worker = None

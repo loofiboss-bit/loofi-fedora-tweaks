@@ -268,7 +268,6 @@ class TestPyQtBoundaryImports:
     """Keep non-UI PyQt imports limited to documented runtime bridges."""
 
     ALLOWED_CORE_PYQT_IMPORTS = {
-        "core/plugins/adapter.py",
         "core/plugins/interface.py",
         "core/workers/base_worker.py",
         "core/workers/command_worker.py",

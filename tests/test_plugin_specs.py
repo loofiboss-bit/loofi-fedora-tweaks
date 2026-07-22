@@ -52,32 +52,27 @@ class TestPluginSpec(unittest.TestCase):
                 class_name="Broken",
             )
 
-    def test_spec_ids_match_runtime_metadata_without_importing_ui(self):
+    def test_ui_metadata_is_projected_from_catalog_without_importing_ui(self):
         source_root = Path(__file__).parents[1] / "loofi-fedora-tweaks"
 
         for spec in BUILTIN_PLUGIN_SPECS:
             with self.subTest(plugin=spec.id):
                 path = source_root.joinpath(*spec.module.split(".")).with_suffix(".py")
                 tree = ast.parse(path.read_text())
-                runtime_id = None
-                runtime_icon = None
+                projected = False
                 for node in tree.body:
                     if isinstance(node, ast.ClassDef) and node.name == spec.class_name:
                         for statement in node.body:
-                            if not isinstance(statement, ast.Assign):
+                            if not isinstance(statement, ast.Assign) or len(statement.targets) != 1:
                                 continue
-                            if not any(
-                                isinstance(target, ast.Name) and target.id == "_METADATA"
-                                for target in statement.targets
-                            ):
+                            if not isinstance(statement.targets[0], ast.Name) or statement.targets[0].id != "_METADATA":
                                 continue
-                            for keyword in statement.value.keywords:
-                                if keyword.arg == "id":
-                                    runtime_id = ast.literal_eval(keyword.value)
-                                if keyword.arg == "icon":
-                                    runtime_icon = ast.literal_eval(keyword.value)
-                self.assertEqual(runtime_id, spec.id)
-                self.assertEqual(runtime_icon, spec.icon)
+                            projected = (
+                                isinstance(statement.value, ast.Call)
+                                and isinstance(statement.value.func, ast.Name)
+                                and statement.value.func.id == "plugin_metadata_for_module"
+                            )
+                self.assertTrue(projected)
 
 
 class TestPluginSpecRegistry(unittest.TestCase):

@@ -11,7 +11,8 @@ Provides:
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import Qt
+from core.product_catalog import plugin_metadata_for_module
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QDialog,
@@ -40,15 +41,8 @@ from ui.components.layout import AdaptiveGrid
 class ProfilesTab(QWidget, PluginInterface):
     """System Profiles tab for quick-switching system configurations."""
 
-    _METADATA = PluginMetadata(
-        id="profiles",
-        name="Profiles",
-        description="System profile quick-switch for applying and managing configuration profiles.",
-        category="Appearance",
-        icon="settings",
-        badge="",
-        order=30,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
+    actionCenterRequested = pyqtSignal(str, object)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -241,21 +235,8 @@ class ProfilesTab(QWidget, PluginInterface):
             self.log(self.tr("Profile '{}' not found.").format(name))
             return
 
-        reply = QMessageBox.question(
-            self,
-            self.tr("Apply Profile"),
-            self.tr("Apply the '{}' profile? This will change system settings.").format(
-                profile.get("name", name)
-            ),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-        )
-        if reply != QMessageBox.StandardButton.Yes:
-            return
-
-        self.log(self.tr("Applying profile '{}'...").format(profile.get("name", name)))
-        result = ProfileManager.apply_profile(name, create_snapshot=True)
-        self.log(result.message)
-        self._refresh_profiles()
+        self.log(self.tr("Reviewing profile '{}' in Action Center...").format(profile.get("name", name)))
+        self.actionCenterRequested.emit("apply-system-profile", {"profile": name})
 
     def _delete_profile(self, name: str):
         """Delete a custom profile with confirmation."""

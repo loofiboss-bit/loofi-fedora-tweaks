@@ -50,14 +50,13 @@ class FingerprintDialog(QDialog):
         self.enroll_step = 0
 
     def start_enrollment(self):
-        self.btn_start.setEnabled(False)
-        self.lbl_status.setText("Enrolling right index finger...\nPlease swipe/touch the sensor.")
+        self.btn_start.setEnabled(True)
+        self.lbl_status.setText(
+            "Fingerprint enrollment is manual-only in Haven.\n"
+            "Open Fedora System Settings → Users to enroll or remove fingerprints."
+        )
         self.progress.setValue(0)
         self.enroll_step = 0
-
-        # We enroll the right index finger by default for simplicity
-        # Command: fprintd-enroll <user> (defaults to current user) -f right-index-finger
-        self.process.start("fprintd-enroll", ["-", "right-index-finger"])
 
     def on_output(self):
         data = self.process.readAllStandardOutput().data().decode().strip()

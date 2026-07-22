@@ -19,8 +19,7 @@ class TestExtensionsTabSource(unittest.TestCase):
         self.assertIn("class ExtensionsTab(BaseTab)", self.source)
 
     def test_has_metadata(self):
-        self.assertIn("_METADATA", self.source)
-        self.assertIn('"extensions"', self.source)
+        self.assertIn("_METADATA = plugin_metadata_for_module(__name__)", self.source)
 
     def test_has_search_bar(self):
         self.assertIn("QLineEdit", self.source)

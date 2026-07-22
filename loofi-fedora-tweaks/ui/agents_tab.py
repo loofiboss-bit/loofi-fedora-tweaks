@@ -8,10 +8,13 @@ Provides:
 - Agent detail view with settings and history
 """
 
+import typing
+
 import logging
 import time
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import (
@@ -46,66 +49,66 @@ REFRESH_INTERVAL_MS = 10000
 class AgentsTab(BaseTab):
     """Tab for managing autonomous system agents."""
 
-    _METADATA = PluginMetadata(
-        id="agents",
-        name="Agents",
-        description="Manage autonomous system agents for automated monitoring and maintenance.",
-        category="Maintenance",
-        icon="developer-tools",
-        badge="",
-        order=40,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self._scheduler = None
         self._init_ui()
         self._refresh_timer = QTimer()
         self._refresh_timer.timeout.connect(self._refresh_all)
 
-    def on_activate(self) -> None:
+    def on_activate(self: typing.Any) -> None:
         """Refresh agent state only while the page is visible."""
         if not self._refresh_timer.isActive():
             self._refresh_timer.start(REFRESH_INTERVAL_MS)
         QTimer.singleShot(0, self._refresh_all)
 
-    def on_deactivate(self) -> None:
+    def on_deactivate(self: typing.Any) -> None:
         if self._refresh_timer.isActive():
             self._refresh_timer.stop()
 
-    def _init_ui(self):
+    def _init_ui(self: typing.Any) -> typing.Any:
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
 
         self.tabs = QStackedWidget()
         self.tabs.setObjectName("agentPages")
-        self.tabs.addWidget(self._scaffold_route(
-            self.tr("Agent dashboard"),
-            self.tr("Review scheduler state and recent agent results."),
-            self._build_dashboard_tab(),
-        ))
-        self.tabs.addWidget(self._scaffold_route(
-            self.tr("My agents"),
-            self.tr("Review and manage configured local agents."),
-            self._build_agents_tab(),
-        ))
-        self.tabs.addWidget(self._scaffold_route(
-            self.tr("Create agent"),
-            self.tr("Create a local agent from a goal or template."),
-            self._build_create_tab(),
-        ))
-        self.tabs.addWidget(self._scaffold_route(
-            self.tr("Agent activity"),
-            self.tr("Inspect recent agent runs and results."),
-            self._build_activity_tab(),
-        ))
+        self.tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Agent dashboard"),
+                self.tr("Review scheduler state and recent agent results."),
+                self._build_dashboard_tab(),
+            )
+        )
+        self.tabs.addWidget(
+            self._scaffold_route(
+                self.tr("My agents"),
+                self.tr("Review and manage configured local agents."),
+                self._build_agents_tab(),
+            )
+        )
+        self.tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Create agent"),
+                self.tr("Create a local agent from a goal or template."),
+                self._build_create_tab(),
+            )
+        )
+        self.tabs.addWidget(
+            self._scaffold_route(
+                self.tr("Agent activity"),
+                self.tr("Inspect recent agent runs and results."),
+                self._build_activity_tab(),
+            )
+        )
         layout.addWidget(self.tabs)
 
         self.add_output_disclosure(layout, self.tr("Show agent output"))
@@ -116,7 +119,7 @@ class AgentsTab(BaseTab):
         scaffold.add_widget(content, 1)
         return scaffold
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select an Agents page from a stable route ID."""
         index = {
             "agents": 0,
@@ -132,7 +135,7 @@ class AgentsTab(BaseTab):
 
     # ==================== Dashboard Sub-Tab ====================
 
-    def _build_dashboard_tab(self) -> QWidget:
+    def _build_dashboard_tab(self: typing.Any) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -190,7 +193,7 @@ class AgentsTab(BaseTab):
         QTimer.singleShot(100, self._refresh_dashboard)
         return widget
 
-    def _make_stat_card(self, title: str, value: str) -> QGroupBox:
+    def _make_stat_card(self: typing.Any, title: str, value: str) -> QGroupBox:
         box = QGroupBox()
         box.setFixedHeight(80)
         lay = QVBoxLayout(box)
@@ -214,7 +217,7 @@ class AgentsTab(BaseTab):
 
     # ==================== My Agents Sub-Tab ====================
 
-    def _build_agents_tab(self) -> QWidget:
+    def _build_agents_tab(self: typing.Any) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -258,7 +261,7 @@ class AgentsTab(BaseTab):
 
     # ==================== Create Agent Sub-Tab ====================
 
-    def _build_create_tab(self) -> QWidget:
+    def _build_create_tab(self: typing.Any) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -335,7 +338,7 @@ class AgentsTab(BaseTab):
 
     # ==================== Activity Log Sub-Tab ====================
 
-    def _build_activity_tab(self) -> QWidget:
+    def _build_activity_tab(self: typing.Any) -> QWidget:
         widget = QWidget()
         layout = QVBoxLayout(widget)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -372,12 +375,12 @@ class AgentsTab(BaseTab):
 
     # ==================== Actions ====================
 
-    def _get_registry(self):
+    def _get_registry(self: typing.Any) -> typing.Any:
         from core.agents import AgentRegistry
 
         return AgentRegistry.instance()
 
-    def _get_scheduler(self):
+    def _get_scheduler(self: typing.Any) -> typing.Any:
         if self._scheduler is None:
             from core.agents import AgentScheduler
 
@@ -385,11 +388,11 @@ class AgentsTab(BaseTab):
             self._scheduler.set_result_callback(self._on_agent_result)
         return self._scheduler
 
-    def _on_agent_result(self, agent_id: str, result):
+    def _on_agent_result(self: typing.Any, agent_id: str, result: typing.Any) -> typing.Any:
         """Callback when an agent produces a result."""
         self.append_output(f"[{agent_id}] {result.message}\n")
 
-    def _start_scheduler(self):
+    def _start_scheduler(self: typing.Any) -> typing.Any:
         scheduler = self._get_scheduler()
         scheduler.start()
         self.lbl_scheduler_status.setText(self.tr("Scheduler: Running"))
@@ -397,7 +400,7 @@ class AgentsTab(BaseTab):
         self.btn_stop_scheduler.setEnabled(True)
         self.append_output(self.tr("Agent scheduler started\n"))
 
-    def _stop_scheduler(self):
+    def _stop_scheduler(self: typing.Any) -> typing.Any:
         scheduler = self._get_scheduler()
         scheduler.stop()
         self.lbl_scheduler_status.setText(self.tr("Scheduler: Stopped"))
@@ -405,14 +408,14 @@ class AgentsTab(BaseTab):
         self.btn_stop_scheduler.setEnabled(False)
         self.append_output(self.tr("Agent scheduler stopped\n"))
 
-    def _refresh_all(self):
+    def _refresh_all(self: typing.Any) -> typing.Any:
         """Periodic refresh of all data."""
         try:
             self._refresh_dashboard()
         except (RuntimeError, OSError, ValueError, TypeError, KeyError) as exc:
             logger.debug("Dashboard refresh failed: %s", exc)
 
-    def _refresh_dashboard(self):
+    def _refresh_dashboard(self: typing.Any) -> typing.Any:
         registry = self._get_registry()
         summary = registry.get_agent_summary()
 
@@ -431,7 +434,7 @@ class AgentsTab(BaseTab):
             lines.append(f"{ts} {status} [{item['agent_name']}] {item['message']}")
         self.activity_preview.setPlainText("\n".join(lines) if lines else self.tr("No recent activity"))
 
-    def _refresh_agents_table(self):
+    def _refresh_agents_table(self: typing.Any) -> typing.Any:
         registry = self._get_registry()
         agents = registry.list_agents()
 
@@ -492,7 +495,7 @@ class AgentsTab(BaseTab):
         if callable(normalize):
             normalize(self.agent_table)
 
-    def _toggle_agent(self, agent_id: str, currently_enabled: bool):
+    def _toggle_agent(self: typing.Any, agent_id: str, currently_enabled: bool) -> typing.Any:
         registry = self._get_registry()
         if currently_enabled:
             registry.disable_agent(agent_id)
@@ -503,7 +506,7 @@ class AgentsTab(BaseTab):
         self._refresh_agents_table()
         self._refresh_dashboard()
 
-    def _run_agent_now(self, agent_id: str):
+    def _run_agent_now(self: typing.Any, agent_id: str) -> typing.Any:
         scheduler = self._get_scheduler()
         self.append_output(self.tr("Running agent {} now...\n").format(agent_id))
         results = scheduler.run_agent_now(agent_id)
@@ -513,7 +516,7 @@ class AgentsTab(BaseTab):
         self._refresh_agents_table()
         self._refresh_dashboard()
 
-    def _generate_plan(self):
+    def _generate_plan(self: typing.Any) -> typing.Any:
         goal = self.goal_input.text().strip()
         if not goal:
             QMessageBox.warning(
@@ -551,7 +554,7 @@ class AgentsTab(BaseTab):
 
         self.plan_preview.setPlainText("\n".join(lines))
 
-    def _create_agent_from_plan(self):
+    def _create_agent_from_plan(self: typing.Any) -> typing.Any:
         if not hasattr(self, "_current_plan") or self._current_plan is None:
             QMessageBox.warning(
                 self,
@@ -575,7 +578,7 @@ class AgentsTab(BaseTab):
         self._refresh_agents_table()
         self._refresh_dashboard()
 
-    def _refresh_activity_table(self):
+    def _refresh_activity_table(self: typing.Any) -> typing.Any:
         registry = self._get_registry()
         activity = registry.get_recent_activity(limit=50)
 
@@ -586,9 +589,7 @@ class AgentsTab(BaseTab):
             self.activity_table.setItem(row, 1, QTableWidgetItem(item["agent_name"]))
             self.activity_table.setItem(row, 2, QTableWidgetItem(item["action_id"]))
 
-            result_item = QTableWidgetItem(
-                self.tr("Success") if item["success"] else self.tr("Failed")
-            )
+            result_item = QTableWidgetItem(self.tr("Success") if item["success"] else self.tr("Failed"))
             self.activity_table.setItem(row, 3, result_item)
 
             self.activity_table.setItem(row, 4, QTableWidgetItem(item["message"][:100]))
@@ -596,7 +597,7 @@ class AgentsTab(BaseTab):
         if callable(normalize):
             normalize(self.activity_table)
 
-    def _toggle_notifications(self, agent_id: str, currently_enabled: bool):
+    def _toggle_notifications(self: typing.Any, agent_id: str, currently_enabled: bool) -> typing.Any:
         """Toggle notification config for an agent."""
         registry = self._get_registry()
         agent = registry.get_agent(agent_id)
@@ -611,7 +612,7 @@ class AgentsTab(BaseTab):
         registry.save()
         self._refresh_agents_table()
 
-    def cleanup(self):
+    def cleanup(self: typing.Any) -> typing.Any:
         """Stop timer and scheduler — called on application exit."""
         if self._refresh_timer.isActive():
             self._refresh_timer.stop()

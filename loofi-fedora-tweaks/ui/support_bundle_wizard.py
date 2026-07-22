@@ -4,7 +4,7 @@ from PyQt6.QtWidgets import (
     QDialog, QVBoxLayout, QHBoxLayout, QLabel,
     QPushButton, QTextEdit, QFileDialog, QMessageBox
 )
-from core.export.support_bundle_v5 import SupportBundleV5
+from core.export.support_bundle import SupportBundleWriter
 from utils.log import get_logger
 
 logger = get_logger(__name__)
@@ -20,7 +20,7 @@ class SupportBundleWizard(QDialog):
         self.setWindowTitle("Atlas Assistant - Support Bundle")
         self.setMinimumSize(700, 500)
 
-        self.bundle_gen = SupportBundleV5()
+        self.bundle_gen = SupportBundleWriter()
         self.bundle_data = {}
 
         self._setup_ui()

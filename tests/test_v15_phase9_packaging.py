@@ -27,12 +27,12 @@ class TestPhase9PackageMetadata(unittest.TestCase):
         self.assertIn("[ -x .venv/bin/flake8 ]", justfile)
         self.assertIn("[ -x .venv/bin/mypy ]", justfile)
 
-    def test_base_python_metadata_contains_only_core_runtime_dependency(self):
+    def test_base_python_metadata_contains_core_and_secret_store_dependencies(self):
         project = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))[
             "project"
         ]
 
-        self.assertEqual(project["dependencies"], ["PyQt6>=6.7"])
+        self.assertEqual(project["dependencies"], ["PyQt6>=6.7", "keyring>=25.0"])
         self.assertEqual(
             project["optional-dependencies"]["daemon"], ["dbus-python>=1.3"]
         )
@@ -197,8 +197,8 @@ class TestV14UpgradeCompatibility(unittest.TestCase):
             self.assertEqual(runs[0].state, "verifying")
             self.assertEqual(history[0]["event"], "run-awaiting-verification")
             self.assertNotEqual(doctor["status"], "error")
-            self.assertEqual(json.loads(plan_path.read_text(encoding="utf-8"))["schema_version"], 2)
-            self.assertEqual(json.loads(run_path.read_text(encoding="utf-8"))["action_run_schema_version"], 2)
+            self.assertEqual(json.loads(plan_path.read_text(encoding="utf-8"))["schema_version"], 3)
+            self.assertEqual(json.loads(run_path.read_text(encoding="utf-8"))["action_run_schema_version"], 3)
             self.assertEqual(history_path.read_bytes(), before[history_path])
             self.assertEqual(plan_path.with_suffix(".json.lkg").read_bytes(), before[plan_path])
             self.assertEqual(run_path.with_suffix(".jsonl.lkg").read_bytes(), before[run_path])

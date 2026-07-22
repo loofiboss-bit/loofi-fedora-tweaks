@@ -35,13 +35,15 @@ PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --cli info
 High-level layout:
 
 - `loofi-fedora-tweaks/ui/` - PyQt6 tabs and window components
-- `loofi-fedora-tweaks/utils/` - business logic and command operations
-- `loofi-fedora-tweaks/core/plugins/` - plugin registry/loader/compat layer
+- `loofi-fedora-tweaks/core/` and `services/` - domain logic and system services
+- `loofi-fedora-tweaks/core/product_catalog.py` - canonical product metadata
+- `loofi-fedora-tweaks/core/plugins/` - built-in page-provider compatibility views
 - `loofi-fedora-tweaks/cli/main.py` - CLI entrypoint
 - `loofi-fedora-tweaks/services/` - service layer components
 - `tests/` - unit tests with mocks
 
-The UI is plugin-driven: tab metadata, registration, and compatibility are sourced from plugin interfaces.
+The UI is catalog-driven. External Python plugins are retired and must not be
+reintroduced as an executable extension boundary.
 
 ---
 
@@ -49,9 +51,12 @@ The UI is plugin-driven: tab metadata, registration, and compatibility are sourc
 
 1. Never use `sudo` in application command execution paths; use `pkexec` via command helpers.
 2. Never hardcode `dnf`; use package manager detection (`dnf` vs `rpm-ostree`).
-3. Never call subprocesses directly from UI tabs; put system logic in `utils/`.
-4. Always unpack operation tuples before `subprocess.run()`.
-5. Keep version values synchronized across `version.py` and `.spec`.
+3. Never call subprocesses directly from UI or alternate entrypoints.
+4. Classify every operation as `host`, `app_state`, `session`, or `manual_only`.
+5. Route every host mutation through `ActionCenterOrchestrator`; background
+   services may create plans but may not confirm or execute them.
+6. Always unpack privileged operation tuples before execution.
+7. Keep version values synchronized with `scripts/bump_version.py`.
 
 ---
 
@@ -59,7 +64,7 @@ The UI is plugin-driven: tab metadata, registration, and compatibility are sourc
 
 - Prefer existing patterns over new abstractions.
 - Keep changes minimal and targeted.
-- New UI tabs should follow `BaseTab` and plugin metadata conventions.
+- New UI surfaces should follow `BaseTab` and product-catalog conventions.
 - Keep user-visible strings translatable (`self.tr("...")`) in UI code.
 - Avoid introducing root-required tests or environment-coupled behavior.
 
@@ -70,7 +75,7 @@ The UI is plugin-driven: tab metadata, registration, and compatibility are sourc
 Run tests before opening a PR:
 
 ```bash
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v --cov-fail-under=80
+just verify
 ```
 
 Testing expectations:
@@ -86,13 +91,13 @@ Testing expectations:
 Lint:
 
 ```bash
-flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722
+just lint
 ```
 
 Build RPM:
 
 ```bash
-bash scripts/build_rpm.sh
+just build-rpm
 ```
 
 ---

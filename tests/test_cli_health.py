@@ -68,7 +68,7 @@ class TestCliHealthCommands(unittest.TestCase):
         result = cmd_action_center(_args(action="recommendations", target="44", limit=10))
 
         self.assertEqual(result, 0)
-        self.assertEqual(mock_output_json.call_args.args[0]["schema_version"], 2)
+        self.assertEqual(mock_output_json.call_args.args[0]["schema_version"], 3)
 
     @patch("cli.main._output_json")
     @patch("cli.main._json_output", True)
@@ -105,7 +105,7 @@ class TestCliHealthCommands(unittest.TestCase):
             target="44",
         )
         payload = mock_output_json.call_args.args[0]
-        self.assertEqual(payload["schema_version"], 2)
+        self.assertEqual(payload["schema_version"], 3)
         self.assertEqual(payload["plan"]["plan_id"], "plan-1")
         self.assertEqual(payload["policy_decision"]["reason_code"], "preflight_ok")
 
@@ -459,7 +459,7 @@ class TestCliReadinessActionBranches(unittest.TestCase):
 
     @patch("cli.main._print")
     @patch("cli.main._json_output", False)
-    @patch("core.export.support_bundle_v10.SupportBundleV10")
+    @patch("core.export.support_bundle.SupportBundleWriter")
     def test_export_text(self, bundle_cls, print_fn):
         from cli.main import _cmd_readiness_action
 
@@ -472,7 +472,7 @@ class TestCliReadinessActionBranches(unittest.TestCase):
 
     @patch("cli.main._output_json")
     @patch("cli.main._json_output", True)
-    @patch("core.export.support_bundle_v10.SupportBundleV10")
+    @patch("core.export.support_bundle.SupportBundleWriter")
     def test_export_and_action_info_json(self, bundle_cls, output_json):
         from cli.main import _cmd_readiness_action
 
@@ -485,7 +485,7 @@ class TestCliReadinessActionBranches(unittest.TestCase):
 
     @patch("cli.main._print")
     @patch("cli.main._json_output", False)
-    @patch("cli.main._print_action_result", return_value=0)
+    @patch("cli.commands.readiness_commands._print_action_result", return_value=0)
     @patch("core.diagnostics.readiness_actions.ReadinessActionService")
     def test_preview_run_verify_and_unknown_text(self, service, print_result, print_fn):
         from cli.main import _cmd_readiness_action
@@ -617,7 +617,7 @@ class TestCliActionCenterPresentationBranches(unittest.TestCase):
         self.assertEqual(cmd_action_center(args), 1)
         print_fn.assert_called_with("Plan failed")
 
-    @patch("cli.main._print_action_result", return_value=0)
+    @patch("cli.commands.readiness_commands._print_action_result", return_value=0)
     @patch("cli.main._print")
     @patch("cli.main._json_output", False)
     @patch("core.actions.ActionRunStore")
@@ -691,10 +691,10 @@ class TestCliActionCenterPresentationBranches(unittest.TestCase):
 
         self.assertEqual(cmd_action_center(SimpleNamespace(action="list", target="44")), 0)
         self.assertEqual(cmd_action_center(SimpleNamespace(action="preview", target="44", action_id="missing")), 1)
-        output_json.assert_called_with({"schema_version": 2, "error": "not_found", "action_id": "missing"})
+        output_json.assert_called_with({"schema_version": 3, "error": "not_found", "action_id": "missing"})
         self.assertEqual(cmd_action_center(SimpleNamespace(action="history", target="44", limit=5)), 0)
         self.assertEqual(cmd_action_center(SimpleNamespace(action="bad", target="44")), 1)
-        output_json.assert_called_with({"schema_version": 2, "error": "unknown_action_center_command", "action": "bad"})
+        output_json.assert_called_with({"schema_version": 3, "error": "unknown_action_center_command", "action": "bad"})
 
 
 if __name__ == "__main__":

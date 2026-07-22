@@ -6,10 +6,10 @@ SECURITY CONTRACT
 This daemon runs as a systemd user service and performs ONLY these operations:
 
 1. Scheduled Task Execution (via TaskScheduler.execute_task):
-   - CLEANUP: dnf/rpm-ostree cache cleaning and autoremove
+   - CLEANUP: Create reviewable Action Center cleanup plans
    - UPDATE_CHECK: Check for system updates (read-only, no installation)
    - SYNC_CONFIG: Sync configuration to GitHub Gist (requires auth token)
-   - APPLY_PRESET: Apply saved system presets
+   - APPLY_PRESET: Validate a local preset and create a manual review plan
 
    All task actions are validated against ALLOWED_ACTIONS in scheduler.py.
    Unknown/disallowed actions are rejected and audit logged.
@@ -19,16 +19,15 @@ This daemon runs as a systemd user service and performs ONLY these operations:
    - Uses upower command (read-only query)
    - Triggers tasks on battery/AC transitions
 
-3. Plugin Update Checking:
-   - Checks plugin repositories for updates (if auto-update enabled)
-   - Downloads and installs plugin updates
-   - Respects plugin_auto_update config flag (default: False)
+3. Legacy extension handling:
+   - External extension code is never imported or updated
+   - Existing user-owned files remain untouched on disk
 
 SAFETY GUARANTEES
 -----------------
 - No arbitrary command execution: All actions validated via ALLOWED_ACTIONS
 - No direct subprocess calls with user-controlled input
-- All privileged operations go through PrivilegedCommand
+- Scheduled host mutations are never confirmed or executed unattended
 - Audit logging for all task executions (successful and failed)
 - Graceful shutdown on SIGTERM/SIGINT
 
@@ -46,10 +45,7 @@ import subprocess
 import time
 from pathlib import Path
 
-from utils.config_manager import ConfigManager
 from utils.log import get_logger
-from utils.plugin_base import PluginLoader
-from utils.plugin_installer import PluginInstaller
 
 logger = get_logger(__name__)
 
@@ -59,11 +55,9 @@ class Daemon:
 
     CHECK_INTERVAL = 300  # Check every 5 minutes
     POWER_CHECK_INTERVAL = 30  # Check power state every 30 seconds
-    PLUGIN_UPDATE_INTERVAL = 86400  # Check for plugin updates every 24 hours
 
     _running = True
     _last_power_state = None
-    _last_plugin_check = 0
 
     @classmethod
     def signal_handler(cls, signum, frame):
@@ -168,50 +162,8 @@ class Daemon:
 
     @classmethod
     def check_plugin_updates(cls):
-        """Check for plugin updates and auto-update if enabled."""
-        # Check if auto-update is enabled in config
-        config = ConfigManager.load_config() or {}
-        if not config.get("plugin_auto_update", False):
-            return
-
-        logger.info("Checking for plugin updates...")
-
-        try:
-            loader = PluginLoader()
-            installer = PluginInstaller()
-            plugins = loader.list_plugins()
-
-            for plugin in plugins:
-                if not plugin.get("enabled", True):
-                    continue  # Skip disabled plugins
-
-                plugin_name = plugin["name"]
-                logger.debug("Checking updates for plugin: %s", plugin_name)
-
-                result = installer.check_update(plugin_name)
-
-                if (
-                    result.success
-                    and result.data
-                    and result.data.get("update_available")
-                ):
-                    new_version = result.data.get("new_version")
-                    logger.info("Update available for %s: %s", plugin_name, new_version)
-
-                    # Auto-update the plugin
-                    update_result = installer.update(plugin_name)
-
-                    if update_result.success:
-                        logger.info(
-                            "Successfully updated %s to %s", plugin_name, new_version
-                        )
-                    else:
-                        logger.warning(
-                            "Failed to update %s: %s", plugin_name, update_result.error
-                        )
-
-        except (ImportError, AttributeError, OSError) as e:
-            logger.error("Error checking plugin updates: %s", e, exc_info=True)
+        """External plugin updates were retired; never contact a marketplace."""
+        logger.debug("Skipping retired external plugin update check")
 
     @classmethod
     def run(cls):
@@ -227,7 +179,6 @@ class Daemon:
 
         last_task_check = 0
         last_power_check = 0
-        last_plugin_update_check = 0
 
         while cls._running:
             try:
@@ -242,11 +193,6 @@ class Daemon:
                 if now - last_power_check >= cls.POWER_CHECK_INTERVAL:
                     cls.check_power_triggers()
                     last_power_check = now
-
-                # Check for plugin updates (daily)
-                if now - last_plugin_update_check >= cls.PLUGIN_UPDATE_INTERVAL:
-                    cls.check_plugin_updates()
-                    last_plugin_update_check = now
 
                 # Sleep briefly
                 time.sleep(10)

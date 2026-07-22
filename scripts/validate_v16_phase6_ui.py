@@ -114,8 +114,8 @@ def validate() -> list[str]:
         _method_call_count(ui_root / filename, "addTab")
         for filename in ADVANCED_PAGE_FILES
     )
-    if qtab_count != 1 or local_tab_count != 3:
-        errors.append("only the three-view local Community preset tabs may remain")
+    if qtab_count != 0 or local_tab_count != 0:
+        errors.append("Advanced pages must use shell-owned sections without nested tabs")
 
     assets_root = SOURCE / "assets"
     for filename in LEGACY_THEME_FILES:
@@ -137,8 +137,8 @@ def main() -> int:
         "advanced_routes": 33,
         "advanced_sections": 26,
         "application_navigation_qtabwidgets": 0,
-        "local_qtabwidgets": 1,
-        "local_tab_views": 3,
+        "local_qtabwidgets": 0,
+        "local_tab_views": 0,
         "host_probes": 0,
         "mutations": 0,
         "status": "passed" if not errors else "failed",

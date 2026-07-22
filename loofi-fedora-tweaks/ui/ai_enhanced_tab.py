@@ -7,9 +7,12 @@ Provides:
 - Knowledge: indexing status, index/clear buttons, search field
 """
 
+import typing
+
 from core.ai import RECOMMENDED_MODELS, AIModelManager, ContextRAGManager
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt, QThread, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -45,11 +48,11 @@ class ModelDownloadWorker(QThread):
     progress = pyqtSignal(str)
     finished = pyqtSignal(bool, str)
 
-    def __init__(self, model_id: str):
+    def __init__(self: typing.Any, model_id: str) -> None:
         super().__init__()
         self.model_id = model_id
 
-    def run(self):
+    def run(self: typing.Any) -> typing.Any:
         result = AIModelManager.download_model(
             self.model_id,
             callback=lambda msg: self.progress.emit(msg),
@@ -63,7 +66,7 @@ class IndexBuildWorker(QThread):
     progress = pyqtSignal(str)
     finished = pyqtSignal(bool, str)
 
-    def run(self):
+    def run(self: typing.Any) -> typing.Any:
         result = ContextRAGManager.build_index(
             callback=lambda msg: self.progress.emit(msg),
         )
@@ -75,11 +78,11 @@ class RecordAudioWorker(QThread):
 
     finished = pyqtSignal(str)
 
-    def __init__(self, duration: int):
+    def __init__(self: typing.Any, duration: int) -> None:
         super().__init__()
         self.duration = duration
 
-    def run(self):
+    def run(self: typing.Any) -> typing.Any:
         path = VoiceManager.record_audio(duration_seconds=self.duration)
         self.finished.emit(path)
 
@@ -89,12 +92,12 @@ class TranscribeWorker(QThread):
 
     finished = pyqtSignal(bool, str, str)
 
-    def __init__(self, audio_path: str, model: str):
+    def __init__(self: typing.Any, audio_path: str, model: str) -> None:
         super().__init__()
         self.audio_path = audio_path
         self.model = model
 
-    def run(self):
+    def run(self: typing.Any) -> typing.Any:
         result = VoiceManager.transcribe(self.audio_path, self.model)
         text = result.data.get("text", "") if result.data else ""
         self.finished.emit(result.success, result.message, text)
@@ -108,50 +111,48 @@ class TranscribeWorker(QThread):
 class AIEnhancedTab(QWidget, PluginInterface):
     """AI Lab enhanced tab with sub-tabs for Models, Voice, and Knowledge."""
 
-    _METADATA = PluginMetadata(
-        id="ai_lab",
-        name="AI Lab",
-        description="AI model management, voice transcription, and knowledge base indexing.",
-        category="Tools",
-        icon="cpu-performance",
-        badge="advanced",
-        order=30,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
-        self._workers = []
+        self._workers: list[typing.Any] = []
         self._last_recording_path = ""
         self._init_ui()
 
-    def _init_ui(self):
+    def _init_ui(self: typing.Any) -> typing.Any:
         """Initialize shell-selected AI Lab route pages."""
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.tab_widget = QStackedWidget()
         self.tab_widget.setObjectName("aiLabPages")
-        self.tab_widget.addWidget(self._scaffold_route(
-            self.tr("Local AI models"),
-            self.tr("Review and manage models available on this device."),
-            self._create_models_tab(),
-        ))
-        self.tab_widget.addWidget(self._scaffold_route(
-            self.tr("Local voice tools"),
-            self.tr("Record and transcribe speech on this device."),
-            self._create_voice_tab(),
-        ))
-        self.tab_widget.addWidget(self._scaffold_route(
-            self.tr("Local knowledge"),
-            self.tr("Build and search a local knowledge index."),
-            self._create_knowledge_tab(),
-        ))
+        self.tab_widget.addWidget(
+            self._scaffold_route(
+                self.tr("Local AI models"),
+                self.tr("Review and manage models available on this device."),
+                self._create_models_tab(),
+            )
+        )
+        self.tab_widget.addWidget(
+            self._scaffold_route(
+                self.tr("Local voice tools"),
+                self.tr("Record and transcribe speech on this device."),
+                self._create_voice_tab(),
+            )
+        )
+        self.tab_widget.addWidget(
+            self._scaffold_route(
+                self.tr("Local knowledge"),
+                self.tr("Build and search a local knowledge index."),
+                self._create_knowledge_tab(),
+            )
+        )
         layout.addWidget(self.tab_widget)
 
         # Shared output log
@@ -171,7 +172,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         scaffold.add_widget(content, 1)
         return scaffold
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select an AI Lab page from a stable route ID."""
         index = {
             "ai_lab": 0,
@@ -188,7 +189,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
     # Models sub-tab
     # ------------------------------------------------------------------
 
-    def _create_models_tab(self) -> QWidget:
+    def _create_models_tab(self: typing.Any) -> QWidget:
         """Create the Models management sub-tab."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -267,7 +268,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         scroll.setWidget(container)
         return scroll
 
-    def _refresh_models(self):
+    def _refresh_models(self: typing.Any) -> typing.Any:
         """Refresh the installed models list."""
         if not hasattr(self, "models_list"):
             return
@@ -285,7 +286,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
                 item.setData(Qt.ItemDataRole.UserRole, model["name"])
                 self.models_list.addItem(item)
 
-    def _download_model(self, model_id: str):
+    def _download_model(self: typing.Any, model_id: str) -> typing.Any:
         """Start downloading a model in the background."""
         self._log(self.tr("Downloading {}...").format(model_id))
         self.model_progress.setVisible(True)
@@ -296,7 +297,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         self._workers.append(worker)
         worker.start()
 
-    def _on_model_download_finished(self, success: bool, message: str):
+    def _on_model_download_finished(self: typing.Any, success: bool, message: str) -> typing.Any:
         """Handle model download completion."""
         self.model_progress.setVisible(False)
         self._log(message)
@@ -307,7 +308,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
     # Voice sub-tab
     # ------------------------------------------------------------------
 
-    def _create_voice_tab(self) -> QWidget:
+    def _create_voice_tab(self: typing.Any) -> QWidget:
         """Create the Voice sub-tab for speech-to-text."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -404,7 +405,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         scroll.setWidget(container)
         return scroll
 
-    def _record_audio(self):
+    def _record_audio(self: typing.Any) -> typing.Any:
         """Start recording audio in the background."""
         duration = self.duration_spin.value()
         self._log(self.tr("Recording for {} seconds...").format(duration))
@@ -415,7 +416,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         self._workers.append(worker)
         worker.start()
 
-    def _on_recording_finished(self, path: str):
+    def _on_recording_finished(self: typing.Any, path: str) -> typing.Any:
         """Handle recording completion."""
         self.record_btn.setEnabled(True)
         if path:
@@ -425,7 +426,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         else:
             self._log(self.tr("Recording failed. Check microphone and recording tools."))
 
-    def _transcribe_last(self):
+    def _transcribe_last(self: typing.Any) -> typing.Any:
         """Transcribe the last recorded audio."""
         if not self._last_recording_path:
             self._log(self.tr("No recording available. Record audio first."))
@@ -440,7 +441,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         self._workers.append(worker)
         worker.start()
 
-    def _on_transcription_finished(self, success: bool, message: str, text: str):
+    def _on_transcription_finished(self: typing.Any, success: bool, message: str, text: str) -> typing.Any:
         """Handle transcription completion."""
         self.transcribe_btn.setEnabled(True)
         if success:
@@ -453,7 +454,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
     # Knowledge sub-tab
     # ------------------------------------------------------------------
 
-    def _create_knowledge_tab(self) -> QWidget:
+    def _create_knowledge_tab(self: typing.Any) -> QWidget:
         """Create the Knowledge sub-tab for RAG indexing and search."""
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
@@ -551,7 +552,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         scroll.setWidget(container)
         return scroll
 
-    def _build_index(self):
+    def _build_index(self: typing.Any) -> typing.Any:
         """Build the RAG index in the background."""
         self._log(self.tr("Building index..."))
         self.build_index_btn.setEnabled(False)
@@ -562,13 +563,13 @@ class AIEnhancedTab(QWidget, PluginInterface):
         self._workers.append(worker)
         worker.start()
 
-    def _on_index_build_finished(self, success: bool, message: str):
+    def _on_index_build_finished(self: typing.Any, success: bool, message: str) -> typing.Any:
         """Handle index build completion."""
         self.build_index_btn.setEnabled(True)
         self._log(message)
         self._refresh_index_stats()
 
-    def _clear_index(self):
+    def _clear_index(self: typing.Any) -> typing.Any:
         """Clear the RAG index."""
         reply = QMessageBox.question(
             self,
@@ -582,7 +583,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
             self._log(result.message)
             self._refresh_index_stats()
 
-    def _refresh_index_stats(self):
+    def _refresh_index_stats(self: typing.Any) -> typing.Any:
         """Refresh index statistics display."""
         stats = ContextRAGManager.get_index_stats()
         indexed = ContextRAGManager.is_indexed()
@@ -594,7 +595,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
         else:
             self.index_status_label.setText(self.tr("No index built yet"))
 
-    def _search_index(self):
+    def _search_index(self: typing.Any) -> typing.Any:
         """Search the knowledge index."""
         query = self.search_input.text().strip()
         if not query:
@@ -616,7 +617,7 @@ class AIEnhancedTab(QWidget, PluginInterface):
 
         self.search_results.setPlainText("\n".join(output_lines))
 
-    def _scan_files(self):
+    def _scan_files(self: typing.Any) -> typing.Any:
         """Scan for indexable files and display them."""
         self.files_list.clear()
         files = ContextRAGManager.scan_indexable_files()
@@ -633,6 +634,6 @@ class AIEnhancedTab(QWidget, PluginInterface):
     # Shared helpers
     # ------------------------------------------------------------------
 
-    def _log(self, message: str):
+    def _log(self: typing.Any, message: str) -> typing.Any:
         """Append a message to the shared output log."""
         self.output_text.append(message)

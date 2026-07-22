@@ -9,6 +9,7 @@ from daemon.contracts import error_response, ok_response
 from daemon.handlers import FirewallHandler, NetworkHandler, PackageHandler, ServiceHandler
 from daemon.interfaces import INTERFACE, OBJECT_PATH
 from daemon.validators import ValidationError
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 
 logger = logging.getLogger(__name__)
 
@@ -68,6 +69,7 @@ class DaemonService(_DbusObjectBase):  # type: ignore[misc,valid-type]
         return ok_response(
             {
                 "version": 1,
+                "mutation_contract": "plan_only",
                 "network": [
                     "scan_wifi",
                     "load_vpn_connections",
@@ -135,7 +137,7 @@ class DaemonService(_DbusObjectBase):  # type: ignore[misc,valid-type]
         )
 
     @_dbus_method(INTERFACE, in_signature="s", out_signature="s")
-    def ObservabilityCollectHealthSnapshot(self, target: str = "44") -> str:  # noqa: N802
+    def ObservabilityCollectHealthSnapshot(self, target: str = FEDORA_RELEASE_POLICY.stable_target) -> str:  # noqa: N802
         return self._safe_call(_collect_health_snapshot, target)
 
     @_dbus_method(INTERFACE, in_signature="i", out_signature="s")
@@ -353,11 +355,14 @@ class DaemonService(_DbusObjectBase):  # type: ignore[misc,valid-type]
             return error_response("execution_error", str(exc))
 
 
-def _collect_health_snapshot(target: str = "44") -> dict[str, Any]:
+def _collect_health_snapshot(target: str = FEDORA_RELEASE_POLICY.stable_target) -> dict[str, Any]:
     from core.observability import ObservabilityService
 
-    if target not in {"44", "45-preview"}:
-        raise ValidationError("target must be 44 or 45-preview")
+    if target not in FEDORA_RELEASE_POLICY.action_targets:
+        raise ValidationError(
+            "target must be %s or %s"
+            % FEDORA_RELEASE_POLICY.action_targets
+        )
     snapshot = ObservabilityService().collect_snapshot(target=target, source="daemon-dbus")
     return {"schema_version": 1, "read_only": True, "snapshot": snapshot.to_dict()}
 

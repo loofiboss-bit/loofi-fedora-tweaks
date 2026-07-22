@@ -24,6 +24,7 @@ classifiers = [
 ]
 dependencies = [
     "PyQt6>=6.7",
+    "keyring>=25.0",
 ]
 
 [project.optional-dependencies]
@@ -55,7 +56,6 @@ include = [
     "config*",
     "core*",
     "daemon*",
-    "plugins*",
     "resources*",
     "services*",
     "ui*",
@@ -78,6 +78,21 @@ addopts = "-v --tb=short"
 ignore_missing_imports = true
 warn_return_any = true
 no_error_summary = true
+
+[[tool.mypy.overrides]]
+module = [
+    "core.actions.*",
+    "core.navigation.*",
+    "core.state.*",
+    "core.execution_policy",
+    "core.fedora_release_policy",
+    "core.product_catalog",
+    "core.secrets",
+    "daemon.*",
+    "services.storage.cloud_sync",
+    "services.system.onboarding",
+]
+check_untyped_defs = true
 
 [tool.ruff]
 line-length = 150

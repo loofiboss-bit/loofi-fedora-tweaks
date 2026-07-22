@@ -1,8 +1,7 @@
 """Route-aware application shell with lazy destination navigation."""
 
 import logging
-import os
-from dataclasses import dataclass, field, replace
+from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from core.navigation import (
@@ -22,7 +21,7 @@ from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
 from core.plugins.registry import CATEGORY_ICONS
 from PyQt6.QtCore import QRect, Qt, QTimer
-from PyQt6.QtGui import QKeySequence, QPainter, QShortcut
+from PyQt6.QtGui import QPainter
 from PyQt6.QtWidgets import (
     QFrame,
     QGridLayout,
@@ -34,7 +33,6 @@ from PyQt6.QtWidgets import (
     QSizePolicy,
     QStackedWidget,
     QStyledItemDelegate,
-    QStyle,
     QStyleOptionViewItem,
     QTabWidget,
     QTreeWidgetItem,
@@ -46,7 +44,6 @@ from PyQt6.QtWidgets import (
 from services.system import SystemManager  # noqa: F401  (re-exported for legacy callers)
 from utils.config_manager import ConfigManager
 from utils.favorites import FavoritesManager
-from utils.focus_mode import FocusMode
 from utils.history import HistoryManager
 from utils.log import get_logger
 from version import __version__
@@ -56,6 +53,8 @@ from ui.design import semantic_qcolor
 from ui.layout_primitives import LayoutMetrics, PageHeader
 from ui.lazy_widget import LazyWidget
 from ui.navigation import DestinationHost, DestinationSidebar
+from ui.main_window_interactions import MainWindowInteractionMixin
+from ui.main_window_services import MainWindowServiceMixin
 
 if TYPE_CHECKING:
     from core.plugins.spec import PluginSpec
@@ -136,7 +135,7 @@ class DisabledPluginPage(QWidget):
         layout.addWidget(label)
 
 
-class MainWindow(QMainWindow):
+class MainWindow(MainWindowServiceMixin, MainWindowInteractionMixin, QMainWindow):
     def __init__(self):
         super().__init__()
 
@@ -150,9 +149,7 @@ class MainWindow(QMainWindow):
         self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, False)
         self.setWindowTitle(self.tr("Loofi Fedora Tweaks v%1").replace("%1", __version__))
         self.setAccessibleName(self.tr("Loofi Fedora Tweaks"))
-        self.setAccessibleDescription(
-            self.tr("Fedora system settings and maintenance control center")
-        )
+        self.setAccessibleDescription(self.tr("Fedora system settings and maintenance control center"))
 
         # HiDPI/Wayland safety: use Qt device-independent units and derive
         # shell dimensions from the active font and available screen size.
@@ -207,15 +204,9 @@ class MainWindow(QMainWindow):
         self._global_search_button = QPushButton(self.tr("Search  Ctrl+K"))
         self._global_search_button.setObjectName("globalSearchAffordance")
         self._global_search_button.setIcon(get_qicon("search", size=18))
-        self._global_search_button.setAccessibleName(
-            self.tr("Search routes, settings, and actions")
-        )
-        self._global_search_button.setToolTip(
-            self.tr("Search routes, settings, and actions (Ctrl+K)")
-        )
-        self._global_search_button.clicked.connect(
-            lambda: self._show_global_search(actions_only=False)
-        )
+        self._global_search_button.setAccessibleName(self.tr("Search routes, settings, and actions"))
+        self._global_search_button.setToolTip(self.tr("Search routes, settings, and actions (Ctrl+K)"))
+        self._global_search_button.clicked.connect(lambda: self._show_global_search(actions_only=False))
         sidebar_layout.addWidget(self._global_search_button)
 
         # Track sidebar expanded width and state
@@ -410,9 +401,7 @@ class MainWindow(QMainWindow):
         self._navigation_context = NavigationContext(
             mode=mode,
             installed_components=discover_builtin_components(specs),
-            fedora_variant=(
-                FedoraVariant.ATOMIC if is_atomic else FedoraVariant.TRADITIONAL
-            ),
+            fedora_variant=(FedoraVariant.ATOMIC if is_atomic else FedoraVariant.TRADITIONAL),
             capabilities=frozenset({"rpm-ostree"} if is_atomic else {"dnf"}),
             incompatible_plugin_ids=frozenset(incompatible_plugin_ids),
             favorite_route_ids=frozenset(favorites),
@@ -609,121 +598,6 @@ class MainWindow(QMainWindow):
         )
         self._register_in_index(meta.id, entry, scroll_widget=page_widget)
 
-    def _start_pulse_listener(self):
-        """Initialize and start the Pulse event listener."""
-        try:
-            from utils.pulse import PulseThread, SystemPulse
-
-            self.pulse = SystemPulse()
-            self.pulse_thread = PulseThread(self.pulse)
-            self.pulse.moveToThread(self.pulse_thread)
-            self.pulse_thread.start()
-        except (RuntimeError, OSError) as e:
-            logger.debug("Failed to start pulse listener: %s", e)
-
-    @staticmethod
-    def _background_services_enabled() -> bool:
-        """Return whether persisted settings require tray/background runtime."""
-        try:
-            from utils.settings import SettingsManager
-
-            return bool(SettingsManager.instance().get("start_minimized", False))
-        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
-            return False
-
-    def _initialize_background_services(self) -> None:
-        """Start tray and Pulse only for an explicitly background-enabled app."""
-        if not self._background_services_enabled():
-            return
-        self.setup_tray()
-        self._start_pulse_listener()
-
-    def _schedule_post_render_services(self) -> None:
-        """Schedule nonessential shell work after meaningful Home exists."""
-        if self._post_render_services_scheduled:
-            return
-        self._post_render_services_scheduled = True
-        QTimer.singleShot(250, self._initialize_post_render_services)
-
-    def _initialize_post_render_services(self) -> None:
-        """Initialize deferred UI and probes outside the first-render hot path."""
-        self._start_status_refresh()
-        QTimer.singleShot(0, self.check_dependencies)
-
-    def _start_status_refresh(self) -> None:
-        """Start periodic sidebar status refresh after first render."""
-        if self._status_timer is not None:
-            return
-        self._status_timer = QTimer(self)
-        self._status_timer.timeout.connect(self._refresh_status_indicators)
-        self._status_timer.start(30000)
-        try:
-            from utils.settings import SettingsManager
-
-            check_on_start = bool(
-                SettingsManager.instance().get("check_updates_on_start", True)
-            )
-        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
-            check_on_start = True
-        if check_on_start:
-            QTimer.singleShot(5000, self._refresh_status_indicators)
-
-    def _build_favorites_section(self):
-        """Compatibility no-op: favorites remain stored outside the v15 sidebar."""
-        return
-
-    def _sidebar_context_menu(self, pos):
-        """Show context menu for sidebar items with favorite toggle."""
-        item = self.sidebar.itemAt(pos)
-        if not item or not item.data(0, Qt.ItemDataRole.UserRole):
-            return
-
-        from PyQt6.QtWidgets import QMenu
-
-        tab_id = item.data(0, _ROLE_ROUTE_ID)
-        if not tab_id:
-            tab_name = item.data(0, _ROLE_NAME)
-            if not tab_name:
-                tab_name = item.text(0)
-                for suffix in _BADGE_SUFFIXES.values():
-                    tab_name = tab_name.replace(suffix, "")
-                tab_name = tab_name.strip()
-            route = resolve(str(tab_name))
-            tab_id = route.id if route else str(tab_name).lower().replace(" ", "_")
-        tab_id = str(tab_id)
-
-        menu = QMenu(self)
-        is_fav = FavoritesManager.is_favorite(tab_id)
-
-        if is_fav:
-            action = menu.addAction(self.tr("Remove from Favorites"))
-        else:
-            action = menu.addAction(self.tr("Add to Favorites"))
-
-        result = menu.exec(self.sidebar.mapToGlobal(pos))
-        if result == action:
-            FavoritesManager.toggle_favorite(tab_id)
-            self._rebuild_favorites_section()
-
-    def _rebuild_favorites_section(self):
-        """Compatibility no-op while favorites are stored for later surfaces."""
-        return
-
-    def _rebuild_sidebar_for_navigation_mode(self, mode=None):
-        """Refresh policy and destination rows without rebuilding page widgets."""
-        from utils.navigation_mode import NavigationModeManager
-
-        mode = mode or NavigationModeManager.get_mode()
-        previous_route = self._active_route_id
-        self._active_navigation_mode = mode
-        self._navigation_context = replace(self._navigation_context, mode=mode)
-        self.sidebar.set_destinations(destinations_for_mode(mode))
-        self._active_destination_id = ""
-        if previous_route and self.switch_to_route(previous_route, record_history=False):
-            return
-        if self.sidebar.topLevelItemCount() > 0:
-            self.sidebar.setCurrentItem(self.sidebar.topLevelItem(0))
-
     def add_page(
         self,
         name: str,
@@ -837,9 +711,7 @@ class MainWindow(QMainWindow):
     def _update_header_for_route(self, route: NavigationRoute, entry: SidebarEntry | None = None) -> None:
         """Render the focused page header when a route has no visible sidebar row."""
         placement = placement_for_route(route.id)
-        destination = (
-            get_destination(placement.destination_id) if placement is not None else None
-        )
+        destination = get_destination(placement.destination_id) if placement is not None else None
         area = area_for_plugin(route.plugin_id)
         category = destination.label if destination else (area.label if area else route.category)
         self._bc_category.setText(category)
@@ -1080,8 +952,6 @@ class MainWindow(QMainWindow):
         self._status_label.style().polish(self._status_label)
         self._update_status_chrome()
 
-        from PyQt6.QtCore import QTimer
-
         QTimer.singleShot(duration, self._clear_toast)
 
     def _clear_toast(self):
@@ -1108,10 +978,7 @@ class MainWindow(QMainWindow):
 
         if getattr(self, "_shell_uses_destinations", False) is True:
             result = NavigationPolicy.evaluate(route.id, self._navigation_context)
-            if (
-                result.direct_link_behavior is DirectLinkBehavior.REDIRECT
-                and result.redirect_route_id
-            ):
+            if result.direct_link_behavior is DirectLinkBehavior.REDIRECT and result.redirect_route_id:
                 return self.switch_to_route(
                     result.redirect_route_id,
                     record_history=record_history,
@@ -1228,499 +1095,3 @@ class MainWindow(QMainWindow):
 
         logger.debug("switch_to_tab: no match for '%s'", name)
         return False
-
-    def _setup_command_palette_shortcut(self):
-        """Compatibility name for registering both global-search shortcuts."""
-        self._setup_global_search_shortcuts()
-
-    def _setup_global_search_shortcuts(self) -> None:
-        """Bind route/settings search and action search to the same dialog."""
-        global_shortcut = QShortcut(QKeySequence("Ctrl+K"), self)
-        global_shortcut.activated.connect(
-            lambda: self._show_global_search(actions_only=False)
-        )
-        action_shortcut = QShortcut(QKeySequence("Ctrl+Shift+K"), self)
-        action_shortcut.activated.connect(
-            lambda: self._show_global_search(actions_only=True)
-        )
-        self._global_search_shortcuts = (global_shortcut, action_shortcut)
-
-    def _show_command_palette(self):
-        """Compatibility entry point for the shared global search."""
-        self._show_global_search(actions_only=False)
-
-    def _setup_quick_actions(self):
-        """Compatibility no-op; action discovery uses global search shortcuts."""
-
-    def _show_quick_actions(self):
-        """Compatibility entry point for action-filtered global search."""
-        self._show_global_search(actions_only=True)
-
-    def _show_global_search(self, *, actions_only: bool = False) -> None:
-        """Show the single policy-backed global discovery surface."""
-        try:
-            from core.navigation import GlobalSearchModel, SearchFilter
-            from ui.global_search import GlobalSearchDialog
-            from utils.quick_actions_config import QuickActionsConfig
-
-            context = getattr(self, "_navigation_context", NavigationContext())
-            model = GlobalSearchModel(
-                context,
-                configured_quick_actions=QuickActionsConfig.get_actions(),
-            )
-            dialog = GlobalSearchDialog(
-                model,
-                self._activate_global_search_result,
-                search_filter=(
-                    SearchFilter.ACTIONS if actions_only else SearchFilter.ALL
-                ),
-                parent=self,
-            )
-            dialog.exec()
-        except ImportError:
-            logger.debug("Global search module not available", exc_info=True)
-
-    def _activate_global_search_result(self, result) -> bool:
-        """Navigate to a result and optionally preselect an Action Center item."""
-        route_id = str(getattr(result, "route_id", "") or "")
-        if not route_id or not self.switch_to_route(route_id):
-            return False
-        action_id = str(getattr(result, "action_id", "") or "")
-        if action_id:
-            self._preselect_action_center(action_id)
-        return True
-
-    def _preselect_action_center(self, action_id: str, parameters=None) -> bool:
-        """Select an Action Center candidate without planning or running it."""
-        entry = self._sidebar_index.get("maintenance")
-        if entry is None:
-            return False
-        widget = self._real_widget_for_entry(entry)
-        preselect = getattr(widget, "preselect_action", None)
-        if not callable(preselect):
-            return False
-        if parameters is None:
-            return bool(preselect(action_id))
-        return bool(preselect(action_id, parameters))
-
-    def _toggle_sidebar(self):
-        """Toggle sidebar between expanded and collapsed states."""
-        self._auto_sidebar_collapsed = False
-        self._set_sidebar_collapsed(not self._sidebar_collapsed)
-
-    def _set_sidebar_toggle_state(self, collapsed: bool) -> None:
-        """Apply a native semantic direction icon and accessible control text."""
-        action = self.tr("Expand sidebar") if collapsed else self.tr("Collapse sidebar")
-        standard_icon = (
-            QStyle.StandardPixmap.SP_ArrowRight
-            if collapsed
-            else QStyle.StandardPixmap.SP_ArrowLeft
-        )
-        self._sidebar_toggle.setText("")
-        style = self.style()
-        if style is not None:
-            self._sidebar_toggle.setIcon(style.standardIcon(standard_icon))
-        self._sidebar_toggle.setToolTip(action)
-        self._sidebar_toggle.setAccessibleName(action)
-
-    def _set_sidebar_collapsed(self, collapsed: bool) -> None:
-        """Apply sidebar collapsed/expanded state without changing route data."""
-        if not collapsed:
-            self._sidebar_container.setFixedWidth(self._sidebar_expanded_width)
-            self._sidebar_layout.setContentsMargins(12, 14, 12, 10)
-            self.sidebar.setVisible(True)
-            self._set_sidebar_icon_only(False)
-            self._global_search_button.setText(self.tr("Search  Ctrl+K"))
-            self._set_sidebar_toggle_state(False)
-            self._sidebar_collapsed = False
-        else:
-            collapsed_width = getattr(getattr(self, "_metrics", None), "sidebar_collapsed_width", int(self._line_height * 4))
-            self._sidebar_container.setFixedWidth(collapsed_width)
-            self._sidebar_layout.setContentsMargins(8, 14, 8, 10)
-            self.sidebar.setVisible(True)
-            self._set_sidebar_icon_only(True)
-            self._global_search_button.setText("")
-            self._set_sidebar_toggle_state(True)
-            self._sidebar_collapsed = True
-
-    def _set_section_navigation_compact(self, compact: bool) -> None:
-        """Move section navigation above content at the minimum layout."""
-        compact = bool(compact)
-        if compact == getattr(self, "_section_navigation_compact", None):
-            set_compact = getattr(self.destination_host, "set_compact", None)
-            if callable(set_compact):
-                set_compact(compact)
-            return
-        self._shell_body_layout.removeWidget(self.destination_host)
-        self._shell_body_layout.removeWidget(self.content_area)
-        if compact:
-            self._shell_body_layout.addWidget(self.destination_host, 0, 0, 1, 2)
-            self._shell_body_layout.addWidget(self.content_area, 1, 0, 1, 2)
-            self._shell_body_layout.setColumnStretch(0, 1)
-            self._shell_body_layout.setColumnStretch(1, 0)
-        else:
-            self._shell_body_layout.addWidget(self.destination_host, 0, 0)
-            self._shell_body_layout.addWidget(self.content_area, 0, 1)
-            self._shell_body_layout.setColumnStretch(0, 0)
-            self._shell_body_layout.setColumnStretch(1, 1)
-        set_compact = getattr(self.destination_host, "set_compact", None)
-        if callable(set_compact):
-            set_compact(compact)
-        self._section_navigation_compact = compact
-
-    def _apply_responsive_shell(self, width: int) -> None:
-        """Apply the v16 wide, medium, and minimum shell breakpoints."""
-        compact_sections = width < 900
-        self._set_section_navigation_compact(compact_sections)
-        if width < 1180 and not self._sidebar_collapsed:
-            self._auto_sidebar_collapsed = True
-            self._set_sidebar_collapsed(True)
-        elif width >= 1180 and self._auto_sidebar_collapsed:
-            self._auto_sidebar_collapsed = False
-            self._set_sidebar_collapsed(False)
-
-    def resizeEvent(self, event) -> None:
-        """Apply responsive sidebar breakpoints as the window changes size."""
-        try:
-            width = int(self.width())
-            self._apply_responsive_shell(width)
-        except (TypeError, ValueError, AttributeError, RuntimeError):
-            logger.debug("Responsive sidebar resize update failed", exc_info=True)
-        super().resizeEvent(event)
-
-    def _sidebar_display_text(self, item: QTreeWidgetItem) -> str:
-        """Return the expanded display text for a sidebar item."""
-        name = item.data(0, _ROLE_NAME)
-        if name:
-            badge = item.data(0, _ROLE_BADGE) or ""
-            suffix = _BADGE_SUFFIXES.get(badge, "")
-            return f"{name}{suffix}"
-        return str(item.data(0, _ROLE_DESC) or item.text(0))
-
-    def _set_sidebar_icon_only(self, collapsed: bool) -> None:
-        """Toggle sidebar labels while keeping icon rows selectable."""
-        if getattr(self, "_shell_uses_destinations", False) is True:
-            self.sidebar.set_collapsed(collapsed)
-            return
-        iterator = QTreeWidgetItemIterator(self.sidebar)
-        while iterator.value():
-            item = iterator.value()
-            if item is None:
-                break
-            display_text = self._sidebar_display_text(item)
-            if display_text:
-                item.setToolTip(0, item.toolTip(0) or display_text)
-            item.setText(0, "" if collapsed else display_text)
-            iterator += 1
-
-    def _setup_keyboard_shortcuts(self):
-        """Register destination-aware shell navigation shortcuts."""
-        # Ctrl+1 through Ctrl+7 select stable destinations.
-        for i in range(1, 8):
-            shortcut = QShortcut(QKeySequence(f"Ctrl+{i}"), self)
-            shortcut.activated.connect(lambda idx=i - 1: self._select_category(idx))
-
-        # Ctrl+Tab - next tab
-        next_tab = QShortcut(QKeySequence("Ctrl+Tab"), self)
-        next_tab.activated.connect(self._select_next_item)
-
-        # Ctrl+Shift+Tab - previous tab
-        prev_tab = QShortcut(QKeySequence("Ctrl+Shift+Tab"), self)
-        prev_tab.activated.connect(self._select_prev_item)
-
-        back = QShortcut(QKeySequence("Alt+Left"), self)
-        back.activated.connect(self.navigate_back)
-        forward = QShortcut(QKeySequence("Alt+Right"), self)
-        forward.activated.connect(self.navigate_forward)
-
-        # Ctrl+Q - Quit
-        quit_shortcut = QShortcut(QKeySequence("Ctrl+Q"), self)
-        quit_shortcut.activated.connect(self.quit_app)
-
-        # F1 - Show shortcut help
-        help_shortcut = QShortcut(QKeySequence("F1"), self)
-        help_shortcut.activated.connect(self._show_shortcut_help)
-
-    def _select_category(self, index: int):
-        """Compatibility name for selecting a flat destination by position."""
-        if index < self.sidebar.topLevelItemCount():
-            item = self.sidebar.topLevelItem(index)
-            self.sidebar.setCurrentItem(item)
-
-    def _select_next_item(self):
-        current = self.sidebar.currentItem()
-        if not current:
-            return
-
-        # Try to find next item below
-        next_item = self.sidebar.itemBelow(current)
-        if next_item:
-            self.sidebar.setCurrentItem(next_item)
-        else:
-            # Wrap around to top
-            if self.sidebar.topLevelItemCount() > 0:
-                self.sidebar.setCurrentItem(self.sidebar.topLevelItem(0))
-
-    def _select_prev_item(self):
-        current = self.sidebar.currentItem()
-        if not current:
-            return
-
-        # Try to find item above
-        prev_item = self.sidebar.itemAbove(current)
-        if prev_item:
-            self.sidebar.setCurrentItem(prev_item)
-        else:
-            # Wrap around to the last destination.
-            self.sidebar.setCurrentItem(
-                self.sidebar.topLevelItem(self.sidebar.topLevelItemCount() - 1)
-            )
-
-    def _show_shortcut_help(self):
-        """Show keyboard shortcuts help dialog."""
-        from PyQt6.QtWidgets import QMessageBox
-
-        shortcuts = (
-            "Ctrl+K — Search routes, settings, and actions\n"
-            "Ctrl+Shift+K — Search actions\n"
-            "Ctrl+1..7 — Switch destination\n"
-            "Ctrl+Tab — Next destination\n"
-            "Ctrl+Shift+Tab — Previous destination\n"
-            "Alt+Left/Right — Route history\n"
-            "Ctrl+Q — Quit\n"
-            "F1 — This help"
-        )
-        QMessageBox.information(self, self.tr("Keyboard Shortcuts"), shortcuts)
-
-    def show_toast(self, title: str, message: str, category: str = "general"):
-        """Show an animated toast notification at the top-right."""
-        try:
-            from ui.notification_toast import NotificationToast
-
-            if self._toast_widget is None:
-                self._toast_widget = NotificationToast(self)
-            self._toast_widget.show_toast(title, message, category)
-        except (RuntimeError, ImportError) as e:
-            logger.debug("Failed to show toast notification: %s", e)
-
-    def _refresh_status_indicators(self):
-        """Update sidebar status indicators from live system data (v29.0)."""
-        try:
-            # Maintenance: check for updates
-            from utils.update_checker import UpdateChecker
-
-            update_info = UpdateChecker.check_for_updates(timeout=5, use_cache=True)
-            if update_info and update_info.is_newer:
-                self._set_tab_status("maintenance", "warning", "Updates available")
-            else:
-                self._set_tab_status("maintenance", "ok", "Up to date")
-        except (RuntimeError, OSError, ValueError) as e:
-            logger.debug("Failed to check for updates: %s", e)
-            self._set_tab_status("maintenance", "", "")
-
-        try:
-            # Storage: check disk space
-            from services.hardware.disk import DiskManager
-
-            usage = DiskManager.get_disk_usage("/")
-            if usage and hasattr(usage, "percent_used"):
-                if usage.percent_used >= 90:
-                    self._set_tab_status("storage", "error", f"Disk {usage.percent_used:.0f}% full")
-                elif usage.percent_used >= 75:
-                    self._set_tab_status("storage", "warning", f"Disk {usage.percent_used:.0f}% used")
-                else:
-                    self._set_tab_status("storage", "ok", "Healthy")
-        except (RuntimeError, OSError, ValueError) as e:
-            logger.debug("Failed to check disk space: %s", e)
-            self._set_tab_status("storage", "", "")
-
-    def _set_tab_status(self, tab_id: str, status: str, tooltip: str = ""):
-        """Set a colored status indicator on a sidebar tab by plugin ID. O(1) lookup."""
-        entry = self._sidebar_index.get(tab_id)
-        if not entry:
-            logger.debug("_set_tab_status: unknown tab_id %s", tab_id)
-            return
-
-        entry.status = status
-        if entry.tree_item is None:
-            return
-        entry.tree_item.setData(0, _ROLE_STATUS, status)
-
-        if tooltip:
-            desc = entry.metadata.description or ""
-            entry.tree_item.setToolTip(0, f"{desc}\n[{tooltip}]" if desc else tooltip)
-
-    def apply_navigation_mode(self, mode=None):
-        """Apply the canonical Standard/Advanced navigation mode."""
-        try:
-            from utils.navigation_mode import NavigationModeManager
-
-            if mode is None:
-                mode = NavigationModeManager.get_mode()
-            if getattr(self, "_active_navigation_mode", None) == mode:
-                return
-            self._rebuild_sidebar_for_navigation_mode(mode)
-        except (ImportError, AttributeError, ValueError, RuntimeError) as e:
-            logger.debug("Navigation mode refresh unavailable: %s", e)
-
-    def _check_first_run(self):
-        """Show the single welcome surface only when its sentinel is absent."""
-        try:
-            from ui.wizard import FirstRunWelcome, needs_first_run
-
-            welcome = None
-            if needs_first_run():
-                welcome = FirstRunWelcome(self)
-                welcome.exec()
-            self.apply_navigation_mode()
-            requested_route = str(getattr(welcome, "requested_route", "") or "")
-            if requested_route:
-                self.switch_to_route(requested_route)
-        except ImportError:
-            logger.debug("First-run welcome module not available", exc_info=True)
-
-    def setup_tray(self):
-        from PyQt6.QtGui import QAction, QIcon
-        from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
-
-        if QSystemTrayIcon.isSystemTrayAvailable():
-            self.tray_icon = QSystemTrayIcon(self)
-            icon_path = os.path.join(os.path.dirname(__file__), "..", "assets", "loofi-fedora-tweaks.png")
-            if os.path.exists(icon_path):
-                self.tray_icon.setIcon(QIcon(icon_path))
-            else:
-                self.tray_icon.setIcon(self.style().standardIcon(self.style().StandardPixmap.SP_ComputerIcon))
-
-            tray_menu = QMenu()
-            show_action = QAction(self.tr("Show"), self)
-            show_action.triggered.connect(self.show)
-
-            # Focus Mode toggle
-            self.focus_action = QAction(self.tr("Focus Mode"), self)
-            self.focus_action.setCheckable(True)
-            self.focus_action.setChecked(FocusMode.is_active())
-            self.focus_action.triggered.connect(self._toggle_focus_mode)
-
-            quit_action = QAction(self.tr("Quit"), self)
-            quit_action.triggered.connect(self.quit_app)
-
-            tray_menu.addAction(show_action)
-            tray_menu.addSeparator()
-            tray_menu.addAction(self.focus_action)
-            tray_menu.addSeparator()
-            tray_menu.addAction(quit_action)
-            self.tray_icon.setContextMenu(tray_menu)
-            self.tray_icon.show()
-        else:
-            self.tray_icon = None
-
-    def _toggle_focus_mode(self):
-        """Toggle Focus Mode from tray."""
-        result = FocusMode.toggle()
-        self.focus_action.setChecked(FocusMode.is_active())
-
-        if self.tray_icon:
-            message = result.get("message", "Focus Mode toggled")
-            self.tray_icon.showMessage(
-                self.tr("Focus Mode"),
-                message,
-                self.tray_icon.MessageIcon.Information,
-                2000,
-            )
-
-    def quit_app(self):
-        self._set_active_plugin("")
-        # Stop Pulse listener
-        if self.pulse_thread:
-            self.pulse_thread.stop()
-
-        if self.tray_icon:
-            self.tray_icon.hide()
-        from PyQt6.QtWidgets import QApplication
-
-        QApplication.quit()
-
-    def closeEvent(self, event):
-        tray_icon = getattr(self, "tray_icon", None)
-        if tray_icon and tray_icon.isVisible():
-            self.hide()
-            tray_icon.showMessage(
-                self.tr("Loofi Fedora Tweaks"),
-                self.tr("Minimized to tray."),
-                tray_icon.MessageIcon.Information,
-                2000,
-            )
-            event.ignore()
-        else:
-            # Clean up page resources (timers, schedulers)
-            self._set_active_plugin("")
-            registry = PluginRegistry.instance()
-            list_all = getattr(registry, "list_all", lambda: [])
-            plugins = list(list_all())
-            if not plugins:
-                plugins = [entry.page_widget for entry in self._sidebar_index.values()]
-            for plugin in plugins:
-                if hasattr(plugin, "cleanup"):
-                    try:
-                        plugin.cleanup()
-                    except (RuntimeError, OSError) as e:
-                        logger.debug("Failed to cleanup page on close: %s", e)
-            event.accept()
-
-    def check_dependencies(self):
-        from services.system.system import cached_which
-
-        critical = ["dnf", "pkexec"]
-        missing = [tool for tool in critical if not cached_which(tool)]
-        if missing:
-            self.show_doctor()
-
-    def show_doctor(self):
-        from ui.doctor import DependencyDoctor
-
-        doctor = DependencyDoctor(self)
-        doctor.exec()
-
-    # ==================== Theme Management ====================
-
-    def load_theme(self, name: str = "system") -> None:
-        """
-        Apply invariant component structure with the requested semantic palette.
-
-        System mode derives colours from ``QPalette`` while retaining the same
-        card, state, navigation, control, and focus geometry as explicit themes.
-        """
-        from PyQt6.QtWidgets import QApplication
-
-        app = QApplication.instance()
-        if not isinstance(app, QApplication):
-            return
-        from ui.design import ThemeManager
-
-        if ThemeManager().apply(app, name):
-            sidebar = getattr(self, "sidebar", None)
-            refresh_destination_icons = getattr(sidebar, "refresh_icon_tints", None)
-            if callable(refresh_destination_icons):
-                refresh_destination_icons()
-            if sidebar is not None and not callable(refresh_destination_icons):
-                self._refresh_sidebar_icon_tints()
-            refresh_section_icons = getattr(
-                getattr(self, "destination_host", None),
-                "refresh_icon_tints",
-                None,
-            )
-            if callable(refresh_section_icons):
-                refresh_section_icons()
-            self.update()
-
-    @staticmethod
-    def detect_system_theme() -> str:
-        """
-        Detect the system colour-scheme preference via
-        ``gsettings`` (GNOME / GTK) and return ``"dark"`` or ``"light"``.
-
-        Returns ``"dark"`` when detection fails.
-        """
-        from services.desktop import DesktopUtils
-
-        return DesktopUtils.detect_color_scheme()

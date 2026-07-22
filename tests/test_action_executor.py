@@ -149,7 +149,7 @@ class TestActionExecutor:
         with tempfile.TemporaryDirectory() as tmpdir:
             with patch("core.executor.action_executor._LOG_DIR", tmpdir), \
                  patch("core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "log.jsonl")):
-                result = ActionExecutor.run("dnf")
+                result = ActionExecutor.run("dnf", authority="action_center")
                 assert result.success is False
                 assert result.exit_code == 127
                 assert "not found" in result.message.lower()
@@ -262,6 +262,7 @@ class TestCommandFacade:
                     privileged=True,
                     timeout=7,
                     action_id="facade-clean",
+                    authority="action_center",
                 )
         assert result.success is True
         assert result.action_id == "facade-clean"

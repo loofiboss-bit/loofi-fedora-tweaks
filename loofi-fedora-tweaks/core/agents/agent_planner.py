@@ -14,6 +14,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Any, Dict, List, Optional
 
+from core.execution_policy import execution_allowed
+
 from core.agents.agents import (
     ActionSeverity,
     AgentAction,
@@ -365,8 +367,11 @@ class AgentPlanner:
         )
 
         try:
+            vector = ["ollama", "run", "llama3.2", prompt]
+            if not execution_allowed(vector[0], vector[1:]):
+                return None
             result = subprocess.run(
-                ["ollama", "run", "llama3.2", prompt],
+                vector,
                 capture_output=True,
                 text=True,
                 timeout=30,

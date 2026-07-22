@@ -9,9 +9,16 @@ import re
 import subprocess
 import time
 import glob
-from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Dict, List
 
+from core.diagnostics.release_models import (
+    TARGETS,
+    ReadinessCheck,
+    ReadinessRecommendation,
+    ReleaseReadinessReport,
+    ReleaseTarget,
+)
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from services.desktop.kde44 import KDE44DesktopInfo, KDE44DesktopService
 from services.package.dnf5_health import DNF5HealthReport, DNF5HealthService
 from services.security.secureboot import SecureBootManager
@@ -21,304 +28,17 @@ from utils.log import get_logger
 logger = get_logger(__name__)
 
 
-@dataclass(frozen=True)
-class ReleaseChange:
-    """Static release-profile metadata shown in upgrade planning surfaces."""
-
-    id: str
-    title: str
-    summary: str
-    impact: str = "info"
-    docs_link: str = ""
-
-    def to_dict(self) -> Dict[str, str]:
-        return {
-            "id": self.id,
-            "title": self.title,
-            "summary": self.summary,
-            "impact": self.impact,
-            "docs_link": self.docs_link,
-        }
-
-
-@dataclass(frozen=True)
-class ReleaseTarget:
-    """Fedora release target metadata used by readiness probes."""
-
-    key: str
-    label: str
-    fedora_version: str
-    supported: bool
-    preview: bool = False
-    compatible_versions: tuple[str, ...] = ()
-    min_plasma: tuple[int, ...] = (6, 0)
-    min_qt: tuple[int, ...] = (6, 6)
-    beta_target: str = ""
-    final_target: str = ""
-    status_label: str = "Supported"
-    release_phase: str = "stable"
-    upgrade_from: tuple[str, ...] = ()
-    important_changes: tuple[ReleaseChange, ...] = ()
-    known_risks: tuple[ReleaseChange, ...] = ()
-    docs_links: tuple[str, ...] = ()
-
-    def to_dict(self) -> Dict[str, object]:
-        return {
-            "key": self.key,
-            "label": self.label,
-            "fedora_version": self.fedora_version,
-            "supported": self.supported,
-            "preview": self.preview,
-            "compatible_versions": list(self.compatible_versions),
-            "min_plasma": ".".join(str(part) for part in self.min_plasma),
-            "min_qt": ".".join(str(part) for part in self.min_qt),
-            "beta_target": self.beta_target,
-            "final_target": self.final_target,
-            "status_label": self.status_label,
-            "release_phase": self.release_phase,
-            "upgrade_from": list(self.upgrade_from),
-            "important_changes": [change.to_dict() for change in self.important_changes],
-            "known_risks": [risk.to_dict() for risk in self.known_risks],
-            "docs_links": list(self.docs_links),
-        }
-
-
-TARGETS: Dict[str, ReleaseTarget] = {
-    "44": ReleaseTarget(
-        key="44",
-        label="Fedora KDE 44",
-        fedora_version="44",
-        supported=True,
-        compatible_versions=("43",),
-        status_label="Supported baseline",
-        release_phase="stable",
-        upgrade_from=("43",),
-        important_changes=(
-            ReleaseChange(
-                "packagekit-dnf5",
-                "PackageKit uses DNF5",
-                "Fedora 44 aligns graphical software tools and command-line package management on the DNF5 stack.",
-                "medium",
-                "https://discussion.fedoraproject.org/t/f44-change-proposal-packagekit-dnf5-systemwide/179013",
-            ),
-            ReleaseChange(
-                "kde-oobe",
-                "Unified KDE setup",
-                "Fedora KDE variants use Plasma Setup for a more consistent first-run experience.",
-                "info",
-                "https://fedoraproject.org/wiki/Releases/44/ChangeSet",
-            ),
-        ),
-        known_risks=(
-            ReleaseChange(
-                "legacy-cert-path",
-                "Legacy TLS bundle path changed",
-                "Some legacy tools may still expect /etc/pki/tls/cert.pem even though Fedora uses the generated CA trust bundle.",
-                "low",
-                "https://fedoraproject.org/wiki/Releases/44/ChangeSet",
-            ),
-        ),
-        docs_links=(
-            "https://fedoraproject.org/kde/download/",
-            "https://fedoramagazine.org/announcing-fedora-linux-44/",
-        ),
-    ),
-    "45-preview": ReleaseTarget(
-        key="45-preview",
-        label="Fedora KDE 45 Preview",
-        fedora_version="45",
-        supported=False,
-        preview=True,
-        compatible_versions=("44",),
-        beta_target="2026-09-15",
-        final_target="2026-10-20",
-        status_label="Preview planning profile",
-        release_phase="preview",
-        upgrade_from=("44",),
-        important_changes=(
-            ReleaseChange(
-                "repo-configs-usr",
-                "Packaged repository configs move to /usr",
-                "Fedora 45 plans to relocate packaged RPM repository configuration data from /etc to /usr.",
-                "medium",
-                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
-            ),
-            ReleaseChange(
-                "python-315",
-                "Python 3.15 and Setuptools changes",
-                "Fedora 45 includes Python 3.15 planning and Setuptools 82+ compatibility work that can affect tools using removed legacy APIs.",
-                "medium",
-                "https://fedoraproject.org/wiki/Changes/Python3.15",
-            ),
-            ReleaseChange(
-                "networkmanager-ipv6-mostly",
-                "IPv6-mostly NetworkManager support",
-                "NetworkManager gains default support for IPv6-mostly networks.",
-                "low",
-                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
-            ),
-            ReleaseChange(
-                "podman-6",
-                "Podman 6",
-                "Podman 6 brings CLI/API changes and removes some deprecated container networking/storage components.",
-                "medium",
-                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
-            ),
-            ReleaseChange(
-                "atomic-flatpak-filtering",
-                "Atomic Flatpak filtering",
-                "Atomic Desktop images may filter Fedora Flatpaks and enable a verified Flathub subset by default.",
-                "low",
-                "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
-            ),
-        ),
-        known_risks=(
-            ReleaseChange(
-                "third-party-repos",
-                "Third-party repositories need review",
-                "COPR, vendor, and RPM Fusion repositories can lag major release changes and should be audited before upgrade.",
-                "medium",
-            ),
-            ReleaseChange(
-                "rpm-openssl-compat",
-                "RPM/OpenSSL compatibility should be checked",
-                "RPM and OpenSSL stack changes can expose stale package metadata, signatures, or certificate assumptions.",
-                "medium",
-            ),
-        ),
-        docs_links=(
-            "https://fedoraproject.org/wiki/Releases/45/ChangeSet",
-            "https://fedoraproject.org/wiki/Changes/Python3.15",
-        ),
-    ),
-}
-
-
-@dataclass
-class ReadinessRecommendation:
-    """Action metadata attached to a readiness finding."""
-
-    title: str
-    description: str
-    command_preview: Optional[List[str]] = None
-    risk_level: str = "info"
-    reversible: bool = True
-    rollback_hint: str = "No system changes are made by this recommendation."
-    manual_only: bool = True
-    docs_link: str = ""
-
-    def to_dict(self) -> Dict[str, object]:
-        data: Dict[str, object] = {
-            "title": self.title,
-            "description": self.description,
-            "risk_level": self.risk_level,
-            "reversible": self.reversible,
-            "rollback_hint": self.rollback_hint,
-            "manual_only": self.manual_only,
-        }
-        if self.command_preview:
-            data["command_preview"] = list(self.command_preview)
-        if self.docs_link:
-            data["docs_link"] = self.docs_link
-        return data
-
-
-@dataclass
-class ReadinessCheck:
-    """Single release readiness finding."""
-
-    id: str
-    title: str
-    category: str
-    status: str
-    severity: str
-    summary: str
-    beginner_guidance: str
-    advanced_detail: str = ""
-    command_preview: Optional[List[str]] = None
-    risk_level: str = "info"
-    rollback_hint: str = "No changes are made by this readiness check."
-    recommendation: Optional[ReadinessRecommendation] = None
-
-    def to_dict(self, *, advanced: bool = True) -> Dict[str, object]:
-        data: Dict[str, object] = {
-            "id": self.id,
-            "title": self.title,
-            "category": self.category,
-            "status": self.status,
-            "severity": self.severity,
-            "summary": self.summary,
-            "beginner_guidance": self.beginner_guidance,
-            "risk_level": self.risk_level,
-            "rollback_hint": self.rollback_hint,
-        }
-        if self.command_preview:
-            data["command_preview"] = list(self.command_preview)
-        if self.recommendation:
-            data["recommendation"] = self.recommendation.to_dict()
-        if advanced:
-            data["advanced_detail"] = self.advanced_detail
-        return data
-
-
-@dataclass
-class ReleaseReadinessReport:
-    """Aggregated release readiness report."""
-
-    target: str
-    generated_at: float
-    score: int
-    status: str
-    summary: str
-    checks: List[ReadinessCheck] = field(default_factory=list)
-    desktop: Optional[KDE44DesktopInfo] = None
-    package: Optional[DNF5HealthReport] = None
-    target_metadata: ReleaseTarget = field(default_factory=lambda: TARGETS["44"])
-    mode: str = "check"
-
-    def to_dict(self, *, advanced: bool = True) -> Dict[str, object]:
-        data: Dict[str, object] = {
-            "target": self.target,
-            "target_metadata": self.target_metadata.to_dict(),
-            "generated_at": self.generated_at,
-            "score": self.score,
-            "status": self.status,
-            "summary": self.summary,
-            "mode": self.mode,
-            "checks": [check.to_dict(advanced=advanced) for check in self.checks],
-            "target_changes": {
-                "important_changes": [change.to_dict() for change in self.target_metadata.important_changes],
-                "known_risks": [risk.to_dict() for risk in self.target_metadata.known_risks],
-            },
-        }
-        if advanced:
-            data["desktop"] = self.desktop.to_dict() if self.desktop else {}
-            data["package"] = self.package.to_dict() if self.package else {}
-        return data
-
-    def support_summary(self) -> str:
-        warnings = [check for check in self.checks if check.severity == "warning"]
-        errors = [check for check in self.checks if check.severity in {"error", "critical"}]
-        lines = [
-            f"{self.target}: {self.score}/100 ({self.status})",
-            f"{len(warnings)} warning(s), {len(errors)} error(s)",
-        ]
-        for check in warnings + errors:
-            lines.append(f"- {check.title}: {check.summary}")
-        return "\n".join(lines)
-
-
 class ReleaseReadiness:
     """Read-only release readiness aggregator."""
 
-    TARGET_KEY = "44"
-    TARGET = TARGETS["44"].label
+    TARGET_KEY = FEDORA_RELEASE_POLICY.stable_target
+    TARGET = TARGETS[FEDORA_RELEASE_POLICY.stable_target].label
     FEDORA_COMPAT_VERSION = "43"
-    FEDORA_TARGET_VERSION = "44"
+    FEDORA_TARGET_VERSION = FEDORA_RELEASE_POLICY.stable_release
 
     @staticmethod
-    def get_target(target_key: str = "44") -> ReleaseTarget:
-        return TARGETS.get(target_key, TARGETS["44"])
+    def get_target(target_key: str = FEDORA_RELEASE_POLICY.stable_target) -> ReleaseTarget:
+        return TARGETS.get(target_key, TARGETS[FEDORA_RELEASE_POLICY.stable_target])
 
     @staticmethod
     def list_targets() -> List[ReleaseTarget]:
@@ -447,7 +167,9 @@ class ReleaseReadiness:
                 status=plasma_status,
                 severity="info" if plasma_status == "pass" else "warning",
                 summary=f"Plasma version: {desktop.plasma_version}",
-                beginner_guidance="Plasma version looks compatible." if plasma_status == "pass" else f"Plasma {'.'.join(str(x) for x in target.min_plasma)}+ is expected for {target.label}.",
+                beginner_guidance="Plasma version looks compatible."
+                if plasma_status == "pass"
+                else f"Plasma {'.'.join(str(x) for x in target.min_plasma)}+ is expected for {target.label}.",
                 advanced_detail=desktop.display_manager_detail,
                 command_preview=["plasmashell", "--version"],
             )
@@ -463,7 +185,9 @@ class ReleaseReadiness:
                 status=qt_status,
                 severity="info" if qt_status == "pass" else "warning",
                 summary=f"Qt version: {desktop.qt_version}",
-                beginner_guidance="Qt version looks compatible." if qt_status == "pass" else f"Qt {'.'.join(str(x) for x in target.min_qt)}+ is expected for current Plasma 6 desktops.",
+                beginner_guidance="Qt version looks compatible."
+                if qt_status == "pass"
+                else f"Qt {'.'.join(str(x) for x in target.min_qt)}+ is expected for current Plasma 6 desktops.",
                 advanced_detail=json.dumps(desktop.to_dict(), indent=2, sort_keys=True),
                 command_preview=["qmake6", "--version"],
             )
@@ -522,7 +246,9 @@ class ReleaseReadiness:
                 status="pass" if package.packagekit_active else "info",
                 severity="info",
                 summary=f"PackageKit: {package.packagekit_detail}",
-                beginner_guidance="PackageKit is active." if package.packagekit_active else "PackageKit is not active or unavailable; this may be normal on some setups.",
+                beginner_guidance="PackageKit is active."
+                if package.packagekit_active
+                else "PackageKit is not active or unavailable; this may be normal on some setups.",
                 advanced_detail=package.packagekit_detail,
                 command_preview=["systemctl", "is-active", "packagekit.service"],
             ),
@@ -554,7 +280,9 @@ class ReleaseReadiness:
                 status="pass" if package.repo_probe_ok else "warning",
                 severity="info" if package.repo_probe_ok else "warning",
                 summary="Enabled repositories can be queried." if package.repo_probe_ok else "Repository query reported a problem.",
-                beginner_guidance="Repository metadata looks reachable." if package.repo_probe_ok else "Check disabled, broken, or outdated repository files before upgrading.",
+                beginner_guidance="Repository metadata looks reachable."
+                if package.repo_probe_ok
+                else "Check disabled, broken, or outdated repository files before upgrading.",
                 advanced_detail=package.repo_probe_detail,
                 command_preview=[package.package_manager, "repolist", "--enabled"] if package.package_manager != "Unknown" else None,
                 recommendation=(
@@ -579,7 +307,9 @@ class ReleaseReadiness:
                 status="warning" if high_risks else ("info" if package.repo_risks else "pass"),
                 severity="warning" if high_risks else "info",
                 summary=f"{len(package.repo_risks)} third-party repository signal(s) found.",
-                beginner_guidance="Review COPR and RPM Fusion repos before major upgrades." if package.repo_risks else "No third-party repository risks found.",
+                beginner_guidance="Review COPR and RPM Fusion repos before major upgrades."
+                if package.repo_risks
+                else "No third-party repository risks found.",
                 advanced_detail=json.dumps([risk.to_dict() for risk in package.repo_risks], indent=2, sort_keys=True),
                 command_preview=["ls", "/etc/yum.repos.d"],
                 recommendation=(
@@ -679,7 +409,9 @@ class ReleaseReadiness:
             status=status,
             severity="warning" if status == "warning" else "info",
             summary="NVIDIA GPU detected; module and Secure Boot checks completed.",
-            beginner_guidance="Resolve module, akmods, or MOK warnings before upgrading kernels." if status == "warning" else "NVIDIA module state looks compatible.",
+            beginner_guidance="Resolve module, akmods, or MOK warnings before upgrading kernels."
+            if status == "warning"
+            else "NVIDIA module state looks compatible.",
             advanced_detail=json.dumps(details, indent=2, sort_keys=True),
             command_preview=["modinfo", "nvidia"],
             recommendation=(
@@ -718,7 +450,9 @@ class ReleaseReadiness:
             status="pass" if kde_lines else "info",
             severity="info",
             summary=f"{len(kde_lines)} KDE Flatpak runtime(s) detected.",
-            beginner_guidance="KDE Flatpak runtimes are present." if kde_lines else "Install apps normally; Flatpak will pull KDE runtimes when needed.",
+            beginner_guidance="KDE Flatpak runtimes are present."
+            if kde_lines
+            else "Install apps normally; Flatpak will pull KDE runtimes when needed.",
             advanced_detail="\n".join(kde_lines)[:3000],
             command_preview=["flatpak", "list", "--runtime", "--columns=application,branch"],
         )
@@ -791,16 +525,8 @@ class ReleaseReadiness:
         """
         checks: List[ReadinessCheck] = []
 
-        repo_config_paths = [
-            path
-            for pattern in DNF5HealthService.REPO_PATHS
-            for path in sorted(glob.glob(pattern))
-        ]
-        third_party_repo_paths = [
-            risk.source
-            for risk in package.repo_risks
-            if risk.risk == "warning" or "copr" in risk.reason.lower()
-        ]
+        repo_config_paths = [path for pattern in DNF5HealthService.REPO_PATHS for path in sorted(glob.glob(pattern))]
+        third_party_repo_paths = [risk.source for risk in package.repo_risks if risk.risk == "warning" or "copr" in risk.reason.lower()]
         checks.append(
             ReadinessCheck(
                 id="fedora45-repo-config-layout",
@@ -858,7 +584,11 @@ class ReleaseReadiness:
                     else "pkg_resources is not importable in the current Python environment."
                 ),
                 beginner_guidance="Review local Python tools and plugins before Fedora 45 if they depend on older setuptools APIs.",
-                advanced_detail=((pkg_resources.stdout if pkg_resources else "") or (pkg_resources.stderr if pkg_resources else "") or "python3/pkg_resources probe completed")[:2000],
+                advanced_detail=(
+                    (pkg_resources.stdout if pkg_resources else "")
+                    or (pkg_resources.stderr if pkg_resources else "")
+                    or "python3/pkg_resources probe completed"
+                )[:2000],
                 command_preview=["python3", "-c", "import pkg_resources"],
                 recommendation=ReadinessRecommendation(
                     title="Review local Python tooling",
@@ -871,7 +601,9 @@ class ReleaseReadiness:
             )
         )
 
-        pyqt_result = cls._run(["python3", "-c", "from PyQt6.QtCore import QT_VERSION_STR, PYQT_VERSION_STR; print(QT_VERSION_STR, PYQT_VERSION_STR)"], timeout=8)
+        pyqt_result = cls._run(
+            ["python3", "-c", "from PyQt6.QtCore import QT_VERSION_STR, PYQT_VERSION_STR; print(QT_VERSION_STR, PYQT_VERSION_STR)"], timeout=8
+        )
         pyqt_text = (pyqt_result.stdout if pyqt_result else "") or (pyqt_result.stderr if pyqt_result else "")
         checks.append(
             ReadinessCheck(
@@ -883,7 +615,11 @@ class ReleaseReadiness:
                 summary=pyqt_text.strip() or "PyQt6/Qt version probe is unavailable.",
                 beginner_guidance="Confirm PyQt6 and Qt packages remain installable before Fedora 45 promotion.",
                 advanced_detail=pyqt_text[:2000] if pyqt_text else "python3 PyQt6.QtCore probe unavailable",
-                command_preview=["python3", "-c", "from PyQt6.QtCore import QT_VERSION_STR, PYQT_VERSION_STR; print(QT_VERSION_STR, PYQT_VERSION_STR)"],
+                command_preview=[
+                    "python3",
+                    "-c",
+                    "from PyQt6.QtCore import QT_VERSION_STR, PYQT_VERSION_STR; print(QT_VERSION_STR, PYQT_VERSION_STR)",
+                ],
             )
         )
 
@@ -1050,7 +786,7 @@ class ReleaseReadiness:
 
     @staticmethod
     def _overall_status(score: int, checks: List[ReadinessCheck], target: ReleaseTarget | None = None) -> str:
-        target = target or TARGETS["44"]
+        target = target or TARGETS[FEDORA_RELEASE_POLICY.stable_target]
         if target.preview:
             return "preview"
         if any(check.severity in {"critical", "error"} for check in checks):
@@ -1062,11 +798,7 @@ class ReleaseReadiness:
     @staticmethod
     def build_release_plan(report: ReleaseReadinessReport) -> Dict[str, object]:
         """Build a serializable guided release plan from a readiness report."""
-        attention = [
-            check.to_dict(advanced=False)
-            for check in report.checks
-            if check.severity in {"warning", "error", "critical"}
-        ]
+        attention = [check.to_dict(advanced=False) for check in report.checks if check.severity in {"warning", "error", "critical"}]
         next_action = "Review warnings before upgrading." if attention else "No blocking readiness warnings detected."
         if report.target_metadata.preview:
             next_action = "Use this as planning guidance only; wait for the Fedora release to become supported before treating it as final."

@@ -136,7 +136,7 @@ class TestTaskSchedulerCRUD(unittest.TestCase):
         mock_file.exists.return_value = True
         self.assertEqual(TaskScheduler.list_tasks(), [])
 
-    @patch("builtins.open", new_callable=mock_open)
+    @patch("utils.scheduler.atomic_write_json")
     @patch("utils.scheduler.TaskScheduler.CONFIG_FILE")
     @patch("utils.scheduler.TaskScheduler.CONFIG_DIR")
     def test_list_tasks_with_data(self, mock_dir, mock_file, mopen):
@@ -151,19 +151,20 @@ class TestTaskSchedulerCRUD(unittest.TestCase):
         self.assertEqual(len(tasks), 1)
         self.assertEqual(tasks[0].id, "a")
 
-    @patch("builtins.open", new_callable=mock_open)
+    @patch("utils.scheduler.atomic_write_json")
     @patch("utils.scheduler.TaskScheduler.CONFIG_FILE")
     @patch("utils.scheduler.TaskScheduler.CONFIG_DIR")
-    def test_save_tasks_success(self, mock_dir, mock_file, mopen):
+    def test_save_tasks_success(self, mock_dir, mock_file, atomic_write):
         mock_dir.mkdir = MagicMock()
         task = ScheduledTask(id="x", name="X", action="cleanup", schedule="daily")
         result = TaskScheduler.save_tasks([task])
         self.assertTrue(result)
+        atomic_write.assert_called_once()
 
-    @patch("builtins.open", side_effect=OSError("disk full"))
+    @patch("utils.scheduler.atomic_write_json", side_effect=OSError("disk full"))
     @patch("utils.scheduler.TaskScheduler.CONFIG_FILE")
     @patch("utils.scheduler.TaskScheduler.CONFIG_DIR")
-    def test_save_tasks_failure(self, mock_dir, mock_file, _open):
+    def test_save_tasks_failure(self, mock_dir, mock_file, _write):
         mock_dir.mkdir = MagicMock()
         self.assertFalse(TaskScheduler.save_tasks([]))
 
@@ -316,16 +317,16 @@ class TestTaskSchedulerExecution(unittest.TestCase):
 # ---------------------------------------------------------------------------
 class TestTaskImplementations(unittest.TestCase):
 
-    @patch("subprocess.run")
-    @patch("utils.notifications.NotificationManager.notify_cleanup_complete")
-    def test_run_cleanup_success(self, _notify, mock_run):
-        mock_run.return_value = MagicMock(returncode=0)
+    @patch("utils.scheduler.ActionCenterOrchestrator")
+    def test_run_cleanup_success(self, orchestrator):
+        orchestrator.return_value.plan.return_value = MagicMock(state="ready")
         ok, msg = TaskScheduler._run_cleanup()
         self.assertTrue(ok)
-        self.assertIn("Cleanup", msg)
+        self.assertIn("cleanup plan", msg)
+        self.assertEqual(orchestrator.return_value.plan.call_count, 2)
 
-    @patch("subprocess.run", side_effect=OSError("nope"))
-    def test_run_cleanup_failure(self, _):
+    @patch("utils.scheduler.ActionCenterOrchestrator", side_effect=OSError("nope"))
+    def test_run_cleanup_failure(self, _orchestrator):
         ok, msg = TaskScheduler._run_cleanup()
         self.assertFalse(ok)
 
@@ -380,18 +381,18 @@ class TestTaskImplementations(unittest.TestCase):
         self.assertIn("No preset name", msg)
 
     @patch("utils.presets.PresetManager")
-    @patch("utils.notifications.NotificationManager.notify_preset_applied")
-    def test_run_apply_preset_found(self, _n, MockPM):
+    def test_run_apply_preset_found(self, MockPM):
         inst = MockPM.return_value
-        inst.load_preset.return_value = {"tweaks": []}
+        inst.create_review_plan.return_value = MagicMock(plan_id="plan-1")
         ok, msg = TaskScheduler._run_apply_preset("mypreset")
         self.assertTrue(ok)
         self.assertIn("mypreset", msg)
+        inst.create_review_plan.assert_called_once_with("mypreset")
 
     @patch("utils.presets.PresetManager")
     def test_run_apply_preset_not_found(self, MockPM):
         inst = MockPM.return_value
-        inst.load_preset.return_value = None
+        inst.create_review_plan.side_effect = ValueError("invalid")
         ok, msg = TaskScheduler._run_apply_preset("missing")
         self.assertFalse(ok)
         self.assertIn("not found", msg)

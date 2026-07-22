@@ -8,6 +8,7 @@ from typing import Mapping, Sequence
 from core.executor.action_executor import ActionExecutor, COMMAND_TIMEOUT
 from core.executor.action_result import ActionResult
 from core.executor.command_policy import CommandValidationError, validate_command_vector
+from core.execution_policy import ExecutionAuthority
 
 
 @dataclass(frozen=True)
@@ -92,6 +93,7 @@ class CommandFacade:
         timeout: int = COMMAND_TIMEOUT,
         action_id: str = "",
         env: Mapping[str, str] | None = None,
+        authority: ExecutionAuthority = "legacy",
     ) -> ActionResult:
         """Validate and execute a command vector through the shared executor."""
         try:
@@ -111,6 +113,7 @@ class CommandFacade:
             timeout=request.timeout,
             action_id=request.action_id,
             env=dict(request.env) if request.env else None,
+            authority=authority,
         )
         result.data = {
             **(result.data or {}),

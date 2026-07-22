@@ -141,7 +141,12 @@ def main():
         except ValueError:
             _log.warning("Invalid LOOFI_API_PORT; falling back to 8000")
             api_port = 8000
-        server = APIServer(host=api_host, port=api_port)
+        try:
+            server = APIServer(host=api_host, port=api_port)
+        except ValueError as exc:
+            print(f"ERROR: {exc}", file=sys.stderr)
+            _log.error("Web API configuration rejected: %s", exc)
+            sys.exit(2)
         server.start()
         _log.info("Loofi Web API started on %s:%s", server.host, server.port)
         try:

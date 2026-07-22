@@ -3,6 +3,7 @@
 from core.export.ansible_export import AnsibleExporter, Result  # noqa: F401
 from core.export.kickstart import KickstartGenerator  # noqa: F401
 from core.export.report_exporter import ReportExporter  # noqa: F401
+from core.export.support_bundle import SupportBundleWriter  # noqa: F401
 from core.export.support_bundle_v3 import SupportBundleV3  # noqa: F401
 from core.export.support_bundle_v4 import SupportBundleV4  # noqa: F401
 from core.export.support_bundle_v5 import SupportBundleV5  # noqa: F401

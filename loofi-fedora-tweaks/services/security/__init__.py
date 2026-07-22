@@ -7,7 +7,7 @@ from services.security.audit import AuditLogger
 from services.security.firewall import FirewallInfo, FirewallManager, FirewallResult, ZoneInfo
 from services.security.risk import RiskEntry, RiskLevel, RiskRegistry
 from services.security.safety import SafetyManager
-from services.security.sandbox import BubblewrapManager, PluginIsolationManager, SandboxManager
+from services.security.sandbox import BubblewrapManager, SandboxManager
 from services.security.secureboot import SecureBootManager, SecureBootResult, SecureBootStatus
 from services.security.usbguard import USBDevice, USBGuardManager
 
@@ -17,7 +17,6 @@ __all__ = [
     "FirewallInfo",
     "FirewallManager",
     "FirewallResult",
-    "PluginIsolationManager",
     "RiskEntry",
     "RiskLevel",
     "RiskRegistry",

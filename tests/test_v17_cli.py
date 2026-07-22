@@ -269,6 +269,8 @@ class TestCLIArgparse(unittest.TestCase):
         )
         with open(filepath, 'r', encoding='utf-8') as f:
             source = f.read()
+        with open(os.path.join(os.path.dirname(filepath), 'parser.py'), 'r', encoding='utf-8') as f:
+            source += f.read()
         self.assertIn('"bluetooth": cmd_bluetooth', source)
         self.assertIn('subparsers.add_parser("bluetooth"', source)
 
@@ -279,6 +281,8 @@ class TestCLIArgparse(unittest.TestCase):
         )
         with open(filepath, 'r', encoding='utf-8') as f:
             source = f.read()
+        with open(os.path.join(os.path.dirname(filepath), 'parser.py'), 'r', encoding='utf-8') as f:
+            source += f.read()
         self.assertIn('"storage": cmd_storage', source)
         self.assertIn('"storage"', source)
         self.assertIn('storage_parser = subparsers.add_parser', source)

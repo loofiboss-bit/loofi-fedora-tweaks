@@ -142,8 +142,10 @@ Doctor and archive services.
 **Software & Updates → Action Center** remains the only plan/run/verify GUI.
 The v16 shell changes its placement and presentation, not its domain contract.
 
-- The executable catalog is deny-by-default and remains limited to
-  `dnf-clean-all`, `restart-failed-service`, and `fstrim-all`.
+- The executable catalog is deny-by-default and contains eleven bounded actions:
+  system, Flatpak and firmware updates; application install/remove; journal
+  vacuum; package autoremove; recovery-point creation; cache cleanup; failed
+  service restart; and filesystem trim.
 - Plans expire and are re-preflighted before execution.
 - Execution requires explicit confirmation and, when applicable, explicit
   acknowledgement that rollback is unavailable.

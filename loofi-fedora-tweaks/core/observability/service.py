@@ -10,6 +10,7 @@ from pathlib import Path
 from typing import Any
 
 from core.diagnostics.health_timeline import HealthTimeline as MetricTimelineStore
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from core.observability.snapshot import HealthSnapshot
 from core.observability.timeline import HealthTimelineStore as HealthSnapshotStore
 from core.state.atomic_io import StateBusyError, advisory_lock, atomic_write_text
@@ -65,7 +66,7 @@ class ObservabilityService:
             snapshot_count=len(snapshots), metric_store=self.metric_path,
         )
 
-    def collect(self, target: str = "44", source: str = "daemon") -> ObservabilityStatus:
+    def collect(self, target: str = FEDORA_RELEASE_POLICY.stable_target, source: str = "daemon") -> ObservabilityStatus:
         try:
             self.collect_snapshot(target=target, source=source)
         except StateBusyError:
@@ -73,7 +74,7 @@ class ObservabilityService:
             return ObservabilityStatus(**{**status.to_dict(), "warning": "collector-busy", "recovery_status": "busy"})
         return self.status(source)
 
-    def collect_snapshot(self, target: str = "44", source: str = "daemon") -> HealthSnapshot:
+    def collect_snapshot(self, target: str = FEDORA_RELEASE_POLICY.stable_target, source: str = "daemon") -> HealthSnapshot:
         """Collect through the shared cross-process lease and return the snapshot.
 
         Entry modes that need the snapshot envelope (rather than only status)

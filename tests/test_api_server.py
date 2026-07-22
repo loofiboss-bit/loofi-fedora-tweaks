@@ -14,7 +14,7 @@ except ImportError:
 pytestmark = pytest.mark.skipif(not _HAS_FASTAPI, reason="fastapi not installed")
 
 if _HAS_FASTAPI:
-    from utils.api_server import APIServer
+    from utils.api_server import APIServer, TokenRateLimiter
     from utils.auth import AuthManager
 
 
@@ -25,10 +25,15 @@ class TestReadOnlyAPI(unittest.TestCase):
         cls.server.app.dependency_overrides[AuthManager.verify_bearer_token] = lambda: "test-token"
         cls.client = TestClient(cls.server.app)
 
-    def test_health_is_public_without_version_leak(self):
+    def test_health_is_authenticated_without_version_leak(self):
         response = self.client.get("/api/health")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), {"status": "ok"})
+
+    def test_health_rejects_missing_authentication(self):
+        server = APIServer()
+        response = TestClient(server.app).get("/api/health")
+        self.assertIn(response.status_code, {401, 403})
 
     def test_only_token_is_a_non_read_method(self):
         non_read = []
@@ -73,6 +78,23 @@ class TestReadOnlyAPI(unittest.TestCase):
         response = self.client.get("/api/info")
         self.assertEqual(response.status_code, 200)
         self.assertIn("system_type", response.json())
+
+
+class TestApiTrustBoundary(unittest.TestCase):
+    def test_non_loopback_bind_is_rejected(self):
+        with self.assertRaises(ValueError):
+            APIServer(host="0.0.0.0")
+
+    def test_ipv6_loopback_is_accepted(self):
+        server = APIServer(host="::1")
+        self.assertEqual(server.host, "::1")
+
+    def test_token_limiter_expires_old_attempts(self):
+        limiter = TokenRateLimiter(limit=2, window_seconds=60)
+        self.assertTrue(limiter.allow("client", now=0))
+        self.assertTrue(limiter.allow("client", now=1))
+        self.assertFalse(limiter.allow("client", now=2))
+        self.assertTrue(limiter.allow("client", now=61))
 
 
 if __name__ == "__main__":

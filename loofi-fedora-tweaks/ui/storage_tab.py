@@ -6,6 +6,7 @@ Uses StorageManager from utils/storage.py for lsblk, smartctl, df, and fsck.
 """
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QGridLayout,
@@ -31,15 +32,7 @@ class StorageTab(BaseTab):
 
     actionCenterRequested = pyqtSignal(str, object)
 
-    _METADATA = PluginMetadata(
-        id="storage",
-        name="Storage",
-        description="Disk information, SMART health monitoring, and filesystem management.",
-        category="Hardware",
-        icon="storage-disk",
-        badge="",
-        order=40,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA

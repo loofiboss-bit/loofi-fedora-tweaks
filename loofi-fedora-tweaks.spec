@@ -16,6 +16,7 @@ BuildRequires:  systemd-rpm-macros
 
 Requires:       python3
 Requires:       python3-pyqt6
+Requires:       python3-keyring
 Requires:       qt6-qtbase-gui
 Requires:       mesa-libGL
 Requires:       mesa-libEGL

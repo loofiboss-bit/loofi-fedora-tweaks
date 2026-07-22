@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Mapping
 
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from services.system.system import SystemManager
 
 
@@ -40,12 +41,12 @@ def _read_os_release(path: Path = Path("/etc/os-release")) -> dict[str, str]:
 
 
 def _support_for_version(version: str) -> tuple[str, str]:
-    if version == "44":
-        return "Supported", "Fedora 44 is the verified stable target for this release."
-    if version == "45":
-        return "Preview", "Fedora 45 support is advisory and remains read-only where capability policy requires it."
+    if version == FEDORA_RELEASE_POLICY.stable_release:
+        return "Supported", f"Fedora {FEDORA_RELEASE_POLICY.stable_release} is the verified stable target for this release."
+    if version == FEDORA_RELEASE_POLICY.preview_release:
+        return "Preview", f"Fedora {FEDORA_RELEASE_POLICY.preview_release} support is advisory and remains read-only where capability policy requires it."
     if version:
-        return "Not verified", f"Fedora {version} is outside this release's verified Fedora 44 target."
+        return "Not verified", f"Fedora {version} is outside this release's verified Fedora {FEDORA_RELEASE_POLICY.stable_release} target."
     return "Unknown", "The Fedora release could not be identified; availability remains capability-aware."
 
 

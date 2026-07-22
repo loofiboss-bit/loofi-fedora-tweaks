@@ -14,6 +14,7 @@ from typing import Optional
 from services.system import SystemManager
 
 from utils.containers import Result
+from core.state.atomic_io import atomic_write_json
 
 logger = logging.getLogger(__name__)
 
@@ -292,13 +293,12 @@ class ConfigManager:
 
     @classmethod
     def save_config(cls, config: dict) -> bool:
-        """Save current runtime config."""
+        """Persist application configuration atomically with private mode."""
         cls.ensure_dirs()
         try:
-            with open(cls.CONFIG_FILE, "w") as f:
-                json.dump(config, f, indent=2)
+            atomic_write_json(cls.CONFIG_FILE, config, mode=0o600)
             return True
-        except (OSError, json.JSONDecodeError) as e:
+        except (OSError, TypeError, ValueError) as e:
             logger.debug("Failed to save config: %s", e)
             return False
 

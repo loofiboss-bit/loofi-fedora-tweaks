@@ -30,7 +30,8 @@ from core.diagnostics.readiness_actions import (
     ReadinessActionCandidate,
     ReadinessActionService,
 )
-from core.export.support_bundle_v5 import SupportBundleV5
+from core.export.support_bundle import SupportBundleWriter
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from utils.log import get_logger
 
 logger = get_logger(__name__)
@@ -48,7 +49,7 @@ class ReadinessWorker(QObject):
 
     def run(self) -> None:
         try:
-            mode = "upgrade-plan" if self.target_key == "45-preview" else "check"
+            mode = "upgrade-plan" if self.target_key == FEDORA_RELEASE_POLICY.preview_target else "check"
             self.finished.emit(ReleaseReadiness.run(self.target_key, mode=mode))
         except (OSError, RuntimeError, ValueError, TypeError, AttributeError) as exc:
             logger.error("Release readiness probe failed: %s", exc, exc_info=True)
@@ -75,7 +76,7 @@ class ReleaseReadinessDialog(QDialog):
         "network": "Network",
     }
 
-    def __init__(self, target_key: str = "44", parent=None, *, auto_run: bool = True):
+    def __init__(self, target_key: str = FEDORA_RELEASE_POLICY.stable_target, parent=None, *, auto_run: bool = True):
         super().__init__(parent)
         self.target_key = target_key
         self.report: ReleaseReadinessReport | None = None
@@ -479,7 +480,7 @@ class ReleaseReadinessDialog(QDialog):
         if not path:
             return
         try:
-            SupportBundleV5.save_json(path, target=self.target_key)
+            SupportBundleWriter.save_json(path, target=self.target_key)
         except (OSError, RuntimeError, ValueError, TypeError) as exc:
             logger.error("Failed to export support bundle: %s", exc, exc_info=True)
             QMessageBox.warning(self, self.tr("Export Failed"), str(exc))

@@ -347,7 +347,7 @@ def test_release_readiness_dialog_manual_action_and_warning_paths(mock_warning, 
     empty._verify_action("missing-action")
 
 
-@patch("ui.release_readiness_dialog.SupportBundleV5.save_json")
+@patch("ui.release_readiness_dialog.SupportBundleWriter.save_json")
 @patch("ui.release_readiness_dialog.QMessageBox.information")
 @patch("ui.release_readiness_dialog.QFileDialog.getSaveFileName", return_value=("/tmp/loofi-test-bundle.json", ""))
 def test_release_readiness_dialog_export_action(mock_file, mock_message, mock_save):

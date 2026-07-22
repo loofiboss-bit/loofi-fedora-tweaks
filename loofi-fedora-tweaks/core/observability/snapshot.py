@@ -7,6 +7,7 @@ from dataclasses import dataclass, field
 from typing import Any, Iterable, cast
 
 from core.diagnostics.daily_maintenance import DailyMaintenanceReport, MaintenanceCard
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from core.observability.fingerprints import ProblemFingerprint, fingerprints_from_cards
 from core.observability.privacy import redact_payload
 from services.system.system import SystemManager
@@ -41,7 +42,7 @@ class HealthSnapshot:
         report: DailyMaintenanceReport,
         *,
         action_center_items: Iterable[Any] | None = None,
-        fedora_target: str = "44",
+        fedora_target: str = FEDORA_RELEASE_POLICY.stable_target,
         timestamp: float | None = None,
     ) -> "HealthSnapshot":
         cards = list(report.cards)
@@ -77,7 +78,7 @@ class HealthSnapshot:
         *,
         maintenance_service: Any | None = None,
         action_center_service: Any | None = None,
-        fedora_target: str = "44",
+        fedora_target: str = FEDORA_RELEASE_POLICY.stable_target,
     ) -> "HealthSnapshot":
         from core.actions import ActionCenterService
         from core.diagnostics.daily_maintenance import DailyMaintenanceService
@@ -109,7 +110,7 @@ class HealthSnapshot:
             timestamp=float(data.get("timestamp", 0.0)),
             app_version=str(data.get("app_version", "")),
             app_codename=str(data.get("app_codename", "")),
-            fedora_target=str(data.get("fedora_target", "44")),
+            fedora_target=str(data.get("fedora_target", FEDORA_RELEASE_POLICY.stable_target)),
             atomic=bool(data.get("atomic", False)),
             daily_maintenance=dict(data.get("daily_maintenance", {}) if isinstance(data.get("daily_maintenance", {}), dict) else {}),
             action_center_summary=dict(data.get("action_center_summary", {}) if isinstance(data.get("action_center_summary", {}), dict) else {}),

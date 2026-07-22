@@ -1,9 +1,12 @@
 """Tests for utils/presets.py — PresetManager."""
 import sys
 import os
+import json
 import subprocess
+import tempfile
 import unittest
-from unittest.mock import patch, mock_open
+from pathlib import Path
+from unittest.mock import MagicMock, patch, mock_open
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
@@ -77,17 +80,15 @@ class TestSavePreset(unittest.TestCase):
     def setUp(self, mock_makedirs):
         self.pm = PresetManager()
 
-    @patch('builtins.open', new_callable=mock_open)
+    @patch('utils.presets.atomic_write_json')
     @patch.object(PresetManager, '_get_power_profile', return_value='balanced')
     @patch.object(PresetManager, '_get_battery_limit', return_value=100)
     @patch.object(PresetManager, '_get_gsettings', return_value='Adwaita')
-    def test_save_writes_json(self, mock_gs, mock_bat, mock_power, mock_file):
+    def test_save_writes_json(self, mock_gs, mock_bat, mock_power, writer):
         result = self.pm.save_preset("test_preset")
         self.assertTrue(result)
-        mock_file.assert_called_once()
-        handle = mock_file()
-        written = handle.write.call_args_list
-        self.assertTrue(len(written) > 0)
+        writer.assert_called_once()
+        self.assertEqual(writer.call_args.kwargs["mode"], 0o600)
 
 
 class TestLoadPreset(unittest.TestCase):
@@ -102,14 +103,12 @@ class TestLoadPreset(unittest.TestCase):
         result = self.pm.load_preset("nonexistent")
         self.assertFalse(result)
 
-    @patch.object(PresetManager, '_set_gsettings')
     @patch('builtins.open', new_callable=mock_open, read_data='{"name":"t","theme":"Adwaita"}')
     @patch('utils.presets.os.path.exists', return_value=True)
-    def test_loads_and_applies(self, mock_exists, mock_file, mock_set_gs):
+    def test_loads_data_without_applying(self, mock_exists, mock_file):
         result = self.pm.load_preset("test")
         self.assertIsInstance(result, dict)
         self.assertEqual(result["theme"], "Adwaita")
-        mock_set_gs.assert_called()
 
 
 class TestDeletePreset(unittest.TestCase):
@@ -119,12 +118,12 @@ class TestDeletePreset(unittest.TestCase):
     def setUp(self, mock_makedirs):
         self.pm = PresetManager()
 
-    @patch('utils.presets.os.remove')
+    @patch('utils.presets.durable_unlink')
     @patch('utils.presets.os.path.exists', return_value=True)
-    def test_deletes_existing(self, mock_exists, mock_remove):
+    def test_deletes_existing(self, mock_exists, unlink):
         result = self.pm.delete_preset("old_preset")
         self.assertTrue(result)
-        mock_remove.assert_called_once()
+        unlink.assert_called_once()
 
     @patch('utils.presets.os.path.exists', return_value=False)
     def test_returns_false_when_missing(self, mock_exists):
@@ -133,22 +132,74 @@ class TestDeletePreset(unittest.TestCase):
 
 
 class TestSavePresetData(unittest.TestCase):
-    """Tests for save_preset_data (community presets)."""
+    """Tests for validated local profile data."""
 
     @patch('utils.presets.os.makedirs')
     def setUp(self, mock_makedirs):
         self.pm = PresetManager()
 
-    @patch('builtins.open', new_callable=mock_open)
-    def test_save_community_preset(self, mock_file):
+    @patch('utils.presets.atomic_write_json')
+    def test_save_local_import_data(self, writer):
         data = {"theme": "Nordic", "icon_theme": "Papirus"}
         result = self.pm.save_preset_data("community", data)
         self.assertTrue(result)
 
-    @patch('builtins.open', side_effect=OSError("disk full"))
-    def test_save_failure(self, mock_file):
+    @patch('utils.presets.atomic_write_json', side_effect=OSError("disk full"))
+    def test_save_failure(self, writer):
         result = self.pm.save_preset_data("fail", {"theme": "X"})
         self.assertFalse(result)
+
+
+class TestLocalProfileImport(unittest.TestCase):
+    def test_import_validates_schema_path_and_permissions(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "source.json"
+            source.write_text(
+                json.dumps(
+                    {
+                        "schema_version": 1,
+                        "name": "travel-profile",
+                        "theme": "Breeze",
+                        "battery_limit": 80,
+                    }
+                ),
+                encoding="utf-8",
+            )
+            manager = PresetManager()
+            manager.PRESETS_DIR = str(root / "profiles")
+
+            success, name = manager.import_preset(source)
+
+            self.assertTrue(success)
+            self.assertEqual(name, "travel-profile")
+            imported = root / "profiles" / "travel-profile.json"
+            self.assertEqual(imported.stat().st_mode & 0o777, 0o600)
+
+    def test_import_rejects_unknown_schema_and_symlink(self):
+        with tempfile.TemporaryDirectory() as directory:
+            root = Path(directory)
+            source = root / "invalid.json"
+            source.write_text('{"schema_version": 2, "name": "invalid"}', encoding="utf-8")
+            manager = PresetManager()
+            manager.PRESETS_DIR = str(root / "profiles")
+            self.assertFalse(manager.import_preset(source)[0])
+            link = root / "link.json"
+            link.symlink_to(source)
+            self.assertFalse(manager.import_preset(link)[0])
+
+    @patch("core.actions.orchestrator.ActionCenterOrchestrator")
+    def test_valid_profile_becomes_manual_action_center_plan(self, orchestrator):
+        manager = PresetManager()
+        plan = MagicMock(plan_id="plan-1")
+        orchestrator.return_value.plan.return_value = plan
+        with patch.object(
+            manager,
+            "load_preset",
+            return_value={"schema_version": 1, "name": "travel", "theme": "Breeze"},
+        ):
+            self.assertIs(manager.create_review_plan("travel"), plan)
+        self.assertEqual(orchestrator.return_value.plan.call_args.args[0], "local-profile-review")
 
 
 class TestGetGsettings(unittest.TestCase):

@@ -1,11 +1,10 @@
 """System information API routes.
 
-Security:
-- /health is unauthenticated but does NOT expose version info.
-- /info and /agents require Bearer JWT authentication.
+Every route requires Bearer JWT authentication.
 """
 
 from core.agents import AgentRegistry
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from fastapi import APIRouter, Depends
 from pydantic import BaseModel
 from services.system import SystemManager
@@ -22,8 +21,8 @@ class HealthResponse(BaseModel):
 
 
 @router.get("/health", response_model=HealthResponse)
-def get_health():
-    """Basic health check endpoint (unauthenticated, no version leak)."""
+def get_health(_auth: str = Depends(AuthManager.verify_bearer_token)):
+    """Authenticated basic health check without a version leak."""
     return HealthResponse(status="ok")
 
 
@@ -77,7 +76,7 @@ def get_agents(
 
 @router.get("/observability/current")
 def get_current_health_snapshot(
-    target: str = "44",
+    target: str = FEDORA_RELEASE_POLICY.stable_target,
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
     """Collect one bounded snapshot without persisting API-triggered state."""

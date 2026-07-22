@@ -6,6 +6,7 @@ import logging
 
 from daemon.interfaces import BUS_NAME
 from daemon.server import DaemonService, dbus
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from utils.daemon import Daemon as LegacyDaemon
 
 logger = logging.getLogger(__name__)
@@ -16,7 +17,7 @@ def collect_startup_snapshot() -> None:
     try:
         from core.observability import ObservabilityService
 
-        ObservabilityService().collect(target="44", source="daemon-startup")
+        ObservabilityService().collect(target=FEDORA_RELEASE_POLICY.stable_target, source="daemon-startup")
     except (OSError, RuntimeError, ValueError, TypeError) as exc:
         logger.warning("Loofi daemon health snapshot collection failed: %s", exc)
 

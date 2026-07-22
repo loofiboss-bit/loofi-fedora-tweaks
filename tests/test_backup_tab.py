@@ -1087,7 +1087,7 @@ class TestRestoreSelected(unittest.TestCase):
         bw.restore_snapshot.assert_not_called()
 
     def test_restores_with_correct_id(self):
-        """Selected snapshot ID is passed to restore_snapshot."""
+        """Selected snapshot restore becomes a manual Action Center request."""
         tab = _make_tab()
         bw = _get_backup_wizard()
         bw.restore_snapshot.return_value = (
@@ -1098,8 +1098,12 @@ class TestRestoreSelected(unittest.TestCase):
         tab.snap_table._current_row = 0
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("42"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("timeshift"))
+        requests = []
+        tab.actionCenterRequested = _DummySignal()
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
         tab._restore_selected()
-        bw.restore_snapshot.assert_called_once_with("42", tool="timeshift")
+        bw.restore_snapshot.assert_not_called()
+        self.assertEqual(requests, [("restore-recovery-point", {})])
 
     def test_restores_with_tool_from_table(self):
         """Tool from column 3 is passed to restore_snapshot."""
@@ -1114,7 +1118,8 @@ class TestRestoreSelected(unittest.TestCase):
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("5"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("snapper"))
         tab._restore_selected()
-        bw.restore_snapshot.assert_called_once_with("5", tool="snapper")
+        bw.restore_snapshot.assert_not_called()
+        self.assertIn("Action Center", tab._output_text)
 
     def test_restores_with_none_tool_when_missing(self):
         """Missing tool item passes None as tool."""
@@ -1129,7 +1134,8 @@ class TestRestoreSelected(unittest.TestCase):
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("7"))
         # No item at column 3
         tab._restore_selected()
-        bw.restore_snapshot.assert_called_once_with("7", tool=None)
+        bw.restore_snapshot.assert_not_called()
+        self.assertIn("Action Center", tab._output_text)
 
     def test_runs_command_after_restore(self):
         """Restore calls run_command with the returned tuple."""
@@ -1144,8 +1150,8 @@ class TestRestoreSelected(unittest.TestCase):
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("3"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("timeshift"))
         tab._restore_selected()
-        self.assertEqual(tab._last_cmd, "pkexec")
-        self.assertEqual(tab._last_desc, "Restoring 3")
+        self.assertIsNone(tab._last_cmd)
+        self.assertIn("Action Center", tab._output_text)
 
     def test_restore_exception_appends_error(self):
         """Exception during restore appends error to output."""
@@ -1157,8 +1163,8 @@ class TestRestoreSelected(unittest.TestCase):
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("timeshift"))
         tab._output_text = ""
         tab._restore_selected()
-        self.assertIn("[ERROR]", tab._output_text)
-        self.assertIn("restore failed", tab._output_text)
+        self.assertNotIn("[ERROR]", tab._output_text)
+        self.assertIn("Action Center", tab._output_text)
 
 
 # ===========================================================================
@@ -1187,7 +1193,7 @@ class TestDeleteSelected(unittest.TestCase):
         bw.delete_snapshot.assert_not_called()
 
     def test_deletes_with_correct_id(self):
-        """Selected snapshot ID is passed to delete_snapshot."""
+        """Selected snapshot deletion becomes a manual Action Center request."""
         tab = _make_tab()
         bw = _get_backup_wizard()
         bw.delete_snapshot.return_value = (
@@ -1198,8 +1204,12 @@ class TestDeleteSelected(unittest.TestCase):
         tab.snap_table._current_row = 0
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("99"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("timeshift"))
+        requests = []
+        tab.actionCenterRequested = _DummySignal()
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
         tab._delete_selected()
-        bw.delete_snapshot.assert_called_once_with("99", tool="timeshift")
+        bw.delete_snapshot.assert_not_called()
+        self.assertEqual(requests, [("delete-recovery-point", {})])
 
     def test_deletes_with_snapper_tool(self):
         """Snapper tool from column 3 is passed to delete_snapshot."""
@@ -1210,7 +1220,8 @@ class TestDeleteSelected(unittest.TestCase):
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("10"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("snapper"))
         tab._delete_selected()
-        bw.delete_snapshot.assert_called_once_with("10", tool="snapper")
+        bw.delete_snapshot.assert_not_called()
+        self.assertIn("Action Center", tab._output_text)
 
     def test_deletes_with_none_tool_when_missing(self):
         """Missing tool item passes None as tool."""
@@ -1224,7 +1235,8 @@ class TestDeleteSelected(unittest.TestCase):
         tab.snap_table._current_row = 0
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("7"))
         tab._delete_selected()
-        bw.delete_snapshot.assert_called_once_with("7", tool=None)
+        bw.delete_snapshot.assert_not_called()
+        self.assertIn("Action Center", tab._output_text)
 
     def test_runs_command_after_delete(self):
         """Delete calls run_command with the returned tuple."""
@@ -1239,8 +1251,8 @@ class TestDeleteSelected(unittest.TestCase):
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("5"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("snapper"))
         tab._delete_selected()
-        self.assertEqual(tab._last_cmd, "pkexec")
-        self.assertEqual(tab._last_desc, "Deleting 5")
+        self.assertIsNone(tab._last_cmd)
+        self.assertIn("Action Center", tab._output_text)
 
     def test_delete_exception_appends_error(self):
         """Exception during delete appends error to output."""
@@ -1252,8 +1264,8 @@ class TestDeleteSelected(unittest.TestCase):
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("timeshift"))
         tab._output_text = ""
         tab._delete_selected()
-        self.assertIn("[ERROR]", tab._output_text)
-        self.assertIn("delete denied", tab._output_text)
+        self.assertNotIn("[ERROR]", tab._output_text)
+        self.assertIn("Action Center", tab._output_text)
 
 
 # ===========================================================================
@@ -1551,7 +1563,8 @@ class TestEdgeCases(unittest.TestCase):
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("1"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("timeshift"))
         tab._restore_selected()
-        bw.restore_snapshot.assert_called_once()
+        bw.restore_snapshot.assert_not_called()
+        self.assertIn("Action Center", tab._output_text)
 
     def test_delete_row_0_with_items(self):
         """Deleting row 0 when items exist works correctly."""
@@ -1562,7 +1575,8 @@ class TestEdgeCases(unittest.TestCase):
         tab.snap_table.setItem(0, 0, _DummyTableWidgetItem("1"))
         tab.snap_table.setItem(0, 3, _DummyTableWidgetItem("timeshift"))
         tab._delete_selected()
-        bw.delete_snapshot.assert_called_once()
+        bw.delete_snapshot.assert_not_called()
+        self.assertIn("Action Center", tab._output_text)
 
     def test_load_snapshots_with_many_entries(self):
         """Loading many snapshots populates all rows correctly."""

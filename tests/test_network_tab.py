@@ -518,34 +518,46 @@ class TestNetworkTabDNS(unittest.TestCase):
     @patch("ui.network_tab.QMessageBox")
     @patch("ui.network_tab.NetworkUtils")
     def test_apply_dns_auto_dhcp(self, mock_nu, mock_msgbox, mock_ss):
-        """apply_dns resets DNS to DHCP when 'auto' is selected."""
+        """apply_dns routes DHCP reset to Action Center without mutation."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
         mock_nu.apply_dns.return_value = True
         tab = _create_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
         # Select "System Default (DHCP)" which has data "auto"
         tab.dns_combo.setCurrentIndex(5)
 
         tab.apply_dns()
 
-        mock_nu.apply_dns.assert_called_once_with("WiFi Home", "auto")
-        mock_nu.reactivate_connection.assert_called_once_with("WiFi Home")
+        self.assertEqual(
+            requests,
+            [("configure-network-dns", {"connection": "WiFi Home", "dns": "auto"})],
+        )
+        mock_nu.apply_dns.assert_not_called()
+        mock_nu.reactivate_connection.assert_not_called()
         mock_msgbox.information.assert_called_once()
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.QMessageBox")
     @patch("ui.network_tab.NetworkUtils")
     def test_apply_dns_custom_provider(self, mock_nu, mock_msgbox, mock_ss):
-        """apply_dns applies custom DNS servers for non-auto selection."""
+        """apply_dns routes custom DNS to Action Center without mutation."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
         mock_nu.apply_dns.return_value = True
         tab = _create_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
         # Select Cloudflare (index 0)
         tab.dns_combo.setCurrentIndex(0)
 
         tab.apply_dns()
 
-        mock_nu.apply_dns.assert_called_once_with("WiFi Home", "1.1.1.1 1.0.0.1")
-        mock_nu.reactivate_connection.assert_called_once()
+        self.assertEqual(
+            requests,
+            [("configure-network-dns", {"connection": "WiFi Home", "dns": "1.1.1.1 1.0.0.1"})],
+        )
+        mock_nu.apply_dns.assert_not_called()
+        mock_nu.reactivate_connection.assert_not_called()
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     def test_test_dns(self, mock_ss):
@@ -588,47 +600,42 @@ class TestNetworkTabPrivacy(unittest.TestCase):
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.QMessageBox")
-    @patch("builtins.open", mock_open())
     def test_toggle_mac_enable_success(self, mock_msgbox, mock_ss):
-        """toggle_mac_randomization(True) writes config and runs pkexec mv."""
+        """toggle_mac_randomization(True) creates a manual review request."""
         tab = _create_tab()
-        tab.history = MagicMock()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab.toggle_mac_randomization(True)
-            mock_run.assert_called_once()
-            args = mock_run.call_args[0]
-            self.assertEqual(args[0], "pkexec")
-            self.assertIn("mv", args[1])
+        tab.toggle_mac_randomization(True)
 
-        tab.history.log_change.assert_called_once()
+        self.assertEqual(requests, [("enable-mac-randomization", {})])
         mock_msgbox.information.assert_called_once()
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
+    @patch("ui.network_tab.QMessageBox")
     @patch("builtins.open", side_effect=OSError("Permission denied"))
-    def test_toggle_mac_enable_write_error(self, mock_open_f, mock_ss):
-        """toggle_mac_randomization(True) handles temp file write failure."""
+    def test_toggle_mac_enable_write_error(self, mock_open_f, mock_msgbox, mock_ss):
+        """toggle_mac_randomization never writes an unmanaged temporary file."""
         tab = _create_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
 
-        with patch.object(tab, "append_output") as mock_output:
-            tab.toggle_mac_randomization(True)
-            mock_output.assert_called()
-            output_text = mock_output.call_args[0][0]
-            self.assertIn("Failed", output_text)
+        tab.toggle_mac_randomization(True)
+
+        mock_open_f.assert_not_called()
+        self.assertEqual(requests, [("enable-mac-randomization", {})])
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.QMessageBox")
     def test_toggle_mac_disable(self, mock_msgbox, mock_ss):
-        """toggle_mac_randomization(False) runs pkexec rm."""
+        """toggle_mac_randomization(False) creates a manual review request."""
         tab = _create_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
 
-        with patch.object(tab, "run_command") as mock_run:
-            tab.toggle_mac_randomization(False)
-            mock_run.assert_called_once()
-            args = mock_run.call_args[0]
-            self.assertEqual(args[0], "pkexec")
-            self.assertIn("rm", args[1])
+        tab.toggle_mac_randomization(False)
 
+        self.assertEqual(requests, [("disable-mac-randomization", {})])
         mock_msgbox.information.assert_called_once()
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
@@ -694,32 +701,31 @@ class TestNetworkTabPrivacy(unittest.TestCase):
     @patch("ui.network_tab.QMessageBox")
     @patch("ui.network_tab.NetworkUtils")
     def test_toggle_hostname_hide(self, mock_nu, mock_msgbox, mock_ss):
-        """_toggle_hostname_privacy(True) routes through service with hide=True."""
+        """_toggle_hostname_privacy(True) routes through Action Center."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
-        mock_nu.set_hostname_privacy.return_value = True
         tab = _create_tab()
-        tab.history = MagicMock()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, params: requests.append((action_id, params)))
 
         tab._toggle_hostname_privacy(True)
 
-        mock_nu.set_hostname_privacy.assert_called_once_with("WiFi Home", True)
-        tab.history.log_change.assert_called_once()
-        mock_msgbox.information.assert_called_once()
+        self.assertEqual(requests, [("configure-hostname-privacy", {"connection": "WiFi Home", "hidden": True})])
+        mock_nu.set_hostname_privacy.assert_not_called()
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.QMessageBox")
     @patch("ui.network_tab.NetworkUtils")
     def test_toggle_hostname_show(self, mock_nu, mock_msgbox, mock_ss):
-        """_toggle_hostname_privacy(False) routes through service with hide=False."""
+        """_toggle_hostname_privacy(False) routes through Action Center."""
         mock_nu.get_active_connection.return_value = "WiFi Home"
-        mock_nu.set_hostname_privacy.return_value = True
         tab = _create_tab()
-        tab.history = MagicMock()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, params: requests.append((action_id, params)))
 
         tab._toggle_hostname_privacy(False)
 
-        mock_nu.set_hostname_privacy.assert_called_once_with("WiFi Home", False)
-        tab.history.log_change.assert_called_once()
+        self.assertEqual(requests, [("configure-hostname-privacy", {"connection": "WiFi Home", "hidden": False})])
+        mock_nu.set_hostname_privacy.assert_not_called()
 
 
 # =========================================================================

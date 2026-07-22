@@ -16,7 +16,9 @@ from services.system import SystemManager
 from services.system.system import cached_which
 
 from services.security import AuditLogger
-from utils.commands import PrivilegedCommand
+from core.actions import ActionCenterOrchestrator
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
+from core.state.atomic_io import atomic_write_json
 
 logger = logging.getLogger(__name__)
 
@@ -130,10 +132,13 @@ class TaskScheduler:
         cls.ensure_dirs()
 
         try:
-            with open(cls.CONFIG_FILE, "w") as f:
-                json.dump({"tasks": [t.to_dict() for t in tasks]}, f, indent=2)
+            atomic_write_json(
+                cls.CONFIG_FILE,
+                {"tasks": [t.to_dict() for t in tasks]},
+                mode=0o600,
+            )
             return True
-        except (OSError, json.JSONDecodeError) as e:
+        except (OSError, TypeError, ValueError) as e:
             logger.debug("Failed to save tasks: %s", e)
             return False
 
@@ -277,33 +282,22 @@ class TaskScheduler:
 
     @classmethod
     def _run_cleanup(cls) -> tuple:
-        """Run system cleanup."""
+        """Create cleanup plans; schedulers never confirm or execute them."""
         try:
-            # Clean package manager cache
-            binary, args, desc = PrivilegedCommand.dnf("clean")
-            subprocess.run(
-                [binary] + args,
-                capture_output=True,
-                check=False,
-                timeout=600,
+            orchestrator = ActionCenterOrchestrator()
+            plans = [
+                orchestrator.plan(
+                    action_id,
+                    target=FEDORA_RELEASE_POLICY.stable_target,
+                )
+                for action_id in ("dnf-clean-all", "autoremove-packages")
+            ]
+            ready = sum(plan.state in {"ready", "needs_review"} for plan in plans)
+            return (
+                True,
+                f"Created {len(plans)} cleanup plan(s); {ready} await interactive review.",
             )
-
-            # Remove orphaned packages (non-interactive)
-            binary, args, desc = PrivilegedCommand.dnf("autoremove")
-            subprocess.run(
-                [binary] + args,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=600,
-            )
-
-            from utils.notifications import NotificationManager
-
-            NotificationManager.notify_cleanup_complete(50.0)  # Approximate
-
-            return (True, "Cleanup completed")
-        except (subprocess.SubprocessError, OSError) as e:
+        except (OSError, RuntimeError, TypeError, ValueError) as e:
             logger.debug("Cleanup task failed: %s", e)
             return (False, str(e))
 
@@ -382,7 +376,7 @@ class TaskScheduler:
 
     @classmethod
     def _run_apply_preset(cls, preset_name: Optional[str]) -> tuple:
-        """Apply a preset."""
+        """Validate a local preset and create a manual review plan."""
         if not preset_name:
             return (False, "No preset name specified")
 
@@ -390,14 +384,13 @@ class TaskScheduler:
             from utils.presets import PresetManager
 
             manager = PresetManager()
-            data = manager.load_preset(preset_name)
-
-            if data:
-                from utils.notifications import NotificationManager
-
-                NotificationManager.notify_preset_applied(preset_name)
-                return (True, f"Preset '{preset_name}' applied")
-            else:
+            try:
+                plan = manager.create_review_plan(preset_name)
+                return (
+                    True,
+                    f"Preset '{preset_name}' was validated as plan {plan.plan_id}; interactive review is required.",
+                )
+            except ValueError:
                 return (False, f"Preset '{preset_name}' not found")
 
         except (ImportError, OSError) as e:

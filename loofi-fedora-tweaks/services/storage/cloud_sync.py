@@ -1,28 +1,24 @@
 """
-Cloud Sync Manager - Handles cloud sync and community presets.
-Integrates with GitHub Gist and community preset repository.
+Cloud Sync Manager - Handles private, user-owned Gist backup.
 
 Migrated from utils/cloud_sync.py in v2.0.0 "Evolution".
 """
 
 import json
 import logging
-import os
 import urllib.error
 import urllib.request
-from datetime import datetime
 from pathlib import Path
 from typing import Optional
+
+from core.secrets import SecretStore
+from core.state.atomic_io import atomic_write_text, durable_unlink
 
 logger = logging.getLogger(__name__)
 
 
 class CloudSyncManager:
-    """Manages cloud sync operations and community presets."""
-
-    # Community presets repository
-    PRESETS_REPO = "https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks-presets/main"
-    PRESETS_INDEX_URL = f"{PRESETS_REPO}/index.json"
+    """Manage opt-in private Gist backup without public discovery."""
 
     # Gist API
     GIST_API = "https://api.github.com/gists"
@@ -30,6 +26,7 @@ class CloudSyncManager:
     # Local storage
     CONFIG_DIR = Path.home() / ".config" / "loofi-fedora-tweaks"
     TOKEN_FILE = CONFIG_DIR / ".gist_token"
+    TOKEN_ACCOUNT = "github-gist-token"
     GIST_ID_FILE = CONFIG_DIR / ".gist_id"
     CACHE_DIR = CONFIG_DIR / "cache"
 
@@ -43,39 +40,26 @@ class CloudSyncManager:
 
     @classmethod
     def get_gist_token(cls) -> Optional[str]:
-        """
-        Get stored GitHub Gist token.
-
-        Note: Token is stored in a hidden file. For better security,
-        consider using the system keyring in a future update.
-        """
-        try:
-            with open(cls.TOKEN_FILE, "r") as f:
-                return f.read().strip()
-        except FileNotFoundError:
-            return None
+        """Return the keyring/session token, migrating legacy plaintext once."""
+        existing = SecretStore.get(cls.TOKEN_ACCOUNT)
+        if existing:
+            return existing
+        SecretStore.migrate_plaintext(cls.TOKEN_ACCOUNT, cls.TOKEN_FILE)
+        return SecretStore.get(cls.TOKEN_ACCOUNT)
 
     @classmethod
     def save_gist_token(cls, token: str) -> bool:
-        """Save GitHub Gist token."""
-        cls.ensure_dirs()
-        try:
-            with open(cls.TOKEN_FILE, "w") as f:
-                f.write(token)
-            # Set restrictive permissions
-            os.chmod(cls.TOKEN_FILE, 0o600)
-            return True
-        except OSError as e:
-            logger.debug("Failed to save gist token: %s", e)
-            return False
+        """Save a token in Secret Service or session memory only."""
+        return SecretStore.set(cls.TOKEN_ACCOUNT, token).success
 
     @classmethod
     def clear_gist_token(cls) -> bool:
         """Remove stored token."""
         try:
-            cls.TOKEN_FILE.unlink(missing_ok=True)
-            cls.GIST_ID_FILE.unlink(missing_ok=True)
-            return True
+            deleted = SecretStore.delete(cls.TOKEN_ACCOUNT)
+            durable_unlink(cls.TOKEN_FILE)
+            durable_unlink(cls.GIST_ID_FILE)
+            return deleted
         except OSError as e:
             logger.debug("Failed to clear gist token: %s", e)
             return False
@@ -94,8 +78,7 @@ class CloudSyncManager:
         """Save Gist ID for future syncs."""
         cls.ensure_dirs()
         try:
-            with open(cls.GIST_ID_FILE, "w") as f:
-                f.write(gist_id)
+            atomic_write_text(cls.GIST_ID_FILE, gist_id, mode=0o600)
             return True
         except OSError as e:
             logger.debug("Failed to save gist ID: %s", e)
@@ -206,94 +189,6 @@ class CloudSyncManager:
                 return (False, "Gist not found. Check the Gist ID.")
             else:
                 return (False, f"GitHub API error: {e.code}")
-        except (urllib.error.URLError, OSError, json.JSONDecodeError) as e:
-            return (False, f"Download failed: {str(e)}")
-
-    # ==================== COMMUNITY PRESETS ====================
-
-    @classmethod
-    def fetch_community_presets(cls, use_cache: bool = True) -> tuple:
-        """
-        Fetch list of community presets from GitHub.
-
-        Args:
-            use_cache: If True, use cached index if available (< 1 hour old).
-
-        Returns:
-            (success: bool, presets_or_message: list|str)
-        """
-        cls.ensure_dirs()
-        cache_file = cls.CACHE_DIR / "presets_index.json"
-
-        # Check cache
-        if use_cache and cache_file.exists():
-            try:
-                with open(cache_file, "r") as f:
-                    cached = json.load(f)
-                cached_time = datetime.fromisoformat(cached.get("cached_at", "2000-01-01"))
-                age_hours = (datetime.now() - cached_time).total_seconds() / 3600
-                if age_hours < 1:
-                    return (True, cached.get("presets", []))
-            except (OSError, json.JSONDecodeError, ValueError) as e:
-                logger.debug("Failed to read preset cache: %s", e)
-
-        # Fetch from GitHub
-        try:
-            request = urllib.request.Request(cls.PRESETS_INDEX_URL)
-            request.add_header("User-Agent", "Loofi-Fedora-Tweaks/5.5")
-
-            with urllib.request.urlopen(request, timeout=15) as response:
-                presets = json.loads(response.read().decode())
-
-                # Cache result
-                try:
-                    with open(cache_file, "w") as f:
-                        json.dump({"cached_at": datetime.now().isoformat(), "presets": presets}, f)
-                except OSError as e:
-                    logger.debug("Failed to write preset cache: %s", e)
-
-                return (True, presets)
-
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                # Return empty list if repo doesn't exist yet
-                return (True, [])
-            return (False, f"Failed to fetch presets: HTTP {e.code}")
-        except (urllib.error.URLError, OSError, json.JSONDecodeError) as e:
-            # Try returning cache even if stale
-            if cache_file.exists():
-                try:
-                    with open(cache_file, "r") as f:
-                        cached = json.load(f)
-                    return (True, cached.get("presets", []))
-                except (OSError, json.JSONDecodeError) as cache_e:
-                    logger.debug("Failed to read stale cache: %s", cache_e)
-            return (False, f"Failed to fetch presets: {str(e)}")
-
-    @classmethod
-    def download_preset(cls, preset_id: str) -> tuple:
-        """
-        Download a specific community preset.
-
-        Args:
-            preset_id: ID of the preset to download.
-
-        Returns:
-            (success: bool, preset_or_message: dict|str)
-        """
-        try:
-            url = f"{cls.PRESETS_REPO}/presets/{preset_id}.json"
-            request = urllib.request.Request(url)
-            request.add_header("User-Agent", "Loofi-Fedora-Tweaks/5.5")
-
-            with urllib.request.urlopen(request, timeout=15) as response:
-                preset = json.loads(response.read().decode())
-                return (True, preset)
-
-        except urllib.error.HTTPError as e:
-            if e.code == 404:
-                return (False, f"Preset '{preset_id}' not found.")
-            return (False, f"Download failed: HTTP {e.code}")
         except (urllib.error.URLError, OSError, json.JSONDecodeError) as e:
             return (False, f"Download failed: {str(e)}")
 

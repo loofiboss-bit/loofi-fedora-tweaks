@@ -13,6 +13,7 @@ import time
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtWidgets import (
     QFileDialog,
     QFrame,
@@ -43,15 +44,7 @@ logger = logging.getLogger(__name__)
 class TeleportTab(QWidget, PluginInterface):
     """State Teleport tab for capturing and restoring workspace state."""
 
-    _METADATA = PluginMetadata(
-        id="teleport",
-        name="State Teleport",
-        description="Capture and restore workspace state including git repos and environment snapshots.",
-        category="Maintenance",
-        icon="network-traffic",
-        badge="advanced",
-        order=60,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA

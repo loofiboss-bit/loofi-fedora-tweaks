@@ -54,8 +54,9 @@ class TestDefaults(unittest.TestCase):
     def test_default_log_level_is_info(self):
         self.assertEqual(AppSettings().log_level, "INFO")
 
-    def test_default_plugin_analytics_is_disabled(self):
-        self.assertFalse(AppSettings().plugin_analytics_enabled)
+    def test_retired_plugin_analytics_is_not_persisted(self):
+        self.assertNotIn("plugin_analytics_enabled", KNOWN_KEYS)
+        self.assertNotIn("plugin_analytics_anonymous_id", KNOWN_KEYS)
 
     def test_default_state_contract_is_empty_and_versioned(self):
         defaults = AppSettings()
@@ -203,17 +204,12 @@ class TestSaveLoad(unittest.TestCase):
             mgr.save()
             self.assertTrue(path.exists())
 
-    def test_plugin_analytics_toggle_persists(self):
+    def test_retired_plugin_analytics_keys_are_rejected(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "settings.json"
-            mgr1 = SettingsManager(settings_path=path)
-            mgr1.set("plugin_analytics_enabled", True)
-            mgr1.set("plugin_analytics_anonymous_id", "anon-001")
-            mgr1.save()
-
-            mgr2 = SettingsManager(settings_path=path)
-            self.assertTrue(mgr2.get("plugin_analytics_enabled"))
-            self.assertEqual(mgr2.get("plugin_analytics_anonymous_id"), "anon-001")
+            manager = SettingsManager(settings_path=path)
+            with self.assertRaises(KeyError):
+                manager.set("plugin_analytics_enabled", True)
 
 
 # ---------------------------------------------------------------------------

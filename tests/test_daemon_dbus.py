@@ -6,7 +6,6 @@ import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
 
-from core.executor.action_result import ActionResult
 from daemon.contracts import error_response, ok_response
 from daemon.handlers.firewall_handler import FirewallHandler
 from daemon.handlers.network_handler import NetworkHandler
@@ -56,20 +55,18 @@ class TestDaemonDBusContracts(unittest.TestCase):
 
 
 class TestServiceHandler(unittest.TestCase):
-    """Validate service handler serialization and scope parsing."""
+    """Validate read-only service handling and plan-only mutations."""
 
-    @patch("daemon.handlers.service_handler.SystemService")
-    def test_reboot_serializes_action_result(self, mock_system_service):
-        instance = mock_system_service.return_value
-        instance.reboot_local.return_value = ActionResult(
-            success=True, message="ok", exit_code=0)
+    @patch("daemon.handlers.service_handler.create_manual_plan")
+    def test_reboot_creates_manual_plan_without_execution(self, create_manual_plan):
+        create_manual_plan.return_value = {"plan_only": True}
 
         payload = ServiceHandler.reboot(description="reboot", delay_seconds=5)
 
-        self.assertTrue(payload["success"])
-        self.assertEqual(payload["message"], "ok")
-        instance.reboot_local.assert_called_once_with(
-            description="reboot", delay_seconds=5)
+        self.assertTrue(payload["plan_only"])
+        create_manual_plan.assert_called_once_with(
+            "reboot", {"description": "reboot", "delay_seconds": 5}
+        )
 
     @patch("daemon.handlers.service_handler.ServiceManager")
     def test_list_units_maps_units_to_dicts(self, mock_service_manager):
@@ -91,46 +88,37 @@ class TestServiceHandler(unittest.TestCase):
         self.assertEqual(payload[0]["scope"], "user")
         self.assertTrue(payload[0]["is_gaming"])
 
-    @patch("daemon.handlers.service_handler.ServiceManager")
-    def test_start_unit_uses_system_scope_when_requested(self, mock_service_manager):
-        mock_service_manager.start_unit.return_value = MagicMock(
-            success=True, message="Started sshd")
+    @patch("daemon.handlers.service_handler.create_manual_plan")
+    def test_start_unit_creates_plan_for_system_scope(self, create_manual_plan):
+        create_manual_plan.return_value = {"plan_only": True}
 
         payload = ServiceHandler.start_unit("sshd", scope="system")
 
-        self.assertTrue(payload["success"])
-        self.assertEqual(payload["message"], "Started sshd")
-        mock_service_manager.start_unit.assert_called_once_with(
-            "sshd", UnitScope.SYSTEM)
-
-    @patch("daemon.handlers.service_handler.ServiceManager")
-    def test_mask_unit_uses_user_scope_by_default(self, mock_service_manager):
-        mock_service_manager.mask_unit.return_value = MagicMock(
-            success=True,
-            message="Masked gamemoded",
+        self.assertTrue(payload["plan_only"])
+        create_manual_plan.assert_called_once_with(
+            "service-start", {"service": "sshd", "scope": "system"}
         )
+
+    @patch("daemon.handlers.service_handler.create_manual_plan")
+    def test_mask_unit_creates_plan_for_user_scope(self, create_manual_plan):
+        create_manual_plan.return_value = {"plan_only": True}
 
         payload = ServiceHandler.mask_unit("gamemoded")
 
-        self.assertTrue(payload["success"])
-        self.assertEqual(payload["message"], "Masked gamemoded")
-        mock_service_manager.mask_unit.assert_called_once_with(
-            "gamemoded", UnitScope.USER
+        self.assertTrue(payload["plan_only"])
+        create_manual_plan.assert_called_once_with(
+            "service-mask", {"service": "gamemoded", "scope": "user"}
         )
 
-    @patch("daemon.handlers.service_handler.ServiceManager")
-    def test_unmask_unit_uses_system_scope_when_requested(self, mock_service_manager):
-        mock_service_manager.unmask_unit.return_value = MagicMock(
-            success=True,
-            message="Unmasked sshd",
-        )
+    @patch("daemon.handlers.service_handler.create_manual_plan")
+    def test_unmask_unit_creates_plan_for_system_scope(self, create_manual_plan):
+        create_manual_plan.return_value = {"plan_only": True}
 
         payload = ServiceHandler.unmask_unit("sshd", scope="system")
 
-        self.assertTrue(payload["success"])
-        self.assertEqual(payload["message"], "Unmasked sshd")
-        mock_service_manager.unmask_unit.assert_called_once_with(
-            "sshd", UnitScope.SYSTEM
+        self.assertTrue(payload["plan_only"])
+        create_manual_plan.assert_called_once_with(
+            "service-unmask", {"service": "sshd", "scope": "system"}
         )
 
     @patch("daemon.handlers.service_handler.ServiceManager")

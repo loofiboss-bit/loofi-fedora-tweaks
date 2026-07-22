@@ -399,6 +399,7 @@ def _install_stubs():
         def __init__(self, *a, **kw):
             self._output_lines = []
             self.output_area = _DummyTextEdit()
+            self.actionCenterRequested = _DummySignal()
             self.runner = MagicMock()
             self.runner.output_received = _DummySignal()
             self.runner.finished = _DummySignal()
@@ -595,148 +596,6 @@ def _make_tab(distrobox_available=True, containers=None, vscode_available=True):
 
     tab = mod.DevelopmentTab()
     return tab
-
-
-# ---------------------------------------------------------------------------
-# Tests — InstallWorker
-# ---------------------------------------------------------------------------
-
-
-class TestInstallWorker(unittest.TestCase):
-    """Tests for the InstallWorker QThread class."""
-
-    def _make_worker(self, tool, extra_args=None):
-        mod = _get_module()
-        w = mod.InstallWorker.__new__(mod.InstallWorker)
-        w.tool = tool
-        w.extra_args = extra_args or {}
-        w.finished = _DummySignal()
-        return w
-
-    @patch("utils.devtools.DevToolsManager.install_pyenv")
-    def test_run_pyenv_success(self, mock_install):
-        """InstallWorker dispatches pyenv installation and emits finished."""
-        mock_install.return_value = _StubResult(True, "pyenv installed")
-        w = self._make_worker("pyenv", {"python_version": "3.11"})
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        mock_install.assert_called_once_with("3.11")
-        self.assertEqual(results, [("pyenv", True, "pyenv installed")])
-
-    @patch("utils.devtools.DevToolsManager.install_pyenv")
-    def test_run_pyenv_default_version(self, mock_install):
-        """Pyenv defaults to python 3.12 when no version specified."""
-        mock_install.return_value = _StubResult(True, "ok")
-        w = self._make_worker("pyenv")
-        w.run()
-        mock_install.assert_called_once_with("3.12")
-
-    @patch("utils.devtools.DevToolsManager.install_nvm")
-    def test_run_nvm_success(self, mock_install):
-        """InstallWorker dispatches nvm installation."""
-        mock_install.return_value = _StubResult(True, "nvm installed")
-        w = self._make_worker("nvm", {"node_version": "18"})
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        mock_install.assert_called_once_with("18")
-        self.assertEqual(results[0][1], True)
-
-    @patch("utils.devtools.DevToolsManager.install_nvm")
-    def test_run_nvm_default_version(self, mock_install):
-        """NVM defaults to 'lts' when no version specified."""
-        mock_install.return_value = _StubResult(True, "ok")
-        w = self._make_worker("nvm")
-        w.run()
-        mock_install.assert_called_once_with("lts")
-
-    @patch("utils.devtools.DevToolsManager.install_rustup")
-    def test_run_rustup_success(self, mock_install):
-        """InstallWorker dispatches rustup installation."""
-        mock_install.return_value = _StubResult(True, "rustup installed")
-        w = self._make_worker("rustup")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        mock_install.assert_called_once()
-        self.assertTrue(results[0][1])
-
-    @patch("utils.vscode.VSCodeManager.install_profile")
-    def test_run_vscode_profile(self, mock_install):
-        """InstallWorker dispatches VS Code profile installation."""
-        mock_install.return_value = _StubResult(True, "profile installed")
-        w = self._make_worker("vscode_python")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        mock_install.assert_called_once_with("python")
-        self.assertEqual(results[0][0], "vscode_python")
-
-    @patch("utils.vscode.VSCodeManager.install_profile")
-    def test_run_vscode_web_profile(self, mock_install):
-        """InstallWorker dispatches VS Code web profile correctly."""
-        mock_install.return_value = _StubResult(True, "web installed")
-        w = self._make_worker("vscode_web")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        mock_install.assert_called_once_with("web")
-        self.assertEqual(results[0][0], "vscode_web")
-        self.assertTrue(results[0][1])
-
-    def test_run_unknown_tool(self):
-        """Unknown tool results in failure emission."""
-        w = self._make_worker("unknown_tool")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        self.assertFalse(results[0][1])
-        self.assertIn("Unknown tool", results[0][2])
-
-    @patch("utils.devtools.DevToolsManager.install_pyenv")
-    def test_run_exception_handling(self, mock_install):
-        """InstallWorker handles exceptions gracefully."""
-        mock_install.side_effect = RuntimeError("network error")
-        w = self._make_worker("pyenv")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        self.assertFalse(results[0][1])
-        self.assertIn("network error", results[0][2])
-
-    @patch("utils.devtools.DevToolsManager.install_pyenv")
-    def test_run_pyenv_failure_result(self, mock_install):
-        """InstallWorker emits failure when tool returns success=False."""
-        mock_install.return_value = _StubResult(False, "deps missing")
-        w = self._make_worker("pyenv")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        self.assertFalse(results[0][1])
-        self.assertEqual(results[0][2], "deps missing")
-
-    @patch("utils.devtools.DevToolsManager.install_nvm")
-    def test_run_nvm_exception(self, mock_install):
-        """NVM install exception is caught and emitted."""
-        mock_install.side_effect = OSError("permission denied")
-        w = self._make_worker("nvm")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        self.assertFalse(results[0][1])
-        self.assertIn("permission denied", results[0][2])
-
-    @patch("utils.devtools.DevToolsManager.install_rustup")
-    def test_run_rustup_exception(self, mock_install):
-        """Rustup install exception is caught and emitted."""
-        mock_install.side_effect = RuntimeError("curl failed")
-        w = self._make_worker("rustup")
-        results = []
-        w.finished.connect(lambda t, s, m: results.append((t, s, m)))
-        w.run()
-        self.assertFalse(results[0][1])
-        self.assertIn("curl failed", results[0][2])
 
 
 # ---------------------------------------------------------------------------
@@ -1401,13 +1260,15 @@ class TestCreateContainer(unittest.TestCase):
 class TestInstallDistrobox(unittest.TestCase):
     """Tests for _install_distrobox and _on_distrobox_install_finished."""
 
-    def test_install_distrobox_creates_runner(self):
-        """Install creates a CommandRunner and starts it."""
+    def test_install_distrobox_requests_action_center_plan(self):
+        """Install preselects the bounded package workflow."""
         tab = _make_tab(distrobox_available=False)
-        tab._install_distrobox()
-        self.assertIsNotNone(tab._distrobox_runner)
-        output = "".join(tab._output_lines)
-        self.assertIn("Installing Distrobox", output)
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab._install_distrobox()
+        emit.assert_called_once_with(
+            "install-application",
+            {"source": "fedora", "package_id": "distrobox"},
+        )
 
     def test_distrobox_install_finished_success(self):
         """Successful installation shows success message."""
@@ -1571,43 +1432,23 @@ class TestRefreshDevStatus(unittest.TestCase):
 class TestInstallTool(unittest.TestCase):
     """Tests for _install_tool method."""
 
-    def test_install_pyenv_disables_button(self):
-        """Installing pyenv disables pyenv button."""
+    def test_install_pyenv_requests_review(self):
         tab = _make_tab()
-        tab._install_tool("pyenv")
-        self.assertFalse(tab.pyenv_btn.isEnabled())
-
-    def test_install_nvm_disables_button(self):
-        """Installing nvm disables nvm button."""
-        tab = _make_tab()
-        tab._install_tool("nvm")
-        self.assertFalse(tab.nvm_btn.isEnabled())
-
-    def test_install_rustup_disables_button(self):
-        """Installing rustup disables rustup button."""
-        tab = _make_tab()
-        tab._install_tool("rustup")
-        self.assertFalse(tab.rust_btn.isEnabled())
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab._install_tool("pyenv")
+        emit.assert_called_once_with("install-developer-tool", {"tool": "pyenv"})
 
     def test_install_tool_outputs_message(self):
-        """Install tool shows installing message."""
+        """Install tool shows review guidance."""
         tab = _make_tab()
         tab._install_tool("pyenv")
         output = "".join(tab._output_lines)
-        self.assertIn("Installing pyenv", output)
+        self.assertIn("Action Center", output)
 
-    def test_install_tool_creates_worker(self):
-        """Install tool creates and tracks worker."""
+    def test_install_tool_does_not_create_worker(self):
         tab = _make_tab()
         tab._install_tool("rustup")
-        self.assertEqual(len(tab.workers), 1)
-
-    def test_install_multiple_tools(self):
-        """Installing multiple tools tracks all workers."""
-        tab = _make_tab()
-        tab._install_tool("pyenv")
-        tab._install_tool("nvm")
-        self.assertEqual(len(tab.workers), 2)
+        self.assertEqual(tab.workers, [])
 
 
 # ---------------------------------------------------------------------------
@@ -1790,39 +1631,30 @@ class TestInstallVSCodeProfile(unittest.TestCase):
     """Tests for _install_vscode_profile."""
 
     def test_install_profile_outputs_message(self):
-        """Install profile outputs installing message."""
+        """Install profile outputs review guidance."""
         tab = _make_tab(vscode_available=True)
         tab._install_vscode_profile()
         output = "".join(tab._output_lines)
-        self.assertIn("Installing VS Code", output)
-        self.assertIn("python", output)
+        self.assertIn("Action Center", output)
 
-    def test_install_profile_shows_progress(self):
-        """Install profile makes progress bar visible."""
+    def test_install_profile_keeps_progress_hidden(self):
         tab = _make_tab(vscode_available=True)
         tab._install_vscode_profile()
-        self.assertTrue(tab.vscode_progress.isVisible())
+        self.assertFalse(tab.vscode_progress.isVisible())
 
-    def test_install_profile_sets_indeterminate(self):
-        """Install profile sets progress to indeterminate (0,0)."""
+    def test_install_profile_requests_review(self):
         tab = _make_tab(vscode_available=True)
-        tab._install_vscode_profile()
-        self.assertEqual(tab.vscode_progress._min, 0)
-        self.assertEqual(tab.vscode_progress._max, 0)
-
-    def test_install_profile_creates_worker(self):
-        """Install profile creates worker with vscode_ prefix."""
-        tab = _make_tab(vscode_available=True)
-        tab._install_vscode_profile()
-        self.assertEqual(len(tab.workers), 1)
-        self.assertEqual(tab.workers[0].tool, "vscode_python")
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab._install_vscode_profile()
+        emit.assert_called_once_with("install-developer-tool", {"tool": "vscode_python"})
 
     def test_install_second_profile(self):
-        """Installing second profile uses correct key."""
+        """Second profile uses its exact catalog key."""
         tab = _make_tab(vscode_available=True)
         tab.profile_combo.setCurrentIndex(1)
-        tab._install_vscode_profile()
-        self.assertEqual(tab.workers[0].tool, "vscode_web")
+        with patch.object(tab.actionCenterRequested, "emit") as emit:
+            tab._install_vscode_profile()
+        emit.assert_called_once_with("install-developer-tool", {"tool": "vscode_web"})
 
 
 class TestApplyVSCodeSettings(unittest.TestCase):

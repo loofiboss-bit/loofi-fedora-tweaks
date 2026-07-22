@@ -175,8 +175,9 @@ class TestHomeServiceStates(unittest.TestCase):
         summary = _service().summary()
 
         self.assertEqual(summary.data_state, "empty")
-        self.assertEqual(summary.overall_state, "unknown")
-        self.assertIsNone(summary.primary_recommendation)
+        self.assertEqual(summary.overall_state, "attention")
+        self.assertEqual(summary.primary_recommendation.kind, "first_health_review")
+        self.assertEqual(summary.primary_recommendation.route_id, "maintenance:health-timeline")
 
     def test_critical_state_integrity_is_first(self):
         snapshot = _snapshot(

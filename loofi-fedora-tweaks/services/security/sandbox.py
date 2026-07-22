@@ -15,7 +15,6 @@ from pathlib import Path
 from typing import Any, Optional
 
 from services.system.system import cached_which
-from utils.commands import PrivilegedCommand
 
 logger = logging.getLogger(__name__)
 
@@ -27,47 +26,6 @@ class Result:
     success: bool
     message: str
     data: Optional[dict] = None
-
-
-class PluginIsolationManager:
-    """Runtime enforcement checks for plugin isolation policies."""
-
-    @staticmethod
-    def _mode_value(mode) -> str:
-        value = getattr(mode, "value", mode)
-        return str(value or "advisory").strip().lower()
-
-    @classmethod
-    def can_enforce_mode(cls, mode) -> bool:
-        """Return whether current host can enforce a requested isolation mode."""
-        mode_value = cls._mode_value(mode)
-        if mode_value == "advisory":
-            return True
-        # External plugins are currently imported in the GUI interpreter. Merely
-        # finding an isolation executable does not apply a process boundary.
-        # Fail closed until loading is delegated to an actual isolated host.
-        if mode_value in {"process", "os"}:
-            return False
-        return False
-
-    @classmethod
-    def enforce_policy(cls, policy) -> Result:
-        """Validate that policy isolation mode is enforceable on this host."""
-        mode = cls._mode_value(getattr(policy, "mode", "advisory"))
-        plugin_id = str(getattr(policy, "plugin_id", "unknown-plugin"))
-
-        if cls.can_enforce_mode(mode):
-            return Result(
-                True,
-                f"Isolation policy enforced for {plugin_id} (mode={mode})",
-                {"plugin_id": plugin_id, "mode": mode},
-            )
-
-        return Result(
-            False,
-            f"Isolation policy cannot be enforced for {plugin_id} (mode={mode})",
-            {"plugin_id": plugin_id, "mode": mode},
-        )
 
 
 class SandboxManager:
@@ -100,23 +58,6 @@ class SandboxManager:
     def is_bubblewrap_installed(cls) -> bool:
         """Check if Bubblewrap is installed."""
         return cached_which("bwrap") is not None
-
-    @classmethod
-    def install_firejail(cls) -> Result:
-        """Install Firejail via DNF."""
-        if cls.is_firejail_installed():
-            return Result(True, "Firejail is already installed")
-
-        try:
-            binary, args, desc = PrivilegedCommand.dnf("install", "firejail")
-            result = subprocess.run([binary] + args, capture_output=True, text=True, timeout=120)
-
-            if result.returncode == 0:
-                return Result(True, "Firejail installed successfully")
-            else:
-                return Result(False, f"Installation failed: {result.stderr}")
-        except (subprocess.SubprocessError, OSError) as e:
-            return Result(False, f"Installation error: {e}")
 
     @classmethod
     def list_profiles(cls) -> list[str]:

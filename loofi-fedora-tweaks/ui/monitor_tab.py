@@ -10,12 +10,15 @@ refresh timers and custom rendering logic rather than CommandRunner
 based execution.
 """
 
+import typing
+
 import getpass
 import os
 from collections import deque
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtGui import QBrush, QColor, QLinearGradient, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import (
@@ -47,6 +50,7 @@ from ui.design import semantic_qcolor
 logger = get_logger(__name__)
 
 if not hasattr(os, "getuid"):
+
     def _getuid_unavailable() -> int:
         raise OSError("getuid not available")
 
@@ -57,6 +61,7 @@ if not hasattr(os, "getuid"):
 # Performance graph widgets
 # ---------------------------------------------------------------------------
 
+
 class MiniGraph(QWidget):
     """Compact area-chart widget that draws a filled line graph.
 
@@ -66,7 +71,7 @@ class MiniGraph(QWidget):
 
     MAX_POINTS = 60
 
-    def __init__(self, color_role: str, parent=None):
+    def __init__(self: typing.Any, color_role: str, parent: typing.Any = None) -> None:
         super().__init__(parent)
         self._color_role = color_role
         self._values: deque = deque(maxlen=self.MAX_POINTS)
@@ -74,16 +79,16 @@ class MiniGraph(QWidget):
         self.setFixedHeight(80)
         self.setMinimumWidth(200)
 
-    def set_max_value(self, max_val: float):
+    def set_max_value(self: typing.Any, max_val: float) -> typing.Any:
         """Set the maximum expected value for Y-axis scaling."""
         self._max_value = max(max_val, 1.0)
 
-    def add_value(self, value: float):
+    def add_value(self: typing.Any, value: float) -> typing.Any:
         """Append a new data point and trigger a repaint."""
         self._values.append(value)
         self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self: typing.Any, event: typing.Any) -> typing.Any:
         """Draw the area chart with gradient fill."""
         if not self._values:
             return
@@ -175,7 +180,7 @@ class DualMiniGraph(QWidget):
 
     MAX_POINTS = 60
 
-    def __init__(self, color_role_a: str, color_role_b: str, parent=None):
+    def __init__(self: typing.Any, color_role_a: str, color_role_b: str, parent: typing.Any = None) -> None:
         super().__init__(parent)
         self._color_role_a = color_role_a
         self._color_role_b = color_role_b
@@ -185,7 +190,7 @@ class DualMiniGraph(QWidget):
         self.setFixedHeight(80)
         self.setMinimumWidth(200)
 
-    def add_values(self, value_a: float, value_b: float):
+    def add_values(self: typing.Any, value_a: float, value_b: float) -> typing.Any:
         """Append data points for both series and trigger repaint."""
         self._values_a.append(value_a)
         self._values_b.append(value_b)
@@ -196,8 +201,7 @@ class DualMiniGraph(QWidget):
             self._max_value = max(peak * 1.2, 1024.0)
         self.update()
 
-    def _draw_series(self, painter: QPainter, values: list, color: QColor,
-                     w: int, h: int):
+    def _draw_series(self: typing.Any, painter: QPainter, values: list, color: QColor, w: int, h: int) -> typing.Any:
         """Draw a single series as a filled area chart."""
         count = len(values)
         if count < 2:
@@ -245,7 +249,7 @@ class DualMiniGraph(QWidget):
         painter.setBrush(Qt.BrushStyle.NoBrush)
         painter.drawPath(path)
 
-    def paintEvent(self, event):
+    def paintEvent(self: typing.Any, event: typing.Any) -> typing.Any:
         """Draw both series overlapping."""
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
@@ -290,19 +294,19 @@ class _CoreBar(QWidget):
     the core's current utilisation percentage.
     """
 
-    def __init__(self, parent: QWidget | None = None) -> None:
+    def __init__(self: typing.Any, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self._value: float = 0.0
         self.setFixedHeight(24)
         self.setMinimumWidth(6)
         self.setMaximumWidth(20)
 
-    def set_value(self, percent: float):
+    def set_value(self: typing.Any, percent: float) -> typing.Any:
         """Set core usage percentage (0-100) and repaint."""
         self._value = max(0.0, min(100.0, percent))
         self.update()
 
-    def paintEvent(self, event):
+    def paintEvent(self: typing.Any, event: typing.Any) -> typing.Any:
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
 
@@ -330,6 +334,7 @@ class _CoreBar(QWidget):
 # Sub-tab: Performance
 # ---------------------------------------------------------------------------
 
+
 class _PerformanceSubTab(QWidget):
     """Sub-tab with live performance graphs.
 
@@ -341,7 +346,7 @@ class _PerformanceSubTab(QWidget):
     - 1-second QTimer refresh cycle
     """
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self.collector = PerformanceCollector()
         self._slow_worker = None
@@ -353,7 +358,7 @@ class _PerformanceSubTab(QWidget):
         self.refresh_timer.timeout.connect(self._on_tick)
         self._has_baseline = False
 
-    def set_active(self, active: bool) -> None:
+    def set_active(self: typing.Any, active: bool) -> None:
         if active:
             if not self._has_baseline:
                 self.collector.collect_all()
@@ -363,7 +368,7 @@ class _PerformanceSubTab(QWidget):
         elif self.refresh_timer.isActive():
             self.refresh_timer.stop()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
@@ -376,10 +381,9 @@ class _PerformanceSubTab(QWidget):
 
         slow_group = QGroupBox(self.tr("Diagnose a Slow System"))
         slow_layout = QVBoxLayout(slow_group)
-        slow_intro = QLabel(self.tr(
-            "Capture one bounded, read-only snapshot of CPU, memory, storage, "
-            "top processes, failed services, and recurring health signals."
-        ))
+        slow_intro = QLabel(
+            self.tr("Capture one bounded, read-only snapshot of CPU, memory, storage, top processes, failed services, and recurring health signals.")
+        )
         slow_intro.setWordWrap(True)
         slow_layout.addWidget(slow_intro)
         self.slow_result = ResultBanner(
@@ -420,7 +424,7 @@ class _PerformanceSubTab(QWidget):
         layout.addLayout(grid)
         layout.addStretch()
 
-    def _analyze_slow_system(self) -> None:
+    def _analyze_slow_system(self: typing.Any) -> None:
         if self._slow_worker is not None:
             return
         from PyQt6.QtCore import QThread, pyqtSignal
@@ -430,7 +434,7 @@ class _PerformanceSubTab(QWidget):
             resultReady = pyqtSignal(object)
             failed = pyqtSignal(str)
 
-            def run(worker_self) -> None:
+            def run(worker_self: typing.Any) -> None:
                 try:
                     worker_self.resultReady.emit(SlowSystemService().collect())
                 except (OSError, RuntimeError, ValueError, TypeError) as exc:
@@ -449,7 +453,7 @@ class _PerformanceSubTab(QWidget):
         self._slow_worker = worker
         worker.start()
 
-    def _show_slow_summary(self, summary) -> None:
+    def _show_slow_summary(self: typing.Any, summary: typing.Any) -> None:
         snapshot = summary.snapshot
         metrics = self.tr("CPU: %s · Memory: %s · Storage: %s · I/O wait: %s") % (
             self._percent(snapshot.cpu_percent),
@@ -457,15 +461,9 @@ class _PerformanceSubTab(QWidget):
             self._percent(snapshot.storage_percent),
             self._percent(snapshot.io_wait_percent),
         )
-        processes = ", ".join(
-            f"{item.name} ({item.cpu_percent:.1f}% CPU)"
-            for item in snapshot.top_processes[:3]
-        ) or self.tr("none available")
+        processes = ", ".join(f"{item.name} ({item.cpu_percent:.1f}% CPU)" for item in snapshot.top_processes[:3]) or self.tr("none available")
         steps = "\n".join(f"• {step}" for step in summary.next_steps)
-        result_text = (
-            f"{summary.bottleneck}\n{summary.explanation}\n{metrics}\n"
-            f"{self.tr('Top processes')}: {processes}\n{steps}"
-        )
+        result_text = f"{summary.bottleneck}\n{summary.explanation}\n{metrics}\n{self.tr('Top processes')}: {processes}\n{steps}"
         self.slow_result.set_result(
             "warning" if summary.action_center_link is not None else "success",
             self.tr("Slow-system analysis complete"),
@@ -476,7 +474,7 @@ class _PerformanceSubTab(QWidget):
         if summary.action_center_link is not None:
             self.slow_action_button.setText(summary.action_center_link.label)
 
-    def _show_slow_error(self, message: str) -> None:
+    def _show_slow_error(self: typing.Any, message: str) -> None:
         self.slow_result.set_result(
             "error",
             self.tr("Slow-system analysis failed"),
@@ -485,14 +483,14 @@ class _PerformanceSubTab(QWidget):
         self._slow_action_link = None
         self.slow_action_button.hide()
 
-    def _clear_slow_worker(self) -> None:
+    def _clear_slow_worker(self: typing.Any) -> None:
         worker = self._slow_worker
         self._slow_worker = None
         self.slow_analyze_button.setEnabled(True)
         if worker is not None:
             worker.deleteLater()
 
-    def _open_slow_action(self) -> None:
+    def _open_slow_action(self: typing.Any) -> None:
         link = self._slow_action_link
         main_window = self.window() if hasattr(self, "window") else None
         switch = getattr(main_window, "switch_to_route", None)
@@ -503,18 +501,18 @@ class _PerformanceSubTab(QWidget):
             preselect(link.action_id, dict(link.parameters))
 
     @staticmethod
-    def _percent(value) -> str:
+    def _percent(value: typing.Any) -> str:
         return "—" if value is None else f"{float(value):.0f}%"
 
     # ==================== CARD BUILDERS ====================
 
-    def _create_card(self, title: str) -> QGroupBox:
+    def _create_card(self: typing.Any, title: str) -> QGroupBox:
         """Create a text-labelled performance card."""
         card = QGroupBox(title)
         card.setObjectName("monitorCard")
         return card
 
-    def _create_cpu_card(self) -> QGroupBox:
+    def _create_cpu_card(self: typing.Any) -> QGroupBox:
         """Build the CPU usage card with graph and labels."""
         card = self._create_card(self.tr("CPU Usage"))
         card_layout = QVBoxLayout(card)
@@ -535,7 +533,7 @@ class _PerformanceSubTab(QWidget):
 
         return card
 
-    def _create_memory_card(self) -> QGroupBox:
+    def _create_memory_card(self: typing.Any) -> QGroupBox:
         """Build the memory usage card with graph and labels."""
         card = self._create_card(self.tr("Memory Usage"))
         card_layout = QVBoxLayout(card)
@@ -550,7 +548,7 @@ class _PerformanceSubTab(QWidget):
 
         return card
 
-    def _create_network_card(self) -> QGroupBox:
+    def _create_network_card(self: typing.Any) -> QGroupBox:
         """Build the network I/O card with dual-line graph and labels."""
         card = self._create_card(self.tr("Network I/O"))
         card_layout = QVBoxLayout(card)
@@ -577,7 +575,7 @@ class _PerformanceSubTab(QWidget):
 
         return card
 
-    def _create_disk_card(self) -> QGroupBox:
+    def _create_disk_card(self: typing.Any) -> QGroupBox:
         """Build the disk I/O card with dual-line graph and labels."""
         card = self._create_card(self.tr("Disk I/O"))
         card_layout = QVBoxLayout(card)
@@ -606,7 +604,7 @@ class _PerformanceSubTab(QWidget):
 
     # ==================== PER-CORE BARS ====================
 
-    def _ensure_core_bars(self, core_count: int):
+    def _ensure_core_bars(self: typing.Any, core_count: int) -> typing.Any:
         """Create per-core bar widgets if not yet initialised."""
         if len(self.cpu_core_bars) == core_count:
             return
@@ -623,7 +621,7 @@ class _PerformanceSubTab(QWidget):
 
     # ==================== TIMER CALLBACK ====================
 
-    def _on_tick(self):
+    def _on_tick(self: typing.Any) -> typing.Any:
         """Called every second to collect metrics and update graphs."""
         results = self.collector.collect_all()
 
@@ -636,66 +634,37 @@ class _PerformanceSubTab(QWidget):
             for i, pct in enumerate(cpu_sample.per_core):
                 if i < len(self.cpu_core_bars):
                     self.cpu_core_bars[i].set_value(pct)
-            self.lbl_cpu.setText(
-                self.tr("CPU: {pct}% | Cores: {cores}").format(
-                    pct=cpu_sample.percent, cores=core_count
-                )
-            )
+            self.lbl_cpu.setText(self.tr("CPU: {pct}% | Cores: {cores}").format(pct=cpu_sample.percent, cores=core_count))
 
         # --- Memory ---
         mem_sample = results.get("memory")
         if mem_sample is not None:
             self.mem_graph.add_value(mem_sample.percent)
             used_h = PerformanceCollector.bytes_to_human(mem_sample.used_bytes)
-            total_h = PerformanceCollector.bytes_to_human(
-                mem_sample.total_bytes
-            )
-            self.lbl_mem.setText(
-                self.tr("Memory: {pct}% | {used}/{total}").format(
-                    pct=mem_sample.percent, used=used_h, total=total_h
-                )
-            )
+            total_h = PerformanceCollector.bytes_to_human(mem_sample.total_bytes)
+            self.lbl_mem.setText(self.tr("Memory: {pct}% | {used}/{total}").format(pct=mem_sample.percent, used=used_h, total=total_h))
 
         # --- Network ---
         net_sample = results.get("network")
         if net_sample is not None:
-            self.net_graph.add_values(
-                net_sample.recv_rate, net_sample.send_rate
-            )
-            recv_h = PerformanceCollector.bytes_to_human(
-                int(net_sample.recv_rate)
-            )
-            send_h = PerformanceCollector.bytes_to_human(
-                int(net_sample.send_rate)
-            )
-            self.lbl_net.setText(
-                self.tr("Recv: {recv}/s | Send: {send}/s").format(
-                    recv=recv_h, send=send_h
-                )
-            )
+            self.net_graph.add_values(net_sample.recv_rate, net_sample.send_rate)
+            recv_h = PerformanceCollector.bytes_to_human(int(net_sample.recv_rate))
+            send_h = PerformanceCollector.bytes_to_human(int(net_sample.send_rate))
+            self.lbl_net.setText(self.tr("Recv: {recv}/s | Send: {send}/s").format(recv=recv_h, send=send_h))
 
         # --- Disk I/O ---
         disk_sample = results.get("disk_io")
         if disk_sample is not None:
-            self.disk_graph.add_values(
-                disk_sample.read_rate, disk_sample.write_rate
-            )
-            read_h = PerformanceCollector.bytes_to_human(
-                int(disk_sample.read_rate)
-            )
-            write_h = PerformanceCollector.bytes_to_human(
-                int(disk_sample.write_rate)
-            )
-            self.lbl_disk.setText(
-                self.tr("Read: {read}/s | Write: {write}/s").format(
-                    read=read_h, write=write_h
-                )
-            )
+            self.disk_graph.add_values(disk_sample.read_rate, disk_sample.write_rate)
+            read_h = PerformanceCollector.bytes_to_human(int(disk_sample.read_rate))
+            write_h = PerformanceCollector.bytes_to_human(int(disk_sample.write_rate))
+            self.lbl_disk.setText(self.tr("Read: {read}/s | Write: {write}/s").format(read=read_h, write=write_h))
 
 
 # ---------------------------------------------------------------------------
 # Sub-tab: Processes
 # ---------------------------------------------------------------------------
+
 
 class _ProcessesSubTab(QWidget):
     """Sub-tab with real-time process table and management controls.
@@ -710,7 +679,7 @@ class _ProcessesSubTab(QWidget):
     - Catppuccin Mocha colour coding (zombies red, high-CPU yellow)
     """
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self._show_all = True  # True = all processes, False = my only
         self._current_sort = "cpu"
@@ -722,7 +691,7 @@ class _ProcessesSubTab(QWidget):
         self.refresh_timer.timeout.connect(self.refresh_processes)
         self._has_loaded = False
 
-    def set_active(self, active: bool) -> None:
+    def set_active(self: typing.Any, active: bool) -> None:
         if active:
             if not self._has_loaded:
                 self._has_loaded = True
@@ -753,7 +722,7 @@ class _ProcessesSubTab(QWidget):
 
             return getpass.getuser()
 
-    def init_ui(self):
+    def init_ui(self: typing.Any) -> typing.Any:
         """Initialise the UI components."""
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
@@ -771,9 +740,7 @@ class _ProcessesSubTab(QWidget):
         summary_layout = QHBoxLayout(self.summary_frame)
         summary_layout.setContentsMargins(15, 8, 15, 8)
 
-        self.lbl_summary = QLabel(
-            self.tr("Total: 0 | Running: 0 | Sleeping: 0 | Zombie: 0")
-        )
+        self.lbl_summary = QLabel(self.tr("Total: 0 | Running: 0 | Sleeping: 0 | Zombie: 0"))
         self.lbl_summary.setObjectName("monitorSummaryLabel")
         summary_layout.addWidget(self.lbl_summary)
         summary_layout.addStretch()
@@ -817,35 +784,33 @@ class _ProcessesSubTab(QWidget):
 
         # Process tree / table
         self.process_tree = QTreeWidget()
-        self.process_tree.setHeaderLabels([
-            self.tr("PID"),
-            self.tr("Name"),
-            self.tr("User"),
-            self.tr("CPU%"),
-            self.tr("Memory%"),
-            self.tr("Memory"),
-            self.tr("State"),
-            self.tr("Nice"),
-        ])
+        self.process_tree.setHeaderLabels(
+            [
+                self.tr("PID"),
+                self.tr("Name"),
+                self.tr("User"),
+                self.tr("CPU%"),
+                self.tr("Memory%"),
+                self.tr("Memory"),
+                self.tr("State"),
+                self.tr("Nice"),
+            ]
+        )
         self.process_tree.setRootIsDecorated(False)
         self.process_tree.setAlternatingRowColors(True)
         self.process_tree.setSortingEnabled(False)
-        self.process_tree.setContextMenuPolicy(
-            Qt.ContextMenuPolicy.CustomContextMenu
-        )
-        self.process_tree.customContextMenuRequested.connect(
-            self._show_context_menu
-        )
+        self.process_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
+        self.process_tree.customContextMenuRequested.connect(self._show_context_menu)
 
         # Column widths
-        self.process_tree.setColumnWidth(0, 70)   # PID
+        self.process_tree.setColumnWidth(0, 70)  # PID
         self.process_tree.setColumnWidth(1, 200)  # Name
         self.process_tree.setColumnWidth(2, 100)  # User
-        self.process_tree.setColumnWidth(3, 70)   # CPU%
-        self.process_tree.setColumnWidth(4, 80)   # Memory%
-        self.process_tree.setColumnWidth(5, 90)   # Memory
-        self.process_tree.setColumnWidth(6, 60)   # State
-        self.process_tree.setColumnWidth(7, 50)   # Nice
+        self.process_tree.setColumnWidth(3, 70)  # CPU%
+        self.process_tree.setColumnWidth(4, 80)  # Memory%
+        self.process_tree.setColumnWidth(5, 90)  # Memory
+        self.process_tree.setColumnWidth(6, 60)  # State
+        self.process_tree.setColumnWidth(7, 50)  # Nice
 
         # Stretch the Name column
         tree_header = self.process_tree.header()
@@ -858,12 +823,12 @@ class _ProcessesSubTab(QWidget):
 
     # -- Slot handlers -----------------------------------------------------
 
-    def _on_sort_changed(self, index: int):
+    def _on_sort_changed(self: typing.Any, index: int) -> typing.Any:
         """Handle sort dropdown change."""
         self._current_sort = self.sort_combo.currentData()
         self.refresh_processes()
 
-    def _on_filter_toggled(self, checked: bool):
+    def _on_filter_toggled(self: typing.Any, checked: bool) -> typing.Any:
         """Handle the Show All / My Processes toggle."""
         self._show_all = not checked
         if checked:
@@ -874,14 +839,11 @@ class _ProcessesSubTab(QWidget):
 
     # -- Data refresh ------------------------------------------------------
 
-    def refresh_processes(self):
+    def refresh_processes(self: typing.Any) -> typing.Any:
         """Refresh the process list and summary bar."""
         counts = ProcessManager.get_process_count()
         self.lbl_summary.setText(
-            self.tr(
-                "Total: {total} | Running: {running} | "
-                "Sleeping: {sleeping} | Zombie: {zombie}"
-            ).format(
+            self.tr("Total: {total} | Running: {running} | Sleeping: {sleeping} | Zombie: {zombie}").format(
                 total=counts["total"],
                 running=counts["running"],
                 sleeping=counts["sleeping"],
@@ -926,33 +888,25 @@ class _ProcessesSubTab(QWidget):
         for proc in processes:
             memory_human = ProcessManager.bytes_to_human(proc.memory_bytes)
 
-            item = QTreeWidgetItem([
-                str(proc.pid),
-                proc.name,
-                proc.user,
-                f"{proc.cpu_percent:.1f}",
-                f"{proc.memory_percent:.1f}",
-                memory_human,
-                proc.state,
-                str(proc.nice),
-            ])
+            item = QTreeWidgetItem(
+                [
+                    str(proc.pid),
+                    proc.name,
+                    proc.user,
+                    f"{proc.cpu_percent:.1f}",
+                    f"{proc.memory_percent:.1f}",
+                    memory_human,
+                    proc.state,
+                    str(proc.nice),
+                ]
+            )
 
             # Right-align numeric columns
-            item.setTextAlignment(
-                0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-            )
-            item.setTextAlignment(
-                3, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-            )
-            item.setTextAlignment(
-                4, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-            )
-            item.setTextAlignment(
-                5, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-            )
-            item.setTextAlignment(
-                7, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter
-            )
+            item.setTextAlignment(0, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            item.setTextAlignment(3, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            item.setTextAlignment(4, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            item.setTextAlignment(5, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+            item.setTextAlignment(7, Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
 
             # Store PID in UserRole for context menu
             item.setData(0, Qt.ItemDataRole.UserRole, proc.pid)
@@ -979,7 +933,7 @@ class _ProcessesSubTab(QWidget):
 
     # -- Context menu ------------------------------------------------------
 
-    def _show_context_menu(self, position):
+    def _show_context_menu(self: typing.Any, position: typing.Any) -> typing.Any:
         """Show right-click context menu for process actions."""
         item = self.process_tree.itemAt(position)
         if not item:
@@ -995,35 +949,27 @@ class _ProcessesSubTab(QWidget):
 
         # Kill (SIGTERM)
         action_term = menu.addAction(self.tr("Kill Process (SIGTERM)"))
-        action_term.triggered.connect(
-            lambda: self._kill_process(pid, name, 15)
-        )
+        action_term.triggered.connect(lambda: self._kill_process(pid, name, 15))
 
         # Force kill (SIGKILL)
         action_kill = menu.addAction(self.tr("Force Kill (SIGKILL)"))
-        action_kill.triggered.connect(
-            lambda: self._kill_process(pid, name, 9)
-        )
+        action_kill.triggered.connect(lambda: self._kill_process(pid, name, 9))
 
         menu.addSeparator()
 
         # Renice
         action_renice = menu.addAction(self.tr("Renice..."))
-        action_renice.triggered.connect(
-            lambda: self._renice_process(pid, name)
-        )
+        action_renice.triggered.connect(lambda: self._renice_process(pid, name))
 
         menu.exec(self.process_tree.viewport().mapToGlobal(position))
 
-    def _kill_process(self, pid: int, name: str, signal: int):
+    def _kill_process(self: typing.Any, pid: int, name: str, signal: int) -> typing.Any:
         """Kill a process after confirmation."""
         signal_name = "SIGTERM" if signal == 15 else "SIGKILL"
         reply = QMessageBox.question(
             self,
             self.tr("Confirm Kill"),
-            self.tr(
-                "Send {signal} to process '{name}' (PID {pid})?"
-            ).format(signal=signal_name, name=name, pid=pid),
+            self.tr("Send {signal} to process '{name}' (PID {pid})?").format(signal=signal_name, name=name, pid=pid),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -1031,21 +977,17 @@ class _ProcessesSubTab(QWidget):
         if reply == QMessageBox.StandardButton.Yes:
             success, message = ProcessManager.kill_process(pid, signal)
             if success:
-                QMessageBox.information(
-                    self, self.tr("Success"), message
-                )
+                QMessageBox.information(self, self.tr("Success"), message)
                 self.refresh_processes()
             else:
                 QMessageBox.warning(self, self.tr("Error"), message)
 
-    def _renice_process(self, pid: int, name: str):
+    def _renice_process(self: typing.Any, pid: int, name: str) -> typing.Any:
         """Renice a process after showing an input dialog."""
         reply = QMessageBox.question(
             self,
             self.tr("Confirm Renice"),
-            self.tr(
-                "Change priority of process '{name}' (PID {pid})?"
-            ).format(name=name, pid=pid),
+            self.tr("Change priority of process '{name}' (PID {pid})?").format(name=name, pid=pid),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
             QMessageBox.StandardButton.No,
         )
@@ -1056,10 +998,7 @@ class _ProcessesSubTab(QWidget):
         nice_value, ok = QInputDialog.getInt(
             self,
             self.tr("Renice Process"),
-            self.tr(
-                "Enter new nice value (-20 to 19).\n"
-                "Lower = higher priority, higher = lower priority:"
-            ),
+            self.tr("Enter new nice value (-20 to 19).\nLower = higher priority, higher = lower priority:"),
             value=0,
             min=-20,
             max=19,
@@ -1068,9 +1007,7 @@ class _ProcessesSubTab(QWidget):
         if ok:
             success, message = ProcessManager.renice_process(pid, nice_value)
             if success:
-                QMessageBox.information(
-                    self, self.tr("Success"), message
-                )
+                QMessageBox.information(self, self.tr("Success"), message)
                 self.refresh_processes()
             else:
                 QMessageBox.warning(self, self.tr("Error"), message)
@@ -1080,6 +1017,7 @@ class _ProcessesSubTab(QWidget):
 # Main consolidated tab
 # ---------------------------------------------------------------------------
 
+
 class MonitorTab(QWidget, PluginInterface):
     """Consolidated monitor tab merging Performance and Processes.
 
@@ -1088,23 +1026,15 @@ class MonitorTab(QWidget, PluginInterface):
     cycles rather than the CommandRunner pattern.
     """
 
-    _METADATA = PluginMetadata(
-        id="monitor",
-        name="System Monitor",
-        description="Live CPU, memory, and process monitoring with performance graphs.",
-        category="System",
-        icon="overview-dashboard",
-        badge="recommended",
-        order=30,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
-    def metadata(self) -> PluginMetadata:
-        return self._METADATA
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         return self
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -1120,7 +1050,7 @@ class MonitorTab(QWidget, PluginInterface):
 
         layout.addWidget(self.pages)
 
-    def activate_route(self, route) -> bool:
+    def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select Performance or Processes from the stable shell route."""
         subroute = str(getattr(route, "subroute", "") or "")
         if subroute not in {"", "performance", "processes"}:
@@ -1130,14 +1060,14 @@ class MonitorTab(QWidget, PluginInterface):
         self._sync_timer_lifecycle(index)
         return True
 
-    def _sync_timer_lifecycle(self, index: int) -> None:
+    def _sync_timer_lifecycle(self: typing.Any, index: int) -> None:
         self._performance_tab.set_active(self._route_active and index == 0)
         self._processes_tab.set_active(self._route_active and index == 1)
 
-    def on_activate(self) -> None:
+    def on_activate(self: typing.Any) -> None:
         self._route_active = True
         self._sync_timer_lifecycle(self.pages.currentIndex())
 
-    def on_deactivate(self) -> None:
+    def on_deactivate(self: typing.Any) -> None:
         self._route_active = False
         self._sync_timer_lifecycle(self.pages.currentIndex())

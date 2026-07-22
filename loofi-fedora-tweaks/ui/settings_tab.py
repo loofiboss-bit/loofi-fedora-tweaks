@@ -11,6 +11,8 @@ import platform
 from core.navigation.models import NavigationMode
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR
 from PyQt6.QtWidgets import (
     QApplication,
@@ -37,15 +39,7 @@ from ui.components import ActionBar, DangerButton, PageScaffold, SecondaryButton
 class SettingsTab(QWidget, PluginInterface):
     """Application settings, local state repair, and build information."""
 
-    _METADATA = PluginMetadata(
-        id="settings",
-        name="Settings",
-        description="Configure appearance, behavior, and advanced application options.",
-        category="Appearance",
-        icon="settings",
-        badge="",
-        order=100,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def __init__(self):
         super().__init__()
@@ -349,9 +343,10 @@ class SettingsTab(QWidget, PluginInterface):
         form.addRow(self.tr("PyQt:"), QLabel(PYQT_VERSION_STR))
         layout.addLayout(form)
 
-        support = QLabel(self.tr(
-            "Fedora 44 is the supported target. Fedora 45 remains preview/advisory and capability-aware."
-        ))
+        support = QLabel(
+            self.tr("Fedora %s is the supported target. Fedora %s remains preview/advisory and capability-aware.")
+            % (FEDORA_RELEASE_POLICY.stable_release, FEDORA_RELEASE_POLICY.preview_release)
+        )
         support.setObjectName("settingsHelpText")
         support.setWordWrap(True)
         layout.addWidget(support)

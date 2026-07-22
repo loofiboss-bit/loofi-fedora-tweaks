@@ -32,6 +32,7 @@ from core.agents.agents import (
     TriggerType,
 )
 from core.executor.action_executor import ActionExecutor as CentralExecutor
+from core.execution_policy import classify_command
 
 logger = logging.getLogger(__name__)
 
@@ -45,6 +46,18 @@ COMMAND_TIMEOUT_SECONDS = 60
 SCHEDULER_POLL_SECONDS = 10
 PROTECTED_GIT_BRANCHES = {"master", "refs/heads/master"}
 GIT_BRANCH_TIMEOUT_SECONDS = 5
+
+
+def _run_classified_probe(vector: List[str], **kwargs: Any) -> subprocess.CompletedProcess[str]:
+    """Execute a bounded agent probe only after deny-by-default classification."""
+    classification = classify_command(vector[0], vector[1:]) if vector else "manual_only"
+    if classification not in {"read_only", "session"}:
+        raise PermissionError(f"agent probe rejected as {classification}")
+    kwargs.setdefault("capture_output", True)
+    kwargs.setdefault("text", True)
+    kwargs.setdefault("check", False)
+    timeout = kwargs.pop("timeout", COMMAND_TIMEOUT_SECONDS)
+    return subprocess.run(vector, timeout=timeout, **kwargs)
 
 
 class AgentExecutor:
@@ -140,7 +153,20 @@ class AgentExecutor:
 
     @staticmethod
     def _execute_command(cmd: str, args: List[str]) -> AgentResult:
-        """Execute a raw command via centralized ActionExecutor."""
+        """Execute only read/session commands; host changes become plans."""
+        classification = classify_command(cmd, args)
+        if classification not in {"read_only", "session"}:
+            return AgentResult(
+                success=False,
+                message="Agent host changes require an explicitly confirmed Action Center plan.",
+                data={
+                    "policy_block": True,
+                    "action_center_required": True,
+                    "operation_class": classification,
+                    "cmd": cmd,
+                    "args": args,
+                },
+            )
         blocked, reason = AgentExecutor._is_blocked_git_command(cmd, args)
         if blocked:
             return AgentResult(
@@ -234,7 +260,7 @@ class AgentExecutor:
     def _is_on_protected_branch() -> bool:
         """Return True when current git branch resolves to protected master."""
         try:
-            branch = subprocess.run(
+            branch = _run_classified_probe(
                 ["git", "rev-parse", "--abbrev-ref", "HEAD"],
                 capture_output=True,
                 text=True,
@@ -481,7 +507,7 @@ class AgentExecutor:
     def _op_scan_ports(settings: Dict[str, Any]) -> AgentResult:
         """Scan for open listening ports."""
         try:
-            result = subprocess.run(
+            result = _run_classified_probe(
                 ["ss", "-tlnp"],
                 capture_output=True,
                 text=True,
@@ -511,7 +537,7 @@ class AgentExecutor:
         """Check for recent failed login attempts via journalctl."""
         max_allowed = settings.get("max_failed_logins", 5)
         try:
-            result = subprocess.run(
+            result = _run_classified_probe(
                 [
                     "journalctl",
                     "--no-pager",
@@ -546,7 +572,7 @@ class AgentExecutor:
     def _op_check_firewall(settings: Dict[str, Any]) -> AgentResult:
         """Check if firewalld is running."""
         try:
-            result = subprocess.run(
+            result = _run_classified_probe(
                 ["systemctl", "is-active", "firewalld"],
                 capture_output=True,
                 text=True,
@@ -574,7 +600,7 @@ class AgentExecutor:
         """Check for available package updates."""
         try:
             if SystemManager.is_atomic():
-                result = subprocess.run(
+                result = _run_classified_probe(
                     ["rpm-ostree", "upgrade", "--check"],
                     capture_output=True,
                     text=True,
@@ -601,7 +627,7 @@ class AgentExecutor:
                         message="DNF not available on this system",
                         data={"dnf_updates": 0, "alert": False},
                     )
-                result = subprocess.run(
+                result = _run_classified_probe(
                     [package_manager, "check-update", "--quiet"],
                     capture_output=True,
                     text=True,
@@ -628,7 +654,7 @@ class AgentExecutor:
     def _op_check_flatpak_updates(settings: Dict[str, Any]) -> AgentResult:
         """Check for available Flatpak updates."""
         try:
-            result = subprocess.run(
+            result = _run_classified_probe(
                 ["flatpak", "remote-ls", "--updates"],
                 capture_output=True,
                 text=True,
@@ -663,7 +689,7 @@ class AgentExecutor:
         """Report DNF cache size (actual cleanup requires pkexec)."""
         cache_path = "/var/cache/dnf" if cached_which("dnf") else "/var/cache/rpm-ostree"
         try:
-            result = subprocess.run(
+            result = _run_classified_probe(
                 ["du", "-sh", cache_path],
                 capture_output=True,
                 text=True,
@@ -682,7 +708,7 @@ class AgentExecutor:
     def _op_vacuum_journal(settings: Dict[str, Any]) -> AgentResult:
         """Report journal disk usage."""
         try:
-            result = subprocess.run(
+            result = _run_classified_probe(
                 ["journalctl", "--disk-usage"],
                 capture_output=True,
                 text=True,
@@ -703,7 +729,7 @@ class AgentExecutor:
         sizes = {}
         for path in ["/tmp", os.path.expanduser("~/.cache")]:
             try:
-                result = subprocess.run(
+                result = _run_classified_probe(
                     ["du", "-sh", path],
                     capture_output=True,
                     text=True,

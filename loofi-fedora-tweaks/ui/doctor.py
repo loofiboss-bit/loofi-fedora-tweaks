@@ -5,13 +5,13 @@ Part of v10.0 "Aurora", refactored in v38.0 "Clarity".
 Checks for critical and recommended system tools, offers to install
 missing dependencies via the correct package manager (dnf or rpm-ostree).
 
-Uses PrivilegedCommand and SystemManager.get_package_manager() instead of
-hardcoded dnf calls.  All user-visible strings are wrapped in self.tr()
-for i18n readiness.
+Missing packages are handed to Action Center instead of being installed from
+the dialog. All user-visible strings are wrapped in self.tr().
 """
 
 from services.system.system import cached_which
 
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QDialog,
@@ -24,12 +24,12 @@ from PyQt6.QtWidgets import (
     QVBoxLayout,
 )
 from services.system import SystemManager
-from utils.command_runner import CommandRunner
-from utils.commands import PrivilegedCommand
 from ui.design import semantic_qcolor
 
 
 class DependencyDoctor(QDialog):
+    actionCenterRequested = pyqtSignal(str, object)
+
     def __init__(self, parent=None):
         super().__init__(parent)
         self.setWindowTitle(self.tr("Dependency Doctor"))
@@ -86,10 +86,6 @@ class DependencyDoctor(QDialog):
         # Populate tool list after action buttons are created.
         self.check_tools()
 
-        # Command Runner for installation
-        self.runner = CommandRunner()
-        self.runner.finished.connect(self.on_fix_complete)
-
     def check_tools(self):
         self.tool_list.clear()
         self.missing_tools = []
@@ -111,7 +107,7 @@ class DependencyDoctor(QDialog):
         if self.missing_tools:
             self.btn_fix.setEnabled(True)
             self.btn_fix.setText(
-                self.tr("Install {n} Missing Tools").format(n=len(self.missing_tools))
+                self.tr("Review {n} Missing Tools").format(n=len(self.missing_tools))
             )
         else:
             self.btn_fix.setEnabled(False)
@@ -121,17 +117,19 @@ class DependencyDoctor(QDialog):
         if not self.missing_tools:
             return
 
-        # Use PrivilegedCommand for proper package manager detection
-        binary, args, desc = PrivilegedCommand.dnf("install", *self.missing_tools)
-        cmd = args  # CommandRunner takes binary + args separately
-
-        # Disable UI
-        self.btn_fix.setEnabled(False)
-        self.btn_fix.setText(self.tr("Installing..."))
-        self.tool_list.setEnabled(False)
-
-        # Run install via correct package manager
-        self.runner.run_command(binary, cmd)
+        installable = [
+            tool
+            for tool in self.missing_tools
+            if tool not in {SystemManager.get_package_manager(), "pkexec"}
+        ]
+        action_id = "install-application" if installable else "legacy-ui-manual-review"
+        parameters = (
+            {"source": "fedora", "package_id": installable[0]}
+            if installable
+            else {}
+        )
+        self.accept()
+        self.actionCenterRequested.emit(action_id, parameters)
 
     def on_fix_complete(self, exit_code):
         self.tool_list.setEnabled(True)

@@ -113,18 +113,11 @@ class TestCLIRunOperation(unittest.TestCase):
     """Tests for the run_operation helper that executes command tuples."""
 
     @patch("subprocess.run")
-    def test_run_operation_success(self, mock_run):
-        """Successful command returns True."""
-        mock_run.return_value = MagicMock(returncode=0, stdout="done\n", stderr="")
+    def test_run_operation_blocks_unplanned_host_mutation(self, mock_run):
+        """Host commands cannot bypass Action Center."""
         result = run_operation(("pkexec", ["dnf", "clean", "all"], "Cleaning..."))
-        self.assertTrue(result)
-        mock_run.assert_called_once_with(
-            ["pkexec", "dnf", "clean", "all"],
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=300,
-        )
+        self.assertFalse(result)
+        mock_run.assert_not_called()
 
     @patch("subprocess.run")
     def test_run_operation_failure(self, mock_run):
@@ -201,7 +194,8 @@ class TestCLITweakCommand(unittest.TestCase):
 
         args = argparse.Namespace(action="power", profile="performance", limit=80)
         result = cmd_tweak(args)
-        self.assertEqual(result, 0)
+        self.assertEqual(result, 1)
+        mock_run.assert_not_called()
 
     @patch("cli.main.TweakOps.get_power_profile", return_value="balanced")
     @patch("cli.main.SystemManager.is_atomic", return_value=False)

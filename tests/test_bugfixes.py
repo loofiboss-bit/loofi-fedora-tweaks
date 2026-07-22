@@ -82,8 +82,7 @@ class TestPresetNameConsistency(unittest.TestCase):
     def tearDown(self):
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    @patch.object(PresetManager, '_set_gsettings')
-    def test_save_data_and_load_use_same_file(self, mock_set):
+    def test_save_data_and_load_use_same_file(self):
         """Verify that a preset saved via save_preset_data can be loaded."""
         name = "My Cool Theme"
         data = {"theme": "Adwaita", "icon_theme": "Papirus"}

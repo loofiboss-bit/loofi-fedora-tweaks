@@ -24,30 +24,36 @@ def handle_preset(args, json_output, output_json, print_fn, json_module, preset_
         if not args.name:
             print_fn("❌ Preset name required")
             return 1
-        result = manager.load_preset(args.name)
-        if result:
+        try:
+            plan = manager.create_review_plan(args.name)
             if json_output:
-                output_json({"success": True, "applied": args.name, "settings": result})
+                output_json(
+                    {
+                        "success": True,
+                        "applied": False,
+                        "requires_interactive_review": True,
+                        "schema_version": 3,
+                        "plan": plan.to_dict(),
+                    }
+                )
             else:
-                print_fn(f"✅ Applied preset: {args.name}")
+                print_fn(f"✅ Created Action Center review plan {plan.plan_id} for: {args.name}")
             return 0
-        if json_output:
-            output_json({"success": False, "error": f"Preset '{args.name}' not found"})
-        else:
-            print_fn(f"❌ Preset '{args.name}' not found")
-        return 1
+        except (OSError, TypeError, ValueError) as exc:
+            if json_output:
+                output_json({"success": False, "error": str(exc)})
+            else:
+                print_fn(f"❌ {exc}")
+            return 1
 
     if args.action == "export":
         if not args.name or not args.path:
             print_fn("❌ Preset name and path required")
             return 1
-        result = manager.load_preset(args.name)
-        if not result:
-            print_fn(f"❌ Preset '{args.name}' not found")
-            return 1
         try:
-            with open(args.path, "w", encoding="utf-8") as f:
-                json_module.dump(result, f, indent=2)
+            if not manager.export_preset(args.name, args.path):
+                print_fn(f"❌ Preset '{args.name}' is invalid or the export path is not a regular JSON destination")
+                return 1
             if json_output:
                 output_json({"success": True, "exported": args.name, "path": args.path})
             else:

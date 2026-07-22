@@ -13,6 +13,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
 | v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
+| v18.0.0 | Haven | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
 
 ## [DONE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
 
@@ -82,6 +83,23 @@ The canonical annotated tag `v17.0.0` peels to release commit
 `29716217083`, COPR build `10748977`, the public Fedora 44 package install,
 release asset evidence, and wiki readback all passed. The historical Atlas tag
 remains available as `legacy-v17.0.0-atlas`.
+
+## [ACTIVE] v18.0.0 "Haven" — Complete Trust Boundary
+
+- Converge every supported host mutation on Action Center plan, confirmation,
+  execution, and independent verification.
+- Generate product navigation/plugin views from one data-only catalog.
+- Retire public Marketplace distribution and executable third-party plugins
+  while preserving built-in lazy loading and compatibility routes.
+- Move credentials to Secret Service, lock the read-only Web API to loopback,
+  and simplify the primary review-run-verify user journey.
+- Reduce architectural hotspots and make statistics, security documentation,
+  and release gates reflect the actual repository.
+
+The sole scope authority is the
+[canonical v18 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md). Phase 0
+baseline evidence is recorded in
+[the scope-lock report](docs/reports/V18_PHASE0_BASELINE.md).
 
 ## Execution Rules
 

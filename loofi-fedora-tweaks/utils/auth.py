@@ -2,7 +2,6 @@
 
 import logging
 import secrets
-from pathlib import Path
 from typing import Optional
 
 import bcrypt
@@ -11,6 +10,7 @@ from fastapi import Depends, HTTPException, status
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 
 from utils.config_manager import ConfigManager
+from core.secrets import SecretStore
 
 logger = logging.getLogger(__name__)
 
@@ -20,26 +20,52 @@ class AuthManager:
 
     _ALGORITHM = "HS256"
     _CONFIG_KEY = "api_auth"
-    _CONFIG_FILE = "api_auth.json"
     _TOKEN_LIFETIME_SECONDS = 3600
+    _JWT_ACCOUNT = "web-api-jwt-secret"
 
     security = HTTPBearer(auto_error=False)
 
     @classmethod
-    def _auth_path(cls) -> Path:
-        return ConfigManager.CONFIG_DIR / cls._CONFIG_FILE
+    def _ensure_secret(cls, data: dict) -> dict:
+        legacy = str(data.get("jwt_secret", ""))
+        if legacy:
+            persistent = SecretStore.get_persistent(cls._JWT_ACCOUNT)
+            if not persistent:
+                result = SecretStore.set(cls._JWT_ACCOUNT, legacy)
+                persistent = (
+                    SecretStore.get_persistent(cls._JWT_ACCOUNT)
+                    if result.success and result.persistent
+                    else None
+                )
+            if persistent:
+                data.pop("jwt_secret", None)
+        if not SecretStore.get(cls._JWT_ACCOUNT):
+            SecretStore.set(cls._JWT_ACCOUNT, secrets.token_hex(32))
+        return data
 
     @classmethod
-    def _ensure_secret(cls, data: dict) -> dict:
-        if not data.get("jwt_secret"):
-            data["jwt_secret"] = secrets.token_hex(32)
-        return data
+    def _jwt_secret(cls) -> str:
+        value = SecretStore.get(cls._JWT_ACCOUNT)
+        if value:
+            return value
+        result = SecretStore.set(cls._JWT_ACCOUNT, secrets.token_hex(32))
+        value = SecretStore.get(cls._JWT_ACCOUNT)
+        if not result.success or not value:
+            raise RuntimeError("Web API secret storage is unavailable.")
+        return value
 
     @classmethod
     def _load_auth_data(cls) -> dict:
         ConfigManager.ensure_dirs()
         config = ConfigManager.load_config() or {}
-        return cls._ensure_secret(config.get(cls._CONFIG_KEY, {}))
+        raw = config.get(cls._CONFIG_KEY, {})
+        data = dict(raw) if isinstance(raw, dict) else {}
+        had_legacy_secret = bool(data.get("jwt_secret"))
+        data = cls._ensure_secret(data)
+        if had_legacy_secret and "jwt_secret" not in data:
+            config[cls._CONFIG_KEY] = data
+            ConfigManager.save_config(config)
+        return data
 
     @classmethod
     def _save_auth_data(cls, data: dict) -> None:
@@ -47,10 +73,6 @@ class AuthManager:
         config = ConfigManager.load_config() or {}
         config[cls._CONFIG_KEY] = data
         ConfigManager.save_config(config)
-        try:
-            cls._auth_path().write_text("1")
-        except (OSError, IOError) as e:
-            logger.debug("Failed to write auth marker file: %s", e)
 
     @classmethod
     def _hash_key(cls, api_key: str) -> str:
@@ -59,7 +81,7 @@ class AuthManager:
 
     @classmethod
     def generate_api_key(cls) -> str:
-        """Generate and store a new API key."""
+        """Rotate and return a new API key exactly once."""
         api_key = secrets.token_urlsafe(32)
         data = cls._load_auth_data()
         data["api_key_hash"] = cls._hash_key(api_key)
@@ -82,18 +104,30 @@ class AuthManager:
             "sub": "loofi-api",
             "exp": int(__import__("time").time()) + cls._TOKEN_LIFETIME_SECONDS,
         }
-        return str(jwt.encode(payload, data["jwt_secret"], algorithm=cls._ALGORITHM))
+        return str(jwt.encode(payload, cls._jwt_secret(), algorithm=cls._ALGORITHM))
 
     @classmethod
     def verify_token(cls, token: str) -> None:
-        data = cls._load_auth_data()
         try:
-            jwt.decode(token, data["jwt_secret"], algorithms=[cls._ALGORITHM])
+            jwt.decode(token, cls._jwt_secret(), algorithms=[cls._ALGORITHM])
         except (jwt.InvalidTokenError, KeyError, ValueError) as e:
             logger.debug("JWT token verification failed: %s", e)
             raise HTTPException(
                 status_code=status.HTTP_401_UNAUTHORIZED, detail="Invalid token"
             )
+
+    @classmethod
+    def revoke_api_key(cls) -> None:
+        """Revoke API-key authentication and invalidate issued JWTs."""
+        data = cls._load_auth_data()
+        data.pop("api_key_hash", None)
+        SecretStore.delete(cls._JWT_ACCOUNT)
+        SecretStore.set(cls._JWT_ACCOUNT, secrets.token_hex(32))
+        cls._save_auth_data(data)
+
+    @classmethod
+    def has_api_key(cls) -> bool:
+        return bool(cls._load_auth_data().get("api_key_hash"))
 
     @classmethod
     def verify_bearer_token(

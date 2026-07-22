@@ -111,6 +111,12 @@ class HomeService:
                 "Saved health and maintenance signals do not need attention.",
                 "maintenance:health-timeline", "info",
             ))
+        elif not recommendations and data_state == "empty":
+            recommendations.append(Recommendation(
+                "home-first-review", "first_health_review", "Review system health",
+                "No saved status exists yet. Open the local health view to create the first snapshot.",
+                "maintenance:health-timeline", "info",
+            ))
 
         ordered = ordered_recommendations(recommendations)
         primary = select_primary_recommendation(ordered)

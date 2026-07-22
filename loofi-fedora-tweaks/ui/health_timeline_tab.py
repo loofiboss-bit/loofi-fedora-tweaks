@@ -13,6 +13,7 @@ Provides:
 from core.diagnostics import HealthTimeline
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -39,15 +40,7 @@ from ui.tab_utils import CONTENT_MARGINS
 class HealthTimelineTab(QWidget, PluginInterface):
     """Health Timeline tab for viewing system metrics over time."""
 
-    _METADATA = PluginMetadata(
-        id="health",
-        name="Health",
-        description="System health metrics timeline for tracking CPU, RAM, disk, and thermal trends.",
-        category="Maintenance",
-        icon="maintenance-health",
-        badge="",
-        order=10,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA

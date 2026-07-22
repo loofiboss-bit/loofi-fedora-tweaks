@@ -6,20 +6,19 @@ from dataclasses import dataclass, field
 from enum import Enum
 from typing import FrozenSet
 
+from core.catalog_models import (  # noqa: F401 - stable navigation re-exports
+    Destination,
+    FedoraVariant,
+    RoutePlacement,
+    SectionDefinition,
+)
+
 
 class NavigationMode(Enum):
     """User-facing navigation modes introduced for v15."""
 
     STANDARD = "standard"
     ADVANCED = "advanced"
-
-
-class FedoraVariant(Enum):
-    """Fedora installation variants relevant to navigation capability policy."""
-
-    TRADITIONAL = "traditional"
-    ATOMIC = "atomic"
-    UNKNOWN = "unknown"
 
 
 class NavigationDecision(Enum):
@@ -37,50 +36,6 @@ class DirectLinkBehavior(Enum):
     ALLOW = "allow"
     REDIRECT = "redirect"
     EXPLAIN = "explain"
-
-
-@dataclass(frozen=True)
-class Destination:
-    """A shell destination that groups existing canonical route IDs."""
-
-    id: str
-    label: str
-    icon: str
-    default_route_id: str
-    route_ids: tuple[str, ...]
-    advanced_only: bool = False
-
-
-@dataclass(frozen=True)
-class SectionDefinition:
-    """Data-only presentation metadata for one destination section."""
-
-    id: str
-    destination_id: str
-    label: str
-    icon: str
-    order: int
-    default_route_id: str
-    description: str = ""
-
-
-@dataclass(frozen=True)
-class RoutePlacement:
-    """Destination, section, and compatibility metadata for one route."""
-
-    route_id: str
-    destination_id: str
-    section_id: str
-    advanced_only: bool = False
-    component_id: str = "core"
-    required_capabilities: FrozenSet[str] = field(default_factory=frozenset)
-    allowed_variants: FrozenSet[FedoraVariant] = field(
-        default_factory=lambda: frozenset(
-            {FedoraVariant.TRADITIONAL, FedoraVariant.ATOMIC}
-        )
-    )
-    redirect_route_id: str | None = None
-    discoverable: bool = True
 
 
 @dataclass(frozen=True)

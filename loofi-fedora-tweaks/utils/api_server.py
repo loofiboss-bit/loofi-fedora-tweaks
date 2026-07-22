@@ -1,28 +1,78 @@
 """Loofi Web API server (FastAPI + Uvicorn)."""
 
 import os
+import ipaddress
 import threading
-from pathlib import Path
+import time
+from collections import defaultdict, deque
 from typing import Optional
+from urllib.parse import urlparse
 
 import uvicorn
 from api.routes import action_center as action_center_routes
 from api.routes import profiles as profiles_routes
 from api.routes import system as system_routes
-from fastapi import FastAPI, Form, HTTPException
+from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import FileResponse
-from fastapi.staticfiles import StaticFiles
 
 from utils.auth import AuthManager
+
+TOKEN_ATTEMPTS_PER_MINUTE = 5
+
+
+def _is_loopback_host(host: str) -> bool:
+    normalized = str(host).strip().lower()
+    if normalized == "localhost":
+        return True
+    try:
+        return ipaddress.ip_address(normalized).is_loopback
+    except ValueError:
+        return False
+
+
+def _is_loopback_origin(origin: str) -> bool:
+    try:
+        parsed = urlparse(origin)
+    except ValueError:
+        return False
+    return parsed.scheme in {"http", "https"} and bool(parsed.hostname) and _is_loopback_host(str(parsed.hostname))
+
+
+def _origin_for(host: str, port: int) -> str:
+    rendered_host = f"[{host}]" if ":" in host and not host.startswith("[") else host
+    return f"http://{rendered_host}:{port}"
+
+
+class TokenRateLimiter:
+    """Small in-memory throttle for the loopback token endpoint."""
+
+    def __init__(self, limit: int = TOKEN_ATTEMPTS_PER_MINUTE, window_seconds: int = 60):
+        self.limit = max(1, limit)
+        self.window_seconds = max(1, window_seconds)
+        self._attempts: dict[str, deque[float]] = defaultdict(deque)
+        self._lock = threading.Lock()
+
+    def allow(self, identity: str, *, now: float | None = None) -> bool:
+        timestamp = time.monotonic() if now is None else now
+        with self._lock:
+            attempts = self._attempts[identity]
+            while attempts and timestamp - attempts[0] >= self.window_seconds:
+                attempts.popleft()
+            if len(attempts) >= self.limit:
+                return False
+            attempts.append(timestamp)
+            return True
 
 
 class APIServer:
     """FastAPI server wrapper to run in a background thread."""
 
     def __init__(self, host: str = "127.0.0.1", port: int = 8000):
+        if not _is_loopback_host(host):
+            raise ValueError("Loofi Web API is loopback-only; use localhost, 127.0.0.1, or ::1.")
         self.host = host
         self.port = port
+        self._token_limiter = TokenRateLimiter()
         self.app = self._create_app()
         self._thread: Optional[threading.Thread] = None
 
@@ -32,11 +82,14 @@ class APIServer:
         app = FastAPI(title="Loofi Web API", version=__version__)
         configured_origins = os.getenv("LOOFI_CORS_ORIGINS", "").strip()
         default_origins = [
-            f"http://{self.host}:{self.port}",
+            _origin_for(self.host, self.port),
             "http://localhost:8000",
             "http://127.0.0.1:8000",
         ]
-        allowed_origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()] or default_origins
+        requested_origins = [origin.strip() for origin in configured_origins.split(",") if origin.strip()]
+        if any(not _is_loopback_origin(origin) for origin in requested_origins):
+            raise ValueError("LOOFI_CORS_ORIGINS may contain loopback origins only.")
+        allowed_origins = requested_origins or default_origins
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
         # API routes
@@ -45,22 +98,16 @@ class APIServer:
         app.include_router(action_center_routes.router, prefix="/api")
 
         @app.post("/api/token")
-        def issue_token(api_key: str = Form(...)):
+        def issue_token(request: Request, api_key: str = Form(...)):
             """Issue JWT token for valid API key (form-urlencoded)."""
+            identity = request.client.host if request.client else "loopback"
+            if not self._token_limiter.allow(identity):
+                raise HTTPException(status_code=429, detail="Too many token attempts. Try again later.")
             try:
                 token = AuthManager.issue_token(api_key)
                 return {"access_token": token, "token_type": "bearer"}
             except (RuntimeError, ValueError, OSError) as e:
                 raise HTTPException(status_code=401, detail=str(e))
-
-        # Static file serving
-        web_dir = Path(__file__).parent.parent / "web"
-        if web_dir.exists():
-            app.mount("/assets", StaticFiles(directory=str(web_dir / "assets")), name="assets")
-
-            @app.get("/")
-            def serve_index():
-                return FileResponse(str(web_dir / "index.html"))
 
         return app
 

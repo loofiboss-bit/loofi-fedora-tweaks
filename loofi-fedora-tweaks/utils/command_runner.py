@@ -5,6 +5,7 @@ from typing import Optional
 from PyQt6.QtCore import QObject, QProcess, QTimer, pyqtSignal
 
 from utils.log import get_logger
+from core.execution_policy import ExecutionAuthority, blocked_execution_message, execution_allowed
 
 logger = get_logger(__name__)
 
@@ -49,8 +50,14 @@ class CommandRunner(QObject):
         """Check if a command is currently running."""
         return bool(self.process.state() == QProcess.ProcessState.Running)
 
-    def run_command(self, command, args):
+    def run_command(self, command, args, *, authority: ExecutionAuthority = "legacy"):
         """Start a command. Wraps with flatpak-spawn if in Flatpak sandbox."""
+        if not execution_allowed(command, args, authority=authority):
+            message = blocked_execution_message(command, args)
+            logger.warning("Blocked command outside Action Center: %s", command)
+            self.error_occurred.emit(message)
+            self.finished.emit(126)
+            return
         if self._detect_flatpak() and command != "flatpak-spawn":
             new_args = ["--host", command] + args
             command = "flatpak-spawn"

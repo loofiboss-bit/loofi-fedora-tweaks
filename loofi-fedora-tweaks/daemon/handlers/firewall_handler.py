@@ -13,6 +13,7 @@ from daemon.validators import (
     validate_rich_rule,
     validate_zone,
 )
+from daemon.plan_boundary import create_manual_plan
 
 
 class FirewallHandler:
@@ -48,72 +49,84 @@ class FirewallHandler:
 
     @staticmethod
     def set_default_zone(zone: str) -> dict:
-        result = FirewallManager.set_default_zone_local(validate_zone(zone))
-        return {"success": result.success, "message": result.message}
+        return create_manual_plan(
+            "firewall-default-zone",
+            {"zone": validate_zone(zone)},
+        )
 
     @staticmethod
     def add_service(service: str, zone: str = "", permanent: bool = True) -> dict:
         valid_service = validate_firewall_service(service)
         valid_zone = validate_zone(zone)
         valid_permanent = validate_boolean(permanent, "permanent")
-        result = FirewallManager.add_service_local(valid_service, valid_zone, permanent=valid_permanent)
-        return {"success": result.success, "message": result.message}
+        return create_manual_plan(
+            "firewall-add-service",
+            {"service": valid_service, "zone": valid_zone, "permanent": valid_permanent},
+        )
 
     @staticmethod
     def remove_service(service: str, zone: str = "", permanent: bool = True) -> dict:
         valid_service = validate_firewall_service(service)
         valid_zone = validate_zone(zone)
         valid_permanent = validate_boolean(permanent, "permanent")
-        result = FirewallManager.remove_service_local(valid_service, valid_zone, permanent=valid_permanent)
-        return {"success": result.success, "message": result.message}
+        return create_manual_plan(
+            "firewall-remove-service",
+            {"service": valid_service, "zone": valid_zone, "permanent": valid_permanent},
+        )
 
     @staticmethod
     def add_rich_rule(rule: str, zone: str = "", permanent: bool = True) -> dict:
         valid_rule = validate_rich_rule(rule)
         valid_zone = validate_zone(zone)
         valid_permanent = validate_boolean(permanent, "permanent")
-        result = FirewallManager.add_rich_rule_local(valid_rule, valid_zone, permanent=valid_permanent)
-        return {"success": result.success, "message": result.message}
+        return create_manual_plan(
+            "firewall-add-rich-rule",
+            {"rule": valid_rule, "zone": valid_zone, "permanent": valid_permanent},
+        )
 
     @staticmethod
     def remove_rich_rule(rule: str, zone: str = "", permanent: bool = True) -> dict:
         valid_rule = validate_rich_rule(rule)
         valid_zone = validate_zone(zone)
         valid_permanent = validate_boolean(permanent, "permanent")
-        result = FirewallManager.remove_rich_rule_local(valid_rule, valid_zone, permanent=valid_permanent)
-        return {"success": result.success, "message": result.message}
+        return create_manual_plan(
+            "firewall-remove-rich-rule",
+            {"rule": valid_rule, "zone": valid_zone, "permanent": valid_permanent},
+        )
 
     @staticmethod
     def open_port(port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> dict:
         valid_permanent = validate_boolean(permanent, "permanent")
-        result = FirewallManager.open_port_local(
-            validate_port(port),
-            validate_protocol(protocol),
-            validate_zone(zone),
-            permanent=valid_permanent,
+        return create_manual_plan(
+            "firewall-open-port",
+            {
+                "port": validate_port(port),
+                "protocol": validate_protocol(protocol),
+                "zone": validate_zone(zone),
+                "permanent": valid_permanent,
+            },
         )
-        return {"success": result.success, "message": result.message}
 
     @staticmethod
     def close_port(port: str, protocol: str = "tcp", zone: str = "", permanent: bool = True) -> dict:
         valid_permanent = validate_boolean(permanent, "permanent")
-        result = FirewallManager.close_port_local(
-            validate_port(port),
-            validate_protocol(protocol),
-            validate_zone(zone),
-            permanent=valid_permanent,
+        return create_manual_plan(
+            "firewall-close-port",
+            {
+                "port": validate_port(port),
+                "protocol": validate_protocol(protocol),
+                "zone": validate_zone(zone),
+                "permanent": valid_permanent,
+            },
         )
-        return {"success": result.success, "message": result.message}
 
     @staticmethod
     def start_firewall() -> dict:
-        result = FirewallManager.start_firewall_local()
-        return {"success": result.success, "message": result.message}
+        return create_manual_plan("firewall-start")
 
     @staticmethod
     def stop_firewall() -> dict:
-        result = FirewallManager.stop_firewall_local()
-        return {"success": result.success, "message": result.message}
+        return create_manual_plan("firewall-stop")
 
     @staticmethod
     def scan_ports() -> list[dict]:

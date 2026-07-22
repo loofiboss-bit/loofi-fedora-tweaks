@@ -6,6 +6,7 @@ from core.executor.action_result import ActionResult
 from services.package.service import get_package_service
 
 from daemon.validators import validate_package_list, validate_package_name, validate_search_limit, validate_search_query
+from daemon.plan_boundary import create_manual_plan, create_plan
 
 
 class PackageHandler:
@@ -39,40 +40,31 @@ class PackageHandler:
 
     @staticmethod
     def install(packages: list[str]) -> dict:
-        service = get_package_service()
         clean = validate_package_list(packages)
-        result = PackageHandler._execute_action(
-            service,
-            "install_local",
-            "install",
-            clean,
-        )
-        return PackageHandler._serialize_result(result)
+        if len(clean) == 1:
+            return create_plan(
+                "install-application",
+                {"source": "fedora", "package_id": clean[0]},
+            )
+        return create_manual_plan("package-install", {"packages": clean})
 
     @staticmethod
     def remove(packages: list[str]) -> dict:
-        service = get_package_service()
         clean = validate_package_list(packages)
-        result = PackageHandler._execute_action(
-            service,
-            "remove_local",
-            "remove",
-            clean,
-        )
-        return PackageHandler._serialize_result(result)
+        if len(clean) == 1:
+            return create_plan(
+                "remove-application",
+                {"source": "fedora", "package_id": clean[0]},
+            )
+        return create_manual_plan("package-remove", {"packages": clean})
 
     @staticmethod
     def update(packages: list[str] | None = None) -> dict:
-        service = get_package_service()
         cleaned = validate_package_list(
             packages) if packages is not None else []
-        result = PackageHandler._execute_action(
-            service,
-            "update_local",
-            "update",
-            cleaned or None,
-        )
-        return PackageHandler._serialize_result(result)
+        if not cleaned:
+            return create_plan("update-fedora-system")
+        return create_manual_plan("package-update-selection", {"packages": cleaned})
 
     @staticmethod
     def search(query: str, limit: int = 50) -> dict:

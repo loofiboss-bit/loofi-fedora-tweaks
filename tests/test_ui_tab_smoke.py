@@ -61,23 +61,24 @@ class TestDependencyDoctor(unittest.TestCase):
         d.close()
 
     @patch("ui.doctor.cached_which", return_value=None)
-    @patch("utils.command_runner.CommandRunner.run_command")
-    def test_fix_dependencies_runs_command(self, mock_run, mock_which):
+    def test_fix_dependencies_routes_to_action_center(self, mock_which):
         from ui.doctor import DependencyDoctor
         d = DependencyDoctor()
+        requests = []
+        d.actionCenterRequested.connect(lambda action, parameters: requests.append((action, parameters)))
         d.fix_dependencies()
-        mock_run.assert_called_once()
-        args = mock_run.call_args
-        self.assertEqual(args[0][0], "pkexec")
+        self.assertEqual(requests[0][0], "install-application")
+        self.assertEqual(requests[0][1]["source"], "fedora")
         d.close()
 
     @patch("ui.doctor.cached_which", return_value="/usr/bin/all")
-    @patch("utils.command_runner.CommandRunner.run_command")
-    def test_fix_dependencies_no_missing(self, mock_run, mock_which):
+    def test_fix_dependencies_no_missing(self, mock_which):
         from ui.doctor import DependencyDoctor
         d = DependencyDoctor()
+        requests = []
+        d.actionCenterRequested.connect(lambda action, parameters: requests.append((action, parameters)))
         d.fix_dependencies()
-        mock_run.assert_not_called()
+        self.assertEqual(requests, [])
         d.close()
 
     @patch("ui.doctor.cached_which", return_value=None)
@@ -180,12 +181,13 @@ class TestFingerprintDialog(unittest.TestCase):
         d.close()
 
     @patch("PyQt6.QtCore.QProcess.start")
-    def test_start_enrollment(self, mock_start):
+    def test_start_enrollment_is_manual_only(self, mock_start):
         from ui.fingerprint_dialog import FingerprintDialog
         d = FingerprintDialog()
         d.start_enrollment()
-        mock_start.assert_called_once_with("fprintd-enroll", ["-", "right-index-finger"])
-        self.assertFalse(d.btn_start.isEnabled())
+        mock_start.assert_not_called()
+        self.assertIn("manual-only", d.lbl_status.text())
+        self.assertTrue(d.btn_start.isEnabled())
         d.close()
 
     def test_on_output_stage_passed(self):

@@ -40,7 +40,6 @@ class TestCloudSyncDirectories(unittest.TestCase):
         CloudSyncManager.CACHE_DIR = self.original_cache_dir
         CloudSyncManager.TOKEN_FILE = self.original_token_file
         CloudSyncManager.GIST_ID_FILE = self.original_gist_id_file
-
         import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
@@ -72,6 +71,11 @@ class TestGistTokenManagement(unittest.TestCase):
         CloudSyncManager.CACHE_DIR = CloudSyncManager.CONFIG_DIR / "cache"
         CloudSyncManager.TOKEN_FILE = CloudSyncManager.CONFIG_DIR / ".gist_token"
         CloudSyncManager.GIST_ID_FILE = CloudSyncManager.CONFIG_DIR / ".gist_id"
+        self.secret_patcher = patch(
+            "services.storage.cloud_sync.SecretStore._keyring",
+            return_value=None,
+        )
+        self.secret_patcher.start()
 
     def tearDown(self):
         """Restore original paths and clean up."""
@@ -79,6 +83,10 @@ class TestGistTokenManagement(unittest.TestCase):
         CloudSyncManager.CACHE_DIR = self.original_cache_dir
         CloudSyncManager.TOKEN_FILE = self.original_token_file
         CloudSyncManager.GIST_ID_FILE = self.original_gist_id_file
+        self.secret_patcher.stop()
+
+        from core.secrets import SecretStore
+        SecretStore._session.clear()
 
         import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
@@ -97,12 +105,10 @@ class TestGistTokenManagement(unittest.TestCase):
         retrieved = CloudSyncManager.get_gist_token()
         self.assertEqual(retrieved, token)
 
-    @unittest.skipIf(sys.platform == "win32", "File permissions not supported on Windows")
-    def test_save_gist_token_sets_permissions(self):
-        """save_gist_token sets restrictive file permissions."""
+    def test_save_gist_token_has_no_plaintext_fallback(self):
+        """Session fallback must not create a plaintext token file."""
         CloudSyncManager.save_gist_token("test_token")
-        mode = oct(CloudSyncManager.TOKEN_FILE.stat().st_mode)[-3:]
-        self.assertEqual(mode, "600")
+        self.assertFalse(CloudSyncManager.TOKEN_FILE.exists())
 
     def test_clear_gist_token(self):
         """clear_gist_token removes token and gist ID files."""
@@ -318,96 +324,6 @@ class TestSyncFromGist(unittest.TestCase):
         )
 
         success, message = CloudSyncManager.sync_from_gist("nonexistent_id")
-
-        self.assertFalse(success)
-        self.assertIn("not found", message.lower())
-
-
-class TestCommunityPresets(unittest.TestCase):
-    """Tests for community preset fetching."""
-
-    def setUp(self):
-        """Set up temp directories for testing."""
-        self.temp_dir = tempfile.mkdtemp()
-        self.original_config_dir = CloudSyncManager.CONFIG_DIR
-        self.original_cache_dir = CloudSyncManager.CACHE_DIR
-        self.original_token_file = CloudSyncManager.TOKEN_FILE
-        self.original_gist_id_file = CloudSyncManager.GIST_ID_FILE
-
-        CloudSyncManager.CONFIG_DIR = Path(self.temp_dir) / "config"
-        CloudSyncManager.CACHE_DIR = CloudSyncManager.CONFIG_DIR / "cache"
-        CloudSyncManager.TOKEN_FILE = CloudSyncManager.CONFIG_DIR / ".gist_token"
-        CloudSyncManager.GIST_ID_FILE = CloudSyncManager.CONFIG_DIR / ".gist_id"
-
-    def tearDown(self):
-        """Restore original paths and clean up."""
-        CloudSyncManager.CONFIG_DIR = self.original_config_dir
-        CloudSyncManager.CACHE_DIR = self.original_cache_dir
-        CloudSyncManager.TOKEN_FILE = self.original_token_file
-        CloudSyncManager.GIST_ID_FILE = self.original_gist_id_file
-
-        import shutil
-        shutil.rmtree(self.temp_dir, ignore_errors=True)
-
-    @patch('urllib.request.urlopen')
-    def test_fetch_community_presets_success(self, mock_urlopen):
-        """fetch_community_presets returns list of presets."""
-        presets = [
-            {"id": "preset1", "name": "Gaming"},
-            {"id": "preset2", "name": "Privacy"}
-        ]
-
-        mock_response = MagicMock()
-        mock_response.read.return_value = json.dumps(presets).encode()
-        mock_response.__enter__ = MagicMock(return_value=mock_response)
-        mock_response.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_response
-
-        success, result = CloudSyncManager.fetch_community_presets(use_cache=False)
-
-        self.assertTrue(success)
-        self.assertEqual(len(result), 2)
-
-    @patch('urllib.request.urlopen')
-    def test_fetch_community_presets_returns_empty_on_404(self, mock_urlopen):
-        """fetch_community_presets returns empty list when repo doesn't exist."""
-        mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="", code=404, msg="Not Found", hdrs={}, fp=None
-        )
-
-        success, result = CloudSyncManager.fetch_community_presets(use_cache=False)
-
-        self.assertTrue(success)
-        self.assertEqual(result, [])
-
-
-class TestDownloadPreset(unittest.TestCase):
-    """Tests for preset downloading."""
-
-    @patch('urllib.request.urlopen')
-    def test_download_preset_success(self, mock_urlopen):
-        """download_preset successfully downloads a preset."""
-        preset_data = {"name": "Test Preset", "config": {}}
-
-        mock_response = MagicMock()
-        mock_response.read.return_value = json.dumps(preset_data).encode()
-        mock_response.__enter__ = MagicMock(return_value=mock_response)
-        mock_response.__exit__ = MagicMock(return_value=False)
-        mock_urlopen.return_value = mock_response
-
-        success, result = CloudSyncManager.download_preset("test_preset")
-
-        self.assertTrue(success)
-        self.assertEqual(result, preset_data)
-
-    @patch('urllib.request.urlopen')
-    def test_download_preset_not_found(self, mock_urlopen):
-        """download_preset handles preset not found."""
-        mock_urlopen.side_effect = urllib.error.HTTPError(
-            url="", code=404, msg="Not Found", hdrs={}, fp=None
-        )
-
-        success, message = CloudSyncManager.download_preset("nonexistent")
 
         self.assertFalse(success)
         self.assertIn("not found", message.lower())

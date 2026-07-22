@@ -13,11 +13,14 @@ v25.0: Implements PluginInterface as a mixin for plugin architecture support.
 v31.0.2: Added configure_table() for readable data rows across all tabs.
 """
 
+import typing
+
 import logging
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
-from PyQt6.QtCore import QSize, Qt
+from core.execution_policy import classify_command
+from PyQt6.QtCore import QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QColor
 from PyQt6.QtWidgets import (
     QFileDialog,
@@ -41,18 +44,16 @@ logger = logging.getLogger(__name__)
 class _ReadableTableItemDelegate(QStyledItemDelegate):
     """Force stable table item painting across fonts, DPI, and QSS variants."""
 
-    def __init__(self, min_row_height: int, parent=None):
+    def __init__(self: typing.Any, min_row_height: int, parent: typing.Any = None) -> None:
         super().__init__(parent)
         self._min_row_height = min_row_height
 
-    def initStyleOption(self, option, index):
+    def initStyleOption(self: typing.Any, option: typing.Any, index: typing.Any) -> typing.Any:
         """Ensure text stays vertically centered in every table cell."""
         super().initStyleOption(option, index)
-        option.displayAlignment = (
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        option.displayAlignment = Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
 
-    def sizeHint(self, option, index) -> QSize:
+    def sizeHint(self: typing.Any, option: typing.Any, index: typing.Any) -> QSize:
         """Guarantee a non-clipped row height for rendered item text."""
         hint = super().sizeHint(option, index)
         if hint.height() < self._min_row_height:
@@ -85,8 +86,9 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
     # Subclasses MUST override _METADATA with their own PluginMetadata
     _METADATA: PluginMetadata = _STUB_META
     _DEFAULT_TABLE_VISIBLE_ROWS = 3
+    actionCenterRequested = pyqtSignal(str, object)
 
-    def __init__(self):
+    def __init__(self: typing.Any) -> None:
         super().__init__()
         self._commands_enabled = True
 
@@ -104,37 +106,44 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         self.runner.error_occurred.connect(self.on_error)
         self.runner.progress_update.connect(self.on_progress)
 
-    def run_command(self, cmd, args, description=""):
+    def run_command(self: typing.Any, cmd: typing.Any, args: typing.Any, description: typing.Any = "") -> typing.Any:
         """Execute a command with output logging."""
         self.output_area.clear()
         if description:
             self.append_output(f"{description}\n")
+        operation_class = classify_command(cmd, args)
+        if operation_class == "host":
+            self.append_output(self.tr("Host changes require an Action Center plan with fresh preflight, review, and verification."))
+            self.actionCenterRequested.emit("legacy-ui-manual-review", {})
+            return
+        if operation_class == "manual_only":
+            self.append_output(self.tr("This operation is not classified for automatic execution. Review its manual guidance instead."))
+            self.actionCenterRequested.emit("legacy-ui-manual-review", {})
+            return
         self.runner.run_command(cmd, args)
 
-    def append_output(self, text):
+    def append_output(self: typing.Any, text: typing.Any) -> typing.Any:
         """Append text to the output area and scroll to bottom."""
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
         self.output_area.insertPlainText(text)
         self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
 
-    def on_command_finished(self, exit_code):
+    def on_command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
         """Handle command completion."""
-        self.append_output(
-            self.tr("\nCommand finished with exit code: {}").format(exit_code)
-        )
+        self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
         if exit_code == 0:
             self.show_success(self.tr("Command completed successfully"))
         else:
             self.show_error(self.tr("Command failed (exit code {})").format(exit_code))
 
-    def on_error(self, error_msg):
+    def on_error(self: typing.Any, error_msg: typing.Any) -> typing.Any:
         """Handle command errors."""
         self.append_output(f"\n[ERROR] {error_msg}\n")
 
-    def on_progress(self, percent, status):
+    def on_progress(self: typing.Any, percent: typing.Any, status: typing.Any) -> typing.Any:
         """Handle progress updates. Override in subclasses for custom behavior."""
 
-    def add_section(self, title, widgets) -> QGroupBox:
+    def add_section(self: typing.Any, title: typing.Any, widgets: typing.Any) -> QGroupBox:
         """Create a group box section with a list of widgets."""
         group = QGroupBox(self.tr(title))
         layout = QVBoxLayout(group)
@@ -145,7 +154,7 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
                 layout.addLayout(widget)
         return group
 
-    def add_output_section(self, layout):
+    def add_output_section(self: typing.Any, layout: typing.Any) -> typing.Any:
         """Add the standard output area with Copy/Save/Cancel toolbar to a layout."""
         header_row = QHBoxLayout()
         header_row.addWidget(QLabel(self.tr("Output Log:")))
@@ -175,7 +184,7 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         layout.addLayout(header_row)
         layout.addWidget(self.output_area)
 
-    def add_output_disclosure(self, layout, summary: str = ""):
+    def add_output_disclosure(self: typing.Any, layout: typing.Any, summary: str = "") -> typing.Any:
         """Keep technical command output available without dominating the page."""
         from ui.components.feedback import DetailsDisclosure
 
@@ -183,15 +192,13 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         container_layout = QVBoxLayout(container)
         container_layout.setContentsMargins(0, 0, 0, 0)
         self.add_output_section(container_layout)
-        disclosure = DetailsDisclosure(
-            summary=summary or self.tr("Show technical output")
-        )
+        disclosure = DetailsDisclosure(summary=summary or self.tr("Show technical output"))
         disclosure.add_widget(container)
         layout.addWidget(disclosure)
         self.output_disclosure = disclosure
         return disclosure
 
-    def _copy_output(self):
+    def _copy_output(self: typing.Any) -> typing.Any:
         """Copy the output area text to clipboard."""
         text = self.output_area.toPlainText()
         if text:
@@ -201,7 +208,7 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
             if clipboard:
                 clipboard.setText(text)
 
-    def _save_output(self):
+    def _save_output(self: typing.Any) -> typing.Any:
         """Save the output area text to a file."""
         text = self.output_area.toPlainText()
         if not text:
@@ -219,23 +226,23 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
             except OSError as e:
                 logger.debug("Failed to save output: %s", e)
 
-    def _cancel_command(self):
+    def _cancel_command(self: typing.Any) -> typing.Any:
         """Cancel the currently running command."""
         if self.runner:
             self.runner.cancel()
 
     # ---------------------------------------------------------------- Toast feedback
 
-    def _find_main_window(self):
+    def _find_main_window(self: typing.Any) -> typing.Any:
         """Walk up parent chain to find MainWindow (not self)."""
-        widget = self.parent() if hasattr(self, 'parent') else None
+        widget = self.parent() if hasattr(self, "parent") else None
         while widget is not None:
-            if hasattr(widget, 'show_toast') and widget is not self:
+            if hasattr(widget, "show_toast") and widget is not self:
                 return widget
-            widget = widget.parent() if hasattr(widget, 'parent') else None
+            widget = widget.parent() if hasattr(widget, "parent") else None
         return None
 
-    def show_toast(self, title: str, message: str, category: str = "general") -> None:
+    def show_toast(self: typing.Any, title: str, message: str, category: str = "general") -> None:
         """Show a toast notification via the MainWindow.
 
         Args:
@@ -247,40 +254,39 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         if mw:
             mw.show_toast(title, message, category)
 
-    def show_success(self, message: str) -> None:
+    def show_success(self: typing.Any, message: str) -> None:
         """Show a success toast notification."""
         self.show_toast(self.tr("Success"), message, "general")
 
-    def show_error(self, message: str) -> None:
+    def show_error(self: typing.Any, message: str) -> None:
         """Show an error toast notification."""
         self.show_toast(self.tr("Error"), message, "security")
 
-    def show_info(self, message: str) -> None:
+    def show_info(self: typing.Any, message: str) -> None:
         """Show an informational toast notification."""
         self.show_toast(self.tr("Info"), message, "system")
 
     # ---------------------------------------------------------------- PluginInterface
 
-    def metadata(self) -> PluginMetadata:
+    def metadata(self: typing.Any) -> PluginMetadata:
         """Return plugin metadata. Logs a warning if using the stub (unset) metadata."""
         if self._METADATA.id == "__stub__":
             logger.warning(
-                "%s does not override _METADATA — using stub. "
-                "Set _METADATA = PluginMetadata(...) on the class.",
+                "%s does not override _METADATA — using stub. Set _METADATA = PluginMetadata(...) on the class.",
                 type(self).__name__,
             )
-        return self._METADATA
+        return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self) -> QWidget:
+    def create_widget(self: typing.Any) -> QWidget:
         """Default: return self. Tabs that need fresh instances must override."""
         return self
 
-    def set_context(self, context: dict) -> None:
+    def set_context(self: typing.Any, context: dict) -> None:
         """Store context for tabs that need MainWindow or executor references."""
         self._plugin_context = context
 
     @staticmethod
-    def configure_table(table):
+    def configure_table(table: typing.Any) -> typing.Any:
         """Apply consistent table styling for readable data rows.
 
         Call this after creating any QTableWidget to ensure:
@@ -342,46 +348,34 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
 
         header = table.horizontalHeader()
         vertical_header = table.verticalHeader()
-        row_height = (
-            vertical_header.defaultSectionSize()
-            if vertical_header is not None
-            else max(36, table.fontMetrics().height() + 14)
-        )
+        row_height = vertical_header.defaultSectionSize() if vertical_header is not None else max(36, table.fontMetrics().height() + 14)
         header_height = header.height() if header is not None else 0
         frame = table.frameWidth() * 2
         h_scroll = table.horizontalScrollBar()
         scroll_h = h_scroll.sizeHint().height() if h_scroll is not None else 0
         rows = max(1, table.rowCount())
         visible_rows = min(rows, max_visible_rows)
-        table_height = (
-            header_height + (row_height * visible_rows) + frame + scroll_h + 8
-        )
+        table_height = header_height + (row_height * visible_rows) + frame + scroll_h + 8
 
         table.setFixedHeight(table_height)
         table.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
 
     @staticmethod
-    def make_table_item(text, color: str = "") -> QTableWidgetItem:
+    def make_table_item(text: typing.Any, color: str = "") -> QTableWidgetItem:
         """Create a table item. Color is applied via QSS by default."""
         item = QTableWidgetItem(str(text))
-        item.setTextAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         if color:
             item.setForeground(QColor(color))
         return item
 
     @staticmethod
-    def set_table_empty_state(
-        table: QTableWidget, message: str, color: str = ""
-    ) -> None:
+    def set_table_empty_state(table: QTableWidget, message: str, color: str = "") -> None:
         """Render a single full-width empty-state row in a table."""
         table.clearSpans()
         table.setRowCount(1)
         msg_item = BaseTab.make_table_item(message, color=color)
-        msg_item.setTextAlignment(
-            Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter
-        )
+        msg_item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         table.setItem(0, 0, msg_item)
         for col in range(1, table.columnCount()):
             table.setItem(0, col, BaseTab.make_table_item("", color=color))

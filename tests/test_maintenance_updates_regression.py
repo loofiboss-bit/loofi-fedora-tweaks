@@ -36,6 +36,7 @@ def _install_maintenance_import_stubs():
     qt_widgets.QTableWidget = _Dummy
     qt_widgets.QTableWidgetItem = _Dummy
     qt_widgets.QFileDialog = _Dummy
+    qt_widgets.QComboBox = _Dummy
 
     qt_core = types.ModuleType("PyQt6.QtCore")
     qt_core.Qt = types.SimpleNamespace(GlobalColor=types.SimpleNamespace(darkGray=0))
@@ -163,22 +164,43 @@ class TestMaintenanceUpdatesRegression(unittest.TestCase):
             "services.system",
             "services.system.system",
             "core.plugins.metadata",
+            "ui.maintenance_updates",
+            "ui.maintenance_action_center",
         ):
             cls._module_backup[module_name] = sys.modules.get(module_name)
 
         _install_maintenance_import_stubs()
-        sys.modules.pop("ui.maintenance_tab", None)
+        for module_name in (
+            "ui.maintenance_tab",
+            "ui.maintenance_updates",
+            "ui.maintenance_action_center",
+        ):
+            sys.modules.pop(module_name, None)
         cls.maintenance_module = importlib.import_module("ui.maintenance_tab")
         cls.updates_tab_cls = cls.maintenance_module._UpdatesSubTab
 
     @classmethod
     def tearDownClass(cls):
-        sys.modules.pop("ui.maintenance_tab", None)
+        for module_name in (
+            "ui.maintenance_tab",
+            "ui.maintenance_updates",
+            "ui.maintenance_action_center",
+        ):
+            sys.modules.pop(module_name, None)
         for module_name, module_value in cls._module_backup.items():
             if module_value is None:
                 sys.modules.pop(module_name, None)
             else:
                 sys.modules[module_name] = module_value
+        ui_package = sys.modules.get("ui")
+        if ui_package is not None:
+            for attribute in (
+                "maintenance_tab",
+                "maintenance_updates",
+                "maintenance_action_center",
+            ):
+                if hasattr(ui_package, attribute):
+                    delattr(ui_package, attribute)
 
     def test_direct_system_update_builder_is_removed(self):
         self.assertFalse(hasattr(self.updates_tab_cls, "_system_update_step"))

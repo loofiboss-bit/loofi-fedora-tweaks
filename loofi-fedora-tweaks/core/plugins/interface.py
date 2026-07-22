@@ -16,7 +16,7 @@ class PluginInterface:
     """
     Abstract base class for all Loofi tab plugins.
 
-    Every built-in tab and future external plugin must subclass this.
+    Every built-in lazy-loaded tab must implement this contract.
     Core never imports ui/; tabs import from core.
     """
 

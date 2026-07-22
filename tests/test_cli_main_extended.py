@@ -34,6 +34,7 @@ from cli.main import (
     cmd_plugins,
     cmd_tweak,
 )
+from core.plugins.legacy import LegacyExtensionRecord
 
 
 def _make_args(**kwargs):
@@ -443,18 +444,18 @@ class TestCmdPreset(unittest.TestCase):
     @patch("cli.main._print")
     @patch("cli.main.PresetManager")
     def test_apply_text_success(self, mock_cls, mock_print):
-        """apply text mode success."""
-        mock_cls.return_value.load_preset.return_value = {"swappiness": 10}
+        """apply text mode creates a review plan without applying settings."""
+        mock_cls.return_value.create_review_plan.return_value = MagicMock(plan_id="plan-1")
         result = cmd_preset(_make_args(action="apply", name="gaming"))
         self.assertEqual(result, 0)
         printed = " ".join(c[0][0] for c in mock_print.call_args_list)
-        self.assertIn("Applied preset", printed)
+        self.assertIn("Created Action Center review plan plan-1", printed)
 
     @patch("cli.main._print")
     @patch("cli.main.PresetManager")
     def test_apply_text_not_found(self, mock_cls, mock_print):
         """apply text mode preset not found."""
-        mock_cls.return_value.load_preset.return_value = None
+        mock_cls.return_value.create_review_plan.side_effect = ValueError("Local profile 'nope' is missing or invalid.")
         result = cmd_preset(_make_args(action="apply", name="nope"))
         self.assertEqual(result, 1)
 
@@ -468,20 +469,24 @@ class TestCmdPreset(unittest.TestCase):
     @patch("builtins.print")
     @patch("cli.main.PresetManager")
     def test_apply_json_success(self, mock_cls, mock_print):
-        """apply JSON mode success."""
+        """apply JSON mode returns a machine-readable review plan."""
         cli_mod._json_output = True
-        mock_cls.return_value.load_preset.return_value = {"swap": 10}
+        plan = MagicMock(plan_id="plan-1")
+        plan.to_dict.return_value = {"plan_id": "plan-1", "state": "blocked"}
+        mock_cls.return_value.create_review_plan.return_value = plan
         result = cmd_preset(_make_args(action="apply", name="gaming"))
         self.assertEqual(result, 0)
         data = json.loads(mock_print.call_args[0][0])
         self.assertTrue(data["success"])
+        self.assertFalse(data["applied"])
+        self.assertTrue(data["requires_interactive_review"])
 
     @patch("builtins.print")
     @patch("cli.main.PresetManager")
     def test_apply_json_not_found(self, mock_cls, mock_print):
         """apply JSON mode not found."""
         cli_mod._json_output = True
-        mock_cls.return_value.load_preset.return_value = None
+        mock_cls.return_value.create_review_plan.side_effect = ValueError("Local profile 'nope' is missing or invalid.")
         result = cmd_preset(_make_args(action="apply", name="nope"))
         self.assertEqual(result, 1)
         data = json.loads(mock_print.call_args[0][0])
@@ -491,7 +496,7 @@ class TestCmdPreset(unittest.TestCase):
     @patch("cli.main.PresetManager")
     def test_export_text_not_found(self, mock_cls, mock_print):
         """export text mode preset not found."""
-        mock_cls.return_value.load_preset.return_value = None
+        mock_cls.return_value.export_preset.return_value = False
         result = cmd_preset(
             _make_args(action="export", name="nope", path="/tmp/out.json")
         )
@@ -504,16 +509,14 @@ class TestCmdPreset(unittest.TestCase):
         result = cmd_preset(_make_args(action="export", name=None, path=None))
         self.assertEqual(result, 1)
 
-    @patch("builtins.open", new_callable=lambda: lambda: MagicMock())
     @patch("cli.main._print")
     @patch("cli.main.PresetManager")
-    def test_export_text_success(self, mock_cls, mock_print, mock_open_fn):
+    def test_export_text_success(self, mock_cls, mock_print):
         """export text mode success."""
-        mock_cls.return_value.load_preset.return_value = {"key": "val"}
-        with patch("builtins.open", unittest.mock.mock_open()):
-            result = cmd_preset(
-                _make_args(action="export", name="gaming", path="/tmp/out.json")
-            )
+        mock_cls.return_value.export_preset.return_value = True
+        result = cmd_preset(
+            _make_args(action="export", name="gaming", path="/tmp/out.json")
+        )
         self.assertEqual(result, 0)
 
     @patch("builtins.print")
@@ -521,11 +524,10 @@ class TestCmdPreset(unittest.TestCase):
     def test_export_json_success(self, mock_cls, mock_print):
         """export JSON mode success."""
         cli_mod._json_output = True
-        mock_cls.return_value.load_preset.return_value = {"key": "val"}
-        with patch("builtins.open", unittest.mock.mock_open()):
-            result = cmd_preset(
-                _make_args(action="export", name="gaming", path="/tmp/out.json")
-            )
+        mock_cls.return_value.export_preset.return_value = True
+        result = cmd_preset(
+            _make_args(action="export", name="gaming", path="/tmp/out.json")
+        )
         self.assertEqual(result, 0)
         data = json.loads(mock_print.call_args[0][0])
         self.assertTrue(data["success"])
@@ -1383,7 +1385,7 @@ class TestCmdProfile(unittest.TestCase):
 # 13. cmd_plugins  (lines 709-750)
 # =====================================================================
 class TestCmdPlugins(unittest.TestCase):
-    """Cover cmd_plugins edge cases."""
+    """Cover retired extension compatibility behavior."""
 
     def setUp(self):
         self._orig_json = cli_mod._json_output
@@ -1392,67 +1394,48 @@ class TestCmdPlugins(unittest.TestCase):
     def tearDown(self):
         cli_mod._json_output = self._orig_json
 
-    @patch("cli.main.PluginLoader")
+    @patch("cli.main.LegacyExtensionService.list_extensions", return_value=[])
     @patch("cli.main._print")
-    def test_list_text_empty(self, mock_print, mock_loader_cls):
-        """list text mode with no plugins."""
-        mock_loader_cls.return_value.list_plugins.return_value = []
+    def test_list_text_empty(self, mock_print, mock_extensions):
         result = cmd_plugins(_make_args(action="list"))
         self.assertEqual(result, 0)
         printed = " ".join(c[0][0] for c in mock_print.call_args_list)
-        self.assertIn("no plugins found", printed)
+        self.assertIn("execution disabled", printed)
 
-    @patch("cli.main.PluginLoader")
+    @patch("cli.main.LegacyExtensionService.list_extensions")
     @patch("cli.main._print")
-    def test_list_text_with_manifest_none(self, mock_print, mock_loader_cls):
-        """list text mode with plugin whose manifest is None."""
-        mock_loader_cls.return_value.list_plugins.return_value = [
-            {"name": "test-plugin", "enabled": True, "manifest": None}
+    def test_list_text_with_legacy_directory(self, mock_print, mock_extensions):
+        mock_extensions.return_value = [
+            LegacyExtensionRecord(name="test-plugin", path="/tmp/test-plugin", manifest_present=False)
         ]
         result = cmd_plugins(_make_args(action="list"))
         self.assertEqual(result, 0)
         printed = " ".join(c[0][0] for c in mock_print.call_args_list)
         self.assertIn("test-plugin", printed)
-        self.assertIn("unknown", printed)
 
-    @patch("cli.main.PluginLoader")
     @patch("cli.main._print")
-    def test_enable_text_success(self, mock_print, mock_loader_cls):
-        """enable text mode."""
+    def test_enable_text_is_retired(self, mock_print):
         result = cmd_plugins(_make_args(action="enable", name="my-plugin"))
-        self.assertEqual(result, 0)
+        self.assertEqual(result, 2)
         printed = " ".join(c[0][0] for c in mock_print.call_args_list)
-        self.assertIn("enabled", printed)
+        self.assertIn("retired", printed.lower())
 
-    @patch("cli.main.PluginLoader")
-    @patch("cli.main._print")
-    def test_disable_text_success(self, mock_print, mock_loader_cls):
-        """disable text mode."""
-        result = cmd_plugins(_make_args(action="disable", name="my-plugin"))
-        self.assertEqual(result, 0)
-
-    @patch("cli.main.PluginLoader")
     @patch("builtins.print")
-    def test_enable_json(self, mock_print, mock_loader_cls):
-        """enable JSON mode."""
+    def test_enable_json_is_retired(self, mock_print):
         cli_mod._json_output = True
         result = cmd_plugins(_make_args(action="enable", name="my-plugin"))
-        self.assertEqual(result, 0)
+        self.assertEqual(result, 2)
         data = json.loads(mock_print.call_args[0][0])
-        self.assertTrue(data["enabled"])
+        self.assertEqual(data["error"], "feature_retired")
 
-    @patch("cli.main.PluginLoader")
     @patch("cli.main._print")
-    def test_enable_no_name(self, mock_print, mock_loader_cls):
-        """enable without name returns 1."""
+    def test_enable_no_name(self, mock_print):
         result = cmd_plugins(_make_args(action="enable", name=None))
-        self.assertEqual(result, 1)
+        self.assertEqual(result, 2)
 
     def test_unknown_action(self):
-        """Unknown action returns 1."""
-        with patch("cli.main.PluginLoader"):
-            result = cmd_plugins(_make_args(action="unknown"))
-        self.assertEqual(result, 1)
+        result = cmd_plugins(_make_args(action="unknown"))
+        self.assertEqual(result, 2)
 
 
 # =====================================================================

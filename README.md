@@ -17,7 +17,7 @@
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
-  <img src="https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 85%"/>
+  <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
 ## What Assurance changes
@@ -134,9 +134,10 @@ PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 | Daemon | `loofi-fedora-tweaks --daemon` | Optional D-Bus host with preserved compatibility methods |
 | Web API | `loofi-fedora-tweaks --web` | Authenticated read-only status and inspection API |
 
-The API binds to `127.0.0.1:8000` by default. Configure
-`LOOFI_API_HOST`, `LOOFI_API_PORT`, and the comma-separated
-`LOOFI_CORS_ORIGINS` allowlist when a different trusted interface is required.
+The API accepts loopback bindings only and defaults to `127.0.0.1:8000`.
+`LOOFI_API_HOST` may select another loopback address; non-local values stop
+startup. `LOOFI_API_PORT` changes the port and `LOOFI_CORS_ORIGINS` is limited
+to loopback origins.
 
 ## CLI examples
 

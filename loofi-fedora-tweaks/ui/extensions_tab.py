@@ -8,6 +8,8 @@ removing GNOME Shell and KDE Plasma extensions.
 import logging
 
 from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
+from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QComboBox,
@@ -31,15 +33,8 @@ logger = logging.getLogger(__name__)
 class ExtensionsTab(BaseTab):
     """Desktop shell extension manager — GNOME and KDE."""
 
-    _METADATA = PluginMetadata(
-        id="extensions",
-        name="Extensions",
-        description="Manage GNOME Shell and KDE Plasma desktop extensions.",
-        category="Appearance",
-        icon="appearance-theme",
-        badge="new",
-        order=20,
-    )
+    _METADATA = plugin_metadata_for_module(__name__)
+    actionCenterRequested = pyqtSignal(str, object)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -225,16 +220,8 @@ class ExtensionsTab(BaseTab):
 
     def _toggle_extension(self, uuid: str, enable: bool):
         """Enable or disable an extension."""
-        try:
-            from utils.extension_manager import ExtensionManager
-
-            if enable:
-                binary, args, desc = ExtensionManager.enable(uuid)
-            else:
-                binary, args, desc = ExtensionManager.disable(uuid)
-            self.run_command(binary, args, desc)
-        except (RuntimeError, OSError, ValueError) as e:
-            self.append_output(f"[ERROR] {e}\n")
+        action_id = "enable-desktop-extension" if enable else "disable-desktop-extension"
+        self.actionCenterRequested.emit(action_id, {})
 
     def _install_extension(self):
         """Install an extension by UUID from search input."""
@@ -242,13 +229,7 @@ class ExtensionsTab(BaseTab):
         if not uuid:
             self.append_output(self.tr("Enter an extension UUID to install.\n"))
             return
-        try:
-            from utils.extension_manager import ExtensionManager
-
-            binary, args, desc = ExtensionManager.install(uuid)
-            self.run_command(binary, args, desc)
-        except (RuntimeError, OSError, ValueError) as e:
-            self.append_output(f"[ERROR] {e}\n")
+        self.actionCenterRequested.emit("install-desktop-extension", {})
 
     def _remove_selected(self):
         """Remove selected extension."""
@@ -259,13 +240,7 @@ class ExtensionsTab(BaseTab):
         name_item = self.table.item(row, 0)
         if not name_item:
             return
-        try:
-            from utils.extension_manager import ExtensionManager
-
-            binary, args, desc = ExtensionManager.remove(name_item.text())
-            self.run_command(binary, args, desc)
-        except (RuntimeError, OSError, ValueError) as e:
-            self.append_output(f"[ERROR] {e}\n")
+        self.actionCenterRequested.emit("remove-desktop-extension", {})
 
     def _filter_table(self):
         """Filter table rows by search text and status."""

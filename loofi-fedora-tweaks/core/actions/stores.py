@@ -11,8 +11,8 @@ from core.actions.contracts import ActionPlan, ActionRun
 from core.state.atomic_io import advisory_lock, atomic_write_json, atomic_write_text
 from core.state.paths import StatePaths
 
-ACTION_PLAN_SCHEMA_VERSION = 2
-ACTION_RUN_SCHEMA_VERSION = 2
+ACTION_PLAN_SCHEMA_VERSION = 3
+ACTION_RUN_SCHEMA_VERSION = 3
 MAX_ACTION_PLANS = 50
 MAX_ACTION_RUNS = 100
 
@@ -38,7 +38,7 @@ class ActionPlanStore:
         if not isinstance(payload, Mapping):
             return []
         version = int(payload.get("schema_version", 0))
-        if version not in {1, ACTION_PLAN_SCHEMA_VERSION}:
+        if version not in {1, 2, ACTION_PLAN_SCHEMA_VERSION}:
             raise ActionStoreVersionError(f"Unsupported action plan schema version: {version}")
         raw_plans = payload.get("plans", [])
         if not isinstance(raw_plans, list):
@@ -51,7 +51,7 @@ class ActionPlanStore:
                 plans.append(ActionPlan.from_dict(raw))
             except (KeyError, TypeError, ValueError):
                 continue
-        if version == 1:
+        if version in {1, 2}:
             self._write_unlocked(plans)
         return plans
 
@@ -101,9 +101,9 @@ class ActionRunStore:
             if not isinstance(raw, Mapping):
                 continue
             version = int(raw.get("action_run_schema_version", 0))
-            if version not in {1, ACTION_RUN_SCHEMA_VERSION}:
+            if version not in {1, 2, ACTION_RUN_SCHEMA_VERSION}:
                 raise ActionStoreVersionError(f"Unsupported action run schema version: {version}")
-            migration_required = migration_required or version == 1
+            migration_required = migration_required or version in {1, 2}
             try:
                 runs.append(ActionRun.from_dict(raw))
             except (KeyError, TypeError, ValueError):

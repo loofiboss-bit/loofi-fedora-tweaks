@@ -60,12 +60,23 @@ class TestSchemaAwareState(StateV14Case):
     def test_doctor_understands_action_run_jsonl_schema_key(self):
         target = self.inventory.get("action_runs").path
         target.parent.mkdir(parents=True)
-        target.write_text(json.dumps({"action_run_schema_version": 2, "run_id": "future"}) + "\n", encoding="utf-8")
+        target.write_text(json.dumps({"action_run_schema_version": 4, "run_id": "future"}) + "\n", encoding="utf-8")
 
         result = StateDoctor(self.inventory).run()
 
         findings = [item for item in result["findings"] if item["domain"] == "action_runs"]
         self.assertIn("State uses a newer schema and is read-only", [item["summary"] for item in findings])
+
+    def test_doctor_accepts_supported_action_run_v2_migration(self):
+        target = self.inventory.get("action_runs").path
+        target.parent.mkdir(parents=True)
+        target.write_text(json.dumps({"action_run_schema_version": 2, "run_id": "legacy"}) + "\n", encoding="utf-8")
+
+        result = StateDoctor(self.inventory).run()
+
+        findings = [item for item in result["findings"] if item["domain"] == "action_runs"]
+        summaries = [item["summary"] for item in findings]
+        self.assertNotIn("State requires an unavailable migration", summaries)
 
     def test_timeline_migrates_supported_legacy_document_with_runner(self):
         target = self.inventory.get("health_snapshots").path

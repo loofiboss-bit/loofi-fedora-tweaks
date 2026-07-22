@@ -320,10 +320,27 @@ def check_stat_drift(stats: dict[str, Any]) -> list[str]:
     return issues
 
 
+def check_committed_stats(stats: dict[str, Any]) -> list[str]:
+    """Require the committed JSON snapshot to equal freshly gathered data."""
+    if not STATS_JSON.exists():
+        return [".project-stats.json: missing generated statistics snapshot"]
+    try:
+        committed = json.loads(STATS_JSON.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        return [f".project-stats.json: unreadable statistics snapshot: {exc}"]
+    if committed == stats:
+        return []
+    changed = sorted(
+        key for key in set(committed) | set(stats) if committed.get(key) != stats.get(key)
+    )
+    return [f".project-stats.json: generated data differs for {', '.join(changed)}"]
+
+
 def run_check(stats: dict[str, Any]) -> int:
     """Run all consistency checks. Returns exit code."""
     issues: list[str] = []
 
+    issues.extend(check_committed_stats(stats))
     issues.extend(check_unrendered_templates(stats))
     issues.extend(check_stat_drift(stats))
 

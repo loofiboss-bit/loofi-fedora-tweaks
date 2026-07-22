@@ -47,6 +47,19 @@ class AssuranceRuntime:
 
 
 class TestAssuranceValidation(unittest.TestCase):
+    def test_every_catalog_entry_has_closed_haven_metadata_and_parameters(self):
+        for definition in ActionCatalog().list():
+            with self.subTest(action=definition.id):
+                self.assertIn(definition.operation_class, {"host", "app_state", "session", "manual_only"})
+                self.assertTrue(definition.supported_variants)
+                self.assertTrue(definition.supported_variants <= {"traditional", "atomic"})
+                self.assertIn(definition.reboot_policy, {"none", "may_require", "required"})
+                self.assertTrue(definition.affected_resources)
+                self.assertEqual(
+                    validate_parameters(definition, {"__unexpected": "value"}).reason_code,
+                    "invalid_parameters",
+                )
+
     def test_application_identifiers_sources_and_urls_are_strict(self):
         definition = ActionCatalog().get("install-application")
         self.assertIsNotNone(definition)
@@ -76,6 +89,71 @@ class TestAssuranceValidation(unittest.TestCase):
 
         self.assertTrue(definition.privilege_resolver({"source": "fedora", "package_id": "firefox"}, runtime))
         self.assertFalse(definition.privilege_resolver({"source": "flatpak", "package_id": "org.mozilla.firefox"}, runtime))
+
+    def test_local_profile_review_accepts_only_bounded_data(self):
+        definition = ActionCatalog().get("local-profile-review")
+        assert definition is not None
+        valid = {
+            "profile": "travel",
+            "settings": {
+                "schema_version": 1,
+                "name": "Travel",
+                "power_profile": "balanced",
+                "battery_limit": 80,
+            },
+        }
+
+        self.assertTrue(validate_parameters(definition, valid).allowed)
+        self.assertFalse(validate_parameters(definition, {**valid, "profile": "travel; reboot"}).allowed)
+        self.assertFalse(validate_parameters(definition, {**valid, "settings": []}).allowed)
+        self.assertFalse(
+            validate_parameters(
+                definition,
+                {**valid, "settings": {"unknown_setting": "value"}},
+            ).allowed
+        )
+
+    def test_manual_boundary_parameter_matrix_rejects_out_of_range_and_injection_values(self):
+        cases = {
+            "block-firewall-port": ({"port": 443, "protocol": "tcp"}, {"port": 0, "protocol": "tcp"}),
+            "allow-usb-device": ({"device_id": "1234:abcd"}, {"device_id": "1234; reboot"}),
+            "set-grub-timeout": ({"seconds": 10}, {"seconds": 61}),
+            "set-cpu-governor": ({"governor": "performance"}, {"governor": "turbo"}),
+            "set-power-profile": ({"profile": "balanced"}, {"profile": "turbo"}),
+            "set-gpu-mode": ({"mode": "hybrid"}, {"mode": "discrete"}),
+            "set-fan-speed": ({"speed": -1}, {"speed": 101}),
+            "install-developer-tool": ({"tool": "rustup"}, {"tool": "curl | sh"}),
+            "apply-system-profile": ({"profile": "workstation"}, {"profile": "../../etc"}),
+            "configure-hostname-privacy": (
+                {"connection": "Home WiFi", "hidden": True},
+                {"connection": "Home\nWiFi", "hidden": True},
+            ),
+            "configure-network-dns": (
+                {"connection": "Home WiFi", "dns": "1.1.1.1, 2606:4700:4700::1111"},
+                {"connection": "Home WiFi", "dns": "https://resolver.invalid"},
+            ),
+            "service-control": (
+                {"service": "sshd.service", "action": "restart", "scope": "system"},
+                {"service": "sshd.service", "action": "reload-or-reboot", "scope": "system"},
+            ),
+            "configure-kernel-parameter": (
+                {"parameter": "ipv6.disable=1", "enabled": True},
+                {"parameter": "ipv6.disable=1;reboot", "enabled": True},
+            ),
+            "restore-grub-backup": ({"backup": "backup-1"}, {"backup": "../backup"}),
+            "configure-zram": (
+                {"size_percent": 50, "algorithm": "zstd"},
+                {"size_percent": 5, "algorithm": "gzip"},
+            ),
+        }
+        catalog = ActionCatalog()
+        for action_id, (valid, invalid) in cases.items():
+            definition = catalog.get(action_id)
+            assert definition is not None
+            with self.subTest(action=action_id, case="valid"):
+                self.assertTrue(validate_parameters(definition, valid).allowed)
+            with self.subTest(action=action_id, case="invalid"):
+                self.assertFalse(validate_parameters(definition, invalid).allowed)
 
 
 class TestAssuranceLifecycle(unittest.TestCase):
@@ -314,7 +392,7 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
 
 
 class TestAssuranceStoreMigration(unittest.TestCase):
-    def test_v1_plan_is_migrated_to_v2_with_backup_and_readback(self):
+    def test_v1_plan_is_migrated_to_v3_with_backup_and_readback(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "plans.json"
             plan = ActionPlan(
@@ -336,10 +414,10 @@ class TestAssuranceStoreMigration(unittest.TestCase):
             loaded = ActionPlanStore(path).list()
 
             self.assertEqual(loaded[0].plan_id, "plan-1")
-            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["schema_version"], 2)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["schema_version"], 3)
             self.assertTrue(path.with_suffix(".json.lkg").exists())
 
-    def test_v1_run_is_migrated_to_v2_with_backup_and_readback(self):
+    def test_v1_run_is_migrated_to_v3_with_backup_and_readback(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "runs.jsonl"
             run = ActionRun("run-1", "plan-1", "dnf-clean-all", "correlation-1")
@@ -348,5 +426,5 @@ class TestAssuranceStoreMigration(unittest.TestCase):
             loaded = ActionRunStore(path).list()
 
             self.assertEqual(loaded[0].run_id, "run-1")
-            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["action_run_schema_version"], 2)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["action_run_schema_version"], 3)
             self.assertTrue(path.with_suffix(".jsonl.lkg").exists())

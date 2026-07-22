@@ -102,13 +102,17 @@ class SystemActionRuntime:
 
 
 class ActionCatalog:
-    """Fixed v17 catalog. Unknown, plugin, and free-form actions stay manual-only."""
+    """Fixed first-party catalog. Unknown and free-form actions stay manual-only."""
 
     def __init__(self, definitions: Sequence[ActionDefinition] | None = None):
         if definitions is None:
             from core.actions.assurance import assurance_definitions
+            from core.actions.metadata import with_haven_metadata
 
-            selected = [*_first_party_definitions(), *assurance_definitions()]
+            selected = [
+                with_haven_metadata(definition)
+                for definition in [*_first_party_definitions(), *assurance_definitions()]
+            ]
         else:
             selected = list(definitions)
         self._definitions = {definition.id: definition for definition in selected}
@@ -124,9 +128,9 @@ class ActionCatalog:
         return PolicyDecision(
             allowed=False,
             reason_code="manual_only",
-            explanation=f"Action '{action_id}' has no audited v17 first-party definition.",
+            explanation=f"Action '{action_id}' has no audited Haven first-party definition.",
             alternative="Review the recommendation and perform any follow-up manually.",
-            facts={"action_id": action_id, "catalog": "v17-deny-by-default"},
+            facts={"action_id": action_id, "catalog": "v18-deny-by-default"},
         )
 
 
@@ -147,6 +151,12 @@ def validate_parameters(definition: ActionDefinition, parameters: Mapping[str, A
             return PolicyDecision(False, "missing_parameter", f"Parameter '{name}' is required.", facts={"parameter": name})
         if value is not None and schema.get("type") == "string" and not isinstance(value, str):
             return PolicyDecision(False, "invalid_parameter_type", f"Parameter '{name}' must be a string.", facts={"parameter": name})
+        if value is not None and schema.get("type") == "integer" and (not isinstance(value, int) or isinstance(value, bool)):
+            return PolicyDecision(False, "invalid_parameter_type", f"Parameter '{name}' must be an integer.", facts={"parameter": name})
+        if value is not None and schema.get("type") == "boolean" and not isinstance(value, bool):
+            return PolicyDecision(False, "invalid_parameter_type", f"Parameter '{name}' must be a boolean.", facts={"parameter": name})
+        if value is not None and schema.get("type") == "object" and not isinstance(value, Mapping):
+            return PolicyDecision(False, "invalid_parameter_type", f"Parameter '{name}' must be an object.", facts={"parameter": name})
         if name == "service" and isinstance(value, str) and not _UNIT_PATTERN.fullmatch(value):
             return PolicyDecision(
                 False,
