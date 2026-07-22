@@ -21,10 +21,10 @@ Central documentation map for Loofi Fedora Tweaks.
 - `../CHANGELOG.md` - Full change history
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
-- `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Active v18.0.0 "Haven" implementation scope and release gates
-- `releases/RELEASE-NOTES-v18.0.0.md` - Haven changes, migration notes, local evidence, and pending publication gates
+- `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
+- `releases/RELEASE-NOTES-v18.0.0.md` - Haven changes, migration notes, and verified publication evidence
 - `reports/V18_PHASE0_BASELINE.md` - Haven authority, performance, route, state, module, and mutation baseline
-- `reports/V18_PHASE6_RELEASE_READINESS.md` - Haven local regression, security, performance, packaging, and remaining physical release gates
+- `reports/V18_PHASE6_RELEASE_READINESS.md` - Haven regression, security, performance, packaging, and verified public-release evidence
 - `reports/V18_PLATFORM_CERTIFICATION.md` - Current Fedora 44 Traditional host evidence and the carried-forward Atomic support boundary
 - `reports/V17_PHASE0_BASELINE.md` - v16 release baseline, scope lock, and mutation inventory
 - `reports/V17_PHASE1_CORE_API.md` - schema-v2 lifecycle, validation, migration, and read-only API
@@ -70,8 +70,8 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides describe the locally verified `v18.0.0 "Haven"`
-  candidate. They must not describe GitHub or COPR publication as complete until
-  exact-commit readback is recorded.
+- User-facing guides describe the publicly verified `v18.0.0 "Haven"`
+  release. Exact-commit GitHub and COPR readback is recorded in the release
+  notes and readiness report.
 - Historical v16 and v17 reports and screenshots remain release evidence for
   those versions. Do not present them as current Haven captures.

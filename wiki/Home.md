@@ -2,7 +2,7 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Candidate:** v18.0.0 "Haven"<br>
+**Current release:** v18.0.0 "Haven"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
@@ -67,14 +67,16 @@ confirmation or privilege policy.
 
 ## Release status
 
-The Haven candidate passed the local suite with 6,796 tests, 68 skipped, and
-86.24% coverage. Meaningful Home measured 142.042 ms median and 75,408 KiB
-median RSS. Historical Sentinel is preserved as
-`legacy-v18.0.0-sentinel`. Canonical CodeQL, the Haven tag, GitHub assets, and
-COPR publication remain pending.
+Haven passed the local suite with 6,796 tests, 68 skipped, and 86.24% coverage.
+Meaningful Home measured 142.042 ms median and 75,408 KiB median RSS. The exact
+release commit passed canonical CI and CodeQL; GitHub assets, checksums, SBOM,
+provenance, COPR build `10764217`, and a clean Fedora 44 repository install all
+passed public readback. Historical Sentinel is preserved as
+`legacy-v18.0.0-sentinel`.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Candidate notes: [v18.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v18.0.0.md)
+- Release: [v18.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v18.0.0)
+- Release notes: [v18.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v18.0.0.md)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 
 For support, run `loofi-fedora-tweaks --cli doctor` and

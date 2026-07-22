@@ -1,17 +1,18 @@
 # v18 Platform Certification
 
 Date: 2026-07-22
-Candidate: `18.0.0 "Haven"` on branch `v18-haven`
+Release: `18.0.0 "Haven"`; canonical tag commit
+`6cfe11babd502d32bb57f333f1f505615a4f8864`
 
 ## Fedora 44 Traditional
 
-The candidate ran on a physical Fedora Linux 44 KDE Plasma host with kernel
-`7.1.4-202.fc44.x86_64`, Plasma `6.7.3`, KWin `6.7.3`, and PyQt `6.11.0`.
+The release candidate ran on a physical Fedora Linux 44 KDE Plasma host with
+kernel `7.1.4-202.fc44.x86_64`, Plasma `6.7.3`, KWin `6.7.3`, and PyQt `6.11.0`.
 The active session used Wayland on a 1920 x 1080 internal panel at 1.4 scale.
 
 - The real Wayland main window rendered and reported the title
   `Loofi Fedora Tweaks v18.0.0`.
-- The XCB/XWayland path rendered the same candidate at 1,180 DIP width.
+- The XCB/XWayland path rendered the same release candidate at 1,180 DIP width.
 - CLI readback reported version `18.0.0`, codename `Haven`, system type
   `Traditional`, and package manager `dnf`.
 - The full suite passed with 6,796 tests, 68 skips, and 86.24 percent coverage.

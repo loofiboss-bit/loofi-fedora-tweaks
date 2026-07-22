@@ -31,8 +31,11 @@
 
 ## Completion
 
-- [ ] [post-publish] Record canonical CodeQL and Auto Release Pipeline results.
-- [ ] [post-publish] Verify the exact GitHub tag, release assets, checksums,
+- [x] [post-publish] Record canonical CodeQL and Auto Release Pipeline results:
+  CodeQL `29943164084`, CI `29943164246`, and Auto Release `29943164217` passed
+  on `6cfe11babd502d32bb57f333f1f505615a4f8864`.
+- [x] [post-publish] Verify the exact GitHub tag, release assets, checksums,
   CycloneDX SBOM, and in-toto provenance.
-- [ ] [post-publish] Verify the COPR build and a clean Fedora 44 repository install.
-- [ ] [post-publish] Read back the public wiki and close roadmap and race-lock status.
+- [x] [post-publish] Verify COPR build `10764217` and a clean Fedora 44
+  repository install of `1:18.0.0-1.fc44`.
+- [x] [post-publish] Read back the public wiki and close roadmap and race-lock status.

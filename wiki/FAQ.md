@@ -218,7 +218,7 @@ The first-run wizard will appear on next launch.
 
 ### How many tests does the project have?
 
-**v18 release-candidate gate:**
+**v18 release gate:**
 - **6,796 passed**
 - **68 skipped**
 - **86.24% line coverage**

@@ -1,11 +1,10 @@
-# v18 Phase 6 Local Release Readiness
+# v18 Phase 6 Release Readiness and Publication Evidence
 
 Date: 2026-07-22  
-Candidate state: committed Haven implementation on `v18-haven`, based on
-`6630c92` with release metadata and documentation prepared for the final
-release commit
+Release state: public `v18.0.0` tag and artifacts verified from release commit
+`6cfe11babd502d32bb57f333f1f505615a4f8864`
 
-Release decision: **LOCAL PASS / AUTHORIZED FOR PUBLICATION**
+Release decision: **PUBLIC RELEASE VERIFIED**
 
 ## Implemented release boundary
 
@@ -66,7 +65,7 @@ reports Setuptools' forward-looking license-metadata deprecation warning.
 
 The final offscreen benchmark used one warmup and ten measured clean-profile
 runs. Meaningful Home median was **142.042 ms** and median RSS was **75,408
-KiB**. Phase 0 medians were 143.848 ms and 75,188 KiB, so the candidate stays
+KiB**. Phase 0 medians were 143.848 ms and 75,188 KiB, so the release stays
 below the 172.618 ms and 86,466 KiB limits. Every run created exactly one
 runtime plugin and reported zero subprocess probes, active timers, and running
 QThreads.
@@ -80,21 +79,27 @@ inspection confirmed `18.0.0` / `Haven` in the source archive, RPM NEVRs of
 `96c8022d11bb8d9da6ff057aff439baed5401246c647cd47476e6f044efb46a4`
 with the same embedded version.
 
-## Publication-only gates
+## Public publication evidence
 
-- Canonical CodeQL must run in GitHub Actions from the release
-  commit. Local Bandit and dependency audit results do not replace it.
+- CodeQL run `29943164084`, CI run `29943164246`, and Auto Release Pipeline run
+  `29943164217` completed successfully on the exact release commit.
+- The annotated `v18.0.0` tag peels to
+  `6cfe11babd502d32bb57f333f1f505615a4f8864`.
+- Independent public downloads passed every entry in `SHA256SUMS.txt`. The
+  CycloneDX 1.5 SBOM reports version `18.0.0`; the in-toto provenance resolves
+  all five primary subjects to the same release commit and workflow run.
+- COPR build `10764217` succeeded. A clean Fedora 44 container installed
+  `loofi-fedora-tweaks-1:18.0.0-1.fc44.noarch` from the public repository and
+  returned `18.0.0` / `Haven` through CLI readback.
 - The current Fedora 44 KDE physical host passed a native Wayland smoke at
   1920x1080 and 1.4x scale plus an XCB/XWayland smoke at requested 1,180 DIP.
   The signed Kinoite 44 install and real rpm-ostree reboot/readback evidence is
   carried forward from v17; a fresh v18 Atomic guest installation was not
   repeated. See [V18_PLATFORM_CERTIFICATION.md](V18_PLATFORM_CERTIFICATION.md).
 - Fedora 45 remains preview-only until stable and independently certified.
-- Remote readback confirms that historical Sentinel is preserved as
-  `legacy-v18.0.0-sentinel`. Creating the canonical Haven tag and publishing
-  GitHub and COPR artifacts remain pending.
+- Public wiki content and synchronized screenshots were cloned and read back
+  after publication. Historical Sentinel remains preserved as
+  `legacy-v18.0.0-sentinel`.
 
-The complete implementation is committed and pushed on `v18-haven`. The old
-Sentinel tag was preserved under its explicit legacy name before the obsolete
-`v18.0.0` tag was removed. The canonical Haven tag must be created only by the
-release workflow from the exact release commit.
+The release workflow created Haven's canonical tag from the exact release
+commit. The superseded Sentinel tag remains under its explicit legacy name.

@@ -13,7 +13,7 @@
 
 <p align="center">
   <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v18.0.0">
-    <img src="https://img.shields.io/badge/Candidate-v18.0.0-blue?style=for-the-badge&logo=github" alt="v18.0.0 release candidate"/>
+    <img src="https://img.shields.io/badge/Release-v18.0.0-blue?style=for-the-badge&logo=github" alt="v18.0.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -182,10 +182,12 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v18.0.0 "Haven"` is a locally verified release candidate for Fedora 44.
-Fedora 45 remains preview-only. The historical Sentinel tag is preserved as
-`legacy-v18.0.0-sentinel`. Canonical CodeQL, the Haven tag, GitHub assets, and
-COPR publication remain pending until their independent readback is recorded.
+`v18.0.0 "Haven"` is the current Fedora 44 release. The annotated tag resolves
+to `6cfe11babd502d32bb57f333f1f505615a4f8864`; canonical CI, CodeQL, GitHub
+assets, checksums, SBOM, provenance, COPR build `10764217`, and a clean Fedora
+44 repository install all passed independent readback. Fedora 45 remains
+preview-only. The historical Sentinel tag is preserved as
+`legacy-v18.0.0-sentinel`.
 
 ## License
 

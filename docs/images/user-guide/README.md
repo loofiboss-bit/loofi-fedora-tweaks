@@ -2,7 +2,7 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v18.0.0 "Haven" exact candidate on 2026-07-22
+**Last verified**: v18.0.0 "Haven" release on 2026-07-22
 
 **Status**: Screenshot filenames remain stable for user docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
 

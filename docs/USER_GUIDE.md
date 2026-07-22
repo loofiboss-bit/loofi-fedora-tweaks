@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 18.0.0 "Haven" release candidate — one local trust boundary for host changes
+> Version 18.0.0 "Haven" — one local trust boundary for host changes
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see

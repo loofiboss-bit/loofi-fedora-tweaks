@@ -6,9 +6,10 @@ Haven makes Action Center the single local trust boundary for host changes.
 The GUI, CLI, daemon, automation, and agent entry points all produce the same
 reviewable plans, and unattended paths cannot confirm or execute them.
 
-This announcement is prepared for publication. GitHub, COPR, checksum, SBOM,
-provenance, and exact-commit identifiers are added only after independent
-public readback succeeds.
+The public release is verified end to end. The annotated tag resolves to
+`6cfe11babd502d32bb57f333f1f505615a4f8864`; GitHub Actions, release assets,
+checksums, SBOM, provenance, COPR build `10764217`, and a clean Fedora 44
+repository installation all passed independent readback.
 
 ## Highlights
 

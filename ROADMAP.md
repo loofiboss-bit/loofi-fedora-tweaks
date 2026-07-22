@@ -13,7 +13,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
 | v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
-| v18.0.0 | Haven | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
+| v18.0.0 | Haven | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
 
 ## [DONE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
 
@@ -84,7 +84,7 @@ The canonical annotated tag `v17.0.0` peels to release commit
 release asset evidence, and wiki readback all passed. The historical Atlas tag
 remains available as `legacy-v17.0.0-atlas`.
 
-## [ACTIVE] v18.0.0 "Haven" — Complete Trust Boundary
+## [DONE] v18.0.0 "Haven" — Complete Trust Boundary
 
 - Converge every supported host mutation on Action Center plan, confirmation,
   execution, and independent verification.
@@ -100,6 +100,13 @@ The sole scope authority is the
 [canonical v18 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md). Phase 0
 baseline evidence is recorded in
 [the scope-lock report](docs/reports/V18_PHASE0_BASELINE.md).
+
+The canonical annotated tag `v18.0.0` peels to release commit
+`6cfe11babd502d32bb57f333f1f505615a4f8864`. Auto Release Pipeline run
+`29943164217`, CodeQL run `29943164084`, CI run `29943164246`, COPR build
+`10764217`, public release artifacts, checksum/SBOM/provenance verification,
+the clean Fedora 44 repository install, and wiki readback all passed.
+Historical Sentinel remains available as `legacy-v18.0.0-sentinel`.
 
 ## Execution Rules
 

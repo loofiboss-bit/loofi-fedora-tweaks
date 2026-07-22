@@ -1,6 +1,6 @@
 # Screenshots
 
-UI screenshots for the exact **v18.0.0 "Haven"** candidate, captured from the
+UI screenshots for the exact **v18.0.0 "Haven"** release, captured from the
 real PyQt application on 2026-07-22. The capture script also synchronized these
 wiki assets from the user-guide catalog.
 

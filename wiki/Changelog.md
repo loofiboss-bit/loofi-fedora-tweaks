@@ -16,7 +16,8 @@
 - Added Secret Service storage with session-only fallback and tightened the
   loopback-only Web API with token issuance limits, rotation, and revocation.
 - Passed the local suite with 6,796 tests, 68 skipped, and 86.24% coverage.
-  Public release evidence remains pending.
+- Published the exact-commit GitHub release and verified checksums, SBOM,
+  provenance, COPR build `10764217`, and a clean Fedora 44 installation.
 
 ## v17.0.0 — Assurance
 
@@ -63,18 +64,16 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ---
 
-## Current Candidate
+## Current Release
 
 ### v18.0.0 "Haven" (2026-07-22)
 
-Haven has passed local regression, trust-boundary, performance, security, and
+Haven passed local regression, trust-boundary, performance, security, and
 package checks. Meaningful Home measured 142.042 ms median and 75,408 KiB
 median RSS with one built-in provider and no subprocess probes, active timers,
-or QThreads.
-
-Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`. Canonical
-CodeQL, the Haven tag, GitHub assets, and COPR publication must be completed and
-read back before Haven is described as a public release.
+or QThreads. Canonical CI and CodeQL, the exact tag, release assets, checksums,
+SBOM, provenance, COPR, and a clean Fedora 44 install passed public readback.
+Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`.
 
 ---
 

@@ -1,6 +1,6 @@
 # Release Notes: v18.0.0 "Haven"
 
-Release candidate date: 2026-07-22<br>
+Release date: 2026-07-22<br>
 Supported target: Fedora 44<br>
 Preview target: Fedora 45
 
@@ -104,18 +104,20 @@ packaged runtime component. `pip 26.1.2` contains the fix.
   schema v3.
 - Fedora 44 is the release target. Fedora 45 remains preview-only.
 
-## Publication status
+## Publication evidence
 
-This document describes the locally verified candidate. The following evidence
-must still be completed and read back before the release is declared public:
+The annotated `v18.0.0` tag resolves to release commit
+`6cfe11babd502d32bb57f333f1f505615a4f8864`. CodeQL run `29943164084`, CI run
+`29943164246`, and Auto Release Pipeline run `29943164217` completed
+successfully on that exact commit. Independent download verification passed for
+all assets in `SHA256SUMS.txt`, the CycloneDX 1.5 SBOM, and the in-toto
+provenance statement.
 
-- canonical CodeQL on the release commit;
-- exact platform certification readback, including the stated carried-forward
-  Atomic boundary;
-- canonical `v18.0.0` Haven tag creation; the historical Sentinel tag is already
-  preserved as `legacy-v18.0.0-sentinel`;
-- GitHub release assets, checksums, SBOM/provenance, and exact-commit readback;
-- Fedora 44 COPR build and independent repository install/readback.
+COPR build `10764217` succeeded. A clean Fedora 44 container enabled the public
+repository, installed `loofi-fedora-tweaks-1:18.0.0-1.fc44.noarch`, and reported
+`18.0.0` / `Haven` through both version and JSON CLI readback. The public wiki
+was also cloned and checked after publication. Historical Sentinel remains
+preserved as `legacy-v18.0.0-sentinel`.
 
 See [V18_PHASE6_RELEASE_READINESS.md](../reports/V18_PHASE6_RELEASE_READINESS.md)
-for the local evidence and remaining blockers.
+for the complete local and public evidence boundary.

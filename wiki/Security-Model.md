@@ -114,10 +114,10 @@ state, statistics, documentation, Bandit, dependency, CodeQL, SBOM, RPM,
 Flatpak, and source-distribution checks. It also requires physical Fedora 44
 Traditional and Atomic validation and exact-commit publication readback.
 
-The Haven candidate passed local tests, Bandit, dependency checks, and package
-builds. Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`.
-Canonical CodeQL, the Haven tag, GitHub assets, and COPR readback remain
-pending.
+Haven passed local tests, Bandit, dependency checks, package builds, canonical
+CodeQL, exact-commit GitHub artifact verification, and a clean Fedora 44 COPR
+installation. Historical Sentinel is preserved as
+`legacy-v18.0.0-sentinel`.
 
 ## Reporting a vulnerability
 

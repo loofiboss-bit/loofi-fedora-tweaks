@@ -4,7 +4,7 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v18.0.0 "Haven" release candidate**
+- **v18.0.0 "Haven"**
 - Full notes: [RELEASE-NOTES-v18.0.0.md](RELEASE-NOTES-v18.0.0.md)
 
 ## Recent Releases

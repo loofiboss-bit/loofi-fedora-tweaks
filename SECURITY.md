@@ -4,13 +4,13 @@
 
 | Version | Support |
 |---|---|
-| 18.x | Release candidate; support begins after public release verification |
-| 17.x | Current stable security support |
+| 18.x | Current stable security support |
+| 17.x | Critical security fixes only |
 | 16.x | Critical security fixes only |
 | < 16 | End of life |
 
-v18.0.0 "Haven" is under development and is not a supported release until its
-release gates, tag, and public artifacts have been independently verified.
+v18.0.0 "Haven" is the current supported release. Its release gates, exact tag,
+public artifacts, and Fedora 44 COPR installation were independently verified.
 
 ## Reporting a Vulnerability
 
@@ -68,9 +68,9 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
 
 The repository requires unit and integration tests, architecture and
 trust-boundary checks, lint, type checking, Bandit, dependency audit, CodeQL,
-package builds, and SBOM generation as release gates. The Haven candidate has
-passed the local gates. Canonical CodeQL and public artifact readback remain
-pending; a green local suite alone is not public release evidence.
+package builds, and SBOM generation as release gates. Haven passed the local
+gates, canonical CodeQL, exact-commit artifact readback, and a clean Fedora 44
+COPR installation. A green local suite alone is not public release evidence.
 
 ## Scope
 
