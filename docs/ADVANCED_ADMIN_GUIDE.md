@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 17.0.0 "Assurance"
+> Version 18.0.0 "Haven"
 
 Operational runbook for power users and Fedora administrators.
 
@@ -22,10 +22,11 @@ policy-visible routes and settings; `Ctrl+Shift+K` uses the same search model
 filtered to actions.
 
 The base package uses logical core/specialist isolation. It does not ship a
-physical `-extras` RPM. Core startup registers data-only plugin specifications
-without importing specialist UI modules, and page instances are created on
-demand. CLI, API, daemon, IPC, and stable route contracts remain independent of
-the selected GUI mode.
+physical `-extras` RPM. Core startup registers application-owned, data-only
+provider specifications without importing specialist UI modules, and page
+instances are created on demand. External Python plugin discovery and execution
+are retired. CLI, API, daemon, IPC, and stable route contracts remain
+independent of the selected GUI mode.
 
 Platform behavior:
 
@@ -48,10 +49,10 @@ pkexec true
 ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 ```
 
-Action Center remains the only GUI that owns the verified maintenance
+Action Center is the only GUI that owns the verified maintenance
 plan/run/verify lifecycle. Home and global search may navigate or preselect,
-but cannot plan or execute. The catalog remains limited to `dnf-clean-all`,
-`restart-failed-service`, and `fstrim-all`.
+but cannot execute. The catalog contains 56 classified first-party definitions;
+unsupported host operations are explicit `manual_only` plans.
 
 Operational invariants:
 
@@ -128,7 +129,7 @@ These surfaces reuse the v14 state, archive, and recovery contracts.
 ## 5) Advanced and Specialist Operations
 
 Enable Advanced mode only when specialist routes are needed. Performance
-Tuning, Gaming, Development, Community, Loofi Link, AI Lab, Agents, Automation,
+Tuning, Gaming, Development, Local Profiles, Loofi Link, AI Lab, Agents, Automation,
 State Teleport, and Virtualization belong to the logical specialist component.
 Profiles and Extensions are also Advanced-only routes.
 
@@ -136,6 +137,11 @@ If a specialist component is unavailable, the route remains fail-closed with
 an explanation. The six Standard destinations and five core workflows must
 remain usable. Do not work around an unavailable result by importing a missing
 UI module manually.
+
+Local profiles are explicit, data-only JSON. The Legacy Extensions view can
+inventory and export existing third-party directories, but it never imports or
+deletes their code. There is no supported Marketplace installation or external
+plugin execution path.
 
 ---
 
@@ -184,10 +190,12 @@ loofi-fedora-tweaks --daemon
 loofi-fedora-tweaks --web
 ```
 
-The daemon and API retain their v14 package names and exact base-package EVR
-dependency. Keep the API on trusted interfaces, preserve authentication, and
-monitor logs. The daemon remains bounded by its existing D-Bus and read-only
-collection contracts; GUI mode selection does not broaden either surface.
+The daemon and API retain their package names and exact base-package EVR
+dependency. The API accepts loopback bindings only and is read-only apart from
+rate-limited token issuance. Manage the local API credential with `api-key
+status`, `api-key rotate`, and `api-key revoke`. The daemon may create plans but
+cannot confirm or execute host changes; GUI mode selection does not broaden
+either surface.
 
 ---
 
@@ -224,9 +232,10 @@ journalctl --user --since "2 hours ago"
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-The v15 upgrade preserves v14 settings, navigation migration inputs, favorites,
-stable routes, Action Center plans/runs/history, state schemas, and
-observability data. RPM scriptlets do not own or migrate per-user XDG state.
+Haven preserves settings, navigation migration inputs, favorites, stable routes,
+and observability data. Writable Action Center v1/v2 state migrates atomically
+to schema v3; unknown future schemas remain read-only. RPM scriptlets do not
+own or migrate per-user XDG state.
 
 ---
 

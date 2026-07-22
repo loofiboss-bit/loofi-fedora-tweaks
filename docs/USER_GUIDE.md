@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 17.0.0 "Assurance" — verified core workflows and preserved responsive navigation
+> Version 18.0.0 "Haven" release candidate — one local trust boundary for host changes
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
@@ -75,9 +75,9 @@ Standard mode always presents these six destinations:
 
 Enable the optional **Advanced** destination from **Settings → Advanced Tools**.
 It exposes specialist routes such as Performance Tuning, Gaming, Development,
-Community, Loofi Link, AI Lab, Agents, Automation, State Teleport, and
-Virtualization. Profiles and Extensions also remain Advanced-only. Switching
-mode changes discovery, not safety or confirmation requirements.
+Local Profiles, Loofi Link, AI Lab, Agents, Automation, State Teleport, and
+Virtualization. Profiles and desktop Extensions also remain Advanced-only.
+Switching mode changes discovery, not safety or confirmation requirements.
 
 Primary shortcuts:
 
@@ -92,8 +92,6 @@ It cannot bypass Standard/Advanced mode, unavailable components, Fedora variant
 constraints, required capabilities, or Action Center safety. An Action Center
 result may navigate and preselect only; it cannot plan, run, or verify.
 
-![Home](images/user-guide/home-dashboard.png)
-
 ---
 
 ## 4) Five Core Workflows
@@ -103,8 +101,6 @@ result may navigate and preselect only; it cannot plan, run, or verify.
 Open **Software & Updates → Updates**, review the available updates, and confirm
 the operation. Traditional Fedora uses DNF. Atomic Fedora follows the existing
 rpm-ostree-aware or manual guidance path.
-
-![Maintenance Updates](images/user-guide/maintenance-updates.png)
 
 ### Install an application
 
@@ -118,8 +114,6 @@ Open **System → Performance** and select **Analyze Slow System**. Loofi takes 
 bounded, read-only snapshot of CPU, memory, storage, I/O wait, processes, failed
 services, and recurring health signals. It explains the strongest signal before
 offering a safe next route.
-
-![System Monitor](images/user-guide/system-monitor.png)
 
 ### Free disk space
 
@@ -139,13 +133,12 @@ Doctor and archive services.
 
 ## 5) Action Center Safety
 
-**Software & Updates → Action Center** remains the only plan/run/verify GUI.
-The v16 shell changes its placement and presentation, not its domain contract.
+**Software & Updates → Action Center** is the only plan/run/verify GUI.
 
-- The executable catalog is deny-by-default and contains eleven bounded actions:
-  system, Flatpak and firmware updates; application install/remove; journal
-  vacuum; package autoremove; recovery-point creation; cache cleanup; failed
-  service restart; and filesystem trim.
+- The catalog contains 56 first-party definitions. Each definition declares its
+  operation class, Fedora variants, reboot policy, affected resources,
+  parameters, preflight, confirmation, verification, and recovery policy.
+- Unsupported host operations produce non-executable `manual_only` plans.
 - Plans expire and are re-preflighted before execution.
 - Execution requires explicit confirmation and, when applicable, explicit
   acknowledgement that rollback is unavailable.
@@ -155,6 +148,8 @@ The v16 shell changes its placement and presentation, not its domain contract.
   automatically.
 - Home, global search, deep links, CLI listing, API status, and recommendations
   do not silently execute actions.
+- Daemon, scheduler, automation, and agent paths may create plans but cannot
+  confirm or execute them.
 
 Read-only inspection:
 
@@ -168,17 +163,25 @@ See `docs/VERIFIED_MAINTENANCE.md` for the complete lifecycle.
 
 ---
 
-## 6) Core and Specialist Components
+## 6) Built-in Providers and Local Profiles
 
-v16 preserves logical component isolation and does not add a physical `-extras`
-RPM. The base RPM still ships the built-in source tree. Core startup does not import
-specialist UI modules, and specialist pages load on demand after route
-activation.
+The base RPM ships the reviewed built-in source tree. Core startup does not
+import specialist UI modules, and specialist pages load after route activation.
+External Python plugin discovery and execution are retired.
 
 If a specialist component is missing or incomplete, policy marks its routes
 unavailable while the six Standard destinations, Home, the five core workflows,
 and Action Center remain usable. The API and daemon keep their existing
 subpackage boundaries and exact base-package dependency.
+
+**Advanced → Local Profiles** accepts explicit local JSON files with a closed,
+data-only schema. Imported content is validated before it can become a
+reviewable plan. The same area inventories legacy extension directories for
+export but never imports or deletes their Python code.
+
+The hidden `plugin-marketplace` CLI compatibility command always returns a
+machine-readable `feature_retired` response. Use built-in features or local
+profiles instead.
 
 ---
 
@@ -252,8 +255,9 @@ loofi --json readiness --target 44
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-v16 preserves settings, favorites, stable route IDs, Action Center plans,
-runs and history, state schemas, and observability data.
+Haven preserves settings, favorites, stable route IDs, observability data, and
+readable Action Center v1/v2 state. Writable Action Center state migrates
+atomically to schema v3; unknown future schemas remain read-only.
 
 ---
 
@@ -275,7 +279,9 @@ Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
 
 ---
 
-## 10) Screenshot Catalog
+## 10) Release Scope
 
-Current user-guide screenshots are tracked in
-`docs/images/user-guide/README.md`.
+Fedora 44 is the supported release target. Fedora 45 remains preview-only.
+GitHub and COPR publication are not complete until the canonical release commit,
+artifacts, checksums, SBOM/provenance, and Fedora 44 repository install are
+independently read back.

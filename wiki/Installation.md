@@ -8,7 +8,7 @@ This guide covers system requirements and installation methods for Loofi Fedora 
 
 ### Base Requirements
 
-- **Operating System**: Fedora 43 or later (Traditional Workstation or Atomic variants like Silverblue/Kinoite)
+- **Operating System**: Fedora 44 (Traditional or Atomic variants such as Silverblue/Kinoite); Fedora 45 is preview-only
 - **Python**: 3.12 or later
 - **PyQt6**: GUI framework (installable via `dnf` or `pip`)
 - **Polkit**: For privilege escalation (`pkexec`)
@@ -228,5 +228,5 @@ If no agent is running, install and start one for your desktop environment.
 ## Next Steps
 
 - [Getting Started](Getting-Started) — Learn the basics of GUI and CLI usage
-- [GUI Tabs Reference](GUI-Tabs-Reference) — Explore all 28 feature tabs
+- [GUI Tabs Reference](GUI-Tabs-Reference) — Explore the catalog-backed GUI routes
 - [CLI Reference](CLI-Reference) — Master command-line automation

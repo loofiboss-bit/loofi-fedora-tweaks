@@ -1,5 +1,23 @@
 # Changelog
 
+## v18.0.0 — Haven
+
+- Projected all 80 stable routes from one data-only product catalog while
+  preserving route IDs, aliases, favorites, and lazy loading.
+- Classified 56 first-party Action Center definitions by operation, Fedora
+  variant, reboot policy, and affected resources.
+- Routed GUI, CLI, daemon, automation, and agent host changes through Action
+  Center. Background actors may create plans but cannot confirm or execute them.
+- Added Action Center schema v3 with atomic v1/v2 migration and read-only
+  handling for unknown future schemas.
+- Retired public Marketplace distribution and external Python execution.
+  Existing third-party directories remain untouched and exportable; local
+  profiles remain data-only.
+- Added Secret Service storage with session-only fallback and tightened the
+  loopback-only Web API with token issuance limits, rotation, and revocation.
+- Passed the local suite with 6,796 tests, 68 skipped, and 86.24% coverage.
+  Public release evidence remains pending.
+
 ## v17.0.0 — Assurance
 
 - Added eight single-action definitions for independent Fedora, Flatpak, and
@@ -45,18 +63,18 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ---
 
-## Latest Release
+## Current Candidate
 
-### v17.0.0 "Assurance" (2026-07-20)
+### v18.0.0 "Haven" (2026-07-22)
 
-**Verified core workflows** with preview-first plans, explicit confirmation,
-action-specific readback, reboot-aware completion, and a read-only Web API.
+Haven has passed local regression, trust-boundary, performance, security, and
+package checks. Meaningful Home measured 142.042 ms median and 75,408 KiB
+median RSS with one built-in provider and no subprocess probes, active timers,
+or QThreads.
 
-**Release evidence**: 7,683 tests passed with 86.23% coverage before the final
-version bump. GitHub assets
-include Fedora 44 RPMs, Flatpak, sdist, SHA-256 checksums, CycloneDX SBOM, and
-in-toto/SLSA provenance. Exact public pipeline and COPR identifiers are recorded
-in the repository release-readiness report.
+Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`. Canonical
+CodeQL, the Haven tag, GitHub assets, and COPR publication must be completed and
+read back before Haven is described as a public release.
 
 ---
 

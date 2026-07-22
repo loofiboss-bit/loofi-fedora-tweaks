@@ -34,7 +34,7 @@ Runs on every **push** and **pull request**.
    ↓
 4. Security Scan (bandit)
    ↓
-5. Packaging (build RPM in Fedora 43 container)
+5. Packaging (build RPM in Fedora 44 container)
 ```
 
 ### Jobs
@@ -97,7 +97,7 @@ Runs on every **push** and **pull request**.
     bash scripts/build_rpm.sh
 ```
 
-Runs in **Fedora 43 container** to ensure package builds correctly.
+Runs in a **Fedora 44 container** to ensure package builds correctly.
 
 ---
 
@@ -120,7 +120,7 @@ Parallel Gates:
   - Security
   - Docs Gate
   ↓
-Build (RPM in Fedora 43 container)
+Build (RPM in Fedora 44 container)
   ↓
 Auto Tag (create vX.Y.Z tag if missing)
   ↓
@@ -153,7 +153,7 @@ All must pass before proceeding to build.
 
 #### 3. Build
 
-Builds RPM package in Fedora 43 container:
+Builds the RPM package in a Fedora 44 container:
 
 ```yaml
 - name: Build RPM

@@ -414,41 +414,23 @@ loofi-fedora-tweaks
 
 ---
 
-## Plugin Issues
+## Legacy Extensions and Local Profiles
 
-### 1. Plugin Won't Load
+### External plugin does not load
 
-**Solution**:
+This is expected in Haven. External Python discovery and execution are
+retired. Loofi does not import, update, or delete existing extension files.
 
 ```bash
-# Check plugin structure
-ls -la plugins/my-plugin/
-
-# Required files:
-# - plugin.json
-# - plugin.py
-
-# Check plugin logs
-tail -n 50 ~/.local/share/loofi-fedora-tweaks/plugins.log
-
-# Test plugin manually
+# Inventory legacy extension directories without executing their code
 loofi-fedora-tweaks --cli plugins list
+
+# Stable compatibility result: feature_retired
+loofi-fedora-tweaks --cli --json plugin-marketplace search
 ```
 
-### 2. Marketplace Search Fails
-
-**Solution**:
-
-```bash
-# Check network connectivity
-curl -I https://plugins.loofi.fedora-tweaks.example.com
-
-# Verify firewall allows HTTPS
-pkexec firewall-cmd --list-services | grep https
-
-# Clear plugin cache
-rm -rf ~/.cache/loofi-fedora-tweaks/plugins/
-```
+Use **Advanced -> Local Profiles -> Legacy Extensions** to inspect or export
+legacy files. Import settings through an explicit, data-only local JSON profile.
 
 ---
 

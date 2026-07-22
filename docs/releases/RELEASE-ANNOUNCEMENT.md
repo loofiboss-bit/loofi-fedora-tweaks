@@ -1,28 +1,27 @@
-# Loofi Fedora Tweaks v17.0.0 "Assurance" Release Announcement
+# Loofi Fedora Tweaks v18.0.0 "Haven" Release Announcement
 
 ## TL;DR
 
-Assurance makes the five canonical system-changing workflows preview-first,
-explicitly confirmed, audited, and verified. Fedora, Flatpak, firmware,
-application, cleanup, and recovery-point operations now converge on Action
-Center without adding automatic retry, reboot, rollback, or remote apply.
+Haven makes Action Center the single local trust boundary for host changes.
+The GUI, CLI, daemon, automation, and agent entry points all produce the same
+reviewable plans, and unattended paths cannot confirm or execute them.
 
-The release is live on GitHub and the Fedora 44 COPR repository. Checksums,
-CycloneDX SBOM, in-toto/SLSA provenance, RPMs, Flatpak, and source distribution
-were read back and verified against the exact release commit.
+This announcement is prepared for publication. GitHub, COPR, checksum, SBOM,
+provenance, and exact-commit identifiers are added only after independent
+public readback succeeds.
 
 ## Highlights
 
-- Eleven deny-by-default Action Center definitions retain one action and one
-  command vector per plan.
-- Exact planned RPM identities, Flatpak refs/commits, firmware facts, cleanup
-  targets, and recovery-point evidence drive outcome verification.
-- Atomic Fedora and firmware operations persist safely across required reboots.
-- Schema-v2 history migrates v1 stores atomically and keeps future schemas
-  read-only.
-- The Web API route table is read-only except for token issuance.
-- The v16 shell, routes, state, CLI, daemon, IPC, and original Action Center
-  definitions remain compatible.
+- 80 stable routes project from one reviewed product catalog.
+- 56 first-party Action Center definitions declare capability, preview,
+  confirmation, verification, and recovery policy.
+- Action plan and run state uses schema v3 with atomic migration and
+  last-known-good recovery.
+- The public Marketplace and executable third-party Python extensions are
+  retired; local profiles are data-only.
+- Persistent secrets use Secret Service without a plaintext fallback.
+- The optional API is loopback-only and read-only apart from local token
+  lifecycle operations.
 
 ## Install or upgrade
 
@@ -40,8 +39,8 @@ pkexec dnf install loofi-fedora-tweaks-daemon
 
 ## Links
 
-- **GitHub release**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v17.0.0>
-- **Release notes**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v17.0.0.md>
+- **GitHub release**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v18.0.0>
+- **Release notes**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v18.0.0.md>
 - **COPR packages**: <https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/>
 - **Wiki**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/wiki>
 - **Issue tracker**: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>

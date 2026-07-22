@@ -14,6 +14,12 @@ from typing import Iterator
 ROOT = Path(__file__).resolve().parents[1]
 SRC = ROOT / "loofi-fedora-tweaks"
 OUT = ROOT / "docs" / "images" / "user-guide"
+WIKI_OUT = ROOT / "wiki" / "images"
+
+WIKI_FILENAMES = {
+    "home-dashboard.png": "hero-home.png",
+    "network-overview.png": "network-connections.png",
+}
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, str(SRC))
@@ -52,6 +58,12 @@ def _save_widget(widget, filename: str) -> None:
     if pixmap.isNull() or not pixmap.save(str(path), "PNG"):
         raise RuntimeError(f"failed to save {path}")
     print(f"captured {path.relative_to(ROOT)}")
+
+    WIKI_OUT.mkdir(parents=True, exist_ok=True)
+    wiki_path = WIKI_OUT / WIKI_FILENAMES.get(filename, filename)
+    if not pixmap.save(str(wiki_path), "PNG"):
+        raise RuntimeError(f"failed to save {wiki_path}")
+    print(f"captured {wiki_path.relative_to(ROOT)}")
 
 
 @contextmanager

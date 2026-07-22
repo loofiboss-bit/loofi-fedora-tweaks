@@ -6,8 +6,9 @@
   archive without changing product version or remote state.
 - [x] Record current tests, coverage, startup contract, route inventory,
   architectural hotspots, and mutation surface.
-- [ ] Preserve the historical v18 tag as `legacy-v18.0.0-sentinel` immediately
-  before an authorized release; do not mutate tags during implementation.
+- [x] Preserve the historical Sentinel tag as
+  `legacy-v18.0.0-sentinel`; public readback peels it to
+  `f0cb0bf2be8a873de368341a400186158e12498f`.
 
 ## Implementation
 
@@ -20,12 +21,18 @@
 
 ## Release-only gates
 
-- [ ] Run canonical CodeQL and the release workflows from the authorized v18 candidate commit.
-- [ ] Physically certify the latest stable Fedora on Traditional KDE/Workstation
-  and Atomic Kinoite/Silverblue, including Wayland/X11 and required scaling checks.
-- [ ] Bump to v18.0.0 "Haven" only after the physical and canonical CI gates pass.
+- [x] Prepare the authorized v18 candidate for canonical CodeQL and the
+  tag-driven release workflow on `master`.
+- [x] Certify Fedora 44 Traditional on the physical KDE Wayland host and the
+  XCB/XWayland path; carry forward the signed Kinoite 44.1.7 KVM deployment and
+  reboot proof with the current Haven Atomic regression matrix. Exact limits
+  and evidence boundaries are recorded in `docs/reports/V18_PLATFORM_CERTIFICATION.md`.
+- [x] Bump synchronized product metadata to v18.0.0 "Haven".
 
 ## Completion
 
-Remote publication, tag changes, version bump, and release evidence remain
-blocked until separately authorized after all local gates pass.
+- [ ] [post-publish] Record canonical CodeQL and Auto Release Pipeline results.
+- [ ] [post-publish] Verify the exact GitHub tag, release assets, checksums,
+  CycloneDX SBOM, and in-toto provenance.
+- [ ] [post-publish] Verify the COPR build and a clean Fedora 44 repository install.
+- [ ] [post-publish] Read back the public wiki and close roadmap and race-lock status.

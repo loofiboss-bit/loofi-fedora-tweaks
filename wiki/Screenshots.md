@@ -1,6 +1,8 @@
 # Screenshots
 
-Fresh UI screenshots for **v13.0.0 "Anchor"**, captured from the real PyQt app in July 2026.
+UI screenshots for the exact **v18.0.0 "Haven"** candidate, captured from the
+real PyQt application on 2026-07-22. The capture script also synchronized these
+wiki assets from the user-guide catalog.
 
 ## State & Recovery
 
@@ -34,11 +36,9 @@ Fresh UI screenshots for **v13.0.0 "Anchor"**, captured from the real PyQt app i
 | --- | --- |
 | ![Settings Appearance](images/settings-appearance.png) | ![AI Lab Models](images/ai-lab-models.png) |
 
-## Community
+## Local Profiles and Legacy Extensions
 
-| Community Presets | Community Marketplace |
-| --- | --- |
-| ![Community Presets](images/community-presets.png) | ![Community Marketplace](images/community-marketplace.png) |
+![Local Profiles and non-executing legacy extension inventory](images/community-legacy-extensions.png)
 
 ## Advanced Readiness
 

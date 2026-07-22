@@ -1,431 +1,131 @@
 # Security Model
 
-## Helm Action Center
-
-v14 permits mutation only for the audited first-party IDs `dnf-clean-all`,
-`restart-failed-service`, and `fstrim-all`. Every other recommendation or
-command remains manual-only. Plans are parameter-schema validated, digest
-bound, short-lived, and rechecked for system drift before execution. A
-cross-process advisory lease permits only one active mutation, and successful
-execution is not reported as success until the action-specific verifier passes.
-
-The authenticated Web API exposes read-only plan and run status. It does not
-add an Action Center mutation route, and support bundles exclude raw stdout,
-stderr, and secrets.
+Haven treats Action Center as the only execution boundary for supported host
+changes. GUI, CLI, daemon, automation, scheduler, and agent entry points use the
+same classified definitions and verification rules.
 
-Security architecture and privilege management in Loofi Fedora Tweaks.
-
----
+## Operation classes
+
+Every operation is one of:
 
-## Core Principles
-
-1. **pkexec-only**: All privileged operations use `pkexec` (Polkit), never `sudo`
-2. **Subprocess safety**: All subprocess calls have timeouts, no shell injection, no `shell=True`
-3. **Audit logging**: All privileged actions logged to structured JSONL audit trail
-4. **Parameter validation**: All inputs validated before execution
-5. **Minimal privileges**: Request only necessary permissions, scope operations narrowly
+| Class | Meaning |
+| --- | --- |
+| `host` | Changes the Fedora host and requires an Action Center plan plus explicit local confirmation |
+| `app_state` | Changes Loofi-owned state only |
+| `session` | Changes process- or session-scoped state |
+| `manual_only` | Loofi can explain or prepare the operation but cannot execute it |
 
----
+Unclassified mutation entry points fail the release gate. Background actors may
+create plans but cannot confirm or execute host changes.
+
+## Action Center lifecycle
 
-## Polkit Policies
+The 56 first-party definitions declare their Fedora variants, reboot policy,
+affected resources, closed parameters, preflight, preview, confirmation,
+verification, and recovery policy.
 
-### Purpose-Scoped Policy Files (v35.0+)
-
-Split into **7 granular policy files** for better security:
-
-| File | Purpose | Actions |
-|------|---------|---------|
-| `org.loofi.fedora-tweaks.package.policy` | Package management | Install, remove, update, clean cache |
-| `org.loofi.fedora-tweaks.firewall.policy` | Firewall configuration | Add/remove rules, zones, services |
-| `org.loofi.fedora-tweaks.network.policy` | Network settings | DNS, interfaces, VPN |
-| `org.loofi.fedora-tweaks.storage.policy` | Storage operations | Mount, unmount, disk management |
-| `org.loofi.fedora-tweaks.service-manage.policy` | Service control | Start, stop, restart, enable, disable services |
-| `org.loofi.fedora-tweaks.kernel.policy` | Kernel management | Boot config, kernel params, modules |
-| `org.loofi.fedora-tweaks.security.policy` | Security hardening | SELinux, AppArmor, auditing |
-
-### Policy Location
-
-**System-wide**: `/usr/share/polkit-1/actions/`
-
-Each policy file follows Polkit XML schema:
-
-```xml
-<?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE policyconfig PUBLIC
- "-//freedesktop//DTD PolicyKit Policy Configuration 1.0//EN"
- "http://www.freedesktop.org/standards/PolicyKit/1.0/policyconfig.dtd">
-<policyconfig>
-  <action id="org.loofi.fedora-tweaks.package.install">
-    <description>Install packages</description>
-    <message>Authentication is required to install packages</message>
-    <defaults>
-      <allow_any>auth_admin</allow_any>
-      <allow_inactive>auth_admin</allow_inactive>
-      <allow_active>auth_admin_keep</allow_active>
-    </defaults>
-  </action>
-</policyconfig>
-```
-
-### POLKIT_MAP
-
-The `POLKIT_MAP` in `utils/commands.py` maps operation types to action IDs:
-
-```python
-POLKIT_MAP = {
-    "package": "org.loofi.fedora-tweaks.package.install",
-    "firewall": "org.loofi.fedora-tweaks.firewall.modify",
-    "network": "org.loofi.fedora-tweaks.network.configure",
-    "storage": "org.loofi.fedora-tweaks.storage.manage",
-    "service": "org.loofi.fedora-tweaks.service-manage.control",
-    "kernel": "org.loofi.fedora-tweaks.kernel.modify",
-    "security": "org.loofi.fedora-tweaks.security.modify",
-}
-```
-
----
-
-## Subprocess Safety
-
-### Timeout Enforcement (v35.0+)
-
-**All subprocess calls MUST have timeouts**:
-
-```python
-# ✅ Correct
-subprocess.run(cmd, timeout=60, capture_output=True, text=True)
-
-# ❌ Wrong — missing timeout
-subprocess.run(cmd, capture_output=True, text=True)
-```
-
-**Category-specific defaults**:
-- Package operations: 600s (10 minutes)
-- Network operations: 30s
-- System info queries: 15s
-- Service control: 60s
-- File operations: 120s
-- Containers/VMs: 300s
-- Default: 60s
-
-### No Shell Injection
-
-**Never use `shell=True`**:
-
-```python
-# ✅ Correct — list of args
-subprocess.run(["pkexec", "dnf", "install", "-y", "firefox"], timeout=600)
-
-# ❌ Wrong — shell injection risk
-subprocess.run("pkexec dnf install -y " + package_name, shell=True, timeout=600)
-```
-
-**Never use `sh -c`** for privilege escalation:
-
-```python
-# ✅ Correct
-["pkexec", "systemctl", "restart", "sshd"]
-
-# ❌ Wrong — shell command string
-["pkexec", "sh", "-c", "systemctl restart sshd"]
-```
-
-### Command Validation
-
-All privileged commands go through `PrivilegedCommand` builder with validation:
-
-```python
-from utils.commands import PrivilegedCommand
-
-# Validated, safe command construction
-binary, args, desc = PrivilegedCommand.dnf("install", "firefox")
-subprocess.run([binary] + args, timeout=600)
-```
-
----
-
-## Audit Logging (v35.0+)
-
-### Structured Audit Trail
-
-All privileged actions logged to `~/.config/loofi-fedora-tweaks/audit.jsonl` in JSON Lines format.
-
-**Log entry structure**:
-
-```json
-{
-  "timestamp": "2026-02-14T23:45:12.123456",
-  "action": "package.install",
-  "params": {
-    "packages": ["firefox"],
-    "package_manager": "dnf"
-  },
-  "exit_code": 0,
-  "stderr_hash": "sha256:abc123...",
-  "dry_run": false
-}
-```
-
-### Features
-
-- **Auto-rotation**: 10 MB max size, 5 backup files
-- **Sensitive parameter redaction**: Passwords, tokens, keys automatically redacted
-- **stderr hashing**: SHA-256 hash of stderr output for privacy
-- **Dry-run logging**: Preview mode actions logged with `dry_run: true`
-
-### Audit Logger API
-
-```python
-from utils.audit import AuditLogger
-
-# Log privileged action
-AuditLogger().log(
-    action="package.install",
-    params={"packages": ["firefox"]},
-    exit_code=0
-)
-
-# Log validation failure
-AuditLogger().log_validation_failure(
-    action="firewall.add_port",
-    params={"port": "not-a-number"},
-    reason="Invalid port number"
-)
-
-# Retrieve recent entries
-recent = AuditLogger().get_recent(count=20)
-```
-
-### CLI Access
-
-```bash
-# View last 20 audit entries
-loofi-fedora-tweaks --cli audit-log --count 20
-
-# View all entries
-loofi-fedora-tweaks --cli audit-log --count 0
-
-# JSON output
-loofi-fedora-tweaks --cli --json audit-log --count 50
-```
-
----
-
-## Parameter Validation (v35.0+)
-
-### @validated_action Decorator
-
-All `PrivilegedCommand` builder methods use `@validated_action` decorator:
-
-```python
-@validated_action(
-    required=["action"],
-    types={"action": str},
-    choices={"action": ["install", "remove", "update"]},
-    paths=[]
-)
-def dnf(action: str, *packages: str) -> Tuple[str, List[str], str]:
-    # Validated before execution
-    pass
-```
-
-### Validation Features
-
-- **Type checking**: Ensure parameters are correct type
-- **Required parameters**: Fail if missing required params
-- **Path traversal detection**: Reject paths with `..` or absolute paths where relative expected
-- **Choices validation**: Ensure parameter value is in allowed set
-- **Audit logging**: All validation failures logged
-
-### ValidationError
-
-```python
-from utils.errors import ValidationError
-
-try:
-    PrivilegedCommand.dnf("invalid-action", "package")
-except ValidationError as e:
-    print(e.code)  # "VALIDATION_FAILED"
-    print(e.hint)  # "action must be one of: install, remove, update"
-```
-
----
-
-## Safety Guards
-
-### SafetyManager
-
-Prompts for snapshots before risky operations:
-
-```python
-from utils.safety import SafetyManager
-
-# Confirm action with optional snapshot
-SafetyManager.confirm_action(
-    action_name="delete_logs",
-    requires_snapshot=True
-)
-```
-
-**Features:**
-- Detects available snapshot tools (Timeshift, Snapper)
-- Prompts user to create snapshot before proceeding
-- Can be disabled per-action via "Don't ask again" checkbox
-
-### ConfirmActionDialog
-
-User confirmation dialog for dangerous operations:
-
-```python
-from ui.confirm_dialog import ConfirmActionDialog
-
-if ConfirmActionDialog.confirm(
-    parent=self,
-    title="Delete All Snapshots",
-    message="This action cannot be undone. All snapshots will be permanently deleted.",
-    risk_level="HIGH"
-):
-    # User confirmed, proceed
-```
-
-**Features:**
-- Risk badges: LOW (green), MEDIUM (yellow), HIGH (red)
-- Command preview section (collapsible)
-- Per-action "Don't ask again" option
-- Undo command display
-
-### HistoryManager
-
-Action logging with undo support:
-
-```python
-from utils.history import HistoryManager
-
-# Log action with undo command
-HistoryManager.log_change(
-    action="delete_snapshots",
-    description="Deleted 3 snapshots",
-    undo_commands=[
-        ("restore_snapshot", ["--id", "123"], "Restore snapshot 123")
-    ]
-)
-
-# Undo last action
-HistoryManager.undo_last()
-
-# Get recent history
-history = HistoryManager.get_history(limit=50)
-```
-
-**Features:**
-- Max 50 actions stored
-- Persistent storage in `~/.config/loofi-fedora-tweaks/history.json`
-- Status bar undo button in GUI
-
----
-
-## Risk Registry (v37.0+)
-
-Centralized risk assessment for all privileged actions.
-
-### RiskLevel Enum
-
-```python
-from utils.risk import RiskLevel
-
-class RiskLevel(Enum):
-    LOW = "low"        # Safe, reversible operations
-    MEDIUM = "medium"  # Caution needed, mostly reversible
-    HIGH = "high"      # Dangerous, irreversible operations
-```
-
-### RiskEntry
-
-```python
-from utils.risk import RiskEntry
-
-entry = RiskEntry(
-    action="delete_snapshots",
-    level=RiskLevel.HIGH,
-    description="Permanently delete system snapshots",
-    revert_instructions="Cannot be reverted. Create new snapshots."
-)
-```
-
-### RiskRegistry
-
-```python
-from utils.risk import RiskRegistry
-
-# Get risk level for action
-risk = RiskRegistry.get_risk("delete_snapshots")
-print(risk.level)  # RiskLevel.HIGH
-
-# List all high-risk actions
-high_risk = RiskRegistry.list_by_level(RiskLevel.HIGH)
-```
-
----
-
-## Dry-Run Mode (v35.0+)
-
-Preview commands without executing:
-
-```bash
-# CLI dry-run
-loofi-fedora-tweaks --cli --dry-run cleanup all
-
-# Output:
-# 🔍 [DRY-RUN] Would execute: pkexec dnf clean all
-#    Description: Cleaning DNF cache...
-# 🔍 [DRY-RUN] Would execute: pkexec journalctl --vacuum-time=7d
-#    Description: Cleaning journal logs...
-```
-
-**Features:**
-- Shows exact command that would run
-- Logs to audit trail with `dry_run: true`
-- Supports `--json` output
-- Works with all CLI commands
-
----
-
-## Best Practices
-
-### For Developers
-
-1. **Always unpack PrivilegedCommand tuples** before passing to subprocess
-2. **Never hardcode `dnf`** — use `SystemManager.get_package_manager()`
-3. **Add timeouts to ALL subprocess calls** — use category-specific defaults
-4. **Use @validated_action** for all privileged command builders
-5. **Log all privileged actions** via `AuditLogger`
-6. **Test both Traditional and Atomic Fedora** paths
-7. **Never use `shell=True` or `sh -c`** patterns
-
-### For Users
-
-1. **Review audit logs regularly**: `loofi-fedora-tweaks --cli audit-log`
-2. **Enable snapshot creation** before risky operations
-3. **Use dry-run mode** to preview commands: `--dry-run`
-4. **Keep polkit policies updated** when upgrading
-5. **Review plugin permissions** before installing from marketplace
-6. **Report security issues** to maintainers privately (see SECURITY.md)
-
----
-
-## Security Disclosure
-
-For security vulnerabilities, see [SECURITY.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/SECURITY.md):
-
-- **Supported versions**: v34.0.0+
-- **Response timeline**: 90 days
-- **Disclosure**: Private disclosure via GitHub Security Advisories
-
----
-
-## Next Steps
-
-- [Architecture](Architecture) — Understand PrivilegedCommand pattern
-- [Atomic Fedora Support](Atomic-Fedora-Support) — Package manager detection
-- [Plugin Development](Plugin-Development) — Plugin permissions model
-- [Troubleshooting](Troubleshooting) — Privilege escalation issues
+1. Preflight captures the current system facts.
+2. Planning validates parameters and creates a short-lived, digest-bound plan.
+3. Apply repeats preflight and requires explicit local confirmation.
+4. A cross-process lease permits one host mutation at a time.
+5. Verification reads the resulting state independently. Exit status zero is
+   not enough to mark a host change successful.
+6. Interrupted work remains recorded and never resumes, retries, rolls back, or
+   reboots automatically.
+
+Unsupported host operations use `manual_only` plans. Reboot-requiring work can
+pause at `awaiting_reboot`, but Loofi never triggers the reboot itself.
+
+## Privileged commands
+
+- Privileged commands use Polkit through `pkexec`, never `sudo`.
+- Commands are argument vectors and never use `shell=True` or `sh -c`.
+- Every subprocess call has an explicit timeout.
+- Parameters use closed schemas and validation before command construction.
+- Package operations select DNF or rpm-ostree through Fedora variant policy.
+- UI modules do not execute subprocesses or contain domain logic.
+
+Do not copy a rendered command from a plan into storage. Persisted commands are
+never authoritative; the reviewed definition regenerates them at preview and
+apply time.
+
+## State integrity
+
+Action Center plans and runs use schema v3. Writable v1 and v2 state migrates
+atomically with a last-known-good backup and readback. Unknown future schemas
+remain read-only.
+
+State backup and restore reject path traversal, duplicate entries, oversized
+data, unsupported schemas, and hash mismatches. Restore requires a generated
+plan and can roll back already changed domains if a later domain fails.
+Registered secret domains, raw logs, caches, and executable plugin code are not
+included in default archives.
+
+## External code and local profiles
+
+Only application-owned providers from the reviewed package are importable.
+Loofi does not discover or execute third-party Python extensions.
+
+Existing legacy extension directories remain user-owned. The Local Profiles
+view can inventory and export them but never loads or deletes their code. The
+public Marketplace, reviews, analytics, updater, dependency resolver, and hot
+reload are retired.
+
+Local profiles use a closed, data-only schema. Imports reject symlinks, unsafe
+paths, unknown fields, unsupported schemas, invalid values, and files larger
+than 1 MiB. Accepted content becomes a reviewable plan before host settings
+change.
+
+## Secrets
+
+Gist and JWT secrets use the desktop Secret Service through `keyring` when
+persistent storage is available. A legacy plaintext value is removed only after
+the persistent write is read back successfully.
+
+If Secret Service is unavailable, a new secret remains in memory for the
+current process. There is no plaintext file fallback. Other sensitive local
+configuration uses atomic writes with private file permissions.
+
+## Local Web API
+
+- The optional API accepts loopback hosts only. A non-loopback
+  `LOOFI_API_HOST` stops startup.
+- Authenticated endpoints expose status and inspection data. There is no remote
+  host-mutation endpoint.
+- Token issuance is the only mutating HTTP operation and is rate-limited.
+- API keys can be inspected, rotated, or revoked locally with `api-key` CLI
+  commands.
+
+Browser storage of an issued bearer token is scoped to the local Web UI. Treat
+the token as a credential and revoke it if the browser profile is shared or
+compromised.
+
+## Privacy and audit data
+
+Audit and support data redact credentials and token-like values. Support bundles
+exclude raw command stdout and stderr, external extension code, and secret
+domains. Paths, hostnames, email-like strings, and other identifying values are
+redacted by the shared export boundary.
+
+## Release gates
+
+A public release requires the full suite, coverage, lint, typing, architecture,
+state, statistics, documentation, Bandit, dependency, CodeQL, SBOM, RPM,
+Flatpak, and source-distribution checks. It also requires physical Fedora 44
+Traditional and Atomic validation and exact-commit publication readback.
+
+The Haven candidate passed local tests, Bandit, dependency checks, and package
+builds. Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`.
+Canonical CodeQL, the Haven tag, GitHub assets, and COPR readback remain
+pending.
+
+## Reporting a vulnerability
+
+Use a private
+[GitHub Security Advisory](https://github.com/loofiboss-bit/loofi-fedora-tweaks/security/advisories/new).
+Include the affected version, reproduction steps, impact, and any known
+mitigation. Do not open a public issue for an unpatched vulnerability.
+
+See the repository
+[security policy](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/SECURITY.md)
+for supported versions and scope.

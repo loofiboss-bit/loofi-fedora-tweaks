@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and recovery steps for v15.0.0 "Essentials".
+Common issues and recovery steps for v18.0.0 "Haven".
 
 ## 1) Quick Diagnostics
 
@@ -44,7 +44,7 @@ QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
 tail -n 200 ~/.local/share/loofi-fedora-tweaks/startup.log
 ```
 
-v15 loads built-in pages on demand. A failing specialist page should not stop
+Haven loads built-in pages on demand. A failing specialist page should not stop
 Home or the six Standard destinations from opening. Include the exact route and
 startup log when reporting an import failure.
 
@@ -65,7 +65,7 @@ Policy may keep a result unavailable when:
 - the route is incompatible with Traditional or Atomic Fedora;
 - a required host capability is absent.
 
-Do not bypass the unavailable state by importing a UI module directly. v15
+Do not bypass the unavailable state by importing a UI module directly. Haven
 ships logical core/specialist isolation in the base RPM; there is no physical
 `loofi-fedora-tweaks-extras` package.
 
@@ -126,8 +126,8 @@ Action Center is intentionally fail-closed. Common outcomes:
   back automatically.
 - **Verification failed:** treat the run as unverified even when the command
   exited successfully.
-- **Manual-only:** the recommendation is outside the three-action executable
-  catalog or is unavailable for this Fedora variant.
+- **Manual-only:** the definition does not permit execution on this Fedora
+  variant or is outside the supported local host-mutation boundary.
 
 Read-only inspection:
 
@@ -173,22 +173,32 @@ unavailable explanation and follow the documented rpm-ostree guidance.
 - **Restore rejected:** do not bypass validation. Check the plan ID, hashes,
   schema, duplicate paths, traversal checks, and size limits.
 
-v15 preserves v14 settings, favorites, routes, Action Center records, and state
-formats. Package installation does not migrate per-user XDG files.
+Haven preserves settings, favorites, routes, and readable Action Center v1/v2
+records. Writable Action Center state migrates atomically to schema v3; unknown
+future schemas remain read-only. Package installation does not migrate per-user
+XDG files.
 
 ---
 
-## 9) Plugin Marketplace Issues
+## 9) Retired Marketplace and Local Profiles
 
 ```bash
-loofi-fedora-tweaks --cli plugin-marketplace search --query monitor
-loofi-fedora-tweaks --cli plugin-marketplace info <plugin-id>
-loofi-fedora-tweaks --cli plugin-marketplace install <plugin-id> --accept-permissions
+loofi-fedora-tweaks --cli --json plugin-marketplace search
+loofi-fedora-tweaks --cli plugins list
 ```
 
-Marketplace routes require Advanced mode in the GUI. External plugin
-compatibility and permission checks remain separate from the built-in logical
-core/specialist component boundary.
+The first command returns exit status 2 with a stable schema-v3
+`feature_retired` result. This is expected: Haven has no public Marketplace or
+external Python execution path.
+
+Existing third-party files remain untouched. Open **Advanced → Local Profiles →
+Legacy Extensions** or run `plugins list` to inventory them without importing
+their code. Export anything you need before removing files manually.
+
+Use a reviewed built-in provider for application features. Use an explicit
+local JSON profile for data-only settings; invalid schemas, paths, values, and
+oversized imports are rejected. For help with migration, attach a support bundle
+to a GitHub issue without including the extension code itself.
 
 ---
 

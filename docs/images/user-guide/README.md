@@ -2,7 +2,7 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v17.0.0 "Assurance" on 2026-07-20; v16 UI geometry remains unchanged
+**Last verified**: v18.0.0 "Haven" exact candidate on 2026-07-22
 
 **Status**: Screenshot filenames remain stable for user docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
 
@@ -17,8 +17,7 @@ Canonical screenshot assets for user-facing docs.
 - `network-overview.png` -- Network tab overview
 - `security-privacy.png` -- Security & Privacy tab
 - `ai-lab-models.png` -- Advanced route > AI Lab models view
-- `community-presets.png` -- Advanced route > Community presets view
-- `community-marketplace.png` -- Advanced route > Community marketplace view
+- `community-legacy-extensions.png` -- Advanced > Local Profiles > Legacy Extensions
 - `settings-appearance.png` -- Settings > Appearance
 
 ## Referenced By
@@ -39,8 +38,9 @@ PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v8_user_guide_screenshots
 The capture script uses a temporary clean profile by default so onboarding,
 favorites, and local navigation-mode settings do not affect release images. It
 captures Standard routes first, then switches the same real application window
-to Advanced for specialist routes. Set `LOOFI_SCREENSHOT_REAL_HOME=1` only when
-intentionally capturing a local user profile.
+to Advanced for specialist routes. It also synchronizes the corresponding wiki
+assets. Set `LOOFI_SCREENSHOT_REAL_HOME=1` only when intentionally capturing a
+local user profile.
 
 For manual verification after regeneration:
 
@@ -65,8 +65,7 @@ For manual verification after regeneration:
 | `network-overview.png` | Network & Security > Network | Show connections view |
 | `security-privacy.png` | Network & Security > Security | Show security score |
 | `ai-lab-models.png` | Search/direct route > AI Lab | Show models list |
-| `community-presets.png` | Search/direct route > Community | Show presets tab |
-| `community-marketplace.png` | Search/direct route > Community | Show marketplace tab |
+| `community-legacy-extensions.png` | Advanced > Local Profiles > Legacy Extensions | Show local profiles and the non-executing legacy extension inventory |
 | `settings-appearance.png` | Settings > Appearance | Show appearance options |
 
 ### Additional screenshots to consider next

@@ -1,9 +1,10 @@
 # Verified Maintenance
 
-v17.0.0 "Assurance" extends the v14 verified-maintenance contract from three
-maintenance actions to the five canonical product workflows. Fedora 44 is the
-supported target; Fedora 45 remains preview/advisory. This document describes
-the released v17 contract and its supported manual boundaries.
+v18.0.0 "Haven" makes Action Center the trust boundary for supported host
+changes across GUI, CLI, daemon, automation, scheduler, and agent entry points.
+Its 56 first-party definitions declare operation class, Fedora variants, reboot
+policy, affected resources, preflight, confirmation, verification, and recovery
+policy. Fedora 44 is the supported target; Fedora 45 remains preview-only.
 
 ## Action Center workflow
 
@@ -60,19 +61,21 @@ plan, policy, run, and verification envelopes.
 | `autoremove-packages` | Exact preflight package list; Traditional only | Every planned package is absent and package health passes |
 | `create-recovery-point` | Timeshift or Snapper and printable description | A new listed snapshot contains the description |
 
-All other recommendations remain manual-only. Assurance does not provide fix-all,
+All other recommendations remain manual-only. Haven does not provide fix-all,
 scheduled repair, automatic rollback, automatic retry, remote API apply, or
 plugin/AI-provided executable actions.
 
 ## Recovery and support
 
 Plans expire after 30 minutes and are re-preflighted before execution. Each
-plan contains one action and one command vector. Only one
+plan contains one action and validated parameters; the reviewed definition
+regenerates the command, so persisted commands are never authoritative. Only one
 Action Center mutation can run across GUI and CLI processes. The read-only API
 can inspect plans and runs, and Support Bundle v10 exports redacted lifecycle
 evidence linked by run ID without raw command output or secrets.
 
-Schema-v1 plans and runs migrate atomically to v2 with a last-known-good backup
-and readback. Future schemas are never rewritten. Home and global search may show attention or action entry points, but activation
-only opens `maintenance:action-center`. They never create, apply, verify, retry,
-or resume a plan. Standard and Advanced mode use the same safety policy.
+Writable schema-v1 and schema-v2 plans and runs migrate atomically to schema v3
+with a last-known-good backup and readback. Unknown future schemas remain
+read-only. Home and global search may show attention or action entry points, but
+activation only opens `maintenance:action-center`. They never apply, verify,
+retry, or resume a plan. Standard and Advanced mode use the same safety policy.

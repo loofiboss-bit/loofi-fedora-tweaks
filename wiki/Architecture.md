@@ -10,7 +10,7 @@ Technical architecture and design patterns for Loofi Fedora Tweaks.
 loofi-fedora-tweaks/          # Application root (on PYTHONPATH)
 ├── main.py                   # Entry point — GUI (default), CLI (--cli), Daemon (--daemon)
 ├── version.py                # __version__, __version_codename__, __app_name__
-├── ui/                       # PyQt6 widgets — 28 feature tabs + base class
+├── ui/                       # PyQt6 widgets projected from the product catalog
 │   ├── base_tab.py           # BaseTab ABC — shared CommandRunner wiring, output area
 │   ├── *_tab.py              # Feature tabs (inherit BaseTab for command tabs)
 │   ├── main_window.py        # MainWindow with sidebar + lazy-loaded tab stack

@@ -174,7 +174,7 @@ Example JSON output:
   "version": "40.0.0",
   "codename": "Foundation",
   "python_version": "3.12.1",
-  "os": "Fedora 43",
+  "os": "Fedora 44",
   "package_manager": "dnf"
 }
 ```

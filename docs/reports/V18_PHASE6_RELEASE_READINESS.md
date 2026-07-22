@@ -1,8 +1,11 @@
 # v18 Phase 6 Local Release Readiness
 
 Date: 2026-07-22  
-Candidate state: uncommitted Haven implementation on `master`, based on `e7c7c07`  
-Release decision: **LOCAL PASS / PUBLIC RELEASE BLOCKED**
+Candidate state: committed Haven implementation on `v18-haven`, based on
+`6630c92` with release metadata and documentation prepared for the final
+release commit
+
+Release decision: **LOCAL PASS / AUTHORIZED FOR PUBLICATION**
 
 ## Implemented release boundary
 
@@ -70,27 +73,28 @@ QThreads.
 
 ## Package evidence
 
-Fresh isolated builds passed for RPM, source distribution, and Flatpak. Each
-artifact was opened without installation and passed an import smoke that
-verified all 80 routes, the Action Center catalog, absence of the retired hot
-reload API, and fail-closed external plugin loading.
+Fresh isolated builds passed for RPM, source distribution, and Flatpak. The
+RPM `%check` import smoke and AppStream validation passed. Direct artifact
+inspection confirmed `18.0.0` / `Haven` in the source archive, RPM NEVRs of
+`1:18.0.0-1.fc44`, and Flatpak commit
+`96c8022d11bb8d9da6ff057aff439baed5401246c647cd47476e6f044efb46a4`
+with the same embedded version.
 
-The artifacts deliberately identify as v17.0.0. They prove that the current
-implementation packages successfully; they are not v18 release artifacts.
-The repository version and codename remain `17.0.0` / `Assurance` until every
-release-only gate passes and a version bump is explicitly authorized.
+## Publication-only gates
 
-## Remaining release blockers
-
-- Canonical CodeQL must run in GitHub Actions from the eventual candidate
+- Canonical CodeQL must run in GitHub Actions from the release
   commit. Local Bandit and dependency audit results do not replace it.
-- Fedora 44 must be physically verified on Traditional KDE/Workstation and
-  Atomic Kinoite/Silverblue. Required Wayland/X11, 860/1,180/1,400 DIP,
-  100-200% scaling, theme, keyboard, and focus checks remain physical evidence.
+- The current Fedora 44 KDE physical host passed a native Wayland smoke at
+  1920x1080 and 1.4x scale plus an XCB/XWayland smoke at requested 1,180 DIP.
+  The signed Kinoite 44 install and real rpm-ostree reboot/readback evidence is
+  carried forward from v17; a fresh v18 Atomic guest installation was not
+  repeated. See [V18_PLATFORM_CERTIFICATION.md](V18_PLATFORM_CERTIFICATION.md).
 - Fedora 45 remains preview-only until stable and independently certified.
-- Remote readback currently shows historical `v18.0.0` at `f0cb0bf`; the
-  required `legacy-v18.0.0-sentinel` tag is absent. Preserving that history,
-  deleting the old name after readback, committing, pushing, version bumping,
-  tagging, and publishing all require separate authorization.
+- Remote readback confirms that historical Sentinel is preserved as
+  `legacy-v18.0.0-sentinel`. Creating the canonical Haven tag and publishing
+  GitHub and COPR artifacts remain pending.
 
-No commit, push, tag mutation, version bump, or public release was performed.
+The complete implementation is committed and pushed on `v18-haven`. The old
+Sentinel tag was preserved under its explicit legacy name before the obsolete
+`v18.0.0` tag was removed. The canonical Haven tag must be created only by the
+release workflow from the exact release commit.

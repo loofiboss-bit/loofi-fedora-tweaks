@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v17.0.0 "Assurance"
+# Loofi Fedora Tweaks v18.0.0 "Haven"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,36 +12,38 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v17.0.0">
-    <img src="https://img.shields.io/badge/Release-v17.0.0-blue?style=for-the-badge&logo=github" alt="Release v17.0.0"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v18.0.0">
+    <img src="https://img.shields.io/badge/Candidate-v18.0.0-blue?style=for-the-badge&logo=github" alt="v18.0.0 release candidate"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
-## What Assurance changes
+## What Haven changes
 
-v17 converges the five canonical maintenance workflows on preview-first,
-explicitly confirmed, audited, and outcome-verified Action Center plans.
+Haven closes the local trust boundary around host changes. The 80 stable routes
+and 56 first-party Action Center definitions now come from reviewed catalogs.
+Every definition states its operation class, Fedora variants, reboot policy,
+affected resources, preflight checks, confirmation, verification, and recovery
+policy.
 
-- Fedora, Flatpak, and firmware updates create independent, single-action plans
-  with exact preflight facts and action-specific readback verification.
-- Application install/remove, cleanup, and recovery-point creation use the same
-  plan, confirm, apply, verify, and history lifecycle.
-- Atomic Fedora and reboot-requiring firmware runs pause durably at
-  `awaiting_reboot` and verify the expected deployment after restart.
-- Action Center schema v2 preserves readable v1 history and migrates writable
-  stores atomically with a verified backup.
-- The authenticated Web API is read-only except for token issuance.
-- The v16 responsive shell, stable routes, Home, search, CLI, daemon, IPC, and
-  original three Action Center definitions remain compatible.
+- GUI, CLI, daemon, automation, and agent host mutations pass through Action
+  Center. Background actors may create plans but cannot confirm or execute them.
+- Action Center schema v3 stores operation and platform metadata. Writable v1
+  and v2 state migrates atomically; unknown future schemas remain read-only.
+- Unsupported host operations fail closed as `manual_only` plans.
+- The public Marketplace and executable third-party Python plugins are retired.
+  Existing extension files are inventoried for export but never imported or
+  deleted. Local profiles remain data-only and reviewable.
+- Gist and JWT secrets use Secret Service when persistent storage is available,
+  with session-only fallback. The optional Web API remains loopback-only and
+  read-only apart from rate-limited token issuance.
+- Built-in page providers remain lazy-loaded. The release benchmark measured
+  meaningful Home at 142.042 ms median and 75,408 KiB median RSS, with one
+  provider, zero subprocess probes, zero active timers, and zero QThreads.
 
-The recorded v17 release benchmark renders meaningful Home in 160.268 ms and
-uses 78,092 KiB RSS. It constructs one plugin and starts with no subprocess
-probes, active hidden-page timers, or worker threads.
-
-Full details: [v17 release notes](docs/releases/RELEASE-NOTES-v17.0.0.md).
+Full details: [v18 release notes](docs/releases/RELEASE-NOTES-v18.0.0.md).
 
 ## The six destinations
 
@@ -55,7 +57,7 @@ Full details: [v17 release notes](docs/releases/RELEASE-NOTES-v17.0.0.md).
 | Settings | Appearance and behavior settings, Standard/Advanced mode, Repair Loofi, and About |
 
 Advanced contains development, local AI, agents, automation, virtualization,
-gaming, community, device sharing, profiles, extensions, and workspace tools.
+gaming, device sharing, local profiles, desktop extensions, and workspace tools.
 These routes remain discoverable when policy and component availability allow;
 Advanced mode never weakens confirmation or privilege rules.
 
@@ -70,30 +72,6 @@ Advanced mode never weakens confirmation or privilege rules.
 The five canonical surfaces may create one exact Action Center plan and open it
 for review. They never apply it automatically; apply remains a separate,
 explicitly confirmed operation.
-
-## Screenshots
-
-<table>
-  <tr>
-    <td width="50%"><img src="docs/images/user-guide/home-dashboard.png" alt="Clarity Home with responsive six-destination sidebar"/></td>
-    <td width="50%"><img src="docs/images/user-guide/maintenance-updates.png" alt="Software and Updates maintenance workflow"/></td>
-  </tr>
-  <tr>
-    <td><strong>Canonical Home</strong></td>
-    <td><strong>Updates and maintenance</strong></td>
-  </tr>
-  <tr>
-    <td><img src="docs/images/user-guide/system-monitor.png" alt="System performance and processes"/></td>
-    <td><img src="docs/images/user-guide/settings-appearance.png" alt="Settings appearance page"/></td>
-  </tr>
-  <tr>
-    <td><strong>System diagnosis</strong></td>
-    <td><strong>Settings</strong></td>
-  </tr>
-</table>
-
-The complete, reproducible screenshot catalog is in
-[docs/images/user-guide/README.md](docs/images/user-guide/README.md).
 
 ## Install
 
@@ -161,9 +139,8 @@ The global `--json` option appears before the CLI command.
 
 ## Safety and compatibility
 
-- Action Center exposes the original three definitions plus eight Assurance
-  definitions for independent updates, application operations, cleanup, and
-  recovery-point creation.
+- Action Center exposes 56 classified first-party definitions. Unsupported host
+  operations are visible as non-executable `manual_only` plans.
 - Plans expire and are re-preflighted. Exit code zero is not success until the
   verifier passes. Interrupted runs never resume automatically.
 - Commands are list-based, allowlisted, timeout-bounded, audit-linked, and never
@@ -171,8 +148,8 @@ The global `--json` option appears before the CLI command.
 - State schemas, atomic writes, backup/restore planning, redaction, routes,
   aliases, favorites, first-run sentinels, CLI JSON, API, daemon, and IPC remain
   compatible with v14.
-- Specialist tools are logically isolated but remain in the base RPM. Current
-  ownership and runtime overlap keep a physical extras RPM out of v17 scope.
+- Built-in specialist tools remain lazy-loaded in the base RPM. External Python
+  code is not an extension boundary.
 
 ## Development
 
@@ -205,9 +182,10 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v17.0.0 "Assurance"` is the current release for Fedora KDE 44. The canonical
-tag, GitHub release assets, checksums, SBOM/provenance, and Fedora 44 COPR build
-are produced from one exact release commit.
+`v18.0.0 "Haven"` is a locally verified release candidate for Fedora 44.
+Fedora 45 remains preview-only. The historical Sentinel tag is preserved as
+`legacy-v18.0.0-sentinel`. Canonical CodeQL, the Haven tag, GitHub assets, and
+COPR publication remain pending until their independent readback is recorded.
 
 ## License
 

@@ -4,6 +4,57 @@
 
 All notable changes to this project will be documented in this file.
 
+## [18.0.0] - 2026-07-22 "Haven"
+
+### Added
+
+- One data-only product catalog for all 80 stable routes and their plugin,
+  destination, section, visibility, compatibility, and risk projections.
+- Operation-class, Fedora-variant, reboot-policy, and affected-resource metadata
+  across 56 first-party Action Center definitions.
+- Action Center schema v3 with atomic v1/v2 migration, last-known-good backup,
+  and read-only handling for unknown future schemas.
+- Secret Service storage for Gist and JWT secrets, with session-only fallback
+  when persistent credential storage is unavailable.
+
+### Changed
+
+- Routed GUI, CLI, daemon, automation, and agent host mutations through the
+  Action Center lifecycle. Background actors may create plans but cannot
+  confirm or execute them.
+- Classified unsupported host operations as `manual_only` and kept verification
+  independent of process exit status.
+- Simplified Home, Action Center, Updates, Security, Upgrade, and Advanced
+  around the same review, run, and verify language.
+- Kept built-in page providers lazy-loaded while preserving all route IDs and
+  aliases.
+
+### Removed
+
+- Retired public Marketplace distribution, reviews, analytics, hot reload,
+  dependency resolution, and executable third-party Python plugins.
+- Removed external extension discovery from active and packaged code. Existing
+  third-party files remain untouched and can be inventoried or exported.
+
+### Security
+
+- Restricted the Web API to loopback binding and read-only operations apart
+  from rate-limited token issuance, rotation, and revocation.
+- Closed alternate host-mutation entry points and rejected unclassified
+  presentation mutations in the release gate.
+
+### Verification
+
+- Passed 6,796 tests with 68 skipped and 86.24% coverage, plus clean lint,
+  mypy, architecture, state, statistics, release-document, Bandit, dependency,
+  and package-manifest gates.
+- Measured meaningful Home at 142.042 ms median and 75,408 KiB median RSS with
+  one provider and no subprocess probes, active timers, or QThreads.
+- Built and inspected local RPM, source distribution, and Flatpak candidates.
+  Preserved the historical Sentinel tag as `legacy-v18.0.0-sentinel`.
+  Canonical CodeQL, the Haven tag, GitHub assets, and COPR publication remain
+  pending.
+
 ## [17.0.0] - 2026-07-20 "Assurance"
 
 ### Added

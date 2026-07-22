@@ -1,106 +1,82 @@
 # Loofi Fedora Tweaks Wiki
 
-Welcome to the official wiki for **Loofi Fedora Tweaks** — a modern Fedora control center for maintenance, diagnostics, security, performance, and automation.
+Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current Version**: v17.0.0 "Assurance" — Verified Core Workflows
-**Screenshots Refreshed**: July 2026
+**Candidate:** v18.0.0 "Haven"<br>
+**Supported target:** Fedora 44<br>
+**Preview target:** Fedora 45
 
-![Loofi Fedora Tweaks Dashboard](images/hero-home.png)
+## What Haven changes
 
-## At a Glance
+- **One product catalog:** 80 stable routes project from reviewed, data-only
+  metadata while retaining their existing IDs and aliases.
+- **One host-change boundary:** 56 first-party Action Center definitions state
+  their operation class, Fedora variants, reboot policy, affected resources,
+  preflight, confirmation, verification, and recovery policy.
+- **No unattended host changes:** daemon, scheduler, automation, and agent paths
+  may create plans but cannot confirm or execute them.
+- **Schema v3:** writable Action Center v1/v2 state migrates atomically; unknown
+  future schemas remain read-only.
+- **Local profiles:** explicit JSON profiles remain data-only and become
+  reviewable plans before host settings change.
+- **No executable third-party plugins:** the public Marketplace and external
+  Python loading are retired. Existing extension files remain untouched and can
+  be inventoried or exported.
+- **Local secrets:** Gist and JWT secrets use Secret Service when available,
+  with session-only fallback. The optional Web API accepts loopback bindings
+  only.
 
-- **Focused navigation**: Standard mode has six destinations: Home, Software & Updates, System, Network & Security, Desktop, and Settings.
-- **Responsive sections**: Full-label section navigation reflows for smaller windows and larger font scales instead of clipping.
-- **Shared interface**: Standard and Advanced pages use the same page scaffold, cards, notices, actions, states, and focus treatment.
-- **One Home**: Saved health, state, update, backup, history, and Action Center signals are summarized without probing or mutating the host at startup.
-- **One search surface**: `Ctrl+K` finds routes, settings, and safe action entry points while respecting availability and Standard/Advanced policy.
-- **Advanced tools on demand**: AI Lab, Agents, Automation, Community, Teleport, Virtualization, Gaming, Performance, Profiles, Extensions, and Loofi Link remain available through the optional Advanced destination.
-- **Safe actions**: Privileged operations use `pkexec`; command preview and execution share the same allowlist, timeout, action metadata, and command-vector checks.
-- **State & Recovery**: Read-only State Doctor, privacy-safe backup, plan-before-apply restore, and collector status live in Settings.
-- **Verified maintenance**: Five canonical workflows create expiring, single-action plans, recheck exact preflight facts before apply, serialize mutations, and verify outcomes. Reboot-requiring runs resume verification without auto-retrying or auto-rebooting.
-- **Read-only API**: Authenticated status, plan, run, profile, observability, and export reads are available; token issuance is the only mutating HTTP method.
-- **First-Class Atomic Support**: Dedicated `rpm-ostree` diagnostics and upgrade checks for Silverblue/Kinoite.
-- 4 run modes: GUI, CLI (`--json`), daemon scheduler, and Web API.
-- Privileged actions through `pkexec` (never `sudo`).
+## Navigation
 
-## Start Here
+Standard mode has six destinations:
 
-- [Installation](Installation)
-- [Getting Started](Getting-Started)
-- [GUI Tabs Reference](GUI-Tabs-Reference)
-- [CLI Reference](CLI-Reference)
-- [Screenshots](Screenshots)
+1. **Home** for current state, attention items, and common tasks.
+2. **Software & Updates** for applications, repositories, updates, cleanup,
+   Fedora upgrades, and Action Center.
+3. **System** for system details, performance, processes, hardware, storage,
+   diagnostics, health history, and recovery points.
+4. **Network & Security** for connections, DNS, privacy, firewall, exposure,
+   and backups.
+5. **Desktop** for appearance, displays, and window behavior.
+6. **Settings** for application behavior, Advanced mode, Repair Loofi, and
+   About.
 
-## Feature Preview
+Built-in specialist providers load only when opened through Advanced mode,
+search, favorites, or a stable deep link. Advanced mode changes discovery, not
+confirmation or privilege policy.
 
-### Core Workflows
-
-| System Monitor | Maintenance Updates |
-| --- | --- |
-| ![System Monitor](images/system-monitor.png) | ![Maintenance Updates](images/maintenance-updates.png) |
-
-| Release Readiness | Security and Privacy |
-| --- | --- |
-| ![Release Readiness](images/release-readiness.png) | ![Security and Privacy](images/security-privacy.png) |
-
-| Upgrade Assistant | Network Connections |
-| --- | --- |
-| ![Upgrade Assistant](images/upgrade-assistant.png) | ![Network Connections](images/network-connections.png) |
-
-### Advanced Workflows
-
-| Settings Appearance | AI Lab Models |
-| --- | --- |
-| ![Settings Appearance](images/settings-appearance.png) | ![AI Lab Models](images/ai-lab-models.png) |
-
-| Community Presets | Community Marketplace |
-| --- | --- |
-| ![Community Presets](images/community-presets.png) | ![Community Marketplace](images/community-marketplace.png) |
-
-## Wiki Pages
-
-### Getting Started
+## Start here
 
 - [Installation](Installation)
 - [Getting Started](Getting-Started)
-- [FAQ](FAQ)
-
-### Features and Usage
-
 - [GUI Tabs Reference](GUI-Tabs-Reference)
 - [CLI Reference](CLI-Reference)
 - [Configuration](Configuration)
-- [Screenshots](Screenshots)
-
-### Architecture and Development
-
-- [Architecture](Architecture)
-- [Plugin Development](Plugin-Development)
 - [Security Model](Security-Model)
 - [Atomic Fedora Support](Atomic-Fedora-Support)
+- [Troubleshooting](Troubleshooting)
 
-### Contributing and Support
+## Development
 
+- [Architecture](Architecture)
+- [Built-in Provider Development](Plugin-Development)
 - [Contributing](Contributing)
 - [Testing](Testing)
 - [CI/CD Pipeline](CI-CD-Pipeline)
-- [Troubleshooting](Troubleshooting)
-
-### Reference
-
 - [Changelog](Changelog)
 
-## Quick Links
+## Release status
 
-- GitHub Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Latest Release: [v17.0.0](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v17.0.0)
-- Issues: [Issue Tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
-- Main README: [README.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/README.md)
-- Architecture Doc: [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)
+The Haven candidate passed the local suite with 6,796 tests, 68 skipped, and
+86.24% coverage. Meaningful Home measured 142.042 ms median and 75,408 KiB
+median RSS. Historical Sentinel is preserved as
+`legacy-v18.0.0-sentinel`. Canonical CodeQL, the Haven tag, GitHub assets, and
+COPR publication remain pending.
 
-## Support
+- Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
+- Candidate notes: [v18.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v18.0.0.md)
+- Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 
-1. Check [Troubleshooting](Troubleshooting).
-2. Search existing [GitHub Issues](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues).
-3. Run `loofi-fedora-tweaks --cli doctor` and `loofi-fedora-tweaks --cli support-bundle`.
-4. Open a new issue with Fedora version, desktop environment, repro steps, and logs.
+For support, run `loofi-fedora-tweaks --cli doctor` and
+`loofi-fedora-tweaks --cli support-bundle`, then include the Fedora variant,
+exact route or command, reproduction steps, and relevant output in the issue.

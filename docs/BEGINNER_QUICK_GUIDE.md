@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 17.0.0 "Assurance" — preview-first plans, explicit confirmation, and verified maintenance
+> Version 18.0.0 "Haven" — classified plans, local confirmation, and independent verification
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -39,8 +39,9 @@ Standard mode has exactly six destinations:
 
 Pages inside a destination load when you open them. Enable the optional
 **Advanced** destination from **Settings → Advanced Tools** when you need
-specialist development, AI, virtualization, automation, community, or sharing
-tools. Standard mode remains the default.
+specialist development, AI, virtualization, automation, local-profile, or
+sharing tools. Standard mode remains the default. Built-in pages load on demand;
+external Python plugins and the public Marketplace are retired.
 
 Useful shortcuts:
 
@@ -92,7 +93,7 @@ Open **System → Recovery Points** to create or inspect snapshots. Use
 ## 4) Verified Maintenance
 
 Open **Software & Updates → Action Center** for supported maintenance actions.
-Action Center keeps the v14 safety lifecycle:
+Action Center applies the same safety lifecycle to all supported host changes:
 
 1. Review the exact action and preflight evidence.
 2. Create an expiring plan.
@@ -101,10 +102,10 @@ Action Center keeps the v14 safety lifecycle:
 5. Run one bounded mutation at a time.
 6. Verify the outcome separately.
 
-The executable catalog remains deny-by-default and limited to supported DNF
-cache cleanup, an explicitly selected failed service, and supported filesystem
-trim. Other recommendations remain manual-only. Loofi never treats command exit
-code zero as verified success by itself.
+The 56 first-party definitions declare their operation class, Fedora variants,
+reboot policy, affected resources, confirmation, verification, and recovery
+policy. Unsupported host operations remain `manual_only`. Loofi never treats
+command exit code zero as verified success by itself.
 
 Read-only CLI examples:
 

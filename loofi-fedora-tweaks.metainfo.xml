@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="18.0.0" date="2026-07-22">
+      <description>
+        <p>v18.0.0 "Haven" - Local Trust Boundary</p>
+        <ul>
+          <li>Projected 80 stable routes and 56 first-party Action Center definitions from reviewed data catalogs</li>
+          <li>Routed GUI, CLI, daemon, automation, and agent host mutations through explicit local planning and confirmation</li>
+          <li>Added Action Center schema v3 metadata with atomic v1/v2 migration and future-schema read-only safety</li>
+          <li>Retired public Marketplace distribution and executable third-party Python plugins while preserving data-only local profiles</li>
+          <li>Added Secret Service credential storage, loopback-only API binding, and rate-limited token lifecycle controls</li>
+        </ul>
+      </description>
+    </release>
     <release version="17.0.0" date="2026-07-20">
       <description>
         <p>v17.0.0 "Assurance" - Verified Core Workflows</p>

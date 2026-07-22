@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        17.0.0
+Version:        18.0.0
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -162,6 +162,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Wed Jul 22 2026 Loofi <loofi@example.com> - 18.0.0-1
+- v18.0.0 "Haven" - Catalog-driven trust boundary, Action Center schema v3, external-code retirement, and Secret Service hardening
+
 * Mon Jul 20 2026 Loofi <loofi@example.com> - 17.0.0-1
 - v17.0.0 "Assurance" - Preview-first verified core workflows, reboot-aware Atomic lifecycle, and read-only Web API
 

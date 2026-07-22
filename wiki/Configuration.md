@@ -32,8 +32,11 @@ All user configuration is stored in:
 | `../share/loofi-fedora-tweaks/action_plans.json` | At most 50 Action Center plans |
 | `../share/loofi-fedora-tweaks/action_runs.jsonl` | At most 100 Action Center run records |
 
-Action plans persist validated parameters, policy facts, digest, preview, and
-expiry. Commands are regenerated from the audited action definition during
+Action Center plans and runs use schema v3. Writable v1/v2 state migrates
+atomically with a last-known-good backup, while unknown future schemas remain
+read-only. Plans persist validated parameters, operation class, Fedora variants,
+reboot policy, affected resources, policy facts, digest, preview, and expiry.
+Commands are regenerated from the audited action definition during
 both preview and apply. A persisted `running` record is marked `interrupted`
 after restart and is never retried automatically. A `verifying` record is
 preserved so the user can explicitly run verification after restart; it is
@@ -424,7 +427,6 @@ Application logs are stored in:
 | File | Purpose |
 |------|---------|
 | `startup.log` | Application startup log |
-| `plugins.log` | Plugin loading and execution log |
 
 **View logs:**
 
@@ -432,8 +434,6 @@ Application logs are stored in:
 # Startup log
 tail -f ~/.local/share/loofi-fedora-tweaks/startup.log
 
-# Plugin log
-tail -f ~/.local/share/loofi-fedora-tweaks/plugins.log
 ```
 
 **Rotate logs**: Logs auto-rotate at 5 MB (3 backups kept).
@@ -461,6 +461,19 @@ QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
 # Force Wayland
 QT_QPA_PLATFORM=wayland loofi-fedora-tweaks
 ```
+
+### `LOOFI_API_HOST` and `LOOFI_API_PORT`
+
+The optional Web API defaults to `127.0.0.1:8000`. The host must resolve to a
+loopback address; a non-loopback value stops startup.
+
+```bash
+LOOFI_API_HOST=127.0.0.1 LOOFI_API_PORT=8000 loofi-fedora-tweaks --web
+```
+
+Use `loofi-fedora-tweaks --cli api-key status`, `api-key rotate`, and
+`api-key revoke` to manage the local credential. Gist and JWT secrets use
+Secret Service when available and otherwise remain in memory for the process.
 
 ### `LOOFI_DEBUG`
 
@@ -500,4 +513,4 @@ cp ~/settings-backup.json ~/.config/loofi-fedora-tweaks/settings.json
 
 - [Getting Started](Getting-Started) — Configure after installation
 - [Troubleshooting](Troubleshooting) — Config file issues
-- [Contributing](Contributing) — Contribute themes or presets
+- [Contributing](Contributing) — Contribute built-in providers and documentation

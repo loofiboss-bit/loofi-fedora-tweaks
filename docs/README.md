@@ -12,8 +12,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `STATE_INTEGRITY.md` - State Doctor, backup, restore planning, schemas, locks, and archive threat model
 - `VERIFIED_MAINTENANCE.md` - Action Center planning, confirmation, verification, interruption, and recovery behavior
 - `CONTRIBUTING.md` - Development and contribution workflow
-- `images/user-guide/README.md` - Screenshot catalog and naming map
-- `images/user-guide/` - Current UI screenshots used across user docs
+- `images/user-guide/README.md` - Historical screenshot catalog and naming map
 
 ## Product and Release Docs
 
@@ -23,8 +22,10 @@ Central documentation map for Loofi Fedora Tweaks.
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Active v18.0.0 "Haven" implementation scope and release gates
+- `releases/RELEASE-NOTES-v18.0.0.md` - Haven changes, migration notes, local evidence, and pending publication gates
 - `reports/V18_PHASE0_BASELINE.md` - Haven authority, performance, route, state, module, and mutation baseline
 - `reports/V18_PHASE6_RELEASE_READINESS.md` - Haven local regression, security, performance, packaging, and remaining physical release gates
+- `reports/V18_PLATFORM_CERTIFICATION.md` - Current Fedora 44 Traditional host evidence and the carried-forward Atomic support boundary
 - `reports/V17_PHASE0_BASELINE.md` - v16 release baseline, scope lock, and mutation inventory
 - `reports/V17_PHASE1_CORE_API.md` - schema-v2 lifecycle, validation, migration, and read-only API
 - `reports/V17_PHASE2_UPDATES.md` - independent Fedora, Flatpak, and firmware verification
@@ -69,8 +70,8 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- Released user-facing guides are aligned to `v17.0.0 "Assurance"`. The
-  active Haven plan documents unreleased behavior. Historical v16/v17 reports
-  remain immutable release records.
-- Screenshot paths are standardized to `docs/images/user-guide/*.png`.
-- When replacing screenshots, keep filenames stable or update all guide references.
+- User-facing guides describe the locally verified `v18.0.0 "Haven"`
+  candidate. They must not describe GitHub or COPR publication as complete until
+  exact-commit readback is recorded.
+- Historical v16 and v17 reports and screenshots remain release evidence for
+  those versions. Do not present them as current Haven captures.

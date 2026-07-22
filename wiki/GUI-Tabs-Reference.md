@@ -1,7 +1,7 @@
 # GUI Tabs Reference
 
-Reference for Loofi Fedora Tweaks v17.0.0 "Assurance" navigation. The v16 route
-and responsive-shell structure remains stable.
+Reference for Loofi Fedora Tweaks v18.0.0 "Haven" navigation. All 80 route IDs
+and aliases remain stable and project from the product catalog.
 
 ---
 
@@ -56,7 +56,7 @@ The default sidebar intentionally stays small:
 ## Advanced Tools
 
 23. Live Overview (`dashboard_tab.py`) — Route-addressable system overview.
-24. Community (`community_tab.py`) — Presets, marketplace, plugins, and featured content.
+24. Local Profiles (`community_tab.py`) — Data-only local profiles, private backup, and read-only inventory/export of legacy extension directories. Retired Marketplace routes open compatibility explanations.
 25. Logs (`logs_tab.py`)
 26. AI Lab (`ai_enhanced_tab.py`)
 27. Agents (`agents_tab.py`)

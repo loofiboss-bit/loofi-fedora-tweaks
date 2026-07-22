@@ -11,11 +11,11 @@ Frequently Asked Questions about Loofi Fedora Tweaks.
 Loofi Fedora Tweaks is a comprehensive system management application for Fedora Linux. It combines maintenance, diagnostics, tuning, networking, security, and automation tools in one unified interface.
 
 **Key features:**
-- 28 feature tabs organized by activity
+- 80 stable routes projected from one reviewed product catalog
 - CLI mode with `--json` output for scripting
-- Daemon mode for background automation
-- Plugin marketplace for third-party extensions
-- Full support for both Traditional and Atomic Fedora
+- Daemon mode for bounded background inspection and plan creation
+- Action Center as the shared local trust boundary for host changes
+- Traditional and Atomic Fedora capability-aware behavior
 
 ---
 
@@ -23,10 +23,12 @@ Loofi Fedora Tweaks is a comprehensive system management application for Fedora 
 
 ### What Fedora versions are supported?
 
-**Supported**: Fedora 43 and later
+**Supported**: Fedora 44
+
+**Preview**: Fedora 45
 
 **Minimum requirements:**
-- Fedora 43+
+- Fedora 44
 - Python 3.12+
 - PyQt6
 
@@ -34,14 +36,16 @@ Older versions may work but are not officially supported or tested.
 
 ### Does it work on Fedora Silverblue/Kinoite (Atomic)?
 
-**Yes!** Loofi Fedora Tweaks fully supports Atomic Fedora variants:
+Loofi detects Atomic Fedora variants and uses `rpm-ostree` capability policy:
 
 - Fedora Silverblue (GNOME)
 - Fedora Kinoite (KDE)
 - Fedora Onyx (Budgie)
 - Fedora Sericea (Sway)
 
-The application automatically detects `rpm-ostree` and adapts all package operations accordingly.
+The current v18 certification carries forward the signed Fedora Kinoite 44
+install and real rpm-ostree reboot/readback evidence from v17. Unsupported
+operations are shown as manual-only instead of being guessed.
 
 See: [Atomic Fedora Support](Atomic-Fedora-Support)
 
@@ -128,42 +132,29 @@ Some desktop-specific features (like Extensions tab) adapt based on the detected
 
 ### Can I install plugins?
 
-**Yes!** Loofi Fedora Tweaks has a plugin system with marketplace support:
+No. Haven retires the public Marketplace and executable third-party Python
+plugins. Existing extension files remain untouched and are never imported.
 
-**Local plugins:**
 ```bash
-# List plugins
+# Inventory legacy extension directories without loading their code
 loofi-fedora-tweaks --cli plugins list
 
-# Enable/disable plugins
-loofi-fedora-tweaks --cli plugins enable my-plugin
-loofi-fedora-tweaks --cli plugins disable my-plugin
+# Stable compatibility response: exit status 2 and feature_retired
+loofi-fedora-tweaks --cli --json plugin-marketplace search
 ```
 
-**Marketplace plugins** (v27.0+):
-```bash
-# Search marketplace
-loofi-fedora-tweaks --cli plugin-marketplace search --query backup
-
-# Install plugin
-loofi-fedora-tweaks --cli plugin-marketplace install backup-manager --accept-permissions
-```
-
-See: [Plugin Development](Plugin-Development)
+Use **Advanced → Local Profiles → Legacy Extensions** to inventory or export
+existing files. Use an explicit local JSON profile for data-only settings.
 
 ### Can I develop my own plugins?
 
-**Yes!** The Plugin SDK makes it easy to extend Loofi Fedora Tweaks:
+There is no supported third-party plugin SDK. Main-repository maintainers can
+add application-owned providers to the canonical product catalog. Providers
+ship with the reviewed package, load on demand, and send host mutations through
+Action Center.
 
-**Quick start:**
-1. Create `plugins/my-plugin/plugin.json` (manifest)
-2. Create `plugins/my-plugin/plugin.py` (implementation)
-3. Implement `LoofiPlugin` abstract base class
-4. Provide GUI widget and/or CLI commands
-
-**Resources:**
-- [Plugin Development](Plugin-Development) — Complete SDK guide
-- Example: `plugins/hello_world/` (bundled example plugin)
+See [Built-in Provider Development](Plugin-Development) for the internal
+contract.
 
 ---
 
@@ -227,10 +218,10 @@ The first-run wizard will appear on next launch.
 
 ### How many tests does the project have?
 
-**Test suite metrics** (v40.0.0):
-- **174 test files**
-- **4349+ tests**
-- **74% line coverage**
+**v18 release-candidate gate:**
+- **6,796 passed**
+- **68 skipped**
+- **86.24% line coverage**
 - **0 failures**
 
 All tests run in CI on every PR.
@@ -265,7 +256,8 @@ See: [Testing](Testing)
 ✅ **No shell injection** — Never uses `shell=True` or command strings
 ✅ **Audit logging** — All privileged actions logged to `audit.jsonl`
 ✅ **Parameter validation** — All inputs validated before execution
-✅ **Plugin sandboxing** — Plugins run with restricted permissions
+✅ **No external Python execution** — Legacy extension directories are inventory-only
+✅ **Action Center trust boundary** — Host mutations require reviewed plans and local confirmation
 ✅ **Regular security scans** — Bandit, pip-audit, Trivy on every PR
 
 See: [Security Model](Security-Model)
@@ -279,9 +271,9 @@ See: [Security Model](Security-Model)
 - Logs stored in `~/.local/share/loofi-fedora-tweaks/`
 - Audit trail in `audit.jsonl` (local file)
 
-**No telemetry, no analytics, no external connections** except:
+**No telemetry and no analytics.** Network access is limited to explicit
+features such as:
 - Package manager operations (dnf/rpm-ostree repositories)
-- Plugin marketplace (optional, only when explicitly used)
 - Update checker (optional, can be disabled in Settings)
 
 ---
@@ -410,9 +402,9 @@ git pull origin master
 - Bug fixes accumulate
 
 **Versioning**: Semantic Versioning (v`MAJOR.MINOR.PATCH`)
-- **Major** (v40.0.0 → v41.0.0): Breaking changes, major features
-- **Minor** (v40.0.0 → v40.1.0): New features, backwards compatible
-- **Patch** (v40.0.0 → v40.0.1): Bug fixes only
+- **Major** (v18.0.0 → v19.0.0): Breaking changes or a major release scope
+- **Minor** (v18.0.0 → v18.1.0): Backward-compatible features
+- **Patch** (v18.0.0 → v18.0.1): Backward-compatible fixes
 
 See: [Changelog](Changelog) for version history
 

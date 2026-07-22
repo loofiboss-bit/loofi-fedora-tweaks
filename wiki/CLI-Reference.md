@@ -516,56 +516,28 @@ loofi bluetooth connect --address AA:BB:CC:DD:EE:FF
 
 ---
 
-## Plugins & Marketplace
+## Legacy Extensions and Retired Marketplace
 
 ### `plugins <action>`
-Manage installed plugins.
+Inspect quarantined legacy extension directories without importing their code.
 
-**Actions**: `list`, `enable`, `disable`, `info`, `update`
+**Actions**: `list`, `enable`, `disable`
 
 ```bash
-# List all plugins
+# List legacy extension paths without executing them
 loofi plugins list
 
-# Enable a plugin
-loofi plugins enable my-plugin
-
-# Disable a plugin
-loofi plugins disable my-plugin
-
-# Show plugin info
-loofi plugins info my-plugin
-
-# Check for plugin updates
-loofi plugins update
+# Both return exit status 2 and feature_retired
+loofi --json plugins enable my-plugin
+loofi --json plugins disable my-plugin
 ```
 
 ### `plugin-marketplace <action>`
-Plugin marketplace operations (added in v27.0.0).
-
-**Actions**: `search`, `info`, `install`, `uninstall`, `update`, `reviews`, `rating`
+The command spelling is hidden from help and retained only for compatibility.
+Every action returns exit status 2 and a schema-v3 `feature_retired` result.
 
 ```bash
-# Search for plugins
-loofi plugin-marketplace search --query backup
-
-# Get plugin details
-loofi plugin-marketplace info backup-manager
-
-# Install a plugin
-loofi plugin-marketplace install backup-manager --accept-permissions
-
-# Uninstall a plugin
-loofi plugin-marketplace uninstall backup-manager
-
-# Update all marketplace plugins
-loofi plugin-marketplace update
-
-# View reviews
-loofi plugin-marketplace reviews backup-manager --limit 10
-
-# Get rating
-loofi plugin-marketplace rating backup-manager
+loofi --json plugin-marketplace search
 ```
 
 ---
@@ -631,41 +603,41 @@ loofi focus-mode status
 ## Profiles & Presets
 
 ### `profile <action>`
-User profile management.
+Local profile management.
 
-**Actions**: `list`, `create`, `switch`, `delete`, `export`, `import`
+**Actions**: `list`, `apply`, `create`, `delete`, `export`, `import`, `export-all`, `import-all`
 
 ```bash
 # List profiles
 loofi profile list
 
 # Create a new profile
-loofi profile create --name gaming
+loofi profile create gaming
 
-# Switch to a profile
-loofi profile switch --name gaming
+# Review and apply a profile
+loofi profile apply gaming
 
 # Export profile
-loofi profile export --name work --output /tmp/work-profile.json
+loofi profile export work /tmp/work-profile.json
 
 # Import profile
-loofi profile import --file /tmp/work-profile.json
+loofi profile import /tmp/work-profile.json
 ```
 
 ### `preset <action>`
-Community configuration presets.
+Local data-only presets.
 
-**Actions**: `list`, `apply`, `info`
+**Actions**: `list`, `apply`, `export`
 
 ```bash
 # List available presets
 loofi preset list
 
 # Apply a preset
-loofi preset apply --name gaming-optimized
+loofi preset apply gaming-optimized
 
-# Show preset details
-loofi preset info --name gaming-optimized
+# Export a local preset
+loofi preset export gaming-optimized /tmp/gaming-optimized.json
 ```
 
 ---
@@ -725,7 +697,7 @@ $ loofi --json info
   "version": "40.0.0",
   "codename": "Foundation",
   "python_version": "3.12.1",
-  "os": "Fedora 43",
+  "os": "Fedora 44",
   "package_manager": "dnf"
 }
 

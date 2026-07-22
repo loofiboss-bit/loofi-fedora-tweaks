@@ -4,6 +4,7 @@
 
 | Version | Support |
 |---|---|
+| 18.x | Release candidate; support begins after public release verification |
 | 17.x | Current stable security support |
 | 16.x | Critical security fixes only |
 | < 16 | End of life |
@@ -26,6 +27,8 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
   explicit timeouts.
 - Action Center plans expire, are re-preflighted before execution, and never
   persist an authoritative command vector.
+- Every operation is classified as `host`, `app_state`, `session`, or
+  `manual_only`; unclassified mutations fail the release gate.
 - GUI, CLI, daemon, automation, and agent entrypoints may create plans, but host
   changes require an explicit local Action Center confirmation.
 - Reboot, rollback, and distribution upgrade are never started automatically.
@@ -63,10 +66,11 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
 
 ## Security Testing
 
-The repository runs unit and integration tests, architecture and trust-boundary
-checks, lint, type checking, Bandit, dependency audit, CodeQL, package builds,
-and SBOM generation as release gates. A green unit suite alone is not sufficient
-release evidence.
+The repository requires unit and integration tests, architecture and
+trust-boundary checks, lint, type checking, Bandit, dependency audit, CodeQL,
+package builds, and SBOM generation as release gates. The Haven candidate has
+passed the local gates. Canonical CodeQL and public artifact readback remain
+pending; a green local suite alone is not public release evidence.
 
 ## Scope
 
