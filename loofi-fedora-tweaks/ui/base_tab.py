@@ -277,9 +277,9 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
             )
         return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self: typing.Any) -> QWidget:
+    def create_widget(self) -> QWidget:
         """Default: return self. Tabs that need fresh instances must override."""
-        return typing.cast(QWidget, self)
+        return self
 
     def set_context(self: typing.Any, context: dict) -> None:
         """Store context for tabs that need MainWindow or executor references."""

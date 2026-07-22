@@ -49,8 +49,8 @@ class DevelopmentTab(BaseTab):
     def metadata(self: typing.Any) -> PluginMetadata:
         return typing.cast(PluginMetadata, self._METADATA)
 
-    def create_widget(self: typing.Any) -> QWidget:
-        return typing.cast(QWidget, self)
+    def create_widget(self) -> QWidget:
+        return self
 
     def __init__(self: typing.Any) -> None:
         super().__init__()
