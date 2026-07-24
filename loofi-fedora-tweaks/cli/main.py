@@ -296,37 +296,114 @@ def cmd_info(_args: typing.Any) -> typing.Any:
 
 
 def cmd_health(args: typing.Any) -> typing.Any:
-    """Show system health overview."""
+    """Run or read the canonical System Check and preserve health aliases."""
     action = getattr(args, "health_action", None)
+    if action == "check":
+        from core.system_check.presentation import PRESENTATION_SCHEMA_ID, PRESENTATION_SCHEMA_VERSION
+        from core.system_check.service import SystemCheckService
+
+        result = SystemCheckService().run()
+        check_payload = {
+            "schema_id": PRESENTATION_SCHEMA_ID,
+            "schema_version": PRESENTATION_SCHEMA_VERSION,
+            "command": "check",
+            "data": {"result": result.to_dict()},
+        }
+        if _json_output:
+            _output_json(check_payload)
+        else:
+            _print(f"System Check: {result.state}")
+            _print(f"Findings: {len(result.findings)}")
+            if result.source_errors:
+                _print("Unavailable sources: " + ", ".join(error.source_id for error in result.source_errors))
+        return 0 if result.state in {"completed", "partial"} else 1
+
+    if action in {"findings", "history"}:
+        from core.system_check.presentation import SystemCheckPresentationService
+
+        state = SystemCheckPresentationService().load(
+            history_limit=getattr(args, "limit", 10)
+        )
+        state_data = state.to_dict()
+        if action == "findings":
+            data = {
+                "latest_check_id": state.latest_check_id,
+                "latest_state": state.latest_state,
+                "latest_completed_at": state.latest_completed_at,
+                "findings": state_data["findings"],
+                "unavailable_sources": list(state.unavailable_sources),
+                "snapshot_error": state.snapshot_error,
+            }
+        else:
+            data = {
+                "history": state_data["history"],
+                "metrics": state_data["metrics"],
+                "snapshot_error": state.snapshot_error,
+                "metric_error": state.metric_error,
+            }
+        presentation_payload = {
+            "schema_id": state.schema_id,
+            "schema_version": state.schema_version,
+            "command": action,
+            "data": data,
+        }
+        if _json_output:
+            _output_json(presentation_payload)
+        elif action == "findings":
+            _print("Current System Check findings")
+            if not state.findings:
+                _print("No saved findings.")
+            for finding in state.findings:
+                _print(f"- [{finding.severity}] {finding.title}: {finding.summary}")
+        else:
+            _print("System Check history")
+            if not state.history:
+                _print("No saved history.")
+            for item in state.history:
+                _print(
+                    f"- {item.timestamp}: {item.source} [{item.state}] "
+                    f"findings={item.finding_count} new={item.new_count} resolved={item.resolved_count}"
+                )
+        return 0
+
+    if action == "comparison":
+        from cli.commands.system_check_commands import handle_health_comparison
+
+        return handle_health_comparison(
+            json_output=_json_output,
+            output_json=_output_json,
+            print_fn=_print,
+        )
+
     if action == "snapshot":
         from core.observability import MaintenanceTrendAnalyzer, ObservabilityService
 
         service = ObservabilityService()
         snapshot = service.collect_snapshot(target=getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target), source="cli")
         timeline = service.snapshots.load()
-        payload: dict[str, typing.Any] = {
+        snapshot_payload: dict[str, typing.Any] = {
             "schema_version": 1,
             "snapshot": snapshot.to_dict(),
             "trend_summary": MaintenanceTrendAnalyzer(timeline).analyze().to_dict(),
         }
         if _json_output:
-            _output_json(payload)
+            _output_json(snapshot_payload)
         else:
             _print("My Fedora Today snapshot recorded.")
-            _print(payload["trend_summary"]["summary"])
+            _print(snapshot_payload["trend_summary"]["summary"])
         return 0
 
     if action == "timeline":
         from core.observability import HealthTimelineStore
 
-        payload = HealthTimelineStore().export(limit=getattr(args, "limit", 10))
+        timeline_payload = HealthTimelineStore().export(limit=getattr(args, "limit", 10))
         if _json_output:
-            _output_json(payload)
+            _output_json(timeline_payload)
         else:
             _print("Health Timeline")
-            _print(f"Snapshots: {payload['count']}")
-            _print(str(payload["trend_summary"]["summary"]))
-            for snapshot in payload["snapshots"]:
+            _print(f"Snapshots: {timeline_payload['count']}")
+            _print(str(timeline_payload["trend_summary"]["summary"]))
+            for snapshot in timeline_payload["snapshots"]:
                 _print(f"- {snapshot['timestamp']}: {snapshot['app_version']} {snapshot['app_codename']}")
         return 0
 

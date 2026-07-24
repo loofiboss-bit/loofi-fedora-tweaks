@@ -11,7 +11,7 @@ from pathlib import Path
 from typing import Any, Callable, Mapping, Sequence
 
 from core.actions.catalog import ActionCatalog, SystemActionRuntime, validate_parameters
-from core.actions.contracts import ActionDefinition, ActionPlan, ActionRun, ActionRuntime, PolicyDecision, PreparedActionRun, VerificationDecision
+from core.actions.contracts import ActionDefinition, ActionPlan, ActionRun, ActionRuntime, FindingContext, PolicyDecision, PreparedActionRun, VerificationDecision
 from core.actions.stores import ActionPlanStore, ActionRunStore
 from core.executor.action_result import ActionResult
 from core.executor.command_facade import CommandFacade
@@ -69,6 +69,7 @@ class ActionCenterOrchestrator:
         id_factory: Callable[[], str] | None = None,
         recover_interrupted: bool = True,
         release_policy: FedoraReleasePolicy = FEDORA_RELEASE_POLICY,
+        finding_handoff: Any | None = None,
     ):
         self.facade = facade or CommandFacade()
         self.catalog = catalog or ActionCatalog()
@@ -79,6 +80,7 @@ class ActionCenterOrchestrator:
         self.clock = clock
         self.id_factory = id_factory or (lambda: str(uuid.uuid4()))
         self.release_policy = release_policy
+        self.finding_handoff = finding_handoff
         self._held_leases: dict[str, AbstractContextManager[None]] = {}
         if recover_interrupted:
             self._recover_interrupted_if_unleased()
@@ -89,6 +91,55 @@ class ActionCenterOrchestrator:
         parameters: Mapping[str, Any] | None = None,
         *,
         target: str = FEDORA_RELEASE_POLICY.stable_target,
+    ) -> ActionPlan:
+        """Create an ordinary v18-compatible plan without finding context."""
+        return self._create_plan(
+            action_id,
+            parameters,
+            target=target,
+            finding_context=None,
+        )
+
+    def plan_from_finding(
+        self,
+        *,
+        check_result_id: str,
+        finding_fingerprint: str,
+        origin_route: str,
+        expected_action_id: str,
+        target: str = FEDORA_RELEASE_POLICY.stable_target,
+    ) -> ActionPlan:
+        """Re-resolve persisted evidence before creating one reviewed plan."""
+        if self.finding_handoff is None:
+            from core.system_check.handoff import FindingActionHandoff
+
+            self.finding_handoff = FindingActionHandoff(catalog=self.catalog)
+        review = self.finding_handoff.resolve(
+            check_result_id=check_result_id,
+            finding_fingerprint=finding_fingerprint,
+            origin_route=origin_route,
+        )
+        if review.action_id != str(expected_action_id):
+            from core.system_check.handoff import FindingHandoffError
+
+            raise FindingHandoffError(
+                "finding_action_mismatch",
+                "The requested action does not match the saved finding.",
+            )
+        return self._create_plan(
+            review.action_id,
+            review.parameters_dict(),
+            target=target,
+            finding_context=review.context,
+        )
+
+    def _create_plan(
+        self,
+        action_id: str,
+        parameters: Mapping[str, Any] | None,
+        *,
+        target: str,
+        finding_context: FindingContext | None,
     ) -> ActionPlan:
         """Create a 30-minute plan after schema validation and fresh preflight."""
         now = self.clock()
@@ -113,6 +164,7 @@ class ActionCenterOrchestrator:
                 supported_variants=frozenset(),
                 reboot_policy="none",
                 affected_resources=(),
+                finding_context=finding_context,
                 created_at=now,
                 expires_at=now + PLAN_TTL_SECONDS,
             )
@@ -123,6 +175,7 @@ class ActionCenterOrchestrator:
                 plan.preview,
                 decision,
                 self._plan_definition_fields(plan),
+                finding_context,
             )
             plan.transition("blocked", decision.reason_code, at=now)
             self.plan_store.save(plan)
@@ -181,6 +234,7 @@ class ActionCenterOrchestrator:
             supported_variants=definition.supported_variants,
             reboot_policy=definition.reboot_policy,
             affected_resources=definition.affected_resources,
+            finding_context=finding_context,
             created_at=now,
             expires_at=now + PLAN_TTL_SECONDS,
         )
@@ -191,6 +245,7 @@ class ActionCenterOrchestrator:
             preview,
             decision,
             self._definition_fields(definition, normalized),
+            finding_context,
         )
         if not decision.allowed:
             state = "blocked"
@@ -271,6 +326,7 @@ class ActionCenterOrchestrator:
                 command,
                 current_decision,
                 self._definition_fields(definition, plan.parameters),
+                plan.finding_context,
             )
             if current_digest != plan.digest:
                 decision = PolicyDecision(
@@ -313,6 +369,7 @@ class ActionCenterOrchestrator:
                 supported_variants=plan.supported_variants,
                 reboot_policy=plan.reboot_policy,
                 affected_resources=plan.affected_resources,
+                finding_context=plan.finding_context,
                 state="running",
                 created_at=now,
                 updated_at=now,
@@ -511,16 +568,20 @@ class ActionCenterOrchestrator:
         preview: Sequence[str],
         decision: PolicyDecision,
         definition_fields: Mapping[str, Any],
+        finding_context: FindingContext | None = None,
     ) -> str:
+        payload = {
+            "action_id": action_id,
+            "parameters": dict(parameters),
+            "target": target,
+            "preview": list(preview),
+            "policy_decision": decision.to_dict(),
+            "definition": dict(definition_fields),
+        }
+        if finding_context is not None:
+            payload["finding_context"] = finding_context.to_dict()
         canonical = json.dumps(
-            {
-                "action_id": action_id,
-                "parameters": dict(parameters),
-                "target": target,
-                "preview": list(preview),
-                "policy_decision": decision.to_dict(),
-                "definition": dict(definition_fields),
-            },
+            payload,
             sort_keys=True,
             separators=(",", ":"),
             default=str,
@@ -535,6 +596,7 @@ class ActionCenterOrchestrator:
             plan.preview,
             plan.policy_decision,
             self._plan_definition_fields(plan),
+            plan.finding_context,
         )
         if not plan.digest or expected != plan.digest:
             raise ActionPlanIntegrityError("Action plan digest validation failed.")

@@ -32,6 +32,15 @@ EXPECTED_SURFACES = {
     "result_state": ("Activity status",),
     "confirmation": ("Confirm action: Remove selected packages",),
 }
+ROUTE_SURFACES = {
+    "health": {
+        "page_title": ("System Check",),
+        "system_check_status": (
+            "Latest saved check",
+            "Refresh saved results",
+        ),
+    },
+}
 
 
 def _child() -> int:
@@ -68,7 +77,7 @@ def _child() -> int:
         window = MainWindow()
         window.resize(1280, 720)
         window.show()
-        window.switch_to_route("system_info")
+        window.switch_to_route(os.environ.get("LOOFI_ATSPI_ROUTE", "system_info"))
         window.set_status("Validation completed")
 
         confirmation = ConfirmActionDialog(
@@ -79,7 +88,7 @@ def _child() -> int:
             risk_level=ConfirmActionDialog.RISK_HIGH,
         )
         confirmation.show()
-        print("READY", flush=True)
+        QTimer.singleShot(500, lambda: print("READY", flush=True))
         QTimer.singleShot(20000, application.quit)
         result = application.exec()
         confirmation.close()
@@ -87,7 +96,7 @@ def _child() -> int:
         return int(result)
 
 
-def _walk(accessible: Any, *, depth: int = 0, limit: int = 12) -> list[dict[str, str]]:
+def _walk(accessible: Any, *, depth: int = 0, limit: int = 20) -> list[dict[str, str]]:
     if depth > limit:
         return []
     try:
@@ -162,7 +171,14 @@ def _session_atspi_address() -> str:
     return ""
 
 
-def run_probe(backend: str) -> dict[str, Any]:
+def run_probe(
+    backend: str,
+    *,
+    route: str = "system_info",
+    report_path: Path = REPORT_PATH,
+    release: str = "v16.0.0 Clarity",
+    phase: int = 7,
+) -> dict[str, Any]:
     """Launch the real app and query its exported AT-SPI tree."""
     bus_address = _session_atspi_address()
     if bus_address:
@@ -181,6 +197,7 @@ def run_probe(backend: str) -> dict[str, Any]:
     environment["QT_QPA_PLATFORM"] = backend
     environment["QT_LINUX_ACCESSIBILITY"] = "1"
     environment["PYTHONPATH"] = str(SOURCE)
+    environment["LOOFI_ATSPI_ROUTE"] = route
     if bus_address:
         environment["AT_SPI_BUS_ADDRESS"] = bus_address
     process = subprocess.Popen(
@@ -219,7 +236,9 @@ def run_probe(backend: str) -> dict[str, Any]:
 
     names = {node["name"] for node in nodes if node["name"]}
     surfaces: dict[str, dict[str, Any]] = {}
-    for surface, candidates in EXPECTED_SURFACES.items():
+    expected_surfaces = dict(EXPECTED_SURFACES)
+    expected_surfaces.update(ROUTE_SURFACES.get(route, {}))
+    for surface, candidates in expected_surfaces.items():
         matches = sorted(
             name
             for name in names
@@ -235,13 +254,14 @@ def run_probe(backend: str) -> dict[str, Any]:
 
     payload = {
         "schema_version": 1,
-        "release": "v16.0.0 Clarity",
-        "phase": 7,
+        "release": release,
+        "phase": phase,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "backend": backend,
         "protocol": "AT-SPI2",
         "bus_address_resolved": bool(bus_address),
         "real_main_window": True,
+        "route": route,
         "orca_available": bool(shutil_which("orca")),
         "child_output": child_output,
         "surfaces": surfaces,
@@ -250,8 +270,8 @@ def run_probe(backend: str) -> dict[str, Any]:
         "status": "passed" if not errors else "failed",
         "errors": errors,
     }
-    REPORT_PATH.parent.mkdir(parents=True, exist_ok=True)
-    REPORT_PATH.write_text(
+    report_path.parent.mkdir(parents=True, exist_ok=True)
+    report_path.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",
         encoding="utf-8",
     )
@@ -269,6 +289,10 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--child", action="store_true")
     parser.add_argument("--backend", choices=("wayland", "xcb"), default="wayland")
+    parser.add_argument("--route", default="system_info")
+    parser.add_argument("--report", type=Path, default=REPORT_PATH)
+    parser.add_argument("--release", default="v16.0.0 Clarity")
+    parser.add_argument("--phase", type=int, default=7)
     parser.add_argument("--json", action="store_true")
     return parser.parse_args(argv)
 
@@ -277,12 +301,21 @@ def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
     if args.child:
         return _child()
-    payload = run_probe(args.backend)
+    payload = run_probe(
+        args.backend,
+        route=args.route,
+        report_path=args.report,
+        release=args.release,
+        phase=args.phase,
+    )
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:
         print(f"v16 Phase 7 AT-SPI validation: {payload['status']}")
-        print(str(REPORT_PATH.relative_to(ROOT)))
+        try:
+            print(str(args.report.relative_to(ROOT)))
+        except ValueError:
+            print(str(args.report))
         for error in payload["errors"]:
             print(f"- {error}")
     return 0 if payload["status"] == "passed" else 1

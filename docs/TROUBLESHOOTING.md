@@ -173,10 +173,18 @@ unavailable explanation and follow the documented rpm-ostree guidance.
 - **Restore rejected:** do not bypass validation. Check the plan ID, hashes,
   schema, duplicate paths, traversal checks, and size limits.
 
-Haven preserves settings, favorites, routes, and readable Action Center v1/v2
-records. Writable Action Center state migrates atomically to schema v3; unknown
-future schemas remain read-only. Package installation does not migrate per-user
-XDG files.
+Steward preserves settings, favorites, routes, and readable Action Center
+v1-v3 records. Writable Action Center plans and runs migrate atomically to
+schema v4; unknown future schemas remain read-only. Package installation does
+not migrate per-user XDG files.
+
+If an Action Center run is verified but the finding still appears, run
+**Check again** after any required reboot. `verified` describes the action
+verifier; `resolved` requires a later compatible System Check. A
+`not_comparable` result means the required source was unavailable or the
+profile, Fedora variant, or ordering did not match. Export Support Bundle v11
+to include the bounded result, comparison, and linked plan/run metadata with
+paths, identities, secrets, network identifiers, and command output redacted.
 
 ---
 

@@ -1,0 +1,1854 @@
+{
+  "backend": "xcb",
+  "bus_address_resolved": true,
+  "child_output": "READY",
+  "errors": [],
+  "generated_at": "2026-07-24T22:27:53.362741+00:00",
+  "node_count": 354,
+  "nodes": [
+    {
+      "description": "/usr/bin/python3.14",
+      "name": "loofi-v16-phase7-atspi",
+      "role": "application"
+    },
+    {
+      "description": "Fedora system settings and maintenance control center",
+      "name": "Loofi Fedora Tweaks",
+      "role": "frame"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Collapse sidebar",
+      "name": "Collapse sidebar",
+      "role": "button"
+    },
+    {
+      "description": "Search routes, settings, and actions (Ctrl+K)",
+      "name": "Search routes, settings, and actions",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Navigation destinations",
+      "role": "tree"
+    },
+    {
+      "description": "",
+      "name": "1",
+      "role": "table column header"
+    },
+    {
+      "description": "Open Home",
+      "name": "Home",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Software & Updates",
+      "name": "Software & Updates",
+      "role": "table cell"
+    },
+    {
+      "description": "Open System",
+      "name": "System",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Network & Security",
+      "name": "Network & Security",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Desktop",
+      "name": "Desktop",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Settings",
+      "name": "Settings",
+      "role": "table cell"
+    },
+    {
+      "description": "Current findings, saved check history, and supporting health metrics.",
+      "name": "System Check",
+      "role": "panel"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Page actions",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "System",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "System Check",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Current findings, saved check history, and supporting health metrics.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "list"
+    },
+    {
+      "description": "Operating system, hardware, and current-state details.",
+      "name": "System Information",
+      "role": "list item"
+    },
+    {
+      "description": "Current resource use and performance diagnostics.",
+      "name": "Performance",
+      "role": "list item"
+    },
+    {
+      "description": "Inspect running processes.",
+      "name": "Processes",
+      "role": "list item"
+    },
+    {
+      "description": "Hardware devices, batteries, and power state.",
+      "name": "Hardware & Power",
+      "role": "list item"
+    },
+    {
+      "description": "Disk use and storage health.",
+      "name": "Storage",
+      "role": "list item"
+    },
+    {
+      "description": "Review current findings, saved checks, and supporting metrics.",
+      "name": "System Check",
+      "role": "list item"
+    },
+    {
+      "description": "Diagnose system issues and inspect evidence.",
+      "name": "Troubleshooting",
+      "role": "list item"
+    },
+    {
+      "description": "Create and manage recovery points.",
+      "name": "Recovery Points",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "System Check",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "Operating system, hardware, and current-state details.",
+      "name": "System Information",
+      "role": "list item"
+    },
+    {
+      "description": "Current resource use and performance diagnostics.",
+      "name": "Performance",
+      "role": "list item"
+    },
+    {
+      "description": "Inspect running processes.",
+      "name": "Processes",
+      "role": "list item"
+    },
+    {
+      "description": "Hardware devices, batteries, and power state.",
+      "name": "Hardware & Power",
+      "role": "list item"
+    },
+    {
+      "description": "Disk use and storage health.",
+      "name": "Storage",
+      "role": "list item"
+    },
+    {
+      "description": "Review current findings, saved checks, and supporting metrics.",
+      "name": "System Check",
+      "role": "list item"
+    },
+    {
+      "description": "Diagnose system issues and inspect evidence.",
+      "name": "Troubleshooting",
+      "role": "list item"
+    },
+    {
+      "description": "Create and manage recovery points.",
+      "name": "Recovery Points",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Navigation availability",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "layered pane"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Current status, the next useful action, and common Fedora tasks.",
+      "name": "Home",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "System status",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "System status",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "role": "label"
+    },
+    {
+      "description": "Last checked: Never \u00b7 Status unavailable",
+      "name": "System Check freshness",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "System health: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "System health: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Updates: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Updates: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Storage: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Storage: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Recovery protection: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Recovery protection: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "Run the local read-only System Check.",
+      "name": "Check now",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Recommended next step",
+      "role": "label"
+    },
+    {
+      "description": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "name": "Review system health",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Review system health",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "role": "label"
+    },
+    {
+      "description": "info",
+      "name": "Information",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Information",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "name": "Review Review system health",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Common tasks",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Open Update the system. Review available Fedora updates.",
+      "name": "Update the system",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Update the system",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Review available Fedora updates.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Update the system",
+      "role": "label"
+    },
+    {
+      "description": "Open Install an application. Find and install Fedora or Flatpak apps.",
+      "name": "Install an application",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Install an application",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Find and install Fedora or Flatpak apps.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Install an application",
+      "role": "label"
+    },
+    {
+      "description": "Open Check performance. Inspect CPU, memory, and running processes.",
+      "name": "Check performance",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Check performance",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Inspect CPU, memory, and running processes.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Check performance",
+      "role": "label"
+    },
+    {
+      "description": "Open Protect or recover. Review backups and recovery options.",
+      "name": "Protect or recover",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Protect or recover",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Review backups and recovery options.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Protect or recover",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Info...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Info...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Monitor...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Monitor...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Local Profiles...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Local Profiles...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Software...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Software...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Maintenance...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Maintenance...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Snapshots...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Snapshots...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Hardware...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Hardware...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Performance...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Performance...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Storage...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Storage...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Gaming...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Gaming...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Network...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Network...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Loofi Link...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Loofi Link...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Security & Privacy...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Security & Privacy...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Backup...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Backup...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Desktop...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Desktop...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Extensions...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Extensions...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Profiles...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Profiles...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Settings...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Settings...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Development...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Development...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Virtualization...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Virtualization...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading AI Lab...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading AI Lab...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Current findings, saved checks, before/after history, and supporting metrics.",
+      "name": "System Check",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "A finding is an explained issue from a completed System Check. A sampled metric is supporting history, not a finding. An Action Center run is a separately reviewed and verified system change.",
+      "name": "Three different kinds of evidence",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Three different kinds of evidence",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "A finding is an explained issue from a completed System Check. A sampled metric is supporting history, not a finding. An Action Center run is a separately reviewed and verified system change.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "list"
+    },
+    {
+      "description": "Latest saved System Check status.",
+      "name": "Overview",
+      "role": "list item"
+    },
+    {
+      "description": "Issues from the latest saved check.",
+      "name": "Current findings",
+      "role": "list item"
+    },
+    {
+      "description": "Before/after state and supporting metrics.",
+      "name": "History",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Overview",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "Latest saved System Check status.",
+      "name": "Overview",
+      "role": "list item"
+    },
+    {
+      "description": "Issues from the latest saved check.",
+      "name": "Current findings",
+      "role": "list item"
+    },
+    {
+      "description": "Before/after state and supporting metrics.",
+      "name": "History",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "layered pane"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Latest saved check",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Latest saved check",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "label"
+    },
+    {
+      "description": "0 current finding(s)",
+      "name": "No saved System Check",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "No saved System Check",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Last checked: Never \u00b7 Findings: 0",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "label"
+    },
+    {
+      "description": "Reread local persisted System Check data without collecting new signals.",
+      "name": "Refresh saved results",
+      "role": "button"
+    },
+    {
+      "description": "Use Check now on Home to collect a new read-only result. This page never polls or starts a check automatically.",
+      "name": "Checks start explicitly",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Checks start explicitly",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Use Check now on Home to collect a new read-only result. This page never polls or starts a check automatically.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "No finding is available in the latest saved System Check.",
+      "name": "No current findings",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "No current findings",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "No finding is available in the latest saved System Check.",
+      "role": "label"
+    },
+    {
+      "description": "No finding is available in the latest saved System Check.",
+      "name": "",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Existing v18 health snapshots will appear here without migration.",
+      "name": "No saved history",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "No saved history",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Existing v18 health snapshots will appear here without migration.",
+      "role": "label"
+    },
+    {
+      "description": "Existing v18 health snapshots will appear here without migration.",
+      "name": "",
+      "role": "button"
+    },
+    {
+      "description": "No legacy metric samples are available.",
+      "name": "Show supporting metric details",
+      "role": "filler"
+    },
+    {
+      "description": "Show technical details",
+      "name": "Show supporting metric details",
+      "role": "check box"
+    },
+    {
+      "description": "No legacy metric samples are available.",
+      "name": "Supporting health metrics",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Logs...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Logs...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Diagnostics...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Diagnostics...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Agents...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Agents...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Automation...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Automation...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading State Teleport...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading State Teleport...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "Validation completed",
+      "name": "Activity status",
+      "role": "label"
+    },
+    {
+      "description": "Undo last action",
+      "name": "Undo",
+      "role": "button"
+    },
+    {
+      "description": "Review the package list before continuing.",
+      "name": "Confirm action: Remove selected packages",
+      "role": "dialog"
+    },
+    {
+      "description": "",
+      "name": "Warning",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Remove selected packages",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Risk level: HIGH",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Review the package list before continuing.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Don't ask for confirmation again",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "Show the exact command that will run",
+      "name": "Preview",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Cancel",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Confirm",
+      "role": "button"
+    }
+  ],
+  "orca_available": true,
+  "phase": 6,
+  "protocol": "AT-SPI2",
+  "real_main_window": true,
+  "release": "v19 Steward working tree (metadata v18.0.0 Haven)",
+  "route": "health",
+  "schema_version": 1,
+  "status": "passed",
+  "surfaces": {
+    "application": {
+      "expected": [
+        "Loofi Fedora Tweaks"
+      ],
+      "matches": [
+        "Loofi Fedora Tweaks"
+      ],
+      "status": "passed"
+    },
+    "confirmation": {
+      "expected": [
+        "Confirm action: Remove selected packages"
+      ],
+      "matches": [
+        "Confirm action: Remove selected packages"
+      ],
+      "status": "passed"
+    },
+    "navigation": {
+      "expected": [
+        "Navigation destinations",
+        "Primary navigation",
+        "Sections"
+      ],
+      "matches": [
+        "Navigation destinations",
+        "Sections"
+      ],
+      "status": "passed"
+    },
+    "page_title": {
+      "expected": [
+        "System Check"
+      ],
+      "matches": [
+        "A finding is an explained issue from a completed System Check. A sampled metric is supporting history, not a finding. An Action Center run is a separately reviewed and verified system change.",
+        "No finding is available in the latest saved System Check.",
+        "No saved System Check",
+        "No saved status exists yet. Run a local System Check to create the first snapshot.",
+        "System Check",
+        "System Check freshness"
+      ],
+      "status": "passed"
+    },
+    "result_state": {
+      "expected": [
+        "Activity status"
+      ],
+      "matches": [
+        "Activity status"
+      ],
+      "status": "passed"
+    },
+    "system_check_status": {
+      "expected": [
+        "Latest saved check",
+        "Refresh saved results"
+      ],
+      "matches": [
+        "Latest saved check",
+        "Refresh saved results"
+      ],
+      "status": "passed"
+    }
+  }
+}

@@ -93,6 +93,14 @@ def _child_measurement() -> dict[str, Any]:
         meaningful_home_ms = _milliseconds()
         registry = PluginRegistry.instance()
         imported = sorted(sys.modules)
+        system_check_runtime_imports = [
+            name
+            for name in imported
+            if name in {
+                "core.system_check.service",
+                "core.workers.system_check_worker",
+            }
+        ]
         ui_modules = [name for name in imported if name == "ui" or name.startswith("ui.")]
         tab_modules = [name for name in ui_modules if name.endswith("_tab")]
         timers = window.findChildren(QTimer)
@@ -126,6 +134,7 @@ def _child_measurement() -> dict[str, Any]:
             "active_timer_intervals_ms": sorted(active_timers),
             "running_qthreads": running_threads,
             "subprocess_probes": probes,
+            "system_check_runtime_imports": system_check_runtime_imports,
             "post_render_services_scheduled": window._post_render_services_scheduled,
         }
     finally:

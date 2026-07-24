@@ -3,15 +3,19 @@
 from __future__ import annotations
 
 import unittest
+from dataclasses import replace
 from datetime import datetime, timezone
 from unittest.mock import MagicMock
 
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtGui import QFont
+from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QAbstractButton, QFrame, QLabel, QPushButton, QScrollArea
 
 from core.home import AttentionItem, HomeStatus, HomeSummary, HomeTask, RecentChange, Recommendation
 from ui.components import ClickableCard, DetailsDisclosure, PageScaffold, StatusBadge
 from ui.atlas_dashboard_tab import AtlasDashboardTab
+from ui.design.theme_manager import ThemeManager
 
 
 class _SummaryService:
@@ -48,6 +52,8 @@ def _summary() -> HomeSummary:
             HomeStatus("storage", "Storage", "good", "Storage is healthy.", "storage"),
             HomeStatus("recovery", "Recovery protection", "unknown", "No saved protection status.", "backup"),
         ),
+        last_checked_at=datetime(2026, 7, 24, 10, 30, tzinfo=timezone.utc),
+        freshness_state="fresh",
     )
 
 
@@ -107,6 +113,96 @@ class TestCanonicalHomeUi(unittest.TestCase):
         self.assertNotIn("plan", button_text)
         self.assertNotIn("run", button_text)
         self.assertNotIn("verify", button_text)
+
+    def test_check_now_is_directly_visible_for_empty_stale_and_error_states(self):
+        for data_state, freshness in (
+            ("empty", "unavailable"),
+            ("stale", "stale"),
+            ("error", "unavailable"),
+        ):
+            with self.subTest(data_state=data_state):
+                summary = replace(
+                    _summary(),
+                    data_state=data_state,
+                    freshness_state=freshness,
+                    last_checked_at=None if data_state == "empty" else _summary().last_checked_at,
+                )
+                factory = MagicMock()
+                tab = AtlasDashboardTab(
+                    home_service=_SummaryService(summary),
+                    check_worker_factory=factory,
+                )
+
+                button = tab.findChild(QPushButton, "homeCheckNow")
+                self.assertIsNotNone(button)
+                self.assertFalse(button.isHidden())
+                factory.assert_not_called()
+
+    def test_status_card_shows_last_checked_and_freshness(self):
+        tab = AtlasDashboardTab(home_service=_SummaryService(_summary()))
+
+        label = tab.findChild(QLabel, "homeLastChecked")
+
+        self.assertIsNotNone(label)
+        self.assertIn("2026-07-24", label.text())
+        self.assertIn("Fresh", label.text())
+
+    def test_phase_two_size_scale_and_theme_matrix_keeps_check_action_available(self):
+        original_font = self.app.font()
+        theme_manager = ThemeManager()
+        try:
+            for theme in ThemeManager.SUPPORTED_THEMES:
+                self.assertTrue(theme_manager.apply(self.app, theme))
+                for width in (860, 1180, 1400):
+                    for scale in (100, 140, 200):
+                        with self.subTest(theme=theme, width=width, scale=scale):
+                            font = QFont(original_font)
+                            font.setPointSizeF(original_font.pointSizeF() * scale / 100)
+                            self.app.setFont(font)
+                            tab = AtlasDashboardTab(
+                                home_service=_SummaryService(_summary())
+                            )
+                            tab.resize(width, 900)
+                            tab.show()
+                            self.app.processEvents()
+
+                            button = tab.findChild(QPushButton, "homeCheckNow")
+                            self.assertIsNotNone(button)
+                            self.assertTrue(button.isVisible())
+                            self.assertGreater(button.width(), 0)
+                            self.assertLessEqual(button.mapTo(tab, button.rect().topRight()).x(), tab.width())
+
+                            tab.close()
+                            tab.deleteLater()
+                            self.app.processEvents()
+        finally:
+            self.app.setFont(original_font)
+            theme_manager.apply(self.app, "system")
+
+    def test_keyboard_activates_check_and_action_center_route(self):
+        factory = MagicMock()
+        worker = MagicMock()
+        worker.isRunning.return_value = False
+        factory.return_value = worker
+        main_window = MagicMock()
+        tab = AtlasDashboardTab(
+            main_window=main_window,
+            home_service=_SummaryService(_summary()),
+            check_worker_factory=factory,
+        )
+        tab.show()
+        self.app.processEvents()
+
+        check_button = tab.findChild(QPushButton, "homeCheckNow")
+        check_button.setFocus()
+        QTest.keyClick(check_button, Qt.Key.Key_Space)
+        factory.assert_called_once_with(tab)
+        worker.start.assert_called_once_with()
+
+        action_link = tab.findChild(QPushButton, "homeActionCenterLink")
+        action_link.setFocus()
+        QTest.keyClick(action_link, Qt.Key.Key_Space)
+        main_window.switch_to_route.assert_called_once_with("maintenance:action-center")
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Canonical v18 product catalog and compatibility projections.
+"""Canonical product catalog and compatibility projections.
 
 This module is the only runtime composer for built-in plugin, route,
 destination, section, visibility, variant, capability, and risk metadata.

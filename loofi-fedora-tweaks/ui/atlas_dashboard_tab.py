@@ -2,7 +2,8 @@
 
 from __future__ import annotations
 
-from typing import Protocol
+from collections.abc import Callable
+from typing import Any, Protocol
 
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLayout, QVBoxLayout, QWidget
@@ -14,16 +15,20 @@ from core.product_catalog import plugin_metadata_for_module
 from .base_tab import BaseTab
 from .components import (
     ActionBar,
+    ActionProgress,
     Card,
     ClickableCard,
     DetailsDisclosure,
     GhostButton,
+    InlineNotice,
     PageScaffold,
     PrimaryButton,
     StatusBadge,
 )
 from .components.layout import AdaptiveGrid
 from .icon_pack import get_qicon
+
+_DETACHED_CHECK_WORKERS: set[Any] = set()
 
 
 class _HomeSummaryProvider(Protocol):
@@ -42,6 +47,13 @@ class AtlasDashboardTab(BaseTab):
         ("storage", "Storage"),
         ("recovery", "Recovery protection"),
     )
+    _CHECK_SOURCE_LABELS = {
+        "state-integrity": "Application state",
+        "maintenance": "Updates, services, and disk",
+        "storage-reclaim": "Reclaimable storage",
+        "action-center": "Action Center history",
+        "pending-reboot": "Pending reboot",
+    }
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -57,10 +69,22 @@ class AtlasDashboardTab(BaseTab):
         main_window=None,
         *,
         home_service: _HomeSummaryProvider | None = None,
+        check_worker_factory: Callable[[QWidget], Any] | None = None,
     ) -> None:
         super().__init__()
         self.main_window = main_window
         self.home_service = home_service
+        self.check_worker_factory = check_worker_factory
+        self._check_worker: Any | None = None
+        self._check_cancel_requested = False
+        self._closing = False
+        self._last_summary: HomeSummary | None = None
+        self.check_progress: ActionProgress | None = None
+        self.check_source_label: QLabel | None = None
+        self.check_elapsed_label: QLabel | None = None
+        self.check_unavailable_label: QLabel | None = None
+        self.check_notice: InlineNotice | None = None
+        self.cancel_check_button: GhostButton | None = None
         self._setup_ui()
         if self.home_service is not None:
             self.refresh_summary()
@@ -86,6 +110,10 @@ class AtlasDashboardTab(BaseTab):
         self.state_label.setObjectName("homeStateLabel")
         self.state_label.setWordWrap(True)
         self.state_card.add_widget(self.state_label)
+        self.freshness_label = QLabel(self.tr("Last checked: Never · Status unavailable"))
+        self.freshness_label.setObjectName("homeLastChecked")
+        self.freshness_label.setWordWrap(True)
+        self.state_card.add_widget(self.freshness_label)
 
         status_grid = AdaptiveGrid(
             min_column_width=190,
@@ -102,6 +130,16 @@ class AtlasDashboardTab(BaseTab):
             self.status_badges[key] = badge
             status_grid.add_card(badge)
         self.state_card.add_widget(status_grid)
+
+        self.check_actions = ActionBar()
+        self.check_now_button = PrimaryButton(
+            self.tr("Check now"),
+            description=self.tr("Run the local read-only System Check."),
+        )
+        self.check_now_button.setObjectName("homeCheckNow")
+        self.check_now_button.clicked.connect(self.start_system_check)
+        self.check_actions.add_action(self.check_now_button, primary=True)
+        self.state_card.add_widget(self.check_actions)
         self.scaffold.add_widget(self.state_card)
 
         self.primary_container = QVBoxLayout()
@@ -119,9 +157,12 @@ class AtlasDashboardTab(BaseTab):
         if self.home_service is None:
             return
         summary = self.home_service.summary()
+        self._last_summary = summary
         self.state_card.setProperty("overallState", summary.overall_state)
         self.state_card.setProperty("dataState", summary.data_state)
         self.state_label.setText(self.tr(summary.summary))
+        self._update_freshness(summary)
+        self.check_now_button.setVisible(summary.check_now_available)
         self._update_status_badges(summary)
 
         self._clear_layout(self.primary_container)
@@ -139,7 +180,7 @@ class AtlasDashboardTab(BaseTab):
         self.tasks_container.addWidget(self._section_label(self.tr("Common tasks")))
         task_grid = AdaptiveGrid(min_column_width=250)
         task_grid.setObjectName("homeTaskGrid")
-        for task in summary.common_tasks[:6]:
+        for task in summary.common_tasks[:4]:
             task_grid.add_card(self._task_card(task))
         self.tasks_container.addWidget(task_grid)
 
@@ -161,6 +202,237 @@ class AtlasDashboardTab(BaseTab):
             disclosure.details.setAccessibleName(self.tr("Recent activity details"))
             recent.add_widget(disclosure)
             self.recent_container.addWidget(recent)
+
+    def _update_freshness(self, summary: HomeSummary) -> None:
+        if summary.last_checked_at is None:
+            checked = self.tr("Never")
+        else:
+            checked = summary.last_checked_at.astimezone().strftime("%Y-%m-%d %H:%M")
+        freshness = {
+            "fresh": self.tr("Fresh"),
+            "stale": self.tr("Stale"),
+            "unavailable": self.tr("Status unavailable"),
+        }[summary.freshness_state]
+        self.freshness_label.setText(
+            self.tr("Last checked: %1 · %2")
+            .replace("%1", checked)
+            .replace("%2", freshness)
+        )
+        self.freshness_label.setAccessibleName(self.tr("System Check freshness"))
+        self.freshness_label.setAccessibleDescription(self.freshness_label.text())
+
+    def start_system_check(self) -> None:
+        """Start collection only after direct user activation."""
+        if self._check_worker is not None and self._check_worker.isRunning():
+            return
+        self._ensure_check_feedback()
+        assert self.check_progress is not None
+        assert self.check_source_label is not None
+        assert self.check_elapsed_label is not None
+        assert self.check_unavailable_label is not None
+        assert self.check_notice is not None
+        assert self.cancel_check_button is not None
+        if self.check_worker_factory is None:
+            from core.workers.system_check_worker import SystemCheckWorker
+
+            worker = SystemCheckWorker(parent=self)
+        else:
+            worker = self.check_worker_factory(self)
+        self._check_worker = worker
+        self._check_cancel_requested = False
+        self.check_notice.setVisible(False)
+        self.check_unavailable_label.clear()
+        self.check_unavailable_label.setVisible(False)
+        self.check_progress.set_busy(self.tr("Starting the local read-only check…"))
+        self.check_progress.setVisible(True)
+        self.check_source_label.setText(self.tr("Current source: Preparing"))
+        self.check_elapsed_label.setText(self.tr("Elapsed: 0.0 seconds"))
+        self.check_now_button.set_loading(True, self.tr("Checking…"))
+        self.cancel_check_button.setEnabled(True)
+        self.cancel_check_button.setVisible(True)
+        worker.check_progress.connect(self._on_check_progress)
+        worker.finished.connect(self._on_check_finished)
+        worker.error.connect(self._on_check_error)
+        worker.start()
+
+    def _ensure_check_feedback(self) -> None:
+        """Create nonessential operation feedback only after explicit activation."""
+        if self.check_progress is not None:
+            return
+        self.check_progress = ActionProgress(self.tr("Preparing System Check…"))
+        self.check_progress.setObjectName("homeSystemCheckProgress")
+        self.check_source_label = QLabel(self.tr("Current source: Waiting"))
+        self.check_source_label.setObjectName("homeSystemCheckSource")
+        self.check_elapsed_label = QLabel(self.tr("Elapsed: 0.0 seconds"))
+        self.check_elapsed_label.setObjectName("homeSystemCheckElapsed")
+        self.check_unavailable_label = QLabel()
+        self.check_unavailable_label.setObjectName("homeSystemCheckUnavailable")
+        self.check_unavailable_label.setWordWrap(True)
+        self.check_unavailable_label.setVisible(False)
+        self.check_progress.details_layout.addWidget(self.check_source_label)
+        self.check_progress.details_layout.addWidget(self.check_elapsed_label)
+        self.check_progress.details_layout.addWidget(self.check_unavailable_label)
+        self.state_card.add_widget(self.check_progress)
+
+        self.check_notice = InlineNotice("", "", kind="neutral")
+        self.check_notice.setObjectName("homeSystemCheckNotice")
+        self.check_notice.setVisible(False)
+        self.state_card.add_widget(self.check_notice)
+
+        self.cancel_check_button = GhostButton(
+            self.tr("Cancel"),
+            description=self.tr("Cancel the running System Check and keep the previous saved status."),
+        )
+        self.cancel_check_button.setObjectName("homeCancelSystemCheck")
+        self.cancel_check_button.clicked.connect(self.cancel_system_check)
+        self.check_actions.add_action(self.cancel_check_button)
+        self.cancel_check_button.setVisible(False)
+
+    def cancel_system_check(self) -> None:
+        worker = self._check_worker
+        if (
+            worker is None
+            or not worker.isRunning()
+            or self.cancel_check_button is None
+            or self.check_progress is None
+        ):
+            return
+        self._check_cancel_requested = True
+        self.cancel_check_button.setEnabled(False)
+        self.check_progress.set_busy(self.tr("Cancelling System Check…"))
+        worker.cancel()
+
+    def _on_check_progress(self, progress: Any) -> None:
+        if (
+            self._closing
+            or self.check_progress is None
+            or self.check_source_label is None
+            or self.check_elapsed_label is None
+            or self.check_unavailable_label is None
+        ):
+            return
+        source_id = str(getattr(progress, "source_id", "") or "")
+        source = self.tr(self._CHECK_SOURCE_LABELS.get(source_id, source_id or "Finalizing"))
+        elapsed = max(0.0, float(getattr(progress, "elapsed_seconds", 0.0) or 0.0))
+        percentage = int(getattr(progress, "percentage", 0) or 0)
+        stage = str(getattr(progress, "stage", "running"))
+        message = {
+            "running": self.tr("Checking saved and local system signals…"),
+            "completed": self.tr("Source completed."),
+            "failed": self.tr("Source unavailable; continuing with partial results."),
+            "timed_out": self.tr("Source timed out; continuing with partial results."),
+            "cancelling": self.tr("Cancelling System Check…"),
+        }.get(stage, self.tr("Checking…"))
+        self.check_progress.set_progress(percentage, message)
+        self.check_source_label.setText(
+            self.tr("Current source: %1").replace("%1", source)
+        )
+        self.check_elapsed_label.setText(
+            self.tr("Elapsed: %1 seconds").replace("%1", f"{elapsed:.1f}")
+        )
+        unavailable = tuple(getattr(progress, "unavailable_sources", ()) or ())
+        if unavailable:
+            labels = [
+                self.tr(self._CHECK_SOURCE_LABELS.get(str(item), str(item)))
+                for item in unavailable
+            ]
+            self.check_unavailable_label.setText(
+                self.tr("Unavailable sources: %1").replace("%1", ", ".join(labels))
+            )
+            self.check_unavailable_label.setVisible(True)
+
+    def _on_check_finished(self, result: Any) -> None:
+        if self._closing:
+            return
+        state = str(getattr(result, "state", "failed"))
+        findings = tuple(getattr(result, "findings", ()) or ())
+        errors = tuple(getattr(result, "source_errors", ()) or ())
+        if state == "completed":
+            kind = "warning" if findings else "success"
+            title = self.tr("Check complete")
+            message = (
+                self.tr("%1 finding(s) need review.").replace("%1", str(len(findings)))
+                if findings
+                else self.tr("No issue was found by the completed sources.")
+            )
+        elif state == "partial":
+            kind = "warning"
+            title = self.tr("Check partially complete")
+            sources = ", ".join(
+                self.tr(self._CHECK_SOURCE_LABELS.get(str(error.source_id), str(error.source_id)))
+                for error in errors
+            )
+            message = self.tr("Unavailable sources: %1").replace("%1", sources or self.tr("Unknown"))
+        elif state == "cancelled":
+            kind = "neutral"
+            title = self.tr("Check cancelled")
+            message = self.tr("The previous saved status was kept.")
+        else:
+            kind = "error"
+            title = self.tr("Check could not finish")
+            message = self.tr("The previous saved status was kept. Try again or review diagnostics.")
+        self._finish_check_presentation(kind, title, message)
+        if state in {"completed", "partial"}:
+            self.refresh_summary()
+
+    def _on_check_error(self, _message: str) -> None:
+        if self._closing:
+            return
+        if self._check_cancel_requested:
+            self._finish_check_presentation(
+                "neutral",
+                self.tr("Check cancelled"),
+                self.tr("The previous saved status was kept."),
+            )
+        else:
+            self._finish_check_presentation(
+                "error",
+                self.tr("Check could not finish"),
+                self.tr("The previous saved status was kept. Try again or review diagnostics."),
+            )
+
+    def _finish_check_presentation(self, kind: str, title: str, message: str) -> None:
+        if (
+            self.check_progress is None
+            or self.cancel_check_button is None
+            or self.check_notice is None
+        ):
+            return
+        worker = self._check_worker
+        self._check_worker = None
+        self._check_cancel_requested = False
+        self.check_progress.setVisible(False)
+        self.cancel_check_button.setVisible(False)
+        self.check_now_button.set_loading(False)
+        self.check_notice.set_notice(kind, title, message)
+        self.check_notice.setVisible(True)
+        if worker is not None:
+            worker.wait(1000)
+            worker.deleteLater()
+
+    def cleanup(self) -> None:
+        """Cancel or detach the bounded worker before Home is destroyed."""
+        self._closing = True
+        worker = self._check_worker
+        if worker is None:
+            return
+        if worker.isRunning():
+            worker.cancel()
+            worker.wait(1000)
+        if worker.isRunning():
+            worker.setParent(None)
+            _DETACHED_CHECK_WORKERS.add(worker)
+
+            def release_worker(*_args: Any) -> None:
+                worker.wait(1000)
+                _DETACHED_CHECK_WORKERS.discard(worker)
+                worker.deleteLater()
+
+            worker.finished.connect(release_worker)
+            worker.error.connect(release_worker)
+        else:
+            worker.deleteLater()
+        self._check_worker = None
 
     def _load_saved_summary(self) -> None:
         """Load local persisted sources after the first Home frame can render."""

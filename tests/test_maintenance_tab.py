@@ -409,11 +409,6 @@ class TestMaintenanceTabMetadata(unittest.TestCase):
 
             action_center.assert_called_once_with()
 
-    def test_has_health_timeline_subtab_factory(self):
-        """MaintenanceTab exposes the v12 Health Timeline as a Maintenance sub-tab."""
-        labels = [label for label, _factory in self.tab._sub_tab_factories]
-        self.assertIn("Health Timeline", labels)
-
     @patch("ui.maintenance_tab.SystemManager.is_atomic", return_value=False)
     def test_search_preselection_loads_action_center_without_planning(self, _atomic):
         action_center = MagicMock()
@@ -825,85 +820,6 @@ class TestActionCenterSubTab(unittest.TestCase):
 
         source = Path(_mt.__file__).read_text(encoding="utf-8")
         self.assertNotIn("import subprocess", source)
-
-
-# ===================================================================
-# Test: _HealthTimelineSubTab
-# ===================================================================
-
-
-class TestHealthTimelineSubTab(unittest.TestCase):
-    """Tests for the v12 Health Timeline GUI surface."""
-
-    def _summary_cls(self):
-        class _Analyzer:
-            def __init__(self, snapshots):
-                self.snapshots = snapshots
-
-            def analyze(self):
-                return SimpleNamespace(
-                    summary=f"{len(self.snapshots)} snapshot(s) loaded",
-                    new=[object()],
-                    recurring=[object(), object()],
-                    resolved=[],
-                    worsening=[object()],
-                )
-
-        return _Analyzer
-
-    @patch("core.observability.MaintenanceTrendAnalyzer")
-    @patch("core.observability.ObservabilityService")
-    def test_load_timeline_renders_summary_and_recent_items(self, service_cls, analyzer_cls):
-        analyzer_cls.side_effect = self._summary_cls()
-        snapshots = [
-            SimpleNamespace(timestamp=1.0, problem_fingerprints=[]),
-            SimpleNamespace(timestamp=2.0, problem_fingerprints=[object(), object()]),
-        ]
-        service_cls.return_value.snapshots.load.return_value = snapshots
-
-        tab = _mt._HealthTimelineSubTab()
-        tab.timeline_list = MagicMock()
-        tab.summary_label = MagicMock()
-        tab.detail_area = MagicMock()
-
-        tab._load_timeline()
-
-        tab.timeline_list.clear.assert_called_once_with()
-        self.assertEqual(tab.timeline_list.addItem.call_count, 2)
-        tab.summary_label.setText.assert_called_with("2 snapshot(s) loaded")
-        detail = tab.detail_area.setPlainText.call_args.args[0]
-        self.assertIn("Snapshots: 2", detail)
-        self.assertIn("Recurring: 2", detail)
-
-    @patch.object(_QMessageBox, "warning")
-    @patch("core.observability.MaintenanceTrendAnalyzer")
-    @patch("core.observability.ObservabilityService")
-    def test_record_snapshot_handles_collection_failure(self, service_cls, analyzer_cls, warning):
-        analyzer_cls.side_effect = self._summary_cls()
-        service_cls.return_value.snapshots.load.return_value = []
-        service_cls.return_value.collect_snapshot.side_effect = RuntimeError("read failed")
-
-        tab = _mt._HealthTimelineSubTab()
-        tab._load_timeline = MagicMock()
-
-        tab._record_snapshot()
-
-        warning.assert_called_once()
-        tab._load_timeline.assert_not_called()
-
-    @patch("core.observability.MaintenanceTrendAnalyzer")
-    @patch("core.observability.ObservabilityService")
-    def test_record_snapshot_refreshes_on_success(self, service_cls, analyzer_cls):
-        analyzer_cls.side_effect = self._summary_cls()
-        service_cls.return_value.snapshots.load.return_value = []
-
-        tab = _mt._HealthTimelineSubTab()
-        tab._load_timeline = MagicMock()
-
-        tab._record_snapshot()
-
-        service_cls.return_value.collect_snapshot.assert_called_with(target="44", source="gui")
-        tab._load_timeline.assert_called_once_with()
 
 
 # ===================================================================

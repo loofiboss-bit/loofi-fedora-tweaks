@@ -3,7 +3,7 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Released version**: 17.0.0 "Haven" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Released version**: 18.0.0 "Steward" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 
 ## Runtime entry modes
 
@@ -55,6 +55,7 @@ enforced by `tests/test_architecture_imports.py`:
 
 - `core/workers/base_worker.py`
 - `core/workers/command_worker.py`
+- `core/workers/system_check_worker.py`
 - `core/plugins/interface.py`
 - `core/plugins/adapter.py`
 - `services/security/safety.py`
@@ -130,9 +131,9 @@ running worker thread or active timer. `scripts/benchmark_startup.py` records
 milestones, RSS, imports, plugin instances, widgets, timers, threads, probes,
 and installed components.
 
-v15 keeps specialist modules in the base RPM. Static analysis found overlapping
+v18 keeps specialist modules in the base RPM. Static analysis found overlapping
 core/specialist and CLI/API/daemon closures, so a physical extras RPM is unsafe
-until v16 defines non-overlapping file ownership.
+until a future release defines non-overlapping file ownership.
 
 ## Canonical Home
 
@@ -145,6 +146,13 @@ Recommendations are deterministic and prioritize state corruption,
 interrupted/failed Action Center runs, pending reboot, security/health problems,
 updates, stale data, and ready plans. Home may link to
 `maintenance:action-center`; it never embeds its planner or executes an action.
+Empty, stale, and recoverable-error states expose an explicit `Check now`
+control. Only that activation lazily imports `SystemCheckWorker`, which runs the
+read-only service off the UI thread and reports source, progress, elapsed time,
+cancellation, and partial availability. Completed and partial runs refresh Home
+by rereading persisted state; cancellation and failure preserve the previous
+snapshot. Home construction still performs no collection and owns no polling
+timer.
 The legacy `dashboard` route redirects to System and is not a second Home.
 
 ## Global search
@@ -175,8 +183,9 @@ verifies the five routes without host probes or mutations.
 
 ## Action Center invariants
 
-`core/actions` retains the protected v14 planning boundary and extends it with
-the v17 schema-v2, reboot-aware verification contract.
+`core/actions` retains the protected v14 planning boundary, the v17
+reboot-aware verification contract, the v18 operation/platform metadata, and
+the v19 schema-v4 optional finding context.
 
 - `maintenance:action-center` is the only Review/Plan/Run/Verify/History UI.
 - The legacy `dnf-clean-all`, `restart-failed-service`, and `fstrim-all`
@@ -197,8 +206,33 @@ the v17 schema-v2, reboot-aware verification contract.
 - Home, search, API, plugins, and AI content cannot execute or expand the
   catalog. The authenticated API remains read-only.
 
-Action plans and runs use schema v2. v1 state is migrated with atomic replace,
-last-known-good backup, and readback. Unknown future schemas remain read-only.
+Action plans and runs use schema v4. Writable v1-v3 state is migrated with
+atomic replace, last-known-good backup, and readback. Unknown future schemas
+remain read-only. Schema v4 may carry a check result ID, finding fingerprint,
+evidence digest, origin route, and affected resources. This context is
+non-authoritative and cannot supply an action, parameters, command, policy, or
+confirmation. Context-bearing plans bind it into the plan digest; legacy plans
+without context retain the v18 digest calculation.
+System Check reads supported Action Center plans and runs through explicit
+non-migrating store methods. Finding handoff re-resolves the latest persisted
+finding, validates its evidence fingerprint, freshness, variant, and closed
+mapping, and then asks Action Center to create a normal plan. System Check
+findings never carry command vectors, renderers, callbacks, or execution
+authority.
+`core/system_check/comparison.py` reconstructs supported schema-v1 results
+without rewriting the snapshot store. It compares one original check with a
+later check only when profile, Fedora variant, ordering, and source availability
+are compatible. Every original finding is classified as `resolved`,
+`unchanged`, `worsened`, or `not_comparable`. Action Center `verified` and
+finding `resolved` remain separate facts; a linked run waiting for reboot cannot
+claim resolution, and a successful verifier still requires a later compatible
+check collected after verification.
+The canonical Support Bundle v11 includes at most two results, 50 findings per
+result, one comparison, and 25 linked plan/run records. It recursively redacts
+paths, hostnames, emails, secrets, network identifiers, and verifier messages,
+and includes no raw command output. The authenticated loopback API exposes only
+`GET /api/system-check/latest`; no System Check confirm, execute, or collection
+route exists.
 The HTTP route table permits mutation only for token issuance; system,
 observability, profile, Action Center, and export surfaces are authenticated
 GET inspection endpoints.
@@ -215,6 +249,26 @@ last-known-good copies.
 snapshots distinct behind `ObservabilityService`. The daemon collector is
 read-only and never upgrades, cleans, resets, restores, flashes firmware, or
 restarts services.
+
+`core/system_check` owns the PyQt-free, immutable System Check contracts and a
+closed quick profile composed from State Doctor, Daily Maintenance, reclaim
+analysis, Action Center state, and pending Atomic deployments. Each collector
+has a name and timeout. Failures produce partial or failed results, cancellation
+does not persist, and deterministic fingerprints use normalized redacted facts.
+Completed and partial results are nested inside the existing schema-v1
+`HealthSnapshot.daily_maintenance` envelope; the JSON timeline and supporting
+SQLite metric store remain unchanged and v18 snapshots remain readable.
+
+`core/system_check/presentation.py` composes those existing stores for one
+read-only page and the CLI. It opens an existing metric database read-only and
+does not create or migrate it. `ui/system_check_tab.py` is the only
+Standard-mode System Check presentation, with Overview, Current findings, and
+History views plus collapsed supporting metrics. The stable `health` route
+selects Overview and `maintenance:health-timeline` selects History through the
+same plugin. `ui.health_timeline_tab.HealthTimelineTab` remains an import
+adapter; Action Center no longer owns a second health-history UI or Record
+Snapshot action. The presentation can describe Action Center runs but cannot
+plan, render, execute, or verify them.
 
 ## Commands, privilege, and Fedora variants
 
@@ -279,7 +333,7 @@ just build-flatpak
 just build-sdist
 ```
 
-Coverage must remain at or above 85%. Release completion additionally requires
+Coverage must remain at or above 86%. Release completion additionally requires
 Fedora review, Fedora 44 RPM install/upgrade, exact tag/source/artifact lineage,
 checksums, SBOM, CI/COPR terminal success, GitHub asset readback, and wiki
 readback.

@@ -11,8 +11,8 @@ from core.actions.contracts import ActionPlan, ActionRun
 from core.state.atomic_io import advisory_lock, atomic_write_json, atomic_write_text
 from core.state.paths import StatePaths
 
-ACTION_PLAN_SCHEMA_VERSION = 3
-ACTION_RUN_SCHEMA_VERSION = 3
+ACTION_PLAN_SCHEMA_VERSION = 4
+ACTION_RUN_SCHEMA_VERSION = 4
 MAX_ACTION_PLANS = 50
 MAX_ACTION_RUNS = 100
 
@@ -28,7 +28,7 @@ class ActionPlanStore:
         self.path = path or (StatePaths.from_environment().data / "action_plans.json")
         self.max_plans = max(1, max_plans)
 
-    def _load_unlocked(self) -> list[ActionPlan]:
+    def _load_unlocked(self, *, migrate: bool = True) -> list[ActionPlan]:
         try:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except FileNotFoundError:
@@ -38,7 +38,7 @@ class ActionPlanStore:
         if not isinstance(payload, Mapping):
             return []
         version = int(payload.get("schema_version", 0))
-        if version not in {1, 2, ACTION_PLAN_SCHEMA_VERSION}:
+        if version not in {1, 2, 3, ACTION_PLAN_SCHEMA_VERSION}:
             raise ActionStoreVersionError(f"Unsupported action plan schema version: {version}")
         raw_plans = payload.get("plans", [])
         if not isinstance(raw_plans, list):
@@ -51,7 +51,7 @@ class ActionPlanStore:
                 plans.append(ActionPlan.from_dict(raw))
             except (KeyError, TypeError, ValueError):
                 continue
-        if version in {1, 2}:
+        if migrate and version in {1, 2, 3}:
             self._write_unlocked(plans)
         return plans
 
@@ -67,6 +67,12 @@ class ActionPlanStore:
     def list(self, *, limit: int | None = None) -> list[ActionPlan]:
         with advisory_lock(self.path):
             plans = self._load_unlocked()
+        return plans[-limit:] if limit is not None else plans
+
+    def list_read_only(self, *, limit: int | None = None) -> List[ActionPlan]:
+        """Read supported plans without migrating or rewriting their store."""
+        with advisory_lock(self.path):
+            plans = self._load_unlocked(migrate=False)
         return plans[-limit:] if limit is not None else plans
 
     def get(self, plan_id: str) -> ActionPlan | None:
@@ -86,7 +92,7 @@ class ActionRunStore:
         self.path = path or (StatePaths.from_environment().data / "action_runs.jsonl")
         self.max_runs = max(1, max_runs)
 
-    def _load_unlocked(self) -> list[ActionRun]:
+    def _load_unlocked(self, *, migrate: bool = True) -> list[ActionRun]:
         try:
             lines = self.path.read_text(encoding="utf-8").splitlines()
         except OSError:
@@ -101,14 +107,14 @@ class ActionRunStore:
             if not isinstance(raw, Mapping):
                 continue
             version = int(raw.get("action_run_schema_version", 0))
-            if version not in {1, 2, ACTION_RUN_SCHEMA_VERSION}:
+            if version not in {1, 2, 3, ACTION_RUN_SCHEMA_VERSION}:
                 raise ActionStoreVersionError(f"Unsupported action run schema version: {version}")
-            migration_required = migration_required or version in {1, 2}
+            migration_required = migration_required or version in {1, 2, 3}
             try:
                 runs.append(ActionRun.from_dict(raw))
             except (KeyError, TypeError, ValueError):
                 continue
-        if migration_required:
+        if migrate and migration_required:
             self._write_unlocked(runs)
         return runs
 
@@ -121,6 +127,12 @@ class ActionRunStore:
     def list(self, *, limit: int | None = None) -> list[ActionRun]:
         with advisory_lock(self.path):
             runs = self._load_unlocked()
+        return runs[-limit:] if limit is not None else runs
+
+    def list_read_only(self, *, limit: int | None = None) -> List[ActionRun]:
+        """Read supported runs without migrating or rewriting their store."""
+        with advisory_lock(self.path):
+            runs = self._load_unlocked(migrate=False)
         return runs[-limit:] if limit is not None else runs
 
     def get(self, run_id: str) -> ActionRun | None:

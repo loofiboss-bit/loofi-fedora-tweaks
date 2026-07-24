@@ -197,6 +197,12 @@ status`, `api-key rotate`, and `api-key revoke`. The daemon may create plans but
 cannot confirm or execute host changes; GUI mode selection does not broaden
 either surface.
 
+Authenticated `GET /api/system-check/latest` returns only the latest bounded,
+privacy-safe persisted System Check result. It performs no collection. There
+is no API endpoint to start a check, confirm a plan, execute maintenance, or
+claim finding resolution. Use `loofi --json health comparison` for the same
+read-only before/after outcome model in scripts.
+
 ---
 
 ## 8) Incident Response Quick Playbooks
@@ -233,8 +239,8 @@ journalctl --user --since "2 hours ago"
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
 Haven preserves settings, navigation migration inputs, favorites, stable routes,
-and observability data. Writable Action Center v1/v2 state migrates atomically
-to schema v3; unknown future schemas remain read-only. RPM scriptlets do not
+and observability data. Writable Action Center v1-v3 state migrates atomically
+to schema v4; unknown future schemas remain read-only. RPM scriptlets do not
 own or migrate per-user XDG state.
 
 ---

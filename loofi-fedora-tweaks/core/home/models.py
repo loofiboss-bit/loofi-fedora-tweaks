@@ -8,6 +8,8 @@ from typing import Literal
 
 HomeOverallState = Literal["good", "attention", "critical", "unknown"]
 HomeDataState = Literal["fresh", "stale", "error", "empty"]
+HomeFreshnessState = Literal["fresh", "stale", "unavailable"]
+HomeCheckState = Literal["completed", "partial", "cancelled", "failed"]
 AttentionSeverity = Literal["info", "attention", "critical"]
 HomeStatusState = Literal["good", "attention", "critical", "unknown"]
 HomeStatusId = Literal["health", "updates", "storage", "recovery"]
@@ -83,6 +85,10 @@ class HomeSummary:
     recent_change: RecentChange | None
     source_errors: tuple[str, ...] = ()
     status_items: tuple[HomeStatus, ...] = ()
+    last_checked_at: datetime | None = None
+    freshness_state: HomeFreshnessState = "unavailable"
+    last_check_state: HomeCheckState | None = None
+    check_now_available: bool = True
 
     def __post_init__(self) -> None:
         if len(self.attention_items) > 3:

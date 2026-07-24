@@ -392,7 +392,7 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
 
 
 class TestAssuranceStoreMigration(unittest.TestCase):
-    def test_v1_plan_is_migrated_to_v3_with_backup_and_readback(self):
+    def test_v1_plan_is_migrated_to_v4_with_backup_and_readback(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "plans.json"
             plan = ActionPlan(
@@ -414,10 +414,10 @@ class TestAssuranceStoreMigration(unittest.TestCase):
             loaded = ActionPlanStore(path).list()
 
             self.assertEqual(loaded[0].plan_id, "plan-1")
-            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["schema_version"], 3)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["schema_version"], 4)
             self.assertTrue(path.with_suffix(".json.lkg").exists())
 
-    def test_v1_run_is_migrated_to_v3_with_backup_and_readback(self):
+    def test_v1_run_is_migrated_to_v4_with_backup_and_readback(self):
         with tempfile.TemporaryDirectory() as tmp:
             path = Path(tmp) / "runs.jsonl"
             run = ActionRun("run-1", "plan-1", "dnf-clean-all", "correlation-1")
@@ -426,5 +426,5 @@ class TestAssuranceStoreMigration(unittest.TestCase):
             loaded = ActionRunStore(path).list()
 
             self.assertEqual(loaded[0].run_id, "run-1")
-            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["action_run_schema_version"], 3)
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["action_run_schema_version"], 4)
             self.assertTrue(path.with_suffix(".jsonl.lkg").exists())

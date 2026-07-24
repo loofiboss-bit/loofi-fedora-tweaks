@@ -129,6 +129,19 @@ Btrfs snapshots. Open **Network & Security → Backups** for guided backup and
 restore. Repair Loofi remains available from Settings and reuses the v14 State
 Doctor and archive services.
 
+### Check maintenance outcomes
+
+Use **Check now** on Home to start the explicit read-only System Check. Review
+current findings and before/after history under **System → System Check**. A
+mapped finding can open one exact Action Center action for review; it never
+supplies a command or confirms execution.
+
+After a linked action is independently verified, Action Center offers
+**Check again**. Verification and resolution are separate: verifier success
+does not remove a finding, and a reboot-required run remains pending. Only a
+later compatible check can classify the original finding as resolved,
+unchanged, worsened, or not comparable.
+
 ---
 
 ## 5) Action Center Safety
@@ -191,7 +204,10 @@ System and diagnostics:
 
 ```bash
 loofi info
-loofi health
+loofi health check
+loofi health findings
+loofi health comparison
+loofi health history --limit 10
 loofi readiness --target 44
 loofi readiness --target 44 --advanced
 loofi readiness actions --target 44
@@ -242,7 +258,8 @@ Machine-readable output:
 
 ```bash
 loofi --json info
-loofi --json health
+loofi --json health findings
+loofi --json health comparison
 loofi --json readiness --target 44
 ```
 
@@ -256,8 +273,8 @@ loofi --json readiness --target 44
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
 Haven preserves settings, favorites, stable route IDs, observability data, and
-readable Action Center v1/v2 state. Writable Action Center state migrates
-atomically to schema v3; unknown future schemas remain read-only.
+readable Action Center v1-v3 state. Writable Action Center plans and runs
+migrate atomically to schema v4; unknown future schemas remain read-only.
 
 ---
 

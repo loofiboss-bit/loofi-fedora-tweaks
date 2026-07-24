@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v18.0.0 "Haven"
+# Loofi Fedora Tweaks v19.0.0 "Steward"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,38 +12,35 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v18.0.0">
-    <img src="https://img.shields.io/badge/Release-v18.0.0-blue?style=for-the-badge&logo=github" alt="v18.0.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v19.0.0">
+    <img src="https://img.shields.io/badge/Local_candidate-v19.0.0-orange?style=for-the-badge&logo=github" alt="v19.0.0 local release candidate; tag not yet published"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
-## What Haven changes
+## What Steward changes
 
-Haven closes the local trust boundary around host changes. The 80 stable routes
-and 56 first-party Action Center definitions now come from reviewed catalogs.
-Every definition states its operation class, Fedora variants, reboot policy,
-affected resources, preflight checks, confirmation, verification, and recovery
-policy.
+Steward connects Home, diagnostics, saved health evidence, and the v18 Action
+Center boundary into one explicit System Check and verified-resolution journey.
+The check remains read-only and runs only after user activation.
 
-- GUI, CLI, daemon, automation, and agent host mutations pass through Action
-  Center. Background actors may create plans but cannot confirm or execute them.
-- Action Center schema v3 stores operation and platform metadata. Writable v1
-  and v2 state migrates atomically; unknown future schemas remain read-only.
-- Unsupported host operations fail closed as `manual_only` plans.
-- The public Marketplace and executable third-party Python plugins are retired.
-  Existing extension files are inventoried for export but never imported or
-  deleted. Local profiles remain data-only and reviewable.
-- Gist and JWT secrets use Secret Service when persistent storage is available,
-  with session-only fallback. The optional Web API remains loopback-only and
-  read-only apart from rate-limited token issuance.
-- Built-in page providers remain lazy-loaded. The release benchmark measured
-  meaningful Home at 142.042 ms median and 75,408 KiB median RSS, with one
-  provider, zero subprocess probes, zero active timers, and zero QThreads.
+- Home starts one cancellable, timeout-bounded quick check off the UI thread.
+- One canonical System Check page shows current findings, saved history,
+  before/after outcomes, and honest partial or unavailable states.
+- Findings carry privacy-safe evidence and may link only to a validated existing
+  route, audited Action Center action ID, or manual guidance.
+- Action Center schema v4 stores bounded finding context while retaining atomic
+  v1-v3 migration, future-schema read-only safety, fresh preflight, explicit
+  confirmation, and independent verification.
+- CLI and the loopback-only read API expose stable versioned System Check
+  envelopes without adding a second execution path.
+- The release benchmark measured meaningful Home at 160.661 ms median and
+  76,048 KiB median RSS, with one provider, zero subprocess probes, zero active
+  timers, zero running QThreads, and no System Check import on cold start.
 
-Full details: [v18 release notes](docs/releases/RELEASE-NOTES-v18.0.0.md).
+Full details: [v19 release notes](docs/releases/RELEASE-NOTES-v19.0.0.md).
 
 ## The six destinations
 
@@ -124,6 +121,9 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 loofi info
 loofi health
+loofi health check
+loofi health findings
+loofi health history --limit 5
 loofi doctor
 loofi support-bundle
 loofi readiness --target 44
@@ -141,6 +141,8 @@ The global `--json` option appears before the CLI command.
 
 - Action Center exposes 56 classified first-party definitions. Unsupported host
   operations are visible as non-executable `manual_only` plans.
+- System Check findings cannot execute commands. Action handoff resolves only
+  fresh, untampered evidence against the closed Action Center catalog.
 - Plans expire and are re-preflighted. Exit code zero is not success until the
   verifier passes. Interrupted runs never resume automatically.
 - Commands are list-based, allowlisted, timeout-bounded, audit-linked, and never
@@ -182,12 +184,13 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v18.0.0 "Haven"` is the current Fedora 44 release. The annotated tag resolves
-to `6cfe11babd502d32bb57f333f1f505615a4f8864`; canonical CI, CodeQL, GitHub
-assets, checksums, SBOM, provenance, COPR build `10764217`, and a clean Fedora
-44 repository install all passed independent readback. Fedora 45 remains
-preview-only. The historical Sentinel tag is preserved as
-`legacy-v18.0.0-sentinel`.
+`v19.0.0 "Steward"` is locally release-ready for Fedora 44 Traditional and
+Atomic. Full tests, coverage, architecture, security, packaging, accessibility,
+startup, System Check duration, and fresh Kinoite deployment/reboot gates pass.
+No v19 tag or public package has been created; `v18.0.0 "Haven"` remains the
+latest independently verified public release until publication is separately
+authorized. Fedora 45 remains preview-only. The historical Sentinel tag remains
+preserved as `legacy-v18.0.0-sentinel`.
 
 ## License
 

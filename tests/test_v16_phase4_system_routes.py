@@ -68,16 +68,18 @@ class TestPhase4SystemRouteStacks(unittest.TestCase):
         self.assertEqual(len(tab.findChildren(PageScaffold)), 1)
         self.assertIsNone(tab.findChild(type(tab.backend_labels[0][1]), "snapHeader"))
 
-    def test_hardware_health_and_maintenance_sources_use_phase_four_scaffolds(self):
+    def test_hardware_system_check_and_maintenance_use_page_scaffolds(self):
         root = Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks" / "ui"
         hardware = (root / "hardware_tab.py").read_text(encoding="utf-8")
         maintenance = (root / "maintenance_tab.py").read_text(encoding="utf-8")
         maintenance_action_center = (root / "maintenance_action_center.py").read_text(encoding="utf-8")
+        system_check = (root / "system_check_tab.py").read_text(encoding="utf-8")
 
         self.assertIn("self.scaffold = PageScaffold(", hardware)
         self.assertNotIn('header = QLabel(self.tr("Hardware Control"))', hardware)
         self.assertIn("self.tabs = QStackedWidget()", maintenance)
-        self.assertIn('self.tr("Health History")', maintenance_action_center)
+        self.assertIn("self.scaffold = PageScaffold(", system_check)
+        self.assertNotIn("Health History", maintenance_action_center)
         self.assertNotIn('header = QLabel(self.tr("My Fedora Today"))', maintenance)
 
 

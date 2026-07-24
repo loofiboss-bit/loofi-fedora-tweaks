@@ -71,11 +71,21 @@ Plans expire after 30 minutes and are re-preflighted before execution. Each
 plan contains one action and validated parameters; the reviewed definition
 regenerates the command, so persisted commands are never authoritative. Only one
 Action Center mutation can run across GUI and CLI processes. The read-only API
-can inspect plans and runs, and Support Bundle v10 exports redacted lifecycle
-evidence linked by run ID without raw command output or secrets.
+can inspect plans and runs. Support Bundle v11 preserves the v10 lifecycle
+evidence and adds bounded System Check results, comparison outcomes, and linked
+finding metadata without raw command output or secrets.
 
-Writable schema-v1 and schema-v2 plans and runs migrate atomically to schema v3
-with a last-known-good backup and readback. Unknown future schemas remain
+Action Center `verified` means the action-specific verifier passed.
+System Check `resolved` means the original finding is absent from a later
+compatible check whose source completed. These facts are intentionally
+separate. A successful linked run offers **Check again**; a run waiting for
+reboot stays pending until reboot-aware verification finishes, and missing
+follow-up sources produce `not_comparable`, never `resolved`.
+
+Writable schema-v1 through schema-v3 plans and runs migrate atomically to
+schema v4 with a last-known-good backup and readback. Schema v4 can link a plan
+and run to a validated System Check finding, but that context cannot alter the
+action, command, policy, or confirmation. Unknown future schemas remain
 read-only. Home and global search may show attention or action entry points, but
 activation only opens `maintenance:action-center`. They never apply, verify,
 retry, or resume a plan. Standard and Advanced mode use the same safety policy.

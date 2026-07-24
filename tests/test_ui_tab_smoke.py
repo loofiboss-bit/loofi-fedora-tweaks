@@ -14,6 +14,7 @@ Targets: AgentsTab, LogsTab, StorageTab, PerformanceTab, SnapshotTab,
 import os
 import sys
 import unittest
+from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
@@ -457,17 +458,32 @@ class TestProfilesTab(unittest.TestCase):
 class TestHealthTimelineTab(unittest.TestCase):
     """Tests for HealthTimelineTab widget."""
 
-    @patch("utils.health_timeline.HealthTimeline")
-    def test_init(self, mock_ht):
-        mock_ht.return_value = MagicMock()
+    @patch("core.system_check.presentation.SystemCheckPresentationService")
+    def test_init(self, service_cls):
+        service_cls.return_value.load.return_value = SimpleNamespace(
+            latest_state="unavailable",
+            latest_completed_at=None,
+            findings=(),
+            unavailable_sources=(),
+            history=(),
+            metrics=(),
+        )
         from ui.health_timeline_tab import HealthTimelineTab
         t = HealthTimelineTab()
         self.assertIsNotNone(t)
-        self.assertTrue(hasattr(t, 'timeline'))
+        self.assertTrue(hasattr(t, 'presentation_service'))
+        self.assertFalse(hasattr(t, 'timeline'))
 
-    @patch("utils.health_timeline.HealthTimeline")
-    def test_metadata(self, mock_ht):
-        mock_ht.return_value = MagicMock()
+    @patch("core.system_check.presentation.SystemCheckPresentationService")
+    def test_metadata(self, service_cls):
+        service_cls.return_value.load.return_value = SimpleNamespace(
+            latest_state="unavailable",
+            latest_completed_at=None,
+            findings=(),
+            unavailable_sources=(),
+            history=(),
+            metrics=(),
+        )
         from ui.health_timeline_tab import HealthTimelineTab
         t = HealthTimelineTab()
         self.assertEqual(t._METADATA.id, "health")

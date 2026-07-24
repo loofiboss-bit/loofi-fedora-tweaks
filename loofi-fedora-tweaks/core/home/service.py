@@ -13,11 +13,14 @@ from core.actions.stores import ActionPlanStore, ActionRunStore
 from core.observability.timeline import HealthTimelineStore
 from core.observability.trends import MaintenanceTrendAnalyzer
 from core.state.doctor import StateDoctor
+from core.system_check.comparison import comparison_from_check
 from utils.history import HistoryManager
 
 from .models import (
     AttentionItem,
+    HomeCheckState,
     HomeDataState,
+    HomeFreshnessState,
     HomeOverallState,
     HomeStatus,
     HomeSummary,
@@ -85,15 +88,15 @@ class HomeService:
                 if error:
                     errors.append(f"health snapshot: {error}")
         state = self._read_source("state integrity", self.state_source.run, errors, default={})
-        plans = self._read_source("Action Center plans", lambda: self.plan_store.list(limit=25), errors, default=[])
-        runs = self._read_source("Action Center runs", lambda: self.run_store.list(limit=25), errors, default=[])
+        plans = self._read_source("Action Center plans", lambda: self._list_action_state(self.plan_store), errors, default=[])
+        runs = self._read_source("Action Center runs", lambda: self._list_action_state(self.run_store), errors, default=[])
         history = self._read_history(errors)
         notifications = self._read_notifications(errors)
 
         latest = max(snapshots, key=lambda item: float(getattr(item, "timestamp", 0.0)), default=None)
         data_state = self._data_state(now, latest, errors)
         recommendations = self._recommendations(now, snapshots, latest, state, plans, runs)
-        if not recommendations and data_state == "error":
+        if data_state == "error" and not any(item.kind == "source_error" for item in recommendations):
             recommendations.append(Recommendation(
                 "home-source-error", "source_error", "Home data needs attention",
                 "Some saved status sources could not be read. Review system health before making changes.",
@@ -114,11 +117,11 @@ class HomeService:
         elif not recommendations and data_state == "empty":
             recommendations.append(Recommendation(
                 "home-first-review", "first_health_review", "Review system health",
-                "No saved status exists yet. Open the local health view to create the first snapshot.",
+                "No saved status exists yet. Run a local System Check to create the first snapshot.",
                 "maintenance:health-timeline", "info",
             ))
 
-        ordered = ordered_recommendations(recommendations)
+        ordered = ordered_recommendations(self._deduplicate_recommendations(recommendations))
         primary = select_primary_recommendation(ordered)
         attention = tuple(
             AttentionItem(item.id, item.title, item.summary, item.route_id, item.severity)
@@ -142,7 +145,31 @@ class HomeService:
                 state,
                 ordered,
             ),
+            last_checked_at=(
+                datetime.fromtimestamp(float(getattr(latest, "timestamp", 0.0)), timezone.utc)
+                if latest is not None and float(getattr(latest, "timestamp", 0.0)) > 0.0
+                else None
+            ),
+            freshness_state=self._freshness_state(data_state),
+            last_check_state=self._last_check_state(latest),
+            check_now_available=True,
         )
+
+    @staticmethod
+    def _list_action_state(store: Any) -> list[Any]:
+        reader = getattr(store, "list_read_only", None)
+        if callable(reader):
+            return list(reader(limit=25))
+        return list(store.list(limit=25))
+
+    @staticmethod
+    def _freshness_state(data_state: HomeDataState) -> HomeFreshnessState:
+        return {
+            "fresh": "fresh",
+            "stale": "stale",
+            "error": "unavailable",
+            "empty": "unavailable",
+        }[data_state]  # type: ignore[return-value]
 
     @staticmethod
     def _read_source(label: str, reader: Callable[[], Any], errors: list[str], *, default: Any) -> Any:
@@ -225,7 +252,59 @@ class HomeService:
                 "maintenance:action-center", "critical", len(problematic_runs),
             ))
 
+        awaiting_reboot_runs = [
+            run
+            for run in runs
+            if str(getattr(run, "state", "")) == "awaiting_reboot"
+            or bool(getattr(run, "reboot_required", False))
+        ]
+        if awaiting_reboot_runs:
+            items.append(Recommendation(
+                "action-run-pending-reboot",
+                "pending_reboot",
+                "Restart before checking maintenance again",
+                "A verified Action Center step is waiting for reboot-aware verification.",
+                "maintenance:action-center",
+                "attention",
+                len(awaiting_reboot_runs),
+            ))
+
+        follow_up_runs = sorted(
+            (
+                run
+                for run in runs
+                if str(getattr(run, "state", "")) == "succeeded"
+                and getattr(run, "finding_context", None) is not None
+            ),
+            key=lambda run: float(getattr(run, "updated_at", 0.0) or 0.0),
+            reverse=True,
+        )
+        if follow_up_runs:
+            run = follow_up_runs[0]
+            context = run.finding_context
+            comparison = comparison_from_check(
+                list(snapshots),
+                context.check_result_id,
+            )
+            outcome = (
+                comparison.outcome_for(context.finding_fingerprint)
+                if comparison is not None
+                and comparison.after_completed_at
+                > float(getattr(run, "last_verified_at", 0.0) or 0.0)
+                else None
+            )
+            if outcome is None or outcome.state == "not_comparable":
+                items.append(Recommendation(
+                    f"resolution-check:{run.run_id}",
+                    "resolution_check",
+                    "Check maintenance outcome",
+                    "Action Center verification passed. Run a later System Check before treating the linked finding as resolved.",
+                    "atlas_dashboard",
+                    "attention",
+                ))
+
         if latest is not None:
+            items.extend(self._system_check_recommendations(latest))
             cards = self._card_map(latest)
             if self._pending_reboot(latest, cards):
                 items.append(Recommendation(
@@ -294,6 +373,83 @@ class HomeService:
                 "maintenance:action-center", "attention", review_count,
             ))
         return items
+
+    @classmethod
+    def _system_check_payload(cls, snapshot: Any | None) -> dict[str, Any]:
+        if snapshot is None:
+            return {}
+        maintenance = cls._mapping(getattr(snapshot, "daily_maintenance", {}))
+        return cls._mapping(maintenance.get("system_check", {}))
+
+    @classmethod
+    def _last_check_state(cls, snapshot: Any | None) -> HomeCheckState | None:
+        state = str(cls._system_check_payload(snapshot).get("state", ""))
+        return state if state in {"completed", "partial", "cancelled", "failed"} else None  # type: ignore[return-value]
+
+    @classmethod
+    def _system_check_recommendations(cls, snapshot: Any) -> list[Recommendation]:
+        payload = cls._system_check_payload(snapshot)
+        if not payload:
+            return []
+        recommendations: list[Recommendation] = []
+        errors = payload.get("source_errors", [])
+        if str(payload.get("state", "")) == "partial" and isinstance(errors, list):
+            sources = sorted({
+                str(item.get("source_id", ""))
+                for item in errors
+                if isinstance(item, Mapping) and item.get("source_id")
+            })
+            detail = ", ".join(sources) if sources else "one or more sources"
+            recommendations.append(Recommendation(
+                "system-check-partial",
+                "system_check_partial",
+                "Some checks were unavailable",
+                f"The latest System Check could not read: {detail}.",
+                "maintenance:health-timeline",
+                "attention",
+                max(1, len(sources)),
+            ))
+        findings = payload.get("findings", [])
+        if not isinstance(findings, list):
+            return recommendations
+        kind_by_id = {
+            "state-integrity": "state_integrity",
+            "action-run-needs-review": "action_run_review",
+            "pending-reboot": "pending_reboot",
+            "root-disk-pressure": "disk_pressure",
+            "package-health": "failed_update",
+            "recovery-protection": "missing_backup",
+        }
+        for raw in findings:
+            if not isinstance(raw, Mapping):
+                continue
+            finding_id = str(raw.get("finding_id", "system-check-finding"))
+            severity = "critical" if str(raw.get("severity", "")) == "critical" else "attention"
+            action_id = str(raw.get("action_id", ""))
+            route_id = str(raw.get("route_id", ""))
+            if action_id:
+                route_id = "maintenance:action-center"
+            recommendations.append(Recommendation(
+                f"system-check:{raw.get('fingerprint', finding_id)}",
+                kind_by_id.get(finding_id, "system_check_finding"),
+                str(raw.get("title") or "System Check finding"),
+                str(raw.get("summary") or "The latest System Check found an item to review."),
+                route_id or "maintenance:health-timeline",
+                severity,  # type: ignore[arg-type]
+            ))
+        return recommendations
+
+    @staticmethod
+    def _deduplicate_recommendations(
+        recommendations: Sequence[Recommendation],
+    ) -> tuple[Recommendation, ...]:
+        selected: dict[tuple[str, str], Recommendation] = {}
+        for item in recommendations:
+            key = (item.kind, item.route_id)
+            existing = selected.get(key)
+            if existing is None or item.severity == "critical" and existing.severity != "critical":
+                selected[key] = item
+        return tuple(selected.values())
 
     @staticmethod
     def _mapping(value: Any) -> dict[str, Any]:
@@ -431,6 +587,8 @@ class HomeService:
                 "repeated_health",
                 "source_error",
                 "stale_data",
+                "system_check_partial",
+                "system_check_finding",
             }:
                 return recommendation
             if recommendation.kind in kinds:

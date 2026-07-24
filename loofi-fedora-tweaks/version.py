@@ -3,6 +3,6 @@ Centralized version information for Loofi Fedora Tweaks.
 All version references should import from this module.
 """
 
-__version__ = "18.0.0"
-__version_codename__ = "Haven"
+__version__ = "19.0.0"
+__version_codename__ = "Steward"
 __app_name__ = "Loofi Fedora Tweaks"

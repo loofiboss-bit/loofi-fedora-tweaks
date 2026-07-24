@@ -1,0 +1,70 @@
+{
+  "backend": "wayland",
+  "fixture_timestamp": "2026-07-25T10:00:00+00:00",
+  "generated_at": "2026-07-24T22:27:17.850259+00:00",
+  "release": "v19 Steward working tree (metadata v18.0.0 Haven)",
+  "schema_version": 1,
+  "states": [
+    {
+      "height": 691,
+      "home_real_widget": true,
+      "path": "docs/images/v19/phase6/empty.png",
+      "sha256": "efcb06b6705e36511bcc9d64970bd8f76d085d4bb798b27d1ba80ea1c9db28aa",
+      "state": "empty",
+      "system_check_real_widget": true,
+      "system_check_section": "overview",
+      "width": 1363
+    },
+    {
+      "height": 958,
+      "home_real_widget": true,
+      "path": "docs/images/v19/phase6/healthy.png",
+      "sha256": "2e6416d1969afa7fb39b83cc84f26fcc78422312c2fb290f95d4d81c89da1a6a",
+      "state": "healthy",
+      "system_check_real_widget": true,
+      "system_check_section": "overview",
+      "width": 1600
+    },
+    {
+      "height": 939,
+      "home_real_widget": true,
+      "path": "docs/images/v19/phase6/partial.png",
+      "sha256": "199b7b9b058387557e127028d3cc5161445b270b06e83aeec931f554e7ba1c70",
+      "state": "partial",
+      "system_check_real_widget": true,
+      "system_check_section": "overview",
+      "width": 1600
+    },
+    {
+      "height": 958,
+      "home_real_widget": true,
+      "path": "docs/images/v19/phase6/actionable.png",
+      "sha256": "c2deff5479159ed54edf08c178544e37b15c56ff4e7467acdca2b137bc8af986",
+      "state": "actionable",
+      "system_check_real_widget": true,
+      "system_check_section": "findings",
+      "width": 1600
+    },
+    {
+      "height": 958,
+      "home_real_widget": true,
+      "path": "docs/images/v19/phase6/awaiting-reboot.png",
+      "sha256": "4842ba65d3377516d8a21e40346e78c8b6dc79e8dfaaf70bf88dc524bd13128d",
+      "state": "awaiting-reboot",
+      "system_check_real_widget": true,
+      "system_check_section": "findings",
+      "width": 1600
+    },
+    {
+      "height": 691,
+      "home_real_widget": true,
+      "path": "docs/images/v19/phase6/resolved.png",
+      "sha256": "46b96046d8fcd29376880e36f2e923694cad473a1eb226d1fa12b5be648cc064",
+      "state": "resolved",
+      "system_check_real_widget": true,
+      "system_check_section": "history",
+      "width": 1363
+    }
+  ],
+  "status": "passed"
+}

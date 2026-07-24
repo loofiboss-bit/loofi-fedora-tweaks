@@ -1,5 +1,5 @@
 """
-Maintenance Action Center and health timeline sections.
+Maintenance Action Center sections.
 Part of v11.0 "Aurora Update".
 
 Uses a lazy route-owned stack to preserve all features from the
@@ -66,6 +66,8 @@ class _ActionCenterOperationWorker(QObject):
 class _ActionCenterSubTab(BaseTab):
     """Review, asynchronously run, verify, and inspect v17 action plans."""
 
+    systemCheckRequested = pyqtSignal(object)
+
     _ACTION_ID_ADAPTERS = {
         "readiness-repo-cache-clean": "dnf-clean-all",
     }
@@ -85,6 +87,7 @@ class _ActionCenterSubTab(BaseTab):
         self._operation_worker = None
         self._requested_action_id = ""
         self._requested_parameters: dict[str, typing.Any] = {}
+        self._requested_finding_context: dict[str, typing.Any] | None = None
 
         from core.actions.center import ActionCenterService
 
@@ -159,6 +162,13 @@ class _ActionCenterSubTab(BaseTab):
         self.verify_button.setEnabled(False)
         target_review_row.addWidget(self.verify_button)
 
+        self.check_again_button = QPushButton(self.tr("Check again"))
+        self.check_again_button.setObjectName("actionCenterCheckAgain")
+        self.check_again_button.clicked.connect(self._request_follow_up_check)
+        self.check_again_button.setEnabled(False)
+        self.check_again_button.setVisible(False)
+        target_review_row.addWidget(self.check_again_button)
+
         history_button = QPushButton(self.tr("Show History"))
         self.history_button = history_button
         history_button.clicked.connect(self._show_history)
@@ -206,6 +216,8 @@ class _ActionCenterSubTab(BaseTab):
         self._current_run = None
         self.run_button.setEnabled(False)
         self.verify_button.setEnabled(False)
+        self.check_again_button.setEnabled(False)
+        self.check_again_button.setVisible(False)
         self.action_list.clear()
         self.detail_area.setPlainText(self.tr("Loading Action Center candidates..."))
         self.presentation_banner.set_result(
@@ -290,10 +302,21 @@ class _ActionCenterSubTab(BaseTab):
             lines.extend(f"{plan.plan_id}: {plan.action_id} [{plan.state}]" for plan in reversed(plans[-10:]))
         self.detail_area.setPlainText("\n".join(lines) if len(lines) > 1 else empty)
 
-    def preselect_action(self: typing.Any, action_id: str, parameters: typing.Any = None) -> bool:
+    def preselect_action(
+        self: typing.Any,
+        action_id: str,
+        parameters: typing.Any = None,
+        *,
+        finding_context: typing.Any = None,
+    ) -> bool:
         """Preselect a candidate without creating a plan or running anything."""
         self._requested_action_id = self._ACTION_ID_ADAPTERS.get(str(action_id or ""), str(action_id or ""))
         self._requested_parameters = dict(parameters or {})
+        self._requested_finding_context = (
+            dict(finding_context)
+            if isinstance(finding_context, dict)
+            else None
+        )
         if not self._requested_action_id:
             return False
         return self._select_requested_action() or not bool(self._items)
@@ -310,7 +333,15 @@ class _ActionCenterSubTab(BaseTab):
 
     def _selection_changed(self: typing.Any, row: int) -> None:
         if 0 <= row < len(self._items):
-            self._show_item(self._items[row])
+            item = self._items[row]
+            candidate_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
+            if (
+                self._requested_finding_context is not None
+                and candidate_id != self._requested_action_id
+            ):
+                self._requested_finding_context = None
+                self._requested_parameters = {}
+            self._show_item(item)
 
     def _select_requested_action(self: typing.Any) -> bool:
         if not self._requested_action_id:
@@ -434,8 +465,25 @@ class _ActionCenterSubTab(BaseTab):
                 parameters["service"] = service
 
         orchestrator = self._orchestrator_instance()
+        context = self._requested_finding_context
+        def operation():
+            if context is not None:
+                return orchestrator.plan_from_finding(
+                    check_result_id=str(context.get("check_result_id", "")),
+                    finding_fingerprint=str(
+                        context.get("finding_fingerprint", "")
+                    ),
+                    origin_route=str(context.get("origin_route", "")),
+                    expected_action_id=action_id,
+                    target=self._target_key,
+                )
+            return orchestrator.plan(
+                action_id,
+                parameters,
+                target=self._target_key,
+            )
         self._start_operation(
-            lambda: orchestrator.plan(action_id, parameters, target=self._target_key),
+            operation,
             self._accept_plan,
             self.tr("Action Plan Failed"),
         )
@@ -448,11 +496,19 @@ class _ActionCenterSubTab(BaseTab):
         self._show_plan(plan)
 
     def _show_plan(self: typing.Any, plan: typing.Any) -> None:
+        context = getattr(plan, "finding_context", None)
+        context_line = (
+            f"{self.tr('System Check')}: {context.check_result_id} / "
+            f"{context.finding_fingerprint[:12]}"
+            if context is not None
+            else f"{self.tr('System Check')}: {self.tr('not linked')}"
+        )
         self.detail_area.setPlainText(
             "\n".join(
                 [
                     f"{self.tr('Plan')}: {plan.plan_id}",
                     f"{self.tr('Action')}: {plan.action_id}",
+                    context_line,
                     f"{self.tr('State')}: {plan.state}",
                     f"{self.tr('Risk')}: {plan.risk_level}",
                     f"{self.tr('Privilege')}: {'pkexec' if plan.privileged else self.tr('none')}",
@@ -599,20 +655,69 @@ class _ActionCenterSubTab(BaseTab):
         self.verify_button.setEnabled(verified.state == "awaiting_reboot")
         self._show_run(verified)
 
+    def _request_follow_up_check(self: typing.Any) -> None:
+        run = self._current_run
+        context = getattr(run, "finding_context", None) if run is not None else None
+        if (
+            run is None
+            or context is None
+            or str(getattr(run, "state", "")) != "succeeded"
+        ):
+            return
+        self.systemCheckRequested.emit(
+            {
+                "run_id": str(run.run_id),
+                "check_result_id": context.check_result_id,
+                "finding_fingerprint": context.finding_fingerprint,
+                "affected_resources": list(context.affected_resources),
+            }
+        )
+
     def _show_run(self: typing.Any, run: typing.Any) -> None:
         verification = run.verification_result or {}
+        context = getattr(run, "finding_context", None)
+        can_check_again = (
+            context is not None
+            and str(getattr(run, "state", "")) == "succeeded"
+        )
+        self.check_again_button.setVisible(context is not None)
+        self.check_again_button.setEnabled(can_check_again)
+        self.check_again_button.setToolTip(
+            self.tr("Run a later read-only System Check for: %1").replace(
+                "%1",
+                ", ".join(context.affected_resources)
+                if context is not None and context.affected_resources
+                else self.tr("the linked finding"),
+            )
+            if can_check_again
+            else self.tr(
+                "Finish verification and any required reboot before checking the finding again."
+            )
+        )
+        context_line = (
+            f"{self.tr('System Check')}: {context.check_result_id} / "
+            f"{context.finding_fingerprint[:12]}"
+            if context is not None
+            else f"{self.tr('System Check')}: {self.tr('not linked')}"
+        )
         self.detail_area.setPlainText(
             "\n".join(
                 [
                     f"{self.tr('Run')}: {run.run_id}",
                     f"{self.tr('Plan')}: {run.plan_id}",
                     f"{self.tr('Action')}: {run.action_id}",
+                    context_line,
                     f"{self.tr('State')}: {run.state}",
                     f"{self.tr('Execution')}: {(run.execution_result or {}).get('message', '')}",
                     f"{self.tr('Verification')}: {verification.get('message', self.tr('Pending'))}",
                     f"{self.tr('Verification attempts')}: {getattr(run, 'verification_attempts', 0)}",
                     f"{self.tr('Reboot required')}: {getattr(run, 'reboot_required', False)}",
                     f"{self.tr('Recovery')}: {run.recovery_status}",
+                    (
+                        self.tr("Finding resolution: requires a later compatible System Check")
+                        if context is not None
+                        else self.tr("Finding resolution: not linked")
+                    ),
                 ]
             )
         )
@@ -641,97 +746,3 @@ class _ActionCenterSubTab(BaseTab):
         if viable is not None:
             self._current_plan = viable
             self.run_button.setEnabled(True)
-
-
-# ---------------------------------------------------------------------------
-# Sub-tab: Health Timeline (v12.0 Lighthouse)
-# ---------------------------------------------------------------------------
-
-
-class _HealthTimelineSubTab(QWidget):
-    """My Fedora Today timeline surface backed by core.observability."""
-
-    def __init__(self: typing.Any) -> None:
-        super().__init__()
-        from core.observability import MaintenanceTrendAnalyzer, ObservabilityService
-
-        self._observability = ObservabilityService()
-        self._store = self._observability.snapshots
-        self._analyzer_cls = MaintenanceTrendAnalyzer
-
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        self.scaffold = PageScaffold(
-            self.tr("Health History"),
-            self.tr("Review recorded system-health events and recurring issues."),
-        )
-        root.addWidget(self.scaffold)
-        layout = self.scaffold.content_layout
-        layout.setSpacing(12)
-
-        button_row = QHBoxLayout()
-        refresh_button = QPushButton(self.tr("Refresh"))
-        refresh_button.clicked.connect(self._load_timeline)
-        button_row.addWidget(refresh_button)
-
-        snapshot_button = QPushButton(self.tr("Record Snapshot"))
-        snapshot_button.clicked.connect(self._record_snapshot)
-        button_row.addWidget(snapshot_button)
-        button_row.addStretch()
-        layout.addLayout(button_row)
-
-        self.summary_label = QLabel()
-        self.summary_label.setWordWrap(True)
-        layout.addWidget(self.summary_label)
-
-        self.timeline_list = QListWidget()
-        self.timeline_list.setAccessibleName(self.tr("Health timeline snapshots"))
-        layout.addWidget(self.timeline_list, 1)
-
-        self.detail_area = QTextEdit()
-        self.detail_area.setReadOnly(True)
-        self.detail_area.setAccessibleName(self.tr("Health timeline details"))
-        layout.addWidget(self.detail_area, 1)
-
-        self._load_timeline()
-
-    def _load_timeline(self: typing.Any) -> None:
-        snapshots = self._store.load()
-        summary = self._analyzer_cls(snapshots).analyze()
-        self.timeline_list.clear()
-        self.summary_label.setText(summary.summary)
-
-        for snapshot in reversed(snapshots[-10:]):
-            self.timeline_list.addItem(
-                self.tr("%1 -- %2 issue(s)").replace("%1", str(snapshot.timestamp)).replace("%2", str(len(snapshot.problem_fingerprints)))
-            )
-
-        self.detail_area.setPlainText(
-            "\n".join(
-                [
-                    f"{self.tr('Snapshots')}: {len(snapshots)}",
-                    f"{self.tr('New')}: {len(summary.new)}",
-                    f"{self.tr('Recurring')}: {len(summary.recurring)}",
-                    f"{self.tr('Resolved')}: {len(summary.resolved)}",
-                    f"{self.tr('Worsening')}: {len(summary.worsening)}",
-                    "",
-                    summary.summary,
-                ]
-            )
-        )
-
-    def _record_snapshot(self: typing.Any) -> None:
-        try:
-            self._observability.collect_snapshot(
-                target=FEDORA_RELEASE_POLICY.stable_target,
-                source="gui",
-            )
-        except (OSError, RuntimeError, ValueError, TypeError) as exc:
-            QMessageBox.warning(self, self.tr("Snapshot Failed"), str(exc))
-            return
-        self._load_timeline()
-
-
-# ---------------------------------------------------------------------------
-# Main consolidated tab
-# ---------------------------------------------------------------------------

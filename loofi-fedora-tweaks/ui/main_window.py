@@ -491,6 +491,12 @@ class MainWindow(MainWindowServiceMixin, MainWindowInteractionMixin, QMainWindow
         action_request = getattr(widget, "actionCenterRequested", None)
         if action_request is not None and hasattr(action_request, "connect"):
             action_request.connect(self._open_action_center_request)
+        finding_request = getattr(widget, "findingActionReviewRequested", None)
+        if finding_request is not None and hasattr(finding_request, "connect"):
+            finding_request.connect(self._open_system_check_action_request)
+        check_request = getattr(widget, "systemCheckRequested", None)
+        if check_request is not None and hasattr(check_request, "connect"):
+            check_request.connect(self._start_follow_up_system_check)
         if plugin_id == "atlas_dashboard":
             self._schedule_post_render_services()
         return widget
@@ -499,6 +505,26 @@ class MainWindow(MainWindowServiceMixin, MainWindowInteractionMixin, QMainWindow
         """Navigate and preselect only; workflow adapters never create a plan."""
         if self.switch_to_route("maintenance:action-center"):
             self._preselect_action_center(action_id, parameters)
+
+    def _open_system_check_action_request(self, action_id: str, context=None) -> None:
+        """Carry identifiers only; Action Center re-resolves persisted evidence."""
+        if self.switch_to_route("maintenance:action-center"):
+            self._preselect_action_center(
+                action_id,
+                finding_context=dict(context or {}),
+            )
+
+    def _start_follow_up_system_check(self, _context=None) -> None:
+        """Start collection only after the user's explicit Check again action."""
+        if not self.switch_to_route("atlas_dashboard"):
+            return
+        entry = self._sidebar_index.get("atlas_dashboard")
+        if entry is None:
+            return
+        widget = self._real_widget_for_entry(entry)
+        start = getattr(widget, "start_system_check", None)
+        if callable(start):
+            start()
 
     def _find_or_create_category(self, category: str) -> QTreeWidgetItem:
         """Find or create a category tree item, using cache for O(1) lookup."""

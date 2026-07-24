@@ -39,13 +39,18 @@ def build_parser() -> argparse.ArgumentParser:
     subparsers.add_parser("info", help="Show system information")
 
     # Health command
-    health_parser = subparsers.add_parser("health", help="System health check overview")
-    health_subparsers = health_parser.add_subparsers(dest="health_action", help="Health timeline commands")
+    health_parser = subparsers.add_parser("health", help="System Check and compatibility health commands")
+    health_subparsers = health_parser.add_subparsers(dest="health_action", help="System Check commands")
+    health_subparsers.add_parser("check", help="Run and persist the explicit read-only System Check")
+    health_subparsers.add_parser("findings", help="Show findings from the latest saved System Check")
+    health_subparsers.add_parser("comparison", help="Show the latest compatible before/after finding outcomes")
+    health_history_parser = health_subparsers.add_parser("history", help="Show saved checks and before/after history")
+    health_history_parser.add_argument("--limit", type=int, default=10, help="History limit")
     health_snapshot_parser = health_subparsers.add_parser("snapshot", help="Record a My Fedora Today health snapshot")
     health_snapshot_parser.add_argument(
         "--target", choices=FEDORA_RELEASE_POLICY.action_targets, default=FEDORA_RELEASE_POLICY.stable_target, help="Readiness target profile"
     )
-    health_timeline_parser = health_subparsers.add_parser("timeline", help="Show persisted health snapshots")
+    health_timeline_parser = health_subparsers.add_parser("timeline", help="Compatibility alias for persisted health snapshots")
     health_timeline_parser.add_argument("--limit", type=int, default=10, help="Snapshot limit")
 
     maintenance_parser = subparsers.add_parser("maintenance", help="Daily maintenance health commands")

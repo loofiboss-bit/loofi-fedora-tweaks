@@ -73,6 +73,45 @@ class HealthSnapshot:
         )
 
     @classmethod
+    def from_system_check(
+        cls,
+        result: Any,
+        *,
+        fedora_target: str = FEDORA_RELEASE_POLICY.stable_target,
+    ) -> "HealthSnapshot":
+        """Embed System Check in the v18-compatible maintenance envelope."""
+        payload = result.to_dict()
+        if result.completed_at is None:
+            raise ValueError("Only terminal System Check results can be persisted.")
+        findings = list(getattr(result, "findings", ()))
+        action_ids = [str(item.action_id) for item in findings if item.action_id]
+        daily_maintenance = {
+            "generated_at": result.completed_at,
+            "atomic": result.atomic,
+            "cards": [],
+            "recommended_action": "",
+            "system_check": payload,
+        }
+        return cls(
+            timestamp=result.completed_at,
+            app_version=__version__,
+            app_codename=__version_codename__,
+            fedora_target=fedora_target,
+            atomic=result.atomic,
+            daily_maintenance=cast(dict[str, Any], redact_payload(daily_maintenance)),
+            action_center_summary={
+                "candidate_count": len(action_ids),
+                "by_action_id": {action_id: action_ids.count(action_id) for action_id in sorted(set(action_ids))},
+                "by_state": {},
+            },
+            problem_fingerprints=[],
+            collection_errors=[
+                f"{item.source_id}: {item.reason_code}"
+                for item in result.source_errors
+            ],
+        )
+
+    @classmethod
     def collect(
         cls,
         *,

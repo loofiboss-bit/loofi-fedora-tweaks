@@ -14,6 +14,40 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
 | v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
 | v18.0.0 | Haven | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
+| v19.0.0 | Steward | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
+
+## [ACTIVE] v19.0.0 "Steward" — Guided System Checks
+
+**Objective:** connect the existing read-only health, Home, diagnostics, and
+Action Center foundations into one explicit System Check and verified-resolution
+journey without weakening the v18 trust boundary.
+
+### Required outcomes
+
+- Home starts a bounded read-only check only after explicit user action.
+- One canonical System Check presentation composes the existing snapshot and
+  metric stores without creating a third health database.
+- Findings carry privacy-safe evidence and may recommend one existing audited
+  Action Center action ID, a navigation-only route, or honest manual guidance.
+- Stable routes, aliases, settings, favorites, snapshots, metrics, plans, runs,
+  Traditional/Atomic behavior, and startup safety remain compatible.
+
+### Phase status
+
+| Phase | Status | Deliverable |
+| --- | --- | --- |
+| 0 — Authority, baseline, and scope lock | DONE | [Exact v18 inventories and v19 authority](docs/reports/V19_PHASE0_BASELINE.md) |
+| 1 — Canonical System Check domain | DONE | [PyQt-free contracts, bounded collectors, and v18-compatible storage](docs/reports/V19_PHASE1_SYSTEM_CHECK_DOMAIN.md) |
+| 2 — Explicit Home check workflow | DONE | [Explicit asynchronous Check now flow and startup evidence](docs/reports/V19_PHASE2_EXPLICIT_HOME_CHECK.md) |
+| 3 — Canonical page and compatibility migration | DONE | [One read-only page with preserved routes, snapshots, metrics, and CLI aliases](docs/reports/V19_PHASE3_CANONICAL_SYSTEM_CHECK.md) |
+| 4 — Finding-to-Action Center handoff | DONE | [Validated finding handoff and Action Center schema-v4 context](docs/reports/V19_PHASE4_ACTION_HANDOFF.md) |
+| 5 — Verified resolution and support evidence | DONE | [Separate verification/resolution facts, bounded support evidence, and read-only API](docs/reports/V19_PHASE5_VERIFIED_RESOLUTION.md) |
+| 6 — Accessibility, platform certification, and release | LOCAL READY | [Platform evidence](docs/reports/V19_PHASE6_PLATFORM_CERTIFICATION.md) and [local release readiness](docs/reports/V19_PHASE6_RELEASE_READINESS.md) |
+
+The sole scope authority is the
+[canonical v19 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md). No product
+tag or publication occurs without separate authorization. The synchronized
+v19.0.0 metadata was applied only after the local Phase 6 gates passed.
 
 ## [DONE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
 

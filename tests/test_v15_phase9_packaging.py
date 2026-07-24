@@ -9,7 +9,12 @@ import unittest
 from pathlib import Path
 
 from core.actions.history import ActionHistoryStore
-from core.actions.stores import ActionPlanStore, ActionRunStore
+from core.actions.stores import (
+    ACTION_PLAN_SCHEMA_VERSION,
+    ACTION_RUN_SCHEMA_VERSION,
+    ActionPlanStore,
+    ActionRunStore,
+)
 from core.navigation.models import NavigationMode
 from core.state.doctor import StateDoctor
 from core.state.inventory import StateInventory
@@ -197,8 +202,16 @@ class TestV14UpgradeCompatibility(unittest.TestCase):
             self.assertEqual(runs[0].state, "verifying")
             self.assertEqual(history[0]["event"], "run-awaiting-verification")
             self.assertNotEqual(doctor["status"], "error")
-            self.assertEqual(json.loads(plan_path.read_text(encoding="utf-8"))["schema_version"], 3)
-            self.assertEqual(json.loads(run_path.read_text(encoding="utf-8"))["action_run_schema_version"], 3)
+            self.assertEqual(
+                json.loads(plan_path.read_text(encoding="utf-8"))["schema_version"],
+                ACTION_PLAN_SCHEMA_VERSION,
+            )
+            self.assertEqual(
+                json.loads(run_path.read_text(encoding="utf-8"))[
+                    "action_run_schema_version"
+                ],
+                ACTION_RUN_SCHEMA_VERSION,
+            )
             self.assertEqual(history_path.read_bytes(), before[history_path])
             self.assertEqual(plan_path.with_suffix(".json.lkg").read_bytes(), before[plan_path])
             self.assertEqual(run_path.with_suffix(".jsonl.lkg").read_bytes(), before[run_path])

@@ -33,6 +33,23 @@ class _PackageService:
         return _package_report()
 
 
+class _UnavailablePackageService:
+    @staticmethod
+    def collect():
+        return DNF5HealthReport(
+            package_manager="Unknown",
+            dnf5_available=False,
+            dnf_available=False,
+            packagekit_active=False,
+            packagekit_detail="unavailable",
+            dnf_locked=False,
+            lock_detail="No locks",
+            repo_probe_ok=False,
+            repo_probe_detail="No DNF-compatible package manager found",
+            repo_risks=[],
+        )
+
+
 def _runner(cmd, _timeout):
     stdout_by_command = {
         "flatpak": "flathub\n",
@@ -60,12 +77,15 @@ class TestDailyMaintenanceService(unittest.TestCase):
     @patch("core.diagnostics.daily_maintenance.shutil.which", return_value=None)
     @patch("core.diagnostics.daily_maintenance.SystemManager.is_atomic", return_value=True)
     def test_atomic_fedora_uses_rpm_ostree_update_guidance(self, _mock_atomic, _mock_which):
-        report = DailyMaintenanceService(runner=_runner, package_service=_PackageService).collect()
+        report = DailyMaintenanceService(runner=_runner, package_service=_UnavailablePackageService).collect()
         cards = {card.id: card for card in report.cards}
 
         self.assertTrue(report.atomic)
         self.assertEqual(cards["system-updates"].command_preview, ["rpm-ostree", "upgrade", "--check"])
         self.assertEqual(cards["system-updates"].state, "preview_only")
+        self.assertEqual(cards["package-health"].state, "success")
+        self.assertEqual(cards["package-health"].command_preview, ["rpm-ostree", "status"])
+        self.assertNotIn("DNF", cards["package-health"].summary)
         self.assertEqual(cards["rollback"].command_preview, ["rpm-ostree", "status"])
 
 

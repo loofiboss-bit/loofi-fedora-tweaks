@@ -5,9 +5,19 @@ from __future__ import annotations
 import unittest
 from types import SimpleNamespace
 
-from core.actions.contracts import ActionPlan, ActionRun, PolicyDecision
+from core.actions.contracts import (
+    ActionPlan,
+    ActionRun,
+    FindingContext,
+    PolicyDecision,
+)
 from core.home import HomeService, Recommendation, select_primary_recommendation
 from core.observability.snapshot import HealthSnapshot
+from core.system_check.models import (
+    FindingEvidence,
+    SystemCheckResult,
+    SystemFinding,
+)
 
 
 class _ListSource:
@@ -16,6 +26,7 @@ class _ListSource:
     def __init__(self, values=(), error: Exception | None = None):
         self.values = list(values)
         self.error = error
+        self.read_only_calls = 0
 
     def load(self):
         if self.error:
@@ -23,6 +34,12 @@ class _ListSource:
         return list(self.values)
 
     def list(self, *, limit=None):
+        if self.error:
+            raise self.error
+        return list(self.values[-limit:] if limit else self.values)
+
+    def list_read_only(self, *, limit=None):
+        self.read_only_calls += 1
         if self.error:
             raise self.error
         return list(self.values[-limit:] if limit else self.values)
@@ -67,6 +84,48 @@ def _snapshot(now: float, **overrides) -> HealthSnapshot:
     }
     values.update(overrides)
     return HealthSnapshot(**values)
+
+
+def _check_snapshot(
+    check_id: str,
+    completed_at: float,
+    findings=(),
+) -> HealthSnapshot:
+    return HealthSnapshot.from_system_check(
+        SystemCheckResult(
+            check_id,
+            "system-check-quick-v1",
+            "completed",
+            False,
+            completed_at - 1,
+            completed_at,
+            tuple(findings),
+            (),
+            (),
+            ("maintenance",),
+        )
+    )
+
+
+def _disk_finding() -> SystemFinding:
+    return SystemFinding.build(
+        finding_id="root-disk-pressure",
+        category="storage",
+        severity="attention",
+        title="Root filesystem needs attention",
+        summary="Root usage is high.",
+        evidence=FindingEvidence.from_mapping(
+            "maintenance",
+            {"root_usage_percent": 92.0, "state": "warning"},
+            collected_at=90_000.0,
+        ),
+        applicable_variants=frozenset({"traditional", "atomic"}),
+        freshness_state="fresh",
+        affected_resources=("filesystem:/",),
+        route_id="maintenance:cleanup",
+        manual_guidance="Review reclaimable data.",
+        manual_reason_code="disk-review",
+    )
 
 
 def _service(
@@ -178,6 +237,71 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.overall_state, "attention")
         self.assertEqual(summary.primary_recommendation.kind, "first_health_review")
         self.assertEqual(summary.primary_recommendation.route_id, "maintenance:health-timeline")
+        self.assertIsNone(summary.last_checked_at)
+        self.assertEqual(summary.freshness_state, "unavailable")
+        self.assertTrue(summary.check_now_available)
+
+    def test_last_checked_and_freshness_follow_latest_saved_snapshot(self):
+        summary = _service(snapshots=[_snapshot(100_000.0)]).summary()
+
+        self.assertEqual(summary.last_checked_at.timestamp(), 100_000.0)
+        self.assertEqual(summary.freshness_state, "fresh")
+
+        stale = _service(snapshots=[_snapshot(1.0)]).summary()
+        self.assertEqual(stale.freshness_state, "stale")
+
+    def test_nested_system_check_finding_drives_home_without_execution(self):
+        snapshot = _snapshot(
+            100_000.0,
+            daily_maintenance={
+                "cards": [],
+                "system_check": {
+                    "state": "completed",
+                    "findings": [{
+                        "finding_id": "root-disk-pressure",
+                        "fingerprint": "disk-fingerprint",
+                        "title": "Root filesystem needs attention",
+                        "summary": "Root usage is 96 percent.",
+                        "severity": "critical",
+                        "route_id": "maintenance:cleanup",
+                        "action_id": "",
+                    }],
+                    "source_errors": [],
+                },
+            },
+        )
+
+        summary = _service(snapshots=[snapshot]).summary()
+
+        self.assertEqual(summary.primary_recommendation.kind, "disk_pressure")
+        self.assertEqual(summary.primary_recommendation.severity, "critical")
+        self.assertEqual(summary.primary_recommendation.route_id, "maintenance:cleanup")
+        self.assertEqual(summary.last_check_state, "completed")
+
+    def test_partial_system_check_names_unavailable_source_and_is_not_good(self):
+        snapshot = _snapshot(
+            100_000.0,
+            collection_errors=["maintenance: collector-timeout"],
+            daily_maintenance={
+                "cards": [],
+                "system_check": {
+                    "state": "partial",
+                    "findings": [],
+                    "source_errors": [{
+                        "source_id": "maintenance",
+                        "reason_code": "collector-timeout",
+                    }],
+                },
+            },
+        )
+
+        summary = _service(snapshots=[snapshot]).summary()
+
+        self.assertEqual(summary.data_state, "error")
+        self.assertNotEqual(summary.overall_state, "good")
+        self.assertEqual(summary.primary_recommendation.kind, "system_check_partial")
+        self.assertIn("maintenance", summary.primary_recommendation.summary)
+        self.assertEqual(summary.last_check_state, "partial")
 
     def test_critical_state_integrity_is_first(self):
         snapshot = _snapshot(
@@ -200,6 +324,77 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.primary_recommendation.kind, "action_run_review")
         self.assertEqual(summary.primary_recommendation.route_id, "maintenance:action-center")
         self.assertIn("interrupted", summary.primary_recommendation.summary)
+
+    def test_verified_link_requires_a_later_check_before_resolution(self):
+        finding = _disk_finding()
+        context = FindingContext(
+            "check-before",
+            finding.fingerprint,
+            "a" * 64,
+            "health",
+            ("filesystem:/",),
+        )
+        run = ActionRun(
+            "run-1",
+            "plan-1",
+            "dnf-clean-all",
+            "corr",
+            finding_context=context,
+            state="succeeded",
+            updated_at=99_000.0,
+            last_verified_at=99_000.0,
+            verification_result={"success": True},
+        )
+
+        summary = _service(
+            snapshots=[
+                _check_snapshot("check-before", 90_000.0, (finding,)),
+                _check_snapshot("check-too-early", 98_000.0),
+            ],
+            runs=[run],
+        ).summary()
+
+        self.assertEqual(
+            summary.primary_recommendation.kind,
+            "resolution_check",
+        )
+
+        resolved = _service(
+            snapshots=[
+                _check_snapshot("check-before", 90_000.0, (finding,)),
+                _check_snapshot("check-after", 100_000.0),
+            ],
+            runs=[run],
+        ).summary()
+
+        self.assertEqual(resolved.primary_recommendation.kind, "no_action")
+
+    def test_awaiting_reboot_is_separate_from_resolution(self):
+        finding = _disk_finding()
+        run = ActionRun(
+            "run-reboot",
+            "plan-reboot",
+            "atomic-update",
+            "corr",
+            finding_context=FindingContext(
+                "check-before",
+                finding.fingerprint,
+                "b" * 64,
+                "health",
+                ("rpm-ostree-deployment",),
+            ),
+            state="awaiting_reboot",
+            reboot_required=True,
+            updated_at=99_000.0,
+        )
+
+        summary = _service(
+            snapshots=[_check_snapshot("check-before", 90_000.0, (finding,))],
+            runs=[run],
+        ).summary()
+
+        self.assertEqual(summary.primary_recommendation.kind, "pending_reboot")
+        self.assertIn("reboot", summary.primary_recommendation.summary.lower())
 
     def test_ready_plan_and_snapshot_candidates_are_counted_for_review_only(self):
         plan = ActionPlan(

@@ -139,7 +139,12 @@ class MainWindowInteractionMixin:
             self._preselect_action_center(action_id)
         return True
 
-    def _preselect_action_center(self: typing.Any, action_id: str, parameters: typing.Any = None) -> bool:
+    def _preselect_action_center(
+        self: typing.Any,
+        action_id: str,
+        parameters: typing.Any = None,
+        finding_context: typing.Any = None,
+    ) -> bool:
         """Select an Action Center candidate without planning or running it."""
         entry = self._sidebar_index.get("maintenance")
         if entry is None:
@@ -148,6 +153,14 @@ class MainWindowInteractionMixin:
         preselect = getattr(widget, "preselect_action", None)
         if not callable(preselect):
             return False
+        if finding_context is not None:
+            return bool(
+                preselect(
+                    action_id,
+                    parameters,
+                    finding_context=finding_context,
+                )
+            )
         if parameters is None:
             return bool(preselect(action_id))
         return bool(preselect(action_id, parameters))

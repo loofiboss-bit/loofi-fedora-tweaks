@@ -9,7 +9,11 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from core.execution_policy import classify_command, execution_allowed
-from core.export.support_bundle import import_legacy_bundle
+from core.export.support_bundle import (
+    CURRENT_SUPPORT_BUNDLE_VERSION,
+    MIN_SUPPORT_BUNDLE_VERSION,
+    import_legacy_bundle,
+)
 from core.plugins.legacy import LegacyExtensionService
 from core.product_catalog import catalog_entry
 from core.secrets import SecretStore
@@ -139,10 +143,23 @@ class TestCatalogLegacyAndPlanHelpers(unittest.TestCase):
 
     def test_support_bundle_legacy_adapter_is_explicit(self):
         self.assertEqual(
-            import_legacy_bundle({"support_bundle_version": 2})["support_bundle_version"],
-            2,
+            import_legacy_bundle(
+                {"support_bundle_version": MIN_SUPPORT_BUNDLE_VERSION}
+            )["support_bundle_version"],
+            MIN_SUPPORT_BUNDLE_VERSION,
         )
-        for value in (None, 1, 11, "10"):
+        self.assertEqual(
+            import_legacy_bundle(
+                {"support_bundle_version": CURRENT_SUPPORT_BUNDLE_VERSION}
+            )["support_bundle_version"],
+            CURRENT_SUPPORT_BUNDLE_VERSION,
+        )
+        for value in (
+            None,
+            MIN_SUPPORT_BUNDLE_VERSION - 1,
+            CURRENT_SUPPORT_BUNDLE_VERSION + 1,
+            str(CURRENT_SUPPORT_BUNDLE_VERSION),
+        ):
             with self.subTest(value=value), self.assertRaises(ValueError):
                 import_legacy_bundle({"support_bundle_version": value})
 

@@ -36,7 +36,7 @@ def validate() -> list[str]:
     expected_routes = {
         "maintenance:action-center": ("software_updates", "maintenance_review", None),
         "maintenance:smart-updates": ("software_updates", "updates", "maintenance:updates"),
-        "health": ("system", "troubleshooting", "diagnostics"),
+        "health": ("system", "system_check", None),
         "logs": ("system", "troubleshooting", "diagnostics:watchtower"),
     }
     for route_id, expected in expected_routes.items():

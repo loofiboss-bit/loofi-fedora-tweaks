@@ -4,6 +4,53 @@
 
 All notable changes to this project will be documented in this file.
 
+## [19.0.0] - 2026-07-25 "Steward"
+
+### Added
+
+- One canonical, PyQt-free System Check domain with immutable findings,
+  privacy-safe evidence, closed collector profiles, per-source timeouts,
+  cooperative cancellation, and deterministic persisted results.
+- An explicit Home check flow and one canonical System Check page for current
+  findings, saved history, source availability, and supporting metrics.
+- Deterministic before/after comparison with separate resolved, recurring,
+  worsened, unverifiable, and Action Center verification facts.
+- Stable versioned CLI and read-only API envelopes plus bounded support-bundle
+  evidence for System Check results and linked action context.
+
+### Changed
+
+- Migrated Action Center plan and run state to schema v4 with bounded finding
+  context, ordered atomic v1-v3 migration, last-known-good backup, and
+  future-schema read-only handling.
+- Kept the `health` route ID and CLI aliases while presenting System Check as
+  the canonical health surface.
+- Preserved cold-start laziness: Home construction does not import or run System
+  Check, create timers, start threads, or launch subprocess probes.
+
+### Fixed
+
+- Prevented Atomic Fedora from interpreting the absence of DNF as a package
+  health warning; Kinoite now keeps the stable card ID and uses rpm-ostree
+  deployment guidance.
+- Kept stale, tampered, unsupported, or manually guided findings outside all
+  command-producing paths.
+
+### Verification
+
+- Passed 6,882 tests with 68 skipped, 1,032 subtests, zero failures, and 86.26%
+  coverage, plus clean lint, mypy, architecture, stabilization, product,
+  System Check, release-document, statistics, and adapter-drift gates.
+- Measured meaningful Home at 160.661 ms median and 76,048 KiB median RSS on a
+  comparable idle host. The quick System Check median was 442.335 ms.
+- Validated Wayland and XCB real-shell accessibility, six state screenshots,
+  Bandit, dependency audit, RPM, Flatpak, and source-distribution builds.
+- Installed a signed Fedora Kinoite 44.1.7 image, staged the exact local RPM,
+  rebooted, replaced the corrected RPM, rebooted again, and read back the exact
+  booted deployment and matching installed source checksum.
+- Tagging, public assets, canonical CI/CodeQL readback, COPR publication, and
+  public documentation remain pending separate authorization.
+
 ## [18.0.0] - 2026-07-22 "Haven"
 
 ### Added

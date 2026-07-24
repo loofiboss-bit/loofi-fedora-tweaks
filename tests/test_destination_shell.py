@@ -194,7 +194,7 @@ class TestDestinationHost(_QtTestCase):
             for index in range(self.host.navigator.selector.count())
         ]
         self.assertIn("Hardware & Power", labels)
-        self.assertIn("Health History", labels)
+        self.assertIn("System Check", labels)
         self.assertTrue(all(label and "…" not in label for label in labels))
 
     def test_section_activation_requests_explicit_default_route(self):

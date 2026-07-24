@@ -115,3 +115,33 @@ def get_state_status(
     from core.state import StateDoctor
 
     return StateDoctor().run()
+
+
+@router.get("/system-check/latest")
+def get_latest_system_check(
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Return only the latest saved privacy-safe System Check result."""
+    from core.observability import HealthTimelineStore
+    from core.privacy import redact_payload
+    from core.system_check.comparison import results_from_snapshots
+
+    store = HealthTimelineStore()
+    results = results_from_snapshots(store.load())
+    latest = results[-1].to_dict() if results else None
+    if latest is not None:
+        latest["findings"] = list(latest.get("findings", []))[:50]
+        latest["source_errors"] = list(
+            latest.get("source_errors", [])
+        )[:10]
+    return {
+        "schema_id": "loofi.system-check",
+        "schema_version": 1,
+        "read_only": True,
+        "result": redact_payload(latest) if latest is not None else None,
+        "source_status": (
+            "unavailable"
+            if store.last_error
+            else ("available" if latest is not None else "empty")
+        ),
+    }

@@ -22,6 +22,16 @@ Central documentation map for Loofi Fedora Tweaks.
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
+- `plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md` - Active v19.0.0 "Steward" implementation scope and phase gates
+- `reports/V19_PHASE0_BASELINE.md` - Steward authority, route/data, Home-state, performance, and platform scope lock
+- `reports/V19_PHASE1_SYSTEM_CHECK_DOMAIN.md` - Immutable System Check contracts, bounded collectors, mapping gates, and storage compatibility
+- `reports/V19_PHASE2_EXPLICIT_HOME_CHECK.md` - Explicit asynchronous Home check, cancellation, responsive UI, and startup evidence
+- `reports/V19_PHASE3_CANONICAL_SYSTEM_CHECK.md` - One read-only System Check page, stable routes, existing-store composition, and CLI compatibility
+- `reports/V19_PHASE4_ACTION_HANDOFF.md` - Deny-by-default finding handoff, schema-v4 context migration, and preserved Action Center execution authority
+- `reports/V19_PHASE5_VERIFIED_RESOLUTION.md` - Deterministic before/after outcomes, separate verification facts, bounded support evidence, and read-only API
+- `reports/V19_PHASE6_PLATFORM_CERTIFICATION.md` - Fedora 44 Traditional and fresh Kinoite installation, staged deployment, reboot, correction, and exact readback
+- `reports/V19_PHASE6_RELEASE_READINESS.md` - local v19 verification, artifact identities, security results, and deliberately pending exact-commit/publication gates
+- `releases/RELEASE-NOTES-v19.0.0.md` - Steward changes, compatibility, local release evidence, and deferred publication gates
 - `releases/RELEASE-NOTES-v18.0.0.md` - Haven changes, migration notes, and verified publication evidence
 - `reports/V18_PHASE0_BASELINE.md` - Haven authority, performance, route, state, module, and mutation baseline
 - `reports/V18_PHASE6_RELEASE_READINESS.md` - Haven regression, security, performance, packaging, and verified public-release evidence
@@ -70,8 +80,8 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides describe the publicly verified `v18.0.0 "Haven"`
-  release. Exact-commit GitHub and COPR readback is recorded in the release
-  notes and readiness report.
+- User-facing guides describe the locally release-ready `v19.0.0 "Steward"`
+  candidate. `v18.0.0 "Haven"` remains the latest independently verified public
+  release until v19 publication is separately authorized and read back.
 - Historical v16 and v17 reports and screenshots remain release evidence for
-  those versions. Do not present them as current Haven captures.
+  those versions. Do not present them as current Steward captures.

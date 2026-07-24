@@ -271,6 +271,7 @@ class TestPyQtBoundaryImports:
         "core/plugins/interface.py",
         "core/workers/base_worker.py",
         "core/workers/command_worker.py",
+        "core/workers/system_check_worker.py",
     }
     ALLOWED_SERVICE_PYQT_IMPORTS = {
         "services/security/safety.py",

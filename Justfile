@@ -150,11 +150,20 @@ sync-agents:
 check-drift:
 	python3 scripts/sync_ai_adapters.py --check
 
-validate-haven:
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v18_haven.py
+validate-product-contract:
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
+
+# Compatibility command for v18-era automation.
+validate-haven: validate-product-contract
 
 validate-architecture:
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v18_architecture.py
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_architecture.py
+
+validate-system-check:
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_system_check_contract.py
+
+validate-v19-ui-evidence:
+	QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v19_system_check_states.py --check
 
 # Validate release documentation
 validate-release:
@@ -225,6 +234,12 @@ release-prep:
     @echo ""
     @echo "=== Step 5: Check packaging manifest ==="
     just check-packaging
+    @echo ""
+    @echo "=== Step 6: Validate System Check trust contract ==="
+    just validate-system-check
+    @echo ""
+    @echo "=== Step 7: Validate v19 UI evidence ==="
+    just validate-v19-ui-evidence
     @echo ""
     @echo "=== Release preparation complete ==="
 

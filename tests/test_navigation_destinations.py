@@ -140,7 +140,7 @@ class TestRoutePlacements(unittest.TestCase):
             "atlas_dashboard": ("home", "overview"),
             "software:apps": ("software_updates", "applications"),
             "maintenance:action-center": ("software_updates", "maintenance_review"),
-            "maintenance:health-timeline": ("system", "system_health_history"),
+            "maintenance:health-timeline": ("system", "system_check"),
             "system-monitor:processes": ("system", "processes"),
             "snapshots": ("system", "recovery_points"),
             "security:firewall": ("network_security", "firewall"),
@@ -188,15 +188,15 @@ class TestRoutePlacements(unittest.TestCase):
         self.assertEqual(placement.redirect_route_id, "maintenance:updates")
         self.assertFalse(placement.discoverable)
 
-    def test_health_and_logs_compatibility_routes_converge_on_troubleshooting(self):
+    def test_health_is_canonical_system_check_while_logs_remain_compatible(self):
         health = placement_for_route("health")
         logs = placement_for_route("logs")
 
-        self.assertEqual(health.redirect_route_id, "diagnostics")
+        self.assertIsNone(health.redirect_route_id)
         self.assertEqual(logs.redirect_route_id, "diagnostics:watchtower")
-        self.assertEqual(health.section_id, "troubleshooting")
+        self.assertEqual(health.section_id, "system_check")
         self.assertEqual(logs.section_id, "troubleshooting")
-        self.assertFalse(health.discoverable)
+        self.assertTrue(health.discoverable)
         self.assertFalse(logs.discoverable)
 
     def test_overlays_are_explicitly_advanced_and_atomic_only(self):

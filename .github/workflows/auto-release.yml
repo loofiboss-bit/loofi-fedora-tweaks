@@ -229,8 +229,9 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: python3 scripts/check_stabilization_rules.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v18_haven.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v18_architecture.py
+      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
+      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_architecture.py
+      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_system_check_contract.py
       - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/project_stats.py --check
 
   fedora_review:

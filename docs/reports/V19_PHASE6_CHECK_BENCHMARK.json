@@ -1,0 +1,96 @@
+{
+  "errors": [],
+  "generated_at": "2026-07-24T22:29:14.183970+00:00",
+  "persist": false,
+  "release": "v19 Steward working tree (metadata v18.0.0 Haven)",
+  "runs": [
+    {
+      "atomic": false,
+      "run": 1,
+      "source_durations_ms": {
+        "action-center": 75.991,
+        "maintenance": 519.77,
+        "pending-reboot": 0.062,
+        "state-integrity": 138.512,
+        "storage-reclaim": 63.4
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 522.082
+    },
+    {
+      "atomic": false,
+      "run": 2,
+      "source_durations_ms": {
+        "action-center": 60.6,
+        "maintenance": 491.675,
+        "pending-reboot": 9.383,
+        "state-integrity": 151.543,
+        "storage-reclaim": 66.311
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 493.554
+    },
+    {
+      "atomic": false,
+      "run": 3,
+      "source_durations_ms": {
+        "action-center": 44.003,
+        "maintenance": 439.864,
+        "pending-reboot": 13.228,
+        "state-integrity": 125.071,
+        "storage-reclaim": 86.552
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 442.309
+    },
+    {
+      "atomic": false,
+      "run": 4,
+      "source_durations_ms": {
+        "action-center": 33.142,
+        "maintenance": 435.156,
+        "pending-reboot": 3.336,
+        "state-integrity": 111.989,
+        "storage-reclaim": 80.786
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 442.335
+    },
+    {
+      "atomic": false,
+      "run": 5,
+      "source_durations_ms": {
+        "action-center": 46.18,
+        "maintenance": 424.001,
+        "pending-reboot": 0.052,
+        "state-integrity": 129.429,
+        "storage-reclaim": 32.187
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 425.74
+    }
+  ],
+  "schema_version": 1,
+  "source_median_budgets_ms": {
+    "action-center": 250.0,
+    "maintenance": 1200.0,
+    "pending-reboot": 250.0,
+    "state-integrity": 250.0,
+    "storage-reclaim": 500.0
+  },
+  "source_medians_ms": {
+    "action-center": 46.18,
+    "maintenance": 439.864,
+    "pending-reboot": 3.336,
+    "state-integrity": 129.429,
+    "storage-reclaim": 66.311
+  },
+  "status": "passed",
+  "total_median_budget_ms": 3500.0,
+  "total_median_ms": 442.335
+}

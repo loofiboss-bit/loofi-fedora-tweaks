@@ -211,6 +211,7 @@ class ActionProgress(QFrame):
         super().__init__(parent)
         self.setObjectName("actionProgress")
         layout = QVBoxLayout(self)
+        self.details_layout = layout
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
         self.status_label = QLabel(message)

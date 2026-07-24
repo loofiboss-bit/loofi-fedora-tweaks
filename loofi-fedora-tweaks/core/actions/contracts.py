@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import time
+import re
 from dataclasses import dataclass, field
 from typing import Any, Callable, Literal, Mapping, Protocol, Sequence
 
@@ -31,6 +32,9 @@ _CONFIRMATION_POLICIES = frozenset({"explicit", "explicit-no-rollback"})
 _OPERATION_CLASSES = frozenset({"host", "app_state", "session", "manual_only"})
 _SUPPORTED_VARIANTS = frozenset({"traditional", "atomic"})
 _REBOOT_POLICIES = frozenset({"none", "may_require", "required"})
+_FINDING_ORIGIN_ROUTES = frozenset({"health", "maintenance:health-timeline"})
+_SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+_CHECK_ID_PATTERN = re.compile(r"^[A-Za-z0-9._:-]{1,128}$")
 
 
 def _validated_value(value: Any, allowed: frozenset[str], field_name: str) -> str:
@@ -51,6 +55,56 @@ def _validated_variants(value: Any) -> frozenset[SupportedVariant]:
 
 class ActionLifecycleError(ValueError):
     """Raised when a persisted action attempts an invalid state transition."""
+
+
+@dataclass(frozen=True)
+class FindingContext:
+    """Integrity-bound, non-authoritative link to one persisted System Check finding."""
+
+    check_result_id: str
+    finding_fingerprint: str
+    evidence_digest: str
+    origin_route: str
+    affected_resources: tuple[str, ...] = ()
+
+    def __post_init__(self) -> None:
+        if not _CHECK_ID_PATTERN.fullmatch(self.check_result_id):
+            raise ValueError("Finding context requires a bounded check result ID.")
+        if not _SHA256_PATTERN.fullmatch(self.finding_fingerprint):
+            raise ValueError("Finding context fingerprint must be a SHA-256 digest.")
+        if not _SHA256_PATTERN.fullmatch(self.evidence_digest):
+            raise ValueError("Finding context evidence digest must be SHA-256.")
+        if self.origin_route not in _FINDING_ORIGIN_ROUTES:
+            raise ValueError("Finding context origin route is not a System Check route.")
+        if len(self.affected_resources) > 16 or any(
+            not resource
+            or len(resource) > 160
+            or any(ord(character) < 32 or ord(character) == 127 for character in resource)
+            for resource in self.affected_resources
+        ):
+            raise ValueError("Finding context affected resources are invalid.")
+
+    def to_dict(self) -> dict[str, Any]:
+        return {
+            "check_result_id": self.check_result_id,
+            "finding_fingerprint": self.finding_fingerprint,
+            "evidence_digest": self.evidence_digest,
+            "origin_route": self.origin_route,
+            "affected_resources": list(self.affected_resources),
+        }
+
+    @classmethod
+    def from_dict(cls, payload: Mapping[str, Any]) -> "FindingContext":
+        resources = payload.get("affected_resources", [])
+        if not isinstance(resources, (list, tuple)):
+            raise ValueError("Finding context resources must be a collection.")
+        return cls(
+            check_result_id=str(payload.get("check_result_id", "")),
+            finding_fingerprint=str(payload.get("finding_fingerprint", "")),
+            evidence_digest=str(payload.get("evidence_digest", "")),
+            origin_route=str(payload.get("origin_route", "")),
+            affected_resources=tuple(str(item) for item in resources),
+        )
 
 
 PLAN_TRANSITIONS: dict[str, frozenset[str]] = {
@@ -247,6 +301,7 @@ class ActionPlan:
     )
     reboot_policy: RebootPolicy = "none"
     affected_resources: tuple[str, ...] = ()
+    finding_context: FindingContext | None = None
     state: PlanState = "planned"
     created_at: float = field(default_factory=time.time)
     expires_at: float = 0.0
@@ -279,6 +334,7 @@ class ActionPlan:
             "supported_variants": sorted(self.supported_variants),
             "reboot_policy": self.reboot_policy,
             "affected_resources": list(self.affected_resources),
+            "finding_context": self.finding_context.to_dict() if self.finding_context else None,
             "state": self.state,
             "created_at": self.created_at,
             "expires_at": self.expires_at,
@@ -289,6 +345,7 @@ class ActionPlan:
     def from_dict(cls, payload: Mapping[str, Any]) -> "ActionPlan":
         parameters = payload.get("parameters", {})
         history = payload.get("state_history", [])
+        finding_context = payload.get("finding_context")
         return cls(
             plan_id=str(payload["plan_id"]),
             action_id=str(payload["action_id"]),
@@ -308,6 +365,11 @@ class ActionPlan:
             ),
             reboot_policy=_validated_value(payload.get("reboot_policy", "none"), _REBOOT_POLICIES, "reboot_policy"),  # type: ignore[arg-type]
             affected_resources=tuple(str(item) for item in payload.get("affected_resources", [])),
+            finding_context=(
+                FindingContext.from_dict(finding_context)
+                if isinstance(finding_context, Mapping)
+                else None
+            ),
             state=str(payload.get("state", "blocked")),  # type: ignore[arg-type]
             created_at=float(payload.get("created_at", 0.0)),
             expires_at=float(payload.get("expires_at", 0.0)),
@@ -330,6 +392,7 @@ class ActionRun:
     )
     reboot_policy: RebootPolicy = "none"
     affected_resources: tuple[str, ...] = ()
+    finding_context: FindingContext | None = None
     state: RunState = "running"
     created_at: float = field(default_factory=time.time)
     updated_at: float = field(default_factory=time.time)
@@ -366,6 +429,7 @@ class ActionRun:
             "supported_variants": sorted(self.supported_variants),
             "reboot_policy": self.reboot_policy,
             "affected_resources": list(self.affected_resources),
+            "finding_context": self.finding_context.to_dict() if self.finding_context else None,
             "state": self.state,
             "created_at": self.created_at,
             "updated_at": self.updated_at,
@@ -386,6 +450,7 @@ class ActionRun:
         execution = payload.get("execution_result")
         verification = payload.get("verification_result")
         history = payload.get("state_history", [])
+        finding_context = payload.get("finding_context")
         return cls(
             run_id=str(payload["run_id"]),
             plan_id=str(payload["plan_id"]),
@@ -398,6 +463,11 @@ class ActionRun:
             ),
             reboot_policy=_validated_value(payload.get("reboot_policy", "none"), _REBOOT_POLICIES, "reboot_policy"),  # type: ignore[arg-type]
             affected_resources=tuple(str(item) for item in payload.get("affected_resources", [])),
+            finding_context=(
+                FindingContext.from_dict(finding_context)
+                if isinstance(finding_context, Mapping)
+                else None
+            ),
             state=str(payload.get("state", "interrupted")),  # type: ignore[arg-type]
             created_at=float(payload.get("created_at", 0.0)),
             updated_at=float(payload.get("updated_at", 0.0)),

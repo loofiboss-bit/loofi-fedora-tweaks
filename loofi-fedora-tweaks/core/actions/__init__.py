@@ -7,6 +7,7 @@ from core.actions.contracts import (  # noqa: F401
     ActionLifecycleError,
     ActionPlan,
     ActionRun,
+    FindingContext,
     PolicyDecision,
     PreparedActionRun,
     VerificationDecision,

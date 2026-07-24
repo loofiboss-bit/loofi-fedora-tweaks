@@ -16,6 +16,7 @@ from core.diagnostics.release_readiness import ReleaseReadiness
 from core.executor.action_executor import ActionExecutor
 from core.export.report_exporter import ReportExporter
 from core.observability import HealthSnapshot, HealthTimelineStore, MaintenanceTrendAnalyzer
+from core.privacy import redact_text
 from services.package.dnf5_health import DNF5HealthService
 from utils.log import get_logger
 from version import __version__, __version_codename__
@@ -39,7 +40,8 @@ class SupportBundleV5:
 
     @classmethod
     def _mask_text(cls, text: str) -> str:
-        masked = cls._HOME_RE.sub("/home/<user>", text or "")
+        masked = redact_text(text or "")
+        masked = cls._HOME_RE.sub("/home/<user>", masked)
         masked = cls._SECRET_VALUE_RE.sub(r"\1=<masked>", masked)
         masked = cls._EMAIL_RE.sub(r"\1***\2", masked)
         masked = cls._HOSTNAME_RE.sub(r"\1=<masked-host>", masked)

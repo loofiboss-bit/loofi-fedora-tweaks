@@ -46,6 +46,7 @@ class TestStartupBenchmark(unittest.TestCase):
         self.assertEqual(run["running_qthreads"], 0)
         self.assertEqual(run["active_timer_intervals_ms"], [])
         self.assertEqual(run["subprocess_probes"], [])
+        self.assertEqual(run["system_check_runtime_imports"], [])
         self.assertNotIn("ui.dashboard_tab", run["imports"]["ui_modules"])
         specialist = {
             "ui.agents_tab",

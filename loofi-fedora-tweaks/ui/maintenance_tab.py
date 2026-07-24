@@ -48,7 +48,6 @@ from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
 from ui.maintenance_action_center import (
     _ActionCenterOperationWorker,
     _ActionCenterSubTab,
-    _HealthTimelineSubTab,
 )
 from ui.maintenance_updates import (
     _CleanupSubTab,
@@ -69,6 +68,7 @@ class MaintenanceTab(BaseTab):
     _METADATA = plugin_metadata_for_module(__name__)
 
     actionCenterRequested = pyqtSignal(str, object)
+    systemCheckRequested = pyqtSignal(object)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -88,7 +88,6 @@ class MaintenanceTab(BaseTab):
             (self.tr("Updates"), _UpdatesSubTab),
             (self.tr("Action Center"), _ActionCenterSubTab),
             (self.tr("Cleanup"), _CleanupSubTab),
-            (self.tr("Health Timeline"), _HealthTimelineSubTab),
             (self.tr("Upgrade Assistant"), _UpgradeAssistantSubTab),
         ]
 
@@ -117,6 +116,9 @@ class MaintenanceTab(BaseTab):
             request = getattr(widget, "actionCenterRequested", None)
             if request is not None and hasattr(request, "connect"):
                 request.connect(self._open_action_center)
+            check_request = getattr(widget, "systemCheckRequested", None)
+            if check_request is not None and hasattr(check_request, "connect"):
+                check_request.connect(self.systemCheckRequested.emit)
             self._loaded_tabs[index] = widget
             self.tabs.blockSignals(True)
             placeholder = self.tabs.widget(index)
@@ -129,7 +131,13 @@ class MaintenanceTab(BaseTab):
     def _open_action_center(self, action_id: str, parameters=None) -> None:
         self.preselect_action(action_id, parameters)
 
-    def preselect_action(self, action_id: str, parameters=None) -> bool:
+    def preselect_action(
+        self,
+        action_id: str,
+        parameters=None,
+        *,
+        finding_context=None,
+    ) -> bool:
         """Open Action Center and preselect one candidate without side effects."""
         for index, (label, _factory) in enumerate(self._sub_tab_factories):
             if label != self.tr("Action Center"):
@@ -140,6 +148,14 @@ class MaintenanceTab(BaseTab):
             preselect = getattr(action_center, "preselect_action", None)
             if not callable(preselect):
                 return False
+            if finding_context is not None:
+                return bool(
+                    preselect(
+                        action_id,
+                        parameters,
+                        finding_context=finding_context,
+                    )
+                )
             if parameters is None:
                 return bool(preselect(action_id))
             return bool(preselect(action_id, parameters))
@@ -151,7 +167,6 @@ class MaintenanceTab(BaseTab):
         labels = {
             "updates": self.tr("Updates"),
             "cleanup": self.tr("Cleanup"),
-            "health-timeline": self.tr("Health Timeline"),
             "action-center": self.tr("Action Center"),
             "upgrade-assistant": self.tr("Upgrade Assistant"),
             "overlays": self.tr("Overlays"),

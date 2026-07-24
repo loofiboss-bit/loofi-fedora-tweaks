@@ -83,7 +83,25 @@ class DailyMaintenanceService:
             self._failed_services_card(),
             self._journal_card(),
             self._disk_card(),
-            self._package_health_card(package),
+            self._package_health_card(atomic, package),
+            self._rollback_card(atomic),
+        ]
+        return DailyMaintenanceReport(
+            generated_at=time.time(),
+            atomic=atomic,
+            cards=cards,
+            recommended_action=self._recommended_action(cards),
+        )
+
+    def collect_quick(self) -> DailyMaintenanceReport:
+        """Collect the closed System Check subset using the existing probes."""
+        atomic = SystemManager.is_atomic()
+        package = self._package_service.collect()
+        cards = [
+            self._system_updates_card(atomic, package),
+            self._failed_services_card(),
+            self._disk_card(),
+            self._package_health_card(atomic, package),
             self._rollback_card(atomic),
         ]
         return DailyMaintenanceReport(
@@ -124,6 +142,13 @@ class DailyMaintenanceService:
 
     def _failed_services_card(self) -> MaintenanceCard:
         result = self._runner(["systemctl", "--failed", "--no-legend"], 10)
+        if result is None or result.returncode != 0:
+            return MaintenanceCard(
+                id="failed-services",
+                title="Failed Services",
+                state="error",
+                summary="Unable to query failed services.",
+            )
         output = (result.stdout if result else "").strip()
         failed = [line for line in output.splitlines() if line.strip()]
         return MaintenanceCard(
@@ -153,7 +178,15 @@ class DailyMaintenanceService:
         return MaintenanceCard("disk-usage", "Disk Usage", "success" if output else "error", "Root filesystem usage is available." if output else "Unable to read disk usage.", ["df", "-h", "/"], details=output)
 
     @staticmethod
-    def _package_health_card(package: DNF5HealthReport) -> MaintenanceCard:
+    def _package_health_card(atomic: bool, package: DNF5HealthReport) -> MaintenanceCard:
+        if atomic:
+            return MaintenanceCard(
+                "package-health",
+                "Package Manager Health",
+                "success",
+                "Atomic package health is managed through rpm-ostree deployments.",
+                ["rpm-ostree", "status"],
+            )
         if package.dnf_locked:
             return MaintenanceCard("package-health", "Package Manager Health", "blocked", "Package manager lock detected.", ["fuser", "/var/lib/dnf/metadata_lock.pid", "/var/lib/rpm/.rpm.lock"], details=package.lock_detail)
         return MaintenanceCard("package-health", "Package Manager Health", "success" if package.repo_probe_ok else "warning", package.repo_probe_detail or "Package manager health collected.", [package.package_manager, "repolist", "--enabled"] if package.package_manager != "Unknown" else [])

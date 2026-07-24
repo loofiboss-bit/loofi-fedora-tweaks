@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="19.0.0" date="2026-07-25">
+      <description>
+        <p>v19.0.0 "Steward" - Guided System Checks</p>
+        <ul>
+          <li>Added one explicit, cancellable, read-only System Check across Home, CLI, API, and the canonical health page</li>
+          <li>Added privacy-safe findings, saved history, honest partial states, and deterministic before-and-after outcomes</li>
+          <li>Linked only fresh validated findings to existing audited Action Center actions while preserving separate confirmation and verification</li>
+          <li>Migrated Action Center context to schema v4 with atomic v1-v3 compatibility and future-schema read-only safety</li>
+          <li>Certified startup, accessibility, packaging, Fedora 44 Traditional, and fresh Kinoite 44 deployment and reboot behavior</li>
+        </ul>
+      </description>
+    </release>
     <release version="18.0.0" date="2026-07-22">
       <description>
         <p>v18.0.0 "Haven" - Local Trust Boundary</p>
