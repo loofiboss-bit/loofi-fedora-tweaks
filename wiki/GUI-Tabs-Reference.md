@@ -1,6 +1,6 @@
 # GUI Tabs Reference
 
-Reference for Loofi Fedora Tweaks v18.0.0 "Haven" navigation. All 80 route IDs
+Reference for Loofi Fedora Tweaks v19.0.0 "Steward" navigation. All 80 route IDs
 and aliases remain stable and project from the product catalog.
 
 ---

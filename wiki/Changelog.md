@@ -1,5 +1,22 @@
 # Changelog
 
+## v19.0.0 — Steward
+
+- Added a PyQt-free `core.system_check` domain with immutable finding, evidence,
+  comparison, and handoff contracts.
+- Added one explicit, bounded quick check flow from Home and a canonical System
+  Check page that refreshes from persisted state after completion.
+- Added read-only API surface for check history, findings, and comparison data with
+  a cancellable execution path.
+- Added compatibility and safety fixes for unknown schemas, invalid mappings, and
+  atomic migration behavior.
+- Added richer release-readiness and startup duration evidence for both startup and
+  health execution.
+
+**Test Suite**: local release gates passed with 6,882 tests, 68 skipped, 1,032
+subtests, and 86.26% coverage. See the release evidence set for full readback
+and artifact status.
+
 ## v18.0.0 — Haven
 
 - Projected all 80 stable routes from one data-only product catalog while

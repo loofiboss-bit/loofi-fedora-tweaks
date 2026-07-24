@@ -2,29 +2,23 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v18.0.0 "Haven"<br>
+**Current release:** v19.0.0 "Steward"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
-## What Haven changes
+## What Steward changes
 
-- **One product catalog:** 80 stable routes project from reviewed, data-only
-  metadata while retaining their existing IDs and aliases.
-- **One host-change boundary:** 56 first-party Action Center definitions state
-  their operation class, Fedora variants, reboot policy, affected resources,
-  preflight, confirmation, verification, and recovery policy.
-- **No unattended host changes:** daemon, scheduler, automation, and agent paths
-  may create plans but cannot confirm or execute them.
-- **Schema v3:** writable Action Center v1/v2 state migrates atomically; unknown
-  future schemas remain read-only.
-- **Local profiles:** explicit JSON profiles remain data-only and become
-  reviewable plans before host settings change.
-- **No executable third-party plugins:** the public Marketplace and external
-  Python loading are retired. Existing extension files remain untouched and can
-  be inventoried or exported.
-- **Local secrets:** Gist and JWT secrets use Secret Service when available,
-  with session-only fallback. The optional Web API accepts loopback bindings
-  only.
+- **Guided health journey:** one explicit System Check path from Home to the
+  canonical diagnostics workflow, with no cold-start probe and no polling.
+- **Structured findings and actions:** reusable finding evidence moves to
+  Action Center through audited handoff only, with closed verification data.
+- **Read-only and cancellable checks:** System Check operations are bounded,
+  timeout-aware, and can be cancelled and recovered.
+- **Separation of concerns:** host mutations still pass through Action Center
+  plan/apply confirmation; System Check itself is read-only.
+- **Compatibility preserved:** health/timeline aliases, favorites, saved
+  navigation, existing CLI compatibility routes, and unknown future schema behavior
+  remain intact.
 
 ## Navigation
 
@@ -67,16 +61,16 @@ confirmation or privilege policy.
 
 ## Release status
 
-Haven passed the local suite with 6,796 tests, 68 skipped, and 86.24% coverage.
-Meaningful Home measured 142.042 ms median and 75,408 KiB median RSS. The exact
-release commit passed canonical CI and CodeQL; GitHub assets, checksums, SBOM,
-provenance, COPR build `10764217`, and a clean Fedora 44 repository install all
-passed public readback. Historical Sentinel is preserved as
-`legacy-v18.0.0-sentinel`.
+Steward is currently at release-candidate status with local verification complete:
+6,882 tests, 68 skipped, 1,032 subtests passed, and 86.26% coverage.
+Meaningful Home measured 160.661 ms median and 76,048 KiB median RSS. The
+verified payload includes startup, startup duration, and System Check timing gates,
+bandit, dependency checks, and packaging builds. Publication to GitHub release,
+COPR, and signed provenance is pending explicit authorization.
+Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release: [v18.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v18.0.0)
-- Release notes: [v18.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v18.0.0.md)
+- Release notes: [v19.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v19.0.0.md)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 
 For support, run `loofi-fedora-tweaks --cli doctor` and
