@@ -50,20 +50,25 @@ def _load_router(module_name: str):
         mod = None
 
     r = getattr(mod, "router", None) if mod is not None else None
-    if r is None or not getattr(r, "routes", None):
-        for name, m in list(sys.modules.items()):
-            if name.endswith(module_name) and getattr(m, "router", None) and getattr(m.router, "routes", None):
-                r = m.router
-                break
+    if r is not None and len(getattr(r, "routes", [])) > 0:
+        return r
 
-    if r is None and mod is not None:
+    for name, m in list(sys.modules.items()):
+        if name.endswith(module_name):
+            cand = getattr(m, "router", None)
+            if cand is not None and len(getattr(cand, "routes", [])) > 0:
+                return cand
+
+    if mod is not None:
         try:
             mod = importlib.reload(mod)
             r = getattr(mod, "router", None)
+            if r is not None and len(getattr(r, "routes", [])) > 0:
+                return r
         except (ImportError, AttributeError):
             pass
 
-    return r
+    return r if r is not None and len(getattr(r, "routes", [])) > 0 else (getattr(mod, "router", None) if mod is not None else None)
 
 
 class TokenRateLimiter:
