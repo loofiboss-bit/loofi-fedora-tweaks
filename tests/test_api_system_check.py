@@ -6,6 +6,7 @@ import unittest
 from unittest.mock import patch
 
 from fastapi.testclient import TestClient
+from fastapi.routing import APIRoute
 
 from core.observability.snapshot import HealthSnapshot
 from core.system_check.models import SystemCheckResult
@@ -29,6 +30,22 @@ def _snapshot() -> HealthSnapshot:
 
 
 class TestSystemCheckApi(unittest.TestCase):
+    @staticmethod
+    def _iter_routes(routes):
+        for route in routes:
+            path = getattr(route, "path", "")
+            methods = getattr(route, "methods", None) or set()
+            if isinstance(route, APIRoute) and path:
+                for method in methods:
+                    yield path, method
+                continue
+
+            original_router = getattr(route, "original_router", None)
+            if original_router is not None:
+                yield from TestSystemCheckApi._iter_routes(
+                    getattr(original_router, "routes", ()),
+                )
+
     def test_latest_result_requires_authentication(self):
         from utils.api_server import APIServer
 
@@ -61,9 +78,8 @@ class TestSystemCheckApi(unittest.TestCase):
         from utils.api_server import APIServer
 
         routes = {
-            (getattr(route, "path", ""), method)
-            for route in APIServer().app.routes
-            for method in (getattr(route, "methods", set()) or set())
+            (path, method)
+            for path, method in self._iter_routes(APIServer().app.routes)
         }
 
         self.assertIn(
