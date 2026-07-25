@@ -154,15 +154,27 @@ class TestActivityCli(unittest.TestCase):
 
 class TestActivityApi(unittest.TestCase):
     @staticmethod
-    def _routes():
+    def _iter_routes(routes):
+        """Traverse direct and mounted FastAPI routes across supported versions."""
+        for route in routes:
+            path = getattr(route, "path", "")
+            methods = getattr(route, "methods", None) or set()
+            if isinstance(route, APIRoute) and path:
+                for method in methods:
+                    yield path, method
+                continue
+
+            original_router = getattr(route, "original_router", None)
+            if original_router is not None:
+                yield from TestActivityApi._iter_routes(
+                    getattr(original_router, "routes", ()),
+                )
+
+    @classmethod
+    def _routes(cls):
         from utils.api_server import APIServer
 
-        return {
-            (route.path, method)
-            for route in APIServer().app.routes
-            if isinstance(route, APIRoute)
-            for method in route.methods
-        }
+        return set(cls._iter_routes(APIServer().app.routes))
 
     def test_activity_requires_authentication(self):
         from utils.api_server import APIServer
