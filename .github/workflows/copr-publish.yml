@@ -9,6 +9,10 @@ on:
       version:
         description: "Version without v prefix (e.g. 48.0.0). Leave empty to use version.py."
         required: false
+      skip_tag_match_check:
+        description: "Skip release tag validation for manual repair runs only."
+        required: false
+        default: "false"
 
 permissions:
   contents: read
@@ -59,6 +63,7 @@ jobs:
           fi
 
       - name: Verify release tag matches checkout
+        if: inputs.skip_tag_match_check != 'true'
         run: |
           set -euo pipefail
           TAG="v${{ steps.version.outputs.version }}"
