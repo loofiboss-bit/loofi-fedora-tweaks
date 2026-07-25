@@ -40,6 +40,11 @@ def _origin_for(host: str, port: int) -> str:
     return f"http://{rendered_host}:{port}"
 
 
+from api.routes.action_center import router as action_center_router
+from api.routes.profiles import router as profiles_router
+from api.routes.system import router as system_router
+
+
 class TokenRateLimiter:
     """Small in-memory throttle for the loopback token endpoint."""
 
@@ -89,16 +94,10 @@ class APIServer:
         allowed_origins = requested_origins or default_origins
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
-        import importlib
-
-        for mod_name in ("api.routes.system", "api.routes.profiles", "api.routes.action_center"):
-            mod = importlib.import_module(mod_name)
-            router = getattr(mod, "router", None)
-            if router is not None and not getattr(router, "routes", None):
-                mod = importlib.reload(mod)
-                router = getattr(mod, "router", None)
-            if router is not None:
-                app.include_router(router, prefix="/api")
+        # API routes
+        app.include_router(system_router, prefix="/api")
+        app.include_router(profiles_router, prefix="/api")
+        app.include_router(action_center_router, prefix="/api")
 
         @app.post("/api/token")
         def issue_token(request: Request, api_key: str = Form(...)):
