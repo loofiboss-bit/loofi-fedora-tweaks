@@ -25,10 +25,6 @@ from ui.fedora44_readiness_dialog import Fedora44ReadinessDialog
 from ui.release_readiness_dialog import ReadinessWorker, ReleaseReadinessDialog
 
 
-app = QApplication.instance()
-if app is None:
-    app = QApplication(sys.argv)
-
 
 class _Result:
     def __init__(self, success=True, message="ok", data=None):

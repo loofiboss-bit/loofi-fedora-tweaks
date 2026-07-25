@@ -12,8 +12,6 @@ from PyQt6.QtWidgets import QApplication, QWidget
 from utils.guided_tour import TourStep
 
 
-app = QApplication.instance() or QApplication(sys.argv)
-
 
 class TestTourOverlay(unittest.TestCase):
     @staticmethod
@@ -39,13 +37,13 @@ class TestTourOverlay(unittest.TestCase):
         target.setGeometry(100, 120, 180, 80)
         parent.show()
         target.show()
-        app.processEvents()
+        QApplication.instance().processEvents()
 
         overlay = TourOverlay(parent)
         completed = MagicMock()
         overlay.tour_completed.connect(completed)
         overlay.start()
-        app.processEvents()
+        QApplication.instance().processEvents()
 
         self.assertEqual(overlay.size(), parent.size())
         self.assertTrue(overlay.isVisible())
@@ -66,7 +64,7 @@ class TestTourOverlay(unittest.TestCase):
 
         overlay.resize(700, 500)
         overlay.grab()
-        app.processEvents()
+        QApplication.instance().processEvents()
         overlay._next_step()
 
         mark_complete.assert_called_once_with()

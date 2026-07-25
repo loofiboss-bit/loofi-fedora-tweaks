@@ -13,20 +13,15 @@ from core.diagnostics.release_readiness import ReadinessCheck, ReadinessRecommen
 from core.diagnostics.health_model import HealthResult
 from core.executor.action_result import ActionResult
 
-# Create a QApplication instance for UI tests if it doesn't exist
-app = QApplication.instance()
-if not app:
-    app = QApplication(sys.argv)
-
-
 def _wait_for_planning(wizard):
     deadline = time.monotonic() + 5
+    qapp = QApplication.instance() or QApplication([])
     while wizard._plan_thread is not None and time.monotonic() < deadline:
-        app.processEvents()
+        qapp.processEvents()
         thread = wizard._plan_thread
         if thread is not None:
             thread.wait(10)
-    app.processEvents()
+    qapp.processEvents()
     assert wizard._plan_thread is None
 
 @patch("core.diagnostics.health_registry.HealthRegistry.run_check")
