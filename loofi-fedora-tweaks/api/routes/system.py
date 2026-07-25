@@ -11,8 +11,6 @@ from services.system import SystemManager
 from utils.auth import AuthManager
 from utils.monitor import SystemMonitor
 
-router = APIRouter(prefix="/api", tags=["system"])
-
 
 class HealthResponse(BaseModel):
     """Health response payload — no version info for unauthenticated callers."""
@@ -20,13 +18,11 @@ class HealthResponse(BaseModel):
     status: str
 
 
-@router.get("/health", response_model=HealthResponse)
 def get_health(_auth: str = Depends(AuthManager.verify_bearer_token)):
     """Authenticated basic health check without a version leak."""
     return HealthResponse(status="ok")
 
 
-@router.get("/info")
 def get_info(
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
@@ -60,7 +56,6 @@ def get_info(
     }
 
 
-@router.get("/agents")
 def get_agents(
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
@@ -74,7 +69,6 @@ def get_agents(
     }
 
 
-@router.get("/observability/current")
 def get_current_health_snapshot(
     target: str = FEDORA_RELEASE_POLICY.stable_target,
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -86,7 +80,6 @@ def get_current_health_snapshot(
     return {"schema_version": 1, "read_only": True, "snapshot": snapshot.to_dict()}
 
 
-@router.get("/observability/timeline")
 def get_health_timeline(
     limit: int = 10,
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -97,7 +90,6 @@ def get_health_timeline(
     return HealthTimelineStore().export(limit=max(1, min(limit, 30)))
 
 
-@router.get("/observability/status")
 def get_observability_status(
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
@@ -107,7 +99,6 @@ def get_observability_status(
     return ObservabilityService().status(source="api").to_dict()
 
 
-@router.get("/state/status")
 def get_state_status(
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
@@ -117,7 +108,6 @@ def get_state_status(
     return StateDoctor().run()
 
 
-@router.get("/system-check/latest")
 def get_latest_system_check(
     _auth: str = Depends(AuthManager.verify_bearer_token),
 ):
@@ -145,3 +135,19 @@ def get_latest_system_check(
             else ("available" if latest is not None else "empty")
         ),
     }
+
+
+def get_system_router() -> APIRouter:
+    r = APIRouter(prefix="/api", tags=["system"])
+    r.add_api_route("/health", get_health, methods=["GET"], response_model=HealthResponse)
+    r.add_api_route("/info", get_info, methods=["GET"])
+    r.add_api_route("/agents", get_agents, methods=["GET"])
+    r.add_api_route("/observability/current", get_current_health_snapshot, methods=["GET"])
+    r.add_api_route("/observability/timeline", get_health_timeline, methods=["GET"])
+    r.add_api_route("/observability/status", get_observability_status, methods=["GET"])
+    r.add_api_route("/state/status", get_state_status, methods=["GET"])
+    r.add_api_route("/system-check/latest", get_latest_system_check, methods=["GET"])
+    return r
+
+
+router = get_system_router()

@@ -4,10 +4,7 @@ from fastapi import APIRouter, Depends
 from utils.auth import AuthManager
 from utils.profiles import ProfileManager
 
-router = APIRouter(prefix="/api", tags=["profiles"])
 
-
-@router.get("/profiles")
 def list_profiles(_auth: str = Depends(AuthManager.verify_bearer_token)):
     """Return available profiles and currently active key."""
     return {
@@ -16,7 +13,6 @@ def list_profiles(_auth: str = Depends(AuthManager.verify_bearer_token)):
     }
 
 
-@router.get("/profiles/export-all")
 def export_all_profiles(
     include_builtins: bool = False,
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -25,7 +21,6 @@ def export_all_profiles(
     return ProfileManager.export_bundle_data(include_builtins=include_builtins)
 
 
-@router.get("/profiles/{name}/export")
 def export_profile(
     name: str,
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -35,3 +30,14 @@ def export_profile(
     return payload or {
         "error": f"Profile '{name}' not found.",
     }
+
+
+def get_profiles_router() -> APIRouter:
+    r = APIRouter(prefix="/api", tags=["profiles"])
+    r.add_api_route("/profiles", list_profiles, methods=["GET"])
+    r.add_api_route("/profiles/export-all", export_all_profiles, methods=["GET"])
+    r.add_api_route("/profiles/{name}/export", export_profile, methods=["GET"])
+    return r
+
+
+router = get_profiles_router()

@@ -40,9 +40,9 @@ def _origin_for(host: str, port: int) -> str:
     return f"http://{rendered_host}:{port}"
 
 
-from api.routes.action_center import router as action_center_router
-from api.routes.profiles import router as profiles_router
-from api.routes.system import router as system_router
+from api.routes.action_center import get_action_center_router
+from api.routes.profiles import get_profiles_router
+from api.routes.system import get_system_router
 
 
 class TokenRateLimiter:
@@ -95,9 +95,9 @@ class APIServer:
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
         # API routes
-        app.include_router(system_router)
-        app.include_router(profiles_router)
-        app.include_router(action_center_router)
+        app.include_router(get_system_router())
+        app.include_router(get_profiles_router())
+        app.include_router(get_action_center_router())
 
         @app.post("/api/token")
         def issue_token(request: Request, api_key: str = Form(...)):

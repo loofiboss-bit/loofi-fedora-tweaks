@@ -8,8 +8,6 @@ from core.actions.stores import ActionPlanStore, ActionRunStore
 from fastapi import APIRouter, Depends, HTTPException, Query
 from utils.auth import AuthManager
 
-router = APIRouter(prefix="/api/action-center", tags=["action-center"])
-
 
 def _run_status(run: Any) -> dict[str, Any]:
     """Expose status fields while keeping captured process output private."""
@@ -22,7 +20,6 @@ def _run_status(run: Any) -> dict[str, Any]:
     return payload
 
 
-@router.get("/plans")
 def list_action_plans(
     limit: int = Query(default=25, ge=1, le=50),
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -36,7 +33,6 @@ def list_action_plans(
     }
 
 
-@router.get("/plans/{plan_id}")
 def get_action_plan(
     plan_id: str,
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -53,7 +49,6 @@ def get_action_plan(
     }
 
 
-@router.get("/runs")
 def list_action_runs(
     limit: int = Query(default=25, ge=1, le=100),
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -67,7 +62,6 @@ def list_action_runs(
     }
 
 
-@router.get("/runs/{run_id}")
 def get_action_run(
     run_id: str,
     _auth: str = Depends(AuthManager.verify_bearer_token),
@@ -81,3 +75,15 @@ def get_action_run(
         "read_only": True,
         "run": _run_status(run),
     }
+
+
+def get_action_center_router() -> APIRouter:
+    r = APIRouter(prefix="/api/action-center", tags=["action-center"])
+    r.add_api_route("/plans", list_action_plans, methods=["GET"])
+    r.add_api_route("/plans/{plan_id}", get_action_plan, methods=["GET"])
+    r.add_api_route("/runs", list_action_runs, methods=["GET"])
+    r.add_api_route("/runs/{run_id}", get_action_run, methods=["GET"])
+    return r
+
+
+router = get_action_center_router()
