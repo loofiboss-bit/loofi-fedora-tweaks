@@ -1,6 +1,7 @@
 """Loofi Web API server (FastAPI + Uvicorn)."""
 
 import os
+import importlib
 import ipaddress
 import threading
 import time
@@ -9,9 +10,6 @@ from typing import Optional
 from urllib.parse import urlparse
 
 import uvicorn
-from api.routes import action_center as action_center_routes
-from api.routes import profiles as profiles_routes
-from api.routes import system as system_routes
 from fastapi import FastAPI, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -41,6 +39,13 @@ def _is_loopback_origin(origin: str) -> bool:
 def _origin_for(host: str, port: int) -> str:
     rendered_host = f"[{host}]" if ":" in host and not host.startswith("[") else host
     return f"http://{rendered_host}:{port}"
+
+
+def _load_api_router(module_name: str):
+    module = importlib.import_module(module_name)
+    module = importlib.reload(module)
+    router = getattr(module, "router", None)
+    return router
 
 
 class TokenRateLimiter:
@@ -93,9 +98,9 @@ class APIServer:
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
         # API routes
-        app.include_router(system_routes.router, prefix="/api")
-        app.include_router(profiles_routes.router, prefix="/api")
-        app.include_router(action_center_routes.router, prefix="/api")
+        app.include_router(_load_api_router("api.routes.system"), prefix="/api")
+        app.include_router(_load_api_router("api.routes.profiles"), prefix="/api")
+        app.include_router(_load_api_router("api.routes.action_center"), prefix="/api")
 
         @app.post("/api/token")
         def issue_token(request: Request, api_key: str = Form(...)):
