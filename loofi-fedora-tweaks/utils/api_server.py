@@ -43,11 +43,8 @@ def _origin_for(host: str, port: int) -> str:
 def _get_router(module_path: str):
     import importlib
     mod = importlib.import_module(module_path)
-    router = getattr(mod, "router", None)
-    if router is None or len(getattr(router, "routes", [])) == 0:
-        mod = importlib.reload(mod)
-        router = getattr(mod, "router", None)
-    return router
+    mod = importlib.reload(mod)
+    return getattr(mod, "router", None)
 
 
 class TokenRateLimiter:
