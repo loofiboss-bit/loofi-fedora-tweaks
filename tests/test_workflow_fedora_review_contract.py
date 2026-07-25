@@ -123,5 +123,7 @@ def test_copr_workflows_wait_for_exact_fedora_44_success():
         assert "--chroot \"${COPR_CHROOT}\"" in text
         assert "--nowait" not in text
         assert 'STATUS=$(copr-cli status "$BUILD_ID"' in text
-        assert 'if [ "$STATUS" != "succeeded" ]' in text
+        assert 'if [ "$STATUS" = "succeeded" ]' in text
+        assert 'if [ "$STATUS" = "failed" ]' in text
+        assert "Attempting COPR repo regeneration" in text
         assert "dnf --refresh install" in text
