@@ -137,9 +137,43 @@ def _print(text: typing.Any) -> typing.Any:
         print(text)
 
 
+def _redact_sensitive_data(data: typing.Any) -> typing.Any:
+    """Recursively redact sensitive fields before emitting JSON output."""
+    sensitive_markers = (
+        "password",
+        "secret",
+        "token",
+        "api_key",
+        "apikey",
+        "authorization",
+        "auth",
+        "credential",
+        "jwt",
+        "key",
+    )
+
+    if isinstance(data, dict):
+        redacted: Dict[typing.Any, typing.Any] = {}
+        for key, value in data.items():
+            key_text = str(key).lower()
+            if any(marker in key_text for marker in sensitive_markers):
+                redacted[key] = "***REDACTED***"
+            else:
+                redacted[key] = _redact_sensitive_data(value)
+        return redacted
+
+    if isinstance(data, list):
+        return [_redact_sensitive_data(item) for item in data]
+
+    if isinstance(data, tuple):
+        return tuple(_redact_sensitive_data(item) for item in data)
+
+    return data
+
+
 def _output_json(data: typing.Any) -> typing.Any:
     """Output JSON data and exit."""
-    print(json_module.dumps(data, indent=2, default=str))
+    print(json_module.dumps(_redact_sensitive_data(data), indent=2, default=str))
 
 
 def run_operation(op_result: typing.Any, timeout: typing.Any = None) -> typing.Any:
