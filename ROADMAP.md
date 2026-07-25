@@ -14,9 +14,43 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
 | v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
 | v18.0.0 | Haven | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
-| v19.0.0 | Steward | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
+| v19.0.0 | Steward | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
+| v20.0.0 | Continuity | ACTIVE | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
 
-## [ACTIVE] v19.0.0 "Steward" — Guided System Checks
+## [ACTIVE] v20.0.0 "Continuity" — Trusted Activity and Recovery
+
+**Objective:** compose trusted local change history into one privacy-bounded
+review surface and offer only state-verifiable recovery through Action Center.
+
+### Required outcomes
+
+- No command-bearing history or second durable journal database.
+- Exact DNF5 offline and rpm-ostree rollback recovery with changed-boot
+  verification and no automatic reboot.
+- Lazy Activity & Recovery UI, stable CLI, authenticated read-only API, and
+  bounded support evidence.
+- All legacy presentation mutations either use a named Action Center definition
+  or fail closed.
+- Specialist Tools remain discoverable without a global mode switch; safety
+  remains action-specific.
+
+### Phase status
+
+| Phase | Status | Deliverable |
+| --- | --- | --- |
+| 0 — Authority and scope lock | DONE | v19 baseline, current checkout, and Continuity contract |
+| 1 — Journal and migration | DONE | Inert event model, source adapters, cache, and history schema v2 |
+| 2 — Safe recovery | DONE | DNF5 offline undo and exact rpm-ostree rollback |
+| 3 — Interfaces and product integration | DONE | UI, CLI, API, catalog, support bundle, unified navigation |
+| 4 — Mutation closure | DONE | Named legacy plans and inert direct helpers |
+| 5 — Release preparation | LOCAL READY | Full local gates and evidence passed; publication explicitly excluded |
+
+The exact implementation and acceptance authority is
+[the v20 architecture](.workflow/specs/arch-v20.0.0.md) and
+[task contract](.workflow/specs/tasks-v20.0.0.md). No v20 tag or publication
+occurs without separate authorization.
+
+## [DONE] v19.0.0 "Steward" — Guided System Checks
 
 **Objective:** connect the existing read-only health, Home, diagnostics, and
 Action Center foundations into one explicit System Check and verified-resolution
@@ -44,10 +78,12 @@ journey without weakening the v18 trust boundary.
 | 5 — Verified resolution and support evidence | DONE | [Separate verification/resolution facts, bounded support evidence, and read-only API](docs/reports/V19_PHASE5_VERIFIED_RESOLUTION.md) |
 | 6 — Accessibility, platform certification, and release | LOCAL READY | [Platform evidence](docs/reports/V19_PHASE6_PLATFORM_CERTIFICATION.md) and [local release readiness](docs/reports/V19_PHASE6_RELEASE_READINESS.md) |
 
-The sole scope authority is the
+The historical scope authority is the
 [canonical v19 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md). No product
 tag or publication occurs without separate authorization. The synchronized
-v19.0.0 metadata was applied only after the local Phase 6 gates passed.
+v19.0.0 metadata was applied only after the local Phase 6 gates passed. The
+canonical v19 release, package, and documentation were subsequently published
+and independently read back.
 
 ## [DONE] v16.0.0 "Clarity" — UI/UX Redesign and Consolidation
 

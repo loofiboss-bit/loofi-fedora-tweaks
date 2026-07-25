@@ -410,7 +410,12 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.primary_recommendation.count, 3)
 
     def test_recent_change_is_single_and_never_undone_by_composition(self):
-        entry = SimpleNamespace(id="change-1", timestamp="2026-07-18T09:00:00", description="Changed theme", undo_command=["gsettings"])
+        entry = SimpleNamespace(
+            id="change-1",
+            timestamp="2026-07-18T09:00:00",
+            description="Changed theme",
+            recovery_action_id="restore-theme",
+        )
 
         summary = _service(snapshots=[_snapshot(100_000.0)], history=[entry]).summary()
 

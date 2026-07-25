@@ -1,230 +1,119 @@
-"""
-Tests for utils/history.py — HistoryManager.
-Covers: log_change, get_last_action, undo_last_action,
-history loading/saving, max entries limit, and error handling.
-"""
+"""Tests for the v20 non-executable activity history."""
 
 import json
 import os
-import subprocess
 import sys
 import tempfile
 import unittest
-from unittest.mock import patch, MagicMock
+from pathlib import Path
+from unittest.mock import patch
 
-# Add source path to sys.path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
+sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
-from utils.history import HistoryManager
-
-
-# ---------------------------------------------------------------------------
-# TestHistoryInit — initialisation
-# ---------------------------------------------------------------------------
-
-class TestHistoryInit(unittest.TestCase):
-    """Tests for HistoryManager initialisation."""
-
-    @patch('utils.history.os.makedirs')
-    def test_init_creates_directory(self, mock_makedirs):
-        """__init__ creates the history directory."""
-        _ = HistoryManager()  # noqa: F841
-        mock_makedirs.assert_called_once()
+from utils.history import (  # noqa: E402
+    HISTORY_SCHEMA_VERSION,
+    HistoryManager,
+    HistoryVersionError,
+)
 
 
-# ---------------------------------------------------------------------------
-# TestLogChange — adding history entries
-# ---------------------------------------------------------------------------
-
-class TestLogChange(unittest.TestCase):
-    """Tests for log_change method."""
-
+class TestTypedHistory(unittest.TestCase):
     def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        self.tmpfile = os.path.join(self.tmpdir, "history.json")
+        self.temporary = tempfile.TemporaryDirectory()
+        self.path = Path(self.temporary.name) / "history.json"
+        self.manager = HistoryManager()
+        self.manager.HISTORY_FILE = str(self.path)
 
     def tearDown(self):
-        import shutil
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
+        self.temporary.cleanup()
 
-    @patch('utils.history.os.makedirs')
-    def test_log_change_creates_entry(self, mock_makedirs):
-        """log_change adds an entry with timestamp, description, and undo_command."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
+    def test_log_change_discards_command_and_writes_v2_envelope(self):
+        self.manager.log_change(
+            "Enabled dark mode",
+            ["gsettings", "set", "theme", "light"],
+        )
 
-        hm.log_change("Enabled dark mode", ["gsettings", "set", "theme", "light"])
+        payload = json.loads(self.path.read_text(encoding="utf-8"))
+        self.assertEqual(payload["schema_version"], HISTORY_SCHEMA_VERSION)
+        self.assertEqual(payload["entries"][0]["description"], "Enabled dark mode")
+        self.assertNotIn("undo_command", payload["entries"][0])
+        self.assertFalse(self.manager.can_undo())
 
-        with open(self.tmpfile) as f:
-            history = json.load(f)
+    def test_closed_recovery_reference_is_inert_but_discoverable(self):
+        self.manager.log_change(
+            "Prepared package recovery",
+            recovery_action_id="dnf5-history-undo",
+            recovery_parameters={"transaction_id": 42},
+        )
 
-        self.assertEqual(len(history), 1)
-        self.assertEqual(history[0]["description"], "Enabled dark mode")
-        self.assertEqual(history[0]["undo_command"], ["gsettings", "set", "theme", "light"])
-        self.assertIn("timestamp", history[0])
+        self.assertTrue(self.manager.can_undo())
+        result = self.manager.undo_last_action()
+        self.assertFalse(result.success)
+        self.assertEqual(result.data["recovery_action_id"], "dnf5-history-undo")
+        self.assertEqual(result.data["recovery_parameters"], {"transaction_id": 42})
 
-    @patch('utils.history.os.makedirs')
-    def test_log_change_appends_to_existing(self, mock_makedirs):
-        """log_change appends to existing history."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
+    @patch("subprocess.run")
+    def test_tampered_legacy_command_is_never_executed(self, mock_run):
+        self.path.write_text(
+            json.dumps(
+                [
+                    {
+                        "id": "tampered",
+                        "timestamp": "2026-01-01T00:00:00+00:00",
+                        "description": "Legacy change",
+                        "undo_command": ["pkexec", "tee", "/etc/example"],
+                    }
+                ]
+            ),
+            encoding="utf-8",
+        )
 
-        hm.log_change("First action", ["echo", "undo1"])
-        hm.log_change("Second action", ["echo", "undo2"])
-
-        with open(self.tmpfile) as f:
-            history = json.load(f)
-
-        self.assertEqual(len(history), 2)
-        self.assertEqual(history[1]["description"], "Second action")
-
-    @patch('utils.history.os.makedirs')
-    def test_log_change_enforces_max_50_entries(self, mock_makedirs):
-        """log_change keeps only the last 50 entries."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
-
-        for i in range(55):
-            hm.log_change(f"Action {i}", ["echo", str(i)])
-
-        with open(self.tmpfile) as f:
-            history = json.load(f)
-
-        self.assertEqual(len(history), 50)
-        # Should keep the most recent entries
-        self.assertEqual(history[-1]["description"], "Action 54")
-
-
-# ---------------------------------------------------------------------------
-# TestGetLastAction — retrieving last action
-# ---------------------------------------------------------------------------
-
-class TestGetLastAction(unittest.TestCase):
-    """Tests for get_last_action method."""
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        self.tmpfile = os.path.join(self.tmpdir, "history.json")
-
-    def tearDown(self):
-        import shutil
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('utils.history.os.makedirs')
-    def test_get_last_action_returns_last_entry(self, mock_makedirs):
-        """get_last_action returns the most recent entry."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
-
-        hm.log_change("First", ["echo", "1"])
-        hm.log_change("Second", ["echo", "2"])
-
-        last = hm.get_last_action()
-        self.assertEqual(last["description"], "Second")
-
-    @patch('utils.history.os.makedirs')
-    def test_get_last_action_returns_none_when_empty(self, mock_makedirs):
-        """get_last_action returns None when no history exists."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
-
-        last = hm.get_last_action()
-        self.assertIsNone(last)
-
-
-# ---------------------------------------------------------------------------
-# TestUndoLastAction — undo operations
-# ---------------------------------------------------------------------------
-
-class TestUndoLastAction(unittest.TestCase):
-    """Tests for undo_last_action method."""
-
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        self.tmpfile = os.path.join(self.tmpdir, "history.json")
-
-    def tearDown(self):
-        import shutil
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('utils.history.subprocess.run')
-    @patch('utils.history.os.makedirs')
-    def test_undo_last_action_success(self, mock_makedirs, mock_run):
-        """undo_last_action executes command and removes entry on success."""
-        mock_run.return_value = MagicMock(returncode=0)
-
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
-
-        hm.log_change("Test action", ["echo", "undo"])
-
-        result = hm.undo_last_action()
-
-        self.assertTrue(result.success)
-        self.assertIn("Undid", result.message)
-        mock_run.assert_called_once_with(["echo", "undo"], check=True, timeout=60)
-
-    @patch('utils.history.os.makedirs')
-    def test_undo_last_action_no_history(self, mock_makedirs):
-        """undo_last_action returns failure when history is empty."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
-
-        result = hm.undo_last_action()
+        result = self.manager.undo_action("tampered")
 
         self.assertFalse(result.success)
-        self.assertIn("No actions", result.message)
+        mock_run.assert_not_called()
+        migrated = json.loads(self.path.read_text(encoding="utf-8"))
+        self.assertEqual(migrated["schema_version"], HISTORY_SCHEMA_VERSION)
+        self.assertNotIn("undo_command", migrated["entries"][0])
+        backup = self.path.with_name("history.v1.json.bak")
+        self.assertTrue(backup.exists())
+        self.assertIn("undo_command", backup.read_text(encoding="utf-8"))
 
-    @patch('utils.history.subprocess.run', side_effect=subprocess.CalledProcessError(1, "cmd"))
-    @patch('utils.history.os.makedirs')
-    def test_undo_last_action_command_failure(self, mock_makedirs, mock_run):
-        """undo_last_action returns failure when undo command fails."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
+    def test_future_schema_is_read_only(self):
+        original = {"schema_version": 99, "entries": []}
+        self.path.write_text(json.dumps(original), encoding="utf-8")
 
-        hm.log_change("Test action", ["false"])
+        with self.assertRaises(HistoryVersionError):
+            self.manager.get_recent()
 
-        result = hm.undo_last_action()
+        self.assertEqual(json.loads(self.path.read_text(encoding="utf-8")), original)
 
-        self.assertFalse(result.success)
+    def test_history_is_bounded_and_newest_first(self):
+        for index in range(55):
+            self.manager.log_change(f"Action {index}")
 
+        recent = self.manager.get_recent(3)
+        payload = json.loads(self.path.read_text(encoding="utf-8"))
+        self.assertEqual(len(payload["entries"]), 50)
+        self.assertEqual([entry.description for entry in recent], ["Action 54", "Action 53", "Action 52"])
 
-# ---------------------------------------------------------------------------
-# TestHistoryFilePersistence — file handling
-# ---------------------------------------------------------------------------
+    def test_corrupt_and_missing_history_are_empty(self):
+        self.assertEqual(self.manager.get_recent(), [])
+        self.path.write_text("not-json", encoding="utf-8")
+        self.assertEqual(self.manager.get_recent(), [])
 
-class TestHistoryFilePersistence(unittest.TestCase):
-    """Tests for history file loading edge cases."""
+    def test_private_values_are_redacted(self):
+        self.manager.log_change(
+            "Changed /home/alice/config token=secret-value",
+            recovery_action_id="manual",
+            recovery_parameters={"password": "hunter2", "path": "/home/alice/file"},
+        )
 
-    def setUp(self):
-        self.tmpdir = tempfile.mkdtemp()
-        self.tmpfile = os.path.join(self.tmpdir, "history.json")
-
-    def tearDown(self):
-        import shutil
-        shutil.rmtree(self.tmpdir, ignore_errors=True)
-
-    @patch('utils.history.os.makedirs')
-    def test_load_history_corrupted_json(self, mock_makedirs):
-        """Corrupted JSON returns empty list."""
-        with open(self.tmpfile, "w") as f:
-            f.write("not valid json{{{")
-
-        hm = HistoryManager()
-        hm.HISTORY_FILE = self.tmpfile
-
-        last = hm.get_last_action()
-        self.assertIsNone(last)
-
-    @patch('utils.history.os.makedirs')
-    def test_load_history_missing_file(self, mock_makedirs):
-        """Missing history file returns empty list."""
-        hm = HistoryManager()
-        hm.HISTORY_FILE = os.path.join(self.tmpdir, "nonexistent.json")
-
-        last = hm.get_last_action()
-        self.assertIsNone(last)
+        entry = self.manager.get_recent(1)[0]
+        self.assertNotIn("alice", entry.description)
+        self.assertEqual(entry.recovery_parameters["password"], "<masked>")
+        self.assertEqual(entry.recovery_parameters["path"], "/home/<user>/file")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     unittest.main()

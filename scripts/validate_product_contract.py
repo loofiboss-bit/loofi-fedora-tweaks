@@ -265,8 +265,8 @@ def _unguarded_command_runner_calls(path: Path, tree: ast.AST) -> list[str]:
 def validate() -> list[str]:
     errors = validate_product_catalog()
     entries = product_catalog()
-    if len({entry.route_id for entry in entries}) != 80:
-        errors.append(f"stable route count changed: expected 80, got {len(entries)}")
+    if len({entry.route_id for entry in entries}) != 81:
+        errors.append(f"stable route count changed: expected 81, got {len(entries)}")
 
     for definition in _action_definitions():
         if definition.operation_class not in {"host", "app_state", "session", "manual_only"}:
@@ -299,6 +299,12 @@ def validate() -> list[str]:
     cli_source = (SOURCE / "cli" / "main.py").read_text(encoding="utf-8")
     if "execution_allowed(" not in cli_source or "action_center_required" not in cli_source:
         errors.append("CLI execution boundary is missing its fail-closed Action Center gate")
+    settings_source = (SOURCE / "ui" / "settings_tab.py").read_text(encoding="utf-8")
+    if "self.mode_combo" in settings_source:
+        errors.append("retired global navigation mode control remains visible")
+    navigation_mode_source = (SOURCE / "utils" / "navigation_mode.py").read_text(encoding="utf-8")
+    if "return NavigationMode.ADVANCED" not in navigation_mode_source:
+        errors.append("unified Specialist Tools navigation is not enforced")
     agent_source = (SOURCE / "core" / "agents" / "agent_runner.py").read_text(encoding="utf-8")
     if "classify_command(" not in agent_source or "Action Center" not in agent_source:
         errors.append("agent raw-command boundary is missing its classification gate")
@@ -384,7 +390,7 @@ def main() -> int:
         for error in errors:
             print(f"[product-contract] ERROR: {error}")
         return 1
-    print("[product-contract] OK: 80 routes, classified actions, built-in-only plugins, and guarded entrypoints")
+    print("[product-contract] OK: 81 routes, classified actions, built-in-only plugins, and guarded entrypoints")
     return 0
 
 

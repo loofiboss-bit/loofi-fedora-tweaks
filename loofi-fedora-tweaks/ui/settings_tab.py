@@ -239,19 +239,13 @@ class SettingsTab(QWidget, PluginInterface):
         help_label.setObjectName("settingsHelpText")
         layout.addWidget(help_label)
 
-        mode_group = QGroupBox(self.tr("Advanced Tools"))
+        mode_group = QGroupBox(self.tr("Specialist Tools"))
         mode_form = QFormLayout(mode_group)
-        from utils.navigation_mode import NavigationModeManager
-
-        self.mode_combo = QComboBox()
-        self.mode_combo.setAccessibleName(self.tr("Navigation mode"))
-        self.mode_combo.addItems([self.tr("Standard"), self.tr("Advanced")])
-        current_mode = NavigationModeManager.get_mode()
-        self.mode_combo.setCurrentIndex(1 if current_mode is NavigationMode.ADVANCED else 0)
-        self.mode_combo.currentIndexChanged.connect(self._on_navigation_mode_changed)
-        mode_form.addRow(self.tr("Mode:"), self.mode_combo)
-
-        self._mode_desc = QLabel(self._mode_description(current_mode))
+        self._mode_desc = QLabel(
+            self.tr(
+                "Specialist tools are always available. Each system change still has its own review and confirmation."
+            )
+        )
         self._mode_desc.setWordWrap(True)
         self._mode_desc.setObjectName("settingsHelpText")
         mode_form.addRow("", self._mode_desc)
@@ -522,9 +516,9 @@ class SettingsTab(QWidget, PluginInterface):
         self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
 
     def _sync_mode_controls(self) -> None:
-        """Refresh mode widgets after a settings reset."""
-        from utils.navigation_mode import NavigationModeManager
-
-        mode = NavigationModeManager.get_mode()
-        self.mode_combo.setCurrentIndex(1 if mode is NavigationMode.ADVANCED else 0)
-        self._mode_desc.setText(self._mode_description(mode))
+        """Compatibility hook after reset; v20 has no global mode control."""
+        self._mode_desc.setText(
+            self.tr(
+                "Specialist tools are always available. Each system change still has its own review and confirmation."
+            )
+        )

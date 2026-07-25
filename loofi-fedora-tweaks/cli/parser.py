@@ -61,6 +61,37 @@ def build_parser() -> argparse.ArgumentParser:
     )
     maintenance_today_parser.add_argument("--json", action="store_true", help="Output in JSON format")
 
+    activity_parser = subparsers.add_parser(
+        "activity",
+        help="Inspect the Trusted Change Journal and create reviewed recovery plans",
+    )
+    activity_subparsers = activity_parser.add_subparsers(
+        dest="activity_action",
+        help="Activity commands",
+    )
+    activity_list = activity_subparsers.add_parser(
+        "list",
+        help="List recent changes from available local sources",
+    )
+    activity_list.add_argument("--limit", type=int, default=25)
+    activity_list.add_argument(
+        "--source",
+        choices=["action_center", "dnf5", "rpm_ostree", "flatpak", "fwupd", "loofi_app", "session"],
+        action="append",
+        default=[],
+        help="Restrict results to one or more sources",
+    )
+    activity_list.add_argument("--refresh", action="store_true")
+    for action in ("show", "related", "recover"):
+        action_parser = activity_subparsers.add_parser(
+            action,
+            help=f"{action.capitalize()} one activity event",
+        )
+        action_parser.add_argument("event_id")
+        action_parser.add_argument("--refresh", action="store_true")
+    activity_related = activity_subparsers.choices["related"]
+    activity_related.add_argument("--limit", type=int, default=20)
+
     # Disk command
     disk_parser = subparsers.add_parser("disk", help="Disk usage information")
     disk_parser.add_argument("--details", action="store_true", help="Show large directories")
@@ -116,6 +147,11 @@ def build_parser() -> argparse.ArgumentParser:
         choices=["cloudflare", "google", "quad9", "opendns"],
         default="cloudflare",
         help="DNS provider",
+    )
+    net_parser.add_argument(
+        "--connection",
+        required=True,
+        help="Exact NetworkManager connection name to review",
     )
 
     # v10.0 new commands

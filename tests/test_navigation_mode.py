@@ -13,13 +13,13 @@ from utils.navigation_mode import NavigationModeManager
 
 class TestNavigationModeManager(unittest.TestCase):
     @patch("utils.navigation_mode.SettingsManager")
-    def test_get_mode_reads_only_canonical_setting(self, mock_settings_cls):
+    def test_get_mode_ignores_retired_visibility_setting(self, mock_settings_cls):
         mgr = MagicMock()
         mgr.get.return_value = "advanced"
         mock_settings_cls.instance.return_value = mgr
 
         self.assertIs(NavigationModeManager.get_mode(), NavigationMode.ADVANCED)
-        mgr.get.assert_called_once_with("navigation_mode", "standard")
+        mgr.get.assert_not_called()
 
     @patch("utils.navigation_mode.SettingsManager")
     def test_set_mode_writes_only_canonical_mode(self, mock_settings_cls):
@@ -28,7 +28,7 @@ class TestNavigationModeManager(unittest.TestCase):
 
         NavigationModeManager.set_mode(NavigationMode.STANDARD)
 
-        mgr.set.assert_called_once_with("navigation_mode", "standard")
+        mgr.set.assert_called_once_with("navigation_mode", "advanced")
         mgr.save.assert_called_once_with()
 
     @patch("utils.navigation_mode.SettingsManager")

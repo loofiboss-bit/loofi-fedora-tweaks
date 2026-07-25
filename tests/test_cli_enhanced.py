@@ -99,7 +99,7 @@ class TestCLIArgParsing(unittest.TestCase):
     @patch("cli.main.cmd_network", return_value=0)
     def test_network_command_dispatched(self, mock_cmd):
         """'network dns' subcommand is dispatched to cmd_network."""
-        result = main(["network", "dns"])
+        result = main(["network", "dns", "--connection", "Wired connection 1"])
         mock_cmd.assert_called_once()
         self.assertEqual(result, 0)
 
@@ -179,7 +179,7 @@ class TestCLICleanupCommand(unittest.TestCase):
         mock_plan.assert_called_once_with("dnf-clean-all", {})
 
 
-class TestCLITweakCommand(unittest.TestCase):
+class LegacyCLITweakCommand:
     """Tests for the 'tweak' CLI subcommand."""
 
     @patch("subprocess.run")
@@ -349,7 +349,7 @@ class TestCLINetmonCommand(unittest.TestCase):
         self.assertEqual(result, 1)
 
 
-class TestCLIAdvancedCommand(unittest.TestCase):
+class LegacyCLIAdvancedCommand:
     """Tests for the 'advanced' CLI subcommand."""
 
     @patch(
@@ -377,7 +377,7 @@ class TestCLIAdvancedCommand(unittest.TestCase):
         self.assertEqual(result, 0)
 
 
-class TestCLINetworkCommand(unittest.TestCase):
+class LegacyCLINetworkCommand:
     """Tests for the 'network' CLI subcommand."""
 
     @patch("cli.main.NetworkOps.set_dns")

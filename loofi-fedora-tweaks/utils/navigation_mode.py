@@ -1,4 +1,4 @@
-"""Persistence for the canonical v15 Standard/Advanced UI mode."""
+"""Compatibility persistence for the v20 unified navigation surface."""
 
 from core.navigation.migrations import navigation_mode_from_value
 from core.navigation.models import NavigationMode
@@ -9,18 +9,22 @@ logger = get_logger(__name__)
 
 
 class NavigationModeManager:
-    """Read and write the sole post-migration navigation-mode source."""
+    """Normalize legacy mode callers to the unified Specialist Tools surface."""
 
     @staticmethod
     def get_mode() -> NavigationMode:
-        mgr = SettingsManager.instance()
-        raw = mgr.get("navigation_mode", NavigationMode.STANDARD.value)
-        return navigation_mode_from_value(raw)
+        """Return the v20 unified navigation surface.
+
+        Persisted values remain readable for migration compatibility, but no
+        longer hide product areas.
+        """
+        return NavigationMode.ADVANCED
 
     @staticmethod
     def set_mode(mode: NavigationMode) -> None:
-        canonical = navigation_mode_from_value(mode)
+        """Keep the compatibility API while normalizing to unified navigation."""
+        navigation_mode_from_value(mode)
         mgr = SettingsManager.instance()
-        mgr.set("navigation_mode", canonical.value)
+        mgr.set("navigation_mode", NavigationMode.ADVANCED.value)
         mgr.save()
-        logger.info("Navigation mode set to %s", canonical.value)
+        logger.info("Navigation mode normalized to %s", NavigationMode.ADVANCED.value)

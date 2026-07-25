@@ -86,7 +86,7 @@ def validate() -> list[str]:
         and placement.destination_id == "advanced"
     ]
     advanced_sections = sections_for_destination("advanced")
-    if len(routes) != 80:
+    if len(routes) != 81:
         errors.append("the stable route inventory changed")
     if len(advanced_routes) != 33:
         errors.append("the Advanced route inventory changed")

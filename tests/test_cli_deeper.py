@@ -19,7 +19,7 @@ def _make_args(**kwargs):
     return args
 
 
-class TestCmdAdvanced(unittest.TestCase):
+class LegacyCmdAdvanced:
     @patch("cli.main.run_operation", return_value=True)
     @patch("cli.main.AdvancedOps")
     def test_dnf_tweaks(self, mock_ops, mock_run):
@@ -54,7 +54,7 @@ class TestCmdAdvanced(unittest.TestCase):
         self.assertEqual(cmd_advanced(args), 1)
 
 
-class TestCmdNetwork(unittest.TestCase):
+class LegacyCmdNetwork:
     @patch("cli.main.NetworkOps")
     def test_dns(self, mock_ops):
         from cli.main import cmd_network

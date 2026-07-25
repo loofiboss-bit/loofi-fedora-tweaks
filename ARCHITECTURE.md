@@ -3,7 +3,7 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Released version**: 18.0.0 "Steward" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Released version**: 19.0.0 "Steward" | **Active candidate**: 20.0.0 "Continuity" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 
 ## Runtime entry modes
 
@@ -64,10 +64,10 @@ enforced by `tests/test_architecture_imports.py`:
 
 Stable route IDs in `core/navigation/manifest.py` remain canonical.
 `core/navigation/destinations.py` groups them into the v16 shell and owns
-explicit, data-only presentation metadata for all 61 destination sections; it
+explicit, data-only presentation metadata for all 62 destination sections; it
 does not replace routes or section IDs with a parallel namespace.
 
-Standard mode contains exactly:
+The unified shell contains:
 
 | Order | Destination ID | Label | Default route |
 | ---: | --- | --- | --- |
@@ -78,16 +78,16 @@ Standard mode contains exactly:
 | 5 | `desktop` | Desktop | `desktop` |
 | 6 | `settings` | Settings | `settings` |
 
-Advanced mode adds one `advanced` destination. The shared
+Specialist Tools retains the stable `advanced` destination ID. The shared
 `DestinationSidebar` owns primary selection and `DestinationHost` maps the
 responsive `SectionNavigator` between explicit section IDs and stable routes.
 At 1180 DIP and above the primary navigation is expanded; from 900 through 1179
 DIP it is a 64–72 DIP icon rail; below 900 DIP the section rail becomes a
-full-width selector above content. Standard mode does not render a nested
+full-width selector above content. The unified shell does not render a nested
 plugin tree or an application-level horizontal route tab bar.
 
-Advanced routes use the same shell-selected `QStackedWidget` and
-`PageScaffold` contract as Standard routes. Local tabs are allowed only for
+Specialist routes use the same shell-selected `QStackedWidget` and
+`PageScaffold` contract as core routes. Local tabs are allowed only for
 small same-context view sets; Community Presets is the single retained
 three-view local tab group.
 
@@ -97,18 +97,14 @@ specialist components fail closed with an unavailable/explanation result.
 Aliases, favorites, saved last routes, direct links, and `switch_to_route()`
 continue to resolve through compatibility mappings.
 
-## Standard and Advanced modes
+## Unified navigation and legacy mode compatibility
 
-`utils/navigation_mode.py` is the sole post-migration settings authority:
-
-```text
-navigation_mode = standard | advanced
-```
-
-Legacy Beginner/Intermediate/Advanced values are accepted only by idempotent
-migration adapters. Standard is the default. Advanced reveals policy-approved
-specialist routes but never changes confirmation, privilege, or execution
-rules. Returning to Standard preserves hidden settings and pins.
+The visible Standard/Advanced selector is retired in v20. Legacy
+Beginner/Intermediate/Advanced values remain accepted by idempotent migration
+adapters, and the stable `advanced` destination ID is preserved. Runtime
+navigation normalizes to the unified Specialist Tools surface. Visibility no
+longer implies safety: confirmation, privilege, platform, and recovery rules
+remain attached to each action.
 
 ## Plugin and component lifecycle
 

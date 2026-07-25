@@ -16,6 +16,18 @@ from core.actions.contracts import (
 )
 from core.executor.action_result import ActionResult
 from core.local_profiles import validate_local_profile
+from core.actions.continuity_recovery import (
+    _preflight_dnf5_history_undo,
+    _preflight_fedora_update,
+    _preflight_rpm_ostree_rollback,
+    _render_dnf5_history_undo,
+    _render_fedora_update,
+    _validate_rpm_ostree_rollback,
+    _validate_transaction_id,
+    _verify_dnf5_history_undo,
+    _verify_fedora_update,
+    _verify_rpm_ostree_rollback,
+)
 
 _PACKAGE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+._-]{0,127}$")
 _FLATPAK_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{1,255}$")
@@ -29,14 +41,57 @@ def assurance_definitions() -> list[ActionDefinition]:
     return [
         ActionDefinition(
             id="update-fedora-system",
-            capability_id="updates.fedora.apply",
-            title="Update Fedora",
-            description="Apply the currently planned Fedora package or deployment update.",
+            capability_id="updates.fedora.prepare",
+            title="Prepare Fedora update",
+            description="Stage the currently planned Fedora package or deployment update without rebooting.",
             parameter_schema={}, risk_level="medium", privileged=True,
             confirmation_policy="explicit-no-rollback",
             recovery_guidance="Traditional systems retain package history; Atomic systems retain the previous deployment.",
             rollback_supported=False, command_renderer=_render_fedora_update,
             preflight_checker=_preflight_fedora_update, verifier=_verify_fedora_update,
+            reboot_policy="required",
+            affected_resources=("packages", "rpmdb", "boot-state"),
+        ),
+        ActionDefinition(
+            id="dnf5-history-undo",
+            capability_id="recovery.dnf5.transaction.undo",
+            title="Prepare DNF transaction recovery",
+            description="Prepare an offline inverse of one exact, verifiable DNF5 transaction.",
+            parameter_schema={"transaction_id": {"type": "integer", "required": True}},
+            risk_level="high",
+            privileged=True,
+            confirmation_policy="explicit-no-rollback",
+            recovery_guidance="The inverse is applied only after a separate reboot; create a recovery point first.",
+            rollback_supported=False,
+            command_renderer=_render_dnf5_history_undo,
+            preflight_checker=_preflight_dnf5_history_undo,
+            verifier=_verify_dnf5_history_undo,
+            supported_variants=frozenset({"traditional"}),
+            reboot_policy="required",
+            affected_resources=("packages", "rpmdb", "boot-state"),
+            parameter_validator=_validate_transaction_id,
+        ),
+        ActionDefinition(
+            id="rpm-ostree-rollback",
+            capability_id="recovery.rpm-ostree.rollback",
+            title="Stage Atomic rollback",
+            description="Stage the exact existing previous deployment and verify it after reboot.",
+            parameter_schema={
+                "expected_deployment": {"type": "string", "required": True},
+                "rollback_deployment": {"type": "string", "required": True},
+            },
+            risk_level="high",
+            privileged=True,
+            confirmation_policy="explicit-no-rollback",
+            recovery_guidance="The current deployment remains available until the staged rollback is booted.",
+            rollback_supported=False,
+            command_renderer=lambda _parameters, _runtime: ["rpm-ostree", "rollback"],
+            preflight_checker=_preflight_rpm_ostree_rollback,
+            verifier=_verify_rpm_ostree_rollback,
+            supported_variants=frozenset({"atomic"}),
+            reboot_policy="required",
+            affected_resources=("rpm-ostree-deployment", "boot-state"),
+            parameter_validator=_validate_rpm_ostree_rollback,
         ),
         ActionDefinition(
             id="update-flatpaks",
@@ -366,6 +421,49 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
                 parameter_validator=_validate_zram,
                 reboot_policy="may_require",
             ),
+            _manual_definition(
+                "set-battery-limit",
+                "Set battery charge limit",
+                "Persistent battery charge thresholds require hardware-specific verification.",
+                "Review hardware support and the exact threshold before applying the change manually.",
+                ("battery", "power-supply"),
+                parameter_schema={"limit": {"type": "integer", "required": True}},
+                parameter_validator=lambda values: _validate_integer_range(
+                    values, "limit", 50, 100
+                ),
+            ),
+            _manual_definition(
+                "optimize-dnf-config",
+                "Review DNF configuration tuning",
+                "Persistent package-manager configuration remains guided manual work.",
+                "Review existing DNF5 configuration and remove conflicting values before editing it manually.",
+                ("dnf-config",),
+            ),
+            _manual_definition(
+                "enable-tcp-bbr",
+                "Review TCP BBR enablement",
+                "Persistent kernel networking changes require kernel and recovery verification.",
+                "Verify BBR kernel support and retain the previous sysctl configuration before changing it manually.",
+                ("kernel-tunables", "network-stack"),
+            ),
+            _manual_definition(
+                "install-gamemode",
+                "Review GameMode installation",
+                "Package and group membership changes require separate verification.",
+                "Review the Fedora package and exact user group membership before applying changes manually.",
+                ("packages", "user-groups"),
+            ),
+            _manual_definition(
+                "set-swappiness",
+                "Set system swappiness",
+                "Persistent memory-policy changes require workload-specific verification.",
+                "Review memory pressure and retain the previous sysctl value before changing it manually.",
+                ("kernel-tunables", "memory-policy"),
+                parameter_schema={"value": {"type": "integer", "required": True}},
+                parameter_validator=lambda values: _validate_integer_range(
+                    values, "value", 0, 100
+                ),
+            ),
         ]
     )
     return definitions
@@ -396,6 +494,25 @@ def _choice_manual_definition(
 def _validate_choice(parameters: Mapping[str, Any], name: str, allowed: set[str]) -> PolicyDecision:
     if parameters.get(name) not in allowed:
         return _blocked("invalid_choice", f"Parameter '{name}' must be one of: {', '.join(sorted(allowed))}.")
+    return _allowed("parameters_valid", f"Parameter '{name}' is valid.")
+
+
+def _validate_integer_range(
+    parameters: Mapping[str, Any],
+    name: str,
+    minimum: int,
+    maximum: int,
+) -> PolicyDecision:
+    value = parameters.get(name)
+    if (
+        not isinstance(value, int)
+        or isinstance(value, bool)
+        or not minimum <= value <= maximum
+    ):
+        return _blocked(
+            f"invalid_{name}",
+            f"Parameter '{name}' must be an integer between {minimum} and {maximum}.",
+        )
     return _allowed("parameters_valid", f"Parameter '{name}' is valid.")
 
 
@@ -548,71 +665,6 @@ def _validate_recovery_point(parameters: Mapping[str, Any]) -> PolicyDecision:
     if not isinstance(description, str) or not _DESCRIPTION_PATTERN.fullmatch(description.strip()):
         return _blocked("invalid_snapshot_description", "Description must contain 1-80 printable characters.")
     return _allowed("parameters_valid", "Recovery-point parameters are valid.")
-
-
-def _render_fedora_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> list[str]:
-    if runtime.is_atomic():
-        return ["rpm-ostree", "upgrade"]
-    manager = runtime.package_manager()
-    return [manager if manager in {"dnf", "dnf5"} else "dnf", "upgrade", "--refresh", "-y"]
-
-
-def _preflight_fedora_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
-    if runtime.is_atomic():
-        status = runtime.execute_read_only(["rpm-ostree", "status", "--json"], action_id="update-fedora-status", timeout=30)
-        payload = _json_payload(status)
-        deployments = payload.get("deployments", []) if isinstance(payload, dict) else []
-        booted = next((item for item in deployments if isinstance(item, dict) and item.get("booted")), {})
-        if not status.success or not booted:
-            return _blocked("atomic_status_unavailable", "The current Atomic deployment could not be verified.")
-        return _allowed("preflight_ok", "Atomic deployment state is ready.", atomic=True, booted_checksum=str(booted.get("checksum", "")))
-    if runtime.package_manager_busy():
-        return _blocked("package_manager_busy", "Another package operation may be active.")
-    manager = runtime.package_manager()
-    if manager not in {"dnf", "dnf5"}:
-        return _blocked("unsupported_package_manager", f"Unsupported package manager: {manager}")
-    query = runtime.execute_read_only(
-        [manager, "repoquery", "--upgrades", "--qf", "%{name}|%{evr}|%{arch}"],
-        action_id="update-fedora-candidates", timeout=90,
-    )
-    candidates = _lines(query.stdout)
-    if not query.success:
-        return _blocked("update_query_failed", "Fedora update candidates could not be resolved.")
-    if not candidates:
-        return _blocked("no_updates", "No Fedora package updates are currently available.")
-    return _allowed("preflight_ok", f"{len(candidates)} Fedora package updates are ready.", atomic=False, manager=manager, candidates=candidates)
-
-
-def _verify_fedora_update(run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
-    facts = plan.policy_decision.facts
-    if facts.get("atomic"):
-        status = runtime.execute_read_only(["rpm-ostree", "status", "--json"], action_id="update-fedora-verify-status", timeout=30)
-        deployments = _json_payload(status).get("deployments", []) if status.success else []
-        booted = next((item for item in deployments if isinstance(item, dict) and item.get("booted")), {})
-        pending = _pending_deployment(deployments)
-        expected = str(((run.verification_result or {}).get("data") or {}).get("expected_checksum", "")) or str(pending.get("checksum", ""))
-        boot_id = _runtime_boot_id(runtime)
-        if expected and boot_id != run.execution_boot_id and str(booted.get("checksum", "")) == expected:
-            return VerificationDecision.succeeded("The staged Atomic deployment is now booted.", booted_checksum=expected)
-        if expected:
-            return VerificationDecision.awaiting_reboot("The Atomic update is staged and requires reboot verification.", expected_checksum=expected)
-        return VerificationDecision.failed("No verifiable staged Atomic deployment was found.")
-    candidates = [str(item) for item in facts.get("candidates", [])]
-    missing = []
-    for candidate in candidates:
-        name = candidate.split("|", 1)[0]
-        result = runtime.execute_read_only(
-            ["rpm", "-q", "--qf", "%{name}|%{evr}|%{arch}\\n", name],
-            action_id="update-fedora-verify-package",
-            timeout=15,
-        )
-        if not result.success or candidate not in _lines(result.stdout):
-            missing.append(candidate)
-    manager = str(facts.get("manager", runtime.package_manager()))
-    health = runtime.execute_read_only([manager, "check"], action_id="update-fedora-verify-health", timeout=120)
-    if missing or not health.success:
-        return VerificationDecision.failed("Fedora package verification failed.", missing_packages=sorted(set(missing)))
-    return VerificationDecision.succeeded("Planned Fedora packages and package health were verified.", verified_packages=len(candidates))
 
 
 def _preflight_flatpak_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:

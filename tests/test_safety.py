@@ -49,15 +49,15 @@ class TestHistory(unittest.TestCase):
         
         last = self.history_mgr.get_last_action()
         self.assertEqual(last["description"], "Test Action")
-        self.assertEqual(last["undo_command"], ["echo", "undo"])
+        self.assertNotIn("undo_command", last)
         
-        # Undo
+        # Legacy command data must never be executed.
         with patch('subprocess.run') as mock_run:
             result = self.history_mgr.undo_last_action()
-            self.assertTrue(result.success)
-            mock_run.assert_called_with(["echo", "undo"], check=True, timeout=60)
-            
-        self.assertIsNone(self.history_mgr.get_last_action())
+            self.assertFalse(result.success)
+            mock_run.assert_not_called()
+
+        self.assertIsNotNone(self.history_mgr.get_last_action())
 
 if __name__ == '__main__':
     unittest.main()

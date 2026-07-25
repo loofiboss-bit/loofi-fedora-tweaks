@@ -1,5 +1,21 @@
 # Changelog
 
+## v20.0.0 — Continuity
+
+- Added the Trusted Change Journal across Action Center, DNF5, rpm-ostree,
+  Flatpak, fwupd, and Loofi records.
+- Added exact offline DNF5 transaction recovery and exact rpm-ostree rollback
+  planning with changed-boot verification.
+- Added Activity & Recovery UI, CLI, authenticated read-only API, and bounded
+  support-bundle evidence.
+- Removed executable legacy undo commands and closed remaining direct CLI
+  mutation paths behind Action Center plans.
+- Replaced the global Standard/Advanced selector with always-discoverable
+  Specialist Tools.
+
+**Test Suite**: 6,822 passed, 68 skipped, 1,057 subtests, and 86.10% coverage,
+with lint, typing, architecture, packaging, release-document, and UI gates.
+
 ## v19.0.0 — Steward
 
 - Added a PyQt-free `core.system_check` domain with immutable finding, evidence,

@@ -309,7 +309,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 self.assertTrue(window.destination_host.explanation.isVisible())
                 gated += 1
 
-        self.assertEqual(opened + gated, 80)
+        self.assertEqual(opened + gated, 81)
         self.assertGreater(opened, 0)
         self.assertGreater(gated, 0)
 

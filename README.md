@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v19.0.0 "Steward"
+# Loofi Fedora Tweaks v20.0.0 "Continuity"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,35 +12,34 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v19.0.0">
-    <img src="https://img.shields.io/badge/Local_candidate-v19.0.0-orange?style=for-the-badge&logo=github" alt="v19.0.0 local release candidate; tag not yet published"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v20.0.0">
+    <img src="https://img.shields.io/badge/Release-v20.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v20.0.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
-## What Steward changes
+## What Continuity changes
 
-Steward connects Home, diagnostics, saved health evidence, and the v18 Action
-Center boundary into one explicit System Check and verified-resolution journey.
-The check remains read-only and runs only after user activation.
+Continuity composes trusted local change records into one Activity & Recovery
+surface. History remains inert, and recovery stays inside Action Center with
+fresh state checks, explicit confirmation, and independent verification.
 
-- Home starts one cancellable, timeout-bounded quick check off the UI thread.
-- One canonical System Check page shows current findings, saved history,
-  before/after outcomes, and honest partial or unavailable states.
-- Findings carry privacy-safe evidence and may link only to a validated existing
-  route, audited Action Center action ID, or manual guidance.
-- Action Center schema v4 stores bounded finding context while retaining atomic
-  v1-v3 migration, future-schema read-only safety, fresh preflight, explicit
-  confirmation, and independent verification.
-- CLI and the loopback-only read API expose stable versioned System Check
-  envelopes without adding a second execution path.
-- The release benchmark measured meaningful Home at 160.661 ms median and
-  76,048 KiB median RSS, with one provider, zero subprocess probes, zero active
-  timers, zero running QThreads, and no System Check import on cold start.
+- The Trusted Change Journal reads Action Center, DNF5, rpm-ostree, Flatpak,
+  fwupd, and Loofi records only after explicit activation.
+- DNF5 recovery accepts only exact successful install/remove transaction shapes
+  and stages the inverse offline.
+- Atomic recovery binds the current and previous deployment checksums and
+  verifies the exact booted rollback after reboot.
+- Flatpak, firmware, ambiguous package history, and legacy command-bearing
+  history never become executable recovery.
+- CLI, authenticated read-only API, UI, and support bundle share the same
+  privacy-bounded event contract.
+- Specialist Tools are always discoverable; each action still owns its risk,
+  confirmation, privilege, and platform policy.
 
-Full details: [v19 release notes](docs/releases/RELEASE-NOTES-v19.0.0.md).
+Full details: [v20 release notes](docs/releases/RELEASE-NOTES-v20.0.0.md).
 
 ## The six destinations
 
@@ -51,12 +50,12 @@ Full details: [v19 release notes](docs/releases/RELEASE-NOTES-v19.0.0.md).
 | System | System details, performance, processes, hardware, storage, diagnostics, health history, and recovery points |
 | Network & Security | Connections, DNS, privacy, firewall, exposure, and backups |
 | Desktop | Appearance, displays, and window behavior |
-| Settings | Appearance and behavior settings, Standard/Advanced mode, Repair Loofi, and About |
+| Settings | Appearance and behavior settings, Specialist Tools status, Repair Loofi, and About |
 
-Advanced contains development, local AI, agents, automation, virtualization,
+Specialist Tools contains development, local AI, agents, automation, virtualization,
 gaming, device sharing, local profiles, desktop extensions, and workspace tools.
 These routes remain discoverable when policy and component availability allow;
-Advanced mode never weakens confirmation or privilege rules.
+their visibility never weakens confirmation or privilege rules.
 
 ## Five common workflows
 
@@ -184,13 +183,9 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v19.0.0 "Steward"` is locally release-ready for Fedora 44 Traditional and
-Atomic. Full tests, coverage, architecture, security, packaging, accessibility,
-startup, System Check duration, and fresh Kinoite deployment/reboot gates pass.
-No v19 tag or public package has been created; `v18.0.0 "Haven"` remains the
-latest independently verified public release until publication is separately
-authorized. Fedora 45 remains preview-only. The historical Sentinel tag remains
-preserved as `legacy-v18.0.0-sentinel`.
+`v20.0.0 "Continuity"` is the current release. Fedora 45 remains preview-only.
+The historical Sentinel, Horizon, Nebula, and Synapse lineages remain preserved
+under explicit `legacy-v*` tags.
 
 ## License
 

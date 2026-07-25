@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="20.0.0" date="2026-07-25">
+      <description>
+        <p>v20.0.0 "Continuity" - Trusted Activity and Recovery</p>
+        <ul>
+          <li>Added a privacy-bounded Trusted Change Journal across Action Center, DNF5, rpm-ostree, Flatpak, fwupd, and Loofi history</li>
+          <li>Added conservative DNF5 offline transaction recovery and exact rpm-ostree deployment rollback planning</li>
+          <li>Added lazy Activity and Recovery UI, CLI inspection, and authenticated read-only API access</li>
+          <li>Removed executable legacy undo commands and closed remaining direct CLI mutation paths behind Action Center plans</li>
+          <li>Unified navigation with always-available Specialist Tools while retaining action-specific safety policy</li>
+        </ul>
+      </description>
+    </release>
     <release version="19.0.0" date="2026-07-25">
       <description>
         <p>v19.0.0 "Steward" - Guided System Checks</p>

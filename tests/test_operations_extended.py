@@ -301,7 +301,7 @@ class TestTweakOpsRestartAudio(unittest.TestCase):
         self.assertIn("audio", desc.lower())
 
 
-class TestTweakOpsSetBatteryLimit(unittest.TestCase):
+class LegacyTweakOpsSetBatteryLimit:
     """Tests for TweakOps.set_battery_limit()."""
 
     @patch("core.executor.operations.subprocess.run")
@@ -466,7 +466,7 @@ class TestTweakOpsBatterySysfs(unittest.TestCase):
 # ── AdvancedOps ───────────────────────────────────────────────────────────
 
 
-class TestAdvancedOpsApplyDnfTweaks(unittest.TestCase):
+class LegacyAdvancedOpsApplyDnfTweaks:
     """Tests for AdvancedOps.apply_dnf_tweaks()."""
 
     @patch("core.executor.operations.subprocess.run")
@@ -569,7 +569,7 @@ class TestAdvancedOpsApplyDnfTweaks(unittest.TestCase):
         self.assertEqual(call_kwargs["timeout"], 30)
 
 
-class TestAdvancedOpsEnableTcpBbr(unittest.TestCase):
+class LegacyAdvancedOpsEnableTcpBbr:
     """Tests for AdvancedOps.enable_tcp_bbr()."""
 
     @patch("core.executor.operations.subprocess.run")
@@ -628,7 +628,7 @@ class TestAdvancedOpsEnableTcpBbr(unittest.TestCase):
         self.assertEqual(second_call_args, ["pkexec", "sysctl", "--system"])
 
 
-class TestAdvancedOpsInstallGamemode(unittest.TestCase):
+class LegacyAdvancedOpsInstallGamemode:
     """Tests for AdvancedOps.install_gamemode()."""
 
     @patch("core.executor.operations.getpass.getuser")
@@ -738,7 +738,7 @@ class TestAdvancedOpsInstallGamemode(unittest.TestCase):
         self.assertEqual(install_call_kwargs["timeout"], 300)
 
 
-class TestAdvancedOpsSetSwappiness(unittest.TestCase):
+class LegacyAdvancedOpsSetSwappiness:
     """Tests for AdvancedOps.set_swappiness()."""
 
     @patch("core.executor.operations.subprocess.run")
@@ -878,7 +878,7 @@ class TestNetworkOpsDnsProviders(unittest.TestCase):
             self.assertEqual(len(addrs), 2, f"{provider} should have 2 addresses")
 
 
-class TestNetworkOpsSetDns(unittest.TestCase):
+class LegacyNetworkOpsSetDns:
     """Tests for NetworkOps.set_dns()."""
 
     @patch("core.executor.operations.subprocess.run")

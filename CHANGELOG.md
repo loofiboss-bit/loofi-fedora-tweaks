@@ -4,6 +4,38 @@
 
 All notable changes to this project will be documented in this file.
 
+## [20.0.0] - 2026-07-25 "Continuity"
+
+### Added
+
+- Trusted Change Journal composition for Action Center, DNF5, rpm-ostree,
+  Flatpak, fwupd, and Loofi records without a new authoritative database.
+- Explicit Activity & Recovery UI, CLI, authenticated read-only API, and
+  support bundle v12 evidence.
+- Exact DNF5 offline install/remove transaction recovery and exact rpm-ostree
+  previous-deployment rollback with post-reboot verification.
+
+### Changed
+
+- Traditional Fedora updates now stage through DNF5 offline transactions.
+- Legacy CLI host operations map to named typed Action Center review plans.
+- Specialist Tools are always visible; the global Standard/Advanced selector is
+  retired while stable IDs and persisted inputs remain compatible.
+
+### Fixed
+
+- Legacy command-bearing history migrates atomically to an inert schema and can
+  no longer execute undo commands.
+- CLI help following `--cli` is forwarded to the real nested parser.
+
+### Verification
+
+- Passed 6,822 tests with 68 expected skips, 1,057 subtests, and 86.10%
+  coverage, plus clean lint, mypy, architecture, packaging, release-document,
+  product-catalog, statistics, stabilization, and adapter-drift gates.
+- Preserved the historical Synapse tag as `legacy-v20.0.0-synapse` before
+  publishing the canonical Continuity lineage.
+
 ## [19.0.0] - 2026-07-25 "Steward"
 
 ### Added
@@ -48,8 +80,8 @@ All notable changes to this project will be documented in this file.
 - Installed a signed Fedora Kinoite 44.1.7 image, staged the exact local RPM,
   rebooted, replaced the corrected RPM, rebooted again, and read back the exact
   booted deployment and matching installed source checksum.
-- Tagging, public assets, canonical CI/CodeQL readback, COPR publication, and
-  public documentation remain pending separate authorization.
+- The canonical tag, public assets, CI/CodeQL, COPR package, documentation, and
+  clean Fedora installation were subsequently published and read back.
 
 ## [18.0.0] - 2026-07-22 "Haven"
 

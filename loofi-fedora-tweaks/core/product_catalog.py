@@ -20,10 +20,13 @@ from core.catalog_models import (
     RoutePlacement,
     SectionDefinition,
 )
-from core.product_catalog_records import CATALOG_DATA
+from core.product_catalog_continuity import extend_catalog
+from core.product_catalog_records import CATALOG_DATA as BASE_CATALOG_DATA
 
 if TYPE_CHECKING:
     from core.plugins.metadata import PluginMetadata
+
+CATALOG_DATA = extend_catalog(BASE_CATALOG_DATA)
 
 RETIRED_ROUTE_REDIRECTS: Mapping[str, str] = MappingProxyType(
     {

@@ -2,27 +2,26 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v19.0.0 "Steward"<br>
+**Current release:** v20.0.0 "Continuity"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
-## What Steward changes
+## What Continuity changes
 
-- **Guided health journey:** one explicit System Check path from Home to the
-  canonical diagnostics workflow, with no cold-start probe and no polling.
-- **Structured findings and actions:** reusable finding evidence moves to
-  Action Center through audited handoff only, with closed verification data.
-- **Read-only and cancellable checks:** System Check operations are bounded,
-  timeout-aware, and can be cancelled and recovered.
-- **Separation of concerns:** host mutations still pass through Action Center
-  plan/apply confirmation; System Check itself is read-only.
-- **Compatibility preserved:** health/timeline aliases, favorites, saved
-  navigation, existing CLI compatibility routes, and unknown future schema behavior
-  remain intact.
+- **Trusted activity:** one privacy-bounded journal composes Action Center,
+  DNF5, rpm-ostree, Flatpak, fwupd, and Loofi records without a new database.
+- **Conservative recovery:** only exact DNF5 install/remove transactions and
+  exact rpm-ostree deployment rollbacks can create recovery plans.
+- **Action Center remains authoritative:** recovery creates a plan and still
+  requires separate confirmation, execution, and verification.
+- **Unified navigation:** Specialist Tools are always discoverable without a
+  global Standard/Advanced safety switch.
+- **Compatibility preserved:** stable routes, aliases, favorites, state
+  schemas, System Check, CLI, API, daemon, and IPC remain intact.
 
 ## Navigation
 
-Standard mode has six destinations:
+The unified shell has six destinations:
 
 1. **Home** for current state, attention items, and common tasks.
 2. **Software & Updates** for applications, repositories, updates, cleanup,
@@ -32,11 +31,11 @@ Standard mode has six destinations:
 4. **Network & Security** for connections, DNS, privacy, firewall, exposure,
    and backups.
 5. **Desktop** for appearance, displays, and window behavior.
-6. **Settings** for application behavior, Advanced mode, Repair Loofi, and
+6. **Settings** for application behavior, Specialist Tools, Repair Loofi, and
    About.
 
-Built-in specialist providers load only when opened through Advanced mode,
-search, favorites, or a stable deep link. Advanced mode changes discovery, not
+Built-in specialist providers load only when opened through Specialist Tools,
+search, favorites, or a stable deep link. Discoverability never changes
 confirmation or privilege policy.
 
 ## Start here
@@ -61,16 +60,13 @@ confirmation or privilege policy.
 
 ## Release status
 
-Steward is currently at release-candidate status with local verification complete:
-6,882 tests, 68 skipped, 1,032 subtests passed, and 86.26% coverage.
-Meaningful Home measured 160.661 ms median and 76,048 KiB median RSS. The
-verified payload includes startup, startup duration, and System Check timing gates,
-bandit, dependency checks, and packaging builds. Publication to GitHub release,
-COPR, and signed provenance is pending explicit authorization.
-Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`.
+Continuity passed 6,822 tests, 68 expected skips, 1,057 subtests, and 86.10%
+coverage, plus lint, typing, architecture, package, product-catalog, and
+offscreen UI gates. The historical Synapse lineage is preserved as
+`legacy-v20.0.0-synapse`.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release notes: [v19.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v19.0.0.md)
+- Release notes: [v20.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v20.0.0.md)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 
 For support, run `loofi-fedora-tweaks --cli doctor` and

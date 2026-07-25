@@ -1451,17 +1451,20 @@ class TestCmdTweakEdges(unittest.TestCase):
     def tearDown(self):
         cli_mod._json_output = self._orig_json
 
-    @patch("cli.main.run_operation", return_value=True)
-    @patch("cli.main.TweakOps.set_power_profile", return_value=("cmd", [], "set power"))
-    def test_power_success(self, mock_tweak, mock_run):
-        """power action returns 0 on success."""
+    @patch("cli.main._emit_legacy_plans", return_value=0)
+    @patch("cli.main._create_action_center_plan")
+    def test_power_success(self, mock_plan, mock_emit):
+        """Power creates one named plan and can report a ready review."""
         result = cmd_tweak(_make_args(action="power", profile="balanced"))
         self.assertEqual(result, 0)
+        mock_plan.assert_called_once_with(
+            "set-power-profile", {"profile": "balanced"}
+        )
 
-    @patch("cli.main.run_operation", return_value=False)
-    @patch("cli.main.TweakOps.set_power_profile", return_value=("cmd", [], "set power"))
-    def test_power_failure(self, mock_tweak, mock_run):
-        """power action returns 1 on failure."""
+    @patch("cli.main._emit_legacy_plans", return_value=1)
+    @patch("cli.main._create_action_center_plan")
+    def test_power_failure(self, mock_plan, mock_emit):
+        """Power reports a blocked review without direct execution."""
         result = cmd_tweak(_make_args(action="power", profile="balanced"))
         self.assertEqual(result, 1)
 

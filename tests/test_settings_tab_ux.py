@@ -27,12 +27,9 @@ def _bare_tab():
 
 
 class TestSettingsNavigationMode(unittest.TestCase):
-    def test_standard_description_is_focused(self):
+    def test_compatibility_descriptions_remain_available(self):
         tab = _bare_tab()
         self.assertIn("six core destinations", tab._mode_description(NavigationMode.STANDARD))
-
-    def test_advanced_description_preserves_safety(self):
-        tab = _bare_tab()
         self.assertIn("without changing confirmations", tab._mode_description(NavigationMode.ADVANCED))
 
     @patch("utils.navigation_mode.NavigationModeManager.set_mode")
@@ -44,12 +41,6 @@ class TestSettingsNavigationMode(unittest.TestCase):
 
         mock_set_mode.assert_called_once_with(NavigationMode.ADVANCED)
         tab._main_window.apply_navigation_mode.assert_called_once_with(NavigationMode.ADVANCED)
-
-    @patch("utils.navigation_mode.NavigationModeManager.set_mode")
-    def test_invalid_index_fails_closed_to_standard(self, mock_set_mode):
-        tab = _bare_tab()
-        tab._on_navigation_mode_changed(99)
-        mock_set_mode.assert_called_once_with(NavigationMode.STANDARD)
 
     def test_component_status_never_claims_automatic_install(self):
         tab = _bare_tab()
@@ -91,9 +82,8 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
         manager.get.side_effect = lambda key, default=None: values.get(key, default)
         return manager
 
-    @patch("utils.navigation_mode.NavigationModeManager.get_mode", return_value=NavigationMode.STANDARD)
     @patch("ui.settings_tab.SettingsManager.instance")
-    def test_settings_has_only_canonical_mode_and_phase7_pages(self, mock_instance, mock_get_mode):
+    def test_settings_has_unified_specialist_tools_and_phase7_pages(self, mock_instance):
         from ui.settings_tab import SettingsTab
 
         mock_instance.return_value = self._manager()
@@ -104,8 +94,8 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
             for index in range(tab.settings_tabs.count())
         ]
         self.assertEqual(labels, ["Appearance", "Behavior", "Advanced Tools", "Repair Loofi", "About"])
-        self.assertEqual(tab.mode_combo.count(), 2)
-        self.assertEqual([tab.mode_combo.itemText(index) for index in range(2)], ["Standard", "Advanced"])
+        self.assertFalse(hasattr(tab, "mode_combo"))
+        self.assertIn("always available", tab._mode_desc.text())
         self.assertTrue(tab.follow_system_cb.isChecked())
         self.assertFalse(tab.theme_combo.isEnabled())
 

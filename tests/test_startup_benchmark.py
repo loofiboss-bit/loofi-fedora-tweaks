@@ -41,7 +41,7 @@ class TestStartupBenchmark(unittest.TestCase):
         self.assertEqual(payload["method"]["marker"], "AtlasDashboardTab realized")
         run = payload["runs"][0]
         self.assertEqual(run["runtime_plugin_ids"], ["atlas_dashboard"])
-        self.assertEqual(run["plugin_spec_count"], 28)
+        self.assertEqual(run["plugin_spec_count"], 29)
         self.assertEqual(run["installed_components"], ["core", "specialist"])
         self.assertEqual(run["running_qthreads"], 0)
         self.assertEqual(run["active_timer_intervals_ms"], [])

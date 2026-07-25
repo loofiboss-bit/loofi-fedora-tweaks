@@ -12,7 +12,7 @@ import subprocess
 import sys
 from typing import Any, Dict, List, Optional
 
-from core.executor.operations import AdvancedOps, NetworkOps, TweakOps
+from core.executor.operations import TweakOps
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from cli.parser import build_parser
 from cli.commands.readiness_commands import (
@@ -53,8 +53,6 @@ from cli.commands.system_commands import (  # noqa: E402
     handle_temperature,
 )
 from cli.commands.ops_commands import (  # noqa: E402
-    handle_advanced,
-    handle_network,
     handle_tweak,
 )
 from cli.commands.user_commands import (  # noqa: E402
@@ -101,6 +99,8 @@ from cli.commands.service_package_commands import (  # noqa: E402
 )
 from cli.commands.firewall_commands import handle_firewall  # noqa: E402
 from cli.commands.agent_commands import handle_agent  # noqa: E402
+from cli.commands.activity_commands import handle_activity  # noqa: E402
+from cli.commands.health_history_commands import handle_health_history  # noqa: E402
 from utils.focus_mode import FocusMode  # noqa: E402
 from utils.journal import JournalManager  # noqa: E402
 from utils.monitor import SystemMonitor  # noqa: E402
@@ -260,26 +260,57 @@ def cmd_cleanup(args: typing.Any) -> typing.Any:
 
 
 def cmd_tweak(args: typing.Any) -> typing.Any:
-    """Handle tweak subcommand."""
-    return handle_tweak(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        run_operation=run_operation,
-        tweak_ops_cls=TweakOps,
-        system_manager_cls=SystemManager,
-    )
+    """Inspect tweak state or create one named Action Center review plan."""
+    if args.action == "status":
+        return handle_tweak(
+            args=args,
+            json_output=_json_output,
+            output_json=_output_json,
+            print_fn=_print,
+            run_operation=run_operation,
+            tweak_ops_cls=TweakOps,
+            system_manager_cls=SystemManager,
+        )
+    requests = {
+        "power": ("set-power-profile", {"profile": args.profile}),
+        "audio": ("restart-audio-session", {}),
+        "battery": ("set-battery-limit", {"limit": args.limit}),
+    }
+    if args.action not in requests:
+        return 1
+    action_id, parameters = requests[args.action]
+    return _emit_legacy_plans([_create_action_center_plan(action_id, parameters)])
 
 
 def cmd_advanced(args: typing.Any) -> typing.Any:
-    """Handle advanced subcommand."""
-    return handle_advanced(args=args, print_fn=_print, advanced_ops_cls=AdvancedOps)
+    """Create a named Action Center review plan; never mutate the host."""
+    requests = {
+        "dnf-tweaks": ("optimize-dnf-config", {}),
+        "bbr": ("enable-tcp-bbr", {}),
+        "gamemode": ("install-gamemode", {}),
+        "swappiness": ("set-swappiness", {"value": args.value}),
+    }
+    if args.action not in requests:
+        return 1
+    action_id, parameters = requests[args.action]
+    return _emit_legacy_plans([_create_action_center_plan(action_id, parameters)])
 
 
 def cmd_network(args: typing.Any) -> typing.Any:
-    """Handle network subcommand."""
-    return handle_network(args=args, print_fn=_print, network_ops_cls=NetworkOps)
+    """Create an exact connection-scoped DNS review plan."""
+    if args.action != "dns":
+        return 1
+    dns = {
+        "cloudflare": "1.1.1.1 1.0.0.1",
+        "google": "8.8.8.8 8.8.4.4",
+        "quad9": "9.9.9.9 149.112.112.112",
+        "opendns": "208.67.222.222 208.67.220.220",
+    }[args.provider]
+    plan = _create_action_center_plan(
+        "configure-network-dns",
+        {"connection": args.connection, "dns": dns},
+    )
+    return _emit_legacy_plans([plan])
 
 
 def cmd_info(_args: typing.Any) -> typing.Any:
@@ -292,6 +323,18 @@ def cmd_info(_args: typing.Any) -> typing.Any:
         codename=__version_codename__,
         system_manager_cls=SystemManager,
         tweak_ops_cls=TweakOps,
+    )
+
+
+def cmd_activity(args: typing.Any) -> int:
+    """Inspect inert change history or create one reviewed recovery plan."""
+    return handle_activity(
+        args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        create_plan=_create_action_center_plan,
+        emit_plans=_emit_legacy_plans,
     )
 
 
@@ -675,89 +718,13 @@ def cmd_health_history(args: typing.Any) -> typing.Any:
         from utils import health_timeline as health_timeline_module
 
         timeline_cls = health_timeline_module.HealthTimeline
-    timeline = timeline_cls()
-
-    if args.action == "show":
-        summary = timeline.get_summary(hours=24)
-        if _json_output:
-            _output_json({"summary": summary})
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Health Timeline (24h Summary)")
-            _print("═══════════════════════════════════════════")
-            if not summary:
-                _print("\n(no metrics recorded)")
-                _print("Run 'loofi health-history record' to capture a snapshot.")
-            else:
-                metric_labels = {
-                    "cpu_temp": ("CPU Temp", "C"),
-                    "ram_usage": ("RAM Usage", "%"),
-                    "disk_usage": ("Disk Usage", "%"),
-                    "load_avg": ("Load Avg", ""),
-                }
-                for metric_type, data in summary.items():
-                    label, unit = metric_labels.get(metric_type, (metric_type, ""))
-                    _print(f"\n  {label}:")
-                    _print(f"      Min: {data['min']:.1f}{unit}")
-                    _print(f"      Max: {data['max']:.1f}{unit}")
-                    _print(f"      Avg: {data['avg']:.1f}{unit}")
-                    _print(f"      Samples: {data['count']}")
-        return 0
-
-    elif args.action == "record":
-        result = timeline.record_snapshot()
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "export":
-        if not args.path:
-            _print("❌ Export path required")
-            return 1
-        # Determine format from extension
-        if args.path.lower().endswith(".csv"):
-            format_type = "csv"
-        else:
-            format_type = "json"
-        result = timeline.export_metrics(args.path, format=format_type)
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    elif args.action == "prune":
-        result = timeline.prune_old_data()
-        if _json_output:
-            _output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            _print(f"{icon} {result.message}")
-        return 0 if result.success else 1
-
-    return 1
+    return handle_health_history(
+        args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        timeline_cls=timeline_cls,
+    )
 
 
 # ==================== v15.0 Nebula CLI commands ====================
@@ -1112,6 +1079,7 @@ def _command_handlers() -> typing.Any:
         "info": cmd_info,
         "health": cmd_health,
         "maintenance": cmd_maintenance,
+        "activity": cmd_activity,
         "disk": cmd_disk,
         "processes": cmd_processes,
         "temperature": cmd_temperature,

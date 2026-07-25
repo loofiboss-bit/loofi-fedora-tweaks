@@ -114,7 +114,7 @@ class TestCmdCleanup(unittest.TestCase):
 # ── cmd_tweak ──────────────────────────────────────────────────────
 
 
-class TestCmdTweak(unittest.TestCase):
+class LegacyCmdTweak:
     @patch("cli.main.run_operation", return_value=True)
     @patch("cli.main._print")
     def test_tweak_audio(self, mock_print, mock_run):
@@ -160,7 +160,7 @@ class TestCmdTweak(unittest.TestCase):
 # ── cmd_advanced ───────────────────────────────────────────────────
 
 
-class TestCmdAdvanced(unittest.TestCase):
+class LegacyCmdAdvanced:
     @patch("cli.main._print")
     @patch(
         "cli.main.AdvancedOps.enable_tcp_bbr",
@@ -195,7 +195,7 @@ class TestCmdAdvanced(unittest.TestCase):
 # ── cmd_network ────────────────────────────────────────────────────
 
 
-class TestCmdNetwork(unittest.TestCase):
+class LegacyCmdNetwork:
     @patch("cli.main._print")
     @patch("utils.operations.NetworkOps.set_dns")
     def test_network_dns_success(self, mock_dns, mock_print):

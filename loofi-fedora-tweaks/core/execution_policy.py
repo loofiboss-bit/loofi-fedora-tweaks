@@ -111,6 +111,10 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
     if binary in _READ_ONLY_COMMANDS:
         return "read_only"
     if binary in {"dnf", "dnf5"}:
+        if first == "history" and len(vector) >= 2:
+            return "read_only" if vector[1] in {"info", "list"} else "host"
+        if first == "offline" and len(vector) >= 2:
+            return "read_only" if vector[1] in {"log", "status"} else "host"
         return "read_only" if first in {"check", "check-update", "info", "list", "repoquery", "repolist", "search"} else "host"
     if binary == "rpm":
         return "read_only" if first.startswith("-q") else "host"
@@ -119,7 +123,7 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
             return "read_only"
         return "host"
     if binary == "flatpak":
-        return "read_only" if first in {"info", "list", "remote-info", "remote-ls", "remotes", "search"} else "host"
+        return "read_only" if first in {"history", "info", "list", "remote-info", "remote-ls", "remotes", "search"} else "host"
     if binary == "fwupdmgr":
         return "read_only" if first in {"get-devices", "get-history", "get-releases", "get-updates", "get-remotes"} else "host"
     if binary == "systemctl":

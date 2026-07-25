@@ -43,7 +43,7 @@ class TestComponentGraph(unittest.TestCase):
         report = analysis.analyze()
 
         self.assertEqual(report["schema_version"], 1)
-        self.assertEqual(report["components"]["core"]["entry_module_count"], 17)
+        self.assertEqual(report["components"]["core"]["entry_module_count"], 18)
         self.assertEqual(
             report["components"]["specialist"]["entry_module_count"], 11
         )

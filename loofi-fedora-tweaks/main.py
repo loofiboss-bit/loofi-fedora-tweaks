@@ -88,8 +88,29 @@ def _theme_file_for(name: str) -> str | None:
     return "base.qss"
 
 
-def main():
+def _forwarded_cli_help(arguments: list[str]) -> list[str] | None:
+    """Return CLI arguments when help belongs to the ``--cli`` surface."""
+    positions = [
+        arguments.index(flag)
+        for flag in ("--cli", "-c")
+        if flag in arguments
+    ]
+    if not positions:
+        return None
+    position = min(positions)
+    forwarded = arguments[position + 1 :]
+    return forwarded if any(item in {"--help", "-h"} for item in forwarded) else None
+
+
+def main(argv: list[str] | None = None):
     """Main entry point with argument parsing."""
+    arguments = list(sys.argv[1:] if argv is None else argv)
+    cli_help = _forwarded_cli_help(arguments)
+    if cli_help is not None:
+        from cli.main import main as cli_main
+
+        return cli_main(cli_help)
+
     parser = argparse.ArgumentParser(
         prog="loofi-fedora-tweaks",
         description="System tweaks and maintenance for Fedora",
@@ -109,7 +130,7 @@ def main():
     parser.add_argument("--web", action="store_true", help="Run headless Loofi Web API server")
     parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
 
-    args, remaining = parser.parse_known_args()
+    args, remaining = parser.parse_known_args(arguments)
 
     if args.daemon:
         # Run in daemon mode

@@ -657,7 +657,7 @@ class HomeService:
             id=str(getattr(entry, "id", "recent-change")),
             description=str(getattr(entry, "description", "Recent change")),
             occurred_at=occurred_at,
-            undo_available=bool(getattr(entry, "undo_command", [])),
+            undo_available=bool(getattr(entry, "recovery_action_id", None)),
         )
 
     @staticmethod

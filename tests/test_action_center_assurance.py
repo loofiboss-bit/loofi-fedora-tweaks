@@ -82,6 +82,36 @@ class TestAssuranceValidation(unittest.TestCase):
         self.assertTrue(validate_parameters(recovery, {"backend": "snapper", "description": "Before update"}).allowed)
         self.assertFalse(validate_parameters(recovery, {"backend": "btrfs", "description": "Before update"}).allowed)
 
+    def test_recovery_identifiers_are_exact_and_bounded(self):
+        catalog = ActionCatalog()
+        dnf = catalog.get("dnf5-history-undo")
+        ostree = catalog.get("rpm-ostree-rollback")
+        assert dnf is not None and ostree is not None
+        current = "a" * 64
+        previous = "b" * 64
+
+        self.assertTrue(validate_parameters(dnf, {"transaction_id": 42}).allowed)
+        self.assertFalse(validate_parameters(dnf, {"transaction_id": 0}).allowed)
+        self.assertFalse(validate_parameters(dnf, {"transaction_id": "42"}).allowed)
+        self.assertTrue(
+            validate_parameters(
+                ostree,
+                {
+                    "expected_deployment": current,
+                    "rollback_deployment": previous,
+                },
+            ).allowed
+        )
+        self.assertFalse(
+            validate_parameters(
+                ostree,
+                {
+                    "expected_deployment": "../current",
+                    "rollback_deployment": previous,
+                },
+            ).allowed
+        )
+
     def test_application_privilege_is_source_specific(self):
         definition = ActionCatalog().get("install-application")
         assert definition is not None and definition.privilege_resolver is not None
@@ -249,26 +279,145 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
             verification_result=verification_result,
         )
 
-    def test_traditional_fedora_update_verifies_only_planned_nevras_and_health(self):
+    def test_traditional_fedora_update_is_offline_and_reboot_verified(self):
         definition = self.catalog.get("update-fedora-system")
         assert definition is not None
-        query = ("dnf", "repoquery", "--upgrades", "--qf", "%{name}|%{evr}|%{arch}")
+        query = ("dnf5", "repoquery", "--upgrades", "--qf", "%{name}|%{evr}|%{arch}")
         self.runtime.results[query] = ActionResult.ok("updates", stdout="alpha|2-1|x86_64\nbeta|3-1|noarch\n")
 
         decision = definition.preflight_checker({}, self.runtime)
 
         self.assertTrue(decision.allowed)
-        self.assertEqual(definition.command_renderer({}, self.runtime), ["dnf", "upgrade", "--refresh", "-y"])
+        self.assertEqual(
+            definition.command_renderer({}, self.runtime),
+            ["dnf5", "upgrade", "--refresh", "-y", "--offline"],
+        )
+        self.runtime.results[("dnf5", "offline", "status")] = ActionResult.ok("ready")
+        plan = self._plan(definition, {}, decision)
+        run = self._run(definition.id)
+        waiting = definition.verifier(run, plan, self.runtime)
+        self.assertEqual(waiting.state, "awaiting_reboot")
+
+        self.runtime.boot = "boot-b"
         self.runtime.results[("rpm", "-q", "--qf", "%{name}|%{evr}|%{arch}\\n", "alpha")] = ActionResult.ok(
             "installed", stdout="alpha|2-1|x86_64\n"
         )
         self.runtime.results[("rpm", "-q", "--qf", "%{name}|%{evr}|%{arch}\\n", "beta")] = ActionResult.ok(
             "installed", stdout="beta|3-1|noarch\n"
         )
-        self.runtime.results[("dnf", "check")] = ActionResult.ok("healthy")
-        result = definition.verifier(self._run(definition.id), self._plan(definition, {}, decision), self.runtime)
+        self.runtime.results[("dnf5", "check")] = ActionResult.ok("healthy")
+        self.runtime.results[("dnf5", "offline", "log", "--number=-1")] = ActionResult.ok("complete")
+        result = definition.verifier(run, plan, self.runtime)
         self.assertEqual(result.state, "succeeded")
         self.assertEqual(result.data["verified_packages"], 2)
+
+    def test_dnf5_history_undo_allows_only_verifiable_transaction_shape(self):
+        definition = self.catalog.get("dnf5-history-undo")
+        assert definition is not None
+        parameters = {"transaction_id": 42}
+        info = ("dnf5", "history", "info", "42", "--json")
+        self.runtime.results[info] = ActionResult.ok(
+            "history",
+            stdout=json.dumps(
+                [
+                    {
+                        "id": 42,
+                        "status": "Ok",
+                        "packages": [
+                            {"action": "Install", "nevra": "alpha-2-1.x86_64"}
+                        ],
+                    }
+                ]
+            ),
+        )
+
+        decision = definition.preflight_checker(parameters, self.runtime)
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(
+            definition.command_renderer(parameters, self.runtime),
+            ["dnf5", "history", "undo", "42", "--offline"],
+        )
+        plan = self._plan(definition, parameters, decision)
+        run = self._run(definition.id)
+        self.runtime.results[("dnf5", "offline", "status")] = ActionResult.ok("ready")
+        self.assertEqual(definition.verifier(run, plan, self.runtime).state, "awaiting_reboot")
+
+        self.runtime.boot = "boot-b"
+        self.runtime.results[("rpm", "-q", "--qf", "%{nevra}\\n", "alpha")] = ActionResult.fail(
+            "not installed",
+            exit_code=1,
+        )
+        self.runtime.results[("dnf5", "check")] = ActionResult.ok("healthy")
+        self.runtime.results[("dnf5", "offline", "log", "--number=-1")] = ActionResult.ok("complete")
+        verified = definition.verifier(run, plan, self.runtime)
+        self.assertEqual(verified.state, "succeeded")
+
+        self.runtime.results[info] = ActionResult.ok(
+            "history",
+            stdout=json.dumps(
+                [
+                    {
+                        "id": 42,
+                        "status": "Ok",
+                        "packages": [
+                            {"action": "Upgrade", "nevra": "alpha-3-1.x86_64"}
+                        ],
+                    }
+                ]
+            ),
+        )
+        rejected = definition.preflight_checker(parameters, self.runtime)
+        self.assertEqual(rejected.reason_code, "unsupported_transaction_shape")
+
+    def test_rpm_ostree_rollback_binds_exact_deployments_and_reboot(self):
+        definition = self.catalog.get("rpm-ostree-rollback")
+        assert definition is not None
+        self.runtime.atomic = True
+        current = "a" * 64
+        previous = "b" * 64
+        parameters = {
+            "expected_deployment": current,
+            "rollback_deployment": previous,
+        }
+        status = ("rpm-ostree", "status", "--json")
+        self.runtime.results[status] = ActionResult.ok(
+            "status",
+            stdout=json.dumps(
+                {
+                    "deployments": [
+                        {"booted": True, "checksum": current},
+                        {"booted": False, "checksum": previous},
+                    ]
+                }
+            ),
+        )
+
+        decision = definition.preflight_checker(parameters, self.runtime)
+
+        self.assertTrue(decision.allowed)
+        self.assertEqual(
+            definition.command_renderer(parameters, self.runtime),
+            ["rpm-ostree", "rollback"],
+        )
+        plan = self._plan(definition, parameters, decision)
+        run = self._run(definition.id)
+        self.assertEqual(definition.verifier(run, plan, self.runtime).state, "awaiting_reboot")
+
+        self.runtime.boot = "boot-b"
+        self.runtime.results[status] = ActionResult.ok(
+            "status",
+            stdout=json.dumps(
+                {
+                    "deployments": [
+                        {"booted": True, "checksum": previous},
+                        {"booted": False, "checksum": current},
+                    ]
+                }
+            ),
+        )
+        verified = definition.verifier(run, plan, self.runtime)
+        self.assertEqual(verified.state, "succeeded")
 
     def test_atomic_update_stages_then_requires_the_exact_booted_deployment(self):
         definition = self.catalog.get("update-fedora-system")

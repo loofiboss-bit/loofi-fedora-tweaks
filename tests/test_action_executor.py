@@ -352,7 +352,9 @@ class TestActionLog:
                  patch("core.executor.action_executor._ACTION_LOG_FILE", log_path):
                 ActionExecutor.run("echo", ["diag"], preview=True)
                 diag = ActionExecutor.export_diagnostics()
-                assert diag["version"] == "19.0.0"  # fixture-version
+                from version import __version__
+
+                assert diag["version"] == __version__
                 assert "exported_at" in diag
                 assert len(diag["action_log"]) >= 1
 

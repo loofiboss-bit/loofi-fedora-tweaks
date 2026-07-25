@@ -727,14 +727,16 @@ class NetworkTab(BaseTab):
         )
 
     def undo_last(self: typing.Any) -> typing.Any:
-        """Undo the last network privacy action."""
-        success, msg = self.history.undo_last_action()
+        """Show safe recovery guidance for the latest legacy activity."""
+        result = self.history.undo_last_action()
+        success = bool(getattr(result, "success", result[0] if isinstance(result, tuple) else False))
+        message = str(getattr(result, "message", result[1] if isinstance(result, tuple) and len(result) > 1 else ""))
         if success:
-            QMessageBox.information(self, self.tr("Undo Successful"), msg)
+            QMessageBox.information(self, self.tr("Recovery"), message)
             self.check_mac_status()
             self._check_hostname_privacy()
-        else:
-            QMessageBox.warning(self, self.tr("Undo Failed"), msg)
+            return
+        QMessageBox.warning(self, self.tr("Recovery"), message)
 
     # ------------------------------------------------------------------ #
     #  Monitoring sub-tab

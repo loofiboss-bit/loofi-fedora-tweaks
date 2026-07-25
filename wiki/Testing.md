@@ -6,10 +6,10 @@ Testing guide for Loofi Fedora Tweaks test suite.
 
 ## Test Suite Metrics
 
-- **Total tests**: 6,882 passed, 68 skipped, 1,032 subtests passed
-- **Coverage**: 86.26% line coverage
+- **Total tests**: 6,822 passed, 68 skipped, 1,057 subtests passed
+- **Coverage**: 86.10% line coverage
 - **Framework**: `unittest` + `unittest.mock`
-- **Status**: v19.0.0 release-candidate verification completed on 2026-07-25 (pending publication authorization)
+- **Status**: v20.0.0 Continuity release verification completed on 2026-07-25
 
 ---
 

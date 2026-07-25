@@ -3,9 +3,7 @@ Operations Layer - Business logic extracted from UI tabs.
 Provides reusable operations for both GUI and CLI.
 """
 
-import getpass
 import logging
-import os
 import subprocess
 from dataclasses import dataclass
 from typing import List, Tuple
@@ -124,32 +122,13 @@ class TweakOps:
 
     @staticmethod
     def set_battery_limit(limit: int) -> OperationResult:
-        """Set battery charge limit (HP Elitebook)."""
+        """Reject legacy direct mutation; use the named Action Center workflow."""
         if not 50 <= limit <= 100:
             return OperationResult(False, "Invalid limit (50-100)")
-
-        if not os.path.exists(TweakOps.BATTERY_SYSFS):
-            return OperationResult(
-                False, "Battery limit not supported on this hardware"
-            )
-
-        try:
-            binary, args, desc = PrivilegedCommand.write_file(
-                TweakOps.BATTERY_SYSFS, str(limit)
-            )
-            result = subprocess.run(
-                [binary] + args,
-                input=str(limit),
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                return OperationResult(True, f"Battery limit set to {limit}%")
-            return OperationResult(False, f"Failed: {result.stderr}")
-        except (subprocess.SubprocessError, OSError) as e:
-            return OperationResult(False, str(e))
+        return OperationResult(
+            False,
+            "Direct battery changes are disabled; review set-battery-limit in Action Center.",
+        )
 
     @staticmethod
     def install_nbfc() -> Tuple[str, List[str], str]:
@@ -177,151 +156,37 @@ class AdvancedOps:
 
     @staticmethod
     def apply_dnf_tweaks() -> OperationResult:
-        """Optimize DNF configuration.
-
-        Appends max_parallel_downloads and fastestmirror to dnf.conf
-        if not already present.
-        """
-        conf_path = "/etc/dnf/dnf.conf"
-        tweaks = {
-            "max_parallel_downloads": "max_parallel_downloads=10",
-            "fastestmirror": "fastestmirror=True",
-        }
-
-        try:
-            # Read current config
-            try:
-                with open(conf_path, "r") as f:
-                    content = f.read()
-            except (OSError, PermissionError):
-                content = ""
-
-            lines_to_add = []
-            for key, line in tweaks.items():
-                if key not in content:
-                    lines_to_add.append(line)
-
-            if not lines_to_add:
-                return OperationResult(True, "DNF already optimized")
-
-            append_content = "\n".join(lines_to_add) + "\n"
-            result = subprocess.run(
-                ["pkexec", "tee", "-a", conf_path],
-                input=append_content,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                return OperationResult(True, "DNF optimizations applied")
-            return OperationResult(False, f"Failed: {result.stderr}")
-        except (subprocess.SubprocessError, OSError, IOError) as e:
-            return OperationResult(False, str(e))
+        """Reject legacy direct mutation; use the named Action Center workflow."""
+        return OperationResult(
+            False,
+            "Direct DNF configuration changes are disabled; review optimize-dnf-config in Action Center.",
+        )
 
     @staticmethod
     def enable_tcp_bbr() -> OperationResult:
-        """Enable TCP BBR congestion control."""
-        conf_path = "/etc/sysctl.d/99-bbr.conf"
-        content = "net.core.default_qdisc=fq\nnet.ipv4.tcp_congestion_control=bbr\n"
-
-        try:
-            # Write sysctl config
-            result = subprocess.run(
-                ["pkexec", "tee", conf_path],
-                input=content,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if result.returncode != 0:
-                return OperationResult(
-                    False, f"Failed to write config: {result.stderr}"
-                )
-
-            # Reload sysctl
-            result = subprocess.run(
-                ["pkexec", "sysctl", "--system"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                return OperationResult(True, "TCP BBR enabled")
-            return OperationResult(False, f"sysctl reload failed: {result.stderr}")
-        except (subprocess.SubprocessError, OSError) as e:
-            return OperationResult(False, str(e))
+        """Reject legacy direct mutation; use the named Action Center workflow."""
+        return OperationResult(
+            False,
+            "Direct kernel tuning is disabled; review enable-tcp-bbr in Action Center.",
+        )
 
     @staticmethod
     def install_gamemode() -> OperationResult:
-        """Install and configure GameMode."""
-        user = getpass.getuser()
-
-        try:
-            # Install gamemode
-            binary, args, desc = PrivilegedCommand.dnf("install", "gamemode")
-            result = subprocess.run(
-                [binary] + args,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=300,
-            )
-            if result.returncode != 0:
-                return OperationResult(False, f"Install failed: {result.stderr}")
-
-            # Add user to gamemode group
-            result = subprocess.run(
-                ["pkexec", "usermod", "-aG", "gamemode", user],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                return OperationResult(True, f"GameMode installed for {user}")
-            return OperationResult(False, f"usermod failed: {result.stderr}")
-        except (subprocess.SubprocessError, OSError) as e:
-            return OperationResult(False, str(e))
+        """Reject legacy direct mutation; use the named Action Center workflow."""
+        return OperationResult(
+            False,
+            "Direct package and group changes are disabled; review install-gamemode in Action Center.",
+        )
 
     @staticmethod
     def set_swappiness(value: int = 10) -> OperationResult:
-        """Set system swappiness value."""
+        """Reject legacy direct mutation; use the named Action Center workflow."""
         if not 0 <= value <= 100:
-            value = 10
-        conf_path = "/etc/sysctl.d/99-swappiness.conf"
-        content = f"vm.swappiness={value}\n"
-
-        try:
-            # Write sysctl config
-            result = subprocess.run(
-                ["pkexec", "tee", conf_path],
-                input=content,
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if result.returncode != 0:
-                return OperationResult(
-                    False, f"Failed to write config: {result.stderr}"
-                )
-
-            # Reload sysctl
-            result = subprocess.run(
-                ["pkexec", "sysctl", "--system"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                return OperationResult(True, f"Swappiness set to {value}")
-            return OperationResult(False, f"sysctl reload failed: {result.stderr}")
-        except (subprocess.SubprocessError, OSError) as e:
-            return OperationResult(False, str(e))
+            return OperationResult(False, "Invalid swappiness value (0-100)")
+        return OperationResult(
+            False,
+            "Direct kernel tuning is disabled; review set-swappiness in Action Center.",
+        )
 
 
 class NetworkOps:
@@ -336,62 +201,13 @@ class NetworkOps:
 
     @staticmethod
     def set_dns(provider: str) -> OperationResult:
-        """Set DNS provider."""
+        """Reject legacy direct mutation; use the connection-scoped workflow."""
         if provider.lower() not in NetworkOps.DNS_PROVIDERS:
             return OperationResult(False, f"Unknown provider: {provider}")
-
-        primary, secondary = NetworkOps.DNS_PROVIDERS[provider.lower()]
-
-        try:
-            # Get active connection
-            result = subprocess.run(
-                ["nmcli", "-t", "-", "NAME", "connection", "show", "--active"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=15,
-            )
-            if result.returncode != 0:
-                return OperationResult(False, "No active connection found")
-
-            connections = result.stdout.strip().split("\n")
-            if not connections:
-                return OperationResult(False, "No active connection found")
-
-            conn = connections[0]
-
-            # Set DNS
-            dns_cmd = [
-                "nmcli",
-                "connection",
-                "modify",
-                conn,
-                "ipv4.dns",
-                f"{primary} {secondary}",
-                "ipv4.ignore-auto-dns",
-                "yes",
-            ]
-
-            result = subprocess.run(
-                dns_cmd, capture_output=True, text=True, check=False, timeout=15
-            )
-            if result.returncode != 0:
-                return OperationResult(False, f"Failed: {result.stderr}")
-
-            # Restart connection
-            subprocess.run(
-                ["nmcli", "connection", "up", conn],
-                capture_output=True,
-                check=False,
-                timeout=30,
-            )
-
-            return OperationResult(
-                True, f"DNS set to {provider} ({primary}, {secondary})"
-            )
-
-        except (subprocess.SubprocessError, OSError) as e:
-            return OperationResult(False, str(e))
+        return OperationResult(
+            False,
+            "Direct DNS changes are disabled; review configure-network-dns in Action Center.",
+        )
 
 
 def execute_operation(

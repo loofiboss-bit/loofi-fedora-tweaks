@@ -4,9 +4,11 @@ Every route requires Bearer JWT authentication.
 """
 
 from core.agents import AgentRegistry
+from core.change_journal.models import ChangeSource
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
-from fastapi import APIRouter, Depends
+from fastapi import APIRouter, Depends, HTTPException
 from pydantic import BaseModel
+from typing import cast
 from services.system import SystemManager
 from utils.auth import AuthManager
 from utils.monitor import SystemMonitor
@@ -137,6 +139,52 @@ def get_latest_system_check(
     }
 
 
+def get_activity(
+    limit: int = 50,
+    source: str | None = None,
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Return a bounded, read-only Trusted Change Journal snapshot."""
+    from core.change_journal import ChangeJournalService
+
+    allowed = {
+        "action_center",
+        "dnf5",
+        "rpm_ostree",
+        "flatpak",
+        "fwupd",
+        "loofi_app",
+        "session",
+    }
+    if source is not None and source not in allowed:
+        raise HTTPException(status_code=400, detail="Unknown activity source.")
+    selected = [cast(ChangeSource, source)] if source else None
+    return {
+        **ChangeJournalService().snapshot(
+            limit=max(1, min(limit, 100)),
+            sources=selected,
+        ).to_dict(),
+        "read_only": True,
+    }
+
+
+def get_activity_event(
+    event_id: str,
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Return one inert activity event without exposing mutation endpoints."""
+    from core.change_journal import ChangeJournalService
+
+    event = ChangeJournalService().get(event_id)
+    if event is None:
+        raise HTTPException(status_code=404, detail="Activity event not found.")
+    return {
+        "schema": "loofi.change-journal/v1",
+        "read_only": True,
+        "event": event.to_dict(),
+    }
+
+
 def get_system_router() -> APIRouter:
     r = APIRouter(prefix="/api", tags=["system"])
     r.add_api_route("/health", get_health, methods=["GET"], response_model=HealthResponse)
@@ -147,6 +195,8 @@ def get_system_router() -> APIRouter:
     r.add_api_route("/observability/status", get_observability_status, methods=["GET"])
     r.add_api_route("/state/status", get_state_status, methods=["GET"])
     r.add_api_route("/system-check/latest", get_latest_system_check, methods=["GET"])
+    r.add_api_route("/activity", get_activity, methods=["GET"])
+    r.add_api_route("/activity/{event_id}", get_activity_event, methods=["GET"])
     return r
 
 

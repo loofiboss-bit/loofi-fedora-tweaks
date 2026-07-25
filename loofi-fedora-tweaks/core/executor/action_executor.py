@@ -338,8 +338,10 @@ class ActionExecutor(BaseActionExecutor):
     @classmethod
     def export_diagnostics(cls) -> Dict[str, Any]:
         """Export full diagnostics bundle (action log + system info)."""
+        from version import __version__
+
         return {
-            "version": "19.0.0",
+            "version": __version__,
             "exported_at": time.time(),
             "action_log": cls.get_action_log(limit=100),
             "dry_run_global": cls._dry_run_global,
