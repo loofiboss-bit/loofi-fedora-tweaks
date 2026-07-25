@@ -95,9 +95,9 @@ class APIServer:
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
         # API routes
-        app.include_router(system_router, prefix="/api")
-        app.include_router(profiles_router, prefix="/api")
-        app.include_router(action_center_router, prefix="/api")
+        app.include_router(system_router)
+        app.include_router(profiles_router)
+        app.include_router(action_center_router)
 
         @app.post("/api/token")
         def issue_token(request: Request, api_key: str = Form(...)):

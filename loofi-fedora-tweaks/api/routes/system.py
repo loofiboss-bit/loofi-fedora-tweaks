@@ -11,7 +11,7 @@ from services.system import SystemManager
 from utils.auth import AuthManager
 from utils.monitor import SystemMonitor
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["system"])
 
 
 class HealthResponse(BaseModel):

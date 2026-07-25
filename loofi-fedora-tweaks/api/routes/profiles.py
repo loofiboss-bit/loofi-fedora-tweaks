@@ -4,7 +4,7 @@ from fastapi import APIRouter, Depends
 from utils.auth import AuthManager
 from utils.profiles import ProfileManager
 
-router = APIRouter()
+router = APIRouter(prefix="/api", tags=["profiles"])
 
 
 @router.get("/profiles")

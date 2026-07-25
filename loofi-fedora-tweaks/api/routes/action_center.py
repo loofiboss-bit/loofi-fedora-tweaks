@@ -8,7 +8,7 @@ from core.actions.stores import ActionPlanStore, ActionRunStore
 from fastapi import APIRouter, Depends, HTTPException, Query
 from utils.auth import AuthManager
 
-router = APIRouter(prefix="/action-center", tags=["action-center"])
+router = APIRouter(prefix="/api/action-center", tags=["action-center"])
 
 
 def _run_status(run: Any) -> dict[str, Any]:
