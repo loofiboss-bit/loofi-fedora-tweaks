@@ -40,36 +40,9 @@ def _origin_for(host: str, port: int) -> str:
     return f"http://{rendered_host}:{port}"
 
 
-def _load_router(module_name: str):
-    import importlib
-    import sys
-
-    try:
-        mod = importlib.import_module(module_name)
-    except (ImportError, AttributeError) as e:
-        print(f"DEBUG _load_router import failure for {module_name}: {e!r}", file=sys.stderr)
-        mod = None
-
-    r = getattr(mod, "router", None) if mod is not None else None
-    if r is not None and len(getattr(r, "routes", [])) > 0:
-        return r
-
-    for name, m in list(sys.modules.items()):
-        if name.endswith(module_name):
-            cand = getattr(m, "router", None)
-            if cand is not None and len(getattr(cand, "routes", [])) > 0:
-                return cand
-
-    if mod is not None:
-        try:
-            mod = importlib.reload(mod)
-            r = getattr(mod, "router", None)
-            if r is not None and len(getattr(r, "routes", [])) > 0:
-                return r
-        except (ImportError, AttributeError) as e:
-            print(f"DEBUG _load_router reload failure for {module_name}: {e!r}", file=sys.stderr)
-
-    return r if r is not None and len(getattr(r, "routes", [])) > 0 else (getattr(mod, "router", None) if mod is not None else None)
+from api.routes.action_center import router as action_center_router
+from api.routes.profiles import router as profiles_router
+from api.routes.system import router as system_router
 
 
 class TokenRateLimiter:
@@ -122,10 +95,9 @@ class APIServer:
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
 
         # API routes
-        for mod_name in ("api.routes.system", "api.routes.profiles", "api.routes.action_center"):
-            r = _load_router(mod_name)
-            if r is not None:
-                app.include_router(r)
+        app.include_router(system_router)
+        app.include_router(profiles_router)
+        app.include_router(action_center_router)
 
         @app.post("/api/token")
         def issue_token(request: Request, api_key: str = Form(...)):
