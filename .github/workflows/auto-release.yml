@@ -786,21 +786,97 @@ jobs:
           fi
           echo "Submitting ${SRPM} (v${VER}) to COPR project ${COPR_OWNER}/${COPR_PROJECT}"
           echo "Target chroot: ${COPR_CHROOT}"
-          COPR_OUT=$(copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --chroot "${COPR_CHROOT}" --nowait 2>&1)
+
+          SUBMIT_TIMEOUT_SECONDS=1200
+          SUBMIT_STATUS=0
+          if ! COPR_OUT=$(timeout "${SUBMIT_TIMEOUT_SECONDS}" copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --chroot "${COPR_CHROOT}" --nowait 2>&1); then
+            SUBMIT_STATUS=$?
+            if [ "$SUBMIT_STATUS" -eq 124 ]; then
+              echo "::warning::copr-cli build command exceeded ${SUBMIT_TIMEOUT_SECONDS}s timeout while submitting."
+            else
+              echo "::warning::copr-cli build command exited ${SUBMIT_STATUS} while submitting."
+            fi
+          fi
           echo "${COPR_OUT}"
 
           BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's/.*Created builds?:[[:space:]]*([0-9]+).*/\1/p' | tail -1)
           if [ -z "$BUILD_ID" ]; then
             BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's#.*[/]build/([0-9]+)/?.*#\1#p' | tail -1)
           fi
+
+          COPR_API="https://copr.fedorainfracloud.org/api_3"
+
+          GET_BUILD_ID_FROM_API() {
+            for attempt in $(seq 1 12); do
+              BUILD_LIST_JSON=$(curl -fsSL "${COPR_API}/build/list?ownername=${COPR_OWNER}&projectname=${COPR_PROJECT}" 2>/dev/null || true)
+              if [ -n "$BUILD_LIST_JSON" ]; then
+                CANDIDATE_BUILD_ID=$(
+                  VER="$VER" COPR_PACKAGE="$COPR_PACKAGE" COPR_CHROOT="$COPR_CHROOT" \
+                  python3 - "$BUILD_LIST_JSON" <<'PY'
+import json
+import os
+import sys
+
+
+def _trim_epoch(version: str) -> str:
+    if ":" in version:
+        return version.split(":", 1)[1]
+    return version
+
+
+payload = json.loads(sys.argv[1])
+target_version = os.environ.get("VER", "")
+target_package = os.environ.get("COPR_PACKAGE", "")
+target_chroot = os.environ.get("COPR_CHROOT", "")
+matches = []
+
+for item in payload.get("items", []):
+    source_package = item.get("source_package") or {}
+    if source_package.get("name") != target_package:
+        continue
+
+    raw_version = _trim_epoch(str(source_package.get("version", "")))
+    if not raw_version.startswith(f"{target_version}-"):
+        continue
+
+    chroots = item.get("chroots") or []
+    if target_chroot and target_chroot not in chroots:
+        continue
+
+    submitted_on = int(item.get("submitted_on") or 0)
+    build_id = int(item.get("id") or 0)
+    matches.append((submitted_on, build_id))
+
+if not matches:
+    sys.exit(1)
+
+_, latest_build_id = sorted(matches)[-1]
+print(latest_build_id)
+PY
+                )
+                if [ -n "$CANDIDATE_BUILD_ID" ]; then
+                  echo "${CANDIDATE_BUILD_ID}"
+                  return 0
+                fi
+              fi
+
+              echo "Waiting for COPR API to expose submitted build (${attempt}/12)"
+              sleep 10
+            done
+            return 1
+          }
+
           if [ -z "$BUILD_ID" ]; then
-            echo "::error::COPR build completed but its build ID could not be parsed"
+            BUILD_ID=$(GET_BUILD_ID_FROM_API)
+          fi
+
+          if [ -z "$BUILD_ID" ]; then
+            echo "::error::COPR build completed but its build ID could not be resolved"
             exit 1
           fi
 
           BUILD_RESULTS_URL="https://download.copr.fedorainfracloud.org/results/${COPR_OWNER}/${COPR_PROJECT}/${COPR_CHROOT}"
           BUILD_ARTIFACT_URL="${BUILD_RESULTS_URL}/${BUILD_ID}-${COPR_PACKAGE}"
-          COPR_API="https://copr.fedorainfracloud.org/api_3"
 
           HAS_BUILD_ARTIFACTS() {
             if RESULTS_JSON=$(curl -fsSL "${BUILD_ARTIFACT_URL}/results.json" 2>/dev/null); then
