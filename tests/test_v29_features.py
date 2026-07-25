@@ -134,8 +134,7 @@ class TestAPIServerCORS(unittest.TestCase):
     """API server CORS origins are restricted to localhost (not wildcard)."""
 
     @patch('utils.api_server.uvicorn')
-    @patch('utils.api_server.AuthManager')
-    def test_cors_not_wildcard(self, mock_auth, mock_uvicorn):
+    def test_cors_not_wildcard(self, mock_uvicorn):
         """Allowed origins must not contain '*'."""
         from utils.api_server import APIServer
 
@@ -153,8 +152,7 @@ class TestAPIServerCORS(unittest.TestCase):
         self.assertTrue(cors_found, "CORSMiddleware not found in app middleware")
 
     @patch('utils.api_server.uvicorn')
-    @patch('utils.api_server.AuthManager')
-    def test_cors_allows_localhost(self, mock_auth, mock_uvicorn):
+    def test_cors_allows_localhost(self, mock_uvicorn):
         """Allowed origins should include localhost variants."""
         from utils.api_server import APIServer
 
@@ -170,8 +168,7 @@ class TestAPIServerCORS(unittest.TestCase):
                 break
 
     @patch('utils.api_server.uvicorn')
-    @patch('utils.api_server.AuthManager')
-    def test_cors_origins_are_list_of_strings(self, mock_auth, mock_uvicorn):
+    def test_cors_origins_are_list_of_strings(self, mock_uvicorn):
         """Origins should be a list of string URLs."""
         from utils.api_server import APIServer
 
@@ -189,8 +186,7 @@ class TestAPIServerCORS(unittest.TestCase):
                 break
 
     @patch('utils.api_server.uvicorn')
-    @patch('utils.api_server.AuthManager')
-    def test_cors_credentials_enabled(self, mock_auth, mock_uvicorn):
+    def test_cors_credentials_enabled(self, mock_uvicorn):
         """Credentials should be allowed for API token auth."""
         from utils.api_server import APIServer
 
