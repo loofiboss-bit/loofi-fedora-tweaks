@@ -587,7 +587,7 @@ def cmd_api_key(args: typing.Any) -> typing.Any:
         payload = {
             "schema_version": 3,
             "status": "rotated",
-            "api_key": api_key,
+            "api_key": "***REDACTED***" if _json_output else api_key,
             "warning": "This key is shown once. Store it in a password manager.",
         }
     elif args.action == "revoke":
