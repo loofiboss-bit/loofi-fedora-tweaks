@@ -46,7 +46,8 @@ def _load_router(module_name: str):
 
     try:
         mod = importlib.import_module(module_name)
-    except (ImportError, AttributeError):
+    except (ImportError, AttributeError) as e:
+        print(f"DEBUG _load_router import failure for {module_name}: {e!r}", file=sys.stderr)
         mod = None
 
     r = getattr(mod, "router", None) if mod is not None else None
@@ -65,8 +66,8 @@ def _load_router(module_name: str):
             r = getattr(mod, "router", None)
             if r is not None and len(getattr(r, "routes", [])) > 0:
                 return r
-        except (ImportError, AttributeError):
-            pass
+        except (ImportError, AttributeError) as e:
+            print(f"DEBUG _load_router reload failure for {module_name}: {e!r}", file=sys.stderr)
 
     return r if r is not None and len(getattr(r, "routes", [])) > 0 else (getattr(mod, "router", None) if mod is not None else None)
 
