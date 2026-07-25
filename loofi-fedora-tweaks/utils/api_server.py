@@ -43,7 +43,6 @@ def _origin_for(host: str, port: int) -> str:
 
 def _load_api_router(module_name: str):
     module = importlib.import_module(module_name)
-    module = importlib.reload(module)
     router = getattr(module, "router", None)
     return router
 
