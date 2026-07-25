@@ -46,7 +46,7 @@ def _load_router(module_name: str):
 
     try:
         mod = importlib.import_module(module_name)
-    except Exception:
+    except (ImportError, AttributeError):
         mod = None
 
     r = getattr(mod, "router", None) if mod is not None else None
@@ -60,7 +60,7 @@ def _load_router(module_name: str):
         try:
             mod = importlib.reload(mod)
             r = getattr(mod, "router", None)
-        except Exception:
+        except (ImportError, AttributeError):
             pass
 
     return r
