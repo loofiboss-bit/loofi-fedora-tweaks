@@ -786,7 +786,7 @@ jobs:
           fi
           echo "Submitting ${SRPM} (v${VER}) to COPR project ${COPR_OWNER}/${COPR_PROJECT}"
           echo "Target chroot: ${COPR_CHROOT}"
-          COPR_OUT=$(copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --chroot "${COPR_CHROOT}" 2>&1)
+          COPR_OUT=$(copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --chroot "${COPR_CHROOT}" --nowait 2>&1)
           echo "${COPR_OUT}"
 
           BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's/.*Created builds?:[[:space:]]*([0-9]+).*/\1/p' | tail -1)
@@ -798,13 +798,28 @@ jobs:
             exit 1
           fi
 
-          STATUS=$(copr-cli status "$BUILD_ID" | tr -d '[:space:]')
-          if [ "$STATUS" != "succeeded" ]; then
-            echo "::error::COPR build ${BUILD_ID} reached terminal status ${STATUS:-unknown}, expected succeeded"
+          for attempt in $(seq 1 120); do
+            STATUS=$(copr-cli status "$BUILD_ID" | tr -d '[:space:]')
+            echo "COPR build ${BUILD_ID} status (${attempt}/120): ${STATUS:-unknown}"
+
+            if [ "$STATUS" = "succeeded" ]; then
+              echo "Verified COPR build ${BUILD_ID}: succeeded"
+              break
+            fi
+
+            if [ "$STATUS" = "failed" ] || [ "$STATUS" = "canceled" ] || [ "$STATUS" = "cancelled" ]; then
+              echo "::error::COPR build ${BUILD_ID} reached terminal status ${STATUS}"
+              exit 1
+            fi
+
+            sleep 15
+          done
+
+          if [ "${STATUS:-}" != "succeeded" ]; then
+            echo "::error::Timed out waiting for COPR build ${BUILD_ID} to reach succeeded (last status: ${STATUS:-unknown})"
             exit 1
           fi
           echo "build_id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
-          echo "Verified COPR build ${BUILD_ID}: succeeded"
 
       - name: Verify installed COPR package version
         run: |
