@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field
+from typing import cast
 from typing import Dict, List, Optional
 
 from core.diagnostics.release_readiness import (
@@ -140,7 +141,7 @@ class ReadinessActionService:
 
             orchestrator = ActionCenterOrchestrator()
             plan = orchestrator.plan(canonical_id, target=target_key)
-            result = orchestrator.preview(plan.plan_id)
+            result = cast(ActionResult, orchestrator.preview(plan.plan_id))
             result.data = {
                 **(result.data or {}),
                 **data,

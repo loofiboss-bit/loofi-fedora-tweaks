@@ -5,12 +5,13 @@ from __future__ import annotations
 import re
 import platform
 from pathlib import Path
-from typing import Any, Mapping, Sequence
+from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
 from core.actions.contracts import ActionDefinition, ActionRun, ActionRuntime, PolicyDecision
 from core.executor.action_result import ActionResult
 from core.executor.command_facade import CommandFacade
-from services.system.system import SystemManager
+if TYPE_CHECKING:
+    from services.system.system import SystemManager
 
 _UNIT_PATTERN = re.compile(r"^[A-Za-z0-9_.@:-]+$")
 _TRIMMED_PATTERN = re.compile(r"^\s*\S.*:\s+.+(?:trimmed|bytes?)", re.IGNORECASE)
@@ -19,8 +20,17 @@ _TRIMMED_PATTERN = re.compile(r"^\s*\S.*:\s+.+(?:trimmed|bytes?)", re.IGNORECASE
 class SystemActionRuntime:
     """Read-only probe adapter backed by CommandFacade and SystemManager."""
 
-    def __init__(self, facade: CommandFacade, system_manager: type[SystemManager] = SystemManager):
+    def __init__(
+        self,
+        facade: CommandFacade,
+        system_manager: type["SystemManager"] | None = None,
+    ):
         self.facade = facade
+        if system_manager is None:
+            from services.system.system import SystemManager
+
+            system_manager = SystemManager
+
         self.system_manager = system_manager
 
     def is_atomic(self) -> bool:
