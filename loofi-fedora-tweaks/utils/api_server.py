@@ -40,11 +40,6 @@ def _origin_for(host: str, port: int) -> str:
     return f"http://{rendered_host}:{port}"
 
 
-from api.routes.action_center import router as action_center_router
-from api.routes.profiles import router as profiles_router
-from api.routes.system import router as system_router
-
-
 class TokenRateLimiter:
     """Small in-memory throttle for the loopback token endpoint."""
 
@@ -93,6 +88,10 @@ class APIServer:
             raise ValueError("LOOFI_CORS_ORIGINS may contain loopback origins only.")
         allowed_origins = requested_origins or default_origins
         app.add_middleware(CORSMiddleware, allow_origins=allowed_origins, allow_credentials=True, allow_methods=["*"], allow_headers=["*"])
+
+        from api.routes.action_center import router as action_center_router
+        from api.routes.profiles import router as profiles_router
+        from api.routes.system import router as system_router
 
         # API routes
         app.include_router(system_router, prefix="/api")
