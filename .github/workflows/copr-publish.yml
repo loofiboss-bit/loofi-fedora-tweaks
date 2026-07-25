@@ -19,7 +19,7 @@ permissions:
 
 concurrency:
   group: copr-publish
-  cancel-in-progress: false
+  cancel-in-progress: true
 
 env:
   PYTHON_VERSION: "3.12"
@@ -134,33 +134,14 @@ jobs:
           echo "Submitting ${SRPM} to COPR project ${COPR_OWNER}/${COPR_PROJECT}"
           echo "Target chroot: ${COPR_CHROOT}"
 
-          SUBMIT_TIMEOUT_SECONDS=1200
-          SUBMIT_STATUS=0
-          if ! COPR_OUT=$(timeout "${SUBMIT_TIMEOUT_SECONDS}" copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --chroot "${COPR_CHROOT}" --nowait 2>&1); then
-            SUBMIT_STATUS=$?
-            if [ "$SUBMIT_STATUS" -eq 124 ]; then
-              echo "::warning::copr-cli build command exceeded ${SUBMIT_TIMEOUT_SECONDS}s timeout while submitting."
-            else
-              echo "::warning::copr-cli build command exited ${SUBMIT_STATUS} while submitting."
-            fi
-          fi
-
-          echo "${COPR_OUT}"
-
-          BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's/.*Created builds?:[[:space:]]*([0-9]+).*/\1/p' | tail -1)
-          if [ -z "$BUILD_ID" ]; then
-            BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's#.*[/]build/([0-9]+)/?.*#\1#p' | tail -1)
-          fi
-
           COPR_API="https://copr.fedorainfracloud.org/api_3"
 
-          GET_BUILD_ID_FROM_API() {
-            for attempt in $(seq 1 12); do
-              BUILD_LIST_JSON=$(curl -fsSL "${COPR_API}/build/list?ownername=${COPR_OWNER}&projectname=${COPR_PROJECT}" 2>/dev/null || true)
-              if [ -n "$BUILD_LIST_JSON" ]; then
-                CANDIDATE_BUILD_ID=$(
-                  VER="$VER" COPR_PACKAGE="$COPR_PACKAGE" COPR_CHROOT="$COPR_CHROOT" \
-                  python3 - "$BUILD_LIST_JSON" <<'PY'
+          CANCEL_DUPLICATE_ACTIVE_BUILDS() {
+            BUILD_LIST_JSON=$(curl -fsSL "${COPR_API}/build/list?ownername=${COPR_OWNER}&projectname=${COPR_PROJECT}" 2>/dev/null || true)
+            if [ -n "$BUILD_LIST_JSON" ]; then
+              STALE_BUILD_IDS=$(
+                VER="$VER" COPR_PACKAGE="$COPR_PACKAGE" COPR_CHROOT="$COPR_CHROOT" \
+                python3 - "$BUILD_LIST_JSON" <<'PY'
 import json
 import os
 import sys
@@ -171,6 +152,8 @@ def _trim_epoch(version: str) -> str:
         return version.split(":", 1)[1]
     return version
 
+def _is_active(state: str) -> bool:
+    return state in {"running", "pending", "starting"}
 
 payload = json.loads(sys.argv[1])
 target_version = os.environ.get("VER", "")
@@ -189,6 +172,83 @@ for item in payload.get("items", []):
 
     chroots = item.get("chroots") or []
     if target_chroot and target_chroot not in chroots:
+        continue
+
+    state = item.get("state") or ""
+    if not _is_active(state):
+        continue
+
+    submitted_on = int(item.get("submitted_on") or 0)
+    build_id = int(item.get("id") or 0)
+    matches.append((submitted_on, build_id))
+
+if len(matches) <= 1:
+    sys.exit(1)
+
+_, keep_build_id = sorted(matches)[-1]
+for _, stale_build_id in sorted(matches, reverse=True):
+    if stale_build_id == keep_build_id:
+        continue
+    print(stale_build_id)
+PY
+              )
+              if [ -n "$STALE_BUILD_IDS" ]; then
+                echo "Cancelling duplicate active COPR builds for ${COPR_PACKAGE} v${VER}:"
+                while IFS= read -r STALE_BUILD_ID; do
+                  if [ -z "$STALE_BUILD_ID" ]; then
+                    continue
+                  fi
+                  if timeout 120 copr-cli cancel "${STALE_BUILD_ID}"; then
+                    echo "  cancelled build ${STALE_BUILD_ID}"
+                  else
+                    echo "::warning::Failed to cancel COPR build ${STALE_BUILD_ID}"
+                  fi
+                done <<< "${STALE_BUILD_IDS}"
+              fi
+            fi
+          }
+
+          FIND_BUILD_ID_FROM_API() {
+            local FILTER_STATES="$1"
+            for attempt in $(seq 1 12); do
+              BUILD_LIST_JSON=$(curl -fsSL "${COPR_API}/build/list?ownername=${COPR_OWNER}&projectname=${COPR_PROJECT}" 2>/dev/null || true)
+              if [ -n "$BUILD_LIST_JSON" ]; then
+                CANDIDATE_BUILD_ID=$(
+                  VER="$VER" COPR_PACKAGE="$COPR_PACKAGE" COPR_CHROOT="$COPR_CHROOT" FILTER_STATES="$FILTER_STATES" \
+                  python3 - "$BUILD_LIST_JSON" <<'PY'
+import json
+import os
+import sys
+
+
+def _trim_epoch(version: str) -> str:
+    if ":" in version:
+        return version.split(":", 1)[1]
+    return version
+
+
+payload = json.loads(sys.argv[1])
+target_version = os.environ.get("VER", "")
+target_package = os.environ.get("COPR_PACKAGE", "")
+target_chroot = os.environ.get("COPR_CHROOT", "")
+state_filter = {state.strip() for state in os.environ.get("FILTER_STATES", "").split(",") if state.strip()}
+matches = []
+
+for item in payload.get("items", []):
+    source_package = item.get("source_package") or {}
+    if source_package.get("name") != target_package:
+        continue
+
+    raw_version = _trim_epoch(str(source_package.get("version", "")))
+    if not raw_version.startswith(f"{target_version}-"):
+        continue
+
+    chroots = item.get("chroots") or []
+    if target_chroot and target_chroot not in chroots:
+        continue
+
+    state = item.get("state") or ""
+    if state_filter and state not in state_filter:
         continue
 
     submitted_on = int(item.get("submitted_on") or 0)
@@ -214,8 +274,32 @@ PY
             return 1
           }
 
+          BUILD_ID=
+          CANCEL_DUPLICATE_ACTIVE_BUILDS
+          BUILD_ID=$(FIND_BUILD_ID_FROM_API "running,pending,starting")
+          if [ -n "$BUILD_ID" ]; then
+            echo "::notice::Reusing active COPR build ${BUILD_ID} for ${COPR_PACKAGE} v${VER}; skipping duplicate submit."
+          else
+            SUBMIT_TIMEOUT_SECONDS=1200
+            SUBMIT_STATUS=0
+            if ! COPR_OUT=$(timeout "${SUBMIT_TIMEOUT_SECONDS}" copr-cli build "${COPR_OWNER}/${COPR_PROJECT}" "${SRPM}" --chroot "${COPR_CHROOT}" --nowait 2>&1); then
+              SUBMIT_STATUS=$?
+              if [ "$SUBMIT_STATUS" -eq 124 ]; then
+                echo "::warning::copr-cli build command exceeded ${SUBMIT_TIMEOUT_SECONDS}s timeout while submitting."
+              else
+                echo "::warning::copr-cli build command exited ${SUBMIT_STATUS} while submitting."
+              fi
+            fi
+            echo "${COPR_OUT}"
+
+            BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's/.*Created builds?:[[:space:]]*([0-9]+).*/\1/p' | tail -1)
+            if [ -z "$BUILD_ID" ]; then
+              BUILD_ID=$(printf '%s\n' "$COPR_OUT" | sed -nE 's#.*[/]build/([0-9]+)/?.*#\1#p' | tail -1)
+            fi
+          fi
+
           if [ -z "$BUILD_ID" ]; then
-            BUILD_ID=$(GET_BUILD_ID_FROM_API)
+            BUILD_ID=$(FIND_BUILD_ID_FROM_API "")
           fi
 
           if [ -z "$BUILD_ID" ]; then
