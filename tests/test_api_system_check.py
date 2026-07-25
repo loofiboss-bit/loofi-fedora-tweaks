@@ -66,7 +66,11 @@ class TestSystemCheckApi(unittest.TestCase):
             for method in (getattr(route, "methods", set()) or set())
         }
 
-        self.assertIn(("/api/system-check/latest", "GET"), routes)
+        self.assertIn(
+            ("/api/system-check/latest", "GET"),
+            routes,
+            f"Expected ('/api/system-check/latest', 'GET') in routes. Actual routes: {sorted(routes)}",
+        )
         self.assertNotIn(("/api/system-check/run", "POST"), routes)
         self.assertNotIn(("/api/system-check/confirm", "POST"), routes)
         self.assertNotIn(("/api/system-check/execute", "POST"), routes)
