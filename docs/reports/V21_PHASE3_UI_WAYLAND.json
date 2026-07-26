@@ -1,0 +1,4963 @@
+{
+  "backend": "wayland",
+  "cases": [
+    {
+      "case_id": "system__860x560__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1069,
+        601
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__860x560__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__900x720__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1366x768__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "system__1920x1080__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "system",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__860x560__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__900x720__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1366x768__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "dark__1920x1080__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "dark",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__860x560__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__900x720__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1366x768__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "light__1920x1080__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "light",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__860x560__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        860,
+        560
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__900x720__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        900,
+        720
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        900,
+        720
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1366x768__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1366,
+        768
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-100__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-100__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-100__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-100__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 100,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-125__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-125__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-125__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-125__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 125,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-150__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-150__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-150__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-150__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 150,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-200__ltr__settings",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-200__ltr__development",
+      "direction": "ltr",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-200__rtl__settings",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "standard",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "settings",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    },
+    {
+      "case_id": "highcontrast__1920x1080__scale-200__rtl__development",
+      "direction": "rtl",
+      "issues": [],
+      "locale_fixture": "en",
+      "navigation_mode": "advanced",
+      "rendered_viewport": [
+        1920,
+        1080
+      ],
+      "route_id": "development",
+      "scale_percent": 200,
+      "status": "passed",
+      "theme": "highcontrast",
+      "viewport": [
+        1920,
+        1080
+      ]
+    }
+  ],
+  "catalog_frames": [],
+  "contact_sheets": [],
+  "contrast": {
+    "interactive_focus_minimum": 3.0,
+    "status": "passed",
+    "text_minimum": 4.5
+  },
+  "errors": [],
+  "generated_at": "2026-07-26T12:38:23.055679+00:00",
+  "git_commit": "b93e3a4dc2fef583f66b62832819db507caaec68",
+  "git_worktree_clean": false,
+  "host": {
+    "atspi_python": "available",
+    "declared_compositor_scale_percent": null,
+    "desktop": "KDE",
+    "device_pixel_ratio": 2.0,
+    "display": ":0",
+    "hostname": "fedora",
+    "kscreen": "\u001b[01;32mOutput: \u001b[0;0m1 eDP-1 9e232cbe-bf6c-48a3-9f6c-1861192ddb44\n\t\u001b[01;32menabled\u001b[0;0m\n\t\u001b[01;32mconnected\u001b[0;0m\n\t\u001b[01;32mpriority 1\u001b[0;0m\n\t\u001b[01;33mPanel\u001b[0;0m\n\t\u001b[01;33mreplication source:\u001b[0;0m0\n\t\u001b[01;34mModes: \u001b[0;0m 1:\u001b[01;32m1920x1080@60.01*\u001b[0;0m!  10:1368x768@59.88  11:1368x768@59.88  12:1280x720@59.85  13:1280x720@59.85  2:1280x1024@59.90  3:1280x1024@59.90  4:1024x768@59.92  5:1024x768@59.92  6:1280x800@59.81  7:1280x800@59.81  8:1600x900@59.95  9:1600x900@59.95 \n\u001b[01;33m\tCustom modes:\u001b[0;0m None\n\u001b[01;33m\tGeometry: \u001b[0;0m0,0 1372x772\n\u001b[01;33m\tScale: \u001b[0;0m1.4\n\u001b[01;33m\tRotation: \u001b[0;0m1\n\u001b[01;33m\tOverscan: \u001b[0;0m0\n\u001b[01;33m\tVrr: \u001b[0;0mincapable\n\u001b[01;33m\tRgbRange: \u001b[0;0mAutomatic\n\u001b[01;33m\tHDR: \u001b[0;0mincapable\n\u001b[01;33m\tWide Color Gamut: \u001b[0;0mincapable\n\u001b[01;33m\tICC profile: \u001b[0;0mnone\n\u001b[01;33m\tColor profile source: \u001b[0;0msRGB\n\u001b[01;33m\tColor power preference: \u001b[0;0mprefer efficiency and performance\n\u001b[01;33m\tBrightness control: \u001b[0;0msupported, set to 55% and dimming to 100%\n\u001b[01;33m\tColor resolution: \u001b[0;0mautomatic (10), range: [6; 12] bits per color\n\u001b[01;33m\tAllow EDR: \u001b[0;0malways\n\u001b[01;33m\tSharpness control: \u001b[0;0munsupported\n\u001b[01;33m\tAutomatic brightness: \u001b[0;0munsupported\n\u001b[01;33m\tAuto Rotate Policy: \u001b[0;0mincapable\n\u001b[01;33m\tAdaptive backlight modulation: \u001b[0;0munsupported",
+    "orca": "Orca version 50.2, AT-SPI2 version: 2.60.5, Session: wayland KDE",
+    "platform": "Linux-7.1.4-204.fc44.x86_64-x86_64-with-glibc2.43",
+    "qt_platform": "wayland",
+    "qt_scale_factor": "",
+    "screen_geometry": [
+      1371,
+      771
+    ],
+    "session_type": "wayland",
+    "wayland_display": "wayland-0",
+    "xrandr": "Screen 0: minimum 16 x 16, current 1920 x 1080, maximum 32767 x 32767\neDP-1 connected primary 1920x1080+0+0 (normal left inverted right x axis y axis) 309mm x 174mm\n   1920x1080     59.96*+\n   1440x1080     59.99  \n   1400x1050     59.98  \n   1280x1024     59.89  \n   1280x960      59.94  \n   1152x864      59.96  \n   1024x768      59.92  \n   800x600       59.86  \n   640x480       59.38  \n   320x240       59.52  \n   1680x1050     59.95  \n   1440x900      59.89  \n   1280x800      59.81  \n   1152x720      59.97  \n   960x600       59.96  \n   928x580       59.88  \n   800x500       59.50  \n   768x480       59.90  \n   720x480       59.71  \n   640x400       59.95  \n   320x200       58.96  \n   1600x900      59.95  \n   1368x768      59.88  \n   1280x720      59.86  \n   1024x576      59.90  \n   864x486       59.92  \n   720x400       59.55  \n   640x350       59.77"
+  },
+  "interaction": {
+    "confirmation_dialog": "passed",
+    "errors": [],
+    "keyboard_navigation": "passed",
+    "mouse": "passed",
+    "resize": "passed",
+    "touchpad_wheel_equivalent": "passed",
+    "visible_focus": "passed"
+  },
+  "matrix_contract": {
+    "complete_cells": 256,
+    "directions": [
+      "ltr",
+      "rtl"
+    ],
+    "executed_cells": 256,
+    "font_scales": [
+      100,
+      125,
+      150,
+      200
+    ],
+    "real_main_window": true,
+    "routes": [
+      "settings",
+      "development"
+    ],
+    "themes": [
+      "system",
+      "dark",
+      "light",
+      "highcontrast"
+    ],
+    "viewports": [
+      [
+        860,
+        560
+      ],
+      [
+        900,
+        720
+      ],
+      [
+        1366,
+        768
+      ],
+      [
+        1920,
+        1080
+      ]
+    ]
+  },
+  "phase": 3,
+  "release": "v21.0.0 Resolve",
+  "safety": {
+    "asynchronous_commands_rejected": true,
+    "background_services_disabled": true,
+    "mutating_subprocesses_rejected": true,
+    "temporary_home_and_xdg": true
+  },
+  "schema_version": 1,
+  "scope": "automated",
+  "status": "passed"
+}

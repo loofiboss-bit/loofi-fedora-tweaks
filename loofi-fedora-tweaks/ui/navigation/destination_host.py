@@ -29,6 +29,51 @@ class SecondaryRoute:
     label: str
     description: str
     icon: str = ""
+    group: str = ""
+
+
+_SPECIALIST_GROUPS = {
+    "performance_tuning": "Performance & gaming",
+    "gaming": "Performance & gaming",
+    "development": "Development & local AI",
+    "developer_tools": "Development & local AI",
+    "ai_lab": "Development & local AI",
+    "ai_lab_voice": "Development & local AI",
+    "ai_lab_knowledge": "Development & local AI",
+    "profiles": "Profiles & extensions",
+    "extensions": "Profiles & extensions",
+    "community": "Profiles & extensions",
+    "community_marketplace": "Profiles & extensions",
+    "community_plugins": "Profiles & extensions",
+    "community_featured": "Profiles & extensions",
+    "loofi_link": "Devices & sharing",
+    "loofi_link_clipboard": "Devices & sharing",
+    "loofi_link_file_drop": "Devices & sharing",
+    "agents": "Agents & automation",
+    "agents_list": "Agents & automation",
+    "agents_create": "Agents & automation",
+    "agents_activity": "Agents & automation",
+    "automation": "Agents & automation",
+    "automation_replicator": "Agents & automation",
+    "state_teleport": "Agents & automation",
+    "virtualization": "Virtualization",
+    "virtualization_gpu": "Virtualization",
+    "virtualization_disposable": "Virtualization",
+}
+_SPECIALIST_GROUP_ORDER = (
+    "Performance & gaming",
+    "Development & local AI",
+    "Profiles & extensions",
+    "Devices & sharing",
+    "Agents & automation",
+    "Virtualization",
+    "Other specialist tools",
+)
+
+
+def specialist_group_for_section(section_id: str) -> str:
+    """Return user-facing grouping for a Specialist Tools section."""
+    return _SPECIALIST_GROUPS.get(str(section_id), "Other specialist tools")
 
 
 def secondary_routes_for_destination(
@@ -62,8 +107,18 @@ def secondary_routes_for_destination(
                 label=section.label,
                 description=section.description,
                 icon=section.icon,
+                group=(
+                    specialist_group_for_section(section.id)
+                    if destination.id == "advanced"
+                    else ""
+                ),
             )
         )
+    if destination.id == "advanced":
+        order = {
+            group: index for index, group in enumerate(_SPECIALIST_GROUP_ORDER)
+        }
+        routes.sort(key=lambda route: order.get(route.group, len(order)))
     return tuple(routes)
 
 
@@ -109,6 +164,7 @@ class DestinationHost(QFrame):
         """Populate the shared section bar from policy-approved routes."""
         self._suppress_signal = True
         self._routes = secondary_routes_for_destination(destination, context)
+        self.navigator.set_filtering_enabled(destination.id == "advanced")
         self.navigator.set_sections(
             [
                 SectionItem(
@@ -116,6 +172,7 @@ class DestinationHost(QFrame):
                     label=route.label,
                     description=route.description,
                     icon=route.icon,
+                    group=route.group,
                 )
                 for route in self._routes
             ]

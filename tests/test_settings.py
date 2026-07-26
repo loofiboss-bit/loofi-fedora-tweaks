@@ -10,6 +10,7 @@ import sys
 import tempfile
 import unittest
 from pathlib import Path
+from unittest.mock import patch
 
 # Add source path to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
@@ -171,8 +172,16 @@ class TestSaveLoad(unittest.TestCase):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "settings.json"
             mgr = SettingsManager(settings_path=path)
-            mgr.save()
+            self.assertTrue(mgr.save())
             self.assertTrue(path.exists())
+
+    @patch("pathlib.Path.write_text", side_effect=OSError("read-only"))
+    def test_save_reports_persistence_failure(self, _mock_write_text):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "settings.json"
+            mgr = SettingsManager(settings_path=path)
+
+            self.assertFalse(mgr.save())
 
     def test_save_load_round_trip(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -330,7 +339,7 @@ class TestReset(unittest.TestCase):
             mgr = _make_manager(tmpdir)
             mgr.set("theme", "light")
             mgr.set("start_minimized", True)
-            mgr.reset()
+            self.assertTrue(mgr.reset())
 
             self.assertEqual(mgr.get("theme"), "dark")
             self.assertFalse(mgr.get("start_minimized"))

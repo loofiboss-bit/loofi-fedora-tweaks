@@ -33,7 +33,13 @@ from PyQt6.QtWidgets import (
 from utils.settings import SettingsManager
 from version import __app_name__, __version__, __version_codename__
 
-from ui.components import ActionBar, DangerButton, PageScaffold, SecondaryButton
+from ui.components import (
+    ActionBar,
+    DangerButton,
+    PageScaffold,
+    SecondaryButton,
+)
+from ui.components.settings import SettingRow
 
 
 class SettingsTab(QWidget, PluginInterface):
@@ -46,6 +52,7 @@ class SettingsTab(QWidget, PluginInterface):
         self._main_window = None
         self._mgr = SettingsManager.instance()
         self._ui_initialized = False
+        self._setting_rows: dict[str, SettingRow] = {}
         # Guard against headless/non-Qt execution paths that import tabs without a QApplication.
         if QApplication.instance() is not None:
             self._init_ui()
@@ -135,41 +142,48 @@ class SettingsTab(QWidget, PluginInterface):
 
     def _build_appearance_tab(self) -> QWidget:
         page = QWidget()
-        form = QFormLayout(page)
-        form.setSpacing(12)
+        layout = QVBoxLayout(page)
+        layout.setSpacing(10)
 
-        # Help text (v47.0)
         help_label = QLabel(self.tr(
             "Choose your visual theme. 'Follow system theme' auto-detects your desktop preference."
         ))
         help_label.setWordWrap(True)
         help_label.setObjectName("settingsHelpText")
-        form.addRow(help_label)
+        layout.addWidget(help_label)
 
-        # Theme selector
         self.theme_combo = QComboBox()
         self.theme_combo.setAccessibleName(self.tr("Theme selector"))
         self.theme_combo.addItems(["dark", "light", "highcontrast"])
         self.theme_combo.setCurrentText(self._mgr.get("theme"))
-        self.theme_combo.setEnabled(not self._mgr.get("follow_system_theme"))
         self.theme_combo.currentTextChanged.connect(self._on_theme_changed)
-        form.addRow(self.tr("Theme:"), self.theme_combo)
+        self._setting_rows["theme"] = SettingRow(
+            self.tr("Theme"),
+            self.tr("Choose dark, light, or high contrast when system theme following is off."),
+            self.theme_combo,
+        )
+        layout.addWidget(self._setting_rows["theme"])
 
-        # Follow system theme
         self.follow_system_cb = QCheckBox(self.tr("Follow system theme"))
         self.follow_system_cb.setAccessibleName(self.tr("Follow system theme"))
         self.follow_system_cb.setChecked(self._mgr.get("follow_system_theme"))
         self.follow_system_cb.toggled.connect(self._on_follow_system_toggled)
-        form.addRow("", self.follow_system_cb)
+        self._setting_rows["follow_system_theme"] = SettingRow(
+            self.tr("System theme"),
+            self.tr("Use the desktop color scheme and disable the manual theme selector."),
+            self.follow_system_cb,
+        )
+        layout.addWidget(self._setting_rows["follow_system_theme"])
+        self._sync_theme_dependency()
 
-        # v29.0: Reset appearance to defaults
         reset_appearance_btn = SecondaryButton(self.tr("Reset Appearance"))
         reset_appearance_btn.setAccessibleName(self.tr("Reset Appearance"))
         reset_appearance_btn.setToolTip(self.tr("Reset theme settings to defaults"))
         reset_appearance_btn.clicked.connect(self._reset_appearance)
         appearance_actions = ActionBar()
         appearance_actions.add_action(reset_appearance_btn)
-        form.addRow("", appearance_actions)
+        layout.addWidget(appearance_actions)
+        layout.addStretch()
 
         return page
 
@@ -177,8 +191,8 @@ class SettingsTab(QWidget, PluginInterface):
 
     def _build_behavior_tab(self) -> QWidget:
         page = QWidget()
-        form = QFormLayout(page)
-        form.setSpacing(12)
+        layout = QVBoxLayout(page)
+        layout.setSpacing(10)
 
         self.start_minimized_cb = QCheckBox(self.tr("Start minimized to tray"))
         self.start_minimized_cb.setAccessibleName(self.tr("Start minimized to tray"))
@@ -186,7 +200,12 @@ class SettingsTab(QWidget, PluginInterface):
         self.start_minimized_cb.toggled.connect(
             lambda v: self._toggle_setting("start_minimized", v)
         )
-        form.addRow("", self.start_minimized_cb)
+        self._setting_rows["start_minimized"] = SettingRow(
+            self.tr("Startup"),
+            self.tr("Open the application in the notification area instead of showing the window."),
+            self.start_minimized_cb,
+        )
+        layout.addWidget(self._setting_rows["start_minimized"])
 
         self.notifications_cb = QCheckBox(self.tr("Show desktop notifications"))
         self.notifications_cb.setAccessibleName(self.tr("Show desktop notifications"))
@@ -194,7 +213,12 @@ class SettingsTab(QWidget, PluginInterface):
         self.notifications_cb.toggled.connect(
             lambda v: self._toggle_setting("show_notifications", v)
         )
-        form.addRow("", self.notifications_cb)
+        self._setting_rows["show_notifications"] = SettingRow(
+            self.tr("Notifications"),
+            self.tr("Show desktop feedback for completed application activity."),
+            self.notifications_cb,
+        )
+        layout.addWidget(self._setting_rows["show_notifications"])
 
         self.confirm_cb = QCheckBox(self.tr("Confirm dangerous actions"))
         self.confirm_cb.setAccessibleName(self.tr("Confirm dangerous actions"))
@@ -202,7 +226,12 @@ class SettingsTab(QWidget, PluginInterface):
         self.confirm_cb.toggled.connect(
             lambda v: self._toggle_setting("confirm_dangerous_actions", v)
         )
-        form.addRow("", self.confirm_cb)
+        self._setting_rows["confirm_dangerous_actions"] = SettingRow(
+            self.tr("Confirmations"),
+            self.tr("Keep explicit confirmation before dangerous application actions."),
+            self.confirm_cb,
+        )
+        layout.addWidget(self._setting_rows["confirm_dangerous_actions"])
 
         self.restore_tab_cb = QCheckBox(self.tr("Restore last active tab on start"))
         self.restore_tab_cb.setAccessibleName(self.tr("Restore last active tab on start"))
@@ -210,16 +239,21 @@ class SettingsTab(QWidget, PluginInterface):
         self.restore_tab_cb.toggled.connect(
             lambda v: self._toggle_setting("restore_last_tab", v)
         )
-        form.addRow("", self.restore_tab_cb)
+        self._setting_rows["restore_last_tab"] = SettingRow(
+            self.tr("Route restoration"),
+            self.tr("Return to the last available route after startup."),
+            self.restore_tab_cb,
+        )
+        layout.addWidget(self._setting_rows["restore_last_tab"])
 
-        # v29.0: Reset behavior to defaults
         reset_behavior_btn = SecondaryButton(self.tr("Reset Behavior"))
         reset_behavior_btn.setAccessibleName(self.tr("Reset Behavior"))
         reset_behavior_btn.setToolTip(self.tr("Reset behavior settings to defaults"))
         reset_behavior_btn.clicked.connect(self._reset_behavior)
         behavior_actions = ActionBar()
         behavior_actions.add_action(reset_behavior_btn)
-        form.addRow("", behavior_actions)
+        layout.addWidget(behavior_actions)
+        layout.addStretch()
 
         return page
 
@@ -265,7 +299,12 @@ class SettingsTab(QWidget, PluginInterface):
         self.log_combo.addItems(["DEBUG", "INFO", "WARNING", "ERROR"])
         self.log_combo.setCurrentText(self._mgr.get("log_level"))
         self.log_combo.currentTextChanged.connect(self._on_log_level_changed)
-        log_form.addRow(self.tr("Log level:"), self.log_combo)
+        self._setting_rows["log_level"] = SettingRow(
+            self.tr("Log level"),
+            self.tr("Choose how much diagnostic detail Loofi records locally."),
+            self.log_combo,
+        )
+        log_form.addRow(self._setting_rows["log_level"])
         layout.addWidget(log_group)
 
         # Update checking
@@ -275,7 +314,12 @@ class SettingsTab(QWidget, PluginInterface):
         self.updates_cb.toggled.connect(
             lambda v: self._toggle_setting("check_updates_on_start", v)
         )
-        layout.addWidget(self.updates_cb)
+        self._setting_rows["check_updates_on_start"] = SettingRow(
+            self.tr("Update checks"),
+            self.tr("Check for a newer Loofi release after the application starts."),
+            self.updates_cb,
+        )
+        layout.addWidget(self._setting_rows["check_updates_on_start"])
 
         # Reset
         reset_group = QGroupBox(self.tr("Reset"))
@@ -440,8 +484,8 @@ class SettingsTab(QWidget, PluginInterface):
         label.setText(text)
 
     def _on_theme_changed(self, theme_name: str):
-        self._mgr.set("theme", theme_name)
-        self._mgr.save()
+        if not self._save_setting("theme", theme_name):
+            return
         if (
             not self._mgr.get("follow_system_theme")
             and self._main_window
@@ -450,19 +494,68 @@ class SettingsTab(QWidget, PluginInterface):
             self._main_window.load_theme(theme_name)
 
     def _on_follow_system_toggled(self, checked: bool):
-        self._mgr.set("follow_system_theme", checked)
-        self._mgr.save()
-        self.theme_combo.setEnabled(not checked)
+        saved = self._save_setting("follow_system_theme", checked)
+        self._sync_theme_dependency()
+        if not saved:
+            return
         if self._main_window and hasattr(self._main_window, "load_theme"):
             self._main_window.load_theme("system" if checked else self.theme_combo.currentText())
 
     def _toggle_setting(self, key: str, value: bool):
-        self._mgr.set(key, value)
-        self._mgr.save()
+        self._save_setting(key, value)
 
     def _on_log_level_changed(self, level: str):
-        self._mgr.set("log_level", level)
-        self._mgr.save()
+        self._save_setting("log_level", level)
+
+    def _save_setting(self, key: str, value) -> bool:
+        """Persist one row and keep success or failure visible next to it."""
+        row = self._setting_rows.get(key)
+        try:
+            self._mgr.set(key, value)
+            saved = bool(self._mgr.save())
+        except (KeyError, OSError, RuntimeError, TypeError, ValueError):
+            saved = False
+        if row is not None:
+            if saved:
+                row.set_feedback(
+                    self.tr("The change is stored for the next session."),
+                    kind="saved",
+                )
+            else:
+                row.set_feedback(
+                    self.tr("The change could not be written. Check the configuration directory and try again."),
+                    kind="error",
+                )
+        return saved
+
+    def _sync_theme_dependency(self) -> None:
+        row = self._setting_rows.get("theme")
+        if row is None:
+            return
+        row.set_dependency(
+            self.tr("Turn off Follow system theme to choose a theme here."),
+            blocked=bool(self.follow_system_cb.isChecked()),
+        )
+
+    def _set_persistence_feedback(
+        self,
+        keys: tuple[str, ...],
+        *,
+        saved: bool,
+        success_message: str,
+    ) -> None:
+        """Apply one reset result consistently to every affected setting row."""
+        for key in keys:
+            row = self._setting_rows.get(key)
+            if row is None:
+                continue
+            if saved:
+                row.set_feedback(success_message, kind="saved")
+            else:
+                row.set_feedback(
+                    self.tr("The change could not be written. Check the configuration directory and try again."),
+                    kind="error",
+                )
 
     def _on_reset(self):
         reply = QMessageBox.question(
@@ -476,7 +569,7 @@ class SettingsTab(QWidget, PluginInterface):
         if reply != QMessageBox.StandardButton.Yes:
             return
 
-        self._mgr.reset()
+        reset_saved = bool(self._mgr.reset())
 
         # Refresh widgets to reflect defaults
         self.theme_combo.setCurrentText(self._mgr.get("theme"))
@@ -488,6 +581,12 @@ class SettingsTab(QWidget, PluginInterface):
         self.log_combo.setCurrentText(self._mgr.get("log_level"))
         self.updates_cb.setChecked(self._mgr.get("check_updates_on_start"))
         self._sync_mode_controls()
+        self._set_persistence_feedback(
+            tuple(self._setting_rows),
+            saved=reset_saved,
+            success_message=self.tr("All settings were reset to defaults."),
+        )
+        self._sync_theme_dependency()
 
         if self._main_window and hasattr(self._main_window, "load_theme"):
             selected = "system" if self._mgr.get("follow_system_theme") else self._mgr.get("theme")
@@ -497,23 +596,41 @@ class SettingsTab(QWidget, PluginInterface):
 
     def _reset_appearance(self):
         """Reset appearance settings to defaults."""
-        self._mgr.reset_group(["theme", "follow_system_theme"])
+        reset_saved = bool(
+            self._mgr.reset_group(["theme", "follow_system_theme"])
+        )
         self.theme_combo.setCurrentText(self._mgr.get("theme"))
         self.follow_system_cb.setChecked(self._mgr.get("follow_system_theme"))
+        self._set_persistence_feedback(
+            ("theme", "follow_system_theme"),
+            saved=reset_saved,
+            success_message=self.tr("Appearance settings were reset to defaults."),
+        )
+        self._sync_theme_dependency()
         if self._main_window and hasattr(self._main_window, "load_theme"):
             selected = "system" if self._mgr.get("follow_system_theme") else self._mgr.get("theme")
             self._main_window.load_theme(selected)
 
     def _reset_behavior(self):
         """Reset behavior settings to defaults."""
-        self._mgr.reset_group([
-            "start_minimized", "show_notifications",
-            "confirm_dangerous_actions", "restore_last_tab", "last_tab_index",
-        ])
+        keys = (
+            "start_minimized",
+            "show_notifications",
+            "confirm_dangerous_actions",
+            "restore_last_tab",
+        )
+        reset_saved = bool(
+            self._mgr.reset_group([*keys, "last_tab_index"])
+        )
         self.start_minimized_cb.setChecked(self._mgr.get("start_minimized"))
         self.notifications_cb.setChecked(self._mgr.get("show_notifications"))
         self.confirm_cb.setChecked(self._mgr.get("confirm_dangerous_actions"))
         self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
+        self._set_persistence_feedback(
+            keys,
+            saved=reset_saved,
+            success_message=self.tr("Behavior settings were reset to defaults."),
+        )
 
     def _sync_mode_controls(self) -> None:
         """Compatibility hook after reset; v20 has no global mode control."""

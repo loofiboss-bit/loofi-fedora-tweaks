@@ -21,7 +21,7 @@
   navigation repair.
 - [x] P2: GuidedTask/Home composition, truthful application review copy and
   filters, System Check local views, and state-driven Activity & Recovery.
-- [ ] P3: grouped Specialist Tools, consistent Settings feedback, responsive
+- [x] P3: grouped Specialist Tools, consistent Settings feedback, responsive
   geometry, accessibility, Wayland/X11, and RTL validation.
 - [ ] P4: lifecycle regression, startup/performance, Fedora 44
   Traditional/Atomic certification, packaging, and complete local gates.

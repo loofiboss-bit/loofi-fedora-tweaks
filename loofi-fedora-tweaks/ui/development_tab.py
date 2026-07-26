@@ -28,6 +28,7 @@ from PyQt6.QtWidgets import (
     QProgressBar,
     QPushButton,
     QScrollArea,
+    QSizePolicy,
     QStackedWidget,
     QVBoxLayout,
     QWidget,
@@ -39,6 +40,12 @@ from utils.vscode import VSCodeManager
 from ui.base_tab import BaseTab
 from ui.components import PageScaffold
 from ui.tooltips import DEV_CONTAINERS, DEV_LANGUAGES, DEV_VSCODE  # noqa: F401 — DEV_TOOLBOX reserved
+
+_SCROLLBAR_ALWAYS_OFF = getattr(
+    getattr(Qt, "ScrollBarPolicy", None),
+    "ScrollBarAlwaysOff",
+    None,
+)
 
 
 class DevelopmentTab(BaseTab):
@@ -118,8 +125,14 @@ class DevelopmentTab(BaseTab):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        if _SCROLLBAR_ALWAYS_OFF is not None:
+            scroll.setHorizontalScrollBarPolicy(_SCROLLBAR_ALWAYS_OFF)
 
         container = QWidget()
+        container.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Preferred,
+        )
         ct_layout = QVBoxLayout(container)
         ct_layout.setContentsMargins(0, 0, 0, 0)
         ct_layout.setSpacing(15)
@@ -442,8 +455,14 @@ class DevelopmentTab(BaseTab):
         scroll = QScrollArea()
         scroll.setWidgetResizable(True)
         scroll.setFrameShape(QFrame.Shape.NoFrame)
+        if _SCROLLBAR_ALWAYS_OFF is not None:
+            scroll.setHorizontalScrollBarPolicy(_SCROLLBAR_ALWAYS_OFF)
 
         container = QWidget()
+        container.setSizePolicy(
+            QSizePolicy.Policy.Ignored,
+            QSizePolicy.Policy.Preferred,
+        )
         dev_layout = QVBoxLayout(container)
         dev_layout.setContentsMargins(0, 0, 0, 0)
         dev_layout.setSpacing(15)

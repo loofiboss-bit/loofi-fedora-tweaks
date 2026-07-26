@@ -103,7 +103,8 @@ QFrame[routeCard="true"],
 QFrame#homeState,
 QFrame#profileCard,
 QFrame#monitorCard,
-QFrame#hwCard {
+QFrame#hwCard,
+QFrame#settingRow {
     background-color: $color_surface;
     border: $border_width solid $color_border;
     border-radius: $radius_card;
@@ -130,8 +131,26 @@ QLabel#homeSectionTitle {
 QLabel#routeCardDescription,
 QLabel#stateMessage,
 QLabel#homeSubheader,
-QLabel#supportBundleDescription {
+QLabel#supportBundleDescription,
+QLabel#settingRowDescription {
     color: $color_text_muted;
+}
+
+QLabel#settingRowTitle {
+    color: $color_text;
+    font-weight: $section_title_weight;
+}
+
+QLabel#settingRowFeedback[feedbackKind="saved"] {
+    color: $color_success_text;
+}
+
+QLabel#settingRowFeedback[feedbackKind="dependency"] {
+    color: $color_text_muted;
+}
+
+QLabel#settingRowFeedback[feedbackKind="error"] {
+    color: $color_error_text;
 }
 
 /* Controls: geometry is shared, semantic roles carry emphasis. */

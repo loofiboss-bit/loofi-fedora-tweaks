@@ -268,18 +268,18 @@ class SettingsManager:
             raise KeyError(f"Unknown setting: {key!r}")
         self._settings[key] = value
 
-    def reset(self) -> None:
+    def reset(self) -> bool:
         """Restore every setting to its default value and persist."""
         self._settings = asdict(AppSettings())
-        self.save()
+        return self.save()
 
-    def reset_group(self, keys: list) -> None:
+    def reset_group(self, keys: list) -> bool:
         """Reset a specific group of setting keys to their defaults and persist."""
         defaults = asdict(AppSettings())
         for key in keys:
             if key in defaults:
                 self._settings[key] = defaults[key]
-        self.save()
+        return self.save()
 
     def all(self) -> dict:
         """Return a shallow copy of the current settings dict."""
@@ -287,16 +287,18 @@ class SettingsManager:
 
     # ---- Persistence -------------------------------------------------------
 
-    def save(self) -> None:
-        """Write current settings to disk as pretty-printed JSON."""
+    def save(self) -> bool:
+        """Write settings atomically and report whether persistence succeeded."""
         try:
             self._path.parent.mkdir(parents=True, exist_ok=True)
             tmp_path = self._path.with_suffix(".tmp")
             tmp_path.write_text(json.dumps(self._settings, indent=2) + "\n")
             tmp_path.replace(self._path)
             logger.debug("Settings saved to %s", self._path)
+            return True
         except OSError as exc:
             logger.warning("Failed to save settings: %s", exc)
+            return False
 
     def _load(self) -> None:
         """Load settings from disk, falling back to defaults on error."""

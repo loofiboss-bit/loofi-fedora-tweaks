@@ -1,0 +1,2233 @@
+{
+  "backend": "wayland",
+  "bus_address_resolved": true,
+  "child_output": "READY",
+  "errors": [],
+  "generated_at": "2026-07-26T12:42:31.482807+00:00",
+  "node_count": 424,
+  "nodes": [
+    {
+      "description": "/usr/bin/python3.14",
+      "name": "loofi-v16-phase7-atspi",
+      "role": "application"
+    },
+    {
+      "description": "Fedora system settings and maintenance control center",
+      "name": "Loofi Fedora Tweaks",
+      "role": "frame"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Collapse sidebar",
+      "name": "Collapse sidebar",
+      "role": "button"
+    },
+    {
+      "description": "Search routes, settings, and actions (Ctrl+K)",
+      "name": "Search routes, settings, and actions",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Navigation destinations",
+      "role": "tree"
+    },
+    {
+      "description": "",
+      "name": "1",
+      "role": "table column header"
+    },
+    {
+      "description": "Open Home",
+      "name": "Home",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Software & Updates",
+      "name": "Software & Updates",
+      "role": "table cell"
+    },
+    {
+      "description": "Open System",
+      "name": "System",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Network & Security",
+      "name": "Network & Security",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Desktop",
+      "name": "Desktop",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Settings",
+      "name": "Settings",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Specialist Tools",
+      "name": "Specialist Tools",
+      "role": "table cell"
+    },
+    {
+      "description": "Application appearance, behavior, and advanced settings.",
+      "name": "Settings",
+      "role": "panel"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Page actions",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Settings",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Settings",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Application appearance, behavior, and advanced settings.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "Filter specialist tools",
+      "name": "Filter specialist tools",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "All groups",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "",
+      "name": "All groups",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "list"
+    },
+    {
+      "description": "Application theme and presentation settings.",
+      "name": "Appearance",
+      "role": "list item"
+    },
+    {
+      "description": "Application behavior and navigation preferences.",
+      "name": "Behavior",
+      "role": "list item"
+    },
+    {
+      "description": "Advanced application settings.",
+      "name": "Advanced Tools",
+      "role": "list item"
+    },
+    {
+      "description": "Repair application configuration and state.",
+      "name": "Repair Loofi",
+      "role": "list item"
+    },
+    {
+      "description": "Version, support, and project information.",
+      "name": "About",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Appearance",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "Application theme and presentation settings.",
+      "name": "Appearance",
+      "role": "list item"
+    },
+    {
+      "description": "Application behavior and navigation preferences.",
+      "name": "Behavior",
+      "role": "list item"
+    },
+    {
+      "description": "Advanced application settings.",
+      "name": "Advanced Tools",
+      "role": "list item"
+    },
+    {
+      "description": "Repair application configuration and state.",
+      "name": "Repair Loofi",
+      "role": "list item"
+    },
+    {
+      "description": "Version, support, and project information.",
+      "name": "About",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Navigation availability",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "layered pane"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Current status, the next useful action, and common Fedora tasks.",
+      "name": "Home",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "System status",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "System status",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Saved system status contains an item that may need attention.",
+      "role": "label"
+    },
+    {
+      "description": "Last checked: Never \u00b7 Status unavailable",
+      "name": "System Check freshness",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "System health: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "System health: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Updates: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Updates: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Storage: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Storage: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Recovery protection: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Recovery protection: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "Run the local read-only System Check.",
+      "name": "Check now",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Recommended next step",
+      "role": "label"
+    },
+    {
+      "description": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "name": "Review system health",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Review system health",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "name": "Review: Review system health",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Common tasks",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Open Update the system. Review available Fedora updates.",
+      "name": "Update the system",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Update the system",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Review available Fedora updates.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Update the system",
+      "role": "label"
+    },
+    {
+      "description": "Open Install an application. Find and install Fedora or Flatpak apps.",
+      "name": "Install an application",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Install an application",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Find and install Fedora or Flatpak apps.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Install an application",
+      "role": "label"
+    },
+    {
+      "description": "Open Check performance. Inspect CPU, memory, and running processes.",
+      "name": "Check performance",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Check performance",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Inspect CPU, memory, and running processes.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Check performance",
+      "role": "label"
+    },
+    {
+      "description": "Open Protect or recover. Review backups and recovery options.",
+      "name": "Protect or recover",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Protect or recover",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Review backups and recovery options.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Protect or recover",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Info...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Info...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Monitor...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Monitor...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Local Profiles...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Local Profiles...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Activity & Recovery...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Activity & Recovery...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Software...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Software...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Maintenance...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Maintenance...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Snapshots...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Snapshots...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Hardware...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Hardware...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Performance...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Performance...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Storage...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Storage...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Gaming...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Gaming...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Network...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Network...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Loofi Link...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Loofi Link...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Security & Privacy...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Security & Privacy...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Backup...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Backup...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Desktop...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Desktop...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Extensions...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Extensions...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Profiles...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Profiles...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "layered pane"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Choose the application theme. Changes are saved automatically.",
+      "name": "Appearance",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Choose your visual theme. 'Follow system theme' auto-detects your desktop preference.",
+      "role": "label"
+    },
+    {
+      "description": "Choose dark, light, or high contrast when system theme following is off.",
+      "name": "Theme",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Theme",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Choose dark, light, or high contrast when system theme following is off.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "dark",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "",
+      "name": "dark",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "light",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "highcontrast",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Theme status",
+      "role": "label"
+    },
+    {
+      "description": "Use the desktop color scheme and disable the manual theme selector.",
+      "name": "System theme",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "System theme",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Use the desktop color scheme and disable the manual theme selector.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Follow system theme",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "System theme status",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "Reset theme settings to defaults",
+      "name": "Reset Appearance",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Configure startup, notifications, confirmations, and route restoration.",
+      "name": "Behavior",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Open the application in the notification area instead of showing the window.",
+      "name": "Startup",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Startup",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Open the application in the notification area instead of showing the window.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Start minimized to tray",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "Startup status",
+      "role": "label"
+    },
+    {
+      "description": "Show desktop feedback for completed application activity.",
+      "name": "Notifications",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Notifications",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Show desktop feedback for completed application activity.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Show desktop notifications",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "Notifications status",
+      "role": "label"
+    },
+    {
+      "description": "Keep explicit confirmation before dangerous application actions.",
+      "name": "Confirmations",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Confirmations",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Keep explicit confirmation before dangerous application actions.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Confirm dangerous actions",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "Confirmations status",
+      "role": "label"
+    },
+    {
+      "description": "Return to the last available route after startup.",
+      "name": "Route restoration",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Route restoration",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Return to the last available route after startup.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Restore last active tab on start",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "Route restoration status",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "Reset behavior settings to defaults",
+      "name": "Reset Behavior",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Choose Standard or Advanced navigation without weakening safety checks.",
+      "name": "Advanced Tools",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Advanced settings for debugging and maintenance. Only change these if you know what you're doing.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Specialist Tools",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Specialist tools are always available. Each system change still has its own review and confirmation.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Components:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Core and specialist tools are included in this build. Changing mode never installs packages.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Logging",
+      "role": "panel"
+    },
+    {
+      "description": "Choose how much diagnostic detail Loofi records locally.",
+      "name": "Log level",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Log level",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Choose how much diagnostic detail Loofi records locally.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "INFO",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "",
+      "name": "DEBUG",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "INFO",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "WARNING",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "ERROR",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Log level status",
+      "role": "label"
+    },
+    {
+      "description": "Check for a newer Loofi release after the application starts.",
+      "name": "Update checks",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Update checks",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Check for a newer Loofi release after the application starts.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Check for updates on start",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "Update checks status",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Reset",
+      "role": "panel"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Reset All Settings to Defaults",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Inspect local state before exporting or resetting application data.",
+      "name": "Repair Loofi",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Repair Loofi checks local files, schemas, locks, permissions, and collector freshness. The check is read-only. This page repairs and archives Loofi application state only; it does not create system recovery points, personal-file backups, rollback deployments, or support bundles. State backups exclude credentials, raw logs, plugin code, and caches.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Repair Loofi results",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Inspect Loofi State",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Create Privacy-Safe Backup\u2026",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Preview State Restore\u2026",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Review application, runtime, support, and compatibility information.",
+      "name": "About",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Application:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loofi Fedora Tweaks",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Version:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "20.0.0",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Build identity:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Continuity",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Python:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "3.14.6",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Qt:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "6.11.0",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "PyQt:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "6.11.0",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Fedora 44 is the supported target. Fedora 45 remains preview/advisory and capability-aware.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Documentation and support links",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Development...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Development...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Virtualization...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Virtualization...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading AI Lab...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading AI Lab...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Check...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Check...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Logs...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Logs...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Diagnostics...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Diagnostics...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Agents...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Agents...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Automation...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Automation...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading State Teleport...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading State Teleport...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "Validation completed",
+      "name": "Activity status",
+      "role": "label"
+    },
+    {
+      "description": "Undo last action",
+      "name": "Undo",
+      "role": "button"
+    },
+    {
+      "description": "Review the package list before continuing.",
+      "name": "Confirm action: Remove selected packages",
+      "role": "dialog"
+    },
+    {
+      "description": "",
+      "name": "Warning",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Remove selected packages",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Risk level: HIGH",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Review the package list before continuing.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Don't ask for confirmation again",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "Show the exact command that will run",
+      "name": "Preview",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Cancel",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Confirm",
+      "role": "button"
+    }
+  ],
+  "orca_available": true,
+  "phase": 3,
+  "protocol": "AT-SPI2",
+  "real_main_window": true,
+  "release": "v21.0.0 Resolve",
+  "route": "settings",
+  "schema_version": 1,
+  "status": "passed",
+  "surfaces": {
+    "application": {
+      "expected": [
+        "Loofi Fedora Tweaks"
+      ],
+      "matches": [
+        "Loofi Fedora Tweaks"
+      ],
+      "status": "passed"
+    },
+    "confirmation": {
+      "expected": [
+        "Confirm action: Remove selected packages"
+      ],
+      "matches": [
+        "Confirm action: Remove selected packages"
+      ],
+      "status": "passed"
+    },
+    "navigation": {
+      "expected": [
+        "Navigation destinations",
+        "Primary navigation",
+        "Sections"
+      ],
+      "matches": [
+        "Navigation destinations",
+        "Sections"
+      ],
+      "status": "passed"
+    },
+    "page_title": {
+      "expected": [
+        "Settings"
+      ],
+      "matches": [
+        "Advanced settings for debugging and maintenance. Only change these if you know what you're doing.",
+        "Application appearance, behavior, and advanced settings.",
+        "Reset All Settings to Defaults",
+        "Search routes, settings, and actions",
+        "Settings"
+      ],
+      "status": "passed"
+    },
+    "result_state": {
+      "expected": [
+        "Activity status"
+      ],
+      "matches": [
+        "Activity status"
+      ],
+      "status": "passed"
+    },
+    "settings_notifications": {
+      "expected": [
+        "Notifications"
+      ],
+      "matches": [
+        "Notifications",
+        "Notifications status",
+        "Show desktop notifications"
+      ],
+      "status": "passed"
+    },
+    "settings_system_theme": {
+      "expected": [
+        "System theme",
+        "Follow system theme"
+      ],
+      "matches": [
+        "Choose dark, light, or high contrast when system theme following is off.",
+        "Choose your visual theme. 'Follow system theme' auto-detects your desktop preference.",
+        "Follow system theme",
+        "System theme",
+        "System theme status"
+      ],
+      "status": "passed"
+    },
+    "settings_theme": {
+      "expected": [
+        "Theme"
+      ],
+      "matches": [
+        "Choose dark, light, or high contrast when system theme following is off.",
+        "Choose your visual theme. 'Follow system theme' auto-detects your desktop preference.",
+        "Follow system theme",
+        "System theme",
+        "System theme status",
+        "Theme",
+        "Theme status",
+        "Use the desktop color scheme and disable the manual theme selector."
+      ],
+      "status": "passed"
+    }
+  }
+}

@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import (
     QComboBox,
     QFrame,
     QHBoxLayout,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
@@ -29,6 +30,7 @@ class SectionItem:
     description: str = ""
     status: str = ""
     icon: str = ""
+    group: str = ""
 
 
 class SectionNavigator(QFrame):
@@ -43,10 +45,33 @@ class SectionNavigator(QFrame):
         self._sections: tuple[SectionItem, ...] = ()
         self._suppress_signal = False
         self._compact = False
+        self._filtering_enabled = False
+        self._visible_section_indexes: tuple[int, ...] = ()
+        self._rail_section_indexes: dict[int, int] = {}
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(8)
+
+        self.filter_panel = QFrame(self)
+        self.filter_panel.setObjectName("sectionFilterPanel")
+        filter_layout = QVBoxLayout(self.filter_panel)
+        filter_layout.setContentsMargins(0, 0, 0, 0)
+        filter_layout.setSpacing(6)
+        self.filter_input = QLineEdit(self.filter_panel)
+        self.filter_input.setObjectName("sectionFilter")
+        self.filter_input.setAccessibleName(self.tr("Filter specialist tools"))
+        self.filter_input.setPlaceholderText(self.tr("Filter specialist tools"))
+        self.filter_input.setClearButtonEnabled(True)
+        self.filter_input.textChanged.connect(self._rebuild_visible_sections)
+        filter_layout.addWidget(self.filter_input)
+        self.group_filter = QComboBox(self.filter_panel)
+        self.group_filter.setObjectName("sectionGroupFilter")
+        self.group_filter.setAccessibleName(self.tr("Specialist tool group"))
+        self.group_filter.currentIndexChanged.connect(self._rebuild_visible_sections)
+        filter_layout.addWidget(self.group_filter)
+        layout.addWidget(self.filter_panel)
+        self.filter_panel.hide()
 
         self.rail = QListWidget(self)
         self.rail.setObjectName("sectionRail")
@@ -68,9 +93,92 @@ class SectionNavigator(QFrame):
     def set_sections(self, sections: tuple[SectionItem, ...] | list[SectionItem]) -> None:
         self._suppress_signal = True
         self._sections = tuple(sections)
+        self._populate_group_filter()
+        self._rebuild_visible_sections()
+        self._suppress_signal = False
+
+    def set_filtering_enabled(self, enabled: bool) -> None:
+        """Expose local grouping and filtering without changing route identity."""
+        enabled = bool(enabled)
+        if self._filtering_enabled == enabled:
+            return
+        self._filtering_enabled = enabled
+        self.filter_panel.setVisible(enabled)
+        if not enabled:
+            self.filter_input.clear()
+            self.group_filter.setCurrentIndex(0)
+        self._rebuild_visible_sections()
+
+    def filtering_enabled(self) -> bool:
+        return self._filtering_enabled
+
+    def filter_text(self) -> str:
+        return self.filter_input.text()
+
+    def available_groups(self) -> tuple[str, ...]:
+        return tuple(
+            str(self.group_filter.itemData(index) or "")
+            for index in range(1, self.group_filter.count())
+        )
+
+    def visible_section_ids(self) -> tuple[str, ...]:
+        return tuple(
+            self._sections[index].section_id
+            for index in self._visible_section_indexes
+        )
+
+    def _populate_group_filter(self) -> None:
+        selected = str(self.group_filter.currentData() or "")
+        groups = tuple(
+            dict.fromkeys(section.group for section in self._sections if section.group)
+        )
+        self.group_filter.blockSignals(True)
+        self.group_filter.clear()
+        self.group_filter.addItem(self.tr("All groups"), "")
+        for group in groups:
+            self.group_filter.addItem(group, group)
+        selected_index = self.group_filter.findData(selected)
+        self.group_filter.setCurrentIndex(max(0, selected_index))
+        self.group_filter.blockSignals(False)
+
+    def _matching_section_indexes(self) -> tuple[int, ...]:
+        if not self._filtering_enabled:
+            return tuple(range(len(self._sections)))
+        query = self.filter_input.text().strip().casefold()
+        selected_group = str(self.group_filter.currentData() or "")
+        matches: list[int] = []
+        for index, section in enumerate(self._sections):
+            if selected_group and section.group != selected_group:
+                continue
+            searchable = " ".join(
+                (section.label, section.description, section.status, section.group)
+            ).casefold()
+            if query and query not in searchable:
+                continue
+            matches.append(index)
+        return tuple(matches)
+
+    def _rebuild_visible_sections(self, *_args) -> None:
+        active_section_id = self.active_section_id()
+        previous_suppress = self._suppress_signal
+        self._suppress_signal = True
+        self._visible_section_indexes = self._matching_section_indexes()
+        self._rail_section_indexes = {}
         self.rail.clear()
         self.selector.clear()
-        for section in self._sections:
+        previous_group = ""
+        for section_index in self._visible_section_indexes:
+            section = self._sections[section_index]
+            if self._filtering_enabled and section.group and section.group != previous_group:
+                header = QListWidgetItem(section.group)
+                header.setFlags(Qt.ItemFlag.NoItemFlags)
+                header.setData(Qt.ItemDataRole.AccessibleTextRole, section.group)
+                header.setData(
+                    Qt.ItemDataRole.AccessibleDescriptionRole,
+                    self.tr("Specialist tool group"),
+                )
+                self.rail.addItem(header)
+                previous_group = section.group
             visible_label = (
                 self.tr("%1 — %2").replace("%1", section.label).replace("%2", section.status)
                 if section.status
@@ -89,6 +197,7 @@ class SectionNavigator(QFrame):
                 item.setIcon(icon)
             item.setSizeHint(item.sizeHint().expandedTo(self._minimum_row_size(visible_label)))
             self.rail.addItem(item)
+            self._rail_section_indexes[self.rail.count() - 1] = section_index
             if section.icon:
                 self.selector.addItem(icon, section.label, section.section_id)
             else:
@@ -101,10 +210,17 @@ class SectionNavigator(QFrame):
                 section.description or section.status,
                 Qt.ItemDataRole.AccessibleDescriptionRole,
             )
-        if self._sections:
-            self.rail.setCurrentRow(0)
-            self.selector.setCurrentIndex(0)
-        self._suppress_signal = False
+        if self._visible_section_indexes:
+            selected_index = 0
+            for index, section_index in enumerate(self._visible_section_indexes):
+                if self._sections[section_index].section_id == active_section_id:
+                    selected_index = index
+                    break
+            self.selector.setCurrentIndex(selected_index)
+            self._select_rail_section_index(
+                self._visible_section_indexes[selected_index]
+            )
+        self._suppress_signal = previous_suppress
 
     def sections(self) -> tuple[SectionItem, ...]:
         return self._sections
@@ -115,16 +231,27 @@ class SectionNavigator(QFrame):
     def set_active_section(self, section_id: str) -> None:
         for index, section in enumerate(self._sections):
             if section.section_id == section_id:
+                if index not in self._visible_section_indexes:
+                    self.filter_input.blockSignals(True)
+                    self.group_filter.blockSignals(True)
+                    self.filter_input.clear()
+                    self.group_filter.setCurrentIndex(0)
+                    self.filter_input.blockSignals(False)
+                    self.group_filter.blockSignals(False)
+                    self._rebuild_visible_sections()
                 self._suppress_signal = True
-                self.rail.setCurrentRow(index)
-                self.selector.setCurrentIndex(index)
+                visible_index = self._visible_section_indexes.index(index)
+                self._select_rail_section_index(index)
+                self.selector.setCurrentIndex(visible_index)
                 self._suppress_signal = False
                 return
 
     def active_section_id(self) -> str:
-        index = self.selector.currentIndex() if self._compact else self.rail.currentRow()
-        if 0 <= index < len(self._sections):
-            return str(self._sections[index].section_id)
+        visible_index = self.selector.currentIndex()
+        if 0 <= visible_index < len(self._visible_section_indexes):
+            section_index = self._visible_section_indexes[visible_index]
+            if 0 <= section_index < len(self._sections):
+                return str(self._sections[section_index].section_id)
         return ""
 
     def set_compact(self, compact: bool) -> None:
@@ -134,14 +261,23 @@ class SectionNavigator(QFrame):
 
     def refresh_icons(self) -> None:
         """Rebuild semantic icon tints after a live theme change."""
-        for index, section in enumerate(self._sections):
+        for visible_index, section_index in enumerate(self._visible_section_indexes):
+            section = self._sections[section_index]
             if not section.icon:
                 continue
             icon = get_qicon(section.icon, size=20)
-            rail_item = self.rail.item(index)
+            rail_row = next(
+                (
+                    row
+                    for row, mapped_index in self._rail_section_indexes.items()
+                    if mapped_index == section_index
+                ),
+                -1,
+            )
+            rail_item = self.rail.item(rail_row)
             if rail_item is not None:
                 rail_item.setIcon(icon)
-            self.selector.setItemIcon(index, icon)
+            self.selector.setItemIcon(visible_index, icon)
 
     def is_compact(self) -> bool:
         return self._compact
@@ -160,10 +296,12 @@ class SectionNavigator(QFrame):
         return QSize(208, max(44, bounds.height() + 16))
 
     def _refresh_row_sizes(self) -> None:
-        for index in range(self.rail.count()):
-            item = self.rail.item(index)
+        for row, section_index in self._rail_section_indexes.items():
+            item = self.rail.item(row)
             if item is not None:
-                item.setSizeHint(self._minimum_row_size(item.text()))
+                item.setSizeHint(
+                    self._minimum_row_size(self._sections[section_index].label)
+                )
 
     def _apply_mode(self, compact: bool) -> None:
         self._compact = compact
@@ -173,20 +311,33 @@ class SectionNavigator(QFrame):
         self.selector.setVisible(compact)
 
     def _on_rail_changed(self, index: int) -> None:
-        if self._suppress_signal or index < 0 or index >= len(self._sections):
+        section_index = self._rail_section_indexes.get(index)
+        if self._suppress_signal or section_index is None:
             return
         self._suppress_signal = True
-        self.selector.setCurrentIndex(index)
+        visible_index = self._visible_section_indexes.index(section_index)
+        self.selector.setCurrentIndex(visible_index)
         self._suppress_signal = False
-        self.sectionActivated.emit(self._sections[index].section_id)
+        self.sectionActivated.emit(self._sections[section_index].section_id)
 
     def _on_selector_changed(self, index: int) -> None:
-        if self._suppress_signal or index < 0 or index >= len(self._sections):
+        if (
+            self._suppress_signal
+            or index < 0
+            or index >= len(self._visible_section_indexes)
+        ):
             return
+        section_index = self._visible_section_indexes[index]
         self._suppress_signal = True
-        self.rail.setCurrentRow(index)
+        self._select_rail_section_index(section_index)
         self._suppress_signal = False
-        self.sectionActivated.emit(self._sections[index].section_id)
+        self.sectionActivated.emit(self._sections[section_index].section_id)
+
+    def _select_rail_section_index(self, section_index: int) -> None:
+        for row, mapped_index in self._rail_section_indexes.items():
+            if mapped_index == section_index:
+                self.rail.setCurrentRow(row)
+                return
 
 
 @dataclass(frozen=True)

@@ -1,0 +1,2264 @@
+{
+  "backend": "wayland",
+  "bus_address_resolved": true,
+  "child_output": "READY",
+  "errors": [],
+  "generated_at": "2026-07-26T12:43:04.879428+00:00",
+  "node_count": 432,
+  "nodes": [
+    {
+      "description": "/usr/bin/python3.14",
+      "name": "loofi-v16-phase7-atspi",
+      "role": "application"
+    },
+    {
+      "description": "Fedora system settings and maintenance control center",
+      "name": "Loofi Fedora Tweaks",
+      "role": "frame"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Collapse sidebar",
+      "name": "Collapse sidebar",
+      "role": "button"
+    },
+    {
+      "description": "Search routes, settings, and actions (Ctrl+K)",
+      "name": "Search routes, settings, and actions",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Navigation destinations",
+      "role": "tree"
+    },
+    {
+      "description": "",
+      "name": "1",
+      "role": "table column header"
+    },
+    {
+      "description": "Open Home",
+      "name": "Home",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Software & Updates",
+      "name": "Software & Updates",
+      "role": "table cell"
+    },
+    {
+      "description": "Open System",
+      "name": "System",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Network & Security",
+      "name": "Network & Security",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Desktop",
+      "name": "Desktop",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Settings",
+      "name": "Settings",
+      "role": "table cell"
+    },
+    {
+      "description": "Open Specialist Tools",
+      "name": "Specialist Tools",
+      "role": "table cell"
+    },
+    {
+      "description": "Containers and developer tool setup.",
+      "name": "Development Tools",
+      "role": "panel"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Page actions",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Specialist Tools",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Development Tools",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Containers and developer tool setup.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "Filter specialist tools",
+      "name": "Filter specialist tools",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "All groups",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "",
+      "name": "All groups",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Performance & gaming",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Development & local AI",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Profiles & extensions",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Devices & sharing",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Agents & automation",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Virtualization",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Sections",
+      "role": "list"
+    },
+    {
+      "description": "Specialist tool group",
+      "name": "Performance & gaming",
+      "role": "list item"
+    },
+    {
+      "description": "Advanced performance tuning.",
+      "name": "Performance Tuning",
+      "role": "list item"
+    },
+    {
+      "description": "Gaming-focused system tools.",
+      "name": "Gaming",
+      "role": "list item"
+    },
+    {
+      "description": "Specialist tool group",
+      "name": "Development & local AI",
+      "role": "list item"
+    },
+    {
+      "description": "Developer environments and containers.",
+      "name": "Development",
+      "role": "list item"
+    },
+    {
+      "description": "Language runtimes and editor tooling.",
+      "name": "Developer Tools",
+      "role": "list item"
+    },
+    {
+      "description": "Local AI models, voice, and knowledge tools.",
+      "name": "AI Lab",
+      "role": "list item"
+    },
+    {
+      "description": "Record and transcribe speech locally.",
+      "name": "Voice",
+      "role": "list item"
+    },
+    {
+      "description": "Build and search local knowledge indexes.",
+      "name": "Knowledge",
+      "role": "list item"
+    },
+    {
+      "description": "Specialist tool group",
+      "name": "Profiles & extensions",
+      "role": "list item"
+    },
+    {
+      "description": "Reusable configuration profiles.",
+      "name": "Profiles",
+      "role": "list item"
+    },
+    {
+      "description": "Optional Loofi extensions.",
+      "name": "Extensions",
+      "role": "list item"
+    },
+    {
+      "description": "Local profiles, private backup, and legacy extension inventory.",
+      "name": "Local Profiles",
+      "role": "list item"
+    },
+    {
+      "description": "Specialist tool group",
+      "name": "Devices & sharing",
+      "role": "list item"
+    },
+    {
+      "description": "Device sharing and Loofi Link tools.",
+      "name": "Loofi Link",
+      "role": "list item"
+    },
+    {
+      "description": "Share clipboard content with paired devices.",
+      "name": "Shared Clipboard",
+      "role": "list item"
+    },
+    {
+      "description": "Send files to paired devices.",
+      "name": "File Drop",
+      "role": "list item"
+    },
+    {
+      "description": "Specialist tool group",
+      "name": "Agents & automation",
+      "role": "list item"
+    },
+    {
+      "description": "Local agent management and activity.",
+      "name": "Agents",
+      "role": "list item"
+    },
+    {
+      "description": "Review and manage configured agents.",
+      "name": "My Agents",
+      "role": "list item"
+    },
+    {
+      "description": "Create a local agent from a goal.",
+      "name": "Create Agent",
+      "role": "list item"
+    },
+    {
+      "description": "Inspect recent agent activity.",
+      "name": "Agent Activity",
+      "role": "list item"
+    },
+    {
+      "description": "Schedules and automation workflows.",
+      "name": "Automation",
+      "role": "list item"
+    },
+    {
+      "description": "Export reproducible system configuration.",
+      "name": "Replicator",
+      "role": "list item"
+    },
+    {
+      "description": "Move compatible application state.",
+      "name": "State Teleport",
+      "role": "list item"
+    },
+    {
+      "description": "Specialist tool group",
+      "name": "Virtualization",
+      "role": "list item"
+    },
+    {
+      "description": "Virtual machines and disposable environments.",
+      "name": "Virtualization",
+      "role": "list item"
+    },
+    {
+      "description": "Review VFIO readiness and setup guidance.",
+      "name": "GPU Passthrough",
+      "role": "list item"
+    },
+    {
+      "description": "Create and manage disposable virtual machines.",
+      "name": "Disposable VMs",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Development",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "Advanced performance tuning.",
+      "name": "Performance Tuning",
+      "role": "list item"
+    },
+    {
+      "description": "Gaming-focused system tools.",
+      "name": "Gaming",
+      "role": "list item"
+    },
+    {
+      "description": "Developer environments and containers.",
+      "name": "Development",
+      "role": "list item"
+    },
+    {
+      "description": "Language runtimes and editor tooling.",
+      "name": "Developer Tools",
+      "role": "list item"
+    },
+    {
+      "description": "Local AI models, voice, and knowledge tools.",
+      "name": "AI Lab",
+      "role": "list item"
+    },
+    {
+      "description": "Record and transcribe speech locally.",
+      "name": "Voice",
+      "role": "list item"
+    },
+    {
+      "description": "Build and search local knowledge indexes.",
+      "name": "Knowledge",
+      "role": "list item"
+    },
+    {
+      "description": "Reusable configuration profiles.",
+      "name": "Profiles",
+      "role": "list item"
+    },
+    {
+      "description": "Optional Loofi extensions.",
+      "name": "Extensions",
+      "role": "list item"
+    },
+    {
+      "description": "Local profiles, private backup, and legacy extension inventory.",
+      "name": "Local Profiles",
+      "role": "list item"
+    },
+    {
+      "description": "Device sharing and Loofi Link tools.",
+      "name": "Loofi Link",
+      "role": "list item"
+    },
+    {
+      "description": "Share clipboard content with paired devices.",
+      "name": "Shared Clipboard",
+      "role": "list item"
+    },
+    {
+      "description": "Send files to paired devices.",
+      "name": "File Drop",
+      "role": "list item"
+    },
+    {
+      "description": "Local agent management and activity.",
+      "name": "Agents",
+      "role": "list item"
+    },
+    {
+      "description": "Review and manage configured agents.",
+      "name": "My Agents",
+      "role": "list item"
+    },
+    {
+      "description": "Create a local agent from a goal.",
+      "name": "Create Agent",
+      "role": "list item"
+    },
+    {
+      "description": "Inspect recent agent activity.",
+      "name": "Agent Activity",
+      "role": "list item"
+    },
+    {
+      "description": "Schedules and automation workflows.",
+      "name": "Automation",
+      "role": "list item"
+    },
+    {
+      "description": "Export reproducible system configuration.",
+      "name": "Replicator",
+      "role": "list item"
+    },
+    {
+      "description": "Move compatible application state.",
+      "name": "State Teleport",
+      "role": "list item"
+    },
+    {
+      "description": "Virtual machines and disposable environments.",
+      "name": "Virtualization",
+      "role": "list item"
+    },
+    {
+      "description": "Review VFIO readiness and setup guidance.",
+      "name": "GPU Passthrough",
+      "role": "list item"
+    },
+    {
+      "description": "Create and manage disposable virtual machines.",
+      "name": "Disposable VMs",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Navigation availability",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "layered pane"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Current status, the next useful action, and common Fedora tasks.",
+      "name": "Home",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "System status",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "System status",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Saved system status contains an item that may need attention.",
+      "role": "label"
+    },
+    {
+      "description": "Last checked: Never \u00b7 Status unavailable",
+      "name": "System Check freshness",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "System health: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "System health: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Updates: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Updates: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Storage: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Storage: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "No saved status is available for this area.",
+      "name": "Recovery protection: Status unavailable",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Recovery protection: Status unavailable",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "Run the local read-only System Check.",
+      "name": "Check now",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Recommended next step",
+      "role": "label"
+    },
+    {
+      "description": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "name": "Review system health",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Review system health",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "role": "label"
+    },
+    {
+      "description": "Available actions for this content",
+      "name": "Actions",
+      "role": "filler"
+    },
+    {
+      "description": "No saved status exists yet. Run a local System Check to create the first snapshot.",
+      "name": "Review: Review system health",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Common tasks",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Open Update the system. Review available Fedora updates.",
+      "name": "Update the system",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Update the system",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Review available Fedora updates.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Update the system",
+      "role": "label"
+    },
+    {
+      "description": "Open Install an application. Find and install Fedora or Flatpak apps.",
+      "name": "Install an application",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Install an application",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Find and install Fedora or Flatpak apps.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Install an application",
+      "role": "label"
+    },
+    {
+      "description": "Open Check performance. Inspect CPU, memory, and running processes.",
+      "name": "Check performance",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Check performance",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Inspect CPU, memory, and running processes.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Check performance",
+      "role": "label"
+    },
+    {
+      "description": "Open Protect or recover. Review backups and recovery options.",
+      "name": "Protect or recover",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Protect or recover",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Review backups and recovery options.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "image"
+    },
+    {
+      "description": "",
+      "name": "Open Protect or recover",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Info...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Info...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Monitor...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Monitor...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Local Profiles...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Local Profiles...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Activity & Recovery...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Activity & Recovery...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Software...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Software...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Maintenance...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Maintenance...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Snapshots...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Snapshots...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Hardware...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Hardware...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Performance...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Performance...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Storage...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Storage...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Gaming...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Gaming...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Network...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Network...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Loofi Link...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Loofi Link...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Security & Privacy...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Security & Privacy...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Backup...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Backup...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Desktop...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Desktop...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Extensions...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Extensions...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Profiles...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Profiles...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Settings...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Settings...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "layered pane"
+    },
+    {
+      "description": "Create and manage isolated developer environments.",
+      "name": "Development containers",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Your Containers",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Refresh",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Your Containers",
+      "role": "list"
+    },
+    {
+      "description": "",
+      "name": "Enter Container",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Stop",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Delete",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Create New Container",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Name:",
+      "role": "label"
+    },
+    {
+      "description": "my-container",
+      "name": "Container name",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "Image:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Fedora",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "",
+      "name": "Fedora",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Ubuntu",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Arch",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Alpine",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Debian",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Opensuse",
+      "role": "list item"
+    },
+    {
+      "description": "Manage Podman containers for development workloads",
+      "name": "Create",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Containers share your home directory by default. Double-click a container to enter it.",
+      "role": "label"
+    },
+    {
+      "description": "Manage language runtimes and editor tooling.",
+      "name": "Developer tools",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Page content",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Language Version Managers",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Install version managers to run multiple language versions without affecting system packages.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "PyEnv: not installed",
+      "role": "label"
+    },
+    {
+      "description": "Install programming language runtimes and toolchains",
+      "name": "Install PyEnv + Python 3.12",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "NVM: not installed",
+      "role": "label"
+    },
+    {
+      "description": "Install programming language runtimes and toolchains",
+      "name": "Install NVM + Node LTS",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Rustup: rustup 1.28.2 (e4f3ad6f8 2025-04-28)",
+      "role": "label"
+    },
+    {
+      "description": "Install programming language runtimes and toolchains",
+      "name": "Install Rustup",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "VS Code Extensions",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Install recommended extensions for different development profiles.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Profile:",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Python Development (6 extensions)",
+      "role": "combo box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "list"
+    },
+    {
+      "description": "",
+      "name": "Python Development (6 extensions)",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "C/C++ Development (5 extensions)",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Rust Development (3 extensions)",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Web Development (5 extensions)",
+      "role": "list item"
+    },
+    {
+      "description": "",
+      "name": "Container Development (3 extensions)",
+      "role": "list item"
+    },
+    {
+      "description": "Install or configure Visual Studio Code and extensions",
+      "name": "Install Extensions",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Apply Settings",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "VS Code Extensions",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "Show developer operation output",
+      "role": "filler"
+    },
+    {
+      "description": "Show technical details",
+      "name": "Show developer operation output",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "Technical details",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "Output Log:",
+      "role": "label"
+    },
+    {
+      "description": "Copy output to clipboard",
+      "name": "Copy",
+      "role": "button"
+    },
+    {
+      "description": "Save output to file",
+      "name": "Save",
+      "role": "button"
+    },
+    {
+      "description": "Cancel running command",
+      "name": "Cancel",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Command output",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Virtualization...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Virtualization...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading AI Lab...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading AI Lab...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading System Check...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading System Check...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Logs...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Logs...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Diagnostics...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Diagnostics...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Agents...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Agents...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading Automation...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading Automation...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "Loading State Teleport...",
+      "name": "Loading",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Loading",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading State Teleport...",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Loading progress",
+      "role": "progress bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "Validation completed",
+      "name": "Activity status",
+      "role": "label"
+    },
+    {
+      "description": "Undo last action",
+      "name": "Undo",
+      "role": "button"
+    },
+    {
+      "description": "Review the package list before continuing.",
+      "name": "Confirm action: Remove selected packages",
+      "role": "dialog"
+    },
+    {
+      "description": "",
+      "name": "Warning",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Remove selected packages",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Risk level: HIGH",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "panel"
+    },
+    {
+      "description": "",
+      "name": "Review the package list before continuing.",
+      "role": "label"
+    },
+    {
+      "description": "",
+      "name": "Don't ask for confirmation again",
+      "role": "check box"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "text"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "filler"
+    },
+    {
+      "description": "",
+      "name": "",
+      "role": "scroll bar"
+    },
+    {
+      "description": "Show the exact command that will run",
+      "name": "Preview",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Cancel",
+      "role": "button"
+    },
+    {
+      "description": "",
+      "name": "Confirm",
+      "role": "button"
+    }
+  ],
+  "orca_available": true,
+  "phase": 3,
+  "protocol": "AT-SPI2",
+  "real_main_window": true,
+  "release": "v21.0.0 Resolve",
+  "route": "development",
+  "schema_version": 1,
+  "status": "passed",
+  "surfaces": {
+    "application": {
+      "expected": [
+        "Loofi Fedora Tweaks"
+      ],
+      "matches": [
+        "Loofi Fedora Tweaks"
+      ],
+      "status": "passed"
+    },
+    "confirmation": {
+      "expected": [
+        "Confirm action: Remove selected packages"
+      ],
+      "matches": [
+        "Confirm action: Remove selected packages"
+      ],
+      "status": "passed"
+    },
+    "navigation": {
+      "expected": [
+        "Navigation destinations",
+        "Primary navigation",
+        "Sections"
+      ],
+      "matches": [
+        "Navigation destinations",
+        "Sections"
+      ],
+      "status": "passed"
+    },
+    "page_title": {
+      "expected": [
+        "Development"
+      ],
+      "matches": [
+        "C/C++ Development (5 extensions)",
+        "Container Development (3 extensions)",
+        "Development",
+        "Development & local AI",
+        "Development Tools",
+        "Development containers",
+        "Install recommended extensions for different development profiles.",
+        "Python Development (6 extensions)",
+        "Rust Development (3 extensions)",
+        "Web Development (5 extensions)"
+      ],
+      "status": "passed"
+    },
+    "result_state": {
+      "expected": [
+        "Activity status"
+      ],
+      "matches": [
+        "Activity status"
+      ],
+      "status": "passed"
+    },
+    "specialist_filter": {
+      "expected": [
+        "Filter specialist tools"
+      ],
+      "matches": [
+        "Filter specialist tools"
+      ],
+      "status": "passed"
+    },
+    "specialist_group_filter": {
+      "expected": [
+        "All groups"
+      ],
+      "matches": [
+        "All groups"
+      ],
+      "status": "passed"
+    },
+    "specialist_group_option": {
+      "expected": [
+        "Development & local AI"
+      ],
+      "matches": [
+        "Development & local AI"
+      ],
+      "status": "passed"
+    }
+  }
+}

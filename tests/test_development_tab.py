@@ -368,6 +368,9 @@ def _install_stubs():
     qt_widgets.QMenu = _DummyMenu
     qt_widgets.QMessageBox = MagicMock()
     qt_widgets.QProgressBar = _DummyProgressBar
+    qt_widgets.QSizePolicy = types.SimpleNamespace(
+        Policy=types.SimpleNamespace(Ignored=0, Preferred=5)
+    )
 
     # -- PyQt6.QtCore --
     qt_core = types.ModuleType("PyQt6.QtCore")

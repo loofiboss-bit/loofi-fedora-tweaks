@@ -32,13 +32,25 @@ EXPECTED_SURFACES = {
     "result_state": ("Activity status",),
     "confirmation": ("Confirm action: Remove selected packages",),
 }
-ROUTE_SURFACES = {
+ROUTE_SURFACES: dict[str, dict[str, tuple[str, ...]]] = {
     "health": {
         "page_title": ("System Check",),
         "system_check_status": (
             "Latest saved check",
             "Refresh saved results",
         ),
+    },
+    "settings": {
+        "page_title": ("Settings",),
+        "settings_theme": ("Theme",),
+        "settings_system_theme": ("System theme", "Follow system theme"),
+        "settings_notifications": ("Notifications",),
+    },
+    "development": {
+        "page_title": ("Development",),
+        "specialist_filter": ("Filter specialist tools",),
+        "specialist_group_filter": ("All groups",),
+        "specialist_group_option": ("Development & local AI",),
     },
 }
 
@@ -77,7 +89,14 @@ def _child() -> int:
         window = MainWindow()
         window.resize(1280, 720)
         window.show()
-        window.switch_to_route(os.environ.get("LOOFI_ATSPI_ROUTE", "system_info"))
+        route = os.environ.get("LOOFI_ATSPI_ROUTE", "system_info")
+        if route == "development":
+            from core.navigation import NavigationMode
+
+            window._rebuild_sidebar_for_navigation_mode(
+                NavigationMode.ADVANCED
+            )
+        window.switch_to_route(route)
         window.set_status("Validation completed")
 
         confirmation = ConfirmActionDialog(
