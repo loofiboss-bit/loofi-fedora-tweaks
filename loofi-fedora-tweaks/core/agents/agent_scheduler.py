@@ -45,6 +45,7 @@ class AgentScheduler:
         self._registry = registry or AgentRegistry.instance()
         self._event_bus = EventBus()
         self._subscribed_agents: Dict[str, AgentConfig] = {}
+        self._subscriptions: Dict[str, list[tuple[str, Callable[[Event], None], str]]] = {}
         self._initialize_subscriptions()
 
     def _initialize_subscriptions(self) -> None:
@@ -63,9 +64,14 @@ class AgentScheduler:
         Args:
             agent: AgentConfig with subscriptions list
         """
+        if agent.agent_id in self._subscribed_agents:
+            self.unregister_agent(agent.agent_id)
         for topic in agent.subscriptions:
             callback = self._create_agent_callback(agent)
             self._event_bus.subscribe(topic=topic, callback=callback, subscriber_id=agent.agent_id)
+            self._subscriptions.setdefault(agent.agent_id, []).append(
+                (topic, callback, agent.agent_id)
+            )
 
         self._subscribed_agents[agent.agent_id] = agent
 
@@ -270,12 +276,8 @@ class AgentScheduler:
             return False
 
         agent = self._subscribed_agents[agent_id]
-
-        # Unsubscribe from all topics
-        for topic in agent.subscriptions:
-            # Note: EventBus.unsubscribe requires the exact callback,
-            # which we don't store. For cleanup, we rely on EventBus
-            # internal handling or agent restart.
+        for topic, callback, subscriber_id in self._subscriptions.pop(agent_id, []):
+            self._event_bus.unsubscribe(topic, callback, subscriber_id)
             logger.debug("Agent '%s' unsubscribed from topic: %s", agent.name, topic)
 
         del self._subscribed_agents[agent_id]
@@ -289,5 +291,7 @@ class AgentScheduler:
     def shutdown(self) -> None:
         """Shutdown the scheduler and cleanup resources."""
         logger.info("Shutting down AgentScheduler")
-        self._subscribed_agents.clear()
+        for agent_id in tuple(self._subscribed_agents):
+            self.unregister_agent(agent_id)
+        self._subscriptions.clear()
         # EventBus shutdown is handled separately by the application

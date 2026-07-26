@@ -402,11 +402,12 @@ class TestUnregisterAgent(unittest.TestCase):
         mock_registry.get_enabled_agents.return_value = []
         scheduler = AgentScheduler(registry=mock_registry)
         agent = _make_mock_agent(agent_id="agent-to-remove")
-        scheduler._subscribed_agents["agent-to-remove"] = agent
+        scheduler.register_agent(agent)
 
         result = scheduler.unregister_agent("agent-to-remove")
         self.assertTrue(result)
         self.assertNotIn("agent-to-remove", scheduler._subscribed_agents)
+        mock_event_bus_cls.return_value.unsubscribe.assert_called_once()
 
     @patch('core.agents.agent_scheduler.EventBus')
     @patch('core.agents.agent_scheduler.AgentRegistry')
@@ -450,11 +451,14 @@ class TestShutdown(unittest.TestCase):
         mock_registry = MagicMock()
         mock_registry.get_enabled_agents.return_value = []
         scheduler = AgentScheduler(registry=mock_registry)
-        scheduler._subscribed_agents["a"] = MagicMock()
-        scheduler._subscribed_agents["b"] = MagicMock()
+        first = _make_mock_agent(agent_id="a")
+        second = _make_mock_agent(agent_id="b")
+        scheduler.register_agent(first)
+        scheduler.register_agent(second)
 
         scheduler.shutdown()
         self.assertEqual(len(scheduler._subscribed_agents), 0)
+        self.assertEqual(mock_event_bus_cls.return_value.unsubscribe.call_count, 2)
 
 
 if __name__ == '__main__':

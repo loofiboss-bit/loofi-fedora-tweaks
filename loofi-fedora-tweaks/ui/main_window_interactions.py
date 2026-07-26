@@ -485,16 +485,63 @@ class MainWindowInteractionMixin:
             )
 
     def quit_app(self: typing.Any) -> typing.Any:
-        self._set_active_plugin("")
-        # Stop Pulse listener
-        if self.pulse_thread:
-            self.pulse_thread.stop()
-
-        if self.tray_icon:
-            self.tray_icon.hide()
+        self._request_runtime_shutdown()
         from PyQt6.QtWidgets import QApplication
 
         QApplication.quit()
+
+    def _request_runtime_shutdown(self: typing.Any) -> None:
+        """Use the process runtime when present, with a direct test fallback."""
+        runtime = getattr(self, "__dict__", {}).get("_runtime")
+        shutdown = getattr(runtime, "shutdown", None)
+        if callable(shutdown):
+            shutdown()
+            return
+        self._cleanup_runtime(5.0)
+
+    def _cleanup_runtime(self: typing.Any, timeout: float) -> None:
+        """Stop window-owned timers, workers, plugins, Pulse, and tray once."""
+        attributes = getattr(self, "__dict__", {})
+        if attributes.get("_runtime_cleaned", False):
+            return
+        self._runtime_cleaned = True
+        self._set_active_plugin("")
+
+        status_timer = getattr(self, "_status_timer", None)
+        if status_timer is not None:
+            status_timer.stop()
+
+        registry = PluginRegistry.instance()
+        list_all: typing.Callable[[], typing.Iterable[typing.Any]] = getattr(
+            registry,
+            "list_all",
+            lambda: [],
+        )
+        plugins = list(list_all())
+        if not plugins:
+            plugins = [
+                entry.page_widget
+                for entry in getattr(self, "_sidebar_index", {}).values()
+            ]
+        for plugin in plugins:
+            cleanup = getattr(plugin, "cleanup", None)
+            if callable(cleanup):
+                try:
+                    cleanup()
+                except (RuntimeError, OSError, TypeError, ValueError) as exc:
+                    logger.debug("Failed to cleanup page on close: %s", exc)
+
+        pulse_thread = getattr(self, "pulse_thread", None)
+        if pulse_thread:
+            timeout_ms = max(0, min(5000, int(timeout * 1000)))
+            try:
+                pulse_thread.stop(timeout_ms=timeout_ms)
+            except TypeError:
+                pulse_thread.stop()
+
+        tray_icon = getattr(self, "tray_icon", None)
+        if tray_icon:
+            tray_icon.hide()
 
     def closeEvent(self: typing.Any, event: typing.Any) -> typing.Any:
         tray_icon = getattr(self, "tray_icon", None)
@@ -508,19 +555,7 @@ class MainWindowInteractionMixin:
             )
             event.ignore()
         else:
-            # Clean up page resources (timers, schedulers)
-            self._set_active_plugin("")
-            registry = PluginRegistry.instance()
-            list_all: typing.Callable[[], typing.Iterable[typing.Any]] = getattr(registry, "list_all", lambda: [])
-            plugins = list(list_all())
-            if not plugins:
-                plugins = [entry.page_widget for entry in self._sidebar_index.values()]
-            for plugin in plugins:
-                if hasattr(plugin, "cleanup"):
-                    try:
-                        plugin.cleanup()
-                    except (RuntimeError, OSError) as e:
-                        logger.debug("Failed to cleanup page on close: %s", e)
+            self._request_runtime_shutdown()
             event.accept()
 
     def check_dependencies(self: typing.Any) -> typing.Any:

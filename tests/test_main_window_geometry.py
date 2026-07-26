@@ -6,15 +6,6 @@ import sys
 import unittest
 from unittest.mock import patch
 
-# Skip in CI or offscreen environments — creating real MainWindow spawns
-# EventBus threads that leak and cause SIGABRT when running the full suite.
-_SKIP = (
-    os.environ.get("CI", "") == "true"
-    or os.environ.get("GITHUB_ACTIONS", "") == "true"
-    or os.environ.get("QT_QPA_PLATFORM", "") == "offscreen"
-)
-_SKIP_REASON = "Skipped — real MainWindow leaks EventBus threads in offscreen/CI mode"
-
 # Allow Qt to initialize in headless CI/dev environments.
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -28,7 +19,6 @@ except ImportError:
     _HAS_QT_WIDGETS = False
 
 
-@unittest.skipIf(_SKIP, _SKIP_REASON)
 @unittest.skipUnless(_HAS_QT_WIDGETS, "PyQt6.QtWidgets not available (headless environment)")
 class TestMainWindowGeometry(unittest.TestCase):
     """Guard against client-area content being laid out into top chrome."""
@@ -71,7 +61,8 @@ class TestMainWindowGeometry(unittest.TestCase):
         self.assertTrue(first_widget.isVisible())
         self.assertGreaterEqual(first_widget.geometry().y(), 0)
 
-        window.hide()
+        window.close()
+        self.app.processEvents()
 
     def test_minimum_window_size(self):
         """Verify minimum window size is enforced (800x500)."""
@@ -88,7 +79,8 @@ class TestMainWindowGeometry(unittest.TestCase):
         self.assertGreaterEqual(min_size.width(), 800)
         self.assertGreaterEqual(min_size.height(), 500)
 
-        window.hide()
+        window.close()
+        self.app.processEvents()
 
     def test_breadcrumb_bar_height(self):
         """Verify breadcrumb bar has positive height."""
@@ -108,7 +100,8 @@ class TestMainWindowGeometry(unittest.TestCase):
         self.assertIsNotNone(breadcrumb)
         self.assertGreater(breadcrumb.height(), 0)
 
-        window.hide()
+        window.close()
+        self.app.processEvents()
 
     def test_status_bar_height(self):
         """Verify status bar has positive height."""
@@ -128,7 +121,8 @@ class TestMainWindowGeometry(unittest.TestCase):
         self.assertIsNotNone(status_frame)
         self.assertGreater(status_frame.height(), 0)
 
-        window.hide()
+        window.close()
+        self.app.processEvents()
 
     def test_sidebar_width(self):
         """Verify sidebar has positive width."""
@@ -148,7 +142,8 @@ class TestMainWindowGeometry(unittest.TestCase):
         self.assertIsNotNone(sidebar)
         self.assertGreater(sidebar.width(), 0)
 
-        window.hide()
+        window.close()
+        self.app.processEvents()
 
     def test_no_widget_overlaps_origin(self):
         """Verify no visible widgets overlap the (0,0) origin point."""
@@ -180,7 +175,8 @@ class TestMainWindowGeometry(unittest.TestCase):
         self.assertGreaterEqual(geom.x(), 0)
         self.assertGreaterEqual(geom.y(), 0)
 
-        window.hide()
+        window.close()
+        self.app.processEvents()
 
     def test_pages_are_wrapped_in_scroll_area(self):
         """Verify tab pages use a scroll container to avoid vertical compression."""
@@ -193,13 +189,14 @@ class TestMainWindowGeometry(unittest.TestCase):
              patch.object(MainWindow, "_check_first_run", lambda self: None):
             window = MainWindow()
 
-        # Pick first real page item: Dashboard > Home
-        home_item = window.sidebar.topLevelItem(0).child(0)
-        page_container = home_item.data(0, mod.Qt.ItemDataRole.UserRole)
+        # The current flat shell resolves Home without a nested tree row.
+        self.assertEqual(window.sidebar.topLevelItem(0).childCount(), 0)
+        page_container = window.content_area.currentWidget()
         self.assertIsInstance(page_container, QScrollArea)
         self.assertIsNotNone(page_container.widget())
 
-        window.hide()
+        window.close()
+        self.app.processEvents()
 
 
 if __name__ == "__main__":

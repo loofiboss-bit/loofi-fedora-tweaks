@@ -173,6 +173,40 @@ class TestMainGUI(unittest.TestCase):
             source,
         )
 
+    @patch("ui.design.ThemeManager")
+    @patch("utils.error_handler.install_error_handler")
+    @patch("utils.event_bus.EventBus")
+    @patch("ui.main_window.MainWindow")
+    @patch("core.application_runtime.ApplicationRuntime")
+    @patch("PyQt6.QtWidgets.QApplication")
+    @patch("main._check_pyqt6", return_value=True)
+    @patch("sys.argv", ["loofi-fedora-tweaks"])
+    def test_gui_connects_one_process_runtime(
+        self,
+        mock_check,
+        mock_qapplication,
+        mock_runtime_class,
+        mock_window_class,
+        mock_event_bus_class,
+        mock_install_error_handler,
+        mock_theme_manager,
+    ):
+        """GUI startup binds QApplication teardown to the owned runtime."""
+        app = mock_qapplication.return_value
+        app.exec.return_value = 0
+        runtime = mock_runtime_class.return_value
+
+        from main import main
+
+        with self.assertRaises(SystemExit) as raised:
+            main()
+
+        self.assertEqual(raised.exception.code, 0)
+        runtime.register.assert_called_once()
+        self.assertEqual(runtime.register.call_args.args[0], "event-bus")
+        app.aboutToQuit.connect.assert_called_once_with(runtime.shutdown)
+        mock_window_class.assert_called_once_with(runtime=runtime)
+
 
 if __name__ == '__main__':
     unittest.main()

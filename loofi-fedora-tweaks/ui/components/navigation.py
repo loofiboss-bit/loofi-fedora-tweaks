@@ -5,7 +5,17 @@ from __future__ import annotations
 from dataclasses import dataclass
 
 from PyQt6.QtCore import QEvent, QRect, QSize, Qt, pyqtSignal
-from PyQt6.QtWidgets import QComboBox, QFrame, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import (
+    QButtonGroup,
+    QComboBox,
+    QFrame,
+    QHBoxLayout,
+    QListWidget,
+    QListWidgetItem,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from ui.icon_pack import get_qicon
 
@@ -177,3 +187,131 @@ class SectionNavigator(QFrame):
         self.rail.setCurrentRow(index)
         self._suppress_signal = False
         self.sectionActivated.emit(self._sections[index].section_id)
+
+
+@dataclass(frozen=True)
+class LocalViewItem:
+    """Presentation metadata for one peer view inside a single route."""
+
+    view_id: str
+    label: str
+    description: str = ""
+
+
+class LocalViewSwitcher(QFrame):
+    """Switch between two to five local peer views without route semantics."""
+
+    viewActivated = pyqtSignal(str)
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("localViewSwitcher")
+        self.setAccessibleName(self.tr("Views"))
+        self._views: tuple[LocalViewItem, ...] = ()
+        self._compact = False
+        self._suppress_signal = False
+
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
+        self.button_row = QWidget(self)
+        self.button_layout = QHBoxLayout(self.button_row)
+        self.button_layout.setContentsMargins(0, 0, 0, 0)
+        self.button_layout.setSpacing(8)
+        self.button_group = QButtonGroup(self)
+        self.button_group.setExclusive(True)
+        self.button_group.idClicked.connect(self._on_button_clicked)
+        layout.addWidget(self.button_row)
+
+        self.selector = QComboBox(self)
+        self.selector.setAccessibleName(self.tr("View"))
+        self.selector.currentIndexChanged.connect(self._on_selector_changed)
+        self.selector.hide()
+        layout.addWidget(self.selector)
+
+    def set_views(
+        self,
+        views: tuple[LocalViewItem, ...] | list[LocalViewItem],
+    ) -> None:
+        """Replace the bounded local view set."""
+        normalized = tuple(views)
+        if normalized and not 2 <= len(normalized) <= 5:
+            raise ValueError("LocalViewSwitcher requires two to five views")
+        view_ids = tuple(view.view_id for view in normalized)
+        if any(not view_id for view_id in view_ids) or len(set(view_ids)) != len(view_ids):
+            raise ValueError("Local view IDs must be non-empty and unique")
+
+        self._suppress_signal = True
+        for button in self.button_group.buttons():
+            self.button_group.removeButton(button)
+            self.button_layout.removeWidget(button)
+            button.deleteLater()
+        self.selector.clear()
+        self._views = normalized
+        for index, view in enumerate(self._views):
+            button = QPushButton(view.label, self.button_row)
+            button.setCheckable(True)
+            button.setAccessibleName(view.label)
+            button.setAccessibleDescription(view.description)
+            button.setToolTip(view.description or view.label)
+            self.button_group.addButton(button, index)
+            self.button_layout.addWidget(button)
+            self.selector.addItem(view.label, view.view_id)
+            self.selector.setItemData(
+                index,
+                view.description or view.label,
+                Qt.ItemDataRole.ToolTipRole,
+            )
+        self.button_layout.addStretch()
+        if self._views:
+            first = self.button_group.button(0)
+            if first is not None:
+                first.setChecked(True)
+            self.selector.setCurrentIndex(0)
+        self._suppress_signal = False
+
+    def view_ids(self) -> tuple[str, ...]:
+        return tuple(view.view_id for view in self._views)
+
+    def active_view_id(self) -> str:
+        index = self.selector.currentIndex()
+        if 0 <= index < len(self._views):
+            return self._views[index].view_id
+        return ""
+
+    def set_active_view(self, view_id: str) -> None:
+        for index, view in enumerate(self._views):
+            if view.view_id != view_id:
+                continue
+            self._suppress_signal = True
+            self.selector.setCurrentIndex(index)
+            button = self.button_group.button(index)
+            if button is not None:
+                button.setChecked(True)
+            self._suppress_signal = False
+            return
+
+    def set_compact(self, compact: bool) -> None:
+        self._compact = bool(compact)
+        self.button_row.setVisible(not self._compact)
+        self.selector.setVisible(self._compact)
+
+    def is_compact(self) -> bool:
+        return self._compact
+
+    def _activate_index(self, index: int) -> None:
+        if self._suppress_signal or not 0 <= index < len(self._views):
+            return
+        self._suppress_signal = True
+        self.selector.setCurrentIndex(index)
+        button = self.button_group.button(index)
+        if button is not None:
+            button.setChecked(True)
+        self._suppress_signal = False
+        self.viewActivated.emit(self._views[index].view_id)
+
+    def _on_button_clicked(self, index: int) -> None:
+        self._activate_index(index)
+
+    def _on_selector_changed(self, index: int) -> None:
+        self._activate_index(index)

@@ -189,7 +189,9 @@ def main(argv: list[str] | None = None):
 
         try:
             from PyQt6.QtWidgets import QApplication, QMessageBox
+            from core.application_runtime import ApplicationRuntime
             from ui.main_window import MainWindow
+            from utils.event_bus import EventBus
         except ImportError as exc:
             _log.critical("Failed to import GUI modules: %s", exc, exc_info=True)
             _notify_error("Loofi — Import Error", str(exc))
@@ -197,6 +199,13 @@ def main(argv: list[str] | None = None):
 
         try:
             app = QApplication(sys.argv)
+            runtime = ApplicationRuntime()
+            event_bus = EventBus()
+            runtime.register(
+                "event-bus",
+                lambda remaining: event_bus.shutdown(timeout=remaining),
+            )
+            app.aboutToQuit.connect(runtime.shutdown)
 
             # Install centralized error handler (v29.0)
             from utils.error_handler import install_error_handler
@@ -209,7 +218,7 @@ def main(argv: list[str] | None = None):
 
             ThemeManager().apply(app, theme_name)
 
-            window = MainWindow()
+            window = MainWindow(runtime=runtime)
             window.show()
             _log.info("MainWindow shown successfully")
             sys.exit(app.exec())

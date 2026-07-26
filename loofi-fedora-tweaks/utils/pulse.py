@@ -644,11 +644,11 @@ class PulseThread(QThread):
         """Start the pulse event loop."""
         self.pulse.start()
 
-    def stop(self):
+    def stop(self, timeout_ms: int = 5000):
         """Stop the pulse event loop."""
         self.pulse.stop()
         self.quit()
-        self.wait(5000)  # Wait up to 5 seconds
+        self.wait(max(0, timeout_ms))
 
 
 # Convenience function for creating and starting pulse

@@ -16,7 +16,7 @@
 
 ## Implementation
 
-- [ ] P1: application-owned runtime cleanup, exact EventBus/AgentScheduler
+- [x] P1: application-owned runtime cleanup, exact EventBus/AgentScheduler
   teardown, focused shell extraction, local view switching, and compact
   navigation repair.
 - [ ] P2: GuidedTask/Home composition, truthful application review copy and

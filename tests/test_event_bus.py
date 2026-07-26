@@ -332,3 +332,34 @@ def test_subscription_dataclass():
     assert sub.topic == "test.topic"
     assert sub.callback == callback
     assert sub.subscriber_id == "test_sub"
+
+
+def test_shutdown_rejects_new_publishes_and_clears_subscriptions(event_bus):
+    callback = Mock()
+    event_bus.subscribe("test.topic", callback)
+
+    event_bus.shutdown(timeout=0.1)
+    event_bus.publish("test.topic", {"ignored": True})
+
+    time.sleep(0.05)
+    callback.assert_not_called()
+    assert event_bus.get_subscriber_count("test.topic") == 0
+    with pytest.raises(RuntimeError, match="shut down"):
+        event_bus.subscribe("test.topic", callback)
+
+
+def test_explicit_test_reinitialization_restores_publish(event_bus):
+    callback = Mock()
+    event_bus.shutdown(timeout=0.1)
+    event_bus._reinit_executor()
+    event_bus.subscribe("test.topic", callback)
+
+    event_bus.publish("test.topic", {"accepted": True})
+
+    callback_event = callback.call_args
+    for _ in range(20):
+        if callback_event is not None:
+            break
+        time.sleep(0.01)
+        callback_event = callback.call_args
+    callback.assert_called_once()

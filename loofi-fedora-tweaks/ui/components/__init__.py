@@ -22,7 +22,12 @@ from ui.components.layout import (
     PageHeader,
     PageScaffold,
 )
-from ui.components.navigation import SectionItem, SectionNavigator
+from ui.components.navigation import (
+    LocalViewItem,
+    LocalViewSwitcher,
+    SectionItem,
+    SectionNavigator,
+)
 
 __all__ = [
     "ActionBar",
@@ -38,6 +43,8 @@ __all__ = [
     "GhostButton",
     "InlineNotice",
     "LoadingState",
+    "LocalViewItem",
+    "LocalViewSwitcher",
     "PageHeader",
     "PageScaffold",
     "PrimaryButton",

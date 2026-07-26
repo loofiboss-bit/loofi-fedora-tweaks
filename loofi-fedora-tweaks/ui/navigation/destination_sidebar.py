@@ -30,6 +30,7 @@ class DestinationSidebar(QTreeWidget):
         self.setIndentation(0)
         self.setUniformRowHeights(True)
         self.setAnimated(False)
+        self.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.setIconSize(QSize(20, 20))
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAccessibleName(self.tr("Primary navigation"))

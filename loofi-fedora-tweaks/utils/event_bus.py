@@ -10,7 +10,7 @@ from __future__ import annotations
 
 import logging
 import threading
-from concurrent.futures import ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, wait
 from dataclasses import dataclass
 from typing import Any, Callable, Dict, List, Optional
 
@@ -92,6 +92,8 @@ class EventBus:
         self._subscriptions: Dict[str, List[Subscription]] = {}
         self._sub_lock = threading.Lock()
         self._executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="EventBus")
+        self._futures: set[Future[None]] = set()
+        self._accepting_publishes = True
         logger.info("EventBus initialized")
 
     def subscribe(
@@ -116,6 +118,8 @@ class EventBus:
         subscription = Subscription(topic=topic, callback=callback, subscriber_id=subscriber_id)
 
         with self._sub_lock:
+            if not self._accepting_publishes:
+                raise RuntimeError("EventBus is shut down")
             if topic not in self._subscriptions:
                 self._subscriptions[topic] = []
             self._subscriptions[topic].append(subscription)
@@ -147,6 +151,9 @@ class EventBus:
         logger.debug("Publishing event: topic='%s', source='%s'", topic, source or "unknown")
 
         with self._sub_lock:
+            if not self._accepting_publishes:
+                logger.debug("Discarding event after EventBus shutdown: topic='%s'", topic)
+                return
             subscribers = self._subscriptions.get(topic, []).copy()
 
         if not subscribers:
@@ -154,7 +161,17 @@ class EventBus:
             return
 
         for sub in subscribers:
-            self._executor.submit(self._invoke_subscriber, sub, event)
+            with self._sub_lock:
+                if not self._accepting_publishes:
+                    return
+                future = self._executor.submit(self._invoke_subscriber, sub, event)
+                self._futures.add(future)
+            future.add_done_callback(self._discard_future)
+
+    def _discard_future(self, future: Future[None]) -> None:
+        """Forget a completed subscriber invocation."""
+        with self._sub_lock:
+            self._futures.discard(future)
 
     def _invoke_subscriber(self, subscription: Subscription, event: Event) -> None:
         """
@@ -238,18 +255,34 @@ class EventBus:
         with self._sub_lock:
             return len(self._subscriptions.get(topic, []))
 
-    def shutdown(self) -> None:
+    def shutdown(self, timeout: float = 5.0) -> None:
         """
-        Shutdown the EventBus and executor thread pool.
+        Stop publishes and complete bounded executor cleanup.
         Call this during application teardown.
         """
         logger.info("Shutting down EventBus")
-        self._executor.shutdown(wait=True)
-        self.clear()
+        with self._sub_lock:
+            if not self._accepting_publishes:
+                return
+            self._accepting_publishes = False
+            futures = tuple(self._futures)
+            self._subscriptions.clear()
+        for future in futures:
+            future.cancel()
+        self._executor.shutdown(wait=False, cancel_futures=True)
+        if futures and timeout > 0:
+            wait(futures, timeout=timeout)
+        with self._sub_lock:
+            self._futures.clear()
 
     def _reinit_executor(self) -> None:
         """
-        Reinitialize the thread pool executor. Used for testing.
+        Explicitly reinitialize runtime state. Used for testing only.
         """
-        if hasattr(self._executor, '_shutdown') and self._executor._shutdown:
+        with self._sub_lock:
+            if self._accepting_publishes:
+                return
             self._executor = ThreadPoolExecutor(max_workers=10, thread_name_prefix="EventBus")
+            self._futures.clear()
+            self._subscriptions.clear()
+            self._accepting_publishes = True

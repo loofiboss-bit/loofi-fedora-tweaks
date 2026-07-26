@@ -14,7 +14,6 @@ from core.navigation import (
     area_for_plugin,
     destinations_for_mode,
     get_destination,
-    placement_for_route,
     resolve,
 )
 from core.plugins import PluginInterface, PluginRegistry
@@ -55,6 +54,7 @@ from ui.lazy_widget import LazyWidget
 from ui.navigation import DestinationHost, DestinationSidebar
 from ui.main_window_interactions import MainWindowInteractionMixin
 from ui.main_window_services import MainWindowServiceMixin
+from ui.main_window_shell import MainWindowShellMixin
 
 if TYPE_CHECKING:
     from core.plugins.spec import PluginSpec
@@ -135,9 +135,16 @@ class DisabledPluginPage(QWidget):
         layout.addWidget(label)
 
 
-class MainWindow(MainWindowServiceMixin, MainWindowInteractionMixin, QMainWindow):
-    def __init__(self):
+class MainWindow(
+    MainWindowServiceMixin,
+    MainWindowInteractionMixin,
+    MainWindowShellMixin,
+    QMainWindow,
+):
+    def __init__(self, runtime=None):
         super().__init__()
+        self._runtime = runtime
+        self._runtime_cleaned = False
 
         # Initialize logger for this class
         self.logger = logging.getLogger(__name__)
@@ -329,6 +336,8 @@ class MainWindow(MainWindowServiceMixin, MainWindowInteractionMixin, QMainWindow
 
         # First-run wizard
         self._check_first_run()
+        if self._runtime is not None:
+            self._runtime.register("main-window", self._cleanup_runtime)
 
     @property
     def pages(self) -> dict[str, QWidget]:
@@ -416,30 +425,6 @@ class MainWindow(MainWindowServiceMixin, MainWindowInteractionMixin, QMainWindow
         if destination is None:
             return
         self.switch_to_route(destination.default_route_id)
-
-    def _sync_destination_shell(self, route_id: str) -> None:
-        """Synchronize primary and secondary navigation for a stable route."""
-        placement = placement_for_route(route_id)
-        if placement is None:
-            return
-        destination = get_destination(placement.destination_id)
-        if destination is None:
-            return
-
-        self._selecting_destination = True
-        self.sidebar.select_destination(destination.id)
-        self._selecting_destination = False
-
-        if destination.id != self._active_destination_id:
-            self.destination_host.set_destination(
-                destination,
-                self._navigation_context,
-                route_id,
-            )
-            self._active_destination_id = destination.id
-        else:
-            self.destination_host.clear_explanation()
-            self.destination_host.set_active_route(route_id)
 
     def _find_or_create_area(self, plugin_id: str, fallback_category: str) -> QTreeWidgetItem:
         """Find/create a focused sidebar area for a plugin."""
@@ -701,87 +686,6 @@ class MainWindow(MainWindowServiceMixin, MainWindowInteractionMixin, QMainWindow
             if current.childCount() > 0:
                 current.setExpanded(True)
                 self.sidebar.setCurrentItem(current.child(0))
-
-    def _update_breadcrumb(self, item):
-        """Update breadcrumb bar with current route category > page."""
-        parent = item.parent()
-        # Use raw category name (stored in _ROLE_DESC on category items) for clean breadcrumb
-        category = ""
-        if parent:
-            category = parent.data(0, _ROLE_DESC) or parent.text(0)
-        page_name = item.data(0, _ROLE_NAME)
-        if not page_name:
-            page_name = item.text(0)
-            for suffix in _BADGE_SUFFIXES.values():
-                page_name = page_name.replace(suffix, "")
-        page_name = str(page_name)
-        desc = item.data(0, _ROLE_DESC) or ""
-        route = resolve(self._active_route_id or str(item.data(0, _ROLE_ROUTE_ID) or ""))
-        if route:
-            area = area_for_plugin(route.plugin_id)
-            category = area.label if area else route.category
-            page_name = route.label
-            desc = route.description
-        elif parent:
-            parent_route = str(parent.data(0, _ROLE_ROUTE_ID) or "")
-            area = area_for_plugin(str(item.data(0, _ROLE_ROUTE_ID) or ""))
-            category = area.label if area else parent_route or category
-        self._bc_category.setText(category)
-        self._bc_page.setText(page_name)
-        self._bc_desc.setText(desc)
-        if hasattr(self._breadcrumb_frame, "set_content"):
-            self._breadcrumb_frame.set_content(category, page_name, desc)
-        # Store parent item ref for breadcrumb click (v38.0)
-        self._bc_parent_item = parent
-
-    def _update_header_for_route(self, route: NavigationRoute, entry: SidebarEntry | None = None) -> None:
-        """Render the focused page header when a route has no visible sidebar row."""
-        placement = placement_for_route(route.id)
-        destination = get_destination(placement.destination_id) if placement is not None else None
-        area = area_for_plugin(route.plugin_id)
-        category = destination.label if destination else (area.label if area else route.category)
-        self._bc_category.setText(category)
-        self._bc_page.setText(route.label)
-        self._bc_desc.setText(route.description)
-        if hasattr(self._breadcrumb_frame, "set_content"):
-            self._breadcrumb_frame.set_content(category, route.label, route.description)
-        self._bc_parent_item = entry.tree_item.parent() if entry and entry.tree_item else None
-
-    def _sync_page_header_actions(self, route: NavigationRoute | None) -> None:
-        """Populate the shell header from an optional route-owned action provider."""
-        header = getattr(self, "_breadcrumb_frame", None)
-        clear_actions = getattr(header, "clear_actions", None)
-        widget: QWidget | None = None
-        actions: tuple[object, ...] = ()
-        if route is not None:
-            entry = self._sidebar_index.get(route.plugin_id)
-            if entry is not None:
-                widget = self._real_widget_for_entry(entry)
-                provider = getattr(widget, "page_header_actions", None)
-                if callable(provider):
-                    try:
-                        actions = tuple(provider(route))
-                    except (AttributeError, RuntimeError, TypeError, ValueError) as exc:
-                        logger.debug("Page header actions failed for %s: %s", route.id, exc)
-
-        if getattr(self, "_page_header_action_owner", None) is None and not actions:
-            return
-        if callable(clear_actions):
-            clear_actions()
-        self._page_header_action_owner = None
-        if not actions:
-            return
-        add_action = getattr(header, "add_action", None)
-        if not callable(add_action):
-            return
-        for action in actions:
-            control = action
-            primary = False
-            if isinstance(action, tuple) and len(action) == 2:
-                control, primary = action
-            if isinstance(control, QWidget):
-                add_action(control, primary=bool(primary))
-        self._page_header_action_owner = widget
 
     @staticmethod
     def _normalize_route_label(value: str) -> str:

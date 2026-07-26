@@ -21,6 +21,8 @@ from ui.components import (
     DangerButton,
     DefinitionList,
     GhostButton,
+    LocalViewItem,
+    LocalViewSwitcher,
     PageHeader,
     PageScaffold,
     PrimaryButton,
@@ -49,6 +51,8 @@ class TestCanonicalComponentApi(unittest.TestCase):
                 "GhostButton",
                 "InlineNotice",
                 "LoadingState",
+                "LocalViewItem",
+                "LocalViewSwitcher",
                 "PageHeader",
                 "PageScaffold",
                 "PrimaryButton",
@@ -171,6 +175,30 @@ class TestInteractiveComponents(unittest.TestCase):
             navigator.selector.itemData(1, Qt.ItemDataRole.AccessibleTextRole),
             "Technical details and history",
         )
+
+    def test_local_view_switcher_has_no_route_semantics(self) -> None:
+        switcher = LocalViewSwitcher()
+        switcher.set_views(
+            [
+                LocalViewItem("overview", "Overview", "Current summary"),
+                LocalViewItem("history", "History", "Saved checks"),
+            ]
+        )
+        callback = MagicMock()
+        switcher.viewActivated.connect(callback)
+
+        self.assertEqual(switcher.view_ids(), ("overview", "history"))
+        switcher.button_group.button(1).click()
+        callback.assert_called_once_with("history")
+        self.assertEqual(switcher.active_view_id(), "history")
+        self.assertFalse(hasattr(switcher, "routeRequested"))
+
+        switcher.set_compact(True)
+        self.assertTrue(switcher.is_compact())
+        self.assertFalse(switcher.button_row.isVisible())
+
+        with self.assertRaises(ValueError):
+            switcher.set_views([LocalViewItem("only", "Only")])
 
 
 class TestContentComponents(unittest.TestCase):
