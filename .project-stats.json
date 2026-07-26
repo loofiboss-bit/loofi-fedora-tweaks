@@ -39,11 +39,11 @@
   "utils_module_count": 101,
   "test_count": "6864",
   "coverage": "86.24",
-  "active_version": "21.0.0",
+  "active_version": "",
   "next_version": "",
-  "roadmap_status": "active",
+  "roadmap_status": "stable",
   "pipeline_version": "v21.0.0",
-  "pipeline_status": "active",
+  "pipeline_status": "completed",
   "python_version": "3.12",
   "framework": "PyQt6"
 }
