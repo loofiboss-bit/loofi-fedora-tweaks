@@ -320,12 +320,6 @@ jobs:
         run: |
           PYTHONPATH=loofi-fedora-tweaks python -m coverage report \
             --fail-under=${{ env.COVERAGE_THRESHOLD }}
-      - name: Upload test results
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: test-results
-          path: test-results.xml
       - name: Test report annotations
         if: always()
         uses: dorny/test-reporter@v3
@@ -347,12 +341,6 @@ jobs:
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
       - run: pip install bandit
       - run: bandit -r loofi-fedora-tweaks/ -ll -ii --skip B103,B104,B108,B310,B404,B603,B602 -f json -o bandit-report.json
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: security-report
-          path: bandit-report.json
-
   build:
     runs-on: ubuntu-latest
     container: fedora:44
@@ -384,11 +372,13 @@ jobs:
           name: rpm-package
           path: rpmbuild/RPMS/noarch/*.rpm
           if-no-files-found: error
+          retention-days: 1
       - uses: actions/upload-artifact@v4
         with:
           name: srpm-package
           path: rpmbuild/SRPMS/*.src.rpm
           if-no-files-found: error
+          retention-days: 1
 
   rpm_smoke_test:
     runs-on: ubuntu-latest
@@ -457,6 +447,7 @@ jobs:
           name: flatpak-package
           path: dist/flatpak/*.flatpak
           if-no-files-found: error
+          retention-days: 1
 
   build_sdist:
     runs-on: ubuntu-latest
@@ -482,6 +473,7 @@ jobs:
           name: sdist-package
           path: dist/*.tar.gz
           if-no-files-found: error
+          retention-days: 1
 
   auto_tag:
     if: |

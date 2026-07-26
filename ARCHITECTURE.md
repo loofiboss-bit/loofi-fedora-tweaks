@@ -3,7 +3,25 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Released version**: 19.0.0 "Steward" | **Active candidate**: 20.0.0 "Continuity" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 20.0.0 "Continuity" | **Active target**: 21.0.0 "Resolve" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+>
+> V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
+> V21 Phase 0 was activated by explicit user override; product metadata remains
+> v20 until the Resolve release gates pass.
+
+## Active Resolve architecture
+
+V21 is a coherence and lifecycle release, not a new feature family. Its
+canonical authority is the
+[Resolve plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md),
+[architecture contract](.workflow/specs/arch-v21.0.0.md), and
+[Phase 0 baseline](docs/reports/V21_PHASE0_BASELINE.md).
+
+Resolve will add an application-owned runtime teardown boundary, distinguish
+route navigation from small local view sets, and compose existing Home,
+System Check, Action Center, and activity identifiers into clearer
+presentation. It does not add a database, execution authority, mutating API,
+background probe, or compatibility-breaking route.
 
 ## Runtime entry modes
 

@@ -1,4 +1,9 @@
-# Loofi Fedora Tweaks v21.0.0 "UX Stabilization & Layout Integrity"
+# Archived Loofi Fedora Tweaks v21.0.0 "UX Stabilization & Layout Integrity"
+
+> Historical release evidence from the pre-normalization release line.
+> This is not the canonical v21.0.0 "Resolve" release documentation.
+> The original remote tag currently points to
+> `7328d87b078e3d3361523876eedfa545cbbe2a0d`.
 
 ## Release Highlights
 

@@ -23,7 +23,13 @@ Central documentation map for Loofi Fedora Tweaks.
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
 - `plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md` - Completed v19.0.0 "Steward" implementation scope and phase gates
-- `../.workflow/specs/arch-v20.0.0.md` - Active v20.0.0 "Continuity" architecture and safety contracts
+- `plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md` - Active v21.0.0 "Resolve" scope, phases, compatibility, and gates
+- `../.workflow/specs/arch-v21.0.0.md` - Active Resolve architecture and protected contracts
+- `../.workflow/specs/tasks-v21.0.0.md` - Resolve implementation and release checklist
+- `reports/V21_PHASE0_BASELINE.md` - Exact v20 checkout, runtime, UI, lifecycle, tag, and platform baseline
+- `reports/V21_PHASE0_STARTUP.json` - Reproducible offscreen startup and resource baseline
+- `reports/V21_PHASE0_SYSTEM_CHECK.json` - Read-only System Check duration baseline
+- `../.workflow/specs/arch-v20.0.0.md` - v20.0.0 "Continuity" architecture and safety contracts
 - `../.workflow/specs/tasks-v20.0.0.md` - Continuity implementation and verification checklist
 - `releases/RELEASE-NOTES-v20.0.0.md` - Trusted Change Journal, safe recovery, compatibility, and local release status
 - `reports/V19_PHASE0_BASELINE.md` - Steward authority, route/data, Home-state, performance, and platform scope lock
@@ -83,8 +89,12 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- User-facing guides are being updated for the local `v20.0.0 "Continuity"`
-  candidate. `v19.0.0 "Steward"` remains the latest independently verified
-  public release until v20 publication is separately authorized and read back.
+- `v20.0.0 "Continuity"` is the current product version and its GitHub release
+  is public. Fedora publication remains blocked because COPR/Pulp failed after
+  package build; the public Fedora 44 repository still exposes v19.
+- `v21.0.0 "Resolve"` is the sole active development target. Product metadata
+  remains v20 during implementation.
 - Historical v16 and v17 reports and screenshots remain release evidence for
   those versions. Do not present them as current Steward captures.
+- The archived pre-normalization v21 release notes under `archive/` are
+  historical evidence, not Resolve release documentation.

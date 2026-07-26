@@ -1,0 +1,124 @@
+{
+  "errors": [],
+  "generated_at": "2026-07-26T11:10:28.877103+00:00",
+  "persist": false,
+  "release": "v19 Steward working tree (metadata v18.0.0 Haven)",
+  "runs": [
+    {
+      "atomic": false,
+      "run": 1,
+      "source_durations_ms": {
+        "action-center": 37.677,
+        "maintenance": 430.043,
+        "pending-reboot": 0.973,
+        "state-integrity": 125.762,
+        "storage-reclaim": 95.905
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 431.925
+    },
+    {
+      "atomic": false,
+      "run": 2,
+      "source_durations_ms": {
+        "action-center": 25.593,
+        "maintenance": 309.141,
+        "pending-reboot": 10.955,
+        "state-integrity": 86.223,
+        "storage-reclaim": 26.144
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 310.553
+    },
+    {
+      "atomic": false,
+      "run": 3,
+      "source_durations_ms": {
+        "action-center": 27.665,
+        "maintenance": 301.033,
+        "pending-reboot": 4.647,
+        "state-integrity": 98.381,
+        "storage-reclaim": 27.746
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 302.065
+    },
+    {
+      "atomic": false,
+      "run": 4,
+      "source_durations_ms": {
+        "action-center": 13.986,
+        "maintenance": 295.782,
+        "pending-reboot": 2.383,
+        "state-integrity": 93.035,
+        "storage-reclaim": 53.461
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 297.112
+    },
+    {
+      "atomic": false,
+      "run": 5,
+      "source_durations_ms": {
+        "action-center": 24.997,
+        "maintenance": 287.305,
+        "pending-reboot": 12.053,
+        "state-integrity": 84.769,
+        "storage-reclaim": 25.168
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 288.84
+    },
+    {
+      "atomic": false,
+      "run": 6,
+      "source_durations_ms": {
+        "action-center": 32.104,
+        "maintenance": 332.99,
+        "pending-reboot": 3.903,
+        "state-integrity": 130.382,
+        "storage-reclaim": 32.202
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 334.283
+    },
+    {
+      "atomic": false,
+      "run": 7,
+      "source_durations_ms": {
+        "action-center": 32.918,
+        "maintenance": 308.234,
+        "pending-reboot": 16.965,
+        "state-integrity": 95.503,
+        "storage-reclaim": 69.351
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 309.881
+    }
+  ],
+  "schema_version": 1,
+  "source_median_budgets_ms": {
+    "action-center": 250.0,
+    "maintenance": 1200.0,
+    "pending-reboot": 250.0,
+    "state-integrity": 250.0,
+    "storage-reclaim": 500.0
+  },
+  "source_medians_ms": {
+    "action-center": 27.665,
+    "maintenance": 308.234,
+    "pending-reboot": 4.647,
+    "state-integrity": 95.503,
+    "storage-reclaim": 32.202
+  },
+  "status": "passed",
+  "total_median_budget_ms": 3500.0,
+  "total_median_ms": 309.881
+}

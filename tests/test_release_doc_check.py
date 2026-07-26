@@ -427,6 +427,30 @@ def test_release_doc_check_accepts_completed_current_with_newer_active(tmp_path)
     assert issues == []
 
 
+def test_release_doc_check_accepts_publication_blocked_current_with_newer_active(
+    tmp_path,
+):
+    module = _load_module(
+        "check_release_docs_test_blocked_current",
+        Path("scripts/check_release_docs.py"),
+    )
+    _write_release_files(tmp_path)
+    _activate_next_release(tmp_path)
+    roadmap = tmp_path / "ROADMAP.md"
+    roadmap.write_text(
+        roadmap.read_text(encoding="utf-8").replace(
+            '## [DONE] v26.0.1 "TestRelease"',
+            '## [PUBLICATION BLOCKED] v26.0.1 "TestRelease"',
+        ),
+        encoding="utf-8",
+    )
+    _set_module_paths(module, tmp_path)
+
+    issues = module.validate_release_docs(tmp_path, require_logs=False)
+
+    assert issues == []
+
+
 def test_release_doc_check_rejects_non_newer_active_release(tmp_path):
     module = _load_module(
         "check_release_docs_test_non_newer_active",

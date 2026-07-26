@@ -15,9 +15,43 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
 | v18.0.0 | Haven | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
 | v19.0.0 | Steward | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
-| v20.0.0 | Continuity | ACTIVE | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
+| v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
+| v21.0.0 | Resolve | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md) |
 
-## [ACTIVE] v20.0.0 "Continuity" — Trusted Activity and Recovery
+## [ACTIVE] v21.0.0 "Resolve" — Coherent Verified Work
+
+**Objective:** make the existing safe Fedora control center understandable as
+one See → Understand → Review → Apply → Verify journey and guarantee
+deterministic application teardown.
+
+### Required outcomes
+
+- One truthful Home summary and one primary next step without duplicated work.
+- Separate route navigation from small same-context local view switching.
+- Truthful Action Center review language for application operations.
+- State-driven System Check and Activity & Recovery presentation.
+- Grouped, searchable Specialist Tools and consistent Settings feedback.
+- No leaked EventBus, scheduler, QThread, timer, or plugin-worker resources.
+- Preserve every current route, persisted-data, Action Center, System Check,
+  CLI/API/daemon, Traditional/Atomic, and lazy-startup contract.
+
+### Phase status
+
+| Phase | Status | Deliverable |
+| --- | --- | --- |
+| 0 — Authority, baseline, and scope lock | DONE | [Exact v20 evidence and V21 authority](docs/reports/V21_PHASE0_BASELINE.md) |
+| 1 — Runtime lifecycle and shell | NOT STARTED | ApplicationRuntime, exact cleanup, shell extraction, local view switching |
+| 2 — Guided core journey | NOT STARTED | GuidedTask, Home, Apps, System Check, Activity & Recovery |
+| 3 — Supporting surfaces and accessibility | NOT STARTED | Specialist Tools, Settings, responsive and real-session validation |
+| 4 — Platform and release readiness | NOT STARTED | Lifecycle, performance, Fedora 44, packaging, and local release gates |
+
+The sole scope authority is the
+[canonical v21 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md). Product
+metadata remains v20.0.0 until all local Resolve gates pass. No tag mutation,
+commit, push, package publication, or remote release action occurs without
+separate authorization.
+
+## [PUBLICATION BLOCKED] v20.0.0 "Continuity" — Trusted Activity and Recovery
 
 **Objective:** compose trusted local change history into one privacy-bounded
 review surface and offer only state-verifiable recovery through Action Center.
@@ -43,12 +77,13 @@ review surface and offer only state-verifiable recovery through Action Center.
 | 2 — Safe recovery | DONE | DNF5 offline undo and exact rpm-ostree rollback |
 | 3 — Interfaces and product integration | DONE | UI, CLI, API, catalog, support bundle, unified navigation |
 | 4 — Mutation closure | DONE | Named legacy plans and inert direct helpers |
-| 5 — Release preparation | LOCAL READY | Full local gates and evidence passed; publication explicitly excluded |
+| 5 — Release preparation | PUBLICATION BLOCKED | GitHub published; COPR build `10773551` failed in Pulp and Fedora 44 public metadata remains on v19 |
 
 The exact implementation and acceptance authority is
 [the v20 architecture](.workflow/specs/arch-v20.0.0.md) and
-[task contract](.workflow/specs/tasks-v20.0.0.md). No v20 tag or publication
-occurs without separate authorization.
+[task contract](.workflow/specs/tasks-v20.0.0.md). C11-C13 remain open. The
+user explicitly allowed V21 Phase 0 to proceed without treating V20 as
+complete.
 
 ## [DONE] v19.0.0 "Steward" — Guided System Checks
 

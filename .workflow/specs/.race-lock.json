@@ -1,7 +1,11 @@
 {
-  "version": "v20.0.0",
-  "started_at": "20260725_200945",
+  "version": "v21.0.0",
+  "started_at": "20260726_111101",
   "status": "active",
-  "target_version": "v20.0.0",
-  "bumped_at": "2026-07-25T20:09:45.078965+00:00"
+  "target_version": "v21.0.0",
+  "phase": "phase-0",
+  "baseline_commit": "841218ef4dbfa6368136bd3d8cbc1c394ec81258",
+  "product_version": "v20.0.0",
+  "v20_publication_status": "blocked",
+  "override_recorded_at": "2026-07-26T11:11:01+00:00"
 }

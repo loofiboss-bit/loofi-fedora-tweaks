@@ -60,7 +60,7 @@ _TASK_CHECKBOX_RE = re.compile(
     re.MULTILINE,
 )
 _ROADMAP_RELEASE_RE = re.compile(
-    r'^## \[(ACTIVE|DONE)\] v(\d+\.\d+\.\d+)(?:\s+"([^"]+)")?',
+    r'^## \[(ACTIVE|DONE|PUBLICATION BLOCKED)\] v(\d+\.\d+\.\d+)(?:\s+"([^"]+)")?',
     re.MULTILINE,
 )
 
@@ -327,10 +327,19 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
         status == "DONE" and release_version == version
         for status, release_version, _codename in releases
     )
-    if not current_active and not current_done:
-        errors.append(f"ROADMAP missing ACTIVE or DONE section for {tag}")
-    if current_active and current_done:
-        errors.append(f"ROADMAP marks {tag} as both ACTIVE and DONE")
+    current_publication_blocked = any(
+        status == "PUBLICATION BLOCKED" and release_version == version
+        for status, release_version, _codename in releases
+    )
+    current_status_count = sum(
+        (current_active, current_done, current_publication_blocked)
+    )
+    if current_status_count == 0:
+        errors.append(
+            f"ROADMAP missing ACTIVE, DONE, or PUBLICATION BLOCKED section for {tag}"
+        )
+    if current_status_count > 1:
+        errors.append(f"ROADMAP assigns multiple statuses to {tag}")
     if len(active_releases) > 1:
         errors.append(
             "ROADMAP must have at most one ACTIVE release section, "
@@ -342,7 +351,7 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     workflow_tag = tag
     workflow_codename = codename
     workflow_is_active = current_active
-    if current_done and len(active_releases) == 1:
+    if (current_done or current_publication_blocked) and len(active_releases) == 1:
         _status, active_version, active_codename = active_releases[0]
         if _version_tuple(active_version) <= _version_tuple(version):
             errors.append(
