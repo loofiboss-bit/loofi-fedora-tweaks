@@ -39,9 +39,9 @@
 
 ## Completion
 
-- [ ] [post-publish] Verify canonical CI, CodeQL, tag lineage, release assets,
+- [x] [post-publish] Verify canonical CI, CodeQL, tag lineage, release assets,
   checksums, SBOM, and provenance.
-- [ ] [post-publish] Verify COPR terminal success and clean Fedora 44
+- [x] [post-publish] Verify COPR terminal success and clean Fedora 44
   Traditional installation.
-- [ ] [post-publish] Verify Atomic package/deployment evidence, public
+- [x] [post-publish] Verify Atomic package/deployment evidence, public
   documentation, and final roadmap/race-lock closure.

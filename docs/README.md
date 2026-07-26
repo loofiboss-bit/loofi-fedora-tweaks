@@ -35,6 +35,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V21_PHASE3_STARTUP.json` - Resolve Phase 3 cold-start, one-provider, probe, timer, thread, import, and RSS evidence
 - `reports/V21_PHASE4_PLATFORM_QUALITY.md` - Resolve lifecycle, Fedora 44, package, security, and complete local quality qualification
 - `reports/V21_PHASE4_STARTUP.json` - Final Resolve implementation-phase startup, resource, import, and RSS evidence
+- `reports/V21_RELEASE_PUBLICATION.md` - Exact Resolve GitHub, COPR, clean-install, public-documentation, and lineage readback
 - `releases/RELEASE-NOTES-v21.0.0.md` - Resolve guided-work, lifecycle, compatibility, and upgrade notes
 - `../.workflow/specs/arch-v20.0.0.md` - v20.0.0 "Continuity" architecture and safety contracts
 - `../.workflow/specs/tasks-v20.0.0.md` - Continuity implementation and verification checklist
@@ -96,8 +97,8 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- `v21.0.0 "Resolve"` is the sole active release target and current product
-  metadata. Publication evidence remains separate from local qualification.
+- `v21.0.0 "Resolve"` is the current completed public release. Its GitHub and
+  COPR evidence is recorded separately from local qualification.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its
   COPR build failed in Pulp after package build.
 - Historical v16 and v17 reports and screenshots remain release evidence for

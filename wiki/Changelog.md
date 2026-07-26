@@ -1,5 +1,18 @@
 # Changelog
 
+## v21.0.0 — Resolve
+
+- Connected Home, application review, System Check, Action Center, and Activity
+  into one See, Understand, Review, Apply, and Verify journey.
+- Added deterministic application-owned cleanup for shell resources.
+- Added state-driven local views, grouped Specialist Tools, and consistent
+  Settings feedback.
+- Strengthened responsive, keyboard, RTL, Wayland, X11, high-contrast, and
+  assistive-technology behavior while preserving all stable contracts.
+
+**Test Suite**: 6,863 passed, 61 skipped, 1,057 subtests, and 86.57% coverage,
+with exact GitHub release, COPR build, and clean Fedora 44 install readback.
+
 ## v20.0.0 — Continuity
 
 - Added the Trusted Change Journal across Action Center, DNF5, rpm-ostree,

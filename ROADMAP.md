@@ -16,9 +16,9 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v18.0.0 | Haven | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
 | v19.0.0 | Steward | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
 | v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
-| v21.0.0 | Resolve | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md) |
+| v21.0.0 | Resolve | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md), [public evidence](docs/reports/V21_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v21.0.0 "Resolve" — Coherent Verified Work
+## [DONE] v21.0.0 "Resolve" — Coherent Verified Work
 
 **Objective:** make the existing safe Fedora control center understandable as
 one See → Understand → Review → Apply → Verify journey and guarantee
@@ -44,13 +44,14 @@ deterministic application teardown.
 | 2 — Guided core journey | DONE | [GuidedTask, Home, Apps, System Check, and Activity & Recovery](docs/reports/V21_PHASE2_GUIDED_CORE.md) |
 | 3 — Supporting surfaces and accessibility | DONE | [Grouped Specialist Tools, Settings feedback, responsive, AT-SPI, Wayland, and xcb validation](docs/reports/V21_PHASE3_SUPPORTING_SURFACES.md) |
 | 4 — Platform and release readiness | DONE | [Lifecycle, performance, Fedora 44, packaging, security, and complete local gates](docs/reports/V21_PHASE4_PLATFORM_QUALITY.md) |
-| 5 — Release readiness | ACTIVE | v21 metadata, exact candidate assets, legacy-tag preservation, and canonical publication |
+| 5 — Release readiness | DONE | [Exact GitHub, COPR, package-install, documentation, and lineage readback](docs/reports/V21_RELEASE_PUBLICATION.md) |
 
 The sole scope authority is the
 [canonical v21 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md). Product
 metadata was synchronized to v21.0.0 after all local Resolve gates passed. The
-user separately authorized canonical GitHub and COPR publication; public
-completion still requires independent readback.
+user separately authorized canonical GitHub and COPR publication. The release
+is complete after independent tag, CI, asset, provenance, COPR API, repository,
+and clean Fedora 44 installation readback.
 
 ## [PUBLICATION BLOCKED] v20.0.0 "Continuity" — Trusted Activity and Recovery
 

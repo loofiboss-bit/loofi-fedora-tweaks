@@ -2,20 +2,22 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v20.0.0 "Continuity"<br>
+**Current release:** v21.0.0 "Resolve"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
-## What Continuity changes
+## What Resolve changes
 
-- **Trusted activity:** one privacy-bounded journal composes Action Center,
-  DNF5, rpm-ostree, Flatpak, fwupd, and Loofi records without a new database.
-- **Conservative recovery:** only exact DNF5 install/remove transactions and
-  exact rpm-ostree deployment rollbacks can create recovery plans.
-- **Action Center remains authoritative:** recovery creates a plan and still
-  requires separate confirmation, execution, and verification.
-- **Unified navigation:** Specialist Tools are always discoverable without a
-  global Standard/Advanced safety switch.
+- **Guided work:** Home presents one truthful summary and one primary next step
+  over the existing safe routes and state.
+- **Explicit review:** application install and removal hand off to Action
+  Center before confirmation and execution.
+- **State-driven detail:** System Check and Activity & Recovery show local
+  views only when their current state supports them.
+- **Deterministic teardown:** application-owned timers, workers, schedulers,
+  subscriptions, Pulse, and plugins stop with the shell.
+- **Responsive navigation:** compact, scaled, RTL, Wayland, X11, keyboard, and
+  assistive-technology layouts preserve all stable routes.
 - **Compatibility preserved:** stable routes, aliases, favorites, state
   schemas, System Check, CLI, API, daemon, and IPC remain intact.
 
@@ -60,13 +62,16 @@ confirmation or privilege policy.
 
 ## Release status
 
-Continuity passed 6,822 tests, 68 expected skips, 1,057 subtests, and 86.10%
+Resolve passed 6,863 tests, 61 expected skips, 1,057 subtests, and 86.57%
 coverage, plus lint, typing, architecture, package, product-catalog, and
-offscreen UI gates. The historical Synapse lineage is preserved as
-`legacy-v20.0.0-synapse`.
+offscreen UI gates. The historical occupied v21 lineages are preserved as
+`legacy-v21.0.0-ux-stabilization` and
+`legacy-v21.0.1-python-jose-packaging`.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release notes: [v20.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v20.0.0.md)
+- Release: [v21.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v21.0.0)
+- Release notes: [v21.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v21.0.0.md)
+- Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 
 For support, run `loofi-fedora-tweaks --cli doctor` and
