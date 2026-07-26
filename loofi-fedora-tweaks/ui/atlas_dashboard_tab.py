@@ -8,7 +8,7 @@ from typing import Any, Protocol
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLayout, QVBoxLayout, QWidget
 
-from core.home import AttentionItem, HomeStatus, HomeSummary, HomeTask, Recommendation
+from core.home import AttentionItem, GuidedTask, HomeStatus, HomeSummary, HomeTask, Recommendation
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 
@@ -146,9 +146,11 @@ class AtlasDashboardTab(BaseTab):
         self.attention_container = QVBoxLayout()
         self.tasks_container = QVBoxLayout()
         self.recent_container = QVBoxLayout()
+        self.active_work_container = QVBoxLayout()
         self.scaffold.add_layout(self.primary_container)
         self.scaffold.add_layout(self.attention_container)
         self.scaffold.add_layout(self.tasks_container)
+        self.scaffold.add_layout(self.active_work_container)
         self.scaffold.add_layout(self.recent_container)
         self.scaffold.content_layout.addStretch()
 
@@ -168,9 +170,12 @@ class AtlasDashboardTab(BaseTab):
         self._clear_layout(self.primary_container)
         self._clear_layout(self.attention_container)
         self._clear_layout(self.tasks_container)
+        self._clear_layout(self.active_work_container)
         self._clear_layout(self.recent_container)
 
-        if summary.primary_recommendation is not None:
+        if summary.primary_task is not None:
+            self._add_guided_task(summary.primary_task, primary=True)
+        elif summary.primary_recommendation is not None:
             self._add_primary(summary.primary_recommendation)
         if summary.attention_items:
             self.attention_container.addWidget(self._section_label(self.tr("Also needs attention")))
@@ -183,6 +188,16 @@ class AtlasDashboardTab(BaseTab):
         for task in summary.common_tasks[:4]:
             task_grid.add_card(self._task_card(task))
         self.tasks_container.addWidget(task_grid)
+
+        if summary.active_work is not None:
+            self.active_work_container.addWidget(
+                self._section_label(self.tr("Active work"))
+            )
+            self._add_guided_task(
+                summary.active_work,
+                primary=False,
+                target=self.active_work_container,
+            )
 
         if summary.recent_change is not None:
             self.recent_container.addWidget(self._section_label(self.tr("Recent activity")))
@@ -461,6 +476,36 @@ class AtlasDashboardTab(BaseTab):
         actions.add_action(button, primary=True)
         card.add_widget(actions)
         self.primary_container.addWidget(card)
+
+    def _add_guided_task(
+        self,
+        task: GuidedTask,
+        *,
+        primary: bool,
+        target: QVBoxLayout | None = None,
+    ) -> None:
+        container = target or self.primary_container
+        if primary:
+            container.addWidget(self._section_label(self.tr("Recommended next step")))
+        card = Card(self.tr(task.title), self.tr(task.summary))
+        card.setObjectName("homePrimaryTask" if primary else "homeActiveWork")
+        card.setProperty("taskSource", task.source)
+        card.setProperty("sourceId", task.source_id)
+        actions = ActionBar()
+        button_type = PrimaryButton if primary else GhostButton
+        button = button_type(
+            self.tr(task.action_label),
+            description=self.tr(task.summary),
+        )
+        button.setAccessibleName(
+            self.tr("%1: %2")
+            .replace("%1", self.tr(task.action_label))
+            .replace("%2", self.tr(task.title))
+        )
+        self._connect_route_button(button, task.route_id)
+        actions.add_action(button, primary=True)
+        card.add_widget(actions)
+        container.addWidget(card)
 
     def _attention_card(self, item: AttentionItem) -> Card:
         card = Card(self.tr(item.title), self.tr(item.summary))

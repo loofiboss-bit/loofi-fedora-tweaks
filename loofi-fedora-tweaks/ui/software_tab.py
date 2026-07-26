@@ -20,6 +20,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
+    QComboBox,
     QPushButton,
     QScrollArea,
     QStackedWidget,
@@ -31,7 +32,7 @@ from utils.command_runner import CommandRunner
 from utils.software_utils import SoftwareUtils
 
 from ui.base_tab import BaseTab
-from ui.components import DetailsDisclosure, PageScaffold
+from ui.components import DetailsDisclosure, PageScaffold, StatusBadge
 from ui.shared_states import EmptyState, LoadingState, UnavailableState
 from ui.tooltips import (
     SW_CODECS,
@@ -89,7 +90,37 @@ class _ApplicationsSubTab(BaseTab):
         self._search_bar.setToolTip(SW_SEARCH)
         self._search_bar.setClearButtonEnabled(True)
         self._search_bar.textChanged.connect(self._filter_apps)
-        layout.addWidget(self._search_bar)
+        filters = QHBoxLayout()
+        filters.addWidget(self._search_bar, 1)
+        self._source_filter = QComboBox()
+        self._source_filter.setObjectName("applicationSourceFilter")
+        self._source_filter.setAccessibleName(self.tr("Filter by application source"))
+        for label, value in (
+            (self.tr("All sources"), "all"),
+            (self.tr("Fedora RPM"), "fedora"),
+            (self.tr("Flathub"), "flatpak"),
+            (self.tr("Other sources"), "other"),
+        ):
+            self._source_filter.addItem(label, value)
+        self._source_filter.currentIndexChanged.connect(
+            lambda _index: self._filter_apps(self._search_bar.text())
+        )
+        filters.addWidget(self._source_filter)
+        self._status_filter = QComboBox()
+        self._status_filter.setObjectName("applicationStatusFilter")
+        self._status_filter.setAccessibleName(self.tr("Filter by installation status"))
+        for label, value in (
+            (self.tr("All statuses"), "all"),
+            (self.tr("Installed"), "installed"),
+            (self.tr("Available"), "available"),
+            (self.tr("Source setup required"), "unavailable"),
+        ):
+            self._status_filter.addItem(label, value)
+        self._status_filter.currentIndexChanged.connect(
+            lambda _index: self._filter_apps(self._search_bar.text())
+        )
+        filters.addWidget(self._status_filter)
+        layout.addLayout(filters)
 
         self.catalog_loading = LoadingState(self.tr("Loading the application catalogue…"))
         self.catalog_empty = EmptyState(
@@ -195,11 +226,6 @@ class _ApplicationsSubTab(BaseTab):
 
         lbl_name = QLabel(f"<b>{app_name}</b>")
         lbl_desc = QLabel(app_desc)
-        lbl_source = QLabel(self.tr("Source: %s") % presentation.source)
-        lbl_source.setToolTip(presentation.explanation)
-
-        btn_install = QPushButton(self.tr("Install"))
-        btn_install.setAccessibleName(self.tr("Install {}").format(app_name))
 
         # Check if installed
         chk_cmd = app_data.get("check_cmd")
@@ -207,9 +233,52 @@ class _ApplicationsSubTab(BaseTab):
         if chk_cmd:
             is_installed = self.check_installed(chk_cmd)
 
+        source_kind = (
+            "flatpak"
+            if presentation.source == "Flathub (Flatpak)"
+            else "fedora"
+            if presentation.source == "Fedora RPM"
+            else "other"
+        )
+        status_kind = (
+            "installed"
+            if is_installed
+            else "available"
+            if presentation.available
+            else "unavailable"
+        )
+        row_widget.setProperty(
+            "appSearchText",
+            " ".join((str(app_name), str(app_desc), presentation.source)).lower(),
+        )
+        row_widget.setProperty("appSource", source_kind)
+        row_widget.setProperty("appStatus", status_kind)
+
+        badges = QVBoxLayout()
+        source_badge = StatusBadge(
+            self.tr("Source: %1").replace("%1", presentation.source),
+            kind="info",
+        )
+        source_badge.setObjectName("applicationSourceBadge")
+        source_badge.setToolTip(presentation.explanation)
+        status_badge = StatusBadge(
+            self.tr("Installed")
+            if is_installed
+            else self.tr("Available")
+            if presentation.available
+            else self.tr("Source setup required"),
+            kind="success" if is_installed else "neutral",
+        )
+        status_badge.setObjectName("applicationStatusBadge")
+        badges.addWidget(source_badge)
+        badges.addWidget(status_badge)
+
+        btn_install = QPushButton(self.tr("Review install"))
+        btn_install.setAccessibleName(self.tr("Review install for {}").format(app_name))
+
         if is_installed:
-            btn_install.setText(self.tr("Remove"))
-            btn_install.setAccessibleName(self.tr("Remove {}").format(app_name))
+            btn_install.setText(self.tr("Review removal"))
+            btn_install.setAccessibleName(self.tr("Review removal for {}").format(app_name))
             btn_install.setObjectName("swInstalledBtn")
             btn_install.clicked.connect(
                 lambda checked, app=app_data: self.run_app_action(
@@ -231,7 +300,7 @@ class _ApplicationsSubTab(BaseTab):
 
         row_layout.addWidget(lbl_name)
         row_layout.addWidget(lbl_desc)
-        row_layout.addWidget(lbl_source)
+        row_layout.addLayout(badges)
         row_layout.addStretch()
         row_layout.addWidget(btn_install)
 
@@ -275,8 +344,10 @@ class _ApplicationsSubTab(BaseTab):
             self.show_error(self.tr("Operation failed (exit code {})").format(exit_code))
 
     def _filter_apps(self: typing.Any, text: str) -> typing.Any:
-        """Filter visible app rows by name or description (case-insensitive)."""
+        """Apply search, source, and installed-state filters together."""
         query = text.strip().lower()
+        source = str(self._source_filter.currentData() or "all")
+        status = str(self._status_filter.currentData() or "all")
         for i in range(self.scroll_layout.count()):
             item = self.scroll_layout.itemAt(i)
             widget = item.widget() if item else None
@@ -284,14 +355,13 @@ class _ApplicationsSubTab(BaseTab):
                 continue
             if not isinstance(widget, QFrame):
                 continue
-            # Search through QLabel children for name and description text
-            labels = widget.findChildren(QLabel)
-            match = not query  # Show all when query is empty
-            for lbl in labels:
-                if query in lbl.text().lower():
-                    match = True
-                    break
-            widget.setVisible(match)
+            search_text = str(widget.property("appSearchText") or "")
+            source_value = str(widget.property("appSource") or "")
+            status_value = str(widget.property("appStatus") or "")
+            matches_query = not query or query in search_text
+            matches_source = source == "all" or source == source_value
+            matches_status = status == "all" or status == status_value
+            widget.setVisible(matches_query and matches_source and matches_status)
 
 
 # ---------------------------------------------------------------------------

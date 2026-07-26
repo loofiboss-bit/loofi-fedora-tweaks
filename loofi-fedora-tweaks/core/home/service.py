@@ -18,6 +18,8 @@ from utils.history import HistoryManager
 
 from .models import (
     AttentionItem,
+    GuidedTask,
+    GuidedTaskSource,
     HomeCheckState,
     HomeDataState,
     HomeFreshnessState,
@@ -129,6 +131,14 @@ class HomeService:
             if item is not primary and item.kind != "no_action"
         )[:3]
         overall = self._overall_state(data_state, primary)
+        primary_task = self._guided_primary_task(
+            primary,
+            now=now,
+            latest=latest,
+            plans=plans,
+            runs=runs,
+        )
+        active_work = self._active_work_task(runs, primary_task)
         return HomeSummary(
             overall_state=overall,
             data_state=data_state,
@@ -153,6 +163,142 @@ class HomeService:
             freshness_state=self._freshness_state(data_state),
             last_check_state=self._last_check_state(latest),
             check_now_available=True,
+            primary_task=primary_task,
+            active_work=active_work,
+        )
+
+    @classmethod
+    def _guided_primary_task(
+        cls,
+        recommendation: Recommendation | None,
+        *,
+        now: float,
+        latest: Any | None,
+        plans: Sequence[Any],
+        runs: Sequence[Any],
+    ) -> GuidedTask | None:
+        """Project one recommendation through existing persisted identifiers."""
+        if recommendation is None:
+            return None
+        if recommendation.kind in {"action_run_review", "pending_reboot"}:
+            candidates = [
+                run
+                for run in runs
+                if str(getattr(run, "state", ""))
+                in {
+                    "running",
+                    "verifying",
+                    "awaiting_reboot",
+                    "failed",
+                    "interrupted",
+                    "verification_failed",
+                }
+            ]
+            if candidates:
+                run = max(
+                    candidates,
+                    key=lambda item: float(getattr(item, "updated_at", 0.0) or 0.0),
+                )
+                run_id = str(getattr(run, "run_id", "") or "")
+                source: GuidedTaskSource = (
+                    "reboot"
+                    if str(getattr(run, "state", "")) == "awaiting_reboot"
+                    or bool(getattr(run, "reboot_required", False))
+                    else "run"
+                )
+                return GuidedTask(
+                    recommendation.id,
+                    source,
+                    recommendation.title,
+                    recommendation.summary,
+                    recommendation.route_id,
+                    run_id,
+                )
+        if recommendation.kind == "action_center_review":
+            ready = [
+                plan
+                for plan in plans
+                if str(getattr(plan, "state", "")) in {"ready", "needs_review"}
+                and float(getattr(plan, "expires_at", 0.0) or 0.0) > now
+            ]
+            if ready:
+                plan = max(
+                    ready,
+                    key=lambda item: float(getattr(item, "created_at", 0.0) or 0.0),
+                )
+                return GuidedTask(
+                    recommendation.id,
+                    "plan",
+                    recommendation.title,
+                    recommendation.summary,
+                    recommendation.route_id,
+                    str(getattr(plan, "plan_id", "") or ""),
+                )
+        payload = cls._system_check_payload(latest)
+        check_id = str(payload.get("result_id") or payload.get("check_id") or "")
+        if check_id and recommendation.kind in {
+            "system_check_partial",
+            "system_check_finding",
+            "resolution_check",
+        }:
+            return GuidedTask(
+                recommendation.id,
+                "system_check",
+                recommendation.title,
+                recommendation.summary,
+                recommendation.route_id,
+                check_id,
+            )
+        return GuidedTask(
+            recommendation.id,
+            "route",
+            recommendation.title,
+            recommendation.summary,
+            recommendation.route_id,
+            recommendation.route_id,
+        )
+
+    @staticmethod
+    def _active_work_task(
+        runs: Sequence[Any],
+        primary_task: GuidedTask | None,
+    ) -> GuidedTask | None:
+        active = [
+            run
+            for run in runs
+            if str(getattr(run, "state", ""))
+            in {"running", "verifying", "awaiting_reboot"}
+        ]
+        if not active:
+            return None
+        run = max(
+            active,
+            key=lambda item: float(getattr(item, "updated_at", 0.0) or 0.0),
+        )
+        run_id = str(getattr(run, "run_id", "") or "")
+        if primary_task is not None and primary_task.source_id == run_id:
+            return None
+        state = str(getattr(run, "state", "") or "")
+        if state == "awaiting_reboot":
+            title = "Restart required"
+            summary = "A reviewed maintenance run is waiting for reboot-aware verification."
+            source: GuidedTaskSource = "reboot"
+        elif state == "verifying":
+            title = "Verification in progress"
+            summary = "Action Center is verifying the reviewed maintenance result."
+            source = "run"
+        else:
+            title = "Maintenance in progress"
+            summary = "A reviewed Action Center operation is still running."
+            source = "run"
+        return GuidedTask(
+            f"active:{run_id}",
+            source,
+            title,
+            summary,
+            "maintenance:action-center",
+            run_id,
+            "Open Action Center",
         )
 
     @staticmethod
@@ -683,8 +829,12 @@ class HomeService:
 
     @staticmethod
     def _summary_text(data_state: HomeDataState, primary: Recommendation | None) -> str:
-        if primary is not None:
-            return primary.summary
+        if primary is not None and primary.severity == "critical":
+            return "Saved system status contains an item that needs review."
+        if primary is not None and primary.kind != "no_action":
+            return "Saved system status contains an item that may need attention."
+        if data_state == "fresh":
+            return "Saved system status does not currently report an issue."
         if data_state == "empty":
             return "No saved system health snapshot is available yet."
         return "System status is not available."

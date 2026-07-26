@@ -41,6 +41,7 @@ def _install_stubs():
     qt_widgets.QFrame = _Dummy
     qt_widgets.QCheckBox = _Dummy
     qt_widgets.QLineEdit = _Dummy
+    qt_widgets.QComboBox = _Dummy
     qt_widgets.QScrollArea = _Dummy
     qt_widgets.QListWidget = _Dummy
 
@@ -145,6 +146,7 @@ def _install_stubs():
     components_mod = types.ModuleType("ui.components")
     components_mod.PageScaffold = _Dummy
     components_mod.DetailsDisclosure = _Dummy
+    components_mod.StatusBadge = _Dummy
 
     module_map = {
         "PyQt6": pyqt,

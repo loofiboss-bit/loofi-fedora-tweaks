@@ -12,7 +12,15 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QAbstractButton, QFrame, QLabel, QPushButton, QScrollArea
 
-from core.home import AttentionItem, HomeStatus, HomeSummary, HomeTask, RecentChange, Recommendation
+from core.home import (
+    AttentionItem,
+    GuidedTask,
+    HomeStatus,
+    HomeSummary,
+    HomeTask,
+    RecentChange,
+    Recommendation,
+)
 from ui.components import ClickableCard, DetailsDisclosure, PageScaffold, StatusBadge
 from ui.atlas_dashboard_tab import AtlasDashboardTab
 from ui.design.theme_manager import ThemeManager
@@ -54,6 +62,23 @@ def _summary() -> HomeSummary:
         ),
         last_checked_at=datetime(2026, 7, 24, 10, 30, tzinfo=timezone.utc),
         freshness_state="fresh",
+        primary_task=GuidedTask(
+            "run",
+            "run",
+            "Review maintenance",
+            "An interrupted run needs review.",
+            "maintenance:action-center",
+            "run-1",
+        ),
+        active_work=GuidedTask(
+            "active:run-2",
+            "run",
+            "Maintenance in progress",
+            "A reviewed operation is still running.",
+            "maintenance:action-center",
+            "run-2",
+            "Open Action Center",
+        ),
     )
 
 
@@ -65,9 +90,10 @@ class TestCanonicalHomeUi(unittest.TestCase):
     def test_content_limits_and_no_home_timer(self):
         tab = AtlasDashboardTab(home_service=_SummaryService(_summary()))
 
-        self.assertEqual(len(tab.findChildren(QFrame, "homePrimaryRecommendation")), 1)
+        self.assertEqual(len(tab.findChildren(QFrame, "homePrimaryTask")), 1)
         self.assertEqual(len(tab.findChildren(QFrame, "homeAttentionItem")), 3)
         self.assertEqual(len(tab.findChildren(QFrame, "homeTask")), 4)
+        self.assertEqual(len(tab.findChildren(QFrame, "homeActiveWork")), 1)
         self.assertEqual(len(tab.findChildren(QFrame, "homeRecentChange")), 1)
         self.assertEqual(tab.findChildren(QTimer), [])
         self.assertEqual(len(tab.findChildren(PageScaffold)), 1)
@@ -113,6 +139,15 @@ class TestCanonicalHomeUi(unittest.TestCase):
         self.assertNotIn("plan", button_text)
         self.assertNotIn("run", button_text)
         self.assertNotIn("verify", button_text)
+
+    def test_guided_tasks_expose_only_inert_source_identifiers(self):
+        tab = AtlasDashboardTab(home_service=_SummaryService(_summary()))
+        primary = tab.findChild(QFrame, "homePrimaryTask")
+        active = tab.findChild(QFrame, "homeActiveWork")
+
+        self.assertEqual(primary.property("taskSource"), "run")
+        self.assertEqual(primary.property("sourceId"), "run-1")
+        self.assertEqual(active.property("sourceId"), "run-2")
 
     def test_check_now_is_directly_visible_for_empty_stale_and_error_states(self):
         for data_state, freshness in (

@@ -7,7 +7,6 @@ from typing import Any, Protocol
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
-    QHBoxLayout,
     QLabel,
     QStackedWidget,
     QVBoxLayout,
@@ -29,10 +28,10 @@ from ui.components import (
     DetailsDisclosure,
     EmptyState,
     InlineNotice,
+    LocalViewItem,
+    LocalViewSwitcher,
     PageScaffold,
     SecondaryButton,
-    SectionItem,
-    SectionNavigator,
     StatusBadge,
 )
 
@@ -95,19 +94,19 @@ class SystemCheckTab(QWidget, PluginInterface):
         explanation.setObjectName("systemCheckEvidenceExplanation")
         self.scaffold.add_widget(explanation)
 
-        content = QHBoxLayout()
+        content = QVBoxLayout()
         content.setSpacing(16)
-        self.navigator = SectionNavigator()
-        self.navigator.setObjectName("systemCheckNavigator")
-        self.navigator.set_sections(
+        self.view_switcher = LocalViewSwitcher()
+        self.view_switcher.setObjectName("systemCheckViewSwitcher")
+        self.view_switcher.set_views(
             [
-                SectionItem("overview", self.tr("Overview"), self.tr("Latest saved System Check status."), icon="overview-dashboard"),
-                SectionItem("findings", self.tr("Current findings"), self.tr("Issues from the latest saved check."), icon="maintenance-health"),
-                SectionItem("history", self.tr("History"), self.tr("Before/after state and supporting metrics."), icon="logs"),
+                LocalViewItem("overview", self.tr("Overview"), self.tr("Latest saved System Check status.")),
+                LocalViewItem("findings", self.tr("Findings"), self.tr("Issues from the latest saved check.")),
+                LocalViewItem("history", self.tr("History"), self.tr("Before/after state and supporting metrics.")),
             ]
         )
-        self.navigator.sectionActivated.connect(self.select_section)
-        content.addWidget(self.navigator)
+        self.view_switcher.viewActivated.connect(self.select_view)
+        content.addWidget(self.view_switcher)
 
         self.stack = QStackedWidget()
         self.stack.setObjectName("systemCheckViewStack")
@@ -245,12 +244,7 @@ class SystemCheckTab(QWidget, PluginInterface):
                     kind=kind,
                 )
             )
-            destination = (
-                finding.route_id
-                or finding.action_id
-                or finding.manual_guidance
-                or self.tr("Manual guidance unavailable")
-            )
+            destination = self._review_destination_label(finding)
             route = QLabel(self.tr("Next review: %1").replace("%1", destination))
             route.setWordWrap(True)
             route.setObjectName("systemCheckFindingDestination")
@@ -333,7 +327,7 @@ class SystemCheckTab(QWidget, PluginInterface):
             card = Card(
                 self.tr("Linked maintenance"),
                 self.tr("%1 · Run %2")
-                .replace("%1", outcome.action_id)
+                .replace("%1", self._action_label(outcome.action_id))
                 .replace("%2", outcome.run_id),
             )
             card.setObjectName("systemCheckMaintenanceOutcome")
@@ -400,11 +394,11 @@ class SystemCheckTab(QWidget, PluginInterface):
         self.history_layout.addWidget(self.metric_disclosure)
         self.history_layout.addStretch()
 
-    def select_section(self, section_id: str) -> bool:
-        index = self._SECTION_INDEX.get(str(section_id))
+    def select_view(self, view_id: str) -> bool:
+        index = self._SECTION_INDEX.get(str(view_id))
         if index is None:
             return False
-        self.navigator.set_active_section(str(section_id))
+        self.view_switcher.set_active_view(str(view_id))
         self.stack.setCurrentIndex(index)
         return True
 
@@ -415,10 +409,10 @@ class SystemCheckTab(QWidget, PluginInterface):
             self._origin_route = route_id
         subroute = str(getattr(route, "subroute", "") or "")
         if route_id == "maintenance:health-timeline" or subroute in {"history", "timeline", "health-timeline"}:
-            return self.select_section("history")
+            return self.select_view("history")
         if subroute == "findings":
-            return self.select_section("findings")
-        return self.select_section("overview")
+            return self.select_view("findings")
+        return self.select_view("overview")
 
     def _request_action_review(self, finding: FindingView) -> None:
         state = self._state
@@ -438,10 +432,32 @@ class SystemCheckTab(QWidget, PluginInterface):
             },
         )
 
+    def _review_destination_label(self, finding: FindingView) -> str:
+        if finding.route_id:
+            from core.product_catalog import catalog_entry
+
+            entry = catalog_entry(finding.route_id)
+            if entry is not None:
+                return self.tr(entry.route.label)
+        if finding.action_id:
+            return self._action_label(finding.action_id)
+        if finding.manual_guidance:
+            return self.tr("Manual guidance")
+        return self.tr("Review details")
+
+    def _action_label(self, action_id: str) -> str:
+        from core.actions.catalog import ActionCatalog
+
+        definition = ActionCatalog().get(action_id)
+        return (
+            self.tr(definition.title)
+            if definition is not None
+            else self.tr("Action Center review")
+        )
+
     def resizeEvent(self, event: Any) -> None:
         compact = self.width() < 900
-        self.navigator.set_compact(compact)
-        self.navigator.setMaximumWidth(224 if not compact else 260)
+        self.view_switcher.set_compact(compact)
         super().resizeEvent(event)
 
     @staticmethod

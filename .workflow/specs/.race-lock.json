@@ -3,7 +3,7 @@
   "started_at": "20260726_111101",
   "status": "active",
   "target_version": "v21.0.0",
-  "phase": "phase-1",
+  "phase": "phase-2",
   "baseline_commit": "841218ef4dbfa6368136bd3d8cbc1c394ec81258",
   "product_version": "v20.0.0",
   "v20_publication_status": "blocked",

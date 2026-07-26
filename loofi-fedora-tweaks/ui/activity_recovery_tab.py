@@ -17,6 +17,14 @@ from PyQt6.QtWidgets import (
 )
 
 from core.change_journal.models import ChangeEvent, ChangeJournalSnapshot
+from core.change_journal.presentation import (
+    ActivityPresentationState,
+    error_state,
+    initial_state,
+    loading_state,
+    selected_state,
+    snapshot_state,
+)
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
@@ -79,7 +87,9 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._snapshot: ChangeJournalSnapshot | None = None
         self._events_by_id: dict[str, ChangeEvent] = {}
         self._worker: ActivityJournalWorker | None = None
+        self.presentation_state = initial_state()
         self._setup_ui()
+        self._apply_presentation_state(self.presentation_state)
 
     def metadata(self) -> PluginMetadata:
         return self._METADATA
@@ -189,13 +199,26 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.detail_card.add_widget(self.review_button)
         self.scaffold.add_widget(self.detail_card)
 
+    def _apply_presentation_state(
+        self,
+        state: ActivityPresentationState,
+    ) -> None:
+        """Render controls only when the current data state supports them."""
+        self.presentation_state = state
+        self.setProperty("presentationState", state.state)
+        self.feedback.setText(self.tr(state.message))
+        self.table.setVisible(state.table_visible)
+        self.empty_state.setVisible(state.empty_visible)
+        self.detail_card.setVisible(state.details_visible)
+        self.refresh_button.setEnabled(state.refresh_enabled)
+        self.review_button.setVisible(state.recovery_review_visible)
+
     def load_activity(self, *, refresh: bool) -> None:
         """Start one explicit, non-overlapping local collection."""
         if self._worker is not None and self._worker.isRunning():
             return
         self.load_button.set_loading(True, self.tr("Loading activity…"))
-        self.refresh_button.setEnabled(False)
-        self.feedback.setText(self.tr("Reading supported local sources…"))
+        self._apply_presentation_state(loading_state())
         worker = ActivityJournalWorker(self.journal_service, refresh=refresh, parent=self)
         worker.finished.connect(self._loaded)
         worker.error.connect(self._load_failed)
@@ -212,42 +235,29 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._events_by_id = {event.event_id: event for event in result.events}
         self.load_button.reset_state()
         self.load_button.setText(self.tr("Load again"))
-        self.refresh_button.setEnabled(True)
-        self._render_sources(result)
+        self._apply_presentation_state(snapshot_state(result))
         self._render_events(result.events)
         self._worker = None
 
     def _load_failed(self, message: str) -> None:
         self.load_button.reset_state()
-        self.refresh_button.setEnabled(self._snapshot is not None)
-        self.feedback.setText(
-            self.tr("Activity could not be loaded: %1").replace("%1", str(message))
+        self._apply_presentation_state(
+            error_state(
+                str(message),
+                has_snapshot=self._snapshot is not None,
+                has_events=bool(self._snapshot and self._snapshot.events),
+            )
         )
         self._worker = None
-
-    def _render_sources(self, snapshot: ChangeJournalSnapshot) -> None:
-        available = sum(source.availability == "available" for source in snapshot.sources)
-        partial = sum(source.availability == "partial" for source in snapshot.sources)
-        unavailable = sum(source.availability == "unavailable" for source in snapshot.sources)
-        message = self.tr("%1 source(s) ready · %2 partial · %3 unavailable").replace(
-            "%1", str(available)
-        ).replace("%2", str(partial)).replace("%3", str(unavailable))
-        if snapshot.truncated:
-            message += self.tr(" · Showing the newest 100 changes")
-        self.feedback.setText(message)
 
     def _render_events(self, events: tuple[ChangeEvent, ...]) -> None:
         self.table.setRowCount(0)
         if not events:
-            self.table.hide()
             self.empty_state.title_label.setText(self.tr("No recorded changes"))
             self.empty_state.set_message(
                 self.tr("The available sources did not report any changes.")
             )
-            self.empty_state.show()
             return
-        self.empty_state.hide()
-        self.table.show()
         for event in events:
             row = self.table.rowCount()
             self.table.insertRow(row)
@@ -263,7 +273,6 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
                 item.setData(Qt.ItemDataRole.UserRole, event.event_id)
                 item.setToolTip(value)
                 self.table.setItem(row, column, item)
-        self.table.selectRow(0)
 
     def _selected_event(self) -> ChangeEvent | None:
         row = self.table.currentRow()
@@ -275,6 +284,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         event = self._selected_event()
         if event is None:
             return
+        self._apply_presentation_state(selected_state(event))
         self.detail_card.set_heading(event.summary, self.tr("Recorded by %1").replace(
             "%1", self._SOURCE_LABELS.get(event.source, event.source)
         ))
@@ -299,7 +309,6 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             .replace("%1", str(related))
         )
         recovery = event.recovery
-        self.review_button.hide()
         if recovery.kind == "action_center":
             self.detail_status.set_status(
                 self.tr("Recovery can be reviewed"),
@@ -309,7 +318,6 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             self.recovery_guidance.setText(
                 recovery.guidance or self.tr("Review this recovery in Action Center.")
             )
-            self.review_button.show()
         elif recovery.kind == "manual_guidance":
             self.detail_status.set_status(self.tr("Manual recovery guidance"), kind="neutral")
             self.recovery_guidance.setText(recovery.guidance)

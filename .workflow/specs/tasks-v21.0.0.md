@@ -19,7 +19,7 @@
 - [x] P1: application-owned runtime cleanup, exact EventBus/AgentScheduler
   teardown, focused shell extraction, local view switching, and compact
   navigation repair.
-- [ ] P2: GuidedTask/Home composition, truthful application review copy and
+- [x] P2: GuidedTask/Home composition, truthful application review copy and
   filters, System Check local views, and state-driven Activity & Recovery.
 - [ ] P3: grouped Specialist Tools, consistent Settings feedback, responsive
   geometry, accessibility, Wayland/X11, and RTL validation.

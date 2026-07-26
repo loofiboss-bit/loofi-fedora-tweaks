@@ -30,6 +30,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V21_PHASE0_STARTUP.json` - Reproducible offscreen startup and resource baseline
 - `reports/V21_PHASE0_SYSTEM_CHECK.json` - Read-only System Check duration baseline
 - `reports/V21_PHASE1_RUNTIME_SHELL.md` - Process-owned teardown, exact subscriptions, shell extraction, local views, and compact navigation
+- `reports/V21_PHASE2_GUIDED_CORE.md` - Inert GuidedTask composition, truthful application review handoffs, System Check local views, and progressive Activity states
 - `../.workflow/specs/arch-v20.0.0.md` - v20.0.0 "Continuity" architecture and safety contracts
 - `../.workflow/specs/tasks-v20.0.0.md` - Continuity implementation and verification checklist
 - `releases/RELEASE-NOTES-v20.0.0.md` - Trusted Change Journal, safe recovery, compatibility, and local release status

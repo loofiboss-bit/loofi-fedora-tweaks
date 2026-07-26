@@ -54,7 +54,9 @@ class TestActivityRecoveryTab(unittest.TestCase):
 
         service.snapshot.assert_not_called()
         self.assertFalse(tab.table.isVisible())
+        self.assertFalse(tab.detail_card.isVisible())
         self.assertFalse(tab.refresh_button.isEnabled())
+        self.assertEqual(tab.property("presentationState"), "initial")
         tab.close()
 
     def test_action_center_recovery_handoff_contains_closed_metadata(self):
@@ -75,8 +77,11 @@ class TestActivityRecoveryTab(unittest.TestCase):
                 )
             )
         )
+        tab.table.selectRow(0)
+        tab._render_selected()
 
         self.assertEqual(tab.table.rowCount(), 1)
+        self.assertEqual(tab.property("presentationState"), "recoverable")
         self.assertIn("Possibly related", tab.related_label.text())
         self.assertTrue(tab.review_button.isVisibleTo(tab))
         tab._review_recovery()
@@ -96,7 +101,10 @@ class TestActivityRecoveryTab(unittest.TestCase):
                 )
             )
         )
+        tab.table.selectRow(0)
+        tab._render_selected()
 
         self.assertFalse(tab.review_button.isVisible())
+        self.assertEqual(tab.property("presentationState"), "manual-only")
         self.assertEqual(tab.recovery_guidance.text(), "Use the vendor documentation.")
         tab.close()

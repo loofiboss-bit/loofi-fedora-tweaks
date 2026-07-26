@@ -21,6 +21,7 @@ from core.system_check.presentation import (
     SystemCheckPageState,
     SystemCheckPresentationService,
 )
+from ui.components import LocalViewSwitcher, SectionNavigator
 from ui.system_check_tab import SystemCheckTab
 
 
@@ -183,22 +184,26 @@ class TestSystemCheckTab(unittest.TestCase):
         self.addCleanup(self.tab.deleteLater)
 
     def test_one_page_has_three_views_and_no_record_snapshot_action(self):
+        self.assertIsInstance(self.tab.view_switcher, LocalViewSwitcher)
         self.assertEqual(
-            self.tab.navigator.section_ids(),
+            self.tab.view_switcher.view_ids(),
             ("overview", "findings", "history"),
         )
+        self.assertEqual(self.tab.findChildren(SectionNavigator), [])
         self.assertEqual(len(self.tab.findChildren(QWidget, "systemCheckFinding")), 1)
         labels = " ".join(label.text() for label in self.tab.findChildren(QLabel))
         self.assertIn("A finding is an explained issue", labels)
+        self.assertIn("Updates", labels)
+        self.assertNotIn("maintenance:updates", labels)
         self.assertNotIn("Record Snapshot", labels)
         self.assertFalse(self.tab.metric_disclosure.toggle_button.isChecked())
         self.assertFalse(self.tab.metric_disclosure.details.isVisible())
 
     def test_stable_routes_preselect_the_canonical_view(self):
         self.assertTrue(self.tab.activate_route(resolve("health")))
-        self.assertEqual(self.tab.navigator.active_section_id(), "overview")
+        self.assertEqual(self.tab.view_switcher.active_view_id(), "overview")
         self.assertTrue(self.tab.activate_route(resolve("maintenance:health-timeline")))
-        self.assertEqual(self.tab.navigator.active_section_id(), "history")
+        self.assertEqual(self.tab.view_switcher.active_view_id(), "history")
 
 
 if __name__ == "__main__":

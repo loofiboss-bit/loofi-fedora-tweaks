@@ -41,7 +41,7 @@ deterministic application teardown.
 | --- | --- | --- |
 | 0 — Authority, baseline, and scope lock | DONE | [Exact v20 evidence and V21 authority](docs/reports/V21_PHASE0_BASELINE.md) |
 | 1 — Runtime lifecycle and shell | DONE | [ApplicationRuntime, exact cleanup, shell extraction, and local view switching](docs/reports/V21_PHASE1_RUNTIME_SHELL.md) |
-| 2 — Guided core journey | NOT STARTED | GuidedTask, Home, Apps, System Check, Activity & Recovery |
+| 2 — Guided core journey | DONE | [GuidedTask, Home, Apps, System Check, and Activity & Recovery](docs/reports/V21_PHASE2_GUIDED_CORE.md) |
 | 3 — Supporting surfaces and accessibility | NOT STARTED | Specialist Tools, Settings, responsive and real-session validation |
 | 4 — Platform and release readiness | NOT STARTED | Lifecycle, performance, Fedora 44, packaging, and local release gates |
 
