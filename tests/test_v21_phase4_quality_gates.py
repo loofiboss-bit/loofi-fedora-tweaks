@@ -1,0 +1,52 @@
+"""Contracts for the committed V21 Phase 4 qualification evidence."""
+
+from __future__ import annotations
+
+import json
+import unittest
+from pathlib import Path
+
+
+ROOT = Path(__file__).resolve().parents[1]
+STARTUP = ROOT / "docs" / "reports" / "V21_PHASE4_STARTUP.json"
+REPORT = ROOT / "docs" / "reports" / "V21_PHASE4_PLATFORM_QUALITY.md"
+TASKS = ROOT / ".workflow" / "specs" / "tasks-v21.0.0.md"
+RACE_LOCK = ROOT / ".workflow" / "specs" / ".race-lock.json"
+
+
+class TestV21Phase4QualityGates(unittest.TestCase):
+    def test_startup_evidence_meets_resolve_ceiling_and_idle_contract(self):
+        evidence = json.loads(STARTUP.read_text(encoding="utf-8"))
+
+        self.assertEqual(evidence["method"]["warmups"], 2)
+        self.assertEqual(evidence["method"]["runs"], 7)
+        self.assertLessEqual(
+            evidence["summary"]["milestones_ms"]["meaningful_home"]["median"],
+            250.094,
+        )
+        self.assertLessEqual(evidence["summary"]["rss_kib"]["median"], 83_582)
+
+        for run in evidence["runs"]:
+            self.assertEqual(run["runtime_plugin_ids"], ["atlas_dashboard"])
+            self.assertEqual(run["active_timer_intervals_ms"], [])
+            self.assertEqual(run["running_qthreads"], 0)
+            self.assertEqual(run["subprocess_probes"], [])
+            self.assertEqual(run["system_check_runtime_imports"], [])
+
+    def test_phase_four_is_closed_without_starting_release_work(self):
+        report = REPORT.read_text(encoding="utf-8")
+        tasks = TASKS.read_text(encoding="utf-8")
+        race_lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
+
+        self.assertIn("Product version remains `20.0.0 \"Continuity\"`", report)
+        self.assertIn("- [x] P4: lifecycle regression", tasks)
+        self.assertIn(
+            "- [ ] Synchronize version metadata to v21.0.0", tasks
+        )
+        self.assertEqual(race_lock["phase"], "phase-4")
+        self.assertEqual(race_lock["product_version"], "v20.0.0")
+        self.assertEqual(race_lock["status"], "active")
+
+
+if __name__ == "__main__":
+    unittest.main()

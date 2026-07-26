@@ -43,7 +43,7 @@ deterministic application teardown.
 | 1 — Runtime lifecycle and shell | DONE | [ApplicationRuntime, exact cleanup, shell extraction, and local view switching](docs/reports/V21_PHASE1_RUNTIME_SHELL.md) |
 | 2 — Guided core journey | DONE | [GuidedTask, Home, Apps, System Check, and Activity & Recovery](docs/reports/V21_PHASE2_GUIDED_CORE.md) |
 | 3 — Supporting surfaces and accessibility | DONE | [Grouped Specialist Tools, Settings feedback, responsive, AT-SPI, Wayland, and xcb validation](docs/reports/V21_PHASE3_SUPPORTING_SURFACES.md) |
-| 4 — Platform and release readiness | NOT STARTED | Lifecycle, performance, Fedora 44, packaging, and local release gates |
+| 4 — Platform and release readiness | DONE | [Lifecycle, performance, Fedora 44, packaging, security, and complete local gates](docs/reports/V21_PHASE4_PLATFORM_QUALITY.md) |
 
 The sole scope authority is the
 [canonical v21 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md). Product

@@ -23,7 +23,7 @@
   filters, System Check local views, and state-driven Activity & Recovery.
 - [x] P3: grouped Specialist Tools, consistent Settings feedback, responsive
   geometry, accessibility, Wayland/X11, and RTL validation.
-- [ ] P4: lifecycle regression, startup/performance, Fedora 44
+- [x] P4: lifecycle regression, startup/performance, Fedora 44
   Traditional/Atomic certification, packaging, and complete local gates.
 
 ## Release-only gates

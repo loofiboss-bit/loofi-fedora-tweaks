@@ -33,6 +33,8 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V21_PHASE2_GUIDED_CORE.md` - Inert GuidedTask composition, truthful application review handoffs, System Check local views, and progressive Activity states
 - `reports/V21_PHASE3_SUPPORTING_SURFACES.md` - Grouped and filtered Specialist Tools, truthful Settings persistence feedback, responsive geometry, RTL, AT-SPI, Wayland, and xcb evidence
 - `reports/V21_PHASE3_STARTUP.json` - Resolve Phase 3 cold-start, one-provider, probe, timer, thread, import, and RSS evidence
+- `reports/V21_PHASE4_PLATFORM_QUALITY.md` - Resolve lifecycle, Fedora 44, package, security, and complete local quality qualification
+- `reports/V21_PHASE4_STARTUP.json` - Final Resolve implementation-phase startup, resource, import, and RSS evidence
 - `../.workflow/specs/arch-v20.0.0.md` - v20.0.0 "Continuity" architecture and safety contracts
 - `../.workflow/specs/tasks-v20.0.0.md` - Continuity implementation and verification checklist
 - `releases/RELEASE-NOTES-v20.0.0.md` - Trusted Change Journal, safe recovery, compatibility, and local release status
