@@ -3,7 +3,7 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 20.0.0 "Continuity" | **Active target**: 21.0.0 "Resolve" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 20.0.0 "Resolve" | **Active target**: 21.0.0 "Resolve" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
 > V21 Phase 0 was activated by explicit user override; product metadata remains

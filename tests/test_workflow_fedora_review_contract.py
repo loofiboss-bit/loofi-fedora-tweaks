@@ -92,6 +92,15 @@ def test_release_workflows_require_exact_peeled_tag_commit():
     assert "COPR publish requires ${TAG} to peel to ${GITHUB_SHA}" in copr_publish
 
 
+def test_post_release_master_commits_do_not_republish_existing_version():
+    auto_release = _read_text(AUTO_RELEASE_WORKFLOW)
+
+    assert "should_release: ${{ steps.tag_identity.outputs.should_release }}" in auto_release
+    assert 'if [[ "${GITHUB_REF}" == "refs/heads/master" ]]' in auto_release
+    assert "this is a post-release master commit" in auto_release
+    assert "needs.validate.outputs.should_release == 'true'" in auto_release
+
+
 def test_copr_tag_lookup_is_independent_of_container_checkout_remote():
     for workflow in (AUTO_RELEASE_WORKFLOW, COPR_WORKFLOW):
         text = _read_text(workflow)

@@ -510,6 +510,7 @@ class MainWindowInteractionMixin:
         status_timer = getattr(self, "_status_timer", None)
         if status_timer is not None:
             status_timer.stop()
+            self._status_timer = None
 
         registry = PluginRegistry.instance()
         list_all: typing.Callable[[], typing.Iterable[typing.Any]] = getattr(

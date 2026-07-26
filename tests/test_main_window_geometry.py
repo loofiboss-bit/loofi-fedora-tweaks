@@ -13,6 +13,7 @@ os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
 try:
+    from PyQt6.QtTest import QTest
     from PyQt6.QtWidgets import QApplication, QScrollArea
     _HAS_QT_WIDGETS = True
 except ImportError:
@@ -197,6 +198,25 @@ class TestMainWindowGeometry(unittest.TestCase):
 
         window.close()
         self.app.processEvents()
+
+    def test_close_cancels_deferred_dependency_check(self):
+        """Closing the shell must cancel work scheduled after Home renders."""
+        mod = importlib.import_module("ui.main_window")
+        MainWindow = mod.MainWindow
+
+        with patch.object(MainWindow, "_start_pulse_listener", lambda self: None), \
+             patch.object(MainWindow, "setup_tray", lambda self: None), \
+             patch.object(MainWindow, "check_dependencies", lambda self: None), \
+             patch.object(MainWindow, "_check_first_run", lambda self: None):
+            window = MainWindow()
+
+        with patch.object(MainWindow, "show_doctor") as show_doctor:
+            window.close()
+            self.app.processEvents()
+            QTest.qWait(300)
+            self.app.processEvents()
+
+        show_doctor.assert_not_called()
 
 
 if __name__ == "__main__":

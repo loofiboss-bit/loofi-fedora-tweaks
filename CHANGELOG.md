@@ -4,6 +4,48 @@
 
 All notable changes to this project will be documented in this file.
 
+## [21.0.0] - 2026-07-26 "Resolve"
+
+### Added
+
+- Added a process-owned `ApplicationRuntime` that shuts down shell resources in
+  a bounded, idempotent order.
+- Added immutable guided-task presentation for Home using existing route,
+  System Check, Action Center, reboot, and activity identifiers.
+- Added local view switching for System Check plus explicit presentation states
+  for Activity & Recovery.
+- Added grouped Specialist Tools, local filtering, and consistent Settings rows
+  with saved, dependency, and error feedback.
+
+### Changed
+
+- Reworked Home into one truthful summary and one primary next step with bounded
+  supporting work.
+- Renamed application mutation handoffs to `Review install` and
+  `Review removal`; execution remains exclusively in Action Center.
+- Separated route navigation from same-route view switching and removed
+  internal route identifiers from visible compact-shell labels.
+- Strengthened responsive, keyboard, RTL, high-contrast, Wayland, X11, and
+  assistive-technology behavior without changing the 81 stable routes.
+
+### Fixed
+
+- EventBus, AgentScheduler, timers, QThreads, Pulse, plugins, and deferred shell
+  work now stop deterministically during application teardown.
+- Deferred dependency checks can no longer survive a closed window and open
+  nested Dependency Doctor dialogs during later event processing.
+- Compact navigation no longer requires horizontal scrolling at the supported
+  minimum geometry and text scales.
+
+### Compatibility
+
+- Preserved Action Center schema v4, System Check and Trusted Change Journal
+  data, CLI/API/daemon interfaces, Traditional/Atomic behavior, future-schema
+  read-only handling, favorites, aliases, and lazy startup.
+- Preserved the historical occupied v21 lineages as
+  `legacy-v21.0.0-ux-stabilization` and
+  `legacy-v21.0.1-python-jose-packaging`.
+
 ## [20.0.0] - 2026-07-25 "Continuity"
 
 ### Added

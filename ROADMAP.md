@@ -16,7 +16,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v18.0.0 | Haven | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md), [architecture](.workflow/specs/arch-v18.0.0.md), [tasks](.workflow/specs/tasks-v18.0.0.md) |
 | v19.0.0 | Steward | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
 | v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
-| v21.0.0 | Resolve | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md) |
+| v21.0.0 | Resolve | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md) |
 
 ## [ACTIVE] v21.0.0 "Resolve" — Coherent Verified Work
 
@@ -44,12 +44,13 @@ deterministic application teardown.
 | 2 — Guided core journey | DONE | [GuidedTask, Home, Apps, System Check, and Activity & Recovery](docs/reports/V21_PHASE2_GUIDED_CORE.md) |
 | 3 — Supporting surfaces and accessibility | DONE | [Grouped Specialist Tools, Settings feedback, responsive, AT-SPI, Wayland, and xcb validation](docs/reports/V21_PHASE3_SUPPORTING_SURFACES.md) |
 | 4 — Platform and release readiness | DONE | [Lifecycle, performance, Fedora 44, packaging, security, and complete local gates](docs/reports/V21_PHASE4_PLATFORM_QUALITY.md) |
+| 5 — Release readiness | ACTIVE | v21 metadata, exact candidate assets, legacy-tag preservation, and canonical publication |
 
 The sole scope authority is the
 [canonical v21 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md). Product
-metadata remains v20.0.0 until all local Resolve gates pass. No tag mutation,
-commit, push, package publication, or remote release action occurs without
-separate authorization.
+metadata was synchronized to v21.0.0 after all local Resolve gates passed. The
+user separately authorized canonical GitHub and COPR publication; public
+completion still requires independent readback.
 
 ## [PUBLICATION BLOCKED] v20.0.0 "Continuity" — Trusted Activity and Recovery
 

@@ -116,35 +116,10 @@ class MainWindowServiceMixin:
         self._start_pulse_listener()
 
     def _schedule_post_render_services(self: Any) -> None:
-        """Schedule nonessential shell work after meaningful Home exists."""
-        if self._post_render_services_scheduled:
+        """Record meaningful Home without starting hidden probes or timers."""
+        if self._post_render_services_scheduled or self._runtime_cleaned:
             return
         self._post_render_services_scheduled = True
-        QTimer.singleShot(250, self._initialize_post_render_services)
-
-    def _initialize_post_render_services(self: Any) -> None:
-        """Initialize deferred UI and probes outside the first-render hot path."""
-        self._start_status_refresh()
-        QTimer.singleShot(0, self.check_dependencies)
-
-    def _start_status_refresh(self: Any) -> None:
-        """Start periodic sidebar status refresh after first render."""
-        if self._status_timer is not None:
-            return
-        timer = QTimer(self)
-        timer.timeout.connect(self._refresh_status_indicators)
-        timer.start(30000)
-        self._status_timer = timer
-        try:
-            from utils.settings import SettingsManager
-
-            check_on_start = bool(
-                SettingsManager.instance().get("check_updates_on_start", True)
-            )
-        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
-            check_on_start = True
-        if check_on_start:
-            QTimer.singleShot(5000, self._refresh_status_indicators)
 
     def _build_favorites_section(self):
         """Compatibility no-op: favorites remain stored outside the v15 sidebar."""

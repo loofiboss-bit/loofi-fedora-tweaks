@@ -28,13 +28,13 @@
 
 ## Release-only gates
 
-- [ ] Synchronize version metadata to v21.0.0 "Resolve" only after all local
+- [x] Synchronize version metadata to v21.0.0 "Resolve" only after all local
   gates pass.
-- [ ] Preserve `v21.0.0` as `legacy-v21.0.0-ux-stabilization` and `v21.0.1` as
+- [x] Preserve `v21.0.0` as `legacy-v21.0.0-ux-stabilization` and `v21.0.1` as
   `legacy-v21.0.1-python-jose-packaging` before replacing canonical refs.
-- [ ] Build exact candidate assets, checksums, SBOM, provenance, and package
+- [x] Build exact candidate assets, checksums, SBOM, provenance, and package
   lifecycle evidence.
-- [ ] Commit, push, tag, publish, or modify public release surfaces only after
+- [x] Commit, push, tag, publish, or modify public release surfaces only after
   separate explicit authorization.
 
 ## Completion

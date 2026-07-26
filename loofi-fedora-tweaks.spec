@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        20.0.0
+Version:        21.0.0
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -162,6 +162,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
+* Sun Jul 26 2026 Loofi <loofi@example.com> - 21.0.0-1
+- v21.0.0 "Resolve" - coherent guided work, responsive surfaces, and deterministic teardown
+
 * Sat Jul 25 2026 Loofi <loofi@example.com> - 20.0.0-1
 - v20.0.0 "Continuity" - Trusted Change Journal, exact safe recovery, and unified Specialist Tools
 

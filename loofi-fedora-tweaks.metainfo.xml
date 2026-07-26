@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="21.0.0" date="2026-07-26">
+      <description>
+        <p>v21.0.0 "Resolve" - Coherent Verified Work</p>
+        <ul>
+          <li>Connected Home, System Check, Action Center, and Activity into one See, Understand, Review, Apply, and Verify journey</li>
+          <li>Added deterministic process-owned cleanup for EventBus, scheduler, timers, workers, Pulse, and plugins</li>
+          <li>Added truthful application review handoffs and state-driven System Check and Activity presentation</li>
+          <li>Grouped and filtered Specialist Tools and added consistent Settings persistence feedback</li>
+          <li>Strengthened responsive, keyboard, RTL, high-contrast, Wayland, X11, and assistive-technology behavior</li>
+        </ul>
+      </description>
+    </release>
     <release version="20.0.0" date="2026-07-25">
       <description>
         <p>v20.0.0 "Continuity" - Trusted Activity and Recovery</p>

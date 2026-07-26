@@ -33,7 +33,7 @@ class TestV21Phase4QualityGates(unittest.TestCase):
             self.assertEqual(run["subprocess_probes"], [])
             self.assertEqual(run["system_check_runtime_imports"], [])
 
-    def test_phase_four_is_closed_without_starting_release_work(self):
+    def test_phase_four_evidence_is_retained_during_release_readiness(self):
         report = REPORT.read_text(encoding="utf-8")
         tasks = TASKS.read_text(encoding="utf-8")
         race_lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
@@ -41,10 +41,10 @@ class TestV21Phase4QualityGates(unittest.TestCase):
         self.assertIn("Product version remains `20.0.0 \"Continuity\"`", report)
         self.assertIn("- [x] P4: lifecycle regression", tasks)
         self.assertIn(
-            "- [ ] Synchronize version metadata to v21.0.0", tasks
+            "- [x] Synchronize version metadata to v21.0.0", tasks
         )
-        self.assertEqual(race_lock["phase"], "phase-4")
-        self.assertEqual(race_lock["product_version"], "v20.0.0")
+        self.assertEqual(race_lock["phase"], "release-readiness")
+        self.assertEqual(race_lock["product_version"], "v21.0.0")
         self.assertEqual(race_lock["status"], "active")
 
 

@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v20.0.0 "Continuity"
+# Loofi Fedora Tweaks v21.0.0 "Resolve"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,34 +12,35 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v20.0.0">
-    <img src="https://img.shields.io/badge/Release-v20.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v20.0.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v21.0.0">
+    <img src="https://img.shields.io/badge/Release-v21.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v21.0.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
-## What Continuity changes
+## What Resolve changes
 
-Continuity composes trusted local change records into one Activity & Recovery
-surface. History remains inert, and recovery stays inside Action Center with
-fresh state checks, explicit confirmation, and independent verification.
+Resolve connects the existing safe control center into one coherent
+See → Understand → Review → Apply → Verify journey. It also gives the
+application one process-owned lifecycle so closing the shell deterministically
+stops its timers, workers, schedulers, subscriptions, and plugins.
 
-- The Trusted Change Journal reads Action Center, DNF5, rpm-ostree, Flatpak,
-  fwupd, and Loofi records only after explicit activation.
-- DNF5 recovery accepts only exact successful install/remove transaction shapes
-  and stages the inverse offline.
-- Atomic recovery binds the current and previous deployment checksums and
-  verifies the exact booted rollback after reboot.
-- Flatpak, firmware, ambiguous package history, and legacy command-bearing
-  history never become executable recovery.
-- CLI, authenticated read-only API, UI, and support bundle share the same
-  privacy-bounded event contract.
-- Specialist Tools are always discoverable; each action still owns its risk,
-  confirmation, privilege, and platform policy.
+- Home presents one truthful summary, one primary next step, bounded attention
+  items, active work, and recent activity without collecting on startup.
+- Application changes use explicit `Review install` and `Review removal`
+  handoffs before Action Center confirmation.
+- System Check and Activity & Recovery expose local views and details only when
+  their current state supports them.
+- Specialist Tools are grouped and searchable, while Settings provides clear
+  dependency, saved, and error feedback.
+- Compact, scaled, RTL, Wayland, X11, keyboard, and assistive-technology
+  layouts retain the same stable route and lazy-loading contracts.
+- The Home render starts no hidden probes or timers, and dependency UI cannot
+  appear after the application has closed.
 
-Full details: [v20 release notes](docs/releases/RELEASE-NOTES-v20.0.0.md).
+Full details: [v21 release notes](docs/releases/RELEASE-NOTES-v21.0.0.md).
 
 ## The six destinations
 
@@ -183,7 +184,7 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v20.0.0 "Continuity"` is the current release. Fedora 45 remains preview-only.
+`v21.0.0 "Resolve"` is the current release. Fedora 45 remains preview-only.
 The historical Sentinel, Horizon, Nebula, and Synapse lineages remain preserved
 under explicit `legacy-v*` tags.
 

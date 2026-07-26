@@ -114,15 +114,16 @@ class TestShellLifecycle(unittest.TestCase):
         window.setup_tray.assert_called_once_with()
         window._start_pulse_listener.assert_called_once_with()
 
-    @patch("ui.main_window.QTimer.singleShot")
-    def test_post_render_services_are_scheduled_once(self, single_shot):
+    @patch("ui.main_window_services.QTimer")
+    def test_post_render_services_are_scheduled_once(self, timer_class):
         window = SimpleNamespace(
             _post_render_services_scheduled=False,
-            _initialize_post_render_services=MagicMock(),
+            _runtime_cleaned=False,
         )
         MainWindow._schedule_post_render_services(window)
         MainWindow._schedule_post_render_services(window)
-        single_shot.assert_called_once_with(250, window._initialize_post_render_services)
+        timer_class.assert_not_called()
+        self.assertTrue(window._post_render_services_scheduled)
 
 
 if __name__ == "__main__":
