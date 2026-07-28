@@ -62,10 +62,12 @@ confirmation or privilege policy.
 
 ## Release status
 
-Alignment passed 6,909 tests, 61 expected skips, 1,079 subtests, and 86.65%
-coverage, plus lint, typing, architecture, package, product-catalog, Wayland,
-Orca/AT-SPI, GitHub provenance, COPR, and clean Fedora 44 install gates.
-Fedora 45 remains preview-only.
+Alignment's Fedora 44 qualification passed 6,909 tests, 61 expected skips,
+1,079 subtests, and 86.65% coverage. Canonical GitHub CI passed 6,846 tests,
+124 platform-driven skips, the same 1,079 subtests, and 86% coverage. Lint,
+typing, architecture, package, product-catalog, Wayland, Orca/AT-SPI, GitHub
+provenance, COPR, and clean Fedora 44 install gates also passed. Fedora 45
+remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
 - Release: [v22.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v22.0.0)

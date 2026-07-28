@@ -32,11 +32,12 @@ interfaces or stored user data.
 
 - Flatpak detection, bounded shutdown, and credential redaction gaps.
 
-## Stats
+## Qualification Stats
 
-- **Tests:** 6,909 passed, 61 skipped, 0 failed
+- **Fedora 44 local:** 6,909 passed, 61 skipped, 0 failed
+- **Canonical GitHub CI:** 6,846 passed, 124 skipped, 0 failed
 - **Lint:** 0 errors
-- **Coverage:** 86.65%
+- **Coverage:** 86.65% local; 86% in canonical GitHub CI
 
 ## Upgrade Notes
 

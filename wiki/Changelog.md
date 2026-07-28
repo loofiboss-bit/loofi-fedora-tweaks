@@ -13,9 +13,11 @@
 - Closed Flatpak detection, bounded shutdown, RPM dependency, SecretStore,
   credential-redaction, and expanded accessibility gaps.
 
-**Test Suite**: 6,909 passed, 61 skipped, 1,079 subtests, and 86.65% coverage,
-with exact GitHub release, attestations, COPR build `10783672`, clean Fedora 44
-GUI/API/daemon install, and physical Wayland/AT-SPI readback.
+**Test Suite**: Fedora 44 qualification passed 6,909 tests, 61 skips, 1,079
+subtests, and 86.65% coverage. Canonical GitHub CI passed 6,846 tests, 124
+platform-driven skips, the same 1,079 subtests, and 86% coverage. Exact GitHub
+release, attestations, COPR build `10783672`, clean Fedora 44 GUI/API/daemon
+install, and physical Wayland/AT-SPI readback also passed.
 
 ## v21.0.0 — Resolve
 

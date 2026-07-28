@@ -21,8 +21,11 @@
   and CodeQL
   [30375619797](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/30375619797)
   completed successfully for the release commit.
-- The final release suite passed 6,909 tests, 61 expected skips, 1,079
-  subtests, and 86.65 percent coverage.
+- The Fedora 44 local release qualification passed 6,909 tests, 61 expected
+  skips, 1,079 subtests, and 86.65 percent coverage.
+- The canonical Ubuntu GitHub release job passed 6,846 tests, 124
+  platform-driven skips, 1,079 subtests, and reported 86 percent coverage.
+  Both environments completed with zero failures.
 
 ## GitHub Release
 
