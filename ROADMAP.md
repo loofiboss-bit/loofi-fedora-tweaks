@@ -17,6 +17,46 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v19.0.0 | Steward | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
 | v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
 | v21.0.0 | Resolve | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md), [public evidence](docs/reports/V21_RELEASE_PUBLICATION.md) |
+| v22.0.0 | Alignment | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [baseline](docs/reports/V22_PHASE0_BASELINE.md) |
+
+## [ACTIVE] v22.0.0 "Alignment" — Fedora-native Consolidation
+
+**Objective:** make trust gates enforceable, align Plasma-owned configuration
+with native desktop tools, and reduce visual and architectural depth without
+adding execution authority.
+
+### Required outcomes
+
+- COPR, RPM subpackage, Flatpak detection, shutdown, and support-redaction
+  findings are closed through their real boundaries.
+- One canonical catalog preserves every route while destination-owned records
+  become independently maintainable.
+- Native Discover and KDE KCM handoffs are fixed, non-privileged, explicit,
+  and truthfully unavailable when the host lacks them.
+- Home, Action Center, Specialist Tools, System Check, and Activity present one
+  clear local task hierarchy.
+- Core journeys gain expanded focus, AT-SPI, geometry, theme, scale, RTL, and
+  reduced-motion evidence.
+- Fedora 44 remains stable and Fedora 45 remains preview until the explicit
+  physical promotion gate passes.
+
+### Phase status
+
+| Phase | Status | Deliverable |
+| --- | --- | --- |
+| 0 — Authority and baseline | DONE | [Current checkout, contract, startup, package, and visual baseline](docs/reports/V22_PHASE0_BASELINE.md) |
+| 1 — Trust foundation | DONE | [COPR state machine, package dependencies, Flatpak probes, bounded shutdown, and redaction](docs/reports/V22_PHASE1_TRUST_FOUNDATION.md) |
+| 2 — Catalog and native alignment | DONE | [Destination records, capability presentation, and allowlisted handoffs](docs/reports/V22_PHASE2_CATALOG_NATIVE_ALIGNMENT.md) |
+| 3 — Visual hierarchy and workflows | DONE | [Quieter shell, Home, Action Center, Specialist, System Check, and Activity](docs/reports/V22_PHASE3_VISUAL_ALIGNMENT.md) |
+| 4 — Accessibility and Fedora 45 readiness | DONE | [Core journey matrix](docs/reports/V22_PHASE4_JOURNEY_UI.md) and [provider-neutral secrets](docs/reports/V22_PHASE4_SECRETSTORE.md) |
+| 5 — Qualification and release readiness | LOCAL READY | [Full local gates, candidate evidence, and explicitly open physical/release gates](docs/reports/V22_PHASE5_LOCAL_QUALIFICATION.md) |
+
+The sole scope authority is the
+[canonical V22 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md). Product
+metadata is synchronized to v22.0.0 after the local Alignment implementation
+and qualification gates passed. The active race lock remains in place because
+commit, push, tag, physical installation, publication, and public readback are
+separately authorized release actions.
 
 ## [DONE] v21.0.0 "Resolve" — Coherent Verified Work
 

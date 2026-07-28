@@ -136,3 +136,22 @@ def test_copr_workflows_wait_for_exact_fedora_44_success():
         assert 'if [ "$STATUS" = "failed" ]' in text
         assert "Attempting COPR repo regeneration" in text
         assert "dnf --refresh install" in text
+        assert "scripts/copr_release_gate.py build" in text
+        assert "scripts/copr_release_gate.py install" in text
+
+
+def test_copr_artifacts_never_replace_terminal_success_or_clean_install():
+    for workflow in (AUTO_RELEASE_WORKFLOW, COPR_WORKFLOW):
+        text = _read_text(workflow)
+        artifact_branch = text.split("if HAS_BUILD_ARTIFACTS; then", 1)[1].split(
+            "fi", 1
+        )[0]
+
+        assert "BUILD_REACHED_FINAL=1" not in artifact_branch
+        assert "break" not in artifact_branch
+        assert "did not reach a final 'succeeded' status" in text
+        assert "exit 1" in text.split(
+            "did not reach a final 'succeeded' status", 1
+        )[1].split('echo "build_id=', 1)[0]
+        assert "proceeding with warnings only" not in text
+        assert "Treating this as non-blocking" not in text

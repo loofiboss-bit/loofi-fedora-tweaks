@@ -23,8 +23,19 @@ Central documentation map for Loofi Fedora Tweaks.
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
 - `plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md` - Completed v19.0.0 "Steward" implementation scope and phase gates
-- `plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md` - Active v21.0.0 "Resolve" scope, phases, compatibility, and gates
-- `../.workflow/specs/arch-v21.0.0.md` - Active Resolve architecture and protected contracts
+- `plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md` - Active v22.0.0 "Alignment" scope, phases, compatibility, and gates
+- `../.workflow/specs/arch-v22.0.0.md` - Active Alignment architecture and protected contracts
+- `../.workflow/specs/tasks-v22.0.0.md` - Alignment implementation and release checklist
+- `reports/V22_PHASE0_BASELINE.md` - Exact v21 checkout, trust, catalog, UI, startup, and package baseline
+- `reports/V22_PHASE0_STARTUP.json` - Reproducible Alignment startup and resource baseline
+- `reports/V22_PHASE1_TRUST_FOUNDATION.md` - Fail-closed COPR, package, Flatpak, shutdown, and support privacy closure
+- `reports/V22_PHASE2_CATALOG_NATIVE_ALIGNMENT.md` - Destination-owned catalog records and safe Plasma handoffs
+- `reports/V22_PHASE3_VISUAL_ALIGNMENT.md` - Quieter hierarchy and state-led core workflows
+- `reports/V22_PHASE4_JOURNEY_UI.md` - Automated core-journey accessibility matrix and physical gate boundary
+- `reports/V22_PHASE4_SECRETSTORE.md` - Provider-neutral locked, unavailable, CRUD, and fallback evidence
+- `reports/V22_PHASE5_LOCAL_QUALIFICATION.md` - Full local gates, exact candidate identities, and remaining physical and publication boundaries
+- `plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md` - Completed v21.0.0 "Resolve" scope, phases, compatibility, and gates
+- `../.workflow/specs/arch-v21.0.0.md` - Resolve architecture and protected contracts
 - `../.workflow/specs/tasks-v21.0.0.md` - Resolve implementation and release checklist
 - `reports/V21_PHASE0_BASELINE.md` - Exact v20 checkout, runtime, UI, lifecycle, tag, and platform baseline
 - `reports/V21_PHASE0_STARTUP.json` - Reproducible offscreen startup and resource baseline
@@ -97,6 +108,8 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
+- `v22.0.0 "Alignment"` is the sole active development target. Product
+  metadata remains v21.0.0 until local implementation and qualification pass.
 - `v21.0.0 "Resolve"` is the current completed public release. Its GitHub and
   COPR evidence is recorded separately from local qualification.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its

@@ -33,7 +33,10 @@ class SupportBundleV5:
 
     BUNDLE_SCHEMA = "12.0.0-lighthouse-support-v8"
     _SECRET_KEY_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)")
-    _SECRET_VALUE_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key)=([^\s&]+)")
+    _SECRET_VALUE_RE = re.compile(
+        r"(?i)\b(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)"
+        r"(?:\s*[:=]\s*|\s+)([^\s&]+)"
+    )
     _HOME_RE = re.compile(r"/home/[^/\\s]+")
     _EMAIL_RE = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+)")
     _HOSTNAME_RE = re.compile(r"(?i)\b(hostname|host)\s*[:=]\s*([A-Za-z0-9_.-]+)")

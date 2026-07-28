@@ -179,8 +179,14 @@ class AtlasDashboardTab(BaseTab):
             self._add_primary(summary.primary_recommendation)
         if summary.attention_items:
             self.attention_container.addWidget(self._section_label(self.tr("Also needs attention")))
+            attention_grid = AdaptiveGrid(
+                min_column_width=250,
+                column_breakpoints=((0, 1), (560, 2), (900, 3)),
+            )
+            attention_grid.setObjectName("homeAttentionGrid")
             for item in summary.attention_items:
-                self.attention_container.addWidget(self._attention_card(item))
+                attention_grid.add_card(self._attention_card(item))
+            self.attention_container.addWidget(attention_grid)
 
         self.tasks_container.addWidget(self._section_label(self.tr("Common tasks")))
         task_grid = AdaptiveGrid(min_column_width=250)

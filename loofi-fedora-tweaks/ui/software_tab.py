@@ -10,6 +10,7 @@ import typing
 
 import logging
 
+from core.catalog_models import NativeHandoffId
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer, pyqtSignal
@@ -33,6 +34,7 @@ from utils.software_utils import SoftwareUtils
 
 from ui.base_tab import BaseTab
 from ui.components import DetailsDisclosure, PageScaffold, StatusBadge
+from ui.native_handoff_card import NativeHandoffCard
 from ui.shared_states import EmptyState, LoadingState, UnavailableState
 from ui.tooltips import (
     SW_CODECS,
@@ -72,6 +74,17 @@ class _ApplicationsSubTab(BaseTab):
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
+
+        self.native_handoff = NativeHandoffCard(
+            NativeHandoffId.PLASMA_DISCOVER,
+            title=self.tr("Browse beyond the curated catalogue"),
+            description=self.tr(
+                "Use Plasma Discover for the complete graphical software catalogue. "
+                "Loofi keeps the verified Fedora actions below."
+            ),
+            button_text=self.tr("Open Plasma Discover"),
+        )
+        layout.addWidget(self.native_handoff)
 
         # Header with Refresh Button
         header_layout = QHBoxLayout()
@@ -173,6 +186,7 @@ class _ApplicationsSubTab(BaseTab):
         return []  # Populated asynchronously
 
     def on_activate(self: typing.Any) -> None:
+        self.native_handoff.refresh_availability()
         if self._catalog_load_started:
             return
         self._catalog_load_started = True

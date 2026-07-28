@@ -348,6 +348,25 @@ def test_shutdown_rejects_new_publishes_and_clears_subscriptions(event_bus):
         event_bus.subscribe("test.topic", callback)
 
 
+def test_two_phase_shutdown_requests_stop_before_wait(event_bus):
+    release = threading.Event()
+    received = threading.Event()
+
+    def blocking_callback(_event):
+        received.set()
+        release.wait(1.0)
+
+    event_bus.subscribe("test.topic", blocking_callback)
+    event_bus.publish("test.topic", {})
+    assert received.wait(0.5)
+
+    event_bus.request_stop()
+
+    assert event_bus.wait_for_stop(0.01) is False
+    release.set()
+    assert event_bus.wait_for_stop(0.5) is True
+
+
 def test_explicit_test_reinitialization_restores_publish(event_bus):
     callback = Mock()
     event_bus.shutdown(timeout=0.1)

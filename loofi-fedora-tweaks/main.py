@@ -189,7 +189,7 @@ def main(argv: list[str] | None = None):
 
         try:
             from PyQt6.QtWidgets import QApplication, QMessageBox
-            from core.application_runtime import ApplicationRuntime
+            from core.application_runtime import ApplicationRuntime, ShutdownResource
             from ui.main_window import MainWindow
             from utils.event_bus import EventBus
         except ImportError as exc:
@@ -203,9 +203,11 @@ def main(argv: list[str] | None = None):
             event_bus = EventBus()
             runtime.register(
                 "event-bus",
-                lambda remaining: event_bus.shutdown(timeout=remaining),
+                ShutdownResource(
+                    request_stop=event_bus.request_stop,
+                    wait_for_stop=event_bus.wait_for_stop,
+                ),
             )
-            app.aboutToQuit.connect(runtime.shutdown)
 
             # Install centralized error handler (v29.0)
             from utils.error_handler import install_error_handler
@@ -219,6 +221,10 @@ def main(argv: list[str] | None = None):
             ThemeManager().apply(app, theme_name)
 
             window = MainWindow(runtime=runtime)
+            # Keep QObject cleanup on the GUI thread before the runtime starts
+            # its bounded resource workers.
+            app.aboutToQuit.connect(window._request_runtime_stop)
+            app.aboutToQuit.connect(runtime.shutdown)
             window.show()
             _log.info("MainWindow shown successfully")
             sys.exit(app.exec())

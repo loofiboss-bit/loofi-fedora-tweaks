@@ -7,6 +7,7 @@ from typing import Any, Protocol
 
 from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import (
+    QHBoxLayout,
     QLabel,
     QStackedWidget,
     QVBoxLayout,
@@ -96,6 +97,13 @@ class SystemCheckTab(QWidget, PluginInterface):
 
         content = QVBoxLayout()
         content.setSpacing(16)
+        view_row = QHBoxLayout()
+        view_row.setContentsMargins(0, 0, 0, 0)
+        view_row.setSpacing(12)
+        self.view_label = QLabel(self.tr("View"))
+        self.view_label.setObjectName("systemCheckViewLabel")
+        self.view_label.setAccessibleName(self.tr("System Check view"))
+        view_row.addWidget(self.view_label)
         self.view_switcher = LocalViewSwitcher()
         self.view_switcher.setObjectName("systemCheckViewSwitcher")
         self.view_switcher.set_views(
@@ -106,7 +114,8 @@ class SystemCheckTab(QWidget, PluginInterface):
             ]
         )
         self.view_switcher.viewActivated.connect(self.select_view)
-        content.addWidget(self.view_switcher)
+        view_row.addWidget(self.view_switcher, 1)
+        content.addLayout(view_row)
 
         self.stack = QStackedWidget()
         self.stack.setObjectName("systemCheckViewStack")

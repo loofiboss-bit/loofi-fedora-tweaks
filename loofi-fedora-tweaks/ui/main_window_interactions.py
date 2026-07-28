@@ -171,10 +171,37 @@ class MainWindowInteractionMixin:
         self._set_sidebar_collapsed(not self._sidebar_collapsed)
 
     def _set_sidebar_toggle_state(self: typing.Any, collapsed: bool) -> None:
-        """Apply a native semantic direction icon and accessible control text."""
-        action = self.tr("Expand sidebar") if collapsed else self.tr("Collapse sidebar")
-        standard_icon = QStyle.StandardPixmap.SP_ArrowRight if collapsed else QStyle.StandardPixmap.SP_ArrowLeft
-        self._sidebar_toggle.setText("")
+        """Present a panel control that cannot be mistaken for Back."""
+        action = (
+            self.tr("Expand navigation sidebar")
+            if collapsed
+            else self.tr("Collapse navigation sidebar")
+        )
+        standard_pixmaps = QStyle.StandardPixmap
+        standard_icon = (
+            getattr(
+                standard_pixmaps,
+                "SP_TitleBarUnshadeButton",
+                standard_pixmaps.SP_ArrowRight,
+            )
+            if collapsed
+            else getattr(
+                standard_pixmaps,
+                "SP_TitleBarShadeButton",
+                standard_pixmaps.SP_ArrowLeft,
+            )
+        )
+        self._sidebar_toggle.setText("" if collapsed else self.tr("Collapse"))
+        tool_button_style = getattr(Qt, "ToolButtonStyle", None)
+        if tool_button_style is not None:
+            self._sidebar_toggle.setToolButtonStyle(
+                tool_button_style.ToolButtonIconOnly
+                if collapsed
+                else tool_button_style.ToolButtonTextBesideIcon
+            )
+        self._sidebar_toggle.setFixedWidth(
+            36 if collapsed else max(104, int(self._line_height * 6.5))
+        )
         style = self.style()
         if style is not None:
             self._sidebar_toggle.setIcon(style.standardIcon(standard_icon))
@@ -495,12 +522,20 @@ class MainWindowInteractionMixin:
         runtime = getattr(self, "__dict__", {}).get("_runtime")
         shutdown = getattr(runtime, "shutdown", None)
         if callable(shutdown):
+            # QObject-owned timers and widgets must be stopped on the GUI
+            # thread before ApplicationRuntime invokes its bounded hooks.
+            self._request_runtime_stop()
             shutdown()
             return
         self._cleanup_runtime(5.0)
 
     def _cleanup_runtime(self: typing.Any, timeout: float) -> None:
-        """Stop window-owned timers, workers, plugins, Pulse, and tray once."""
+        """Backward-compatible direct cleanup for tests without a runtime."""
+        self._request_runtime_stop()
+        self._wait_for_runtime_stop(timeout)
+
+    def _request_runtime_stop(self: typing.Any) -> None:
+        """Request window-owned timers, workers, plugins, and Pulse to stop."""
         attributes = getattr(self, "__dict__", {})
         if attributes.get("_runtime_cleaned", False):
             return
@@ -534,15 +569,26 @@ class MainWindowInteractionMixin:
 
         pulse_thread = getattr(self, "pulse_thread", None)
         if pulse_thread:
-            timeout_ms = max(0, min(5000, int(timeout * 1000)))
             try:
-                pulse_thread.stop(timeout_ms=timeout_ms)
+                pulse_thread.stop(timeout_ms=0)
             except TypeError:
                 pulse_thread.stop()
 
         tray_icon = getattr(self, "tray_icon", None)
         if tray_icon:
             tray_icon.hide()
+
+    def _wait_for_runtime_stop(self: typing.Any, timeout: float) -> bool:
+        """Wait within the runtime's remaining budget for the Pulse thread."""
+        pulse_thread = getattr(self, "pulse_thread", None)
+        if not pulse_thread:
+            return True
+        timeout_ms = max(0, min(5000, int(timeout * 1000)))
+        wait_for_thread = getattr(pulse_thread, "wait", None)
+        if not callable(wait_for_thread):
+            return True
+        stopped = wait_for_thread(timeout_ms)
+        return stopped is not False
 
     def closeEvent(self: typing.Any, event: typing.Any) -> typing.Any:
         tray_icon = getattr(self, "tray_icon", None)

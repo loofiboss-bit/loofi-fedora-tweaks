@@ -13,6 +13,7 @@ from types import MappingProxyType
 from typing import TYPE_CHECKING, Any, Mapping, cast
 
 from core.catalog_models import (
+    NativeHandoffId,
     Destination,
     FedoraVariant,
     NavigationRoute,
@@ -20,13 +21,10 @@ from core.catalog_models import (
     RoutePlacement,
     SectionDefinition,
 )
-from core.product_catalog_continuity import extend_catalog
-from core.product_catalog_records import CATALOG_DATA as BASE_CATALOG_DATA
+from core.product_catalog_records import CATALOG_DATA
 
 if TYPE_CHECKING:
     from core.plugins.metadata import PluginMetadata
-
-CATALOG_DATA = extend_catalog(BASE_CATALOG_DATA)
 
 RETIRED_ROUTE_REDIRECTS: Mapping[str, str] = MappingProxyType(
     {
@@ -107,6 +105,11 @@ def _placement(record: Mapping[str, Any]) -> RoutePlacement:
         allowed_variants=frozenset(FedoraVariant(str(value)) for value in record["allowed_variants"]),
         redirect_route_id=(str(record["redirect_route_id"]) if record["redirect_route_id"] is not None else None),
         discoverable=bool(record["discoverable"]),
+        native_handoff_id=(
+            NativeHandoffId(str(record["native_handoff_id"]))
+            if record.get("native_handoff_id") is not None
+            else None
+        ),
     )
 
 

@@ -156,8 +156,6 @@ jobs:
               echo "Detected COPR build artifacts for ${COPR_PACKAGE}-${VER} at:"
               echo "  ${BUILD_ARTIFACT_URL}"
               ARTIFACTS_READY=1
-              BUILD_REACHED_FINAL=1
-              break
             fi
 
             if [ "$STATUS" = "succeeded" ]; then
@@ -174,13 +172,14 @@ jobs:
             sleep 15
           done
 
-          if [ "$BUILD_REACHED_FINAL" -ne 1 ]; then
-            echo "::warning::COPR build ${BUILD_ID} did not reach a final 'succeeded' status within polling window (last status: ${STATUS:-unknown}). Attempting COPR repo regeneration and proceeding to package install verification to avoid false failure from delayed COPR backend state."
+          if [ "$BUILD_REACHED_FINAL" -ne 1 ] || ! python3 scripts/copr_release_gate.py build --status "${STATUS:-unknown}"; then
+            echo "::error::COPR build ${BUILD_ID} did not reach a final 'succeeded' status within polling window (last status: ${STATUS:-unknown}). Attempting COPR repo regeneration for diagnostics."
             if copr-cli regenerate-repos "${COPR_OWNER}/${COPR_PROJECT}"; then
               echo "Requested COPR repository regeneration for ${COPR_OWNER}/${COPR_PROJECT}"
             else
               echo "::warning::Failed to run copr-cli regenerate-repos for ${COPR_OWNER}/${COPR_PROJECT}"
             fi
+            exit 1
           fi
           echo "build_id=${BUILD_ID}" >> "$GITHUB_OUTPUT"
           echo "has_build_artifacts=${ARTIFACTS_READY}" >> "$GITHUB_OUTPUT"
@@ -204,23 +203,23 @@ jobs:
             sleep 20
           done
           if [ "$INSTALLED" -ne 1 ]; then
+            echo "::error::Unable to install ${COPR_PACKAGE}-${VER} from COPR after repository refresh retries"
             if [ "$HAS_BUILD_ARTIFACTS" = "1" ]; then
-              echo "::warning::Unable to install ${COPR_PACKAGE}-${VER} from COPR after repository refresh retries, but build artifacts are visible at:"
+              echo "::warning::Build artifacts are visible at:"
               echo "${BUILD_ARTIFACT_URL}"
-              echo "::warning::Treating this as non-blocking since package artifacts are available in COPR results."
-            else
-              echo "::error::Unable to install ${COPR_PACKAGE}-${VER} from COPR after repository refresh retries"
-              exit 1
             fi
+            exit 1
           fi
-          if [ "$INSTALLED" -eq 1 ]; then
-            INSTALLED_VER=$(rpm -q --qf '%{VERSION}' "${COPR_PACKAGE}")
-            if [ "$INSTALLED_VER" != "$VER" ]; then
-              echo "::error::COPR installed version ${INSTALLED_VER}, expected ${VER}"
-              exit 1
-            fi
-            echo "Verified installed COPR package version: ${INSTALLED_VER}"
+          INSTALLED_VER=$(rpm -q --qf '%{VERSION}' "${COPR_PACKAGE}")
+          python3 scripts/copr_release_gate.py install \
+            --installed "$INSTALLED" \
+            --expected-version "$VER" \
+            --installed-version "$INSTALLED_VER"
+          if [ "$INSTALLED_VER" != "$VER" ]; then
+            echo "::error::COPR installed version ${INSTALLED_VER}, expected ${VER}"
+            exit 1
           fi
+          echo "Verified installed COPR package version: ${INSTALLED_VER}"
 
       - name: Build summary
         run: |

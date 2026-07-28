@@ -21,7 +21,7 @@
             "flathub",
             "com.visualstudio.code"
         ],
-        "check_cmd": "flatpak list | grep com.visualstudio.code"
+        "check_cmd": "flatpak info com.visualstudio.code"
     },
     {
         "name": "Steam",
@@ -56,7 +56,7 @@
             "flathub",
             "com.discordapp.Discord"
         ],
-        "check_cmd": "flatpak list | grep com.discordapp.Discord"
+        "check_cmd": "flatpak info com.discordapp.Discord"
     },
     {
         "name": "Spotify",
@@ -68,7 +68,7 @@
             "flathub",
             "com.spotify.Client"
         ],
-        "check_cmd": "flatpak list | grep com.spotify.Client"
+        "check_cmd": "flatpak info com.spotify.Client"
     },
     {
         "name": "OBS Studio",
@@ -80,7 +80,7 @@
             "flathub",
             "com.obsproject.Studio"
         ],
-        "check_cmd": "flatpak list | grep com.obsproject.Studio"
+        "check_cmd": "flatpak info com.obsproject.Studio"
     },
     {
         "name": "GIMP",

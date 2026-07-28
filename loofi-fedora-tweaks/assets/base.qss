@@ -6,10 +6,28 @@
 /* Hallmark · PyQt control-center · restrained native · blue anchor · destination shell */
 /* Loofi Clarity structural theme. Palette values are substituted by ThemeManager. */
 
-/* Minimal application baseline: retain the QApplication system font. */
+/* Minimal application baseline: retain the QApplication system font.
+ * The palette owns the window canvas; nested reading widgets stay transparent
+ * unless they are an intentional surface below.
+ */
 QWidget {
-    background-color: $color_window;
     color: $color_text;
+    background-color: transparent;
+}
+
+QMainWindow,
+QDialog,
+QAbstractScrollArea {
+    background-color: $color_window;
+}
+
+QAbstractItemView {
+    background-color: $color_surface;
+    alternate-background-color: $color_surface_raised;
+}
+
+QLabel {
+    background-color: transparent;
 }
 
 QDialog, QMenu, QToolTip {
@@ -67,11 +85,25 @@ QTreeWidget#destinationSidebar[collapsed="true"]::item {
 
 QToolButton#sidebarToggle,
 QPushButton#globalSearchAffordance {
-    min-width: $control_min_height;
     min-height: $control_min_height;
 }
 
+QToolButton#sidebarToggle {
+    padding: 0 $space_2;
+    background-color: transparent;
+    color: $color_text_muted;
+    border-color: transparent;
+}
+
+QToolButton#sidebarToggle:hover,
+QToolButton#sidebarToggle:focus {
+    background-color: $color_hover;
+    color: $color_text;
+    border-color: $color_accent;
+}
+
 QPushButton#globalSearchAffordance {
+    min-width: $control_min_height;
     text-align: left;
 }
 
@@ -492,10 +524,15 @@ QFrame[clickableCard="true"]:disabled {
     border-color: $color_disabled_text;
 }
 
-QFrame#homePrimaryRecommendation {
+QFrame#homePrimaryRecommendation,
+QFrame#homePrimaryTask {
     background-color: $color_selected;
     border: $focus_width solid $color_accent;
     border-radius: $radius_card;
+}
+
+QFrame#homeAttentionItem {
+    background-color: $color_surface;
 }
 
 QLabel#cardTitle,
@@ -577,6 +614,34 @@ QFrame#sectionNavigator {
     background-color: transparent;
     color: $color_text;
     border: none;
+}
+
+QFrame#sectionGroupOverview {
+    background-color: $color_surface;
+    color: $color_text;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+}
+
+QLabel#sectionOverviewTitle {
+    color: $color_text;
+    font-weight: $section_title_weight;
+}
+
+QLabel#sectionOverviewDescription,
+QLabel#sectionMatchCount {
+    color: $color_text_muted;
+}
+
+QPushButton#sectionGroupButton {
+    text-align: left;
+    background-color: $color_surface_raised;
+}
+
+QFrame#sectionNoResults {
+    background-color: $color_surface_raised;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
 }
 
 QListWidget#sectionRail {

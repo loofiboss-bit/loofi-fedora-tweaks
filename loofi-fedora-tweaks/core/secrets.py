@@ -34,7 +34,11 @@ class SecretStore:
             if float(getattr(backend, "priority", 0)) <= 0:
                 return None
             return keyring
-        except (ImportError, RuntimeError, TypeError, ValueError):
+        except Exception as exc:
+            logger.debug(
+                "Secret Service backend is unavailable: %s",
+                type(exc).__name__,
+            )
             return None
 
     @classmethod
@@ -44,18 +48,26 @@ class SecretStore:
     @classmethod
     def get_persistent(cls, account: str) -> str | None:
         """Read only from Secret Service, never from the session fallback."""
+        if not account:
+            return None
         keyring = cls._keyring()
         if keyring is not None:
             try:
                 value = keyring.get_password(cls.SERVICE, account)
                 if value:
                     return str(value)
-            except (RuntimeError, OSError, ValueError) as exc:
-                logger.debug("Secret Service read failed for %s: %s", account, exc)
+            except Exception as exc:
+                logger.debug(
+                    "Secret Service read failed for %s: %s",
+                    account,
+                    type(exc).__name__,
+                )
         return None
 
     @classmethod
     def get(cls, account: str) -> str | None:
+        if not account:
+            return None
         persistent = cls.get_persistent(account)
         if persistent:
             return persistent
@@ -74,23 +86,42 @@ class SecretStore:
                     cls._session.pop(account, None)
                     return SecretWriteResult(True, True, "Stored in Secret Service.")
                 return SecretWriteResult(False, False, "Secret Service readback failed.")
-            except (RuntimeError, OSError, ValueError) as exc:
-                logger.debug("Secret Service write failed for %s: %s", account, exc)
+            except Exception as exc:
+                logger.debug(
+                    "Secret Service write failed for %s: %s",
+                    account,
+                    type(exc).__name__,
+                )
         cls._session[account] = value
         return SecretWriteResult(True, False, "Secret Service is unavailable; stored for this session only.")
 
     @classmethod
     def delete(cls, account: str) -> bool:
+        if not account:
+            return False
         cls._session.pop(account, None)
         keyring = cls._keyring()
         if keyring is None:
             return True
         try:
             keyring.delete_password(cls.SERVICE, account)
-        except keyring.errors.PasswordDeleteError:
-            pass
-        except (RuntimeError, OSError, ValueError) as exc:
-            logger.debug("Secret Service delete failed for %s: %s", account, exc)
+        except Exception as exc:
+            password_delete_error = getattr(
+                getattr(keyring, "errors", None),
+                "PasswordDeleteError",
+                None,
+            )
+            if (
+                isinstance(password_delete_error, type)
+                and issubclass(password_delete_error, Exception)
+                and isinstance(exc, password_delete_error)
+            ):
+                return True
+            logger.debug(
+                "Secret Service delete failed for %s: %s",
+                account,
+                type(exc).__name__,
+            )
             return False
         return True
 

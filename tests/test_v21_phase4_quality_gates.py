@@ -12,6 +12,7 @@ STARTUP = ROOT / "docs" / "reports" / "V21_PHASE4_STARTUP.json"
 REPORT = ROOT / "docs" / "reports" / "V21_PHASE4_PLATFORM_QUALITY.md"
 TASKS = ROOT / ".workflow" / "specs" / "tasks-v21.0.0.md"
 RACE_LOCK = ROOT / ".workflow" / "specs" / ".race-lock.json"
+PUBLICATION = ROOT / "docs" / "reports" / "V21_RELEASE_PUBLICATION.md"
 
 
 class TestV21Phase4QualityGates(unittest.TestCase):
@@ -37,20 +38,18 @@ class TestV21Phase4QualityGates(unittest.TestCase):
         report = REPORT.read_text(encoding="utf-8")
         tasks = TASKS.read_text(encoding="utf-8")
         race_lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
+        publication = PUBLICATION.read_text(encoding="utf-8")
 
         self.assertIn("Product version remains `20.0.0 \"Continuity\"`", report)
         self.assertIn("- [x] P4: lifecycle regression", tasks)
         self.assertIn(
             "- [x] Synchronize version metadata to v21.0.0", tasks
         )
-        self.assertEqual(race_lock["phase"], "release-complete")
         self.assertEqual(race_lock["product_version"], "v21.0.0")
-        self.assertEqual(race_lock["status"], "completed")
-        self.assertEqual(
-            race_lock["release_commit"],
-            "843760c4fe2725d093a977554badf8d1eb2451be",
-        )
-        self.assertEqual(race_lock["copr_build"], 10774741)
+        self.assertEqual(race_lock["target_version"], "v22.0.0")
+        self.assertEqual(race_lock["status"], "active")
+        self.assertIn("843760c4fe2725d093a977554badf8d1eb2451be", publication)
+        self.assertIn("10774741", publication)
 
 
 if __name__ == "__main__":

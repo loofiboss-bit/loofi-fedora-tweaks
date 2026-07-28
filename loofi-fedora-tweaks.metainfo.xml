@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="22.0.0" date="2026-07-28">
+      <description>
+        <p>v22.0.0 "Alignment" - Fedora-native consolidation and trust</p>
+        <ul>
+          <li>Added fail-closed COPR, package dependency, shutdown, Flatpak, and credential privacy gates</li>
+          <li>Split the catalog into destination-owned records while preserving all 81 routes</li>
+          <li>Added five fixed, user-initiated Plasma native handoffs</li>
+          <li>Simplified Home, Action Center, Specialist Tools, System Check, and Activity hierarchy</li>
+          <li>Expanded provider-neutral secrets and accessibility qualification</li>
+        </ul>
+      </description>
+    </release>
     <release version="21.0.0" date="2026-07-26">
       <description>
         <p>v21.0.0 "Resolve" - Coherent Verified Work</p>

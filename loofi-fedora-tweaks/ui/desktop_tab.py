@@ -15,6 +15,7 @@ from pathlib import Path
 from PyQt6.QtCore import QTimer
 
 logger = logging.getLogger(__name__)
+from core.catalog_models import NativeHandoffId  # noqa: E402
 from core.plugins.metadata import PluginMetadata  # noqa: E402
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtWidgets import (  # noqa: E402
@@ -40,6 +41,7 @@ from services.desktop import (  # noqa: E402
 
 from ui.base_tab import BaseTab  # noqa: E402
 from ui.components import PageScaffold  # noqa: E402
+from ui.native_handoff_card import NativeHandoffCard  # noqa: E402
 from ui.tooltips import DESK_FONTS, DESK_THEME  # noqa: F401, E402
 
 
@@ -85,6 +87,12 @@ class DesktopTab(BaseTab):
         if index is None:
             return False
         self.sub_tabs.setCurrentIndex(index)
+        handoff = {
+            0: self.window_management_handoff,
+            1: self.appearance_handoff,
+            2: self.display_handoff,
+        }[index]
+        handoff.refresh_availability()
         return True
 
     # ================================================================
@@ -102,6 +110,17 @@ class DesktopTab(BaseTab):
             self.tr("Preview compositor, tiling, workspace, and dotfile choices before applying them."),
         )
         wm_layout = scaffold.content_layout
+
+        self.window_management_handoff = NativeHandoffCard(
+            NativeHandoffId.PLASMA_WINDOW_MANAGEMENT,
+            title=self.tr("Plasma window settings"),
+            description=self.tr(
+                "Use Plasma's native settings for window actions and behavior. "
+                "Loofi keeps its preview-based workspace tools below."
+            ),
+            button_text=self.tr("Open Window Management"),
+        )
+        wm_layout.addWidget(self.window_management_handoff)
 
         # Compositor detection
         wm_layout.addWidget(self._create_compositor_section())
@@ -375,6 +394,17 @@ class DesktopTab(BaseTab):
         )
         layout = widget.content_layout
 
+        self.appearance_handoff = NativeHandoffCard(
+            NativeHandoffId.PLASMA_APPEARANCE,
+            title=self.tr("Complete Plasma appearance settings"),
+            description=self.tr(
+                "Use Plasma's native global theme settings for the complete set "
+                "of installed appearance options."
+            ),
+            button_text=self.tr("Open Global Theme"),
+        )
+        layout.addWidget(self.appearance_handoff)
+
         # KDE Global Theme Group
         theme_group = QGroupBox(self.tr("KDE Plasma Global Theme"))
         theme_layout = QVBoxLayout()
@@ -483,6 +513,17 @@ class DesktopTab(BaseTab):
             self.tr("Review connected displays and session state before changing scaling behavior."),
         )
         layout = scaffold.content_layout
+
+        self.display_handoff = NativeHandoffCard(
+            NativeHandoffId.PLASMA_DISPLAY,
+            title=self.tr("Complete display configuration"),
+            description=self.tr(
+                "Use Plasma's native display settings for arrangement, resolution, "
+                "refresh rate, and per-display scaling."
+            ),
+            button_text=self.tr("Open Display Configuration"),
+        )
+        layout.addWidget(self.display_handoff)
 
         # Session Info
         self.display_session_info = QLabel(self.tr("Detecting session..."))

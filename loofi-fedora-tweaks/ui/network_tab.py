@@ -14,6 +14,7 @@ import typing
 import logging
 import os
 
+from core.catalog_models import NativeHandoffId
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
@@ -36,6 +37,7 @@ from utils.history import HistoryManager
 
 from ui.base_tab import BaseTab
 from ui.components import PageScaffold
+from ui.native_handoff_card import NativeHandoffCard
 from ui.design import semantic_qcolor
 from ui.tooltips import DIAG_NETWORK
 
@@ -112,6 +114,17 @@ class NetworkTab(BaseTab):
     def _build_connections_tab(self: typing.Any) -> typing.Any:
         """Interfaces + WiFi + VPN overview."""
         container = QVBoxLayout()
+
+        self.connections_handoff = NativeHandoffCard(
+            NativeHandoffId.PLASMA_NETWORK_CONNECTIONS,
+            title=self.tr("Edit saved connections in Plasma"),
+            description=self.tr(
+                "Use the native Plasma editor for connection profiles. "
+                "Loofi continues to show the current network state below."
+            ),
+            button_text=self.tr("Open Network Connections"),
+        )
+        container.addWidget(self.connections_handoff)
 
         # Active Interfaces
         iface_group = QGroupBox(self.tr("Active Interfaces"))
@@ -508,6 +521,8 @@ class NetworkTab(BaseTab):
 
     def _on_tab_changed(self: typing.Any, index: typing.Any) -> typing.Any:
         """Start/stop monitoring timer based on active sub-tab."""
+        if self._route_active and index == 0:
+            self.connections_handoff.refresh_availability()
         if index == 3 and self._route_active:  # Monitoring tab
             self._refresh_monitoring()
             self._monitor_timer.start(3000)

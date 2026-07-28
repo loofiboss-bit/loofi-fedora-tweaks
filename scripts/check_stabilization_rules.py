@@ -33,8 +33,16 @@ ALLOWED_BROAD_EXCEPTIONS = {
     ("loofi-fedora-tweaks/core/workers/base_worker.py", "BaseWorker.run"),
     (
         "loofi-fedora-tweaks/core/application_runtime.py",
-        "ApplicationRuntime.shutdown",
+        "ApplicationRuntime._request_all_bounded.invoke",
     ),
+    (
+        "loofi-fedora-tweaks/core/application_runtime.py",
+        "ApplicationRuntime._invoke_bounded.invoke",
+    ),
+    ("loofi-fedora-tweaks/core/secrets.py", "SecretStore._keyring"),
+    ("loofi-fedora-tweaks/core/secrets.py", "SecretStore.get_persistent"),
+    ("loofi-fedora-tweaks/core/secrets.py", "SecretStore.set"),
+    ("loofi-fedora-tweaks/core/secrets.py", "SecretStore.delete"),
     ("loofi-fedora-tweaks/ui/lazy_widget.py", "LazyWidget.ensure_loaded"),
     ("loofi-fedora-tweaks/utils/error_handler.py", "_log_error"),
 }

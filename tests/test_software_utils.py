@@ -3,9 +3,11 @@ Tests for utils/software_utils.py (v34.0).
 Covers SoftwareUtils.is_check_command_satisfied with
 success, failure, missing binary, and invalid command cases.
 """
+import json
 import unittest
 import sys
 import os
+from pathlib import Path
 from unittest.mock import patch, MagicMock
 from subprocess import CalledProcessError
 
@@ -75,6 +77,25 @@ class TestIsCheckCommandSatisfied(unittest.TestCase):
         self.assertTrue(result)
         args = mock_run.call_args[0][0]
         self.assertEqual(args, ["flatpak", "info", "org.gimp.GIMP"])
+
+    def test_packaged_flatpak_checks_use_direct_info_probe(self):
+        catalog_path = (
+            Path(__file__).resolve().parents[1]
+            / "loofi-fedora-tweaks"
+            / "config"
+            / "apps.json"
+        )
+        catalog = json.loads(catalog_path.read_text(encoding="utf-8"))
+
+        flatpak_apps = [app for app in catalog if app["cmd"] == "flatpak"]
+        self.assertTrue(flatpak_apps)
+        for app in flatpak_apps:
+            with self.subTest(app=app["name"]):
+                application_id = app["args"][-1]
+                self.assertEqual(
+                    app["check_cmd"],
+                    f"flatpak info {application_id}",
+                )
 
 
 if __name__ == '__main__':

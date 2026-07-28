@@ -9,7 +9,11 @@ import re
 from typing import Any
 
 _SECRET_KEY_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)")
-_SECRET_VALUE_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key)=([^\s&]+)")
+_SECRET_VALUE_RE = re.compile(
+    r"(?i)\b(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)"
+    r"(?:\s*[:=]\s*|\s+)([^\s&]+)"
+)
+_AUTHORIZATION_RE = re.compile(r"(?i)(\bauthorization\s*:\s*)(bearer|basic)\s+([^\s,;]+)")
 _HOME_RE = re.compile(r"/home/[^/\s]+")
 _EMAIL_RE = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+)")
 _IPV4_RE = re.compile(r"(?<![\d.])(?:\d{1,3}\.){3}\d{1,3}(?![\d.])")
@@ -37,6 +41,7 @@ def _mask_ipv6_candidate(match: re.Match[str]) -> str:
 def redact_text(text: str, *, limit: int = 6000) -> str:
     """Mask private values in free-form text."""
     masked = _HOME_RE.sub("/home/<user>", text or "")
+    masked = _AUTHORIZATION_RE.sub(r"\1\2 <masked>", masked)
     masked = _SECRET_VALUE_RE.sub(r"\1=<masked>", masked)
     masked = _EMAIL_RE.sub(r"\1***\2", masked)
     masked = _MAC_RE.sub("<masked-mac>", masked)

@@ -23,6 +23,27 @@ class FedoraVariant(Enum):
     UNKNOWN = "unknown"
 
 
+class CapabilityState(str, Enum):
+    """Inert presentation state; it never grants execution authority."""
+
+    SUPPORTED = "supported"
+    READ_ONLY = "read_only"
+    UNAVAILABLE = "unavailable"
+    MANUAL_ONLY = "manual_only"
+    NATIVE_HANDOFF = "native_handoff"
+    PENDING_REBOOT = "pending_reboot"
+
+
+class NativeHandoffId(str, Enum):
+    """Opaque identifiers for the fixed native desktop handoff allowlist."""
+
+    PLASMA_DISCOVER = "plasma.discover"
+    PLASMA_NETWORK_CONNECTIONS = "plasma.network.connections"
+    PLASMA_APPEARANCE = "plasma.appearance"
+    PLASMA_DISPLAY = "plasma.display"
+    PLASMA_WINDOW_MANAGEMENT = "plasma.window.management"
+
+
 @dataclass(frozen=True)
 class NavigationRoute:
     """A stable route users and persisted UI state can reference."""
@@ -130,3 +151,4 @@ class RoutePlacement:
     )
     redirect_route_id: str | None = None
     discoverable: bool = True
+    native_handoff_id: NativeHandoffId | None = None

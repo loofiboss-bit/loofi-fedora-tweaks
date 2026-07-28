@@ -4,6 +4,33 @@
 
 All notable changes to this project will be documented in this file.
 
+## [22.0.0] - 2026-07-28 "Alignment"
+
+### Added
+
+- Added destination-owned catalog records with exact 81-route projection
+  checks and five fixed Plasma native handoffs.
+- Added provider-neutral SecretStore and core-journey accessibility matrices.
+- Added verifiable GitHub artifact attestations to the release workflow.
+
+### Changed
+
+- Made COPR success, repository availability, clean install, and version
+  readback separate fail-closed gates.
+- Simplified Home, Action Center, Specialist Tools, System Check, and Activity
+  around the next safe action.
+- Replaced synchronous shutdown hooks with a bounded two-phase protocol.
+
+### Fixed
+
+- Added missing API and daemon RPM runtime dependencies.
+- Replaced shell-like Flatpak detection and expanded credential redaction.
+
+### Compatibility
+
+- Preserved all 81 routes, aliases, favorites, persisted navigation, Action
+  Center schema v4, and public CLI/API/daemon contracts.
+
 ## [21.0.0] - 2026-07-26 "Resolve"
 
 ### Added

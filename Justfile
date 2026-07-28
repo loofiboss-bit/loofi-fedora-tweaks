@@ -99,7 +99,7 @@ verify:
     @echo "=== Type Check ==="
     just typecheck
     @echo ""
-    @echo "=== v18 Architecture ==="
+    @echo "=== Architecture ==="
     just validate-architecture
     @echo ""
     @echo "=== Tests + Coverage ==="

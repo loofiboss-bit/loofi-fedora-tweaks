@@ -260,6 +260,11 @@ class EventBus:
         Stop publishes and complete bounded executor cleanup.
         Call this during application teardown.
         """
+        self.request_stop()
+        self.wait_for_stop(timeout)
+
+    def request_stop(self) -> None:
+        """Stop accepting work and request cancellation without waiting."""
         logger.info("Shutting down EventBus")
         with self._sub_lock:
             if not self._accepting_publishes:
@@ -270,10 +275,15 @@ class EventBus:
         for future in futures:
             future.cancel()
         self._executor.shutdown(wait=False, cancel_futures=True)
-        if futures and timeout > 0:
-            wait(futures, timeout=timeout)
+
+    def wait_for_stop(self, timeout: float) -> bool:
+        """Wait up to ``timeout`` seconds for in-flight callbacks."""
         with self._sub_lock:
-            self._futures.clear()
+            futures = tuple(self._futures)
+        if not futures:
+            return True
+        _done, pending = wait(futures, timeout=max(0.0, timeout))
+        return not pending
 
     def _reinit_executor(self) -> None:
         """

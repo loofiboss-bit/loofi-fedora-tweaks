@@ -132,7 +132,7 @@ class _ActionCenterSubTab(BaseTab):
         target_row.setObjectName("actionCenterControls")
         target_load_row = QHBoxLayout()
         target_review_row = QHBoxLayout()
-        load_stable = QPushButton(self.tr("Load Fedora %s Actions") % FEDORA_RELEASE_POLICY.stable_release)
+        load_stable = QPushButton(self.tr("Reload Fedora %s Actions") % FEDORA_RELEASE_POLICY.stable_release)
         self.load_stable_button = load_stable
         load_stable.clicked.connect(lambda: self._load_target(FEDORA_RELEASE_POLICY.stable_target))
         target_load_row.addWidget(load_stable)
@@ -140,12 +140,28 @@ class _ActionCenterSubTab(BaseTab):
         load_preview = QPushButton(self.tr("Load Fedora %s Preview Actions") % FEDORA_RELEASE_POLICY.preview_release)
         self.load_preview_button = load_preview
         load_preview.clicked.connect(lambda: self._load_target(FEDORA_RELEASE_POLICY.preview_target))
-        target_load_row.addWidget(load_preview)
+        load_preview.hide()
 
         preview_button = QPushButton(self.tr("Preview Selected"))
         self.preview_button = preview_button
         preview_button.clicked.connect(self._preview_selected)
         target_load_row.addWidget(preview_button)
+
+        history_button = QPushButton(self.tr("Show History"))
+        self.history_button = history_button
+        history_button.clicked.connect(self._show_history)
+        target_load_row.addWidget(history_button)
+        target_load_row.addStretch()
+
+        self.target_guidance = QLabel(
+            self.tr(
+                "Fedora %s preview target choices are available in Upgrade Assistant."
+            )
+            % FEDORA_RELEASE_POLICY.preview_release
+        )
+        self.target_guidance.setObjectName("actionCenterTargetGuidance")
+        self.target_guidance.setWordWrap(True)
+        self.target_guidance.setAccessibleName(self.tr("Release target guidance"))
 
         review_button = QPushButton(self.tr("Review & Plan"))
         self.review_button = review_button
@@ -169,13 +185,11 @@ class _ActionCenterSubTab(BaseTab):
         self.check_again_button.setVisible(False)
         target_review_row.addWidget(self.check_again_button)
 
-        history_button = QPushButton(self.tr("Show History"))
-        self.history_button = history_button
-        history_button.clicked.connect(self._show_history)
-        target_review_row.addWidget(history_button)
         target_row.addLayout(target_load_row)
+        target_row.addWidget(self.target_guidance)
         target_row.addLayout(target_review_row)
         layout.addLayout(target_row)
+        self._set_lifecycle_primary("review", enabled=False)
 
         self.presentation_banner = ResultBanner(
             self.tr("Action Center status"),
@@ -214,10 +228,7 @@ class _ActionCenterSubTab(BaseTab):
         self.lifecycle_view.setCurrentIndex(0)
         self._current_plan = None
         self._current_run = None
-        self.run_button.setEnabled(False)
-        self.verify_button.setEnabled(False)
-        self.check_again_button.setEnabled(False)
-        self.check_again_button.setVisible(False)
+        self._set_lifecycle_primary("review", enabled=False)
         self.action_list.clear()
         self.detail_area.setPlainText(self.tr("Loading Action Center candidates..."))
         self.presentation_banner.set_result(
@@ -269,16 +280,16 @@ class _ActionCenterSubTab(BaseTab):
         """Present one of Haven's four explicit Action Center states."""
         review_mode = index == 0
         self.action_list.setVisible(review_mode)
-        for button in (self.preview_button, self.review_button, self.run_button):
-            button.setVisible(review_mode)
-        self.verify_button.setVisible(index in {1, 3})
+        self.preview_button.setVisible(review_mode)
         if review_mode:
             item = self._selected_item()
             if item is not None:
                 self._show_item(item)
             elif not self._items:
                 self.detail_area.setPlainText(self.tr("No Action Center candidate is waiting for review."))
+                self._set_lifecycle_primary("review", enabled=False)
             return
+        self._set_lifecycle_primary("", enabled=False)
 
         from core.actions import ActionPlanStore, ActionRunStore
 
@@ -326,10 +337,37 @@ class _ActionCenterSubTab(BaseTab):
             self.load_stable_button,
             self.load_preview_button,
             self.preview_button,
-            self.review_button,
             self.history_button,
         ):
             button.setEnabled(not loading)
+        if loading:
+            for button in (
+                self.review_button,
+                self.run_button,
+                self.verify_button,
+                self.check_again_button,
+            ):
+                button.setEnabled(False)
+
+    def _set_lifecycle_primary(
+        self,
+        stage: str,
+        *,
+        enabled: bool,
+    ) -> None:
+        """Expose exactly one next lifecycle action without changing behavior."""
+        buttons = {
+            "review": self.review_button,
+            "run": self.run_button,
+            "verify": self.verify_button,
+            "check_again": self.check_again_button,
+        }
+        for candidate_stage, button in buttons.items():
+            button.setVisible(candidate_stage == stage)
+            button.setEnabled(enabled if candidate_stage == stage else False)
+            button.setObjectName(
+                "primaryAction" if candidate_stage == stage else "componentButton"
+            )
 
     def _selection_changed(self: typing.Any, row: int) -> None:
         if 0 <= row < len(self._items):
@@ -385,7 +423,7 @@ class _ActionCenterSubTab(BaseTab):
         return self._items[row]
 
     def _show_item(self: typing.Any, item: typing.Any) -> None:
-        self.review_button.setEnabled(not item.manual_only)
+        self._set_lifecycle_primary("review", enabled=not item.manual_only)
         if item.manual_only:
             self.presentation_status.setText(self.tr("Manual-only recommendation: review the guidance; Action Center will not execute it."))
         command = " ".join(item.command_preview) if item.command_preview else self.tr("Manual-only")
@@ -491,8 +529,10 @@ class _ActionCenterSubTab(BaseTab):
     def _accept_plan(self: typing.Any, plan: typing.Any) -> None:
         self._current_plan = plan
         self._current_run = None
-        self.run_button.setEnabled(plan.state in {"ready", "needs_review"})
-        self.verify_button.setEnabled(False)
+        self._set_lifecycle_primary(
+            "run",
+            enabled=plan.state in {"ready", "needs_review"},
+        )
         self._show_plan(plan)
 
     def _show_plan(self: typing.Any, plan: typing.Any) -> None:
@@ -565,8 +605,7 @@ class _ActionCenterSubTab(BaseTab):
         self._prepared_run = prepared
         self._output_chunks = []
         self._stderr_chunks = []
-        self.run_button.setEnabled(False)
-        self.verify_button.setEnabled(False)
+        self._set_lifecycle_primary("run", enabled=False)
         self.output_area.clear()
         self.append_output(self.tr("Running reviewed Action Center plan asynchronously...\n"))
         self.runner.run_command(vector[0], vector[1:], authority="action_center")
@@ -601,7 +640,6 @@ class _ActionCenterSubTab(BaseTab):
             QMessageBox.warning(self, self.tr("Run Recording Failed"), str(exc))
             return
         self._current_run = run
-        self.verify_button.setEnabled(run.state == "verifying")
         self.append_output(self.tr("\nExecution state: %1\n").replace("%1", run.state))
         self._show_run(run)
 
@@ -634,7 +672,6 @@ class _ActionCenterSubTab(BaseTab):
         except (OSError, RuntimeError, ValueError, TypeError) as exc:
             QMessageBox.warning(self, self.tr("Run Recording Failed"), str(exc))
             return
-        self.verify_button.setEnabled(False)
         self._show_run(self._current_run)
 
     def _verify_current_run(self: typing.Any) -> None:
@@ -642,7 +679,7 @@ class _ActionCenterSubTab(BaseTab):
         if run is None:
             QMessageBox.warning(self, self.tr("No Run"), self.tr("Run a reviewed plan before verification."))
             return
-        self.verify_button.setEnabled(False)
+        self._set_lifecycle_primary("verify", enabled=False)
         orchestrator = self._orchestrator_instance()
         self._start_operation(
             lambda: orchestrator.verify(run.run_id),
@@ -652,7 +689,6 @@ class _ActionCenterSubTab(BaseTab):
 
     def _accept_verification(self: typing.Any, verified: typing.Any) -> None:
         self._current_run = verified
-        self.verify_button.setEnabled(verified.state == "awaiting_reboot")
         self._show_run(verified)
 
     def _request_follow_up_check(self: typing.Any) -> None:
@@ -680,8 +716,12 @@ class _ActionCenterSubTab(BaseTab):
             context is not None
             and str(getattr(run, "state", "")) == "succeeded"
         )
-        self.check_again_button.setVisible(context is not None)
-        self.check_again_button.setEnabled(can_check_again)
+        if can_check_again:
+            self._set_lifecycle_primary("check_again", enabled=True)
+        elif str(getattr(run, "state", "")) in {"verifying", "awaiting_reboot"}:
+            self._set_lifecycle_primary("verify", enabled=True)
+        else:
+            self._set_lifecycle_primary("", enabled=False)
         self.check_again_button.setToolTip(
             self.tr("Run a later read-only System Check for: %1").replace(
                 "%1",
@@ -745,4 +785,4 @@ class _ActionCenterSubTab(BaseTab):
         viable = next((plan for plan in reversed(plans) if plan.state in {"ready", "needs_review"} and not plan.is_expired()), None)
         if viable is not None:
             self._current_plan = viable
-            self.run_button.setEnabled(True)
+            self._set_lifecycle_primary("run", enabled=True)

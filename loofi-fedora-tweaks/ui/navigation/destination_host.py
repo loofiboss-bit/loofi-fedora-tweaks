@@ -179,19 +179,22 @@ class DestinationHost(QFrame):
         )
         self._suppress_signal = False
         self.clear_explanation()
-        self.set_active_route(active_route_id or destination.default_route_id)
+        self.set_active_route(
+            active_route_id or destination.default_route_id,
+            reveal=destination.id != "advanced",
+        )
         self.setVisible(len(self._routes) > 1)
 
     def route_ids(self) -> tuple[str, ...]:
         return tuple(route.route_id for route in self._routes)
 
-    def set_active_route(self, route_id: str) -> None:
+    def set_active_route(self, route_id: str, *, reveal: bool = True) -> None:
         """Select the section containing a route without requesting navigation."""
         placement = placement_for_route(route_id)
         if placement is None:
             return
         self._suppress_signal = True
-        self.navigator.set_active_section(placement.section_id)
+        self.navigator.set_active_section(placement.section_id, reveal=reveal)
         self._suppress_signal = False
 
     def set_compact(self, compact: bool) -> None:

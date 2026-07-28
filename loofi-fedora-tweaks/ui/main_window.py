@@ -203,7 +203,7 @@ class MainWindow(
         sidebar_chrome.addStretch()
         self._sidebar_toggle = QToolButton()
         self._sidebar_toggle.setObjectName("sidebarToggle")
-        self._sidebar_toggle.setFixedSize(36, 36)
+        self._sidebar_toggle.setFixedHeight(36)
         self._sidebar_toggle.clicked.connect(self._toggle_sidebar)
         sidebar_chrome.addWidget(self._sidebar_toggle)
         sidebar_layout.addLayout(sidebar_chrome)
@@ -337,7 +337,15 @@ class MainWindow(
         # First-run wizard
         self._check_first_run()
         if self._runtime is not None:
-            self._runtime.register("main-window", self._cleanup_runtime)
+            from core.application_runtime import ShutdownResource
+
+            self._runtime.register(
+                "main-window",
+                ShutdownResource(
+                    request_stop=self._request_runtime_stop,
+                    wait_for_stop=self._wait_for_runtime_stop,
+                ),
+            )
 
     @property
     def pages(self) -> dict[str, QWidget]:

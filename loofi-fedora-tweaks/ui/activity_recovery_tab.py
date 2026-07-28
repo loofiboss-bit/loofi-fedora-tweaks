@@ -118,6 +118,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.scaffold.add_widget(notice)
 
         actions = ActionBar()
+        self.activity_actions = actions
         self.load_button = PrimaryButton(
             self.tr("Load activity"),
             description=self.tr("Read the latest records from supported local sources."),
@@ -169,7 +170,21 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             self.tr("Choose Load activity to read supported local history."),
         )
         self.empty_state.setObjectName("activityEmptyState")
-        self.scaffold.add_widget(self.empty_state)
+        self.empty_state.body.setAlignment(Qt.AlignmentFlag.AlignCenter)
+        self.empty_load_button = PrimaryButton(
+            self.tr("Load activity"),
+            description=self.tr("Read the latest records from supported local sources."),
+        )
+        self.empty_load_button.setObjectName("activityEmptyLoadButton")
+        self.empty_load_button.clicked.connect(
+            lambda: self.load_activity(refresh=False)
+        )
+        self.empty_state.body.addWidget(
+            self.empty_load_button,
+            0,
+            Qt.AlignmentFlag.AlignHCenter,
+        )
+        self.scaffold.add_widget(self.empty_state, 1)
 
         self.detail_card = Card(
             self.tr("Change details"),
@@ -210,6 +225,9 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.table.setVisible(state.table_visible)
         self.empty_state.setVisible(state.empty_visible)
         self.detail_card.setVisible(state.details_visible)
+        self.activity_actions.setVisible(state.state != "initial")
+        self.feedback.setVisible(state.state != "initial")
+        self.empty_load_button.setVisible(state.state == "initial")
         self.refresh_button.setEnabled(state.refresh_enabled)
         self.review_button.setVisible(state.recovery_review_visible)
 

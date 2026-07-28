@@ -1,0 +1,235 @@
+{
+  "backend": "offscreen",
+  "cases": [
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "atlas_dashboard",
+      "status": "passed",
+      "surface": "home",
+      "target_object_name": "homeCheckNow",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "atlas_dashboard",
+      "status": "passed",
+      "surface": "home",
+      "target_object_name": "homeCheckNow",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "atlas_dashboard",
+      "status": "passed",
+      "surface": "home",
+      "target_object_name": "homeCheckNow",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "atlas_dashboard",
+      "status": "passed",
+      "surface": "home",
+      "target_object_name": "homeCheckNow",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "health",
+      "status": "passed",
+      "surface": "system_check",
+      "target_object_name": "systemCheckRefresh",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "health",
+      "status": "passed",
+      "surface": "system_check",
+      "target_object_name": "systemCheckRefresh",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "health",
+      "status": "passed",
+      "surface": "system_check",
+      "target_object_name": "systemCheckRefresh",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "health",
+      "status": "passed",
+      "surface": "system_check",
+      "target_object_name": "systemCheckRefresh",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "maintenance:action-center",
+      "status": "passed",
+      "surface": "action_center",
+      "target_object_name": "Action Center candidates",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "maintenance:action-center",
+      "status": "passed",
+      "surface": "action_center",
+      "target_object_name": "Action Center candidates",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "maintenance:action-center",
+      "status": "passed",
+      "surface": "action_center",
+      "target_object_name": "Action Center candidates",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "maintenance:action-center",
+      "status": "passed",
+      "surface": "action_center",
+      "target_object_name": "Action Center candidates",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "activity",
+      "status": "passed",
+      "surface": "activity",
+      "target_object_name": "activityLoadButton",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "activity",
+      "status": "passed",
+      "surface": "activity",
+      "target_object_name": "activityLoadButton",
+      "viewport": [
+        1366,
+        768
+      ]
+    },
+    {
+      "direction": "ltr",
+      "issues": [],
+      "route_id": "activity",
+      "status": "passed",
+      "surface": "activity",
+      "target_object_name": "activityLoadButton",
+      "viewport": [
+        860,
+        560
+      ]
+    },
+    {
+      "direction": "rtl",
+      "issues": [],
+      "route_id": "activity",
+      "status": "passed",
+      "surface": "activity",
+      "target_object_name": "activityLoadButton",
+      "viewport": [
+        860,
+        560
+      ]
+    }
+  ],
+  "errors": [],
+  "matrix_contract": {
+    "base_point_size": 14,
+    "cells": 16,
+    "directions": [
+      "ltr",
+      "rtl"
+    ],
+    "reduced_motion": true,
+    "scale_percent": 200,
+    "surfaces": [
+      "home",
+      "system_check",
+      "action_center",
+      "activity"
+    ],
+    "theme": "highcontrast",
+    "viewports": [
+      [
+        1366,
+        768
+      ],
+      [
+        860,
+        560
+      ]
+    ]
+  },
+  "phase": 4,
+  "physical_gate": {
+    "at_spi": "not_verified",
+    "orca": "not_verified",
+    "reason": "Offscreen Qt evidence cannot establish live compositor or assistive-technology behaviour.",
+    "wayland": "not_verified"
+  },
+  "release": "v22.0.0 Alignment",
+  "schema_version": 1,
+  "status": "passed"
+}

@@ -1,0 +1,49 @@
+{
+  "method": {
+    "marker": "AtlasDashboardTab realized",
+    "profile": "temporary-standard-clean",
+    "qt_platform": "offscreen",
+    "runs": 7,
+    "warmups": 2
+  },
+  "resource_contract": {
+    "active_timer_intervals_ms": [],
+    "running_qthreads": 0,
+    "runtime_plugin_ids": [
+      "atlas_dashboard"
+    ],
+    "subprocess_probes": [],
+    "system_check_runtime_imports": []
+  },
+  "schema_version": 1,
+  "summary": {
+    "milestones_ms": {
+      "gui_import": {
+        "max": 111.518,
+        "median": 98.507,
+        "min": 96.299
+      },
+      "main_window": {
+        "max": 171.610,
+        "median": 159.734,
+        "min": 157.045
+      },
+      "meaningful_home": {
+        "max": 173.846,
+        "median": 162.010,
+        "min": 159.222
+      },
+      "qapplication": {
+        "max": 112.907,
+        "median": 99.881,
+        "min": 97.871
+      }
+    },
+    "rss_kib": {
+      "max": 76496,
+      "median": 76372,
+      "min": 76324
+    }
+  }
+}
+

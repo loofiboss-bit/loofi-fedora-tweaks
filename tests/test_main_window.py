@@ -1707,7 +1707,7 @@ class TestToggleSidebar(unittest.TestCase):
         self.win._sidebar_collapsed = True
         self.win._toggle_sidebar()
         self.assertFalse(self.win._sidebar_collapsed)
-        self.assertEqual(self.win._sidebar_toggle._text, "")
+        self.assertEqual(self.win._sidebar_toggle._text, "Collapse")
 
     def test_toggle_round_trip(self):
         """Double toggle returns to original state."""

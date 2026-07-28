@@ -9,7 +9,9 @@ from PyQt6.QtWidgets import (
     QButtonGroup,
     QComboBox,
     QFrame,
+    QGridLayout,
     QHBoxLayout,
+    QLabel,
     QLineEdit,
     QListWidget,
     QListWidgetItem,
@@ -48,6 +50,8 @@ class SectionNavigator(QFrame):
         self._filtering_enabled = False
         self._visible_section_indexes: tuple[int, ...] = ()
         self._rail_section_indexes: dict[int, int] = {}
+        self._group_buttons: list[QPushButton] = []
+        self._overview_active = False
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -73,6 +77,49 @@ class SectionNavigator(QFrame):
         layout.addWidget(self.filter_panel)
         self.filter_panel.hide()
 
+        self.group_overview = QFrame(self)
+        self.group_overview.setObjectName("sectionGroupOverview")
+        overview_layout = QVBoxLayout(self.group_overview)
+        overview_layout.setContentsMargins(16, 16, 16, 16)
+        overview_layout.setSpacing(8)
+        self.overview_title = QLabel(self.tr("Specialist tool groups"))
+        self.overview_title.setObjectName("sectionOverviewTitle")
+        self.overview_description = QLabel(
+            self.tr("Choose a group below, or search all specialist tools.")
+        )
+        self.overview_description.setObjectName("sectionOverviewDescription")
+        self.overview_description.setWordWrap(True)
+        self.group_button_grid = QGridLayout()
+        self.group_button_grid.setContentsMargins(0, 4, 0, 0)
+        self.group_button_grid.setSpacing(8)
+        overview_layout.addWidget(self.overview_title)
+        overview_layout.addWidget(self.overview_description)
+        overview_layout.addLayout(self.group_button_grid)
+        layout.addWidget(self.group_overview)
+        self.group_overview.hide()
+
+        self.match_count = QLabel()
+        self.match_count.setObjectName("sectionMatchCount")
+        self.match_count.setAccessibleName(self.tr("Specialist tool search results"))
+        layout.addWidget(self.match_count)
+        self.match_count.hide()
+
+        self.no_results = QFrame(self)
+        self.no_results.setObjectName("sectionNoResults")
+        no_results_layout = QVBoxLayout(self.no_results)
+        no_results_layout.setContentsMargins(16, 16, 16, 16)
+        self.no_results_title = QLabel(self.tr("No specialist tools found"))
+        self.no_results_title.setObjectName("stateTitle")
+        self.no_results_message = QLabel(
+            self.tr("Try another search term or choose All groups.")
+        )
+        self.no_results_message.setObjectName("stateMessage")
+        self.no_results_message.setWordWrap(True)
+        no_results_layout.addWidget(self.no_results_title)
+        no_results_layout.addWidget(self.no_results_message)
+        layout.addWidget(self.no_results)
+        self.no_results.hide()
+
         self.rail = QListWidget(self)
         self.rail.setObjectName("sectionRail")
         self.rail.setAccessibleName(self.tr("Sections"))
@@ -94,6 +141,8 @@ class SectionNavigator(QFrame):
         self._suppress_signal = True
         self._sections = tuple(sections)
         self._populate_group_filter()
+        self._populate_group_overview()
+        self._overview_active = self._filtering_enabled
         self._rebuild_visible_sections()
         self._suppress_signal = False
 
@@ -104,6 +153,7 @@ class SectionNavigator(QFrame):
             return
         self._filtering_enabled = enabled
         self.filter_panel.setVisible(enabled)
+        self._overview_active = enabled
         if not enabled:
             self.filter_input.clear()
             self.group_filter.setCurrentIndex(0)
@@ -141,6 +191,44 @@ class SectionNavigator(QFrame):
         self.group_filter.setCurrentIndex(max(0, selected_index))
         self.group_filter.blockSignals(False)
 
+    def _populate_group_overview(self) -> None:
+        while self.group_button_grid.count():
+            item = self.group_button_grid.takeAt(0)
+            if item is None:
+                continue
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        self._group_buttons = []
+        group_counts: dict[str, int] = {}
+        for section in self._sections:
+            if section.group:
+                group_counts[section.group] = group_counts.get(section.group, 0) + 1
+        for index, (group, count) in enumerate(group_counts.items()):
+            button = QPushButton(
+                self.tr("%1 · %2 tools")
+                .replace("%1", group)
+                .replace("%2", str(count))
+            )
+            button.setObjectName("sectionGroupButton")
+            button.setAccessibleName(
+                self.tr("Show %1 specialist tools").replace("%1", group)
+            )
+            button.clicked.connect(
+                lambda _checked=False, selected=group: self._select_group(selected)
+            )
+            row, column = divmod(index, 2)
+            self.group_button_grid.addWidget(button, row, column)
+            self._group_buttons.append(button)
+
+    def _select_group(self, group: str) -> None:
+        index = self.group_filter.findData(group)
+        if index < 0:
+            return
+        self._overview_active = False
+        self.group_filter.setCurrentIndex(index)
+        self._rebuild_visible_sections()
+
     def _matching_section_indexes(self) -> tuple[int, ...]:
         if not self._filtering_enabled:
             return tuple(range(len(self._sections)))
@@ -159,6 +247,11 @@ class SectionNavigator(QFrame):
         return tuple(matches)
 
     def _rebuild_visible_sections(self, *_args) -> None:
+        if self._filtering_enabled and (
+            self.filter_input.text().strip()
+            or str(self.group_filter.currentData() or "")
+        ):
+            self._overview_active = False
         active_section_id = self.active_section_id()
         previous_suppress = self._suppress_signal
         self._suppress_signal = True
@@ -220,6 +313,19 @@ class SectionNavigator(QFrame):
             self._select_rail_section_index(
                 self._visible_section_indexes[selected_index]
             )
+        has_matches = bool(self._visible_section_indexes)
+        show_overview = self._filtering_enabled and self._overview_active
+        self.group_overview.setVisible(show_overview)
+        self.no_results.setVisible(self._filtering_enabled and not has_matches)
+        self.match_count.setVisible(
+            self._filtering_enabled and not show_overview and has_matches
+        )
+        if self._filtering_enabled:
+            self.match_count.setText(
+                self.tr("%1 specialist tools")
+                .replace("%1", str(len(self._visible_section_indexes)))
+            )
+        self._apply_mode(self._compact)
         self._suppress_signal = previous_suppress
 
     def sections(self) -> tuple[SectionItem, ...]:
@@ -228,9 +334,19 @@ class SectionNavigator(QFrame):
     def section_ids(self) -> tuple[str, ...]:
         return tuple(section.section_id for section in self._sections)
 
-    def set_active_section(self, section_id: str) -> None:
+    def set_active_section(self, section_id: str, *, reveal: bool = True) -> None:
         for index, section in enumerate(self._sections):
             if section.section_id == section_id:
+                if self._filtering_enabled and reveal:
+                    self._overview_active = False
+                    self.filter_input.blockSignals(True)
+                    self.group_filter.blockSignals(True)
+                    self.filter_input.clear()
+                    group_index = self.group_filter.findData(section.group)
+                    self.group_filter.setCurrentIndex(max(0, group_index))
+                    self.filter_input.blockSignals(False)
+                    self.group_filter.blockSignals(False)
+                    self._rebuild_visible_sections()
                 if index not in self._visible_section_indexes:
                     self.filter_input.blockSignals(True)
                     self.group_filter.blockSignals(True)
@@ -307,8 +423,11 @@ class SectionNavigator(QFrame):
         self._compact = compact
         self.setMinimumWidth(0 if compact else 208)
         self.setMaximumWidth(16777215 if compact else 224)
-        self.rail.setVisible(not compact)
-        self.selector.setVisible(compact)
+        show_sections = not (
+            self._filtering_enabled and self._overview_active
+        ) and bool(self._visible_section_indexes)
+        self.rail.setVisible(show_sections and not compact)
+        self.selector.setVisible(show_sections and compact)
 
     def _on_rail_changed(self, index: int) -> None:
         section_index = self._rail_section_indexes.get(index)

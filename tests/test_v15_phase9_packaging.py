@@ -53,10 +53,12 @@ class TestPhase9PackageMetadata(unittest.TestCase):
             "Requires:       %{name} = %{epoch}:%{version}-%{release}", api
         )
         self.assertIn("Requires:       python3-fastapi", api)
+        self.assertIn("Requires:       python3-python-multipart", api)
         self.assertIn(
             "Requires:       %{name} = %{epoch}:%{version}-%{release}", daemon
         )
         self.assertIn("Requires:       python3-dbus", daemon)
+        self.assertIn("Requires:       python3-gobject-base", daemon)
         self.assertNotIn("%package extras", spec)
 
     def test_package_descriptions_separate_core_and_specialist_capability(self):

@@ -10,7 +10,7 @@ Covers:
 import os
 import sys
 import unittest
-from unittest.mock import MagicMock, patch
+from unittest.mock import MagicMock, call, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
@@ -204,8 +204,17 @@ class TestMainGUI(unittest.TestCase):
         self.assertEqual(raised.exception.code, 0)
         runtime.register.assert_called_once()
         self.assertEqual(runtime.register.call_args.args[0], "event-bus")
-        app.aboutToQuit.connect.assert_called_once_with(runtime.shutdown)
+        resource = runtime.register.call_args.args[1]
+        self.assertEqual(resource.request_stop, mock_event_bus_class.return_value.request_stop)
+        self.assertEqual(resource.wait_for_stop, mock_event_bus_class.return_value.wait_for_stop)
         mock_window_class.assert_called_once_with(runtime=runtime)
+        self.assertEqual(
+            app.aboutToQuit.connect.call_args_list,
+            [
+                call(mock_window_class.return_value._request_runtime_stop),
+                call(runtime.shutdown),
+            ],
+        )
 
 
 if __name__ == '__main__':

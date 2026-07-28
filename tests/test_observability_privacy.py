@@ -36,6 +36,27 @@ class TestObservabilityPrivacy(unittest.TestCase):
     def test_redaction_is_bounded(self):
         self.assertEqual(len(redact_text("x" * 7000)), 6000)
 
+    def test_masks_authorization_headers_and_colon_separated_secrets(self):
+        redacted = redact_text(
+            "Authorization: Bearer top-secret "
+            "Proxy-Authorization: Basic proxy-secret "
+            "password: private-value token = another-secret "
+            "api_key : final-secret credential whitespace-secret"
+        )
+
+        for private in (
+            "top-secret",
+            "proxy-secret",
+            "private-value",
+            "another-secret",
+            "final-secret",
+            "whitespace-secret",
+        ):
+            with self.subTest(private=private):
+                self.assertNotIn(private, redacted)
+        self.assertIn("Authorization: Bearer <masked>", redacted)
+        self.assertIn("Authorization: Basic <masked>", redacted)
+
 
 if __name__ == "__main__":
     unittest.main()

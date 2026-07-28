@@ -507,7 +507,15 @@ class TestSupportBundleV3(unittest.TestCase):
         self.assertTrue(bundle["privacy"]["tokens_masked"])
 
     @patch.object(SupportBundleV5, "_flatpak_runtimes", return_value="")
-    @patch.object(SupportBundleV5, "_recent_journal_warnings", return_value="user@example.com /home/loofi token=abc")
+    @patch.object(
+        SupportBundleV5,
+        "_recent_journal_warnings",
+        return_value=(
+            "user@example.com /home/loofi token=abc "
+            "Authorization: Bearer journal-secret password: journal-password "
+            "credential whitespace-secret"
+        ),
+    )
     @patch.object(SupportBundleV5, "_failed_services", return_value=[])
     @patch("core.export.support_bundle_v5.ActionExecutor.get_action_log", return_value=[{"cmd": ["/home/loofi/tool"], "token": "abc"}])
     @patch("core.export.support_bundle_v5.ReportExporter.gather_system_info", return_value={"home": "/home/loofi", "email": "user@example.com"})
@@ -532,6 +540,9 @@ class TestSupportBundleV3(unittest.TestCase):
         self.assertNotIn("/home/loofi", text)
         self.assertNotIn("user@example.com", text)
         self.assertNotIn("token=abc", text)
+        self.assertNotIn("journal-secret", text)
+        self.assertNotIn("journal-password", text)
+        self.assertNotIn("whitespace-secret", text)
         self.assertEqual(bundle["action_history"][0]["token"], "<masked>")
 
     @patch.object(SupportBundleV5, "generate_bundle", return_value={"schema": SupportBundleV5.BUNDLE_SCHEMA})

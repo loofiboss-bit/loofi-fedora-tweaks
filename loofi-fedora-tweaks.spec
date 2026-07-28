@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        21.0.0
+Version:        22.0.0
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -47,6 +47,7 @@ Requires:       python3-uvicorn
 Requires:       python3-jwt
 Requires:       python3-bcrypt
 Requires:       python3-httpx
+Requires:       python3-python-multipart
 
 %description api
 Optional FastAPI/Uvicorn web API runtime for Loofi Fedora Tweaks.
@@ -56,6 +57,7 @@ Install this package only when the headless web API mode is needed.
 Summary:        Optional Loofi Fedora Tweaks user daemon runtime
 Requires:       %{name} = %{epoch}:%{version}-%{release}
 Requires:       python3-dbus
+Requires:       python3-gobject-base
 
 %description daemon
 Optional user daemon runtime and systemd user service for Loofi Fedora Tweaks.

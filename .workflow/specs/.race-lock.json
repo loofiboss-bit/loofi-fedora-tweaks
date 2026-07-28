@@ -1,18 +1,11 @@
 {
-  "version": "v21.0.0",
-  "started_at": "20260726_111101",
-  "status": "completed",
-  "target_version": "v21.0.0",
-  "phase": "release-complete",
-  "baseline_commit": "841218ef4dbfa6368136bd3d8cbc1c394ec81258",
-  "product_version": "v21.0.0",
+  "version": "v22.0.0",
+  "started_at": "20260728_000000",
+  "status": "active",
+  "target_version": "v22.0.0",
+  "phase": "phase-5",
+  "baseline_commit": "3c9ce62a14839f40dd1ac027cc43a83476f27571",
+  "product_version": "v22.0.0",
   "v20_publication_status": "blocked",
-  "override_recorded_at": "2026-07-26T11:11:01+00:00",
-  "release_authorized_at": "2026-07-26T15:24:00+02:00",
-  "release_commit": "843760c4fe2725d093a977554badf8d1eb2451be",
-  "release_run": 30204640746,
-  "ci_run": 30204640772,
-  "codeql_run": 30204640677,
-  "copr_build": 10774741,
-  "completed_at": "2026-07-26T16:01:48+02:00"
+  "override_recorded_at": "2026-07-28T00:00:00+02:00"
 }
