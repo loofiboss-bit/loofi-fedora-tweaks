@@ -177,7 +177,7 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v21.0.0 "Resolve"` is the current release. Fedora 45 remains preview-only.
+`v22.0.0 "Alignment"` is the current release. Fedora 45 remains preview-only.
 The historical Sentinel, Horizon, Nebula, and Synapse lineages remain preserved
 under explicit `legacy-v*` tags.
 

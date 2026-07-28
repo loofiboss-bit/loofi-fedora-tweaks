@@ -1,5 +1,22 @@
 # Changelog
 
+## v22.0.0 — Alignment
+
+- Made COPR success, repository availability, clean installation, and exact
+  version readback separate mandatory release gates.
+- Split the canonical 81-route catalog into destination-owned records without
+  changing routes, aliases, favorites, or persisted state.
+- Added fixed, non-privileged Discover and KDE KCM handoffs with truthful
+  unavailable and manual fallbacks.
+- Reduced visual decision density across Home, Action Center, Specialist
+  Tools, System Check, and Activity.
+- Closed Flatpak detection, bounded shutdown, RPM dependency, SecretStore,
+  credential-redaction, and expanded accessibility gaps.
+
+**Test Suite**: 6,909 passed, 61 skipped, 1,079 subtests, and 86.65% coverage,
+with exact GitHub release, attestations, COPR build `10783672`, clean Fedora 44
+GUI/API/daemon install, and physical Wayland/AT-SPI readback.
+
 ## v21.0.0 — Resolve
 
 - Connected Home, application review, System Check, Action Center, and Activity
@@ -112,14 +129,13 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ## Current Release
 
-### v18.0.0 "Haven" (2026-07-22)
+### v22.0.0 "Alignment" (2026-07-28)
 
-Haven passed local regression, trust-boundary, performance, security, and
-package checks. Meaningful Home measured 142.042 ms median and 75,408 KiB
-median RSS with one built-in provider and no subprocess probes, active timers,
-or QThreads. Canonical CI and CodeQL, the exact tag, release assets, checksums,
-SBOM, provenance, COPR, and a clean Fedora 44 install passed public readback.
-Historical Sentinel is preserved as `legacy-v18.0.0-sentinel`.
+Alignment passed the complete regression, trust-boundary, accessibility,
+package, and performance gates. Canonical CI and CodeQL, the annotated tag,
+eight release assets, checksums, SBOM, provenance, attestations, COPR build
+`10783672`, and a clean Fedora 44 GUI/API/daemon install passed independent
+public readback. Fedora 45 remains preview-only.
 
 ---
 

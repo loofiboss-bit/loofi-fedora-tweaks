@@ -23,8 +23,8 @@ Central documentation map for Loofi Fedora Tweaks.
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
 - `plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md` - Completed v19.0.0 "Steward" implementation scope and phase gates
-- `plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md` - Active v22.0.0 "Alignment" scope, phases, compatibility, and gates
-- `../.workflow/specs/arch-v22.0.0.md` - Active Alignment architecture and protected contracts
+- `plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md` - Completed v22.0.0 "Alignment" scope, phases, compatibility, and gates
+- `../.workflow/specs/arch-v22.0.0.md` - Alignment architecture and protected contracts
 - `../.workflow/specs/tasks-v22.0.0.md` - Alignment implementation and release checklist
 - `reports/V22_PHASE0_BASELINE.md` - Exact v21 checkout, trust, catalog, UI, startup, and package baseline
 - `reports/V22_PHASE0_STARTUP.json` - Reproducible Alignment startup and resource baseline
@@ -34,6 +34,8 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V22_PHASE4_JOURNEY_UI.md` - Automated core-journey accessibility matrix and physical gate boundary
 - `reports/V22_PHASE4_SECRETSTORE.md` - Provider-neutral locked, unavailable, CRUD, and fallback evidence
 - `reports/V22_PHASE5_LOCAL_QUALIFICATION.md` - Full local gates, exact candidate identities, and remaining physical and publication boundaries
+- `reports/V22_RELEASE_PUBLICATION.md` - Exact Alignment GitHub, COPR, clean-install, platform, public-documentation, and lineage readback
+- `releases/RELEASE-NOTES-v22.0.0.md` - Alignment trust, native handoff, visual hierarchy, compatibility, and upgrade notes
 - `plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md` - Completed v21.0.0 "Resolve" scope, phases, compatibility, and gates
 - `../.workflow/specs/arch-v21.0.0.md` - Resolve architecture and protected contracts
 - `../.workflow/specs/tasks-v21.0.0.md` - Resolve implementation and release checklist
@@ -108,10 +110,10 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- `v22.0.0 "Alignment"` is the sole active development target. Product
-  metadata remains v21.0.0 until local implementation and qualification pass.
-- `v21.0.0 "Resolve"` is the current completed public release. Its GitHub and
-  COPR evidence is recorded separately from local qualification.
+- `v22.0.0 "Alignment"` is the current completed public release. Its GitHub,
+  COPR, install, platform, and documentation evidence is recorded separately
+  from local qualification.
+- No development release is currently active.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its
   COPR build failed in Pulp after package build.
 - Historical v16 and v17 reports and screenshots remain release evidence for

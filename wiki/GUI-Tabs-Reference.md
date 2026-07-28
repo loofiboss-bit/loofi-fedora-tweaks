@@ -1,6 +1,6 @@
 # GUI Tabs Reference
 
-Reference for Loofi Fedora Tweaks v21.0.0 "Resolve" navigation. All 81 route IDs
+Reference for Loofi Fedora Tweaks v22.0.0 "Alignment" navigation. All 81 route IDs
 and aliases remain stable and project from the product catalog.
 
 ---

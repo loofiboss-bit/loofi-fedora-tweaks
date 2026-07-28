@@ -17,9 +17,9 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v19.0.0 | Steward | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md), [architecture](.workflow/specs/arch-v19.0.0.md), [tasks](.workflow/specs/tasks-v19.0.0.md) |
 | v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
 | v21.0.0 | Resolve | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md), [public evidence](docs/reports/V21_RELEASE_PUBLICATION.md) |
-| v22.0.0 | Alignment | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [baseline](docs/reports/V22_PHASE0_BASELINE.md) |
+| v22.0.0 | Alignment | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v22.0.0.md), [public evidence](docs/reports/V22_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v22.0.0 "Alignment" — Fedora-native Consolidation
+## [DONE] v22.0.0 "Alignment" — Fedora-native Consolidation
 
 **Objective:** make trust gates enforceable, align Plasma-owned configuration
 with native desktop tools, and reduce visual and architectural depth without
@@ -49,14 +49,14 @@ adding execution authority.
 | 2 — Catalog and native alignment | DONE | [Destination records, capability presentation, and allowlisted handoffs](docs/reports/V22_PHASE2_CATALOG_NATIVE_ALIGNMENT.md) |
 | 3 — Visual hierarchy and workflows | DONE | [Quieter shell, Home, Action Center, Specialist, System Check, and Activity](docs/reports/V22_PHASE3_VISUAL_ALIGNMENT.md) |
 | 4 — Accessibility and Fedora 45 readiness | DONE | [Core journey matrix](docs/reports/V22_PHASE4_JOURNEY_UI.md) and [provider-neutral secrets](docs/reports/V22_PHASE4_SECRETSTORE.md) |
-| 5 — Qualification and release readiness | LOCAL READY | [Full local gates, candidate evidence, and explicitly open physical/release gates](docs/reports/V22_PHASE5_LOCAL_QUALIFICATION.md) |
+| 5 — Qualification and release readiness | DONE | [Full local qualification](docs/reports/V22_PHASE5_LOCAL_QUALIFICATION.md) and [exact public release evidence](docs/reports/V22_RELEASE_PUBLICATION.md) |
 
 The sole scope authority is the
 [canonical V22 plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md). Product
 metadata is synchronized to v22.0.0 after the local Alignment implementation
-and qualification gates passed. The active race lock remains in place because
-commit, push, tag, physical installation, publication, and public readback are
-separately authorized release actions.
+and qualification gates passed. The separately authorized GitHub, COPR,
+Fedora 44 install, physical Wayland/AT-SPI, carried-forward Atomic, and public
+documentation gates all passed independent readback.
 
 ## [DONE] v21.0.0 "Resolve" — Coherent Verified Work
 

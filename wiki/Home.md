@@ -2,24 +2,24 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v21.0.0 "Resolve"<br>
+**Current release:** v22.0.0 "Alignment"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
-## What Resolve changes
+## What Alignment changes
 
-- **Guided work:** Home presents one truthful summary and one primary next step
-  over the existing safe routes and state.
-- **Explicit review:** application install and removal hand off to Action
-  Center before confirmation and execution.
-- **State-driven detail:** System Check and Activity & Recovery show local
-  views only when their current state supports them.
-- **Deterministic teardown:** application-owned timers, workers, schedulers,
-  subscriptions, Pulse, and plugins stop with the shell.
-- **Responsive navigation:** compact, scaled, RTL, Wayland, X11, keyboard, and
-  assistive-technology layouts preserve all stable routes.
-- **Compatibility preserved:** stable routes, aliases, favorites, state
-  schemas, System Check, CLI, API, daemon, and IPC remain intact.
+- **Enforceable release trust:** COPR publication requires terminal API
+  success, public repository metadata, and an exact clean-install readback.
+- **Fedora-native handoffs:** Plasma-owned application and desktop settings
+  open through fixed, non-privileged Discover and KDE KCM destinations.
+- **Truthful capability states:** unavailable native tools stay explicit and
+  never widen command or privilege authority.
+- **Quieter workflows:** Home, Action Center, Specialist Tools, System Check,
+  and Activity use one clearer local task hierarchy.
+- **Stronger lifecycle and privacy:** bounded shutdown, structured Flatpak
+  probes, RPM runtime dependencies, and credential redaction close trust gaps.
+- **Compatibility preserved:** all 81 routes, aliases, favorites, state
+  schemas, Traditional/Atomic policy, CLI, API, daemon, and IPC remain intact.
 
 ## Navigation
 
@@ -62,15 +62,14 @@ confirmation or privilege policy.
 
 ## Release status
 
-Resolve passed 6,863 tests, 61 expected skips, 1,057 subtests, and 86.57%
-coverage, plus lint, typing, architecture, package, product-catalog, and
-offscreen UI gates. The historical occupied v21 lineages are preserved as
-`legacy-v21.0.0-ux-stabilization` and
-`legacy-v21.0.1-python-jose-packaging`.
+Alignment passed 6,909 tests, 61 expected skips, 1,079 subtests, and 86.65%
+coverage, plus lint, typing, architecture, package, product-catalog, Wayland,
+Orca/AT-SPI, GitHub provenance, COPR, and clean Fedora 44 install gates.
+Fedora 45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release: [v21.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v21.0.0)
-- Release notes: [v21.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v21.0.0.md)
+- Release: [v22.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v22.0.0)
+- Release notes: [v22.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v22.0.0.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 

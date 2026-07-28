@@ -1,11 +1,15 @@
 {
   "version": "v22.0.0",
   "started_at": "20260728_000000",
-  "status": "active",
+  "status": "completed",
   "target_version": "v22.0.0",
-  "phase": "phase-5",
+  "phase": "release-complete",
   "baseline_commit": "3c9ce62a14839f40dd1ac027cc43a83476f27571",
   "product_version": "v22.0.0",
   "v20_publication_status": "blocked",
-  "override_recorded_at": "2026-07-28T00:00:00+02:00"
+  "override_recorded_at": "2026-07-28T00:00:00+02:00",
+  "completed_at": "2026-07-28T18:19:21+02:00",
+  "release_commit": "31dc3ac7af53367f2bd257336ad0282cadea5fe7",
+  "release_run_id": 30375621830,
+  "copr_build_id": 10783672
 }

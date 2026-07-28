@@ -4,11 +4,15 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **v18.0.0 "Haven"**
-- Full notes: [RELEASE-NOTES-v18.0.0.md](RELEASE-NOTES-v18.0.0.md)
+- **v22.0.0 "Alignment"**
+- Full notes: [RELEASE-NOTES-v22.0.0.md](RELEASE-NOTES-v22.0.0.md)
 
 ## Recent Releases
 
+- v21.0.0 "Resolve": [RELEASE-NOTES-v21.0.0.md](RELEASE-NOTES-v21.0.0.md)
+- v20.0.0 "Continuity": [RELEASE-NOTES-v20.0.0.md](RELEASE-NOTES-v20.0.0.md)
+- v19.0.0 "Steward": [RELEASE-NOTES-v19.0.0.md](RELEASE-NOTES-v19.0.0.md)
+- v18.0.0 "Haven": [RELEASE-NOTES-v18.0.0.md](RELEASE-NOTES-v18.0.0.md)
 - v17.0.0 "Assurance": [RELEASE-NOTES-v17.0.0.md](RELEASE-NOTES-v17.0.0.md)
 - v16.0.0 "Clarity": [RELEASE-NOTES-v16.0.0.md](RELEASE-NOTES-v16.0.0.md)
 - v15.0.0 "Essentials": [RELEASE-NOTES-v15.0.0.md](RELEASE-NOTES-v15.0.0.md)
