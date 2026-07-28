@@ -56,5 +56,18 @@
 
 - [x] Synchronize version metadata to v22.0.0 "Alignment" only after all local
   implementation and qualification gates pass.
-- [ ] Commit, push, tag, publish, install on the host, or modify remote release
-  surfaces only after separate explicit authorization.
+- [x] Record separate explicit authorization before committing release-state
+  changes, pushing, tagging, publishing, installing, or modifying remote
+  release surfaces.
+- [ ] [post-publish] Verify the exact release commit, annotated tag, canonical
+  CI and CodeQL runs, eight GitHub assets, checksums, SBOM, provenance, and
+  artifact attestations through independent public readback.
+- [ ] [post-publish] Verify COPR reaches terminal API state `succeeded`, public
+  repository metadata exposes v22.0.0, and a clean Fedora 44 environment
+  installs and reads back the exact GUI, API, and daemon package versions.
+- [ ] [post-publish] Complete the physical Fedora 44 Traditional Wayland,
+  keyboard, Orca/AT-SPI, and Atomic/Kinoite qualification required by the V22
+  plan without promoting Fedora 45 from Preview.
+- [ ] [post-publish] Read back the public wiki and installation documentation,
+  close the roadmap and race lock with exact release evidence, and verify the
+  final source-controlled state is clean and live.
