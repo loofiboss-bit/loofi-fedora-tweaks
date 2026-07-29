@@ -20,7 +20,8 @@ CANDIDATE = ROOT / "docs" / "reports" / "V23_PHASE6_LOCAL_CANDIDATE.json"
 SCREENSHOTS = ROOT / "docs" / "reports" / "V23_PHASE6_SCREENSHOTS.json"
 CANDIDATE_RELATIVE = CANDIDATE.relative_to(ROOT).as_posix()
 
-EXPECTED_VERSION = "23.0.0"
+CURRENT_VERSION = "23.0.1"
+RETAINED_CANDIDATE_VERSION = "23.0.0"
 EXPECTED_CODENAME = "Compass"
 EXPECTED_RELEASE = "v23.0.0 Compass"
 EXPECTED_HEAD = re.compile(r"^[0-9a-f]{40}$")
@@ -56,6 +57,7 @@ EXPECTED_RELEASE_EXTERNAL_GATES = {
 REQUIRED_DOCS = (
     "README.md",
     "CHANGELOG.md",
+    "docs/releases/RELEASE-NOTES-v23.0.1.md",
     "docs/releases/RELEASE-NOTES-v23.0.0.md",
     "docs/USER_GUIDE.md",
     "docs/ADVANCED_ADMIN_GUIDE.md",
@@ -137,20 +139,20 @@ def validate_metadata(lock: Mapping[str, Any]) -> list[str]:
         spec_match = re.search(r"^Version:\s*(\S+)", spec, re.MULTILINE)
     except (OSError, SyntaxError, ValueError, tomllib.TOMLDecodeError) as exc:
         return [f"unable to read product metadata: {exc}"]
-    if version != EXPECTED_VERSION or codename != EXPECTED_CODENAME:
-        errors.append("version.py is not synchronized to v23.0.0 Compass")
-    if pyproject.get("project", {}).get("version") != EXPECTED_VERSION:
-        errors.append("pyproject.toml is not synchronized to v23.0.0")
-    if not spec_match or spec_match.group(1) != EXPECTED_VERSION:
-        errors.append("RPM spec is not synchronized to v23.0.0")
-    if lock.get("version") != "v23.0.0" or lock.get("target_version") != "v23.0.0":
-        errors.append("race lock does not target v23.0.0")
-    if lock.get("product_version") != "v23.0.0":
-        errors.append("race lock product metadata is not v23.0.0")
+    if version != CURRENT_VERSION or codename != EXPECTED_CODENAME:
+        errors.append("version.py is not synchronized to v23.0.1 Compass")
+    if pyproject.get("project", {}).get("version") != CURRENT_VERSION:
+        errors.append("pyproject.toml is not synchronized to v23.0.1")
+    if not spec_match or spec_match.group(1) != CURRENT_VERSION:
+        errors.append("RPM spec is not synchronized to v23.0.1")
+    if lock.get("version") != "v23.0.1" or lock.get("target_version") != "v23.0.1":
+        errors.append("race lock does not target v23.0.1")
+    if lock.get("product_version") != "v23.0.1":
+        errors.append("race lock product metadata is not v23.0.1")
     if lock.get("product_codename") != EXPECTED_CODENAME:
         errors.append("race lock product codename is not Compass")
-    if lock.get("current_public_release") != "v22.0.0":
-        errors.append("race lock must preserve v22.0.0 as the public release")
+    if lock.get("current_public_release") != "v23.0.0":
+        errors.append("race lock must identify v23.0.0 as the public release")
     if (
         lock.get("status") != "active"
         or lock.get("phase") != "phase-6-release-authorized"
@@ -203,8 +205,8 @@ def validate_documentation(lock: Mapping[str, Any]) -> list[str]:
             errors.append(f"release notes omit required boundary: {phrase}")
     if lock.get("phase") == "phase-6-release-authorized":
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        if "releases/tag/v23.0.0" not in readme:
-            errors.append("README does not link the canonical v23.0.0 release")
+        if "releases/tag/v23.0.1" not in readme:
+            errors.append("README does not link the canonical v23.0.1 release")
     return errors
 
 
@@ -300,7 +302,7 @@ def validate_screenshots(payload: Mapping[str, Any]) -> list[str]:
     errors: list[str] = []
     if payload.get("schema_version") != 1 or payload.get("phase") != 6:
         errors.append("screenshot evidence has an unsupported schema")
-    if payload.get("captured_product_version") != EXPECTED_VERSION:
+    if payload.get("captured_product_version") != RETAINED_CANDIDATE_VERSION:
         errors.append("screenshot evidence did not capture v23.0.0")
     if payload.get("captured_product_codename") != EXPECTED_CODENAME:
         errors.append("screenshot evidence did not capture Compass")

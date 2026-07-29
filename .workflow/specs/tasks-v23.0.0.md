@@ -85,11 +85,11 @@
 - [x] Authorize and prepare the Compass release commit for exact source
   lineage.
 - [x] Preserve the historical tag under its verified legacy reference.
-- [ ] [post-publish] Create and verify the canonical `v23.0.0` tag at the
+- [x] [post-publish] Create and verify the canonical `v23.0.0` tag at the
   release commit.
-- [ ] [post-publish] Publish and verify GitHub release assets, checksums, SBOM,
+- [x] [post-publish] Publish and verify GitHub release assets, checksums, SBOM,
   provenance, and attestations.
-- [ ] [post-publish] Verify COPR terminal success, public metadata, signatures,
+- [x] [post-publish] Verify COPR terminal success, public metadata, signatures,
   and clean Fedora 44 installation.
 - [ ] [post-publish] Upgrade the authorized Fedora 44 host and verify package
   state without changing desktop or user configuration.

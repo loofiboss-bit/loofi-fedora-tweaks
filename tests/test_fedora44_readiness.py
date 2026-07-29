@@ -747,6 +747,17 @@ class TestFedora44Packaging(unittest.TestCase):
         self.assertIn("Requires:       python3-dbus", spec)
         self.assertIn("%{_userunitdir}/loofi-fedora-tweaks-api.service", spec)
 
+    def test_daemon_unit_allows_only_its_required_user_state_paths(self):
+        unit = (
+            self.ROOT / "loofi-fedora-tweaks" / "config" / "loofi-fedora-tweaks.service"
+        ).read_text(encoding="utf-8")
+        self.assertIn("ProtectHome=read-only", unit)
+        self.assertIn(
+            "ReadWritePaths=%h/.config/loofi-fedora-tweaks "
+            "%h/.local/share/loofi-fedora-tweaks",
+            unit,
+        )
+
     def test_workflows_target_fedora44(self):
         for rel_path in (
             ".github/workflows/copr-publish.yml",

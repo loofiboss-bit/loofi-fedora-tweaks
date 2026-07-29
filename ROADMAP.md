@@ -18,9 +18,22 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
 | v21.0.0 | Resolve | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md), [public evidence](docs/reports/V21_RELEASE_PUBLICATION.md) |
 | v22.0.0 | Alignment | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v22.0.0.md), [public evidence](docs/reports/V22_RELEASE_PUBLICATION.md) |
-| v23.0.0 | Compass | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md), [Phase 1 domain](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md), [Phase 2 composition](docs/reports/V23_PHASE2_EVIDENCE_COMPOSITION.md), [Phase 3 experience](docs/reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md), [Phase 4 interfaces](docs/reports/V23_PHASE4_INTERFACES_SUPPORT.md), [Phase 5 local qualification](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md), [Phase 6 local readiness](docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md) |
+| v23.0.0 | Compass | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 5 local qualification](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md), [Phase 6 local readiness](docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md) |
+| v23.0.1 | Compass | ACTIVE | [Hotfix architecture](.workflow/specs/arch-v23.0.1.md), [tasks](.workflow/specs/tasks-v23.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.1.md) |
 
-## [ACTIVE] v23.0.0 "Compass" — Guided Troubleshooting
+## [ACTIVE] v23.0.1 "Compass" — Daemon Sandbox Hotfix
+
+**Objective:** permit the hardened background service to write only its
+existing application-owned config and state paths, eliminating the v23.0.0
+restart loop without changing product behavior or enabling any service.
+
+The v23.0.0 feature release is public and remains immutable. Host qualification
+found that its daemon unit kept the launcher log directory read-only. v23.0.1
+adds that bounded state directory to `ReadWritePaths`, retains
+`ProtectHome=read-only`, and requires a new exact tag, package build, clean
+install, host upgrade, and independent public readback.
+
+## [DONE] v23.0.0 "Compass" — Guided Troubleshooting
 
 **Objective:** compose existing System Check, Trusted Change Journal,
 observability, diagnostics, and Action Center evidence into one explicit,
@@ -50,10 +63,10 @@ bounded troubleshooting journey without adding execution authority.
 | 3 — Canonical Troubleshoot experience | DONE | [Explicit guided session, evidence, related changes, one safe next step, and follow-up presentation](docs/reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md) |
 | 4 — CLI, read-only API, and support case | DONE | [Versioned CLI, authenticated retrieval-only API, and bounded Support Bundle v13](docs/reports/V23_PHASE4_INTERFACES_SUPPORT.md) |
 | 5 — Platform, performance, and security | DONE WITH AUTHORIZED SKIPS | [Exact-input local gates, six-profile Traditional evidence, and explicitly open Atomic/manual gates](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md) |
-| 6 — Release readiness | IN PROGRESS | Release authorized; canonical exact-tag pipeline and public readback pending |
+| 6 — Release readiness | DONE WITH AUTHORIZED SKIPS | Canonical v23.0.0 release, assets, attestations, COPR, and public readback completed; daemon sandbox defect moved to v23.0.1 |
 
-Product metadata is synchronized to v23.0.0 "Compass" and publication is
-authorized through the canonical exact-tag release pipeline. Phases 0-4
+Product metadata was synchronized to v23.0.0 "Compass" and published through
+the canonical exact-tag release pipeline. Phases 0-4
 establish authority, the PyQt-free troubleshooting domain, pure evidence
 composition, and one explicitly started guided experience on the unchanged
 `diagnostics` route plus explicit CLI collection, authenticated retrieval-only
@@ -66,12 +79,13 @@ Wayland/AT-SPI exposure, but fresh Kinoite/Atomic qualification and manual
 keyboard/Orca journeys remain open under an authorized skip and are not
 reported as passed. Phase 6 has locally verified documentation, RPM, sdist,
 Flatpak, checksum, SBOM, provenance, isolated installation, and Flatpak import
-before exact-commit publication. The pre-normalization Architecture Hardening
+before exact-commit publication. GitHub, CI, CodeQL, checksums, attestations,
+and COPR build 10788176 were independently read back. Host qualification then
+found the daemon sandbox issue now addressed by v23.0.1. The pre-normalization Architecture Hardening
 tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`; its peeled commit remains
-`adc4cef116d147bd5b845f0ec98c3a1970b8b054`. Canonical `v23.0.0`, signing,
-GitHub/COPR publication, installation, and public readback remain pending until
-the release workflow proves them.
+`adc4cef116d147bd5b845f0ec98c3a1970b8b054`. Canonical `v23.0.0` remains bound
+to release commit `1a789b8f603ba0050c7bb6e40c8ff0448d2643fa`.
 
 ## [DONE] v22.0.0 "Alignment" — Fedora-native Consolidation
 

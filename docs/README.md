@@ -129,17 +129,18 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- `v23.0.0 "Compass"` is approved for the canonical exact-tag publication
-  workflow. Phases 0-4 are complete and Phase 5 is locally qualified through
+- `v23.0.1 "Compass"` is approved for the canonical exact-tag hotfix
+  workflow after host qualification found the v23.0.0 daemon state directory
+  was read-only. Phases 0-4 are complete and Phase 5 is locally qualified through
   the available repository, security, performance, package, and Traditional
   Wayland/AT-SPI gates. Fresh Kinoite/Atomic and manual keyboard/Orca
   qualification remain open under an authorized skip and are not claimed as
   passed.
+- `v23.0.0 "Compass"` is publicly verified and remains immutable while the
+  v23.0.1 hotfix is qualified.
 - The historical Architecture Hardening tag object is preserved
   byte-identically as `legacy-v23.0.0-architecture-hardening`; canonical
-  `v23.0.0` is reserved for the Compass release commit.
-- `v22.0.0 "Alignment"` remains the last independently verified public release
-  until the Compass pipeline and public readback finish.
+  `v23.0.0` now identifies the Compass release commit.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its
   COPR build failed in Pulp after package build.
 - Historical v16 and v17 reports and screenshots remain release evidence for

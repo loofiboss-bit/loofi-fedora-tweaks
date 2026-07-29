@@ -16,7 +16,7 @@
 V23 composes existing trusted diagnostics into one explicit troubleshooting
 journey. Its canonical authority is the
 [Compass plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md),
-[architecture contract](.workflow/specs/arch-v23.0.0.md), and
+[architecture contract](.workflow/specs/arch-v23.0.1.md), and
 [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md). The
 [Phase 1 report](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) records the
 inert domain implementation, and the

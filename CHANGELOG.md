@@ -4,6 +4,20 @@
 
 All notable changes to this project will be documented in this file.
 
+## [23.0.1] - 2026-07-29 "Compass"
+
+### Fixed
+
+- Allowed the hardened background daemon to write its bounded log and health
+  state under `~/.local/share/loofi-fedora-tweaks`, preventing a systemd
+  restart loop while keeping the rest of the home directory read-only.
+
+### Compatibility
+
+- Preserved all v23.0.0 product, route, schema, CLI, API, daemon, package, and
+  user-state contracts. The hotfix does not enable services or change desktop
+  settings.
+
 ## [23.0.0] - 2026-07-29 "Compass"
 
 ### Added

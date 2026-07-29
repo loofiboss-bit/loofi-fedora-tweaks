@@ -40,6 +40,16 @@
   </provides>
 
   <releases>
+    <release version="23.0.1" date="2026-07-29">
+      <description>
+        <p>v23.0.1 "Compass" - Background daemon startup hotfix</p>
+        <ul>
+          <li>Allowed the hardened daemon to write its bounded application state directory</li>
+          <li>Retained read-only protection for the rest of the user's home directory</li>
+          <li>Preserved all v23.0.0 product, interface, package, and user-state contracts</li>
+        </ul>
+      </description>
+    </release>
     <release version="23.0.0" date="2026-07-29">
       <description>
         <p>v23.0.0 "Compass" - Guided, evidence-bound troubleshooting</p>
