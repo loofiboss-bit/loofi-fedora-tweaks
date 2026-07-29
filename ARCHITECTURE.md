@@ -7,7 +7,7 @@
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
 > V21 and V22 are complete and public. Product metadata remains v22 while
-> Compass is implemented and locally qualified.
+> Compass implementation is locally qualified through Phase 2.
 
 ## Active Compass architecture
 
@@ -17,14 +17,18 @@ journey. Its canonical authority is the
 [architecture contract](.workflow/specs/arch-v23.0.0.md), and
 [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md). The
 [Phase 1 report](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) records the
-inert domain implementation.
+inert domain implementation, and the
+[Phase 2 report](docs/reports/V23_PHASE2_EVIDENCE_COMPOSITION.md) records the
+read-only composition and comparison boundary.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It
 does not add a route, top-level destination, database, execution authority,
 mutating API, background probe, or automatic repair. Phase 1 adds immutable
 contracts, the closed six-profile catalog, bounded lifecycle semantics, and an
-explicit future-safe JSON store. It does not collect or compose evidence.
+explicit future-safe JSON store. Phase 2 adds source-owned evidence adaptation,
+explicit empty/partial/stale states, conservative related-change matching, and
+compatible follow-up comparison. Collection remains explicit future wiring.
 
 ## Runtime entry modes
 
@@ -53,7 +57,7 @@ loofi-fedora-tweaks/
 │   ├── observability/      # Health metrics/snapshots and read-only status
 │   ├── plugins/            # Data-only specs, discovery, registry, lazy loader
 │   ├── state/              # XDG inventory, schemas, atomic I/O, backup/restore
-│   ├── troubleshooting/    # Inert Compass sessions, profiles, lifecycle, persistence
+│   ├── troubleshooting/    # Compass contracts, adapters, composition, comparison, persistence
 │   └── workflows/          # Five canonical workflow contracts
 ├── services/               # Domain services; no PyQt imports
 ├── utils/                  # Shared infrastructure and compatibility shims

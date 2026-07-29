@@ -27,6 +27,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V23_PHASE0_SYSTEM_CHECK.json` - Read-only System Check timing baseline
 - `reports/V23_PHASE0_SCREENSHOTS.json` - Deterministic wide/compact offscreen screenshot evidence
 - `reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md` - Immutable Compass contracts, closed profile budgets, lifecycle matrix, and future-safe session persistence
+- `reports/V23_PHASE2_EVIDENCE_COMPOSITION.md` - Read-only evidence adaptation, conservative correlation, and compatible follow-up comparison
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
@@ -121,9 +122,9 @@ These legacy files are kept for compatibility and historical context.
 - `v22.0.0 "Alignment"` is the current completed public release. Its GitHub,
   COPR, install, platform, and documentation evidence is recorded separately
   from local qualification.
-- `v23.0.0 "Compass"` is the active implementation target. Phases 0 and 1 are
-  complete; evidence composition and interfaces have not started, and product
-  metadata remains v22.0.0.
+- `v23.0.0 "Compass"` is the active implementation target. Phases 0-2 are
+  complete; UI and interface work has not started, and product metadata remains
+  v22.0.0.
 - The historical `v23.0.0` Architecture Hardening tag is occupied and remains
   unchanged pending separately authorized release-lineage resolution.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its

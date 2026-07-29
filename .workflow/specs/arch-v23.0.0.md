@@ -11,10 +11,11 @@ product remains v22.0.0 "Alignment". The canonical authority is:
 - `.workflow/specs/.race-lock.json`; and
 - `docs/reports/V23_PHASE0_BASELINE.md`.
 
-Phase 0 changed authority, evidence, and validation tooling only. Phase 1 adds
-the inert `core.troubleshooting` domain and one registered, explicit session
-history store. It does not change a route, collect or compose evidence, mutate
-the host, or change product metadata.
+Phases 0 and 1 established authority plus the inert `core.troubleshooting`
+domain and one registered, explicit session history store. Phase 2 adds pure
+read-only evidence adapters, composition, conservative correlation, and
+compatible follow-up comparison. It does not change a route, start collection,
+mutate the host, introduce another database, or change product metadata.
 
 ## Canonical route decision
 
@@ -35,10 +36,9 @@ or parallel history surface.
 
 ## Troubleshooting boundary
 
-Phase 1 implements `core/troubleshooting/` as the owner of
-immutable, PyQt-free session, profile, source-result, finding, next-step, and
-comparison contracts. It will compose source-owned evidence rather than
-becoming a new collector or execution authority.
+`core/troubleshooting/` owns immutable, PyQt-free session, profile,
+source-result, finding, next-step, and comparison contracts. Phase 2 composes
+source-owned evidence without becoming a new collector or execution authority.
 
 The six closed profiles are `system_slow`, `updates_failed`,
 `application_failed`, `network_problem`, `storage_pressure`, and
@@ -54,9 +54,8 @@ signal, but it starts no worker, timer, thread, or probe.
 
 The optional `loofi.troubleshooting-sessions` schema-v1 store retains at most 20
 explicit terminal sessions through existing atomic XDG state infrastructure.
-Future schemas remain read-only and are never overwritten. Evidence
-composition, correlation, comparison logic, UI, CLI/API, and support export
-remain later phases.
+Future schemas remain read-only and are never overwritten. UI, explicit
+collection wiring, CLI/API, and support export remain later phases.
 
 ## Source ownership
 

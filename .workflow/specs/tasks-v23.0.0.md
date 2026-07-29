@@ -27,10 +27,10 @@
 
 ## Phase 2 — Evidence composition and conservative correlation
 
-- [ ] Add read-only source adapters without duplicating source ownership.
-- [ ] Preserve unavailable, empty, partial, stale, failed, and variant-specific
+- [x] Add read-only source adapters without duplicating source ownership.
+- [x] Preserve unavailable, empty, partial, stale, failed, and variant-specific
   evidence states.
-- [ ] Add deterministic **Possibly related** matching and compatible follow-up
+- [x] Add deterministic **Possibly related** matching and compatible follow-up
   comparison without writes or a new database.
 
 ## Phase 3 — Canonical Troubleshoot experience

@@ -35,7 +35,7 @@
     "teleport_tab",
     "virtualization_tab"
   ],
-  "test_file_count": 325,
+  "test_file_count": 328,
   "utils_module_count": 101,
   "test_count": "6864",
   "coverage": "86.24",

@@ -25,7 +25,16 @@ from core.troubleshooting.validation import (
 SESSION_SCHEMA_ID = "loofi.troubleshooting-session"
 SESSION_SCHEMA_VERSION = 1
 SessionState = Literal["queued", "running", "completed", "partial", "cancelled", "failed"]
-SourceState = Literal["completed", "unavailable", "timed_out", "failed", "cancelled"]
+SourceState = Literal[
+    "completed",
+    "empty",
+    "partial",
+    "stale",
+    "unavailable",
+    "timed_out",
+    "failed",
+    "cancelled",
+]
 FindingSeverity = Literal["info", "attention", "critical"]
 EvidenceQuality = Literal["confirmed", "supported", "limited", "unknown"]
 FreshnessState = Literal["fresh", "stale", "unknown"]
@@ -34,7 +43,17 @@ SupportedVariant = Literal["traditional", "atomic"]
 ComparisonState = Literal["resolved", "unchanged", "worsened", "not_comparable"]
 
 _SESSION_STATES = frozenset({"queued", "running", "completed", "partial", "cancelled", "failed"})
-_SOURCE_STATES = frozenset({"completed", "unavailable", "timed_out", "failed", "cancelled"})
+_SOURCE_STATES = frozenset({
+    "completed",
+    "empty",
+    "partial",
+    "stale",
+    "unavailable",
+    "timed_out",
+    "failed",
+    "cancelled",
+})
+_EVIDENCE_SOURCE_STATES = frozenset({"completed", "empty", "partial", "stale"})
 _TERMINAL_SESSION_STATES = frozenset({"completed", "partial", "cancelled", "failed"})
 _EVIDENCE_QUALITIES = frozenset({"confirmed", "supported", "limited", "unknown"})
 _FRESHNESS_STATES = frozenset({"fresh", "stale", "unknown"})
@@ -227,11 +246,14 @@ class SourceResult:
         if canonical_facts != self.facts:
             raise ValueError("Source facts must use the canonical frozen form.")
         elapsed = self.completed_at - self.started_at
-        if self.state == "completed":
-            if self.reason_code or self.message:
-                raise ValueError("Completed source results cannot contain an error.")
+        if self.state in _EVIDENCE_SOURCE_STATES:
+            if self.state in {"completed", "empty"} and (self.reason_code or self.message):
+                raise ValueError("Completed and empty source results cannot contain an error.")
+            if self.state in {"partial", "stale"}:
+                validate_identifier(self.reason_code, field="reason_code")
+                validate_text(self.message, field="source message")
             if elapsed > self.timeout_seconds:
-                raise ValueError("Completed source result exceeded its declared timeout.")
+                raise ValueError("Evidence source result exceeded its declared timeout.")
         else:
             validate_identifier(self.reason_code, field="reason_code")
             validate_text(self.message, field="source message")
@@ -270,6 +292,71 @@ class SourceResult:
         message: str,
     ) -> "SourceResult":
         return cls(source_id, "unavailable", at, at, timeout_seconds, reason_code=reason_code, message=message)
+
+    @classmethod
+    def empty(
+        cls,
+        source_id: str,
+        *,
+        started_at: float,
+        completed_at: float,
+        timeout_seconds: float,
+        facts: Mapping[str, Any] | None = None,
+    ) -> "SourceResult":
+        return cls(
+            source_id,
+            "empty",
+            started_at,
+            completed_at,
+            timeout_seconds,
+            freeze_mapping(facts, field="source facts"),
+        )
+
+    @classmethod
+    def partial(
+        cls,
+        source_id: str,
+        *,
+        started_at: float,
+        completed_at: float,
+        timeout_seconds: float,
+        facts: Mapping[str, Any] | None,
+        reason_code: str,
+        message: str,
+    ) -> "SourceResult":
+        return cls(
+            source_id,
+            "partial",
+            started_at,
+            completed_at,
+            timeout_seconds,
+            freeze_mapping(facts, field="source facts"),
+            reason_code,
+            message,
+        )
+
+    @classmethod
+    def stale(
+        cls,
+        source_id: str,
+        *,
+        started_at: float,
+        completed_at: float,
+        timeout_seconds: float,
+        facts: Mapping[str, Any] | None,
+        reason_code: str = "stale-evidence",
+        message: str = "The newest source-owned evidence is stale.",
+    ) -> "SourceResult":
+        return cls(
+            source_id,
+            "stale",
+            started_at,
+            completed_at,
+            timeout_seconds,
+            freeze_mapping(facts, field="source facts"),
+            reason_code,
+            message,
+        )
 
     def facts_dict(self) -> dict[str, Any]:
         return dict(thaw(self.facts))
@@ -627,10 +714,13 @@ class TroubleshootingSession:
             or self.compatibility.variant != self.variant
         ):
             raise ValueError("Session compatibility metadata conflicts with its profile or variant.")
-        if self.state == "completed" and any(result.state != "completed" for result in self.source_results):
+        if self.state == "completed" and any(
+            result.state not in {"completed", "empty"}
+            for result in self.source_results
+        ):
             raise ValueError("A completed session cannot contain incomplete source results.")
         if self.state == "partial" and (
-            all(result.state == "completed" for result in self.source_results)
+            all(result.state in {"completed", "empty"} for result in self.source_results)
             or any(result.state == "cancelled" for result in self.source_results)
         ):
             raise ValueError("A partial session must identify non-cancelled incomplete evidence.")
@@ -648,12 +738,28 @@ class TroubleshootingSession:
         return self._sources_with_state("unavailable")
 
     @property
+    def empty_sources(self) -> tuple[str, ...]:
+        return self._sources_with_state("empty")
+
+    @property
+    def partial_sources(self) -> tuple[str, ...]:
+        return self._sources_with_state("partial")
+
+    @property
+    def stale_sources(self) -> tuple[str, ...]:
+        return self._sources_with_state("stale")
+
+    @property
     def timed_out_sources(self) -> tuple[str, ...]:
         return self._sources_with_state("timed_out")
 
     @property
     def failed_sources(self) -> tuple[str, ...]:
         return self._sources_with_state("failed")
+
+    @property
+    def cancelled_sources(self) -> tuple[str, ...]:
+        return self._sources_with_state("cancelled")
 
     def _sources_with_state(self, state: SourceState) -> tuple[str, ...]:
         return tuple(sorted(result.source_id for result in self.source_results if result.state == state))
@@ -672,9 +778,13 @@ class TroubleshootingSession:
             "profile_parameters": dict(thaw(self.profile_parameters)),
             "source_results": [result.to_dict() for result in self.source_results],
             "completed_sources": list(self.completed_sources),
+            "empty_sources": list(self.empty_sources),
+            "partial_sources": list(self.partial_sources),
+            "stale_sources": list(self.stale_sources),
             "unavailable_sources": list(self.unavailable_sources),
             "timed_out_sources": list(self.timed_out_sources),
             "failed_sources": list(self.failed_sources),
+            "cancelled_sources": list(self.cancelled_sources),
             "findings": [finding.to_dict() for finding in self.findings],
             "related_changes": [change.to_dict() for change in self.related_changes],
             "compatibility": self.compatibility.to_dict() if self.compatibility else {},
@@ -719,9 +829,13 @@ class TroubleshootingSession:
         )
         derived_lists = {
             "completed_sources": session.completed_sources,
+            "empty_sources": session.empty_sources,
+            "partial_sources": session.partial_sources,
+            "stale_sources": session.stale_sources,
             "unavailable_sources": session.unavailable_sources,
             "timed_out_sources": session.timed_out_sources,
             "failed_sources": session.failed_sources,
+            "cancelled_sources": session.cancelled_sources,
         }
         for key, derived in derived_lists.items():
             if key in payload:

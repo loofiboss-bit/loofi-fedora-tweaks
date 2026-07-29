@@ -3,7 +3,7 @@
   "started_at": "20260729_070016",
   "status": "active",
   "target_version": "v23.0.0",
-  "phase": "phase-1-complete",
+  "phase": "phase-2-complete",
   "baseline_commit": "5bd323b6794c72bb17390149a4e07bff3e35bf35",
   "product_version": "v22.0.0",
   "product_codename": "Alignment",
@@ -17,5 +17,6 @@
     "status": "blocked-pending-separate-release-authority"
   },
   "phase_0_completed_at": "2026-07-29T07:18:09+02:00",
-  "phase_1_completed_at": "2026-07-29T07:52:49+02:00"
+  "phase_1_completed_at": "2026-07-29T07:52:49+02:00",
+  "phase_2_completed_at": "2026-07-29T09:39:49+02:00"
 }

@@ -38,12 +38,22 @@ class HealthTimelineStore:
         self.migrations = MigrationRunner(self.registry)
 
     def load(self) -> list[HealthSnapshot]:
+        return self._load(migrate=True)
+
+    def load_read_only(self) -> list[HealthSnapshot]:
+        """Read supported snapshots without migrating or rewriting their store."""
+        return self._load(migrate=False)
+
+    def _load(self, *, migrate: bool) -> list[HealthSnapshot]:
         try:
             raw = json.loads(self.path.read_text(encoding="utf-8"))
             if isinstance(raw, dict):
-                # The runner validates future schemas without writing them and
-                # atomically advances supported older documents when needed.
-                raw = self.migrations.migrate_json("loofi.health-snapshots", self.path)
+                if migrate:
+                    # The runner validates future schemas without writing them and
+                    # atomically advances supported older documents when needed.
+                    raw = self.migrations.migrate_json("loofi.health-snapshots", self.path)
+                else:
+                    raw = self.registry.migrate("loofi.health-snapshots", raw)
         except FileNotFoundError:
             self.last_error = ""
             return []

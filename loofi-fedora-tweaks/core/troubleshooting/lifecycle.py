@@ -117,9 +117,15 @@ def finalize_session(
                         message="Required evidence was not collected.",
                     )
                 )
-        if normalized and all(result.state == "completed" for result in normalized):
+        if normalized and all(
+            result.state in {"completed", "empty"}
+            for result in normalized
+        ):
             state = "completed"
-        elif any(result.state == "completed" for result in normalized):
+        elif any(
+            result.state in {"completed", "empty", "partial", "stale"}
+            for result in normalized
+        ):
             state = "partial"
         elif any(result.state in {"unavailable", "timed_out"} for result in normalized):
             state = "partial"
