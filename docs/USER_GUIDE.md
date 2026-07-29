@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 18.0.0 "Haven" — one local trust boundary for host changes
+> Version 23.0.0 "Compass" — guided, evidence-bound troubleshooting
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
@@ -71,13 +71,13 @@ Standard mode always presents these six destinations:
 | **System** | System information, performance, processes, hardware, storage, diagnostics, and recovery points |
 | **Network & Security** | Connections, DNS, privacy, firewall, exposure, and backups |
 | **Desktop** | Appearance, windows, and displays |
-| **Settings** | Appearance, behavior, Advanced mode, Repair Loofi, and About |
+| **Settings** | Appearance, behavior, Specialist Tools status, Repair Loofi, and About |
 
-Enable the optional **Advanced** destination from **Settings → Advanced Tools**.
-It exposes specialist routes such as Performance Tuning, Gaming, Development,
-Local Profiles, Loofi Link, AI Lab, Agents, Automation, State Teleport, and
-Virtualization. Profiles and desktop Extensions also remain Advanced-only.
-Switching mode changes discovery, not safety or confirmation requirements.
+**Specialist Tools** keeps grouped, searchable routes such as Performance
+Tuning, Gaming, Development, Local Profiles, Loofi Link, AI Lab, Agents,
+Automation, State Teleport, and Virtualization discoverable. Component and
+host policy may mark an individual route unavailable; visibility never weakens
+its safety or confirmation requirements.
 
 Primary shortcuts:
 
@@ -88,8 +88,8 @@ Primary shortcuts:
 - `Ctrl+Q`: quit.
 
 Global search applies `NavigationPolicy` before showing or activating a result.
-It cannot bypass Standard/Advanced mode, unavailable components, Fedora variant
-constraints, required capabilities, or Action Center safety. An Action Center
+It cannot bypass unavailable components, Fedora variant constraints, required
+capabilities, or Action Center safety. An Action Center
 result may navigate and preselect only; it cannot plan, run, or verify.
 
 ---
@@ -141,6 +141,21 @@ After a linked action is independently verified, Action Center offers
 does not remove a finding, and a reboot-required run remains pending. Only a
 later compatible check can classify the original finding as resolved,
 unchanged, worsened, or not comparable.
+
+### Troubleshoot a problem
+
+Open **System → Troubleshooting**, choose one of the six symptom profiles, and
+review its sources and total budget. Collection starts only after **Start
+troubleshooting** is activated. Results keep unavailable, partial, stale,
+failed, and empty evidence distinct, label correlated changes **Possibly
+related**, and expose at most one safe next step for the selected finding.
+
+After a relevant change, explicitly rerun the compatible profile. The
+follow-up compares sessions only when profile, Fedora variant, ordering, and
+required evidence remain compatible. Troubleshooting `resolved` and Action
+Center `verified` remain separate facts.
+
+![Troubleshoot workflow](images/v23/phase6/contact-sheets/troubleshoot.png)
 
 ---
 
@@ -249,8 +264,7 @@ loofi network dns --provider cloudflare
 loofi storage usage
 ```
 
-Specialist CLI contracts remain available independently of whether the GUI is
-currently in Standard or Advanced mode:
+Specialist CLI contracts remain available independently of GUI grouping:
 
 ```bash
 loofi agent list
@@ -278,24 +292,31 @@ loofi --json readiness --target 44
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-Haven preserves settings, favorites, stable route IDs, observability data, and
-readable Action Center v1-v3 state. Writable Action Center plans and runs
-migrate atomically to schema v4; unknown future schemas remain read-only.
+Compass preserves settings, favorites, stable route IDs, observability data,
+and readable Action Center v1-v3 state. Writable Action Center plans and runs
+migrate atomically to schema v4; unknown future schemas remain read-only. The
+optional troubleshooting store retains at most 20 explicitly collected
+terminal sessions and also preserves unknown future schemas read-only.
 
 ---
 
 ## 9) Troubleshooting and Support
 
-First-line diagnostics:
+Start with the guided GUI or explicit CLI collection:
 
 ```bash
+loofi troubleshoot profiles
+loofi troubleshoot run system_slow
+loofi troubleshoot latest
 loofi doctor
 loofi info
 loofi support-bundle
 ```
 
-Then review `docs/TROUBLESHOOTING.md`. When opening an issue, include the Fedora
-variant, exact route or command, full error output, reproduction steps, and
+Use `loofi troubleshoot export SESSION_ID` to create a Support Bundle v13 case
+from one selected retained session. Export never starts collection. Then review
+`docs/TROUBLESHOOTING.md`. When opening an issue, include the Fedora variant,
+exact route or command, full error output, reproduction steps, and
 support-bundle path.
 
 Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
@@ -305,6 +326,9 @@ Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
 ## 10) Release Scope
 
 Fedora 44 is the supported release target. Fedora 45 remains preview-only.
-GitHub and COPR publication are not complete until the canonical release commit,
-artifacts, checksums, SBOM/provenance, and Fedora 44 repository install are
-independently read back.
+Compass is approved for publication through the canonical exact-tag pipeline.
+The historical Architecture Hardening tag object is preserved under
+`legacy-v23.0.0-architecture-hardening`. Release completion still requires
+independent readback of the exact release commit, artifacts, signatures,
+checksums, SBOM/provenance, CI, COPR, Fedora 44 repository installation, and
+public documentation.

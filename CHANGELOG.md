@@ -4,6 +4,46 @@
 
 All notable changes to this project will be documented in this file.
 
+## [23.0.0] - 2026-07-29 "Compass"
+
+### Added
+
+- Added six closed, variant-aware troubleshooting profiles with bounded
+  collection, immutable findings, explicit evidence states, and future-safe
+  retained sessions.
+- Added one canonical Troubleshoot experience on the existing `diagnostics`
+  route with explicit start, cancellation, one safe next step, and compatible
+  follow-up comparison.
+- Added versioned troubleshooting CLI commands, authenticated retrieval-only
+  API endpoints, and one bounded Support Bundle v13 troubleshooting case.
+
+### Changed
+
+- Composed existing System Check, observability, Trusted Change Journal,
+  Action Center, package, network, storage, boot, and deployment evidence
+  without creating another collector or database.
+- Labelled all correlated journal evidence **Possibly related** and kept
+  Action Center `verified` separate from troubleshooting `resolved`.
+- Synchronized release metadata to v23.0.0 and approved Compass for the
+  canonical exact-tag publication workflow.
+
+### Fixed
+
+- Hardened nested command-key, credential, raw-output, malformed-input,
+  timeout, redaction, and per-user file-permission boundaries found during
+  exact-input Phase 5 qualification.
+- Exposed the problem-profile selector correctly through live AT-SPI and kept
+  accessibility evidence summary-only.
+
+### Compatibility
+
+- Preserved all 81 routes, aliases, favorites, Action Center schema v4,
+  System Check and journal stores, Traditional/Atomic separation, lazy Home,
+  CLI/API/daemon contracts, and Support Bundle v2-v12 readers.
+- Preserved the historical `v23.0.0` annotated tag object byte-identically as
+  `legacy-v23.0.0-architecture-hardening`, freeing the canonical version tag
+  for the Compass exact-commit release without losing historical evidence.
+
 ## [22.0.0] - 2026-07-28 "Alignment"
 
 ### Added

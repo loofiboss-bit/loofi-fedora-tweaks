@@ -29,18 +29,18 @@ def _sha256(path: Path) -> str:
 
 
 class TestV23Phase0Authority(unittest.TestCase):
-    def test_product_version_stays_on_alignment_with_active_compass_lock(self):
+    def test_product_version_is_compass_at_release_authorized_gate(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
 
         self.assertEqual(__version__, lock["product_version"].removeprefix("v"))
         self.assertEqual(__version_codename__, lock["product_codename"])
-        self.assertEqual(lock["product_version"], lock["current_public_release"])
+        self.assertEqual(lock["current_public_release"], "v22.0.0")
         self.assertEqual(lock["version"], "v23.0.0")
         self.assertEqual(lock["target_version"], "v23.0.0")
         self.assertEqual(lock["status"], "active")
-        self.assertEqual(lock["phase"], "phase-5-local-qualified")
+        self.assertEqual(lock["phase"], "phase-6-release-authorized")
 
-    def test_historical_v23_tag_collision_is_locked_without_resolution_claim(self):
+    def test_historical_v23_tag_is_preserved_under_exact_legacy_reference(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
         collision = lock["historical_tag_collision"]
 
@@ -51,7 +51,16 @@ class TestV23Phase0Authority(unittest.TestCase):
         )
         self.assertEqual(
             collision["status"],
-            "blocked-pending-separate-release-authority",
+            "preserved-as-legacy",
+        )
+        self.assertEqual(
+            collision["legacy_tag"],
+            "legacy-v23.0.0-architecture-hardening",
+        )
+        self.assertEqual(collision["legacy_tag_object"], collision["tag_object"])
+        self.assertEqual(
+            collision["legacy_peeled_commit"],
+            collision["peeled_commit"],
         )
 
     def test_existing_diagnostics_route_is_selected_without_route_change(self):
@@ -104,10 +113,10 @@ class TestV23Phase0Authority(unittest.TestCase):
     def test_screenshot_manifest_is_complete_and_does_not_claim_physical_gate(self):
         evidence = json.loads(SCREENSHOTS.read_text(encoding="utf-8"))
 
-        self.assertEqual(evidence["captured_product_version"], __version__)
+        self.assertEqual(evidence["captured_product_version"], "22.0.0")
         self.assertEqual(
             evidence["captured_product_codename"],
-            __version_codename__,
+            "Alignment",
         )
         self.assertEqual(evidence["phase"], 0)
         self.assertEqual(evidence["status"], "passed")
@@ -122,7 +131,7 @@ class TestV23Phase0Authority(unittest.TestCase):
             self.assertTrue(path.is_file())
             self.assertEqual(_sha256(path), record["sha256"])
 
-    def test_phases_zero_through_four_are_complete_and_phase_five_is_partial(self):
+    def test_release_tasks_are_publish_ready_with_only_post_publish_gates_open(self):
         text = TASKS.read_text(encoding="utf-8")
         phase_zero, phase_one_and_later = text.split(
             "## Phase 1 — Troubleshooting domain and profile catalog",
@@ -160,8 +169,19 @@ class TestV23Phase0Authority(unittest.TestCase):
         self.assertIn("- [x]", phase_four)
         self.assertNotIn("- [ ]", phase_four)
         self.assertIn("- [x]", phase_five)
-        self.assertIn("- [ ]", phase_five)
-        self.assertNotIn("- [x]", phase_six_and_later)
+        self.assertNotIn("- [ ]", phase_five)
+        self.assertGreaterEqual(phase_six_and_later.count("- [x]"), 5)
+        unchecked = [
+            line
+            for line in phase_six_and_later.splitlines()
+            if line.startswith("- [ ]")
+        ]
+        self.assertTrue(unchecked)
+        self.assertTrue(
+            all("[post-publish]" in line for line in unchecked),
+            unchecked,
+        )
+        self.assertIn("## Separately authorized external gates", phase_six_and_later)
         self.assertEqual(CURRENT_SUPPORT_BUNDLE_VERSION, 13)
 
 

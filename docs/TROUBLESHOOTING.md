@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and recovery steps for v18.0.0 "Haven".
+Common issues and recovery steps for v23.0.0 "Compass".
 
 ## 1) Quick Diagnostics
 
@@ -44,7 +44,7 @@ QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
 tail -n 200 ~/.local/share/loofi-fedora-tweaks/startup.log
 ```
 
-Haven loads built-in pages on demand. A failing specialist page should not stop
+Compass loads built-in pages on demand. A failing specialist page should not stop
 Home or the six Standard destinations from opening. Include the exact route and
 startup log when reporting an import failure.
 
@@ -52,20 +52,19 @@ startup log when reporting an import failure.
 
 ## 3) A Route Is Missing or Unavailable
 
-Standard mode shows exactly Home, Software & Updates, System, Network &
-Security, Desktop, and Settings. Specialist routes are not deleted; enable the
-optional **Advanced** destination from **Settings → Advanced Tools**.
+The primary shell shows Home, Software & Updates, System, Network & Security,
+Desktop, and Settings. Specialist routes remain grouped and searchable under
+Specialist Tools.
 
 Use `Ctrl+K` to search routes and settings. `Ctrl+Shift+K` uses the same search
 model filtered to actions. Both shortcuts use this unified search surface.
 Policy may keep a result unavailable when:
 
-- Advanced mode is required;
 - a logical specialist component is missing or incomplete;
 - the route is incompatible with Traditional or Atomic Fedora;
 - a required host capability is absent.
 
-Do not bypass the unavailable state by importing a UI module directly. Haven
+Do not bypass the unavailable state by importing a UI module directly. Compass
 ships logical core/specialist isolation in the base RPM; there is no physical
 `loofi-fedora-tweaks-extras` package.
 
@@ -85,9 +84,8 @@ For a source checkout:
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --cli info
 ```
 
-GUI Standard/Advanced mode does not remove CLI commands. If a specialist CLI
-command fails, inspect its reported host dependency rather than changing GUI
-mode.
+GUI grouping does not remove CLI commands. If a specialist CLI command fails,
+inspect its reported host dependency.
 
 ---
 
@@ -198,12 +196,12 @@ loofi-fedora-tweaks --cli plugins list
 ```
 
 The first command returns exit status 2 with a stable schema-v3
-`feature_retired` result. This is expected: Haven has no public Marketplace or
+`feature_retired` result. This is expected: Compass has no public Marketplace or
 external Python execution path.
 
-Existing third-party files remain untouched. Open **Advanced → Local Profiles →
-Legacy Extensions** or run `plugins list` to inventory them without importing
-their code. Export anything you need before removing files manually.
+Existing third-party files remain untouched. Open **Specialist Tools → Local
+Profiles → Legacy Extensions** or run `plugins list` to inventory them without
+importing their code. Export anything you need before removing files manually.
 
 Use a reviewed built-in provider for application features. Use an explicit
 local JSON profile for data-only settings; invalid schemas, paths, values, and
@@ -236,8 +234,8 @@ ollama --version
 ollama list
 ```
 
-These tools live under the optional Advanced destination and may report an
-unavailable state when their host dependencies are absent.
+These tools live under Specialist Tools and may report an unavailable state
+when their host dependencies are absent.
 
 ---
 
@@ -260,7 +258,7 @@ plan/run status records. It never starts a troubleshooting collection.
 Include:
 
 1. Fedora version and whether it is Traditional or Atomic
-2. Standard or Advanced mode
+2. whether the affected route is a primary or Specialist Tools route
 3. exact route, action, or command
 4. full error output and reproduction steps
 5. support-bundle path

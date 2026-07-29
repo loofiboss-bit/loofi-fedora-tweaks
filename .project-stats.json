@@ -1,6 +1,6 @@
 {
-  "version": "22.0.0",
-  "codename": "Alignment",
+  "version": "23.0.0",
+  "codename": "Compass",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 30,
   "tab_names": [
@@ -35,7 +35,7 @@
     "teleport_tab",
     "virtualization_tab"
   ],
-  "test_file_count": 332,
+  "test_file_count": 333,
   "utils_module_count": 101,
   "test_count": "6864",
   "coverage": "86.24",

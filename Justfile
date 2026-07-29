@@ -165,6 +165,9 @@ validate-system-check:
 validate-v23-phase5:
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v23_phase5.py
 
+validate-v23-phase6:
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v23_phase6.py
+
 validate-v19-ui-evidence:
 	QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v19_system_check_states.py --check
 
@@ -241,7 +244,10 @@ release-prep:
     @echo "=== Step 6: Validate System Check trust contract ==="
     just validate-system-check
     @echo ""
-    @echo "=== Step 7: Validate v19 UI evidence ==="
+    @echo "=== Step 7: Validate v23 local release candidate ==="
+    just validate-v23-phase6
+    @echo ""
+    @echo "=== Step 8: Validate v19 UI evidence ==="
     just validate-v19-ui-evidence
     @echo ""
     @echo "=== Release preparation complete ==="

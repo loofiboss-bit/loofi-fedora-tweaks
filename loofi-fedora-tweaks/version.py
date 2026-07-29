@@ -3,6 +3,6 @@ Centralized version information for Loofi Fedora Tweaks.
 All version references should import from this module.
 """
 
-__version__ = "22.0.0"
-__version_codename__ = "Alignment"
+__version__ = "23.0.0"
+__version_codename__ = "Compass"
 __app_name__ = "Loofi Fedora Tweaks"

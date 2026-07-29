@@ -1,0 +1,101 @@
+{
+  "schema_version": 1,
+  "release": "v23.0.0 Compass",
+  "phase": 6,
+  "generated_at": "2026-07-29T14:53:15+02:00",
+  "status": "local_ready_external_gates_open",
+  "source": {
+    "identity": "WORKTREE@a26b540c71be86b9e4f4fcd74f1d062da4fbad23",
+    "head_commit": "a26b540c71be86b9e4f4fcd74f1d062da4fbad23",
+    "exact_commit": false,
+    "worktree_clean": false,
+    "snapshot": {
+      "sha256": "39dee04595dce55331f97d75e0cf82774254d12b23964eb33fa28c01752cc3f7",
+      "file_count": 1527
+    }
+  },
+  "artifacts": [
+    {
+      "type": "rpm-base",
+      "filename": "loofi-fedora-tweaks-23.0.0-1.fc44.noarch.rpm",
+      "identity": "loofi-fedora-tweaks|1:23.0.0-1.fc44|noarch",
+      "sha256": "7441318de4c9667fb24396c6ed4dd5beff5cf6271a245c17dd38ea8d7eaccdcd",
+      "signature": "unsigned",
+      "verified": true
+    },
+    {
+      "type": "rpm-api",
+      "filename": "loofi-fedora-tweaks-api-23.0.0-1.fc44.noarch.rpm",
+      "identity": "loofi-fedora-tweaks-api|1:23.0.0-1.fc44|noarch",
+      "sha256": "ab3698bb9002592ad53671b46a0d7d3645d1c3cd7d58d39b7f94174edc3c438a",
+      "signature": "unsigned",
+      "verified": true
+    },
+    {
+      "type": "rpm-daemon",
+      "filename": "loofi-fedora-tweaks-daemon-23.0.0-1.fc44.noarch.rpm",
+      "identity": "loofi-fedora-tweaks-daemon|1:23.0.0-1.fc44|noarch",
+      "sha256": "5f931de7aab7fe401737c77efb65e80a881d7bfca0cadbc8b1719e0e3b9acf9d",
+      "signature": "unsigned",
+      "verified": true
+    },
+    {
+      "type": "flatpak",
+      "filename": "loofi-fedora-tweaks-v23.0.0.flatpak",
+      "identity": "app/org.loofi.FedoraTweaks/x86_64/master",
+      "sha256": "3909158293a2b04b2bd0c880de06fb3979aeb312c31af32fbf0cf189641bcc85",
+      "verified": true
+    },
+    {
+      "type": "sdist",
+      "filename": "loofi_fedora_tweaks-23.0.0.tar.gz",
+      "identity": "loofi_fedora_tweaks 23.0.0 Compass",
+      "sha256": "70681641a81962ee79728ef7571000b430cb66eb3badf1913ffa471802148b74",
+      "verified": true
+    }
+  ],
+  "release_evidence": {
+    "checksums": {
+      "filename": "SHA256SUMS.txt",
+      "sha256": "f5b82af552c77eb406db93381cbf4ead829d27686af5f6c776c202c9470fb132"
+    },
+    "sbom": {
+      "filename": "loofi-fedora-tweaks.cdx.json",
+      "sha256": "799ad44bb247ae970a189f3e671e3a9424a821e9daf8857d5375191de78fc047"
+    },
+    "provenance": {
+      "filename": "loofi-fedora-tweaks.intoto.jsonl",
+      "sha256": "9e4057b56befbbf573419c25875fed0e7bb879eeb23013d5b3573d1330ebc0e0",
+      "source_identity": "WORKTREE@a26b540c71be86b9e4f4fcd74f1d062da4fbad23",
+      "exact_commit_provenance": false
+    }
+  },
+  "evidence": {
+    "checksums_verified": true,
+    "sbom_verified": true,
+    "provenance_verified": true,
+    "rpm_headers_verified": true,
+    "rpm_payload_digests_verified": true,
+    "sdist_metadata_verified": true,
+    "source_install_isolated_verified": true,
+    "flatpak_import_verified": true,
+    "exact_commit_verified": false,
+    "rpm_signatures_verified": false,
+    "host_install_verified": false,
+    "host_upgrade_verified": false,
+    "public_readback_verified": false
+  },
+  "skipped_physical_gates": {
+    "fresh_atomic": "open-user-authorized-skip",
+    "manual_keyboard": "open-user-authorized-skip",
+    "audible_orca": "open-user-authorized-skip"
+  },
+  "external_blockers": {
+    "exact_commit": "not-authorized",
+    "historical_tag_lineage": "blocked-pending-separate-release-authority",
+    "signing": "not-authorized",
+    "host_install_or_upgrade": "not-authorized",
+    "publication": "not-authorized",
+    "public_readback": "not-available"
+  }
+}

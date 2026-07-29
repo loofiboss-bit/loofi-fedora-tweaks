@@ -3,10 +3,10 @@
   "started_at": "20260729_070016",
   "status": "active",
   "target_version": "v23.0.0",
-  "phase": "phase-5-local-qualified",
+  "phase": "phase-6-release-authorized",
   "baseline_commit": "5bd323b6794c72bb17390149a4e07bff3e35bf35",
-  "product_version": "v22.0.0",
-  "product_codename": "Alignment",
+  "product_version": "v23.0.0",
+  "product_codename": "Compass",
   "current_public_release": "v22.0.0",
   "current_release_commit": "31dc3ac7af53367f2bd257336ad0282cadea5fe7",
   "v20_publication_status": "blocked",
@@ -14,12 +14,32 @@
     "tag": "v23.0.0",
     "tag_object": "496ab1edb608a7420083b6541ddbc61b64a432f0",
     "peeled_commit": "adc4cef116d147bd5b845f0ec98c3a1970b8b054",
-    "status": "blocked-pending-separate-release-authority"
+    "status": "preserved-as-legacy",
+    "legacy_tag": "legacy-v23.0.0-architecture-hardening",
+    "legacy_tag_object": "496ab1edb608a7420083b6541ddbc61b64a432f0",
+    "legacy_peeled_commit": "adc4cef116d147bd5b845f0ec98c3a1970b8b054"
   },
   "phase_0_completed_at": "2026-07-29T07:18:09+02:00",
   "phase_1_completed_at": "2026-07-29T07:52:49+02:00",
   "phase_2_completed_at": "2026-07-29T09:39:49+02:00",
   "phase_3_completed_at": "2026-07-29T10:30:11+02:00",
   "phase_4_completed_at": "2026-07-29T11:08:48+02:00",
-  "phase_5_local_qualified_at": "2026-07-29T14:20:57+02:00"
+  "phase_5_local_qualified_at": "2026-07-29T14:20:57+02:00",
+  "phase_6_started_at": "2026-07-29T14:32:00+02:00",
+  "phase_6_local_ready_at": "2026-07-29T14:32:00+02:00",
+  "release_authorized_at": "2026-07-29T15:02:34+02:00",
+  "legacy_tag_preserved_at": "2026-07-29T15:02:34+02:00",
+  "skipped_physical_gates": {
+    "fresh_atomic": "open-user-authorized-skip",
+    "manual_keyboard": "open-user-authorized-skip",
+    "audible_orca": "open-user-authorized-skip"
+  },
+  "phase_6_external_blockers": {
+    "exact_commit": "authorized-pending-release-commit",
+    "historical_tag_lineage": "passed-preserved-as-legacy",
+    "signing": "authorized-pending-canonical-pipeline",
+    "host_install_or_upgrade": "authorized-pending-publication",
+    "publication": "authorized-pending-canonical-pipeline",
+    "public_readback": "pending"
+  }
 }

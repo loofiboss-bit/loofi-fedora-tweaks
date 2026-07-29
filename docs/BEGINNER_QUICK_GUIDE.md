@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Beginner Quick Guide
 
-> Version 18.0.0 "Haven" — classified plans, local confirmation, and independent verification
+> Version 23.0.0 "Compass" — guided troubleshooting and verified maintenance
 
 Use this guide for a safe first run in under 10 minutes.
 
@@ -28,7 +28,7 @@ not safe to automate.
 
 ## 2) Learn the UI in 30 Seconds
 
-Standard mode has exactly six destinations:
+The primary shell has exactly six destinations:
 
 1. **Home**
 2. **Software & Updates**
@@ -37,11 +37,10 @@ Standard mode has exactly six destinations:
 5. **Desktop**
 6. **Settings**
 
-Pages inside a destination load when you open them. Enable the optional
-**Advanced** destination from **Settings → Advanced Tools** when you need
-specialist development, AI, virtualization, automation, local-profile, or
-sharing tools. Standard mode remains the default. Built-in pages load on demand;
-external Python plugins and the public Marketplace are retired.
+Pages inside a destination load when you open them. Specialist development,
+AI, virtualization, automation, local-profile, and sharing tools remain
+grouped and searchable under **Specialist Tools**. Built-in pages load on
+demand; external Python plugins and the public Marketplace are retired.
 
 Useful shortcuts:
 
@@ -49,7 +48,7 @@ Useful shortcuts:
 - `Ctrl+Shift+K` opens the same policy-backed search model filtered to actions.
 - `F1` opens shortcut help.
 
-Search results obey the same mode, Fedora-variant, component, and safety policy
+Search results obey the same Fedora-variant, component, and safety policy
 as normal navigation. Search may open or preselect an Action Center item, but it
 never plans or runs an action.
 
@@ -77,6 +76,11 @@ Open **System → Performance** and run **Analyze Slow System**. The result uses
 bounded, read-only snapshot and links to supporting process or storage details.
 
 ![System Monitor](images/user-guide/system-monitor.png)
+
+For guided troubleshooting, open **System → Troubleshooting**, select a problem
+profile, review its sources, and start the bounded read-only collection
+explicitly. A result may show one safe next step; it never repairs the system
+automatically.
 
 ### Free disk space
 
@@ -134,6 +138,9 @@ loofi readiness plan --target 45-preview
 ```bash
 loofi info
 loofi health
+loofi troubleshoot profiles
+loofi troubleshoot run system_slow
+loofi troubleshoot latest
 loofi fedora44-readiness
 loofi readiness actions --target 44
 loofi doctor

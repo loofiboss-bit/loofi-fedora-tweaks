@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="23.0.0" date="2026-07-29">
+      <description>
+        <p>v23.0.0 "Compass" - Guided, evidence-bound troubleshooting</p>
+        <ul>
+          <li>Added six closed symptom profiles with explicit bounded collection and truthful partial states</li>
+          <li>Reused the existing diagnostics route for one canonical Troubleshoot journey</li>
+          <li>Added conservative related-change evidence and compatible follow-up comparison</li>
+          <li>Added explicit CLI collection, retrieval-only authenticated API endpoints, and Support Bundle v13</li>
+          <li>Preserved all routes, Action Center authority, user data, Traditional/Atomic separation, and lazy startup</li>
+        </ul>
+      </description>
+    </release>
     <release version="22.0.0" date="2026-07-28">
       <description>
         <p>v22.0.0 "Alignment" - Fedora-native consolidation and trust</p>

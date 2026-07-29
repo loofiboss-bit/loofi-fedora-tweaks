@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v22.0.0 "Alignment"
+# Loofi Fedora Tweaks v23.0.0 "Compass"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,28 +12,30 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v22.0.0">
-    <img src="https://img.shields.io/badge/Release-v22.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v22.0.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.0.0">
+    <img src="https://img.shields.io/badge/Release-v23.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v23.0.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
-## What Alignment changes
+## What Compass changes
 
-Alignment consolidates the control center around truthful trust gates,
-Fedora-native desktop handoffs, and a quieter task hierarchy.
+Compass turns the existing System diagnostics route into one explicit,
+bounded troubleshooting journey without adding repair or execution authority.
 
-- COPR completion is fail-closed and package/runtime checks are explicit.
-- Five Plasma-owned settings open through fixed, user-initiated native
-  handoffs with truthful unavailable states.
-- Home and Action Center emphasize exactly one next safe action.
-- Specialist Tools starts with a searchable group overview.
-- Shutdown, support-data redaction, provider-neutral secrets, and accessibility
-  matrices are strengthened without changing public contracts.
+- Six closed symptom profiles collect source-owned evidence only after an
+  explicit start.
+- Findings expose source, freshness, applicability, evidence quality, and one
+  safe next step.
+- Related changes remain conservatively labelled **Possibly related**.
+- Follow-up results keep Action Center verification separate from
+  troubleshooting resolution.
+- CLI collection is explicit; authenticated API endpoints are retrieval-only;
+  Support Bundle v13 remains bounded and command-free.
 
-Full details: [v22 release notes](docs/releases/RELEASE-NOTES-v22.0.0.md).
+Full details: [v23 release notes](docs/releases/RELEASE-NOTES-v23.0.0.md).
 
 ## The six destinations
 
@@ -117,6 +119,12 @@ loofi health
 loofi health check
 loofi health findings
 loofi health history --limit 5
+loofi troubleshoot profiles
+loofi troubleshoot run system_slow
+loofi troubleshoot latest
+loofi troubleshoot show SESSION_ID
+loofi troubleshoot compare SESSION_ID FOLLOWUP_ID
+loofi troubleshoot export SESSION_ID
 loofi doctor
 loofi support-bundle
 loofi readiness --target 44
@@ -177,9 +185,12 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v22.0.0 "Alignment"` is the current release. Fedora 45 remains preview-only.
-The historical Sentinel, Horizon, Nebula, and Synapse lineages remain preserved
-under explicit `legacy-v*` tags.
+`v23.0.0 "Compass"` is approved for publication through the canonical
+exact-tag release pipeline. Fedora 45 remains preview-only. The older
+"Architecture Hardening" tag object is preserved byte-identically as
+`legacy-v23.0.0-architecture-hardening`; the canonical `v23.0.0` reference is
+reserved for Compass. Historical Sentinel, Horizon, Nebula, and Synapse
+lineages likewise remain preserved under explicit `legacy-v*` tags.
 
 ## License
 

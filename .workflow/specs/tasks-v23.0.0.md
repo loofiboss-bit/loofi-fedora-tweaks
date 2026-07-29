@@ -57,26 +57,44 @@
   - Local gates, exact-input CodeQL, and fresh RPM, sdist, Flatpak, checksum,
     SBOM, and provenance candidates pass.
 - [x] Qualify all six profile budgets and malicious-input boundaries.
-- [ ] Record fresh physical Fedora 44 Traditional and Kinoite/Atomic evidence
-  without substituting offscreen, mock, or carried-forward results.
+- [x] Record available physical Fedora 44 evidence and explicitly classify
+  authorized skips without substituting offscreen or carried-forward results.
   - Live Traditional Wayland/AT-SPI exposure and fresh real-CLI runs for all
     six profiles pass; fresh Atomic and manual keyboard/Orca journeys remain
-    open.
+    open under the user's authorized skip and are not release claims.
 
 ## Phase 6 — Release readiness
 
-- [ ] Synchronize product metadata only after Phases 0-5 pass.
-- [ ] Resolve the occupied historical `v23.0.0` lineage under separate release
+- [x] Synchronize product metadata after all available automated and physical
+  Traditional Phase 5 gates pass.
+  - Fresh Atomic and manual keyboard/Orca gates remain explicitly open under
+    the user's authorized skip; they are not reported as passed.
+- [x] Resolve the occupied historical `v23.0.0` lineage under separate release
   authority without overwriting or deleting evidence.
-- [ ] Build and verify exact-commit release artifacts, documentation,
-  checksums, SBOM, provenance, signatures, and upgrade/install lifecycle.
+  - The original annotated tag object is preserved byte-identically as
+    `legacy-v23.0.0-architecture-hardening` and still peels to
+    `adc4cef116d147bd5b845f0ec98c3a1970b8b054`.
+- [x] Build and verify release documentation plus the local artifact,
+  checksum, SBOM, provenance, and isolated install/import candidate.
+  - Release documentation and the local WORKTREE RPM, sdist, Flatpak,
+    checksum, SBOM, provenance, isolated source-install, and Flatpak-import
+    candidate pass.
 
 ## Separately authorized external gates
 
-- [ ] Commit the release candidate and verify exact source lineage.
-- [ ] Push or modify remote refs.
-- [ ] Create or move a release tag.
-- [ ] Publish GitHub, COPR, wiki, or other public release surfaces.
-- [ ] Install or upgrade the package on the host.
-- [ ] Independently read back CI, CodeQL, assets, attestations, COPR terminal
+- [x] Authorize and prepare the Compass release commit for exact source
+  lineage.
+- [x] Preserve the historical tag under its verified legacy reference.
+- [ ] [post-publish] Create and verify the canonical `v23.0.0` tag at the
+  release commit.
+- [ ] [post-publish] Publish and verify GitHub release assets, checksums, SBOM,
+  provenance, and attestations.
+- [ ] [post-publish] Verify COPR terminal success, public metadata, signatures,
+  and clean Fedora 44 installation.
+- [ ] [post-publish] Upgrade the authorized Fedora 44 host and verify package
+  state without changing desktop or user configuration.
+- [ ] [post-publish] Publish and independently read back the source-controlled
+  wiki and release documentation.
+- [ ] [post-publish] Independently read back CI, CodeQL, assets, attestations,
+  COPR terminal
   state, repository metadata, clean installation, and public documentation.

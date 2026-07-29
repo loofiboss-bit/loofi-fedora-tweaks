@@ -34,7 +34,7 @@ class TestV21Phase4QualityGates(unittest.TestCase):
             self.assertEqual(run["subprocess_probes"], [])
             self.assertEqual(run["system_check_runtime_imports"], [])
 
-    def test_phase_four_evidence_is_retained_after_v22_completion(self):
+    def test_phase_four_evidence_is_retained_in_v23_candidate(self):
         report = REPORT.read_text(encoding="utf-8")
         tasks = TASKS.read_text(encoding="utf-8")
         race_lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
@@ -45,7 +45,7 @@ class TestV21Phase4QualityGates(unittest.TestCase):
         self.assertIn(
             "- [x] Synchronize version metadata to v21.0.0", tasks
         )
-        self.assertEqual(race_lock["product_version"], "v22.0.0")
+        self.assertEqual(race_lock["product_version"], "v23.0.0")
         self.assertEqual(race_lock["current_public_release"], "v22.0.0")
         self.assertEqual(
             race_lock["current_release_commit"],

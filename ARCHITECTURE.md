@@ -3,13 +3,13 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 22.0.0 "Alignment" | **Active target**: 23.0.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 23.0.0 "Compass" local candidate | **Current public release**: 22.0.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
-> V21 and V22 are complete and public. Product metadata remains v22 while
-> Compass implementation is locally qualified through the available Phase 5
-> gates. Fresh Atomic and manual physical accessibility qualification remain
-> open.
+> V21 and V22 are complete and public. Compass product metadata is synchronized
+> for Phase 6 local release readiness. Fresh Atomic and manual physical
+> accessibility qualification, exact-commit lineage, signing, installation,
+> and publication remain open.
 
 ## Active Compass architecture
 
@@ -29,7 +29,10 @@ versioned CLI, authenticated retrieval-only API, and Support Bundle v13. The
 [Phase 5 report](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md) records
 exact-input local repository, CodeQL, startup, profile-budget, package, and
 Traditional real-CLI/Wayland/AT-SPI evidence while keeping Atomic and manual
-physical gates open.
+physical gates open. The
+[Phase 6 report](docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md) records
+the versioned local candidate and keeps exact-commit, signing, installation,
+and publication claims separate.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It

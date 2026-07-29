@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 18.0.0 "Haven"
+> Version 23.0.0 "Compass"
 
 Operational runbook for power users and Fedora administrators.
 
@@ -15,11 +15,10 @@ Loofi entry modes:
 - daemon: `loofi-fedora-tweaks --daemon`
 - optional Web API: `loofi-fedora-tweaks --web`
 
-Standard mode exposes Home, Software & Updates, System, Network & Security,
-Desktop, and Settings. Enable the optional Advanced destination from
-**Settings → Advanced Tools** for specialist GUI routes. `Ctrl+K` searches all
-policy-visible routes and settings; `Ctrl+Shift+K` uses the same search model
-filtered to actions.
+The primary shell exposes Home, Software & Updates, System, Network & Security,
+Desktop, and Settings. Specialist Tools remains grouped and searchable without
+a global mode switch. `Ctrl+K` searches all policy-visible routes and settings;
+`Ctrl+Shift+K` uses the same search model filtered to actions.
 
 The base package uses logical core/specialist isolation. It does not ship a
 physical `-extras` RPM. Core startup registers application-owned, data-only
@@ -112,6 +111,12 @@ restart, or delete based on a single metric.
 
 ![System Monitor](images/user-guide/system-monitor.png)
 
+For a broader guided session, open **System → Troubleshooting**, select
+`system_slow`, inspect the exact source budget, and start collection
+explicitly. Treat **Possibly related** changes as correlation, not causation.
+Use a compatible explicit rerun after any independently verified action;
+Action Center `verified` never implies troubleshooting `resolved`.
+
 ### Free disk space
 
 Run **Software & Updates → Cleanup → Analyze Reclaimable Space**. Treat package
@@ -128,10 +133,9 @@ These surfaces reuse the v14 state, archive, and recovery contracts.
 
 ## 5) Advanced and Specialist Operations
 
-Enable Advanced mode only when specialist routes are needed. Performance
-Tuning, Gaming, Development, Local Profiles, Loofi Link, AI Lab, Agents, Automation,
-State Teleport, and Virtualization belong to the logical specialist component.
-Profiles and Extensions are also Advanced-only routes.
+Performance Tuning, Gaming, Development, Local Profiles, Loofi Link, AI Lab,
+Agents, Automation, State Teleport, Virtualization, Profiles, and Extensions
+belong to the grouped logical specialist component.
 
 If a specialist component is unavailable, the route remains fail-closed with
 an explanation. The six Standard destinations and five core workflows must
@@ -243,10 +247,12 @@ journalctl --user --since "2 hours ago"
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-Haven preserves settings, navigation migration inputs, favorites, stable routes,
-and observability data. Writable Action Center v1-v3 state migrates atomically
-to schema v4; unknown future schemas remain read-only. RPM scriptlets do not
-own or migrate per-user XDG state.
+Compass preserves settings, navigation migration inputs, favorites, stable
+routes, and observability data. Writable Action Center v1-v3 state migrates
+atomically to schema v4; unknown future schemas remain read-only. Optional
+troubleshooting schema-v1 state retains at most 20 terminal sessions and also
+fails read-only on unknown future schemas. RPM scriptlets do not own or migrate
+per-user XDG state.
 
 ---
 

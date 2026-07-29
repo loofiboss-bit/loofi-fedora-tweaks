@@ -35,6 +35,9 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V23_PHASE5_ATSPI.json` - Summary-only live Wayland AT-SPI exposure evidence for the canonical Troubleshoot route
 - `reports/V23_PHASE5_TRADITIONAL_PROFILES.json` - Fresh bounded real-CLI evidence for all six profiles on physical Fedora 44 Traditional
 - `reports/V23_PHASE5_CODEQL.json` - Exact-input local CodeQL security-extended coverage, fixes, suppressions, and effective finding counts
+- `reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md` - Retained local Compass candidate, artifact identities, and exact-commit/publication boundary
+- `reports/V23_PHASE6_LOCAL_CANDIDATE.json` - Machine-readable local artifact, checksum, SBOM, provenance, and lifecycle status
+- `reports/V23_PHASE6_SCREENSHOTS.json` - Deterministic v23 wide/compact screenshot evidence
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
@@ -126,16 +129,17 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- `v22.0.0 "Alignment"` is the current completed public release. Its GitHub,
-  COPR, install, platform, and documentation evidence is recorded separately
-  from local qualification.
-- `v23.0.0 "Compass"` is the active implementation target. Phases 0-4 are
-  complete and Phase 5 is locally qualified through the available repository,
-  security, performance, package, and Traditional Wayland/AT-SPI gates. Fresh
-  Kinoite/Atomic and manual keyboard/Orca qualification remain open; product
-  metadata remains v22.0.0.
-- The historical `v23.0.0` Architecture Hardening tag is occupied and remains
-  unchanged pending separately authorized release-lineage resolution.
+- `v23.0.0 "Compass"` is approved for the canonical exact-tag publication
+  workflow. Phases 0-4 are complete and Phase 5 is locally qualified through
+  the available repository, security, performance, package, and Traditional
+  Wayland/AT-SPI gates. Fresh Kinoite/Atomic and manual keyboard/Orca
+  qualification remain open under an authorized skip and are not claimed as
+  passed.
+- The historical Architecture Hardening tag object is preserved
+  byte-identically as `legacy-v23.0.0-architecture-hardening`; canonical
+  `v23.0.0` is reserved for the Compass release commit.
+- `v22.0.0 "Alignment"` remains the last independently verified public release
+  until the Compass pipeline and public readback finish.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its
   COPR build failed in Pulp after package build.
 - Historical v16 and v17 reports and screenshots remain release evidence for
