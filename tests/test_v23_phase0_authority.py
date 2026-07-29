@@ -38,7 +38,7 @@ class TestV23Phase0Authority(unittest.TestCase):
         self.assertEqual(lock["version"], "v23.0.0")
         self.assertEqual(lock["target_version"], "v23.0.0")
         self.assertEqual(lock["status"], "active")
-        self.assertEqual(lock["phase"], "phase-0-complete")
+        self.assertEqual(lock["phase"], "phase-1-complete")
 
     def test_historical_v23_tag_collision_is_locked_without_resolution_claim(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
@@ -66,7 +66,6 @@ class TestV23Phase0Authority(unittest.TestCase):
         self.assertEqual(entry.plugin.id, "diagnostics")
         self.assertTrue(entry.placement.discoverable)
         self.assertEqual(logs.placement.redirect_route_id, "diagnostics:watchtower")
-        self.assertFalse((ROOT / "loofi-fedora-tweaks" / "core" / "troubleshooting").exists())
 
     def test_startup_baseline_locks_phase_zero_resource_budget(self):
         evidence = json.loads(STARTUP.read_text(encoding="utf-8"))
@@ -123,15 +122,21 @@ class TestV23Phase0Authority(unittest.TestCase):
             self.assertTrue(path.is_file())
             self.assertEqual(_sha256(path), record["sha256"])
 
-    def test_phase_zero_is_complete_and_later_phases_are_not_started(self):
+    def test_phases_zero_and_one_are_complete_and_later_phases_are_not_started(self):
         text = TASKS.read_text(encoding="utf-8")
-        phase_zero, later = text.split(
+        phase_zero, phase_one_and_later = text.split(
             "## Phase 1 — Troubleshooting domain and profile catalog",
+            maxsplit=1,
+        )
+        phase_one, later = phase_one_and_later.split(
+            "## Phase 2 — Evidence composition and conservative correlation",
             maxsplit=1,
         )
 
         self.assertIn("- [x]", phase_zero)
         self.assertNotIn("- [ ]", phase_zero)
+        self.assertIn("- [x]", phase_one)
+        self.assertNotIn("- [ ]", phase_one)
         self.assertNotIn("- [x]", later)
         self.assertEqual(CURRENT_SUPPORT_BUNDLE_VERSION, 12)
 

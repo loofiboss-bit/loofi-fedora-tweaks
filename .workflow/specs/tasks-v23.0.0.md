@@ -19,10 +19,10 @@
 
 ## Phase 1 — Troubleshooting domain and profile catalog
 
-- [ ] Add immutable PyQt-free session, profile, source-result, finding,
+- [x] Add immutable PyQt-free session, profile, source-result, finding,
   next-step, and comparison contracts.
-- [ ] Define and validate the six closed profiles and exact collection budgets.
-- [ ] Add bounded cancellation, persistence, malformed-input, and
+- [x] Define and validate the six closed profiles and exact collection budgets.
+- [x] Add bounded cancellation, persistence, malformed-input, and
   future-schema behavior without execution authority.
 
 ## Phase 2 — Evidence composition and conservative correlation

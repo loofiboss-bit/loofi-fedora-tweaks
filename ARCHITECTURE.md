@@ -15,13 +15,16 @@ V23 composes existing trusted diagnostics into one explicit troubleshooting
 journey. Its canonical authority is the
 [Compass plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md),
 [architecture contract](.workflow/specs/arch-v23.0.0.md), and
-[Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md).
+[Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md). The
+[Phase 1 report](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) records the
+inert domain implementation.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It
 does not add a route, top-level destination, database, execution authority,
-mutating API, background probe, or automatic repair. Phase 0 changes authority
-and evidence only; no troubleshooting runtime exists yet.
+mutating API, background probe, or automatic repair. Phase 1 adds immutable
+contracts, the closed six-profile catalog, bounded lifecycle semantics, and an
+explicit future-safe JSON store. It does not collect or compose evidence.
 
 ## Runtime entry modes
 
@@ -50,6 +53,7 @@ loofi-fedora-tweaks/
 │   ├── observability/      # Health metrics/snapshots and read-only status
 │   ├── plugins/            # Data-only specs, discovery, registry, lazy loader
 │   ├── state/              # XDG inventory, schemas, atomic I/O, backup/restore
+│   ├── troubleshooting/    # Inert Compass sessions, profiles, lifecycle, persistence
 │   └── workflows/          # Five canonical workflow contracts
 ├── services/               # Domain services; no PyQt imports
 ├── utils/                  # Shared infrastructure and compatibility shims

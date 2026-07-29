@@ -11,9 +11,10 @@ product remains v22.0.0 "Alignment". The canonical authority is:
 - `.workflow/specs/.race-lock.json`; and
 - `docs/reports/V23_PHASE0_BASELINE.md`.
 
-Phase 0 changes authority, evidence, and validation tooling only. It does not
-add `core.troubleshooting`, change a route, collect new evidence, alter stored
-state, or change product metadata.
+Phase 0 changed authority, evidence, and validation tooling only. Phase 1 adds
+the inert `core.troubleshooting` domain and one registered, explicit session
+history store. It does not change a route, collect or compose evidence, mutate
+the host, or change product metadata.
 
 ## Canonical route decision
 
@@ -32,9 +33,9 @@ It already belongs to the System destination, is discoverable in the
 Compass must not add a route, top-level destination, second Troubleshoot page,
 or parallel history surface.
 
-## Future troubleshooting boundary
+## Troubleshooting boundary
 
-When Phase 1 is separately authorized, `core/troubleshooting/` will own
+Phase 1 implements `core/troubleshooting/` as the owner of
 immutable, PyQt-free session, profile, source-result, finding, next-step, and
 comparison contracts. It will compose source-owned evidence rather than
 becoming a new collector or execution authority.
@@ -44,6 +45,18 @@ The six closed profiles are `system_slow`, `updates_failed`,
 `boot_or_deployment`. A profile is partial or unavailable when its required
 evidence cannot be collected safely. No profile may contain a command vector,
 callback, renderer, credential, token, or raw process output.
+
+The profile catalog owns exact Traditional/Atomic source and total budgets.
+`application_failed` is reduced because no safe application-journal collector
+exists; `network_problem` is reduced because scans remain excluded. The domain
+exposes pure queued/running/terminal transitions and a cooperative cancellation
+signal, but it starts no worker, timer, thread, or probe.
+
+The optional `loofi.troubleshooting-sessions` schema-v1 store retains at most 20
+explicit terminal sessions through existing atomic XDG state infrastructure.
+Future schemas remain read-only and are never overwritten. Evidence
+composition, correlation, comparison logic, UI, CLI/API, and support export
+remain later phases.
 
 ## Source ownership
 

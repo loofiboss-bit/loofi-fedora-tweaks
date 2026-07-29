@@ -18,7 +18,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
 | v21.0.0 | Resolve | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md), [public evidence](docs/reports/V21_RELEASE_PUBLICATION.md) |
 | v22.0.0 | Alignment | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v22.0.0.md), [public evidence](docs/reports/V22_RELEASE_PUBLICATION.md) |
-| v23.0.0 | Compass | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md) |
+| v23.0.0 | Compass | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md), [Phase 1 domain](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) |
 
 ## [ACTIVE] v23.0.0 "Compass" — Guided Troubleshooting
 
@@ -45,18 +45,19 @@ bounded troubleshooting journey without adding execution authority.
 | Phase | Status | Deliverable |
 | --- | --- | --- |
 | 0 — Authority, baseline, and scope lock | DONE | [Exact v22 state, inventories, measurements, route decision, and offscreen evidence](docs/reports/V23_PHASE0_BASELINE.md) |
-| 1 — Troubleshooting domain and profiles | NOT STARTED | Immutable PyQt-free contracts and closed profile catalog |
+| 1 — Troubleshooting domain and profiles | DONE | [Immutable PyQt-free contracts, closed budgets, lifecycle, and future-safe persistence](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) |
 | 2 — Evidence composition and correlation | NOT STARTED | Read-only adapters, conservative related changes, and follow-up comparison |
 | 3 — Canonical Troubleshoot experience | NOT STARTED | One guided experience on the existing `diagnostics` route |
 | 4 — CLI, read-only API, and support case | NOT STARTED | Versioned interfaces and Support Bundle v13 |
 | 5 — Platform, performance, and security | NOT STARTED | Full local and physical qualification |
 | 6 — Release readiness | NOT STARTED | Exact candidate and separately authorized publication |
 
-The product remains v22.0.0 "Alignment". Phase 0 changed documentation,
-workflow authority, evidence, and validation tooling only. The historical
-`v23.0.0` tag is already occupied by the pre-normalization Architecture
-Hardening lineage; it was not modified and remains a release-blocking decision
-for separately authorized Phase 6 work.
+The product remains v22.0.0 "Alignment". Phases 0 and 1 establish authority,
+evidence, and an inert PyQt-free troubleshooting domain only. No collector,
+route, UI, CLI/API surface, support-bundle change, or execution authority has
+been added. The historical `v23.0.0` tag is already occupied by the
+pre-normalization Architecture Hardening lineage; it was not modified and
+remains a release-blocking decision for separately authorized Phase 6 work.
 
 ## [DONE] v22.0.0 "Alignment" — Fedora-native Consolidation
 
