@@ -4,6 +4,22 @@
 
 All notable changes to this project will be documented in this file.
 
+## [23.0.2] - 2026-07-29 "Compass"
+
+### Fixed
+
+- Added private systemd-managed XDG runtime and state directories for the
+  daemon's collector leases and rotating application log.
+- Restored startup health snapshots under the real hardened user-service
+  sandbox while retaining `ProtectSystem=strict` and
+  `ProtectHome=read-only`.
+
+### Compatibility
+
+- Preserved every v23 product, route, schema, CLI, API, daemon, package, and
+  user-state contract. The hotfix does not enable services or change desktop
+  settings.
+
 ## [23.0.1] - 2026-07-29 "Compass"
 
 ### Fixed

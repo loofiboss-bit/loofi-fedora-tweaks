@@ -4,12 +4,13 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **Release approved:** v23.0.1 "Compass"
-- **Last independently verified public release:** v23.0.0 "Compass"
-- Release notes: [RELEASE-NOTES-v23.0.1.md](RELEASE-NOTES-v23.0.1.md)
+- **Release approved:** v23.0.2 "Compass"
+- **Last independently verified public release:** v23.0.1 "Compass"
+- Release notes: [RELEASE-NOTES-v23.0.2.md](RELEASE-NOTES-v23.0.2.md)
 
 ## Recent Releases
 
+- v23.0.2 "Compass": [RELEASE-NOTES-v23.0.2.md](RELEASE-NOTES-v23.0.2.md)
 - v23.0.1 "Compass": [RELEASE-NOTES-v23.0.1.md](RELEASE-NOTES-v23.0.1.md)
 - v23.0.0 "Compass": [RELEASE-NOTES-v23.0.0.md](RELEASE-NOTES-v23.0.0.md)
 - v22.0.0 "Alignment": [RELEASE-NOTES-v22.0.0.md](RELEASE-NOTES-v22.0.0.md)

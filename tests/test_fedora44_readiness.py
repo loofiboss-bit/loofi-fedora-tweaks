@@ -757,6 +757,11 @@ class TestFedora44Packaging(unittest.TestCase):
             "%h/.local/share/loofi-fedora-tweaks",
             unit,
         )
+        self.assertIn("RuntimeDirectory=loofi-fedora-tweaks", unit)
+        self.assertIn("RuntimeDirectoryMode=0700", unit)
+        self.assertIn("StateDirectory=loofi-fedora-tweaks", unit)
+        self.assertIn("StateDirectoryMode=0700", unit)
+        self.assertNotIn("%h/.cache", unit)
 
     def test_workflows_target_fedora44(self):
         for rel_path in (

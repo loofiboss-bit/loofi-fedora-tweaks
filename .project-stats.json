@@ -1,5 +1,5 @@
 {
-  "version": "23.0.1",
+  "version": "23.0.2",
   "codename": "Compass",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 30,
@@ -39,10 +39,10 @@
   "utils_module_count": 101,
   "test_count": "6864",
   "coverage": "86.24",
-  "active_version": "23.0.1",
+  "active_version": "23.0.2",
   "next_version": "",
   "roadmap_status": "active",
-  "pipeline_version": "v23.0.1",
+  "pipeline_version": "v23.0.2",
   "pipeline_status": "active",
   "python_version": "3.12",
   "framework": "PyQt6"

@@ -129,15 +129,16 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- `v23.0.1 "Compass"` is approved for the canonical exact-tag hotfix
-  workflow after host qualification found the v23.0.0 daemon state directory
-  was read-only. Phases 0-4 are complete and Phase 5 is locally qualified through
+- `v23.0.2 "Compass"` is approved for the canonical exact-tag hotfix
+  workflow after real host qualification found the daemon's systemd-managed
+  runtime and XDG state directories were still read-only in v23.0.1. Phases
+  0-4 are complete and Phase 5 is locally qualified through
   the available repository, security, performance, package, and Traditional
   Wayland/AT-SPI gates. Fresh Kinoite/Atomic and manual keyboard/Orca
   qualification remain open under an authorized skip and are not claimed as
   passed.
-- `v23.0.0 "Compass"` is publicly verified and remains immutable while the
-  v23.0.1 hotfix is qualified.
+- `v23.0.0` and `v23.0.1 "Compass"` are publicly verified and remain
+  immutable while the v23.0.2 hotfix is qualified.
 - The historical Architecture Hardening tag object is preserved
   byte-identically as `legacy-v23.0.0-architecture-hardening`; canonical
   `v23.0.0` now identifies the Compass release commit.

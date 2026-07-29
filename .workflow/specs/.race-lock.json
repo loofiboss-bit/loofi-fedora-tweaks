@@ -1,14 +1,14 @@
 {
-  "version": "v23.0.1",
-  "started_at": "20260729_135900",
+  "version": "v23.0.2",
+  "started_at": "20260729_142934",
   "status": "active",
-  "target_version": "v23.0.1",
+  "target_version": "v23.0.2",
   "phase": "phase-6-release-authorized",
-  "baseline_commit": "1a789b8f603ba0050c7bb6e40c8ff0448d2643fa",
-  "product_version": "v23.0.1",
+  "baseline_commit": "cec4bf9b0273b4c44fb6337ebd16637b3e5151f8",
+  "product_version": "v23.0.2",
   "product_codename": "Compass",
-  "current_public_release": "v23.0.0",
-  "current_release_commit": "1a789b8f603ba0050c7bb6e40c8ff0448d2643fa",
+  "current_public_release": "v23.0.1",
+  "current_release_commit": "cec4bf9b0273b4c44fb6337ebd16637b3e5151f8",
   "v20_publication_status": "blocked",
   "historical_tag_collision": {
     "tag": "v23.0.0",
@@ -42,5 +42,5 @@
     "publication": "authorized-pending-canonical-pipeline",
     "public_readback": "pending"
   },
-  "bumped_at": "2026-07-29T13:59:00.470310+00:00"
+  "bumped_at": "2026-07-29T14:29:34.858198+00:00"
 }

@@ -45,11 +45,11 @@ class TestV21Phase4QualityGates(unittest.TestCase):
         self.assertIn(
             "- [x] Synchronize version metadata to v21.0.0", tasks
         )
-        self.assertEqual(race_lock["product_version"], "v23.0.1")
-        self.assertEqual(race_lock["current_public_release"], "v23.0.0")
+        self.assertEqual(race_lock["product_version"], "v23.0.2")
+        self.assertEqual(race_lock["current_public_release"], "v23.0.1")
         self.assertEqual(
             race_lock["current_release_commit"],
-            "1a789b8f603ba0050c7bb6e40c8ff0448d2643fa",
+            "cec4bf9b0273b4c44fb6337ebd16637b3e5151f8",
         )
         self.assertIn("843760c4fe2725d093a977554badf8d1eb2451be", publication)
         self.assertIn("10774741", publication)

@@ -19,19 +19,33 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v21.0.0 | Resolve | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md), [public evidence](docs/reports/V21_RELEASE_PUBLICATION.md) |
 | v22.0.0 | Alignment | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v22.0.0.md), [public evidence](docs/reports/V22_RELEASE_PUBLICATION.md) |
 | v23.0.0 | Compass | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 5 local qualification](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md), [Phase 6 local readiness](docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md) |
-| v23.0.1 | Compass | ACTIVE | [Hotfix architecture](.workflow/specs/arch-v23.0.1.md), [tasks](.workflow/specs/tasks-v23.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.1.md) |
+| v23.0.1 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.1.md), [tasks](.workflow/specs/tasks-v23.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.1.md) |
+| v23.0.2 | Compass | ACTIVE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md) |
 
-## [ACTIVE] v23.0.1 "Compass" — Daemon Sandbox Hotfix
+## [ACTIVE] v23.0.2 "Compass" — Complete Daemon Sandbox State
+
+**Objective:** provide only the systemd-managed runtime and XDG state
+directories the daemon requires for leases, health collection, and rotating
+logs while retaining strict system and read-only home protection.
+
+Real Fedora 44 qualification of v23.0.1 proved that the daemon starts and owns
+its D-Bus name, but also exposed read-only failures for its collector lease
+under `$XDG_RUNTIME_DIR` and rotating log under `$XDG_STATE_HOME`. v23.0.2 uses
+`RuntimeDirectory=` and `StateDirectory=` with mode `0700`; a real transient
+user-service run passed D-Bus `Ping`, health collection, logging, and
+zero-restart validation before release.
+
+## [DONE] v23.0.1 "Compass" — Daemon Startup Hotfix
 
 **Objective:** permit the hardened background service to write only its
 existing application-owned config and state paths, eliminating the v23.0.0
 restart loop without changing product behavior or enabling any service.
 
-The v23.0.0 feature release is public and remains immutable. Host qualification
-found that its daemon unit kept the launcher log directory read-only. v23.0.1
-adds that bounded state directory to `ReadWritePaths`, retains
-`ProtectHome=read-only`, and requires a new exact tag, package build, clean
-install, host upgrade, and independent public readback.
+The v23.0.0 feature release remains immutable. v23.0.1 added the launcher's
+bounded data directory to `ReadWritePaths`, retained `ProtectHome=read-only`,
+and was published through the exact-tag pipeline. Host qualification proved
+the restart loop fixed, then identified the remaining systemd runtime and XDG
+state paths now addressed by v23.0.2.
 
 ## [DONE] v23.0.0 "Compass" — Guided Troubleshooting
 
@@ -63,7 +77,7 @@ bounded troubleshooting journey without adding execution authority.
 | 3 — Canonical Troubleshoot experience | DONE | [Explicit guided session, evidence, related changes, one safe next step, and follow-up presentation](docs/reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md) |
 | 4 — CLI, read-only API, and support case | DONE | [Versioned CLI, authenticated retrieval-only API, and bounded Support Bundle v13](docs/reports/V23_PHASE4_INTERFACES_SUPPORT.md) |
 | 5 — Platform, performance, and security | DONE WITH AUTHORIZED SKIPS | [Exact-input local gates, six-profile Traditional evidence, and explicitly open Atomic/manual gates](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md) |
-| 6 — Release readiness | DONE WITH AUTHORIZED SKIPS | Canonical v23.0.0 release, assets, attestations, COPR, and public readback completed; daemon sandbox defect moved to v23.0.1 |
+| 6 — Release readiness | DONE WITH AUTHORIZED SKIPS | Canonical v23 releases, assets, attestations, COPR, host qualification, and public readback; final daemon sandbox state completion moved to v23.0.2 |
 
 Product metadata was synchronized to v23.0.0 "Compass" and published through
 the canonical exact-tag release pipeline. Phases 0-4
@@ -81,7 +95,8 @@ reported as passed. Phase 6 has locally verified documentation, RPM, sdist,
 Flatpak, checksum, SBOM, provenance, isolated installation, and Flatpak import
 before exact-commit publication. GitHub, CI, CodeQL, checksums, attestations,
 and COPR build 10788176 were independently read back. Host qualification then
-found the daemon sandbox issue now addressed by v23.0.1. The pre-normalization Architecture Hardening
+found the launcher sandbox issue addressed by v23.0.1 and the remaining
+runtime/state boundary addressed by v23.0.2. The pre-normalization Architecture Hardening
 tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`; its peeled commit remains
 `adc4cef116d147bd5b845f0ec98c3a1970b8b054`. Canonical `v23.0.0` remains bound

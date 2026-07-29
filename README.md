@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v23.0.1 "Compass"
+# Loofi Fedora Tweaks v23.0.2 "Compass"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -12,8 +12,8 @@
 </p>
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.0.1">
-    <img src="https://img.shields.io/badge/Release-v23.0.1-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v23.0.1 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.0.2">
+    <img src="https://img.shields.io/badge/Release-v23.0.2-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v23.0.2 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -35,8 +35,9 @@ bounded troubleshooting journey without adding repair or execution authority.
 - CLI collection is explicit; authenticated API endpoints are retrieval-only;
   Support Bundle v13 remains bounded and command-free.
 
-Full details: [v23.0.1 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.1.md)
-and [v23.0.0 feature release notes](docs/releases/RELEASE-NOTES-v23.0.0.md).
+Full details: [v23.0.2 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.2.md),
+[v23.0.1 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.1.md), and
+[v23.0.0 feature release notes](docs/releases/RELEASE-NOTES-v23.0.0.md).
 
 ## The six destinations
 
@@ -186,9 +187,10 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v23.0.1 "Compass"` is the release candidate for the daemon sandbox hotfix;
-`v23.0.0` remains immutable as the initial Compass publication. Fedora 45
-remains preview-only. The older
+`v23.0.2 "Compass"` is the release candidate that completes the daemon
+sandbox's bounded XDG runtime and state contract. `v23.0.0` and `v23.0.1`
+remain immutable earlier Compass publications. Fedora 45 remains preview-only.
+The older
 "Architecture Hardening" tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`. Historical Sentinel, Horizon, Nebula,
 and Synapse

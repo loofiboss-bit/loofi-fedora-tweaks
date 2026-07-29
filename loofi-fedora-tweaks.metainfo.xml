@@ -40,6 +40,16 @@
   </provides>
 
   <releases>
+    <release version="23.0.2" date="2026-07-29">
+      <description>
+        <p>v23.0.2 "Compass" - Complete daemon sandbox state contract</p>
+        <ul>
+          <li>Added private systemd-managed runtime and state directories</li>
+          <li>Restored daemon health collection and rotating application logs</li>
+          <li>Retained strict system and read-only home protection</li>
+        </ul>
+      </description>
+    </release>
     <release version="23.0.1" date="2026-07-29">
       <description>
         <p>v23.0.1 "Compass" - Background daemon startup hotfix</p>

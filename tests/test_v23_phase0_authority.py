@@ -34,9 +34,9 @@ class TestV23Phase0Authority(unittest.TestCase):
 
         self.assertEqual(__version__, lock["product_version"].removeprefix("v"))
         self.assertEqual(__version_codename__, lock["product_codename"])
-        self.assertEqual(lock["current_public_release"], "v23.0.0")
-        self.assertEqual(lock["version"], "v23.0.1")
-        self.assertEqual(lock["target_version"], "v23.0.1")
+        self.assertEqual(lock["current_public_release"], "v23.0.1")
+        self.assertEqual(lock["version"], "v23.0.2")
+        self.assertEqual(lock["target_version"], "v23.0.2")
         self.assertEqual(lock["status"], "active")
         self.assertEqual(lock["phase"], "phase-6-release-authorized")
 

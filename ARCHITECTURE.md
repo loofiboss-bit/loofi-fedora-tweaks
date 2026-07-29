@@ -3,20 +3,20 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 23.0.0 "Compass" local candidate | **Current public release**: 22.0.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 23.0.2 "Compass" release candidate | **Current public release**: 23.0.1 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
-> V21 and V22 are complete and public. Compass product metadata is synchronized
-> for Phase 6 local release readiness. Fresh Atomic and manual physical
-> accessibility qualification, exact-commit lineage, signing, installation,
-> and publication remain open.
+> V21 and V22 are complete and public. Compass `v23.0.0` and `v23.0.1` are public;
+> v23.0.2 completes the daemon's bounded systemd runtime and state contract.
+> Fresh Atomic and manual physical accessibility qualification remain open
+> under an authorized skip.
 
 ## Active Compass architecture
 
 V23 composes existing trusted diagnostics into one explicit troubleshooting
 journey. Its canonical authority is the
 [Compass plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md),
-[architecture contract](.workflow/specs/arch-v23.0.1.md), and
+[architecture contract](.workflow/specs/arch-v23.0.2.md), and
 [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md). The
 [Phase 1 report](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) records the
 inert domain implementation, and the
