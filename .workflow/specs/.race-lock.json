@@ -1,15 +1,20 @@
 {
-  "version": "v22.0.0",
-  "started_at": "20260728_000000",
-  "status": "completed",
-  "target_version": "v22.0.0",
-  "phase": "release-complete",
-  "baseline_commit": "3c9ce62a14839f40dd1ac027cc43a83476f27571",
+  "version": "v23.0.0",
+  "started_at": "20260729_070016",
+  "status": "active",
+  "target_version": "v23.0.0",
+  "phase": "phase-0-complete",
+  "baseline_commit": "5bd323b6794c72bb17390149a4e07bff3e35bf35",
   "product_version": "v22.0.0",
+  "product_codename": "Alignment",
+  "current_public_release": "v22.0.0",
+  "current_release_commit": "31dc3ac7af53367f2bd257336ad0282cadea5fe7",
   "v20_publication_status": "blocked",
-  "override_recorded_at": "2026-07-28T00:00:00+02:00",
-  "completed_at": "2026-07-28T18:19:21+02:00",
-  "release_commit": "31dc3ac7af53367f2bd257336ad0282cadea5fe7",
-  "release_run_id": 30375621830,
-  "copr_build_id": 10783672
+  "historical_tag_collision": {
+    "tag": "v23.0.0",
+    "tag_object": "496ab1edb608a7420083b6541ddbc61b64a432f0",
+    "peeled_commit": "adc4cef116d147bd5b845f0ec98c3a1970b8b054",
+    "status": "blocked-pending-separate-release-authority"
+  },
+  "phase_0_completed_at": "2026-07-29T07:18:09+02:00"
 }

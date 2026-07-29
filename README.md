@@ -132,7 +132,7 @@ The global `--json` option appears before the CLI command.
 
 ## Safety and compatibility
 
-- Action Center exposes 56 classified first-party definitions. Unsupported host
+- Action Center exposes 63 classified first-party definitions. Unsupported host
   operations are visible as non-executable `manual_only` plans.
 - System Check findings cannot execute commands. Action handoff resolves only
   fresh, untampered evidence against the closed Action Center catalog.

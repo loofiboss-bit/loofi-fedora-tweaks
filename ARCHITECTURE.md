@@ -3,25 +3,25 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 21.0.0 "Alignment" | **Active target**: 22.0.0 "Alignment" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 22.0.0 "Alignment" | **Active target**: 23.0.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
-> V21 is complete and public. Product metadata remains v21 while Alignment is
-> implemented and locally qualified.
+> V21 and V22 are complete and public. Product metadata remains v22 while
+> Compass is implemented and locally qualified.
 
-## Active Alignment architecture
+## Active Compass architecture
 
-V22 is a consolidation and trust release, not a new feature family. Its
-canonical authority is the
-[Alignment plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md),
-[architecture contract](.workflow/specs/arch-v22.0.0.md), and
-[Phase 0 baseline](docs/reports/V22_PHASE0_BASELINE.md).
+V23 composes existing trusted diagnostics into one explicit troubleshooting
+journey. Its canonical authority is the
+[Compass plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md),
+[architecture contract](.workflow/specs/arch-v23.0.0.md), and
+[Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md).
 
-Alignment makes current release/runtime trust gates enforceable, decomposes
-catalog storage behind exact route equality, delegates Plasma-owned settings
-through fixed native handoffs, and reduces task hierarchy. It does not add a
-database, execution authority, mutating API, background probe, or
-compatibility-breaking route.
+Compass will reuse the existing `diagnostics` route, System Check, Trusted
+Change Journal, observability, Action Center, and support-export boundaries. It
+does not add a route, top-level destination, database, execution authority,
+mutating API, background probe, or automatic repair. Phase 0 changes authority
+and evidence only; no troubleshooting runtime exists yet.
 
 ## Runtime entry modes
 
@@ -241,12 +241,14 @@ are compatible. Every original finding is classified as `resolved`,
 finding `resolved` remain separate facts; a linked run waiting for reboot cannot
 claim resolution, and a successful verifier still requires a later compatible
 check collected after verification.
-The canonical Support Bundle v11 includes at most two results, 50 findings per
-result, one comparison, and 25 linked plan/run records. It recursively redacts
-paths, hostnames, emails, secrets, network identifiers, and verifier messages,
-and includes no raw command output. The authenticated loopback API exposes only
-`GET /api/system-check/latest`; no System Check confirm, execute, or collection
-route exists.
+The canonical Support Bundle v12 preserves the bounded System Check v11
+payload and adds source-ready Trusted Change Journal evidence. It includes at
+most two System Check results, 50 findings per result, one comparison, 25
+linked plan/run records, and 50 journal events. It recursively redacts paths,
+hostnames, emails, secrets, network identifiers, and verifier messages, and
+includes no raw command output or recovery commands. The authenticated
+loopback API exposes only `GET /api/system-check/latest`; no System Check
+confirm, execute, or collection route exists.
 The HTTP route table permits mutation only for token issuance; system,
 observability, profile, Action Center, and export surfaces are authenticated
 GET inspection endpoints.

@@ -1,0 +1,96 @@
+{
+  "errors": [],
+  "generated_at": "2026-07-29T05:10:41.855542+00:00",
+  "persist": false,
+  "release": "v23 Compass Phase 0 baseline (product metadata v22.0.0 Alignment)",
+  "runs": [
+    {
+      "atomic": false,
+      "run": 1,
+      "source_durations_ms": {
+        "action-center": 11.667,
+        "maintenance": 238.536,
+        "pending-reboot": 0.054,
+        "state-integrity": 65.858,
+        "storage-reclaim": 65.614
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 239.638
+    },
+    {
+      "atomic": false,
+      "run": 2,
+      "source_durations_ms": {
+        "action-center": 10.172,
+        "maintenance": 210.984,
+        "pending-reboot": 1.216,
+        "state-integrity": 58.719,
+        "storage-reclaim": 58.513
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 211.86
+    },
+    {
+      "atomic": false,
+      "run": 3,
+      "source_durations_ms": {
+        "action-center": 10.883,
+        "maintenance": 203.075,
+        "pending-reboot": 0.124,
+        "state-integrity": 60.727,
+        "storage-reclaim": 22.21
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 203.885
+    },
+    {
+      "atomic": false,
+      "run": 4,
+      "source_durations_ms": {
+        "action-center": 11.456,
+        "maintenance": 212.356,
+        "pending-reboot": 1.985,
+        "state-integrity": 60.381,
+        "storage-reclaim": 33.089
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 213.511
+    },
+    {
+      "atomic": false,
+      "run": 5,
+      "source_durations_ms": {
+        "action-center": 11.39,
+        "maintenance": 239.342,
+        "pending-reboot": 0.139,
+        "state-integrity": 66.736,
+        "storage-reclaim": 55.448
+      },
+      "source_errors": [],
+      "state": "completed",
+      "wall_ms": 240.377
+    }
+  ],
+  "schema_version": 1,
+  "source_median_budgets_ms": {
+    "action-center": 250.0,
+    "maintenance": 1200.0,
+    "pending-reboot": 250.0,
+    "state-integrity": 250.0,
+    "storage-reclaim": 500.0
+  },
+  "source_medians_ms": {
+    "action-center": 11.39,
+    "maintenance": 212.356,
+    "pending-reboot": 0.139,
+    "state-integrity": 60.727,
+    "storage-reclaim": 55.448
+  },
+  "status": "passed",
+  "total_median_budget_ms": 3500.0,
+  "total_median_ms": 213.511
+}

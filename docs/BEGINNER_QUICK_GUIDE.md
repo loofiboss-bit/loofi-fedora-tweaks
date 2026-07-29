@@ -102,7 +102,7 @@ Action Center applies the same safety lifecycle to all supported host changes:
 5. Run one bounded mutation at a time.
 6. Verify the outcome separately.
 
-The 56 first-party definitions declare their operation class, Fedora variants,
+The 63 first-party definitions declare their operation class, Fedora variants,
 reboot policy, affected resources, confirmation, verification, and recovery
 policy. Unsupported host operations remain `manual_only`. Loofi never treats
 command exit code zero as verified success by itself.

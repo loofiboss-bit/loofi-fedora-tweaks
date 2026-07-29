@@ -182,9 +182,10 @@ If an Action Center run is verified but the finding still appears, run
 **Check again** after any required reboot. `verified` describes the action
 verifier; `resolved` requires a later compatible System Check. A
 `not_comparable` result means the required source was unavailable or the
-profile, Fedora variant, or ordering did not match. Export Support Bundle v11
-to include the bounded result, comparison, and linked plan/run metadata with
-paths, identities, secrets, network identifiers, and command output redacted.
+profile, Fedora variant, or ordering did not match. Export Support Bundle v12
+to include the bounded result, comparison, linked plan/run metadata, and
+source-ready Trusted Change Journal evidence with paths, identities, secrets,
+network identifiers, command output, and recovery commands redacted.
 
 ---
 

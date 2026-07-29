@@ -18,6 +18,45 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v20.0.0 | Continuity | PUBLICATION BLOCKED | [Architecture](.workflow/specs/arch-v20.0.0.md), [tasks](.workflow/specs/tasks-v20.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v20.0.0.md) |
 | v21.0.0 | Resolve | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md), [architecture](.workflow/specs/arch-v21.0.0.md), [tasks](.workflow/specs/tasks-v21.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v21.0.0.md), [public evidence](docs/reports/V21_RELEASE_PUBLICATION.md) |
 | v22.0.0 | Alignment | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v22.0.0.md), [public evidence](docs/reports/V22_RELEASE_PUBLICATION.md) |
+| v23.0.0 | Compass | ACTIVE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md) |
+
+## [ACTIVE] v23.0.0 "Compass" — Guided Troubleshooting
+
+**Objective:** compose existing System Check, Trusted Change Journal,
+observability, diagnostics, and Action Center evidence into one explicit,
+bounded troubleshooting journey without adding execution authority.
+
+### Required outcomes
+
+- One canonical Troubleshoot experience reuses the existing `diagnostics`
+  route under System and preserves all 81 routes.
+- Six closed symptom profiles expose source, freshness, applicability, evidence
+  quality, and one safe next step.
+- Related changes remain conservatively labelled **Possibly related**.
+- Follow-up comparison keeps Action Center `verified` separate from a later
+  troubleshooting `resolved` result.
+- CLI, authenticated read-only API retrieval, and Support Bundle v13 remain
+  bounded and command-free.
+- Traditional and Atomic evidence never mix, and no physical result is inferred
+  from offscreen or mock evidence.
+
+### Phase status
+
+| Phase | Status | Deliverable |
+| --- | --- | --- |
+| 0 — Authority, baseline, and scope lock | DONE | [Exact v22 state, inventories, measurements, route decision, and offscreen evidence](docs/reports/V23_PHASE0_BASELINE.md) |
+| 1 — Troubleshooting domain and profiles | NOT STARTED | Immutable PyQt-free contracts and closed profile catalog |
+| 2 — Evidence composition and correlation | NOT STARTED | Read-only adapters, conservative related changes, and follow-up comparison |
+| 3 — Canonical Troubleshoot experience | NOT STARTED | One guided experience on the existing `diagnostics` route |
+| 4 — CLI, read-only API, and support case | NOT STARTED | Versioned interfaces and Support Bundle v13 |
+| 5 — Platform, performance, and security | NOT STARTED | Full local and physical qualification |
+| 6 — Release readiness | NOT STARTED | Exact candidate and separately authorized publication |
+
+The product remains v22.0.0 "Alignment". Phase 0 changed documentation,
+workflow authority, evidence, and validation tooling only. The historical
+`v23.0.0` tag is already occupied by the pre-normalization Architecture
+Hardening lineage; it was not modified and remains a release-blocking decision
+for separately authorized Phase 6 work.
 
 ## [DONE] v22.0.0 "Alignment" — Fedora-native Consolidation
 

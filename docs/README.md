@@ -6,7 +6,7 @@ Central documentation map for Loofi Fedora Tweaks.
 
 - `BEGINNER_QUICK_GUIDE.md` - Fast onboarding for new users
 - `USER_GUIDE.md` - End-user walkthrough (GUI, CLI, modes, workflows)
-- `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and support bundle v8 fields
+- `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and Support Bundle v12 fields
 - `ADVANCED_ADMIN_GUIDE.md` - Admin/operator runbooks and advanced operations
 - `TROUBLESHOOTING.md` - Common issues and fixes
 - `STATE_INTEGRITY.md` - State Doctor, backup, restore planning, schemas, locks, and archive threat model
@@ -19,6 +19,13 @@ Central documentation map for Loofi Fedora Tweaks.
 - `../README.md` - Project overview and quick start
 - `../ROADMAP.md` - Current and future release-status index
 - `../CHANGELOG.md` - Full change history
+- `plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md` - Active v23.0.0 "Compass" scope, phases, compatibility, and gates
+- `../.workflow/specs/arch-v23.0.0.md` - Compass architecture and protected contracts
+- `../.workflow/specs/tasks-v23.0.0.md` - Compass implementation and release checklist
+- `reports/V23_PHASE0_BASELINE.md` - Exact v22 release state, route/source/schema inventories, and Compass scope lock
+- `reports/V23_PHASE0_STARTUP.json` - Reproducible Compass startup and resource baseline
+- `reports/V23_PHASE0_SYSTEM_CHECK.json` - Read-only System Check timing baseline
+- `reports/V23_PHASE0_SCREENSHOTS.json` - Deterministic wide/compact offscreen screenshot evidence
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
@@ -113,7 +120,10 @@ These legacy files are kept for compatibility and historical context.
 - `v22.0.0 "Alignment"` is the current completed public release. Its GitHub,
   COPR, install, platform, and documentation evidence is recorded separately
   from local qualification.
-- No development release is currently active.
+- `v23.0.0 "Compass"` is the active implementation target. Phase 0 is complete;
+  runtime work has not started and product metadata remains v22.0.0.
+- The historical `v23.0.0` Architecture Hardening tag is occupied and remains
+  unchanged pending separately authorized release-lineage resolution.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its
   COPR build failed in Pulp after package build.
 - Historical v16 and v17 reports and screenshots remain release evidence for

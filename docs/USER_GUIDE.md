@@ -148,7 +148,7 @@ unchanged, worsened, or not comparable.
 
 **Software & Updates → Action Center** is the only plan/run/verify GUI.
 
-- The catalog contains 56 first-party definitions. Each definition declares its
+- The catalog contains 63 first-party definitions. Each definition declares its
   operation class, Fedora variants, reboot policy, affected resources,
   parameters, preflight, confirmation, verification, and recovery policy.
 - Unsupported host operations produce non-executable `manual_only` plans.

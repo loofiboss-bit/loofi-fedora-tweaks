@@ -1,4 +1,8 @@
-# v23.0 Test Implementation Summary
+# Historical Pre-normalization v23.0 Test Implementation Summary
+
+> This report describes the February 2026 "Architecture Hardening" lineage.
+> It is retained as historical evidence and is not a Compass Phase 0 result,
+> current test result, or authority for the active v23.0.0 plan.
 
 ## ✅ Completed Tasks
 

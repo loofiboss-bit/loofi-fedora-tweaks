@@ -1,10 +1,12 @@
 # Verified Maintenance
 
-v18.0.0 "Haven" makes Action Center the trust boundary for supported host
+v18.0.0 "Haven" made Action Center the trust boundary for supported host
 changes across GUI, CLI, daemon, automation, scheduler, and agent entry points.
-Its 56 first-party definitions declare operation class, Fedora variants, reboot
-policy, affected resources, preflight, confirmation, verification, and recovery
-policy. Fedora 44 is the supported target; Fedora 45 remains preview-only.
+Its original release catalog contained 56 first-party definitions. The current
+v22 catalog contains 63 definitions declaring operation class, Fedora variants,
+reboot policy, affected resources, preflight, confirmation, verification, and
+recovery policy. Fedora 44 is the supported target; Fedora 45 remains
+preview-only.
 
 ## Action Center workflow
 
@@ -71,9 +73,10 @@ Plans expire after 30 minutes and are re-preflighted before execution. Each
 plan contains one action and validated parameters; the reviewed definition
 regenerates the command, so persisted commands are never authoritative. Only one
 Action Center mutation can run across GUI and CLI processes. The read-only API
-can inspect plans and runs. Support Bundle v11 preserves the v10 lifecycle
-evidence and adds bounded System Check results, comparison outcomes, and linked
-finding metadata without raw command output or secrets.
+can inspect plans and runs. Support Bundle v12 preserves the v11 bounded System
+Check results, comparison outcomes, and linked finding metadata and adds
+redacted source-ready Trusted Change Journal events without raw command output,
+recovery commands, or secrets.
 
 Action Center `verified` means the action-specific verifier passed.
 System Check `resolved` means the original finding is absent from a later

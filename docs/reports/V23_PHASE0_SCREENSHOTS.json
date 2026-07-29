@@ -1,0 +1,335 @@
+{
+  "capture_policy": {
+    "asynchronous_commands_rejected": true,
+    "backend": "offscreen",
+    "background_services_disabled": true,
+    "mutating_subprocesses_rejected": true,
+    "navigation_mode": "standard",
+    "physical_gate": "not_verified",
+    "raw_frames_retained": false,
+    "raw_storage": "transient; hashes and contact sheets retained",
+    "real_main_window": true,
+    "temporary_home_and_xdg": true,
+    "theme": "system"
+  },
+  "captured_product_codename": "Alignment",
+  "captured_product_version": "22.0.0",
+  "captures": [
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        900
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/home__1366x900__font-100.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "b9ea5819e4c6d5eb5ad5f6ba9c2da72d70fae92caaf45dc929f976dffd6d2dcf",
+      "theme": "system",
+      "viewport": [
+        1366,
+        900
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        900
+      ],
+      "destination_id": "troubleshoot",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/troubleshoot__1366x900__font-100.png",
+      "retained": false,
+      "route_id": "diagnostics",
+      "sha256": "d2580cd9dbc54c243ed7d2b966537cc1841a0374f976e8fe19d39e019bba072c",
+      "theme": "system",
+      "viewport": [
+        1366,
+        900
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        900
+      ],
+      "destination_id": "system_check",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/system_check__1366x900__font-100.png",
+      "retained": false,
+      "route_id": "health",
+      "sha256": "98eebc090c2fee72e9d97c9009a0f799e2e9f2bde7458494905f900adc9413e7",
+      "theme": "system",
+      "viewport": [
+        1366,
+        900
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        900
+      ],
+      "destination_id": "activity_recovery",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/activity_recovery__1366x900__font-100.png",
+      "retained": false,
+      "route_id": "activity",
+      "sha256": "512263589da217b8b3e4acd711bed05e6edba0bf7bcee7584d25ade3b5687ff8",
+      "theme": "system",
+      "viewport": [
+        1366,
+        900
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        900
+      ],
+      "destination_id": "action_center",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/action_center__1366x900__font-100.png",
+      "retained": false,
+      "route_id": "maintenance:action-center",
+      "sha256": "1d1c495df4afaa300e600bb6b45f8a2406e974ed9cf315144d0e5f342e0ae4e8",
+      "theme": "system",
+      "viewport": [
+        1366,
+        900
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        1366,
+        900
+      ],
+      "destination_id": "release_readiness",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/release_readiness__1366x900__font-100.png",
+      "retained": false,
+      "route_id": "maintenance:upgrade-assistant",
+      "sha256": "d4584547279b7275e5a23046684ce3daf91ec520549ffb6e1030ae68448e63a8",
+      "theme": "system",
+      "viewport": [
+        1366,
+        900
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "home",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/home__860x720__font-100.png",
+      "retained": false,
+      "route_id": "atlas_dashboard",
+      "sha256": "f25c321f09affbfc42851590a4a709fe06ccd3e949ed93c2dc98cc38c1c924a3",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "troubleshoot",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/troubleshoot__860x720__font-100.png",
+      "retained": false,
+      "route_id": "diagnostics",
+      "sha256": "ad875d7ea79c9c47aff590ab91e27840c0c07961f32f4e297503d887147510fc",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "system_check",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/system_check__860x720__font-100.png",
+      "retained": false,
+      "route_id": "health",
+      "sha256": "597abf091646fe57ecd5c34427db9e0a8255781dcc798f93d33eb3fc4daeba77",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "activity_recovery",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/activity_recovery__860x720__font-100.png",
+      "retained": false,
+      "route_id": "activity",
+      "sha256": "a094a21d54c8810cab5fd00d96086e1dc7e6e4927a5ea1c4b2d3c0191c02e45e",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "action_center",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/action_center__860x720__font-100.png",
+      "retained": false,
+      "route_id": "maintenance:action-center",
+      "sha256": "2d6378d296a415ecb4c1cf0be0b346afd66b2081fd6510561f8b92ad341b3e71",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    },
+    {
+      "backend": "offscreen",
+      "captured_dimensions": [
+        860,
+        720
+      ],
+      "destination_id": "release_readiness",
+      "font_scale_method": "QApplication font point-size proxy",
+      "font_scale_percent": 100,
+      "path": "docs/images/v23/phase0/raw/release_readiness__860x720__font-100.png",
+      "retained": false,
+      "route_id": "maintenance:upgrade-assistant",
+      "sha256": "13be9bd4314e0f9c9eab95266b757a559a853c35352e7d554239fce5b31bc71c",
+      "theme": "system",
+      "viewport": [
+        860,
+        720
+      ]
+    }
+  ],
+  "contact_sheets": [
+    {
+      "destination_id": "home",
+      "frame_count": 2,
+      "path": "docs/images/v23/phase0/contact-sheets/home.png",
+      "sha256": "a0a1d5fcc2ec3c9ef4d163c051538158e15eb984814b43f950a0b136792c29b4"
+    },
+    {
+      "destination_id": "troubleshoot",
+      "frame_count": 2,
+      "path": "docs/images/v23/phase0/contact-sheets/troubleshoot.png",
+      "sha256": "fa73fea1afeea2481a1027f178d29d7db1e0d039431e71847ce2f02229ee51da"
+    },
+    {
+      "destination_id": "system_check",
+      "frame_count": 2,
+      "path": "docs/images/v23/phase0/contact-sheets/system_check.png",
+      "sha256": "68155a9d8dbc0c0ed634d3bf98d0f5cc47d97860c7c83463dfc60eceb480afda"
+    },
+    {
+      "destination_id": "activity_recovery",
+      "frame_count": 2,
+      "path": "docs/images/v23/phase0/contact-sheets/activity_recovery.png",
+      "sha256": "943496caf8ecce44e61e9c4db9b4726e16e093234c100b84644b9738c8ff0363"
+    },
+    {
+      "destination_id": "action_center",
+      "frame_count": 2,
+      "path": "docs/images/v23/phase0/contact-sheets/action_center.png",
+      "sha256": "4a17010f505085a81aeadc4d1f8292cbbcb3d1aca4be624f762e5d14b76601a5"
+    },
+    {
+      "destination_id": "release_readiness",
+      "frame_count": 2,
+      "path": "docs/images/v23/phase0/contact-sheets/release_readiness.png",
+      "sha256": "004560e8068b3d7bb1d3087a9a2bd470a84334c4c3a4037af4a758c623328633"
+    }
+  ],
+  "generated_at": "2026-07-29T05:11:01.344411+00:00",
+  "git_commit": "5bd323b6794c72bb17390149a4e07bff3e35bf35",
+  "limitations": [
+    "Offscreen Qt does not prove Wayland compositor behavior.",
+    "Offscreen Qt does not prove Orca speech or the live AT-SPI tree.",
+    "System theme rendering is evidence for this capture environment."
+  ],
+  "phase": 0,
+  "release": "v23.0.0 Compass",
+  "reproduction_command": "PYTHONPATH=loofi-fedora-tweaks QT_QPA_PLATFORM=offscreen python3 scripts/capture_v23_phase0.py",
+  "schema_version": 1,
+  "status": "passed",
+  "surfaces": [
+    {
+      "route_id": "atlas_dashboard",
+      "surface_id": "home"
+    },
+    {
+      "route_id": "diagnostics",
+      "surface_id": "troubleshoot"
+    },
+    {
+      "route_id": "health",
+      "surface_id": "system_check"
+    },
+    {
+      "route_id": "activity",
+      "surface_id": "activity_recovery"
+    },
+    {
+      "route_id": "maintenance:action-center",
+      "surface_id": "action_center"
+    },
+    {
+      "route_id": "maintenance:upgrade-assistant",
+      "surface_id": "release_readiness"
+    }
+  ],
+  "viewports": [
+    {
+      "font_scale_percent": 100,
+      "height": 900,
+      "width": 1366
+    },
+    {
+      "font_scale_percent": 100,
+      "height": 720,
+      "width": 860
+    }
+  ]
+}

@@ -29,7 +29,11 @@ SOURCE_MEDIAN_BUDGETS_MS = {
 TOTAL_MEDIAN_BUDGET_MS = 3500.0
 
 
-def benchmark(runs: int) -> dict[str, Any]:
+def benchmark(
+    runs: int,
+    *,
+    release_label: str = "v19 Steward working tree (metadata v18.0.0 Haven)",
+) -> dict[str, Any]:
     if runs < 1:
         raise ValueError("runs must be positive")
     records: list[dict[str, Any]] = []
@@ -85,7 +89,7 @@ def benchmark(runs: int) -> dict[str, Any]:
 
     return {
         "schema_version": 1,
-        "release": "v19 Steward working tree (metadata v18.0.0 Haven)",
+        "release": release_label,
         "generated_at": datetime.now(timezone.utc).isoformat(),
         "runs": records,
         "source_medians_ms": source_medians,
@@ -102,12 +106,17 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--runs", type=int, default=3)
     parser.add_argument("--report", type=Path, default=DEFAULT_REPORT)
+    parser.add_argument(
+        "--release-label",
+        default="v19 Steward working tree (metadata v18.0.0 Haven)",
+        help="evidence label stored in the generated report",
+    )
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    payload = benchmark(args.runs)
+    payload = benchmark(args.runs, release_label=args.release_label)
     args.report.parent.mkdir(parents=True, exist_ok=True)
     args.report.write_text(
         json.dumps(payload, indent=2, sort_keys=True) + "\n",

@@ -5,6 +5,7 @@
 **Repository:** `loofiboss-bit/loofi-fedora-tweaks`  
 **Reviewed branch:** `master`  
 **Reviewed head:** `8c089f4f460a67099dbad02a8afdede98b6d7b7f`  
+**Phase 0 baseline head:** `5bd323b6794c72bb17390149a4e07bff3e35bf35`
 **Current public release:** v22.0.0 "Alignment"  
 **Proposed release:** v23.0.0 "Compass"  
 **Primary theme:** Guided troubleshooting and explainable support sessions  
@@ -36,10 +37,11 @@ The reviewed repository currently has:
 
 - v22.0.0 "Alignment" published from release commit
   `31dc3ac7af53367f2bd257336ad0282cadea5fe7`;
-- 81 stable routes and 56 classified first-party Action Center definitions;
-- 401 production Python files and 312 test modules at the V22 baseline;
-- 6,909 locally passing tests, 61 expected skips, and 86.65 percent coverage
-  in the V22 local qualification;
+- 81 stable routes and 63 classified first-party Action Center definitions;
+- 1,461 tracked files, 414 production Python files, and 319 test modules at the
+  Phase 0 baseline;
+- 6,916 locally passing tests, 61 expected skips, 1,079 passing subtests, and
+  86.66 percent coverage in the Phase 0 verification;
 - one-provider, probe-free Home startup with a final measured median of
   169.528 ms and 76,828 KiB RSS;
 - no open GitHub issues or pull requests at review time;
@@ -58,6 +60,10 @@ spread across several user surfaces.
   writer is v12.
 - V20 must remain historically `PUBLICATION BLOCKED`; its old post-publication
   tasks must not be silently marked complete.
+- The historical annotated tag `v23.0.0` already exists and peels to
+  `adc4cef116d147bd5b845f0ec98c3a1970b8b054` ("Architecture Hardening").
+  Phase 0 must preserve it and record the naming collision; moving, deleting,
+  replacing, or publishing a tag requires separate release authority.
 
 These are Phase 0 authority fixes, not the V23 product theme.
 

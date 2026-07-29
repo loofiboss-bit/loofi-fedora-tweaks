@@ -1,6 +1,6 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v15.0.0 "Essentials" keeps the read-only release
+Loofi Fedora Tweaks v22.0.0 "Alignment" keeps the read-only release
 readiness center, guided Upgrade Assistant, verified Action Center entry points,
 and health history inside the six-destination shell. Fedora KDE 44 is the
 supported stable target. Fedora 45 remains preview-only and advisory.
@@ -79,9 +79,12 @@ Rules:
 - Manual-only recommendations cannot be executed.
 - Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 
-## Support Bundle v10
+## Support Bundle v12
 
-Support bundles now include privacy-masked generic `release_readiness` data, release planning metadata, guided action context, Action Center context, and My Fedora Today observability context:
+Support bundles include privacy-masked generic `release_readiness` data,
+release planning metadata, guided action context, Action Center context, My
+Fedora Today observability context, bounded System Check evidence, and
+source-owned Trusted Change Journal evidence:
 
 - Fedora/KDE/Qt versions
 - session type and display manager
@@ -105,6 +108,8 @@ Support bundles now include privacy-masked generic `release_readiness` data, rel
 - daemon and optional Web API status probes
 - daemon snapshot status and read-only collection errors
 - support-safe GitHub issue text export
+- at most two System Check results, one comparison, and linked plan/run records
+- at most 50 redacted Trusted Change Journal events with source readiness
 - privacy manifest
 
 The legacy `fedora_kde_44_readiness` field is preserved as an alias for older support tooling.

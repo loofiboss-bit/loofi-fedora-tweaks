@@ -51,7 +51,7 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 
 Action Center is the only GUI that owns the verified maintenance
 plan/run/verify lifecycle. Home and global search may navigate or preselect,
-but cannot execute. The catalog contains 56 classified first-party definitions;
+but cannot execute. The catalog contains 63 classified first-party definitions;
 unsupported host operations are explicit `manual_only` plans.
 
 Operational invariants:
