@@ -38,6 +38,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md` - Retained local Compass candidate, artifact identities, and exact-commit/publication boundary
 - `reports/V23_PHASE6_LOCAL_CANDIDATE.json` - Machine-readable local artifact, checksum, SBOM, provenance, and lifecycle status
 - `reports/V23_PHASE6_SCREENSHOTS.json` - Deterministic v23 wide/compact screenshot evidence
+- `reports/V23_RELEASE_PUBLICATION.md` - Exact final Compass GitHub, attestation, COPR, clean-install, host-daemon, documentation, and lineage readback
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
@@ -129,16 +130,14 @@ These legacy files are kept for compatibility and historical context.
 
 ## Documentation Maintenance Notes
 
-- `v23.0.2 "Compass"` is approved for the canonical exact-tag hotfix
-  workflow after real host qualification found the daemon's systemd-managed
-  runtime and XDG state directories were still read-only in v23.0.1. Phases
-  0-4 are complete and Phase 5 is locally qualified through
-  the available repository, security, performance, package, and Traditional
-  Wayland/AT-SPI gates. Fresh Kinoite/Atomic and manual keyboard/Orca
-  qualification remain open under an authorized skip and are not claimed as
-  passed.
+- `v23.0.2 "Compass"` is the current public release. Its exact tag, GitHub
+  assets, attestations, COPR build `10788467`, signatures, clean Fedora 44
+  install, real-host upgrade, daemon health, CI, CodeQL, and public
+  documentation passed independent readback.
+- Fresh Kinoite/Atomic and manual keyboard/Orca qualification remain open
+  under an authorized skip and are not claimed as passed.
 - `v23.0.0` and `v23.0.1 "Compass"` are publicly verified and remain
-  immutable while the v23.0.2 hotfix is qualified.
+  immutable earlier releases.
 - The historical Architecture Hardening tag object is preserved
   byte-identically as `legacy-v23.0.0-architecture-hardening`; canonical
   `v23.0.0` now identifies the Compass release commit.

@@ -20,9 +20,9 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v22.0.0 | Alignment | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md), [architecture](.workflow/specs/arch-v22.0.0.md), [tasks](.workflow/specs/tasks-v22.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v22.0.0.md), [public evidence](docs/reports/V22_RELEASE_PUBLICATION.md) |
 | v23.0.0 | Compass | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 5 local qualification](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md), [Phase 6 local readiness](docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md) |
 | v23.0.1 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.1.md), [tasks](.workflow/specs/tasks-v23.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.1.md) |
-| v23.0.2 | Compass | ACTIVE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md) |
+| v23.0.2 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md), [public evidence](docs/reports/V23_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v23.0.2 "Compass" — Complete Daemon Sandbox State
+## [DONE] v23.0.2 "Compass" — Complete Daemon Sandbox State
 
 **Objective:** provide only the systemd-managed runtime and XDG state
 directories the daemon requires for leases, health collection, and rotating
@@ -33,7 +33,9 @@ its D-Bus name, but also exposed read-only failures for its collector lease
 under `$XDG_RUNTIME_DIR` and rotating log under `$XDG_STATE_HOME`. v23.0.2 uses
 `RuntimeDirectory=` and `StateDirectory=` with mode `0700`; a real transient
 user-service run passed D-Bus `Ping`, health collection, logging, and
-zero-restart validation before release.
+zero-restart validation before release. Exact-tag GitHub assets, attestations,
+COPR build `10788467`, signed public packages, a clean Fedora 44 install, and
+the real-host daemon health path then passed independent public readback.
 
 ## [DONE] v23.0.1 "Compass" — Daemon Startup Hotfix
 
@@ -91,16 +93,20 @@ Phase 5 implementation and available exact-input local gates pass, including
 fresh real-CLI collection of all six profiles plus live Traditional
 Wayland/AT-SPI exposure, but fresh Kinoite/Atomic qualification and manual
 keyboard/Orca journeys remain open under an authorized skip and are not
-reported as passed. Phase 6 has locally verified documentation, RPM, sdist,
-Flatpak, checksum, SBOM, provenance, isolated installation, and Flatpak import
-before exact-commit publication. GitHub, CI, CodeQL, checksums, attestations,
-and COPR build 10788176 were independently read back. Host qualification then
-found the launcher sandbox issue addressed by v23.0.1 and the remaining
-runtime/state boundary addressed by v23.0.2. The pre-normalization Architecture Hardening
+reported as passed. Phase 6 verified documentation, RPM, sdist, Flatpak,
+checksum, SBOM, provenance, isolated installation, and Flatpak import before
+exact-commit publication. GitHub, CI, CodeQL, checksums, attestations, and
+COPR builds `10788176`, `10788334`, and final `10788467` were independently
+read back. Host qualification found the launcher sandbox issue addressed by
+v23.0.1 and the remaining runtime/state boundary completed and live-verified
+by v23.0.2. The pre-normalization Architecture Hardening
 tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`; its peeled commit remains
 `adc4cef116d147bd5b845f0ec98c3a1970b8b054`. Canonical `v23.0.0` remains bound
 to release commit `1a789b8f603ba0050c7bb6e40c8ff0448d2643fa`.
+Final `v23.0.2` is bound to release commit
+`8d0a94eec17586ff2b0101ad460083fbf26ef9b7`; the complete readback is in the
+[V23 public release evidence](docs/reports/V23_RELEASE_PUBLICATION.md).
 
 ## [DONE] v22.0.0 "Alignment" — Fedora-native Consolidation
 

@@ -3,11 +3,12 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 23.0.2 "Compass" release candidate | **Current public release**: 23.0.1 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 23.0.2 "Compass" | **Current public release**: 23.0.2 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
-> V21 and V22 are complete and public. Compass `v23.0.0` and `v23.0.1` are public;
-> v23.0.2 completes the daemon's bounded systemd runtime and state contract.
+> V21 and V22 are complete and public. Compass `v23.0.0`, `v23.0.1`, and
+> current `v23.0.2` are public; v23.0.2 completes the daemon's bounded systemd
+> runtime and state contract.
 > Fresh Atomic and manual physical accessibility qualification remain open
 > under an authorized skip.
 
@@ -32,7 +33,10 @@ Traditional real-CLI/Wayland/AT-SPI evidence while keeping Atomic and manual
 physical gates open. The
 [Phase 6 report](docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md) records
 the versioned local candidate and keeps exact-commit, signing, installation,
-and publication claims separate.
+and publication claims separate. The
+[public release report](docs/reports/V23_RELEASE_PUBLICATION.md) closes those
+external gates with exact-tag, attestation, COPR, clean-install, host-daemon,
+and documentation readback.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It

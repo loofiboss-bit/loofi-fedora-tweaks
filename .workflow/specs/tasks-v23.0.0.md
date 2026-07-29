@@ -91,10 +91,13 @@
   provenance, and attestations.
 - [x] [post-publish] Verify COPR terminal success, public metadata, signatures,
   and clean Fedora 44 installation.
-- [ ] [post-publish] Upgrade the authorized Fedora 44 host and verify package
+- [x] [post-publish] Upgrade the authorized Fedora 44 host and verify package
   state without changing desktop or user configuration.
-- [ ] [post-publish] Publish and independently read back the source-controlled
+  - The v23.0.0 host attempt truthfully exposed the sandbox defect. The
+    completed supported host state is v23.0.2; no v23.0.0 host success is
+    claimed.
+- [x] [post-publish] Publish and independently read back the source-controlled
   wiki and release documentation.
-- [ ] [post-publish] Independently read back CI, CodeQL, assets, attestations,
+- [x] [post-publish] Independently read back CI, CodeQL, assets, attestations,
   COPR terminal
   state, repository metadata, clean installation, and public documentation.

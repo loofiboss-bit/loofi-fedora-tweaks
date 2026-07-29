@@ -37,10 +37,10 @@ The package is published on [Fedora COPR](https://copr.fedorainfracloud.org/copr
 
 ```bash
 # Enable the COPR repository
-sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 
 # Install the package
-sudo dnf install loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
 ```
 
 ### Method 2: Release RPM
@@ -49,7 +49,7 @@ Download the latest RPM from the [Releases page](https://github.com/loofiboss-bi
 
 ```bash
 # Install with dnf (Traditional Fedora)
-sudo dnf install ./loofi-fedora-tweaks-*.noarch.rpm
+pkexec dnf install ./loofi-fedora-tweaks-*.noarch.rpm
 
 # Or with rpm-ostree (Atomic Fedora)
 rpm-ostree install ./loofi-fedora-tweaks-*.noarch.rpm
@@ -106,7 +106,7 @@ loofi-fedora-tweaks --cli doctor
 
 Expected output from `--cli info`:
 ```
-Loofi Fedora Tweaks v22.0.0 "Alignment"
+Loofi Fedora Tweaks v23.0.2 "Compass"
 Python: 3.12.x
 OS: Fedora 44
 Package Manager: dnf (or rpm-ostree on Atomic)
@@ -143,8 +143,8 @@ loofi cleanup all
 **Traditional Fedora:**
 
 ```bash
-sudo dnf remove loofi-fedora-tweaks
-sudo dnf copr remove loofitheboss/loofi-fedora-tweaks
+pkexec dnf remove loofi-fedora-tweaks
+pkexec dnf copr remove loofitheboss/loofi-fedora-tweaks
 ```
 
 ### Uninstall RPM Package
@@ -152,7 +152,7 @@ sudo dnf copr remove loofitheboss/loofi-fedora-tweaks
 **Traditional Fedora:**
 
 ```bash
-sudo dnf remove loofi-fedora-tweaks
+pkexec dnf remove loofi-fedora-tweaks
 ```
 
 **Atomic Fedora:**

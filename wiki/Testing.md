@@ -6,11 +6,12 @@ Testing guide for Loofi Fedora Tweaks test suite.
 
 ## Test Suite Metrics
 
-- **Fedora 44 local**: 6,909 passed, 61 skipped, 1,079 subtests passed
-- **Canonical GitHub CI**: 6,846 passed, 124 platform-driven skips, 1,079 subtests passed
-- **Coverage**: 86.65% local; 86% in canonical GitHub CI
+- **Fedora 44 local**: 7,007 passed, 61 skipped, 1,184 subtests passed
+- **Canonical release pipeline**: tests, Fedora Review, RPM/Flatpak smoke,
+  attestations, GitHub publication, and COPR clean-install gate passed
+- **Coverage**: 86.26% local; 86% minimum in canonical GitHub CI
 - **Framework**: `unittest` + `unittest.mock`
-- **Status**: v22.0.0 Alignment release verification completed on 2026-07-28
+- **Status**: v23.0.2 Compass release verification completed on 2026-07-29
 
 ---
 

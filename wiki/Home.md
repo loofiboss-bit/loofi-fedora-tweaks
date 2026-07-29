@@ -2,22 +2,24 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v22.0.0 "Alignment"<br>
+**Current release:** v23.0.2 "Compass"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
-## What Alignment changes
+## What Compass changes
 
-- **Enforceable release trust:** COPR publication requires terminal API
-  success, public repository metadata, and an exact clean-install readback.
-- **Fedora-native handoffs:** Plasma-owned application and desktop settings
-  open through fixed, non-privileged Discover and KDE KCM destinations.
-- **Truthful capability states:** unavailable native tools stay explicit and
-  never widen command or privilege authority.
-- **Quieter workflows:** Home, Action Center, Specialist Tools, System Check,
-  and Activity use one clearer local task hierarchy.
-- **Stronger lifecycle and privacy:** bounded shutdown, structured Flatpak
-  probes, RPM runtime dependencies, and credential redaction close trust gaps.
+- **Guided troubleshooting:** six closed symptom profiles compose existing
+  System Check, journal, observability, package, network, storage, boot, and
+  deployment evidence through one explicit Troubleshoot experience.
+- **Truthful evidence:** empty, partial, stale, and unavailable sources remain
+  explicit; related changes are conservatively labelled and never imply
+  causation.
+- **Bounded interfaces:** the CLI may explicitly collect, while the
+  authenticated API remains retrieval-only and Support Bundle v13 exports one
+  redacted troubleshooting case.
+- **Hardened background service:** the daemon keeps a strict read-only
+  system/home sandbox with only private application runtime, state, config,
+  and data paths writable.
 - **Compatibility preserved:** all 81 routes, aliases, favorites, state
   schemas, Traditional/Atomic policy, CLI, API, daemon, and IPC remain intact.
 
@@ -62,16 +64,17 @@ confirmation or privilege policy.
 
 ## Release status
 
-Alignment's Fedora 44 qualification passed 6,909 tests, 61 expected skips,
-1,079 subtests, and 86.65% coverage. Canonical GitHub CI passed 6,846 tests,
-124 platform-driven skips, the same 1,079 subtests, and 86% coverage. Lint,
-typing, architecture, package, product-catalog, Wayland, Orca/AT-SPI, GitHub
-provenance, COPR, and clean Fedora 44 install gates also passed. Fedora 45
-remains preview-only.
+Compass's final Fedora 44 qualification passed 7,007 tests, 61 expected skips,
+1,184 subtests, and 86.26% coverage. Exact-tag GitHub CI and CodeQL, eight
+release assets, checksums, SBOM, provenance, attestations, COPR build
+`10788467`, signed packages, a clean Fedora 44 install, and a real Fedora 44
+host daemon readback passed. Fresh Atomic/Kinoite and manual keyboard/audible
+Orca journeys remain explicitly unverified under an authorized skip. Fedora
+45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release: [v22.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v22.0.0)
-- Release notes: [v22.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v22.0.0.md)
+- Release: [v23.0.2 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.0.2)
+- Release notes: [v23.0.2 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v23.0.2.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 

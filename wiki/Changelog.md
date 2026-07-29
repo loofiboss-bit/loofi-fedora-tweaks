@@ -1,5 +1,22 @@
 # Changelog
 
+## v23.0.2 — Compass
+
+- Added six bounded troubleshooting profiles and one explicit guided
+  Troubleshoot experience on the existing diagnostics route.
+- Added explicit CLI collection, authenticated retrieval-only API endpoints,
+  and Support Bundle v13 troubleshooting export.
+- Kept related changes conservative, evidence states explicit, and all
+  mutation authority outside the troubleshooting domain.
+- Completed the hardened daemon's private systemd runtime and XDG state paths
+  while retaining strict system and read-only home protection.
+
+**Test Suite**: Fedora 44 qualification passed 7,007 tests, 61 skips, 1,184
+subtests, and 86.26% coverage. Exact GitHub release, attestations, CI, CodeQL,
+COPR build `10788467`, signed packages, clean Fedora 44 installation, and
+real-host daemon readback also passed. Fresh Atomic/Kinoite and manual
+keyboard/audible Orca journeys remain authorized skips and are not claimed.
+
 ## v22.0.0 — Alignment
 
 - Made COPR success, repository availability, clean installation, and exact
@@ -131,13 +148,15 @@ For the complete changelog with all changes, see [CHANGELOG.md](https://github.c
 
 ## Current Release
 
-### v22.0.0 "Alignment" (2026-07-28)
+### v23.0.2 "Compass" (2026-07-29)
 
-Alignment passed the complete regression, trust-boundary, accessibility,
-package, and performance gates. Canonical CI and CodeQL, the annotated tag,
-eight release assets, checksums, SBOM, provenance, attestations, COPR build
-`10783672`, and a clean Fedora 44 GUI/API/daemon install passed independent
-public readback. Fedora 45 remains preview-only.
+Compass passed the available regression, trust-boundary, package, and
+Traditional Fedora gates. Canonical CI and CodeQL, the annotated tag, eight
+release assets, checksums, SBOM, provenance, attestations, COPR build
+`10788467`, a clean Fedora 44 install, and a real Fedora 44 host daemon
+readback passed independently. Fresh Atomic/Kinoite and manual
+keyboard/audible Orca journeys remain explicitly unverified. Fedora 45
+remains preview-only.
 
 ---
 

@@ -16,6 +16,8 @@
   Acceptance: Version metadata is synchronized and v23.0.0 remains untouched.
   Docs: `CHANGELOG.md`, `docs/releases/RELEASE-NOTES-v23.0.1.md`
   Tests: `scripts/bump_version.py --check`
-- [ ] [post-publish] Publish and verify exact v23.0.1 GitHub assets,
+- [x] [post-publish] Publish and verify exact v23.0.1 GitHub assets,
   attestations, COPR packages, signatures, clean installation, host upgrade,
   CI, CodeQL, and wiki readback.
+  - Public v23.0.1 evidence passed. Real-host qualification then exposed the
+    remaining runtime/state sandbox boundary completed by v23.0.2.

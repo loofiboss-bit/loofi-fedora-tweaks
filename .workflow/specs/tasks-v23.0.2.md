@@ -17,6 +17,6 @@
   untouched.
   Docs: `CHANGELOG.md`, `docs/releases/RELEASE-NOTES-v23.0.2.md`
   Tests: `scripts/bump_version.py --check`
-- [ ] [post-publish] Publish and verify exact v23.0.2 GitHub assets,
+- [x] [post-publish] Publish and verify exact v23.0.2 GitHub assets,
   attestations, COPR packages, signatures, clean installation, host upgrade,
   daemon health, CI, CodeQL, and wiki readback.

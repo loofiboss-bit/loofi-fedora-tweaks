@@ -4,8 +4,8 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **Release approved:** v23.0.2 "Compass"
-- **Last independently verified public release:** v23.0.1 "Compass"
+- **Current public release:** v23.0.2 "Compass"
+- **Last independently verified public release:** v23.0.2 "Compass"
 - Release notes: [RELEASE-NOTES-v23.0.2.md](RELEASE-NOTES-v23.0.2.md)
 
 ## Recent Releases

@@ -1,14 +1,14 @@
 {
   "version": "v23.0.2",
   "started_at": "20260729_142934",
-  "status": "active",
+  "status": "complete",
   "target_version": "v23.0.2",
-  "phase": "phase-6-release-authorized",
+  "phase": "phase-6-public-complete",
   "baseline_commit": "cec4bf9b0273b4c44fb6337ebd16637b3e5151f8",
   "product_version": "v23.0.2",
   "product_codename": "Compass",
-  "current_public_release": "v23.0.1",
-  "current_release_commit": "cec4bf9b0273b4c44fb6337ebd16637b3e5151f8",
+  "current_public_release": "v23.0.2",
+  "current_release_commit": "8d0a94eec17586ff2b0101ad460083fbf26ef9b7",
   "v20_publication_status": "blocked",
   "historical_tag_collision": {
     "tag": "v23.0.0",
@@ -29,18 +29,19 @@
   "phase_6_local_ready_at": "2026-07-29T14:32:00+02:00",
   "release_authorized_at": "2026-07-29T15:02:34+02:00",
   "legacy_tag_preserved_at": "2026-07-29T15:02:34+02:00",
+  "phase_6_public_completed_at": "2026-07-29T17:03:00+02:00",
   "skipped_physical_gates": {
     "fresh_atomic": "open-user-authorized-skip",
     "manual_keyboard": "open-user-authorized-skip",
     "audible_orca": "open-user-authorized-skip"
   },
   "phase_6_external_blockers": {
-    "exact_commit": "authorized-pending-release-commit",
+    "exact_commit": "passed-exact-tag-commit",
     "historical_tag_lineage": "passed-preserved-as-legacy",
-    "signing": "authorized-pending-canonical-pipeline",
-    "host_install_or_upgrade": "authorized-pending-publication",
-    "publication": "authorized-pending-canonical-pipeline",
-    "public_readback": "pending"
+    "signing": "passed-github-attestations-copr-signatures",
+    "host_install_or_upgrade": "passed-fedora44-host-upgrade",
+    "publication": "passed-github-copr",
+    "public_readback": "passed"
   },
   "bumped_at": "2026-07-29T14:29:34.858198+00:00"
 }

@@ -47,12 +47,12 @@ EXPECTED_CANDIDATE_EXTERNAL_BLOCKERS = {
     "public_readback": "not-available",
 }
 EXPECTED_RELEASE_EXTERNAL_GATES = {
-    "exact_commit": "authorized-pending-release-commit",
+    "exact_commit": "passed-exact-tag-commit",
     "historical_tag_lineage": "passed-preserved-as-legacy",
-    "signing": "authorized-pending-canonical-pipeline",
-    "host_install_or_upgrade": "authorized-pending-publication",
-    "publication": "authorized-pending-canonical-pipeline",
-    "public_readback": "pending",
+    "signing": "passed-github-attestations-copr-signatures",
+    "host_install_or_upgrade": "passed-fedora44-host-upgrade",
+    "publication": "passed-github-copr",
+    "public_readback": "passed",
 }
 REQUIRED_DOCS = (
     "README.md",
@@ -66,6 +66,7 @@ REQUIRED_DOCS = (
     "docs/TROUBLESHOOTING.md",
     "docs/FEDORA_KDE_44_READINESS.md",
     "docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md",
+    "docs/reports/V23_RELEASE_PUBLICATION.md",
 )
 
 
@@ -152,13 +153,18 @@ def validate_metadata(lock: Mapping[str, Any]) -> list[str]:
         errors.append("race lock product metadata is not v23.0.2")
     if lock.get("product_codename") != EXPECTED_CODENAME:
         errors.append("race lock product codename is not Compass")
-    if lock.get("current_public_release") != "v23.0.1":
-        errors.append("race lock must identify v23.0.1 as the public release")
+    if lock.get("current_public_release") != "v23.0.2":
+        errors.append("race lock must identify v23.0.2 as the public release")
     if (
-        lock.get("status") != "active"
-        or lock.get("phase") != "phase-6-release-authorized"
+        lock.get("current_release_commit")
+        != "8d0a94eec17586ff2b0101ad460083fbf26ef9b7"
     ):
-        errors.append("race lock is not active at phase-6-release-authorized")
+        errors.append("race lock does not identify the exact v23.0.2 commit")
+    if (
+        lock.get("status") != "complete"
+        or lock.get("phase") != "phase-6-public-complete"
+    ):
+        errors.append("race lock is not complete at phase-6-public-complete")
     if lock.get("skipped_physical_gates") != EXPECTED_SKIPPED_GATES:
         errors.append("race lock does not preserve the skipped physical gates")
     if lock.get("phase_6_external_blockers") != EXPECTED_RELEASE_EXTERNAL_GATES:
@@ -204,7 +210,7 @@ def validate_documentation(lock: Mapping[str, Any]) -> list[str]:
     ):
         if phrase not in notes:
             errors.append(f"release notes omit required boundary: {phrase}")
-    if lock.get("phase") == "phase-6-release-authorized":
+    if lock.get("phase") == "phase-6-public-complete":
         readme = (ROOT / "README.md").read_text(encoding="utf-8")
         if "releases/tag/v23.0.2" not in readme:
             errors.append("README does not link the canonical v23.0.2 release")

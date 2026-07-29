@@ -29,16 +29,20 @@ def _sha256(path: Path) -> str:
 
 
 class TestV23Phase0Authority(unittest.TestCase):
-    def test_product_version_is_compass_at_release_authorized_gate(self):
+    def test_product_version_is_compass_at_public_complete_gate(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
 
         self.assertEqual(__version__, lock["product_version"].removeprefix("v"))
         self.assertEqual(__version_codename__, lock["product_codename"])
-        self.assertEqual(lock["current_public_release"], "v23.0.1")
+        self.assertEqual(lock["current_public_release"], "v23.0.2")
         self.assertEqual(lock["version"], "v23.0.2")
         self.assertEqual(lock["target_version"], "v23.0.2")
-        self.assertEqual(lock["status"], "active")
-        self.assertEqual(lock["phase"], "phase-6-release-authorized")
+        self.assertEqual(lock["status"], "complete")
+        self.assertEqual(lock["phase"], "phase-6-public-complete")
+        self.assertEqual(
+            lock["current_release_commit"],
+            "8d0a94eec17586ff2b0101ad460083fbf26ef9b7",
+        )
 
     def test_historical_v23_tag_is_preserved_under_exact_legacy_reference(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
@@ -131,7 +135,7 @@ class TestV23Phase0Authority(unittest.TestCase):
             self.assertTrue(path.is_file())
             self.assertEqual(_sha256(path), record["sha256"])
 
-    def test_release_tasks_are_publish_ready_with_only_post_publish_gates_open(self):
+    def test_release_tasks_are_publication_complete(self):
         text = TASKS.read_text(encoding="utf-8")
         phase_zero, phase_one_and_later = text.split(
             "## Phase 1 — Troubleshooting domain and profile catalog",
@@ -171,16 +175,7 @@ class TestV23Phase0Authority(unittest.TestCase):
         self.assertIn("- [x]", phase_five)
         self.assertNotIn("- [ ]", phase_five)
         self.assertGreaterEqual(phase_six_and_later.count("- [x]"), 5)
-        unchecked = [
-            line
-            for line in phase_six_and_later.splitlines()
-            if line.startswith("- [ ]")
-        ]
-        self.assertTrue(unchecked)
-        self.assertTrue(
-            all("[post-publish]" in line for line in unchecked),
-            unchecked,
-        )
+        self.assertNotIn("- [ ]", phase_six_and_later)
         self.assertIn("## Separately authorized external gates", phase_six_and_later)
         self.assertEqual(CURRENT_SUPPORT_BUNDLE_VERSION, 13)
 

@@ -187,9 +187,12 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v23.0.2 "Compass"` is the release candidate that completes the daemon
-sandbox's bounded XDG runtime and state contract. `v23.0.0` and `v23.0.1`
-remain immutable earlier Compass publications. Fedora 45 remains preview-only.
+`v23.0.2 "Compass"` is the current public release. It completes the daemon
+sandbox's bounded XDG runtime and state contract and passed exact-tag GitHub,
+attestation, COPR, clean Fedora 44 installation, and real-host daemon
+readback. `v23.0.0` and `v23.0.1` remain immutable earlier Compass
+publications. Fedora 45 remains preview-only. See the
+[public release evidence](docs/reports/V23_RELEASE_PUBLICATION.md).
 The older
 "Architecture Hardening" tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`. Historical Sentinel, Horizon, Nebula,
