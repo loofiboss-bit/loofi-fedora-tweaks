@@ -71,7 +71,7 @@ class TestTabMargins(unittest.TestCase):
         tab = DiagnosticsTab()
         self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
         scaffolds = tab.findChildren(PageScaffold)
-        self.assertEqual(len(scaffolds), 2)
+        self.assertEqual(len(scaffolds), 3)
         for scaffold in scaffolds:
             left, top, right, bottom = scaffold.content_layout.getContentsMargins()
             self.assertGreater(min(left, top, right, bottom), 0)

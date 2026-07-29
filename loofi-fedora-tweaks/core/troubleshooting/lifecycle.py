@@ -32,6 +32,11 @@ class CancellationSignal:
     def wait(self, timeout: float) -> bool:
         return self._event.wait(max(0.0, timeout))
 
+    @property
+    def event(self) -> threading.Event:
+        """Expose the standard event to existing cooperative collectors."""
+        return self._event
+
 
 def new_session(
     profile_id: str,

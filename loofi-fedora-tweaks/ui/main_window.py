@@ -490,9 +490,16 @@ class MainWindow(
         check_request = getattr(widget, "systemCheckRequested", None)
         if check_request is not None and hasattr(check_request, "connect"):
             check_request.connect(self._start_follow_up_system_check)
+        route_request = getattr(widget, "routeRequested", None)
+        if route_request is not None and hasattr(route_request, "connect"):
+            route_request.connect(self._open_route_request)
         if plugin_id == "atlas_dashboard":
             self._schedule_post_render_services()
         return widget
+
+    def _open_route_request(self, route_id: str, _preselection=None) -> None:
+        """Navigate through the canonical manifest; metadata remains inert."""
+        self.switch_to_route(route_id)
 
     def _open_action_center_request(self, action_id: str, parameters=None) -> None:
         """Navigate and preselect only; workflow adapters never create a plan."""

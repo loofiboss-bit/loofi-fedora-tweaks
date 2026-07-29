@@ -7,7 +7,7 @@
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
 > V21 and V22 are complete and public. Product metadata remains v22 while
-> Compass implementation is locally qualified through Phase 2.
+> Compass implementation is locally qualified through Phase 3.
 
 ## Active Compass architecture
 
@@ -19,7 +19,9 @@ journey. Its canonical authority is the
 [Phase 1 report](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) records the
 inert domain implementation, and the
 [Phase 2 report](docs/reports/V23_PHASE2_EVIDENCE_COMPOSITION.md) records the
-read-only composition and comparison boundary.
+read-only composition and comparison boundary. The
+[Phase 3 report](docs/reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md) records the
+single guided route, explicit worker/service boundary, and local UI matrix.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It
@@ -28,7 +30,10 @@ mutating API, background probe, or automatic repair. Phase 1 adds immutable
 contracts, the closed six-profile catalog, bounded lifecycle semantics, and an
 explicit future-safe JSON store. Phase 2 adds source-owned evidence adaptation,
 explicit empty/partial/stale states, conservative related-change matching, and
-compatible follow-up comparison. Collection remains explicit future wiring.
+compatible follow-up comparison. Phase 3 adds the only GUI collection entry
+point through `TroubleshootingService.run()` and a lazy Qt worker adapter.
+Constructing Home, search, navigation, the page, service, or worker starts no
+collection.
 
 ## Runtime entry modes
 
@@ -82,6 +87,7 @@ enforced by `tests/test_architecture_imports.py`:
 - `core/workers/base_worker.py`
 - `core/workers/command_worker.py`
 - `core/workers/system_check_worker.py`
+- `core/workers/troubleshooting_worker.py`
 - `core/plugins/interface.py`
 - `core/plugins/adapter.py`
 - `services/security/safety.py`

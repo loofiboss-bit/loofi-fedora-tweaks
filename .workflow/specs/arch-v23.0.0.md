@@ -14,8 +14,11 @@ product remains v22.0.0 "Alignment". The canonical authority is:
 Phases 0 and 1 established authority plus the inert `core.troubleshooting`
 domain and one registered, explicit session history store. Phase 2 adds pure
 read-only evidence adapters, composition, conservative correlation, and
-compatible follow-up comparison. It does not change a route, start collection,
-mutate the host, introduce another database, or change product metadata.
+compatible follow-up comparison. Phase 3 adapts the existing `diagnostics`
+route into the single guided Troubleshoot surface and adds an explicitly
+activated, bounded service plus Qt worker adapter. Page construction, Home, and
+search do not start collection. No phase adds host mutation, another database,
+or a product-metadata change.
 
 ## Canonical route decision
 
@@ -50,12 +53,15 @@ The profile catalog owns exact Traditional/Atomic source and total budgets.
 `application_failed` is reduced because no safe application-journal collector
 exists; `network_problem` is reduced because scans remain excluded. The domain
 exposes pure queued/running/terminal transitions and a cooperative cancellation
-signal, but it starts no worker, timer, thread, or probe.
+signal. `TroubleshootingService.run()` is the only Phase 3 collection entry
+point; constructing the service, worker, page, Home, navigation, or search
+starts no worker, timer, thread, or probe.
 
 The optional `loofi.troubleshooting-sessions` schema-v1 store retains at most 20
 explicit terminal sessions through existing atomic XDG state infrastructure.
-Future schemas remain read-only and are never overwritten. UI, explicit
-collection wiring, CLI/API, and support export remain later phases.
+Future schemas remain read-only and are never overwritten. The Phase 3 UI
+reads at most the latest retained session and never introduces a parallel
+history surface. CLI/API and support export remain later phases.
 
 ## Source ownership
 
@@ -68,6 +74,10 @@ collection wiring, CLI/API, and support export remain later phases.
   timeline. Troubleshooting does not create another database.
 - Action Center owns schema-v4 plans and runs, the one-action-per-plan rule,
   preflight, confirmation, mutation lease, execution, and verification.
+- `ui.troubleshoot_widget` owns presentation only. Its one primary control
+  creates `core.workers.troubleshooting_worker` after explicit activation; all
+  policy, budgets, source isolation, persistence, and comparison stay PyQt-free
+  under `core.troubleshooting`.
 - Support Bundle v12 is the current writer. Advancing to v13 belongs to Phase
   4; v2-v12 readers remain supported.
 - Home, navigation, search, page construction, and authenticated API GET

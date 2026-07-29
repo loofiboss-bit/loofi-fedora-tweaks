@@ -36,6 +36,13 @@ from core.troubleshooting.profiles import (
     get_profile,
     require_profile,
 )
+from core.troubleshooting.service import (
+    DefaultEvidenceCollector,
+    EvidenceCollector,
+    TroubleshootingProgress,
+    TroubleshootingRun,
+    TroubleshootingService,
+)
 from core.troubleshooting.storage import (
     SessionStoreSnapshot,
     TroubleshootingSessionStore,
@@ -46,6 +53,8 @@ __all__ = [
     "CancellationSignal",
     "CompatibilityMetadata",
     "FindingComparison",
+    "DefaultEvidenceCollector",
+    "EvidenceCollector",
     "NextStep",
     "RelatedChangeReference",
     "ReadOnlyEvidenceAdapter",
@@ -57,8 +66,11 @@ __all__ = [
     "TroubleshootingComparison",
     "TroubleshootingFinding",
     "TroubleshootingProfile",
+    "TroubleshootingProgress",
+    "TroubleshootingRun",
     "TroubleshootingSession",
     "TroubleshootingSessionStore",
+    "TroubleshootingService",
     "UnsupportedFutureSessionSchema",
     "all_profiles",
     "adapt_action_center",

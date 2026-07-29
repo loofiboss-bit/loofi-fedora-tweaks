@@ -38,9 +38,9 @@ _ATTENTION_STATES = frozenset({"attention", "pending", "updates_available", "war
 _UPDATE_PENDING_STATES = frozenset({"attention", "pending", "updates_available"})
 
 _COMMON_TASKS = (
+    HomeTask("troubleshoot", "Troubleshoot a problem", "Start a bounded read-only check from a real symptom.", "diagnostics", "maintenance-health"),
     HomeTask("updates", "Update the system", "Review available Fedora updates.", "maintenance:updates", "update"),
     HomeTask("applications", "Install an application", "Find and install Fedora or Flatpak apps.", "software:apps", "packages-software"),
-    HomeTask("performance", "Check performance", "Inspect CPU, memory, and running processes.", "monitor", "overview-dashboard"),
     HomeTask("protection", "Protect or recover", "Review backups and recovery options.", "backup", "storage-disk"),
 )
 

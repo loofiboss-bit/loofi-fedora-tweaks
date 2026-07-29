@@ -36,15 +36,17 @@ class TestPhase4SystemRouteStacks(unittest.TestCase):
         self.assertIs(tab.pages.currentWidget(), tab._performance_tab)
 
     @patch.object(_BootSubTab, "refresh_all")
-    def test_diagnostics_keeps_only_content_tabs(self, _refresh):
+    def test_diagnostics_keeps_canonical_troubleshoot_and_stable_subroutes(self, _refresh):
         tab = DiagnosticsTab()
         self.addCleanup(tab.deleteLater)
 
         self.assertIsInstance(tab.pages, QStackedWidget)
-        self.assertEqual(len(tab.findChildren(PageScaffold)), 2)
+        self.assertEqual(len(tab.findChildren(PageScaffold)), 3)
         self.assertEqual(len(tab.findChildren(QTabWidget)), 1)
 
         self.assertTrue(tab.activate_route(resolve("diagnostics:boot")))
+        self.assertEqual(tab.pages.currentIndex(), 2)
+        self.assertTrue(tab.activate_route(resolve("diagnostics:watchtower")))
         self.assertEqual(tab.pages.currentIndex(), 1)
         self.assertTrue(tab.activate_route(resolve("diagnostics")))
         self.assertEqual(tab.pages.currentIndex(), 0)

@@ -827,13 +827,13 @@ class _BootSubTab(QWidget):
 
 
 class DiagnosticsTab(BaseTab):
-    """Consolidated diagnostics tab merging Watchtower and Boot.
+    """Canonical Troubleshoot journey with retained Watchtower and Boot routes.
 
-    Uses a route-owned stack between the Watchtower diagnostic suite
-    and Boot configuration without duplicating shell navigation.
+    Uses one route-owned stack without duplicating shell navigation or history.
     """
 
     _METADATA = plugin_metadata_for_module(__name__)
+    routeRequested = pyqtSignal(str, object)
 
     def metadata(self: typing.Any) -> PluginMetadata:
         return typing.cast(PluginMetadata, self._METADATA)
@@ -843,15 +843,23 @@ class DiagnosticsTab(BaseTab):
 
     def __init__(self: typing.Any) -> None:
         super().__init__()
+        from ui.troubleshoot_widget import TroubleshootWidget
+
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
 
         self.pages = QStackedWidget()
         self.pages.setObjectName("diagnosticsRouteStack")
+        self.troubleshoot = TroubleshootWidget()
         watchtower = _WatchtowerSubTab()
         boot = _BootSubTab()
+        self.troubleshoot.actionCenterRequested.connect(
+            self.actionCenterRequested.emit
+        )
+        self.troubleshoot.routeRequested.connect(self.routeRequested.emit)
         watchtower.actionCenterRequested.connect(self.actionCenterRequested.emit)
         boot.actionCenterRequested.connect(self.actionCenterRequested.emit)
+        self.pages.addWidget(self.troubleshoot)
         self.pages.addWidget(watchtower)
         self.pages.addWidget(boot)
 
@@ -862,5 +870,11 @@ class DiagnosticsTab(BaseTab):
         subroute = str(getattr(route, "subroute", "") or "")
         if subroute not in {"", "watchtower", "boot"}:
             return False
-        self.pages.setCurrentIndex(1 if subroute == "boot" else 0)
+        self.pages.setCurrentIndex(
+            2 if subroute == "boot" else 1 if subroute == "watchtower" else 0
+        )
         return True
+
+    def cleanup(self) -> None:
+        """Cancel only the currently running explicit troubleshooting session."""
+        self.troubleshoot.cleanup()

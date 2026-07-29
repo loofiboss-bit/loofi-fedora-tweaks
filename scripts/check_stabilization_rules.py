@@ -30,6 +30,10 @@ ALLOWED_BROAD_EXCEPTIONS = {
         "loofi-fedora-tweaks/core/system_check/service.py",
         "SystemCheckService.run",
     ),
+    (
+        "loofi-fedora-tweaks/core/troubleshooting/service.py",
+        "TroubleshootingService._collect_source",
+    ),
     ("loofi-fedora-tweaks/core/workers/base_worker.py", "BaseWorker.run"),
     (
         "loofi-fedora-tweaks/core/application_runtime.py",

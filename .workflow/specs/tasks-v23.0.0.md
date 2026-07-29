@@ -35,10 +35,10 @@
 
 ## Phase 3 — Canonical Troubleshoot experience
 
-- [ ] Adapt the existing `diagnostics` route into the single guided experience.
-- [ ] Add explicit start, cancellation, evidence, related-change, next-step,
+- [x] Adapt the existing `diagnostics` route into the single guided experience.
+- [x] Add explicit start, cancellation, evidence, related-change, next-step,
   and follow-up presentation using shared components.
-- [ ] Preserve route count, lazy startup, one primary action, accessibility,
+- [x] Preserve route count, lazy startup, one primary action, accessibility,
   responsive geometry, themes, RTL, and reduced motion.
 
 ## Phase 4 — CLI, read-only API, and support case
