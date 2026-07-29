@@ -43,11 +43,11 @@
 
 ## Phase 4 — CLI, read-only API, and support case
 
-- [ ] Add the versioned troubleshooting CLI payload and explicit collection
+- [x] Add the versioned troubleshooting CLI payload and explicit collection
   commands while preserving the JSON envelope.
-- [ ] Add authenticated retrieval-only API endpoints; no HTTP collection or
+- [x] Add authenticated retrieval-only API endpoints; no HTTP collection or
   plan creation.
-- [ ] Advance the canonical writer to Support Bundle v13 while retaining
+- [x] Advance the canonical writer to Support Bundle v13 while retaining
   v2-v12 readers and bounded recursive redaction.
 
 ## Phase 5 — Platform, performance, and security qualification

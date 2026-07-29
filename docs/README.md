@@ -6,7 +6,7 @@ Central documentation map for Loofi Fedora Tweaks.
 
 - `BEGINNER_QUICK_GUIDE.md` - Fast onboarding for new users
 - `USER_GUIDE.md` - End-user walkthrough (GUI, CLI, modes, workflows)
-- `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and Support Bundle v12 fields
+- `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and Support Bundle v13 fields
 - `ADVANCED_ADMIN_GUIDE.md` - Admin/operator runbooks and advanced operations
 - `TROUBLESHOOTING.md` - Common issues and fixes
 - `STATE_INTEGRITY.md` - State Doctor, backup, restore planning, schemas, locks, and archive threat model
@@ -29,6 +29,7 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md` - Immutable Compass contracts, closed profile budgets, lifecycle matrix, and future-safe session persistence
 - `reports/V23_PHASE2_EVIDENCE_COMPOSITION.md` - Read-only evidence adaptation, conservative correlation, and compatible follow-up comparison
 - `reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md` - Single guided Troubleshoot route, explicit collection and cancellation, evidence, next-step, follow-up, and local UI matrix
+- `reports/V23_PHASE4_INTERFACES_SUPPORT.md` - Versioned troubleshooting CLI, authenticated retrieval-only API, and bounded Support Bundle v13
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
@@ -123,9 +124,9 @@ These legacy files are kept for compatibility and historical context.
 - `v22.0.0 "Alignment"` is the current completed public release. Its GitHub,
   COPR, install, platform, and documentation evidence is recorded separately
   from local qualification.
-- `v23.0.0 "Compass"` is the active implementation target. Phases 0-3 are
-  complete; CLI/API/support-case work has not started, and product metadata remains
-  v22.0.0.
+- `v23.0.0 "Compass"` is the active implementation target. Phases 0-4 are
+  complete; platform qualification and release work have not started, and
+  product metadata remains v22.0.0.
 - The historical `v23.0.0` Architecture Hardening tag is occupied and remains
   unchanged pending separately authorized release-lineage resolution.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its

@@ -49,7 +49,7 @@ class TestSupportBundleV12(TestCase):
         bundle = SupportBundleV12.generate_bundle()
 
         self.assertEqual(bundle["support_bundle_version"], 12)
-        self.assertEqual(CURRENT_SUPPORT_BUNDLE_VERSION, 12)
+        self.assertEqual(CURRENT_SUPPORT_BUNDLE_VERSION, 13)
         self.assertEqual(bundle["change_journal"]["event_limit"], 50)
         self.assertFalse(bundle["change_journal"]["raw_command_output_included"])
         self.assertFalse(bundle["change_journal"]["recovery_commands_included"])

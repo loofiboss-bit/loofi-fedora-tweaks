@@ -199,9 +199,14 @@ either surface.
 
 Authenticated `GET /api/system-check/latest` returns only the latest bounded,
 privacy-safe persisted System Check result. It performs no collection. There
-is no API endpoint to start a check, confirm a plan, execute maintenance, or
-claim finding resolution. Use `loofi --json health comparison` for the same
-read-only before/after outcome model in scripts.
+are equivalent retrieval-only troubleshooting endpoints at
+`GET /api/troubleshooting/latest` and
+`GET /api/troubleshooting/sessions/SESSION_ID`. They read retained sessions
+only. There is no API endpoint to start a check or troubleshooting session,
+create or confirm a plan, execute maintenance, or claim finding resolution.
+Use `loofi --json troubleshoot latest` and
+`loofi --json troubleshoot compare SESSION_ID FOLLOWUP_ID` for the versioned
+CLI payload.
 
 ---
 

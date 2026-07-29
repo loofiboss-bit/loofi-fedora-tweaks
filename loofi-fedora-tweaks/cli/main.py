@@ -101,6 +101,7 @@ from cli.commands.firewall_commands import handle_firewall  # noqa: E402
 from cli.commands.agent_commands import handle_agent  # noqa: E402
 from cli.commands.activity_commands import handle_activity  # noqa: E402
 from cli.commands.health_history_commands import handle_health_history  # noqa: E402
+from cli.commands.troubleshooting_commands import handle_troubleshoot  # noqa: E402
 from utils.focus_mode import FocusMode  # noqa: E402
 from utils.journal import JournalManager  # noqa: E402
 from utils.monitor import SystemMonitor  # noqa: E402
@@ -335,6 +336,17 @@ def cmd_activity(args: typing.Any) -> int:
         print_fn=_print,
         create_plan=_create_action_center_plan,
         emit_plans=_emit_legacy_plans,
+    )
+
+
+def cmd_troubleshoot(args: typing.Any) -> int:
+    """Run or inspect one bounded troubleshooting session."""
+    return handle_troubleshoot(
+        args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        journal_manager_cls=JournalManager,
     )
 
 
@@ -1080,6 +1092,7 @@ def _command_handlers() -> typing.Any:
         "health": cmd_health,
         "maintenance": cmd_maintenance,
         "activity": cmd_activity,
+        "troubleshoot": cmd_troubleshoot,
         "disk": cmd_disk,
         "processes": cmd_processes,
         "temperature": cmd_temperature,

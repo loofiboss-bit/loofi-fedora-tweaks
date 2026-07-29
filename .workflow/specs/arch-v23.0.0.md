@@ -16,9 +16,11 @@ domain and one registered, explicit session history store. Phase 2 adds pure
 read-only evidence adapters, composition, conservative correlation, and
 compatible follow-up comparison. Phase 3 adapts the existing `diagnostics`
 route into the single guided Troubleshoot surface and adds an explicitly
-activated, bounded service plus Qt worker adapter. Page construction, Home, and
-search do not start collection. No phase adds host mutation, another database,
-or a product-metadata change.
+activated, bounded service plus Qt worker adapter. Phase 4 adds the versioned
+CLI, authenticated retrieval-only API, and one selected Support Bundle v13
+case. Page construction, Home, search, API construction, and API GET requests
+do not start collection. No phase adds host mutation, another database, or a
+product-metadata change.
 
 ## Canonical route decision
 
@@ -59,9 +61,10 @@ starts no worker, timer, thread, or probe.
 
 The optional `loofi.troubleshooting-sessions` schema-v1 store retains at most 20
 explicit terminal sessions through existing atomic XDG state infrastructure.
-Future schemas remain read-only and are never overwritten. The Phase 3 UI
-reads at most the latest retained session and never introduces a parallel
-history surface. CLI/API and support export remain later phases.
+Future schemas remain read-only and are never overwritten. The UI reads at
+most the latest retained session and never introduces a parallel history
+surface. CLI `show`, `latest`, and `compare`, authenticated API GET, and
+support export reuse the same bounded read-only inspection boundary.
 
 ## Source ownership
 
@@ -78,8 +81,9 @@ history surface. CLI/API and support export remain later phases.
   creates `core.workers.troubleshooting_worker` after explicit activation; all
   policy, budgets, source isolation, persistence, and comparison stay PyQt-free
   under `core.troubleshooting`.
-- Support Bundle v12 is the current writer. Advancing to v13 belongs to Phase
-  4; v2-v12 readers remain supported.
+- Support Bundle v13 is the current writer. It includes at most one explicitly
+  selected session, one comparison, 50 findings, 25 related changes, and 25
+  linked plan/run status records; v2-v12 readers remain supported.
 - Home, navigation, search, page construction, and authenticated API GET
   requests never start collection.
 

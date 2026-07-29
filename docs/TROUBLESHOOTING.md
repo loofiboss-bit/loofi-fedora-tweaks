@@ -182,10 +182,11 @@ If an Action Center run is verified but the finding still appears, run
 **Check again** after any required reboot. `verified` describes the action
 verifier; `resolved` requires a later compatible System Check. A
 `not_comparable` result means the required source was unavailable or the
-profile, Fedora variant, or ordering did not match. Export Support Bundle v12
-to include the bounded result, comparison, linked plan/run metadata, and
-source-ready Trusted Change Journal evidence with paths, identities, secrets,
-network identifiers, command output, and recovery commands redacted.
+profile, Fedora variant, or ordering did not match. Support Bundle v13
+preserves the bounded System Check and Trusted Change Journal evidence and can
+include one explicitly selected troubleshooting session. Paths, identities,
+secrets, network identifiers, command output, and recovery commands are
+stripped or redacted.
 
 ---
 
@@ -244,8 +245,13 @@ unavailable state when their host dependencies are absent.
 
 ```bash
 loofi-fedora-tweaks --cli support-bundle
+loofi-fedora-tweaks --cli troubleshoot export SESSION_ID
 journalctl --user --since "1 hour ago"
 ```
+
+The selected-session form writes Support Bundle v13 with at most one retained
+session, one comparison, 50 findings, 25 related changes, and 25 linked
+plan/run status records. It never starts a troubleshooting collection.
 
 ---
 

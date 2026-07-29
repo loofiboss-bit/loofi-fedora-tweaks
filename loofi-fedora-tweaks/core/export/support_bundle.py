@@ -4,13 +4,13 @@ from __future__ import annotations
 
 from typing import Any, Mapping
 
-from core.export.support_bundle_v12 import SupportBundleV12
+from core.export.support_bundle_v13 import SupportBundleV13
 
 MIN_SUPPORT_BUNDLE_VERSION = 2
-CURRENT_SUPPORT_BUNDLE_VERSION = 12
+CURRENT_SUPPORT_BUNDLE_VERSION = 13
 
 
-class SupportBundleWriter(SupportBundleV12):
+class SupportBundleWriter(SupportBundleV13):
     """Current writer; versioned classes remain read adapters only."""
 
 

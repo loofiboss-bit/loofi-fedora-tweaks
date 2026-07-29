@@ -73,10 +73,11 @@ Plans expire after 30 minutes and are re-preflighted before execution. Each
 plan contains one action and validated parameters; the reviewed definition
 regenerates the command, so persisted commands are never authoritative. Only one
 Action Center mutation can run across GUI and CLI processes. The read-only API
-can inspect plans and runs. Support Bundle v12 preserves the v11 bounded System
-Check results, comparison outcomes, and linked finding metadata and adds
-redacted source-ready Trusted Change Journal events without raw command output,
-recovery commands, or secrets.
+can inspect plans and runs. Support Bundle v13 preserves the v11 bounded System
+Check results and v12 Trusted Change Journal evidence, then optionally adds one
+explicitly selected troubleshooting session with bounded comparison and linked
+status metadata. It includes no raw command output, recovery commands, or
+secrets.
 
 Action Center `verified` means the action-specific verifier passed.
 System Check `resolved` means the original finding is absent from a later

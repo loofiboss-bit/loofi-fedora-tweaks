@@ -208,6 +208,12 @@ loofi health check
 loofi health findings
 loofi health comparison
 loofi health history --limit 10
+loofi troubleshoot profiles
+loofi troubleshoot run system_slow
+loofi troubleshoot latest
+loofi troubleshoot show SESSION_ID
+loofi troubleshoot compare SESSION_ID FOLLOWUP_ID
+loofi troubleshoot export SESSION_ID
 loofi readiness --target 44
 loofi readiness --target 44 --advanced
 loofi readiness actions --target 44

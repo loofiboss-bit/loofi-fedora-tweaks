@@ -7,7 +7,7 @@
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
 > V21 and V22 are complete and public. Product metadata remains v22 while
-> Compass implementation is locally qualified through Phase 3.
+> Compass implementation is locally qualified through Phase 4.
 
 ## Active Compass architecture
 
@@ -21,7 +21,9 @@ inert domain implementation, and the
 [Phase 2 report](docs/reports/V23_PHASE2_EVIDENCE_COMPOSITION.md) records the
 read-only composition and comparison boundary. The
 [Phase 3 report](docs/reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md) records the
-single guided route, explicit worker/service boundary, and local UI matrix.
+single guided route, explicit worker/service boundary, and local UI matrix. The
+[Phase 4 report](docs/reports/V23_PHASE4_INTERFACES_SUPPORT.md) records the
+versioned CLI, authenticated retrieval-only API, and Support Bundle v13.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It
@@ -32,8 +34,10 @@ explicit future-safe JSON store. Phase 2 adds source-owned evidence adaptation,
 explicit empty/partial/stale states, conservative related-change matching, and
 compatible follow-up comparison. Phase 3 adds the only GUI collection entry
 point through `TroubleshootingService.run()` and a lazy Qt worker adapter.
-Constructing Home, search, navigation, the page, service, or worker starts no
-collection.
+Phase 4 adds a second explicit caller through the CLI while keeping
+`TroubleshootingService.run()` as the only domain collection entry point.
+Constructing Home, search, navigation, the page, service, worker, or API starts
+no collection.
 
 ## Runtime entry modes
 
@@ -255,14 +259,14 @@ are compatible. Every original finding is classified as `resolved`,
 finding `resolved` remain separate facts; a linked run waiting for reboot cannot
 claim resolution, and a successful verifier still requires a later compatible
 check collected after verification.
-The canonical Support Bundle v12 preserves the bounded System Check v11
-payload and adds source-ready Trusted Change Journal evidence. It includes at
-most two System Check results, 50 findings per result, one comparison, 25
-linked plan/run records, and 50 journal events. It recursively redacts paths,
-hostnames, emails, secrets, network identifiers, and verifier messages, and
-includes no raw command output or recovery commands. The authenticated
-loopback API exposes only `GET /api/system-check/latest`; no System Check
-confirm, execute, or collection route exists.
+The canonical Support Bundle v13 preserves the bounded System Check v11 and
+Trusted Change Journal v12 payloads. It can add one explicitly selected
+troubleshooting session, 50 findings, 25 related changes, 25 linked plan/run
+status records, and one comparison. It recursively strips or redacts paths,
+hostnames, emails, secrets, network identifiers, verifier messages, commands,
+and raw process output. The authenticated loopback API exposes saved System
+Check and troubleshooting retrieval only; no System Check or troubleshooting
+confirm, execute, plan, or collection route exists.
 The HTTP route table permits mutation only for token issuance; system,
 observability, profile, Action Center, and export surfaces are authenticated
 GET inspection endpoints.

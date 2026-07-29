@@ -92,6 +92,52 @@ def build_parser() -> argparse.ArgumentParser:
     activity_related = activity_subparsers.choices["related"]
     activity_related.add_argument("--limit", type=int, default=20)
 
+    troubleshoot_parser = subparsers.add_parser(
+        "troubleshoot",
+        help="Run or inspect bounded troubleshooting sessions",
+    )
+    troubleshoot_subparsers = troubleshoot_parser.add_subparsers(
+        dest="troubleshoot_action",
+        help="Troubleshooting commands",
+    )
+    troubleshoot_subparsers.add_parser(
+        "profiles",
+        help="List the closed troubleshooting profile catalog",
+    )
+    troubleshoot_run = troubleshoot_subparsers.add_parser(
+        "run",
+        help="Explicitly run one bounded read-only profile",
+    )
+    troubleshoot_run.add_argument("profile_id")
+    troubleshoot_run.add_argument(
+        "--application-id",
+        help="Package name or Flatpak application ID for application_failed",
+    )
+    troubleshoot_show = troubleshoot_subparsers.add_parser(
+        "show",
+        help="Show one saved troubleshooting session",
+    )
+    troubleshoot_show.add_argument("session_id")
+    troubleshoot_subparsers.add_parser(
+        "latest",
+        help="Show the latest saved troubleshooting session",
+    )
+    troubleshoot_compare = troubleshoot_subparsers.add_parser(
+        "compare",
+        help="Compare one session with an explicit follow-up",
+    )
+    troubleshoot_compare.add_argument("session_id")
+    troubleshoot_compare.add_argument("followup_id")
+    troubleshoot_export = troubleshoot_subparsers.add_parser(
+        "export",
+        help="Export one selected session in Support Bundle v13",
+    )
+    troubleshoot_export.add_argument("session_id")
+    troubleshoot_export.add_argument(
+        "--output",
+        help="Destination ZIP path (defaults to the user home directory)",
+    )
+
     # Disk command
     disk_parser = subparsers.add_parser("disk", help="Disk usage information")
     disk_parser.add_argument("--details", action="store_true", help="Show large directories")

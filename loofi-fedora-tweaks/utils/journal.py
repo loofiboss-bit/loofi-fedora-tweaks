@@ -260,7 +260,12 @@ class JournalManager:
             return Result(False, f"Failed to export log: {e}")
 
     @classmethod
-    def export_support_bundle(cls, output_path: Optional[Path] = None) -> Result:
+    def export_support_bundle(
+        cls,
+        output_path: Optional[Path] = None,
+        *,
+        troubleshooting_session_id: str | None = None,
+    ) -> Result:
         """
         Export a support bundle ZIP with key diagnostics.
 
@@ -306,7 +311,9 @@ class JournalManager:
                 try:
                     from core.export.support_bundle import SupportBundleWriter
 
-                    bundle = SupportBundleWriter.generate_bundle()
+                    bundle = SupportBundleWriter.generate_bundle(
+                        session_id=troubleshooting_session_id,
+                    )
                     bundle_text = __import__("json").dumps(bundle, indent=2, default=str)
                     (tmp / "support-bundle.json").write_text(
                         bundle_text,
@@ -322,6 +329,11 @@ class JournalManager:
                     )
                 except (ImportError, OSError, RuntimeError, ValueError, TypeError, AttributeError) as e:
                     logger.debug("Failed to include support bundle payload: %s", e)
+                    if troubleshooting_session_id is not None:
+                        return Result(
+                            False,
+                            "Failed to export the selected troubleshooting session.",
+                        )
                     fallback = '{"v": "7.0.0-aegis-support-v5", "error": "unavailable"}'
                     (tmp / "support-bundle-v5.json").write_text(
                         fallback,

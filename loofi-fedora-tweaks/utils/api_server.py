@@ -43,6 +43,7 @@ def _origin_for(host: str, port: int) -> str:
 from api.routes.action_center import get_action_center_router
 from api.routes.profiles import get_profiles_router
 from api.routes.system import get_system_router
+from api.routes.troubleshooting import get_troubleshooting_router
 
 
 class TokenRateLimiter:
@@ -98,6 +99,7 @@ class APIServer:
         app.include_router(get_system_router())
         app.include_router(get_profiles_router())
         app.include_router(get_action_center_router())
+        app.include_router(get_troubleshooting_router())
 
         @app.post("/api/token")
         def issue_token(request: Request, api_key: str = Form(...)):

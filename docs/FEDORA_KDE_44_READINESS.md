@@ -79,12 +79,13 @@ Rules:
 - Manual-only recommendations cannot be executed.
 - Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 
-## Support Bundle v12
+## Support Bundle v13
 
 Support bundles include privacy-masked generic `release_readiness` data,
 release planning metadata, guided action context, Action Center context, My
 Fedora Today observability context, bounded System Check evidence, and
-source-owned Trusted Change Journal evidence:
+source-owned Trusted Change Journal evidence. An explicitly selected Compass
+session may also add one bounded troubleshooting support case:
 
 - Fedora/KDE/Qt versions
 - session type and display manager
@@ -108,6 +109,8 @@ source-owned Trusted Change Journal evidence:
 - daemon and optional Web API status probes
 - daemon snapshot status and read-only collection errors
 - support-safe GitHub issue text export
+- one selected troubleshooting session, at most 50 findings, 25 related
+  changes, 25 linked plan/run status records, and one comparison
 - at most two System Check results, one comparison, and linked plan/run records
 - at most 50 redacted Trusted Change Journal events with source readiness
 - privacy manifest
