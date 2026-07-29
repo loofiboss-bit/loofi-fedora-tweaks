@@ -10,6 +10,7 @@ from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from fastapi.testclient import TestClient
+from fastapi.routing import APIRoute
 
 from cli.commands.troubleshooting_commands import (
     _run_with_cancellation,
@@ -30,6 +31,7 @@ from core.troubleshooting.inspection import (
 )
 from core.troubleshooting.lifecycle import new_session, start_session
 from core.troubleshooting.models import NextStep, TroubleshootingFinding
+from core.troubleshooting.service import TroubleshootingRun
 from core.troubleshooting.storage import (
     STORE_SCHEMA_VERSION,
     SessionStoreSnapshot,
@@ -196,6 +198,38 @@ class TestTroubleshootingCli(unittest.TestCase):
 
     @patch(
         "cli.commands.troubleshooting_commands."
+        "TroubleshootingService"
+    )
+    def test_run_maps_the_real_service_persistence_contract(
+        self,
+        service_cls,
+    ):
+        service_cls.return_value.run.return_value = TroubleshootingRun(
+            _session(),
+            persistence_reason_code="session-store-unavailable",
+        )
+        output_json = MagicMock()
+
+        result = handle_troubleshoot(
+            SimpleNamespace(
+                troubleshoot_action="run",
+                profile_id="system_slow",
+                application_id=None,
+            ),
+            True,
+            output_json,
+            MagicMock(),
+            MagicMock(),
+        )
+
+        self.assertEqual(result, 0)
+        self.assertEqual(
+            output_json.call_args.args[0]["data"]["persistence_warning"],
+            "session-store-unavailable",
+        )
+
+    @patch(
+        "cli.commands.troubleshooting_commands."
         "TroubleshootingInspectionService"
     )
     def test_export_selects_exactly_one_known_session(
@@ -235,6 +269,21 @@ class TestTroubleshootingCli(unittest.TestCase):
 
 
 class TestTroubleshootingApi(unittest.TestCase):
+    @staticmethod
+    def _iter_routes(routes):
+        """Traverse direct and mounted FastAPI routes across supported versions."""
+        for route in routes:
+            path = getattr(route, "path", "")
+            methods = getattr(route, "methods", None) or set()
+            if isinstance(route, APIRoute) and path:
+                yield path, tuple(sorted(methods))
+                continue
+            original_router = getattr(route, "original_router", None)
+            if original_router is not None:
+                yield from TestTroubleshootingApi._iter_routes(
+                    getattr(original_router, "routes", ()),
+                )
+
     @patch(
         "core.troubleshooting.storage."
         "TroubleshootingSessionStore.read"
@@ -277,13 +326,7 @@ class TestTroubleshootingApi(unittest.TestCase):
             known.json()["session"]["session_id"],
             SESSION_ID,
         )
-        paths = {
-            (
-                getattr(route, "path", ""),
-                tuple(sorted(getattr(route, "methods", ()) or ())),
-            )
-            for route in server.app.routes
-        }
+        paths = set(self._iter_routes(server.app.routes))
         self.assertIn(
             (
                 "/api/troubleshooting/latest",

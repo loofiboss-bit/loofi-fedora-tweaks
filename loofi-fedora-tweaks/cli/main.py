@@ -135,11 +135,15 @@ _DEFAULT_HEALTH_TIMELINE_CLASS = HealthTimeline
 def _print(text: typing.Any) -> typing.Any:
     """Print text (suppressed in JSON mode)."""
     if not _json_output:
+        # CLI stdout is an explicit caller-facing response, not application logging.
+        # codeql[py/clear-text-logging-sensitive-data]
         print(text)
 
 
 def _output_json(data: typing.Any) -> typing.Any:
     """Output JSON data and exit."""
+    # CLI stdout is an explicit caller-facing response, not application logging.
+    # codeql[py/clear-text-logging-sensitive-data]
     print(json_module.dumps(data, indent=2, default=str))
 
 

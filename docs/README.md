@@ -30,6 +30,11 @@ Central documentation map for Loofi Fedora Tweaks.
 - `reports/V23_PHASE2_EVIDENCE_COMPOSITION.md` - Read-only evidence adaptation, conservative correlation, and compatible follow-up comparison
 - `reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md` - Single guided Troubleshoot route, explicit collection and cancellation, evidence, next-step, follow-up, and local UI matrix
 - `reports/V23_PHASE4_INTERFACES_SUPPORT.md` - Versioned troubleshooting CLI, authenticated retrieval-only API, and bounded Support Bundle v13
+- `reports/V23_PHASE5_LOCAL_QUALIFICATION.md` - Local repository, security, performance, package, and live Traditional Wayland/AT-SPI qualification with explicit open physical gates
+- `reports/V23_PHASE5_STARTUP.json` - Reproducible Compass Phase 5 startup, Home-provider, probe, timer, thread, import, and RSS evidence
+- `reports/V23_PHASE5_ATSPI.json` - Summary-only live Wayland AT-SPI exposure evidence for the canonical Troubleshoot route
+- `reports/V23_PHASE5_TRADITIONAL_PROFILES.json` - Fresh bounded real-CLI evidence for all six profiles on physical Fedora 44 Traditional
+- `reports/V23_PHASE5_CODEQL.json` - Exact-input local CodeQL security-extended coverage, fixes, suppressions, and effective finding counts
 - `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
 - `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
@@ -125,8 +130,10 @@ These legacy files are kept for compatibility and historical context.
   COPR, install, platform, and documentation evidence is recorded separately
   from local qualification.
 - `v23.0.0 "Compass"` is the active implementation target. Phases 0-4 are
-  complete; platform qualification and release work have not started, and
-  product metadata remains v22.0.0.
+  complete and Phase 5 is locally qualified through the available repository,
+  security, performance, package, and Traditional Wayland/AT-SPI gates. Fresh
+  Kinoite/Atomic and manual keyboard/Orca qualification remain open; product
+  metadata remains v22.0.0.
 - The historical `v23.0.0` Architecture Hardening tag is occupied and remains
   unchanged pending separately authorized release-lineage resolution.
 - `v20.0.0 "Continuity"` remains historically publication-blocked because its

@@ -325,7 +325,7 @@ done
 
 echo "Done!"
 """)
-            os.chmod(install_script, 0o755)
+            os.chmod(install_script, 0o700)
 
             # Create README
             readme = repo_path / "README.md"

@@ -182,9 +182,12 @@ class TroubleshootWidget(QWidget):
             self.tr("Start from the symptom you can observe."),
         )
         choose.setObjectName("troubleshootProfileCard")
+        self.profile_label = QLabel(self.tr("Problem profile"))
         self.profile_selector = QComboBox()
         self.profile_selector.setObjectName("troubleshootProfileSelector")
         self.profile_selector.setAccessibleName(self.tr("Problem profile"))
+        self.profile_label.setBuddy(self.profile_selector)
+        choose.add_widget(self.profile_label)
         for profile in all_profiles():
             self.profile_selector.addItem(self.tr(profile.title), profile.id)
         self.profile_selector.currentIndexChanged.connect(self._profile_changed)

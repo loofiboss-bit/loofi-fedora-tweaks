@@ -162,6 +162,7 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 5
     needs: [validate]
+    if: needs.validate.outputs.should_release == 'true'
     steps:
       - uses: actions/checkout@v6
       - name: Validate workflow specs exist

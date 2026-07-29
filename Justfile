@@ -162,6 +162,9 @@ validate-architecture:
 validate-system-check:
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_system_check_contract.py
 
+validate-v23-phase5:
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v23_phase5.py
+
 validate-v19-ui-evidence:
 	QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v19_system_check_states.py --check
 

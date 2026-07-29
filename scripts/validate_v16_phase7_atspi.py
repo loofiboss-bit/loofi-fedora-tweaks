@@ -33,6 +33,12 @@ EXPECTED_SURFACES = {
     "confirmation": ("Confirm action: Remove selected packages",),
 }
 ROUTE_SURFACES: dict[str, dict[str, tuple[str, ...]]] = {
+    "diagnostics": {
+        "page_title": ("Troubleshoot",),
+        "troubleshoot_view": ("Troubleshoot view",),
+        "troubleshoot_profile": ("Problem profile",),
+        "troubleshoot_start": ("Start read-only check",),
+    },
     "health": {
         "page_title": ("System Check",),
         "system_check_status": (
@@ -197,6 +203,7 @@ def run_probe(
     report_path: Path = REPORT_PATH,
     release: str = "v16.0.0 Clarity",
     phase: int = 7,
+    retain_nodes: bool = True,
 ) -> dict[str, Any]:
     """Launch the real app and query its exported AT-SPI tree."""
     bus_address = _session_atspi_address()
@@ -285,7 +292,8 @@ def run_probe(
         "child_output": child_output,
         "surfaces": surfaces,
         "node_count": len(nodes),
-        "nodes": nodes,
+        "nodes_retained": retain_nodes,
+        "nodes": nodes if retain_nodes else [],
         "status": "passed" if not errors else "failed",
         "errors": errors,
     }
@@ -312,6 +320,11 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser.add_argument("--report", type=Path, default=REPORT_PATH)
     parser.add_argument("--release", default="v16.0.0 Clarity")
     parser.add_argument("--phase", type=int, default=7)
+    parser.add_argument(
+        "--summary-only",
+        action="store_true",
+        help="validate the live tree but omit raw nodes from the saved report",
+    )
     parser.add_argument("--json", action="store_true")
     return parser.parse_args(argv)
 
@@ -326,6 +339,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         report_path=args.report,
         release=args.release,
         phase=args.phase,
+        retain_nodes=not args.summary_only,
     )
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))

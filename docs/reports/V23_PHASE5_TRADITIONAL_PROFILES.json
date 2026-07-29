@@ -1,0 +1,148 @@
+{
+  "capture_policy": {
+    "explicit_cli_collection": true,
+    "isolated_xdg_state": true,
+    "mutating_actions": false,
+    "profile_parameters": {
+      "application_failed": {
+        "application_id": "firefox"
+      }
+    },
+    "raw_cli_payloads_retained": false
+  },
+  "errors": [],
+  "generated_at": "2026-07-29T10:01:44.114485+00:00",
+  "host": {
+    "desktop": "KDE",
+    "os_id": "fedora",
+    "package_model": "traditional",
+    "session_type": "wayland",
+    "variant_id": "kde",
+    "version_id": "44",
+    "virtualization": "none"
+  },
+  "phase": 5,
+  "product_metadata": "v22.0.0 Alignment",
+  "profiles": [
+    {
+      "budget_seconds": 62.0,
+      "elapsed_seconds": 2.953,
+      "finding_count": 2,
+      "persistence_warning": "",
+      "profile_id": "system_slow",
+      "related_change_count": 0,
+      "source_ids": [
+        "change-journal",
+        "observability",
+        "system-check"
+      ],
+      "source_state_counts": {
+        "empty": 1,
+        "partial": 2
+      },
+      "state": "partial",
+      "variant": "traditional"
+    },
+    {
+      "budget_seconds": 65.0,
+      "elapsed_seconds": 0.655,
+      "finding_count": 0,
+      "persistence_warning": "",
+      "profile_id": "updates_failed",
+      "related_change_count": 0,
+      "source_ids": [
+        "action-center",
+        "change-journal",
+        "package-health",
+        "pending-reboot"
+      ],
+      "source_state_counts": {
+        "empty": 3,
+        "partial": 1
+      },
+      "state": "partial",
+      "variant": "traditional"
+    },
+    {
+      "budget_seconds": 35.0,
+      "elapsed_seconds": 0.448,
+      "finding_count": 0,
+      "persistence_warning": "",
+      "profile_id": "application_failed",
+      "related_change_count": 0,
+      "source_ids": [
+        "application-inventory",
+        "change-journal"
+      ],
+      "source_state_counts": {
+        "empty": 1,
+        "partial": 1
+      },
+      "state": "partial",
+      "variant": "traditional"
+    },
+    {
+      "budget_seconds": 25.0,
+      "elapsed_seconds": 0.61,
+      "finding_count": 1,
+      "persistence_warning": "",
+      "profile_id": "network_problem",
+      "related_change_count": 0,
+      "source_ids": [
+        "change-journal",
+        "dns-state",
+        "network-state"
+      ],
+      "source_state_counts": {
+        "completed": 1,
+        "empty": 1,
+        "partial": 1
+      },
+      "state": "partial",
+      "variant": "traditional"
+    },
+    {
+      "budget_seconds": 85.0,
+      "elapsed_seconds": 0.796,
+      "finding_count": 3,
+      "persistence_warning": "",
+      "profile_id": "storage_pressure",
+      "related_change_count": 0,
+      "source_ids": [
+        "change-journal",
+        "storage-reclaim",
+        "system-check"
+      ],
+      "source_state_counts": {
+        "empty": 1,
+        "partial": 2
+      },
+      "state": "partial",
+      "variant": "traditional"
+    },
+    {
+      "budget_seconds": 75.0,
+      "elapsed_seconds": 0.637,
+      "finding_count": 1,
+      "persistence_warning": "",
+      "profile_id": "boot_or_deployment",
+      "related_change_count": 0,
+      "source_ids": [
+        "boot-analysis",
+        "failed-services",
+        "package-history",
+        "pending-reboot"
+      ],
+      "source_state_counts": {
+        "completed": 1,
+        "empty": 3
+      },
+      "state": "completed",
+      "variant": "traditional"
+    }
+  ],
+  "release": "v23.0.0 Compass working tree",
+  "schema_version": 1,
+  "source_identity": "WORKTREE@f176b5b0c61769f06c197ce2e590090e70740de0",
+  "status": "passed"
+}

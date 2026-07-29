@@ -14,6 +14,7 @@ Usage:
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import re
 import sys
@@ -38,13 +39,30 @@ STATS_MD = ROOT / ".project-stats.md"
 
 
 def read_version() -> dict[str, str]:
-    """Read version info from version.py."""
-    ns: dict[str, Any] = {}
-    exec(VERSION_FILE.read_text(encoding="utf-8"), ns)  # noqa: S102
+    """Read literal version assignments without executing repository code."""
+    values = {
+        "__version__": "0.0.0",
+        "__version_codename__": "",
+        "__app_name__": "Loofi Fedora Tweaks",
+    }
+    tree = ast.parse(VERSION_FILE.read_text(encoding="utf-8"), filename=str(VERSION_FILE))
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name) or target.id not in values:
+            continue
+        try:
+            value = ast.literal_eval(node.value)
+        except (TypeError, ValueError, SyntaxError) as exc:
+            raise ValueError(f"{target.id} must be a string literal") from exc
+        if not isinstance(value, str):
+            raise TypeError(f"{target.id} must be a string literal")
+        values[target.id] = value
     return {
-        "version": ns.get("__version__", "0.0.0"),
-        "codename": ns.get("__version_codename__", ""),
-        "app_name": ns.get("__app_name__", "Loofi Fedora Tweaks"),
+        "version": values["__version__"],
+        "codename": values["__version_codename__"],
+        "app_name": values["__app_name__"],
     }
 
 

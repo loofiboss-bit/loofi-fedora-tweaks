@@ -98,6 +98,11 @@ def test_post_release_master_commits_do_not_republish_existing_version():
     assert "should_release: ${{ steps.tag_identity.outputs.should_release }}" in auto_release
     assert 'if [[ "${GITHUB_REF}" == "refs/heads/master" ]]' in auto_release
     assert "this is a post-release master commit" in auto_release
+    pipeline_gate = auto_release.split("  pipeline_gate:", 1)[1].split(
+        "\n  lint:",
+        1,
+    )[0]
+    assert "if: needs.validate.outputs.should_release == 'true'" in pipeline_gate
     assert "needs.validate.outputs.should_release == 'true'" in auto_release
 
 

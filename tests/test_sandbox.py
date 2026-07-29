@@ -138,6 +138,8 @@ class TestCreateDesktopEntry(unittest.TestCase):
         result = SandboxManager.create_desktop_entry("Firefox", "firefox")
         self.assertTrue(result.success)
         self.assertIn("path", result.data)
+        mock_chmod.assert_called_once()
+        self.assertEqual(mock_chmod.call_args.args[1], 0o600)
 
     @patch.object(SandboxManager, 'is_firejail_installed', return_value=False)
     def test_create_desktop_entry_no_firejail(self, mock_installed):

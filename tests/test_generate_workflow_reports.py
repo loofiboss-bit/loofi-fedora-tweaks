@@ -4,6 +4,8 @@ import importlib.util
 import sys
 from pathlib import Path
 
+import pytest
+
 
 def _load_module(name: str, path: Path):
     spec = importlib.util.spec_from_file_location(name, path)
@@ -102,3 +104,41 @@ def test_generate_test_results_passes_when_tests_executed_without_failures(tmp_p
 
     assert payload["status"] == "pass"
     assert payload["release_gate"]["status"] == "PASS"
+
+
+@pytest.mark.parametrize(
+    ("module_name", "script", "reader"),
+    (
+        (
+            "generate_workflow_reports_literal_version_test",
+            "generate_workflow_reports.py",
+            "extract_version",
+        ),
+        (
+            "project_stats_literal_version_test",
+            "project_stats.py",
+            "read_version",
+        ),
+    ),
+)
+def test_version_readers_reject_expressions_without_executing_them(
+    tmp_path,
+    module_name,
+    script,
+    reader,
+):
+    module = _load_module(module_name, Path("scripts") / script)
+    sentinel = tmp_path / "executed"
+    version_file = tmp_path / "version.py"
+    version_file.write_text(
+        "__version__ = "
+        f"(__import__('pathlib').Path({str(sentinel)!r}).write_text('unsafe') "
+        "or '22.0.0')\n",
+        encoding="utf-8",
+    )
+    module.VERSION_FILE = version_file
+
+    with pytest.raises(ValueError, match="string literal"):
+        getattr(module, reader)()
+
+    assert not sentinel.exists()

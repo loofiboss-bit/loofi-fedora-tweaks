@@ -1,0 +1,65 @@
+{
+  "alert_suppression_query_matches_all_raw_alerts": true,
+  "findings": {
+    "effective": 0,
+    "effective_high_or_critical": 0,
+    "raw": 4,
+    "raw_security_severity": 7.5,
+    "remediated_before_final_scan": [
+      {
+        "disposition": "fixed",
+        "new_mode": "0600",
+        "rule_id": "py/overly-permissive-file",
+        "surface": "per-user sandbox desktop entry"
+      },
+      {
+        "disposition": "fixed",
+        "new_mode": "0700",
+        "rule_id": "py/overly-permissive-file",
+        "surface": "generated per-user dotfiles installer"
+      }
+    ],
+    "source_suppressed": 4,
+    "source_suppressions": [
+      {
+        "count": 2,
+        "disposition": "by_design",
+        "rationale": "The API-key rotation command is an explicit caller-facing one-time credential response on CLI stdout, not application logging. The generic output helpers are annotated at the exact CodeQL sink locations.",
+        "rule_id": "py/clear-text-logging-sensitive-data"
+      },
+      {
+        "count": 2,
+        "disposition": "false_positive",
+        "rationale": "The upload name is reduced to a basename, rejoined below the configured save directory, and rejected unless commonpath remains that directory. The temporary file is also created inside that directory.",
+        "rule_id": "py/path-injection"
+      }
+    ]
+  },
+  "generated_at": "2026-07-29T11:55:19.325367+00:00",
+  "input_snapshot": {
+    "actions_files": 4,
+    "python_files": 809,
+    "sha256": "ce1106c378161cac584e6dc7997ba4ac935c8165570b32f26759f3150472b6b9"
+  },
+  "phase": 5,
+  "product_metadata": "v22.0.0 Alignment",
+  "query_suite": {
+    "name": "python-security-extended.qls",
+    "resolved_queries": 52
+  },
+  "release": "v23.0.0 Compass working tree",
+  "scan_coverage": {
+    "actions_files_scanned": 4,
+    "actions_files_total": 4,
+    "python_files_scanned": 809,
+    "python_files_total": 809
+  },
+  "schema_version": 1,
+  "source_identity": "WORKTREE@f176b5b0c61769f06c197ce2e590090e70740de0",
+  "status": "passed",
+  "tool": {
+    "bundle_sha256": "76cd9d785940da0a5876676136be0c2803baa116304af5265052b74f1ec46258",
+    "name": "CodeQL CLI",
+    "version": "2.25.5"
+  }
+}

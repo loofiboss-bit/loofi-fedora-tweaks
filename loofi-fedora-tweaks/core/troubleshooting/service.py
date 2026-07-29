@@ -313,7 +313,7 @@ class DefaultEvidenceCollector:
     ) -> SourceEvidence:
         application_id = str(dict(session.profile_parameters).get("application_id", ""))
         available = bool(application_id and shutil.which(application_id))
-        facts = {"application_id": application_id, "command_available": available}
+        facts = {"application_id": application_id, "application_available": available}
         findings = (
             self._finding(
                 session,

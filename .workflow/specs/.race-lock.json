@@ -3,7 +3,7 @@
   "started_at": "20260729_070016",
   "status": "active",
   "target_version": "v23.0.0",
-  "phase": "phase-4-complete",
+  "phase": "phase-5-local-qualified",
   "baseline_commit": "5bd323b6794c72bb17390149a4e07bff3e35bf35",
   "product_version": "v22.0.0",
   "product_codename": "Alignment",
@@ -20,5 +20,6 @@
   "phase_1_completed_at": "2026-07-29T07:52:49+02:00",
   "phase_2_completed_at": "2026-07-29T09:39:49+02:00",
   "phase_3_completed_at": "2026-07-29T10:30:11+02:00",
-  "phase_4_completed_at": "2026-07-29T11:08:48+02:00"
+  "phase_4_completed_at": "2026-07-29T11:08:48+02:00",
+  "phase_5_local_qualified_at": "2026-07-29T14:20:57+02:00"
 }

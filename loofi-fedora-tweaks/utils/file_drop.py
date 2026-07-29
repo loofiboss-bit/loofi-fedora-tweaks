@@ -453,6 +453,8 @@ class FileDropManager:
                 # Handle filename conflicts
                 base, ext = os.path.splitext(save_path)
                 counter = 1
+                # The basename and commonpath checks above constrain this path to save_dir.
+                # codeql[py/path-injection]
                 while os.path.exists(save_path):
                     save_path = f"{base}_{counter}{ext}"
                     counter += 1
@@ -484,8 +486,9 @@ class FileDropManager:
                         self.send_error(400, "Checksum mismatch")
                         return
 
-                    # save_path is constrained to save_dir after basename sanitization and commonpath validation.
-                    os.replace(temp_path, save_path)  # codeql[py/path-injection]
+                    # The basename and commonpath checks above constrain this path to save_dir.
+                    # codeql[py/path-injection]
+                    os.replace(temp_path, save_path)
                 except OSError:
                     if temp_path and os.path.exists(temp_path):
                         os.unlink(temp_path)

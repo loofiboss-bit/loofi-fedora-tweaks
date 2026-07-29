@@ -236,6 +236,10 @@ class TestDotfileManager(unittest.TestCase):
                 self.assertTrue((repo / "config").is_dir())
                 self.assertTrue((repo / "scripts").is_dir())
                 self.assertTrue((repo / "install.sh").exists())
+                self.assertEqual(
+                    (repo / "install.sh").stat().st_mode & 0o777,
+                    0o700,
+                )
                 self.assertTrue((repo / "README.md").exists())
 
     def test_sync_dotfile_unknown_name(self):

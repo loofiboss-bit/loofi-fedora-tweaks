@@ -1,0 +1,946 @@
+{
+  "method": {
+    "marker": "AtlasDashboardTab realized",
+    "profile": "temporary-standard-clean",
+    "qt_platform": "offscreen",
+    "runs": 15,
+    "warmups": 3
+  },
+  "runs": [
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 98.716,
+        "main_window": 157.678,
+        "meaningful_home": 159.646,
+        "qapplication": 100.335,
+        "show_returned": 159.641
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76268,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 91.829,
+        "main_window": 150.412,
+        "meaningful_home": 152.467,
+        "qapplication": 93.347,
+        "show_returned": 152.462
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76308,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 92.897,
+        "main_window": 150.639,
+        "meaningful_home": 152.779,
+        "qapplication": 94.363,
+        "show_returned": 152.772
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76164,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 94.202,
+        "main_window": 152.144,
+        "meaningful_home": 154.254,
+        "qapplication": 95.693,
+        "show_returned": 154.248
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76256,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 92.046,
+        "main_window": 149.932,
+        "meaningful_home": 151.948,
+        "qapplication": 93.523,
+        "show_returned": 151.942
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76272,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 91.141,
+        "main_window": 149.627,
+        "meaningful_home": 151.514,
+        "qapplication": 92.594,
+        "show_returned": 151.51
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76188,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 96.534,
+        "main_window": 154.533,
+        "meaningful_home": 156.587,
+        "qapplication": 98.033,
+        "show_returned": 156.58
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76300,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 93.548,
+        "main_window": 150.593,
+        "meaningful_home": 152.489,
+        "qapplication": 95.171,
+        "show_returned": 152.484
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76056,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 92.367,
+        "main_window": 156.032,
+        "meaningful_home": 158.064,
+        "qapplication": 93.845,
+        "show_returned": 158.059
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76200,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 117.316,
+        "main_window": 214.553,
+        "meaningful_home": 218.183,
+        "qapplication": 119.194,
+        "show_returned": 218.171
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76344,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 103.039,
+        "main_window": 162.753,
+        "meaningful_home": 165.368,
+        "qapplication": 104.61,
+        "show_returned": 165.36
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76348,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 94.21,
+        "main_window": 154.574,
+        "meaningful_home": 157.235,
+        "qapplication": 95.736,
+        "show_returned": 157.227
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76116,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 93.434,
+        "main_window": 151.581,
+        "meaningful_home": 153.787,
+        "qapplication": 94.891,
+        "show_returned": 153.781
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76164,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 92.188,
+        "main_window": 149.01,
+        "meaningful_home": 150.991,
+        "qapplication": 93.796,
+        "show_returned": 150.985
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76192,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    },
+    {
+      "active_timer_intervals_ms": [],
+      "imports": {
+        "all": 288,
+        "ui": 24,
+        "ui_modules": [
+          "ui",
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab",
+          "ui.components",
+          "ui.components.actions",
+          "ui.components.cards",
+          "ui.components.feedback",
+          "ui.components.layout",
+          "ui.components.navigation",
+          "ui.design",
+          "ui.design.theme_manager",
+          "ui.design.tokens",
+          "ui.icon_pack",
+          "ui.layout_primitives",
+          "ui.lazy_widget",
+          "ui.main_window",
+          "ui.main_window_interactions",
+          "ui.main_window_services",
+          "ui.main_window_shell",
+          "ui.navigation",
+          "ui.navigation.destination_host",
+          "ui.navigation.destination_sidebar",
+          "ui.shared_states",
+          "ui.wizard"
+        ],
+        "ui_tab": 2,
+        "ui_tab_modules": [
+          "ui.atlas_dashboard_tab",
+          "ui.base_tab"
+        ]
+      },
+      "installed_components": [
+        "core",
+        "specialist"
+      ],
+      "milestones_ms": {
+        "gui_import": 94.512,
+        "main_window": 154.424,
+        "meaningful_home": 156.621,
+        "qapplication": 96.115,
+        "show_returned": 156.615
+      },
+      "plugin_spec_count": 29,
+      "post_render_services_scheduled": true,
+      "qt_widget_count": 415,
+      "rss_kib": 76236,
+      "running_qthreads": 0,
+      "runtime_plugin_ids": [
+        "atlas_dashboard"
+      ],
+      "schema_version": 1,
+      "subprocess_probes": [],
+      "system_check_runtime_imports": []
+    }
+  ],
+  "schema_version": 1,
+  "summary": {
+    "milestones_ms": {
+      "gui_import": {
+        "max": 117.316,
+        "median": 93.548,
+        "min": 91.141
+      },
+      "main_window": {
+        "max": 214.553,
+        "median": 152.144,
+        "min": 149.01
+      },
+      "meaningful_home": {
+        "max": 218.183,
+        "median": 154.254,
+        "min": 150.991
+      },
+      "qapplication": {
+        "max": 119.194,
+        "median": 95.171,
+        "min": 92.594
+      },
+      "show_returned": {
+        "max": 218.171,
+        "median": 154.248,
+        "min": 150.985
+      }
+    },
+    "rss_kib": {
+      "max": 76348,
+      "median": 76236,
+      "min": 76056
+    }
+  }
+}

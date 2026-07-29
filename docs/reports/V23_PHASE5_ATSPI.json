@@ -1,0 +1,103 @@
+{
+  "backend": "wayland",
+  "bus_address_resolved": true,
+  "child_output": "READY",
+  "errors": [],
+  "generated_at": "2026-07-29T09:44:18.076415+00:00",
+  "node_count": 546,
+  "nodes": [],
+  "nodes_retained": false,
+  "orca_available": true,
+  "phase": 5,
+  "protocol": "AT-SPI2",
+  "real_main_window": true,
+  "release": "v23.0.0 Compass working tree (metadata v22.0.0 Alignment)",
+  "route": "diagnostics",
+  "schema_version": 1,
+  "status": "passed",
+  "surfaces": {
+    "application": {
+      "expected": [
+        "Loofi Fedora Tweaks"
+      ],
+      "matches": [
+        "Loofi Fedora Tweaks"
+      ],
+      "status": "passed"
+    },
+    "confirmation": {
+      "expected": [
+        "Confirm action: Remove selected packages"
+      ],
+      "matches": [
+        "Confirm action: Remove selected packages"
+      ],
+      "status": "passed"
+    },
+    "navigation": {
+      "expected": [
+        "Navigation destinations",
+        "Primary navigation",
+        "Sections"
+      ],
+      "matches": [
+        "Navigation destinations",
+        "Sections"
+      ],
+      "status": "passed"
+    },
+    "page_title": {
+      "expected": [
+        "Troubleshoot"
+      ],
+      "matches": [
+        "No troubleshooting session yet",
+        "Nothing is checked until you start. Troubleshoot never applies a fix, confirms a plan, or reboots the system.",
+        "Open Troubleshoot a problem",
+        "Support export creates privacy-redacted diagnostic evidence for troubleshooting; it is not a backup, recovery point, or rollback mechanism.",
+        "Troubleshoot",
+        "Troubleshoot a problem",
+        "Troubleshoot view",
+        "Troubleshooting",
+        "Troubleshooting findings"
+      ],
+      "status": "passed"
+    },
+    "result_state": {
+      "expected": [
+        "Activity status"
+      ],
+      "matches": [
+        "Activity status"
+      ],
+      "status": "passed"
+    },
+    "troubleshoot_profile": {
+      "expected": [
+        "Problem profile"
+      ],
+      "matches": [
+        "Problem profile"
+      ],
+      "status": "passed"
+    },
+    "troubleshoot_start": {
+      "expected": [
+        "Start read-only check"
+      ],
+      "matches": [
+        "Start read-only check"
+      ],
+      "status": "passed"
+    },
+    "troubleshoot_view": {
+      "expected": [
+        "Troubleshoot view"
+      ],
+      "matches": [
+        "Troubleshoot view"
+      ],
+      "status": "passed"
+    }
+  }
+}

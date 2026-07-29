@@ -52,11 +52,16 @@
 
 ## Phase 5 — Platform, performance, and security qualification
 
-- [ ] Pass full repository, architecture, route, security, package,
+- [x] Pass full repository, architecture, route, security, package,
   compatibility, startup, and coverage gates.
-- [ ] Qualify all six profile budgets and malicious-input boundaries.
+  - Local gates, exact-input CodeQL, and fresh RPM, sdist, Flatpak, checksum,
+    SBOM, and provenance candidates pass.
+- [x] Qualify all six profile budgets and malicious-input boundaries.
 - [ ] Record fresh physical Fedora 44 Traditional and Kinoite/Atomic evidence
   without substituting offscreen, mock, or carried-forward results.
+  - Live Traditional Wayland/AT-SPI exposure and fresh real-CLI runs for all
+    six profiles pass; fresh Atomic and manual keyboard/Orca journeys remain
+    open.
 
 ## Phase 6 — Release readiness
 

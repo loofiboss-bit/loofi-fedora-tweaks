@@ -138,6 +138,8 @@ class TestTroubleshootWidget(unittest.TestCase):
         self.assertEqual(len(widget.findChildren(LocalViewSwitcher)), 1)
         self.assertEqual(len(widget.findChildren(PrimaryButton)), 1)
         self.assertEqual(widget.profile_selector.count(), 6)
+        self.assertEqual(widget.profile_label.text(), "Problem profile")
+        self.assertEqual(widget.profile_label.buddy(), widget.profile_selector)
         self.assertEqual(factory_calls, [])
         self.assertEqual(widget.findChildren(DetailsDisclosure)[0].toggle_button.isChecked(), False)
 

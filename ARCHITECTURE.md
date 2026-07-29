@@ -7,7 +7,9 @@
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
 > V21 and V22 are complete and public. Product metadata remains v22 while
-> Compass implementation is locally qualified through Phase 4.
+> Compass implementation is locally qualified through the available Phase 5
+> gates. Fresh Atomic and manual physical accessibility qualification remain
+> open.
 
 ## Active Compass architecture
 
@@ -23,7 +25,11 @@ read-only composition and comparison boundary. The
 [Phase 3 report](docs/reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md) records the
 single guided route, explicit worker/service boundary, and local UI matrix. The
 [Phase 4 report](docs/reports/V23_PHASE4_INTERFACES_SUPPORT.md) records the
-versioned CLI, authenticated retrieval-only API, and Support Bundle v13.
+versioned CLI, authenticated retrieval-only API, and Support Bundle v13. The
+[Phase 5 report](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md) records
+exact-input local repository, CodeQL, startup, profile-budget, package, and
+Traditional real-CLI/Wayland/AT-SPI evidence while keeping Atomic and manual
+physical gates open.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It

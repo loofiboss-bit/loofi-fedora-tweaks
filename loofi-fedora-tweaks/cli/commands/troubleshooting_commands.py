@@ -135,6 +135,7 @@ def handle_troubleshoot(
                 str(args.profile_id),
                 parameters,
             )
+            persistence_warning = result.persistence_reason_code
             data = {
                 "status": result.session.state,
                 "session": bounded_session_payload(result.session),
@@ -143,7 +144,7 @@ def handle_troubleshoot(
                     if result.comparison is not None
                     else None
                 ),
-                "persistence_warning": result.persistence_warning,
+                "persistence_warning": persistence_warning,
             }
             payload = _envelope(action, data)
             if json_output:
@@ -154,10 +155,10 @@ def handle_troubleshoot(
                     f"{result.session.state}"
                 )
                 print_fn(f"Findings: {len(result.session.findings)}")
-                if result.persistence_warning:
+                if persistence_warning:
                     print_fn(
                         "Warning: session persistence is unavailable "
-                        f"({result.persistence_warning})."
+                        f"({persistence_warning})."
                     )
             if result.session.state == "cancelled":
                 return 130

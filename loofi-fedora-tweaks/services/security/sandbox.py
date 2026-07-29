@@ -178,8 +178,8 @@ Categories=Security;
             with open(desktop_file, "w") as f:
                 f.write(desktop_content)
 
-            # Make executable
-            os.chmod(desktop_file, 0o755)
+            # Per-user desktop entries are data files and must stay private.
+            os.chmod(desktop_file, 0o600)
 
             return Result(
                 True,

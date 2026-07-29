@@ -16,6 +16,7 @@ Intended to be called before tagging a release.
 from __future__ import annotations
 
 import argparse
+import ast
 import json
 import os
 import subprocess
@@ -36,13 +37,24 @@ PYTEST_CMD = [
 
 
 def extract_version() -> str:
-    """Read __version__ from version.py."""
-    ns: dict = {}
-    exec(VERSION_FILE.read_text(encoding="utf-8"), ns)
-    version = ns["__version__"]
-    if not isinstance(version, str):
-        raise TypeError(f"Expected __version__ to be str, got {type(version)}")
-    return version
+    """Read the literal __version__ assignment without executing the file."""
+    tree = ast.parse(VERSION_FILE.read_text(encoding="utf-8"), filename=str(VERSION_FILE))
+    for node in tree.body:
+        if not isinstance(node, ast.Assign) or len(node.targets) != 1:
+            continue
+        target = node.targets[0]
+        if not isinstance(target, ast.Name) or target.id != "__version__":
+            continue
+        try:
+            version = ast.literal_eval(node.value)
+        except (TypeError, ValueError, SyntaxError) as exc:
+            raise ValueError("__version__ must be a string literal") from exc
+        if not isinstance(version, str):
+            raise TypeError(
+                f"Expected __version__ to be str, got {type(version).__name__}"
+            )
+        return version
+    raise ValueError("version.py does not define __version__")
 
 
 def workflow_tag(version: str) -> str:
@@ -71,10 +83,14 @@ def report_paths(version: str) -> tuple[Path, Path]:
 def report_path_candidates(version: str) -> tuple[list[Path], list[Path]]:
     """Return accepted test/manifest report candidates for --check mode."""
     tags = workflow_tags(version)
-    test_candidates = [REPORTS_DIR /
-                       f"test-results-{tag}.json" for tag in tags]
-    manifest_candidates = [REPORTS_DIR /
-                           f"run-manifest-{tag}.json" for tag in tags]
+    test_candidates = [
+        REPORTS_DIR / f"test-results-{tag}.json"
+        for tag in tags
+    ]
+    manifest_candidates = [
+        REPORTS_DIR / f"run-manifest-{tag}.json"
+        for tag in tags
+    ]
     return test_candidates, manifest_candidates
 
 

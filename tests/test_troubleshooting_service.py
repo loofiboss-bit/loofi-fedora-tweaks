@@ -3,10 +3,14 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 
 from core.troubleshooting.adapters import adapt_structured_source
-from core.troubleshooting.lifecycle import CancellationSignal
-from core.troubleshooting.service import TroubleshootingService
+from core.troubleshooting.lifecycle import CancellationSignal, new_session
+from core.troubleshooting.service import (
+    DefaultEvidenceCollector,
+    TroubleshootingService,
+)
 from core.troubleshooting.storage import SessionStoreSnapshot
 
 
@@ -69,6 +73,34 @@ class _Collector:
 
 
 class TestTroubleshootingService(unittest.TestCase):
+    @patch(
+        "core.troubleshooting.service.shutil.which",
+        return_value="/usr/bin/firefox",
+    )
+    def test_application_inventory_uses_a_command_free_fact_contract(
+        self,
+        _which,
+    ):
+        session = new_session(
+            "application_failed",
+            "traditional",
+            started_at=1.0,
+            parameters={"application_id": "firefox"},
+        )
+
+        evidence = DefaultEvidenceCollector(clock=lambda: 1.1).collect(
+            "application-inventory",
+            session,
+            started_at=session.started_at,
+            cancellation=CancellationSignal(),
+        )
+        facts = evidence.result.to_dict()["facts"]
+
+        self.assertEqual(evidence.result.state, "empty")
+        self.assertEqual(facts["application_id"], "firefox")
+        self.assertTrue(facts["application_available"])
+        self.assertNotIn("command_available", facts)
+
     def test_construction_does_not_collect_read_or_write(self):
         collector = _Collector()
         store = _Store()
