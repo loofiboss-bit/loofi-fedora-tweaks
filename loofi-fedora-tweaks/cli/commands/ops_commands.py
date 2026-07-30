@@ -4,26 +4,9 @@ from typing import Callable
 
 
 def handle_cleanup(args, run_operation: Callable, cleanup_ops_cls) -> int:
-    """Handle cleanup subcommand."""
-    if args.action == "all":
-        actions = ["dnf", "journal", "trim"]
-    else:
-        actions = [args.action]
-
-    success = True
-    for action in actions:
-        if action == "dnf":
-            success &= run_operation(cleanup_ops_cls.clean_dnf_cache())
-        elif action == "journal":
-            success &= run_operation(cleanup_ops_cls.vacuum_journal(args.days))
-        elif action == "trim":
-            success &= run_operation(cleanup_ops_cls.trim_ssd())
-        elif action == "autoremove":
-            success &= run_operation(cleanup_ops_cls.autoremove())
-        elif action == "rpmdb":
-            success &= run_operation(cleanup_ops_cls.rebuild_rpmdb())
-
-    return 0 if success else 1
+    """Retain the legacy import surface without direct execution authority."""
+    del args, run_operation, cleanup_ops_cls
+    return 1
 
 
 def handle_tweak(
@@ -36,14 +19,6 @@ def handle_tweak(
     system_manager_cls,
 ) -> int:
     """Handle tweak subcommand."""
-    if args.action == "power":
-        return 0 if run_operation(tweak_ops_cls.set_power_profile(args.profile)) else 1
-    if args.action == "audio":
-        return 0 if run_operation(tweak_ops_cls.restart_audio()) else 1
-    if args.action == "battery":
-        result = tweak_ops_cls.set_battery_limit(args.limit)
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
     if args.action == "status":
         profile = tweak_ops_cls.get_power_profile()
         if json_output:
@@ -57,34 +32,24 @@ def handle_tweak(
             print_fn(f"⚡ Power Profile: {profile}")
             print_fn(f"💻 System: {'Atomic' if system_manager_cls.is_atomic() else 'Traditional'} Fedora")
         return 0
+    if args.action in {"power", "audio", "battery"}:
+        print_fn("Use the command's Action Center plan path.")
+        return 1
     return 1
 
 
 def handle_advanced(args, print_fn: Callable[[str], None], advanced_ops_cls) -> int:
-    """Handle advanced subcommand."""
-    if args.action == "dnf-tweaks":
-        result = advanced_ops_cls.apply_dnf_tweaks()
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    if args.action == "bbr":
-        result = advanced_ops_cls.enable_tcp_bbr()
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    if args.action == "gamemode":
-        result = advanced_ops_cls.install_gamemode()
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
-    if args.action == "swappiness":
-        result = advanced_ops_cls.set_swappiness(args.value)
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
+    """Retain the legacy import surface without direct execution authority."""
+    del advanced_ops_cls
+    if args.action in {"dnf-tweaks", "bbr", "gamemode", "swappiness"}:
+        print_fn("Use the command's Action Center plan path.")
+        return 1
     return 1
 
 
 def handle_network(args, print_fn: Callable[[str], None], network_ops_cls) -> int:
-    """Handle network subcommand."""
+    """Retain the legacy import surface without direct execution authority."""
+    del network_ops_cls
     if args.action == "dns":
-        result = network_ops_cls.set_dns(args.provider)
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
+        print_fn("Use the command's Action Center plan path.")
     return 1

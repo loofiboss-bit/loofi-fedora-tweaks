@@ -8,7 +8,6 @@ and cmd_tweak edge cases.
 """
 
 import json
-import subprocess
 import unittest
 from io import StringIO
 from unittest.mock import MagicMock, patch
@@ -49,7 +48,7 @@ def _make_args(**kwargs):
 # 1. run_operation — dry-run mode  (lines 78-94)
 # =====================================================================
 class TestRunOperationDryRun(unittest.TestCase):
-    """Dry-run mode shows commands without executing them."""
+    """The retired generic runner stays fail-closed in every output mode."""
 
     def setUp(self):
         self._orig_dry = cli_mod._dry_run
@@ -59,58 +58,43 @@ class TestRunOperationDryRun(unittest.TestCase):
         cli_mod._dry_run = self._orig_dry
         cli_mod._json_output = self._orig_json
 
-    @patch("cli.main.subprocess.run")
-    def test_dry_run_text_mode(self, mock_run):
-        """Dry-run prints command and description, does NOT call subprocess."""
+    @patch("cli.main._print")
+    def test_dry_run_text_mode(self, mock_print):
+        """Dry-run cannot revive generic command execution."""
         cli_mod._dry_run = True
         cli_mod._json_output = False
-        with patch("cli.main.AuditLogger", create=True) as mock_audit_cls:
-            mock_audit = MagicMock()
-            mock_audit_cls.return_value = mock_audit
-            with patch("cli.main._print"):
-                result = run_operation(("pkexec", ["dnf", "clean", "all"], "Cleaning"))
-        self.assertTrue(result)
-        mock_run.assert_not_called()
+        result = run_operation(("pkexec", ["dnf", "clean", "all"], "Cleaning"))
+        self.assertFalse(result)
+        self.assertIn("Action Center", mock_print.call_args[0][0])
 
-    @patch("cli.main.subprocess.run")
-    def test_dry_run_json_mode(self, mock_run):
-        """Dry-run with JSON outputs dry_run JSON payload."""
+    def test_dry_run_json_mode(self):
+        """JSON output exposes the stable fail-closed error."""
         cli_mod._dry_run = True
         cli_mod._json_output = True
         with patch("builtins.print") as mock_print:
             result = run_operation(("dnf", ["install", "vim"], "Installing vim"))
-        self.assertTrue(result)
-        mock_run.assert_not_called()
-        # Verify JSON was printed
+        self.assertFalse(result)
         printed = mock_print.call_args[0][0]
         data = json.loads(printed)
-        self.assertTrue(data["dry_run"])
-        self.assertEqual(data["command"], ["dnf", "install", "vim"])
+        self.assertEqual(data["schema_version"], 4)
+        self.assertEqual(data["error"], "closed_action_definition_required")
+        self.assertFalse(data["auto_apply"])
 
-    @patch("cli.main.subprocess.run")
-    def test_dry_run_audit_logger_exception(self, mock_run):
-        """Dry-run handles AuditLogger import/call failure gracefully."""
+    @patch("cli.main._print")
+    def test_dry_run_does_not_touch_audit_or_execution(self, mock_print):
+        """The retired runner needs no audit or execution dependency."""
         cli_mod._dry_run = True
         cli_mod._json_output = False
-        with patch.dict(
-            "sys.modules",
-            {
-                "services.security.audit": MagicMock(
-                    AuditLogger=MagicMock(side_effect=RuntimeError("no audit"))
-                )
-            },
-        ):
-            with patch("cli.main._print"):
-                result = run_operation(("echo", ["hello"], "test"))
-        self.assertTrue(result)
-        mock_run.assert_not_called()
+        result = run_operation(("echo", ["hello"], "test"))
+        self.assertFalse(result)
+        mock_print.assert_called_once()
 
 
 # =====================================================================
 # 2. run_operation — timeout and empty stdout  (lines 110, 117-119)
 # =====================================================================
 class TestRunOperationEdgeCases(unittest.TestCase):
-    """Timeout and empty-stdout paths in run_operation."""
+    """Arguments never change the retired runner's fail-closed result."""
 
     def setUp(self):
         self._orig_dry = cli_mod._dry_run
@@ -123,24 +107,15 @@ class TestRunOperationEdgeCases(unittest.TestCase):
         cli_mod._json_output = self._orig_json
 
     @patch("cli.main._print")
-    @patch("cli.main.subprocess.run")
-    def test_timeout_expired(self, mock_run, mock_print):
-        """TimeoutExpired returns False."""
-        mock_run.side_effect = subprocess.TimeoutExpired(cmd="test", timeout=5)
+    def test_timeout_argument_is_inert(self, mock_print):
         result = run_operation(("test", [], "timeout test"), timeout=5)
         self.assertFalse(result)
 
     @patch("cli.main._print")
-    @patch("cli.main.subprocess.run")
-    def test_success_empty_stdout(self, mock_run, mock_print):
-        """Success with empty stdout does not print stdout."""
-        mock_run.return_value = MagicMock(returncode=0, stdout="", stderr="")
+    def test_command_tuple_is_inert(self, mock_print):
         result = run_operation(("echo", [], "empty output"))
-        self.assertTrue(result)
-        # Only "Running..." and "Success" printed, not stdout
-        calls = [c[0][0] for c in mock_print.call_args_list]
-        self.assertTrue(any("Success" in c for c in calls))
-        self.assertFalse(any(c == "" for c in calls))
+        self.assertFalse(result)
+        self.assertIn("Action Center", mock_print.call_args[0][0])
 
 
 # =====================================================================
@@ -807,24 +782,20 @@ class TestCmdFocusMode(unittest.TestCase):
     def tearDown(self):
         cli_mod._json_output = self._orig_json
 
-    @patch("cli.main.FocusMode.disable")
-    @patch("builtins.print")
-    def test_off_json(self, mock_print, mock_disable):
-        """off action JSON mode."""
+    @patch("cli.commands.user_commands.create_public_plans", return_value=0)
+    def test_off_json(self, mock_plans):
+        """off action routes to a closed plan."""
         cli_mod._json_output = True
-        mock_disable.return_value = {"success": True, "message": "Disabled"}
         result = cmd_focus_mode(_make_args(action="off"))
         self.assertEqual(result, 0)
-        data = json.loads(mock_print.call_args[0][0])
-        self.assertTrue(data["success"])
+        mock_plans.assert_called_once()
 
-    @patch("cli.main.FocusMode.disable")
-    @patch("cli.main._print")
-    def test_off_text_failure(self, mock_print, mock_disable):
-        """off action text mode failure."""
-        mock_disable.return_value = {"success": False, "message": "Failed"}
+    @patch("cli.commands.user_commands.create_public_plans", return_value=0)
+    def test_off_text_creates_plan(self, mock_plans):
+        """off action no longer reports a direct mutation result."""
         result = cmd_focus_mode(_make_args(action="off"))
-        self.assertEqual(result, 1)
+        self.assertEqual(result, 0)
+        mock_plans.assert_called_once()
 
     @patch("cli.main.FocusMode.list_profiles", return_value=["default", "work"])
     @patch("cli.main.FocusMode.get_active_profile", return_value="work")
@@ -852,23 +823,16 @@ class TestCmdFocusMode(unittest.TestCase):
         printed = " ".join(c[0][0] for c in mock_print.call_args_list)
         self.assertIn("Inactive", printed)
 
-    @patch("cli.main.FocusMode.enable")
-    @patch("cli.main._print")
-    def test_on_text_with_extras(self, mock_print, mock_enable):
-        """on action text mode with hosts_modified, dnd, processes_killed."""
-        mock_enable.return_value = {
-            "success": True,
-            "message": "Focus enabled",
-            "hosts_modified": True,
-            "dnd_enabled": True,
-            "processes_killed": ["firefox", "slack"],
-        }
+    @patch("cli.commands.user_commands.create_public_plans", return_value=0)
+    def test_on_routes_profile_to_plan(self, mock_plans):
+        """on action forwards only the validated plan parameters."""
         result = cmd_focus_mode(_make_args(action="on", profile="default"))
         self.assertEqual(result, 0)
-        printed = " ".join(c[0][0] for c in mock_print.call_args_list)
-        self.assertIn("Domains blocked", printed)
-        self.assertIn("Do Not Disturb", printed)
-        self.assertIn("firefox", printed)
+        request = mock_plans.call_args.args[0]
+        self.assertEqual(
+            request,
+            [("cli:focus-mode on", {"action": "enable", "profile": "default"})],
+        )
 
     def test_unknown_action(self):
         """Unknown action returns 1."""
@@ -951,16 +915,14 @@ class TestCmdSnapshot(unittest.TestCase):
             result = cmd_snapshot(_make_args(action="list"))
         self.assertEqual(result, 0)
 
-    @patch("cli.main._print")
-    @patch("cli.main.run_operation", return_value=True)
-    def test_delete_with_id(self, mock_run, mock_print):
-        """delete action with snapshot_id."""
-        with patch(
-            "utils.snapshot_manager.SnapshotManager.delete_snapshot",
-            return_value=("cmd", [], "deleting"),
-        ):
-            result = cmd_snapshot(_make_args(action="delete", snapshot_id="42"))
+    @patch("cli.main.create_public_plans", return_value=0)
+    def test_delete_with_id(self, mock_plans):
+        """delete action requires an exact backend and creates a review plan."""
+        result = cmd_snapshot(
+            _make_args(action="delete", snapshot_id="42", backend="snapper")
+        )
         self.assertEqual(result, 0)
+        mock_plans.assert_called_once()
 
     @patch("cli.main._print")
     def test_delete_no_id(self, mock_print):
@@ -1221,37 +1183,37 @@ class TestCmdTuner(unittest.TestCase):
                     result = cmd_tuner(_make_args(action="analyze"))
         self.assertEqual(result, 0)
 
-    @patch("cli.main.run_operation", return_value=True)
-    @patch("cli.main._print")
-    def test_apply_success(self, mock_print, mock_run):
-        """apply action success — both operations called."""
-        rec = MagicMock(governor="schedutil", swappiness=60)
+    @patch("cli.main.create_public_plans", return_value=0)
+    def test_apply_success(self, mock_plans):
+        """apply creates one closed review plan."""
+        rec = MagicMock(
+            governor="schedutil",
+            swappiness=60,
+            io_scheduler="mq-deadline",
+            thp="madvise",
+        )
         with patch("utils.auto_tuner.AutoTuner.recommend", return_value=rec):
-            with patch(
-                "utils.auto_tuner.AutoTuner.apply_recommendation",
-                return_value=("cmd", [], "applying"),
-            ):
-                with patch(
-                    "utils.auto_tuner.AutoTuner.apply_swappiness",
-                    return_value=("sysctl", [], "swappiness"),
-                ):
+            result = cmd_tuner(_make_args(action="apply"))
+        self.assertEqual(result, 0)
+        mock_plans.assert_called_once()
+
+    @patch("cli.main.create_public_plans", return_value=0)
+    def test_apply_never_calls_direct_helpers(self, mock_plans):
+        """apply cannot execute either legacy tuning helper."""
+        rec = MagicMock(
+            governor="schedutil",
+            swappiness=60,
+            io_scheduler="mq-deadline",
+            thp="madvise",
+        )
+        with patch("utils.auto_tuner.AutoTuner.recommend", return_value=rec):
+            with patch("utils.auto_tuner.AutoTuner.apply_recommendation") as direct:
+                with patch("utils.auto_tuner.AutoTuner.apply_swappiness") as swappiness:
                     result = cmd_tuner(_make_args(action="apply"))
         self.assertEqual(result, 0)
-        self.assertEqual(mock_run.call_count, 2)
-
-    @patch("cli.main.run_operation", return_value=False)
-    @patch("cli.main._print")
-    def test_apply_first_fails(self, mock_print, mock_run):
-        """apply action first op fails — swappiness not called."""
-        rec = MagicMock(governor="schedutil", swappiness=60)
-        with patch("utils.auto_tuner.AutoTuner.recommend", return_value=rec):
-            with patch(
-                "utils.auto_tuner.AutoTuner.apply_recommendation",
-                return_value=("cmd", [], "applying"),
-            ):
-                result = cmd_tuner(_make_args(action="apply"))
-        self.assertEqual(result, 1)
-        self.assertEqual(mock_run.call_count, 1)
+        mock_plans.assert_called_once()
+        direct.assert_not_called()
+        swappiness.assert_not_called()
 
     @patch("cli.main._print")
     def test_history_text_with_entries(self, mock_print):

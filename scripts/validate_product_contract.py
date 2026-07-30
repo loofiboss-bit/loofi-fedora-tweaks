@@ -4,6 +4,7 @@
 from __future__ import annotations
 
 import ast
+import argparse
 import sys
 import types
 from pathlib import Path
@@ -17,6 +18,7 @@ import services  # noqa: E402
 
 from core.execution_policy import classify_command, presentation_operation_class  # noqa: E402
 from core.product_catalog import product_catalog, validate_product_catalog  # noqa: E402
+from core.actions.public_operations import validate_public_operation_inventory  # noqa: E402
 
 
 def _action_definitions() -> list[object]:
@@ -96,6 +98,86 @@ MUTATOR_PREFIXES = (
 
 def _python_files() -> list[Path]:
     return sorted(SOURCE.rglob("*.py"))
+
+
+def _cli_operation_ids() -> set[str]:
+    """Derive public CLI leaves from the canonical argparse surface."""
+    from cli.parser import build_parser
+
+    operations: set[str] = set()
+
+    def walk(parser: argparse.ArgumentParser, prefix: tuple[str, ...] = ()) -> None:
+        subparser_actions = [
+            action
+            for action in parser._actions
+            if isinstance(action, argparse._SubParsersAction)
+        ]
+        if subparser_actions:
+            for action in subparser_actions:
+                for name, child in action.choices.items():
+                    walk(child, (*prefix, str(name)))
+            return
+        positional_choice = next(
+            (
+                action
+                for action in parser._actions
+                if not action.option_strings
+                and action.dest in {"action", "command"}
+                and action.choices
+            ),
+            None,
+        )
+        if positional_choice is None:
+            operations.add(f"cli:{' '.join(prefix)}")
+            return
+        for choice in positional_choice.choices:
+            operations.add(f"cli:{' '.join((*prefix, str(choice)))}")
+
+    walk(build_parser())
+    return operations
+
+
+def _api_operation_ids() -> set[str]:
+    """Derive FastAPI route methods and paths without importing optional API deps."""
+    operations: set[str] = {"api:POST /api/token"}
+    for path in sorted((SOURCE / "api" / "routes").glob("*.py")):
+        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
+        prefix = ""
+        for node in ast.walk(tree):
+            if not isinstance(node, ast.Call):
+                continue
+            call_name = ""
+            if isinstance(node.func, ast.Name):
+                call_name = node.func.id
+            elif isinstance(node.func, ast.Attribute):
+                call_name = node.func.attr
+            if call_name == "APIRouter":
+                for keyword in node.keywords:
+                    if (
+                        keyword.arg == "prefix"
+                        and isinstance(keyword.value, ast.Constant)
+                        and isinstance(keyword.value.value, str)
+                    ):
+                        prefix = keyword.value.value
+            if call_name != "add_api_route" or not node.args:
+                continue
+            route = node.args[0]
+            if not isinstance(route, ast.Constant) or not isinstance(route.value, str):
+                continue
+            methods = next(
+                (
+                    keyword.value
+                    for keyword in node.keywords
+                    if keyword.arg == "methods"
+                ),
+                None,
+            )
+            if not isinstance(methods, (ast.List, ast.Tuple)):
+                continue
+            for method in methods.elts:
+                if isinstance(method, ast.Constant) and isinstance(method.value, str):
+                    operations.add(f"api:{method.value.upper()} {prefix}{route.value}")
+    return operations
 
 
 def _imports(tree: ast.AST) -> set[str]:
@@ -265,16 +347,25 @@ def _unguarded_command_runner_calls(path: Path, tree: ast.AST) -> list[str]:
 def validate() -> list[str]:
     errors = validate_product_catalog()
     entries = product_catalog()
+    definitions = _action_definitions()
     if len({entry.route_id for entry in entries}) != 81:
         errors.append(f"stable route count changed: expected 81, got {len(entries)}")
 
-    for definition in _action_definitions():
+    for definition in definitions:
         if definition.operation_class not in {"host", "app_state", "session", "manual_only"}:
             errors.append(f"action {definition.id} has no valid operation class")
         if not definition.supported_variants:
             errors.append(f"action {definition.id} has no Fedora variant policy")
         if not definition.affected_resources:
             errors.append(f"action {definition.id} has no affected-resource declaration")
+
+    operation_ids = _cli_operation_ids() | _api_operation_ids()
+    errors.extend(
+        validate_public_operation_inventory(
+            operation_ids,
+            known_action_ids=(definition.id for definition in definitions),
+        )
+    )
 
     for module in BANNED_MODULES:
         path = SOURCE / Path(*module.split(".")).with_suffix(".py")
@@ -297,8 +388,8 @@ def validate() -> list[str]:
             errors.extend(_unguarded_command_runner_calls(path, tree))
 
     cli_source = (SOURCE / "cli" / "main.py").read_text(encoding="utf-8")
-    if "execution_allowed(" not in cli_source or "action_center_required" not in cli_source:
-        errors.append("CLI execution boundary is missing its fail-closed Action Center gate")
+    if "create_public_plans" not in cli_source or "closed_action_definition_required" not in cli_source:
+        errors.append("CLI execution boundary is missing its closed Action Center plan gate")
     settings_source = (SOURCE / "ui" / "settings_tab.py").read_text(encoding="utf-8")
     if "self.mode_combo" in settings_source:
         errors.append("retired global navigation mode control remains visible")

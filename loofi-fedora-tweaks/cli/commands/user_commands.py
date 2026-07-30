@@ -1,5 +1,7 @@
 """User-oriented CLI handlers extracted from cli.main."""
 
+from cli.action_plans import create_public_plans
+
 
 def handle_preset(args, json_output, output_json, print_fn, json_module, preset_manager_cls):
     """Handle preset subcommand."""
@@ -70,28 +72,25 @@ def handle_focus_mode(args, json_output, output_json, print_fn, focus_mode_cls):
     """Handle focus-mode subcommand."""
     if args.action == "on":
         profile = getattr(args, "profile", "default")
-        result = focus_mode_cls.enable(profile)
-        if json_output:
-            output_json(result)
-        else:
-            icon = "✅" if result["success"] else "❌"
-            print_fn(f"{icon} {result['message']}")
-            if result.get("hosts_modified"):
-                print_fn("   🌐 Domains blocked via /etc/hosts")
-            if result.get("dnd_enabled"):
-                print_fn("   🔕 Do Not Disturb enabled")
-            if result.get("processes_killed"):
-                print_fn(f"   💀 Killed processes: {', '.join(result['processes_killed'])}")
-        return 0 if result["success"] else 1
+        return create_public_plans(
+            [
+                (
+                    "cli:focus-mode on",
+                    {"action": "enable", "profile": profile},
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     if args.action == "off":
-        result = focus_mode_cls.disable()
-        if json_output:
-            output_json(result)
-        else:
-            icon = "✅" if result["success"] else "❌"
-            print_fn(f"{icon} {result['message']}")
-        return 0 if result["success"] else 1
+        return create_public_plans(
+            [("cli:focus-mode off", {"action": "disable"})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     if args.action == "status":
         is_active = focus_mode_cls.is_active()
@@ -146,22 +145,12 @@ def handle_profile(args, json_output, output_json, print_fn, profile_manager_cls
         if not args.name:
             print_fn("❌ Profile name required")
             return 1
-        result = profile_manager_cls.apply_profile(
-            args.name,
-            create_snapshot=not getattr(args, "no_snapshot", False),
+        return create_public_plans(
+            [("cli:profile apply", {"profile": args.name})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
         )
-        if json_output:
-            output_json(
-                {
-                    "success": result.success,
-                    "message": result.message,
-                    "data": result.data,
-                }
-            )
-        else:
-            icon = "✅" if result.success else "❌"
-            print_fn(f"{icon} {result.message}")
-        return 0 if result.success else 1
 
     if args.action == "create":
         if not args.name:

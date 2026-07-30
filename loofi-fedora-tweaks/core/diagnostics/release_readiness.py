@@ -171,7 +171,7 @@ class ReleaseReadiness:
                 if plasma_status == "pass"
                 else f"Plasma {'.'.join(str(x) for x in target.min_plasma)}+ is expected for {target.label}.",
                 advanced_detail=desktop.display_manager_detail,
-                command_preview=["plasmashell", "--version"],
+                command_preview=["rpm", "-q", "--qf", "%{VERSION}\\n", "plasma-workspace"],
             )
         )
 

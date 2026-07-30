@@ -27,7 +27,7 @@ loofi-fedora-tweaks --cli readiness --target 44 --advanced
 loofi-fedora-tweaks --cli readiness actions --target 44
 loofi-fedora-tweaks --cli readiness action-info <action-id> --target 44
 loofi-fedora-tweaks --cli readiness action-preview <action-id> --target 44
-loofi-fedora-tweaks --cli readiness action-run <action-id> --target 44 --confirm
+loofi-fedora-tweaks --cli readiness action-run <action-id> --target 44
 loofi-fedora-tweaks --cli readiness action-verify <action-id> --target 44
 loofi-fedora-tweaks --cli action-center list --target 44
 loofi-fedora-tweaks --cli action-center preview <action-id> --target 44
@@ -75,7 +75,8 @@ Rules:
 - No automatic repair.
 - No fix-all button.
 - `action-preview` never mutates the system.
-- `action-run` fails without `--confirm`.
+- `action-run` is a compatibility handoff that creates an Action Center review
+  plan and never applies it. The old `--confirm` flag is accepted but ignored.
 - Manual-only recommendations cannot be executed.
 - Privileged actions route through existing `pkexec` and ActionExecutor conventions.
 

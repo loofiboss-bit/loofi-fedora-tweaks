@@ -1,12 +1,67 @@
-"""Authenticated, read-only v17 Action Center API routes."""
+"""Authenticated Action Center planning and read-only status routes."""
 
 from __future__ import annotations
 
 from typing import Any, cast
 
+from core.actions import ActionCatalog, ActionCenterOrchestrator
+from core.actions.catalog import validate_parameters
 from core.actions.stores import ActionPlanStore, ActionRunStore
 from fastapi import APIRouter, Depends, HTTPException, Query
+from pydantic import BaseModel, ConfigDict, Field
 from utils.auth import AuthManager
+
+
+class ActionPlanRequest(BaseModel):
+    """Closed catalog request; arbitrary commands are never accepted."""
+
+    model_config = ConfigDict(extra="forbid")
+
+    definition_id: str = Field(min_length=1, max_length=128)
+    parameters: dict[str, Any] = Field(default_factory=dict)
+
+
+def create_action_plan(
+    request: ActionPlanRequest,
+    _auth: str = Depends(AuthManager.verify_bearer_token),
+):
+    """Create a review plan for one exact catalog definition without applying it."""
+    catalog = ActionCatalog()
+    definition = catalog.get(request.definition_id)
+    if definition is None:
+        raise HTTPException(status_code=404, detail="Unknown Action Center definition")
+    parameter_decision = validate_parameters(definition, request.parameters)
+    if not parameter_decision.allowed:
+        raise HTTPException(
+            status_code=422,
+            detail={
+                "reason_code": parameter_decision.reason_code,
+                "message": parameter_decision.explanation,
+            },
+        )
+    try:
+        plan = ActionCenterOrchestrator(catalog=catalog).plan(
+            request.definition_id,
+            request.parameters,
+        )
+    except (TypeError, ValueError) as error:
+        raise HTTPException(status_code=422, detail=str(error)) from error
+    return {
+        "schema_version": 4,
+        "plan": plan.to_dict(),
+        "plan_summary": {
+            "plan_id": plan.plan_id,
+            "state": plan.state,
+            "definition_id": plan.action_id,
+            "review_required": True,
+            "auto_apply": False,
+            "next_action": (
+                f"loofi-fedora-tweaks --cli action-center apply {plan.plan_id} --confirm"
+                if plan.state != "blocked"
+                else plan.recovery_guidance
+            ),
+        },
+    }
 
 
 def _run_status(run: Any) -> dict[str, Any]:
@@ -80,6 +135,7 @@ def get_action_run(
 def get_action_center_router() -> APIRouter:
     r = APIRouter(prefix="/api/action-center", tags=["action-center"])
     r.add_api_route("/plans", list_action_plans, methods=["GET"])
+    r.add_api_route("/plans", create_action_plan, methods=["POST"], status_code=201)
     r.add_api_route("/plans/{plan_id}", get_action_plan, methods=["GET"])
     r.add_api_route("/runs", list_action_runs, methods=["GET"])
     r.add_api_route("/runs/{run_id}", get_action_run, methods=["GET"])

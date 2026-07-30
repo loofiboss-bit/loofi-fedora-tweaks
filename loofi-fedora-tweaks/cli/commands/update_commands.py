@@ -4,6 +4,8 @@ Update command handlers: self-update, updates.
 
 import os
 
+from cli.action_plans import create_public_plans
+
 
 def handle_self_update(args, json_output, output_json, print_fn, system_manager_cls, update_checker_cls, version):
     """Check and run self-update flow."""
@@ -122,14 +124,20 @@ def handle_updates(args, json_output, output_json, print_fn, run_operation, upda
 
     elif args.action == "schedule":
         time_str = getattr(args, "time", "02:00") or "02:00"
-        scheduled = update_manager_cls.schedule_update(time_str)
-        cmds = update_manager_cls.get_schedule_commands(scheduled)
-        for binary, cmd_args, desc in cmds:
-            run_operation((binary, cmd_args, desc))
-        return 0
+        return create_public_plans(
+            [("cli:updates schedule", {"when": time_str})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "rollback":
-        return 0 if run_operation(update_manager_cls.rollback_last()) else 1
+        return create_public_plans(
+            [("cli:updates rollback", {})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "history":
         history = update_manager_cls.get_update_history()

@@ -150,6 +150,11 @@ def _print_action_result(result) -> int:
         status = "OK" if result.success else "FAILED"
         _print(f"[{status}] {result.message}")
         candidate = (result.data or {}).get("candidate") if result.data else None
+        plan_id = (result.data or {}).get("plan_id") if result.data else None
+        definition_id = (result.data or {}).get("definition_id") if result.data else None
+        if plan_id:
+            _print(f"Plan {plan_id}: {definition_id} [review required]")
+            _print(f"Next: {(result.data or {}).get('next_action')}")
         if candidate:
             command_preview = candidate.get("command_preview") or []
             if command_preview:
@@ -275,6 +280,7 @@ def _cmd_readiness_action(args) -> int:
 def cmd_action_center(args) -> int:
     """Plan, apply, verify, and inspect Action Center maintenance."""
     from core.actions import (
+        ActionCatalog,
         ActionCenterBusyError,
         ActionCenterError,
         ActionCenterOrchestrator,
@@ -296,9 +302,20 @@ def cmd_action_center(args) -> int:
 
     if action in {"plan", "show", "apply", "verify"}:
         identifier = str(getattr(args, "action_id", "") or "")
-        orchestrator = ActionCenterOrchestrator()
+        catalog = ActionCatalog()
+        orchestrator = ActionCenterOrchestrator(catalog=catalog)
         try:
             if action == "plan":
+                definition = catalog.get(identifier)
+                if definition is None:
+                    payload = {
+                        "schema_version": 4,
+                        "error": "unknown_action_definition",
+                        "definition_id": identifier,
+                        "auto_apply": False,
+                    }
+                    emit(payload, [f"Unknown Action Center definition: {identifier}"])
+                    return 1
                 parameters = {}
                 service_unit = getattr(args, "service", None)
                 if service_unit:
@@ -314,6 +331,20 @@ def cmd_action_center(args) -> int:
                     expected_type = int if argument == "days" else str
                     if isinstance(value, expected_type) and not isinstance(value, bool) and value != "":
                         parameters[parameter] = value
+                from core.actions.catalog import validate_parameters
+
+                parameter_decision = validate_parameters(definition, parameters)
+                if not parameter_decision.allowed:
+                    payload = {
+                        "schema_version": 4,
+                        "error": "invalid_action_parameters",
+                        "definition_id": identifier,
+                        "reason_code": parameter_decision.reason_code,
+                        "message": parameter_decision.explanation,
+                        "auto_apply": False,
+                    }
+                    emit(payload, [f"Invalid parameters for {identifier}: {parameter_decision.explanation}"])
+                    return 1
                 plan = orchestrator.plan(identifier, parameters, target=target)
                 payload = {
                     "schema_version": 3,

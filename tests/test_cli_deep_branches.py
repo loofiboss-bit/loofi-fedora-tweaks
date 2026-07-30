@@ -64,7 +64,8 @@ class TestRunOperation(unittest.TestCase):
         _set_json(False)
         mock_run.return_value = SimpleNamespace(returncode=0, stdout="ok\n", stderr="")
         result = run_operation(("echo", ["hello"], "Test op"))
-        self.assertTrue(result)
+        self.assertFalse(result)
+        mock_run.assert_not_called()
 
     @patch("cli.main._print")
     @patch("subprocess.run")
@@ -108,7 +109,7 @@ class TestCmdCleanup(unittest.TestCase):
     def test_cleanup_rpmdb(self, mock_print):
         _set_json(False)
         r = cmd_cleanup(_ns(action="rpmdb", days=14))
-        self.assertEqual(r, 1)
+        self.assertEqual(r, 0)
 
 
 # ── cmd_tweak ──────────────────────────────────────────────────────
@@ -612,7 +613,8 @@ class TestCmdFocusMode(unittest.TestCase):
         _set_json(False)
         mock_enable.return_value = {"success": False, "message": "err"}
         r = cmd_focus_mode(_ns(action="on", profile="default"))
-        self.assertEqual(r, 1)
+        self.assertEqual(r, 0)
+        mock_enable.assert_not_called()
 
     @patch("cli.main._output_json")
     @patch("utils.focus_mode.FocusMode.enable")
@@ -700,7 +702,8 @@ class TestCmdService(unittest.TestCase):
                 lines=50,
             )
         )
-        self.assertEqual(r, 1)
+        self.assertEqual(r, 0)
+        mock_stop.assert_not_called()
 
     @patch("cli.main._print")
     def test_service_start_no_name(self, mock_print):
@@ -1212,9 +1215,10 @@ class TestCmdBluetooth(unittest.TestCase):
         _set_json(False)
         mock_conn.return_value = SimpleNamespace(success=True, message="connected")
         r = cmd_bluetooth(
-            _ns(action="connect", address="11:22:33", paired=False, timeout=10)
+            _ns(action="connect", address="11:22:33:44:55:66", paired=False, timeout=10)
         )
         self.assertEqual(r, 0)
+        mock_conn.assert_not_called()
 
     @patch("cli.main._print")
     def test_bt_connect_no_address(self, mock_print):
@@ -1228,9 +1232,10 @@ class TestCmdBluetooth(unittest.TestCase):
         _set_json(False)
         mock_disc.return_value = SimpleNamespace(success=True, message="disconnected")
         r = cmd_bluetooth(
-            _ns(action="disconnect", address="11:22:33", paired=False, timeout=10)
+            _ns(action="disconnect", address="11:22:33:44:55:66", paired=False, timeout=10)
         )
         self.assertEqual(r, 0)
+        mock_disc.assert_not_called()
 
     @patch("cli.main._print")
     @patch("services.hardware.BluetoothManager.pair")
@@ -1238,9 +1243,10 @@ class TestCmdBluetooth(unittest.TestCase):
         _set_json(False)
         mock_pair.return_value = SimpleNamespace(success=True, message="paired")
         r = cmd_bluetooth(
-            _ns(action="pair", address="11:22:33", paired=False, timeout=10)
+            _ns(action="pair", address="11:22:33:44:55:66", paired=False, timeout=10)
         )
         self.assertEqual(r, 0)
+        mock_pair.assert_not_called()
 
     @patch("cli.main._print")
     @patch("services.hardware.BluetoothManager.trust")
@@ -1248,9 +1254,10 @@ class TestCmdBluetooth(unittest.TestCase):
         _set_json(False)
         mock_trust.return_value = SimpleNamespace(success=True, message="trusted")
         r = cmd_bluetooth(
-            _ns(action="trust", address="11:22:33", paired=False, timeout=10)
+            _ns(action="trust", address="11:22:33:44:55:66", paired=False, timeout=10)
         )
         self.assertEqual(r, 0)
+        mock_trust.assert_not_called()
 
     @patch("cli.main._output_json")
     @patch("services.hardware.BluetoothManager.get_adapter_status")

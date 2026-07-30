@@ -50,7 +50,7 @@ ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
 
 Action Center is the only GUI that owns the verified maintenance
 plan/run/verify lifecycle. Home and global search may navigate or preselect,
-but cannot execute. The catalog contains 63 classified first-party definitions;
+but cannot execute. The catalog contains 74 classified first-party definitions;
 unsupported host operations are explicit `manual_only` plans.
 
 Operational invariants:
@@ -195,8 +195,10 @@ loofi-fedora-tweaks --web
 ```
 
 The daemon and API retain their package names and exact base-package EVR
-dependency. The API accepts loopback bindings only and is read-only apart from
-rate-limited token issuance. Manage the local API credential with `api-key
+dependency. The API accepts loopback bindings only. Apart from rate-limited
+token issuance, its only write is `POST /api/action-center/plans`, which accepts
+one known definition and closed parameter object and never applies the returned
+plan. Manage the local API credential with `api-key
 status`, `api-key rotate`, and `api-key revoke`. The daemon may create plans but
 cannot confirm or execute host changes; GUI mode selection does not broaden
 either surface.
@@ -207,7 +209,7 @@ are equivalent retrieval-only troubleshooting endpoints at
 `GET /api/troubleshooting/latest` and
 `GET /api/troubleshooting/sessions/SESSION_ID`. They read retained sessions
 only. There is no API endpoint to start a check or troubleshooting session,
-create or confirm a plan, execute maintenance, or claim finding resolution.
+confirm or apply a plan, execute maintenance, or claim finding resolution.
 Use `loofi --json troubleshoot latest` and
 `loofi --json troubleshoot compare SESSION_ID FOLLOWUP_ID` for the versioned
 CLI payload.

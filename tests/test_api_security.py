@@ -12,7 +12,7 @@ class TestApiSecurity(unittest.TestCase):
         with self.assertRaises(ValueError):
             APIServer(host="0.0.0.0")
 
-    def test_only_token_uses_a_non_read_method(self):
+    def test_only_closed_planning_and_token_use_non_read_methods(self):
         non_read = []
         for route in APIServer().app.routes:
             path = getattr(route, "path", "")
@@ -23,7 +23,13 @@ class TestApiSecurity(unittest.TestCase):
             if methods:
                 non_read.append((path, methods))
 
-        self.assertEqual(non_read, [("/api/token", {"POST"})])
+        self.assertEqual(
+            non_read,
+            [
+                ("/api/action-center/plans", {"POST"}),
+                ("/api/token", {"POST"}),
+            ],
+        )
 
     def test_action_and_system_check_mutation_routes_are_absent(self):
         paths = {

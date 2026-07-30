@@ -40,8 +40,9 @@ and documentation readback.
 
 Compass will reuse the existing `diagnostics` route, System Check, Trusted
 Change Journal, observability, Action Center, and support-export boundaries. It
-does not add a route, top-level destination, database, execution authority,
-mutating API, background probe, or automatic repair. Phase 1 adds immutable
+does not add a route, top-level destination, database, API execution authority,
+background probe, or automatic repair. The loopback API may create a plan from
+one closed catalog definition, but cannot apply it. Phase 1 adds immutable
 contracts, the closed six-profile catalog, bounded lifecycle semantics, and an
 explicit future-safe JSON store. Phase 2 adds source-owned evidence adaptation,
 explicit empty/partial/stale states, conservative related-change matching, and
@@ -61,7 +62,7 @@ All entry modes start in `loofi-fedora-tweaks/main.py`.
 | GUI | default | `ui.main_window.MainWindow` and lazy PyQt widgets |
 | CLI | `--cli` | `cli.main`; parsing and service/core calls only |
 | Daemon | `--daemon` | `daemon.runtime`; D-Bus host and compatibility fallback |
-| Web API | `--web` | Authenticated read-only HTTP inspection API |
+| Web API | `--web` | Authenticated inspection and closed Action Center plan creation |
 
 The CLI never imports UI. API and daemon subpackages retain separate runtime
 dependencies and require the exact base RPM EVR.
@@ -87,7 +88,7 @@ loofi-fedora-tweaks/
 │   └── design/             # Semantic palettes, stable geometry, QSS rendering
 ├── cli/                    # CLI argument parsing and service calls
 ├── daemon/                 # D-Bus runtime
-└── api/                    # Read-only HTTP routes
+└── api/                    # Read-only HTTP routes plus closed Action Center planning
 ```
 
 | Layer | Allowed | Forbidden |
@@ -249,7 +250,14 @@ the v19 schema-v4 optional finding context.
 - One cross-process mutation lease is allowed. Interrupted runs are inspectable
   and never auto-resume.
 - Home, search, API, plugins, and AI content cannot execute or expand the
-  catalog. The authenticated API remains read-only.
+  catalog. The authenticated API can create a plan for one exact catalog
+  definition, but cannot confirm, apply, verify, retry, or resume it.
+- `core/actions/public_operations.py` classifies every parser- and route-derived
+  public operation. Public handlers have zero direct host-mutation authority;
+  only `action-center apply` may apply an existing digest-bound plan.
+- Legacy mutating CLI spellings either create a validated plan and return its
+  ID or return explicit `manual_only` guidance. They never call the retired
+  generic `run_operation()` execution path.
 
 Action plans and runs use schema v4. Writable v1-v3 state is migrated with
 atomic replace, last-known-good backup, and readback. Unknown future schemas
@@ -279,10 +287,14 @@ status records, and one comparison. It recursively strips or redacts paths,
 hostnames, emails, secrets, network identifiers, verifier messages, commands,
 and raw process output. The authenticated loopback API exposes saved System
 Check and troubleshooting retrieval only; no System Check or troubleshooting
-confirm, execute, plan, or collection route exists.
-The HTTP route table permits mutation only for token issuance; system,
-observability, profile, Action Center, and export surfaces are authenticated
-GET inspection endpoints.
+confirm, execute, plan, or collection route exists. `POST
+/api/action-center/plans` accepts only an exact catalog definition ID and its
+closed parameters, rejects unknown definitions and extra command fields, and
+returns a review plan without applying it.
+The HTTP route table permits state changes only for rate-limited token issuance
+and closed plan persistence. System, observability, profile, troubleshooting,
+run, and export surfaces remain authenticated GET inspection endpoints; no API
+route can mutate the host.
 
 ## State and observability
 

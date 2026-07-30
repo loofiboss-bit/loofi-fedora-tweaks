@@ -32,8 +32,9 @@ bounded troubleshooting journey without adding repair or execution authority.
 - Related changes remain conservatively labelled **Possibly related**.
 - Follow-up results keep Action Center verification separate from
   troubleshooting resolution.
-- CLI collection is explicit; authenticated API endpoints are retrieval-only;
-  Support Bundle v13 remains bounded and command-free.
+- CLI collection is explicit; the authenticated API is retrieval-only except
+  for closed Action Center plan creation; Support Bundle v13 remains bounded
+  and command-free.
 
 Full details: [v23.0.2 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.2.md),
 [v23.0.1 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.1.md), and
@@ -104,12 +105,14 @@ PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 | GUI | `loofi-fedora-tweaks` | Desktop control center |
 | CLI | `loofi-fedora-tweaks --cli <command>` | Scriptable commands and stable JSON envelopes |
 | Daemon | `loofi-fedora-tweaks --daemon` | Optional D-Bus host with preserved compatibility methods |
-| Web API | `loofi-fedora-tweaks --web` | Authenticated read-only status and inspection API |
+| Web API | `loofi-fedora-tweaks --web` | Authenticated status plus closed Action Center plan creation |
 
 The API accepts loopback bindings only and defaults to `127.0.0.1:8000`.
 `LOOFI_API_HOST` may select another loopback address; non-local values stop
 startup. `LOOFI_API_PORT` changes the port and `LOOFI_CORS_ORIGINS` is limited
-to loopback origins.
+to loopback origins. `POST /api/action-center/plans` accepts one known
+definition and closed parameter object, creates a review plan, and never
+applies it. There is no API apply endpoint.
 
 ## CLI examples
 
@@ -142,8 +145,12 @@ The global `--json` option appears before the CLI command.
 
 ## Safety and compatibility
 
-- Action Center exposes 63 classified first-party definitions. Unsupported host
+- Action Center exposes 74 classified first-party definitions. Unsupported host
   operations are visible as non-executable `manual_only` plans.
+- The machine-readable public-operation registry classifies all CLI and API
+  leaves. Legacy host-changing commands return a plan ID or manual guidance;
+  only a separate `action-center apply PLAN_ID --confirm` request can mutate
+  the host.
 - System Check findings cannot execute commands. Action handoff resolves only
   fresh, untampered evidence against the closed Action Center catalog.
 - Plans expire and are re-preflighted. Exit code zero is not success until the

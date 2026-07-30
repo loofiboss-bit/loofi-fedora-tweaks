@@ -16,6 +16,7 @@ from core.actions.contracts import (
 )
 from core.executor.action_result import ActionResult
 from core.local_profiles import validate_local_profile
+from core.actions.public_boundary_definitions import public_boundary_definitions
 from core.actions.continuity_recovery import (
     _preflight_dnf5_history_undo,
     _preflight_fedora_update,
@@ -226,13 +227,6 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
         ("set-battery-limit-100", "Set battery charge limit to 100%", "Persistent battery sysfs and service changes remain guided manual work.", ("battery", "systemd-unit")),
         ("restart-audio-session", "Restart audio session", "Restarting user audio services remains an explicit session operation.", ("user-services", "audio")),
         ("apply-grub-config", "Apply boot-loader configuration", "Boot-loader regeneration remains guided manual work in v18.", ("bootloader", "boot-state")),
-        ("apply-performance-tuning", "Apply performance tuning", "Multi-resource kernel tuning remains guided manual work in v18.", ("kernel-tunables", "power-profile")),
-        ("restore-recovery-point", "Restore recovery point", "Recovery-point restore remains guided manual work in v18.", ("recovery-points", "filesystem")),
-        ("delete-recovery-point", "Delete recovery point", "Recovery-point deletion is destructive and remains guided manual work in v18.", ("recovery-points",)),
-        ("enable-desktop-extension", "Enable desktop extension", "Desktop extension state changes remain guided manual work in v18.", ("desktop-extensions",)),
-        ("disable-desktop-extension", "Disable desktop extension", "Desktop extension state changes remain guided manual work in v18.", ("desktop-extensions",)),
-        ("install-desktop-extension", "Install desktop extension", "Desktop extension installation remains guided manual work in v18.", ("desktop-extensions",)),
-        ("remove-desktop-extension", "Remove desktop extension", "Desktop extension removal remains guided manual work in v18.", ("desktop-extensions",)),
         ("start-usbguard-service", "Start USBGuard service", "USBGuard service activation remains guided manual work in v18.", ("usbguard", "system-services")),
         ("enable-firewall-service", "Enable firewall service", "Persistent firewall activation remains guided manual work in v18.", ("firewall", "system-services")),
         ("disable-firewall-service", "Disable firewall service", "Disabling the host firewall remains guided manual work in v18.", ("firewall", "system-services")),
@@ -271,9 +265,11 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
                 parameter_schema={
                     "port": {"type": "integer", "required": True},
                     "protocol": {"type": "string", "required": True},
+                    "zone": {"type": "string", "required": False},
                 },
                 parameter_validator=_validate_firewall_port,
             ),
+            *public_boundary_definitions(),
             _manual_definition(
                 "allow-usb-device",
                 "Allow USB device",
@@ -551,7 +547,11 @@ def _validate_network_dns(parameters: Mapping[str, Any]) -> PolicyDecision:
 
 
 def _validate_service_control(parameters: Mapping[str, Any]) -> PolicyDecision:
-    action = _validate_choice(parameters, "action", {"start", "stop", "restart", "mask", "unmask"})
+    action = _validate_choice(
+        parameters,
+        "action",
+        {"start", "stop", "restart", "enable", "disable", "mask", "unmask"},
+    )
     if not action.allowed:
         return action
     if parameters.get("scope") not in {"system", "user"}:
@@ -586,6 +586,12 @@ def _validate_firewall_port(parameters: Mapping[str, Any]) -> PolicyDecision:
         return _blocked("invalid_port", "Port must be an integer between 1 and 65535.")
     if protocol not in {"tcp", "udp"}:
         return _blocked("invalid_protocol", "Protocol must be tcp or udp.")
+    zone = parameters.get("zone")
+    if zone is not None and (
+        not isinstance(zone, str)
+        or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_-]{0,63}", zone)
+    ):
+        return _blocked("invalid_zone", "Firewall zone contains rejected characters.")
     return _allowed("parameters_valid", "Firewall rule parameters are valid.")
 
 

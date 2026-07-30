@@ -3,7 +3,7 @@
 v18.0.0 "Haven" made Action Center the trust boundary for supported host
 changes across GUI, CLI, daemon, automation, scheduler, and agent entry points.
 Its original release catalog contained 56 first-party definitions. The current
-v22 catalog contains 63 definitions declaring operation class, Fedora variants,
+catalog contains 74 definitions declaring operation class, Fedora variants,
 reboot policy, affected resources, preflight, confirmation, verification, and
 recovery policy. Fedora 44 is the supported target; Fedora 45 remains
 preview-only.
@@ -48,6 +48,27 @@ loofi action-center history
 Use the global `--json` flag before the command for stable machine-readable
 plan, policy, run, and verification envelopes.
 
+Legacy host-changing CLI commands preserve their parse shape where practical,
+but now return a plan ID and review summary instead of executing. A successfully
+created `manual_only` plan also exits successfully; its blocked state and
+recovery guidance explain the required manual follow-up. The compatibility
+`readiness action-run` spelling creates a plan only, and its old `--confirm`
+flag is accepted but ignored.
+
+The authenticated loopback API offers the same plan-only handoff:
+
+```http
+POST /api/action-center/plans
+Content-Type: application/json
+Authorization: Bearer TOKEN
+
+{"definition_id":"dnf-clean-all","parameters":{}}
+```
+
+Unknown definitions, extra command fields, and invalid parameters are rejected.
+The response includes the plan ID, state, definition ID, review requirement,
+and next action. No API endpoint can apply a plan.
+
 ## Executable catalog
 
 | Action | Policy | Verification |
@@ -72,8 +93,9 @@ plugin/AI-provided executable actions.
 Plans expire after 30 minutes and are re-preflighted before execution. Each
 plan contains one action and validated parameters; the reviewed definition
 regenerates the command, so persisted commands are never authoritative. Only one
-Action Center mutation can run across GUI and CLI processes. The read-only API
-can inspect plans and runs. Support Bundle v13 preserves the v11 bounded System
+Action Center mutation can run across GUI and CLI processes. The API can create
+closed plans and inspect plans and runs, but cannot apply them. Support Bundle
+v13 preserves the v11 bounded System
 Check results and v12 Trusted Change Journal evidence, then optionally adds one
 explicitly selected troubleshooting session with bounded comparison and linked
 status metadata. It includes no raw command output, recovery commands, or

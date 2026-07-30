@@ -177,65 +177,47 @@ class ReadinessActionService:
         report: Optional[ReleaseReadinessReport] = None,
         executor: Optional[ActionExecutor] = None,
     ) -> ActionResult:
-        """Run a confirmed executable readiness action."""
+        """Compatibility handoff that creates a plan and never applies it."""
         candidate = cls.get_candidate(action_id, target_key=target_key, report=report)
         if candidate is None:
             return ActionResult.fail(f"Readiness action not found: {action_id}", action_id=action_id)
-        if not confirm:
-            return ActionResult.fail(
-                "Refusing to run readiness action without --confirm.",
-                data={"candidate": candidate.to_dict()},
-                action_id=candidate.id,
-            )
         if candidate.manual_only:
             return ActionResult.fail(
-                "Manual-only readiness actions cannot be executed by Loofi Fedora Tweaks.",
-                data={"candidate": candidate.to_dict()},
-                action_id=candidate.id,
-            )
-        if candidate.risk_level == "high" and not confirm:
-            return ActionResult.fail(
-                "High-risk readiness actions require explicit confirmation.",
+                "Manual-only readiness actions cannot be converted into executable plans.",
                 data={"candidate": candidate.to_dict()},
                 action_id=candidate.id,
             )
         if not candidate.command:
             return ActionResult.fail(
-                "Readiness action has no executable command.",
+                "Readiness action has no closed Action Center definition.",
                 data={"candidate": candidate.to_dict()},
                 action_id=candidate.id,
             )
 
         canonical_id = cls._ACTION_CENTER_ADAPTERS.get(candidate.id)
         if canonical_id:
-            from core.actions import ActionCenterOrchestrator, ActionPlanRejectedError
+            from core.actions import ActionCenterOrchestrator
 
             orchestrator = ActionCenterOrchestrator()
             plan = orchestrator.plan(canonical_id, target=target_key)
-            try:
-                run = orchestrator.apply(plan.plan_id, confirmed=True)
-            except ActionPlanRejectedError as exc:
-                return ActionResult.fail(
-                    exc.decision.explanation,
-                    action_id=candidate.id,
-                    data={
-                        "candidate": candidate.to_dict(),
-                        "plan": plan.to_dict(),
-                        "policy_decision": exc.decision.to_dict(),
-                        "compatibility_adapter": candidate.id,
-                    },
-                )
             return ActionResult(
-                success=run.state == "verifying",
-                message="Execution recorded; separate Action Center verification is required.",
-                exit_code=(run.execution_result or {}).get("exit_code"),
+                success=True,
+                message="Action Center review plan created; no host change was applied.",
                 action_id=candidate.id,
                 data={
                     "candidate": candidate.to_dict(),
                     "plan": plan.to_dict(),
-                    "run": run.to_dict(),
                     "policy_decision": plan.policy_decision.to_dict(),
                     "compatibility_adapter": candidate.id,
+                    "plan_id": plan.plan_id,
+                    "definition_id": plan.action_id,
+                    "state": plan.state,
+                    "review_required": True,
+                    "auto_apply": False,
+                    "next_action": (
+                        f"loofi-fedora-tweaks --cli action-center apply {plan.plan_id} --confirm"
+                    ),
+                    "deprecated_confirm_ignored": bool(confirm),
                 },
             )
 

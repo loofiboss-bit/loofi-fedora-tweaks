@@ -4,6 +4,8 @@ Network/mesh command handlers: mesh, teleport.
 
 import os
 
+from cli.action_plans import manual_guidance
+
 
 def handle_mesh(args, json_output, output_json, print_fn, mesh_discovery_cls):
     """Handle mesh networking subcommand."""
@@ -82,16 +84,15 @@ def handle_teleport(args, json_output, output_json, print_fn, state_teleport_man
         if not args.package_id:
             print_fn("❌ Package ID required for restore")
             return 1
-        pkg_dir = state_teleport_manager_cls.get_package_dir()
-        # Find matching package file
-        for filename in os.listdir(pkg_dir):
-            if args.package_id in filename:
-                filepath = os.path.join(pkg_dir, filename)
-                package = state_teleport_manager_cls.load_package_from_file(filepath)
-                result = state_teleport_manager_cls.apply_teleport(package)
-                print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-                return 0 if result.success else 1
-        print_fn(f"❌ Package '{args.package_id}' not found")
-        return 1
+        return manual_guidance(
+            "cli:teleport restore",
+            (
+                "Teleport restore is manual-only because it can change a workspace "
+                "and launch desktop applications."
+            ),
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1

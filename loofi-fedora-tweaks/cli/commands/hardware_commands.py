@@ -2,6 +2,8 @@
 Hardware command handlers: hardware, vm, vfio, bluetooth, storage, display.
 """
 
+from cli.action_plans import create_public_plans
+
 
 def handle_hardware(json_output, output_json, print_fn, detect_hardware_profile_fn):
     """Show detected hardware profile."""
@@ -61,14 +63,26 @@ def handle_vm(args, json_output, output_json, print_fn, vm_manager_cls):
         return 0
 
     elif args.action == "start":
-        result = vm_manager_cls.start_vm(args.name)
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
+        if not args.name:
+            print_fn("❌ VM name required")
+            return 1
+        return create_public_plans(
+            [("cli:vm start", {"action": "start", "name": args.name})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "stop":
-        result = vm_manager_cls.stop_vm(args.name)
-        print_fn(f"{'✅' if result.success else '❌'} {result.message}")
-        return 0 if result.success else 1
+        if not args.name:
+            print_fn("❌ VM name required")
+            return 1
+        return create_public_plans(
+            [("cli:vm stop", {"action": "stop", "name": args.name})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1
 
@@ -211,27 +225,34 @@ def handle_bluetooth(args, json_output, output_json, print_fn, bluetooth_manager
         return 0
 
     elif args.action in ("power-on", "power-off"):
-        result = bluetooth_manager_cls.power_on() if args.action == "power-on" else bluetooth_manager_cls.power_off()
-        icon = "✅" if result.success else "❌"
-        print_fn(f"{icon} {result.message}")
-        return 0 if result.success else 1
+        return create_public_plans(
+            [
+                (
+                    f"cli:bluetooth {args.action}",
+                    {"action": args.action, "target": "adapter"},
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action in ("connect", "disconnect", "pair", "unpair", "trust"):
         address = getattr(args, "address", None)
         if not address:
             print_fn("❌ Device address required")
             return 1
-        action_map = {
-            "connect": bluetooth_manager_cls.connect,
-            "disconnect": bluetooth_manager_cls.disconnect,
-            "pair": bluetooth_manager_cls.pair,
-            "unpair": bluetooth_manager_cls.unpair,
-            "trust": bluetooth_manager_cls.trust,
-        }
-        result = action_map[args.action](address)
-        icon = "✅" if result.success else "❌"
-        print_fn(f"{icon} {result.message}")
-        return 0 if result.success else 1
+        return create_public_plans(
+            [
+                (
+                    f"cli:bluetooth {args.action}",
+                    {"action": args.action, "target": address},
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1
 
@@ -333,10 +354,12 @@ def handle_storage(args, json_output, output_json, print_fn, storage_manager_cls
         return 0
 
     elif args.action == "trim":
-        result = storage_manager_cls.trim_ssd()
-        icon = "✅" if result.success else "❌"
-        print_fn(f"{icon} {result.message}")
-        return 0 if result.success else 1
+        return create_public_plans(
+            [("cli:storage trim", {})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1
 
@@ -374,9 +397,19 @@ def handle_display(args, json_output, output_json, print_fn, run_operation, wayl
         return 0
 
     elif args.action == "fractional-on":
-        return 0 if run_operation(wayland_display_manager_cls.enable_fractional_scaling()) else 1
+        return create_public_plans(
+            [("cli:display fractional-on", {"enabled": True})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "fractional-off":
-        return 0 if run_operation(wayland_display_manager_cls.disable_fractional_scaling()) else 1
+        return create_public_plans(
+            [("cli:display fractional-off", {"enabled": False})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1

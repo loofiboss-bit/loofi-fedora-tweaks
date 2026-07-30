@@ -1,4 +1,4 @@
-"""Security and read-only contract tests for the Web API."""
+"""Security and closed-planning contract tests for the Web API."""
 
 import unittest
 from unittest.mock import patch
@@ -18,7 +18,7 @@ if _HAS_FASTAPI:
     from utils.auth import AuthManager
 
 
-class TestReadOnlyAPI(unittest.TestCase):
+class TestClosedPlanningAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.server = APIServer()
@@ -35,7 +35,7 @@ class TestReadOnlyAPI(unittest.TestCase):
         response = TestClient(server.app).get("/api/health")
         self.assertIn(response.status_code, {401, 403})
 
-    def test_only_token_is_a_non_read_method(self):
+    def test_only_closed_planning_and_token_are_non_read_methods(self):
         non_read = []
         for route in self.server.app.routes:
             path = getattr(route, "path", "")
@@ -44,7 +44,13 @@ class TestReadOnlyAPI(unittest.TestCase):
             methods = set(getattr(route, "methods", set()) or set()) - {"GET", "HEAD", "OPTIONS"}
             if methods:
                 non_read.append((path, methods))
-        self.assertEqual(non_read, [("/api/token", {"POST"})])
+        self.assertEqual(
+            non_read,
+            [
+                ("/api/action-center/plans", {"POST"}),
+                ("/api/token", {"POST"}),
+            ],
+        )
 
     def test_removed_mutation_routes_are_absent(self):
         paths = {getattr(route, "path", "") for route in self.server.app.routes}

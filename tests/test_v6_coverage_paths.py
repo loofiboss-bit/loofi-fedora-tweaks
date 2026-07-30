@@ -485,10 +485,8 @@ def test_network_mesh_command_handlers_cover_branches():
     assert handle_teleport(SimpleNamespace(action="list"), False, json_payloads.append, printed.append, _Teleport) == 0
     assert handle_teleport(SimpleNamespace(action="list"), True, json_payloads.append, printed.append, _Teleport) == 0
     assert handle_teleport(SimpleNamespace(action="restore", package_id=""), False, json_payloads.append, printed.append, _Teleport) == 1
-    with patch("cli.commands.network_mesh_commands.os.listdir", return_value=["pkg-1.json"]):
-        assert handle_teleport(SimpleNamespace(action="restore", package_id="pkg-1"), False, json_payloads.append, printed.append, _Teleport) == 0
-    with patch("cli.commands.network_mesh_commands.os.listdir", return_value=[]):
-        assert handle_teleport(SimpleNamespace(action="restore", package_id="missing"), False, json_payloads.append, printed.append, _Teleport) == 1
+    assert handle_teleport(SimpleNamespace(action="restore", package_id="pkg-1"), False, json_payloads.append, printed.append, _Teleport) == 0
+    assert handle_teleport(SimpleNamespace(action="restore", package_id="missing"), False, json_payloads.append, printed.append, _Teleport) == 0
     assert handle_teleport(SimpleNamespace(action="unknown"), False, json_payloads.append, printed.append, _Teleport) == 1
 
 
@@ -506,9 +504,9 @@ def test_tuning_command_handlers_cover_branches():
 
     assert handle_snapshot(SimpleNamespace(action="list"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
     assert handle_snapshot(SimpleNamespace(action="list"), True, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
-    assert handle_snapshot(SimpleNamespace(action="create", label="manual"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
-    assert handle_snapshot(SimpleNamespace(action="delete", snapshot_id="1"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
-    assert handle_snapshot(SimpleNamespace(action="delete", snapshot_id=""), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 1
+    assert handle_snapshot(SimpleNamespace(action="create", label="manual", backend="snapper"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
+    assert handle_snapshot(SimpleNamespace(action="delete", snapshot_id="1", backend="snapper"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
+    assert handle_snapshot(SimpleNamespace(action="delete", snapshot_id="", backend="snapper"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 1
     assert handle_snapshot(SimpleNamespace(action="backends"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
     assert handle_snapshot(SimpleNamespace(action="backends"), True, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 0
     assert handle_snapshot(SimpleNamespace(action="unknown"), False, json_payloads.append, printed.append, run_operation, _SnapshotManager) == 1
@@ -518,10 +516,10 @@ def test_tuning_command_handlers_cover_branches():
     assert handle_backup(SimpleNamespace(action="create", description="desc", tool="snapper"), False, json_payloads.append, printed.append, run_operation, _Backup) == 0
     assert handle_backup(SimpleNamespace(action="list", tool=None), False, json_payloads.append, printed.append, run_operation, _Backup) == 0
     assert handle_backup(SimpleNamespace(action="list", tool=None), True, json_payloads.append, printed.append, run_operation, _Backup) == 0
-    assert handle_backup(SimpleNamespace(action="restore", snapshot_id="1", tool=None), False, json_payloads.append, printed.append, run_operation, _Backup) == 0
-    assert handle_backup(SimpleNamespace(action="restore", snapshot_id="", tool=None), False, json_payloads.append, printed.append, run_operation, _Backup) == 1
-    assert handle_backup(SimpleNamespace(action="delete", snapshot_id="1", tool=None), False, json_payloads.append, printed.append, run_operation, _Backup) == 0
-    assert handle_backup(SimpleNamespace(action="delete", snapshot_id="", tool=None), False, json_payloads.append, printed.append, run_operation, _Backup) == 1
+    assert handle_backup(SimpleNamespace(action="restore", snapshot_id="1", tool="snapper"), False, json_payloads.append, printed.append, run_operation, _Backup) == 0
+    assert handle_backup(SimpleNamespace(action="restore", snapshot_id="", tool="snapper"), False, json_payloads.append, printed.append, run_operation, _Backup) == 1
+    assert handle_backup(SimpleNamespace(action="delete", snapshot_id="1", tool="snapper"), False, json_payloads.append, printed.append, run_operation, _Backup) == 0
+    assert handle_backup(SimpleNamespace(action="delete", snapshot_id="", tool="snapper"), False, json_payloads.append, printed.append, run_operation, _Backup) == 1
     assert handle_backup(SimpleNamespace(action="status"), False, json_payloads.append, printed.append, run_operation, _Backup) == 0
     assert handle_backup(SimpleNamespace(action="status"), True, json_payloads.append, printed.append, run_operation, _Backup) == 0
     assert handle_backup(SimpleNamespace(action="unknown"), False, json_payloads.append, printed.append, run_operation, _Backup) == 1
@@ -649,7 +647,7 @@ def test_firewall_command_handler_branches():
     assert handle_firewall(SimpleNamespace(action="open-port", spec="8080"), False, json_payloads.append, printed.append, run_operation, _Firewall) == 0
     assert handle_firewall(SimpleNamespace(action="open-port", spec="8080/udp"), True, json_payloads.append, printed.append, run_operation, _Firewall) == 0
     assert handle_firewall(SimpleNamespace(action="open-port", spec=""), False, json_payloads.append, printed.append, run_operation, _Firewall) == 1
-    assert handle_firewall(SimpleNamespace(action="close-port", spec="8080/tcp"), False, json_payloads.append, printed.append, run_operation, _Firewall) == 1
+    assert handle_firewall(SimpleNamespace(action="close-port", spec="8080/tcp"), False, json_payloads.append, printed.append, run_operation, _Firewall) == 0
     assert handle_firewall(SimpleNamespace(action="close-port", spec=""), False, json_payloads.append, printed.append, run_operation, _Firewall) == 1
     assert handle_firewall(SimpleNamespace(action="status"), False, json_payloads.append, printed.append, run_operation, _FirewallUnavailable) == 1
     assert handle_firewall(SimpleNamespace(action="unknown"), False, json_payloads.append, printed.append, run_operation, _Firewall) == 1

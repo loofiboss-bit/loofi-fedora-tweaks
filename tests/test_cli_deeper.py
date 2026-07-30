@@ -141,7 +141,8 @@ class TestRunOperation(unittest.TestCase):
     def test_success(self, mock_run):
         from cli.main import run_operation
         result = run_operation(("echo", ["hello"], "desc"))
-        self.assertTrue(result)
+        self.assertFalse(result)
+        mock_run.assert_not_called()
 
     @patch("subprocess.run", return_value=MagicMock(returncode=1, stderr="err"))
     def test_failure(self, mock_run):

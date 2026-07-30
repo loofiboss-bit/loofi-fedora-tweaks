@@ -2,6 +2,8 @@
 Tuning/system command handlers: tuner, snapshot, backup, boot.
 """
 
+from cli.action_plans import create_public_plans
+
 
 def handle_tuner(args, json_output, output_json, print_fn, run_operation, auto_tuner_cls):
     """Handle tuner subcommand."""
@@ -37,11 +39,24 @@ def handle_tuner(args, json_output, output_json, print_fn, run_operation, auto_t
 
     elif args.action == "apply":
         rec = auto_tuner_cls.recommend()
-        print_fn(f"🔄 Applying: governor={rec.governor}, swappiness={rec.swappiness}")
-        success = run_operation(auto_tuner_cls.apply_recommendation(rec))
-        if success:
-            run_operation(auto_tuner_cls.apply_swappiness(rec.swappiness))
-        return 0 if success else 1
+        return create_public_plans(
+            [
+                (
+                    "cli:tuner apply",
+                    {
+                        "settings": {
+                            "governor": rec.governor,
+                            "swappiness": rec.swappiness,
+                            "io_scheduler": rec.io_scheduler,
+                            "thp": rec.thp,
+                        }
+                    },
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "history":
         history = auto_tuner_cls.get_tuning_history()
@@ -86,16 +101,41 @@ def handle_snapshot(args, json_output, output_json, print_fn, run_operation, sna
 
     elif args.action == "create":
         label = args.label or "manual-snapshot"
-        print_fn(f"🔄 Creating snapshot: {label}")
-        success = run_operation(snapshot_manager_cls.create_snapshot(label))
-        return 0 if success else 1
+        backend = getattr(args, "backend", None)
+        if backend not in {"timeshift", "snapper"}:
+            print_fn("❌ Snapshot creation requires --backend timeshift|snapper")
+            return 1
+        return create_public_plans(
+            [
+                (
+                    "cli:snapshot create",
+                    {"backend": backend, "description": label},
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "delete":
         if not args.snapshot_id:
             print_fn("❌ Snapshot ID required")
             return 1
-        success = run_operation(snapshot_manager_cls.delete_snapshot(args.snapshot_id))
-        return 0 if success else 1
+        backend = getattr(args, "backend", None)
+        if backend not in {"timeshift", "snapper"}:
+            print_fn("❌ Snapshot deletion requires --backend timeshift|snapper")
+            return 1
+        return create_public_plans(
+            [
+                (
+                    "cli:snapshot delete",
+                    {"backend": backend, "snapshot_id": args.snapshot_id},
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "backends":
         backends = snapshot_manager_cls.detect_backends()
@@ -128,7 +168,15 @@ def handle_backup(args, json_output, output_json, print_fn, run_operation, backu
     elif args.action == "create":
         desc = getattr(args, "description", None) or "CLI backup"
         tool = getattr(args, "tool", None)
-        return 0 if run_operation(backup_wizard_cls.create_snapshot(tool=tool, description=desc)) else 1
+        if tool not in {"timeshift", "snapper"}:
+            print_fn("❌ Backup creation requires --tool timeshift|snapper")
+            return 1
+        return create_public_plans(
+            [("cli:backup create", {"backend": tool, "description": desc})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "list":
         tool = getattr(args, "tool", None)
@@ -158,7 +206,15 @@ def handle_backup(args, json_output, output_json, print_fn, run_operation, backu
             print_fn("❌ Snapshot ID required")
             return 1
         tool = getattr(args, "tool", None)
-        return 0 if run_operation(backup_wizard_cls.restore_snapshot(snap_id, tool=tool)) else 1
+        if tool not in {"timeshift", "snapper"}:
+            print_fn("❌ Restore requires --tool timeshift|snapper")
+            return 1
+        return create_public_plans(
+            [("cli:backup restore", {"backend": tool, "snapshot_id": snap_id})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "delete":
         snap_id = getattr(args, "snapshot_id", None)
@@ -166,7 +222,15 @@ def handle_backup(args, json_output, output_json, print_fn, run_operation, backu
             print_fn("❌ Snapshot ID required")
             return 1
         tool = getattr(args, "tool", None)
-        return 0 if run_operation(backup_wizard_cls.delete_snapshot(snap_id, tool=tool)) else 1
+        if tool not in {"timeshift", "snapper"}:
+            print_fn("❌ Delete requires --tool timeshift|snapper")
+            return 1
+        return create_public_plans(
+            [("cli:backup delete", {"backend": tool, "snapshot_id": snap_id})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "status":
         status = backup_wizard_cls.get_backup_status()
@@ -215,9 +279,19 @@ def handle_boot(args, json_output, output_json, print_fn, run_operation, boot_co
         if seconds is None:
             print_fn("❌ --seconds required")
             return 1
-        return 0 if run_operation(boot_config_manager_cls.set_timeout(seconds)) else 1
+        return create_public_plans(
+            [("cli:boot timeout", {"seconds": seconds})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "apply":
-        return 0 if run_operation(boot_config_manager_cls.apply_grub_changes()) else 1
+        return create_public_plans(
+            [("cli:boot apply", {})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1

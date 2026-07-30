@@ -256,7 +256,8 @@ class TestCLIStorageCommand(unittest.TestCase):
         import cli.main
         cli.main._json_output = False
         result = cmd_storage(args)
-        self.assertEqual(result, 1)
+        self.assertEqual(result, 0)
+        mock_sm.trim_ssd.assert_not_called()
 
 
 class TestCLIArgparse(unittest.TestCase):

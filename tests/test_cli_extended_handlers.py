@@ -36,12 +36,12 @@ class TestCLIExtendedHandlers(unittest.TestCase):
     @patch('cli.main._print')
     @patch('cli.main.ServiceExplorer.start_service')
     def test_service_start_success(self, mock_start, mock_print):
-        """Service start success path returns 0."""
+        """Service start creates a plan and does not call the service mutator."""
         mock_start.return_value = MagicMock(success=True, message="started")
         args = argparse.Namespace(action="start", user=False, filter=None, search=None, name="sshd", lines=50)
         result = cmd_service(args)
         self.assertEqual(result, 0)
-        self.assertTrue(mock_start.called)
+        mock_start.assert_not_called()
 
     @patch('cli.main._print')
     def test_package_search_requires_query(self, mock_print):
@@ -72,12 +72,12 @@ class TestCLIExtendedHandlers(unittest.TestCase):
     @patch('cli.main.FirewallManager.open_port')
     @patch('cli.main.FirewallManager.is_available', return_value=True)
     def test_firewall_open_port_default_proto(self, mock_available, mock_open_port, mock_print):
-        """open-port infers tcp when protocol is omitted."""
+        """open-port creates a plan and never calls the firewall mutator."""
         mock_open_port.return_value = MagicMock(success=True, message="opened")
         args = argparse.Namespace(action="open-port", spec="8080")
         result = cmd_firewall(args)
         self.assertEqual(result, 0)
-        mock_open_port.assert_called_once_with("8080", "tcp")
+        mock_open_port.assert_not_called()
 
     @patch('cli.main._print')
     @patch('cli.main.BluetoothManager.get_adapter_status')
@@ -159,18 +159,21 @@ class TestCLIExtendedHandlers(unittest.TestCase):
         result = cmd_tuner(args)
         self.assertEqual(result, 0)
 
-    @patch('cli.main.run_operation', return_value=True)
-    @patch('utils.auto_tuner.AutoTuner.apply_swappiness', return_value=("pkexec", ["sysctl", "-w", "vm.swappiness=20"], "set"))
-    @patch('utils.auto_tuner.AutoTuner.apply_recommendation', return_value=("pkexec", ["cmd"], "apply"))
+    @patch('cli.main.create_public_plans', return_value=0)
     @patch('utils.auto_tuner.AutoTuner.recommend')
     @patch('cli.main._print')
-    def test_tuner_apply_runs_two_operations_on_success(self, mock_print, mock_recommend, mock_apply_rec, mock_apply_swap, mock_run_op):
-        """tuner apply runs recommendation and swappiness ops when first succeeds."""
-        mock_recommend.return_value = MagicMock(governor="performance", swappiness=10)
+    def test_tuner_apply_creates_plan_without_execution(self, mock_print, mock_recommend, mock_plans):
+        """tuner apply creates one closed plan without executing tuning helpers."""
+        mock_recommend.return_value = MagicMock(
+            governor="performance",
+            swappiness=10,
+            io_scheduler="mq-deadline",
+            thp="madvise",
+        )
         args = argparse.Namespace(action="apply")
         result = cmd_tuner(args)
         self.assertEqual(result, 0)
-        self.assertEqual(mock_run_op.call_count, 2)
+        mock_plans.assert_called_once()
 
     @patch('cli.main._print')
     @patch('utils.auto_tuner.AutoTuner.get_tuning_history', return_value=[])

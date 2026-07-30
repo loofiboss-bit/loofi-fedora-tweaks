@@ -163,7 +163,7 @@ Center `verified` remain separate facts.
 
 **Software & Updates → Action Center** is the only plan/run/verify GUI.
 
-- The catalog contains 63 first-party definitions. Each definition declares its
+- The catalog contains 74 first-party definitions. Each definition declares its
   operation class, Fedora variants, reboot policy, affected resources,
   parameters, preflight, confirmation, verification, and recovery policy.
 - Unsupported host operations produce non-executable `manual_only` plans.
@@ -176,6 +176,8 @@ Center `verified` remain separate facts.
   automatically.
 - Home, global search, deep links, CLI listing, API status, and recommendations
   do not silently execute actions.
+- The loopback API may create a plan from one exact catalog definition, but
+  cannot confirm or apply it.
 - Daemon, scheduler, automation, and agent paths may create plans but cannot
   confirm or execute them.
 
@@ -245,6 +247,11 @@ loofi cleanup journal --days 7
 loofi tuner analyze
 loofi tuner apply
 ```
+
+Host-changing legacy commands now create a review plan or return explicit
+manual guidance. Their human and `--json` output includes the plan ID, state,
+definition ID, review requirement, and next action. They never auto-apply a
+newly created plan.
 
 Services, packages, and logs:
 

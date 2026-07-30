@@ -218,6 +218,13 @@ class TestFedoraVersionReadiness(unittest.TestCase):
 class TestFedora44ReadinessAggregation(unittest.TestCase):
     """Readiness aggregation uses mocked service state only."""
 
+    @patch.object(KDE44DesktopService, "_run", return_value="6.7.3")
+    def test_plasma_version_uses_display_independent_package_metadata(self, mock_run):
+        self.assertEqual(KDE44DesktopService.get_plasma_version(), "6.7.3")
+        mock_run.assert_called_once_with(
+            ["rpm", "-q", "--qf", "%{VERSION}\\n", "plasma-workspace"]
+        )
+
     def test_qmake_output_prefers_qt_version_line(self):
         output = "QMake version 3.1\nUsing Qt version 6.10.1 in /usr/lib64"
         self.assertEqual(KDE44DesktopService._extract_qt_version(output), "6.10.1")
@@ -617,15 +624,28 @@ class TestReadinessActions(unittest.TestCase):
         executor.execute.assert_not_called()
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
-    def test_action_run_fails_without_confirm(self, _mock_pm):
+    @patch("core.actions.ActionCenterOrchestrator")
+    def test_action_run_without_confirm_creates_plan_only(self, orchestrator_cls, _mock_pm):
         executor = MagicMock()
+        policy = MagicMock()
+        policy.to_dict.return_value = {"allowed": True, "reason_code": "preflight_ok"}
+        plan = MagicMock(
+            plan_id="plan-1",
+            action_id="dnf-clean-all",
+            state="ready",
+            policy_decision=policy,
+        )
+        plan.to_dict.return_value = {"plan_id": "plan-1", "state": "ready"}
+        orchestrator_cls.return_value.plan.return_value = plan
         result = ReadinessActionService.run(
             "readiness-repo-cache-clean",
             report=self._repo_report(),
             executor=executor,
         )
-        self.assertFalse(result.success)
-        self.assertIn("--confirm", result.message)
+        self.assertTrue(result.success)
+        self.assertEqual(result.data["plan_id"], "plan-1")
+        self.assertFalse(result.data["auto_apply"])
+        orchestrator_cls.return_value.apply.assert_not_called()
         executor.execute.assert_not_called()
 
     def test_manual_only_action_cannot_execute(self):
@@ -666,16 +686,13 @@ class TestReadinessActions(unittest.TestCase):
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")
     @patch("core.actions.ActionCenterOrchestrator")
-    def test_confirmed_action_routes_through_executor(self, orchestrator_cls, _mock_pm):
+    def test_legacy_confirm_is_ignored_and_plan_is_not_applied(self, orchestrator_cls, _mock_pm):
         executor = MagicMock()
         policy = MagicMock()
         policy.to_dict.return_value = {"allowed": True, "reason_code": "preflight_ok"}
         plan = MagicMock(plan_id="plan-1", policy_decision=policy)
         plan.to_dict.return_value = {"plan_id": "plan-1"}
-        run = MagicMock(state="verifying", execution_result={"exit_code": 0})
-        run.to_dict.return_value = {"run_id": "run-1", "state": "verifying"}
         orchestrator_cls.return_value.plan.return_value = plan
-        orchestrator_cls.return_value.apply.return_value = run
         result = ReadinessActionService.run(
             "readiness-repo-cache-clean",
             report=self._repo_report(),
@@ -684,7 +701,8 @@ class TestReadinessActions(unittest.TestCase):
         )
         self.assertTrue(result.success)
         orchestrator_cls.return_value.plan.assert_called_once_with("dnf-clean-all", target="44")
-        orchestrator_cls.return_value.apply.assert_called_once_with("plan-1", confirmed=True)
+        orchestrator_cls.return_value.apply.assert_not_called()
+        self.assertTrue(result.data["deprecated_confirm_ignored"])
         executor.execute.assert_not_called()
 
     @patch("core.diagnostics.readiness_actions.SystemManager.get_package_manager", return_value="dnf")

@@ -2,6 +2,8 @@
 Service/package command handlers: service, package, extension, flatpak_manage.
 """
 
+from cli.action_plans import create_public_plans, manual_guidance
+
 
 def handle_service(args, json_output, output_json, print_fn, run_operation, service_explorer_cls):
     """Handle service subcommand."""
@@ -76,26 +78,21 @@ def handle_service(args, json_output, output_json, print_fn, run_operation, serv
         scope_arg = getattr(args, "user", False)
         from utils.service_explorer import ServiceScope
         scope = ServiceScope.USER if scope_arg else ServiceScope.SYSTEM
-        method_map = {
-            "start": "start_service",
-            "stop": "stop_service",
-            "restart": "restart_service",
-            "enable": "enable_service",
-            "disable": "disable_service",
-            "mask": "mask_service",
-            "unmask": "unmask_service",
-        }
-        method_name = method_map[args.action]
-        method = getattr(service_explorer_cls, method_name)
-        result = method(args.name, scope=scope)
-        if json_output:
-            output_json({"success": result.success, "message": result.message})
-        else:
-            if result.success:
-                print_fn(f"✅ {result.message}")
-            else:
-                print_fn(f"❌ {result.message}")
-        return 0 if result.success else 1
+        return create_public_plans(
+            [
+                (
+                    f"cli:service {args.action}",
+                    {
+                        "service": args.name,
+                        "action": args.action,
+                        "scope": "user" if scope_arg else "system",
+                    },
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "logs":
         if not hasattr(args, "name") or not args.name:
@@ -175,31 +172,35 @@ def handle_package(args, json_output, output_json, print_fn, run_operation, pack
         if not hasattr(args, "name") or not args.name:
             print_fn("❌ Package name required")
             return 1
-        source = getattr(args, "source", "auto")
-        result = package_explorer_cls.install(args.name, source=source)
-        if json_output:
-            output_json({"success": result.success, "message": result.message})
-        else:
-            if result.success:
-                print_fn(f"✅ {result.message}")
-            else:
-                print_fn(f"❌ {result.message}")
-        return 0 if result.success else 1
+        source = {"dnf": "fedora", "flatpak": "flatpak"}.get(
+            getattr(args, "source", None) or "dnf"
+        )
+        if source is None:
+            print_fn("Install requires --source dnf|flatpak.")
+            return 1
+        return create_public_plans(
+            [("cli:package install", {"source": source, "package_id": args.name})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "remove":
         if not hasattr(args, "name") or not args.name:
             print_fn("❌ Package name required")
             return 1
-        source = getattr(args, "source", "auto")
-        result = package_explorer_cls.remove(args.name, source=source)
-        if json_output:
-            output_json({"success": result.success, "message": result.message})
-        else:
-            if result.success:
-                print_fn(f"✅ {result.message}")
-            else:
-                print_fn(f"❌ {result.message}")
-        return 0 if result.success else 1
+        source = {"dnf": "fedora", "flatpak": "flatpak"}.get(
+            getattr(args, "source", None) or "dnf"
+        )
+        if source is None:
+            print_fn("Remove requires --source dnf|flatpak.")
+            return 1
+        return create_public_plans(
+            [("cli:package remove", {"source": source, "package_id": args.name})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "list":
         source = getattr(args, "source", "all")
@@ -258,31 +259,57 @@ def handle_extension(args, json_output, output_json, print_fn, run_operation, ex
         if not hasattr(args, "uuid") or not args.uuid:
             print_fn("❌ Extension UUID required")
             return 1
-        return 0 if run_operation(extension_manager_cls.enable(args.uuid)) else 1
+        return create_public_plans(
+            [("cli:extension enable", {"uuid": args.uuid})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "disable":
         if not hasattr(args, "uuid") or not args.uuid:
             print_fn("❌ Extension UUID required")
             return 1
-        return 0 if run_operation(extension_manager_cls.disable(args.uuid)) else 1
+        return create_public_plans(
+            [("cli:extension disable", {"uuid": args.uuid})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "install":
         if not hasattr(args, "uuid") or not args.uuid:
             print_fn("❌ Extension UUID required")
             return 1
-        return 0 if run_operation(extension_manager_cls.install(args.uuid)) else 1
+        return create_public_plans(
+            [("cli:extension install", {"uuid": args.uuid})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "remove":
         if not hasattr(args, "uuid") or not args.uuid:
             print_fn("❌ Extension UUID required")
             return 1
-        return 0 if run_operation(extension_manager_cls.remove(args.uuid)) else 1
+        return create_public_plans(
+            [("cli:extension remove", {"uuid": args.uuid})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "prefs":
         if not hasattr(args, "uuid") or not args.uuid:
             print_fn("❌ Extension UUID required")
             return 1
-        return 0 if run_operation(extension_manager_cls.open_preferences(args.uuid)) else 1
+        return manual_guidance(
+            "cli:extension prefs",
+            "Open extension preferences from the desktop extension manager.",
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1
 
@@ -320,17 +347,42 @@ def handle_flatpak_manage(args, json_output, output_json, print_fn, run_operatio
         if not hasattr(args, "app_id") or not args.app_id:
             print_fn("❌ App ID required")
             return 1
-        return 0 if run_operation(flatpak_manager_cls.install_app(args.app_id)) else 1
+        return create_public_plans(
+            [
+                (
+                    "cli:flatpak-manage install",
+                    {"source": "flatpak", "package_id": args.app_id},
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "uninstall":
         if not hasattr(args, "app_id") or not args.app_id:
             print_fn("❌ App ID required")
             return 1
-        return 0 if run_operation(flatpak_manager_cls.uninstall_app(args.app_id)) else 1
+        return create_public_plans(
+            [
+                (
+                    "cli:flatpak-manage uninstall",
+                    {"source": "flatpak", "package_id": args.app_id},
+                )
+            ],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "update":
         app_id = getattr(args, "app_id", None)
-        return 0 if run_operation(flatpak_manager_cls.update_app(app_id)) else 1
+        return create_public_plans(
+            [("cli:flatpak-manage update", {"app_id": app_id})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     elif args.action == "remotes":
         remotes = flatpak_manager_cls.list_remotes()
@@ -392,6 +444,11 @@ def handle_flatpak_manage(args, json_output, output_json, print_fn, run_operatio
         return 0
 
     elif args.action == "cleanup":
-        return 0 if run_operation(flatpak_manager_cls.cleanup_unused()) else 1
+        return create_public_plans(
+            [("cli:flatpak-manage cleanup", {})],
+            json_output=json_output,
+            output_json=output_json,
+            print_fn=print_fn,
+        )
 
     return 1

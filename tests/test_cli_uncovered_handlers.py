@@ -42,7 +42,8 @@ class TestVMHandlers(unittest.TestCase):
     def test_vm_start_failure(self, mock_start, mock_print):
         mock_start.return_value = SimpleNamespace(success=False, message='boom')
         result = cmd_vm(argparse.Namespace(action='start', name='vm1'))
-        self.assertEqual(result, 1)
+        self.assertEqual(result, 0)
+        mock_start.assert_not_called()
 
     @patch('cli.main._print')
     @patch('services.virtualization.vm_manager.VMManager.stop_vm')
@@ -149,11 +150,13 @@ class TestTeleportAndSecurityHandlers(unittest.TestCase):
     @patch('cli.main._print')
     @patch('os.listdir')
     @patch('services.storage.teleport.StateTeleportManager.get_package_dir')
-    def test_teleport_restore_not_found(self, mock_pkg_dir, mock_listdir, mock_print):
+    def test_teleport_restore_returns_manual_guidance(self, mock_pkg_dir, mock_listdir, mock_print):
         mock_pkg_dir.return_value = '/tmp/pkgs'
         mock_listdir.return_value = ['other-package.json']
         result = cmd_teleport(argparse.Namespace(action='restore', package_id='wanted'))
-        self.assertEqual(result, 1)
+        self.assertEqual(result, 0)
+        mock_pkg_dir.assert_not_called()
+        mock_listdir.assert_not_called()
 
     @patch('cli.main._print')
     @patch('services.network.ports.PortAuditor.is_firewalld_running')

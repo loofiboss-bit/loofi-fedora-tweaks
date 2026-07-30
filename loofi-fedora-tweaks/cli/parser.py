@@ -305,12 +305,16 @@ def build_parser() -> argparse.ArgumentParser:
         "--target", choices=FEDORA_RELEASE_POLICY.action_targets, default=FEDORA_RELEASE_POLICY.stable_target, help="Readiness target profile"
     )
 
-    readiness_run_parser = readiness_subparsers.add_parser("action-run", help="Run a confirmed readiness action")
+    readiness_run_parser = readiness_subparsers.add_parser("action-run", help="Create an Action Center review plan")
     readiness_run_parser.add_argument("action_id", help="Readiness action ID")
     readiness_run_parser.add_argument(
         "--target", choices=FEDORA_RELEASE_POLICY.action_targets, default=FEDORA_RELEASE_POLICY.stable_target, help="Readiness target profile"
     )
-    readiness_run_parser.add_argument("--confirm", action="store_true", help="Confirm the selected mutating action")
+    readiness_run_parser.add_argument(
+        "--confirm",
+        action="store_true",
+        help="Deprecated compatibility flag; the new plan is never auto-applied",
+    )
 
     readiness_verify_parser = readiness_subparsers.add_parser("action-verify", help="Verify one readiness action")
     readiness_verify_parser.add_argument("action_id", help="Readiness action ID")

@@ -306,13 +306,12 @@ class TestCmdBackup(unittest.TestCase):
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 0)
 
-    @patch('cli.main._emit_legacy_plans', return_value=0)
-    @patch('cli.main._create_action_center_plan')
-    def test_create(self, mock_plan, mock_emit):
+    @patch('cli.commands.tuning_commands.create_public_plans', return_value=0)
+    def test_create(self, mock_plans):
         args = argparse.Namespace(action="create", description="test", tool="timeshift")
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 0)
-        mock_plan.assert_called_once_with("create-recovery-point", {"backend": "timeshift", "description": "test"})
+        mock_plans.assert_called_once()
 
     @patch('utils.backup_wizard.BackupWizard.list_snapshots')
     def test_list_empty(self, mock_list):
@@ -333,28 +332,28 @@ class TestCmdBackup(unittest.TestCase):
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 0)
 
-    @patch('cli.main.run_operation')
+    @patch('cli.commands.tuning_commands.create_public_plans', return_value=0)
     @patch('utils.backup_wizard.BackupWizard.restore_snapshot')
-    def test_restore(self, mock_restore, mock_run):
-        mock_restore.return_value = ("pkexec", ["timeshift", "--restore"], "Restore")
-        mock_run.return_value = True
-        args = argparse.Namespace(action="restore", snapshot_id="1", tool=None)
+    def test_restore(self, mock_restore, mock_plans):
+        args = argparse.Namespace(action="restore", snapshot_id="1", tool="timeshift")
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 0)
+        mock_restore.assert_not_called()
+        mock_plans.assert_called_once()
 
     def test_restore_no_id(self):
         args = argparse.Namespace(action="restore", snapshot_id=None, tool=None)
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 1)
 
-    @patch('cli.main.run_operation')
+    @patch('cli.commands.tuning_commands.create_public_plans', return_value=0)
     @patch('utils.backup_wizard.BackupWizard.delete_snapshot')
-    def test_delete(self, mock_delete, mock_run):
-        mock_delete.return_value = ("pkexec", ["timeshift", "--delete"], "Delete")
-        mock_run.return_value = True
-        args = argparse.Namespace(action="delete", snapshot_id="1", tool=None)
+    def test_delete(self, mock_delete, mock_plans):
+        args = argparse.Namespace(action="delete", snapshot_id="1", tool="timeshift")
         code = cli_main.cmd_backup(args)
         self.assertEqual(code, 0)
+        mock_delete.assert_not_called()
+        mock_plans.assert_called_once()
 
     def test_delete_no_id(self):
         args = argparse.Namespace(action="delete", snapshot_id=None, tool=None)

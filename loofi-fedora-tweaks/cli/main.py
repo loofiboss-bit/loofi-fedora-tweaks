@@ -8,7 +8,6 @@ import typing
 import json as json_module
 import logging
 import os
-import subprocess
 import sys
 from typing import Any, Dict, List, Optional
 
@@ -71,6 +70,7 @@ from cli.commands.diagnostic_commands import (  # noqa: E402
 )
 from cli.commands.hardware_commands import (  # noqa: E402
     handle_bluetooth,
+    handle_display,
     handle_hardware,
     handle_storage,
     handle_vfio,
@@ -88,6 +88,7 @@ from cli.commands.network_mesh_commands import (  # noqa: E402
     handle_teleport,
 )
 from cli.commands.tuning_commands import (  # noqa: E402
+    handle_backup,
     handle_boot,
     handle_snapshot,
 )
@@ -102,6 +103,7 @@ from cli.commands.agent_commands import handle_agent  # noqa: E402
 from cli.commands.activity_commands import handle_activity  # noqa: E402
 from cli.commands.health_history_commands import handle_health_history  # noqa: E402
 from cli.commands.troubleshooting_commands import handle_troubleshoot  # noqa: E402
+from cli.action_plans import create_public_plans, manual_guidance  # noqa: E402
 from utils.focus_mode import FocusMode  # noqa: E402
 from utils.journal import JournalManager  # noqa: E402
 from utils.monitor import SystemMonitor  # noqa: E402
@@ -148,104 +150,68 @@ def _output_json(data: typing.Any) -> typing.Any:
 
 
 def run_operation(op_result: typing.Any, timeout: typing.Any = None) -> typing.Any:
-    """Execute an operation tuple (cmd, args, description).
-
-    Args:
-        op_result: Tuple of (cmd, args, description) from utils operations.
-        timeout: Override timeout in seconds. Defaults to global _operation_timeout (300s).
-    """
-    cmd, args, desc = op_result
-    full_cmd = [cmd] + args
-
-    from core.execution_policy import blocked_execution_message, execution_allowed
-
-    if not _dry_run and not execution_allowed(cmd, args):
-        message = blocked_execution_message(cmd, args)
-        plan = _create_action_center_plan("legacy-cli-manual-review", {})
-        if _json_output:
-            _output_json(
-                {
-                    "schema_version": 3,
-                    "error": "action_center_required",
-                    "message": message,
-                    "auto_apply": False,
-                    "plan": plan.to_dict(),
-                }
-            )
-        else:
-            _print(f"Blocked: {message}")
-            _print(f"Plan {plan.plan_id}: {plan.action_id} [{plan.state}]")
-        return False
-
-    # Dry-run mode: show command without executing, audit-log it
-    if _dry_run:
-        _print(f"🔍 [DRY-RUN] Would execute: {' '.join(full_cmd)}")
-        _print(f"   Description: {desc}")
-        try:
-            from services.security import AuditLogger
-
-            AuditLogger().log(
-                action=f"cli.{cmd}",
-                params={"cmd": full_cmd, "description": desc},
-                exit_code=None,
-                dry_run=True,
-            )
-        except (ImportError, OSError, RuntimeError, TypeError, ValueError) as e:
-            logger.debug("Failed to log dry-run audit entry: %s", e)
-        if _json_output:
-            _output_json({"dry_run": True, "command": full_cmd, "description": desc})
-        return True
-
-    _print(f"🔄 {desc}")
-
-    op_timeout = timeout if timeout is not None else _operation_timeout
-
-    try:
-        result = subprocess.run(
-            [cmd] + args,
-            capture_output=True,
-            text=True,
-            check=False,
-            timeout=op_timeout,
-        )
-        if result.returncode == 0:
-            _print("✅ Success")
-            if result.stdout.strip():
-                _print(result.stdout)
-        else:
-            _print(f"❌ Failed (exit code {result.returncode})")
-            if result.stderr.strip():
-                _print(result.stderr)
-        return result.returncode == 0
-    except subprocess.TimeoutExpired:
-        _print(f"❌ Timed out after {op_timeout}s")
-        return False
-    except (subprocess.SubprocessError, OSError) as e:
-        _print(f"❌ Error: {e}")
-        return False
-
-
-def _create_action_center_plan(action_id: str, parameters: Dict[str, Any]) -> typing.Any:
-    from core.actions import ActionCenterOrchestrator
-
-    return ActionCenterOrchestrator().plan(action_id, parameters)
-
-
-def _emit_legacy_plans(plans: typing.Any) -> int:
+    """Fail closed for callers that still supply an unclassified command tuple."""
+    del op_result, timeout
     payload = {
-        "schema_version": 3,
-        "plans": [plan.to_dict() for plan in plans],
+        "schema_version": 4,
+        "error": "closed_action_definition_required",
+        "message": "Direct CLI command execution is disabled. Use a named Action Center definition.",
         "auto_apply": False,
     }
     if _json_output:
         _output_json(payload)
     else:
-        for plan in plans:
+        _print(payload["message"])
+    return False
+
+
+def _create_action_center_plan(action_id: str, parameters: Dict[str, Any]) -> typing.Any:
+    from core.actions import ActionCatalog, ActionCenterOrchestrator
+    from core.actions.catalog import validate_parameters
+
+    catalog = ActionCatalog()
+    definition = catalog.get(action_id)
+    if definition is None:
+        raise ValueError(f"Unknown Action Center definition: {action_id}")
+    parameter_decision = validate_parameters(definition, parameters)
+    if not parameter_decision.allowed:
+        raise ValueError(
+            f"Invalid parameters for {action_id}: {parameter_decision.explanation}"
+        )
+    return ActionCenterOrchestrator(catalog=catalog).plan(action_id, parameters)
+
+
+def _emit_legacy_plans(plans: typing.Any) -> int:
+    summaries = [
+        {
+            "plan_id": plan.plan_id,
+            "state": plan.state,
+            "definition_id": plan.action_id,
+            "review_required": True,
+            "auto_apply": False,
+            "next_action": (
+                f"loofi-fedora-tweaks --cli action-center apply {plan.plan_id} --confirm"
+                if plan.state != "blocked"
+                else plan.recovery_guidance
+            ),
+        }
+        for plan in plans
+    ]
+    payload = {
+        "schema_version": 4,
+        "plans": [plan.to_dict() for plan in plans],
+        "plan_summaries": summaries,
+        "review_required": True,
+        "auto_apply": False,
+    }
+    if _json_output:
+        _output_json(payload)
+    else:
+        for plan, summary in zip(plans, summaries):
             _print(f"Plan {plan.plan_id}: {plan.action_id} [{plan.state}]")
             _print(f"  {plan.policy_decision.explanation}")
-            if plan.state != "blocked":
-                _print(f"  Apply separately: loofi --cli action-center apply {plan.plan_id} --confirm")
-    return 0 if all(plan.state != "blocked" for plan in plans) else 1
+            _print(f"  Next: {summary['next_action']}")
+    return 0
 
 
 def cmd_cleanup(args: typing.Any) -> typing.Any:
@@ -257,8 +223,13 @@ def cmd_cleanup(args: typing.Any) -> typing.Any:
         "autoremove": ("autoremove-packages", {}),
     }
     if args.action == "rpmdb":
-        _print("RPM database repair is manual-only under Troubleshooting.")
-        return 1
+        return manual_guidance(
+            "cli:cleanup rpmdb",
+            "RPM database repair is manual-only under Troubleshooting.",
+            json_output=_json_output,
+            output_json=_output_json,
+            print_fn=_print,
+        )
     actions = ["dnf", "journal", "trim"] if args.action == "all" else [args.action]
     plans = [_create_action_center_plan(*mapping[action]) for action in actions]
     return _emit_legacy_plans(plans)
@@ -782,11 +753,24 @@ def cmd_tuner(args: typing.Any) -> typing.Any:
 
     elif args.action == "apply":
         rec = AutoTuner.recommend()
-        _print(f"🔄 Applying: governor={rec.governor}, swappiness={rec.swappiness}")
-        success = run_operation(AutoTuner.apply_recommendation(rec))
-        if success:
-            run_operation(AutoTuner.apply_swappiness(rec.swappiness))
-        return 0 if success else 1
+        return create_public_plans(
+            [
+                (
+                    "cli:tuner apply",
+                    {
+                        "settings": {
+                            "governor": rec.governor,
+                            "swappiness": rec.swappiness,
+                            "io_scheduler": rec.io_scheduler,
+                            "thp": rec.thp,
+                        }
+                    },
+                )
+            ],
+            json_output=_json_output,
+            output_json=_output_json,
+            print_fn=_print,
+        )
 
     elif args.action == "history":
         history = AutoTuner.get_tuning_history()
@@ -821,6 +805,22 @@ def cmd_snapshot(args: typing.Any) -> typing.Any:
             {"backend": backend, "description": args.label or "manual-snapshot"},
         )
         return _emit_legacy_plans([plan])
+    if args.action == "delete":
+        backend = getattr(args, "backend", None)
+        if backend not in {"timeshift", "snapper"} or not args.snapshot_id:
+            _print("Snapshot deletion requires --backend timeshift|snapper and a snapshot ID.")
+            return 1
+        return create_public_plans(
+            [
+                (
+                    "cli:snapshot delete",
+                    {"backend": backend, "snapshot_id": args.snapshot_id},
+                )
+            ],
+            json_output=_json_output,
+            output_json=_output_json,
+            print_fn=_print,
+        )
     from utils.snapshot_manager import SnapshotManager
 
     return handle_snapshot(args, _json_output, _output_json, _print, run_operation, SnapshotManager)
@@ -902,7 +902,10 @@ def cmd_package(args: typing.Any) -> typing.Any:
             _print("Install/remove requires an explicit --source dnf|flatpak.")
             return 1
         action_id = "install-application" if args.action == "install" else "remove-application"
-        plan = _create_action_center_plan(action_id, {"source": source, "package_id": args.name})
+        plan = _create_action_center_plan(
+            action_id,
+            {"source": source, "package_id": args.name},
+        )
         return _emit_legacy_plans([plan])
     return handle_package(args, _json_output, _output_json, _print, run_operation, PackageExplorer)
 
@@ -977,116 +980,28 @@ def cmd_display(args: typing.Any) -> typing.Any:
     """Handle display configuration subcommand."""
     from services.desktop import WaylandDisplayManager
 
-    if args.action == "list":
-        displays = WaylandDisplayManager.get_displays()
-        if _json_output:
-            _output_json(
-                [
-                    {
-                        "name": d.name,
-                        "resolution": d.resolution,
-                        "scale": d.scale,
-                        "refresh": d.refresh_rate,
-                        "primary": d.primary,
-                    }
-                    for d in displays
-                ]
-            )
-        else:
-            for d in displays:
-                primary = " ★" if d.primary else ""
-                _print(f"  {d.name}: {d.resolution} @{d.scale}x {d.refresh_rate}Hz{primary}")
-        return 0
-
-    elif args.action == "session":
-        info = WaylandDisplayManager.get_session_info()
-        if _json_output:
-            _output_json(info)
-        else:
-            for k, v in info.items():
-                _print(f"  {k}: {v}")
-        return 0
-
-    elif args.action == "fractional-on":
-        return 0 if run_operation(WaylandDisplayManager.enable_fractional_scaling()) else 1
-
-    elif args.action == "fractional-off":
-        return 0 if run_operation(WaylandDisplayManager.disable_fractional_scaling()) else 1
-
-    return 1
+    return handle_display(
+        args,
+        _json_output,
+        _output_json,
+        _print,
+        run_operation,
+        WaylandDisplayManager,
+    )
 
 
 def cmd_backup(args: typing.Any) -> typing.Any:
     """Handle backup subcommand."""
     from utils.backup_wizard import BackupWizard
 
-    if args.action == "detect":
-        active_tool = BackupWizard.detect_backup_tool()
-        available = BackupWizard.get_available_tools()
-        if _json_output:
-            _output_json({"active": active_tool, "available": available})
-        else:
-            _print(f"  Active tool: {active_tool}")
-            _print(f"  Available: {', '.join(available)}")
-        return 0
-
-    elif args.action == "create":
-        desc = getattr(args, "description", None) or "CLI backup"
-        selected_tool = getattr(args, "tool", None)
-        if selected_tool not in {"timeshift", "snapper"}:
-            _print("Backup creation requires --tool timeshift|snapper.")
-            return 1
-        plan = _create_action_center_plan("create-recovery-point", {"backend": selected_tool, "description": desc})
-        return _emit_legacy_plans([plan])
-
-    elif args.action == "list":
-        list_tool = getattr(args, "tool", None)
-        snapshots = BackupWizard.list_snapshots(tool=list_tool)
-        if _json_output:
-            _output_json(
-                [
-                    {
-                        "id": s.id,
-                        "date": s.date,
-                        "description": s.description,
-                        "tool": s.tool,
-                    }
-                    for s in snapshots
-                ]
-            )
-        else:
-            if not snapshots:
-                _print("  No snapshots found.")
-            for s in snapshots:
-                _print(f"  [{s.tool}] {s.id}: {s.description} ({s.date})")
-        return 0
-
-    elif args.action == "restore":
-        snap_id = getattr(args, "snapshot_id", None)
-        if not snap_id:
-            _print("❌ Snapshot ID required")
-            return 1
-        restore_tool = getattr(args, "tool", None)
-        return 0 if run_operation(BackupWizard.restore_snapshot(snap_id, tool=restore_tool)) else 1
-
-    elif args.action == "delete":
-        snap_id = getattr(args, "snapshot_id", None)
-        if not snap_id:
-            _print("❌ Snapshot ID required")
-            return 1
-        delete_tool = getattr(args, "tool", None)
-        return 0 if run_operation(BackupWizard.delete_snapshot(snap_id, tool=delete_tool)) else 1
-
-    elif args.action == "status":
-        status = BackupWizard.get_backup_status()
-        if _json_output:
-            _output_json(status)
-        else:
-            for k, v in status.items():
-                _print(f"  {k}: {v}")
-        return 0
-
-    return 1
+    return handle_backup(
+        args,
+        _json_output,
+        _output_json,
+        _print,
+        run_operation,
+        BackupWizard,
+    )
 
 
 def _command_handlers() -> typing.Any:

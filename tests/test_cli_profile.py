@@ -58,14 +58,15 @@ class TestCLIProfileCommands(unittest.TestCase):
         code = cmd_profile(args)
         self.assertEqual(code, 1)
 
+    @patch('cli.commands.user_commands.create_public_plans', return_value=0)
     @patch('cli.main.ProfileManager.apply_profile')
-    def test_apply_profile_no_snapshot_flag(self, mock_apply):
+    def test_apply_profile_creates_plan_without_direct_apply(self, mock_apply, mock_plans):
         from cli.main import cmd_profile
-        mock_apply.return_value = Result(True, "applied", {})
         args = argparse.Namespace(action="apply", name="gaming", no_snapshot=True)
         code = cmd_profile(args)
         self.assertEqual(code, 0)
-        mock_apply.assert_called_once_with("gaming", create_snapshot=False)
+        mock_apply.assert_not_called()
+        mock_plans.assert_called_once()
 
     def test_export_requires_name_and_path(self):
         from cli.main import cmd_profile

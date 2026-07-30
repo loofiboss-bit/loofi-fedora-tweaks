@@ -79,7 +79,9 @@ class KDE44DesktopService:
 
     @classmethod
     def get_plasma_version(cls) -> str:
-        out = cls._run(["plasmashell", "--version"])
+        # plasmashell initializes a graphical Qt platform even for --version.
+        # Package metadata is display-independent and safe in daemon contexts.
+        out = cls._run(["rpm", "-q", "--qf", "%{VERSION}\\n", "plasma-workspace"])
         return cls._extract_version(out)
 
     @classmethod
