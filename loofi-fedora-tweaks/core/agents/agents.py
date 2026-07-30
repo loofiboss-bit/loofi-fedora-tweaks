@@ -171,7 +171,7 @@ class AgentConfig:
     dry_run: bool = False
     created_at: float = 0.0
     notification_config: Dict[str, Any] = field(default_factory=dict)
-    # Event subscriptions (v19.0 Phase 2)
+    # Event subscriptions are registered explicitly and removed on shutdown.
     subscriptions: List[str] = field(default_factory=list)
 
     def __post_init__(self):

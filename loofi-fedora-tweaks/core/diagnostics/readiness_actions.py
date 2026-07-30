@@ -221,9 +221,9 @@ class ReadinessActionService:
                 },
             )
 
-        # Non-audited legacy definitions are never promoted to v14 execution.
+        # Non-audited legacy definitions are never promoted to execution.
         return ActionResult.fail(
-            "This legacy readiness action is manual-only in the v14 deny-by-default catalog.",
+            "This legacy readiness action is manual-only in the deny-by-default catalog.",
             action_id=candidate.id,
             data={"candidate": candidate.to_dict(), "compatibility_adapter": candidate.id},
         )

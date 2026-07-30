@@ -499,7 +499,7 @@ class DesktopTab(BaseTab):
         )
 
     # ================================================================
-    # DISPLAY CONFIGURATION SUB-TAB (v37.0 Pinnacle)
+    # Display configuration sub-tab
     # ================================================================
 
     def _create_display_tab(self: typing.Any) -> QWidget:

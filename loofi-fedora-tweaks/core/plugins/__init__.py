@@ -8,7 +8,7 @@ Public API:
     PluginRegistry   — singleton registry
     PluginLoader     — built-in plugin loader
     CompatibilityDetector — system compatibility checker
-    External executable plugin APIs were retired in v18 Haven.
+    External executable plugin APIs are retired.
 """
 
 from core.plugins.compat import CompatibilityDetector

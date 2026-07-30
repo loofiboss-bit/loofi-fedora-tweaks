@@ -3,12 +3,11 @@ Settings Tab - User-facing preferences UI.
 Part of v13.5 "UX Polish" update.
 
 Five stable subroutes selected by the application section navigator:
-  Appearance, Behavior, Advanced Tools, Repair Loofi, and About.
+  Appearance, Behavior, Specialist Tools, Repair Loofi, and About.
 """
 
 import platform
 
-from core.navigation.models import NavigationMode
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
@@ -93,8 +92,8 @@ class SettingsTab(QWidget, PluginInterface):
         ))
         tabs.addWidget(self._scaffold_page(
             self._build_advanced_tab(),
-            self.tr("Advanced Tools"),
-            self.tr("Choose Standard or Advanced navigation without weakening safety checks."),
+            self.tr("Specialist Tools"),
+            self.tr("Review specialist availability and advanced application settings."),
         ))
         tabs.addWidget(self._scaffold_page(
             self._build_state_tab(),
@@ -264,7 +263,6 @@ class SettingsTab(QWidget, PluginInterface):
         layout = QVBoxLayout(page)
         layout.setSpacing(12)
 
-        # Help text (v47.0)
         help_label = QLabel(self.tr(
             "Advanced settings for debugging and maintenance. "
             "Only change these if you know what you're doing."
@@ -444,28 +442,6 @@ class SettingsTab(QWidget, PluginInterface):
 
     # ------------------------------------------------------------ Slots --
 
-    def _mode_description(self, mode: NavigationMode) -> str:
-        """Return a concise description for the canonical navigation mode."""
-        descriptions = {
-            NavigationMode.STANDARD: self.tr(
-                "Standard keeps normal Fedora maintenance focused on the six core destinations."
-            ),
-            NavigationMode.ADVANCED: self.tr(
-                "Advanced adds specialist routes without changing confirmations or safety rules."
-            ),
-        }
-        return str(descriptions.get(mode, ""))
-
-    def _on_navigation_mode_changed(self, index: int):
-        """Persist and immediately apply Standard or Advanced mode."""
-        from utils.navigation_mode import NavigationModeManager
-
-        mode = NavigationMode.ADVANCED if index == 1 else NavigationMode.STANDARD
-        NavigationModeManager.set_mode(mode)
-        self._mode_desc.setText(self._mode_description(mode))
-        if self._main_window and hasattr(self._main_window, "apply_navigation_mode"):
-            self._main_window.apply_navigation_mode(mode)
-
     def _update_component_status(self) -> None:
         """Explain logical component availability without installing anything."""
         label = getattr(self, "_component_status", None)
@@ -592,7 +568,7 @@ class SettingsTab(QWidget, PluginInterface):
             selected = "system" if self._mgr.get("follow_system_theme") else self._mgr.get("theme")
             self._main_window.load_theme(selected)
 
-    # ---------------------------------------- v29.0 Reset per group --
+    # Group-level reset helpers
 
     def _reset_appearance(self):
         """Reset appearance settings to defaults."""
@@ -633,7 +609,7 @@ class SettingsTab(QWidget, PluginInterface):
         )
 
     def _sync_mode_controls(self) -> None:
-        """Compatibility hook after reset; v20 has no global mode control."""
+        """Keep the unified specialist-tools description after reset."""
         self._mode_desc.setText(
             self.tr(
                 "Specialist tools are always available. Each system change still has its own review and confirmation."

@@ -1,6 +1,6 @@
 """
 Agent Scheduler — Event-driven agent execution manager.
-Part of v19.0 "Vanguard" Agent Framework Phase 2.
+Schedules registered local agents without owning host-mutation authority.
 
 Provides:
 - Event-based agent triggering via EventBus integration

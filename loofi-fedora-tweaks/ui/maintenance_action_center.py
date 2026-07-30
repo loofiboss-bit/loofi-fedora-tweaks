@@ -277,7 +277,7 @@ class _ActionCenterSubTab(BaseTab):
             self.detail_area.setPlainText(self.tr("No Action Center candidates are currently available."))
 
     def _show_lifecycle_view(self: typing.Any, index: int) -> None:
-        """Present one of Haven's four explicit Action Center states."""
+        """Present one of the four explicit Action Center states."""
         review_mode = index == 0
         self.action_list.setVisible(review_mode)
         self.preview_button.setVisible(review_mode)

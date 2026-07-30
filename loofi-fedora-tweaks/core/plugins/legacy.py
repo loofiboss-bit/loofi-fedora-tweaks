@@ -1,4 +1,4 @@
-"""Read-only inventory for external extensions quarantined by Haven."""
+"""Read-only inventory for quarantined external extensions."""
 
 from __future__ import annotations
 

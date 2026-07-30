@@ -96,7 +96,7 @@ class _ApplicationsSubTab(BaseTab):
         header_layout.addWidget(btn_refresh)
         layout.addLayout(header_layout)
 
-        # v42.0: Search/filter bar
+        # Application search and filtering
         self._search_bar = QLineEdit()
         self._search_bar.setPlaceholderText(self.tr("Search applications..."))
         self._search_bar.setAccessibleName(self.tr("Search applications"))
@@ -559,7 +559,7 @@ class SoftwareTab(BaseTab):
         return True
 
     def _create_flatpak_tab(self: typing.Any) -> typing.Any:
-        """Create the Flatpak Manager sub-tab (v37.0 Pinnacle)."""
+        """Create the Flatpak Manager sub-tab."""
 
         widget = QWidget()
         root = QVBoxLayout(widget)

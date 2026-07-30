@@ -506,7 +506,7 @@ class SecurityTab(QWidget, PluginInterface):
             self._request_action(
                 "allow-usb-device",
                 {"device_id": str(device_id)},
-                self.tr("Permanent USB policy changes remain manual-only in Haven."),
+                self.tr("Permanent USB policy changes remain manual-only."),
             )
 
     def _block_usb(self: typing.Any) -> typing.Any:
@@ -521,7 +521,7 @@ class SecurityTab(QWidget, PluginInterface):
             self._request_action(
                 "block-usb-device",
                 {"device_id": str(device_id)},
-                self.tr("Permanent USB policy changes remain manual-only in Haven."),
+                self.tr("Permanent USB policy changes remain manual-only."),
             )
 
     def _install_firejail(self: typing.Any) -> typing.Any:

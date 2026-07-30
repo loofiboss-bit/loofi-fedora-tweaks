@@ -30,7 +30,7 @@ def handle_plugins(args, json_output, output_json, print_fn, legacy_service_cls)
         "feature": "external-plugins",
         "requested_action": args.action,
         "name": getattr(args, "name", None),
-        "message": "External Python extension execution was retired in Haven.",
+        "message": "External Python extension execution is retired.",
         "alternative": "Use built-in features or local profiles.",
     }
     if json_output:

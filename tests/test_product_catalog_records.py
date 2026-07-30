@@ -21,15 +21,25 @@ _LEGACY_ROUTE_ORDER_HASH = "c89ecb919719171982bf46a9ab5dfd0f49558b3f5386e01d5821
 
 
 def _legacy_projection(records):
-    """Remove V22-only inert fields before comparing the V21 projection."""
-    return tuple(
-        {
-            key: value
-            for key, value in record.items()
-            if key != "native_handoff_id"
-        }
-        for record in records
-    )
+    """Normalize approved presentation-only changes before legacy comparison."""
+    def normalize(value):
+        if isinstance(value, dict):
+            projected = {
+                key: normalize(item)
+                for key, item in value.items()
+                if key != "native_handoff_id"
+            }
+            if projected.get("id") == "settings:advanced" or (
+                projected.get("id") == "advanced"
+                and projected.get("destination_id") == "settings"
+            ):
+                projected["label"] = "Advanced Tools"
+            return projected
+        if isinstance(value, (list, tuple)):
+            return tuple(normalize(item) for item in value)
+        return value
+
+    return tuple(normalize(record) for record in records)
 
 
 def _serialized_hash(records) -> str:
@@ -49,6 +59,21 @@ class TestDestinationOwnedCatalogRecords(unittest.TestCase):
         self.assertEqual(len(route_ids), 81)
         self.assertEqual(len(set(route_ids)), 81)
         self.assertEqual(_serialized_hash(route_ids), _LEGACY_ROUTE_ORDER_HASH)
+
+    def test_specialist_settings_uses_current_plain_language(self):
+        route = next(
+            record
+            for record in CATALOG_DATA["routes"]
+            if record["id"] == "settings:advanced"
+        )
+        section = next(
+            record
+            for record in CATALOG_DATA["sections"]
+            if record["id"] == "advanced"
+            and record["destination_id"] == "settings"
+        )
+        self.assertEqual(route["label"], "Specialist Tools")
+        self.assertEqual(section["label"], "Specialist Tools")
 
     def test_native_handoff_metadata_is_limited_to_the_architecture_allowlist(self):
         handoffs = {

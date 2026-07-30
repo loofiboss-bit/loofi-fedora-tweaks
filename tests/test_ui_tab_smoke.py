@@ -111,10 +111,16 @@ class TestWhatsNewDialog(unittest.TestCase):
     """Tests for WhatsNewDialog."""
 
     def test_init(self):
+        from PyQt6.QtWidgets import QTextEdit
         from ui.whats_new_dialog import WhatsNewDialog
+
         d = WhatsNewDialog()
         self.assertIsNotNone(d)
         self.assertFalse(d.dont_show_again)
+        content = d.findChild(QTextEdit).toPlainText()
+        self.assertIn("Guided troubleshooting", content)
+        self.assertNotIn("--- v", content)
+        self.assertNotIn("Plugin SDK", content)
         d.close()
 
     def test_on_close_sets_dont_show(self):

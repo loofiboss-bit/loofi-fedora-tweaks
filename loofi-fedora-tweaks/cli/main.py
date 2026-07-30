@@ -126,7 +126,7 @@ _json_output = False
 # Global operation timeout (default 300s, configurable via --timeout)
 _operation_timeout = 300
 
-# Global dry-run flag (v35.0 Fortress)
+# Global dry-run state shared by compatibility handlers.
 _dry_run = False
 
 # Keep the original timeline class reference so tests can patch either
@@ -557,13 +557,13 @@ def cmd_plugins(args: typing.Any) -> typing.Any:
 
 
 def cmd_plugin_marketplace(args: typing.Any) -> typing.Any:
-    """Return the stable v18 retirement response for legacy callers."""
+    """Return the stable retirement response for legacy callers."""
     del args
     payload = {
         "schema_version": 3,
         "error": "feature_retired",
         "feature": "plugin-marketplace",
-        "message": "External Marketplace distribution was retired in Haven.",
+        "message": "External Marketplace distribution is retired.",
         "alternative": "Use built-in features or local profiles.",
     }
     if _json_output:
@@ -609,7 +609,7 @@ def cmd_support_bundle(_args: typing.Any) -> typing.Any:
     return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
 
 
-# ==================== v11.5 / v12.0 COMMANDS ====================
+# Maintenance and observability commands
 
 
 def cmd_vm(args: typing.Any) -> typing.Any:
@@ -714,7 +714,7 @@ def cmd_health_history(args: typing.Any) -> typing.Any:
     )
 
 
-# ==================== v15.0 Nebula CLI commands ====================
+# Navigation and workflow commands
 
 
 def cmd_tuner(args: typing.Any) -> typing.Any:
@@ -883,7 +883,7 @@ def cmd_logs(args: typing.Any) -> typing.Any:
     return 1
 
 
-# ===== v16.0 Horizon commands =====
+# Desktop and system commands
 
 
 def cmd_service(args: typing.Any) -> typing.Any:
@@ -915,7 +915,7 @@ def cmd_firewall(args: typing.Any) -> typing.Any:
     return handle_firewall(args, _json_output, _output_json, _print, run_operation, FirewallManager)
 
 
-# ==================== v17.0 Atlas ====================
+# Hardware and storage commands
 
 
 def cmd_bluetooth(args: typing.Any) -> typing.Any:
@@ -923,7 +923,7 @@ def cmd_bluetooth(args: typing.Any) -> typing.Any:
     return handle_bluetooth(args, _json_output, _output_json, _print, BluetoothManager)
 
 
-# ==================== v18.0 Sentinel ====================
+# Agent and automation commands
 
 
 def cmd_agent(args: typing.Any) -> typing.Any:
@@ -945,7 +945,7 @@ def cmd_audit_log(args: typing.Any) -> typing.Any:
     return handle_audit_log(args, _json_output, _output_json, _print, AuditLogger)
 
 
-# ==================== v37.0 Pinnacle ====================
+# Package, update, extension, display, and backup commands
 
 
 def cmd_updates(args: typing.Any) -> typing.Any:

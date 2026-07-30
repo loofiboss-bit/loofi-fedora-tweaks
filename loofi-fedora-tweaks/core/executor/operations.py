@@ -79,7 +79,7 @@ class CleanupOps:
 
 
 class TweakOps:
-    """HP Elitebook specific tweaks."""
+    """Laptop-specific power and hardware tweaks."""
 
     BATTERY_SYSFS = "/sys/class/power_supply/BAT0/charge_control_end_threshold"
 

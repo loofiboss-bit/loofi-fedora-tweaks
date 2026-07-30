@@ -1,4 +1,4 @@
-"""Steward support bundle with bounded System Check resolution evidence."""
+"""Support bundle with bounded System Check resolution evidence."""
 
 from __future__ import annotations
 

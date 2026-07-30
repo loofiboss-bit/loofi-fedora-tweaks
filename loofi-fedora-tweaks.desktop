@@ -1,6 +1,6 @@
 [Desktop Entry]
 Name=Loofi Fedora Tweaks
-Comment=System tweaks and maintenance for HP Elitebook 840 G8
+Comment=Fedora maintenance and desktop settings with reviewed system changes
 Exec=loofi-fedora-tweaks
 Icon=loofi-fedora-tweaks
 Terminal=false

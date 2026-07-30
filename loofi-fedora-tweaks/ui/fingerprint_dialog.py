@@ -52,7 +52,7 @@ class FingerprintDialog(QDialog):
     def start_enrollment(self):
         self.btn_start.setEnabled(True)
         self.lbl_status.setText(
-            "Fingerprint enrollment is manual-only in Haven.\n"
+            "Fingerprint enrollment is manual-only.\n"
             "Open Fedora System Settings → Users to enroll or remove fingerprints."
         )
         self.progress.setValue(0)

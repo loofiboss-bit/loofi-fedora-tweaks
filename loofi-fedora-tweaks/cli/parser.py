@@ -30,7 +30,7 @@ def build_parser() -> argparse.ArgumentParser:
     parser.add_argument(
         "--dry-run",
         action="store_true",
-        help="Show commands without executing them (v35.0)",
+        help="Show commands without executing them",
     )
 
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
@@ -200,7 +200,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Exact NetworkManager connection name to review",
     )
 
-    # v10.0 new commands
+    # Diagnostics commands
     subparsers.add_parser("doctor", help="Check system dependencies and diagnostics")
     subparsers.add_parser("hardware", help="Show detected hardware profile")
 
@@ -216,7 +216,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Credential lifecycle action",
     )
 
-    # v26.0 - Plugin marketplace
+    # Retired plugin marketplace compatibility parser
     marketplace_parser = subparsers.add_parser("plugin-marketplace", help=argparse.SUPPRESS)
     marketplace_parser.add_argument(
         "action",
@@ -351,7 +351,7 @@ def build_parser() -> argparse.ArgumentParser:
     fedora44_parser = subparsers.add_parser("fedora44-readiness", help="Compatibility alias for 'readiness --target 44'")
     fedora44_parser.add_argument("--advanced", action="store_true", help="Show raw command and status details")
 
-    # ==================== v11.5 / v12.0 subparsers ====================
+    # Maintenance and observability commands
 
     # VM management
     vm_parser = subparsers.add_parser("vm", help="Virtual machine management")
@@ -391,7 +391,7 @@ def build_parser() -> argparse.ArgumentParser:
     # Security audit
     subparsers.add_parser("security-audit", help="Run security audit and show score")
 
-    # v13.0 Nexus Update - Profile management
+    # Profile management
     profile_parser = subparsers.add_parser("profile", help="System profile management")
     profile_parser.add_argument(
         "action",
@@ -425,7 +425,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Include built-in profiles in export-all bundle",
     )
 
-    # v13.0 Nexus Update - Health history
+    # Health history
     health_history_parser = subparsers.add_parser("health-history", help="Health timeline metrics")
     health_history_parser.add_argument(
         "action",
@@ -434,7 +434,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     health_history_parser.add_argument("path", nargs="?", help="Export path (for export)")
 
-    # ==================== v15.0 Nebula subparsers ====================
+    # Navigation and workflow commands
 
     # Performance auto-tuner
     tuner_parser = subparsers.add_parser("tuner", help="Performance auto-tuner")
@@ -460,7 +460,7 @@ def build_parser() -> argparse.ArgumentParser:
     logs_parser.add_argument("--lines", type=int, default=100, help="Number of lines")
     logs_parser.add_argument("path", nargs="?", help="Export path (for export)")
 
-    # ==================== v16.0 Horizon subparsers ====================
+    # Desktop and system commands
 
     # Service management
     service_parser = subparsers.add_parser("service", help="Systemd service management")
@@ -512,7 +512,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     firewall_parser.add_argument("spec", nargs="?", help="Port spec (e.g. 8080/tcp)")
 
-    # v17.0 Atlas - Bluetooth management
+    # Bluetooth management
     bt_parser = subparsers.add_parser("bluetooth", help="Bluetooth management")
     bt_parser.add_argument(
         "action",
@@ -534,7 +534,7 @@ def build_parser() -> argparse.ArgumentParser:
     bt_parser.add_argument("--paired", action="store_true", help="Show paired only")
     bt_parser.add_argument("--timeout", type=int, default=10, help="Scan timeout")
 
-    # v17.0 Atlas - Storage management
+    # Storage management
     storage_parser = subparsers.add_parser("storage", help="Storage & disk management")
     storage_parser.add_argument(
         "action",
@@ -587,11 +587,11 @@ def build_parser() -> argparse.ArgumentParser:
         help="Minimum severity to notify: info/low/medium/high/critical",
     )
 
-    # v35.0 Fortress - Audit log viewer
+    # Audit log viewer
     audit_parser = subparsers.add_parser("audit-log", help="View recent audit log entries")
     audit_parser.add_argument("--count", type=int, default=20, help="Number of entries to show (default: 20)")
 
-    # v37.0 Pinnacle - Smart Updates
+    # Smart Updates
     updates_parser = subparsers.add_parser("updates", help="Smart update management")
     updates_parser.add_argument(
         "action",
@@ -600,7 +600,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     updates_parser.add_argument("--time", default="02:00", help="Schedule time (HH:MM, default: 02:00)")
 
-    # v37.0 Pinnacle - Extensions
+    # Extensions
     ext_parser = subparsers.add_parser("extension", help="Desktop extension management")
     ext_parser.add_argument(
         "action",
@@ -609,7 +609,7 @@ def build_parser() -> argparse.ArgumentParser:
     )
     ext_parser.add_argument("--uuid", help="Extension UUID for install/remove/enable/disable")
 
-    # v37.0 Pinnacle - Flatpak Manager
+    # Flatpak Manager
     flatpak_parser = subparsers.add_parser("flatpak-manage", help="Flatpak management tools")
     flatpak_parser.add_argument(
         "action",
@@ -617,12 +617,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Flatpak action",
     )
 
-    # v37.0 Pinnacle - Boot Configuration
+    # Boot Configuration
     boot_parser = subparsers.add_parser("boot", help="Boot configuration management")
     boot_parser.add_argument("action", choices=["config", "kernels", "timeout", "apply"], help="Boot action")
     boot_parser.add_argument("--seconds", type=int, help="Timeout in seconds (for timeout action)")
 
-    # v37.0 Pinnacle - Display
+    # Display
     display_parser = subparsers.add_parser("display", help="Display and Wayland configuration")
     display_parser.add_argument(
         "action",
@@ -630,7 +630,7 @@ def build_parser() -> argparse.ArgumentParser:
         help="Display action",
     )
 
-    # v37.0 Pinnacle - Backup
+    # Backup
     backup_parser = subparsers.add_parser("backup", help="Snapshot backup management")
     backup_parser.add_argument(
         "action",

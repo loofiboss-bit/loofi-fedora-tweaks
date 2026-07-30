@@ -1,4 +1,4 @@
-"""Tests for the v15 Standard/Advanced settings presentation."""
+"""Tests for the unified Specialist Tools settings presentation."""
 
 import os
 import sys
@@ -27,21 +27,6 @@ def _bare_tab():
 
 
 class TestSettingsNavigationMode(unittest.TestCase):
-    def test_compatibility_descriptions_remain_available(self):
-        tab = _bare_tab()
-        self.assertIn("six core destinations", tab._mode_description(NavigationMode.STANDARD))
-        self.assertIn("without changing confirmations", tab._mode_description(NavigationMode.ADVANCED))
-
-    @patch("utils.navigation_mode.NavigationModeManager.set_mode")
-    def test_mode_change_persists_and_refreshes_navigation(self, mock_set_mode):
-        tab = _bare_tab()
-        tab._main_window = MagicMock()
-
-        tab._on_navigation_mode_changed(1)
-
-        mock_set_mode.assert_called_once_with(NavigationMode.ADVANCED)
-        tab._main_window.apply_navigation_mode.assert_called_once_with(NavigationMode.ADVANCED)
-
     def test_component_status_never_claims_automatic_install(self):
         tab = _bare_tab()
         tab._main_window = SimpleNamespace(
@@ -93,7 +78,7 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
             tab.settings_tabs.widget(index).widget().accessibleName()
             for index in range(tab.settings_tabs.count())
         ]
-        self.assertEqual(labels, ["Appearance", "Behavior", "Advanced Tools", "Repair Loofi", "About"])
+        self.assertEqual(labels, ["Appearance", "Behavior", "Specialist Tools", "Repair Loofi", "About"])
         self.assertFalse(hasattr(tab, "mode_combo"))
         self.assertIn("always available", tab._mode_desc.text())
         self.assertTrue(tab.follow_system_cb.isChecked())

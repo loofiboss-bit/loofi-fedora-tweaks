@@ -387,7 +387,7 @@ class MainWindowInteractionMixin:
             logger.debug("Failed to show toast notification: %s", e)
 
     def _refresh_status_indicators(self: typing.Any) -> typing.Any:
-        """Update sidebar status indicators from live system data (v29.0)."""
+        """Update sidebar status indicators from live system data."""
         try:
             # Maintenance: check for updates
             from utils.update_checker import UpdateChecker

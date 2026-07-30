@@ -11,6 +11,8 @@
   Six destinations, one Home, one search surface, safe system operations.
 </p>
 
+![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
+
 <p align="center">
   <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.0.2">
     <img src="https://img.shields.io/badge/Release-v23.0.2-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v23.0.2 release"/>
@@ -20,21 +22,17 @@
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
-## What Compass changes
+## What Loofi does
 
-Compass turns the existing System diagnostics route into one explicit,
-bounded troubleshooting journey without adding repair or execution authority.
+Loofi brings common Fedora maintenance, application, troubleshooting, cleanup,
+recovery, and desktop tasks into one KDE-friendly control center.
 
-- Six closed symptom profiles collect source-owned evidence only after an
-  explicit start.
-- Findings expose source, freshness, applicability, evidence quality, and one
-  safe next step.
-- Related changes remain conservatively labelled **Possibly related**.
-- Follow-up results keep Action Center verification separate from
-  troubleshooting resolution.
-- CLI collection is explicit; the authenticated API is retrieval-only except
-  for closed Action Center plan creation; Support Bundle v13 remains bounded
-  and command-free.
+- Troubleshooting starts only when you choose a symptom and explicitly begin.
+- Supported system changes become reviewed Action Center plans before anything
+  is applied.
+- Maintenance results are verified separately from command completion.
+- Traditional and Atomic Fedora paths stay distinct.
+- The optional API is loopback-only and cannot apply plans.
 
 Full details: [v23.0.2 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.2.md),
 [v23.0.1 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.1.md), and
@@ -51,10 +49,10 @@ Full details: [v23.0.2 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.2.md),
 | Desktop | Appearance, displays, and window behavior |
 | Settings | Appearance and behavior settings, Specialist Tools status, Repair Loofi, and About |
 
-Specialist Tools contains development, local AI, agents, automation, virtualization,
-gaming, device sharing, local profiles, desktop extensions, and workspace tools.
-These routes remain discoverable when policy and component availability allow;
-their visibility never weakens confirmation or privilege rules.
+Specialist Tools keeps development, automation, virtualization, gaming, device
+sharing, local profiles, and other advanced built-in tools searchable without
+adding another top-level destination. Availability never weakens confirmation
+or privilege rules.
 
 ## Five common workflows
 

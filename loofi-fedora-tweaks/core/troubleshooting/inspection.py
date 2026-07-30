@@ -101,7 +101,7 @@ def sanitize_interface_payload(value: Any) -> Any:
 def bounded_session_payload(
     session: TroubleshootingSession,
 ) -> dict[str, Any]:
-    """Return one privacy-safe session within the Phase 4 interface limits."""
+    """Return one privacy-safe session within the public interface limits."""
     payload = session.to_dict()
     payload["findings"] = list(payload.get("findings", []))[
         :MAX_EXPORTED_FINDINGS

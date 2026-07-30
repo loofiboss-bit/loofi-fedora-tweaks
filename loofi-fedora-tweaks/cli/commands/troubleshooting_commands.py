@@ -90,7 +90,7 @@ def handle_troubleshoot(
     print_fn: Callable[[str], None],
     journal_manager_cls: Any,
 ) -> int:
-    """Handle the closed Phase 4 troubleshooting command family."""
+    """Handle the closed troubleshooting command family."""
     action = getattr(args, "troubleshoot_action", None)
     if action is None:
         return _emit_error(

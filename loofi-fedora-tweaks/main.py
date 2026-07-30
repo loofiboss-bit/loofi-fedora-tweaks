@@ -209,7 +209,7 @@ def main(argv: list[str] | None = None):
                 ),
             )
 
-            # Install centralized error handler (v29.0)
+            # Install the centralized error handler before runtime dispatch.
             from utils.error_handler import install_error_handler
 
             install_error_handler()

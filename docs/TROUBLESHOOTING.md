@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and recovery steps for v23.0.0 "Compass".
+Common issues and recovery steps for v23.0.2 "Compass".
 
 ## 1) Quick Diagnostics
 
@@ -171,7 +171,7 @@ unavailable explanation and follow the documented rpm-ostree guidance.
 - **Restore rejected:** do not bypass validation. Check the plan ID, hashes,
   schema, duplicate paths, traversal checks, and size limits.
 
-Steward preserves settings, favorites, routes, and readable Action Center
+Loofi preserves settings, favorites, routes, and readable Action Center
 v1-v3 records. Writable Action Center plans and runs migrate atomically to
 schema v4; unknown future schemas remain read-only. Package installation does
 not migrate per-user XDG files.

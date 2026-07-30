@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 23.0.0 "Compass"
+> Version 23.0.2 "Compass"
 
 Operational runbook for power users and Fedora administrators.
 
@@ -25,7 +25,7 @@ physical `-extras` RPM. Core startup registers application-owned, data-only
 provider specifications without importing specialist UI modules, and page
 instances are created on demand. External Python plugin discovery and execution
 are retired. CLI, API, daemon, IPC, and stable route contracts remain
-independent of the selected GUI mode.
+independent of the current GUI surface.
 
 Platform behavior:
 
@@ -127,7 +127,7 @@ manual-only on Atomic Fedora.
 
 Use **System → Recovery Points** for snapshots, **Network & Security → Backups**
 for guided backup/restore, and **Settings → Repair Loofi** for state inspection.
-These surfaces reuse the v14 state, archive, and recovery contracts.
+These surfaces reuse the established state, archive, and recovery contracts.
 
 ---
 

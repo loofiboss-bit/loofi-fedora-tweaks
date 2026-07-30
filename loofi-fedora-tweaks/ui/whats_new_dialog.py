@@ -1,7 +1,4 @@
-"""
-What's New dialog - shows release highlights after version upgrade.
-Part of v14.0 "Horizon Update".
-"""
+"""Show concise current-product highlights after a version upgrade."""
 
 from PyQt6.QtWidgets import (
     QCheckBox,
@@ -18,38 +15,12 @@ from version import __version__, __version_codename__
 logger = get_logger(__name__)
 
 
-# Release notes for each version
-RELEASE_NOTES = {
-    "14.0.0": [
-        "Update Checker - automatic update notifications from GitHub",
-        "What's New dialog - see highlights after each upgrade",
-        "Activity Feed - global history of configuration changes with undo",
-        "Factory Reset - backup and restore configuration to defaults",
-        "System tray: profile switching and power mode submenus",
-        "10 new CLI commands: update-check, activity, backup, reset, and more",
-        "Plugin lifecycle events: on_app_start, on_app_quit, on_tab_switch",
-    ],
-    "13.5.0": [
-        "Settings tab with dark/light theme switching",
-        "Catppuccin Latte light theme",
-        "Keyboard shortcuts (Ctrl+1-9, Ctrl+Tab, F1)",
-        "Sidebar search/filter",
-        "Notification center with slide-out panel",
-        "Tooltip constants module",
-    ],
-    "13.1.0": [
-        "Exception cleanup across 20 files",
-        "Security hardening: removed shell=True, localhost binding",
-        "Rate limiter for network services",
-        "188 new tests",
-    ],
-    "13.0.0": [
-        "System profiles (Gaming, Development, Battery Saver, etc.)",
-        "Health timeline with SQLite metrics tracking",
-        "Plugin SDK v2 with permissions model",
-        "Shell completions for bash, zsh, fish",
-    ],
-}
+CURRENT_HIGHLIGHTS = (
+    "Six focused destinations with lazy-loaded built-in tools",
+    "Guided troubleshooting that starts only when you ask",
+    "Reviewed Action Center plans for supported system changes",
+    "Separate verification and follow-up checks after maintenance",
+)
 
 
 class WhatsNewDialog(QDialog):
@@ -74,31 +45,10 @@ class WhatsNewDialog(QDialog):
         header.setObjectName("whatsNewHeader")
         layout.addWidget(header)
 
-        # Release notes
+        # Current product highlights
         notes_text = QTextEdit()
         notes_text.setReadOnly(True)
-
-        content = ""
-        notes = RELEASE_NOTES.get(__version__, [])
-        if notes:
-            for item in notes:
-                content += f"  - {item}\n"
-        else:
-            content = self.tr("No release notes available for this version.")
-
-        # Also show previous version notes
-        versions = sorted(
-            RELEASE_NOTES.keys(),
-            key=lambda v: tuple(int(p) for p in v.split(".")),
-            reverse=True,
-        )
-        for ver in versions:
-            if ver == __version__:
-                continue
-            content += f"\n--- v{ver} ---\n"
-            for item in RELEASE_NOTES[ver]:
-                content += f"  - {item}\n"
-
+        content = "\n".join(f"  - {self.tr(item)}" for item in CURRENT_HIGHLIGHTS)
         notes_text.setPlainText(content)
         layout.addWidget(notes_text)
 

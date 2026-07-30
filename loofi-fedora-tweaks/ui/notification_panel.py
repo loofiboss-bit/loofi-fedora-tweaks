@@ -67,7 +67,7 @@ class NotificationCard(QFrame):
 class NotificationPanel(QWidget):
     """Slide-out notification panel."""
 
-    # v35.0 Fortress: Dynamic height cap, edge-clipping prevention
+    # Keep the panel bounded to the available screen edge.
     MIN_HEIGHT = 150
     MAX_HEIGHT = 500
     PANEL_WIDTH = 350

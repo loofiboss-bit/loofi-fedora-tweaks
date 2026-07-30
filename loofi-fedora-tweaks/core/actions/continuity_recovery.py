@@ -224,7 +224,7 @@ def _preflight_dnf5_history_undo(
         if action not in {"install", "remove"} or not nevra:
             return _blocked(
                 "unsupported_transaction_shape",
-                "v20 recovery supports only install/remove transactions that can be verified exactly.",
+                "Recovery supports only install/remove transactions that can be verified exactly.",
             )
         normalized.append({"action": action, "nevra": nevra})
     return _allowed(

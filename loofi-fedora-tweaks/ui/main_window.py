@@ -281,7 +281,7 @@ class MainWindow(
         self._status_label.setAccessibleName(self.tr("Activity status"))
         sb_layout.addWidget(self._status_label)
 
-        # Undo button (v38.0)
+        # Undo control for the latest reversible application action.
         self._undo_btn = QPushButton(self.tr("Undo"))
         self._undo_btn.setObjectName("undoButton")
         self._undo_btn.setVisible(False)
@@ -308,7 +308,7 @@ class MainWindow(
         self._route_history: list[str] = []
         self._route_history_index = -1
 
-        # Build sidebar from PluginRegistry (v25.0 plugin architecture)
+        # Build the sidebar from inert plugin specifications.
         context = {
             "main_window": self,
             "config_manager": ConfigManager,  # class, not instance
@@ -331,7 +331,7 @@ class MainWindow(
         # Ctrl+K and Ctrl+Shift+K share one policy-backed discovery surface.
         self._setup_command_palette_shortcut()
 
-        # v13.5 UX Polish - keyboard shortcuts
+        # Register application keyboard shortcuts after navigation exists.
         self._setup_keyboard_shortcuts()
 
         # First-run wizard
@@ -886,7 +886,7 @@ class MainWindow(
         self._update_status_chrome()
 
     def show_status_toast(self, message: str, error: bool = False, duration: int = 3000):
-        """Show a temporary status-bar toast notification (v38.0)."""
+        """Show a temporary status-bar notification."""
         self._status_label.setText(message)
         self._status_label.setAccessibleDescription(message)
         if error:

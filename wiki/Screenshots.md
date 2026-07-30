@@ -1,45 +1,33 @@
 # Screenshots
 
-UI screenshots for the exact **v18.0.0 "Haven"** release, captured from the
-real PyQt application on 2026-07-22. The capture script also synchronized these
-wiki assets from the user-guide catalog.
+Current deterministic UI evidence for **v23.0.2 "Compass"** is stored once in
+the main repository. These contact sheets show wide and compact layouts without
+duplicating binary assets in the wiki.
 
-## State & Recovery
+## Home
 
-| State Doctor | Restore Preview | Collector Status |
-| --- | --- | --- |
-| ![State Doctor](images/state-doctor.png) | ![Restore Preview](images/restore-preview.png) | ![Collector Status](images/collector-status.png) |
+![Home](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/home.png)
 
-## Navigation and System Workflows
+## Troubleshoot
 
-| Home Dashboard | System Monitor |
-| --- | --- |
-| ![Home Dashboard](images/hero-home.png) | ![System Monitor](images/system-monitor.png) |
+![Troubleshoot](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/troubleshoot.png)
 
-| Maintenance Updates | Release Readiness |
-| --- | --- |
-| ![Maintenance Updates](images/maintenance-updates.png) | ![Release Readiness](images/release-readiness.png) |
+## Action Center
 
-## Upgrade Planning
+![Action Center](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/action_center.png)
 
-![Upgrade Assistant](images/upgrade-assistant.png)
+## System Check
 
-## Network and Security
+![System Check](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/system_check.png)
 
-| Network Connections | Security and Privacy |
-| --- | --- |
-| ![Network Connections](images/network-connections.png) | ![Security and Privacy](images/security-privacy.png) |
+## Activity and recovery
 
-## Personalization and Tools
+![Activity and recovery](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/activity_recovery.png)
 
-| Settings Appearance | AI Lab Models |
-| --- | --- |
-| ![Settings Appearance](images/settings-appearance.png) | ![AI Lab Models](images/ai-lab-models.png) |
+## Release readiness
 
-## Local Profiles and Legacy Extensions
+![Release readiness](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/release_readiness.png)
 
-![Local Profiles and non-executing legacy extension inventory](images/community-legacy-extensions.png)
-
-## Advanced Readiness
-
-![Release Readiness Advanced](images/release-readiness-advanced.png)
+These are deterministic application captures, not proof of a physical display,
+high-DPI, keyboard, or screen-reader gate. The six core workflow screenshots
+will be refreshed together after their UI work is complete.

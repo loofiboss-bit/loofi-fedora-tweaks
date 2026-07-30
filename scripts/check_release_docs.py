@@ -13,16 +13,26 @@ Checks performed:
      completed task checkboxes
   8. (optional --require-publish-ready-tasks) only explicitly tagged
      post-publication closure tasks may remain unchecked
+  9. Active docs match the current product, parse documented CLI examples,
+     contain valid local links/screenshots, and keep wiki mirrors synchronized
+ 10. Desktop metadata and active runtime comments contain no device-specific
+     or generated phase-label residue
 """
 
 from __future__ import annotations
 
 import argparse
 import ast
+import contextlib
+import importlib.util
+import io
 import json
 import re
+import shlex
+import sys
 from pathlib import Path
 from typing import List
+from urllib.parse import unquote
 
 ROOT = Path(__file__).resolve().parent.parent
 VERSION_FILE = ROOT / "loofi-fedora-tweaks" / "version.py"
@@ -39,6 +49,47 @@ CI_WORKFLOW_FILE = ROOT / ".github" / "workflows" / "ci.yml"
 AUTO_RELEASE_WORKFLOW_FILE = ROOT / ".github" / "workflows" / "auto-release.yml"
 JUSTFILE = ROOT / "Justfile"
 PLUGIN_LOADER_FILE = ROOT / "loofi-fedora-tweaks" / "core" / "plugins" / "loader.py"
+
+ACTIVE_DOC_PATHS = (
+    "README.md",
+    "CONTRIBUTING.md",
+    "docs/README.md",
+    "docs/BEGINNER_QUICK_GUIDE.md",
+    "docs/USER_GUIDE.md",
+    "docs/FEDORA_KDE_44_READINESS.md",
+    "docs/ADVANCED_ADMIN_GUIDE.md",
+    "docs/TROUBLESHOOTING.md",
+    "docs/STATE_INTEGRITY.md",
+    "docs/VERIFIED_MAINTENANCE.md",
+    "wiki/Home.md",
+    "wiki/Getting-Started.md",
+    "wiki/Screenshots.md",
+)
+VERSIONED_GUIDE_PATHS = (
+    "README.md",
+    "docs/README.md",
+    "docs/BEGINNER_QUICK_GUIDE.md",
+    "docs/USER_GUIDE.md",
+    "docs/FEDORA_KDE_44_READINESS.md",
+    "docs/ADVANCED_ADMIN_GUIDE.md",
+    "docs/TROUBLESHOOTING.md",
+    "docs/STATE_INTEGRITY.md",
+    "docs/VERIFIED_MAINTENANCE.md",
+    "wiki/Home.md",
+    "wiki/Screenshots.md",
+)
+WIKI_MIRRORS = (
+    ("docs/BEGINNER_QUICK_GUIDE.md", "wiki/Getting-Started.md"),
+)
+CURRENT_SCREENSHOT_PATHS = (
+    "docs/images/user-guide/home-dashboard.png",
+    "docs/images/v23/phase6/contact-sheets/home.png",
+    "docs/images/v23/phase6/contact-sheets/troubleshoot.png",
+    "docs/images/v23/phase6/contact-sheets/action_center.png",
+    "docs/images/v23/phase6/contact-sheets/system_check.png",
+    "docs/images/v23/phase6/contact-sheets/activity_recovery.png",
+    "docs/images/v23/phase6/contact-sheets/release_readiness.png",
+)
 
 VERSION_RE = re.compile(r'__version__\s*=\s*"([^"]+)"')
 CODENAME_RE = re.compile(r'__version_codename__\s*=\s*"([^"]+)"')
@@ -62,6 +113,27 @@ _TASK_CHECKBOX_RE = re.compile(
 _ROADMAP_RELEASE_RE = re.compile(
     r'^## \[(ACTIVE|DONE|PUBLICATION BLOCKED)\] v(\d+\.\d+\.\d+)(?:\s+"([^"]+)")?',
     re.MULTILINE,
+)
+_MARKDOWN_LINK_RE = re.compile(r"!?\[[^\]]*\]\(([^)]+)\)")
+_ACTIVE_PLACEHOLDER_RE = re.compile(
+    r"\b(?:TODO|FIXME|TBD|placeholder)\b",
+    re.IGNORECASE,
+)
+_RETIRED_COPY_RE = re.compile(
+    r"\b(?:five-step wizard|5-step wizard|Advanced mode|Advanced destination)\b",
+    re.IGNORECASE,
+)
+_DIRECT_MUTATION_EXAMPLE_RE = re.compile(
+    r"^\s*(?:loofi|loofi-fedora-tweaks\s+--cli)\s+"
+    r"(?:cleanup\b|tuner\s+apply\b|service\s+(?:start|stop|restart|enable|disable|mask|unmask)\b|"
+    r"package\s+(?:install|remove)\b|firewall\s+(?:open|close)\b|network\s+dns\b|"
+    r"snapshot\s+(?:restore|delete)\b|updates?\s+(?:install|apply)\b)",
+    re.MULTILINE,
+)
+_RUNTIME_RESIDUE_RE = re.compile(
+    r"\bPhase\s+\d+\b|Hallmark\s*·|\bHaven\b|"
+    r"\b(?:Standard|Advanced) mode\b",
+    re.IGNORECASE,
 )
 
 
@@ -438,6 +510,228 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     return errors
 
 
+def _active_doc_files(root: Path) -> list[Path]:
+    return [root / relative for relative in ACTIVE_DOC_PATHS]
+
+
+def _markdown_target_path(source: Path, raw_target: str) -> Path | None:
+    """Resolve one local Markdown target, or None for external/anchor links."""
+    target = raw_target.strip()
+    if target.startswith("<") and target.endswith(">"):
+        target = target[1:-1]
+    target = target.split(maxsplit=1)[0]
+    if not target or target.startswith(("#", "http://", "https://", "mailto:")):
+        return None
+    target = unquote(target.split("#", 1)[0].split("?", 1)[0])
+    if not target:
+        return None
+    candidate = (source.parent / target).resolve()
+    if candidate.exists():
+        return candidate
+    if source.parent.name == "wiki" and not Path(target).suffix:
+        wiki_candidate = candidate.with_suffix(".md")
+        if wiki_candidate.exists():
+            return wiki_candidate
+    return candidate
+
+
+def _validate_active_links(root: Path, paths: list[Path]) -> list[str]:
+    errors: list[str] = []
+    for path in paths:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        for line_number, line in enumerate(text.splitlines(), start=1):
+            for match in _MARKDOWN_LINK_RE.finditer(line):
+                target = _markdown_target_path(path, match.group(1))
+                if target is not None and not target.exists():
+                    errors.append(
+                        f"broken internal link in {path.relative_to(root)}:"
+                        f"{line_number}: {match.group(1)}"
+                    )
+    return errors
+
+
+def _iter_cli_examples(path: Path) -> list[tuple[int, str]]:
+    """Return Loofi CLI command lines from fenced bash blocks."""
+    examples: list[tuple[int, str]] = []
+    in_bash = False
+    for line_number, line in enumerate(
+        path.read_text(encoding="utf-8").splitlines(),
+        start=1,
+    ):
+        stripped = line.strip()
+        if stripped.startswith("```"):
+            if in_bash:
+                in_bash = False
+            else:
+                language = stripped[3:].strip().lower()
+                in_bash = language in {"bash", "sh", "shell", "console"}
+            continue
+        if not in_bash:
+            continue
+        if stripped.startswith("loofi "):
+            examples.append((line_number, stripped))
+        elif stripped.startswith("loofi-fedora-tweaks --cli "):
+            examples.append((line_number, stripped))
+    return examples
+
+
+def _cli_arguments(command: str) -> list[str]:
+    tokens = shlex.split(command)
+    if tokens[0] == "loofi":
+        tokens = tokens[1:]
+    else:
+        cli_index = tokens.index("--cli")
+        tokens = tokens[cli_index + 1 :]
+    for separator in ("|", ">", ">>", "2>", "2>>"):
+        if separator in tokens:
+            tokens = tokens[: tokens.index(separator)]
+    replacements = {
+        "PLAN_ID": "plan-example",
+        "RUN_ID": "run-example",
+        "SESSION_ID": "session-example",
+        "FOLLOWUP_ID": "followup-example",
+    }
+    return [replacements.get(token, token) for token in tokens]
+
+
+def _load_cli_parser(root: Path):
+    parser_file = root / "loofi-fedora-tweaks" / "cli" / "parser.py"
+    if not parser_file.exists():
+        return None
+    source_root = str(root / "loofi-fedora-tweaks")
+    sys.path.insert(0, source_root)
+    try:
+        spec = importlib.util.spec_from_file_location(
+            "_loofi_documented_cli_parser",
+            parser_file,
+        )
+        if spec is None or spec.loader is None:
+            return None
+        module = importlib.util.module_from_spec(spec)
+        spec.loader.exec_module(module)
+        return module.build_parser()
+    finally:
+        sys.path.remove(source_root)
+
+
+def _validate_cli_examples(root: Path, paths: list[Path]) -> list[str]:
+    parser = _load_cli_parser(root)
+    if parser is None:
+        return []
+    errors: list[str] = []
+    for path in paths:
+        if not path.exists():
+            continue
+        for line_number, command in _iter_cli_examples(path):
+            try:
+                with contextlib.redirect_stderr(io.StringIO()):
+                    parser.parse_args(_cli_arguments(command))
+            except (SystemExit, ValueError) as exc:
+                errors.append(
+                    f"documented CLI does not parse in {path.relative_to(root)}:"
+                    f"{line_number}: {command} ({exc})"
+                )
+    return errors
+
+
+def _validate_runtime_copy(root: Path) -> list[str]:
+    errors: list[str] = []
+    desktop_file = root / "loofi-fedora-tweaks.desktop"
+    if desktop_file.exists():
+        desktop = desktop_file.read_text(encoding="utf-8")
+        expected = (
+            "Comment=Fedora maintenance and desktop settings with reviewed "
+            "system changes"
+        )
+        if expected not in desktop:
+            errors.append("desktop metadata must use durable product copy")
+        if re.search(r"\b(?:HP|Elitebook)\b", desktop, re.IGNORECASE):
+            errors.append("desktop metadata contains device-specific copy")
+
+    source_root = root / "loofi-fedora-tweaks"
+    if source_root.exists():
+        for path in sorted(source_root.rglob("*")):
+            if path.suffix not in {".py", ".qss"}:
+                continue
+            text = path.read_text(encoding="utf-8")
+            match = _RUNTIME_RESIDUE_RE.search(text)
+            if match:
+                line_number = text.count("\n", 0, match.start()) + 1
+                errors.append(
+                    f"runtime phase/generated label in "
+                    f"{path.relative_to(root)}:{line_number}: {match.group(0)}"
+                )
+    return errors
+
+
+def validate_active_documentation(root: Path, version: str) -> list[str]:
+    """Validate current user-facing docs without scanning historical archives."""
+    errors: list[str] = []
+    paths = _active_doc_files(root)
+    for path in paths:
+        if not path.exists():
+            errors.append(f"missing active documentation: {path.relative_to(root)}")
+
+    for relative in VERSIONED_GUIDE_PATHS:
+        path = root / relative
+        if not path.exists():
+            continue
+        heading = "\n".join(path.read_text(encoding="utf-8").splitlines()[:8])
+        versions = set(re.findall(r"\bv?(\d+\.\d+\.\d+)\b", heading))
+        if version not in versions:
+            errors.append(f"{relative} does not identify current version {version}")
+        stale = sorted(item for item in versions if item != version)
+        if stale:
+            errors.append(
+                f"{relative} has stale heading version(s): {', '.join(stale)}"
+            )
+
+    for path in paths:
+        if not path.exists():
+            continue
+        text = path.read_text(encoding="utf-8")
+        placeholder = _ACTIVE_PLACEHOLDER_RE.search(text)
+        if placeholder:
+            line_number = text.count("\n", 0, placeholder.start()) + 1
+            errors.append(
+                f"active documentation placeholder in "
+                f"{path.relative_to(root)}:{line_number}: {placeholder.group(0)}"
+            )
+        retired = _RETIRED_COPY_RE.search(text)
+        if retired:
+            line_number = text.count("\n", 0, retired.start()) + 1
+            errors.append(
+                f"retired navigation copy in "
+                f"{path.relative_to(root)}:{line_number}: {retired.group(0)}"
+            )
+        direct = _DIRECT_MUTATION_EXAMPLE_RE.search(text)
+        if direct:
+            line_number = text.count("\n", 0, direct.start()) + 1
+            errors.append(
+                f"direct-mutation CLI example in "
+                f"{path.relative_to(root)}:{line_number}: {direct.group(0).strip()}"
+            )
+
+    for source_relative, target_relative in WIKI_MIRRORS:
+        source = root / source_relative
+        target = root / target_relative
+        if source.exists() and target.exists() and source.read_bytes() != target.read_bytes():
+            errors.append(
+                f"wiki mirror drift: {target_relative} differs from {source_relative}"
+            )
+
+    for relative in CURRENT_SCREENSHOT_PATHS:
+        if not (root / relative).is_file():
+            errors.append(f"referenced current screenshot is missing: {relative}")
+
+    errors.extend(_validate_active_links(root, paths))
+    errors.extend(_validate_cli_examples(root, paths))
+    errors.extend(_validate_runtime_copy(root))
+    return errors
+
+
 def validate_release_docs(
     root: Path,
     *,
@@ -577,6 +871,12 @@ def validate_release_docs(
     # --- Stale version tests ---
     stale_errors = scan_stale_version_tests(TESTS_DIR, py_version, codename)
     errors.extend(stale_errors)
+
+    # --- Active documentation and runtime copy ---
+    # Older unit-test fixtures predate the active documentation tree. A real
+    # checkout always has docs/README.md, which activates this complete gate.
+    if (root / "docs" / "README.md").exists():
+        errors.extend(validate_active_documentation(root, py_version))
 
     return errors
 

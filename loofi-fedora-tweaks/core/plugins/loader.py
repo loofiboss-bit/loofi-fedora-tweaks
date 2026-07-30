@@ -1,4 +1,4 @@
-"""Built-in-only, route-time plugin loader for Haven."""
+"""Built-in-only, route-time plugin loader."""
 
 from __future__ import annotations
 
@@ -119,5 +119,5 @@ class PluginLoader:
     ) -> list[str]:
         """Never scan or import external code; retain a stable empty response."""
         del context, directory
-        log.warning("External executable plugins were retired in Haven and were not loaded.")
+        log.warning("External executable plugins are retired and were not loaded.")
         return []

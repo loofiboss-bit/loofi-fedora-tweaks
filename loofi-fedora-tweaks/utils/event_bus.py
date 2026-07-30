@@ -1,5 +1,5 @@
 """
-EventBus — v20.0 Phase 2 (Agent Hive Mind).
+Process-local event delivery with explicit subscriptions.
 
 Thread-safe pub/sub system enabling inter-agent communication and system event reactions.
 Subscribers execute asynchronously to prevent blocking. Failed subscribers are logged but

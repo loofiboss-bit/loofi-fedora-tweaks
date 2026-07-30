@@ -1,149 +1,52 @@
-# Documentation Index
+# Documentation
 
-Central documentation map for Loofi Fedora Tweaks.
+This is the documentation map for Loofi Fedora Tweaks v23.0.2 "Compass".
 
-## Start Here
+## Use Loofi
 
-- `BEGINNER_QUICK_GUIDE.md` - Fast onboarding for new users
-- `USER_GUIDE.md` - End-user walkthrough (GUI, CLI, modes, workflows)
-- `FEDORA_KDE_44_READINESS.md` - Release readiness checks, Fedora 44 support target, Fedora 45 preview planning, and Support Bundle v13 fields
-- `ADVANCED_ADMIN_GUIDE.md` - Admin/operator runbooks and advanced operations
-- `TROUBLESHOOTING.md` - Common issues and fixes
-- `STATE_INTEGRITY.md` - State Doctor, backup, restore planning, schemas, locks, and archive threat model
-- `VERIFIED_MAINTENANCE.md` - Action Center planning, confirmation, verification, interruption, and recovery behavior
-- `CONTRIBUTING.md` - Development and contribution workflow
-- `images/user-guide/README.md` - Historical screenshot catalog and naming map
+- [Getting started](BEGINNER_QUICK_GUIDE.md) — install, the one-page welcome,
+  navigation, common workflows, and safe CLI inspection
+- [User guide](USER_GUIDE.md) — complete GUI and CLI workflows
+- [Verified maintenance](VERIFIED_MAINTENANCE.md) — Action Center planning,
+  confirmation, verification, interruption, and recovery
+- [State integrity](STATE_INTEGRITY.md) — State Doctor, backups, restore
+  planning, schemas, locks, and archive safety
+- [Troubleshooting](TROUBLESHOOTING.md) — operational problems and recovery
+- [Fedora KDE 44 readiness](FEDORA_KDE_44_READINESS.md) — supported host and
+  Fedora 45 preview boundaries
+- [Advanced administration](ADVANCED_ADMIN_GUIDE.md) — operator runbooks
 
-## Product and Release Docs
+The repository [README](../README.md) is the product overview and quick start.
+The getting-started guide above is the canonical source mirrored to
+`wiki/Getting-Started.md`; CI rejects drift.
 
-- `../README.md` - Project overview and quick start
-- `../ROADMAP.md` - Current and future release-status index
-- `../CHANGELOG.md` - Full change history
-- `plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md` - Active v23.0.0 "Compass" scope, phases, compatibility, and gates
-- `../.workflow/specs/arch-v23.0.0.md` - Compass architecture and protected contracts
-- `../.workflow/specs/tasks-v23.0.0.md` - Compass implementation and release checklist
-- `reports/V23_PHASE0_BASELINE.md` - Exact v22 release state, route/source/schema inventories, and Compass scope lock
-- `reports/V23_PHASE0_STARTUP.json` - Reproducible Compass startup and resource baseline
-- `reports/V23_PHASE0_SYSTEM_CHECK.json` - Read-only System Check timing baseline
-- `reports/V23_PHASE0_SCREENSHOTS.json` - Deterministic wide/compact offscreen screenshot evidence
-- `reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md` - Immutable Compass contracts, closed profile budgets, lifecycle matrix, and future-safe session persistence
-- `reports/V23_PHASE2_EVIDENCE_COMPOSITION.md` - Read-only evidence adaptation, conservative correlation, and compatible follow-up comparison
-- `reports/V23_PHASE3_TROUBLESHOOT_EXPERIENCE.md` - Single guided Troubleshoot route, explicit collection and cancellation, evidence, next-step, follow-up, and local UI matrix
-- `reports/V23_PHASE4_INTERFACES_SUPPORT.md` - Versioned troubleshooting CLI, authenticated retrieval-only API, and bounded Support Bundle v13
-- `reports/V23_PHASE5_LOCAL_QUALIFICATION.md` - Local repository, security, performance, package, and live Traditional Wayland/AT-SPI qualification with explicit open physical gates
-- `reports/V23_PHASE5_STARTUP.json` - Reproducible Compass Phase 5 startup, Home-provider, probe, timer, thread, import, and RSS evidence
-- `reports/V23_PHASE5_ATSPI.json` - Summary-only live Wayland AT-SPI exposure evidence for the canonical Troubleshoot route
-- `reports/V23_PHASE5_TRADITIONAL_PROFILES.json` - Fresh bounded real-CLI evidence for all six profiles on physical Fedora 44 Traditional
-- `reports/V23_PHASE5_CODEQL.json` - Exact-input local CodeQL security-extended coverage, fixes, suppressions, and effective finding counts
-- `reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md` - Retained local Compass candidate, artifact identities, and exact-commit/publication boundary
-- `reports/V23_PHASE6_LOCAL_CANDIDATE.json` - Machine-readable local artifact, checksum, SBOM, provenance, and lifecycle status
-- `reports/V23_PHASE6_SCREENSHOTS.json` - Deterministic v23 wide/compact screenshot evidence
-- `reports/V23_RELEASE_PUBLICATION.md` - Exact final Compass GitHub, attestation, COPR, clean-install, host-daemon, documentation, and lineage readback
-- `plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md` - Canonical v16.0.0 "Clarity" scope and gates
-- `plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md` - Canonical v17.0.0 "Assurance" scope and gates
-- `plans/LOOFI_FEDORA_TWEAKS_V18_PLAN.md` - Completed v18.0.0 "Haven" implementation scope and release gates
-- `plans/LOOFI_FEDORA_TWEAKS_V19_PLAN.md` - Completed v19.0.0 "Steward" implementation scope and phase gates
-- `plans/LOOFI_FEDORA_TWEAKS_V22_PLAN.md` - Completed v22.0.0 "Alignment" scope, phases, compatibility, and gates
-- `../.workflow/specs/arch-v22.0.0.md` - Alignment architecture and protected contracts
-- `../.workflow/specs/tasks-v22.0.0.md` - Alignment implementation and release checklist
-- `reports/V22_PHASE0_BASELINE.md` - Exact v21 checkout, trust, catalog, UI, startup, and package baseline
-- `reports/V22_PHASE0_STARTUP.json` - Reproducible Alignment startup and resource baseline
-- `reports/V22_PHASE1_TRUST_FOUNDATION.md` - Fail-closed COPR, package, Flatpak, shutdown, and support privacy closure
-- `reports/V22_PHASE2_CATALOG_NATIVE_ALIGNMENT.md` - Destination-owned catalog records and safe Plasma handoffs
-- `reports/V22_PHASE3_VISUAL_ALIGNMENT.md` - Quieter hierarchy and state-led core workflows
-- `reports/V22_PHASE4_JOURNEY_UI.md` - Automated core-journey accessibility matrix and physical gate boundary
-- `reports/V22_PHASE4_SECRETSTORE.md` - Provider-neutral locked, unavailable, CRUD, and fallback evidence
-- `reports/V22_PHASE5_LOCAL_QUALIFICATION.md` - Full local gates, exact candidate identities, and remaining physical and publication boundaries
-- `reports/V22_RELEASE_PUBLICATION.md` - Exact Alignment GitHub, COPR, clean-install, platform, public-documentation, and lineage readback
-- `releases/RELEASE-NOTES-v22.0.0.md` - Alignment trust, native handoff, visual hierarchy, compatibility, and upgrade notes
-- `plans/LOOFI_FEDORA_TWEAKS_V21_PLAN.md` - Completed v21.0.0 "Resolve" scope, phases, compatibility, and gates
-- `../.workflow/specs/arch-v21.0.0.md` - Resolve architecture and protected contracts
-- `../.workflow/specs/tasks-v21.0.0.md` - Resolve implementation and release checklist
-- `reports/V21_PHASE0_BASELINE.md` - Exact v20 checkout, runtime, UI, lifecycle, tag, and platform baseline
-- `reports/V21_PHASE0_STARTUP.json` - Reproducible offscreen startup and resource baseline
-- `reports/V21_PHASE0_SYSTEM_CHECK.json` - Read-only System Check duration baseline
-- `reports/V21_PHASE1_RUNTIME_SHELL.md` - Process-owned teardown, exact subscriptions, shell extraction, local views, and compact navigation
-- `reports/V21_PHASE2_GUIDED_CORE.md` - Inert GuidedTask composition, truthful application review handoffs, System Check local views, and progressive Activity states
-- `reports/V21_PHASE3_SUPPORTING_SURFACES.md` - Grouped and filtered Specialist Tools, truthful Settings persistence feedback, responsive geometry, RTL, AT-SPI, Wayland, and xcb evidence
-- `reports/V21_PHASE3_STARTUP.json` - Resolve Phase 3 cold-start, one-provider, probe, timer, thread, import, and RSS evidence
-- `reports/V21_PHASE4_PLATFORM_QUALITY.md` - Resolve lifecycle, Fedora 44, package, security, and complete local quality qualification
-- `reports/V21_PHASE4_STARTUP.json` - Final Resolve implementation-phase startup, resource, import, and RSS evidence
-- `reports/V21_RELEASE_PUBLICATION.md` - Exact Resolve GitHub, COPR, clean-install, public-documentation, and lineage readback
-- `releases/RELEASE-NOTES-v21.0.0.md` - Resolve guided-work, lifecycle, compatibility, and upgrade notes
-- `../.workflow/specs/arch-v20.0.0.md` - v20.0.0 "Continuity" architecture and safety contracts
-- `../.workflow/specs/tasks-v20.0.0.md` - Continuity implementation and verification checklist
-- `releases/RELEASE-NOTES-v20.0.0.md` - Trusted Change Journal, safe recovery, compatibility, and local release status
-- `reports/V19_PHASE0_BASELINE.md` - Steward authority, route/data, Home-state, performance, and platform scope lock
-- `reports/V19_PHASE1_SYSTEM_CHECK_DOMAIN.md` - Immutable System Check contracts, bounded collectors, mapping gates, and storage compatibility
-- `reports/V19_PHASE2_EXPLICIT_HOME_CHECK.md` - Explicit asynchronous Home check, cancellation, responsive UI, and startup evidence
-- `reports/V19_PHASE3_CANONICAL_SYSTEM_CHECK.md` - One read-only System Check page, stable routes, existing-store composition, and CLI compatibility
-- `reports/V19_PHASE4_ACTION_HANDOFF.md` - Deny-by-default finding handoff, schema-v4 context migration, and preserved Action Center execution authority
-- `reports/V19_PHASE5_VERIFIED_RESOLUTION.md` - Deterministic before/after outcomes, separate verification facts, bounded support evidence, and read-only API
-- `reports/V19_PHASE6_PLATFORM_CERTIFICATION.md` - Fedora 44 Traditional and fresh Kinoite installation, staged deployment, reboot, correction, and exact readback
-- `reports/V19_PHASE6_RELEASE_READINESS.md` - local v19 verification, artifact identities, security results, and deliberately pending exact-commit/publication gates
-- `releases/RELEASE-NOTES-v19.0.0.md` - Steward changes, compatibility, local release evidence, and deferred publication gates
-- `releases/RELEASE-NOTES-v18.0.0.md` - Haven changes, migration notes, and verified publication evidence
-- `reports/V18_PHASE0_BASELINE.md` - Haven authority, performance, route, state, module, and mutation baseline
-- `reports/V18_PHASE6_RELEASE_READINESS.md` - Haven regression, security, performance, packaging, and verified public-release evidence
-- `reports/V18_PLATFORM_CERTIFICATION.md` - Current Fedora 44 Traditional host evidence and the carried-forward Atomic support boundary
-- `reports/V17_PHASE0_BASELINE.md` - v16 release baseline, scope lock, and mutation inventory
-- `reports/V17_PHASE1_CORE_API.md` - schema-v2 lifecycle, validation, migration, and read-only API
-- `reports/V17_PHASE2_UPDATES.md` - independent Fedora, Flatpak, and firmware verification
-- `reports/V17_PHASE3_APPLICATIONS.md` - RPM and Flatpak application plan convergence
-- `reports/V17_PHASE4_CLEANUP.md` - diagnosis handoffs and verified cleanup actions
-- `reports/V17_PHASE5_RECOVERY.md` - shared Timeshift/Snapper recovery-point contract
-- `reports/V17_PHASE6_RELEASE_READINESS.md` - regression, physical validation, packaging, and publication evidence
-- `reports/V16_PHASE0_BASELINE.md` - Exact v15 baseline, UI debt inventory, measurements, and Phase 0 verification
-- `reports/V16_PHASE1_THEME_ENGINE.md` - Structural QSS, semantic palettes, token contracts, and Phase 1 verification
-- `reports/V16_PHASE2_SHARED_COMPONENTS.md` - Shared page, navigation, card, action, status, and accessibility component contracts
-- `reports/V16_PHASE3_APPLICATION_SHELL.md` - Responsive application shell, explicit section metadata, and startup/compatibility verification
-- `reports/V16_PHASE4_HOME_SYSTEM.md` - Home and System redesign, responsive properties, and startup-safety evidence
-- `reports/V16_PHASE5_STANDARD_DESTINATIONS.md` - Shared shell and component contracts across all remaining Standard destinations
-- `reports/V16_PHASE6_ADVANCED_CLEANUP.md` - Advanced shell adoption, retained local tabs, and legacy presentation cleanup
-- `reports/V16_PHASE7_UI_ACCESSIBILITY.md` - Real-shell responsive, theme, input, contrast, and accessibility validation
-- `reports/V16_PHASE8_RELEASE_READINESS.md` - Full regression, startup, packaging, security, and publication evidence
-- `releases/RELEASE-NOTES-v*.md` - Version-specific release notes
-- `releases/RELEASE-ANNOUNCEMENT.md` - Announcement template/content
-- `reports/V15_PHASE10_RELEASE_READINESS.md` - v15 local gates, measurements, compatibility, and publication checklist
-- `RELEASE_CHECKLIST.md` - Release execution checklist
-- `checklists/DEPLOYMENT-CHECKLIST.md` - Deployment readiness checklist
+## Contribute
 
-## Developer Docs
+- [Contributing](../CONTRIBUTING.md) — development workflow and engineering rules
+- [Architecture](../ARCHITECTURE.md) — current structure and safety boundaries
+- [Plugin SDK](PLUGIN_SDK.md) — built-in page-provider contract and retired
+  external extension boundary
+- [Release checklist](RELEASE_CHECKLIST.md) — release execution gates
 
-- `PLUGIN_SDK.md` - Built-in page-provider contract and external extension retirement
-- `reports/` - Historical implementation/test summaries
+Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 
-## Legacy/Archive Notes
+## Releases and history
 
-- Canonical latest release index: `releases/RELEASE_NOTES.md`
-- Compatibility aliases: `releases/release_notes.md`, `release_notes.md`
-- `archive/ROADMAP_HISTORY_THROUGH_V15.md` - Full historical roadmap through v15
-- `archive/ROADMAP_V15_NEBULA_LEGACY.md` - Obsolete pre-renormalization Nebula plan
-- `archive/ROADMAP_V18_SENTINEL.md` - Superseded historical Sentinel plan
+- [Roadmap](../ROADMAP.md) — current release status
+- [Changelog](../CHANGELOG.md) — complete change history
+- [Release notes](releases/RELEASE_NOTES.md) — release-note index
+- [Current public evidence](reports/V23_RELEASE_PUBLICATION.md) — exact
+  v23.0.2 release and installation readback
 
-## Planning and Reports
+Historical implementation plans and evidence remain available without
+competing with current guidance:
 
-- `plans/` - planning prompts and roadmap audits
-- `reports/` - implementation and quality diagnostics
+- [`plans/`](plans/) — implementation plans
+- [`reports/`](reports/) — implementation and qualification evidence
+- [`releases/`](releases/) — immutable version-specific release notes
+- [`archive/`](archive/) — superseded pre-normalization material
+- [`images/user-guide/`](images/user-guide/) — screenshot catalog and capture
+  instructions
 
-These legacy files are kept for compatibility and historical context.
-
-## Documentation Maintenance Notes
-
-- `v23.0.2 "Compass"` is the current public release. Its exact tag, GitHub
-  assets, attestations, COPR build `10788467`, signatures, clean Fedora 44
-  install, real-host upgrade, daemon health, CI, CodeQL, and public
-  documentation passed independent readback.
-- Fresh Kinoite/Atomic and manual keyboard/Orca qualification remain open
-  under an authorized skip and are not claimed as passed.
-- `v23.0.0` and `v23.0.1 "Compass"` are publicly verified and remain
-  immutable earlier releases.
-- The historical Architecture Hardening tag object is preserved
-  byte-identically as `legacy-v23.0.0-architecture-hardening`; canonical
-  `v23.0.0` now identifies the Compass release commit.
-- `v20.0.0 "Continuity"` remains historically publication-blocked because its
-  COPR build failed in Pulp after package build.
-- Historical v16 and v17 reports and screenshots remain release evidence for
-  those versions. Do not present them as current Steward captures.
-- The archived pre-normalization v21 release notes under `archive/` are
-  historical evidence, not Resolve release documentation.
+Historical files describe the release named in each file. They are not current
+usage instructions.

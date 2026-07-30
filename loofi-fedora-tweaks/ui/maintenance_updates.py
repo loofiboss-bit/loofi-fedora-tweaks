@@ -591,7 +591,7 @@ class _OverlaysSubTab(QWidget):
             QMessageBox.information(
                 self,
                 self.tr("Manual review required"),
-                self.tr("Resetting every overlay has no bounded Haven definition. Review rpm-ostree status and perform the reset manually."),
+                self.tr("Resetting every overlay has no bounded Action Center definition. Review rpm-ostree status and perform the reset manually."),
             )
 
     def reboot_system(self: typing.Any) -> typing.Any:
@@ -607,12 +607,12 @@ class _OverlaysSubTab(QWidget):
             QMessageBox.information(
                 self,
                 self.tr("Reboot remains manual"),
-                self.tr("Haven never initiates a reboot. Use the desktop session controls when ready."),
+                self.tr("Loofi never initiates a reboot. Use the desktop session controls when ready."),
             )
 
 
 # ---------------------------------------------------------------------------
-# Sub-tab: Smart Updates (v37.0 Pinnacle)
+# Smart Updates sub-tab
 # ---------------------------------------------------------------------------
 
 
@@ -727,11 +727,11 @@ class _SmartUpdatesSubTab(QWidget):
         )
 
     def _rollback_last(self: typing.Any) -> typing.Any:
-        self._append_output(self.tr("Rollback remains manual-only. Haven never initiates rollback or reboot automatically.\n"))
+        self._append_output(self.tr("Rollback remains manual-only. Loofi never initiates rollback or reboot automatically.\n"))
 
 
 # ---------------------------------------------------------------------------
-# Sub-tab: Upgrade Assistant (v10.0 Waypoint)
+# Upgrade Assistant sub-tab
 # ---------------------------------------------------------------------------
 
 
@@ -805,5 +805,5 @@ class _UpgradeAssistantSubTab(QWidget):
 
 
 # ---------------------------------------------------------------------------
-# Sub-tab: Action Center (v11.0 Harbor)
+# Action Center sub-tab
 # ---------------------------------------------------------------------------

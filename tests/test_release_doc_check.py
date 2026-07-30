@@ -2,7 +2,9 @@
 
 import importlib.util
 import sys
+import unittest
 from pathlib import Path
+from unittest.mock import MagicMock, patch
 
 
 def _load_module(name: str, path: Path):
@@ -98,6 +100,28 @@ def _set_module_paths(module, tmp_path: Path) -> None:
     module.AUTO_RELEASE_WORKFLOW_FILE = tmp_path / ".github" / "workflows" / "auto-release.yml"
     module.JUSTFILE = tmp_path / "Justfile"
     module.PLUGIN_LOADER_FILE = tmp_path / "loofi-fedora-tweaks" / "core" / "plugins" / "loader.py"
+
+
+def _write_active_documentation(root: Path, module, version: str = "23.0.2") -> None:
+    for relative in module.ACTIVE_DOC_PATHS:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# Loofi v{version}\n", encoding="utf-8")
+    canonical = root / "docs" / "BEGINNER_QUICK_GUIDE.md"
+    mirror = root / "wiki" / "Getting-Started.md"
+    canonical.write_text(f"# Loofi v{version}\n", encoding="utf-8")
+    mirror.write_bytes(canonical.read_bytes())
+    for relative in module.CURRENT_SCREENSHOT_PATHS:
+        path = root / relative
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_bytes(b"png")
+    (root / "loofi-fedora-tweaks.desktop").write_text(
+        "Comment=Fedora maintenance and desktop settings with reviewed system changes\n",
+        encoding="utf-8",
+    )
+    source = root / "loofi-fedora-tweaks" / "assets" / "base.qss"
+    source.parent.mkdir(parents=True, exist_ok=True)
+    source.write_text("QWidget { color: black; }\n", encoding="utf-8")
 
 
 def test_release_doc_check_passes_when_required_files_exist(tmp_path):
@@ -629,3 +653,77 @@ def test_release_doc_check_allows_only_tagged_post_publish_task_before_release(t
 
     assert publish_issues == []
     assert any("incomplete workflow task" in item for item in closure_issues)
+
+
+class TestActiveDocumentationGate(unittest.TestCase):
+    def setUp(self):
+        self.module = _load_module(
+            f"check_release_docs_active_{self._testMethodName}",
+            Path("scripts/check_release_docs.py"),
+        )
+
+    def test_accepts_synchronized_current_guides(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_active_documentation(root, self.module)
+            self.assertEqual(
+                self.module.validate_active_documentation(root, "23.0.2"),
+                [],
+            )
+
+    def test_rejects_wiki_drift_broken_links_and_direct_mutation_examples(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_active_documentation(root, self.module)
+            (root / "wiki" / "Getting-Started.md").write_text(
+                "# Loofi v23.0.2\nDrift\n",
+                encoding="utf-8",
+            )
+            (root / "README.md").write_text(
+                "# Loofi v23.0.2\n"
+                "[Missing](docs/missing.md)\n"
+                "```bash\nloofi service restart sshd\n```\n",
+                encoding="utf-8",
+            )
+
+            issues = self.module.validate_active_documentation(root, "23.0.2")
+
+            self.assertTrue(any("wiki mirror drift" in item for item in issues))
+            self.assertTrue(any("broken internal link" in item for item in issues))
+            self.assertTrue(any("direct-mutation CLI example" in item for item in issues))
+
+    def test_rejects_runtime_phase_labels(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_active_documentation(root, self.module)
+            source = root / "loofi-fedora-tweaks" / "assets" / "base.qss"
+            source.write_text("/* Phase 2 generated label */\n", encoding="utf-8")
+
+            issues = self.module.validate_active_documentation(root, "23.0.2")
+
+            self.assertTrue(any("runtime phase/generated label" in item for item in issues))
+
+    def test_rejects_documented_cli_that_does_not_parse(self):
+        from tempfile import TemporaryDirectory
+
+        with TemporaryDirectory() as directory:
+            root = Path(directory)
+            _write_active_documentation(root, self.module)
+            guide = root / "docs" / "USER_GUIDE.md"
+            guide.write_text(
+                "# Loofi v23.0.2\n```bash\nloofi unknown-command\n```\n",
+                encoding="utf-8",
+            )
+            parser = MagicMock()
+            parser.parse_args.side_effect = SystemExit(2)
+
+            with patch.object(self.module, "_load_cli_parser", return_value=parser):
+                issues = self.module.validate_active_documentation(root, "23.0.2")
+
+            self.assertTrue(any("documented CLI does not parse" in item for item in issues))

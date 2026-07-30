@@ -1,10 +1,4 @@
-/* Hallmark · pre-emit critique: P5 H5 E5 S5 R5 V5 */
-/* Hallmark · component: shared-system · genre: technical · theme: semantic-native
- * states: default · hover · focus · active · disabled · loading · error · success
- * contrast: pass (semantic palette contract)
- */
-/* Hallmark · PyQt control-center · restrained native · blue anchor · destination shell */
-/* Loofi Clarity structural theme. Palette values are substituted by ThemeManager. */
+/* Structural theme. Palette values are substituted by ThemeManager. */
 
 /* Minimal application baseline: retain the QApplication system font.
  * The palette owns the window canvas; nested reading widgets stay transparent

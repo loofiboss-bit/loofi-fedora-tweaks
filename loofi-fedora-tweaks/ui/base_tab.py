@@ -160,21 +160,21 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         header_row.addWidget(QLabel(self.tr("Output Log:")))
         header_row.addStretch()
 
-        # Copy button (v38.0)
+        # Copy button
         copy_btn = QPushButton(self.tr("Copy"))
         copy_btn.setObjectName("outputCopyBtn")
         copy_btn.setToolTip(self.tr("Copy output to clipboard"))
         copy_btn.clicked.connect(self._copy_output)
         header_row.addWidget(copy_btn)
 
-        # Save button (v38.0)
+        # Save button
         save_btn = QPushButton(self.tr("Save"))
         save_btn.setObjectName("outputSaveBtn")
         save_btn.setToolTip(self.tr("Save output to file"))
         save_btn.clicked.connect(self._save_output)
         header_row.addWidget(save_btn)
 
-        # Cancel button (v38.0)
+        # Cancel button
         cancel_btn = QPushButton(self.tr("Cancel"))
         cancel_btn.setObjectName("outputCancelBtn")
         cancel_btn.setToolTip(self.tr("Cancel running command"))

@@ -358,7 +358,7 @@ class SystemCheckTab(QWidget, PluginInterface):
             self.history_layout.addWidget(
                 EmptyState(
                     self.tr("No saved history"),
-                    self.tr("Existing v18 health snapshots will appear here without migration."),
+                    self.tr("Existing health snapshots will appear here without migration."),
                 )
             )
         for item in history:

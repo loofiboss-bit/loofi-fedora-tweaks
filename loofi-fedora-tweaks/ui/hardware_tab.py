@@ -142,11 +142,11 @@ class HardwareTab(QWidget, PluginInterface):
         fingerprint_card = self.create_fingerprint_card()
         grid.addWidget(fingerprint_card, 3, 0)
 
-        # Bluetooth Card (v17.0 Atlas)
+        # Bluetooth card
         bluetooth_card = self.create_bluetooth_card()
         grid.addWidget(bluetooth_card, 3, 1)
 
-        # Boot Configuration Card (v37.0 Pinnacle)
+        # Boot configuration card
         boot_card = self.create_boot_config_card()
         grid.addWidget(boot_card, 4, 0, 1, 2)
 
@@ -460,7 +460,7 @@ class HardwareTab(QWidget, PluginInterface):
         """Route authentication enrollment to manual security review."""
         self.actionCenterRequested.emit("enroll-fingerprint", {})
 
-    # ==================== BLUETOOTH (v17.0 Atlas) ====================
+    # Bluetooth
 
     def create_bluetooth_card(self: typing.Any) -> QGroupBox:
         """Create Bluetooth management card."""
@@ -551,7 +551,7 @@ class HardwareTab(QWidget, PluginInterface):
         )
         QTimer.singleShot(12000, self._bt_refresh_status)
 
-    # ==================== BOOT CONFIGURATION (v37.0 Pinnacle) ====================
+    # Boot configuration
 
     def create_boot_config_card(self: typing.Any) -> QGroupBox:
         """Create boot configuration management card."""

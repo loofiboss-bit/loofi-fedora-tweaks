@@ -46,7 +46,7 @@ class RiskRegistry:
     def _build_registry(cls) -> Dict[str, RiskEntry]:
         """Build the default risk registry with all known actions."""
         return {
-            # === v36.0 Horizon — Core actions ===
+            # Core actions
             "dnf_install": RiskEntry(
                 level=RiskLevel.LOW,
                 description="Install packages via DNF",
@@ -103,7 +103,7 @@ class RiskRegistry:
                 revert_command="pkexec grubby --update-kernel=DEFAULT --remove-args=<param>",
                 revert_description="Remove the kernel parameter and regenerate GRUB",
             ),
-            # === v37.0 Pinnacle — New actions ===
+            # Additional actions
             # Smart Updates
             "update_rollback": RiskEntry(
                 level=RiskLevel.HIGH,

@@ -6,22 +6,14 @@ Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
-## What Compass changes
+## What Loofi does
 
-- **Guided troubleshooting:** six closed symptom profiles compose existing
-  System Check, journal, observability, package, network, storage, boot, and
-  deployment evidence through one explicit Troubleshoot experience.
-- **Truthful evidence:** empty, partial, stale, and unavailable sources remain
-  explicit; related changes are conservatively labelled and never imply
-  causation.
-- **Bounded interfaces:** the CLI may explicitly collect, while the
-  authenticated API remains retrieval-only and Support Bundle v13 exports one
-  redacted troubleshooting case.
-- **Hardened background service:** the daemon keeps a strict read-only
-  system/home sandbox with only private application runtime, state, config,
-  and data paths writable.
-- **Compatibility preserved:** all 81 routes, aliases, favorites, state
-  schemas, Traditional/Atomic policy, CLI, API, daemon, and IPC remain intact.
+- Troubleshooting starts only when you choose a symptom and begin.
+- Supported system changes become reviewed Action Center plans before anything
+  is applied.
+- Maintenance outcomes are verified separately from command completion.
+- Traditional and Atomic Fedora paths remain distinct.
+- The optional API is loopback-only and cannot apply plans.
 
 ## Navigation
 
@@ -42,25 +34,19 @@ Built-in specialist providers load only when opened through Specialist Tools,
 search, favorites, or a stable deep link. Discoverability never changes
 confirmation or privilege policy.
 
-## Start here
+## Current guides
 
-- [Installation](Installation)
 - [Getting Started](Getting-Started)
-- [GUI Tabs Reference](GUI-Tabs-Reference)
-- [CLI Reference](CLI-Reference)
-- [Configuration](Configuration)
-- [Security Model](Security-Model)
-- [Atomic Fedora Support](Atomic-Fedora-Support)
-- [Troubleshooting](Troubleshooting)
+- [Screenshots](Screenshots)
+- [User guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/USER_GUIDE.md)
+- [Verified maintenance](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/VERIFIED_MAINTENANCE.md)
+- [Troubleshooting](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TROUBLESHOOTING.md)
+- [Advanced administration](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/ADVANCED_ADMIN_GUIDE.md)
+- [Documentation index](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/README.md)
+- [Contributing](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CONTRIBUTING.md)
 
-## Development
-
-- [Architecture](Architecture)
-- [Built-in Provider Development](Plugin-Development)
-- [Contributing](Contributing)
-- [Testing](Testing)
-- [CI/CD Pipeline](CI-CD-Pipeline)
-- [Changelog](Changelog)
+Older standalone wiki pages remain available as historical material. The
+repository guides linked above are the current usage and development sources.
 
 ## Release status
 

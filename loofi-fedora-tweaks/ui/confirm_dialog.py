@@ -84,7 +84,7 @@ class ConfirmActionDialog(QDialog):
         action_label.setAccessibleName(accessible_action)
         header_row.addWidget(action_label, 1)
 
-        # Risk level badge (v38.0)
+        # Risk level badge
         if risk_level:
             badge_text = {
                 self.RISK_LOW: self.tr("LOW"),
@@ -144,7 +144,7 @@ class ConfirmActionDialog(QDialog):
         self.dont_ask_cb.setObjectName("confirmDontAsk")
         layout.addWidget(self.dont_ask_cb)
 
-        # Command preview area (hidden by default, v35.0)
+        # Command preview area, hidden by default
         self._preview_area = None
         if command_preview:
             self._preview_area = QTextEdit()
@@ -158,7 +158,7 @@ class ConfirmActionDialog(QDialog):
         # Buttons
         btn_row = QHBoxLayout()
 
-        # Preview button (v35.0 Fortress)
+        # Preview button
         if command_preview:
             preview_btn = QPushButton(self.tr("Preview"))
             preview_btn.setMinimumWidth(90)
@@ -187,7 +187,7 @@ class ConfirmActionDialog(QDialog):
             try:
                 mgr = SettingsManager.instance()
                 if self._action_key:
-                    # Per-action suppression (v38.0)
+                    # Per-action suppression
                     suppressed = mgr.get("suppressed_confirmations") or []
                     if self._action_key not in suppressed:
                         suppressed.append(self._action_key)
@@ -241,7 +241,7 @@ class ConfirmActionDialog(QDialog):
         if not force:
             try:
                 mgr = SettingsManager.instance()
-                # Check per-action suppression first (v38.0)
+                # Check per-action suppression first.
                 if action_key:
                     suppressed = mgr.get("suppressed_confirmations") or []
                     if action_key in suppressed:

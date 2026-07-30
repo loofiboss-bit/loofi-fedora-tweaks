@@ -1,6 +1,8 @@
 # State Integrity and Recovery
 
-v13.0.0 "Anchor" keeps Loofi-owned state under standard XDG config, data, cache, and runtime directories. Fedora 44 is the supported baseline; Fedora 45 remains preview/advisory.
+Loofi Fedora Tweaks v23.0.2 "Compass" keeps application-owned state under
+standard XDG config, data, cache, and runtime directories. Fedora 44 is the
+supported baseline; Fedora 45 remains preview/advisory.
 
 ## Beginner: check and back up
 
@@ -18,10 +20,11 @@ The same contracts are available in the CLI:
 loofi-fedora-tweaks --cli --json state doctor
 loofi-fedora-tweaks --cli state backup --output loofi-state.zip
 loofi-fedora-tweaks --cli --json state restore plan loofi-state.zip
-loofi-fedora-tweaks --cli state restore apply loofi-state.zip --plan-id PLAN_ID
 ```
 
-Restore apply accepts only the ID produced for the same validated archive. It creates a rollback archive before replacing any domain.
+Review restore plans in **Settings → State & Recovery**. Applying a restore
+accepts only the ID produced for the same validated archive and creates a
+rollback archive before replacing any domain.
 
 ## Advanced: schemas, locks, and recovery
 

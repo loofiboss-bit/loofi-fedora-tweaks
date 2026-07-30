@@ -1,5 +1,5 @@
 """
-Centralized Action Executor — v19.0 Foundation (Phase 1 Refactor).
+Centralized action execution with bounded command vectors.
 
 All system-level actions route through this executor.
 Provides: preview mode, dry-run, structured results, action logging.

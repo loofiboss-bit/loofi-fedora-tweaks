@@ -138,7 +138,7 @@ class ActionCatalog:
         return PolicyDecision(
             allowed=False,
             reason_code="manual_only",
-            explanation=f"Action '{action_id}' has no audited Haven first-party definition.",
+            explanation=f"Action '{action_id}' has no audited first-party definition.",
             alternative="Review the recommendation and perform any follow-up manually.",
             facts={"action_id": action_id, "catalog": "v18-deny-by-default"},
         )

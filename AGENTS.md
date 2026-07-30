@@ -12,7 +12,7 @@ Treat this file as the canonical, hand-maintained workspace instructions for the
   - `ARCHITECTURE.md` — structure, boundaries, critical patterns
   - `ROADMAP.md` — release scope and status
   - `docs/README.md` — documentation index
-  - `.github/instructions/system_hardening_and_stabilization_guide.md` — safety and privilege rules
+  - `CONTRIBUTING.md` — contributor workflow and safety rules
 
 ## Build and verify
 
@@ -74,7 +74,7 @@ Before release-scoped or workflow-scoped work, check:
 - Mock all system calls (`subprocess`, `shutil.which`, file I/O, OS probes, network access).
 - For package operations, test both traditional Fedora and Atomic Fedora paths.
 - Keep tests rootless and deterministic.
-- See `.github/instructions/test.instructions.md` for the full testing contract.
+- Existing tests and `CONTRIBUTING.md` define the maintained testing contract.
 
 ## Exemplar files
 
@@ -95,4 +95,5 @@ Prefer linking to these instead of duplicating them in new instructions or promp
 - `docs/PLUGIN_SDK.md` — plugin-specific work
 - `docs/TROUBLESHOOTING.md` — operational issues
 - `CHANGELOG.md` and `docs/releases/` — release history
-- `.github/instructions/` — specialized repo rules by concern and file area
+- `.github/instructions/copilot.instructions.md` — generated thin adapter; do
+  not treat it as a second source of truth

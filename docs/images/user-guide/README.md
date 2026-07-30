@@ -4,7 +4,11 @@ Canonical screenshot assets for user-facing docs.
 
 **Last verified**: v18.0.0 "Haven" release on 2026-07-22
 
-**Status**: Screenshot filenames remain stable for user docs. Current images are generated from the real PyQt application with `scripts/capture_v8_user_guide_screenshots.py`.
+**Status**: These assets remain available for stable user-doc links. The
+complete Home, Updates, Install App, Troubleshoot, Cleanup, and Action Center
+set must be recaptured on Fedora 44 KDE Wayland after the planned workflow UI
+changes; older captures are not physical qualification for the current
+release.
 
 ## Current Files
 
@@ -36,11 +40,10 @@ PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v8_user_guide_screenshots
 ```
 
 The capture script uses a temporary clean profile by default so onboarding,
-favorites, and local navigation-mode settings do not affect release images. It
-captures Standard routes first, then switches the same real application window
-to Advanced for specialist routes. It also synchronizes the corresponding wiki
-assets. Set `LOOFI_SCREENSHOT_REAL_HOME=1` only when intentionally capturing a
-local user profile.
+favorites, and local navigation settings do not affect release images. Wiki
+pages reference the canonical repository assets instead of storing duplicate
+PNG files. Set `LOOFI_SCREENSHOT_REAL_HOME=1` only when intentionally capturing
+a local user profile.
 
 For manual verification after regeneration:
 

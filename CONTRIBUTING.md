@@ -84,6 +84,14 @@ Testing expectations:
 - Cover both success and failure paths.
 - Prefer `@patch` decorators in unittest-style tests.
 
+Documentation uses `docs/BEGINNER_QUICK_GUIDE.md` as the canonical source for
+the wiki getting-started page. After editing it, render and check the mirror:
+
+```bash
+python3 scripts/sync_wiki_docs.py
+python3 scripts/sync_wiki_docs.py --check
+```
+
 ---
 
 ## Lint and Build

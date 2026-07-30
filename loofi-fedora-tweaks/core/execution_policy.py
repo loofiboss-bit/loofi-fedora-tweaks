@@ -10,7 +10,7 @@ ExecutionAuthority = Literal["legacy", "action_center"]
 
 # Presentation-layer service calls that intentionally remain outside Action
 # Center because they only affect user-owned application or live session state.
-# Any mutator-like call not listed here is rejected by the Haven AST gate.
+# Any mutator-like call not listed here is rejected by the boundary AST gate.
 PRESENTATION_OPERATION_CLASSES: dict[tuple[str, str], ExecutionClass] = {
     ("BluetoothManager", "power_off"): "session",
     ("BluetoothManager", "power_on"): "session",

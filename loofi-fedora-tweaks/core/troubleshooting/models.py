@@ -847,7 +847,7 @@ class TroubleshootingSession:
 
 @dataclass(frozen=True)
 class FindingComparison:
-    """Immutable outcome contract; comparison logic belongs to Phase 2."""
+    """Immutable outcome contract; comparison logic stays in the comparison module."""
 
     original_fingerprint: str
     follow_up_fingerprint: str

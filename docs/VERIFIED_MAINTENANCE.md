@@ -1,9 +1,8 @@
 # Verified Maintenance
 
-v18.0.0 "Haven" made Action Center the trust boundary for supported host
-changes across GUI, CLI, daemon, automation, scheduler, and agent entry points.
-Its original release catalog contained 56 first-party definitions. The current
-catalog contains 74 definitions declaring operation class, Fedora variants,
+Loofi Fedora Tweaks v23.0.2 "Compass" uses Action Center as the trust boundary
+for supported host changes across GUI, CLI, daemon, automation, scheduler, and
+agent entry points. The catalog contains 74 definitions declaring operation class, Fedora variants,
 reboot policy, affected resources, preflight, confirmation, verification, and
 recovery policy. Fedora 44 is the supported target; Fedora 45 remains
 preview-only.
@@ -84,7 +83,7 @@ and next action. No API endpoint can apply a plan.
 | `autoremove-packages` | Exact preflight package list; Traditional only | Every planned package is absent and package health passes |
 | `create-recovery-point` | Timeshift or Snapper and printable description | A new listed snapshot contains the description |
 
-All other recommendations remain manual-only. Haven does not provide fix-all,
+All other recommendations remain manual-only. Loofi does not provide fix-all,
 scheduled repair, automatic rollback, automatic retry, remote API apply, or
 plugin/AI-provided executable actions.
 
@@ -114,4 +113,4 @@ and run to a validated System Check finding, but that context cannot alter the
 action, command, policy, or confirmation. Unknown future schemas remain
 read-only. Home and global search may show attention or action entry points, but
 activation only opens `maintenance:action-center`. They never apply, verify,
-retry, or resume a plan. Standard and Advanced mode use the same safety policy.
+retry, or resume a plan. Every route uses the same safety policy.

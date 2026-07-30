@@ -156,28 +156,28 @@ def assurance_definitions() -> list[ActionDefinition]:
         _manual_definition(
             "enable-rpm-fusion",
             "Enable RPM Fusion",
-            "RPM Fusion enablement requires distribution-specific repository review in v18.",
+            "RPM Fusion enablement requires distribution-specific repository review.",
             "Follow the RPM Fusion Fedora setup guide, verify repository URLs, and return to Software after completion.",
             ("repositories", "packages"),
         ),
         _manual_definition(
             "install-multimedia-codecs",
             "Install multimedia codecs",
-            "Codec groups vary by enabled repositories and remain guided manual work in v18.",
+            "Codec groups vary by enabled repositories and remain guided manual work.",
             "Review the exact package groups and repository trust before installing codecs manually.",
             ("packages", "multimedia"),
         ),
         _manual_definition(
             "enable-flathub",
             "Enable Flathub",
-            "Adding a new software trust source remains a guided manual operation in v18.",
+            "Adding a new software trust source remains a guided manual operation.",
             "Verify the Flathub repository URL and scope before adding the remote manually.",
             ("flatpak-remotes",),
         ),
         _manual_definition(
             "enable-loofi-copr",
             "Enable Loofi COPR",
-            "Enabling a third-party COPR remains a guided manual operation in v18.",
+            "Enabling a third-party COPR remains a guided manual operation.",
             "Inspect the COPR project and signing metadata before enabling it manually.",
             ("repositories", "packages"),
         ),
@@ -226,16 +226,16 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
         ("set-battery-limit-80", "Set battery charge limit to 80%", "Persistent battery sysfs and service changes remain guided manual work.", ("battery", "systemd-unit")),
         ("set-battery-limit-100", "Set battery charge limit to 100%", "Persistent battery sysfs and service changes remain guided manual work.", ("battery", "systemd-unit")),
         ("restart-audio-session", "Restart audio session", "Restarting user audio services remains an explicit session operation.", ("user-services", "audio")),
-        ("apply-grub-config", "Apply boot-loader configuration", "Boot-loader regeneration remains guided manual work in v18.", ("bootloader", "boot-state")),
-        ("start-usbguard-service", "Start USBGuard service", "USBGuard service activation remains guided manual work in v18.", ("usbguard", "system-services")),
-        ("enable-firewall-service", "Enable firewall service", "Persistent firewall activation remains guided manual work in v18.", ("firewall", "system-services")),
-        ("disable-firewall-service", "Disable firewall service", "Disabling the host firewall remains guided manual work in v18.", ("firewall", "system-services")),
-        ("remove-fedora-telemetry", "Remove Fedora telemetry packages", "Telemetry package removal requires an exact package review in v18.", ("packages", "telemetry")),
+        ("apply-grub-config", "Apply boot-loader configuration", "Boot-loader regeneration remains guided manual work.", ("bootloader", "boot-state")),
+        ("start-usbguard-service", "Start USBGuard service", "USBGuard service activation remains guided manual work.", ("usbguard", "system-services")),
+        ("enable-firewall-service", "Enable firewall service", "Persistent firewall activation remains guided manual work.", ("firewall", "system-services")),
+        ("disable-firewall-service", "Disable firewall service", "Disabling the host firewall remains guided manual work.", ("firewall", "system-services")),
+        ("remove-fedora-telemetry", "Remove Fedora telemetry packages", "Telemetry package removal requires an exact package review.", ("packages", "telemetry")),
         ("legacy-cli-manual-review", "Review legacy CLI operation", "Legacy host commands are never executed directly and require a named Action Center workflow.", ("host-system",)),
-        ("legacy-ui-manual-review", "Review legacy interface operation", "This host operation has no executable Haven workflow and remains guided manual work.", ("host-system",)),
+        ("legacy-ui-manual-review", "Review legacy interface operation", "This host operation has no executable reviewed workflow and remains guided manual work.", ("host-system",)),
         ("remove-unused-flatpaks", "Remove unused Flatpak runtimes", "Flatpak runtime cleanup remains guided manual work until the exact unused set can be verified.", ("flatpak-runtimes",)),
-        ("enroll-fingerprint", "Enroll fingerprint", "Authentication enrollment remains guided manual work in v18.", ("authentication", "fingerprint-reader")),
-        ("generate-mok-key", "Generate MOK signing key", "Secure Boot key creation remains guided manual work in v18.", ("secure-boot", "signing-keys")),
+        ("enroll-fingerprint", "Enroll fingerprint", "Authentication enrollment remains guided manual work.", ("authentication", "fingerprint-reader")),
+        ("generate-mok-key", "Generate MOK signing key", "Secure Boot key creation remains guided manual work.", ("secure-boot", "signing-keys")),
         ("enroll-mok-key", "Enroll MOK signing key", "Secure Boot key enrollment requires guided reboot-time verification.", ("secure-boot", "mok-database")),
     )
     definitions = [
@@ -273,7 +273,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "allow-usb-device",
                 "Allow USB device",
-                "Permanent USB device policy changes remain guided manual work in v18.",
+                "Permanent USB device policy changes remain guided manual work.",
                 "Review the exact USBGuard device identifier before changing policy manually.",
                 ("usbguard", "usb-devices"),
                 parameter_schema={"device_id": {"type": "string", "required": True}},
@@ -282,7 +282,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "block-usb-device",
                 "Block USB device",
-                "Permanent USB device policy changes remain guided manual work in v18.",
+                "Permanent USB device policy changes remain guided manual work.",
                 "Review the exact USBGuard device identifier before changing policy manually.",
                 ("usbguard", "usb-devices"),
                 parameter_schema={"device_id": {"type": "string", "required": True}},
@@ -291,7 +291,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "set-grub-timeout",
                 "Set boot menu timeout",
-                "Boot-loader configuration remains guided manual work in v18.",
+                "Boot-loader configuration remains guided manual work.",
                 "Review the selected timeout and current boot configuration before editing GRUB manually.",
                 ("bootloader",),
                 parameter_schema={"seconds": {"type": "integer", "required": True}},
@@ -322,7 +322,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "set-fan-speed",
                 "Set fan control mode",
-                "Direct fan-controller changes remain guided manual work in v18.",
+                "Direct fan-controller changes remain guided manual work.",
                 "Review hardware compatibility and thermal recovery guidance before applying fan changes manually.",
                 ("fan-controller", "thermal-policy"),
                 parameter_schema={"speed": {"type": "integer", "required": True}},
@@ -338,7 +338,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "apply-system-profile",
                 "Apply system profile",
-                "Profiles may combine host changes and must remain guided manual plans in v18.",
+                "Profiles may combine host changes and must remain guided manual plans.",
                 "Review every setting in the selected local profile and create separate executable plans where available.",
                 ("system-profile", "host-system"),
                 parameter_schema={"profile": {"type": "string", "required": True}},
@@ -347,7 +347,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "configure-hostname-privacy",
                 "Configure DHCP hostname privacy",
-                "Persistent NetworkManager connection changes remain guided manual work in v18.",
+                "Persistent NetworkManager connection changes remain guided manual work.",
                 "Review the exact connection and DHCP hostname policy before changing it manually.",
                 ("network-connections", "dhcp"),
                 parameter_schema={
@@ -359,7 +359,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "configure-network-dns",
                 "Configure connection DNS",
-                "Connection-specific DNS changes remain guided manual work in v18.",
+                "Connection-specific DNS changes remain guided manual work.",
                 "Review the exact connection and resolver addresses before changing NetworkManager manually.",
                 ("network-connections", "dns"),
                 parameter_schema={
@@ -384,7 +384,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "configure-kernel-parameter",
                 "Configure kernel parameter",
-                "Kernel command-line changes remain guided manual work in v18.",
+                "Kernel command-line changes remain guided manual work.",
                 "Review the exact parameter and a tested boot recovery path before editing the kernel command line.",
                 ("kernel-command-line", "boot-state"),
                 parameter_schema={
@@ -397,7 +397,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "restore-grub-backup",
                 "Restore GRUB backup",
-                "Boot-loader restoration is destructive and remains guided manual work in v18.",
+                "Boot-loader restoration is destructive and remains guided manual work.",
                 "Verify the selected backup outside the active boot path and retain recovery media before restoring manually.",
                 ("bootloader", "boot-state"),
                 parameter_schema={"backup": {"type": "string", "required": True}},
@@ -407,7 +407,7 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
             _manual_definition(
                 "configure-zram",
                 "Configure ZRAM",
-                "Persistent ZRAM generator changes remain guided manual work in v18.",
+                "Persistent ZRAM generator changes remain guided manual work.",
                 "Review memory pressure and recovery guidance before changing ZRAM configuration manually.",
                 ("zram", "system-services"),
                 parameter_schema={

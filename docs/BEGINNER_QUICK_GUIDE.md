@@ -1,12 +1,14 @@
-# Loofi Fedora Tweaks — Beginner Quick Guide
+# Loofi Fedora Tweaks — Getting Started
 
-> Version 23.0.0 "Compass" — guided troubleshooting and verified maintenance
+> Version 23.0.2 "Compass"
+
+<!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
 Use this guide for a safe first run in under 10 minutes.
 
 ---
 
-## 1) Install and Launch
+## 1) Install and launch
 
 ```bash
 pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
@@ -20,13 +22,18 @@ Optional CLI alias:
 alias loofi='loofi-fedora-tweaks --cli'
 ```
 
+The first launch shows one safe welcome page with read-only Fedora and system
+details. It does not install packages, change profiles, start services, or
+modify the host. Choose **Open Loofi** to continue or **View system details** to
+open the existing System page.
+
 Loofi detects the Fedora variant automatically. Traditional Fedora uses DNF;
 Atomic Fedora uses rpm-ostree-aware or manual-only paths where an operation is
 not safe to automate.
 
 ---
 
-## 2) Learn the UI in 30 Seconds
+## 2) Learn the UI in 30 seconds
 
 The primary shell has exactly six destinations:
 
@@ -37,10 +44,10 @@ The primary shell has exactly six destinations:
 5. **Desktop**
 6. **Settings**
 
-Pages inside a destination load when you open them. Specialist development,
-AI, virtualization, automation, local-profile, and sharing tools remain
-grouped and searchable under **Specialist Tools**. Built-in pages load on
-demand; external Python plugins and the public Marketplace are retired.
+Pages load when you open them. Specialist development, automation,
+virtualization, local-profile, and sharing tools remain grouped and searchable
+under **Specialist Tools**. Built-in pages load on demand; external Python
+plugins and the public Marketplace are retired.
 
 Useful shortcuts:
 
@@ -52,7 +59,7 @@ Search results obey the same Fedora-variant, component, and safety policy
 as normal navigation. Search may open or preselect an Action Center item, but it
 never plans or runs an action.
 
-![Home](images/user-guide/home-dashboard.png)
+![Loofi Home](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/user-guide/home-dashboard.png)
 
 ---
 
@@ -60,22 +67,22 @@ never plans or runs an action.
 
 ### Update the system
 
-Open **Software & Updates → Updates**, review the available updates, and confirm
-the update when prompted.
+Open **Software & Updates → Updates**, review the available updates, and create
+a plan. Action Center shows the exact plan before a separate apply step.
 
-![Maintenance Updates](images/user-guide/maintenance-updates.png)
+![Maintenance Updates](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/user-guide/maintenance-updates.png)
 
 ### Install an application
 
-Open **Software & Updates → Applications**, select an application, and confirm
-the installation.
+Open **Software & Updates → Applications**, select an application, and create a
+review plan. Installing never starts as a side effect of creating the plan.
 
 ### Diagnose a slow system
 
 Open **System → Performance** and run **Analyze Slow System**. The result uses a
 bounded, read-only snapshot and links to supporting process or storage details.
 
-![System Monitor](images/user-guide/system-monitor.png)
+![System Monitor](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/user-guide/system-monitor.png)
 
 For guided troubleshooting, open **System → Troubleshooting**, select a problem
 profile, review its sources, and start the bounded read-only collection
@@ -111,14 +118,18 @@ reboot policy, affected resources, confirmation, verification, and recovery
 policy. Unsupported host operations remain `manual_only`. Loofi never treats
 command exit code zero as verified success by itself.
 
-Read-only CLI examples:
+Safe CLI examples:
 
 ```bash
 loofi action-center list --target 44
 loofi action-center history --limit 10
 loofi readiness --target 44
-loofi readiness plan --target 45-preview
+loofi action-center plan dnf-clean-all
+loofi action-center show PLAN_ID
 ```
+
+Creating a plan does not apply it. Review and apply the exact plan separately
+in Action Center.
 
 ---
 
@@ -144,7 +155,6 @@ loofi troubleshoot latest
 loofi fedora44-readiness
 loofi readiness actions --target 44
 loofi doctor
-loofi cleanup all
 loofi security-audit
 loofi support-bundle
 ```
@@ -153,8 +163,8 @@ loofi support-bundle
 
 ## 7) Next Docs
 
-- Full user guide: `docs/USER_GUIDE.md`
-- Fedora KDE 44 readiness: `docs/FEDORA_KDE_44_READINESS.md`
-- Verified maintenance: `docs/VERIFIED_MAINTENANCE.md`
-- Advanced operations: `docs/ADVANCED_ADMIN_GUIDE.md`
-- Troubleshooting: `docs/TROUBLESHOOTING.md`
+- [Full user guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/USER_GUIDE.md)
+- [Fedora KDE 44 readiness](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/FEDORA_KDE_44_READINESS.md)
+- [Verified maintenance](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/VERIFIED_MAINTENANCE.md)
+- [Advanced operations](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/ADVANCED_ADMIN_GUIDE.md)
+- [Troubleshooting](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TROUBLESHOOTING.md)

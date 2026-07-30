@@ -1,4 +1,4 @@
-"""Haven metadata applied to audited Action Center definitions."""
+"""Policy metadata applied to audited Action Center definitions."""
 
 from __future__ import annotations
 

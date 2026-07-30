@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 23.0.0 "Compass" — guided, evidence-bound troubleshooting
+> Version 23.0.2 "Compass"
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
@@ -17,7 +17,7 @@ Loofi Fedora Tweaks is a Fedora control center with four entry modes:
 - daemon: `loofi-fedora-tweaks --daemon`
 - optional Web API: `loofi-fedora-tweaks --web`
 
-The GUI groups stable route IDs into six Standard destinations. Built-in pages
+The GUI groups stable route IDs into six destinations. Built-in pages
 are registered from data-only specifications and their UI modules are imported
 only when needed. Privileged operations use `pkexec`, never `sudo`, and preserve
 Traditional Fedora DNF and Atomic Fedora rpm-ostree behavior.
@@ -62,7 +62,7 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 ## 3) Navigation and Search
 
-Standard mode always presents these six destinations:
+The application presents these six destinations:
 
 | Destination | Everyday purpose |
 | --- | --- |
@@ -99,14 +99,16 @@ result may navigate and preselect only; it cannot plan, run, or verify.
 ### Update the system
 
 Open **Software & Updates → Updates**, review the available updates, and confirm
-the operation. Traditional Fedora uses DNF. Atomic Fedora follows the existing
-rpm-ostree-aware or manual guidance path.
+the plan details in Action Center before applying it separately. Traditional
+Fedora uses DNF. Atomic Fedora follows the existing rpm-ostree-aware or manual
+guidance path.
 
 ### Install an application
 
-Open **Software & Updates → Applications**, choose an application, and confirm
-the installation. The application workflow retains package-source and
-Traditional/Atomic policy checks.
+Open **Software & Updates → Applications**, choose an application, and create a
+review plan. The application workflow retains package-source and
+Traditional/Atomic policy checks and never installs as a plan-creation side
+effect.
 
 ### Diagnose a slow system
 
@@ -204,7 +206,7 @@ unavailable while the six Standard destinations, Home, the five core workflows,
 and Action Center remain usable. The API and daemon keep their existing
 subpackage boundaries and exact base-package dependency.
 
-**Advanced → Local Profiles** accepts explicit local JSON files with a closed,
+**Specialist Tools → Local Profiles** accepts explicit local JSON files with a closed,
 data-only schema. Imported content is validated before it can become a
 reviewable plan. The same area inventories legacy extension directories for
 export but never imports or deletes their Python code.
@@ -239,25 +241,21 @@ loofi doctor
 loofi support-bundle
 ```
 
-Maintenance:
+Reviewed plan creation:
 
 ```bash
-loofi cleanup all
-loofi cleanup journal --days 7
-loofi tuner analyze
-loofi tuner apply
+loofi action-center plan dnf-clean-all
+loofi action-center show PLAN_ID
 ```
 
-Host-changing legacy commands now create a review plan or return explicit
-manual guidance. Their human and `--json` output includes the plan ID, state,
-definition ID, review requirement, and next action. They never auto-apply a
-newly created plan.
+Plan creation never applies a change. Host-changing legacy commands remain
+parse-compatible where practical, but return a review plan or explicit manual
+guidance instead of executing.
 
 Services, packages, and logs:
 
 ```bash
 loofi service list --filter failed
-loofi service restart sshd
 loofi package search --query firefox --source all
 loofi logs errors --since "2h ago"
 ```
@@ -267,7 +265,6 @@ Security, network, and storage:
 ```bash
 loofi security-audit
 loofi firewall status
-loofi network dns --provider cloudflare
 loofi storage usage
 ```
 
@@ -333,9 +330,8 @@ Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
 ## 10) Release Scope
 
 Fedora 44 is the supported release target. Fedora 45 remains preview-only.
-Compass is approved for publication through the canonical exact-tag pipeline.
+Version 23.0.2 is the current public release.
 The historical Architecture Hardening tag object is preserved under
-`legacy-v23.0.0-architecture-hardening`. Release completion still requires
-independent readback of the exact release commit, artifacts, signatures,
-checksums, SBOM/provenance, CI, COPR, Fedora 44 repository installation, and
-public documentation.
+`legacy-v23.0.0-architecture-hardening`. Its release evidence records exact
+commit, artifact, signature, checksum, SBOM/provenance, CI, COPR, Fedora 44
+installation, and public-documentation readback.

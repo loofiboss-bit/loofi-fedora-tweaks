@@ -1,5 +1,5 @@
 """
-Base Action Executor — v19.0 Phase 1.
+Base contract for bounded action executors.
 
 Abstract base class defining the executor interface.
 All concrete executor implementations must inherit from BaseActionExecutor.
