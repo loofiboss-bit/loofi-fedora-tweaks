@@ -7,6 +7,18 @@ import unittest
 from utils.api_server import APIServer
 
 
+def _iter_api_methods(routes):
+    """Yield methods from flat and nested FastAPI router representations."""
+    for route in routes:
+        path = getattr(route, "path", "")
+        methods = set(getattr(route, "methods", set()) or set())
+        if path:
+            yield path, methods
+        original_router = getattr(route, "original_router", None)
+        if original_router is not None:
+            yield from _iter_api_methods(getattr(original_router, "routes", ()))
+
+
 class TestApiSecurity(unittest.TestCase):
     def test_bind_remains_loopback_only(self):
         with self.assertRaises(ValueError):
@@ -14,11 +26,9 @@ class TestApiSecurity(unittest.TestCase):
 
     def test_only_closed_planning_and_token_use_non_read_methods(self):
         non_read = []
-        for route in APIServer().app.routes:
-            path = getattr(route, "path", "")
+        for path, methods in _iter_api_methods(APIServer().app.routes):
             if not path.startswith("/api"):
                 continue
-            methods = set(getattr(route, "methods", set()) or set())
             methods -= {"GET", "HEAD", "OPTIONS"}
             if methods:
                 non_read.append((path, methods))

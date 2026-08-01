@@ -18,6 +18,18 @@ if _HAS_FASTAPI:
     from utils.auth import AuthManager
 
 
+def _iter_api_methods(routes):
+    """Yield methods from flat and nested FastAPI router representations."""
+    for route in routes:
+        path = getattr(route, "path", "")
+        methods = set(getattr(route, "methods", set()) or set())
+        if path:
+            yield path, methods
+        original_router = getattr(route, "original_router", None)
+        if original_router is not None:
+            yield from _iter_api_methods(getattr(original_router, "routes", ()))
+
+
 class TestClosedPlanningAPI(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -37,11 +49,10 @@ class TestClosedPlanningAPI(unittest.TestCase):
 
     def test_only_closed_planning_and_token_are_non_read_methods(self):
         non_read = []
-        for route in self.server.app.routes:
-            path = getattr(route, "path", "")
+        for path, methods in _iter_api_methods(self.server.app.routes):
             if not path.startswith("/api"):
                 continue
-            methods = set(getattr(route, "methods", set()) or set()) - {"GET", "HEAD", "OPTIONS"}
+            methods -= {"GET", "HEAD", "OPTIONS"}
             if methods:
                 non_read.append((path, methods))
         self.assertEqual(
