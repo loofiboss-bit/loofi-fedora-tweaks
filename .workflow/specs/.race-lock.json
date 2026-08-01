@@ -1,14 +1,14 @@
 {
   "version": "v23.1.0",
   "started_at": "20260801_113111",
-  "status": "active",
+  "status": "complete",
   "target_version": "v23.1.0",
-  "phase": "release-candidate",
+  "phase": "public-complete",
   "baseline_commit": "58692a0f7ea06fa8d8568c8ec1a96f9d5a6c6fc6",
   "product_version": "v23.1.0",
   "product_codename": "Compass",
-  "current_public_release": "v23.0.2",
-  "current_release_commit": "8d0a94eec17586ff2b0101ad460083fbf26ef9b7",
+  "current_public_release": "v23.1.0",
+  "current_release_commit": "efb1e9c471ba4b5b5962774a0435562efc80e4fe",
   "release_authorized_at": "2026-08-01T13:00:00+02:00",
   "local_candidate_prepared_at": "2026-08-01T13:35:07+02:00",
   "historical_tag_collision": {
@@ -27,12 +27,23 @@
     "audible_orca": "unverified"
   },
   "external_release_gates": {
-    "exact_tag_commit": "pending",
-    "ci_and_codeql": "pending",
-    "github_assets_checksums_attestations": "pending",
-    "copr_packages_signatures": "pending",
-    "clean_fedora44_install": "pending",
-    "public_docs_and_wiki": "pending"
+    "exact_tag_commit": "passed",
+    "ci_and_codeql": "passed",
+    "github_assets_checksums_attestations": "passed",
+    "copr_packages_signatures": "passed",
+    "clean_fedora44_install": "passed",
+    "public_docs_and_wiki": "passed"
   },
+  "public_release_evidence": {
+    "release_commit": "efb1e9c471ba4b5b5962774a0435562efc80e4fe",
+    "tag_object": "80f516c15f19ed671512eeb52881ab6e5dca95d3",
+    "auto_release_run": 30698476403,
+    "ci_run": 30698476369,
+    "codeql_run": 30698476177,
+    "copr_build": 10802361,
+    "copr_evr": "1:23.1.0-1.fc44",
+    "wiki_commit": "efc696dc69f59bb985613af6e245a3953b07baa2"
+  },
+  "completed_at": "2026-08-01T15:00:28+02:00",
   "bumped_at": "2026-08-01T11:31:11.120999+00:00"
 }

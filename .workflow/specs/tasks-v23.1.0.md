@@ -43,7 +43,7 @@
   Fedora 44 KDE Wayland screenshot gates pass from the release commit.
   Docs: `CHANGELOG.md`, `docs/releases/RELEASE-NOTES-v23.1.0.md`
   Tests: `just release-prep`, `just build-rpm`
-- [ ] [post-publish] Publish and independently verify the exact v23.1.0 tag,
+- [x] [post-publish] Publish and independently verify the exact v23.1.0 tag,
   GitHub assets and attestations, CI and CodeQL, COPR packages and signatures,
   clean Fedora 44 installation, public docs and wiki, and final repository
   state.

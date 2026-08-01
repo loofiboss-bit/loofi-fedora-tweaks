@@ -71,6 +71,27 @@ state-led journey while preserving the six destinations and existing data.
 - **Platform:** real Fedora 44 KDE Plasma 6.7.3 Wayland screenshots captured at
   140% scale; automated UI contracts cover 100% and 140% scale behavior
 
+## Publication verification
+
+- Annotated tag `v23.1.0` peels to exact release commit
+  `efb1e9c471ba4b5b5962774a0435562efc80e4fe`.
+- [Auto Release Pipeline 30698476403](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/30698476403),
+  [CI 30698476369](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/30698476369),
+  and [CodeQL 30698476177](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/30698476177)
+  completed successfully for that commit.
+- The public GitHub release contains eight assets; a fresh download passed the
+  published SHA-256 manifest and GitHub attestation verification for every
+  asset.
+- [COPR build 10802361](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/build/10802361/)
+  reached `succeeded`. All three packages carry signature fingerprint
+  `4079c862b1977b9bf49768354fe905df539ba887` and installed from public Fedora
+  44 repodata as exact EVR `1:23.1.0-1.fc44` in a clean container.
+- The public wiki was cloned and matched all 17 repository wiki files at wiki
+  commit `efc696dc69f59bb985613af6e245a3953b07baa2`.
+- Fresh Atomic, manual keyboard-only, and audible Orca qualification remain
+  explicitly unverified under the authorized physical-gate skip; automated
+  Atomic and accessibility contracts remain green.
+
 ## Upgrade Notes
 
 Upgrade all installed subpackages together. Existing plans, settings, and
