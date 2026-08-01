@@ -134,6 +134,33 @@ _ICON_GROUPS: dict[str, str] = {
     "settings": "tools",
 }
 
+_THEME_ICON_NAMES: dict[str, tuple[str, ...]] = {
+    "appearance-theme": ("preferences-desktop-theme", "preferences-desktop"),
+    "cleanup": ("edit-clear-history", "user-trash"),
+    "cpu-performance": ("utilities-system-monitor", "computer"),
+    "developer-tools": ("applications-development", "utilities-terminal"),
+    "hardware-performance": ("computer", "preferences-system"),
+    "home": ("go-home",),
+    "info": ("help-about", "dialog-information"),
+    "install": ("system-software-install", "applications-other"),
+    "logs": ("text-x-log", "document-open"),
+    "maintenance-health": ("utilities-system-monitor", "dialog-ok"),
+    "memory-ram": ("memory", "computer"),
+    "network-connectivity": ("network-wired", "network-transmit-receive"),
+    "network-traffic": ("network-transmit-receive", "network-wired"),
+    "notifications": ("preferences-desktop-notification", "dialog-information"),
+    "overview-dashboard": ("view-dashboard", "go-home"),
+    "packages-software": ("applications-other", "system-software-install"),
+    "restart": ("system-reboot", "view-refresh"),
+    "search": ("edit-find", "system-search"),
+    "security-shield": ("security-high", "security-medium"),
+    "settings": ("configure", "preferences-system"),
+    "status-ok": ("dialog-ok-apply", "dialog-ok"),
+    "storage-disk": ("drive-harddisk", "folder"),
+    "terminal-console": ("utilities-terminal",),
+    "update": ("system-software-update", "view-refresh"),
+}
+
 
 _GROUP_ROLES: dict[str, str] = {
     "appearance": "accent",
@@ -309,11 +336,19 @@ def _tinted_icon(path: str, size: int, tint: str) -> QIcon | None:
 
 def get_qicon(icon_value: str, size: int = 24, tint: str | None = None) -> QIcon:
     """Return a QIcon for semantic ids or legacy emoji icon tokens."""
+    icon_name = resolve_icon_name(icon_value)
+    from_theme = getattr(QIcon, "fromTheme", None)
+    for theme_name in _THEME_ICON_NAMES.get(icon_name, ()):
+        if not callable(from_theme):
+            break
+        theme_icon = cast(QIcon, from_theme(theme_name))
+        if not theme_icon.isNull():
+            return theme_icon
+
     path = resolve_icon_path(icon_value, size=size)
     if not path:
         return QIcon()
 
-    icon_name = resolve_icon_name(icon_value)
     icon = _tinted_icon(path, size, tint or _default_tint(icon_name))
     if icon is not None:
         return icon

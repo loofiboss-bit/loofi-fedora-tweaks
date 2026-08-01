@@ -111,6 +111,8 @@ class SettingsTab(QWidget, PluginInterface):
     @staticmethod
     def _scaffold_page(page: QWidget, accessible_name: str, description: str) -> QScrollArea:
         """Wrap one settings route in the shared bounded page scaffold."""
+        page.setObjectName("settingsContent")
+        page.setMaximumWidth(700)
         scaffold = PageScaffold(accessible_name, description)
         scaffold.add_widget(page)
         scaffold.content_layout.addStretch()

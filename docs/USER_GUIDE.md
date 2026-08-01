@@ -96,19 +96,26 @@ result may navigate and preselect only; it cannot plan, run, or verify.
 
 ## 4) Five Core Workflows
 
+Home keeps five direct task links visible: **Check for updates**, **Install an
+app**, **Troubleshoot a problem**, **Free space**, and **Review planned
+changes**. Home shows one primary recommendation at a time. Before the first
+System Check it shows one **Not checked yet** state; a failed read is reported
+separately as **Status check failed**.
+
 ### Update the system
 
 Open **Software & Updates → Updates**, review the available updates, and confirm
-the plan details in Action Center before applying it separately. Traditional
-Fedora uses DNF. Atomic Fedora follows the existing rpm-ostree-aware or manual
-guidance path.
+the plan details in Action Center before applying it separately. The page shows
+the selected source, restart expectation, and required verification before the
+handoff. Traditional Fedora updates the current installation. Atomic Fedora
+creates a new deployment and verifies it after the required restart.
 
 ### Install an application
 
 Open **Software & Updates → Applications**, choose an application, and create a
-review plan. The application workflow retains package-source and
-Traditional/Atomic policy checks and never installs as a plan-creation side
-effect.
+review plan. Each row identifies the package, source, restart handling, and
+installation-state verification. Search and source/status filters remain
+available. Plan creation never installs as a side effect.
 
 ### Diagnose a slow system
 
@@ -121,7 +128,11 @@ offering a safe next route.
 
 Open **Software & Updates → Cleanup** and run the reclaim analysis. Package
 cache, journal retention, and filesystem trim remain separate categories with
-their own risk and availability guidance. Atomic Fedora keeps DNF cache cleanup
+their own estimate, risk, and availability guidance. Only the low-risk package
+cache can be a safe default; journal retention, unused packages, trim, and
+repair choices stay under closed advanced controls. Every cleanup creates an
+Action Center plan. Run the analysis again afterward to verify reclaimed space
+and review any partial result. Atomic Fedora keeps DNF cache cleanup
 manual-only.
 
 ### Protect or recover the system
@@ -146,11 +157,14 @@ unchanged, worsened, or not comparable.
 
 ### Troubleshoot a problem
 
-Open **System → Troubleshooting**, choose one of the six symptom profiles, and
-review its sources and total budget. Collection starts only after **Start
-troubleshooting** is activated. Results keep unavailable, partial, stale,
-failed, and empty evidence distinct, label correlated changes **Possibly
-related**, and expose at most one safe next step for the selected finding.
+Open **System → Troubleshooting** and start from one of eight plain-language
+symptoms: no internet, sound, Bluetooth, failed updates, an app that will not
+start, a slow system, full storage, or something else. Collection starts only
+after **Start read-only check** is activated. The default result explains what
+was checked, what was found, confidence or missing checks, and one safe next
+step. Source, freshness, timing, and schema detail stay in the collapsed
+technical-details section. A next action says whether it opens Action Center
+to create a plan; nothing runs automatically.
 
 After a relevant change, explicitly rerun the compatible profile. The
 follow-up compares sessions only when profile, Fedora variant, ordering, and
@@ -164,6 +178,12 @@ Center `verified` remain separate facts.
 ## 5) Action Center Safety
 
 **Software & Updates → Action Center** is the only plan/run/verify GUI.
+
+The primary work list is grouped by **Needs review**, **Ready**, **Running**,
+**Waiting for restart**, **Completed**, and **Failed**. Select a change to see
+its intended outcome, affected components, privilege and restart requirements,
+verification, and recovery guidance. Definition IDs, command previews, and
+source metadata remain in collapsed details and advanced review tools.
 
 - The catalog contains 74 first-party definitions. Each definition declares its
   operation class, Fedora variants, reboot policy, affected resources,

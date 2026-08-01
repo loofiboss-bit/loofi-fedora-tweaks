@@ -24,10 +24,7 @@ from core.troubleshooting.models import (
     TroubleshootingFinding,
     TroubleshootingSession,
 )
-from core.troubleshooting.profiles import (
-    all_profiles,
-    require_profile,
-)
+from core.troubleshooting.profiles import require_profile
 from ui.components import (
     ActionBar,
     ActionProgress,
@@ -99,6 +96,31 @@ class TroubleshootWidget(QWidget):
         "failed": "Failed",
         "cancelled": "Cancelled",
     }
+    _SYMPTOMS = (
+        ("no_internet", "No internet", "network_problem", ""),
+        (
+            "sound_not_working",
+            "Sound is not working",
+            "system_slow",
+            "This general check does not read device-specific audio logs. Open sound settings if it finds no system-wide issue.",
+        ),
+        (
+            "bluetooth_not_working",
+            "Bluetooth is not working",
+            "system_slow",
+            "This general check does not scan Bluetooth devices. Open Bluetooth settings if it finds no system-wide issue.",
+        ),
+        ("updates_failed", "Updates failed", "updates_failed", ""),
+        ("app_wont_start", "An app will not start", "application_failed", ""),
+        ("system_slow", "The system feels slow", "system_slow", ""),
+        ("storage_full", "Storage is full", "storage_pressure", ""),
+        (
+            "something_else",
+            "Something else",
+            "system_slow",
+            "This general check reviews system health. It may not cover a device-specific problem.",
+        ),
+    )
 
     def __init__(
         self,
@@ -124,8 +146,8 @@ class TroubleshootWidget(QWidget):
         self.scaffold = PageScaffold(
             self.tr("Troubleshoot"),
             self.tr(
-                "Choose a real symptom, run a bounded read-only session, "
-                "review the evidence, and take one safe next step."
+                "Choose what is going wrong, run a read-only check, "
+                "and review one safe next step."
             ),
         )
         root.addWidget(self.scaffold)
@@ -133,8 +155,8 @@ class TroubleshootWidget(QWidget):
         self.safety_notice = InlineNotice(
             self.tr("Read-only and explicit"),
             self.tr(
-                "Nothing is checked until you start. Troubleshoot never applies "
-                "a fix, confirms a plan, or reboots the system."
+                "Checks start only when you choose Start. Troubleshoot never applies "
+                "a change, confirms a plan, or restarts the system."
             ),
             kind="info",
         )
@@ -182,14 +204,14 @@ class TroubleshootWidget(QWidget):
             self.tr("Start from the symptom you can observe."),
         )
         choose.setObjectName("troubleshootProfileCard")
-        self.profile_label = QLabel(self.tr("Problem profile"))
+        self.profile_label = QLabel(self.tr("What is going wrong?"))
         self.profile_selector = QComboBox()
         self.profile_selector.setObjectName("troubleshootProfileSelector")
-        self.profile_selector.setAccessibleName(self.tr("Problem profile"))
+        self.profile_selector.setAccessibleName(self.tr("Troubleshooting symptom"))
         self.profile_label.setBuddy(self.profile_selector)
         choose.add_widget(self.profile_label)
-        for profile in all_profiles():
-            self.profile_selector.addItem(self.tr(profile.title), profile.id)
+        for symptom_id, label, _profile_id, _limitation in self._SYMPTOMS:
+            self.profile_selector.addItem(self.tr(label), symptom_id)
         self.profile_selector.currentIndexChanged.connect(self._profile_changed)
         choose.add_widget(self.profile_selector)
         self.application_input = QLineEdit()
@@ -205,19 +227,10 @@ class TroubleshootWidget(QWidget):
         layout.addWidget(choose)
 
         checks = Card(
-            self.tr("2. Review what will be checked"),
-            self.tr(
-                "Each source has a fixed timeout. Partial or unavailable evidence "
-                "is shown as such and can never produce an all-clear."
-            ),
+            self.tr("2. What will be checked"),
+            self.tr("Review the system areas included in this read-only check."),
         )
         checks.setObjectName("troubleshootChecksCard")
-        self.variant_label = QLabel(
-            self.tr("Fedora variant is detected when the session starts.")
-        )
-        self.variant_label.setWordWrap(True)
-        self.variant_label.setObjectName("troubleshootVariantPreview")
-        checks.add_widget(self.variant_label)
         self.checks_label = QLabel()
         self.checks_label.setWordWrap(True)
         self.checks_label.setObjectName("troubleshootChecks")
@@ -226,6 +239,24 @@ class TroubleshootWidget(QWidget):
             | Qt.TextInteractionFlag.TextSelectableByMouse
         )
         checks.add_widget(self.checks_label)
+        self.technical_disclosure = DetailsDisclosure(
+            summary=self.tr("Show technical details")
+        )
+        self.technical_disclosure.setObjectName("troubleshootTechnicalDetails")
+        self.variant_label = QLabel(
+            self.tr("Fedora variant is detected when the session starts.")
+        )
+        self.variant_label.setWordWrap(True)
+        self.variant_label.setObjectName("troubleshootVariantPreview")
+        self.technical_budget_label = QLabel()
+        self.technical_budget_label.setWordWrap(True)
+        self.technical_budget_label.setTextInteractionFlags(
+            Qt.TextInteractionFlag.TextSelectableByKeyboard
+            | Qt.TextInteractionFlag.TextSelectableByMouse
+        )
+        self.technical_disclosure.add_widget(self.variant_label)
+        self.technical_disclosure.add_widget(self.technical_budget_label)
+        checks.add_widget(self.technical_disclosure)
         layout.addWidget(checks)
 
         self.start_notice = InlineNotice("", "", kind="neutral")
@@ -246,7 +277,7 @@ class TroubleshootWidget(QWidget):
         self.action_bar.add_action(self.cancel_button)
         self.start_button = PrimaryButton(
             self.tr("Start read-only check"),
-            description=self.tr("Run the selected bounded troubleshooting profile."),
+            description=self.tr("Run the checks for the selected symptom."),
         )
         self.start_button.setObjectName("troubleshootStart")
         self.start_button.clicked.connect(self.start_session)
@@ -290,8 +321,12 @@ class TroubleshootWidget(QWidget):
         self.partial_warning.setObjectName("troubleshootPartialWarning")
         self.partial_warning.hide()
         self.result_summary.add_widget(self.partial_warning)
+        self.result_checked = QLabel()
+        self.result_checked.setObjectName("troubleshootCheckedSummary")
+        self.result_checked.setWordWrap(True)
+        self.result_summary.add_widget(self.result_checked)
         self.sources_disclosure = DetailsDisclosure(
-            summary=self.tr("Show source readiness and freshness")
+            summary=self.tr("Show technical details")
         )
         self.sources_disclosure.setObjectName("troubleshootSourceDisclosure")
         self.result_summary.add_widget(self.sources_disclosure)
@@ -310,8 +345,8 @@ class TroubleshootWidget(QWidget):
         self.finding_empty = EmptyState(
             self.tr("No current findings"),
             self.tr(
-                "No issue was found by the sources that completed. "
-                "Review source readiness before treating this as an all-clear."
+                "No issue was found by the checks that completed. "
+                "Review incomplete checks before treating this as an all-clear."
             ),
         )
         self.finding_empty.setObjectName("troubleshootFindingEmpty")
@@ -351,8 +386,8 @@ class TroubleshootWidget(QWidget):
         self.related_card = Card(
             self.tr("Possibly related"),
             self.tr(
-                "These source-owned changes are nearby in time or share an exact "
-                "resource. They are not presented as proven causes."
+                "These changes happened nearby in time or affect the same component. "
+                "They are not presented as proven causes."
             ),
         )
         self.related_card.setObjectName("troubleshootRelatedChanges")
@@ -381,9 +416,11 @@ class TroubleshootWidget(QWidget):
 
     def _profile_changed(self, *_args: Any) -> None:
         profile = require_profile(self.selected_profile_id())
-        lines = []
+        checked_areas = []
+        technical_lines = []
         for budget in profile.source_budgets:
             label = self.tr(self._SOURCE_LABELS.get(budget.source_id, budget.source_id))
+            checked_areas.append(self.tr("• %1").replace("%1", label))
             optional = self.tr("optional") if not budget.required else self.tr("required")
             variants = (
                 self.tr("Traditional and Atomic")
@@ -392,31 +429,38 @@ class TroubleshootWidget(QWidget):
                 if "atomic" in budget.variants
                 else self.tr("Traditional")
             )
-            lines.append(
+            technical_lines.append(
                 self.tr("• %1 — up to %2 seconds · %3 · %4")
                 .replace("%1", label)
                 .replace("%2", f"{budget.timeout_seconds:g}")
                 .replace("%3", optional)
                 .replace("%4", variants)
             )
-        self.checks_label.setText("\n".join(lines))
+        self.checks_label.setText("\n".join(checked_areas))
+        self.technical_budget_label.setText("\n".join(technical_lines))
         requires_application = dict(profile.parameter_schema).get("application_id") is not None
         self.application_input.setVisible(requires_application)
-        if profile.availability == "reduced":
+        symptom_limitation = self._selected_symptom()[3]
+        if symptom_limitation:
+            message = self.tr(symptom_limitation)
+        elif profile.availability == "reduced":
             message = {
                 "application-journal-collector-unavailable": self.tr(
-                    "Application logs are excluded because no safe closed collector is available."
+                    "Application logs are not included in this check."
                 ),
                 "network-scan-excluded": self.tr(
-                    "Network scanning is excluded. Only local connection and DNS metadata is checked."
+                    "Network scanning is not included. Only the local connection and DNS settings are checked."
                 ),
             }.get(
                 profile.limitation_reason_code,
-                self.tr("This profile has a documented evidence limitation."),
+                self.tr("Some checks are not available for this symptom."),
             )
+        else:
+            message = ""
+        if message:
             self.profile_limitation.set_notice(
                 "warning",
-                self.tr("Reduced evidence profile"),
+                self.tr("Some checks are unavailable"),
                 message,
             )
             self.profile_limitation.show()
@@ -424,7 +468,14 @@ class TroubleshootWidget(QWidget):
             self.profile_limitation.hide()
 
     def selected_profile_id(self) -> str:
-        return str(self.profile_selector.currentData() or all_profiles()[0].id)
+        return self._selected_symptom()[2]
+
+    def _selected_symptom(self) -> tuple[str, str, str, str]:
+        symptom_id = str(self.profile_selector.currentData() or self._SYMPTOMS[0][0])
+        return next(
+            (symptom for symptom in self._SYMPTOMS if symptom[0] == symptom_id),
+            self._SYMPTOMS[0],
+        )
 
     def start_session(self) -> None:
         """Create the worker only after direct user activation."""
@@ -457,7 +508,7 @@ class TroubleshootWidget(QWidget):
             worker = self.worker_factory(profile.id, parameters, self)
         self._worker = worker
         self.start_notice.hide()
-        self.progress.set_busy(self.tr("Starting the bounded read-only session…"))
+        self.progress.set_busy(self.tr("Starting the read-only check…"))
         self.progress_source.setText(self.tr("Current source: Preparing"))
         self.progress.show()
         self.start_button.set_loading(True, self.tr("Checking…"))
@@ -551,7 +602,15 @@ class TroubleshootWidget(QWidget):
         self._current_session = session
         self._render_session(session, None, reason_code)
         self.start_button.setText(self.tr("Check again"))
-        index = self.profile_selector.findData(session.profile_id)
+        symptom_id = next(
+            (
+                symptom[0]
+                for symptom in self._SYMPTOMS
+                if symptom[2] == session.profile_id
+            ),
+            "",
+        )
+        index = self.profile_selector.findData(symptom_id)
         if index >= 0:
             self.profile_selector.setCurrentIndex(index)
 
@@ -594,6 +653,16 @@ class TroubleshootWidget(QWidget):
             .replace("%1", variant)
             .replace("%2", completed)
             .replace("%3", str(len(session.findings)))
+        )
+        checked = [
+            self.tr(self._SOURCE_LABELS.get(result.source_id, result.source_id))
+            for result in session.source_results
+        ]
+        self.result_checked.setText(
+            self.tr("Checked: %1").replace(
+                "%1",
+                ", ".join(checked) if checked else self.tr("No checks completed"),
+            )
         )
         incomplete = tuple(
             result
@@ -675,7 +744,7 @@ class TroubleshootWidget(QWidget):
             )
         if session.state == "partial":
             return self.tr(
-                "Some evidence is unavailable, stale, partial, or timed out. "
+                "Some checks were unavailable, out of date, incomplete, or timed out. "
                 "The result is not an all-clear."
             )
         if session.state == "cancelled":
@@ -683,7 +752,7 @@ class TroubleshootWidget(QWidget):
                 "The session was cancelled. The previous completed session was preserved."
             )
         return self.tr(
-            "The session failed without enough usable evidence for a conclusion."
+            "The check failed without enough usable results for a conclusion."
         )
 
     def _source_details(self, session: TroubleshootingSession) -> str:
@@ -710,36 +779,46 @@ class TroubleshootWidget(QWidget):
         finding = session.findings[row]
         self._selected_finding = finding
         kind = "error" if finding.severity == "critical" else "warning"
+        confidence = {
+            "confirmed": self.tr("High"),
+            "supported": self.tr("Medium"),
+            "limited": self.tr("Limited"),
+        }.get(finding.evidence_quality, self.tr("Limited"))
         self.finding_status.set_status(
-            self.tr("%1 · %2 evidence · %3")
+            self.tr("%1 · Confidence: %2")
             .replace("%1", self.tr(finding.severity.title()))
-            .replace("%2", self.tr(finding.evidence_quality.title()))
-            .replace("%3", self.tr(finding.freshness.title())),
+            .replace("%2", confidence),
             kind=kind,
         )
         self.finding_summary.setText(
-            self.tr("%1\n\nWhy this is shown: %2\nSource: %3")
+            self.tr("Found: %1\nConfidence: %2")
             .replace("%1", self.tr(finding.summary))
-            .replace("%2", self.tr(finding.evidence_explanation))
-            .replace(
-                "%3",
-                self.tr(self._SOURCE_LABELS.get(finding.source_id, finding.source_id)),
-            )
+            .replace("%2", confidence)
         )
         facts = "\n".join(
             f"{key}: {value}"
             for key, value in sorted(finding.evidence_dict().items())
         )
         self.evidence_disclosure.set_details(
-            self.tr("Affected resources: %1\nCollected: %2\n%3")
-            .replace("%1", ", ".join(finding.affected_resources))
+            self.tr(
+                "Source: %1\nEvidence quality: %2\nFreshness: %3\n"
+                "Why this is shown: %4\nAffected resources: %5\nCollected: %6\n%7"
+            )
             .replace(
-                "%2",
+                "%1",
+                self.tr(self._SOURCE_LABELS.get(finding.source_id, finding.source_id)),
+            )
+            .replace("%2", self.tr(finding.evidence_quality.title()))
+            .replace("%3", self.tr(finding.freshness.title()))
+            .replace("%4", self.tr(finding.evidence_explanation))
+            .replace("%5", ", ".join(finding.affected_resources))
+            .replace(
+                "%6",
                 datetime.fromtimestamp(finding.collected_at).astimezone().strftime(
                     "%Y-%m-%d %H:%M:%S"
                 ),
             )
-            .replace("%3", facts)
+            .replace("%7", facts)
         )
         label, enabled = self._next_step_presentation(finding.next_step)
         self.next_step_label.setText(label)
@@ -750,16 +829,14 @@ class TroubleshootWidget(QWidget):
         if step.kind == "action":
             return (
                 self.tr(
-                    "Next safe step: open the exact audited Action Center action. "
-                    "Fresh preflight and explicit confirmation remain required."
+                    "Next step: open Action Center and create a plan for review. "
+                    "Nothing runs automatically."
                 ),
                 True,
             )
         if step.kind == "navigation":
             return (
-                self.tr(
-                    "Next safe step: open the maintained route with inert preselection only."
-                ),
+                self.tr("Next step: open the relevant settings. Nothing changes automatically."),
                 True,
             )
         if step.kind == "collect":

@@ -137,8 +137,8 @@ class HomeSummary:
     def __post_init__(self) -> None:
         if len(self.attention_items) > 3:
             raise ValueError("Home may show at most three attention items")
-        if len(self.common_tasks) > 4:
-            raise ValueError("Home may show at most four common tasks")
+        if len(self.common_tasks) > 5:
+            raise ValueError("Home may show at most five common tasks")
         status_ids = tuple(item.id for item in self.status_items)
         if len(status_ids) > 4 or len(set(status_ids)) != len(status_ids):
             raise ValueError("Home status items must contain at most four unique areas")

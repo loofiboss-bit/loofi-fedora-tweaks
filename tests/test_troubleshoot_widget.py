@@ -137,8 +137,8 @@ class TestTroubleshootWidget(unittest.TestCase):
         self.assertEqual(len(widget.findChildren(PageScaffold)), 1)
         self.assertEqual(len(widget.findChildren(LocalViewSwitcher)), 1)
         self.assertEqual(len(widget.findChildren(PrimaryButton)), 1)
-        self.assertEqual(widget.profile_selector.count(), 6)
-        self.assertEqual(widget.profile_label.text(), "Problem profile")
+        self.assertEqual(widget.profile_selector.count(), 8)
+        self.assertEqual(widget.profile_label.text(), "What is going wrong?")
         self.assertEqual(widget.profile_label.buddy(), widget.profile_selector)
         self.assertEqual(factory_calls, [])
         self.assertEqual(widget.findChildren(DetailsDisclosure)[0].toggle_button.isChecked(), False)
@@ -159,7 +159,7 @@ class TestTroubleshootWidget(unittest.TestCase):
 
         widget.start_session()
 
-        self.assertEqual(calls, [("system_slow", {}, widget)])
+        self.assertEqual(calls, [("network_problem", {}, widget)])
         self.assertTrue(worker.started)
         self.assertTrue(widget.progress.isVisible() or not widget.isVisible())
 
@@ -175,7 +175,7 @@ class TestTroubleshootWidget(unittest.TestCase):
         )
         self.addCleanup(widget.deleteLater)
         widget.profile_selector.setCurrentIndex(
-            widget.profile_selector.findData("application_failed")
+            widget.profile_selector.findData("app_wont_start")
         )
 
         widget.start_session()
@@ -199,7 +199,8 @@ class TestTroubleshootWidget(unittest.TestCase):
             requests,
             [("network", {"section": "connections"})],
         )
-        self.assertIn("Source:", widget.finding_summary.text())
+        self.assertIn("Found:", widget.finding_summary.text())
+        self.assertIn("Source:", widget.evidence_disclosure.details.toPlainText())
         self.assertFalse(widget.evidence_disclosure.toggle_button.isChecked())
 
     def test_keyboard_focus_rtl_and_reduced_motion_keep_actions_reachable(self):

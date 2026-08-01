@@ -119,7 +119,8 @@ class AtlasDashboardTab(BaseTab):
             min_column_width=190,
             column_breakpoints=((0, 1), (360, 2), (760, 4)),
         )
-        status_grid.setObjectName("homeStatusGrid")
+        self.status_grid = status_grid
+        self.status_grid.setObjectName("homeStatusGrid")
         self.status_badges: dict[str, StatusBadge] = {}
         for key, label in self._STATUS_ORDER:
             badge = StatusBadge(
@@ -130,6 +131,14 @@ class AtlasDashboardTab(BaseTab):
             self.status_badges[key] = badge
             status_grid.add_card(badge)
         self.state_card.add_widget(status_grid)
+        self.status_unavailable = InlineNotice(
+            self.tr("Not checked yet"),
+            self.tr("Run System Check to create the first saved status."),
+            kind="neutral",
+        )
+        self.status_unavailable.setObjectName("homeStatusUnavailable")
+        self.status_unavailable.hide()
+        self.state_card.add_widget(self.status_unavailable)
 
         self.check_actions = ActionBar()
         self.check_now_button = PrimaryButton(
@@ -165,7 +174,25 @@ class AtlasDashboardTab(BaseTab):
         self.state_label.setText(self.tr(summary.summary))
         self._update_freshness(summary)
         self.check_now_button.setVisible(summary.check_now_available)
-        self._update_status_badges(summary)
+        if summary.data_state in {"empty", "error"}:
+            self.status_grid.hide()
+            if summary.data_state == "empty":
+                self.status_unavailable.set_notice(
+                    "neutral",
+                    self.tr("Not checked yet"),
+                    self.tr("Run System Check to create the first saved status."),
+                )
+            else:
+                self.status_unavailable.set_notice(
+                    "error",
+                    self.tr("Status check failed"),
+                    self.tr("Saved status could not be read. Try System Check again."),
+                )
+            self.status_unavailable.show()
+        else:
+            self.status_unavailable.hide()
+            self.status_grid.show()
+            self._update_status_badges(summary)
 
         self._clear_layout(self.primary_container)
         self._clear_layout(self.attention_container)
@@ -191,7 +218,7 @@ class AtlasDashboardTab(BaseTab):
         self.tasks_container.addWidget(self._section_label(self.tr("Common tasks")))
         task_grid = AdaptiveGrid(min_column_width=250)
         task_grid.setObjectName("homeTaskGrid")
-        for task in summary.common_tasks[:4]:
+        for task in summary.common_tasks[:5]:
             task_grid.add_card(self._task_card(task))
         self.tasks_container.addWidget(task_grid)
 
@@ -232,7 +259,11 @@ class AtlasDashboardTab(BaseTab):
         freshness = {
             "fresh": self.tr("Fresh"),
             "stale": self.tr("Stale"),
-            "unavailable": self.tr("Status unavailable"),
+            "unavailable": (
+                self.tr("Not checked yet")
+                if summary.data_state == "empty"
+                else self.tr("Check failed")
+            ),
         }[summary.freshness_state]
         self.freshness_label.setText(
             self.tr("Last checked: %1 · %2")

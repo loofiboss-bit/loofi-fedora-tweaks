@@ -58,7 +58,13 @@ class ActionCenterService:
                 correlation_id=f"catalog:{target}:{definition.id}",
                 dedupe_key=f"catalog:{definition.id}",
                 safe_next_step="Create a fresh plan to run preflight and generate the exact command.",
-                metadata={"catalog": "v18", "target": target},
+                metadata={
+                    "catalog": "v18",
+                    "target": target,
+                    "affected_resources": list(definition.affected_resources),
+                    "reboot_policy": definition.reboot_policy,
+                    "verification": "Required after execution",
+                },
             ))
         return items
 

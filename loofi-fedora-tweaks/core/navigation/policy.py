@@ -225,7 +225,7 @@ class NavigationPolicy:
                 route=route,
                 placement=placement,
                 decision=NavigationDecision.GATED,
-                reason="This specialist route is unavailable in the current navigation context.",
+                reason="Turn on Advanced in Settings to open this specialist route.",
                 required_mode=NavigationMode.ADVANCED,
                 fallback_route_id=fallback_route_id,
                 search_visible=False,

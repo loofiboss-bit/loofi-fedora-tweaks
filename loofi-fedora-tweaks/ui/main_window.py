@@ -45,8 +45,6 @@ from utils.config_manager import ConfigManager
 from utils.favorites import FavoritesManager
 from utils.history import HistoryManager
 from utils.log import get_logger
-from version import __version__
-
 from ui.icon_pack import get_qicon, icon_tint_variant
 from ui.design import semantic_qcolor
 from ui.layout_primitives import LayoutMetrics, PageHeader
@@ -154,7 +152,7 @@ class MainWindow(
         # appear to bleed into the top chrome when frameless/custom hints are used.
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, False)
         self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, False)
-        self.setWindowTitle(self.tr("Loofi Fedora Tweaks v%1").replace("%1", __version__))
+        self.setWindowTitle(self.tr("Loofi Fedora Tweaks"))
         self.setAccessibleName(self.tr("Loofi Fedora Tweaks"))
         self.setAccessibleDescription(self.tr("Fedora system settings and maintenance control center"))
 

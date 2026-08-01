@@ -64,15 +64,15 @@ class _UpdatesSubTab(BaseTab):
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
-        update_guidance = QLabel(
-            self.tr(
-                "Review system, Flatpak, and firmware updates together. Traditional Fedora "
-                "updates the current system; Atomic Fedora creates a new rpm-ostree deployment "
-                "and may require a reboot."
-            )
-        )
+        update_guidance = QLabel(self._update_guidance())
         update_guidance.setWordWrap(True)
         layout.addWidget(update_guidance)
+        self.update_state = ResultBanner(
+            self.tr("Ready to review updates"),
+            self.tr("Choose System, Flatpak, or Firmware to create one reviewable plan."),
+        )
+        self.update_state.setObjectName("updatesState")
+        layout.addWidget(self.update_state)
 
         self.btn_update_all = QPushButton(self.tr("Review updates independently"))
         self.btn_update_all.setAccessibleName(self.tr("Review independent update plans"))
@@ -151,6 +151,17 @@ class _UpdatesSubTab(BaseTab):
 
         self.runner.progress_update.connect(self.update_progress)
 
+    def _update_guidance(self) -> str:
+        if self.package_manager == "rpm-ostree":
+            return str(self.tr(
+                "System updates create a new Atomic deployment. Review the plan, restart when requested, "
+                "then let Action Center verify the new deployment."
+            ))
+        return str(self.tr(
+            "System updates change the current Fedora installation. Review one source at a time, "
+            "then let Action Center verify the result."
+        ))
+
     def reveal_advanced_options(self: typing.Any) -> None:
         """Reveal the former Smart Updates surface after a compatible deep link."""
         self.advanced_group.setChecked(True)
@@ -171,19 +182,69 @@ class _UpdatesSubTab(BaseTab):
     # -- Individual update actions -----------------------------------------
 
     def run_dnf_update(self: typing.Any) -> typing.Any:
-        self.actionCenterRequested.emit("update-fedora-system", {})
+        translate = getattr(self, "tr", lambda value: value)
+        restart = (
+            translate("Required to use the new deployment")
+            if getattr(self, "package_manager", "") == "rpm-ostree"
+            else translate("Shown in the plan when required")
+        )
+        _UpdatesSubTab._request_update_plan(
+            self,
+            "update-fedora-system",
+            translate("Fedora system packages"),
+            restart,
+        )
 
     def run_flatpak_update(self: typing.Any) -> typing.Any:
-        self.actionCenterRequested.emit("update-flatpaks", {})
+        translate = getattr(self, "tr", lambda value: value)
+        _UpdatesSubTab._request_update_plan(
+            self,
+            "update-flatpaks",
+            translate("Flatpak applications"),
+            translate("Not normally required"),
+        )
 
     def run_fw_update(self: typing.Any) -> typing.Any:
-        self.actionCenterRequested.emit("update-firmware", {})
+        translate = getattr(self, "tr", lambda value: value)
+        _UpdatesSubTab._request_update_plan(
+            self,
+            "update-firmware",
+            translate("Device firmware"),
+            translate("Shown in the plan when required"),
+        )
+
+    def _request_update_plan(
+        self,
+        action_id: str,
+        source: str,
+        restart_requirement: str,
+    ) -> None:
+        translate = getattr(self, "tr", lambda value: value)
+        update_state = getattr(self, "update_state", None)
+        if update_state is not None:
+            update_state.set_result(
+                "info",
+                translate("Opening Action Center"),
+                translate(
+                    "Source: %1 · Restart: %2 · Verification: required after the reviewed plan runs."
+                )
+                .replace("%1", source)
+                .replace("%2", restart_requirement),
+            )
+        self.actionCenterRequested.emit(action_id, {})
 
     # -- Update All (sequential queue) -------------------------------------
 
     def run_update_all(self: typing.Any) -> typing.Any:
+        update_state = getattr(self, "update_state", None)
+        if update_state is not None:
+            update_state.set_result(
+                "info",
+                self.tr("Choose one update source"),
+                self.tr("Separate plans keep package lists, restart requirements, and verification clear."),
+            )
         self.output_area.setPlainText(
-            self.tr("Assurance keeps Fedora, Flatpak, and firmware updates independent. Choose one review button to create one auditable plan.")
+            self.tr("Choose one review button to create one Action Center plan.")
         )
 
     # -- Helpers -----------------------------------------------------------
@@ -249,9 +310,14 @@ class _CleanupSubTab(BaseTab):
         self.output_area.setAccessibleName(self.tr("Cleanup output"))
 
         # Cleanup Group
-        cleanup_group = QGroupBox(self.tr("Cleanup"))
+        cleanup_group = QGroupBox(self.tr("Safe cleanup choices"))
         cleanup_layout = QVBoxLayout()
         cleanup_group.setLayout(cleanup_layout)
+        safe_intro = QLabel(
+            self.tr("Nothing is removed on this page. Review creates a plan before any cleanup runs.")
+        )
+        safe_intro.setWordWrap(True)
+        cleanup_layout.addWidget(safe_intro)
 
         btn_dnf_clean = QPushButton(self.tr("Review DNF Cache Cleanup"))
         btn_dnf_clean.setAccessibleName(self.tr("Review DNF Cache Cleanup in Action Center"))
@@ -260,25 +326,26 @@ class _CleanupSubTab(BaseTab):
         btn_dnf_clean.clicked.connect(lambda: self.actionCenterRequested.emit("dnf-clean-all", {}))
         cleanup_layout.addWidget(btn_dnf_clean)
 
+        layout.addWidget(cleanup_group)
+
+        # Maintenance Group
+        maint_group = QGroupBox(self.tr("Advanced cleanup and maintenance"))
+        maint_group.setObjectName("cleanupAdvancedChoices")
+        maint_layout = QVBoxLayout()
+        maint_group.setLayout(maint_layout)
+
         btn_autoremove = QPushButton(self.tr("Review Unused Packages"))
         btn_autoremove.setAccessibleName(self.tr("Remove Unused Packages"))
         btn_autoremove.setObjectName("maintAutoremoveBtn")
         btn_autoremove.setToolTip(MAINT_ORPHANS)
         btn_autoremove.clicked.connect(self.run_autoremove)
-        cleanup_layout.addWidget(btn_autoremove)
+        maint_layout.addWidget(btn_autoremove)
 
         btn_journal = QPushButton(self.tr("Review Journal Retention"))
         btn_journal.setAccessibleName(self.tr("Vacuum Journal"))
         btn_journal.setToolTip(MAINT_JOURNAL)
         btn_journal.clicked.connect(self._review_journal)
-        cleanup_layout.addWidget(btn_journal)
-
-        layout.addWidget(cleanup_group)
-
-        # Maintenance Group
-        maint_group = QGroupBox(self.tr("Maintenance"))
-        maint_layout = QVBoxLayout()
-        maint_group.setLayout(maint_layout)
+        maint_layout.addWidget(btn_journal)
 
         btn_trim = QPushButton(self.tr("Review SSD Trim"))
         btn_trim.setAccessibleName(self.tr("Review SSD Trim in Action Center"))
@@ -299,7 +366,12 @@ class _CleanupSubTab(BaseTab):
         ts_layout.addWidget(btn_check_ts)
         maint_layout.addLayout(ts_layout)
 
-        layout.addWidget(maint_group)
+        self.advanced_cleanup = DetailsDisclosure(
+            summary=self.tr("Show advanced cleanup choices")
+        )
+        self.advanced_cleanup.setObjectName("cleanupAdvancedDisclosure")
+        self.advanced_cleanup.add_widget(maint_group)
+        layout.addWidget(self.advanced_cleanup)
 
         preview_group = QGroupBox(self.tr("Reclaim Preview"))
         preview_layout = QVBoxLayout(preview_group)
@@ -318,7 +390,7 @@ class _CleanupSubTab(BaseTab):
         self.reclaim_button = QPushButton(self.tr("Analyze Reclaimable Space"))
         self.reclaim_button.clicked.connect(self._analyze_reclaim)
         preview_layout.addWidget(self.reclaim_button)
-        layout.addWidget(preview_group)
+        layout.insertWidget(0, preview_group)
         self.add_output_disclosure(layout, self.tr("Show cleanup command output"))
         self._reclaim_thread = None
         self._reclaim_worker = None
@@ -355,9 +427,20 @@ class _CleanupSubTab(BaseTab):
             size = self.tr("estimate unavailable")
             if category.estimated_bytes is not None:
                 size = self._format_bytes(category.estimated_bytes)
-            mode = self.tr("manual-only") if category.manual_only else self.tr("reviewable")
+            if category.selected_by_default:
+                mode = self.tr("safe default")
+            elif category.manual_only:
+                mode = self.tr("advanced manual guidance")
+            else:
+                mode = self.tr("advanced, not selected")
             lines.append(f"{category.title}: {size} · {category.risk} · {mode}\n{category.guidance}")
         lines.append(self.tr("Selected safe estimate: %s") % self._format_bytes(analysis.estimated_selected_bytes))
+        lines.append(
+            self.tr(
+                "After a cleanup run, analyze again to verify reclaimed space. "
+                "Action Center reports any category that only partially completed."
+            )
+        )
         self.reclaim_banner.set_result(
             "success",
             self.tr("Reclaim analysis complete"),

@@ -63,6 +63,31 @@ class _ActionCenterOperationWorker(QObject):
             self.failed.emit(str(exc))
 
 
+ACTION_CENTER_STATE_GROUPS = (
+    ("needs_review", "Needs review"),
+    ("ready", "Ready"),
+    ("running", "Running"),
+    ("waiting_restart", "Waiting for restart"),
+    ("completed", "Completed"),
+    ("failed", "Failed"),
+)
+
+
+def action_center_group_for_state(state: str) -> str:
+    """Map plan and run states to the six user-facing work groups."""
+    if state in {"planned", "needs_review", "manual_only"}:
+        return "needs_review"
+    if state == "ready":
+        return "ready"
+    if state in {"running", "verifying"}:
+        return "running"
+    if state == "awaiting_reboot":
+        return "waiting_restart"
+    if state == "succeeded":
+        return "completed"
+    return "failed"
+
+
 class _ActionCenterSubTab(BaseTab):
     """Review, asynchronously run, verify, and inspect v17 action plans."""
 
@@ -76,6 +101,7 @@ class _ActionCenterSubTab(BaseTab):
         super().__init__()
         self._target_key = FEDORA_RELEASE_POLICY.stable_target
         self._items: list[typing.Any] = []
+        self._visible_records: list[tuple[str, typing.Any]] = []
         self._orchestrator = None
         self._current_plan = None
         self._current_run = None
@@ -97,39 +123,35 @@ class _ActionCenterSubTab(BaseTab):
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
             self.tr("Action Center"),
-            self.tr("Review, plan, run, verify, and inspect maintenance actions."),
+            self.tr("Review planned changes and follow each one through verification."),
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
         intro = QLabel(
             self.tr(
-                "Review preflight, exact command, risk, and recovery guidance. Applying a plan "
-                "runs asynchronously and never counts as success until separate verification passes."
+                "Choose a work status, select a change, and follow the one available next step. "
+                "A change is complete only after verification succeeds."
             )
         )
         intro.setWordWrap(True)
         layout.addWidget(intro)
 
         lifecycle_row = QHBoxLayout()
-        lifecycle_label = QLabel(self.tr("View"))
+        lifecycle_label = QLabel(self.tr("Work status"))
         self.lifecycle_view = QComboBox()
-        self.lifecycle_view.setAccessibleName(self.tr("Action Center lifecycle view"))
-        self.lifecycle_view.addItems(
-            [
-                self.tr("Waiting for review"),
-                self.tr("Waiting for reboot"),
-                self.tr("Recently verified"),
-                self.tr("Recovery and history"),
-            ]
-        )
+        self.lifecycle_view.setAccessibleName(self.tr("Action Center work status"))
+        for group_id, label in ACTION_CENTER_STATE_GROUPS:
+            self.lifecycle_view.addItem(self.tr(label), group_id)
         self.lifecycle_view.currentIndexChanged.connect(self._show_lifecycle_view)
         lifecycle_row.addWidget(lifecycle_label)
         lifecycle_row.addWidget(self.lifecycle_view, 1)
         layout.addLayout(lifecycle_row)
 
-        target_row = QVBoxLayout()
-        target_row.setObjectName("actionCenterControls")
+        advanced_widget = QWidget()
+        advanced_widget.setObjectName("actionCenterControls")
+        advanced_layout = QVBoxLayout(advanced_widget)
+        advanced_layout.setContentsMargins(0, 0, 0, 0)
         target_load_row = QHBoxLayout()
         target_review_row = QHBoxLayout()
         load_stable = QPushButton(self.tr("Reload Fedora %s Actions") % FEDORA_RELEASE_POLICY.stable_release)
@@ -152,6 +174,16 @@ class _ActionCenterSubTab(BaseTab):
         history_button.clicked.connect(self._show_history)
         target_load_row.addWidget(history_button)
         target_load_row.addStretch()
+
+        catalog_row = QHBoxLayout()
+        catalog_label = QLabel(self.tr("Available advanced action"))
+        self.catalog_selector = QComboBox()
+        self.catalog_selector.setAccessibleName(self.tr("Available advanced Action Center action"))
+        self.catalog_selector.currentIndexChanged.connect(
+            self._select_advanced_candidate
+        )
+        catalog_row.addWidget(catalog_label)
+        catalog_row.addWidget(self.catalog_selector, 1)
 
         self.target_guidance = QLabel(
             self.tr(
@@ -185,10 +217,16 @@ class _ActionCenterSubTab(BaseTab):
         self.check_again_button.setVisible(False)
         target_review_row.addWidget(self.check_again_button)
 
-        target_row.addLayout(target_load_row)
-        target_row.addWidget(self.target_guidance)
-        target_row.addLayout(target_review_row)
-        layout.addLayout(target_row)
+        advanced_layout.addLayout(target_load_row)
+        advanced_layout.addLayout(catalog_row)
+        advanced_layout.addWidget(self.target_guidance)
+        self.advanced_review_tools = DetailsDisclosure(
+            summary=self.tr("Show advanced review tools")
+        )
+        self.advanced_review_tools.setObjectName("actionCenterAdvancedTools")
+        self.advanced_review_tools.add_widget(advanced_widget)
+        layout.addWidget(self.advanced_review_tools)
+        layout.addLayout(target_review_row)
         self._set_lifecycle_primary("review", enabled=False)
 
         self.presentation_banner = ResultBanner(
@@ -200,14 +238,13 @@ class _ActionCenterSubTab(BaseTab):
         layout.addWidget(self.presentation_banner)
 
         self.action_list = QListWidget()
-        self.action_list.setAccessibleName(self.tr("Action Center candidates"))
+        self.action_list.setAccessibleName(self.tr("Action Center work list"))
         self.action_list.currentRowChanged.connect(self._selection_changed)
         layout.addWidget(self.action_list, 1)
 
-        self.detail_disclosure = DetailsDisclosure(summary=self.tr("Action Center details"))
+        self.detail_disclosure = DetailsDisclosure(summary=self.tr("Show selected change details"))
         self.detail_area = self.detail_disclosure.details
-        self.detail_area.setAccessibleName(self.tr("Action Center details"))
-        self.detail_disclosure.toggle_button.setChecked(True)
+        self.detail_area.setAccessibleName(self.tr("Selected change details"))
         layout.addWidget(self.detail_disclosure, 1)
 
         self.add_output_disclosure(layout, self.tr("Show Action Center command output"))
@@ -253,65 +290,139 @@ class _ActionCenterSubTab(BaseTab):
     def _accept_loaded_items(self: typing.Any, items: typing.Any) -> None:
         self._items = list(items)
         self._set_loading(False)
-
+        self.catalog_selector.blockSignals(True)
+        self.catalog_selector.clear()
+        self.catalog_selector.addItem(self.tr("Choose an advanced action…"), "")
         for item in self._items:
-            marker = self.tr("manual") if item.manual_only else item.state
-            self.action_list.addItem(f"{item.title} [{item.risk_level}] - {marker}")
-
-        if self._items:
+            self.catalog_selector.addItem(item.title, item.id)
+        self.catalog_selector.blockSignals(False)
+        current_index = self.lifecycle_view.currentIndex()
+        self._show_lifecycle_view(current_index if isinstance(current_index, int) else 0)
+        selected = self._select_requested_action()
+        if self._visible_records:
             self.presentation_banner.set_result(
                 "info",
-                self.tr("Maintenance review available"),
-                self.tr("%d maintenance items are available. Select one to inspect its lifecycle.") % len(self._items),
+                self.tr("Changes need review"),
+                self.tr("%d changes are available. Select one to review its outcome and safety details.")
+                % len(self._visible_records),
             )
-            selected = self._select_requested_action()
-            if not selected:
+            if not selected and self.action_list.count():
                 self.action_list.setCurrentRow(0)
-                self._show_item(self._items[0])
         else:
             self.presentation_banner.set_result(
                 "success",
                 self.tr("Nothing needs review"),
-                self.tr("No maintenance item needs review right now."),
+                self.tr(
+                    "No planned maintenance item needs review right now. "
+                    "Available catalog actions remain under advanced review tools."
+                ),
             )
-            self.detail_area.setPlainText(self.tr("No Action Center candidates are currently available."))
+            self.detail_area.setPlainText(
+                self.tr("No planned Action Center change currently needs review.")
+            )
 
     def _show_lifecycle_view(self: typing.Any, index: int) -> None:
-        """Present one of the four explicit Action Center states."""
-        review_mode = index == 0
-        self.action_list.setVisible(review_mode)
+        """Present one of the six user-facing Action Center work states."""
+        if not isinstance(index, int):
+            index = 0
+        if not 0 <= index < len(ACTION_CENTER_STATE_GROUPS):
+            index = 0
+        group_id, group_label = ACTION_CENTER_STATE_GROUPS[index]
+        review_mode = group_id == "needs_review"
         self.preview_button.setVisible(review_mode)
-        if review_mode:
-            item = self._selected_item()
-            if item is not None:
-                self._show_item(item)
-            elif not self._items:
-                self.detail_area.setPlainText(self.tr("No Action Center candidate is waiting for review."))
-                self._set_lifecycle_primary("review", enabled=False)
-            return
-        self._set_lifecycle_primary("", enabled=False)
+        self._set_lifecycle_primary(
+            "review" if review_mode else "",
+            enabled=False,
+        )
 
         from core.actions import ActionPlanStore, ActionRunStore
 
-        plans = ActionPlanStore().list(limit=25)
-        runs = ActionRunStore().list(limit=25)
-        if index == 1:
-            selected = [run for run in runs if run.state == "awaiting_reboot"]
-            heading = self.tr("Waiting for reboot")
-            empty = self.tr("No verified run is waiting for a reboot.")
-        elif index == 2:
-            selected = [run for run in runs if run.state == "succeeded"][-10:]
-            heading = self.tr("Recently verified")
-            empty = self.tr("No recently verified run is recorded.")
+        try:
+            plans = ActionPlanStore().list(limit=25)
+            runs = ActionRunStore().list(limit=25)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            plans = []
+            runs = []
+
+        records: list[tuple[str, typing.Any]] = []
+        if group_id == "needs_review":
+            records.extend(
+                ("plan", plan)
+                for plan in plans
+                if action_center_group_for_state(str(plan.state)) == group_id
+            )
+            if self._requested_action_id:
+                records.extend(
+                    ("candidate", item)
+                    for item in self._items
+                    if self._ACTION_ID_ADAPTERS.get(item.id, item.id)
+                    == self._requested_action_id
+                )
+        elif group_id == "ready":
+            records.extend(
+                ("plan", plan)
+                for plan in plans
+                if action_center_group_for_state(str(plan.state)) == group_id
+            )
         else:
-            selected = [run for run in runs if run.state in {"failed", "verification_failed", "interrupted", "cancelled"}]
-            heading = self.tr("Recovery and history")
-            empty = self.tr("No run currently requires recovery review.")
-        lines = [heading]
-        lines.extend(f"{run.run_id}: {run.action_id} [{run.state}] — {run.recovery_status}" for run in reversed(selected))
-        if index == 3:
-            lines.extend(f"{plan.plan_id}: {plan.action_id} [{plan.state}]" for plan in reversed(plans[-10:]))
-        self.detail_area.setPlainText("\n".join(lines) if len(lines) > 1 else empty)
+            records.extend(
+                ("run", run)
+                for run in runs
+                if action_center_group_for_state(str(run.state)) == group_id
+            )
+
+        self._visible_records = records if review_mode else list(reversed(records))
+        self.action_list.clear()
+        for kind, record in self._visible_records:
+            if kind == "candidate":
+                marker = self.tr("Manual guidance") if record.manual_only else self.tr("Create plan")
+                self.action_list.addItem(f"{record.title} — {marker}")
+            elif kind == "plan":
+                resources = ", ".join(record.affected_resources) or self.tr("System")
+                self.action_list.addItem(
+                    f"{self._action_title(record.action_id)} — {resources}"
+                )
+            else:
+                state = self.tr(str(record.state).replace("_", " ").title())
+                self.action_list.addItem(
+                    f"{self._action_title(record.action_id)} — {state}"
+                )
+
+        if self._visible_records:
+            if not self._requested_action_id:
+                self.action_list.setCurrentRow(0)
+            return
+        self.detail_area.setPlainText(
+            self.tr("No changes are in %1.").replace("%1", self.tr(group_label).lower())
+        )
+        self.presentation_banner.set_result(
+            "success",
+            self.tr("%1 is clear").replace("%1", self.tr(group_label)),
+            self.tr("No changes are currently in this work state."),
+        )
+
+    def _action_title(self, action_id: str) -> str:
+        """Return user-facing catalog copy without exposing a definition id."""
+        for item in self._items:
+            candidate_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
+            if candidate_id == action_id:
+                return str(item.title)
+        return str(self.tr(str(action_id).replace("-", " ").title()))
+
+    def _select_advanced_candidate(self, index: int) -> None:
+        """Move one explicitly chosen catalog definition into review."""
+        if index <= 0:
+            return
+        action_id = str(self.catalog_selector.itemData(index) or "")
+        if not action_id:
+            return
+        self._requested_action_id = self._ACTION_ID_ADAPTERS.get(
+            action_id,
+            action_id,
+        )
+        self.lifecycle_view.setCurrentIndex(0)
+        self._show_lifecycle_view(0)
+        self._select_requested_action()
 
     def preselect_action(
         self: typing.Any,
@@ -330,6 +441,9 @@ class _ActionCenterSubTab(BaseTab):
         )
         if not self._requested_action_id:
             return False
+        if self._items:
+            self.lifecycle_view.setCurrentIndex(0)
+            self._show_lifecycle_view(0)
         return self._select_requested_action() or not bool(self._items)
 
     def _set_loading(self: typing.Any, loading: bool) -> None:
@@ -370,8 +484,20 @@ class _ActionCenterSubTab(BaseTab):
             )
 
     def _selection_changed(self: typing.Any, row: int) -> None:
-        if 0 <= row < len(self._items):
-            item = self._items[row]
+        if 0 <= row < len(self._visible_records):
+            kind, record = self._visible_records[row]
+            if kind == "plan":
+                self._current_plan = record
+                self._current_run = None
+                self._show_plan(record)
+                self._set_lifecycle_primary("run", enabled=record.state == "ready")
+                return
+            if kind == "run":
+                self._current_run = record
+                self._current_plan = None
+                self._show_run(record)
+                return
+            item = record
             candidate_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
             if (
                 self._requested_finding_context is not None
@@ -384,7 +510,11 @@ class _ActionCenterSubTab(BaseTab):
     def _select_requested_action(self: typing.Any) -> bool:
         if not self._requested_action_id:
             return False
-        for index, item in enumerate(self._items):
+        if self.lifecycle_view.currentData() != "needs_review":
+            self.lifecycle_view.setCurrentIndex(0)
+        for index, (kind, item) in enumerate(self._visible_records):
+            if kind != "candidate":
+                continue
             candidate_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
             if candidate_id == self._requested_action_id:
                 self.action_list.setCurrentRow(index)
@@ -418,9 +548,14 @@ class _ActionCenterSubTab(BaseTab):
 
     def _selected_item(self: typing.Any) -> typing.Any:
         row = self.action_list.currentRow()
-        if row < 0 or row >= len(self._items):
+        if not isinstance(row, int) or row < 0:
             return None
-        return self._items[row]
+        if row < len(self._visible_records):
+            kind, record = self._visible_records[row]
+            return record if kind == "candidate" else None
+        if row < len(self._items):
+            return self._items[row]
+        return None
 
     def _show_item(self: typing.Any, item: typing.Any) -> None:
         self._set_lifecycle_primary("review", enabled=not item.manual_only)
@@ -428,19 +563,23 @@ class _ActionCenterSubTab(BaseTab):
             self.presentation_status.setText(self.tr("Manual-only recommendation: review the guidance; Action Center will not execute it."))
         command = " ".join(item.command_preview) if item.command_preview else self.tr("Manual-only")
         verification = " ".join(item.verification_command) if item.verification_command else self.tr("No verification command")
+        resources = ", ".join(item.metadata.get("affected_resources", ())) or self.tr("Shown after plan creation")
+        reboot = str(item.metadata.get("reboot_policy", "shown after plan creation")).replace("_", " ")
         self.detail_area.setPlainText(
             "\n".join(
                 [
-                    f"{self.tr('Title')}: {item.title}",
-                    f"{self.tr('Source')}: {item.source}",
-                    f"{self.tr('State')}: {item.state}",
-                    f"{self.tr('Risk')}: {item.risk_level}",
-                    f"{self.tr('Privilege')}: {item.privilege}",
-                    f"{self.tr('Command preview')}: {command}",
-                    f"{self.tr('Verification')}: {verification}",
-                    f"{self.tr('Rollback')}: {item.rollback_hint}",
-                    "",
+                    f"{self.tr('Intended outcome')}: {item.title}",
                     item.description,
+                    f"{self.tr('Affected components')}: {resources}",
+                    f"{self.tr('Privilege required')}: {item.privilege}",
+                    f"{self.tr('Restart requirement')}: {reboot}",
+                    f"{self.tr('Verification')}: {verification}",
+                    f"{self.tr('Recovery guidance')}: {item.rollback_hint}",
+                    "",
+                    f"{self.tr('Technical source')}: {item.source}",
+                    f"{self.tr('Definition')}: {item.id}",
+                    f"{self.tr('Risk')}: {item.risk_level}",
+                    f"{self.tr('Command preview')}: {command}",
                 ]
             )
         )
@@ -546,16 +685,20 @@ class _ActionCenterSubTab(BaseTab):
         self.detail_area.setPlainText(
             "\n".join(
                 [
+                    f"{self.tr('Intended outcome')}: {plan.action_id}",
+                    f"{self.tr('Affected components')}: {', '.join(plan.affected_resources) or self.tr('System')}",
+                    f"{self.tr('Privilege required')}: {self.tr('Administrator approval (pkexec)') if plan.privileged else self.tr('None')}",
+                    f"{self.tr('Restart requirement')}: {str(plan.reboot_policy).replace('_', ' ')}",
+                    f"{self.tr('Verification')}: {self.tr('Required after execution')}",
+                    f"{self.tr('Recovery guidance')}: {plan.recovery_guidance}",
+                    "",
                     f"{self.tr('Plan')}: {plan.plan_id}",
-                    f"{self.tr('Action')}: {plan.action_id}",
+                    f"{self.tr('Definition')}: {plan.action_id}",
                     context_line,
                     f"{self.tr('State')}: {plan.state}",
                     f"{self.tr('Risk')}: {plan.risk_level}",
-                    f"{self.tr('Privilege')}: {'pkexec' if plan.privileged else self.tr('none')}",
-                    f"{self.tr('Preflight')}: {plan.policy_decision.reason_code}",
-                    plan.policy_decision.explanation,
+                    f"{self.tr('Preflight')}: {plan.policy_decision.reason_code} — {plan.policy_decision.explanation}",
                     f"{self.tr('Command preview')}: {' '.join(plan.preview) if plan.preview else self.tr('Manual-only')}",
-                    f"{self.tr('Recovery')}: {plan.recovery_guidance}",
                     f"{self.tr('Expires')}: {plan.expires_at}",
                 ]
             )
@@ -743,16 +886,19 @@ class _ActionCenterSubTab(BaseTab):
         self.detail_area.setPlainText(
             "\n".join(
                 [
+                    f"{self.tr('Intended outcome')}: {run.action_id}",
+                    f"{self.tr('Affected components')}: {', '.join(run.affected_resources) or self.tr('System')}",
+                    f"{self.tr('Restart requirement')}: {self.tr('Required') if run.reboot_required else str(run.reboot_policy).replace('_', ' ')}",
+                    f"{self.tr('Verification')}: {verification.get('message', self.tr('Pending'))}",
+                    f"{self.tr('Recovery guidance')}: {run.recovery_status}",
+                    "",
                     f"{self.tr('Run')}: {run.run_id}",
                     f"{self.tr('Plan')}: {run.plan_id}",
-                    f"{self.tr('Action')}: {run.action_id}",
+                    f"{self.tr('Definition')}: {run.action_id}",
                     context_line,
                     f"{self.tr('State')}: {run.state}",
                     f"{self.tr('Execution')}: {(run.execution_result or {}).get('message', '')}",
-                    f"{self.tr('Verification')}: {verification.get('message', self.tr('Pending'))}",
                     f"{self.tr('Verification attempts')}: {getattr(run, 'verification_attempts', 0)}",
-                    f"{self.tr('Reboot required')}: {getattr(run, 'reboot_required', False)}",
-                    f"{self.tr('Recovery')}: {run.recovery_status}",
                     (
                         self.tr("Finding resolution: requires a later compatible System Check")
                         if context is not None

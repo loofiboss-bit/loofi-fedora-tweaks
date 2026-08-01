@@ -164,7 +164,7 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.data_state, "fresh")
         self.assertEqual(summary.overall_state, "good")
         self.assertEqual(summary.primary_recommendation.kind, "no_action")
-        self.assertEqual(len(summary.common_tasks), 4)
+        self.assertEqual(len(summary.common_tasks), 5)
         self.assertEqual(
             [(item.id, item.state) for item in summary.status_items],
             [

@@ -148,6 +148,9 @@ def _install_stubs():
     components_mod.DetailsDisclosure = _Dummy
     components_mod.StatusBadge = _Dummy
 
+    native_handoff_mod = types.ModuleType("ui.native_handoff_card")
+    native_handoff_mod.NativeHandoffCard = _Dummy
+
     module_map = {
         "PyQt6": pyqt,
         "PyQt6.QtWidgets": qt_widgets,
@@ -163,6 +166,7 @@ def _install_stubs():
         "ui.tooltips": tooltips_mod,
         "ui.shared_states": shared_states_mod,
         "ui.components": components_mod,
+        "ui.native_handoff_card": native_handoff_mod,
     }
 
     for name, mod in module_map.items():

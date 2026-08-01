@@ -267,6 +267,16 @@ class _ApplicationsSubTab(BaseTab):
         )
         row_widget.setProperty("appSource", source_kind)
         row_widget.setProperty("appStatus", status_kind)
+        plan_hint = QLabel(
+            self.tr(
+                "Package: %1 · Source: %2 · Restart: shown in the plan · "
+                "Verification: installation state is checked"
+            )
+            .replace("%1", presentation.package_id)
+            .replace("%2", presentation.source)
+        )
+        plan_hint.setObjectName("applicationPlanSummary")
+        plan_hint.setWordWrap(True)
 
         badges = QVBoxLayout()
         source_badge = StatusBadge(
@@ -312,10 +322,12 @@ class _ApplicationsSubTab(BaseTab):
                 )
             )
 
-        row_layout.addWidget(lbl_name)
-        row_layout.addWidget(lbl_desc)
+        app_copy = QVBoxLayout()
+        app_copy.addWidget(lbl_name)
+        app_copy.addWidget(lbl_desc)
+        app_copy.addWidget(plan_hint)
+        row_layout.addLayout(app_copy, 1)
         row_layout.addLayout(badges)
-        row_layout.addStretch()
         row_layout.addWidget(btn_install)
 
         layout.addWidget(row_widget)
