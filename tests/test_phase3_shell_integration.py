@@ -117,13 +117,19 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         self.assertNotIn("statusVersion", object_names)
         self.assertFalse(window._status_frame.isVisible())
 
-    def test_advanced_mode_adds_exactly_one_destination(self):
+    def test_unified_mode_keeps_specialist_tools_out_of_primary_navigation(self):
         window = self._build_window(mode=NavigationMode.ADVANCED)
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
-        self.assertEqual(window.sidebar.destination_ids()[-1], "advanced")
+        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertNotIn("advanced", window.sidebar.destination_ids())
 
-    def test_mode_refresh_preserves_lazy_pages_and_toggles_six_to_seven(self):
+        opened = window.switch_to_route("development")
+
+        self.assertTrue(opened)
+        self.assertEqual(window._active_destination_id, "advanced")
+        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+
+    def test_mode_refresh_preserves_lazy_pages_and_six_primary_destinations(self):
         window = self._build_window(mode=NavigationMode.STANDARD)
         pages_before = {
             plugin_id: entry.page_widget
@@ -132,7 +138,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         load_calls_before = window._plugin_loader.load_builtin_widget.call_count
 
         window._rebuild_sidebar_for_navigation_mode(NavigationMode.ADVANCED)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertNotIn("advanced", window.sidebar.destination_ids())
         self.assertEqual(
             pages_before,
             {plugin_id: entry.page_widget for plugin_id, entry in window._sidebar_index.items()},

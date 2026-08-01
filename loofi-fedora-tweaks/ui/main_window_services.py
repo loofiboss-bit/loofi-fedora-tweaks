@@ -15,6 +15,7 @@ from core.navigation import (
     FedoraVariant,
     NavigationContext,
     NavigationDecision,
+    NavigationMode,
     NavigationPolicy,
     NavigationRoute,
     area_for_plugin,
@@ -174,7 +175,7 @@ class MainWindowServiceMixin:
         previous_route = self._active_route_id
         self._active_navigation_mode = mode
         self._navigation_context = replace(self._navigation_context, mode=mode)
-        self.sidebar.set_destinations(destinations_for_mode(mode))
+        self.sidebar.set_destinations(destinations_for_mode(NavigationMode.STANDARD))
         self._active_destination_id = ""
         if previous_route and self.switch_to_route(previous_route, record_history=False):
             return

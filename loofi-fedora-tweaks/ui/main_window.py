@@ -9,6 +9,7 @@ from core.navigation import (
     FedoraVariant,
     NavigationContext,
     NavigationDecision,
+    NavigationMode,
     NavigationPolicy,
     NavigationRoute,
     area_for_plugin,
@@ -430,7 +431,10 @@ class MainWindow(
             incompatible_plugin_ids=frozenset(incompatible_plugin_ids),
             favorite_route_ids=frozenset(favorites),
         )
-        self.sidebar.set_destinations(destinations_for_mode(mode))
+        # Specialist routes remain policy-visible and searchable through the
+        # unified navigation context, while the primary shell stays at the six
+        # product destinations.
+        self.sidebar.set_destinations(destinations_for_mode(NavigationMode.STANDARD))
 
     def _activate_destination(self, destination_id: str) -> None:
         """Open a destination's policy-approved default route."""
