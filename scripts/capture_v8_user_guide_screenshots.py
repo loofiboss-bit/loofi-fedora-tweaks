@@ -27,6 +27,10 @@ WINDOW_SIZE = QSize(1400, 900)
 
 ROUTE_SCREENSHOTS = [
     ("home-dashboard.png", "", False),
+    ("install-app.png", "software:apps", False),
+    ("troubleshoot.png", "diagnostics", False),
+    ("cleanup-preview.png", "maintenance:cleanup", False),
+    ("action-center.png", "maintenance:action-center", False),
     ("upgrade-assistant.png", "maintenance:upgrade-assistant", False),
     ("system-monitor.png", "system-monitor:processes", False),
     ("maintenance-updates.png", "maintenance:updates", False),
@@ -51,6 +55,29 @@ def _save_widget(widget, filename: str) -> None:
     if pixmap.isNull() or not pixmap.save(str(path), "PNG"):
         raise RuntimeError(f"failed to save {path}")
     print(f"captured {path.relative_to(ROOT)}")
+
+
+def _sanitize_route_capture(window, route_id: str) -> None:
+    """Remove host-specific values before a documentation screenshot is saved."""
+    if route_id != "network:connections":
+        return
+
+    from ui.network_tab import NetworkTab
+
+    network_tab = window.findChild(NetworkTab)
+    if network_tab is None:
+        raise RuntimeError("Network page was not realized")
+
+    for row in range(network_tab.iface_table.rowCount()):
+        for column in (3, 4):
+            item = network_tab.iface_table.item(row, column)
+            if item is not None:
+                item.setText("—")
+
+    for row in range(network_tab.wifi_table.rowCount()):
+        item = network_tab.wifi_table.item(row, 0)
+        if item is not None:
+            item.setText("Network")
 
 
 @contextmanager
@@ -90,8 +117,13 @@ def _screenshot_home() -> Iterator[None]:
 
 
 def _capture_main_window(app: QApplication) -> None:
+    from core.actions import ActionCenterOrchestrator
     from core.navigation.models import NavigationMode
     from ui.main_window import MainWindow
+
+    # Persist one closed, non-destructive review plan in the temporary profile
+    # so the Action Center capture demonstrates its primary user workflow.
+    ActionCenterOrchestrator().plan("dnf-clean-all", {})
 
     window = MainWindow()
     window.resize(WINDOW_SIZE)
@@ -107,6 +139,15 @@ def _capture_main_window(app: QApplication) -> None:
         if route_id and not window.switch_to_route(route_id):
             raise RuntimeError(f"route did not resolve in MainWindow: {route_id}")
         _settle(app, 1.0)
+        if route_id == "maintenance:action-center":
+            from ui.maintenance_action_center import _ActionCenterSubTab
+
+            action_center = window.findChild(_ActionCenterSubTab)
+            if action_center is None:
+                raise RuntimeError("Action Center page was not realized")
+            action_center._show_lifecycle_view(1)
+            _settle(app, 0.5)
+        _sanitize_route_capture(window, route_id)
         _save_widget(window, filename)
 
     window.close()

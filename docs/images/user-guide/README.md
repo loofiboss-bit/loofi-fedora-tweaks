@@ -2,17 +2,20 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v18.0.0 "Haven" release on 2026-07-22
+**Last verified**: v23.1.0 release candidate on 2026-08-01
 
-**Status**: These assets remain available for stable user-doc links. The
-complete Home, Updates, Install App, Troubleshoot, Cleanup, and Action Center
-set must be recaptured on Fedora 44 KDE Wayland after the planned workflow UI
-changes; older captures are not physical qualification for the current
-release.
+**Status**: The complete set was captured from the real application on Fedora
+44 KDE Plasma 6.7.3 under Wayland at 140% display scale. The deterministic
+temporary profile prevents local settings from entering the images, and the
+capture script redacts host-specific network addresses.
 
 ## Current Files
 
 - `home-dashboard.png` -- Home
+- `install-app.png` -- Install App
+- `troubleshoot.png` -- Troubleshoot
+- `cleanup-preview.png` -- Cleanup preview
+- `action-center.png` -- Action Center with a review-ready cleanup plan
 - `upgrade-assistant.png` -- Software & Updates > Maintenance > Upgrade Assistant
 - `release-readiness.png` -- Home > Release Readiness
 - `release-readiness-advanced.png` -- Release Readiness advanced details
@@ -60,6 +63,10 @@ For manual verification after regeneration:
 | Screenshot | Navigate To | Notes |
 |------------|-------------|-------|
 | `home-dashboard.png` | Home | Show canonical Home and the six-destination Standard sidebar |
+| `install-app.png` | Software & Updates > Install App | Show search before any installation plan is created |
+| `troubleshoot.png` | System > Troubleshoot | Show the symptom-first starting point |
+| `cleanup-preview.png` | Software & Updates > Cleanup | Show safe defaults and preview-first guidance |
+| `action-center.png` | Software & Updates > Action Center | Show one closed, non-destructive review plan |
 | `upgrade-assistant.png` | Software & Updates > Maintenance > Upgrade Assistant | Show Fedora 44 stable and Fedora 45 preview planning |
 | `release-readiness.png` | Home > Release Readiness | Show grouped beginner readiness findings |
 | `release-readiness-advanced.png` | Home > Release Readiness > Advanced | Show command/recommendation metadata |
