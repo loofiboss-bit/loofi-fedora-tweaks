@@ -12,6 +12,10 @@ SOURCE = ROOT / "loofi-fedora-tweaks"
 BUDGETED_EXTRACTED_MODULES = frozenset(
     {
         "cli/parser.py",
+        "cli/parser_domains/host.py",
+        "cli/parser_domains/observability.py",
+        "cli/parser_domains/specialist.py",
+        "cli/parser_domains/support.py",
         "cli/commands/readiness_commands.py",
         "ui/main_window_interactions.py",
         "ui/main_window_services.py",
@@ -21,11 +25,9 @@ BUDGETED_EXTRACTED_MODULES = frozenset(
     }
 )
 
-# These are declarative dispatch/assembly functions. Splitting them further
-# would scatter one public grammar or one screen lifecycle without reducing
-# mutation authority. Their business logic already lives in domain handlers.
+# These are declarative dispatch/assembly functions whose business logic
+# already lives in domain handlers.
 LONG_FUNCTION_EXCEPTIONS = {
-    ("cli/parser.py", "build_parser"): "single declarative argparse grammar",
     ("cli/commands/readiness_commands.py", "_cmd_readiness_action"): "compatibility dispatcher over domain services",
     ("cli/commands/readiness_commands.py", "cmd_action_center"): "single machine-readable Action Center protocol dispatcher",
     ("ui/maintenance_action_center.py", "__init__"): "declarative construction of one lifecycle screen",

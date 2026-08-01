@@ -65,6 +65,8 @@ from ui.navigation import DestinationHost, DestinationSidebar
 
 if TYPE_CHECKING:
     from core.plugins.spec import PluginSpec
+    from PyQt6.QtWidgets import QSystemTrayIcon
+    from ui.notification_toast import NotificationToast
 
 logger = get_logger(__name__)
 
@@ -83,6 +85,9 @@ _BADGE_SUFFIXES = {
 
 class MainWindowInteractionMixin:
     """Behavioral shell mixin kept separate from route/page construction."""
+
+    tray_icon: QSystemTrayIcon | None
+    _toast_widget: NotificationToast | None
 
     def _setup_command_palette_shortcut(self: typing.Any) -> typing.Any:
         """Compatibility name for registering both global-search shortcuts."""

@@ -303,7 +303,7 @@ class TestPhase3ShellAndSettings(unittest.TestCase):
     def test_main_window_title_does_not_include_version(self):
         from ui.main_window import MainWindow
 
-        source = inspect.getsource(MainWindow.__init__)
+        source = inspect.getsource(MainWindow._configure_window_surface)
         self.assertIn('setWindowTitle(self.tr("Loofi Fedora Tweaks"))', source)
         self.assertNotIn("__version__", source)
 

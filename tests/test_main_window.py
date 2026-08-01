@@ -1377,6 +1377,54 @@ class TestDisabledPluginPage(unittest.TestCase):
 class TestMainWindowInstantiation(unittest.TestCase):
     """Tests for MainWindow __init__ and basic setup."""
 
+    @patch("ui.main_window.MainWindow._register_runtime_shutdown")
+    @patch("ui.main_window.MainWindow._initialize_post_navigation_behaviors")
+    @patch("ui.main_window.MainWindow._register_lazy_navigation")
+    @patch("ui.main_window.MainWindow._initialize_navigation_state")
+    @patch("ui.main_window.MainWindow._build_application_shell")
+    @patch("ui.main_window.MainWindow._initialize_service_state")
+    @patch("ui.main_window.MainWindow._configure_window_surface")
+    @patch("ui.main_window.MainWindow._initialize_runtime_state")
+    def test_initialization_responsibilities_preserve_startup_order(
+        self,
+        initialize_runtime,
+        configure_surface,
+        initialize_services,
+        build_shell,
+        initialize_navigation,
+        register_navigation,
+        initialize_behaviors,
+        register_shutdown,
+    ):
+        """The constructor keeps shell, lazy navigation, and services in order."""
+        mod = _get_module()
+        calls = []
+        initialize_runtime.side_effect = lambda runtime: calls.append(("runtime", runtime))
+        configure_surface.side_effect = lambda: calls.append(("surface", None))
+        initialize_services.side_effect = lambda: calls.append(("services", None))
+        build_shell.side_effect = lambda: calls.append(("shell", None))
+        initialize_navigation.side_effect = lambda: calls.append(("navigation-state", None))
+        register_navigation.side_effect = lambda: calls.append(("lazy-navigation", None))
+        initialize_behaviors.side_effect = lambda: calls.append(("behaviors", None))
+        register_shutdown.side_effect = lambda: calls.append(("shutdown", None))
+        runtime = object()
+
+        mod.MainWindow(runtime)
+
+        self.assertEqual(
+            calls,
+            [
+                ("runtime", runtime),
+                ("surface", None),
+                ("services", None),
+                ("shell", None),
+                ("navigation-state", None),
+                ("lazy-navigation", None),
+                ("behaviors", None),
+                ("shutdown", None),
+            ],
+        )
+
     @patch("ui.main_window.MainWindow.check_dependencies")
     @patch("ui.main_window.MainWindow.setup_tray")
     @patch("ui.main_window.MainWindow._check_first_run")

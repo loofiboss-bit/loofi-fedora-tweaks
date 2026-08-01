@@ -55,7 +55,11 @@ from ui.main_window_services import MainWindowServiceMixin
 from ui.main_window_shell import MainWindowShellMixin
 
 if TYPE_CHECKING:
+    from core.application_runtime import ApplicationRuntime
     from core.plugins.spec import PluginSpec
+    from PyQt6.QtWidgets import QSystemTrayIcon
+    from ui.notification_toast import NotificationToast
+    from utils.pulse import PulseThread, SystemPulse
 
 logger = get_logger(__name__)
 
@@ -139,50 +143,57 @@ class MainWindow(
     MainWindowShellMixin,
     QMainWindow,
 ):
-    def __init__(self, runtime=None):
+    def __init__(self, runtime: "ApplicationRuntime | None" = None) -> None:
         super().__init__()
+        self._initialize_runtime_state(runtime)
+        self._configure_window_surface()
+        self._initialize_service_state()
+        self._build_application_shell()
+        self._initialize_navigation_state()
+        self._register_lazy_navigation()
+        self._initialize_post_navigation_behaviors()
+        self._register_runtime_shutdown()
+
+    def _initialize_runtime_state(self, runtime: "ApplicationRuntime | None") -> None:
+        """Store process-owned runtime state before constructing the shell."""
         self._runtime = runtime
         self._runtime_cleaned = False
-
-        # Initialize logger for this class
         self.logger = logging.getLogger(__name__)
 
-        # Keep native title-bar decorations enabled.
-        # This avoids KDE/Wayland/X11 edge-cases where client content can
-        # appear to bleed into the top chrome when frameless/custom hints are used.
+    def _configure_window_surface(self) -> None:
+        """Configure native chrome, accessibility, and responsive geometry."""
         self.setWindowFlag(Qt.WindowType.FramelessWindowHint, False)
         self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, False)
         self.setWindowTitle(self.tr("Loofi Fedora Tweaks"))
         self.setAccessibleName(self.tr("Loofi Fedora Tweaks"))
         self.setAccessibleDescription(self.tr("Fedora system settings and maintenance control center"))
-
-        # HiDPI/Wayland safety: use Qt device-independent units and derive
-        # shell dimensions from the active font and available screen size.
         self._metrics = LayoutMetrics.from_widget(self)
         self._line_height = self._metrics.line_height
         self._apply_initial_geometry()
 
-        # Optional/background services are initialized only when settings require
-        # them or after the first meaningful Home render.
-        self.pulse = None
-        self.pulse_thread = None
-        self.tray_icon = None
+    def _initialize_service_state(self) -> None:
+        """Initialize optional service handles without starting background work."""
+        self.pulse: SystemPulse | None = None
+        self.pulse_thread: PulseThread | None = None
+        self.tray_icon: QSystemTrayIcon | None = None
         self._status_timer = None
         self.notif_panel = None
-        self._toast_widget = None
+        self._toast_widget: NotificationToast | None = None
         self._post_render_services_scheduled = False
 
-        # Central Widget
+    def _build_application_shell(self) -> None:
+        """Construct the central shell without realizing lazy destination pages."""
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
-
-        # Main Layout (Horizontal: Sidebar | Content)
         main_layout = QHBoxLayout()
         main_layout.setContentsMargins(0, 0, 0, 0)
         main_layout.setSpacing(0)
         central_widget.setLayout(main_layout)
+        self._build_sidebar_shell(main_layout)
+        self._build_content_shell(main_layout)
 
-        # Sidebar container with compact shell chrome.
+    def _build_sidebar_shell(self, main_layout: QHBoxLayout) -> None:
+        """Construct destination navigation and its compact controls."""
         sidebar_container = QWidget()
         sidebar_container.setObjectName("sidebarContainer")
         sidebar_width = self._metrics.sidebar_width
@@ -196,8 +207,6 @@ class MainWindow(
         sidebar_chrome = QHBoxLayout()
         sidebar_chrome.setContentsMargins(0, 0, 0, 0)
         sidebar_chrome.setSpacing(6)
-
-        # Compact semantic sidebar control.
         sidebar_chrome.addStretch()
         self._sidebar_toggle = QToolButton()
         self._sidebar_toggle.setObjectName("sidebarToggle")
@@ -214,15 +223,12 @@ class MainWindow(
         self._global_search_button.clicked.connect(lambda: self._show_global_search(actions_only=False))
         sidebar_layout.addWidget(self._global_search_button)
 
-        # Track sidebar expanded width and state
         self._sidebar_container = sidebar_container
         self._sidebar_expanded_width = sidebar_width
         self._sidebar_collapsed = False
         self._auto_sidebar_collapsed = False
         self._set_sidebar_toggle_state(False)
 
-        # Flat primary navigation. Existing route IDs remain in the route index,
-        # not as expandable child rows.
         self.sidebar = DestinationSidebar()
         self.sidebar.setAccessibleName(self.tr("Navigation destinations"))
         self.sidebar.destinationActivated.connect(self._activate_destination)
@@ -232,12 +238,18 @@ class MainWindow(
 
         main_layout.addWidget(sidebar_container)
 
-        # Right side: breadcrumb + content + status bar
+    def _build_content_shell(self, main_layout: QHBoxLayout) -> None:
+        """Construct the header, destination stack, and status surface."""
         right_side = QVBoxLayout()
         right_side.setContentsMargins(0, 0, 0, 0)
         right_side.setSpacing(0)
+        self._build_page_header(right_side)
+        self._build_destination_stack(right_side)
+        self._build_status_bar(right_side)
+        main_layout.addLayout(right_side)
 
-        # Page header (keeps breadcrumb-compatible attributes for callers/tests)
+    def _build_page_header(self, right_side: QVBoxLayout) -> None:
+        """Construct the page header and breadcrumb-compatible attributes."""
         self._breadcrumb_frame = PageHeader()
         self._breadcrumb_frame.setMinimumHeight(self._metrics.header_height)
         self._bc_category = self._breadcrumb_frame.eyebrow
@@ -251,6 +263,8 @@ class MainWindow(
         self._bc_desc.setObjectName("bcDesc")
         right_side.addWidget(self._breadcrumb_frame)
 
+    def _build_destination_stack(self, right_side: QVBoxLayout) -> None:
+        """Construct destination navigation and the lazy page stack."""
         shell_body = QWidget()
         shell_body.setObjectName("shellBody")
         self._shell_body_layout = QGridLayout(shell_body)
@@ -259,8 +273,6 @@ class MainWindow(
 
         self.destination_host = DestinationHost()
         self.destination_host.routeRequested.connect(self.switch_to_route)
-
-        # Content Area
         self.content_area = QStackedWidget()
         self._shell_body_layout.addWidget(self.destination_host, 0, 0)
         self._shell_body_layout.addWidget(self.content_area, 0, 1)
@@ -268,7 +280,8 @@ class MainWindow(
         self._section_navigation_compact = False
         right_side.addWidget(shell_body, 1)
 
-        # Status bar
+    def _build_status_bar(self, right_side: QVBoxLayout) -> None:
+        """Construct the initially hidden activity and undo surface."""
         self._status_frame = QFrame()
         self._status_frame.setObjectName("statusBar")
         self._status_frame.setMinimumHeight(self._metrics.status_height)
@@ -279,7 +292,6 @@ class MainWindow(
         self._status_label.setAccessibleName(self.tr("Activity status"))
         sb_layout.addWidget(self._status_label)
 
-        # Undo control for the latest reversible application action.
         self._undo_btn = QPushButton(self.tr("Undo"))
         self._undo_btn.setObjectName("undoButton")
         self._undo_btn.setVisible(False)
@@ -291,9 +303,8 @@ class MainWindow(
         self._status_frame.setVisible(False)
         right_side.addWidget(self._status_frame)
 
-        main_layout.addLayout(right_side)
-
-        # Initialize sidebar index infrastructure
+    def _initialize_navigation_state(self) -> None:
+        """Initialize route indexes and history before registering pages."""
         self._sidebar_index: dict[str, SidebarEntry] = {}
         self._category_items: dict[str, QTreeWidgetItem] = {}
         self._pages_cache: dict[str, QWidget] | None = None
@@ -306,11 +317,12 @@ class MainWindow(
         self._route_history: list[str] = []
         self._route_history_index = -1
 
-        # Build the sidebar from inert plugin specifications.
+    def _register_lazy_navigation(self) -> None:
+        """Register inert plugin specifications, then select the Home route."""
         context = {
             "main_window": self,
-            "config_manager": ConfigManager,  # class, not instance
-            "executor": None,  # populated after executor init
+            "config_manager": ConfigManager,
+            "executor": None,
         }
         self._build_sidebar_from_registry(context)
         try:
@@ -318,32 +330,29 @@ class MainWindow(
         except (TypeError, ValueError, AttributeError):
             initial_shell_width = 1180
         self._apply_responsive_shell(initial_shell_width)
-
-        # Select Home after all lazy route entries are registered.
         if self.sidebar.topLevelItemCount() > 0:
             self.sidebar.setCurrentItem(self.sidebar.topLevelItem(0))
 
-        # Background-only services are conditional on persisted settings.
+    def _initialize_post_navigation_behaviors(self) -> None:
+        """Restore conditional services, shortcuts, and first-run state in order."""
         self._initialize_background_services()
-
-        # Ctrl+K and Ctrl+Shift+K share one policy-backed discovery surface.
         self._setup_command_palette_shortcut()
-
-        # Register application keyboard shortcuts after navigation exists.
         self._setup_keyboard_shortcuts()
-
-        # First-run wizard
         self._check_first_run()
-        if self._runtime is not None:
-            from core.application_runtime import ShutdownResource
 
-            self._runtime.register(
-                "main-window",
-                ShutdownResource(
-                    request_stop=self._request_runtime_stop,
-                    wait_for_stop=self._wait_for_runtime_stop,
-                ),
-            )
+    def _register_runtime_shutdown(self) -> None:
+        """Register main-window shutdown hooks with the process runtime."""
+        if self._runtime is None:
+            return
+        from core.application_runtime import ShutdownResource
+
+        self._runtime.register(
+            "main-window",
+            ShutdownResource(
+                request_stop=self._request_runtime_stop,
+                wait_for_stop=self._wait_for_runtime_stop,
+            ),
+        )
 
     @property
     def pages(self) -> dict[str, QWidget]:
@@ -883,7 +892,7 @@ class MainWindow(
         self._undo_btn.setVisible(False)
         self._update_status_chrome()
 
-    def show_status_toast(self, message: str, error: bool = False, duration: int = 3000):
+    def show_status_toast(self, message: str, error: bool = False, duration: int = 3000) -> None:
         """Show a temporary status-bar notification."""
         self._status_label.setText(message)
         self._status_label.setAccessibleDescription(message)
@@ -891,19 +900,23 @@ class MainWindow(
             self._status_label.setProperty("toast", "error")
         else:
             self._status_label.setProperty("toast", "success")
-        self._status_label.style().unpolish(self._status_label)
-        self._status_label.style().polish(self._status_label)
+        style = self._status_label.style()
+        if style is not None:
+            style.unpolish(self._status_label)
+            style.polish(self._status_label)
         self._update_status_chrome()
 
         QTimer.singleShot(duration, self._clear_toast)
 
-    def _clear_toast(self):
+    def _clear_toast(self) -> None:
         """Clear toast styling from the status bar."""
         self._status_label.setText("")
         self._status_label.setAccessibleDescription("")
         self._status_label.setProperty("toast", "")
-        self._status_label.style().unpolish(self._status_label)
-        self._status_label.style().polish(self._status_label)
+        style = self._status_label.style()
+        if style is not None:
+            style.unpolish(self._status_label)
+            style.polish(self._status_label)
         self._update_status_chrome()
 
     def _update_status_chrome(self) -> None:

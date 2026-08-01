@@ -65,6 +65,7 @@ from ui.main_window_interactions import MainWindowInteractionMixin
 
 if TYPE_CHECKING:
     from core.plugins.spec import PluginSpec
+    from utils.pulse import PulseThread, SystemPulse
 
 logger = get_logger(__name__)
 
@@ -85,6 +86,9 @@ _BADGE_SUFFIXES = {
 
 class MainWindowServiceMixin:
     """Deferred services that must never delay meaningful Home."""
+
+    pulse: SystemPulse | None
+    pulse_thread: PulseThread | None
 
     def _start_pulse_listener(self: Any) -> None:
         """Initialize and start the Pulse event listener."""

@@ -265,28 +265,27 @@ class TestCLIArgparse(unittest.TestCase):
 
     def test_bluetooth_in_cli_main(self):
         """Verify bluetooth command is registered."""
-        filepath = os.path.join(
-            os.path.dirname(__file__), '..', 'loofi-fedora-tweaks', 'cli', 'main.py'
-        )
-        with open(filepath, 'r', encoding='utf-8') as f:
-            source = f.read()
-        with open(os.path.join(os.path.dirname(filepath), 'parser.py'), 'r', encoding='utf-8') as f:
-            source += f.read()
-        self.assertIn('"bluetooth": cmd_bluetooth', source)
-        self.assertIn('subparsers.add_parser("bluetooth"', source)
+        from cli.main import _command_handlers
+        from cli.parser import build_parser
+
+        args = build_parser().parse_args(["bluetooth", "devices", "--paired"])
+
+        self.assertIn("bluetooth", _command_handlers())
+        self.assertEqual(args.command, "bluetooth")
+        self.assertEqual(args.action, "devices")
+        self.assertTrue(args.paired)
 
     def test_storage_in_cli_main(self):
         """Verify storage command is registered."""
-        filepath = os.path.join(
-            os.path.dirname(__file__), '..', 'loofi-fedora-tweaks', 'cli', 'main.py'
-        )
-        with open(filepath, 'r', encoding='utf-8') as f:
-            source = f.read()
-        with open(os.path.join(os.path.dirname(filepath), 'parser.py'), 'r', encoding='utf-8') as f:
-            source += f.read()
-        self.assertIn('"storage": cmd_storage', source)
-        self.assertIn('"storage"', source)
-        self.assertIn('storage_parser = subparsers.add_parser', source)
+        from cli.main import _command_handlers
+        from cli.parser import build_parser
+
+        args = build_parser().parse_args(["storage", "smart", "/dev/sda"])
+
+        self.assertIn("storage", _command_handlers())
+        self.assertEqual(args.command, "storage")
+        self.assertEqual(args.action, "smart")
+        self.assertEqual(args.device, "/dev/sda")
 
 
 if __name__ == '__main__':
