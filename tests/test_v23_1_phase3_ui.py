@@ -168,13 +168,18 @@ class TestPhase3PlansAndCleanup(unittest.TestCase):
             ],
         )
         expected = {
+            "planned": "needs_review",
             "needs_review": "needs_review",
             "ready": "ready",
+            "blocked": "failed",
             "running": "running",
             "verifying": "running",
             "awaiting_reboot": "waiting_restart",
             "succeeded": "completed",
+            "failed": "failed",
             "verification_failed": "failed",
+            "cancelled": "failed",
+            "interrupted": "failed",
         }
         self.assertEqual(
             {state: action_center_group_for_state(state) for state in expected},
@@ -193,6 +198,72 @@ class TestPhase3PlansAndCleanup(unittest.TestCase):
         self.assertFalse(tab.advanced_review_tools.toggle_button.isChecked())
         self.assertFalse(tab.detail_disclosure.toggle_button.isChecked())
         self.assertNotIn("definition", tab.scaffold.accessibleName().lower())
+
+    @patch.object(_ActionCenterSubTab, "_load_target")
+    def test_action_center_keeps_outcome_visible_and_technical_ids_disclosed(
+        self,
+        _mock_load_target,
+    ):
+        tab = _ActionCenterSubTab()
+        self.addCleanup(tab.deleteLater)
+        item = SimpleNamespace(
+            id="dnf-clean-all",
+            title="Clean package cache",
+            description="Remove cached package metadata after review.",
+            manual_only=False,
+            command_preview=["dnf", "clean", "all"],
+            verification_command=["du", "-s", "/var/cache/dnf"],
+            metadata={
+                "affected_resources": ["package-cache"],
+                "reboot_policy": "none",
+            },
+            privilege="administrator",
+            rollback_hint="Refresh package metadata if needed.",
+            source="catalog:v18",
+            risk_level="low",
+        )
+
+        tab._show_item(item)
+
+        summary = tab.selected_summary.text()
+        technical = tab.detail_area.toPlainText()
+        self.assertIn("Intended outcome: Clean package cache", summary)
+        self.assertIn("Affected components: package-cache", summary)
+        self.assertIn("Privilege required: Administrator approval (pkexec)", summary)
+        self.assertIn("Restart requirement: Not required", summary)
+        self.assertIn("Verification: Required after execution", summary)
+        self.assertNotIn("du -s", summary)
+        self.assertIn("Recovery guidance:", summary)
+        self.assertNotIn("Definition", summary)
+        self.assertIn("Definition: dnf-clean-all", technical)
+        self.assertIn("Verification command: du -s /var/cache/dnf", technical)
+        self.assertFalse(tab.detail_disclosure.toggle_button.isChecked())
+
+    @patch("core.actions.ActionRunStore.list", return_value=[])
+    @patch("core.actions.ActionPlanStore.list")
+    @patch.object(_ActionCenterSubTab, "_load_target")
+    def test_action_center_failed_group_includes_blocked_plans(
+        self,
+        _mock_load_target,
+        mock_plan_list,
+        _mock_run_list,
+    ):
+        tab = _ActionCenterSubTab()
+        self.addCleanup(tab.deleteLater)
+        blocked = SimpleNamespace(
+            plan_id="plan-blocked",
+            action_id="dnf-clean-all",
+            state="blocked",
+            affected_resources=("package-cache",),
+        )
+        mock_plan_list.return_value = [blocked]
+        tab.action_list.blockSignals(True)
+
+        tab._show_lifecycle_view(5)
+
+        self.assertEqual(tab._visible_records, [("plan", blocked)])
+        self.assertEqual(tab.action_list.count(), 1)
+        tab.action_list.blockSignals(False)
 
     @patch("core.actions.ActionRunStore.list", return_value=[])
     @patch("core.actions.ActionPlanStore.list", return_value=[])

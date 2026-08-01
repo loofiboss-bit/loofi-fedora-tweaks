@@ -102,6 +102,7 @@ class _ActionCenterSubTab(BaseTab):
         self._target_key = FEDORA_RELEASE_POLICY.stable_target
         self._items: list[typing.Any] = []
         self._visible_records: list[tuple[str, typing.Any]] = []
+        self._plans_by_id: dict[str, typing.Any] = {}
         self._orchestrator = None
         self._current_plan = None
         self._current_run = None
@@ -242,9 +243,17 @@ class _ActionCenterSubTab(BaseTab):
         self.action_list.currentRowChanged.connect(self._selection_changed)
         layout.addWidget(self.action_list, 1)
 
-        self.detail_disclosure = DetailsDisclosure(summary=self.tr("Show selected change details"))
+        self.selected_summary = QLabel(
+            self.tr("Select a change to review its outcome and safety details.")
+        )
+        self.selected_summary.setObjectName("actionCenterSelectedSummary")
+        self.selected_summary.setAccessibleName(self.tr("Selected change summary"))
+        self.selected_summary.setWordWrap(True)
+        layout.addWidget(self.selected_summary)
+
+        self.detail_disclosure = DetailsDisclosure(summary=self.tr("Show technical details"))
         self.detail_area = self.detail_disclosure.details
-        self.detail_area.setAccessibleName(self.tr("Selected change details"))
+        self.detail_area.setAccessibleName(self.tr("Selected change technical details"))
         layout.addWidget(self.detail_disclosure, 1)
 
         self.add_output_disclosure(layout, self.tr("Show Action Center command output"))
@@ -267,6 +276,9 @@ class _ActionCenterSubTab(BaseTab):
         self._current_run = None
         self._set_lifecycle_primary("review", enabled=False)
         self.action_list.clear()
+        self.selected_summary.setText(
+            self.tr("Loading Action Center candidates…")
+        )
         self.detail_area.setPlainText(self.tr("Loading Action Center candidates..."))
         self.presentation_banner.set_result(
             "info",
@@ -320,6 +332,9 @@ class _ActionCenterSubTab(BaseTab):
             self.detail_area.setPlainText(
                 self.tr("No planned Action Center change currently needs review.")
             )
+            self.selected_summary.setText(
+                self.tr("No planned change needs review right now.")
+            )
 
     def _show_lifecycle_view(self: typing.Any, index: int) -> None:
         """Present one of the six user-facing Action Center work states."""
@@ -343,6 +358,11 @@ class _ActionCenterSubTab(BaseTab):
         except (OSError, RuntimeError, TypeError, ValueError):
             plans = []
             runs = []
+        self._plans_by_id = {
+            str(plan.plan_id): plan
+            for plan in plans
+            if getattr(plan, "plan_id", None)
+        }
 
         records: list[tuple[str, typing.Any]] = []
         if group_id == "needs_review":
@@ -365,6 +385,12 @@ class _ActionCenterSubTab(BaseTab):
                 if action_center_group_for_state(str(plan.state)) == group_id
             )
         else:
+            if group_id == "failed":
+                records.extend(
+                    ("plan", plan)
+                    for plan in plans
+                    if action_center_group_for_state(str(plan.state)) == group_id
+                )
             records.extend(
                 ("run", run)
                 for run in runs
@@ -395,6 +421,12 @@ class _ActionCenterSubTab(BaseTab):
         self.detail_area.setPlainText(
             self.tr("No changes are in %1.").replace("%1", self.tr(group_label).lower())
         )
+        self.selected_summary.setText(
+            self.tr("No changes are currently in %1.").replace(
+                "%1",
+                self.tr(group_label).lower(),
+            )
+        )
         self.presentation_banner.set_result(
             "success",
             self.tr("%1 is clear").replace("%1", self.tr(group_label)),
@@ -408,6 +440,25 @@ class _ActionCenterSubTab(BaseTab):
             if candidate_id == action_id:
                 return str(item.title)
         return str(self.tr(str(action_id).replace("-", " ").title()))
+
+    def _privilege_label(self, privilege: typing.Any) -> str:
+        """Translate stored privilege metadata into plain user-facing copy."""
+        value = str(privilege or "none").strip().lower()
+        if value in {"pkexec", "root", "administrator"}:
+            return str(self.tr("Administrator approval (pkexec)"))
+        if value in {"", "none", "user"}:
+            return str(self.tr("None"))
+        return str(self.tr(value.replace("_", " ").title()))
+
+    def _restart_label(self, reboot_policy: typing.Any, *, required: bool = False) -> str:
+        """Translate the closed reboot policy without exposing stored values."""
+        if required:
+            return str(self.tr("Required"))
+        return str({
+            "none": self.tr("Not required"),
+            "may_require": self.tr("May be required"),
+            "required": self.tr("Required"),
+        }.get(str(reboot_policy), self.tr("Shown after plan creation")))
 
     def _select_advanced_candidate(self, index: int) -> None:
         """Move one explicitly chosen catalog definition into review."""
@@ -490,7 +541,10 @@ class _ActionCenterSubTab(BaseTab):
                 self._current_plan = record
                 self._current_run = None
                 self._show_plan(record)
-                self._set_lifecycle_primary("run", enabled=record.state == "ready")
+                if record.state in {"ready", "needs_review"}:
+                    self._set_lifecycle_primary("run", enabled=True)
+                else:
+                    self._set_lifecycle_primary("", enabled=False)
                 return
             if kind == "run":
                 self._current_run = record
@@ -562,27 +616,41 @@ class _ActionCenterSubTab(BaseTab):
         if item.manual_only:
             self.presentation_status.setText(self.tr("Manual-only recommendation: review the guidance; Action Center will not execute it."))
         command = " ".join(item.command_preview) if item.command_preview else self.tr("Manual-only")
-        verification = " ".join(item.verification_command) if item.verification_command else self.tr("No verification command")
-        resources = ", ".join(item.metadata.get("affected_resources", ())) or self.tr("Shown after plan creation")
-        reboot = str(item.metadata.get("reboot_policy", "shown after plan creation")).replace("_", " ")
-        self.detail_area.setPlainText(
-            "\n".join(
-                [
-                    f"{self.tr('Intended outcome')}: {item.title}",
-                    item.description,
-                    f"{self.tr('Affected components')}: {resources}",
-                    f"{self.tr('Privilege required')}: {item.privilege}",
-                    f"{self.tr('Restart requirement')}: {reboot}",
-                    f"{self.tr('Verification')}: {verification}",
-                    f"{self.tr('Recovery guidance')}: {item.rollback_hint}",
-                    "",
-                    f"{self.tr('Technical source')}: {item.source}",
-                    f"{self.tr('Definition')}: {item.id}",
-                    f"{self.tr('Risk')}: {item.risk_level}",
-                    f"{self.tr('Command preview')}: {command}",
-                ]
-            )
+        verification_command = " ".join(item.verification_command)
+        verification = (
+            self.tr("Required after execution")
+            if verification_command
+            else self.tr("Manual verification guidance")
         )
+        resources = ", ".join(item.metadata.get("affected_resources", ())) or self.tr("Shown after plan creation")
+        reboot = self._restart_label(item.metadata.get("reboot_policy"))
+        self._set_selected_details(
+            [
+                f"{self.tr('Intended outcome')}: {item.title}",
+                item.description,
+                f"{self.tr('Affected components')}: {resources}",
+                f"{self.tr('Privilege required')}: {self._privilege_label(item.privilege)}",
+                f"{self.tr('Restart requirement')}: {reboot}",
+                f"{self.tr('Verification')}: {verification}",
+                f"{self.tr('Recovery guidance')}: {item.rollback_hint}",
+            ],
+            [
+                f"{self.tr('Technical source')}: {item.source}",
+                f"{self.tr('Definition')}: {item.id}",
+                f"{self.tr('Risk')}: {item.risk_level}",
+                f"{self.tr('Command preview')}: {command}",
+                f"{self.tr('Verification command')}: {verification_command or self.tr('None')}",
+            ],
+        )
+
+    def _set_selected_details(
+        self,
+        summary_lines: list[str],
+        technical_lines: list[str],
+    ) -> None:
+        """Keep user outcome and safety facts visible above technical metadata."""
+        self.selected_summary.setText("\n".join(summary_lines))
+        self.detail_area.setPlainText("\n".join(technical_lines))
 
     def _preview_selected(self: typing.Any) -> None:
         item = self._selected_item()
@@ -591,6 +659,17 @@ class _ActionCenterSubTab(BaseTab):
             return
 
         if item.source == "catalog:v18":
+            self.selected_summary.setText(
+                "\n".join(
+                    [
+                        f"{self.tr('Preview')}: {item.title}",
+                        self.tr(
+                            "Create a plan to run fresh preflight and generate the exact command."
+                        ),
+                        f"{self.tr('Recovery guidance')}: {item.rollback_hint}",
+                    ]
+                )
+            )
             self.detail_area.setPlainText(
                 "\n".join(
                     [
@@ -604,6 +683,15 @@ class _ActionCenterSubTab(BaseTab):
             return
 
         result = self._service.preview(item)
+        self.selected_summary.setText(
+            "\n".join(
+                [
+                    f"{self.tr('Preview')}: {item.title}",
+                    f"{self.tr('Result')}: {result.message}",
+                    f"{self.tr('Recovery guidance')}: {item.rollback_hint}",
+                ]
+            )
+        )
         self.detail_area.setPlainText(
             "\n".join(
                 [
@@ -668,6 +756,7 @@ class _ActionCenterSubTab(BaseTab):
     def _accept_plan(self: typing.Any, plan: typing.Any) -> None:
         self._current_plan = plan
         self._current_run = None
+        self._plans_by_id[str(plan.plan_id)] = plan
         self._set_lifecycle_primary(
             "run",
             enabled=plan.state in {"ready", "needs_review"},
@@ -675,6 +764,7 @@ class _ActionCenterSubTab(BaseTab):
         self._show_plan(plan)
 
     def _show_plan(self: typing.Any, plan: typing.Any) -> None:
+        title = self._action_title(str(plan.action_id))
         context = getattr(plan, "finding_context", None)
         context_line = (
             f"{self.tr('System Check')}: {context.check_result_id} / "
@@ -682,26 +772,25 @@ class _ActionCenterSubTab(BaseTab):
             if context is not None
             else f"{self.tr('System Check')}: {self.tr('not linked')}"
         )
-        self.detail_area.setPlainText(
-            "\n".join(
-                [
-                    f"{self.tr('Intended outcome')}: {plan.action_id}",
-                    f"{self.tr('Affected components')}: {', '.join(plan.affected_resources) or self.tr('System')}",
-                    f"{self.tr('Privilege required')}: {self.tr('Administrator approval (pkexec)') if plan.privileged else self.tr('None')}",
-                    f"{self.tr('Restart requirement')}: {str(plan.reboot_policy).replace('_', ' ')}",
-                    f"{self.tr('Verification')}: {self.tr('Required after execution')}",
-                    f"{self.tr('Recovery guidance')}: {plan.recovery_guidance}",
-                    "",
-                    f"{self.tr('Plan')}: {plan.plan_id}",
-                    f"{self.tr('Definition')}: {plan.action_id}",
-                    context_line,
-                    f"{self.tr('State')}: {plan.state}",
-                    f"{self.tr('Risk')}: {plan.risk_level}",
-                    f"{self.tr('Preflight')}: {plan.policy_decision.reason_code} — {plan.policy_decision.explanation}",
-                    f"{self.tr('Command preview')}: {' '.join(plan.preview) if plan.preview else self.tr('Manual-only')}",
-                    f"{self.tr('Expires')}: {plan.expires_at}",
-                ]
-            )
+        self._set_selected_details(
+            [
+                f"{self.tr('Intended outcome')}: {title}",
+                f"{self.tr('Affected components')}: {', '.join(plan.affected_resources) or self.tr('System')}",
+                f"{self.tr('Privilege required')}: {self._privilege_label('pkexec' if plan.privileged else 'none')}",
+                f"{self.tr('Restart requirement')}: {self._restart_label(plan.reboot_policy)}",
+                f"{self.tr('Verification')}: {self.tr('Required after execution')}",
+                f"{self.tr('Recovery guidance')}: {plan.recovery_guidance}",
+            ],
+            [
+                f"{self.tr('Plan')}: {plan.plan_id}",
+                f"{self.tr('Definition')}: {plan.action_id}",
+                context_line,
+                f"{self.tr('State')}: {plan.state}",
+                f"{self.tr('Risk')}: {plan.risk_level}",
+                f"{self.tr('Preflight')}: {plan.policy_decision.reason_code} — {plan.policy_decision.explanation}",
+                f"{self.tr('Command preview')}: {' '.join(plan.preview) if plan.preview else self.tr('Manual-only')}",
+                f"{self.tr('Expires')}: {plan.expires_at}",
+            ],
         )
 
     def _run_current_plan(self: typing.Any) -> None:
@@ -854,6 +943,12 @@ class _ActionCenterSubTab(BaseTab):
 
     def _show_run(self: typing.Any, run: typing.Any) -> None:
         verification = run.verification_result or {}
+        plan = self._plans_by_id.get(str(run.plan_id))
+        privilege = (
+            self._privilege_label("pkexec" if plan.privileged else "none")
+            if plan is not None
+            else self.tr("Recorded in the reviewed plan")
+        )
         context = getattr(run, "finding_context", None)
         can_check_again = (
             context is not None
@@ -883,29 +978,29 @@ class _ActionCenterSubTab(BaseTab):
             if context is not None
             else f"{self.tr('System Check')}: {self.tr('not linked')}"
         )
-        self.detail_area.setPlainText(
-            "\n".join(
-                [
-                    f"{self.tr('Intended outcome')}: {run.action_id}",
-                    f"{self.tr('Affected components')}: {', '.join(run.affected_resources) or self.tr('System')}",
-                    f"{self.tr('Restart requirement')}: {self.tr('Required') if run.reboot_required else str(run.reboot_policy).replace('_', ' ')}",
-                    f"{self.tr('Verification')}: {verification.get('message', self.tr('Pending'))}",
-                    f"{self.tr('Recovery guidance')}: {run.recovery_status}",
-                    "",
-                    f"{self.tr('Run')}: {run.run_id}",
-                    f"{self.tr('Plan')}: {run.plan_id}",
-                    f"{self.tr('Definition')}: {run.action_id}",
-                    context_line,
-                    f"{self.tr('State')}: {run.state}",
-                    f"{self.tr('Execution')}: {(run.execution_result or {}).get('message', '')}",
-                    f"{self.tr('Verification attempts')}: {getattr(run, 'verification_attempts', 0)}",
-                    (
-                        self.tr("Finding resolution: requires a later compatible System Check")
-                        if context is not None
-                        else self.tr("Finding resolution: not linked")
-                    ),
-                ]
-            )
+        self._set_selected_details(
+            [
+                f"{self.tr('Intended outcome')}: {self._action_title(str(run.action_id))}",
+                f"{self.tr('Affected components')}: {', '.join(run.affected_resources) or self.tr('System')}",
+                f"{self.tr('Privilege required')}: {privilege}",
+                f"{self.tr('Restart requirement')}: {self._restart_label(run.reboot_policy, required=run.reboot_required)}",
+                f"{self.tr('Verification')}: {verification.get('message', self.tr('Pending'))}",
+                f"{self.tr('Recovery guidance')}: {run.recovery_status}",
+            ],
+            [
+                f"{self.tr('Run')}: {run.run_id}",
+                f"{self.tr('Plan')}: {run.plan_id}",
+                f"{self.tr('Definition')}: {run.action_id}",
+                context_line,
+                f"{self.tr('State')}: {run.state}",
+                f"{self.tr('Execution')}: {(run.execution_result or {}).get('message', '')}",
+                f"{self.tr('Verification attempts')}: {getattr(run, 'verification_attempts', 0)}",
+                (
+                    self.tr("Finding resolution: requires a later compatible System Check")
+                    if context is not None
+                    else self.tr("Finding resolution: not linked")
+                ),
+            ],
         )
 
     def _show_history(self: typing.Any) -> None:
@@ -915,6 +1010,9 @@ class _ActionCenterSubTab(BaseTab):
         plans = ActionPlanStore().list(limit=25)
         runs = ActionRunStore().list(limit=25)
         if not history and not plans and not runs:
+            self.selected_summary.setText(
+                self.tr("No Action Center history has been recorded.")
+            )
             self.detail_area.setPlainText(self.tr("No Action Center history recorded."))
             return
         lines = []
@@ -927,6 +1025,9 @@ class _ActionCenterSubTab(BaseTab):
             action = entry.get("action", {})
             title = action.get("title", action.get("id", "unknown")) if isinstance(action, dict) else "unknown"
             lines.append(f"{event}: {title}")
+        self.selected_summary.setText(
+            self.tr("Loaded %d recent Action Center records.") % len(lines)
+        )
         self.detail_area.setPlainText("\n".join(lines))
         viable = next((plan for plan in reversed(plans) if plan.state in {"ready", "needs_review"} and not plan.is_expired()), None)
         if viable is not None:
