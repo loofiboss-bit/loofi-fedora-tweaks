@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 23.0.2 "Compass"
+> Version 23.1.0 "Compass"
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
@@ -350,7 +350,7 @@ Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
 ## 10) Release Scope
 
 Fedora 44 is the supported release target. Fedora 45 remains preview-only.
-Version 23.0.2 is the current public release.
+Version 23.1.0 is the current release.
 The historical Architecture Hardening tag object is preserved under
 `legacy-v23.0.0-architecture-hardening`. Its release evidence records exact
 commit, artifact, signature, checksum, SBOM/provenance, CI, COPR, Fedora 44

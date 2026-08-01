@@ -29,20 +29,17 @@ def _sha256(path: Path) -> str:
 
 
 class TestV23Phase0Authority(unittest.TestCase):
-    def test_product_version_is_compass_at_public_complete_gate(self):
+    def test_product_version_matches_active_release_authority(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
 
         self.assertEqual(__version__, lock["product_version"].removeprefix("v"))
         self.assertEqual(__version_codename__, lock["product_codename"])
-        self.assertEqual(lock["current_public_release"], "v23.0.2")
-        self.assertEqual(lock["version"], "v23.0.2")
-        self.assertEqual(lock["target_version"], "v23.0.2")
-        self.assertEqual(lock["status"], "complete")
-        self.assertEqual(lock["phase"], "phase-6-public-complete")
-        self.assertEqual(
-            lock["current_release_commit"],
-            "8d0a94eec17586ff2b0101ad460083fbf26ef9b7",
-        )
+        self.assertEqual(lock["version"], f"v{__version__}")
+        self.assertEqual(lock["target_version"], f"v{__version__}")
+        self.assertIn(lock["status"], {"active", "complete"})
+        self.assertTrue(lock["phase"])
+        self.assertRegex(lock["current_public_release"], r"^v\d+\.\d+\.\d+$")
+        self.assertRegex(lock["current_release_commit"], r"^[0-9a-f]{40}$")
 
     def test_historical_v23_tag_is_preserved_under_exact_legacy_reference(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))

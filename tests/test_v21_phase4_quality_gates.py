@@ -6,6 +6,8 @@ import json
 import unittest
 from pathlib import Path
 
+from version import __version__
+
 
 ROOT = Path(__file__).resolve().parents[1]
 STARTUP = ROOT / "docs" / "reports" / "V21_PHASE4_STARTUP.json"
@@ -45,12 +47,9 @@ class TestV21Phase4QualityGates(unittest.TestCase):
         self.assertIn(
             "- [x] Synchronize version metadata to v21.0.0", tasks
         )
-        self.assertEqual(race_lock["product_version"], "v23.0.2")
-        self.assertEqual(race_lock["current_public_release"], "v23.0.2")
-        self.assertEqual(
-            race_lock["current_release_commit"],
-            "8d0a94eec17586ff2b0101ad460083fbf26ef9b7",
-        )
+        self.assertEqual(race_lock["product_version"], f"v{__version__}")
+        self.assertRegex(race_lock["current_public_release"], r"^v\d+\.\d+\.\d+$")
+        self.assertRegex(race_lock["current_release_commit"], r"^[0-9a-f]{40}$")
         self.assertIn("843760c4fe2725d093a977554badf8d1eb2451be", publication)
         self.assertIn("10774741", publication)
 

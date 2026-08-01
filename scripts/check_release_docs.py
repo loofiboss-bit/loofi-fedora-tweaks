@@ -83,12 +83,11 @@ WIKI_MIRRORS = (
 )
 CURRENT_SCREENSHOT_PATHS = (
     "docs/images/user-guide/home-dashboard.png",
-    "docs/images/v23/phase6/contact-sheets/home.png",
-    "docs/images/v23/phase6/contact-sheets/troubleshoot.png",
-    "docs/images/v23/phase6/contact-sheets/action_center.png",
-    "docs/images/v23/phase6/contact-sheets/system_check.png",
-    "docs/images/v23/phase6/contact-sheets/activity_recovery.png",
-    "docs/images/v23/phase6/contact-sheets/release_readiness.png",
+    "docs/images/user-guide/maintenance-updates.png",
+    "docs/images/user-guide/install-app.png",
+    "docs/images/user-guide/troubleshoot.png",
+    "docs/images/user-guide/cleanup-preview.png",
+    "docs/images/user-guide/action-center.png",
 )
 
 VERSION_RE = re.compile(r'__version__\s*=\s*"([^"]+)"')

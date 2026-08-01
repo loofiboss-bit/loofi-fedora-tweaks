@@ -4,6 +4,42 @@
 
 All notable changes to this project will be documented in this file.
 
+## [23.1.0] - 2026-08-01 "Compass"
+
+### Added
+
+- Added a machine-readable classification for every public CLI and API
+  operation, including its Action Center owner and verification boundary.
+- Added deterministic documentation, route, wiki, screenshot, and mutation
+  gates for the current product contract.
+
+### Changed
+
+- Routed legacy host-changing CLI and API operations to closed Action Center
+  plans or explicit manual guidance without applying changes as a side effect.
+- Simplified Home, Updates, Install App, Troubleshoot, Cleanup, Action Center,
+  Settings, and shell presentation around state and the next safe action.
+- Split CLI parser registration and MainWindow setup into focused,
+  compatibility-tested responsibilities.
+- Refreshed active product documentation and privacy-safe Fedora 44 KDE
+  Wayland screenshots.
+
+### Fixed
+
+- Removed stale product copy, obsolete workflow guidance, and generated-label
+  residue from active documentation and runtime presentation.
+- Kept API mutation-route tests reliable with FastAPI releases that represent
+  included routes through nested routers.
+- Redacted host-specific network values from generated screenshots.
+
+### Compatibility
+
+- Preserved the six top-level destinations, public commands and aliases,
+  routes, persisted user state, Action Center schemas, Traditional/Atomic
+  separation, lazy startup, and optional API/daemon contracts.
+- Retained the existing Compass metadata value without introducing a new
+  codename.
+
 ## [23.0.2] - 2026-07-29 "Compass"
 
 ### Fixed

@@ -40,6 +40,17 @@
   </provides>
 
   <releases>
+    <release version="23.1.0" date="2026-08-01">
+      <description>
+        <p>v23.1.0 "Compass" - Review-first core workflows</p>
+        <ul>
+          <li>Closed public host-changing operations behind Action Center plans or manual guidance</li>
+          <li>Simplified Home, Updates, Install App, Troubleshoot, Cleanup, and Action Center</li>
+          <li>Refreshed current documentation and privacy-safe Fedora 44 KDE Wayland screenshots</li>
+          <li>Preserved routes, aliases, user state, and separate Traditional and Atomic behavior</li>
+        </ul>
+      </description>
+    </release>
     <release version="23.0.2" date="2026-07-29">
       <description>
         <p>v23.0.2 "Compass" - Complete daemon sandbox state contract</p>

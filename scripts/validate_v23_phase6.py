@@ -1,26 +1,21 @@
 #!/usr/bin/env python3
-"""Validate retained Compass Phase 6 evidence and current release gates."""
+"""Validate immutable Compass v23.0.0 Phase 6 candidate evidence."""
 
 from __future__ import annotations
 
 import argparse
-import ast
 import hashlib
 import json
 import re
 import subprocess
-import tomllib
 from pathlib import Path
 from typing import Any, Mapping, Sequence
 
 ROOT = Path(__file__).resolve().parents[1]
-SOURCE = ROOT / "loofi-fedora-tweaks"
-RACE_LOCK = ROOT / ".workflow" / "specs" / ".race-lock.json"
 CANDIDATE = ROOT / "docs" / "reports" / "V23_PHASE6_LOCAL_CANDIDATE.json"
 SCREENSHOTS = ROOT / "docs" / "reports" / "V23_PHASE6_SCREENSHOTS.json"
 CANDIDATE_RELATIVE = CANDIDATE.relative_to(ROOT).as_posix()
 
-CURRENT_VERSION = "23.0.2"
 RETAINED_CANDIDATE_VERSION = "23.0.0"
 EXPECTED_CODENAME = "Compass"
 EXPECTED_RELEASE = "v23.0.0 Compass"
@@ -46,28 +41,6 @@ EXPECTED_CANDIDATE_EXTERNAL_BLOCKERS = {
     "publication": "not-authorized",
     "public_readback": "not-available",
 }
-EXPECTED_RELEASE_EXTERNAL_GATES = {
-    "exact_commit": "passed-exact-tag-commit",
-    "historical_tag_lineage": "passed-preserved-as-legacy",
-    "signing": "passed-github-attestations-copr-signatures",
-    "host_install_or_upgrade": "passed-fedora44-host-upgrade",
-    "publication": "passed-github-copr",
-    "public_readback": "passed",
-}
-REQUIRED_DOCS = (
-    "README.md",
-    "CHANGELOG.md",
-    "docs/releases/RELEASE-NOTES-v23.0.2.md",
-    "docs/releases/RELEASE-NOTES-v23.0.1.md",
-    "docs/releases/RELEASE-NOTES-v23.0.0.md",
-    "docs/USER_GUIDE.md",
-    "docs/ADVANCED_ADMIN_GUIDE.md",
-    "docs/BEGINNER_QUICK_GUIDE.md",
-    "docs/TROUBLESHOOTING.md",
-    "docs/FEDORA_KDE_44_READINESS.md",
-    "docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md",
-    "docs/reports/V23_RELEASE_PUBLICATION.md",
-)
 
 
 def _read_json(path: Path, *, label: str) -> tuple[dict[str, Any], list[str]]:
@@ -78,19 +51,6 @@ def _read_json(path: Path, *, label: str) -> tuple[dict[str, Any], list[str]]:
     if not isinstance(payload, dict):
         return {}, [f"{label} must be a JSON object"]
     return payload, []
-
-
-def _assignment(path: Path, name: str) -> str:
-    tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-    for node in tree.body:
-        if (
-            isinstance(node, ast.Assign)
-            and any(isinstance(target, ast.Name) and target.id == name for target in node.targets)
-        ):
-            value = ast.literal_eval(node.value)
-            if isinstance(value, str):
-                return value
-    raise ValueError(f"missing string assignment {name} in {path}")
 
 
 def _git(*args: str) -> str:
@@ -129,92 +89,6 @@ def source_snapshot() -> dict[str, Any]:
         digest.update(path.read_bytes())
         digest.update(b"\0")
     return {"sha256": digest.hexdigest(), "file_count": len(paths)}
-
-
-def validate_metadata(lock: Mapping[str, Any]) -> list[str]:
-    errors: list[str] = []
-    try:
-        version = _assignment(SOURCE / "version.py", "__version__")
-        codename = _assignment(SOURCE / "version.py", "__version_codename__")
-        pyproject = tomllib.loads((ROOT / "pyproject.toml").read_text(encoding="utf-8"))
-        spec = (ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
-        spec_match = re.search(r"^Version:\s*(\S+)", spec, re.MULTILINE)
-    except (OSError, SyntaxError, ValueError, tomllib.TOMLDecodeError) as exc:
-        return [f"unable to read product metadata: {exc}"]
-    if version != CURRENT_VERSION or codename != EXPECTED_CODENAME:
-        errors.append("version.py is not synchronized to v23.0.2 Compass")
-    if pyproject.get("project", {}).get("version") != CURRENT_VERSION:
-        errors.append("pyproject.toml is not synchronized to v23.0.2")
-    if not spec_match or spec_match.group(1) != CURRENT_VERSION:
-        errors.append("RPM spec is not synchronized to v23.0.2")
-    if lock.get("version") != "v23.0.2" or lock.get("target_version") != "v23.0.2":
-        errors.append("race lock does not target v23.0.2")
-    if lock.get("product_version") != "v23.0.2":
-        errors.append("race lock product metadata is not v23.0.2")
-    if lock.get("product_codename") != EXPECTED_CODENAME:
-        errors.append("race lock product codename is not Compass")
-    if lock.get("current_public_release") != "v23.0.2":
-        errors.append("race lock must identify v23.0.2 as the public release")
-    if (
-        lock.get("current_release_commit")
-        != "8d0a94eec17586ff2b0101ad460083fbf26ef9b7"
-    ):
-        errors.append("race lock does not identify the exact v23.0.2 commit")
-    if (
-        lock.get("status") != "complete"
-        or lock.get("phase") != "phase-6-public-complete"
-    ):
-        errors.append("race lock is not complete at phase-6-public-complete")
-    if lock.get("skipped_physical_gates") != EXPECTED_SKIPPED_GATES:
-        errors.append("race lock does not preserve the skipped physical gates")
-    if lock.get("phase_6_external_blockers") != EXPECTED_RELEASE_EXTERNAL_GATES:
-        errors.append("race lock does not preserve the authorized release gates")
-    collision = lock.get("historical_tag_collision")
-    if (
-        not isinstance(collision, Mapping)
-        or collision.get("tag_object")
-        != "496ab1edb608a7420083b6541ddbc61b64a432f0"
-        or collision.get("peeled_commit")
-        != "adc4cef116d147bd5b845f0ec98c3a1970b8b054"
-        or collision.get("status") != "preserved-as-legacy"
-        or collision.get("legacy_tag")
-        != "legacy-v23.0.0-architecture-hardening"
-        or collision.get("legacy_tag_object") != collision.get("tag_object")
-        or collision.get("legacy_peeled_commit") != collision.get("peeled_commit")
-    ):
-        errors.append("historical v23.0.0 tag lineage changed")
-    return errors
-
-
-def validate_documentation(lock: Mapping[str, Any]) -> list[str]:
-    errors: list[str] = []
-    for relative in REQUIRED_DOCS:
-        path = ROOT / relative
-        try:
-            text = path.read_text(encoding="utf-8")
-        except OSError as exc:
-            errors.append(f"unable to read {relative}: {exc}")
-            continue
-        if EXPECTED_CODENAME not in text:
-            errors.append(f"{relative} does not identify Compass")
-        if re.search(r"\bTODO\b|NOT STARTED|intentionally deferred to Phase 6", text):
-            errors.append(f"{relative} contains an unfinished release placeholder")
-    notes = (ROOT / "docs/releases/RELEASE-NOTES-v23.0.0.md").read_text(
-        encoding="utf-8"
-    )
-    for phrase in (
-        "Release Date",
-        "legacy-v23.0.0-architecture-hardening",
-        "Possibly related",
-        "canonical workflow",
-    ):
-        if phrase not in notes:
-            errors.append(f"release notes omit required boundary: {phrase}")
-    if lock.get("phase") == "phase-6-public-complete":
-        readme = (ROOT / "README.md").read_text(encoding="utf-8")
-        if "releases/tag/v23.0.2" not in readme:
-            errors.append("README does not link the canonical v23.0.2 release")
-    return errors
 
 
 def validate_candidate(
@@ -327,23 +201,15 @@ def validate_screenshots(payload: Mapping[str, Any]) -> list[str]:
 def run_validation(
     candidate_path: Path = CANDIDATE,
     screenshot_path: Path = SCREENSHOTS,
-    race_lock_path: Path = RACE_LOCK,
 ) -> dict[str, Any]:
     candidate, candidate_read_errors = _read_json(candidate_path, label="candidate")
     screenshots, screenshot_read_errors = _read_json(
         screenshot_path, label="screenshots"
     )
-    lock, lock_read_errors = _read_json(race_lock_path, label="race lock")
     errors = (
         candidate_read_errors
         + screenshot_read_errors
-        + lock_read_errors
-        + validate_metadata(lock)
-        + validate_documentation(lock)
-        + validate_candidate(
-            candidate,
-            require_current_worktree=lock.get("phase") == "phase-6-local-ready",
-        )
+        + validate_candidate(candidate)
         + validate_screenshots(screenshots)
     )
     return {
@@ -359,14 +225,13 @@ def parse_args(argv: Sequence[str] | None = None) -> argparse.Namespace:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--candidate", type=Path, default=CANDIDATE)
     parser.add_argument("--screenshots", type=Path, default=SCREENSHOTS)
-    parser.add_argument("--race-lock", type=Path, default=RACE_LOCK)
     parser.add_argument("--json", action="store_true")
     return parser.parse_args(argv)
 
 
 def main(argv: Sequence[str] | None = None) -> int:
     args = parse_args(argv)
-    payload = run_validation(args.candidate, args.screenshots, args.race_lock)
+    payload = run_validation(args.candidate, args.screenshots)
     if args.json:
         print(json.dumps(payload, indent=2, sort_keys=True))
     else:

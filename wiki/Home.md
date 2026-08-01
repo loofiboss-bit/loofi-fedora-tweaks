@@ -2,7 +2,7 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v23.0.2 "Compass"<br>
+**Current release:** v23.1.0 "Compass"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
@@ -59,8 +59,8 @@ Orca journeys remain explicitly unverified under an authorized skip. Fedora
 45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release: [v23.0.2 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.0.2)
-- Release notes: [v23.0.2 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v23.0.2.md)
+- Release: [v23.1.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.1.0)
+- Release notes: [v23.1.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v23.1.0.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 

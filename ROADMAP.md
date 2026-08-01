@@ -21,6 +21,25 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v23.0.0 | Compass | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md), [architecture](.workflow/specs/arch-v23.0.0.md), [tasks](.workflow/specs/tasks-v23.0.0.md), [Phase 5 local qualification](docs/reports/V23_PHASE5_LOCAL_QUALIFICATION.md), [Phase 6 local readiness](docs/reports/V23_PHASE6_LOCAL_RELEASE_READINESS.md) |
 | v23.0.1 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.1.md), [tasks](.workflow/specs/tasks-v23.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.1.md) |
 | v23.0.2 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md), [public evidence](docs/reports/V23_RELEASE_PUBLICATION.md) |
+| v23.1.0 | Compass | ACTIVE | [Canonical plan](docs/plans/loofi-fedora-tweaks-v23.1-implementation-plan.md), [architecture](.workflow/specs/arch-v23.1.0.md), [tasks](.workflow/specs/tasks-v23.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v23.1.0.md) |
+
+## [ACTIVE] v23.1.0 "Compass" — Review-first Core Workflows
+
+**Objective:** make every public host-changing request enter the existing
+Action Center as a closed plan or safe manual handoff, then make the five most
+common user tasks understandable through state and one clear next action.
+
+The implementation inventory covers every public CLI and API leaf and reports
+zero direct host mutations. Active docs and wiki mirrors describe the current
+one-page welcome and six-destination product. Home, Updates, Install App,
+Troubleshoot, Cleanup, Action Center, Settings, parser registration, and window
+setup are simplified without adding routes or execution authority.
+
+The exact v23.1.0 release candidate passed the full local 7,048-test gate,
+86.36% coverage, lint, typecheck, architecture, stabilization, product
+contract, and real Fedora 44 KDE Plasma Wayland screenshot capture at 140%
+scale. Publication and independent public readback remain the active release
+step.
 
 ## [DONE] v23.0.2 "Compass" — Complete Daemon Sandbox State
 

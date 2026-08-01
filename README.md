@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v23.0.2 "Compass"
+# Loofi Fedora Tweaks v23.1.0 "Compass"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -14,8 +14,8 @@
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.0.2">
-    <img src="https://img.shields.io/badge/Release-v23.0.2-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v23.0.2 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.1.0">
+    <img src="https://img.shields.io/badge/Release-v23.1.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v23.1.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -34,9 +34,9 @@ recovery, and desktop tasks into one KDE-friendly control center.
 - Traditional and Atomic Fedora paths stay distinct.
 - The optional API is loopback-only and cannot apply plans.
 
-Full details: [v23.0.2 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.2.md),
-[v23.0.1 hotfix notes](docs/releases/RELEASE-NOTES-v23.0.1.md), and
-[v23.0.0 feature release notes](docs/releases/RELEASE-NOTES-v23.0.0.md).
+Full details: [v23.1.0 release notes](docs/releases/RELEASE-NOTES-v23.1.0.md).
+Earlier Compass releases remain documented in the
+[release-note index](docs/releases/RELEASE_NOTES.md).
 
 ## The six destinations
 
@@ -192,12 +192,11 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v23.0.2 "Compass"` is the current public release. It completes the daemon
-sandbox's bounded XDG runtime and state contract and passed exact-tag GitHub,
-attestation, COPR, clean Fedora 44 installation, and real-host daemon
-readback. `v23.0.0` and `v23.0.1` remain immutable earlier Compass
-publications. Fedora 45 remains preview-only. See the
-[public release evidence](docs/reports/V23_RELEASE_PUBLICATION.md).
+`v23.1.0 "Compass"` is the current release. It makes Action Center the
+enforceable review boundary for public host-changing operations and connects
+the core workflows through clearer state and next-action guidance. Earlier
+v23 releases remain immutable. Fedora 45 remains preview-only. See the
+[v23.1.0 release notes](docs/releases/RELEASE-NOTES-v23.1.0.md).
 The older
 "Architecture Hardening" tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`. Historical Sentinel, Horizon, Nebula,

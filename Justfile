@@ -168,6 +168,11 @@ validate-v23-phase5:
 validate-v23-phase6:
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v23_phase6.py
 
+validate-v23-1:
+	LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 -m pytest tests/test_v20_mutation_boundary.py tests/test_cli_parser_contract.py tests/test_main_window.py tests/test_v23_1_phase3_ui.py -q
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/check_stabilization_rules.py
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
+
 validate-v19-ui-evidence:
 	QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v19_system_check_states.py --check
 
@@ -244,8 +249,8 @@ release-prep:
     @echo "=== Step 6: Validate System Check trust contract ==="
     just validate-system-check
     @echo ""
-    @echo "=== Step 7: Validate v23 local release candidate ==="
-    just validate-v23-phase6
+    @echo "=== Step 7: Validate v23.1 local release candidate ==="
+    just validate-v23-1
     @echo ""
     @echo "=== Step 8: Validate v19 UI evidence ==="
     just validate-v19-ui-evidence

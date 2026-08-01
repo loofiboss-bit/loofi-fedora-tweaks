@@ -1,6 +1,6 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v23.0.2 "Compass" keeps application-owned state under
+Loofi Fedora Tweaks v23.1.0 "Compass" keeps application-owned state under
 standard XDG config, data, cache, and runtime directories. Fedora 44 is the
 supported baseline; Fedora 45 remains preview/advisory.
 

@@ -1,6 +1,6 @@
 # Screenshots
 
-Current deterministic UI evidence for **v23.0.2 "Compass"** is stored once in
+Current deterministic UI evidence for **v23.1.0 "Compass"** is stored once in
 the main repository. These contact sheets show wide and compact layouts without
 duplicating binary assets in the wiki.
 

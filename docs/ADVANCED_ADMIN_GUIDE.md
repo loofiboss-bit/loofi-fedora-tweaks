@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 23.0.2 "Compass"
+> Version 23.1.0 "Compass"
 
 Operational runbook for power users and Fedora administrators.
 

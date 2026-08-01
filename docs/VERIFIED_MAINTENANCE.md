@@ -1,6 +1,6 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v23.0.2 "Compass" uses Action Center as the trust boundary
+Loofi Fedora Tweaks v23.1.0 "Compass" uses Action Center as the trust boundary
 for supported host changes across GUI, CLI, daemon, automation, scheduler, and
 agent entry points. The catalog contains 74 definitions declaring operation class, Fedora variants,
 reboot policy, affected resources, preflight, confirmation, verification, and

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 23.0.2 "Compass"
+> Version 23.1.0 "Compass"
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 

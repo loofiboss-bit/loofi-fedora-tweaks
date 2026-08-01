@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and recovery steps for v23.0.2 "Compass".
+Common issues and recovery steps for v23.1.0 "Compass".
 
 ## 1) Quick Diagnostics
 

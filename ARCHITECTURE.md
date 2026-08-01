@@ -7,8 +7,9 @@
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
 > V21 and V22 are complete and public. Compass `v23.0.0`, `v23.0.1`, and
-> current `v23.0.2` are public; v23.0.2 completes the daemon's bounded systemd
-> runtime and state contract.
+> `v23.0.2` are public; v23.0.2 completes the daemon's bounded systemd runtime
+> and state contract. v23.1.0 extends the public mutation boundary and core
+> workflow contract without adding execution authority.
 > Fresh Atomic and manual physical accessibility qualification remain open
 > under an authorized skip.
 
@@ -17,7 +18,7 @@
 V23 composes existing trusted diagnostics into one explicit troubleshooting
 journey. Its canonical authority is the
 [Compass plan](docs/plans/LOOFI_FEDORA_TWEAKS_V23_PLAN.md),
-[architecture contract](.workflow/specs/arch-v23.0.2.md), and
+[architecture contract](.workflow/specs/arch-v23.1.0.md), and
 [Phase 0 baseline](docs/reports/V23_PHASE0_BASELINE.md). The
 [Phase 1 report](docs/reports/V23_PHASE1_TROUBLESHOOTING_DOMAIN.md) records the
 inert domain implementation, and the
