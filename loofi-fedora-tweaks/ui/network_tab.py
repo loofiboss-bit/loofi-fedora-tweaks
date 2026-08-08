@@ -36,7 +36,13 @@ from services.network import NetworkMonitor, NetworkUtils
 from utils.history import HistoryManager
 
 from ui.base_tab import BaseTab
-from ui.components import PageScaffold
+from ui.components import (
+    FeedbackBanner,
+    PageScaffold,
+    PrimaryButton,
+    RetryButton,
+    SecondaryButton,
+)
 from ui.native_handoff_card import NativeHandoffCard
 from ui.design import semantic_qcolor
 from ui.tooltips import DIAG_NETWORK
@@ -62,6 +68,15 @@ class NetworkTab(BaseTab):
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
+
+        self.network_feedback = FeedbackBanner(
+            self.tr("Network tools are ready"),
+            self.tr("Read-only checks run here; persistent changes require Action Center review."),
+            kind="info",
+        )
+        self.network_feedback.setObjectName("networkFeedback")
+        self.network_feedback.hide()
+        layout.addWidget(self.network_feedback)
 
         self.tabs = QStackedWidget()
         self.tabs.setObjectName("networkRouteStack")
@@ -148,7 +163,7 @@ class NetworkTab(BaseTab):
         iface_layout.addWidget(self.iface_table)
 
         btn_row = QHBoxLayout()
-        btn_refresh_iface = QPushButton(self.tr("Refresh"))
+        btn_refresh_iface = RetryButton(self.tr("Refresh"))
         btn_refresh_iface.setAccessibleName(self.tr("Refresh interfaces"))
         btn_refresh_iface.clicked.connect(self._load_interfaces)
         btn_row.addWidget(btn_refresh_iface)
@@ -177,17 +192,17 @@ class NetworkTab(BaseTab):
         wifi_layout.addWidget(self.wifi_table)
 
         wifi_btn_row = QHBoxLayout()
-        btn_scan_wifi = QPushButton(self.tr("Scan Wi-Fi"))
+        btn_scan_wifi = RetryButton(self.tr("Scan Wi-Fi"))
         btn_scan_wifi.setAccessibleName(self.tr("Scan Wi-Fi"))
         btn_scan_wifi.clicked.connect(self._scan_wifi)
         wifi_btn_row.addWidget(btn_scan_wifi)
 
-        btn_connect_wifi = QPushButton(self.tr("Connect"))
+        btn_connect_wifi = SecondaryButton(self.tr("Connect"))
         btn_connect_wifi.setAccessibleName(self.tr("Connect Wi-Fi"))
         btn_connect_wifi.clicked.connect(self._connect_wifi)
         wifi_btn_row.addWidget(btn_connect_wifi)
 
-        btn_disconnect_wifi = QPushButton(self.tr("Disconnect"))
+        btn_disconnect_wifi = SecondaryButton(self.tr("Disconnect"))
         btn_disconnect_wifi.setAccessibleName(self.tr("Disconnect Wi-Fi"))
         btn_disconnect_wifi.clicked.connect(self._disconnect_wifi)
         wifi_btn_row.addWidget(btn_disconnect_wifi)
@@ -215,7 +230,7 @@ class NetworkTab(BaseTab):
         vpn_layout.addWidget(self.vpn_table)
 
         vpn_btn_row = QHBoxLayout()
-        btn_refresh_vpn = QPushButton(self.tr("Refresh VPN"))
+        btn_refresh_vpn = RetryButton(self.tr("Refresh VPN"))
         btn_refresh_vpn.setAccessibleName(self.tr("Refresh VPN"))
         btn_refresh_vpn.clicked.connect(self._load_vpn)
         vpn_btn_row.addWidget(btn_refresh_vpn)
@@ -256,7 +271,7 @@ class NetworkTab(BaseTab):
         self.dns_combo.addItem(self.tr("System Default (DHCP)"), "auto")
         dns_layout.addWidget(self.dns_combo)
 
-        btn_apply_dns = QPushButton(self.tr("Apply DNS"))
+        btn_apply_dns = PrimaryButton(self.tr("Review DNS Change"))
         btn_apply_dns.setAccessibleName(self.tr("Apply DNS"))
         btn_apply_dns.clicked.connect(self.apply_dns)
         dns_layout.addWidget(btn_apply_dns)
@@ -269,7 +284,7 @@ class NetworkTab(BaseTab):
         self.lbl_dns_test = QLabel(self.tr("Test DNS resolution speed after applying."))
         test_layout.addWidget(self.lbl_dns_test)
 
-        btn_test_dns = QPushButton(self.tr("Test DNS Resolution"))
+        btn_test_dns = SecondaryButton(self.tr("Test DNS Resolution"))
         btn_test_dns.setAccessibleName(self.tr("Test DNS"))
         btn_test_dns.setToolTip(DIAG_NETWORK)
         btn_test_dns.clicked.connect(self._test_dns)
@@ -427,7 +442,7 @@ class NetworkTab(BaseTab):
         conn_layout.addWidget(self.conn_table)
 
         conn_btn_row = QHBoxLayout()
-        btn_refresh_conn = QPushButton(self.tr("Refresh"))
+        btn_refresh_conn = RetryButton(self.tr("Refresh"))
         btn_refresh_conn.setAccessibleName(self.tr("Refresh connections"))
         btn_refresh_conn.clicked.connect(self._refresh_monitoring)
         conn_btn_row.addWidget(btn_refresh_conn)
@@ -647,6 +662,12 @@ class NetworkTab(BaseTab):
         conn_name = self.get_active_connection()
 
         if not conn_name:
+            self.network_feedback.set_result(
+                "error",
+                self.tr("DNS change unavailable"),
+                self.tr("Connect to Wi-Fi or Ethernet, then try again."),
+            )
+            self.network_feedback.show()
             QMessageBox.warning(
                 self,
                 self.tr("Error"),
@@ -660,6 +681,12 @@ class NetworkTab(BaseTab):
             "configure-network-dns",
             {"connection": str(conn_name), "dns": str(dns_servers)},
         )
+        self.network_feedback.set_result(
+            "info",
+            self.tr("DNS plan ready for review"),
+            self.tr("Action Center will show the connection, resolver values, validation, and recovery guidance."),
+        )
+        self.network_feedback.show()
         self.append_output(self.tr("Review the connection-specific DNS guidance in Action Center.\n"))
         QMessageBox.information(
             self,
@@ -669,6 +696,12 @@ class NetworkTab(BaseTab):
 
     def _test_dns(self: typing.Any) -> typing.Any:
         """Test DNS resolution speed."""
+        self.network_feedback.set_result(
+            "info",
+            self.tr("Testing DNS resolution"),
+            self.tr("This read-only check does not change resolver settings."),
+        )
+        self.network_feedback.show()
         self.run_command(
             "bash",
             [
@@ -701,6 +734,12 @@ class NetworkTab(BaseTab):
         """Enable or disable MAC randomization via NetworkManager config."""
         action_id = "enable-mac-randomization" if enable else "disable-mac-randomization"
         self.actionCenterRequested.emit(action_id, {})
+        self.network_feedback.set_result(
+            "info",
+            self.tr("MAC privacy plan ready for review"),
+            self.tr("The NetworkManager restart requirement will be shown before Run Plan."),
+        )
+        self.network_feedback.show()
         QMessageBox.information(
             self,
             self.tr("Review required"),
@@ -725,6 +764,12 @@ class NetworkTab(BaseTab):
         """Hide or show hostname in DHCP requests."""
         conn = self.get_active_connection()
         if not conn:
+            self.network_feedback.set_result(
+                "error",
+                self.tr("Hostname privacy unavailable"),
+                self.tr("Connect to a network, then try again."),
+            )
+            self.network_feedback.show()
             QMessageBox.warning(self, self.tr("Error"), self.tr("No active connection found."))
             return
 
@@ -733,12 +778,16 @@ class NetworkTab(BaseTab):
             {"connection": str(conn), "hidden": bool(hide)},
         )
         self.append_output(self.tr("Review the persistent DHCP hostname policy in Action Center.\n"))
-
-        QTimer.singleShot(500, self._check_hostname_privacy)
+        self.network_feedback.set_result(
+            "info",
+            self.tr("Hostname privacy plan ready for review"),
+            self.tr("No setting has changed yet. Review and run the plan in Action Center."),
+        )
+        self.network_feedback.show()
         QMessageBox.information(
             self,
-            self.tr("Done"),
-            self.tr("Hostname privacy updated. Reconnect to apply."),
+            self.tr("Review required"),
+            self.tr("Hostname privacy changes require Action Center review."),
         )
 
     def undo_last(self: typing.Any) -> typing.Any:

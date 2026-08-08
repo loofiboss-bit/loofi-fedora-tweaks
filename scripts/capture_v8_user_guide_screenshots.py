@@ -145,7 +145,9 @@ def _capture_main_window(app: QApplication) -> None:
             action_center = window.findChild(_ActionCenterSubTab)
             if action_center is None:
                 raise RuntimeError("Action Center page was not realized")
-            action_center._show_lifecycle_view(1)
+            # Drive the real selector so the captured label and work list stay
+            # in the same lifecycle state.
+            action_center.lifecycle_view.setCurrentIndex(1)
             _settle(app, 0.5)
         _sanitize_route_capture(window, route_id)
         _save_widget(window, filename)

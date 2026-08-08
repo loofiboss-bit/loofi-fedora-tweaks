@@ -45,6 +45,10 @@ class SettingsTab(QWidget, PluginInterface):
     """Application settings, local state repair, and build information."""
 
     _METADATA = plugin_metadata_for_module(__name__)
+    _CLOSED_SETTING_VALUES = {
+        "theme": frozenset({"dark", "light", "highcontrast"}),
+        "log_level": frozenset({"DEBUG", "INFO", "WARNING", "ERROR"}),
+    }
 
     def __init__(self):
         super().__init__()
@@ -488,6 +492,14 @@ class SettingsTab(QWidget, PluginInterface):
     def _save_setting(self, key: str, value) -> bool:
         """Persist one row and keep success or failure visible next to it."""
         row = self._setting_rows.get(key)
+        allowed = self._CLOSED_SETTING_VALUES.get(key)
+        if allowed is not None and value not in allowed:
+            if row is not None:
+                row.set_feedback(
+                    self.tr("Choose one of the available values before saving."),
+                    kind="error",
+                )
+            return False
         try:
             self._mgr.set(key, value)
             saved = bool(self._mgr.save())

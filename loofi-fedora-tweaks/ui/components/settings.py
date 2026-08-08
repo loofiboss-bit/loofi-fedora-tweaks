@@ -50,8 +50,10 @@ class SettingRow(QFrame):
         """Expose a non-color-only saved, dependency, or error state."""
         prefixes = {
             "saved": self.tr("Saved"),
+            "changed": self.tr("Changed"),
             "dependency": self.tr("Unavailable"),
             "error": self.tr("Error"),
+            "restart": self.tr("Restart required"),
         }
         prefix = prefixes.get(kind, self.tr("Status"))
         text = (

@@ -14,6 +14,12 @@ from .models import (
     Recommendation,
 )
 from .recommendations import recommendation_priority, select_primary_recommendation
+from .onboarding import (
+    ONBOARDING_STEPS,
+    OnboardingState,
+    OnboardingStep,
+    OnboardingStore,
+)
 
 __all__ = [
     "AttentionItem",
@@ -22,6 +28,10 @@ __all__ = [
     "HomeStatus",
     "HomeSummary",
     "HomeTask",
+    "ONBOARDING_STEPS",
+    "OnboardingState",
+    "OnboardingStep",
+    "OnboardingStore",
     "RecentChange",
     "Recommendation",
     "recommendation_priority",

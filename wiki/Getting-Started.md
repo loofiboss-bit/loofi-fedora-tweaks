@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 23.1.0 "Compass"
+> Version 24.0.0 "Flow"
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -22,10 +22,9 @@ Optional CLI alias:
 alias loofi='loofi-fedora-tweaks --cli'
 ```
 
-The first launch shows one safe welcome page with read-only Fedora and system
-details. It does not install packages, change profiles, start services, or
-modify the host. Choose **Open Loofi** to continue or **View system details** to
-open the existing System page.
+The first launch opens Home with integrated guidance. It can be dismissed or
+resumed, remembers your step, and only opens existing pages. It does not run a
+check, install packages, create a plan, start services, or modify the host.
 
 Loofi detects the Fedora variant automatically. Traditional Fedora uses DNF;
 Atomic Fedora uses rpm-ostree-aware or manual-only paths where an operation is

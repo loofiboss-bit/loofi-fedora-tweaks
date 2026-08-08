@@ -210,7 +210,7 @@ class FactoryReset:
                     if os.path.isdir(plugins_dir):
                         shutil.rmtree(plugins_dir)
 
-            # Remove first-run marker to re-trigger wizard
+            # Remove the compatibility marker; onboarding.json was removed above.
             first_run = os.path.join(CONFIG_DIR, "first_run_complete")
             if os.path.exists(first_run):
                 os.remove(first_run)

@@ -4,12 +4,12 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **Current release:** v23.1.0 "Compass"
-- **Last independently verified public release:** v23.1.0 "Compass"
-- Release notes: [RELEASE-NOTES-v23.1.0.md](RELEASE-NOTES-v23.1.0.md)
+- **Current release:** v24.0.0 "Flow"
+- Release notes: [RELEASE-NOTES-v24.0.0.md](RELEASE-NOTES-v24.0.0.md)
 
 ## Recent Releases
 
+- v24.0.0 "Flow": [RELEASE-NOTES-v24.0.0.md](RELEASE-NOTES-v24.0.0.md)
 - v23.1.0 "Compass": [RELEASE-NOTES-v23.1.0.md](RELEASE-NOTES-v23.1.0.md)
 - v23.0.2 "Compass": [RELEASE-NOTES-v23.0.2.md](RELEASE-NOTES-v23.0.2.md)
 - v23.0.1 "Compass": [RELEASE-NOTES-v23.0.1.md](RELEASE-NOTES-v23.0.1.md)

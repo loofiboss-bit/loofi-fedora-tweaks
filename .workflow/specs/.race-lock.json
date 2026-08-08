@@ -1,16 +1,25 @@
 {
-  "version": "v23.1.0",
-  "started_at": "20260801_113111",
-  "status": "complete",
-  "target_version": "v23.1.0",
-  "phase": "public-complete",
-  "baseline_commit": "58692a0f7ea06fa8d8568c8ec1a96f9d5a6c6fc6",
-  "product_version": "v23.1.0",
-  "product_codename": "Compass",
+  "version": "v24.0.0",
+  "started_at": "20260808_000000",
+  "status": "active",
+  "target_version": "v24.0.0",
+  "phase": "release-authorized",
+  "baseline_commit": "b1c92bf100a365d6ff1652cd0f47a044f809ae51",
+  "product_version": "v24.0.0",
+  "product_codename": "Flow",
+  "target_codename": "Flow",
   "current_public_release": "v23.1.0",
   "current_release_commit": "efb1e9c471ba4b5b5962774a0435562efc80e4fe",
-  "release_authorized_at": "2026-08-01T13:00:00+02:00",
-  "local_candidate_prepared_at": "2026-08-01T13:35:07+02:00",
+  "local_candidate_prepared_at": "2026-08-08T11:08:30+02:00",
+  "release_authorized_at": "2026-08-08T11:56:38+02:00",
+  "v24_historical_tag_collision": {
+    "tag": "v24.0.0",
+    "historical_commit": "dd2a23f8bfb837d3f20e2fc65e63c21a11cb8cd8",
+    "historical_codename": "Power Features",
+    "status": "preserved-as-legacy",
+    "legacy_tag": "legacy-v24.0.0-power-features",
+    "legacy_commit": "dd2a23f8bfb837d3f20e2fc65e63c21a11cb8cd8"
+  },
   "historical_tag_collision": {
     "tag": "v23.0.0",
     "tag_object": "496ab1edb608a7420083b6541ddbc61b64a432f0",
@@ -21,20 +30,23 @@
     "legacy_peeled_commit": "adc4cef116d147bd5b845f0ec98c3a1970b8b054"
   },
   "physical_gates": {
-    "fedora44_kde_wayland_140_percent": "passed-screenshot-and-automated-contract",
+    "offscreen_reference_screens_100_percent": "passed",
+    "offscreen_reference_screens_140_percent": "passed",
+    "deterministic_scale_contracts": "passed-100-125-140-150-200",
+    "fedora44_kde_wayland": "unverified",
     "fresh_atomic": "unverified",
     "manual_keyboard": "unverified",
     "audible_orca": "unverified"
   },
   "external_release_gates": {
-    "exact_tag_commit": "passed",
-    "ci_and_codeql": "passed",
-    "github_assets_checksums_attestations": "passed",
-    "copr_packages_signatures": "passed",
-    "clean_fedora44_install": "passed",
-    "public_docs_and_wiki": "passed"
+    "commit_and_exact_tag": "pending",
+    "ci_and_codeql": "pending",
+    "github_assets_checksums_attestations": "pending",
+    "copr_packages_signatures": "pending",
+    "clean_fedora44_install": "pending",
+    "public_docs_and_wiki": "pending"
   },
-  "public_release_evidence": {
+  "current_public_release_evidence": {
     "release_commit": "efb1e9c471ba4b5b5962774a0435562efc80e4fe",
     "tag_object": "80f516c15f19ed671512eeb52881ab6e5dca95d3",
     "auto_release_run": 30698476403,
@@ -44,6 +56,5 @@
     "copr_evr": "1:23.1.0-1.fc44",
     "wiki_commit": "efc696dc69f59bb985613af6e245a3953b07baa2"
   },
-  "completed_at": "2026-08-01T15:00:28+02:00",
-  "bumped_at": "2026-08-01T11:31:11.120999+00:00"
+  "bumped_at": "2026-08-08T09:08:30+00:00"
 }

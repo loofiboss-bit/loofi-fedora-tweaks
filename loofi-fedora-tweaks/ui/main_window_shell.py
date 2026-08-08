@@ -15,6 +15,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QWidget
 
 from utils.log import get_logger
+from ui.presentation import visible_label
 
 logger = get_logger(__name__)
 
@@ -71,6 +72,8 @@ class MainWindowShellMixin:
             page_name = route.label
             description = route.description
 
+        category = visible_label(category)
+        page_name = visible_label(page_name)
         self._bc_category.setText(category)
         self._bc_page.setText(page_name)
         self._bc_desc.setText(description)
@@ -95,10 +98,12 @@ class MainWindowShellMixin:
             if destination
             else (area.label if area else route.category)
         )
+        category = visible_label(category)
+        page_name = visible_label(route.label)
         self._bc_category.setText(category)
-        self._bc_page.setText(route.label)
+        self._bc_page.setText(page_name)
         self._bc_desc.setText(route.description)
-        self._breadcrumb_frame.set_content(category, route.label, route.description)
+        self._breadcrumb_frame.set_content(category, page_name, route.description)
         self._bc_parent_item = (
             entry.tree_item.parent()
             if entry and entry.tree_item

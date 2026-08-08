@@ -3,18 +3,33 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 23.1.0 "Compass" | **Current public release**: 23.1.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 24.0.0 "Flow" | **Current public release**: 23.1.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
-> V21 and V22 are complete and public. Compass v23.1.0 extends the public
-> mutation boundary and core workflow contract without adding execution
-> authority. Earlier Compass `v23.0.0`, `v23.0.1`, and `v23.0.2` releases are
-> public; `v23.0.2` completed the daemon's bounded systemd runtime and state
-> contract.
+> V21, V22, and Compass 23.1.0 are complete and public. Flow v24.0.0 is a
+> locally qualified candidate that consolidates presentation without adding
+> execution authority. It has not been published or installed on the host.
 > Fresh Atomic and manual physical accessibility qualification remain open
-> under an authorized skip.
+> and are not inferred from offscreen evidence.
 
-## Active Compass architecture
+## Active Flow architecture
+
+V24 is a presentation convergence release. Its authority is the
+[Flow architecture contract](.workflow/specs/arch-v24.0.0.md),
+[task contract](.workflow/specs/tasks-v24.0.0.md), and
+[local qualification](docs/reports/V24_RELEASE_QUALIFICATION.md). It adds a
+small semantic component layer, a PyQt-free onboarding store, and focused
+presentation/view/worker modules while preserving the six destinations, every
+route, lazy loading, services, public interfaces, persisted state, and the
+Action Center execution boundary.
+
+Home, Applications, Updates, Troubleshooting, Action Center, Network, System
+Information, and Settings share explicit task, state, feedback, and safety
+patterns. Browsing, selection, filtering, onboarding, and review remain inert.
+Traditional and Atomic paths remain separate and no runtime dependency,
+provider abstraction, or new privilege path is introduced.
+
+## Preserved Compass architecture
 
 V23 composes existing trusted diagnostics into one explicit troubleshooting
 journey. Its canonical authority is the

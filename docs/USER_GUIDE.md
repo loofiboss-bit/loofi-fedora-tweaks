@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 23.1.0 "Compass"
+> Version 24.0.0 "Flow"
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
@@ -98,24 +98,34 @@ result may navigate and preselect only; it cannot plan, run, or verify.
 
 Home keeps five direct task links visible: **Check for updates**, **Install an
 app**, **Troubleshoot a problem**, **Free space**, and **Review planned
-changes**. Home shows one primary recommendation at a time. Before the first
-System Check it shows one **Not checked yet** state; a failed read is reported
-separately as **Status check failed**.
+changes**. It shows saved system status, outstanding review work, and one
+deterministically selected next action. Before the first System Check it shows
+one **Not checked yet** state; a failed read is reported separately as
+**Status check failed**.
+
+First-run guidance appears inside Home instead of blocking the application. It
+can be dismissed or resumed, remembers the current step, and only navigates to
+existing pages. It never starts a check, creates a plan, or changes the host.
 
 ### Update the system
 
-Open **Software & Updates → Updates**, review the available updates, and confirm
-the plan details in Action Center before applying it separately. The page shows
-the selected source, restart expectation, and required verification before the
-handoff. Traditional Fedora updates the current installation. Atomic Fedora
-creates a new deployment and verifies it after the required restart.
+Open **Software & Updates → Updates** and use **Check for updates** for the
+desired source. The page distinguishes checking, available, review, running,
+succeeded, failed, cancelled, and restart-required states. Review the source,
+summary, restart expectation, and required verification before handing one
+plan to Action Center. Traditional Fedora updates the current installation.
+Atomic Fedora creates a new deployment and verifies it after the required
+restart.
 
 ### Install an application
 
-Open **Software & Updates → Applications**, choose an application, and create a
-review plan. Each row identifies the package, source, restart handling, and
-installation-state verification. Search and source/status filters remain
-available. Plan creation never installs as a side effect.
+Open **Software & Updates → Applications** to review Loofi's curated,
+source-aware actions. Use **Open Plasma Discover** for the complete native
+graphical catalogue. Each Loofi row identifies source and installed,
+available, or unavailable state and offers at most one appropriate
+**Review install** or **Review removal** action. Search plus source/status
+filters share the same empty-state behavior. Review never installs or removes
+as a side effect.
 
 ### Diagnose a slow system
 
@@ -157,14 +167,15 @@ unchanged, worsened, or not comparable.
 
 ### Troubleshoot a problem
 
-Open **System → Troubleshooting** and start from one of eight plain-language
-symptoms: no internet, sound, Bluetooth, failed updates, an app that will not
-start, a slow system, full storage, or something else. Collection starts only
-after **Start read-only check** is activated. The default result explains what
-was checked, what was found, confidence or missing checks, and one safe next
-step. Source, freshness, timing, and schema detail stay in the collapsed
-technical-details section. A next action says whether it opens Action Center
-to create a plan; nothing runs automatically.
+Open **System → Troubleshooting** and follow **1. Problem → 2. Checks →
+3. Results**. Start from one of eight plain-language symptoms: no internet,
+sound, Bluetooth, failed updates, an app that will not start, a slow system,
+full storage, or something else. Collection starts only after **Start
+read-only check** is activated. The result explains what was checked, what was
+found, confidence or missing checks, and one safe next step. Source, freshness,
+timing, and schema detail stay in the collapsed technical-details section. A
+next action says whether it opens Action Center to create a plan; nothing runs
+automatically.
 
 After a relevant change, explicitly rerun the compatible profile. The
 follow-up compares sessions only when profile, Fedora variant, ordering, and
@@ -177,13 +188,17 @@ Center `verified` remain separate facts.
 
 ## 5) Action Center Safety
 
-**Software & Updates → Action Center** is the only plan/run/verify GUI.
+**Software & Updates → Action Center** is the only plan/run/verify GUI. It
+opens in **Review queue**; **Action catalog** is a separate advanced browsing
+mode. Catalog search, filtering, selection, and detail inspection are inert.
+Only **Review & Plan** creates a plan, and it still does not prepare or run it.
 
-The primary work list is grouped by **Needs review**, **Ready**, **Running**,
-**Waiting for restart**, **Completed**, and **Failed**. Select a change to see
-its intended outcome, affected components, privilege and restart requirements,
-verification, and recovery guidance. Definition IDs, command previews, and
-source metadata remain in collapsed details and advanced review tools.
+The master-detail work list is grouped by **Needs review**, **Ready**,
+**Running**, **Waiting for restart**, **Completed**, and **Failed**. Select a
+change to see risk, intended outcome, affected scope, privilege and restart
+requirements, validation, and rollback before its one available lifecycle
+action. Definition IDs, command previews, and source metadata remain in
+collapsed details and advanced review tools.
 
 - The catalog contains 74 first-party definitions. Each definition declares its
   operation class, Fedora variants, reboot policy, affected resources,
@@ -316,7 +331,7 @@ loofi --json readiness --target 44
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-Compass preserves settings, favorites, stable route IDs, observability data,
+Flow preserves settings, favorites, stable route IDs, observability data,
 and readable Action Center v1-v3 state. Writable Action Center plans and runs
 migrate atomically to schema v4; unknown future schemas remain read-only. The
 optional troubleshooting store retains at most 20 explicitly collected
@@ -350,7 +365,7 @@ Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
 ## 10) Release Scope
 
 Fedora 44 is the supported release target. Fedora 45 remains preview-only.
-Version 23.1.0 is the current release.
+Version 24.0.0 "Flow" is the current release.
 The historical Architecture Hardening tag object is preserved under
 `legacy-v23.0.0-architecture-hardening`. Its release evidence records exact
 commit, artifact, signature, checksum, SBOM/provenance, CI, COPR, Fedora 44

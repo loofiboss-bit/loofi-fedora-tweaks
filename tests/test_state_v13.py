@@ -23,7 +23,7 @@ class TestStatePathsAndInventory(TestCase):
         })
         inventory = StateInventory(paths)
         self.assertTrue(all("/forbidden" not in str(domain.path) for domain in inventory.all()))
-        self.assertEqual(len(inventory.all()), 14)
+        self.assertEqual(len(inventory.all()), 15)
         self.assertEqual(inventory.get("audit_log").path, paths.config / "audit.jsonl")
         self.assertEqual(inventory.get("action_log").path, paths.data / "action_log.jsonl")
 

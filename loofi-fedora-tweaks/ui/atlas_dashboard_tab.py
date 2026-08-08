@@ -8,7 +8,16 @@ from typing import Any, Protocol
 from PyQt6.QtCore import QTimer
 from PyQt6.QtWidgets import QHBoxLayout, QLabel, QLayout, QVBoxLayout, QWidget
 
-from core.home import AttentionItem, GuidedTask, HomeStatus, HomeSummary, HomeTask, Recommendation
+from core.home import (
+    AttentionItem,
+    GuidedTask,
+    HomeStatus,
+    HomeSummary,
+    HomeTask,
+    OnboardingState,
+    OnboardingStore,
+    Recommendation,
+)
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 
@@ -27,12 +36,24 @@ from .components import (
 )
 from .components.layout import AdaptiveGrid
 from .icon_pack import get_qicon
+from .home_onboarding import HomeOnboardingCard
 
 _DETACHED_CHECK_WORKERS: set[Any] = set()
 
 
 class _HomeSummaryProvider(Protocol):
     def summary(self) -> HomeSummary:
+        ...
+
+
+class _OnboardingStateStore(Protocol):
+    def load(self) -> OnboardingState:
+        ...
+
+    def advance(self, state: OnboardingState) -> OnboardingState:
+        ...
+
+    def dismiss(self, state: OnboardingState) -> OnboardingState:
         ...
 
 
@@ -70,11 +91,14 @@ class AtlasDashboardTab(BaseTab):
         *,
         home_service: _HomeSummaryProvider | None = None,
         check_worker_factory: Callable[[QWidget], Any] | None = None,
+        onboarding_store: _OnboardingStateStore | None = None,
     ) -> None:
         super().__init__()
         self.main_window = main_window
         self.home_service = home_service
         self.check_worker_factory = check_worker_factory
+        self.onboarding_store = onboarding_store or OnboardingStore()
+        self.onboarding_state = self.onboarding_store.load()
         self._check_worker: Any | None = None
         self._check_cancel_requested = False
         self._closing = False
@@ -103,6 +127,12 @@ class AtlasDashboardTab(BaseTab):
             self.tr("Current status, the next useful action, and common Fedora tasks."),
         )
         outer.addWidget(self.scaffold)
+
+        self.onboarding_card = HomeOnboardingCard()
+        self.onboarding_card.set_state(self.onboarding_state)
+        self.onboarding_card.advanceRequested.connect(self._advance_onboarding)
+        self.onboarding_card.dismissRequested.connect(self._dismiss_onboarding)
+        self.scaffold.add_widget(self.onboarding_card)
 
         self.state_card = Card(self.tr("System status"))
         self.state_card.setObjectName("homeState")
@@ -162,6 +192,25 @@ class AtlasDashboardTab(BaseTab):
         self.scaffold.add_layout(self.active_work_container)
         self.scaffold.add_layout(self.recent_container)
         self.scaffold.content_layout.addStretch()
+
+    def _advance_onboarding(self) -> None:
+        route_id = self.onboarding_state.current_step.route_id
+        try:
+            self.onboarding_state = self.onboarding_store.advance(self.onboarding_state)
+        except OSError as exc:
+            self.onboarding_card.show_error(self.tr(str(exc)))
+            return
+        self.onboarding_card.set_state(self.onboarding_state)
+        if route_id:
+            self._open_route(route_id)
+
+    def _dismiss_onboarding(self) -> None:
+        try:
+            self.onboarding_state = self.onboarding_store.dismiss(self.onboarding_state)
+        except OSError as exc:
+            self.onboarding_card.show_error(self.tr(str(exc)))
+            return
+        self.onboarding_card.set_state(self.onboarding_state)
 
     def refresh_summary(self) -> None:
         """Re-read saved status explicitly; Home has no polling timer."""

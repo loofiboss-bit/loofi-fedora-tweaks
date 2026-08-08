@@ -22,6 +22,29 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v23.0.1 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.1.md), [tasks](.workflow/specs/tasks-v23.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.1.md) |
 | v23.0.2 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md), [public evidence](docs/reports/V23_RELEASE_PUBLICATION.md) |
 | v23.1.0 | Compass | DONE | [Canonical plan](docs/plans/loofi-fedora-tweaks-v23.1-implementation-plan.md), [architecture](.workflow/specs/arch-v23.1.0.md), [tasks](.workflow/specs/tasks-v23.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v23.1.0.md) |
+| v24.0.0 | Flow | RELEASE AUTHORIZED | [Architecture](.workflow/specs/arch-v24.0.0.md), [tasks](.workflow/specs/tasks-v24.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v24.0.0.md), [qualification](docs/reports/V24_RELEASE_QUALIFICATION.md) |
+
+## [ACTIVE] v24.0.0 "Flow" — Coherent Desktop Workflows
+
+**Objective:** make the existing product feel like one desktop application by
+using shared task hierarchy, semantic actions, explicit states, and consistent
+feedback without changing routes, execution authority, or supported features.
+
+Home now provides a deterministic next step and integrated, non-blocking
+onboarding. Applications and Updates share search, source, status, summary, and
+lifecycle patterns. Troubleshooting presents Problem → Checks → Results.
+Action Center separates its Review queue from the inert Action catalog and
+shows risk, scope, requirements, validation, and rollback in a master-detail
+workspace before the single available lifecycle action.
+
+The release preserves the six standard destinations, stable route IDs,
+lazy loading, Traditional/Atomic separation, validation, audit logging, and
+explicit Action Center execution. Automated offscreen evidence covers the five
+reference screens at 100% and 140%; deterministic component contracts cover
+100%, 125%, 140%, 150%, and 200%. Fresh Atomic, physical Wayland keyboard use,
+and audible Orca remain unverified. Exact-tag GitHub, COPR, disposable Fedora
+44 installation, and public wiki evidence must pass independent readback before
+the roadmap is closed as public.
 
 ## [DONE] v23.1.0 "Compass" — Review-first Core Workflows
 

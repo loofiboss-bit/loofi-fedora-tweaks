@@ -161,6 +161,28 @@ _THEME_ICON_NAMES: dict[str, tuple[str, ...]] = {
     "update": ("system-software-update", "view-refresh"),
 }
 
+_SEMANTIC_ICONS: dict[str, tuple[tuple[str, ...], str]] = {
+    "application": (("application-x-executable", "applications-other"), "packages-software"),
+    "browse": (("view-list-details", "folder-open"), "overview-dashboard"),
+    "cancel": (("dialog-cancel", "process-stop"), "status-ok"),
+    "catalog": (("view-list-icons", "applications-other"), "packages-software"),
+    "check": (("system-run", "dialog-ok-apply"), "maintenance-health"),
+    "details": (("documentinfo", "dialog-information"), "info"),
+    "error": (("dialog-error", "dialog-close"), "status-ok"),
+    "filter": (("view-filter", "edit-find"), "search"),
+    "install": (("system-software-install", "list-add"), "install"),
+    "loading": (("process-working", "view-refresh"), "restart"),
+    "refresh": (("view-refresh", "system-software-update"), "update"),
+    "retry": (("view-refresh", "edit-redo"), "restart"),
+    "review": (("document-preview", "documentinfo"), "info"),
+    "rollback": (("edit-undo", "document-revert"), "restart"),
+    "search": (("edit-find", "system-search"), "search"),
+    "settings": (("configure", "preferences-system"), "settings"),
+    "success": (("dialog-ok-apply", "dialog-ok"), "status-ok"),
+    "update": (("system-software-update", "view-refresh"), "update"),
+    "warning": (("dialog-warning", "dialog-information"), "info"),
+}
+
 
 _GROUP_ROLES: dict[str, str] = {
     "appearance": "accent",
@@ -353,3 +375,19 @@ def get_qicon(icon_value: str, size: int = 24, tint: str | None = None) -> QIcon
     if icon is not None:
         return icon
     return QIcon(path)
+
+
+def get_semantic_icon(role: str, size: int = 24) -> QIcon:
+    """Resolve one common action/state role through theme-first fallbacks."""
+    theme_names, fallback = _SEMANTIC_ICONS.get(
+        str(role).strip().lower(),
+        (("dialog-information",), "info"),
+    )
+    from_theme = getattr(QIcon, "fromTheme", None)
+    for theme_name in theme_names:
+        if not callable(from_theme):
+            break
+        icon = cast(QIcon, from_theme(theme_name))
+        if not icon.isNull():
+            return icon
+    return get_qicon(fallback, size=size)

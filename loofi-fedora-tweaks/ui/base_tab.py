@@ -229,7 +229,7 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
     def _cancel_command(self: typing.Any) -> typing.Any:
         """Cancel the currently running command."""
         if self.runner:
-            self.runner.cancel()
+            self.runner.stop()
 
     # ---------------------------------------------------------------- Toast feedback
 

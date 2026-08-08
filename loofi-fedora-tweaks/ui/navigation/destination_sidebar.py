@@ -14,6 +14,16 @@ from ui.icon_pack import get_qicon, icon_tint_variant
 DESTINATION_ID_ROLE = Qt.ItemDataRole.UserRole + 20
 DESTINATION_LABEL_ROLE = Qt.ItemDataRole.UserRole + 21
 DESTINATION_ICON_ROLE = Qt.ItemDataRole.UserRole + 22
+DESTINATION_GROUP_ROLE = Qt.ItemDataRole.UserRole + 23
+
+_PRESENTATION_GROUPS = {
+    "home": "Overview",
+    "software_updates": "Manage",
+    "system": "Manage",
+    "network_security": "Manage",
+    "desktop": "Personalize",
+    "settings": "Personalize",
+}
 
 
 class DestinationSidebar(QTreeWidget):
@@ -41,11 +51,14 @@ class DestinationSidebar(QTreeWidget):
         selected = self.current_destination_id()
         self.clear()
         minimum_height = max(40, int(self.fontMetrics().height() * 2.35))
+        previous_group = ""
         for destination in destinations:
+            group = _PRESENTATION_GROUPS.get(destination.id, self.tr("Other"))
             item = QTreeWidgetItem(self)
             item.setData(0, DESTINATION_ID_ROLE, destination.id)
             item.setData(0, DESTINATION_LABEL_ROLE, destination.label)
             item.setData(0, DESTINATION_ICON_ROLE, destination.icon)
+            item.setData(0, DESTINATION_GROUP_ROLE, group)
             item.setData(
                 0,
                 Qt.ItemDataRole.AccessibleTextRole,
@@ -54,11 +67,12 @@ class DestinationSidebar(QTreeWidget):
             item.setData(
                 0,
                 Qt.ItemDataRole.AccessibleDescriptionRole,
-                self.tr("Open %1").replace("%1", destination.label),
+                self.tr("%1 group. Open %2").replace("%1", group).replace("%2", destination.label),
             )
             item.setText(0, "" if self._collapsed else destination.label)
             item.setToolTip(0, destination.label)
-            item.setSizeHint(0, QSize(0, minimum_height))
+            group_spacing = 8 if previous_group and group != previous_group else 0
+            item.setSizeHint(0, QSize(0, minimum_height + group_spacing))
             item.setIcon(
                 0,
                 get_qicon(
@@ -67,6 +81,7 @@ class DestinationSidebar(QTreeWidget):
                     tint=icon_tint_variant(destination.icon, selected=False),
                 ),
             )
+            previous_group = group
         if selected:
             self.select_destination(selected)
 
@@ -89,6 +104,20 @@ class DestinationSidebar(QTreeWidget):
         if item is None:
             return ""
         return str(item.data(0, DESTINATION_ID_ROLE) or "")
+
+    def presentation_groups(self) -> tuple[tuple[str, tuple[str, ...]], ...]:
+        """Return visual grouping without creating navigation identifiers."""
+        groups: list[tuple[str, list[str]]] = []
+        for index in range(self.topLevelItemCount()):
+            item = self.topLevelItem(index)
+            if item is None:
+                continue
+            group = str(item.data(0, DESTINATION_GROUP_ROLE) or "")
+            destination_id = str(item.data(0, DESTINATION_ID_ROLE) or "")
+            if not groups or groups[-1][0] != group:
+                groups.append((group, []))
+            groups[-1][1].append(destination_id)
+        return tuple((group, tuple(ids)) for group, ids in groups)
 
     def select_destination(self, destination_id: str) -> bool:
         """Select a destination by stable ID."""

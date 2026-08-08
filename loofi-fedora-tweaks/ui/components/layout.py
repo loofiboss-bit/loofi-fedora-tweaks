@@ -18,7 +18,9 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.components.actions import ActionBar
+from ui.components.feedback import StatusBadge
 from ui.design import DesignTokens
+from ui.presentation import button_label, visible_label
 
 
 @dataclass(frozen=True)
@@ -90,24 +92,37 @@ class PageHeader(QFrame):
         self.description.setObjectName("pageHeaderDescription")
         self.description.setWordWrap(True)
 
+        self.status = StatusBadge("")
+        self.status.setProperty("pageHeaderStatus", True)
+        self.status.setVisible(False)
+
         layout.addLayout(top_row)
         layout.addWidget(self.title)
         layout.addWidget(self.description)
+        layout.addWidget(self.status, 0, Qt.AlignmentFlag.AlignLeft)
         self.setAccessibleName(self.tr("Page header"))
 
     def set_content(self, area: str, title: str, description: str = "") -> None:
-        self.eyebrow.setText(area)
-        self.eyebrow.setAccessibleName(area)
-        normalized_area = " ".join(str(area).split()).casefold()
-        normalized_title = " ".join(str(title).split()).casefold()
+        area_text = visible_label(area)
+        title_text = visible_label(title)
+        self.eyebrow.setText(button_label(area_text))
+        self.eyebrow.setAccessibleName(area_text)
+        normalized_area = area_text.casefold()
+        normalized_title = title_text.casefold()
         self.eyebrow.setVisible(
             bool(normalized_area) and normalized_area != normalized_title
         )
-        self.title.setText(title)
+        self.title.setText(title_text)
         self.description.setText(description)
         self.description.setVisible(bool(description))
-        self.setAccessibleName(title or self.tr("Page header"))
+        self.setAccessibleName(title_text or self.tr("Page header"))
         self.setAccessibleDescription(description)
+
+    def set_status(self, text: str = "", *, kind: str = "info", description: str = "") -> None:
+        """Show one optional non-color-only current page status."""
+        self.status.setVisible(bool(text))
+        if text:
+            self.status.set_status(text, kind=kind, description=description)
 
     def add_action(self, widget: QWidget, *, primary: bool = False) -> None:
         self.action_bar.add_action(widget, primary=primary)
@@ -139,6 +154,42 @@ class ContentColumn(QWidget):
 
     def add_layout(self, layout, stretch: int = 0) -> None:
         self.body.addLayout(layout, stretch)
+
+
+class SectionHeader(QFrame):
+    """Consistent in-page section title, purpose, and optional single action."""
+
+    def __init__(
+        self,
+        title: str,
+        description: str = "",
+        *,
+        action: QWidget | None = None,
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(parent)
+        self.setObjectName("sectionHeader")
+        row = QHBoxLayout(self)
+        row.setContentsMargins(0, 4, 0, 4)
+        row.setSpacing(12)
+        copy = QVBoxLayout()
+        copy.setContentsMargins(0, 0, 0, 0)
+        copy.setSpacing(3)
+        self.title_label = QLabel(title)
+        self.title_label.setObjectName("sectionHeaderTitle")
+        self.title_label.setWordWrap(True)
+        self.description_label = QLabel(description)
+        self.description_label.setObjectName("sectionHeaderDescription")
+        self.description_label.setWordWrap(True)
+        self.description_label.setVisible(bool(description))
+        copy.addWidget(self.title_label)
+        copy.addWidget(self.description_label)
+        row.addLayout(copy, 1)
+        self.action = action
+        if action is not None:
+            row.addWidget(action, 0, Qt.AlignmentFlag.AlignTop)
+        self.setAccessibleName(title)
+        self.setAccessibleDescription(description)
 
 
 class PageScaffold(QWidget):

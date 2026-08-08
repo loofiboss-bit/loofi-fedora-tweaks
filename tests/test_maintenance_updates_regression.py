@@ -28,6 +28,7 @@ def _install_maintenance_import_stubs():
     qt_widgets.QProgressBar = _Dummy
     qt_widgets.QTabWidget = _Dummy
     qt_widgets.QStackedWidget = _Dummy
+    qt_widgets.QSplitter = _Dummy
     qt_widgets.QListWidget = _Dummy
     qt_widgets.QListWidgetItem = _Dummy
     qt_widgets.QFrame = _Dummy
@@ -39,7 +40,10 @@ def _install_maintenance_import_stubs():
     qt_widgets.QComboBox = _Dummy
 
     qt_core = types.ModuleType("PyQt6.QtCore")
-    qt_core.Qt = types.SimpleNamespace(GlobalColor=types.SimpleNamespace(darkGray=0))
+    qt_core.Qt = types.SimpleNamespace(
+        GlobalColor=types.SimpleNamespace(darkGray=0),
+        Orientation=types.SimpleNamespace(Horizontal=0),
+    )
     qt_core.QProcess = _Dummy
     qt_core.pyqtSignal = lambda *a, **kw: MagicMock()
     qt_core.QObject = _Dummy
@@ -106,6 +110,18 @@ def _install_maintenance_import_stubs():
     components_layout_module = types.ModuleType("ui.components.layout")
     components_layout_module.PageScaffold = _Dummy
 
+    components_module = types.ModuleType("ui.components")
+    components_module.FeedbackBanner = _Dummy
+    components_module.PrimaryButton = _Dummy
+    components_module.QuietButton = _Dummy
+    components_module.SecondaryButton = _Dummy
+    components_module.SectionHeader = _Dummy
+    components_module.TaskSummary = _Dummy
+
+    action_center_views_module = types.ModuleType("ui.action_center_views")
+    action_center_views_module.ActionCenterDetailPane = _Dummy
+    action_center_views_module.ActionCenterMasterPane = _Dummy
+
     command_runner_module = types.ModuleType("utils.command_runner")
     command_runner_module.CommandRunner = _Dummy
 
@@ -140,7 +156,9 @@ def _install_maintenance_import_stubs():
     sys.modules["ui.base_tab"] = base_tab_module
     sys.modules["ui.tab_utils"] = tab_utils_module
     sys.modules["ui.shared_states"] = shared_states_module
+    sys.modules["ui.components"] = components_module
     sys.modules["ui.components.layout"] = components_layout_module
+    sys.modules["ui.action_center_views"] = action_center_views_module
     sys.modules["utils.command_runner"] = command_runner_module
     sys.modules["services.system"] = services_system_module
     sys.modules["services.system.system"] = services_system_impl_module
@@ -159,7 +177,9 @@ class TestMaintenanceUpdatesRegression(unittest.TestCase):
             "ui.base_tab",
             "ui.tab_utils",
             "ui.shared_states",
+            "ui.components",
             "ui.components.layout",
+            "ui.action_center_views",
             "utils.command_runner",
             "services.system",
             "services.system.system",

@@ -1,6 +1,6 @@
 # Documentation
 
-This is the documentation map for Loofi Fedora Tweaks v23.1.0 "Compass".
+This is the documentation map for Loofi Fedora Tweaks v24.0.0 "Flow".
 
 ## Use Loofi
 
@@ -35,8 +35,10 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 - [Roadmap](../ROADMAP.md) — current release status
 - [Changelog](../CHANGELOG.md) — complete change history
 - [Release notes](releases/RELEASE_NOTES.md) — release-note index
-- [Current release notes](releases/RELEASE-NOTES-v23.1.0.md) — v23.1.0 user
+- [Current release notes](releases/RELEASE-NOTES-v24.0.0.md) — v24.0.0 user
   outcomes, safety boundaries, compatibility, and qualification
+- [Local qualification](reports/V24_RELEASE_QUALIFICATION.md) — exact local
+  gates and explicitly unverified physical or public evidence
 
 Historical implementation plans and evidence remain available without
 competing with current guidance:

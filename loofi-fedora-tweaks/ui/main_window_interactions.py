@@ -452,20 +452,8 @@ class MainWindowInteractionMixin:
             logger.debug("Navigation mode refresh unavailable: %s", e)
 
     def _check_first_run(self: typing.Any) -> typing.Any:
-        """Show the single welcome surface only when its sentinel is absent."""
-        try:
-            from ui.wizard import FirstRunWelcome, needs_first_run
-
-            welcome = None
-            if needs_first_run():
-                welcome = FirstRunWelcome(self)
-                welcome.exec()
-            self.apply_navigation_mode()
-            requested_route = str(getattr(welcome, "requested_route", "") or "")
-            if requested_route:
-                self.switch_to_route(requested_route)
-        except ImportError:
-            logger.debug("First-run welcome module not available", exc_info=True)
+        """Keep startup non-blocking; Home owns resumable first-run guidance."""
+        self.apply_navigation_mode()
 
     def setup_tray(self: typing.Any) -> typing.Any:
         from PyQt6.QtGui import QAction, QIcon

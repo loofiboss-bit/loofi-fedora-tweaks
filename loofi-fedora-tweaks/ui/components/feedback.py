@@ -204,6 +204,52 @@ class UnavailableState(_MessageState):
         self.setProperty("presentationState", "unavailable")
 
 
+class ErrorState(_MessageState):
+    """Recoverable error presentation; retry behavior stays caller-owned."""
+
+    retryRequested = pyqtSignal()
+
+    def __init__(
+        self,
+        title: str,
+        message: str = "",
+        *,
+        retry_text: str = "",
+        parent: QWidget | None = None,
+    ) -> None:
+        super().__init__(title, message, parent)
+        self.setObjectName("errorState")
+        self.setProperty("presentationState", "error")
+        from ui.components.actions import RetryButton
+
+        self.retry_button = RetryButton(retry_text, description=message)
+        self.retry_button.setVisible(bool(retry_text))
+        self.retry_button.clicked.connect(self.retryRequested)
+        self.body.addWidget(self.retry_button)
+
+
+class SuccessState(_MessageState):
+    """Completed-state presentation with no implied execution behavior."""
+
+    def __init__(self, title: str, message: str = "", parent: QWidget | None = None) -> None:
+        super().__init__(title, message, parent)
+        self.setObjectName("successState")
+        self.setProperty("presentationState", "success")
+
+
+class DisabledState(_MessageState):
+    """Disabled-state presentation with nearby plain-language guidance."""
+
+    def __init__(self, title: str, message: str = "", parent: QWidget | None = None) -> None:
+        super().__init__(title, message, parent)
+        self.setObjectName("disabledState")
+        self.setProperty("presentationState", "disabled")
+
+
+class FeedbackBanner(InlineNotice):
+    """Explicit semantic name for page-level feedback banners."""
+
+
 class ActionProgress(QFrame):
     """Progress and status presentation; execution remains caller-owned."""
 

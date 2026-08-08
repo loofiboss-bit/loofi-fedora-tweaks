@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        23.1.0
+Version:        24.0.0
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 

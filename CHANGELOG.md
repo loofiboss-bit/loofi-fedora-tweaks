@@ -4,6 +4,52 @@
 
 All notable changes to this project will be documented in this file.
 
+## [24.0.0] - 2026-08-08 "Flow"
+
+### Added
+
+- Added shared semantic page, section, task-summary, search/filter, application
+  row, feedback, safety-review, and Action Center work-item presentation.
+- Added persisted, resumable, dismissible Home onboarding that only navigates
+  to existing routes and never changes the host.
+- Added focused Flow regression coverage for the shared foundation, Home,
+  Software, Troubleshooting, Action Center, and supporting surfaces.
+
+### Changed
+
+- Reframed Home around saved status, one deterministic next action, common
+  tasks, and outstanding Action Center review work.
+- Reworked Applications and Updates around explicit source, status, review,
+  running, terminal, error, Traditional, and Atomic states.
+- Presented Troubleshooting as Problem → Checks → Results and Action Center as
+  a Review queue plus separate inert Action catalog with master-detail safety
+  evidence.
+- Applied explicit feedback to Network, System Information, and Settings and
+  split touched UI modules by presentation, view, and worker responsibility.
+
+### Fixed
+
+- Removed visible mnemonic artifacts and replaced generic icons with semantic
+  roles where the active icon theme provides them.
+- Stopped Network privacy handoff from reporting success before an Action
+  Center plan is reviewed and run.
+- Kept Action Center lifecycle banners synchronized with the selected work
+  state and made the screenshot capture drive the visible lifecycle selector.
+- Corrected the GUI command-cancellation path to stop the existing runner.
+
+### Compatibility and safety
+
+- Preserved all six standard destinations, stable route IDs, supported
+  features, lazy loading, persisted state, public interfaces, validation,
+  audit logging, and separate Traditional and Atomic behavior.
+- Added no runtime dependency, direct privileged UI execution, unattended
+  action, cloud dependency, package abstraction, or compatibility-only legacy
+  path.
+- Kept physical Wayland, fresh Atomic, manual keyboard, and audible Orca
+  qualification explicitly separate from automated release evidence.
+- Preserved the earlier v24 "Power Features" tag target under the explicit
+  `legacy-v24.0.0-power-features` lineage before publishing Flow.
+
 ## [23.1.0] - 2026-08-01 "Compass"
 
 ### Added

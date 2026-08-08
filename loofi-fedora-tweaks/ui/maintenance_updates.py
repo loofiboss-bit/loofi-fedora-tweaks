@@ -36,6 +36,13 @@ from services.system import SystemManager
 from utils.commands import PrivilegedCommand
 
 from ui.base_tab import BaseTab
+from ui.components import (
+    FeedbackBanner,
+    QuietButton,
+    SecondaryButton,
+    SectionHeader,
+    TaskSummary,
+)
 from ui.components.layout import PageScaffold
 from ui.design import semantic_qcolor
 from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
@@ -64,46 +71,89 @@ class _UpdatesSubTab(BaseTab):
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
+        self._add_update_overview(layout)
+        self._add_source_actions(layout)
+        self._add_advanced_sections(layout)
+
+        self.action_progress = ActionProgress(self.tr("Waiting for an update action."))
+        self.progress_bar = self.action_progress.progress_bar
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(0)
+        self.progress_bar.setTextVisible(True)
+        self.progress_bar.setFormat("%p% - %v")
+        layout.addWidget(self.action_progress)
+
+        self.output_area.setAccessibleName(self.tr("Update output"))
+        self.output_area.setMaximumHeight(16777215)
+        self.add_output_disclosure(layout, self.tr("Show update command output"))
+        self.runner.progress_update.connect(self.update_progress)
+
+    def _add_update_overview(self, layout: QVBoxLayout) -> None:
+        """Add risk and state context before any plan handoff."""
+
         update_guidance = QLabel(self._update_guidance())
         update_guidance.setWordWrap(True)
         layout.addWidget(update_guidance)
-        self.update_state = ResultBanner(
+        self.update_state = FeedbackBanner(
             self.tr("Ready to review updates"),
             self.tr("Choose System, Flatpak, or Firmware to create one reviewable plan."),
+            kind="info",
         )
         self.update_state.setObjectName("updatesState")
+        self.update_state.setProperty("updateLifecycleState", "idle")
         layout.addWidget(self.update_state)
 
-        self.btn_update_all = QPushButton(self.tr("Review updates independently"))
-        self.btn_update_all.setAccessibleName(self.tr("Review independent update plans"))
+        self.update_summary = TaskSummary(
+            self.tr("Update plan summary"),
+            self.tr("One source per plan keeps package lists, restart impact, and verification explicit."),
+            status=self.tr("Awaiting source selection"),
+        )
+        self.update_summary.add_fact(self.tr("System mode"), self.package_manager)
+        self.update_summary.add_fact(self.tr("Execution"), self.tr("Action Center only"))
+        self.update_summary.add_fact(self.tr("Verification"), self.tr("Required after execution"))
+        layout.addWidget(self.update_summary)
+
+        self.btn_update_all = QuietButton(
+            self.tr("Why separate plans?"),
+            description=self.tr("Explain why update sources are reviewed independently."),
+        )
+        self.btn_update_all.setAccessibleName(self.tr("Explain independent update plans"))
         self.btn_update_all.setObjectName("maintUpdateAllBtn")
         self.btn_update_all.clicked.connect(self.run_update_all)
         layout.addWidget(self.btn_update_all)
 
-        # Individual Update Buttons
+    def _add_source_actions(self, layout: QVBoxLayout) -> None:
+        """Add one review action per existing update source."""
+        layout.addWidget(
+            SectionHeader(
+                self.tr("Choose an update source"),
+                self.tr("Each button creates a reviewable plan; no update starts on this page."),
+            )
+        )
         btn_layout = QHBoxLayout()
 
         if self.package_manager == "rpm-ostree":
-            self.btn_dnf = QPushButton(self.tr("Review System Update (rpm-ostree)"))
+            self.btn_dnf = SecondaryButton(self.tr("Review System Update (rpm-ostree)"))
         else:
-            self.btn_dnf = QPushButton(self.tr("Review System Update (DNF)"))
+            self.btn_dnf = SecondaryButton(self.tr("Review System Update (DNF)"))
         self.btn_dnf.setAccessibleName(self.tr("Review System Update"))
         self.btn_dnf.clicked.connect(self.run_dnf_update)
         btn_layout.addWidget(self.btn_dnf)
 
-        self.btn_flatpak = QPushButton(self.tr("Review Flatpak Updates"))
+        self.btn_flatpak = SecondaryButton(self.tr("Review Flatpak Updates"))
         self.btn_flatpak.setAccessibleName(self.tr("Review Flatpak Updates"))
         self.btn_flatpak.clicked.connect(self.run_flatpak_update)
         btn_layout.addWidget(self.btn_flatpak)
 
-        self.btn_fw = QPushButton(self.tr("Review Firmware Updates"))
+        self.btn_fw = SecondaryButton(self.tr("Review Firmware Updates"))
         self.btn_fw.setAccessibleName(self.tr("Review Firmware Updates"))
         self.btn_fw.clicked.connect(self.run_fw_update)
         btn_layout.addWidget(self.btn_fw)
 
         layout.addLayout(btn_layout)
 
-        # Kernel Management Group
+    def _add_advanced_sections(self, layout: QVBoxLayout) -> None:
+        """Keep existing kernel and Smart Updates tools progressively disclosed."""
         kernel_group = QGroupBox(self.tr("Kernel Management"))
         kernel_layout = QHBoxLayout()
         kernel_group.setLayout(kernel_layout)
@@ -135,22 +185,6 @@ class _UpdatesSubTab(BaseTab):
         advanced_layout.addWidget(self.advanced_updates)
         layout.addWidget(self.advanced_group)
 
-        # Progress Bar
-        self.action_progress = ActionProgress(self.tr("Waiting for an update action."))
-        self.progress_bar = self.action_progress.progress_bar
-        self.progress_bar.setRange(0, 100)
-        self.progress_bar.setValue(0)
-        self.progress_bar.setTextVisible(True)
-        self.progress_bar.setFormat("%p% - %v")
-        layout.addWidget(self.action_progress)
-
-        # Use BaseTab's output_area and runner (no shadowing)
-        self.output_area.setAccessibleName(self.tr("Update output"))
-        self.output_area.setMaximumHeight(16777215)
-        self.add_output_disclosure(layout, self.tr("Show update command output"))
-
-        self.runner.progress_update.connect(self.update_progress)
-
     def _update_guidance(self) -> str:
         if self.package_manager == "rpm-ostree":
             return str(self.tr(
@@ -166,9 +200,49 @@ class _UpdatesSubTab(BaseTab):
         """Reveal the former Smart Updates surface after a compatible deep link."""
         self.advanced_group.setChecked(True)
 
+    def _set_update_state(
+        self,
+        lifecycle: str,
+        title: str,
+        message: str,
+        *,
+        kind: str = "info",
+    ) -> None:
+        """Present an explicit update lifecycle without owning execution."""
+        self.update_state.setProperty("updateLifecycleState", lifecycle)
+        self.update_state.set_result(kind, title, message)
+        status_kind = {
+            "succeeded": "success",
+            "failed": "error",
+            "cancelled": "warning",
+            "unavailable": "warning",
+        }.get(lifecycle, "info")
+        self.update_summary.set_status(title, kind=status_kind, description=message)
+
+    def set_checking(self, source: str) -> None:
+        self._set_update_state(
+            "checking",
+            self.tr("Checking update status"),
+            self.tr("Reading available updates for %1 without applying changes.").replace("%1", source),
+        )
+
+    def set_updates_available(self, source: str, count: int) -> None:
+        self._set_update_state(
+            "available",
+            self.tr("Updates available"),
+            self.tr("%1 has %2 available update(s). Review the source before creating a plan.")
+            .replace("%1", source)
+            .replace("%2", str(max(0, count))),
+        )
+
     # -- Progress ----------------------------------------------------------
 
     def update_progress(self: typing.Any, percent: typing.Any, status: typing.Any) -> typing.Any:
+        self._set_update_state(
+            "running",
+            self.tr("Update operation in progress"),
+            str(status),
+        )
         self.action_progress.status_label.setText(str(status))
         if percent == -1:
             if self.progress_bar.value() == 0 or self.progress_bar.value() == 100:
@@ -222,6 +296,7 @@ class _UpdatesSubTab(BaseTab):
         translate = getattr(self, "tr", lambda value: value)
         update_state = getattr(self, "update_state", None)
         if update_state is not None:
+            update_state.setProperty("updateLifecycleState", "review")
             update_state.set_result(
                 "info",
                 translate("Opening Action Center"),
@@ -230,6 +305,13 @@ class _UpdatesSubTab(BaseTab):
                 )
                 .replace("%1", source)
                 .replace("%2", restart_requirement),
+            )
+        update_summary = getattr(self, "update_summary", None)
+        if update_summary is not None:
+            update_summary.set_status(
+                translate("Plan review requested"),
+                kind="info",
+                description=source,
             )
         self.actionCenterRequested.emit(action_id, {})
 
@@ -250,6 +332,11 @@ class _UpdatesSubTab(BaseTab):
     # -- Helpers -----------------------------------------------------------
 
     def start_process(self: typing.Any) -> typing.Any:
+        self._set_update_state(
+            "running",
+            self.tr("Advanced operation running"),
+            self.tr("Progress and technical output are shown below."),
+        )
         self.output_area.clear()
         self.progress_bar.setValue(0)
         self.progress_bar.setFormat("%p% - Waiting...")
@@ -269,6 +356,29 @@ class _UpdatesSubTab(BaseTab):
         self.progress_bar.setValue(100)
         self.progress_bar.setFormat(self.tr("100% - Done"))
         self.action_progress.status_label.setText(self.tr("Advanced operation completed") if exit_code == 0 else self.tr("Advanced operation failed"))
+        if exit_code == 0:
+            self._set_update_state(
+                "succeeded",
+                self.tr("Advanced operation completed"),
+                self.tr("Review the technical output and verification result."),
+                kind="success",
+            )
+        else:
+            self._set_update_state(
+                "failed",
+                self.tr("Advanced operation failed"),
+                self.tr("No success is assumed. Review the technical output before retrying."),
+                kind="error",
+            )
+
+    def _cancel_command(self: typing.Any) -> typing.Any:
+        super()._cancel_command()
+        self._set_update_state(
+            "cancelled",
+            self.tr("Update operation cancelled"),
+            self.tr("The operation was stopped. Review output and current system state before retrying."),
+            kind="warning",
+        )
 
     def run_single_command(self: typing.Any, cmd: typing.Any, args: typing.Any, description: typing.Any) -> typing.Any:
         self.progress_bar.setValue(0)

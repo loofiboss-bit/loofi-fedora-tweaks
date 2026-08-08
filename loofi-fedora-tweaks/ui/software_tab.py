@@ -14,14 +14,13 @@ from core.catalog_models import NativeHandoffId
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer, pyqtSignal
+from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
-    QLineEdit,
     QListWidget,
-    QComboBox,
     QPushButton,
     QScrollArea,
     QStackedWidget,
@@ -33,7 +32,15 @@ from utils.command_runner import CommandRunner
 from utils.software_utils import SoftwareUtils
 
 from ui.base_tab import BaseTab
-from ui.components import DetailsDisclosure, PageScaffold, StatusBadge
+from ui.components import (
+    ApplicationRow,
+    DetailsDisclosure,
+    FeedbackBanner,
+    PageScaffold,
+    RetryButton,
+    SearchFilterRow,
+    SectionHeader,
+)
 from ui.native_handoff_card import NativeHandoffCard
 from ui.shared_states import EmptyState, LoadingState, UnavailableState
 from ui.tooltips import (
@@ -86,54 +93,63 @@ class _ApplicationsSubTab(BaseTab):
         )
         layout.addWidget(self.native_handoff)
 
-        # Header with Refresh Button
-        header_layout = QHBoxLayout()
-        header_layout.addWidget(QLabel(self.tr("Essential Applications")))
-        header_layout.addStretch()
-        btn_refresh = QPushButton(self.tr("Refresh Status"))
-        btn_refresh.setAccessibleName(self.tr("Refresh app status"))
-        btn_refresh.clicked.connect(self.refresh_list)
-        header_layout.addWidget(btn_refresh)
-        layout.addLayout(header_layout)
+        self.btn_refresh = RetryButton(
+            self.tr("Refresh status"),
+            description=self.tr("Check installation state again without changing the system."),
+        )
+        self.btn_refresh.setAccessibleName(self.tr("Refresh app status"))
+        self.btn_refresh.clicked.connect(self.refresh_list)
+        section_header = SectionHeader(
+            self.tr("Curated applications"),
+            self.tr("Search by name, source, or installation state."),
+            action=self.btn_refresh,
+        )
+        layout.addWidget(section_header)
 
         # Application search and filtering
-        self._search_bar = QLineEdit()
-        self._search_bar.setPlaceholderText(self.tr("Search applications..."))
-        self._search_bar.setAccessibleName(self.tr("Search applications"))
+        self.search_filters = SearchFilterRow(
+            self.tr("Search applications…"),
+            accessible_name=self.tr("Search applications"),
+        )
+        self._search_bar = self.search_filters.search
         self._search_bar.setToolTip(SW_SEARCH)
-        self._search_bar.setClearButtonEnabled(True)
         self._search_bar.textChanged.connect(self._filter_apps)
-        filters = QHBoxLayout()
-        filters.addWidget(self._search_bar, 1)
-        self._source_filter = QComboBox()
+        self._source_filter = self.search_filters.add_choice_filter(
+            self.tr("Filter by application source"),
+            (
+                (self.tr("All sources"), "all"),
+                (self.tr("Fedora RPM"), "fedora"),
+                (self.tr("Flathub"), "flatpak"),
+                (self.tr("Other sources"), "other"),
+            ),
+        )
         self._source_filter.setObjectName("applicationSourceFilter")
-        self._source_filter.setAccessibleName(self.tr("Filter by application source"))
-        for label, value in (
-            (self.tr("All sources"), "all"),
-            (self.tr("Fedora RPM"), "fedora"),
-            (self.tr("Flathub"), "flatpak"),
-            (self.tr("Other sources"), "other"),
-        ):
-            self._source_filter.addItem(label, value)
         self._source_filter.currentIndexChanged.connect(
             lambda _index: self._filter_apps(self._search_bar.text())
         )
-        filters.addWidget(self._source_filter)
-        self._status_filter = QComboBox()
+        self._status_filter = self.search_filters.add_choice_filter(
+            self.tr("Filter by installation status"),
+            (
+                (self.tr("All statuses"), "all"),
+                (self.tr("Installed"), "installed"),
+                (self.tr("Available"), "available"),
+                (self.tr("Source setup required"), "unavailable"),
+            ),
+        )
         self._status_filter.setObjectName("applicationStatusFilter")
-        self._status_filter.setAccessibleName(self.tr("Filter by installation status"))
-        for label, value in (
-            (self.tr("All statuses"), "all"),
-            (self.tr("Installed"), "installed"),
-            (self.tr("Available"), "available"),
-            (self.tr("Source setup required"), "unavailable"),
-        ):
-            self._status_filter.addItem(label, value)
         self._status_filter.currentIndexChanged.connect(
             lambda _index: self._filter_apps(self._search_bar.text())
         )
-        filters.addWidget(self._status_filter)
-        layout.addLayout(filters)
+        layout.addWidget(self.search_filters)
+
+        self.application_feedback = FeedbackBanner(
+            self.tr("Ready to review applications"),
+            self.tr("Selecting an action opens Action Center; it does not change packages."),
+            kind="info",
+        )
+        self.application_feedback.setObjectName("applicationFeedback")
+        self.application_feedback.hide()
+        layout.addWidget(self.application_feedback)
 
         self.catalog_loading = LoadingState(self.tr("Loading the application catalogue…"))
         self.catalog_empty = EmptyState(
@@ -144,11 +160,17 @@ class _ApplicationsSubTab(BaseTab):
             self.tr("Application catalogue unavailable"),
             self.tr("Use Refresh Status to try the cached or remote catalogue again."),
         )
+        self.filter_empty = EmptyState(
+            self.tr("No matching applications"),
+            self.tr("Clear or change the search and filters to see more results."),
+        )
         self.catalog_loading.hide()
         self.catalog_unavailable.hide()
+        self.filter_empty.hide()
         layout.addWidget(self.catalog_loading)
         layout.addWidget(self.catalog_empty)
         layout.addWidget(self.catalog_unavailable)
+        layout.addWidget(self.filter_empty)
 
         # Scroll Area for apps list
         scroll = QScrollArea()
@@ -228,18 +250,10 @@ class _ApplicationsSubTab(BaseTab):
         """Add one source-aware app row with a single install/remove action."""
         from services.software import ApplicationOperationService
 
-        row_widget = QFrame()
-        row_widget.setFrameShape(QFrame.Shape.StyledPanel)
-        row_layout = QHBoxLayout()
-        row_widget.setLayout(row_layout)
-
         # Defensive access for potentially missing keys
         app_name = app_data.get("name", "Unknown App")
         app_desc = app_data.get("desc", app_data.get("description", ""))
         presentation = ApplicationOperationService.describe(app_data)
-
-        lbl_name = QLabel(f"<b>{app_name}</b>")
-        lbl_desc = QLabel(app_desc)
 
         # Check if installed
         chk_cmd = app_data.get("check_cmd")
@@ -261,76 +275,72 @@ class _ApplicationsSubTab(BaseTab):
             if presentation.available
             else "unavailable"
         )
+        action_text = self.tr("Review install")
+        action_id = "install"
+        if is_installed:
+            action_text = self.tr("Review removal")
+            action_id = "remove"
+        elif not presentation.available:
+            action_text = ""
+            action_id = "unavailable"
+
+        row_widget = ApplicationRow(
+            presentation.package_id or str(app_name),
+            str(app_name),
+            str(app_desc),
+            source=presentation.source,
+            status=(
+                self.tr("Installed")
+                if is_installed
+                else self.tr("Available")
+                if presentation.available
+                else self.tr("Source setup required")
+            ),
+            status_kind="success" if is_installed else "neutral" if presentation.available else "warning",
+            action_text=action_text,
+            action_id=action_id,
+            icon=self._application_icon(app_data, presentation.package_id),
+            plan_summary=(
+                self.tr(
+                    "Package: %1 · Restart: shown in the plan · Verification: installation state is checked"
+                ).replace("%1", presentation.package_id or self.tr("not available"))
+            ),
+        )
+        row_widget.source_badge.setToolTip(presentation.explanation)
+        if is_installed:
+            row_widget.action_button.setObjectName("swInstalledBtn")
+        if not presentation.available:
+            row_widget.setToolTip(presentation.explanation)
+        row_widget.actionRequested.connect(
+            lambda requested, app=app_data: self.run_app_action(
+                app,
+                installed=requested == "remove",
+            )
+        )
         row_widget.setProperty(
             "appSearchText",
             " ".join((str(app_name), str(app_desc), presentation.source)).lower(),
         )
         row_widget.setProperty("appSource", source_kind)
         row_widget.setProperty("appStatus", status_kind)
-        plan_hint = QLabel(
-            self.tr(
-                "Package: %1 · Source: %2 · Restart: shown in the plan · "
-                "Verification: installation state is checked"
-            )
-            .replace("%1", presentation.package_id)
-            .replace("%2", presentation.source)
-        )
-        plan_hint.setObjectName("applicationPlanSummary")
-        plan_hint.setWordWrap(True)
-
-        badges = QVBoxLayout()
-        source_badge = StatusBadge(
-            self.tr("Source: %1").replace("%1", presentation.source),
-            kind="info",
-        )
-        source_badge.setObjectName("applicationSourceBadge")
-        source_badge.setToolTip(presentation.explanation)
-        status_badge = StatusBadge(
-            self.tr("Installed")
-            if is_installed
-            else self.tr("Available")
-            if presentation.available
-            else self.tr("Source setup required"),
-            kind="success" if is_installed else "neutral",
-        )
-        status_badge.setObjectName("applicationStatusBadge")
-        badges.addWidget(source_badge)
-        badges.addWidget(status_badge)
-
-        btn_install = QPushButton(self.tr("Review install"))
-        btn_install.setAccessibleName(self.tr("Review install for {}").format(app_name))
-
-        if is_installed:
-            btn_install.setText(self.tr("Review removal"))
-            btn_install.setAccessibleName(self.tr("Review removal for {}").format(app_name))
-            btn_install.setObjectName("swInstalledBtn")
-            btn_install.clicked.connect(
-                lambda checked, app=app_data: self.run_app_action(
-                    app,
-                    installed=True,
-                )
-            )
-        elif not presentation.available:
-            btn_install.setText(self.tr("Source setup required"))
-            btn_install.setToolTip(presentation.explanation)
-            btn_install.setEnabled(False)
-        else:
-            btn_install.clicked.connect(
-                lambda checked, app=app_data: self.run_app_action(
-                    app,
-                    installed=False,
-                )
-            )
-
-        app_copy = QVBoxLayout()
-        app_copy.addWidget(lbl_name)
-        app_copy.addWidget(lbl_desc)
-        app_copy.addWidget(plan_hint)
-        row_layout.addLayout(app_copy, 1)
-        row_layout.addLayout(badges)
-        row_layout.addWidget(btn_install)
 
         layout.addWidget(row_widget)
+
+    @staticmethod
+    def _application_icon(app_data: typing.Mapping[str, object], package_id: str) -> QIcon:
+        """Prefer installed desktop-theme artwork and fall back in ApplicationRow."""
+        candidates = (
+            str(app_data.get("icon") or ""),
+            package_id,
+            package_id.lower(),
+        )
+        for candidate in candidates:
+            if not candidate:
+                continue
+            icon = QIcon.fromTheme(candidate)
+            if not icon.isNull():
+                return icon
+        return QIcon()
 
     def check_installed(self: typing.Any, cmd: typing.Any) -> typing.Any:
         """Run a check command silently to determine installation status."""
@@ -346,10 +356,22 @@ class _ApplicationsSubTab(BaseTab):
 
         presentation = ApplicationOperationService.describe(app_data)
         if not presentation.available or presentation.source not in {"Fedora RPM", "Flathub (Flatpak)"}:
+            self.application_feedback.set_result(
+                "error",
+                self.tr("Application action unavailable"),
+                presentation.explanation,
+            )
+            self.application_feedback.show()
             self.show_error(presentation.explanation)
             return
         source = "flatpak" if presentation.source == "Flathub (Flatpak)" else "fedora"
         action_id = "remove-application" if installed else "install-application"
+        self.application_feedback.set_result(
+            "info",
+            self.tr("Opening Action Center"),
+            self.tr("Review the package source, restart impact, and verification before running the plan."),
+        )
+        self.application_feedback.show()
         self.actionCenterRequested.emit(
             action_id,
             {"source": source, "package_id": presentation.package_id},
@@ -364,9 +386,21 @@ class _ApplicationsSubTab(BaseTab):
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
         # Refresh list to update status if installation succeeded
         if exit_code == 0:
+            self.application_feedback.set_result(
+                "success",
+                self.tr("Application operation completed"),
+                self.tr("Installation state will now be checked again."),
+            )
+            self.application_feedback.show()
             self.show_success(self.tr("Operation completed successfully"))
             self.refresh_list()
         else:
+            self.application_feedback.set_result(
+                "error",
+                self.tr("Application operation failed"),
+                self.tr("Review the technical output, then retry from the reviewed plan."),
+            )
+            self.application_feedback.show()
             self.show_error(self.tr("Operation failed (exit code {})").format(exit_code))
 
     def _filter_apps(self: typing.Any, text: str) -> typing.Any:
@@ -374,6 +408,7 @@ class _ApplicationsSubTab(BaseTab):
         query = text.strip().lower()
         source = str(self._source_filter.currentData() or "all")
         status = str(self._status_filter.currentData() or "all")
+        visible_count = 0
         for i in range(self.scroll_layout.count()):
             item = self.scroll_layout.itemAt(i)
             widget = item.widget() if item else None
@@ -387,7 +422,11 @@ class _ApplicationsSubTab(BaseTab):
             matches_query = not query or query in search_text
             matches_source = source == "all" or source == source_value
             matches_status = status == "all" or status == status_value
-            widget.setVisible(matches_query and matches_source and matches_status)
+            visible = matches_query and matches_source and matches_status
+            widget.setVisible(visible)
+            visible_count += int(visible)
+        has_filters = bool(query) or source != "all" or status != "all"
+        self.filter_empty.setVisible(bool(self.apps) and has_filters and visible_count == 0)
 
 
 # ---------------------------------------------------------------------------

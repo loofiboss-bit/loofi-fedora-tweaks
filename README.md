@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v23.1.0 "Compass"
+# Loofi Fedora Tweaks v24.0.0 "Flow"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -14,8 +14,8 @@
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.1.0">
-    <img src="https://img.shields.io/badge/Release-v23.1.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v23.1.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v24.0.0">
+    <img src="https://img.shields.io/badge/Release-v24.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v24.0.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -27,15 +27,18 @@
 Loofi brings common Fedora maintenance, application, troubleshooting, cleanup,
 recovery, and desktop tasks into one KDE-friendly control center.
 
-- Troubleshooting starts only when you choose a symptom and explicitly begin.
+- First-run guidance is integrated into Home, resumable, dismissible, and
+  navigation-only.
+- Troubleshooting follows Problem → Checks → Results and starts only when you
+  explicitly begin.
 - Supported system changes become reviewed Action Center plans before anything
   is applied.
 - Maintenance results are verified separately from command completion.
 - Traditional and Atomic Fedora paths stay distinct.
 - The optional API is loopback-only and cannot apply plans.
 
-Full details: [v23.1.0 release notes](docs/releases/RELEASE-NOTES-v23.1.0.md).
-Earlier Compass releases remain documented in the
+Full details: [v24.0.0 release notes](docs/releases/RELEASE-NOTES-v24.0.0.md).
+Earlier releases remain documented in the
 [release-note index](docs/releases/RELEASE_NOTES.md).
 
 ## The six destinations
@@ -57,7 +60,7 @@ or privilege rules.
 ## Five common workflows
 
 1. **Update Fedora:** Home → Updates → review Fedora → create plan → confirm in Action Center.
-2. **Install an application:** Home → Applications → Install → review and confirm the generated plan.
+2. **Install an application:** Home → Applications → Review install → inspect and confirm the generated plan.
 3. **Diagnose a slow system:** Home → Check performance → Analyze Slow System.
 4. **Find reclaimable disk space:** Software & Updates → Cleanup → Analyze.
 5. **Protect the system:** Home → Protect or recover → create a recovery point.
@@ -192,16 +195,16 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v23.1.0 "Compass"` is the current release. It makes Action Center the
-enforceable review boundary for public host-changing operations and connects
-the core workflows through clearer state and next-action guidance. Earlier
-v23 releases remain immutable. Fedora 45 remains preview-only. See the
-[v23.1.0 release notes](docs/releases/RELEASE-NOTES-v23.1.0.md).
+`v24.0.0 "Flow"` is the current release. It unifies the six
+destinations around shared task, state, feedback, and review patterns while
+keeping Action Center as the only GUI execution boundary. Fedora 45 remains
+preview-only. See the
+[v24.0.0 release notes](docs/releases/RELEASE-NOTES-v24.0.0.md).
 The older
 "Architecture Hardening" tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`. Historical Sentinel, Horizon, Nebula,
-and Synapse
-lineages likewise remain preserved under explicit `legacy-v*` tags.
+Synapse, and the earlier v24 "Power Features" lineage likewise remain preserved
+under explicit `legacy-v*` tags.
 
 ## License
 

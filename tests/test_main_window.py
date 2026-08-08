@@ -2511,25 +2511,24 @@ class TestCheckFirstRun(unittest.TestCase):
         wizard_mod.FirstRunWelcome.assert_not_called()
         self.win.apply_navigation_mode.assert_called_once_with()
 
-    def test_first_run_shows_welcome(self):
-        """_check_first_run shows wizard on first launch."""
+    def test_first_run_uses_non_blocking_home_guidance(self):
+        """_check_first_run never opens the retired modal welcome."""
         wizard_mod = sys.modules["ui.wizard"]
         wizard_mod.needs_first_run.return_value = True
-        welcome = MagicMock(requested_route="")
-        wizard_mod.FirstRunWelcome.return_value = welcome
+        wizard_mod.FirstRunWelcome.reset_mock()
         self.win.apply_navigation_mode = MagicMock()
         self.win._check_first_run()
-        welcome.exec.assert_called_once_with()
+        wizard_mod.FirstRunWelcome.assert_not_called()
         self.win.apply_navigation_mode.assert_called_once_with()
 
-    def test_system_details_uses_canonical_route(self):
+    def test_first_run_does_not_navigate_automatically(self):
         wizard_mod = sys.modules["ui.wizard"]
         wizard_mod.needs_first_run.return_value = True
-        wizard_mod.FirstRunWelcome.return_value = MagicMock(requested_route="system_info")
+        wizard_mod.FirstRunWelcome.reset_mock()
         self.win.apply_navigation_mode = MagicMock()
         self.win.switch_to_route = MagicMock()
         self.win._check_first_run()
-        self.win.switch_to_route.assert_called_once_with("system_info")
+        self.win.switch_to_route.assert_not_called()
 
 
 class TestSidebarContextMenu(unittest.TestCase):

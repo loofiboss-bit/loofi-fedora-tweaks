@@ -93,6 +93,7 @@ def _install_stubs():
     qt_widgets.QProgressBar = _Dummy
     qt_widgets.QTabWidget = _Dummy
     qt_widgets.QStackedWidget = _Dummy
+    qt_widgets.QSplitter = _Dummy
     qt_widgets.QListWidget = _Dummy
     qt_widgets.QListWidgetItem = _StubQListWidgetItem
     qt_widgets.QFrame = _Dummy
@@ -111,6 +112,7 @@ def _install_stubs():
     qt_core = types.ModuleType("PyQt6.QtCore")
     qt_core.Qt = types.SimpleNamespace(
         GlobalColor=types.SimpleNamespace(darkGray=0),
+        Orientation=types.SimpleNamespace(Horizontal=0),
     )
     qt_core.QProcess = _Dummy
     qt_core.pyqtSignal = lambda *a, **kw: MagicMock()
@@ -211,6 +213,44 @@ def _install_stubs():
     shared_states_mod.DetailsDisclosure = _StubDetailsDisclosure
     shared_states_mod.ResultBanner = _StubResultBanner
 
+    components_mod = types.ModuleType("ui.components")
+    components_mod.FeedbackBanner = _StubResultBanner
+    components_mod.PrimaryButton = _Dummy
+    components_mod.QuietButton = _Dummy
+    components_mod.SecondaryButton = _Dummy
+    components_mod.SectionHeader = _Dummy
+    components_mod.TaskSummary = _Dummy
+
+    class _MasterPane(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.mode_switcher = _Dummy()
+            self.lifecycle_view = _Dummy()
+            self.action_list = _Dummy()
+            self.lifecycle_controls = _Dummy()
+
+    class _DetailPane(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.body = _Dummy()
+            self.risk_panel = _Dummy()
+            self.selected_summary = _Dummy()
+            self.detail_disclosure = _StubDetailsDisclosure()
+            self.detail_area = self.detail_disclosure.details
+
+    action_center_views_mod = types.ModuleType("ui.action_center_views")
+    action_center_views_mod.ActionCenterMasterPane = _MasterPane
+    action_center_views_mod.ActionCenterDetailPane = _DetailPane
+
+    class _ActionCenterWorker(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.finished = MagicMock()
+            self.failed = MagicMock()
+
+    action_center_worker_mod = types.ModuleType("ui.action_center_worker")
+    action_center_worker_mod.ActionCenterOperationWorker = _ActionCenterWorker
+
     # --- services.system ---
     services_system_mod = types.ModuleType("services.system")
     services_system_mod.__path__ = []
@@ -292,6 +332,9 @@ def _install_stubs():
         "ui.base_tab": base_tab_mod,
         "ui.tab_utils": tab_utils_mod,
         "ui.shared_states": shared_states_mod,
+        "ui.components": components_mod,
+        "ui.action_center_views": action_center_views_mod,
+        "ui.action_center_worker": action_center_worker_mod,
         "utils.command_runner": cmd_runner_mod,
         "services.system": services_system_mod,
         "services.system.system": services_system_system_mod,

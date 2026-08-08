@@ -1,6 +1,6 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v23.1.0 "Compass" keeps the read-only release
+Loofi Fedora Tweaks v24.0.0 "Flow" keeps the read-only release
 readiness center, guided Upgrade Assistant, verified Action Center entry points,
 and health history inside the six-destination shell. Fedora KDE 44 is the
 supported stable target. Fedora 45 remains preview-only and advisory.
@@ -85,7 +85,7 @@ Rules:
 Support bundles include privacy-masked generic `release_readiness` data,
 release planning metadata, guided action context, Action Center context, My
 Fedora Today observability context, bounded System Check evidence, and
-source-owned Trusted Change Journal evidence. An explicitly selected Compass
+source-owned Trusted Change Journal evidence. An explicitly selected Flow
 session may also add one bounded troubleshooting support case:
 
 - Fedora/KDE/Qt versions

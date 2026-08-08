@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 23.1.0 "Compass"
+> Version 24.0.0 "Flow"
 
 Operational runbook for power users and Fedora administrators.
 
@@ -249,7 +249,7 @@ journalctl --user --since "2 hours ago"
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-Compass preserves settings, navigation migration inputs, favorites, stable
+Flow preserves settings, navigation migration inputs, favorites, stable
 routes, and observability data. Writable Action Center v1-v3 state migrates
 atomically to schema v4; unknown future schemas remain read-only. Optional
 troubleshooting schema-v1 state retains at most 20 terminal sessions and also

@@ -13,7 +13,7 @@ from PyQt6.QtWidgets import QApplication, QComboBox, QFileDialog, QLabel, QVBoxL
 from utils import system_info_utils
 from utils.log import get_logger
 
-from ui.components import DefinitionList, PageScaffold, SecondaryButton
+from ui.components import DefinitionList, FeedbackBanner, PageScaffold, SecondaryButton
 from ui.components.layout import AdaptiveGrid
 
 logger = get_logger(__name__)
@@ -73,6 +73,14 @@ class SystemInfoTab(QWidget, PluginInterface):
         )
         self.scaffold.add_widget(self.fact_grid)
 
+        self.info_feedback = FeedbackBanner(
+            self.tr("System information not loaded"),
+            self.tr("Open this route to read current system facts."),
+            kind="info",
+        )
+        self.info_feedback.setObjectName("systemInfoFeedback")
+        self.scaffold.add_widget(self.info_feedback)
+
         self.export_format_label = QLabel(self.tr("Format"), self)
         self.export_format_label.setAccessibleName(self.tr("Export format label"))
         self.export_format = QComboBox(self)
@@ -119,6 +127,11 @@ class SystemInfoTab(QWidget, PluginInterface):
         if self._info_loaded:
             return
         self._info_loaded = True
+        self.info_feedback.set_result(
+            "info",
+            self.tr("Loading system information"),
+            self.tr("Reading operating system, hardware, and current-state facts."),
+        )
         QTimer.singleShot(0, self.refresh_info)
 
     def refresh_info(self) -> None:
@@ -132,6 +145,7 @@ class SystemInfoTab(QWidget, PluginInterface):
             ("uptime", system_info_utils.get_uptime),
             ("battery", system_info_utils.get_battery_status),
         )
+        unavailable = 0
         for key, getter in getters:
             row = self.definition_rows[key]
             try:
@@ -144,6 +158,19 @@ class SystemInfoTab(QWidget, PluginInterface):
                 logger.debug("Failed to refresh system info field %s: %s", key, exc)
                 row.set_value(self.tr("Unavailable"))
                 row.copy_button.setEnabled(False)
+                unavailable += 1
+        if unavailable:
+            self.info_feedback.set_result(
+                "warning",
+                self.tr("Some system information is unavailable"),
+                self.tr("%1 field(s) could not be read. Available facts remain usable.").replace("%1", str(unavailable)),
+            )
+        else:
+            self.info_feedback.set_result(
+                "success",
+                self.tr("System information loaded"),
+                self.tr("All current facts were read successfully."),
+            )
 
     @staticmethod
     def _copy_value(value: str) -> None:

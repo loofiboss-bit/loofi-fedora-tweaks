@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import QSize, Qt
 from PyQt6.QtWidgets import QHBoxLayout, QPushButton, QSizePolicy, QWidget
 
 
@@ -88,14 +88,39 @@ class SecondaryButton(_RoleButton):
         super().__init__(text, role="secondary", description=description, parent=parent)
 
 
+class QuietButton(_RoleButton):
+    def __init__(self, text: str = "", *, description: str = "", parent: QWidget | None = None) -> None:
+        super().__init__(text, role="quiet", description=description, parent=parent)
+
+
 class GhostButton(_RoleButton):
+    """Compatibility action retaining the established ghost role."""
+
     def __init__(self, text: str = "", *, description: str = "", parent: QWidget | None = None) -> None:
         super().__init__(text, role="ghost", description=description, parent=parent)
 
 
+class DestructiveButton(_RoleButton):
+    def __init__(self, text: str = "", *, description: str = "", parent: QWidget | None = None) -> None:
+        super().__init__(text, role="destructive", description=description, parent=parent)
+
+
 class DangerButton(_RoleButton):
+    """Compatibility action retaining the established danger role."""
+
     def __init__(self, text: str = "", *, description: str = "", parent: QWidget | None = None) -> None:
         super().__init__(text, role="danger", description=description, parent=parent)
+
+
+class RetryButton(_RoleButton):
+    """Secondary retry action with one shared semantic icon."""
+
+    def __init__(self, text: str = "", *, description: str = "", parent: QWidget | None = None) -> None:
+        super().__init__(text, role="retry", description=description, parent=parent)
+        from ui.icon_pack import get_semantic_icon
+
+        self.setIcon(get_semantic_icon("retry", size=18))
+        self.setIconSize(QSize(18, 18))
 
 
 class ActionBar(QWidget):

@@ -29,13 +29,14 @@ def _sha256(path: Path) -> str:
 
 
 class TestV23Phase0Authority(unittest.TestCase):
-    def test_product_version_matches_active_release_authority(self):
+    def test_product_version_and_active_target_are_explicit(self):
         lock = json.loads(RACE_LOCK.read_text(encoding="utf-8"))
 
         self.assertEqual(__version__, lock["product_version"].removeprefix("v"))
         self.assertEqual(__version_codename__, lock["product_codename"])
-        self.assertEqual(lock["version"], f"v{__version__}")
-        self.assertEqual(lock["target_version"], f"v{__version__}")
+        self.assertEqual(lock["version"], lock["target_version"])
+        if lock["status"] == "complete":
+            self.assertEqual(lock["target_version"], f"v{__version__}")
         self.assertIn(lock["status"], {"active", "complete"})
         self.assertTrue(lock["phase"])
         self.assertRegex(lock["current_public_release"], r"^v\d+\.\d+\.\d+$")

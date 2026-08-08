@@ -2,7 +2,7 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v23.1.0 "Compass"<br>
+**Current release:** v24.0.0 "Flow"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
@@ -50,17 +50,14 @@ repository guides linked above are the current usage and development sources.
 
 ## Release status
 
-Compass's final Fedora 44 qualification passed 7,007 tests, 61 expected skips,
-1,184 subtests, and 86.26% coverage. Exact-tag GitHub CI and CodeQL, eight
-release assets, checksums, SBOM, provenance, attestations, COPR build
-`10788467`, signed packages, a clean Fedora 44 install, and a real Fedora 44
-host daemon readback passed. Fresh Atomic/Kinoite and manual keyboard/audible
-Orca journeys remain explicitly unverified under an authorized skip. Fedora
-45 remains preview-only.
+Flow passed the enforced 86% coverage floor, lint, mypy, architecture,
+packaging, documentation, drift, and offscreen 100%/140% visual gates. Fresh
+Atomic/Kinoite, physical Wayland, manual keyboard, and audible Orca journeys
+remain explicitly unverified. Fedora 45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release: [v23.1.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v23.1.0)
-- Release notes: [v23.1.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v23.1.0.md)
+- Release: [v24.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v24.0.0)
+- Release notes: [v24.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v24.0.0.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 

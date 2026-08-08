@@ -1,6 +1,6 @@
 {
-  "version": "23.1.0",
-  "codename": "Compass",
+  "version": "24.0.0",
+  "codename": "Flow",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 30,
   "tab_names": [
@@ -35,15 +35,15 @@
     "teleport_tab",
     "virtualization_tab"
   ],
-  "test_file_count": 336,
+  "test_file_count": 342,
   "utils_module_count": 101,
   "test_count": "6864",
   "coverage": "86.24",
   "active_version": "",
   "next_version": "",
   "roadmap_status": "stable",
-  "pipeline_version": "v23.1.0",
-  "pipeline_status": "complete",
+  "pipeline_version": "v24.0.0",
+  "pipeline_status": "active",
   "python_version": "3.12",
   "framework": "PyQt6"
 }

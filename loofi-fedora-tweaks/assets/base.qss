@@ -171,6 +171,11 @@ QLabel#settingRowFeedback[feedbackKind="saved"] {
     color: $color_success_text;
 }
 
+QLabel#settingRowFeedback[feedbackKind="changed"],
+QLabel#settingRowFeedback[feedbackKind="restart"] {
+    color: $color_warning_text;
+}
+
 QLabel#settingRowFeedback[feedbackKind="dependency"] {
     color: $color_text_muted;
 }
@@ -525,6 +530,16 @@ QFrame#homePrimaryTask {
     border-radius: $radius_card;
 }
 
+QFrame#homeOnboarding {
+    background-color: $color_surface_raised;
+    border: $border_width solid $color_accent;
+    border-radius: $radius_card;
+}
+
+QLabel#homeOnboardingSafety {
+    color: $color_text_muted;
+}
+
 QFrame#homeAttentionItem {
     background-color: $color_surface;
 }
@@ -560,13 +575,15 @@ QPushButton#componentButton[buttonRole="secondary"] {
 }
 
 QPushButton#componentButton[buttonRole="ghost"],
+QPushButton#componentButton[buttonRole="quiet"],
 QToolButton[buttonRole="ghost"] {
     background-color: transparent;
     color: $color_accent;
     border-color: transparent;
 }
 
-QPushButton#componentButton[buttonRole="danger"] {
+QPushButton#componentButton[buttonRole="danger"],
+QPushButton#componentButton[buttonRole="destructive"] {
     background-color: $color_error_surface;
     color: $color_error_text;
     border-color: $color_error;
@@ -575,13 +592,16 @@ QPushButton#componentButton[buttonRole="danger"] {
 QPushButton#componentButton[buttonRole="primary"]:hover,
 QPushButton#componentButton[buttonRole="secondary"]:hover,
 QPushButton#componentButton[buttonRole="ghost"]:hover,
+QPushButton#componentButton[buttonRole="quiet"]:hover,
+QPushButton#componentButton[buttonRole="retry"]:hover,
 QToolButton[buttonRole="ghost"]:hover {
     background-color: $color_hover;
     color: $color_text;
     border-color: $color_accent;
 }
 
-QPushButton#componentButton[buttonRole="danger"]:hover {
+QPushButton#componentButton[buttonRole="danger"]:hover,
+QPushButton#componentButton[buttonRole="destructive"]:hover {
     background-color: $color_error_surface;
     color: $color_error_text;
 }
@@ -675,6 +695,60 @@ QFrame#inlineNotice {
     color: $color_text;
     border: $border_width solid $color_border;
     border-radius: $radius_control;
+}
+
+QFrame#sectionHeader {
+    background-color: transparent;
+    border-bottom: $border_width solid $color_border;
+}
+
+QLabel#sectionHeaderTitle,
+QLabel#applicationRowTitle,
+QLabel#workItemTitle {
+    color: $color_text;
+    font-weight: $section_title_weight;
+}
+
+QLabel#sectionHeaderDescription,
+QLabel#applicationRowDescription,
+QLabel#applicationRowSource,
+QLabel#workItemSummary {
+    color: $color_text_muted;
+}
+
+QFrame#applicationRow,
+QFrame#actionCenterWorkItem,
+QFrame#taskSummary,
+QFrame#confirmationRiskPanel {
+    background-color: $color_surface;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+}
+
+QFrame#actionCenterWorkItem:hover,
+QFrame#actionCenterWorkItem:focus,
+QFrame#actionCenterWorkItem[selected="true"] {
+    background-color: $color_selected;
+    border-color: $color_accent;
+}
+
+QFrame#errorState {
+    background-color: $color_error_surface;
+    border: $border_width solid $color_error;
+    border-radius: $radius_card;
+}
+
+QFrame#successState {
+    background-color: $color_success_surface;
+    border: $border_width solid $color_success;
+    border-radius: $radius_card;
+}
+
+QFrame#disabledState {
+    background-color: $color_disabled_surface;
+    color: $color_disabled_text;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
 }
 
 QFrame#inlineNotice {

@@ -1,6 +1,6 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v23.1.0 "Compass" uses Action Center as the trust boundary
+Loofi Fedora Tweaks v24.0.0 "Flow" uses Action Center as the trust boundary
 for supported host changes across GUI, CLI, daemon, automation, scheduler, and
 agent entry points. The catalog contains 74 definitions declaring operation class, Fedora variants,
 reboot policy, affected resources, preflight, confirmation, verification, and
@@ -9,11 +9,16 @@ preview-only.
 
 ## Action Center workflow
 
-Open **Software & Updates → Maintenance → Action Center**. Select a supported
-action, create a plan, and review its preflight decision, exact command,
-privilege boundary, risk, expiry, and rollback guidance. Applying a plan always
-requires explicit confirmation. Medium-risk actions without supported rollback
-also require acknowledgement of that limitation.
+Open **Software & Updates → Action Center**. The page starts in **Review
+queue**, where persisted work is grouped by lifecycle state. **Action catalog**
+is a separate inert browser: selecting or previewing an item does not create,
+prepare, or run a plan. Choose **Review & Plan** explicitly to create one.
+
+The selected-item pane shows risk, affected scope, privilege and restart
+requirements, validation, and rollback before its one available lifecycle
+action. Applying a ready plan always requires explicit confirmation.
+Medium-risk actions without supported rollback also require acknowledgement of
+that limitation.
 
 The lifecycle is:
 

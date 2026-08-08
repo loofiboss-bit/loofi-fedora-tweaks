@@ -38,7 +38,14 @@ from ui.components import (
     PageScaffold,
     PrimaryButton,
     SecondaryButton,
+    SectionHeader,
     StatusBadge,
+)
+from ui.troubleshoot_presentation import (
+    SESSION_STATUS,
+    SOURCE_LABELS,
+    STATE_LABELS,
+    SYMPTOMS,
 )
 
 
@@ -69,58 +76,9 @@ class TroubleshootWidget(QWidget):
     actionCenterRequested = pyqtSignal(str, object)
     routeRequested = pyqtSignal(str, object)
 
-    _SOURCE_LABELS = {
-        "system-check": "System Check",
-        "observability": "Saved resource trends",
-        "change-journal": "Trusted Change Journal",
-        "package-health": "Package health",
-        "deployment-state": "Atomic deployment state",
-        "pending-reboot": "Pending reboot",
-        "action-center": "Action Center",
-        "application-inventory": "Application inventory",
-        "network-state": "NetworkManager state",
-        "dns-state": "DNS resolver metadata",
-        "storage-reclaim": "Storage and reclaim preview",
-        "boot-analysis": "Boot analysis",
-        "failed-services": "Failed services",
-        "package-history": "Package history",
-        "deployment-history": "Deployment history",
-    }
-    _STATE_LABELS = {
-        "completed": "Completed",
-        "empty": "No issue found",
-        "partial": "Partial",
-        "stale": "Stale",
-        "unavailable": "Unavailable",
-        "timed_out": "Timed out",
-        "failed": "Failed",
-        "cancelled": "Cancelled",
-    }
-    _SYMPTOMS = (
-        ("no_internet", "No internet", "network_problem", ""),
-        (
-            "sound_not_working",
-            "Sound is not working",
-            "system_slow",
-            "This general check does not read device-specific audio logs. Open sound settings if it finds no system-wide issue.",
-        ),
-        (
-            "bluetooth_not_working",
-            "Bluetooth is not working",
-            "system_slow",
-            "This general check does not scan Bluetooth devices. Open Bluetooth settings if it finds no system-wide issue.",
-        ),
-        ("updates_failed", "Updates failed", "updates_failed", ""),
-        ("app_wont_start", "An app will not start", "application_failed", ""),
-        ("system_slow", "The system feels slow", "system_slow", ""),
-        ("storage_full", "Storage is full", "storage_pressure", ""),
-        (
-            "something_else",
-            "Something else",
-            "system_slow",
-            "This general check reviews system health. It may not cover a device-specific problem.",
-        ),
-    )
+    _SOURCE_LABELS = SOURCE_LABELS
+    _STATE_LABELS = STATE_LABELS
+    _SYMPTOMS = SYMPTOMS
 
     def __init__(
         self,
@@ -200,7 +158,7 @@ class TroubleshootWidget(QWidget):
         layout.setSpacing(16)
 
         choose = Card(
-            self.tr("1. Choose a problem"),
+            self.tr("1. Problem"),
             self.tr("Start from the symptom you can observe."),
         )
         choose.setObjectName("troubleshootProfileCard")
@@ -227,7 +185,7 @@ class TroubleshootWidget(QWidget):
         layout.addWidget(choose)
 
         checks = Card(
-            self.tr("2. What will be checked"),
+            self.tr("2. Checks"),
             self.tr("Review the system areas included in this read-only check."),
         )
         checks.setObjectName("troubleshootChecksCard")
@@ -301,6 +259,12 @@ class TroubleshootWidget(QWidget):
         layout = QVBoxLayout(page)
         layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(16)
+        layout.addWidget(
+            SectionHeader(
+                self.tr("3. Results"),
+                self.tr("Review what completed, what did not, and the safest next step."),
+            )
+        )
         self.result_notice = InlineNotice(
             self.tr("No troubleshooting session yet"),
             self.tr("Choose a problem and start an explicit read-only check."),
@@ -621,16 +585,11 @@ class TroubleshootWidget(QWidget):
         persistence_reason_code: str,
     ) -> None:
         profile = require_profile(session.profile_id)
-        labels = {
-            "completed": (self.tr("Completed"), "success"),
-            "partial": (self.tr("Partially completed"), "warning"),
-            "cancelled": (self.tr("Cancelled"), "neutral"),
-            "failed": (self.tr("Failed"), "error"),
-        }
-        state_label, kind = labels.get(
+        state_text, kind = SESSION_STATUS.get(
             session.state,
-            (self.tr("Status unavailable"), "neutral"),
+            ("Status unavailable", "neutral"),
         )
+        state_label = self.tr(state_text)
         self.result_notice.set_notice(
             kind,
             state_label,

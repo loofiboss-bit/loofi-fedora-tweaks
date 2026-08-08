@@ -40,6 +40,17 @@
   </provides>
 
   <releases>
+    <release version="24.0.0" date="2026-08-08">
+      <description>
+        <p>v24.0.0 "Flow" - Coherent desktop workflows</p>
+        <ul>
+          <li>Unified Home, Software, Troubleshooting, Action Center, System, Network, and Settings presentation</li>
+          <li>Added integrated navigation-only onboarding and deterministic next-action guidance</li>
+          <li>Separated the Action Center Review queue from inert catalog browsing with visible safety evidence</li>
+          <li>Preserved routes, features, execution authority, user state, and separate Traditional and Atomic behavior</li>
+        </ul>
+      </description>
+    </release>
     <release version="23.1.0" date="2026-08-01">
       <description>
         <p>v23.1.0 "Compass" - Review-first core workflows</p>

@@ -50,9 +50,13 @@ def _install_stubs():
     qt_core.QTimer = MagicMock()
     qt_core.pyqtSignal = lambda *args, **kwargs: MagicMock()
 
+    qt_gui = types.ModuleType("PyQt6.QtGui")
+    qt_gui.QIcon = _Dummy
+
     pyqt = types.ModuleType("PyQt6")
     pyqt.QtWidgets = qt_widgets
     pyqt.QtCore = qt_core
+    pyqt.QtGui = qt_gui
 
     base_tab_mod = types.ModuleType("ui.base_tab")
 
@@ -147,6 +151,11 @@ def _install_stubs():
     components_mod.PageScaffold = _Dummy
     components_mod.DetailsDisclosure = _Dummy
     components_mod.StatusBadge = _Dummy
+    components_mod.ApplicationRow = _Dummy
+    components_mod.FeedbackBanner = _Dummy
+    components_mod.RetryButton = _Dummy
+    components_mod.SearchFilterRow = _Dummy
+    components_mod.SectionHeader = _Dummy
 
     native_handoff_mod = types.ModuleType("ui.native_handoff_card")
     native_handoff_mod.NativeHandoffCard = _Dummy
@@ -155,6 +164,7 @@ def _install_stubs():
         "PyQt6": pyqt,
         "PyQt6.QtWidgets": qt_widgets,
         "PyQt6.QtCore": qt_core,
+        "PyQt6.QtGui": qt_gui,
         "ui.base_tab": base_tab_mod,
         "ui.tab_utils": tab_utils_mod,
         "utils.command_runner": cmd_runner_mod,
@@ -193,6 +203,11 @@ for _name, _orig in _original_modules.items():
         sys.modules.pop(_name, None)
     else:
         sys.modules[_name] = _orig
+
+# Keep the stubbed module private to this test file.  Leaving it registered
+# until tearDownModule makes later test modules import the stubbed Qt classes
+# during pytest collection, even though the real PyQt modules were restored.
+sys.modules.pop("ui.software_tab", None)
 
 
 class TestApplicationsSubTabFeedback(unittest.TestCase):
@@ -261,7 +276,6 @@ class TestSoftwareTabSourceLevel(unittest.TestCase):
 
 
 def tearDownModule():
-    sys.modules.pop("ui.software_tab", None)
     _uninstall_stubs()
 
 
