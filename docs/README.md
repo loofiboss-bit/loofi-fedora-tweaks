@@ -39,6 +39,8 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
   outcomes, safety boundaries, compatibility, and qualification
 - [Local qualification](reports/V24_RELEASE_QUALIFICATION.md) — exact local
   gates and explicitly unverified physical or public evidence
+- [Public release evidence](reports/V24_RELEASE_PUBLICATION.md) — exact tag,
+  CI, assets, attestations, COPR, clean install, and wiki readback
 
 Historical implementation plans and evidence remain available without
 competing with current guidance:

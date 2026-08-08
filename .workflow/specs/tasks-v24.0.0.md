@@ -97,7 +97,7 @@ Traditional/Atomic separation, and every supported feature.
   `scripts/check_release_docs.py --require-publish-ready-tasks`,
   `scripts/bump_version.py --check`, `just check-drift`, `git diff --check`.
 
-- [ ] [post-publish] ID: T9 | Requirements: REQ-010 | Files: GitHub release,
+- [x] [post-publish] ID: T9 | Requirements: REQ-010 | Files: GitHub release,
   CI, CodeQL, COPR, Fedora 44 disposable install evidence, public wiki,
   roadmap, race lock, and publication report | Dep: T8 | Description: Publish
   and independently verify exact v24.0.0 lineage, release assets, checksums,

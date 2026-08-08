@@ -43,7 +43,7 @@
   "next_version": "",
   "roadmap_status": "stable",
   "pipeline_version": "v24.0.0",
-  "pipeline_status": "active",
+  "pipeline_status": "complete",
   "python_version": "3.12",
   "framework": "PyQt6"
 }
