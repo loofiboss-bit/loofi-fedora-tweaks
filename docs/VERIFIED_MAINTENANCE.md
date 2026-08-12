@@ -1,11 +1,15 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v24.0.0 "Flow" uses Action Center as the trust boundary
+Loofi Fedora Tweaks v25.0.4 "Proof" uses Action Center as the trust boundary
 for supported host changes across GUI, CLI, daemon, automation, scheduler, and
 agent entry points. The catalog contains 74 definitions declaring operation class, Fedora variants,
 reboot policy, affected resources, preflight, confirmation, verification, and
 recovery policy. Fedora 44 is the supported target; Fedora 45 remains
 preview-only.
+
+Proof is the current public release. It adds a bounded direct-action adapter
+and typed outcome evidence without creating another executor or weakening the
+Action Center trust boundary.
 
 ## Action Center workflow
 
@@ -32,6 +36,26 @@ planned → ready → running → verifying → succeeded
 `succeeded` means the action-specific verifier passed; exit code zero alone is
 not sufficient. If the application exits during a run, the run is preserved as
 `interrupted` and is never resumed automatically.
+
+## Proof direct path
+
+When **Settings → Behavior → Safety & Execution** is set to **Direct**, an
+eligible low-risk request may use **Run with Proof**. The service still creates
+the normal Action Center plan, performs fresh preflight, uses the configured
+confirmation policy, executes through Action Center, and attempts independent
+verification. Medium-risk actions require one compact confirmation when enabled.
+High-risk, manual-only, unsupported, incomplete, and unverifiable definitions
+remain review-only or blocked. `--dry-run` and preview never execute.
+
+The CLI equivalent is:
+
+```bash
+loofi run dnf-clean-all --dry-run --json
+```
+
+The result envelope exposes a typed state such as `completed_verified`,
+`completed_awaiting_reboot`, `completed_verification_failed`, `review_required`,
+or `blocked_by_preflight`; it never exposes an arbitrary command vector.
 
 ## CLI
 

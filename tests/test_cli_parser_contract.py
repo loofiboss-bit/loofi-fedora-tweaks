@@ -14,9 +14,9 @@ EXPECTED_TOP_LEVEL_COMMANDS = (
     "support-bundle", "state", "readiness", "action-center", "fedora44-readiness", "vm", "vfio", "mesh", "teleport",
     "ai-models", "preset", "focus-mode", "security-audit", "profile", "health-history", "tuner", "snapshot", "logs",
     "service", "package", "firewall", "bluetooth", "storage", "self-update", "agent", "audit-log", "updates", "extension",
-    "flatpak-manage", "boot", "display", "backup",
+    "flatpak-manage", "boot", "display", "backup", "run",
 )
-EXPECTED_PARSER_SNAPSHOT_SHA256 = "d311df7f182feac30453fc66c814d210e58d708df6dec0857b91c117327776aa"
+EXPECTED_PARSER_SNAPSHOT_SHA256 = "45089eae7e6178ae57f65d8298cb5a0fc9618c61337fde89ee9f3a3957e29293"
 
 
 def _normalize(value):

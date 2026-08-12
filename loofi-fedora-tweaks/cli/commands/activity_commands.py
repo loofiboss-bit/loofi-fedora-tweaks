@@ -24,7 +24,16 @@ def handle_activity(
         selected_sources = getattr(args, "source", []) or None
         snapshot = service.snapshot(
             limit=getattr(args, "limit", 25),
+            since=getattr(args, "since", None),
+            until=getattr(args, "until", None),
             sources=selected_sources,
+            statuses=getattr(args, "statuses", None) or None,
+            reboot_required=(
+                True if getattr(args, "reboot", None) == "required"
+                else False if getattr(args, "reboot", None) == "not-required"
+                else None
+            ),
+            search=getattr(args, "search", None),
             refresh=refresh,
         )
         payload = snapshot.to_dict()
@@ -51,6 +60,39 @@ def handle_activity(
         return 0
 
     event_id = str(getattr(args, "event_id", ""))
+    if action == "export":
+        try:
+            content = service.export_event(
+                event_id,
+                format=str(getattr(args, "format", "json")),
+                refresh=refresh,
+            )
+        except (KeyError, ValueError) as exc:
+            if json_output:
+                output_json(
+                    {
+                        "schema": "loofi.activity-export/v1",
+                        "error": "export_unavailable",
+                        "event_id": event_id,
+                        "message": str(exc),
+                    }
+                )
+            else:
+                print_fn(str(exc))
+            return 1
+        if json_output:
+            output_json(
+                {
+                    "schema": "loofi.activity-export/v1",
+                    "event_id": event_id,
+                    "format": str(getattr(args, "format", "json")),
+                    "content": content,
+                }
+            )
+        else:
+            print_fn(content)
+        return 0
+
     selected_event = service.get(event_id, refresh=refresh)
     if selected_event is None:
         if json_output:

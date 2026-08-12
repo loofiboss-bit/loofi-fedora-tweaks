@@ -15,13 +15,14 @@ _PRIORITY = {
     "failed_update": 6,
     "pending_updates": 7,
     "missing_backup": 8,
-    "resolution_check": 9,
-    "system_check_finding": 10,
-    "repeated_health": 11,
-    "action_center_review": 12,
-    "source_error": 13,
-    "stale_data": 14,
-    "no_action": 15,
+    "recovery_warning": 9,
+    "resolution_check": 10,
+    "system_check_finding": 11,
+    "repeated_health": 12,
+    "action_center_review": 13,
+    "source_error": 14,
+    "stale_data": 15,
+    "no_action": 16,
 }
 
 

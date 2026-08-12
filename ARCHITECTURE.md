@@ -3,16 +3,40 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 24.0.0 "Flow" | **Current public release**: 23.1.0 "Compass" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: 25.0.4 "Proof" | **Current public release**: 25.0.4 "Proof" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
-> V21, V22, and Compass 23.1.0 are complete and public. Flow v24.0.0 is a
-> locally qualified candidate that consolidates presentation without adding
-> execution authority. It has not been published or installed on the host.
+> V21, V22, Compass 23.1.0, and Flow 24.0.0 preceded the public Proof release.
+> Proof v25.0.4 adds a bounded direct-action policy projection over Action
+> Center. Historical v25 tags remain preserved under separate lineages;
+> v25.0.4 is the unambiguous Proof release identity.
 > Fresh Atomic and manual physical accessibility qualification remain open
 > and are not inferred from offscreen evidence.
 
-## Active Flow architecture
+## Active Proof architecture
+
+Proof extends the public Flow architecture without creating another host
+mutation authority. Its authority is the [Proof architecture contract](.workflow/specs/arch-v25.0.4.md),
+[task contract](.workflow/specs/tasks-v25.0.4.md), and the Proof plan and
+qualification reports. GUI and CLI requests enter `DirectActionService`, which
+uses canonical Action Center definitions and delegates plan, fresh preflight,
+execution, verification, leases, expiry, interruption, recovery, and audit to
+the existing orchestrator. Typed `Outcome Evidence` keeps command completion
+separate from verified state.
+
+`Safety & Execution` settings are versioned XDG state. Direct mode is the
+default for complete low-risk definitions; medium-risk definitions require one
+compact confirmation when enabled. Review-first, high-risk, destructive,
+manual-only, incomplete, unsupported, unverifiable, unknown, and future-schema
+requests remain review-only or blocked. Activity & Recovery reads source-owned
+records and exports redacted evidence; Home links to it rather than offering a
+direct Undo operation.
+
+No new destination, API mutation endpoint, scheduler, unattended mode, shell
+command input, automatic retry, rollback, reboot, external plugin execution,
+marketplace publication, or privileged helper is introduced.
+
+## Preserved Flow architecture
 
 V24 is a presentation convergence release. Its authority is the
 [Flow architecture contract](.workflow/specs/arch-v24.0.0.md),

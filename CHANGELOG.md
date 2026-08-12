@@ -4,6 +4,37 @@
 
 All notable changes to this project will be documented in this file.
 
+## [25.0.4] - 2026-08-12 "Proof"
+
+> Public release. The historical `v25.0.0`–`v25.0.3` tags remain preserved;
+> `v25.0.4` is the unambiguous Proof release identity.
+
+### Added
+
+- Added fail-closed eligibility auditing from canonical Action Center metadata.
+- Added versioned Safety & Execution settings with direct and review-first
+  modes, medium-risk confirmation, preview, automatic verification, and
+  future-schema read-only handling.
+- Added `DirectActionService` and typed Outcome Evidence over the existing
+  Action Center plan, lease, execution, verification, and recovery lifecycle.
+- Added `loofi run ACTION_ID` with closed typed parameters, `--yes`, `--dry-run`,
+  `--json`, stable exit codes, and versioned result envelopes.
+- Added Proof execution to the existing Action Center GUI using the responsive
+  single-flight worker path, plus Home and Activity & Recovery projections.
+- Added source/date/status/reboot filters, bounded search, evidence detail, and
+  privacy-redacted JSON/Markdown export for selected Activity events.
+
+### Safety and compatibility
+
+- Preserved the six destinations, stable routes, Action Center authority,
+  Traditional/Atomic policy, API/daemon read-only boundary, and persisted
+  state compatibility.
+- No shell input, unattended mode, automatic retry, rollback, reboot,
+  marketplace publication, external executable plugin path, or host mutation
+  was introduced by this release.
+- Rootless/offscreen evidence remains separate from physical and manual
+  qualification; those gates are reported explicitly as unverified.
+
 ## [24.0.0] - 2026-08-08 "Flow"
 
 ### Added
@@ -1858,7 +1889,7 @@ All notable changes to this project will be documented in this file.
 
 ---
 
-## [25.0.0] - 2026-02-11 "Plugin Architecture"
+## [25.0.4] - 2026-02-11 "Plugin Architecture"
 
 ### Added
 

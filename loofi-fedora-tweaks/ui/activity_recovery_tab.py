@@ -2,21 +2,27 @@
 
 from __future__ import annotations
 
+from collections.abc import Iterable, Mapping
 from datetime import datetime
-from typing import Protocol
+from pathlib import Path
+from typing import Any, Protocol
 
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
+    QComboBox,
+    QFileDialog,
+    QHBoxLayout,
     QLabel,
+    QLineEdit,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
     QWidget,
 )
 
-from core.change_journal.models import ChangeEvent, ChangeJournalSnapshot
+from core.change_journal.models import ChangeEvent, ChangeJournalSnapshot, ChangeSource
 from core.change_journal.presentation import (
     ActivityPresentationState,
     error_state,
@@ -43,21 +49,36 @@ from ui.components import (
 
 
 class _JournalService(Protocol):
-    def snapshot(self, *, limit: int = 100, refresh: bool = False) -> ChangeJournalSnapshot:
+    def snapshot(
+        self,
+        *,
+        limit: int = 100,
+        since: float | None = None,
+        until: float | None = None,
+        sources: Iterable[ChangeSource] | None = None,
+        statuses: Iterable[str] | None = None,
+        reboot_required: bool | None = None,
+        search: str | None = None,
+        refresh: bool = False,
+    ) -> ChangeJournalSnapshot:
+        ...
+
+    def export_event(self, event_id: str, *, format: str = "json", refresh: bool = False) -> str:
         ...
 
 
 class ActivityJournalWorker(BaseWorker):
     """Collect trusted local history away from the UI thread."""
 
-    def __init__(self, service: _JournalService, *, refresh: bool, parent=None) -> None:
+    def __init__(self, service: _JournalService, *, refresh: bool, filters: dict[str, Any], parent=None) -> None:
         super().__init__(parent)
         self.service = service
         self.refresh_sources = refresh
+        self.filters: dict[str, Any] = dict(filters)
 
     def do_work(self) -> ChangeJournalSnapshot:
         self.report_progress(self.tr("Reading trusted local sources…"), 30)
-        result = self.service.snapshot(limit=100, refresh=self.refresh_sources)
+        result = self.service.snapshot(limit=100, refresh=self.refresh_sources, **self.filters)
         self.report_progress(self.tr("Preparing activity history…"), 90)
         return result
 
@@ -83,7 +104,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             from core.change_journal import ChangeJournalService
 
             journal_service = ChangeJournalService()
-        self.journal_service = journal_service
+        assert journal_service is not None
+        self.journal_service: _JournalService = journal_service
         self._snapshot: ChangeJournalSnapshot | None = None
         self._events_by_id: dict[str, ChangeEvent] = {}
         self._worker: ActivityJournalWorker | None = None
@@ -117,6 +139,36 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         notice.setObjectName("activityTrustNotice")
         self.scaffold.add_widget(notice)
 
+        filter_row = QHBoxLayout()
+        self.source_filter = QComboBox()
+        self.source_filter.setObjectName("activitySourceFilter")
+        self.source_filter.addItem(self.tr("All sources"), "")
+        for source_id, label in self._SOURCE_LABELS.items():
+            self.source_filter.addItem(self.tr(label), source_id)
+        self.status_filter = QComboBox()
+        self.status_filter.setObjectName("activityStatusFilter")
+        self.status_filter.addItem(self.tr("All states"), "")
+        for state in ("running", "verifying", "awaiting_reboot", "succeeded", "failed", "verification_failed", "cancelled", "interrupted", "recorded"):
+            self.status_filter.addItem(self.tr(state.replace("_", " ").title()), state)
+        self.reboot_filter = QComboBox()
+        self.reboot_filter.setObjectName("activityRebootFilter")
+        self.reboot_filter.addItem(self.tr("Any reboot state"), "")
+        self.reboot_filter.addItem(self.tr("Reboot required"), "required")
+        self.reboot_filter.addItem(self.tr("No reboot recorded"), "not-required")
+        self.search_input = QLineEdit()
+        self.search_input.setObjectName("activitySearch")
+        self.search_input.setPlaceholderText(self.tr("Search action, package, resource…"))
+        self.search_input.setAccessibleName(self.tr("Activity search"))
+        self.since_input = QLineEdit()
+        self.since_input.setObjectName("activitySinceFilter")
+        self.since_input.setPlaceholderText(self.tr("Since date (YYYY-MM-DD)"))
+        self.until_input = QLineEdit()
+        self.until_input.setObjectName("activityUntilFilter")
+        self.until_input.setPlaceholderText(self.tr("Until date (YYYY-MM-DD)"))
+        for widget in (self.source_filter, self.status_filter, self.reboot_filter, self.search_input, self.since_input, self.until_input):
+            filter_row.addWidget(widget)
+        self.scaffold.add_layout(filter_row)
+
         actions = ActionBar()
         self.activity_actions = actions
         self.load_button = PrimaryButton(
@@ -134,6 +186,16 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.refresh_button.setEnabled(False)
         actions.add_action(self.refresh_button)
         actions.add_action(self.load_button, primary=True)
+        self.export_json_button = SecondaryButton(self.tr("Export JSON…"))
+        self.export_json_button.setObjectName("activityExportJson")
+        self.export_json_button.clicked.connect(lambda: self._export_selected("json"))
+        self.export_json_button.setEnabled(False)
+        self.export_markdown_button = SecondaryButton(self.tr("Export Markdown…"))
+        self.export_markdown_button.setObjectName("activityExportMarkdown")
+        self.export_markdown_button.clicked.connect(lambda: self._export_selected("markdown"))
+        self.export_markdown_button.setEnabled(False)
+        actions.add_action(self.export_json_button)
+        actions.add_action(self.export_markdown_button)
         self.scaffold.add_widget(actions)
 
         self.feedback = QLabel(self.tr("Activity has not been loaded."))
@@ -141,6 +203,10 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.feedback.setWordWrap(True)
         self.feedback.setAccessibleName(self.tr("Activity loading status"))
         self.scaffold.add_widget(self.feedback)
+        self.source_status = QLabel()
+        self.source_status.setObjectName("activitySourceStatus")
+        self.source_status.setWordWrap(True)
+        self.scaffold.add_widget(self.source_status)
 
         self.table = QTableWidget(0, 4)
         self.table.setObjectName("activityTable")
@@ -230,6 +296,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.empty_load_button.setVisible(state.state == "initial")
         self.refresh_button.setEnabled(state.refresh_enabled)
         self.review_button.setVisible(state.recovery_review_visible)
+        self.export_json_button.setEnabled(state.details_visible)
+        self.export_markdown_button.setEnabled(state.details_visible)
 
     def load_activity(self, *, refresh: bool) -> None:
         """Start one explicit, non-overlapping local collection."""
@@ -237,7 +305,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             return
         self.load_button.set_loading(True, self.tr("Loading activity…"))
         self._apply_presentation_state(loading_state())
-        worker = ActivityJournalWorker(self.journal_service, refresh=refresh, parent=self)
+        filters = self._current_filters()
+        worker = ActivityJournalWorker(self.journal_service, refresh=refresh, filters=filters, parent=self)
         worker.finished.connect(self._loaded)
         worker.error.connect(self._load_failed)
         worker.finished.connect(worker.deleteLater)
@@ -254,6 +323,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.load_button.reset_state()
         self.load_button.setText(self.tr("Load again"))
         self._apply_presentation_state(snapshot_state(result))
+        self.source_status.setText(self._source_status_text(result))
         self._render_events(result.events)
         self._worker = None
 
@@ -321,6 +391,11 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             self.tr("Reboot"),
             self.tr("Required") if event.reboot_required else self.tr("Not required"),
         )
+        self.detail_definitions.add_row(self.tr("Expected"), self._facts_text(event.after_facts.get("expected")))
+        self.detail_definitions.add_row(self.tr("Before"), self._facts_text(event.before_facts))
+        self.detail_definitions.add_row(self.tr("After"), self._facts_text(event.after_facts))
+        self.detail_definitions.add_row(self.tr("Verification"), self._facts_text(event.after_facts.get("verification")))
+        self.detail_definitions.add_row(self.tr("Recovery"), self._facts_text(event.after_facts.get("recovery")))
         related = len(event.correlation_ids)
         self.related_label.setText(
             self.tr("Possibly related: %1 change(s). This is a time-and-resource match, not proof of cause.")
@@ -344,6 +419,69 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             self.recovery_guidance.setText(
                 recovery.guidance or self.tr("This record is available for review only.")
             )
+
+    def _current_filters(self) -> dict[str, object]:
+        """Return bounded UI filters; accept ISO dates and Unix timestamps."""
+        filters: dict[str, object] = {}
+        source = str(self.source_filter.currentData() or "")
+        state = str(self.status_filter.currentData() or "")
+        reboot = str(self.reboot_filter.currentData() or "")
+        search = self.search_input.text().strip()[:120]
+        if source:
+            filters["sources"] = (source,)
+        if state:
+            filters["statuses"] = (state,)
+        if reboot:
+            filters["reboot_required"] = reboot == "required"
+        if search:
+            filters["search"] = search
+        for field, widget in (("since", self.since_input), ("until", self.until_input)):
+            value = widget.text().strip()
+            if not value:
+                continue
+            try:
+                filters[field] = float(value)
+            except ValueError:
+                try:
+                    filters[field] = datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+                except ValueError:
+                    self.feedback.setText(self.tr("Date filters must use YYYY-MM-DD or Unix timestamps."))
+        return filters
+
+    def _source_status_text(self, snapshot: ChangeJournalSnapshot) -> str:
+        statuses = [
+            f"{self._SOURCE_LABELS.get(item.source, item.source)}: {item.availability}"
+            for item in snapshot.sources
+        ]
+        return self.tr("Source availability: %1").replace("%1", "; ".join(statuses))
+
+    @staticmethod
+    def _facts_text(value: object) -> str:
+        if not value:
+            return "Not recorded"
+        if isinstance(value, Mapping):
+            return "; ".join(f"{key}={item}" for key, item in list(value.items())[:12])
+        return str(value)[:600]
+
+    def _export_selected(self, format_name: str) -> None:
+        event = self._selected_event()
+        if event is None:
+            return
+        suffix = "json" if format_name == "json" else "md"
+        destination, _ = QFileDialog.getSaveFileName(
+            self,
+            self.tr("Export activity event"),
+            f"activity-{event.event_id.replace(':', '-')}.{suffix}",
+            self.tr("JSON (*.json);;Markdown (*.md)"),
+        )
+        if not destination:
+            return
+        try:
+            content = self.journal_service.export_event(event.event_id, format=format_name)
+            Path(destination).write_text(content, encoding="utf-8")
+            self.feedback.setText(self.tr("Exported selected event."))
+        except (OSError, KeyError, TypeError, ValueError) as exc:
+            self.feedback.setText(self.tr("Export failed: %1").replace("%1", str(exc)))
 
     def _review_recovery(self) -> None:
         event = self._selected_event()

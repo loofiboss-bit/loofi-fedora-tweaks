@@ -40,6 +40,18 @@
   </provides>
 
   <releases>
+    <release version="25.0.4" date="2026-08-12">
+      <description>
+        <p>v25.0.4 "Proof" - bounded direct execution and outcome evidence</p>
+        <ul>
+          <li>Added fail-closed Action Center eligibility, versioned Safety &amp; Execution settings, and typed direct-action outcomes</li>
+          <li>Added the named <code>run</code> CLI workflow with typed parameters, dry-run, compact confirmation, and JSON envelopes</li>
+          <li>Connected high-traffic GUI requests to the existing Action Center worker, lease, preflight, execution, and verification path</li>
+          <li>Added Home pending/reboot/recovery projections and Activity &amp; Recovery filters, evidence, and privacy-redacted export</li>
+          <li>Published as the unambiguous v25.0.4 Proof release; historical v25.0.0-v25.0.3 tags remain preserved</li>
+        </ul>
+      </description>
+    </release>
     <release version="24.0.0" date="2026-08-08">
       <description>
         <p>v24.0.0 "Flow" - Coherent desktop workflows</p>

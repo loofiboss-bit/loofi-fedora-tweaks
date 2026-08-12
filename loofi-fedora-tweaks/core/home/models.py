@@ -94,12 +94,14 @@ class GuidedTask:
 
 @dataclass(frozen=True)
 class RecentChange:
-    """The latest saved activity; Home never mutates or executes its undo."""
+    """The latest saved activity; Home only links to Activity & Recovery."""
 
     id: str
     description: str
     occurred_at: datetime | None
     undo_available: bool
+    outcome_state: str = "unverified"
+    source: str = "local"
 
 
 @dataclass(frozen=True)
@@ -133,6 +135,7 @@ class HomeSummary:
     check_now_available: bool = True
     primary_task: GuidedTask | None = None
     active_work: GuidedTask | None = None
+    last_verified_change: RecentChange | None = None
 
     def __post_init__(self) -> None:
         if len(self.attention_items) > 3:

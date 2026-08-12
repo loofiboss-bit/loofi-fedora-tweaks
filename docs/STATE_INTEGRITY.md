@@ -1,10 +1,13 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v24.0.0 "Flow" keeps application-owned state under
+Loofi Fedora Tweaks v25.0.4 "Proof" keeps application-owned state under
 standard XDG config, data, cache, and runtime directories. Fedora 44 is the
 supported baseline; Fedora 45 remains preview/advisory.
 
 ## Beginner: check and back up
+
+Proof is the current public release. It preserves the existing state contracts
+and adds versioned Safety & Execution settings.
 
 Open **Settings → State & Recovery** and select **Run State Doctor**. The doctor is read-only: it checks registered paths, permissions, JSON/JSONL readability, SQLite integrity, stale locks, and recovery availability without changing files.
 

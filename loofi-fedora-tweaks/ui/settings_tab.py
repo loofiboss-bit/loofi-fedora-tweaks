@@ -30,6 +30,7 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from utils.settings import SettingsManager
+from core.settings.execution import ExecutionSettingsStore, ExecutionSettingsFutureSchemaError
 from version import __app_name__, __version__, __version_codename__
 
 from ui.components import (
@@ -199,6 +200,8 @@ class SettingsTab(QWidget, PluginInterface):
         layout = QVBoxLayout(page)
         layout.setSpacing(10)
 
+        self._build_execution_settings(layout)
+
         self.start_minimized_cb = QCheckBox(self.tr("Start minimized to tray"))
         self.start_minimized_cb.setAccessibleName(self.tr("Start minimized to tray"))
         self.start_minimized_cb.setChecked(self._mgr.get("start_minimized"))
@@ -261,6 +264,89 @@ class SettingsTab(QWidget, PluginInterface):
         layout.addStretch()
 
         return page
+
+    def _build_execution_settings(self, layout: QVBoxLayout) -> None:
+        """Expose the v25 policy controls inside the existing Behavior route."""
+        self.execution_settings_store = ExecutionSettingsStore()
+        self.execution_settings = self.execution_settings_store.load()
+        group = QGroupBox(self.tr("Safety & Execution"))
+        group.setObjectName("safetyExecutionGroup")
+        form = QFormLayout(group)
+
+        self.execution_mode_combo = QComboBox()
+        self.execution_mode_combo.setObjectName("executionModeCombo")
+        self.execution_mode_combo.setAccessibleName(self.tr("Execution mode"))
+        self.execution_mode_combo.addItem(self.tr("Direct"), "direct")
+        self.execution_mode_combo.addItem(self.tr("Review first"), "review_first")
+        self.execution_mode_combo.setCurrentIndex(
+            0 if self.execution_settings.effective_mode == "direct" else 1
+        )
+        self.execution_mode_combo.currentIndexChanged.connect(self._save_execution_mode)
+        form.addRow(self.tr("Execution mode:"), self.execution_mode_combo)
+
+        self.confirm_medium_risk_cb = QCheckBox(self.tr("Confirm medium-risk actions"))
+        self.confirm_medium_risk_cb.setObjectName("confirmMediumRisk")
+        self.confirm_medium_risk_cb.setAccessibleName(self.tr("Confirm medium-risk actions"))
+        self.confirm_medium_risk_cb.setChecked(self.execution_settings.confirm_medium_risk)
+        self.confirm_medium_risk_cb.toggled.connect(
+            lambda value: self._save_execution_setting("confirm_medium_risk", value)
+        )
+        form.addRow("", self.confirm_medium_risk_cb)
+
+        self.show_command_preview_cb = QCheckBox(self.tr("Show command preview before running"))
+        self.show_command_preview_cb.setObjectName("showCommandPreview")
+        self.show_command_preview_cb.setChecked(self.execution_settings.show_command_preview)
+        self.show_command_preview_cb.toggled.connect(
+            lambda value: self._save_execution_setting("show_command_preview", value)
+        )
+        form.addRow("", self.show_command_preview_cb)
+
+        self.auto_verify_cb = QCheckBox(self.tr("Automatically verify completed actions"))
+        self.auto_verify_cb.setObjectName("automaticallyVerify")
+        self.auto_verify_cb.setChecked(self.execution_settings.automatically_verify)
+        self.auto_verify_cb.toggled.connect(
+            lambda value: self._save_execution_setting("automatically_verify", value)
+        )
+        form.addRow("", self.auto_verify_cb)
+
+        self.open_action_center_on_failure_cb = QCheckBox(
+            self.tr("Open Action Center when verification fails")
+        )
+        self.open_action_center_on_failure_cb.setObjectName("openActionCenterOnVerificationFailure")
+        self.open_action_center_on_failure_cb.setChecked(
+            self.execution_settings.open_action_center_on_verification_failure
+        )
+        self.open_action_center_on_failure_cb.toggled.connect(
+            lambda value: self._save_execution_setting(
+                "open_action_center_on_verification_failure", value
+            )
+        )
+        form.addRow("", self.open_action_center_on_failure_cb)
+
+        self.execution_settings_status = QLabel()
+        self.execution_settings_status.setObjectName("executionSettingsStatus")
+        self.execution_settings_status.setWordWrap(True)
+        notice = self.execution_settings.migration_notice or str(
+            getattr(self.execution_settings_store, "last_error", "") or ""
+        )
+        self.execution_settings_status.setText(
+            notice or self.tr("Direct mode still uses fresh preflight, Action Center, and independent verification.")
+        )
+        form.addRow("", self.execution_settings_status)
+        layout.addWidget(group)
+
+    def _save_execution_mode(self, index: int) -> None:
+        mode = str(self.execution_mode_combo.itemData(index) or "review_first")
+        self._save_execution_setting("execution_mode", mode)
+
+    def _save_execution_setting(self, key: str, value: object) -> None:
+        try:
+            self.execution_settings = self.execution_settings_store.update(**{key: value})
+            self.execution_settings_status.setText(
+                self.tr("Safety & Execution settings saved. Direct actions remain bounded by Action Center.")
+            )
+        except (ExecutionSettingsFutureSchemaError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            self.execution_settings_status.setText(self.tr("Settings are read-only: %1").replace("%1", str(exc)))
 
     # ----------------------------------------------------------- Advanced --
 

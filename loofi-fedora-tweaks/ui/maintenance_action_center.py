@@ -32,13 +32,14 @@ from ui.action_center_views import ActionCenterDetailPane, ActionCenterMasterPan
 from ui.action_center_worker import ActionCenterOperationWorker
 from ui.components import PrimaryButton, QuietButton, SecondaryButton
 from ui.components.layout import PageScaffold
+from ui.maintenance_direct import DirectActionUiMixin
 from ui.shared_states import DetailsDisclosure, ResultBanner
 
 
 _ActionCenterOperationWorker = ActionCenterOperationWorker
 
 
-class _ActionCenterSubTab(BaseTab):
+class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
     """Review, asynchronously run, verify, and inspect v17 action plans."""
 
     systemCheckRequested = pyqtSignal(object)
@@ -65,6 +66,7 @@ class _ActionCenterSubTab(BaseTab):
         self._requested_action_id = ""
         self._requested_parameters: dict[str, typing.Any] = {}
         self._requested_finding_context: dict[str, typing.Any] | None = None
+        self._direct_service = None
 
         from core.actions.center import ActionCenterService
 
@@ -151,6 +153,8 @@ class _ActionCenterSubTab(BaseTab):
         self.run_button.clicked.connect(self._run_current_plan)
         self.run_button.setEnabled(False)
         target_review_row.addWidget(self.run_button)
+
+        self._add_direct_action_button(target_review_row)
 
         self.verify_button = PrimaryButton(self.tr("Verify Run"))
         self.verify_button.clicked.connect(self._verify_current_run)
@@ -464,6 +468,7 @@ class _ActionCenterSubTab(BaseTab):
                 self.run_button,
                 self.verify_button,
                 self.check_again_button,
+                self.direct_button,
             ):
                 button.setEnabled(False)
 
@@ -477,6 +482,7 @@ class _ActionCenterSubTab(BaseTab):
         buttons = {
             "review": self.review_button,
             "run": self.run_button,
+            "direct": self.direct_button,
             "verify": self.verify_button,
             "check_again": self.check_again_button,
         }
@@ -566,6 +572,7 @@ class _ActionCenterSubTab(BaseTab):
 
     def _show_item(self: typing.Any, item: typing.Any) -> None:
         self._set_lifecycle_primary("review", enabled=not item.manual_only)
+        self._show_direct_action_for_item(item)
         if item.manual_only:
             self.presentation_status.setText(self.tr("Manual-only recommendation: review the guidance; Action Center will not execute it."))
         self._apply_details(candidate_details(item, self.tr))

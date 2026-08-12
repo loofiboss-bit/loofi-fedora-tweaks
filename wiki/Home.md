@@ -2,7 +2,7 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v24.0.0 "Flow"<br>
+**Current release:** v25.0.4 "Proof"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 
@@ -50,12 +50,14 @@ repository guides linked above are the current usage and development sources.
 
 ## Release status
 
-Flow passed the enforced 86% coverage floor, lint, mypy, architecture,
-packaging, documentation, drift, and offscreen 100%/140% visual gates. Fresh
-Atomic/Kinoite, physical Wayland, manual keyboard, and audible Orca journeys
-remain explicitly unverified. Fedora 45 remains preview-only.
+Proof is the current public release. Its rootless/offscreen qualification is
+reported separately, while public publication and physical Fedora KDE,
+keyboard, accessibility, reboot, and manual recovery gates remain unverified.
+The public baseline remains v24.0.0 "Flow", whose historical release evidence
+is preserved separately. Fedora 45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
+- Release notes: [v25.0.4 Proof](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v25.0.4.md)
 - Release: [v24.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v24.0.0)
 - Release notes: [v24.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v24.0.0.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)

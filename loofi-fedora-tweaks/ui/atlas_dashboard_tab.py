@@ -32,6 +32,7 @@ from .components import (
     InlineNotice,
     PageScaffold,
     PrimaryButton,
+    SecondaryButton,
     StatusBadge,
 )
 from .components.layout import AdaptiveGrid
@@ -289,7 +290,20 @@ class AtlasDashboardTab(BaseTab):
             if summary.recent_change.undo_available:
                 details = "%s\n%s" % (
                     details,
-                    self.tr("Undo is available from the activity bar."),
+                    self.tr("Recovery review is available in Activity & Recovery."),
+                )
+            if summary.last_verified_change is not None:
+                verified = summary.last_verified_change
+                verified_time = (
+                    verified.occurred_at.astimezone().strftime("%Y-%m-%d %H:%M")
+                    if verified.occurred_at is not None
+                    else self.tr("Unknown time")
+                )
+                details = "%s\n%s" % (
+                    details,
+                    self.tr("Last verified change: %1 · %2")
+                    .replace("%1", verified_time)
+                    .replace("%2", verified.outcome_state.replace("_", " ")),
                 )
             disclosure = DetailsDisclosure(
                 details,
@@ -298,6 +312,13 @@ class AtlasDashboardTab(BaseTab):
             disclosure.setAccessibleName(self.tr("Recent activity"))
             disclosure.details.setAccessibleName(self.tr("Recent activity details"))
             recent.add_widget(disclosure)
+            activity_link = SecondaryButton(
+                self.tr("Open Activity & Recovery"),
+                description=self.tr("Review evidence and recovery readiness."),
+            )
+            activity_link.setObjectName("homeActivityLink")
+            activity_link.clicked.connect(lambda: self._open_route("activity"))
+            recent.add_widget(activity_link)
             self.recent_container.addWidget(recent)
 
     def _update_freshness(self, summary: HomeSummary) -> None:

@@ -146,6 +146,7 @@ class HomeService:
             runs=runs,
         )
         active_work = self._active_work_task(runs, primary_task)
+        last_verified_change = self._last_verified_change(runs, plans)
         return HomeSummary(
             overall_state=overall,
             data_state=data_state,
@@ -154,7 +155,7 @@ class HomeService:
             primary_recommendation=primary,
             attention_items=attention,
             common_tasks=_COMMON_TASKS,
-            recent_change=self._recent_activity(history, notifications),
+            recent_change=self._recent_activity(history, notifications, runs, plans),
             source_errors=tuple(dict.fromkeys(errors)),
             status_items=self._build_status_items(
                 data_state,
@@ -172,6 +173,7 @@ class HomeService:
             check_now_available=True,
             primary_task=primary_task,
             active_work=active_work,
+            last_verified_change=last_verified_change,
         )
 
     @classmethod
@@ -220,6 +222,7 @@ class HomeService:
                     recommendation.summary,
                     recommendation.route_id,
                     run_id,
+                    "Continue maintenance",
                 )
         if recommendation.kind == "action_center_review":
             ready = [
@@ -455,6 +458,25 @@ class HomeService:
                     "atlas_dashboard",
                     "attention",
                 ))
+
+        plan_by_id = {str(getattr(plan, "plan_id", "")): plan for plan in plans}
+        risky_completed = [
+            run
+            for run in runs
+            if str(getattr(run, "state", "")) in {"succeeded", "awaiting_reboot"}
+            and not bool(getattr(plan_by_id.get(str(getattr(run, "plan_id", ""))), "rollback_supported", False))
+            and str(getattr(plan_by_id.get(str(getattr(run, "plan_id", ""))), "risk_level", "")) in {"medium", "high", "critical"}
+        ]
+        if risky_completed:
+            latest_risky = max(risky_completed, key=lambda run: float(getattr(run, "updated_at", 0.0) or 0.0))
+            items.append(Recommendation(
+                f"recovery-warning:{getattr(latest_risky, 'run_id', 'recent')}",
+                "recovery_warning",
+                "Review recovery readiness",
+                "A risky maintenance change completed without supported automatic recovery. Review Activity & Recovery.",
+                "activity",
+                "attention",
+            ))
 
         if latest is not None:
             items.extend(self._system_check_recommendations(latest))
@@ -775,7 +797,12 @@ class HomeService:
         }[data_state]
 
     @staticmethod
-    def _recent_activity(history: Sequence[Any], notifications: Sequence[Any]) -> RecentChange | None:
+    def _recent_activity(
+        history: Sequence[Any],
+        notifications: Sequence[Any],
+        runs: Sequence[Any] = (),
+        plans: Sequence[Any] = (),
+    ) -> RecentChange | None:
         entry = history[0] if history else None
         raw_timestamp = str(getattr(entry, "timestamp", "") or "")
         try:
@@ -790,6 +817,10 @@ class HomeService:
         except (TypeError, ValueError):
             notification_timestamp = 0.0
 
+        latest_run = HomeService._last_verified_change(runs, plans)
+        latest_run_timestamp = HomeService._datetime_timestamp(latest_run.occurred_at) if latest_run else 0.0
+        if latest_run is not None and latest_run_timestamp >= max(history_timestamp, notification_timestamp):
+            return latest_run
         if notification is not None and (entry is None or notification_timestamp > history_timestamp):
             title = str(getattr(notification, "title", "") or "").strip()
             message = str(getattr(notification, "message", "") or "").strip()
@@ -803,6 +834,8 @@ class HomeService:
                     else None
                 ),
                 undo_available=False,
+                outcome_state="recorded",
+                source="notification",
             )
         if entry is None:
             return None
@@ -811,6 +844,35 @@ class HomeService:
             description=str(getattr(entry, "description", "Recent change")),
             occurred_at=occurred_at,
             undo_available=bool(getattr(entry, "recovery_action_id", None)),
+            outcome_state="recorded",
+            source="history",
+        )
+
+    @staticmethod
+    def _last_verified_change(runs: Sequence[Any], plans: Sequence[Any]) -> RecentChange | None:
+        """Project the latest recorded verified/awaiting-reboot run for Home."""
+        candidates = [
+            run
+            for run in runs
+            if str(getattr(run, "state", "")) in {"succeeded", "awaiting_reboot"}
+            and float(getattr(run, "last_verified_at", 0.0) or getattr(run, "updated_at", 0.0) or 0.0) > 0.0
+        ]
+        if not candidates:
+            return None
+        run = max(
+            candidates,
+            key=lambda item: float(getattr(item, "last_verified_at", 0.0) or getattr(item, "updated_at", 0.0) or 0.0),
+        )
+        timestamp = float(getattr(run, "last_verified_at", 0.0) or getattr(run, "updated_at", 0.0) or 0.0)
+        state = str(getattr(run, "state", "verified"))
+        label = "Awaiting reboot" if state == "awaiting_reboot" else "Verified"
+        return RecentChange(
+            id=f"run:{getattr(run, 'run_id', 'recent')}",
+            description=f"{getattr(run, 'action_id', 'Maintenance change')} — {label}",
+            occurred_at=datetime.fromtimestamp(timestamp, timezone.utc),
+            undo_available=False,
+            outcome_state="awaiting_reboot" if state == "awaiting_reboot" else "verified",
+            source="action_center",
         )
 
     @staticmethod

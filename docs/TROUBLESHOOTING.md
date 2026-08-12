@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and recovery steps for v24.0.0 "Flow".
+Common issues and recovery steps for v25.0.4 "Proof".
 
 ## 1) Quick Diagnostics
 
@@ -11,6 +11,9 @@ loofi-fedora-tweaks --cli doctor
 loofi-fedora-tweaks --cli info
 loofi-fedora-tweaks --cli support-bundle
 ```
+
+Proof is the current public release. Historical v25.0.0–v25.0.3 tags remain
+preserved as separate lineages.
 
 Optional alias:
 
@@ -44,7 +47,7 @@ QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
 tail -n 200 ~/.local/share/loofi-fedora-tweaks/startup.log
 ```
 
-Flow loads built-in pages on demand. A failing specialist page should not stop
+Proof loads built-in pages on demand. A failing specialist page should not stop
 Home or the six Standard destinations from opening. Include the exact route and
 startup log when reporting an import failure.
 
@@ -64,7 +67,7 @@ Policy may keep a result unavailable when:
 - the route is incompatible with Traditional or Atomic Fedora;
 - a required host capability is absent.
 
-Do not bypass the unavailable state by importing a UI module directly. Flow
+Do not bypass the unavailable state by importing a UI module directly. Proof
 ships logical core/specialist isolation in the base RPM; there is no physical
 `loofi-fedora-tweaks-extras` package.
 
@@ -196,7 +199,7 @@ loofi-fedora-tweaks --cli plugins list
 ```
 
 The first command returns exit status 2 with a stable schema-v3
-`feature_retired` result. This is expected: Flow has no public Marketplace or
+`feature_retired` result. This is expected: Proof has no public Marketplace or
 external Python execution path.
 
 Existing third-party files remain untouched. Open **Specialist Tools → Local

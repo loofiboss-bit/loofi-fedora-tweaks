@@ -59,6 +59,22 @@ def _register_activity_command(subparsers: Subparsers) -> None:
         help="Restrict results to one or more sources",
     )
     activity_list.add_argument("--refresh", action="store_true")
+    activity_list.add_argument("--since", type=float, help="Include events at or after this Unix timestamp")
+    activity_list.add_argument("--until", type=float, help="Include events at or before this Unix timestamp")
+    activity_list.add_argument(
+        "--status",
+        action="append",
+        dest="statuses",
+        choices=["running", "verifying", "awaiting_reboot", "succeeded", "failed", "verification_failed", "cancelled", "interrupted", "recorded"],
+        default=[],
+        help="Restrict results to one or more recorded states",
+    )
+    activity_list.add_argument(
+        "--reboot",
+        choices=["required", "not-required"],
+        help="Filter by recorded reboot requirement",
+    )
+    activity_list.add_argument("--search", help="Bounded search over action, package, resource, and summary facts")
     for action in ("show", "related", "recover"):
         action_parser = activity_subparsers.add_parser(
             action,
@@ -66,6 +82,13 @@ def _register_activity_command(subparsers: Subparsers) -> None:
         )
         action_parser.add_argument("event_id")
         action_parser.add_argument("--refresh", action="store_true")
+    export_parser = activity_subparsers.add_parser(
+        "export",
+        help="Export one selected event as redacted JSON or Markdown",
+    )
+    export_parser.add_argument("event_id")
+    export_parser.add_argument("--format", choices=["json", "markdown"], default="json")
+    export_parser.add_argument("--refresh", action="store_true")
     activity_related = activity_subparsers.choices["related"]
     activity_related.add_argument("--limit", type=int, default=20)
 

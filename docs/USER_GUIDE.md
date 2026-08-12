@@ -1,10 +1,14 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 24.0.0 "Flow"
+> Version 25.0.4 "Proof" public release
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
 `docs/ADVANCED_ADMIN_GUIDE.md`.
+
+This guide documents the public Proof release. Physical Fedora Wayland,
+reboot, and manual accessibility qualification remain separately reported
+gates and are not inferred from offscreen evidence.
 
 ---
 
@@ -204,6 +208,10 @@ collapsed details and advanced review tools.
   operation class, Fedora variants, reboot policy, affected resources,
   parameters, preflight, confirmation, verification, and recovery policy.
 - Unsupported host operations produce non-executable `manual_only` plans.
+- Eligible low-risk requests may use **Run with Proof** when Safety & Execution
+  is set to **Direct**. Medium-risk requests receive one compact confirmation;
+  high-risk, incomplete, unsupported, unverifiable, and manual-only requests
+  remain in review.
 - Plans expire and are re-preflighted before execution.
 - Execution requires explicit confirmation and, when applicable, explicit
   acknowledgement that rollback is unavailable.
@@ -287,6 +295,19 @@ Plan creation never applies a change. Host-changing legacy commands remain
 parse-compatible where practical, but return a review plan or explicit manual
 guidance instead of executing.
 
+Direct Proof execution uses the same Action Center authority:
+
+```bash
+loofi run dnf-clean-all --dry-run --json
+loofi run dnf-clean-all --yes --json
+loofi activity list --status succeeded --reboot not-required
+loofi activity export EVENT_ID --format markdown
+```
+
+Use `Settings → Behavior → Safety & Execution` to choose **Direct** or
+**Review first**, and to control preview, medium-risk confirmation, automatic
+verification, and the Action Center handoff after verification failure.
+
 Services, packages, and logs:
 
 ```bash
@@ -331,7 +352,7 @@ loofi --json readiness --target 44
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-Flow preserves settings, favorites, stable route IDs, observability data,
+Proof preserves settings, favorites, stable route IDs, observability data,
 and readable Action Center v1-v3 state. Writable Action Center plans and runs
 migrate atomically to schema v4; unknown future schemas remain read-only. The
 optional troubleshooting store retains at most 20 explicitly collected
@@ -365,7 +386,8 @@ Issue tracker: <https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues>
 ## 10) Release Scope
 
 Fedora 44 is the supported release target. Fedora 45 remains preview-only.
-Version 24.0.0 "Flow" is the current release.
+Version 25.0.4 "Proof" is the current public release. Version 24.0.0
+"Flow" is the previous public release.
 The historical Architecture Hardening tag object is preserved under
 `legacy-v23.0.0-architecture-hardening`. Its release evidence records exact
 commit, artifact, signature, checksum, SBOM/provenance, CI, COPR, Fedora 44

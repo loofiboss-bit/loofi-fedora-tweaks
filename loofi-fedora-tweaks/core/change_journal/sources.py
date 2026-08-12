@@ -352,14 +352,26 @@ class ActionCenterHistorySource:
                     actor_class="user",
                     summary=f"Action Center run: {run.action_id}",
                     resources=resources,
+                    before_facts={},
                     after_facts={
+                        "expected": {
+                            "action_id": run.action_id,
+                            "risk_level": plan.risk_level if plan else "unknown",
+                            "reboot_policy": plan.reboot_policy if plan else "unknown",
+                            "affected_resources": list(resources),
+                        },
                         "plan_id": run.plan_id,
                         "run_id": run.run_id,
                         "action_id": run.action_id,
-                        "verification": run.verification_result or {},
+                        "execution": _safe_result(run.execution_result),
+                        "verification": _safe_result(run.verification_result),
+                        "recovery": {
+                            "status": run.recovery_status,
+                            "rollback_supported": bool(plan.rollback_supported) if plan else False,
+                        },
                     },
                     state=run.state,
-                    reboot_required=run.state == "awaiting_reboot",
+                    reboot_required=bool(getattr(run, "reboot_required", False)) or run.state == "awaiting_reboot",
                 )
                 if since is None or event.occurred_at >= since:
                     events.append(event)
@@ -378,6 +390,17 @@ class ActionCenterHistorySource:
                     str(exc),
                 ),
             )
+
+
+def _safe_result(result: Mapping[str, Any] | None) -> dict[str, Any]:
+    """Keep journal evidence typed while excluding raw output and vectors."""
+    if not isinstance(result, Mapping):
+        return {}
+    return {
+        key: result[key]
+        for key in ("success", "message", "exit_code", "needs_reboot", "verification_state")
+        if key in result
+    }
 
 
 class LoofiHistorySource:

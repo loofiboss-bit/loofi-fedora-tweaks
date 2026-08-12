@@ -1,8 +1,8 @@
 # Screenshots
 
-Current deterministic UI evidence for **v24.0.0 "Flow"** is stored once in
-the main repository. These contact sheets show wide and compact layouts without
-duplicating binary assets in the wiki.
+Current deterministic UI evidence for the **v25.0.4 "Proof"** public release
+is stored once in the main repository. These contact sheets show wide and
+compact layouts without duplicating binary assets in the wiki.
 
 ## Home
 
@@ -30,4 +30,6 @@ duplicating binary assets in the wiki.
 
 These are deterministic application captures, not proof of a physical display,
 high-DPI, keyboard, or screen-reader gate. The six core workflow screenshots
-will be refreshed together after their UI work is complete.
+will be refreshed together after their UI work is complete. Existing binary
+captures remain evidence from the public v24.0.0 "Flow" baseline until a new
+candidate capture set is produced.

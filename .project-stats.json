@@ -1,6 +1,6 @@
 {
-  "version": "24.0.0",
-  "codename": "Flow",
+  "version": "25.0.4",
+  "codename": "Proof",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 30,
   "tab_names": [
@@ -35,15 +35,15 @@
     "teleport_tab",
     "virtualization_tab"
   ],
-  "test_file_count": 342,
+  "test_file_count": 349,
   "utils_module_count": 101,
   "test_count": "6864",
   "coverage": "86.24",
-  "active_version": "",
+  "active_version": "25.0.4",
   "next_version": "",
-  "roadmap_status": "stable",
-  "pipeline_version": "v24.0.0",
-  "pipeline_status": "complete",
+  "roadmap_status": "active",
+  "pipeline_version": "v25.0.4",
+  "pipeline_status": "active",
   "python_version": "3.12",
   "framework": "PyQt6"
 }

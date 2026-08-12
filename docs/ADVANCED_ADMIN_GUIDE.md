@@ -1,10 +1,14 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 24.0.0 "Flow"
+> Version 25.0.4 "Proof" public release
 
 Operational runbook for power users and Fedora administrators.
 
 ---
+
+Proof adds bounded direct execution and outcome evidence over the existing
+Action Center. Physical and manual qualification remain separately reported
+gates; this guide does not treat rootless evidence as host qualification.
 
 ## 1) Operating Model
 
@@ -249,7 +253,7 @@ journalctl --user --since "2 hours ago"
 - `~/.config/loofi-fedora-tweaks/first_run_complete`
 - `~/.local/share/loofi-fedora-tweaks/startup.log`
 
-Flow preserves settings, navigation migration inputs, favorites, stable
+Proof preserves settings, navigation migration inputs, favorites, stable
 routes, and observability data. Writable Action Center v1-v3 state migrates
 atomically to schema v4; unknown future schemas remain read-only. Optional
 troubleshooting schema-v1 state retains at most 20 terminal sessions and also

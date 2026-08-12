@@ -314,6 +314,63 @@ def cmd_activity(args: typing.Any) -> int:
     )
 
 
+def cmd_run(args: typing.Any) -> int:
+    """Run one registered action through the v25 direct-action adapter."""
+    from core.actions import DirectActionService
+    from core.actions.direct import DirectActionParameterError, parse_typed_parameters
+
+    service = DirectActionService()
+    definition = service.orchestrator.catalog.get(str(args.action_id))
+    try:
+        parameters = parse_typed_parameters(
+            list(getattr(args, "param", []) or []),
+            definition.parameter_schema if definition is not None else {},
+        )
+    except DirectActionParameterError as exc:
+        payload = {
+            "schema": "loofi.direct-action/v1",
+            "schema_version": 1,
+            "action_id": str(args.action_id),
+            "status": "review_required",
+            "label": "Review required",
+            "error": "invalid_parameters",
+            "message": str(exc),
+            "plan_id": "",
+            "run_id": "",
+            "correlation_id": "",
+            "preview": [],
+            "confirmation_required": False,
+            "dry_run": False,
+            "exit_code": 2,
+        }
+        if _json_output:
+            _output_json(payload)
+        else:
+            _print(payload["message"])
+        return 2
+
+    result = service.run(
+        str(args.action_id),
+        parameters,
+        yes=bool(getattr(args, "yes", False)),
+        dry_run=bool(getattr(args, "dry_run", False)),
+        timeout=int(getattr(args, "timeout", _operation_timeout)),
+        target=str(getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target)),
+    )
+    payload = result.to_dict()
+    payload["exit_code"] = result.exit_code
+    if _json_output:
+        _output_json(payload)
+    else:
+        _print(f"{result.display_label}: {result.action_id}")
+        _print(result.message)
+        if result.plan_id:
+            _print(f"Plan: {result.plan_id}")
+        if result.preview:
+            _print("Preview: " + " ".join(result.preview))
+    return int(result.exit_code)
+
+
 def cmd_troubleshoot(args: typing.Any) -> int:
     """Run or inspect one bounded troubleshooting session."""
     return handle_troubleshoot(
@@ -1057,6 +1114,7 @@ def _command_handlers() -> typing.Any:
         "boot": cmd_boot,
         "display": cmd_display,
         "backup": cmd_backup,
+        "run": cmd_run,
     }
 
 

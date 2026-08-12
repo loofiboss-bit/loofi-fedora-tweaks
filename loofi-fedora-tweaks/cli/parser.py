@@ -7,6 +7,7 @@ import argparse
 from cli.parser_domains import (
     register_agent_command,
     register_basic_host_commands,
+    register_execution_commands,
     register_observability_commands,
     register_post_agent_commands,
     register_specialist_commands,
@@ -49,4 +50,5 @@ def build_parser() -> argparse.ArgumentParser:
     register_system_management_commands(subparsers)
     register_agent_command(subparsers)
     register_post_agent_commands(subparsers)
+    register_execution_commands(subparsers)
     return parser

@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v24.0.0 "Flow"
+# Loofi Fedora Tweaks v25.0.4 "Proof"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -14,12 +14,18 @@
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v24.0.0">
-    <img src="https://img.shields.io/badge/Release-v24.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v24.0.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v25.0.4">
+    <img src="https://img.shields.io/badge/Release-v25.0.4-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v25.0.4 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
+</p>
+
+<p align="center">
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v25.0.0">
+    Historical v25.0.0 tag reference only — not the Proof release
+  </a>
 </p>
 
 ## What Loofi does
@@ -31,13 +37,17 @@ recovery, and desktop tasks into one KDE-friendly control center.
   navigation-only.
 - Troubleshooting follows Problem → Checks → Results and starts only when you
   explicitly begin.
-- Supported system changes become reviewed Action Center plans before anything
-  is applied.
+- Supported system changes enter the Action Center plan, fresh-preflight,
+  execution, and independent-verification lifecycle.
 - Maintenance results are verified separately from command completion.
+- Eligible low-risk requests can use the Proof path directly; medium-risk
+  requests receive one compact confirmation, and high-risk or incomplete
+  requests remain review-only.
 - Traditional and Atomic Fedora paths stay distinct.
 - The optional API is loopback-only and cannot apply plans.
 
-Full details: [v24.0.0 release notes](docs/releases/RELEASE-NOTES-v24.0.0.md).
+This checkout contains the [v25.0.4 Proof release](docs/releases/RELEASE-NOTES-v25.0.4.md).
+The previous public release was [v24.0.0 Flow](docs/releases/RELEASE-NOTES-v24.0.0.md).
 Earlier releases remain documented in the
 [release-note index](docs/releases/RELEASE_NOTES.md).
 
@@ -65,9 +75,9 @@ or privilege rules.
 4. **Find reclaimable disk space:** Software & Updates → Cleanup → Analyze.
 5. **Protect the system:** Home → Protect or recover → create a recovery point.
 
-The five canonical surfaces may create one exact Action Center plan and open it
-for review. They never apply it automatically; apply remains a separate,
-explicitly confirmed operation.
+The five canonical surfaces route to one Action Center authority. Proof can run
+an eligible request with fresh preflight and independent verification; review-
+first, high-risk, manual-only, and blocked states remain explicit.
 
 ## Install
 
@@ -139,6 +149,10 @@ loofi action-center plan dnf-clean-all
 loofi action-center show PLAN_ID
 loofi action-center apply PLAN_ID --confirm
 loofi action-center verify RUN_ID
+loofi run dnf-clean-all
+loofi run restart-failed-service --param service=example.service --yes --json
+loofi activity list --source action_center --status succeeded --search package
+loofi activity export EVENT_ID --format markdown
 loofi --json state doctor
 ```
 
@@ -146,8 +160,11 @@ The global `--json` option appears before the CLI command.
 
 ## Safety and compatibility
 
-- Action Center exposes 74 classified first-party definitions. Unsupported host
-  operations are visible as non-executable `manual_only` plans.
+- Action Center exposes 74 classified first-party definitions. Proof derives
+  direct eligibility from that metadata and fails closed for incomplete or
+  unsupported definitions.
+- `loofi run ACTION_ID` accepts only registered, typed parameters and returns a
+  versioned `loofi.direct-action/v1` result. `--dry-run` never executes.
 - The machine-readable public-operation registry classifies all CLI and API
   leaves. Legacy host-changing commands return a plan ID or manual guidance;
   only a separate `action-center apply PLAN_ID --confirm` request can mutate
@@ -195,11 +212,11 @@ See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 
 ## Release status
 
-`v24.0.0 "Flow"` is the current release. It unifies the six
-destinations around shared task, state, feedback, and review patterns while
-keeping Action Center as the only GUI execution boundary. Fedora 45 remains
-preview-only. See the
-[v24.0.0 release notes](docs/releases/RELEASE-NOTES-v24.0.0.md).
+`v25.0.4 "Proof"` is the current public release. The historical `v25.0.0`–
+`v25.0.3` tag lineage is preserved and was not retargeted; `v25.0.4` is the
+unambiguous Proof release identity. Fedora 45 remains preview-only. See the
+[release notes](docs/releases/RELEASE-NOTES-v25.0.4.md) and the
+[public release evidence](docs/reports/V25_RELEASE_PUBLICATION.md).
 The older
 "Architecture Hardening" tag object is preserved byte-identically as
 `legacy-v23.0.0-architecture-hardening`. Historical Sentinel, Horizon, Nebula,

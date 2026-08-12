@@ -34,6 +34,15 @@ _ACTION_EXPORTS = {
     "ActionPlanStore": ("core.actions.stores", "ActionPlanStore"),
     "ActionRunStore": ("core.actions.stores", "ActionRunStore"),
     "ActionStoreVersionError": ("core.actions.stores", "ActionStoreVersionError"),
+    "EligibilityDecision": ("core.actions.eligibility", "EligibilityDecision"),
+    "audit_definitions": ("core.actions.eligibility", "audit_definitions"),
+    "classify_definition": ("core.actions.eligibility", "classify_definition"),
+    "DirectActionResult": ("core.actions.direct", "DirectActionResult"),
+    "DirectActionService": ("core.actions.direct", "DirectActionService"),
+    "EvidenceFact": ("core.actions.outcomes", "EvidenceFact"),
+    "OutcomeEvidenceComposer": ("core.actions.outcomes", "OutcomeEvidenceComposer"),
+    "OutcomeSummary": ("core.actions.outcomes", "OutcomeSummary"),
+    "RecoveryReadiness": ("core.actions.outcomes", "RecoveryReadiness"),
 }
 
 __all__ = tuple(sorted(_ACTION_EXPORTS))

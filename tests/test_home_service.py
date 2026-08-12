@@ -158,6 +158,36 @@ class TestRecommendationOrdering(unittest.TestCase):
 
 
 class TestHomeServiceStates(unittest.TestCase):
+    def test_verified_change_and_recovery_warning_are_projected_from_saved_runs(self):
+        plan = SimpleNamespace(
+            plan_id="plan-risky",
+            risk_level="medium",
+            rollback_supported=False,
+            state="ready",
+        )
+        run = SimpleNamespace(
+            run_id="run-risky",
+            plan_id="plan-risky",
+            action_id="restart-failed-service",
+            state="succeeded",
+            updated_at=100_020.0,
+            last_verified_at=100_019.0,
+            reboot_required=False,
+        )
+
+        summary = _service(
+            snapshots=[_snapshot(100_000.0)],
+            plans=[plan],
+            runs=[run],
+        ).summary()
+
+        self.assertIsNotNone(summary.last_verified_change)
+        assert summary.last_verified_change is not None
+        self.assertEqual(summary.last_verified_change.source, "action_center")
+        self.assertEqual(summary.last_verified_change.outcome_state, "verified")
+        self.assertFalse(summary.last_verified_change.undo_available)
+        self.assertEqual(summary.primary_recommendation.kind, "recovery_warning")
+
     def test_fresh_empty_signal_snapshot_reports_good(self):
         summary = _service(snapshots=[_snapshot(100_000.0)]).summary()
 

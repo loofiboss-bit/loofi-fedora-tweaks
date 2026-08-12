@@ -1,10 +1,13 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 24.0.0 "Flow"
+> Version 25.0.4 "Proof" public release
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
 Use this guide for a safe first run in under 10 minutes.
+
+The current public release is v25.0.4 "Proof". Historical v25.0.0–v25.0.3
+tags remain preserved as separate historical lineages.
 
 ---
 
@@ -26,6 +29,10 @@ The first launch opens Home with integrated guidance. It can be dismissed or
 resumed, remembers your step, and only opens existing pages. It does not run a
 check, install packages, create a plan, start services, or modify the host.
 
+Proof adds a bounded direct path for eligible low-risk maintenance requests.
+Medium-risk requests receive one compact confirmation; high-risk, manual-only,
+unsupported, and incomplete actions remain in review.
+
 Loofi detects the Fedora variant automatically. Traditional Fedora uses DNF;
 Atomic Fedora uses rpm-ostree-aware or manual-only paths where an operation is
 not safe to automate.
@@ -46,7 +53,10 @@ The primary shell has exactly six destinations:
 Pages load when you open them. Specialist development, automation,
 virtualization, local-profile, and sharing tools remain grouped and searchable
 under **Specialist Tools**. Built-in pages load on demand; external Python
-plugins and the public Marketplace are retired.
+plugins and the public Marketplace are retired and are not an execution path.
+
+In **Settings → Behavior → Safety & Execution**, choose **Direct** for eligible
+requests or **Review first** to require the Action Center review flow.
 
 Useful shortcuts:
 
@@ -129,6 +139,14 @@ loofi action-center show PLAN_ID
 
 Creating a plan does not apply it. Review and apply the exact plan separately
 in Action Center.
+
+For an eligible request, the local Proof path can be previewed or run through
+the same Action Center authority:
+
+```bash
+loofi run dnf-clean-all --dry-run --json
+loofi activity list --status succeeded
+```
 
 ---
 

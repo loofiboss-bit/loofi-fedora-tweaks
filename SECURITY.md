@@ -4,13 +4,14 @@
 
 | Version | Support |
 |---|---|
-| 18.x | Current stable security support |
-| 17.x | Critical security fixes only |
-| 16.x | Critical security fixes only |
-| < 16 | End of life |
+| 25.x | Current public Proof release support |
+| 24.x | Previous public release support |
+| 23.x | Critical security fixes only |
+| < 23 | End of life |
 
-v18.0.0 "Haven" is the current supported release. Its release gates, exact tag,
-public artifacts, and Fedora 44 COPR installation were independently verified.
+v25.0.4 "Proof" is the current public release; v24.0.0 "Flow" is the previous
+public release. Historical v25.0.0–v25.0.3 tags are preserved without
+modification, and v25.0.4 is the separate Proof release identity.
 
 ## Reporting a Vulnerability
 
@@ -29,8 +30,14 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
   persist an authoritative command vector.
 - Every operation is classified as `host`, `app_state`, `session`, or
   `manual_only`; unclassified mutations fail the release gate.
-- GUI, CLI, daemon, automation, and agent entrypoints may create plans, but host
-  changes require an explicit local Action Center confirmation.
+- GUI and CLI direct-action entrypoints may execute only through the bounded
+  DirectActionService over Action Center. Host changes still require fresh
+  preflight, policy-appropriate confirmation, a lease, and independent
+  verification.
+- Unknown, incomplete, manual-only, high-risk, unsupported, unverifiable, and
+  future-schema requests fail closed to review or blocked outcomes.
+- `--dry-run` and previews never execute. A successful command without an
+  independent verifier is never presented as verified.
 - Reboot, rollback, and distribution upgrade are never started automatically.
 
 ### Extensions and presets
@@ -43,6 +50,15 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
   executable preset distribution are retired.
 - Local preset files are data only. They must pass schema and path validation
   and become reviewable plans before any host change.
+
+### Outcome and activity evidence
+
+- Outcome Evidence records expected, execution, verification, reboot, resource,
+  recovery, and source-quality facts without treating exit code zero as proof.
+- Activity & Recovery exports are bounded and redacted; executable vectors,
+  raw output, credentials, and secret-shaped fields are excluded.
+- Home links to Activity & Recovery for recovery review and does not provide a
+  direct Undo operation for Proof runs.
 
 ### Secrets and state
 
@@ -68,9 +84,9 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
 
 The repository requires unit and integration tests, architecture and
 trust-boundary checks, lint, type checking, Bandit, dependency audit, CodeQL,
-package builds, and SBOM generation as release gates. Haven passed the local
-gates, canonical CodeQL, exact-commit artifact readback, and a clean Fedora 44
-COPR installation. A green local suite alone is not public release evidence.
+package builds, and SBOM generation as release gates. Flow passed its public
+gates; Proof is public, but physical-host, installation, and reboot evidence
+remain separate and a green rootless suite alone is not physical qualification.
 
 ## Scope
 

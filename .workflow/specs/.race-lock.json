@@ -1,15 +1,17 @@
 {
-  "version": "v24.0.0",
-  "started_at": "20260808_000000",
-  "status": "complete",
-  "target_version": "v24.0.0",
-  "phase": "public-complete",
-  "baseline_commit": "b1c92bf100a365d6ff1652cd0f47a044f809ae51",
-  "product_version": "v24.0.0",
-  "product_codename": "Flow",
-  "target_codename": "Flow",
+  "version": "v25.0.4",
+  "started_at": "20260812_103114",
+  "status": "active",
+  "target_version": "v25.0.4",
+  "phase": "phase-5-local-qualification",
+  "baseline_commit": "0d7314b9fd086a662ba94b7dd5e51e0fbf39bd0b",
+  "product_version": "v25.0.4",
+  "product_codename": "Proof",
+  "target_codename": "Proof",
   "current_public_release": "v24.0.0",
   "current_release_commit": "709faf837649989724b3d744b60dae538b5cec8b",
+  "baseline_product_version": "v24.0.0",
+  "baseline_product_codename": "Flow",
   "local_candidate_prepared_at": "2026-08-08T11:08:30+02:00",
   "release_authorized_at": "2026-08-08T11:56:38+02:00",
   "v24_historical_tag_collision": {
@@ -19,6 +21,37 @@
     "status": "preserved-as-legacy",
     "legacy_tag": "legacy-v24.0.0-power-features",
     "legacy_commit": "dd2a23f8bfb837d3f20e2fc65e63c21a11cb8cd8"
+  },
+  "v25_historical_tag_collisions": {
+    "status": "preserved-unmodified",
+    "publication_blocked_until_human_resolution": false,
+    "proof_release_identity": "v25.0.4",
+    "tags": {
+      "v25.0.0": {
+        "tag_object": "0d9d125046e8b7754bde2b3d8f9902b48676df37",
+        "peeled_commit": "d4b5ace42f1c2c0a4e889689f0d899ccd3725dce",
+        "historical_lineage": "Plugin Architecture",
+        "recommended_legacy_tag": "legacy-v25.0.0-plugin-architecture"
+      },
+      "v25.0.1": {
+        "tag_object": "545592be9cf915a7feaf4b82fe6dc2b0a9665c07",
+        "peeled_commit": "5ad7aa7d775a56524ae0918510285997da02bd9d",
+        "historical_lineage": "hotfix",
+        "recommended_legacy_tag": "legacy-v25.0.1-hotfix"
+      },
+      "v25.0.2": {
+        "tag_object": "f9464e5aabe9b12b14c41150b313a11d138df0be",
+        "peeled_commit": "011e6b25f0ae01d1bcecf605a63807565e20935d",
+        "historical_lineage": "testability hotfix",
+        "recommended_legacy_tag": "legacy-v25.0.2-testability-hotfix"
+      },
+      "v25.0.3": {
+        "tag_object": "f7cc9078327172635e4854412095a97c917d93de",
+        "peeled_commit": "da9adde7885e743ed0f5265a34b4a7ec346697bf",
+        "historical_lineage": "maintenance update crash hotfix",
+        "recommended_legacy_tag": "legacy-v25.0.3-maintenance-crash-hotfix"
+      }
+    }
   },
   "historical_tag_collision": {
     "tag": "v23.0.0",
@@ -39,12 +72,12 @@
     "audible_orca": "unverified"
   },
   "external_release_gates": {
-    "commit_and_exact_tag": "passed",
-    "ci_and_codeql": "passed",
-    "github_assets_checksums_attestations": "passed",
-    "copr_packages_signatures": "passed",
-    "clean_fedora44_install": "passed-disposable-container",
-    "public_docs_and_wiki": "passed"
+    "commit_and_exact_tag": "pending-v25.0.4-canonical-workflow",
+    "ci_and_codeql": "unverified",
+    "github_assets_checksums_attestations": "unverified",
+    "copr_packages_signatures": "unverified",
+    "clean_fedora44_install": "unverified",
+    "public_docs_and_wiki": "unverified"
   },
   "current_public_release_evidence": {
     "release_commit": "709faf837649989724b3d744b60dae538b5cec8b",
@@ -60,6 +93,6 @@
     "copr_key_fingerprint": "4079C862B1977B9BF49768354FE905DF539BA887",
     "wiki_commit": "c520a59d27c5b38a9e835a1a640fcfc7da1c10d6"
   },
-  "bumped_at": "2026-08-08T09:08:30+00:00",
-  "completed_at": "2026-08-08T12:20:42+02:00"
+  "bumped_at": "2026-08-12T10:31:14.374030+00:00",
+  "completed_at": null
 }
