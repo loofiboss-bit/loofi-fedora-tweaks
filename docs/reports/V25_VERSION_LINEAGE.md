@@ -12,6 +12,7 @@ unchanged and are documented below.
 | `v25.0.1` | `545592be9cf915a7feaf4b82fe6dc2b0a9665c07` | `5ad7aa7d775a56524ae0918510285997da02bd9d` | Historical hotfix |
 | `v25.0.2` | `f9464e5aabe9b12b14c41150b313a11d138df0be` | `011e6b25f0ae01d1bcecf605a63807565e20935d` | Historical testability hotfix |
 | `v25.0.3` | `f7cc9078327172635e4854412095a97c917d93de` | `da9adde7885e743ed0f5265a34b4a7ec346697bf` | Historical maintenance-crash hotfix |
+| `v25.0.4` | `2d65b52f74dadb5258a114b1c66897fc744ec4e0` | `d93deaf801edd1fe9f2e240e5eee243890ce09d1` | Proof public release |
 | `legacy-v24.0.0-power-features` | `dd2a23f8bfb837d3f20e2fc65e63c21a11cb8cd8` | same | Preserved v24 collision lineage |
 
 The `v25.0.x` tags through `v25.0.3` predate Proof and were not moved,
@@ -21,5 +22,6 @@ the canonical Proof release tag.
 ## Publication decision
 
 The historical collision is resolved non-destructively by using `v25.0.4`.
-The release workflow must still prove that `v25.0.4` points to the exact release
-commit before publication.
+The canonical release workflow created the annotated tag and public release, and
+independent tag readback proves that `v25.0.4` points to the exact release
+commit `d93deaf801edd1fe9f2e240e5eee243890ce09d1`.

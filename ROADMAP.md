@@ -23,14 +23,15 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v23.0.2 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md), [public evidence](docs/reports/V23_RELEASE_PUBLICATION.md) |
 | v23.1.0 | Compass | DONE | [Canonical plan](docs/plans/loofi-fedora-tweaks-v23.1-implementation-plan.md), [architecture](.workflow/specs/arch-v23.1.0.md), [tasks](.workflow/specs/tasks-v23.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v23.1.0.md) |
 | v24.0.0 | Flow | DONE | [Architecture](.workflow/specs/arch-v24.0.0.md), [tasks](.workflow/specs/tasks-v24.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v24.0.0.md), [qualification](docs/reports/V24_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V24_RELEASE_PUBLICATION.md) |
-| v25.0.4 | Proof | ACTIVE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md) |
+| v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v25.0.4 "Proof" — Bounded Direct Execution and Outcome Evidence
+## [DONE] v25.0.4 "Proof" — Bounded Direct Execution and Outcome Evidence
 
-**Status:** public release. The preserved historical `v25.0.0`–`v25.0.3` tags
-remain unchanged; `v25.0.4` is the unambiguous Proof release identity. The
-previous public release was v24.0.0 "Flow". Physical and manual qualification
-remains separate evidence and is never inferred from rootless checks.
+**Status:** public release complete. The preserved historical `v25.0.0`–`v25.0.3`
+tags remain unchanged; `v25.0.4` is the unambiguous Proof release identity. The
+previous public release was v24.0.0 "Flow". Public publication passed independent
+readback; physical and manual qualification remains separate evidence and is
+never inferred from rootless checks.
 
 Proof adds a direct policy projection over the existing Action Center:
 

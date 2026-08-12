@@ -1,15 +1,15 @@
 {
   "version": "v25.0.4",
   "started_at": "20260812_103114",
-  "status": "active",
+  "status": "complete",
   "target_version": "v25.0.4",
-  "phase": "phase-5-local-qualification",
+  "phase": "public-complete",
   "baseline_commit": "0d7314b9fd086a662ba94b7dd5e51e0fbf39bd0b",
   "product_version": "v25.0.4",
   "product_codename": "Proof",
   "target_codename": "Proof",
-  "current_public_release": "v24.0.0",
-  "current_release_commit": "709faf837649989724b3d744b60dae538b5cec8b",
+  "current_public_release": "v25.0.4",
+  "current_release_commit": "d93deaf801edd1fe9f2e240e5eee243890ce09d1",
   "baseline_product_version": "v24.0.0",
   "baseline_product_codename": "Flow",
   "local_candidate_prepared_at": "2026-08-08T11:08:30+02:00",
@@ -72,27 +72,27 @@
     "audible_orca": "unverified"
   },
   "external_release_gates": {
-    "commit_and_exact_tag": "pending-v25.0.4-canonical-workflow",
-    "ci_and_codeql": "unverified",
-    "github_assets_checksums_attestations": "unverified",
-    "copr_packages_signatures": "unverified",
+    "commit_and_exact_tag": "passed-v25.0.4-canonical-workflow",
+    "ci_and_codeql": "passed",
+    "github_assets_checksums_attestations": "passed",
+    "copr_packages_signatures": "passed",
     "clean_fedora44_install": "unverified",
-    "public_docs_and_wiki": "unverified"
+    "public_docs_and_wiki": "passed"
   },
   "current_public_release_evidence": {
-    "release_commit": "709faf837649989724b3d744b60dae538b5cec8b",
-    "tag_object": "d5d8173417b7074a0683a106ab710a61a8b2944b",
-    "auto_release_run": 31251722128,
-    "ci_run": 31251722118,
-    "codeql_run": 31251721907,
-    "wiki_run": 31251722103,
+    "release_commit": "d93deaf801edd1fe9f2e240e5eee243890ce09d1",
+    "tag_object": "2d65b52f74dadb5258a114b1c66897fc744ec4e0",
+    "auto_release_run": 31589208342,
+    "ci_run": 31589208342,
+    "codeql_run": 31589207822,
+    "wiki_run": 31589208352,
     "github_release_assets": 8,
     "verified_attestations": 8,
-    "copr_build": 10838092,
-    "copr_evr": "1:24.0.0-1.fc44",
+    "copr_build": 10855992,
+    "copr_evr": "1:25.0.4-1.fc44",
     "copr_key_fingerprint": "4079C862B1977B9BF49768354FE905DF539BA887",
-    "wiki_commit": "c520a59d27c5b38a9e835a1a640fcfc7da1c10d6"
+    "wiki_commit": "409a12919bd16e2cdd5d1f0817a5805221f37f8e"
   },
   "bumped_at": "2026-08-12T10:31:14.374030+00:00",
-  "completed_at": null
+  "completed_at": "2026-08-12T13:13:56+02:00"
 }

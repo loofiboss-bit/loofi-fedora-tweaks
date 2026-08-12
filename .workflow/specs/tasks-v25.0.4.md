@@ -1,7 +1,7 @@
 # Tasks — v25.0.4 “Proof”
 
-Status: release candidate prepared for the canonical v25.0.4 publication
-workflow. Historical v25.0.0–v25.0.3 tags remain untouched.
+Status: complete; v25.0.4 public release and independent publication readback
+passed. Historical v25.0.0–v25.0.3 tags remain untouched.
 
 ## Phase 0 — baseline and release identity
 

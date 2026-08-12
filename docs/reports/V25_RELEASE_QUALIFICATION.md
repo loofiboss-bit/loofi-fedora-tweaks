@@ -1,8 +1,8 @@
 # v25.0.4 “Proof” Release Qualification
 
-**Status:** release candidate prepared for the v25.0.4 canonical workflow.
-Rootless/offscreen evidence is separate from package-installation and
-physical-host claims.
+**Status:** v25.0.4 public release qualified for local, automated, and public
+release gates. Rootless/offscreen evidence is separate from package-installation
+and physical-host claims.
 
 ## Authority and boundaries
 
@@ -13,6 +13,9 @@ physical-host claims.
 - Historical `v25.0.0`–`v25.0.3` tags were read and preserved without
   modification. The separate `v25.0.4` identity resolves the collision without
   retargeting history.
+- Public release commit: `d93deaf801edd1fe9f2e240e5eee243890ce09d1`.
+- Public annotated tag object: `2d65b52f74dadb5258a114b1c66897fc744ec4e0`;
+  peeled commit matches the release commit.
 - The release commit, push, tag, GitHub/COPR/wiki publication, package
   installation, reboot, and real-host mutation are separate gates recorded by
   the release workflow and public evidence report.
@@ -68,16 +71,21 @@ or externally dependent gates remain explicitly labeled.
 | Product contract | passed | rootless catalog and entrypoint trust boundaries |
 | Architecture contract | passed | module budgets and annotation boundary |
 | System Check contract | passed | source/route trust contract |
+| Canonical release workflow | passed | run `31589208342`, exact release commit, all jobs successful |
+| CodeQL | passed | run `31589207822`, exact release commit |
+| GitHub assets/checksums/attestations | passed | eight public assets, checksum readback, eight workflow attestations |
+| COPR Fedora 44 package path | passed | build `10855992`, terminal `succeeded`, public repodata and RPM signature readback |
+| Public wiki | passed | publish run `31589208352`, v25.0.4 readback on current pages |
 
-## Explicitly unverified or blocked gates
+## External and physical gate status
 
 | Gate | Status | Reason |
 | --- | --- | --- |
-| Exact v25.0.4 commit and tag | pending | Canonical release workflow must bind the tag to the release commit |
-| CI and CodeQL | pending | Awaiting tag-triggered workflow readback |
-| GitHub assets, checksums, attestations | pending | Awaiting public release readback |
-| COPR build/signature/repodata | pending | Awaiting canonical COPR job and repository readback |
-| Clean Fedora KDE 44 installation | unverified | Not performed in this release task |
+| Exact v25.0.4 commit and tag | passed | Tag object `2d65b52f...` peels to `d93deaf8...` |
+| CI and CodeQL | passed | Canonical workflow and CodeQL completed successfully |
+| GitHub assets, checksums, attestations | passed | Eight uploaded assets and eight workflow attestations read back |
+| COPR build/signature/repodata | passed | Build `10855992`, EVR `1:25.0.4-1.fc44`, public repository and three RPM signatures |
+| Clean Fedora KDE 44 installation | unverified | CI RPM smoke passed in Fedora 44; no physical clean KDE host installation was performed |
 | Physical Fedora KDE Wayland | unverified | Rootless/offscreen tests cannot prove compositor behavior |
 | Fresh Atomic/Kinoite | unverified | No Atomic host qualification was run |
 | Keyboard and screen reader | unverified | No physical/manual accessibility session was run |

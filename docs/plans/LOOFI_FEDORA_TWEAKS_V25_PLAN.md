@@ -1,7 +1,7 @@
 # Loofi Fedora Tweaks v25.0.0 “Proof” Plan
 
-Status: v25.0.4 “Proof” release preparation; historical v25.0.0–v25.0.3 tags
-remain preserved and v25.0.4 is the separate release identity.
+Status: v25.0.4 “Proof” public release complete; historical v25.0.0–v25.0.3
+tags remain preserved and physical/manual qualification remains separate.
 
 ## Objective
 

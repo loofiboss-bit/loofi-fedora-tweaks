@@ -50,8 +50,8 @@ repository guides linked above are the current usage and development sources.
 
 ## Release status
 
-Proof is the current public release. Its rootless/offscreen qualification is
-reported separately, while public publication and physical Fedora KDE,
+Proof is the current public release. Its rootless/offscreen qualification and
+public publication evidence are reported separately. Physical Fedora KDE,
 keyboard, accessibility, reboot, and manual recovery gates remain unverified.
 The public baseline remains v24.0.0 "Flow", whose historical release evidence
 is preserved separately. Fedora 45 remains preview-only.
