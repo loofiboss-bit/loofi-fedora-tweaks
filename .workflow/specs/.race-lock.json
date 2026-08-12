@@ -83,16 +83,20 @@
     "release_commit": "d93deaf801edd1fe9f2e240e5eee243890ce09d1",
     "tag_object": "2d65b52f74dadb5258a114b1c66897fc744ec4e0",
     "auto_release_run": 31589208342,
-    "ci_run": 31589208342,
+    "ci_run": 31589208350,
     "codeql_run": 31589207822,
-    "wiki_run": 31589208352,
+    "wiki_run": 31591133495,
     "github_release_assets": 8,
     "verified_attestations": 8,
     "copr_build": 10855992,
     "copr_evr": "1:25.0.4-1.fc44",
     "copr_key_fingerprint": "4079C862B1977B9BF49768354FE905DF539BA887",
-    "wiki_commit": "409a12919bd16e2cdd5d1f0817a5805221f37f8e"
+    "wiki_commit": "79ff84cf3158a4ed3b9dff1727a3f0e0326184dc",
+    "closure_auto_release_run": 31591133511,
+    "closure_ci_run": 31591133498,
+    "closure_ci_attempt": 2,
+    "closure_codeql_run": 31591133767
   },
   "bumped_at": "2026-08-12T10:31:14.374030+00:00",
-  "completed_at": "2026-08-12T13:13:56+02:00"
+  "completed_at": "2026-08-12T13:28:02+02:00"
 }

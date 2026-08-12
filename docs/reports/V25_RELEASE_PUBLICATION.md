@@ -25,6 +25,11 @@ The tag readback used `git ls-remote --tags` and proved that the annotated tag
 peels to the exact release commit. The historical v25 tag objects and peeled
 commits are recorded in [V25_VERSION_LINEAGE.md](V25_VERSION_LINEAGE.md).
 
+The post-publication closure commit `28dd7c6a5185d200ea792f883ee09f6bf2cefc81`
+also passed Auto Release run `31591133511`, CI run `31591133498` on attempt 2,
+CodeQL run `31591133767`, and Wiki run `31591133495`. These runs validate the
+final documentation/readback state without creating a second release tag.
+
 ## Public surfaces
 
 | Surface | Status | Evidence |
@@ -34,7 +39,7 @@ commits are recorded in [V25_VERSION_LINEAGE.md](V25_VERSION_LINEAGE.md).
 | Checksums | passed | Fresh `gh release download v25.0.4` readback passed `sha256sum -c SHA256SUMS.txt` for all seven listed payload assets; the manifest hash is `sha256:10ff8fc1913d77bdcc1e96eb6d55c68f80464ae515e3302aba1720e6a24ad194`. |
 | SBOM, provenance, attestations | passed | The canonical workflow recorded eight verified attestations. The downloaded base RPM also passed direct `gh attestation verify` readback. |
 | COPR Fedora 44 build | passed | [Build 10855992](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/build/10855992/) reached terminal `succeeded` for `fedora-44-x86_64`; public repodata and all three RPM signatures were read back. |
-| Wiki | passed | [Wiki publish run 31589208352](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/31589208352) succeeded; public `Home`, `Getting-Started`, and `Screenshots` pages identify v25.0.4 “Proof”. |
+| Wiki | passed | [Wiki publish run 31591133495](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/31591133495) succeeded; public wiki commit `79ff84cf3158a4ed3b9dff1727a3f0e0326184dc` and the `Home`, `Getting-Started`, and `Screenshots` pages identify v25.0.4 “Proof”. |
 
 ### GitHub asset hashes
 

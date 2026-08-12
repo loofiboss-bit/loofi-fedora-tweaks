@@ -75,7 +75,7 @@ or externally dependent gates remain explicitly labeled.
 | CodeQL | passed | run `31589207822`, exact release commit |
 | GitHub assets/checksums/attestations | passed | eight public assets, checksum readback, eight workflow attestations |
 | COPR Fedora 44 package path | passed | build `10855992`, terminal `succeeded`, public repodata and RPM signature readback |
-| Public wiki | passed | publish run `31589208352`, v25.0.4 readback on current pages |
+| Public wiki | passed | publish run `31591133495`, wiki commit `79ff84cf...`, v25.0.4 readback on current pages |
 
 ## External and physical gate status
 
