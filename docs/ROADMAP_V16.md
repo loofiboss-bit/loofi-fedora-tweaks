@@ -1,4 +1,7 @@
-# Loofi Fedora Tweaks v16.0.0 "Horizon" — Roadmap
+# Historical Roadmap — v16.0.0 "Horizon"
+
+> This document is preserved for release history. It is not the current
+> product roadmap; see [`ROADMAP.md`](../ROADMAP.md) for v27.0.1 Core.
 
 ## Vision
 

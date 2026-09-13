@@ -10,7 +10,7 @@ the package service, and the wiki after the workflow completes.
 | --- | --- | --- |
 | `.github/workflows/ci.yml` | push and pull request | lint, typecheck, tests, security, docs, RPM/sdist packaging |
 | `.github/workflows/auto-release.yml` | master push, `v*` tag, or dispatch | validation, gates, RPM/sdist build, exact tag, GitHub release, COPR handoff |
-| `.github/workflows/pr-security-bot.yml` | pull request | security review |
+| GitHub CodeQL default setup | pull request and weekly schedule | Python and GitHub Actions security analysis |
 | `.github/workflows/publish-wiki.yml` | wiki changes | wiki publication |
 
 ## Blocking quality contract
@@ -41,6 +41,10 @@ master push
 The auto-tag job fails closed if a version tag already points at a different
 commit. Historical tags are never moved; v27.0.1 is used because v27.0.0 is a
 preserved Marketplace Enhancement tag.
+
+CodeQL is configured on the repository security surface for the languages that
+exist in V27 (`python` and `actions`). JavaScript/TypeScript scanning is not
+enabled because the product contains no JavaScript/TypeScript source.
 
 ## Evidence boundary
 
