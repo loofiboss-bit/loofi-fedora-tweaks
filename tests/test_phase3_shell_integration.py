@@ -23,6 +23,13 @@ from core.navigation import (
     all_routes,
 )
 from core.plugins.registry import PluginRegistry
+from core.plugins.metadata import CompatStatus
+from core.platform.profile import (
+    DeploymentBackend,
+    DesktopEnvironment,
+    PlatformProfile,
+    SessionType,
+)
 from ui.main_window import MainWindow
 from ui.layout_primitives import LayoutMetrics
 
@@ -54,15 +61,36 @@ class TestPhase3MainWindowShell(unittest.TestCase):
             self.window = None
         PluginRegistry.reset()
 
+    @staticmethod
+    def _passing_profile() -> PlatformProfile:
+        """Return a deterministic Fedora profile independent of the CI host."""
+        return PlatformProfile(
+            os_id="fedora",
+            fedora_version=44,
+            variant_id="workstation",
+            variant_name="Fedora Workstation",
+            architecture="x86_64",
+            desktop=DesktopEnvironment.KDE,
+            session_type=SessionType.WAYLAND,
+            deployment_backend=DeploymentBackend.DNF5,
+            is_atomic=False,
+            reboot_pending=False,
+            package_manager_command="dnf5",
+        )
+
     @patch("ui.main_window.MainWindow._check_first_run")
     @patch("ui.main_window.MainWindow._initialize_background_services")
     @patch("ui.main_window.SystemManager.is_atomic", return_value=False)
+    @patch("ui.main_window.SystemManager.get_platform_profile")
     @patch("ui.main_window.FavoritesManager.get_favorites", return_value=[])
     @patch("utils.navigation_mode.NavigationModeManager.get_mode")
+    @patch("core.plugins.compat.CompatibilityDetector.check_plugin_compat")
     def _build_window(
         self,
+        mock_compat,
         mock_mode,
         mock_favorites,
+        mock_profile,
         mock_atomic,
         mock_background,
         mock_first_run,
@@ -72,6 +100,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         del mock_favorites, mock_atomic, mock_background, mock_first_run
         PluginRegistry.reset()
         mock_mode.return_value = mode
+        mock_compat.return_value = CompatStatus(compatible=True)
+        mock_profile.return_value = self._passing_profile()
         window = MainWindow()
         route_widgets: dict[str, _RouteWidget] = {}
 

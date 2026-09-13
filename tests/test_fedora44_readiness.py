@@ -23,6 +23,13 @@ from core.diagnostics.readiness_actions import ReadinessActionService
 from core.executor.action_result import ActionResult
 from core.export.support_bundle_v3 import SupportBundleV3
 from core.export.support_bundle_v5 import SupportBundleV5
+from core.platform.profile import (
+    DeploymentBackend,
+    DesktopEnvironment,
+    PlatformProfile,
+    SessionType,
+)
+from services.system import SystemManager
 from services.desktop.kde44 import KDE44DesktopInfo, KDE44DesktopService
 from services.package.dnf5_health import DNF5HealthReport, DNF5HealthService, RepoRisk
 
@@ -51,6 +58,23 @@ def _passing_package():
         repo_probe_ok=True,
         repo_probe_detail="fedora updates",
         repo_risks=[],
+    )
+
+
+def _passing_profile():
+    """Return a deterministic Fedora KDE profile for host-independent tests."""
+    return PlatformProfile(
+        os_id="fedora",
+        fedora_version=44,
+        variant_id="workstation",
+        variant_name="Fedora Workstation",
+        architecture="x86_64",
+        desktop=DesktopEnvironment.KDE,
+        session_type=SessionType.WAYLAND,
+        deployment_backend=DeploymentBackend.DNF5,
+        is_atomic=False,
+        reboot_pending=False,
+        package_manager_command="dnf5",
     )
 
 
@@ -128,6 +152,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         repo_check = next(check for check in checks if check.id == "fedora45-repo-config-layout")
         self.assertEqual(repo_check.severity, "warning")
 
+    @patch.object(SystemManager, "get_platform_profile", return_value=_passing_profile())
     @patch.object(ReleaseReadiness, "_tls_check")
     @patch.object(ReleaseReadiness, "_flatpak_check")
     @patch.object(ReleaseReadiness, "_nvidia_check")
@@ -144,6 +169,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         mock_nvidia,
         mock_flatpak,
         mock_tls,
+        _mock_profile,
     ):
         mock_os_release.return_value = {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
         mock_desktop.return_value = _passing_desktop()
@@ -169,6 +195,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         self.assertEqual(report.target, "Fedora 44")
         self.assertNotEqual(report.status, "preview")
 
+    @patch.object(SystemManager, "get_platform_profile", return_value=_passing_profile())
     @patch.object(ReleaseReadiness, "_fedora45_upgrade_checks", return_value=[])
     @patch.object(ReleaseReadiness, "_tls_check")
     @patch.object(ReleaseReadiness, "_flatpak_check")
@@ -187,6 +214,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         mock_flatpak,
         mock_tls,
         mock_f45,
+        _mock_profile,
     ):
         mock_os_release.return_value = {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
         mock_desktop.return_value = _passing_desktop()
@@ -228,6 +256,7 @@ class TestFedora44ReadinessAggregation(unittest.TestCase):
         output = "QMake version 3.1\nUsing Qt version 6.10.1 in /usr/lib64"
         self.assertEqual(KDE44DesktopService._extract_qt_version(output), "6.10.1")
 
+    @patch.object(SystemManager, "get_platform_profile", return_value=_passing_profile())
     @patch.object(Fedora44Readiness, "_tls_check")
     @patch.object(Fedora44Readiness, "_flatpak_check")
     @patch.object(Fedora44Readiness, "_nvidia_check")
@@ -244,6 +273,7 @@ class TestFedora44ReadinessAggregation(unittest.TestCase):
         mock_nvidia,
         mock_flatpak,
         mock_tls,
+        _mock_profile,
     ):
         mock_os_release.return_value = {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
         mock_desktop.return_value = _passing_desktop()
