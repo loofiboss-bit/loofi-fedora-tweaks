@@ -83,8 +83,8 @@ signatures.
 - The active guides, architecture, AppStream metadata, changelog, release
   notes, roadmap, workflow specifications, and AI-adapter guidance are synced
   to the Core scope.
-- [Wiki publish workflow 34784282371](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/34784282371)
-  published wiki commit `f6747ffeef90033e6e38b5ceaed2218de1380821`; a fresh
+- [Wiki publish workflow 34787281110](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/34787281110)
+  published wiki commit `7bed79ba0ee540c56256c914e93311b19cef6eb6`; a fresh
   public wiki checkout contains the current Core pages and images.
 - The repository description is now: “Desktop-neutral Fedora maintenance core
   with capability-aware inspection, reviewed changes, and verified outcomes.”

@@ -92,7 +92,7 @@
     "auto_release_run": 34784282392,
     "ci_run": 34784282361,
     "codeql_run": 34784282578,
-    "wiki_run": 34784282371,
+    "wiki_run": 34787281110,
     "github_release_url": "https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v27.0.1",
     "github_release_assets": 5,
     "verified_attestations": 2,
@@ -102,12 +102,12 @@
     "copr_evr": "1:27.0.1-1.fc44",
     "copr_key_fingerprint": "4079C862B1977B9BF49768354FE905DF539BA887",
     "copr_result_url": "https://download.copr.fedorainfracloud.org/results/loofitheboss/loofi-fedora-tweaks/fedora-44-x86_64/",
-    "wiki_commit": "f6747ffeef90033e6e38b5ceaed2218de1380821",
+    "wiki_commit": "7bed79ba0ee540c56256c914e93311b19cef6eb6",
     "publication_report": "docs/reports/V27_RELEASE_PUBLICATION.md"
   },
   "bumped_at": "2026-09-13T20:48:27.659140+00:00",
   "release_authorized_at": "2026-09-13T21:00:00+02:00",
   "published_at": "2026-09-13T21:45:34Z",
-  "closed_at": "2026-09-14T00:28:02+02:00",
+  "closed_at": "2026-09-14T00:36:26+02:00",
   "publication_authorized": true
 }
