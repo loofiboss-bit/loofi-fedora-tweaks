@@ -5,7 +5,7 @@ from __future__ import annotations
 import unittest
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtWidgets import QApplication, QFrame, QPushButton
+from PyQt6.QtWidgets import QApplication
 
 from ui.maintenance_updates import _UpdatesSubTab
 from ui.software_tab import _ApplicationsSubTab
@@ -16,77 +16,13 @@ class TestV24ApplicationsFlow(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
 
-    @patch("services.software.applications.SystemManager.is_atomic", return_value=False)
-    @patch("ui.software_tab.SoftwareUtils.is_check_command_satisfied", return_value=False)
-    def test_application_row_has_one_review_action_and_explicit_source(
-        self,
-        _installed: MagicMock,
-        _atomic: MagicMock,
-    ) -> None:
+    def test_application_page_delegates_to_native_store(self) -> None:
         tab = _ApplicationsSubTab()
         self.addCleanup(tab.deleteLater)
-        tab.apps = [
-            {
-                "name": "Editor",
-                "desc": "Text editor",
-                "cmd": "pkexec",
-                "args": ["dnf", "install", "-y", "editor"],
-                "check_cmd": "rpm -q editor",
-            }
-        ]
-
-        tab.refresh_list()
-
-        row = tab.findChild(QFrame, "applicationRow")
-        self.assertIsNotNone(row)
-        assert row is not None
-        self.assertEqual(row.property("appSource"), "fedora")
-        self.assertEqual(row.property("appStatus"), "available")
-        actions = [button for button in row.findChildren(QPushButton) if button.property("buttonRole") == "primary"]
-        self.assertEqual(len(actions), 1)
-        self.assertEqual(actions[0].text(), "Review install")
-        self.assertIsNotNone(row.findChild(QFrame, "applicationSourceBadge"))
-        self.assertIsNotNone(row.findChild(QFrame, "applicationStatusBadge"))
-
-    @patch("services.software.applications.SystemManager.is_atomic", return_value=False)
-    def test_search_filter_empty_state_is_explicit(self, _atomic: MagicMock) -> None:
-        tab = _ApplicationsSubTab()
-        self.addCleanup(tab.deleteLater)
-        tab.apps = [
-            {
-                "name": "Editor",
-                "desc": "Text editor",
-                "cmd": "pkexec",
-                "args": ["dnf", "install", "-y", "editor"],
-                "check_cmd": "rpm -q editor",
-            }
-        ]
-        with patch.object(tab, "check_installed", return_value=False):
-            tab.refresh_list()
-
-        tab._search_bar.setText("does-not-exist")
-
-        self.assertFalse(tab.filter_empty.isHidden())
-
-    @patch("services.software.applications.SystemManager.is_atomic", return_value=False)
-    def test_review_handoff_does_not_run_a_command(self, _atomic: MagicMock) -> None:
-        tab = _ApplicationsSubTab()
-        self.addCleanup(tab.deleteLater)
-        requests: list[tuple[str, object]] = []
-        tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
-        entry = {
-            "name": "Editor",
-            "desc": "Text editor",
-            "cmd": "pkexec",
-            "args": ["dnf", "install", "-y", "editor"],
-            "check_cmd": "rpm -q editor",
-        }
-
-        tab.run_app_action(entry, installed=False)
-
-        self.assertEqual(requests, [("install-application", {"source": "fedora", "package_id": "editor"})])
-        self.assertFalse(tab.runner.is_running())
-        self.assertEqual(tab.application_feedback.property("resultKind"), "info")
+        self.assertEqual(tab.native_handoff.handoff_id.value, "software.center")
+        self.assertTrue(tab.catalog_empty.property("handoffOnly"))
+        self.assertEqual(tab.load_apps(), [])
+        self.assertFalse(hasattr(tab, "run_app_action"))
 
 
 class TestV24UpdatesFlow(unittest.TestCase):

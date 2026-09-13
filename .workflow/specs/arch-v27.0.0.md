@@ -1,4 +1,8 @@
-# Architecture — v27.0.0 "Core"
+# Architecture — v27.0.0 "Core" (historical)
+
+> Superseded by the completed v27.0.1 Core contract. Retained to preserve the
+> original planning lineage; see [arch-v27.0.1.md](arch-v27.0.1.md) for the
+> current architecture.
 
 ## Core Purpose: Fedora Maintenance Core
 

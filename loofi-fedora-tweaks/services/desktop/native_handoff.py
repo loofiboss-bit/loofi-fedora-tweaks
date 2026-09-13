@@ -11,9 +11,12 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Mapping, Sequence
 
 from core.catalog_models import CapabilityState, NativeHandoffId
+
+if TYPE_CHECKING:
+    from core.platform.profile import PlatformProfile
 
 
 @dataclass(frozen=True)
@@ -50,35 +53,35 @@ class NativeHandoffLaunch:
 
 _TARGETS: Mapping[NativeHandoffId, NativeHandoffTarget] = MappingProxyType(
     {
-        NativeHandoffId.PLASMA_DISCOVER: NativeHandoffTarget(
-            NativeHandoffId.PLASMA_DISCOVER,
-            "Plasma Discover",
+        NativeHandoffId.SOFTWARE_CENTER: NativeHandoffTarget(
+            NativeHandoffId.SOFTWARE_CENTER,
+            "Software Center",
             "plasma-discover",
         ),
-        NativeHandoffId.PLASMA_NETWORK_CONNECTIONS: NativeHandoffTarget(
-            NativeHandoffId.PLASMA_NETWORK_CONNECTIONS,
-            "Plasma Network Connections",
+        NativeHandoffId.NETWORK_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.NETWORK_SETTINGS,
+            "Network Settings",
             "kcmshell6",
             ("kcm_networkmanagement",),
             "kcm_networkmanagement",
         ),
-        NativeHandoffId.PLASMA_APPEARANCE: NativeHandoffTarget(
-            NativeHandoffId.PLASMA_APPEARANCE,
-            "Plasma Global Theme",
+        NativeHandoffId.APPEARANCE_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.APPEARANCE_SETTINGS,
+            "Appearance Settings",
             "kcmshell6",
             ("kcm_lookandfeel",),
             "kcm_lookandfeel",
         ),
-        NativeHandoffId.PLASMA_DISPLAY: NativeHandoffTarget(
-            NativeHandoffId.PLASMA_DISPLAY,
-            "Plasma Display Configuration",
+        NativeHandoffId.DISPLAY_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.DISPLAY_SETTINGS,
+            "Display Settings",
             "kcmshell6",
             ("kcm_kscreen",),
             "kcm_kscreen",
         ),
-        NativeHandoffId.PLASMA_WINDOW_MANAGEMENT: NativeHandoffTarget(
-            NativeHandoffId.PLASMA_WINDOW_MANAGEMENT,
-            "Plasma Window Management",
+        NativeHandoffId.WINDOW_MANAGEMENT: NativeHandoffTarget(
+            NativeHandoffId.WINDOW_MANAGEMENT,
+            "Window Management",
             "kcmshell6",
             ("kcm_kwinoptions",),
             "kcm_kwinoptions",
@@ -115,29 +118,51 @@ class NativeHandoffService:
     def availability(
         self,
         handoff_id: NativeHandoffId | str,
+        *,
+        profile: "PlatformProfile | None" = None,
     ) -> NativeHandoffAvailability:
-        """Probe an executable and, for KCM targets, the exact module ID."""
+        """Probe a target using the detected desktop capability.
+
+        When a profile is supplied, desktop-specific targets are fail-closed:
+        KDE KCMs are never offered on GNOME, and KDE does not silently fall
+        back to GNOME Software.  The optional profile keeps the pure service
+        convenient for callers that only need to inspect the static allowlist;
+        the application card supplies the real profile before rendering.
+        """
         target = self.target(handoff_id)
+        normalized = NativeHandoffId(handoff_id)
+
+        if profile is not None:
+            from core.platform.profile import DesktopEnvironment
+
+            desktop = profile.desktop
+            if normalized is NativeHandoffId.SOFTWARE_CENTER:
+                if desktop is DesktopEnvironment.GNOME:
+                    target = NativeHandoffTarget(
+                        normalized,
+                        "GNOME Software",
+                        "gnome-software",
+                    )
+                elif desktop is DesktopEnvironment.KDE:
+                    target = NativeHandoffTarget(
+                        normalized,
+                        "Discover",
+                        "plasma-discover",
+                    )
+                else:
+                    return NativeHandoffAvailability(
+                        target,
+                        CapabilityState.UNAVAILABLE,
+                        "No supported native software center was detected for this desktop.",
+                    )
+            elif normalized is not NativeHandoffId.SOFTWARE_CENTER and desktop is not DesktopEnvironment.KDE:
+                return NativeHandoffAvailability(
+                    target,
+                    CapabilityState.UNAVAILABLE,
+                    "This native handoff is available only on KDE Plasma.",
+                )
+
         resolved = self._which(target.executable)
-        if (
-            handoff_id == NativeHandoffId.PLASMA_DISCOVER
-            or getattr(handoff_id, "value", handoff_id) == NativeHandoffId.PLASMA_DISCOVER.value
-        ) and not resolved:
-            if self._which("gnome-software"):
-                target = NativeHandoffTarget(
-                    NativeHandoffId.PLASMA_DISCOVER,
-                    "GNOME Software",
-                    "gnome-software",
-                )
-                resolved = self._which("gnome-software")
-            elif self._which("xdg-open"):
-                target = NativeHandoffTarget(
-                    NativeHandoffId.PLASMA_DISCOVER,
-                    "Software Center",
-                    "xdg-open",
-                    ("appstream://",),
-                )
-                resolved = self._which("xdg-open")
         if not resolved:
             return NativeHandoffAvailability(
                 target,
@@ -178,9 +203,11 @@ class NativeHandoffService:
     def prepare_launch(
         self,
         handoff_id: NativeHandoffId | str,
+        *,
+        profile: "PlatformProfile | None" = None,
     ) -> NativeHandoffLaunch | None:
         """Revalidate a target and return its fixed, ephemeral launch vector."""
-        availability = self.availability(handoff_id)
+        availability = self.availability(handoff_id, profile=profile)
         if not availability.available:
             return None
         resolved = self._which(availability.target.executable)

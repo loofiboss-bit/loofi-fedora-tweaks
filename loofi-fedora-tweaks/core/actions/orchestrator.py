@@ -188,10 +188,15 @@ class ActionCenterOrchestrator:
                 if definition.operation_class == "manual_only":
                     decision = definition.preflight_checker(normalized, self.runtime)
                 else:
-                    preview = self._render(definition, normalized)
                     decision = definition.preflight_checker(normalized, self.runtime)
                     if decision.allowed:
                         decision = self._variant_decision(definition) or decision
+                    # Render only after the typed preflight accepts the host.
+                    # This preserves the real policy reason (for example
+                    # ``atomic_manual_only``) instead of turning an
+                    # unavailable backend into a generic empty-vector error.
+                    if decision.allowed:
+                        preview = self._render(definition, normalized)
                 if self.release_policy.is_preview_target(target):
                     decision = PolicyDecision(
                         False,

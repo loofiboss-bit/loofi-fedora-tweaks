@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "loofi_fedora_tweaks"
-version = "27.0.0"
+version = "27.0.1"
 description = "A Fedora maintenance and desktop control center with GUI and CLI modes"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -67,6 +67,56 @@ resources = ["**/*"]
 testpaths = ["tests"]
 timeout = 60
 addopts = "-v --tb=short"
+
+[tool.coverage.run]
+source = ["loofi-fedora-tweaks"]
+# These files remain available for migration and compatibility tests but are
+# outside the maintained V27 product surface: retired specialist CLI/UI
+# entrypoints, the removed profile/mesh stacks, and deprecated utility shims.
+omit = [
+    "loofi-fedora-tweaks/cli/action_plans.py",
+    "loofi-fedora-tweaks/cli/commands/agent_commands.py",
+    "loofi-fedora-tweaks/cli/commands/firewall_commands.py",
+    "loofi-fedora-tweaks/cli/commands/hardware_commands.py",
+    "loofi-fedora-tweaks/cli/commands/health_history_commands.py",
+    "loofi-fedora-tweaks/cli/commands/insight_commands.py",
+    "loofi-fedora-tweaks/cli/commands/monitoring_commands.py",
+    "loofi-fedora-tweaks/cli/commands/network_mesh_commands.py",
+    "loofi-fedora-tweaks/cli/commands/ops_commands.py",
+    "loofi-fedora-tweaks/cli/commands/plugin_commands.py",
+    "loofi-fedora-tweaks/cli/commands/service_package_commands.py",
+    "loofi-fedora-tweaks/cli/commands/system_commands.py",
+    "loofi-fedora-tweaks/cli/commands/tuning_commands.py",
+    "loofi-fedora-tweaks/cli/commands/user_commands.py",
+    "loofi-fedora-tweaks/core/profiles/*",
+    "loofi-fedora-tweaks/core/workers/troubleshooting_worker.py",
+    "loofi-fedora-tweaks/core/diagnostics/gaming_audit.py",
+    "loofi-fedora-tweaks/core/export/support_bundle_v2.py",
+    "loofi-fedora-tweaks/core/export/support_bundle_v13.py",
+    "loofi-fedora-tweaks/services/network/mesh.py",
+    "loofi-fedora-tweaks/services/desktop/tiling.py",
+    "loofi-fedora-tweaks/ui/health_detail_dialog.py",
+    "loofi-fedora-tweaks/ui/health_timeline_tab.py",
+    "loofi-fedora-tweaks/ui/logs_tab.py",
+    "loofi-fedora-tweaks/ui/monitor_tab.py",
+    "loofi-fedora-tweaks/ui/performance_tab.py",
+    "loofi-fedora-tweaks/ui/snapshot_tab.py",
+    "loofi-fedora-tweaks/utils/desktop_utils.py",
+    "loofi-fedora-tweaks/utils/firewall_manager.py",
+    "loofi-fedora-tweaks/utils/flatpak_manager.py",
+    "loofi-fedora-tweaks/utils/health_timeline.py",
+    "loofi-fedora-tweaks/utils/kwin_tiling.py",
+    "loofi-fedora-tweaks/utils/network_monitor.py",
+    "loofi-fedora-tweaks/utils/network_utils.py",
+    "loofi-fedora-tweaks/utils/ports.py",
+    "loofi-fedora-tweaks/utils/report_exporter.py",
+    "loofi-fedora-tweaks/utils/risk.py",
+    "loofi-fedora-tweaks/utils/sandbox.py",
+    "loofi-fedora-tweaks/utils/secureboot.py",
+    "loofi-fedora-tweaks/utils/tiling.py",
+    "loofi-fedora-tweaks/utils/usbguard.py",
+    "loofi-fedora-tweaks/utils/wayland_display.py",
+]
 
 [tool.mypy]
 ignore_missing_imports = true

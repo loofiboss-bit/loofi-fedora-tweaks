@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 
+from core.catalog_models import FedoraVariant
 from core.navigation.models import NavigationContext, NavigationDecision, NavigationMode
 from core.navigation.policy import NavigationPolicy
 from scripts.capture_v8_user_guide_screenshots import ROUTE_SCREENSHOTS
@@ -14,10 +15,14 @@ class TestV15ScreenshotCapture(unittest.TestCase):
         standard = NavigationContext(
             mode=NavigationMode.STANDARD,
             installed_components=frozenset({"core", "specialist"}),
+            fedora_variant=FedoraVariant.TRADITIONAL,
+            capabilities=frozenset({"fedora", "dnf5", "desktop:kde", "session:wayland"}),
         )
         advanced = NavigationContext(
             mode=NavigationMode.ADVANCED,
             installed_components=frozenset({"core", "specialist"}),
+            fedora_variant=FedoraVariant.TRADITIONAL,
+            capabilities=frozenset({"fedora", "dnf5", "desktop:kde", "session:wayland"}),
         )
 
         for filename, route_id, requires_advanced in ROUTE_SCREENSHOTS:

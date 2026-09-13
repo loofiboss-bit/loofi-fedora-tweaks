@@ -74,7 +74,10 @@ _ACTION_CENTER_ACTIONS: tuple[_ActionDefinition, ...] = (
         risk="low",
         action_id="dnf-clean-all",
         allowed_variants=frozenset({FedoraVariant.TRADITIONAL}),
-        required_capabilities=frozenset({"dnf"}),
+        # PlatformProfile exposes the canonical DNF5 capability.  Keep the
+        # search index aligned with that vocabulary so a detected Fedora
+        # Workstation actually surfaces the cache-clean review action.
+        required_capabilities=frozenset({"dnf5"}),
     ),
     _ActionDefinition(
         id="action-center:restart-failed-service",

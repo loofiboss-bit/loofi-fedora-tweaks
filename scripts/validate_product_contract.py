@@ -37,15 +37,12 @@ def _action_definitions() -> list[object]:
     sys.modules["core.actions"] = actions_package
     sys.modules["services.system"] = system_package
     try:
-        from core.actions.assurance import assurance_definitions
-        from core.actions.catalog import ActionCatalog, _first_party_definitions
-        from core.actions.metadata import with_haven_metadata
+        from core.actions.catalog import ActionCatalog
 
-        definitions = [
-            with_haven_metadata(definition)
-            for definition in [*_first_party_definitions(), *assurance_definitions()]
-        ]
-        return list(ActionCatalog(definitions).list())
+        # Validate the same filtered live catalog that the application exposes.
+        # Historical compatibility definitions are intentionally not part of
+        # the v27 public Action Center surface.
+        return list(ActionCatalog().list())
     finally:
         sys.modules.pop("core.actions", None)
         sys.modules.pop("services.system", None)
@@ -132,49 +129,6 @@ def _cli_operation_ids() -> set[str]:
             operations.add(f"cli:{' '.join((*prefix, str(choice)))}")
 
     walk(build_parser())
-    return operations
-
-
-def _api_operation_ids() -> set[str]:
-    """Derive FastAPI route methods and paths without importing optional API deps."""
-    operations: set[str] = {"api:POST /api/token"}
-    for path in sorted((SOURCE / "api" / "routes").glob("*.py")):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        prefix = ""
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            call_name = ""
-            if isinstance(node.func, ast.Name):
-                call_name = node.func.id
-            elif isinstance(node.func, ast.Attribute):
-                call_name = node.func.attr
-            if call_name == "APIRouter":
-                for keyword in node.keywords:
-                    if (
-                        keyword.arg == "prefix"
-                        and isinstance(keyword.value, ast.Constant)
-                        and isinstance(keyword.value.value, str)
-                    ):
-                        prefix = keyword.value.value
-            if call_name != "add_api_route" or not node.args:
-                continue
-            route = node.args[0]
-            if not isinstance(route, ast.Constant) or not isinstance(route.value, str):
-                continue
-            methods = next(
-                (
-                    keyword.value
-                    for keyword in node.keywords
-                    if keyword.arg == "methods"
-                ),
-                None,
-            )
-            if not isinstance(methods, (ast.List, ast.Tuple)):
-                continue
-            for method in methods.elts:
-                if isinstance(method, ast.Constant) and isinstance(method.value, str):
-                    operations.add(f"api:{method.value.upper()} {prefix}{route.value}")
     return operations
 
 
@@ -346,8 +300,17 @@ def validate() -> list[str]:
     errors = validate_product_catalog()
     entries = product_catalog()
     definitions = _action_definitions()
-    if len({entry.route_id for entry in entries}) != 45:
-        errors.append(f"stable route count changed: expected 45, got {len(entries)}")
+    retired_route_ids = {
+        "maintenance:smart-updates",
+        "settings:advanced",
+    }
+    active_route_ids = {entry.route_id for entry in entries}
+    leaked_retired = sorted(active_route_ids & retired_route_ids)
+    if leaked_retired:
+        errors.append(
+            "retired routes remain in the live catalog: "
+            + ", ".join(leaked_retired)
+        )
 
     for definition in definitions:
         if definition.operation_class not in {"host", "app_state", "session", "manual_only"}:
@@ -386,7 +349,11 @@ def validate() -> list[str]:
             errors.extend(_unguarded_command_runner_calls(path, tree))
 
     cli_source = (SOURCE / "cli" / "main.py").read_text(encoding="utf-8")
-    if "create_public_plans" not in cli_source or "closed_action_definition_required" not in cli_source:
+    # V27 keeps the public CLI boundary deliberately small.  The old
+    # ``create_public_plans`` helper belonged to the retired specialist
+    # command registry; the maintained equivalent is the typed Action Center
+    # planner used by the canonical command handlers.
+    if "_create_action_center_plan" not in cli_source or "closed_action_definition_required" not in cli_source:
         errors.append("CLI execution boundary is missing its closed Action Center plan gate")
     settings_source = (SOURCE / "ui" / "settings_tab.py").read_text(encoding="utf-8")
     if "self.mode_combo" in settings_source:
@@ -438,7 +405,10 @@ def main() -> int:
         for error in errors:
             print(f"[product-contract] ERROR: {error}")
         return 1
-    print("[product-contract] OK: 45 routes, classified actions, built-in-only plugins, and guarded entrypoints")
+    print(
+        f"[product-contract] OK: {len(product_catalog())} routes, "
+        "classified actions, built-in-only plugins, and guarded entrypoints"
+    )
     return 0
 
 

@@ -16,6 +16,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QTabBar
 
 from core.navigation import (
+    FedoraVariant,
     NavigationContext,
     NavigationMode,
     NavigationPolicy,
@@ -124,7 +125,11 @@ class TestDestinationSidebar(_QtTestCase):
 class TestDestinationHost(_QtTestCase):
     def setUp(self):
         self.host = DestinationHost()
-        self.standard = NavigationContext(mode=NavigationMode.STANDARD)
+        self.standard = NavigationContext(
+            mode=NavigationMode.STANDARD,
+            fedora_variant=FedoraVariant.TRADITIONAL,
+            capabilities=frozenset({"fedora", "dnf5"}),
+        )
 
     def tearDown(self):
         self.host.close()
@@ -140,7 +145,11 @@ class TestDestinationHost(_QtTestCase):
 
     def test_advanced_host_exposes_advanced_destination_sections(self):
         destination = get_destination("system")
-        context = NavigationContext(mode=NavigationMode.ADVANCED)
+        context = NavigationContext(
+            mode=NavigationMode.ADVANCED,
+            fedora_variant=FedoraVariant.TRADITIONAL,
+            capabilities=frozenset({"fedora", "dnf5"}),
+        )
 
         self.host.set_destination(destination, context)
 
@@ -189,7 +198,7 @@ class TestDestinationHost(_QtTestCase):
             self.host.navigator.selector.itemText(index)
             for index in range(self.host.navigator.selector.count())
         ]
-        self.assertIn("Hardware & Power", labels)
+        self.assertIn("Hardware status", labels)
         self.assertIn("System Check", labels)
         self.assertTrue(all(label and "…" not in label for label in labels))
 

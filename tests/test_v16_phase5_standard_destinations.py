@@ -198,7 +198,7 @@ class TestPhase5RoutePresentation(unittest.TestCase):
         for route_id, index in (
             ("settings:appearance", 0),
             ("settings:behavior", 1),
-            ("settings:advanced", 2),
+            ("settings:application", 2),
             ("settings:repair", 3),
             ("settings:about", 4),
         ):

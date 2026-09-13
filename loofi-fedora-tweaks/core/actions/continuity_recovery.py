@@ -56,12 +56,32 @@ def _validate_rpm_ostree_rollback(parameters: Mapping[str, Any]) -> PolicyDecisi
 
 def _render_fedora_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> list[str]:
     if runtime.is_atomic():
-        return ["rpm-ostree", "upgrade"]
-    return ["dnf5", "upgrade", "--refresh", "-y", "--offline"]
+        manager = runtime.package_manager()
+        if manager == "rpm-ostree":
+            return ["rpm-ostree", "upgrade"]
+        if manager == "bootc":
+            return ["bootc", "upgrade"]
+    # ``dnf`` is accepted only as a compatibility spelling for injected
+    # legacy runtimes.  The real PlatformProfile always reports ``dnf5`` and
+    # the command vector remains explicitly DNF5.
+    if runtime.package_manager() in {"dnf", "dnf5"}:
+        return ["dnf5", "upgrade", "--refresh", "-y", "--offline"]
+    return []
 
 
 def _preflight_fedora_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
+    manager = runtime.package_manager()
+    if manager == "unknown":
+        return _blocked(
+            "platform_unknown",
+            "The Fedora deployment backend could not be verified.",
+        )
     if runtime.is_atomic():
+        if manager == "bootc":
+            return _blocked(
+                "bootc_manual_only",
+                "bootc image updates require a reviewed host workflow and are manual-only here.",
+            )
         status = runtime.execute_read_only(["rpm-ostree", "status", "--json"], action_id="update-fedora-status", timeout=30)
         payload = _json_payload(status)
         deployments = payload.get("deployments", []) if isinstance(payload, dict) else []
@@ -69,6 +89,11 @@ def _preflight_fedora_update(_parameters: Mapping[str, Any], runtime: ActionRunt
         if not status.success or not booted:
             return _blocked("atomic_status_unavailable", "The current Atomic deployment could not be verified.")
         return _allowed("preflight_ok", "Atomic deployment state is ready.", atomic=True, booted_checksum=str(booted.get("checksum", "")))
+    if manager not in {"dnf", "dnf5"}:
+        return _blocked(
+            "unsupported_package_manager",
+            f"The detected package backend ({manager}) is not supported by this workflow.",
+        )
     if runtime.package_manager_busy():
         return _blocked("package_manager_busy", "Another package operation may be active.")
     query = runtime.execute_read_only(
@@ -188,6 +213,11 @@ def _preflight_dnf5_history_undo(
     parameters: Mapping[str, Any],
     runtime: ActionRuntime,
 ) -> PolicyDecision:
+    if runtime.package_manager() not in {"dnf", "dnf5"}:
+        return _blocked(
+            "unsupported_package_manager",
+            "DNF5 transaction recovery requires a verified DNF5 backend.",
+        )
     if runtime.is_atomic():
         return _blocked(
             "traditional_only",

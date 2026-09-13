@@ -64,6 +64,37 @@ class UpdateManager:
     instantiation, consistent with other ``utils/*`` managers.
     """
 
+    @staticmethod
+    def _uses_rpm_ostree() -> bool:
+        """Return whether the current immutable backend is rpm-ostree.
+
+        ``SystemManager.is_atomic()`` is intentionally a broad immutable
+        marker and therefore also returns true for bootc.  This helper keeps
+        legacy update-manager paths from translating bootc into an
+        rpm-ostree command.  The fallback preserves old lightweight test and
+        embedding doubles that only implement ``is_atomic`` and
+        ``get_package_manager``.
+        """
+        try:
+            from core.platform.profile import DeploymentBackend
+
+            profile = SystemManager.get_platform_profile()
+            backend = getattr(profile, "deployment_backend", None)
+            if isinstance(backend, str):
+                try:
+                    backend = DeploymentBackend(backend)
+                except ValueError:
+                    backend = None
+            if backend is DeploymentBackend.BOOTC:
+                return False
+            if backend is DeploymentBackend.RPM_OSTREE:
+                return True
+            if backend is DeploymentBackend.UNKNOWN and bool(getattr(profile, "is_atomic", False)):
+                return False
+        except (AttributeError, OSError, RuntimeError, TypeError, ValueError):
+            pass
+        return bool(SystemManager.is_atomic()) and SystemManager.get_package_manager() != "bootc"
+
     # -----------------------------------------------------------------
     # Check for available updates
     # -----------------------------------------------------------------
@@ -75,8 +106,10 @@ class UpdateManager:
         Returns:
             List of UpdateEntry objects for each available update.
         """
-        if SystemManager.is_atomic():
+        if UpdateManager._uses_rpm_ostree():
             return UpdateManager._check_updates_ostree()
+        if SystemManager.is_immutable():
+            return []
         return UpdateManager._check_updates_dnf()
 
     @staticmethod
@@ -158,8 +191,10 @@ class UpdateManager:
         """
         conflicts: List[ConflictEntry] = []
 
-        if SystemManager.is_atomic():
+        if UpdateManager._uses_rpm_ostree():
             return UpdateManager._preview_conflicts_ostree(packages)
+        if SystemManager.is_immutable():
+            return conflicts
 
         package_manager = SystemManager.get_package_manager()
         if not cached_which(package_manager):
@@ -259,6 +294,8 @@ class UpdateManager:
             List of CommandTuple to create and enable the systemd timer.
         """
         pm = SystemManager.get_package_manager()
+        if pm in {"bootc", "unknown"}:
+            return []
         packages = UpdateManager._validate_schedule_packages(schedule.packages)
         if pm == "rpm-ostree":
             update_args = ["rpm-ostree", "upgrade"]
@@ -309,8 +346,10 @@ class UpdateManager:
         Returns:
             CommandTuple for the rollback operation.
         """
-        if SystemManager.is_atomic():
+        if UpdateManager._uses_rpm_ostree():
             return ("pkexec", ["rpm-ostree", "rollback"], "Rolling back to previous deployment...")
+        if SystemManager.is_immutable():
+            return ("", [], "Rollback requires the host deployment manager's documented workflow.")
 
         package_manager = SystemManager.get_package_manager()
         return (
@@ -331,7 +370,7 @@ class UpdateManager:
         """
         history: List[dict] = []
 
-        if SystemManager.is_atomic():
+        if UpdateManager._uses_rpm_ostree():
             try:
                 result = subprocess.run(
                     ["rpm-ostree", "status", "--json"],
@@ -348,7 +387,7 @@ class UpdateManager:
                         })
             except (subprocess.TimeoutExpired, OSError, json.JSONDecodeError) as e:
                 logger.error("Failed to get rpm-ostree history: %s", e)
-        else:
+        elif not SystemManager.is_immutable():
             package_manager = SystemManager.get_package_manager()
             if not cached_which(package_manager):
                 logger.debug("Package manager binary not found in PATH: %s", package_manager)

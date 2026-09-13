@@ -18,7 +18,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = (
     "doctor",
     "support-bundle",
 )
-EXPECTED_PARSER_SNAPSHOT_SHA256 = "9e7f4f2828f5cfa01e0b739e8122ec334739e8307bc4faea1ea1c11580f4bf89"
+EXPECTED_PARSER_SNAPSHOT_SHA256 = "f05569218abd77585f4830711a6d9b640d6e1061a95cfa2419f761a577396ffc"
 
 
 def _normalize(value):
@@ -86,7 +86,10 @@ class TestCliParserContract(unittest.TestCase):
         )
         troubleshoot = build_parser().parse_args(["troubleshoot", "compare", "before", "after"])
 
-        self.assertEqual((changes.changes_action, changes.target, changes.param, changes.yes), ("apply", "install-application", ["package-id=org.example.App"], True))
+        self.assertEqual(
+            (changes.changes_action, changes.target, changes.release_target, changes.param, changes.yes),
+            ("apply", "install-application", "44", ["package-id=org.example.App"], True),
+        )
         self.assertEqual((troubleshoot.troubleshoot_action, troubleshoot.session_id, troubleshoot.followup_id), ("compare", "before", "after"))
 
 

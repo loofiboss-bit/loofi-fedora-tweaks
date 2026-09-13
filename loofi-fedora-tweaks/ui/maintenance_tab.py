@@ -52,9 +52,7 @@ from ui.maintenance_action_center import (
 from ui.maintenance_updates import (
     _CleanupSubTab,
     _OverlaysSubTab,
-    _SmartUpdatesSubTab,
     _UpdatesSubTab,
-    _UpgradeAssistantSubTab,
 )
 
 
@@ -88,7 +86,6 @@ class MaintenanceTab(BaseTab):
             (self.tr("Updates"), _UpdatesSubTab),
             (self.tr("Action Center"), _ActionCenterSubTab),
             (self.tr("Cleanup"), _CleanupSubTab),
-            (self.tr("Upgrade Assistant"), _UpgradeAssistantSubTab),
         ]
 
         if SystemManager.is_atomic():
@@ -172,13 +169,11 @@ class MaintenanceTab(BaseTab):
         return False
     def activate_route(self, route) -> bool:
         """Resolve stable Maintenance subroutes after presentation consolidation."""
-        original_subroute = str(getattr(route, "subroute", "") or "")
-        subroute = "updates" if original_subroute == "smart-updates" else original_subroute
+        subroute = str(getattr(route, "subroute", "") or "")
         labels = {
             "updates": self.tr("Updates"),
             "cleanup": self.tr("Cleanup"),
             "action-center": self.tr("Action Center"),
-            "upgrade-assistant": self.tr("Upgrade Assistant"),
             "overlays": self.tr("Overlays"),
         }
         wanted = labels.get(subroute)
@@ -193,13 +188,5 @@ class MaintenanceTab(BaseTab):
                 continue
             self.tabs.setCurrentIndex(index)
             self._lazy_load_sub_tab(index)
-            if original_subroute == "smart-updates":
-                reveal = getattr(
-                    self._loaded_tabs.get(index),
-                    "reveal_advanced_options",
-                    None,
-                )
-                if callable(reveal):
-                    reveal()
             return True
         return False

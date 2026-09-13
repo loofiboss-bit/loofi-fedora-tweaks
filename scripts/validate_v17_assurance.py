@@ -13,9 +13,6 @@ TARGETS = {
         "_UpdatesSubTab": {"run_dnf_update", "run_flatpak_update", "run_fw_update", "run_update_all"},
         "_CleanupSubTab": {"run_autoremove", "_review_journal"},
     },
-    "loofi-fedora-tweaks/ui/software_tab.py": {
-        "_ApplicationsSubTab": {"run_app_action"},
-    },
     "loofi-fedora-tweaks/ui/backup_tab.py": {
         "BackupTab": {"_create_snapshot"},
     },

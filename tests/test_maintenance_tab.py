@@ -1514,7 +1514,8 @@ class TestOverlaysSubTab(unittest.TestCase):
         tab.remove_selected()
         mock_pm.remove.assert_not_called()
         tab.actionCenterRequested.emit.assert_called_once_with(
-            "remove-application", {"source": "fedora", "package_id": "vim"}
+            "legacy-ui-manual-review",
+            {"description": "Review rpm-ostree uninstall for the selected layered package: vim"},
         )
 
     @patch.object(
@@ -1842,8 +1843,8 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
         self.assertIn("class _OverlaysSubTab", self.source)
 
     def test_has_smart_updates_subtab(self):
-        """Module contains _SmartUpdatesSubTab class."""
-        self.assertIn("class _SmartUpdatesSubTab", self.source)
+        """v27 keeps the canonical Updates workflow and retires this class."""
+        self.assertNotIn("class _SmartUpdatesSubTab", self.source)
 
     def test_action_center_is_the_only_execution_authority(self):
         """Maintenance host execution declares the Action Center authority."""
@@ -1866,6 +1867,17 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
 # ===================================================================
 # Cleanup stubs on module unload
 # ===================================================================
+
+
+# These specialist surfaces were intentionally removed in v27.  Keep the
+# historical test classes importable for downstream suites, but do not run
+# assertions against widgets that no longer exist in the maintained product.
+TestUpgradeAssistantSubTab = unittest.skip(
+    "v27 removed the specialist Upgrade Assistant route"
+)(TestUpgradeAssistantSubTab)
+TestSmartUpdatesSubTab = unittest.skip(
+    "v27 folded Smart Updates into the canonical Updates workflow"
+)(TestSmartUpdatesSubTab)
 
 
 TestUpdatesSubTabSystemUpdateStep = unittest.skip(

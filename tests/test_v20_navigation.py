@@ -35,4 +35,4 @@ class TestUnifiedNavigation(unittest.TestCase):
             / "settings_tab.py"
         ).read_text(encoding="utf-8")
         self.assertNotIn("self.mode_combo", source)
-        self.assertIn("Specialist tools are always available", source)
+        self.assertIn("Core tools are always available", source)

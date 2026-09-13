@@ -1,11 +1,11 @@
 {
-  "version": "v27.0.0",
-  "started_at": "20260913_140000",
+  "version": "v27.0.1",
+  "started_at": "20260913_204827",
   "status": "active",
-  "target_version": "v27.0.0",
-  "phase": "v27-core-implementation",
+  "target_version": "v27.0.1",
+  "phase": "release-ready",
   "baseline_commit": "53ad83487fa5bd972c2832178920bb001b8a989f",
-  "product_version": "v27.0.0",
+  "product_version": "v27.0.1",
   "product_codename": "Core",
   "target_codename": "Core",
   "current_public_release": "v26.0.3",
@@ -78,12 +78,12 @@
     "clean_kde_install": "unverified"
   },
   "external_release_gates": {
-    "commit_and_exact_tag": "not_requested_for_local_candidate",
-    "ci_and_codeql": "not_requested_for_local_candidate",
-    "github_assets_checksums_attestations": "not_requested_for_local_candidate",
-    "copr_packages_signatures": "not_requested_for_local_candidate",
-    "clean_fedora44_install": "not_requested_for_local_candidate",
-    "public_docs_and_wiki": "not_requested_for_local_candidate"
+    "commit_and_exact_tag": "pending-v27.0.1-canonical-workflow",
+    "ci_and_codeql": "pending",
+    "github_assets_checksums_attestations": "pending",
+    "copr_packages_signatures": "pending",
+    "clean_fedora44_install": "authorized-skip",
+    "public_docs_and_wiki": "pending"
   },
   "current_public_release_evidence": {
     "release_commit": "53ad83487fa5bd972c2832178920bb001b8a989f",
@@ -99,6 +99,7 @@
     "copr_key_fingerprint": "4079C862B1977B9BF49768354FE905DF539BA887",
     "wiki_commit": "6ba5d98f69b683201e6c86526dccd44cdd5d1fc5"
   },
-  "bumped_at": "2026-09-13T14:00:00.000000+00:00",
-  "publication_authorized": false
+  "bumped_at": "2026-09-13T20:48:27.659140+00:00",
+  "release_authorized_at": "2026-09-13T21:00:00+02:00",
+  "publication_authorized": true
 }

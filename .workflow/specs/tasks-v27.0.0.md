@@ -1,6 +1,8 @@
-# Tasks — v27.0.0 "Core"
+# Tasks — v27.0.0 "Core" (historical)
 
-Status: active implementation of Fedora Maintenance Core.
+Status: superseded by the completed v27.0.1 Core contract. This file is kept
+for the original planning lineage; the current release tasks are in
+`.workflow/specs/tasks-v27.0.1.md`.
 
 - [x] Phase 1: Record v26.0.3 publication truth, close v26 release notes and evidence, bump target to v27.0.0 Core.
 - [ ] Phase 2: Decommission specialist plugins, API service, D-Bus daemon, Flatpak packaging, and legacy routes.

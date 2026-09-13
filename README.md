@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v27.0.0 "Core" — Fedora Maintenance Core
+# Loofi Fedora Tweaks v27.0.1 "Core"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -8,69 +8,47 @@
 
 <p align="center">
   <strong>A focused Fedora maintenance core</strong><br>
-  Five destinations, one Home, one search surface, safe system operations.
+  Five destinations, one review surface, and verified system changes.
 </p>
 
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v27.0.0">
-    <img src="https://img.shields.io/badge/Release-v27.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v27.0.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v27.0.1">
+    <img src="https://img.shields.io/badge/Release-v27.0.1-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v27.0.1 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
-  <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
 </p>
 
 ## What Loofi does
 
-Loofi brings common Fedora maintenance, application, troubleshooting, cleanup,
-recovery, and desktop tasks into one KDE-friendly control center.
+Loofi Fedora Tweaks brings the most useful Fedora maintenance tasks into one
+small, desktop-neutral control center. It focuses on inspection, clear review,
+and independently verified results. It does not run a background service or
+include a web API.
 
-- Explicit update inspection shows source status, freshness and details without applying changes.
-- Home links back to saved runs; **Check result** follows up pending verification.
-- First-run guidance is integrated into Home, resumable, dismissible, and
-  navigation-only.
-- Troubleshooting follows Problem → Checks → Results and starts only when you
-  explicitly begin.
-- Supported system changes enter the Action Center plan, fresh-preflight,
-  execution, and independent-verification lifecycle.
-- Maintenance results are verified separately from command completion.
-- Eligible low-risk requests can use the Proof path directly; medium-risk
-  requests receive one compact confirmation, and high-risk or incomplete
-  requests remain review-only.
-- Traditional and Atomic Fedora paths stay distinct.
-- The optional API is loopback-only and cannot apply plans.
+- Home shows current state, one recommended next action, and common tasks.
+- Updates & Apps checks system packages, Flatpak, and firmware independently;
+  application discovery can be handed off to the desktop's native software
+  center.
+- System Health provides read-only checks, symptom-driven troubleshooting,
+  storage and hardware inspection, and support export.
+- Protection & Recovery groups firewall exposure, backups, recovery points,
+  and supported rollback guidance.
+- Changes is the single review, confirmation, execution, and verification
+  workspace for persistent system changes.
 
-This checkout contains the active [v27.0.0 Core candidate](docs/releases/RELEASE-NOTES-v27.0.0.md).
-The previous public release is [v26.0.3 Everyday](docs/releases/RELEASE-NOTES-v26.0.3.md)
-(published 2026-09-13 via COPR build 10981363).
-Earlier releases remain documented in the
-[release-note index](docs/releases/RELEASE_NOTES.md).
+This is the [v27.0.1 Core release](docs/releases/RELEASE-NOTES-v27.0.1.md).
+The previous public release was [v26.0.3 Everyday](docs/releases/RELEASE-NOTES-v26.0.3.md).
+Automated qualification is complete. Physical desktop, authorization, reboot,
+and fresh Atomic qualification are intentionally reported as unverified for
+this release; no manual test result is inferred from offscreen or rootless
+evidence.
 
-## The five destinations
-
-| Destination | What belongs there |
-| --- | --- |
-| Home | System state, single recommended next action, and common maintenance tasks |
-| Updates & Apps | System, Flatpak, and firmware updates; neutral app store handoff |
-| System Health | System Check, symptom-driven troubleshooting, storage, hardware, and support bundle |
-| Protection & Recovery | Firewall, open ports, backup, exact DNF/rpm-ostree rollbacks, and activity history |
-| Changes | Action Center review and verification workspace |
-
-Application settings are accessed via the window header gear icon rather than a separate destination tab.
-
-## Five common workflows
-
-1. **Update Fedora:** Home → Updates → review Fedora → create plan → confirm in Action Center.
-2. **Install an application:** Home → Applications → Review install → inspect and confirm the generated plan.
-3. **Diagnose a slow system:** Home → Check performance → Analyze Slow System.
-4. **Find reclaimable disk space:** Software & Updates → Cleanup → Analyze.
-5. **Protect the system:** Home → Protect or recover → create a recovery point.
-
-The five canonical surfaces route to one Action Center authority. Proof can run
-an eligible request with fresh preflight and independent verification; review-
-first, high-risk, manual-only, and blocked states remain explicit.
+The maintained V27 surface reaches 86.95% local line coverage with an 85%
+blocking gate. The planned repository-wide 90% target is deferred to the next
+release so this version can ship without overstating coverage.
 
 ## Install
 
@@ -81,15 +59,15 @@ pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
 ```
 
-Optional runtimes remain separate:
+Launch the application from the desktop menu or with:
 
 ```bash
-pkexec dnf install loofi-fedora-tweaks-api
-pkexec dnf install loofi-fedora-tweaks-daemon
+loofi-fedora-tweaks
 ```
 
-Never run the application with `sudo`. Privileged operations use explicit
-Polkit prompts through `pkexec`.
+System authorization is requested only when a reviewed change needs it. The
+application uses the desktop's standard authorization agent and does not ship
+project-specific policy files. Never launch the application as root.
 
 ### Run from source
 
@@ -98,81 +76,56 @@ git clone https://github.com/loofiboss-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
 python3 -m venv .venv
 source .venv/bin/activate
-python -m pip install -e '.[api,daemon,dev]'
+python -m pip install -e '.[dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
+```
+
+The `install.sh` helper is intentionally guarded because downloading and
+executing a shell script is less auditable than installing a published RPM:
+
+```bash
+bash install.sh --i-know-what-i-am-doing
 ```
 
 ## Entry modes
 
-| Mode | Command | Contract |
+| Mode | Command | Purpose |
 | --- | --- | --- |
-| GUI | `loofi-fedora-tweaks` | Desktop control center |
-| CLI | `loofi-fedora-tweaks --cli <command>` | Scriptable commands and stable JSON envelopes |
-| Daemon | `loofi-fedora-tweaks --daemon` | Optional D-Bus host with preserved compatibility methods |
-| Web API | `loofi-fedora-tweaks --web` | Authenticated status plus closed Action Center plan creation |
+| GUI | `loofi-fedora-tweaks` | Desktop maintenance control center |
+| CLI | `loofi-fedora-tweaks --cli <command>` | Scriptable inspection and reviewed changes |
 
-The API accepts loopback bindings only and defaults to `127.0.0.1:8000`.
-`LOOFI_API_HOST` may select another loopback address; non-local values stop
-startup. `LOOFI_API_PORT` changes the port and `LOOFI_CORS_ORIGINS` is limited
-to loopback origins. `POST /api/action-center/plans` accepts one known
-definition and closed parameter object, creates a review plan, and never
-applies it. There is no API apply endpoint.
-
-## CLI examples
+The CLI surface is intentionally small:
 
 ```bash
 alias loofi='loofi-fedora-tweaks --cli'
 
 loofi info
-loofi health
-loofi health check
-loofi health findings
-loofi health history --limit 5
+loofi check
+loofi updates check
 loofi troubleshoot profiles
-loofi troubleshoot run system_slow
-loofi troubleshoot latest
-loofi troubleshoot show SESSION_ID
-loofi troubleshoot compare SESSION_ID FOLLOWUP_ID
-loofi troubleshoot export SESSION_ID
+loofi changes list
+loofi activity list
 loofi doctor
 loofi support-bundle
-loofi readiness --target 44
-loofi action-center list
-loofi action-center plan dnf-clean-all
-loofi action-center show PLAN_ID
-loofi action-center apply PLAN_ID --confirm
-loofi action-center verify RUN_ID
-loofi run dnf-clean-all
-loofi run restart-failed-service --param service=example.service --yes --json
-loofi activity list --source action_center --status succeeded --search package
-loofi activity export EVENT_ID --format markdown
-loofi --json state doctor
 ```
 
-The global `--json` option appears before the CLI command.
+Use `--json` before a command when a stable machine-readable envelope is
+needed. Changes remain review-first: inspect the plan, confirm it explicitly,
+and verify the outcome separately.
 
-## Safety and compatibility
+## Safety model
 
-- Action Center exposes 74 classified first-party definitions. Proof derives
-  direct eligibility from that metadata and fails closed for incomplete or
-  unsupported definitions.
-- `loofi run ACTION_ID` accepts only registered, typed parameters and returns a
-  versioned `loofi.direct-action/v1` result. `--dry-run` never executes.
-- The machine-readable public-operation registry classifies all CLI and API
-  leaves. Legacy host-changing commands return a plan ID or manual guidance;
-  only a separate `action-center apply PLAN_ID --confirm` request can mutate
-  the host.
-- System Check findings cannot execute commands. Action handoff resolves only
-  fresh, untampered evidence against the closed Action Center catalog.
-- Plans expire and are re-preflighted. Exit code zero is not success until the
-  verifier passes. Interrupted runs never resume automatically.
-- Commands are list-based, allowlisted, timeout-bounded, audit-linked, and never
-  use `shell=True`.
-- State schemas, atomic writes, backup/restore planning, redaction, routes,
-  aliases, favorites, first-run sentinels, CLI JSON, API, daemon, and IPC remain
-  compatible with v14.
-- Built-in specialist tools remain lazy-loaded in the base RPM. External Python
-  code is not an extension boundary.
+- UI views are read-only until they hand an explicit request to Changes.
+- Commands are list-based, allowlisted, timeout-bounded, and never use a shell
+  interpreter.
+- A plan contains a closed action and typed parameters, not an arbitrary command
+  supplied by a user or document.
+- Fresh preflight, explicit authorization, one mutation lease, and independent
+  verification are required for supported persistent changes.
+- Unknown platform or deployment detection stays unavailable; it never falls
+  back to a traditional Fedora assumption.
+- No automatic reboot, retry, rollback, unattended schedule, or remote apply is
+  performed.
 
 ## Development
 
@@ -180,41 +133,27 @@ Use the repository command surface:
 
 ```bash
 just test
-just test-coverage
 just lint
 just typecheck
 just verify
 just check-packaging
 just validate-release
 just build-rpm
+just build-sdist
 ```
 
-See [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
+Read [AGENTS.md](AGENTS.md), [ARCHITECTURE.md](ARCHITECTURE.md), and
 [CONTRIBUTING.md](CONTRIBUTING.md) before changing code.
 
 ## Documentation
 
-- [Beginner quick guide](docs/BEGINNER_QUICK_GUIDE.md)
+- [Getting started](docs/BEGINNER_QUICK_GUIDE.md)
 - [Full user guide](docs/USER_GUIDE.md)
-- [Advanced administration](docs/ADVANCED_ADMIN_GUIDE.md)
 - [Verified maintenance](docs/VERIFIED_MAINTENANCE.md)
-- [State integrity and recovery](docs/STATE_INTEGRITY.md)
+- [State integrity](docs/STATE_INTEGRITY.md)
 - [Troubleshooting](docs/TROUBLESHOOTING.md)
 - [Documentation index](docs/README.md)
 - [Changelog](CHANGELOG.md)
-
-## Release status
-
-`v25.0.4 "Proof"` is the current public release. The historical `v25.0.0`–
-`v25.0.3` tag lineage is preserved and was not retargeted; `v25.0.4` is the
-unambiguous Proof release identity. Fedora 45 remains preview-only. See the
-[release notes](docs/releases/RELEASE-NOTES-v25.0.4.md) and the
-[public release evidence](docs/reports/V25_RELEASE_PUBLICATION.md).
-The older
-"Architecture Hardening" tag object is preserved byte-identically as
-`legacy-v23.0.0-architecture-hardening`. Historical Sentinel, Horizon, Nebula,
-Synapse, and the earlier v24 "Power Features" lineage likewise remain preserved
-under explicit `legacy-v*` tags.
 
 ## License
 

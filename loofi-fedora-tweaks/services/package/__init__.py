@@ -16,12 +16,14 @@ if TYPE_CHECKING:
     from services.package.service import (
         DnfPackageService,
         RpmOstreePackageService,
+        UnavailablePackageService,
         get_package_service,
     )
 
 _SERVICE_EXPORTS = {
     "DnfPackageService": ("services.package.service", "DnfPackageService"),
     "RpmOstreePackageService": ("services.package.service", "RpmOstreePackageService"),
+    "UnavailablePackageService": ("services.package.service", "UnavailablePackageService"),
     "get_package_service": ("services.package.service", "get_package_service"),
 }
 
@@ -43,6 +45,7 @@ __all__ = [
     "DNF5HealthReport",
     "DNF5HealthService",
     "RpmOstreePackageService",
+    "UnavailablePackageService",
     "RepoRisk",
     "get_package_service",
 ]

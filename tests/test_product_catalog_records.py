@@ -11,13 +11,13 @@ from core.product_catalog import CATALOG_DATA, catalog_entry, catalog_routes
 
 
 _V27_PROJECTION_HASHES = {
-    "plugins": "43ba43a31963c5a26ee37c8271be674ebb7ee32023ab284ae740e1c6e1235845",
-    "routes": "918bfd05b8cd08f39dcd1d5395959d89f8aead83f1c7a8b17ac5a318102dcc12",
-    "placements": "e9c51932a14d89ede32bbc53df9aaf9743004b0b0e30512ee3b2446c1aa51387",
-    "sections": "50a511235068f91722d63781bf6370486229d064e63a29af5594446695e83ac9",
-    "destinations": "0a58f8d50f6a30c580feb7b3f658a3afc67b50b93a7c29cd684ccda95ee6f318",
+    "plugins": "5430324e6308c4a9df55c6de31ec55b50e50c554d09e0e5e1a723ed75264f02a",
+    "routes": "20a61c20d052c1bcdc4d1e8a0e25ee66085a341a3c0a7201e1897ed34db14a04",
+    "placements": "d19ac8d8cd69510db2223a3bf2a40aaf156e6d0803b00252b57094fe3384d33e",
+    "sections": "a7fd8ff688f87dba87201765345872aa7a307e90938d027db111ea191130bff5",
+    "destinations": "19a577b070261a149179fe36dcec7ec015f1cb1fe6b25568cc40007180a31f05",
 }
-_V27_ROUTE_ORDER_HASH = "341b383dbef96d2b7e401eca5a5dbd1706ae760855eed0730c58594cb28c65ea"
+_V27_ROUTE_ORDER_HASH = "f9b57f8cfe572e80e0207fe0158f9745f4846c6f9bb846f245964a13f3c5b178"
 
 
 def _serialized_hash(records) -> str:
@@ -34,24 +34,24 @@ class TestDestinationOwnedCatalogRecords(unittest.TestCase):
     def test_route_order_and_identity_remain_exact(self):
         route_ids = tuple(route.id for route in catalog_routes())
 
-        self.assertEqual(len(route_ids), 45)
-        self.assertEqual(len(set(route_ids)), 45)
+        self.assertEqual(len(route_ids), 43)
+        self.assertEqual(len(set(route_ids)), 43)
         self.assertEqual(_serialized_hash(route_ids), _V27_ROUTE_ORDER_HASH)
 
-    def test_specialist_settings_uses_current_plain_language(self):
+    def test_application_settings_uses_current_plain_language(self):
         route = next(
             record
             for record in CATALOG_DATA["routes"]
-            if record["id"] == "settings:advanced"
+            if record["id"] == "settings:application"
         )
         section = next(
             record
             for record in CATALOG_DATA["sections"]
-            if record["id"] == "advanced"
+            if record["id"] == "application"
             and record["destination_id"] == "settings"
         )
-        self.assertEqual(route["label"], "Specialist Tools")
-        self.assertEqual(section["label"], "Specialist Tools")
+        self.assertEqual(route["label"], "Application")
+        self.assertEqual(section["label"], "Application")
 
     def test_native_handoff_metadata_is_limited_to_the_architecture_allowlist(self):
         handoffs = {

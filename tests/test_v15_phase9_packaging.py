@@ -93,7 +93,7 @@ class TestV14UpgradeCompatibility(unittest.TestCase):
         self.assertEqual(settings["last_route_id"], "changes")
         self.assertEqual(
             settings["favorite_routes"],
-            ["atlas_dashboard", "changes", "future:route"],
+            ["atlas_dashboard", "changes"],
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:

@@ -414,26 +414,30 @@ class TestNetworkTabConnections(unittest.TestCase):
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.NetworkUtils")
     def test_connect_wifi_success(self, mock_nu, mock_ss):
-        """_connect_wifi routes through NetworkUtils.connect_wifi with selected SSID."""
+        """_connect_wifi emits a review request without mutating NetworkManager."""
         mock_nu.scan_wifi.return_value = [("TestNet", "90%", "WPA2", "")]
-        mock_nu.connect_wifi.return_value = True
         tab = _create_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, params: requests.append((action_id, params)))
 
         tab._scan_wifi()
         tab.wifi_table.setCurrentCell(0, 0)
 
         tab._connect_wifi()
-        mock_nu.connect_wifi.assert_called_once_with("TestNet")
+        mock_nu.connect_wifi.assert_not_called()
+        self.assertEqual(requests, [("legacy-ui-manual-review", {})])
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.NetworkUtils")
     def test_disconnect_wifi(self, mock_nu, mock_ss):
-        """_disconnect_wifi routes through NetworkUtils.disconnect_wifi."""
-        mock_nu.disconnect_wifi.return_value = True
+        """_disconnect_wifi emits a review request without mutating NetworkManager."""
         tab = _create_tab()
+        requests = []
+        tab.actionCenterRequested.connect(lambda action_id, params: requests.append((action_id, params)))
 
         tab._disconnect_wifi()
-        mock_nu.disconnect_wifi.assert_called_once_with("wlan0")
+        mock_nu.disconnect_wifi.assert_not_called()
+        self.assertEqual(requests, [("legacy-ui-manual-review", {})])
 
     @patch("PyQt6.QtCore.QTimer.singleShot")
     @patch("ui.network_tab.NetworkUtils")

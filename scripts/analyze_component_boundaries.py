@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Build deterministic Phase 9 import and RPM ownership evidence."""
+"""Build deterministic component reachability and RPM ownership evidence."""
 
 from __future__ import annotations
 
@@ -113,8 +113,14 @@ def _rpm_evidence(spec_path: Path) -> dict[str, bool]:
     return {
         "base_owns_complete_application_tree": "%{_prefix}/lib/%{name}" in text,
         "extras_subpackage_defined": "%package extras" in text,
-        "api_requires_exact_base": "Requires:       %{name} = %{epoch}:%{version}-%{release}" in text.split("%package api", 1)[-1].split("%package daemon", 1)[0],
-        "daemon_requires_exact_base": "Requires:       %{name} = %{epoch}:%{version}-%{release}" in text.split("%package daemon", 1)[-1].split("%prep", 1)[0],
+        "retired_subpackages_absent": not any(
+            marker in text
+            for marker in ("%package api", "%package daemon", "%package extras")
+        ),
+        "custom_polkit_actions_absent": not any(
+            marker in text
+            for marker in ("polkit-1/actions", "org.loofi.fedora-tweaks.*.policy")
+        ),
     }
 
 
@@ -147,11 +153,11 @@ def analyze(source_root: Path = SOURCE_ROOT, spec_path: Path = SPEC_PATH) -> dic
         if root not in modules
     )
 
-    surface_roots = {
-        "cli": {"cli.main"},
-        "api": {"utils.api_server"},
-        "daemon": {"daemon.runtime"},
-    }
+    # The Core package exposes only the GUI entry point and the scriptable CLI.
+    # Keep the graph intentionally honest: retired API/daemon roots must not be
+    # represented as active runtime surfaces merely because old compatibility
+    # modules happen to remain in a checkout.
+    surface_roots = {"cli": {"cli.main"}}
     surface_reachability = {}
     for surface, roots in surface_roots.items():
         reachable = reachable_modules(graph, roots)

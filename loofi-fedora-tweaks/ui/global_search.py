@@ -41,6 +41,7 @@ class GlobalSearchDialog(QDialog):
         self._model = model
         self._on_result = on_result
         self._search_filter = search_filter
+        self._actions_only = search_filter is SearchFilter.ACTIONS
         self._visible_results: tuple[SearchResult, ...] = ()
         self._setup_ui()
         self._populate_results("")
@@ -55,7 +56,9 @@ class GlobalSearchDialog(QDialog):
             self.tr("Search available routes, settings, and safe action entry points")
         )
         self.setObjectName("globalSearch")
-        self.setMinimumSize(620, 420)
+        # Keep the discovery surface usable beside narrow or text-scaled
+        # windows. The parent window may still enlarge it naturally.
+        self.setMinimumSize(520, 360)
         self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Popup)
 
         layout = QVBoxLayout(self)
@@ -76,27 +79,49 @@ class GlobalSearchDialog(QDialog):
 
         self.hint_label = QLabel(self)
         self.hint_label.setObjectName("globalSearchHint")
+        self.hint_label.setWordWrap(True)
         layout.addWidget(self.hint_label)
 
         self.results_list = QListWidget(self)
         self.results_list.setObjectName("globalSearchResults")
         self.results_list.setAccessibleName(self.tr("Search results"))
         self.results_list.itemActivated.connect(self._activate_item)
-        self.results_list.itemClicked.connect(self._activate_item)
+        # A page may be opened directly from the page search. Action mode is
+        # deliberately keyboard/activation driven so a casual click cannot
+        # even preselect a privileged workflow.
+        if not self._actions_only:
+            self.results_list.itemClicked.connect(self._activate_item)
         layout.addWidget(self.results_list, 1)
 
-        footer = QLabel(self.tr("Up/Down Navigate    Enter Open    Esc Close"), self)
+        footer_text = (
+            self.tr("Up/Down Navigate    Enter Review    Esc Close")
+            if self._actions_only
+            else self.tr("Up/Down Navigate    Enter Open    Esc Close")
+        )
+        footer = QLabel(footer_text, self)
         footer.setAlignment(Qt.AlignmentFlag.AlignCenter)
         footer.setObjectName("globalSearchFooter")
         layout.addWidget(footer)
 
     def _populate_results(self, query: str) -> None:
         self.results_list.clear()
-        self._visible_results = self._model.search(
+        results = self._model.search(
             str(query).strip(),
             search_filter=self._search_filter,
-            limit=_MAX_RESULTS,
+            # Fetch the complete page/settings set before removing actions;
+            # otherwise highly ranked configured actions could crowd out
+            # destinations from the ordinary Ctrl+K search.
+            limit=None if not self._actions_only else _MAX_RESULTS,
         )
+        # Ctrl+K is page discovery. The separate Ctrl+Shift+K action mode
+        # keeps system operations out of the normal navigation result list.
+        if not self._actions_only:
+            results = tuple(
+                result
+                for result in results
+                if result.kind is not SearchResultKind.ACTION
+            )
+        self._visible_results = tuple(results[:_MAX_RESULTS])
         for result in self._visible_results:
             kind = {
                 SearchResultKind.ROUTE: self.tr("Page"),
@@ -120,11 +145,20 @@ class GlobalSearchDialog(QDialog):
 
         if self.results_list.count() > 0:
             self.results_list.setCurrentRow(0)
+            mode = (
+                self.tr("Action mode — results open review only")
+                if self._actions_only
+                else self.tr("Pages and settings — use Ctrl+Shift+K for actions")
+            )
             self.hint_label.setText(
-                self.tr("%1 result(s)").replace("%1", str(len(self._visible_results)))
+                self.tr("%1 · %2 result(s)")
+                .replace("%1", mode)
+                .replace("%2", str(len(self._visible_results)))
             )
         else:
-            self.hint_label.setText(self.tr("No available results"))
+            self.hint_label.setText(
+                self.tr("No available results. Try a different term or scope.")
+            )
 
     def _activate_item(self, item: QListWidgetItem) -> None:
         """Navigate through the owner callback; never execute a result directly."""

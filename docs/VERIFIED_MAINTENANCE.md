@@ -1,143 +1,79 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v27.0.0 "Core" uses Action Center as the trust boundary
-for supported host changes across GUI and CLI entry points.
-Fedora 43 and 44 are the supported targets; Fedora 45 remains
-preview-only.
+Loofi Fedora Tweaks v27.0.1 "Core" uses **Changes** as the one trust boundary
+for persistent system changes from both GUI and CLI.
 
-Proof is the current public release. It adds a bounded direct-action adapter
-and typed outcome evidence without creating another executor or weakening the
-Action Center trust boundary.
+## The lifecycle
 
-## Action Center workflow
+Open **Changes** and inspect **Needs attention** or **Recent**. Catalog browsing,
+search, and details are inert. A plan is created only after an explicit review
+request.
 
-Open **Software & Updates → Action Center**. The page starts in **Review
-queue**, where persisted work is grouped by lifecycle state. **Action catalog**
-is a separate inert browser: selecting or previewing an item does not create,
-prepare, or run a plan. Choose **Review & Plan** explicitly to create one.
+Every review shows five facts:
 
-The selected-item pane shows risk, affected scope, privilege and restart
-requirements, validation, and rollback before its one available lifecycle
-action. Applying a ready plan always requires explicit confirmation.
-Medium-risk actions without supported rollback also require acknowledgement of
-that limitation.
+1. **Change** — the exact intended operation and affected resources;
+2. **Risk** — impact and scope;
+3. **Authorization** — why the desktop may request administrator approval;
+4. **Verify** — the independent state check that follows execution; and
+5. **Recovery** — rollback or the precise manual limitation.
 
 The lifecycle is:
 
 ```text
-planned → ready → running → verifying → succeeded
-                ↘ failed / verification_failed / interrupted
-                                  ↕
-                          awaiting_reboot
+preflight → review → explicit authorization → bounded run → independent verify
 ```
 
-`succeeded` means the action-specific verifier passed; exit code zero alone is
-not sufficient. If the application exits during a run, the run is preserved as
-`interrupted` and is never resumed automatically.
+Plans expire and are re-preflighted immediately before execution. One
+cross-process mutation lease prevents concurrent host changes. A process exit
+code alone is never presented as verified success. Interrupted, failed, and
+restart-required runs remain visible and require an explicit follow-up.
 
-## Proof direct path
+## Capability-aware actions
 
-When **Settings → Behavior → Safety & Execution** is set to **Direct**, an
-eligible low-risk request may use **Run action**. The service still creates
-the normal Action Center plan, performs fresh preflight, uses the configured
-confirmation policy, executes through Action Center, and attempts independent
-verification. Medium-risk actions require one compact confirmation when enabled.
-High-risk, manual-only, unsupported, incomplete, and unverifiable definitions
-remain review-only or blocked. `--dry-run` and preview never execute.
+An action is available only when its platform capability, risk, authorization,
+verification, and recovery contract are known. Traditional Fedora, Atomic
+Fedora, and bootc deployments have different package and restart semantics.
+Unknown detection fails closed.
 
-The CLI equivalent is:
+Supported source-specific maintenance can include:
 
-```bash
-loofi run dnf-clean-all --dry-run --json
-```
+- system package updates;
+- Flatpak updates when the command and remote are available;
+- firmware status and update handoff;
+- bounded package-cache cleanup;
+- selected service or firewall changes with an exact verifier; and
+- recovery-point creation or supported rollback guidance.
 
-The result envelope exposes a typed state such as `completed_verified`,
-`completed_awaiting_reboot`, `completed_verification_failed`, `review_required`,
-or `blocked_by_preflight`; it never exposes an arbitrary command vector.
+Application discovery is handed to the desktop's native software center when a
+capability-aware AppStream handoff exists. Loofi is not distributed as a
+Flatpak and does not silently add remotes.
 
 ## CLI
 
 ```bash
-loofi action-center list
-loofi action-center plan dnf-clean-all
-loofi action-center show PLAN_ID
-loofi action-center apply PLAN_ID --confirm
-loofi action-center plan restart-failed-service --service example.service
-loofi action-center apply PLAN_ID --confirm --accept-no-rollback
-loofi action-center plan install-application --source flatpak --package-id org.mozilla.firefox
-loofi action-center plan vacuum-journal --days 14
-loofi action-center plan create-recovery-point --backend snapper --description "Before update"
-loofi action-center verify RUN_ID
-loofi action-center history
+loofi-fedora-tweaks --cli changes list
+loofi-fedora-tweaks --cli changes show PLAN_ID
+loofi-fedora-tweaks --cli changes apply PLAN_ID --yes
+loofi-fedora-tweaks --cli changes verify RUN_ID
 ```
 
-Use the global `--json` flag before the command for stable machine-readable
-plan, policy, run, and verification envelopes.
+Use `--json` before the command for a machine-readable envelope. The CLI
+accepts only the closed catalog and typed parameters; it has no arbitrary shell
+or remote execution mode.
 
-Legacy host-changing CLI commands preserve their parse shape where practical,
-but now return a plan ID and review summary instead of executing. A successfully
-created `manual_only` plan also exits successfully; its blocked state and
-recovery guidance explain the required manual follow-up. The compatibility
-`readiness action-run` spelling creates a plan only, and its old `--confirm`
-flag is accepted but ignored.
+## What never happens automatically
 
-The authenticated loopback API offers the same plan-only handoff:
+Loofi does not perform unattended schedules, fix-all operations, automatic
+restart, retry, rollback, or resume. A manual-only or unavailable action is
+shown with its reason and safe alternative. Cancelling authorization leaves the
+plan unexecuted.
 
-```http
-POST /api/action-center/plans
-Content-Type: application/json
-Authorization: Bearer TOKEN
+## Evidence and support
 
-{"definition_id":"dnf-clean-all","parameters":{}}
-```
+Action verification and System Check resolution are separate facts. A linked
+run waiting for restart remains pending until the new deployment is explicitly
+verified and a later compatible check confirms the relevant state.
 
-Unknown definitions, extra command fields, and invalid parameters are rejected.
-The response includes the plan ID, state, definition ID, review requirement,
-and next action. No API endpoint can apply a plan.
-
-## Executable catalog
-
-| Action | Policy | Verification |
-| --- | --- | --- |
-| `dnf-clean-all` | Traditional Fedora only; Atomic remains read-only/manual | Fresh package/repository health check |
-| `restart-failed-service` | Unit must be present in a fresh failed-unit list | Unit is active and no longer failed |
-| `fstrim-all` | Requires discard support and the `fstrim` binary | Successful per-filesystem trim result |
-| `update-fedora-system` | Exact Traditional NEVRAs or one Atomic staged deployment | RPM health and exact packages, or booted deployment after reboot |
-| `update-flatpaks` | Exact refs and target commits | Only planned refs match their target commits |
-| `update-firmware` | Exact device GUID, version, and checksum | fwupd history, with explicit reboot hand-off |
-| `install-application` / `remove-application` | One Fedora package or Flatpak ref | Exact RPM identity, Atomic deployment, or Flatpak commit/state |
-| `vacuum-journal` | Retention is exactly 7, 14, or 30 days | Fresh usage is measured and does not increase |
-| `autoremove-packages` | Exact preflight package list; Traditional only | Every planned package is absent and package health passes |
-| `create-recovery-point` | Timeshift or Snapper and printable description | A new listed snapshot contains the description |
-
-All other recommendations remain manual-only. Loofi does not provide fix-all,
-scheduled repair, automatic rollback, automatic retry, remote API apply, or
-plugin/AI-provided executable actions.
-
-## Recovery and support
-
-Plans expire after 30 minutes and are re-preflighted before execution. Each
-plan contains one action and validated parameters; the reviewed definition
-regenerates the command, so persisted commands are never authoritative. Only one
-Action Center mutation can run across GUI and CLI processes. The API can create
-closed plans and inspect plans and runs, but cannot apply them. Support Bundle
-v13 preserves the v11 bounded System
-Check results and v12 Trusted Change Journal evidence, then optionally adds one
-explicitly selected troubleshooting session with bounded comparison and linked
-status metadata. It includes no raw command output, recovery commands, or
-secrets.
-
-Action Center `verified` means the action-specific verifier passed.
-System Check `resolved` means the original finding is absent from a later
-compatible check whose source completed. These facts are intentionally
-separate. A successful linked run offers **Check again**; a run waiting for
-reboot stays pending until reboot-aware verification finishes, and missing
-follow-up sources produce `not_comparable`, never `resolved`.
-
-Writable schema-v1 through schema-v3 plans and runs migrate atomically to
-schema v4 with a last-known-good backup and readback. Schema v4 can link a plan
-and run to a validated System Check finding, but that context cannot alter the
-action, command, policy, or confirmation. Unknown future schemas remain
-read-only. Home and global search may show attention or action entry points, but
-activation only opens `maintenance:action-center`. They never apply, verify,
-retry, or resume a plan. Every route uses the same safety policy.
+Support bundles contain bounded, redacted diagnostic evidence. They do not
+contain secrets, raw process output, arbitrary command vectors, or executable
+repair instructions. Review any archive before sharing it.

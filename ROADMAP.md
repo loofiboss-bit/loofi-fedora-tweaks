@@ -22,19 +22,26 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v23.0.1 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.1.md), [tasks](.workflow/specs/tasks-v23.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.1.md) |
 | v23.0.2 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md), [public evidence](docs/reports/V23_RELEASE_PUBLICATION.md) |
 | v23.1.0 | Compass | DONE | [Canonical plan](docs/plans/loofi-fedora-tweaks-v23.1-implementation-plan.md), [architecture](.workflow/specs/arch-v23.1.0.md), [tasks](.workflow/specs/tasks-v23.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v23.1.0.md) |
-| v27.0.0 | Core | ACTIVE | [Plan](docs/plans/plan%20v27.md), [architecture](.workflow/specs/arch-v27.0.0.md), [tasks](.workflow/specs/tasks-v27.0.0.md) |
+| v27.0.1 | Core | ACTIVE | [Plan](docs/plans/plan%20v27.md), [architecture](.workflow/specs/arch-v27.0.1.md), [tasks](.workflow/specs/tasks-v27.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v27.0.1.md) |
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v27.0.0 "Core" — Fedora Maintenance Core
+## [ACTIVE] v27.0.1 "Core" — Fedora Maintenance Core
 
-Active implementation: transform Loofi Fedora Tweaks into a desktop-neutral
-Fedora Maintenance Core with five destinations, immutable PlatformProfile,
-native Polkit helpers, and strict Action Center execution.
+Release-ready implementation: Loofi Fedora Tweaks is a desktop-neutral Fedora
+Maintenance Core with five destinations, immutable PlatformProfile, native
+authorization handoffs, and strict Action Center execution. Publication is
+authorized; the historical v27.0.0 Marketplace Enhancement tag remains
+unchanged and v27.0.1 is the unique Core release identity.
 See the [plan](docs/plans/plan%20v27.md),
-[tasks](.workflow/specs/tasks-v27.0.0.md),
-[architecture](.workflow/specs/arch-v27.0.0.md), and
-[release notes](docs/releases/RELEASE-NOTES-v27.0.0.md).
+[tasks](.workflow/specs/tasks-v27.0.1.md),
+[architecture](.workflow/specs/arch-v27.0.1.md), and
+[release notes](docs/releases/RELEASE-NOTES-v27.0.1.md).
+
+Automated qualification passed with 4,780 tests passed, 73 skipped, and
+86.95% maintained-surface coverage against the 85% blocking gate. The planned
+repository-wide 90% target and physical/manual Fedora qualification are
+explicitly deferred beyond this release.
 
 ## [DONE] v26.0.3 "Everyday" — Daily Maintenance
 

@@ -74,10 +74,13 @@ class _UpdatesSubTab(BaseTab):
         from ui.update_overview import UpdateOverviewWidget
 
         self.overview = UpdateOverviewWidget()
+        self._selected_source: str | None = None
         layout.addWidget(self.overview)
         self._add_update_overview(layout)
         self._add_source_actions(layout)
         self._add_advanced_sections(layout)
+        self.overview.snapshotChanged.connect(self._on_overview_snapshot)
+        self._on_overview_snapshot(self.overview.snapshot)
 
         self.action_progress = ActionProgress(self.tr("Waiting for an update action."))
         self.progress_bar = self.action_progress.progress_bar
@@ -131,29 +134,124 @@ class _UpdatesSubTab(BaseTab):
         self.plan_details.add_widget(self.btn_update_all)
 
     def _add_source_actions(self, layout: QVBoxLayout) -> None:
-        """Add one review action per existing update source."""
+        """Add one explicit select-then-review action per update source."""
         if self.package_manager == "rpm-ostree":
             self.btn_dnf = SecondaryButton(self.tr("Review System Update (rpm-ostree)"))
         else:
             self.btn_dnf = SecondaryButton(self.tr("Review System Update (DNF)"))
-        self.btn_dnf.setAccessibleName(self.tr("Review System Update"))
-        self.btn_dnf.clicked.connect(self.run_dnf_update)
+        self.btn_dnf.setAccessibleName(self.tr("Select System updates"))
+        self.btn_dnf.setProperty("sourceId", "system")
+        self.btn_dnf.clicked.connect(lambda _checked=False: self._select_or_review_source("system"))
 
-        self.btn_flatpak = SecondaryButton(self.tr("Review Flatpak Updates"))
-        self.btn_flatpak.setAccessibleName(self.tr("Review Flatpak Updates"))
-        self.btn_flatpak.clicked.connect(self.run_flatpak_update)
+        self.btn_flatpak = SecondaryButton(self.tr("Select Flatpak updates"))
+        self.btn_flatpak.setAccessibleName(self.tr("Select Flatpak updates"))
+        self.btn_flatpak.setProperty("sourceId", "flatpak")
+        self.btn_flatpak.clicked.connect(lambda _checked=False: self._select_or_review_source("flatpak"))
 
-        self.btn_fw = SecondaryButton(self.tr("Review Firmware Updates"))
-        self.btn_fw.setAccessibleName(self.tr("Review Firmware Updates"))
-        self.btn_fw.clicked.connect(self.run_fw_update)
+        self.btn_fw = SecondaryButton(self.tr("Select Firmware updates"))
+        self.btn_fw.setAccessibleName(self.tr("Select Firmware updates"))
+        self.btn_fw.setProperty("sourceId", "firmware")
+        self.btn_fw.clicked.connect(lambda _checked=False: self._select_or_review_source("firmware"))
+
+        # A source cannot enter the Action Center until the explicit read-only
+        # overview has established a fresh result for it.
+        for button in (self.btn_dnf, self.btn_flatpak, self.btn_fw):
+            button.setEnabled(False)
 
         overview_layout = self.overview.layout()
         if isinstance(overview_layout, QVBoxLayout):
             for source, button in (("system", self.btn_dnf), ("flatpak", self.btn_flatpak), ("firmware", self.btn_fw)):
                 overview_layout.insertWidget(overview_layout.indexOf(self.overview.rows[source][2]), button)
 
+    def _on_overview_snapshot(self, snapshot: object) -> None:
+        """Enable source review only after a fresh, truthful source check."""
+        results = {
+            str(getattr(result, "source", "")): result
+            for result in getattr(snapshot, "sources", ())
+        }
+        buttons = {
+            "system": self.btn_dnf,
+            "flatpak": self.btn_flatpak,
+            "firmware": self.btn_fw,
+        }
+        for source, button in buttons.items():
+            result = results.get(source)
+            status = str(getattr(result, "status", "unchecked"))
+            ready = status in {"available", "up_to_date"} and not bool(
+                getattr(result, "stale", True)
+            )
+            button.setEnabled(ready)
+            button.setProperty("sourceStatus", status)
+            button.setProperty("readyForReview", ready)
+            if source != self._selected_source:
+                label = {
+                    "system": self.tr("Select System"),
+                    "flatpak": self.tr("Select Flatpak"),
+                    "firmware": self.tr("Select Firmware"),
+                }[source]
+                button.setText(
+                    self.tr("%1 updates").replace("%1", label)
+                )
+                button.setAccessibleName(
+                    self.tr("Select %1 updates").replace("%1", label)
+                )
+
+    def _select_or_review_source(self, source: str) -> None:
+        """Make source selection a visible step before Action Center review."""
+        buttons = {
+            "system": self.btn_dnf,
+            "flatpak": self.btn_flatpak,
+            "firmware": self.btn_fw,
+        }
+        button = buttons.get(source)
+        if button is None or not button.isEnabled():
+            return
+        if self._selected_source != source:
+            previous = buttons.get(self._selected_source or "")
+            if previous is not None:
+                previous.setText(
+                    self.tr("Select %1 updates").replace(
+                        "%1",
+                        {
+                            "system": self.tr("System"),
+                            "flatpak": self.tr("Flatpak"),
+                            "firmware": self.tr("Firmware"),
+                        }[str(previous.property("sourceId"))],
+                    )
+                )
+            self._selected_source = source
+            source_label = {
+                "system": self.tr("System"),
+                "flatpak": self.tr("Flatpak"),
+                "firmware": self.tr("Firmware"),
+            }[source]
+            button.setText(
+                self.tr("Review %1 changes").replace("%1", source_label)
+            )
+            button.setAccessibleName(
+                self.tr("Review %1 changes").replace("%1", source_label)
+            )
+            self._set_update_state(
+                "source_selected",
+                self.tr("Source selected"),
+                self.tr("%1 is selected. Choose Review changes to inspect the exact plan.").replace(
+                    "%1", source_label
+                ),
+            )
+            self.update_summary.set_status(
+                self.tr("Source selected"),
+                kind="info",
+                description=source_label,
+            )
+            return
+        {
+            "system": self.run_dnf_update,
+            "flatpak": self.run_flatpak_update,
+            "firmware": self.run_fw_update,
+        }[source]()
+
     def _add_advanced_sections(self, layout: QVBoxLayout) -> None:
-        """Keep existing kernel and Smart Updates tools progressively disclosed."""
+        """Add the bounded kernel inspection and cleanup entry points."""
         kernel_group = QGroupBox(self.tr("Kernel Management"))
         kernel_layout = QHBoxLayout()
         kernel_group.setLayout(kernel_layout)
@@ -172,18 +270,6 @@ class _UpdatesSubTab(BaseTab):
 
         layout.addWidget(kernel_group)
 
-        # Preserve the Smart Updates backend as one advanced section inside
-        # the canonical Updates workflow instead of a duplicate top-level tab.
-        self.advanced_group = QGroupBox(self.tr("Advanced Options"))
-        self.advanced_group.setObjectName("maintAdvancedUpdateOptions")
-        self.advanced_group.setCheckable(True)
-        self.advanced_group.setChecked(False)
-        advanced_layout = QVBoxLayout(self.advanced_group)
-        self.advanced_updates = _SmartUpdatesSubTab()
-        self.advanced_updates.setVisible(False)
-        self.advanced_group.toggled.connect(self.advanced_updates.setVisible)
-        advanced_layout.addWidget(self.advanced_updates)
-        layout.addWidget(self.advanced_group)
 
     def _update_guidance(self) -> str:
         if self.package_manager == "rpm-ostree":
@@ -195,10 +281,6 @@ class _UpdatesSubTab(BaseTab):
             "System updates change the current Fedora installation. Review one source at a time, "
             "then let Action Center verify the result."
         ))
-
-    def reveal_advanced_options(self: typing.Any) -> None:
-        """Reveal the former Smart Updates surface after a compatible deep link."""
-        self.advanced_group.setChecked(True)
 
     def _set_update_state(
         self,
@@ -221,6 +303,11 @@ class _UpdatesSubTab(BaseTab):
         self.update_summary.set_status(title, kind=status_kind, description=message)
 
     def set_checking(self, source: str) -> None:
+        # A new inspection invalidates the previous selection until the fresh
+        # source result is available. This keeps the review handoff truthful.
+        self._selected_source = None
+        for button in (self.btn_dnf, self.btn_flatpak, self.btn_fw):
+            button.setEnabled(False)
         self._set_update_state(
             "checking",
             self.tr("Checking update status"),
@@ -228,6 +315,22 @@ class _UpdatesSubTab(BaseTab):
         )
 
     def set_updates_available(self, source: str, count: int) -> None:
+        # Keep the helper useful for injected check services and tests: an
+        # explicit availability result is enough to unlock review.
+        source_buttons = (
+            ("system", self.btn_dnf, self.tr("System")),
+            ("flatpak", self.btn_flatpak, self.tr("Flatpak")),
+            ("firmware", self.btn_fw, self.tr("Firmware")),
+        )
+        for source_id, button, label in source_buttons:
+            if label.lower() in source.lower() or source_id in source.lower():
+                ready = count >= 0
+                button.setEnabled(ready)
+                button.setProperty("sourceStatus", "available" if count else "up_to_date")
+                button.setProperty("readyForReview", ready)
+                if self._selected_source != source_id:
+                    button.setText(self.tr("Select %1 updates").replace("%1", label))
+                    button.setAccessibleName(self.tr("Select %1 updates").replace("%1", label))
         self._set_update_state(
             "available",
             self.tr("Updates available"),
@@ -337,7 +440,7 @@ class _UpdatesSubTab(BaseTab):
     def start_process(self: typing.Any) -> typing.Any:
         self._set_update_state(
             "running",
-            self.tr("Advanced operation running"),
+            self.tr("Maintenance operation running"),
             self.tr("Progress and technical output are shown below."),
         )
         self.output_area.clear()
@@ -352,24 +455,28 @@ class _UpdatesSubTab(BaseTab):
     def on_command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
 
-        self.btn_dnf.setEnabled(True)
-        self.btn_flatpak.setEnabled(True)
-        self.btn_fw.setEnabled(True)
+        # Command completion must not bypass the preview gate. Only
+        # sources with a fresh, supported overview result become selectable.
+        # The ``readyForReview`` property is also absent on legacy injected
+        # button doubles, where the historical helper contract is retained.
+        for button in (self.btn_dnf, self.btn_flatpak, self.btn_fw):
+            ready = button.property("readyForReview")
+            button.setEnabled(ready if isinstance(ready, bool) else True)
         self.btn_update_all.setEnabled(True)
         self.progress_bar.setValue(100)
         self.progress_bar.setFormat(self.tr("100% - Done"))
-        self.action_progress.status_label.setText(self.tr("Advanced operation completed") if exit_code == 0 else self.tr("Advanced operation failed"))
+        self.action_progress.status_label.setText(self.tr("Maintenance operation completed") if exit_code == 0 else self.tr("Maintenance operation failed"))
         if exit_code == 0:
             self._set_update_state(
                 "succeeded",
-                self.tr("Advanced operation completed"),
+                self.tr("Maintenance operation completed"),
                 self.tr("Review the technical output and verification result."),
                 kind="success",
             )
         else:
             self._set_update_state(
                 "failed",
-                self.tr("Advanced operation failed"),
+                self.tr("Maintenance operation failed"),
                 self.tr("No success is assumed. Review the technical output before retrying."),
                 kind="error",
             )
@@ -442,7 +549,7 @@ class _CleanupSubTab(BaseTab):
         layout.addWidget(cleanup_group)
 
         # Maintenance Group
-        maint_group = QGroupBox(self.tr("Advanced cleanup and maintenance"))
+        maint_group = QGroupBox(self.tr("Additional cleanup and maintenance"))
         maint_group.setObjectName("cleanupAdvancedChoices")
         maint_layout = QVBoxLayout()
         maint_group.setLayout(maint_layout)
@@ -480,7 +587,7 @@ class _CleanupSubTab(BaseTab):
         maint_layout.addLayout(ts_layout)
 
         self.advanced_cleanup = DetailsDisclosure(
-            summary=self.tr("Show advanced cleanup choices")
+            summary=self.tr("Show additional cleanup choices")
         )
         self.advanced_cleanup.setObjectName("cleanupAdvancedDisclosure")
         self.advanced_cleanup.add_widget(maint_group)
@@ -543,9 +650,9 @@ class _CleanupSubTab(BaseTab):
             if category.selected_by_default:
                 mode = self.tr("safe default")
             elif category.manual_only:
-                mode = self.tr("advanced manual guidance")
+                mode = self.tr("manual guidance")
             else:
-                mode = self.tr("advanced, not selected")
+                mode = self.tr("not selected")
             lines.append(f"{category.title}: {size} · {category.risk} · {mode}\n{category.guidance}")
         lines.append(self.tr("Selected safe estimate: %s") % self._format_bytes(analysis.estimated_selected_bytes))
         lines.append(
@@ -739,8 +846,12 @@ class _OverlaysSubTab(QWidget):
 
         # Check for pending reboot
         has_pending = SystemManager.has_pending_deployment()
-        self.reboot_warning.setVisible(has_pending)
-        self.btn_reboot.setVisible(has_pending)
+        self.reboot_warning.setVisible(has_pending is True or has_pending is None)
+        self.btn_reboot.setVisible(has_pending is True)
+        if has_pending is None:
+            self.reboot_warning.setText(
+                self.tr("Reboot status could not be verified. Inspect the deployment before continuing.")
+            )
 
     def remove_selected(self: typing.Any) -> typing.Any:
         """Remove the selected layered package."""
@@ -769,8 +880,13 @@ class _OverlaysSubTab(QWidget):
 
         if reply == QMessageBox.StandardButton.Yes:
             self.actionCenterRequested.emit(
-                "remove-application",
-                {"source": "fedora", "package_id": pkg_name},
+                "legacy-ui-manual-review",
+                {
+                    "description": (
+                        "Review rpm-ostree uninstall for the selected layered package: "
+                        f"{pkg_name}"
+                    )
+                },
             )
 
     def reset_to_base(self: typing.Any) -> typing.Any:
@@ -805,168 +921,6 @@ class _OverlaysSubTab(QWidget):
                 self.tr("Reboot remains manual"),
                 self.tr("Loofi never initiates a reboot. Use the desktop session controls when ready."),
             )
-
-
-# ---------------------------------------------------------------------------
-# Smart Updates sub-tab
-# ---------------------------------------------------------------------------
-
-
-class _SmartUpdatesSubTab(QWidget):
-    """Sub-tab for advanced update management.
-
-    Uses UpdateManager to check updates and preview conflicts.
-    """
-
-    def __init__(self: typing.Any) -> None:
-        super().__init__()
-        self._loaded = False
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 0, 0, 0)
-
-        # Check Updates
-        check_group = QGroupBox(self.tr("Available Updates"))
-        check_layout = QVBoxLayout(check_group)
-
-        btn_row = QHBoxLayout()
-        self.btn_check = QPushButton(self.tr("Check for Updates"))
-        self.btn_check.setAccessibleName(self.tr("Check for Updates"))
-        self.btn_check.clicked.connect(self._check_updates)
-        btn_row.addWidget(self.btn_check)
-
-        self.btn_conflicts = QPushButton(self.tr("Preview Conflicts"))
-        self.btn_conflicts.setAccessibleName(self.tr("Preview Conflicts"))
-        self.btn_conflicts.clicked.connect(self._preview_conflicts)
-        btn_row.addWidget(self.btn_conflicts)
-        btn_row.addStretch()
-        check_layout.addLayout(btn_row)
-
-        self.updates_list = QListWidget()
-        self.updates_list.setMinimumHeight(120)
-        check_layout.addWidget(self.updates_list)
-        layout.addWidget(check_group)
-
-        # Output
-        self.output_area = QTextEdit()
-        self.output_area.setReadOnly(True)
-        self.output_area.setMaximumHeight(150)
-        self.output_area.setAccessibleName(self.tr("Smart updates output"))
-        self.output_details = DetailsDisclosure(summary=self.tr("Show smart update output"))
-        self.output_details.add_widget(self.output_area)
-        layout.addWidget(self.output_details)
-
-        layout.addStretch()
-
-    def _append_output(self: typing.Any, text: typing.Any) -> typing.Any:
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-        self.output_area.insertPlainText(text)
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-
-    def _check_updates(self: typing.Any) -> typing.Any:
-        """Check for available updates."""
-        try:
-            from utils.update_manager import UpdateManager
-
-            updates = UpdateManager.check_updates()
-            self.updates_list.clear()
-            for u in updates:
-                old_version = f"{u.old_version} → " if u.old_version else ""
-                source = u.repo or u.severity
-                item = QListWidgetItem(f"{u.name}  {old_version}{u.version}  ({source})")
-                self.updates_list.addItem(item)
-            if not updates:
-                self.updates_list.addItem(QListWidgetItem(self.tr("System is up to date.")))
-            self._append_output(self.tr("Found {} available updates.\n").format(len(updates)))
-        except (RuntimeError, OSError, ValueError) as e:
-            self._append_output(f"[ERROR] {e}\n")
-
-    def _preview_conflicts(self: typing.Any) -> typing.Any:
-        try:
-            from utils.update_manager import UpdateManager
-
-            conflicts = UpdateManager.preview_conflicts()
-            self.updates_list.clear()
-            for c in conflicts:
-                item = QListWidgetItem(f"WARNING {c.package}: {c.reason}")
-                self.updates_list.addItem(item)
-            if not conflicts:
-                self.updates_list.addItem(QListWidgetItem(self.tr("No conflicts detected.")))
-        except (RuntimeError, OSError, ValueError) as e:
-            self._append_output(f"[ERROR] {e}\n")
-
-
-# ---------------------------------------------------------------------------
-# Upgrade Assistant sub-tab
-# ---------------------------------------------------------------------------
-
-
-class _UpgradeAssistantSubTab(QWidget):
-    """Guided release planning entry point backed by ReleaseReadiness."""
-
-    def __init__(self: typing.Any) -> None:
-        super().__init__()
-        root = QVBoxLayout(self)
-        root.setContentsMargins(0, 0, 0, 0)
-        self.scaffold = PageScaffold(
-            self.tr("Fedora Upgrade"),
-            self.tr("Review release readiness and export support evidence before upgrading Fedora."),
-        )
-        root.addWidget(self.scaffold)
-        layout = self.scaffold.content_layout
-
-        intro = QLabel(
-            self.tr(
-                "Plan Fedora release work with read-only checks, risk explanations, "
-                "command previews, confirmed actions, verification, and support export."
-            )
-        )
-        intro.setWordWrap(True)
-        layout.addWidget(intro)
-
-        from core.diagnostics.release_readiness import ReleaseReadiness
-
-        for target in ReleaseReadiness.list_targets():
-            group = QGroupBox(target.label)
-            group_layout = QVBoxLayout(group)
-            summary = QLabel(f"{target.status_label} · {target.release_phase}")
-            summary.setWordWrap(True)
-            group_layout.addWidget(summary)
-
-            if target.important_changes:
-                changes = QLabel("\n".join(f"- {change.title}: {change.summary}" for change in target.important_changes))
-                changes.setWordWrap(True)
-                group_layout.addWidget(changes)
-
-            actions = QHBoxLayout()
-            open_button = QPushButton(self.tr("Open Guided Check"))
-            open_button.clicked.connect(lambda _checked=False, key=target.key: self._open_readiness(key))
-            actions.addWidget(open_button)
-
-            export_button = QPushButton(self.tr("Export Bundle"))
-            export_button.clicked.connect(lambda _checked=False, key=target.key: self._export_bundle(key))
-            actions.addWidget(export_button)
-            actions.addStretch()
-            group_layout.addLayout(actions)
-
-            layout.addWidget(group)
-
-        layout.addStretch()
-
-    def _open_readiness(self: typing.Any, target_key: str) -> None:
-        from ui.release_readiness_dialog import ReleaseReadinessDialog
-
-        dialog = ReleaseReadinessDialog(target_key, self)
-        dialog.exec()
-
-    def _export_bundle(self: typing.Any, target_key: str) -> None:
-        from core.export.support_bundle import SupportBundleWriter
-
-        path = f"loofi-readiness-{target_key}.json"
-        try:
-            SupportBundleWriter.save_json(path, target=target_key)
-            QMessageBox.information(self, self.tr("Export Complete"), self.tr("Saved support bundle to %1").replace("%1", path))
-        except (OSError, RuntimeError, ValueError) as exc:
-            QMessageBox.critical(self, self.tr("Export Failed"), str(exc))
 
 
 # ---------------------------------------------------------------------------

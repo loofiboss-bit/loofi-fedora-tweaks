@@ -164,7 +164,7 @@ class AtlasDashboardTab(BaseTab):
         self.state_card.add_widget(status_grid)
         self.status_unavailable = InlineNotice(
             self.tr("No system check has been run yet"),
-            self.tr("Run System Check to create the first saved status."),
+            self.tr("Run a system check to create the first saved status."),
             kind="neutral",
         )
         self.status_unavailable.setObjectName("homeStatusUnavailable")
@@ -173,8 +173,8 @@ class AtlasDashboardTab(BaseTab):
 
         self.check_actions = ActionBar()
         self.check_now_button = PrimaryButton(
-            self.tr("Check now"),
-            description=self.tr("Run the local read-only System Check."),
+            self.tr("Run system check"),
+            description=self.tr("Run one local, read-only system check."),
         )
         self.check_now_button.setObjectName("homeCheckNow")
         self.check_now_button.clicked.connect(self.start_system_check)
@@ -230,7 +230,7 @@ class AtlasDashboardTab(BaseTab):
                 self.status_unavailable.set_notice(
                     "neutral",
                     self.tr("No system check has been run yet"),
-                    self.tr("Run System Check to create the first saved status."),
+                    self.tr("Run a system check to create the first saved status."),
                 )
             else:
                 self.status_unavailable.set_notice(
@@ -252,7 +252,10 @@ class AtlasDashboardTab(BaseTab):
 
         if summary.primary_task is not None:
             self._add_guided_task(summary.primary_task, primary=True)
-        elif summary.primary_recommendation is not None:
+        elif (
+            summary.primary_recommendation is not None
+            and summary.data_state != "empty"
+        ):
             self._add_primary(summary.primary_recommendation)
         if summary.attention_items:
             self.attention_container.addWidget(self._section_label(self.tr("Also needs attention")))

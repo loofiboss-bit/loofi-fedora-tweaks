@@ -7,14 +7,12 @@ from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QThread, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QComboBox,
     QHBoxLayout,
     QInputDialog,
     QLabel,
     QMessageBox,
     QSplitter,
     QVBoxLayout,
-    QWidget,
 )
 
 from ui.base_tab import BaseTab
@@ -24,11 +22,11 @@ from ui.action_center_presentation import (
     action_center_group_for_state,
     candidate_details,
     filter_lifecycle_records,
-    format_history_records,
     lifecycle_presence_copy,
     plan_details,
     preview_lines,
     privilege_label,
+    restart_label,
     run_banner_facts,
     run_details,
 )
@@ -38,7 +36,8 @@ from ui.action_center_views import (
     ActionCenterMasterPane,
 )
 from ui.action_center_worker import ActionCenterOperationWorker
-from ui.components import PrimaryButton, QuietButton, SecondaryButton
+from ui.action_center_history import ActionCenterHistoryMixin
+from ui.components import PrimaryButton
 from ui.components.layout import PageScaffold
 from ui.maintenance_direct import DirectActionUiMixin
 from ui.shared_states import DetailsDisclosure, ResultBanner
@@ -47,7 +46,7 @@ from ui.shared_states import DetailsDisclosure, ResultBanner
 _ActionCenterOperationWorker = ActionCenterOperationWorker
 
 
-class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
+class _ActionCenterSubTab(ActionCenterHistoryMixin, DirectActionUiMixin, BaseTab):
     """Review, asynchronously run, verify, and inspect v17 action plans."""
 
     systemCheckRequested = pyqtSignal(object)
@@ -83,8 +82,8 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
-            self.tr("Action Center"),
-            self.tr("Review planned changes and follow each one through verification."),
+            self.tr("Changes"),
+            self.tr("Review needs attention and recent changes, then follow each one through verification."),
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
@@ -103,6 +102,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self.lifecycle_view = self.master_pane.lifecycle_view
         self.action_list = self.master_pane.action_list
         self.mode_switcher.viewActivated.connect(self._show_master_mode)
+        self.master_pane.recent_changes_button.clicked.connect(self._show_recent_changes)
         self.lifecycle_view.currentIndexChanged.connect(self._show_lifecycle_view)
 
         self.advanced_controls = ActionCenterControls()
@@ -142,7 +142,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self.check_again_button.setVisible(False)
         target_review_row.addWidget(self.check_again_button)
 
-        self.advanced_review_tools = DetailsDisclosure(summary=self.tr("Show advanced review tools"))
+        self.advanced_review_tools = DetailsDisclosure(summary=self.tr("Show more review tools"))
         self.advanced_review_tools.setObjectName("actionCenterAdvancedTools")
         self.advanced_review_tools.add_widget(self.advanced_controls)
         layout.addWidget(self.advanced_review_tools)
@@ -225,7 +225,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self._set_loading(False)
         self.catalog_selector.blockSignals(True)
         self.catalog_selector.clear()
-        self.catalog_selector.addItem(self.tr("Choose an advanced action…"), "")
+        self.catalog_selector.addItem(self.tr("Choose an action…"), "")
         for item in self._items:
             self.catalog_selector.addItem(item.title, item.id)
         self.catalog_selector.blockSignals(False)
@@ -251,7 +251,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
                 self.tr("Nothing needs review"),
                 self.tr(
                     "No planned maintenance item needs review right now. "
-                    "Available catalog actions remain under advanced review tools."
+                    "Available catalog actions remain under the review tools."
                 ),
             )
             self.detail_area.setPlainText(
@@ -509,6 +509,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         worker = _ActionCenterOperationWorker(operation)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
+
         def _safe_success(result: typing.Any) -> None:
             try:
                 on_success(result)
@@ -851,28 +852,6 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
                 self.tr,
             )
         )
-
-    def _show_history(self: typing.Any) -> None:
-        from core.actions import ActionPlanStore, ActionRunStore
-
-        history = self._service.recent_history(limit=25)
-        plans = ActionPlanStore().list(limit=25)
-        runs = ActionRunStore().list(limit=25)
-        if not history and not plans and not runs:
-            self.selected_summary.setText(
-                self.tr("No Action Center history has been recorded.")
-            )
-            self.detail_area.setPlainText(self.tr("No Action Center history recorded."))
-            return
-        lines = format_history_records(plans, runs, history)
-        self.selected_summary.setText(
-            self.tr("Loaded %d recent Action Center records.") % len(lines)
-        )
-        self.detail_area.setPlainText("\n".join(lines))
-        viable = next((plan for plan in reversed(plans) if plan.state in {"ready", "needs_review"} and not plan.is_expired()), None)
-        if viable is not None:
-            self._current_plan = viable
-            self._set_lifecycle_primary("run", enabled=True)
 
     def metadata(self: typing.Any) -> PluginMetadata:
         return getattr(self, "_METADATA", None) or plugin_metadata_for_module(__name__)

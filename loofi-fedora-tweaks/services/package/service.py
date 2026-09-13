@@ -20,6 +20,63 @@ from services.system.system import SystemManager
 logger = logging.getLogger(__name__)
 
 
+class UnavailablePackageService(BasePackageService):
+    """Fail-closed package service for unsupported or unknown backends.
+
+    A bootc host is not a DNF host, and an unknown profile must never be
+    treated as one.  Returning structured failures keeps callers on the
+    review/manual path without attempting a guessed command.
+    """
+
+    def __init__(self, reason: str = "No supported Fedora package backend was detected.") -> None:
+        self.reason = reason
+
+    def _fail(self, operation: str) -> ActionResult:
+        return ActionResult.fail(
+            f"{operation} unavailable: {self.reason}",
+            action_id=f"package-{operation.lower().replace(' ', '-')}-unavailable",
+        )
+
+    def install(
+        self,
+        packages: List[str],
+        *,
+        description: str = "",
+        callback: Optional[Callable[..., None]] = None,
+    ) -> ActionResult:
+        return self._fail("Package installation")
+
+    def remove(
+        self,
+        packages: List[str],
+        *,
+        description: str = "",
+        callback: Optional[Callable[..., None]] = None,
+    ) -> ActionResult:
+        return self._fail("Package removal")
+
+    def update(
+        self,
+        packages: Optional[List[str]] = None,
+        *,
+        description: str = "",
+        callback: Optional[Callable[..., None]] = None,
+    ) -> ActionResult:
+        return self._fail("Package updates")
+
+    def search(self, query: str, *, limit: int = 50) -> ActionResult:
+        return self._fail("Package search")
+
+    def info(self, package: str) -> ActionResult:
+        return self._fail("Package information")
+
+    def list_installed(self) -> ActionResult:
+        return self._fail("Installed package listing")
+
+    def is_installed(self, package: str) -> bool:
+        return False
+
+
 class DnfPackageService(BasePackageService):
     """
     Package service implementation for DNF (traditional Fedora).
@@ -540,21 +597,49 @@ class RpmOstreePackageService(BasePackageService):
         return result and result.exit_code == 0 if result else False
 
 
-def get_package_service() -> BasePackageService:
+def get_package_service(profile: object | None = None) -> BasePackageService:
+    """Return the service for the immutable platform backend.
+
+    Backend selection is deliberately explicit.  In particular, ``bootc``
+    and ``unknown`` do not fall through to DNF; their update/install flows are
+    handled by their own reviewed workflows or shown as manual-only.
     """
-    Factory function to get the appropriate package service for this system.
+    from core.platform.profile import DeploymentBackend
 
-    Auto-detects whether running on Atomic (rpm-ostree) or traditional (DNF)
-    Fedora and returns the corresponding service implementation.
+    if profile is None:
+        profile = SystemManager.get_platform_profile()
 
-    Returns:
-        BasePackageService: DnfPackageService or RpmOstreePackageService
-    """
-    pm = SystemManager.get_package_manager()
+    # Keep dependency-injected legacy callers working while production always
+    # supplies the immutable PlatformProfile.  A mock or older adapter may
+    # expose only the two historic SystemManager probes; normalize those
+    # values here instead of guessing a backend in the service implementations.
+    backend = getattr(profile, "deployment_backend", DeploymentBackend.UNKNOWN)
+    if isinstance(backend, str):
+        try:
+            backend = DeploymentBackend(backend)
+        except ValueError:
+            backend = DeploymentBackend.UNKNOWN
+    if not isinstance(backend, DeploymentBackend):
+        legacy_manager = getattr(SystemManager, "get_package_manager", lambda: "unknown")()
+        legacy_value = getattr(legacy_manager, "value", legacy_manager)
+        if legacy_value in {"dnf", "dnf5"}:
+            backend = DeploymentBackend.DNF5
+        elif legacy_value == "rpm-ostree":
+            backend = DeploymentBackend.RPM_OSTREE
+        else:
+            backend = DeploymentBackend.UNKNOWN
 
-    if pm == "rpm-ostree":
-        logger.debug("Using RpmOstreePackageService for Atomic Fedora")
-        return RpmOstreePackageService()
-    else:
-        logger.debug("Using DnfPackageService for traditional Fedora")
+    if backend is DeploymentBackend.DNF5:
+        logger.debug("Using DnfPackageService for DNF5 Fedora")
         return DnfPackageService()
+    if backend is DeploymentBackend.RPM_OSTREE:
+        logger.debug("Using RpmOstreePackageService for rpm-ostree Fedora")
+        return RpmOstreePackageService()
+
+    reason = (
+        "The bootc deployment backend has no package-layer service."
+        if backend is DeploymentBackend.BOOTC
+        else "The Fedora deployment backend is unknown."
+    )
+    logger.warning("Package service unavailable: %s", reason)
+    return UnavailablePackageService(reason)

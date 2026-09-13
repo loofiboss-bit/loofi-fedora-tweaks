@@ -472,7 +472,10 @@ class TestCommandPaletteDeep(unittest.TestCase):
     def test_build_feature_registry(self):
         from ui.command_palette import CommandPalette
         d = CommandPalette(on_action=MagicMock())
-        self.assertTrue(d._model.all_results())
+        # The compatibility adapter has no platform facts of its own.  The
+        # v27 fail-closed default therefore keeps the index empty; the live
+        # MainWindow supplies its detected NavigationContext explicitly.
+        self.assertFalse(d._model.all_results())
         d.close()
 
     def test_filter_case_insensitive(self):

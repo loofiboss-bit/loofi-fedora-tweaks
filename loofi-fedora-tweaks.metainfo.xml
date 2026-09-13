@@ -9,19 +9,17 @@
 
   <description>
     <p>
-      A focused GUI control center for Fedora KDE 44 covering software, maintenance,
-      system inspection, security, recovery, desktop configuration, and application
-      settings.
+      A focused GUI control center for Fedora covering software maintenance,
+      system inspection, protection, recovery, and reviewed system changes.
     </p>
     <p>Features include:</p>
     <ul>
-      <li>Fedora KDE 44 Readiness Center — diagnostics for Plasma, Wayland, DNF5, Flatpak, NVIDIA, and more</li>
-      <li>Security Center with polkit-managed privileged operations</li>
+      <li>Desktop-neutral Fedora readiness diagnostics with capability-aware guidance</li>
+      <li>Reviewed system changes with native desktop authorization and independent verification</li>
       <li>Verified Action Center planning, confirmation, execution, and outcome checks</li>
-      <li>Software installation, updates, package cleanup, and repository management</li>
-      <li>System inspection, performance diagnosis, storage, security, and recovery tools</li>
-      <li>Specialist development, AI, virtualization, automation, and sharing tools available through Advanced routes</li>
-      <li>Optional headless Web API and user daemon</li>
+      <li>System updates, firmware status, package cleanup, and neutral software-center handoff</li>
+      <li>System health, troubleshooting, storage, protection, recovery, and change history</li>
+      <li>One small GUI and CLI surface with no background daemon, web API, or sandbox distribution</li>
     </ul>
   </description>
 
@@ -40,9 +38,20 @@
   </provides>
 
   <releases>
+    <release version="27.0.1" date="2026-09-13" type="stable">
+      <description>
+        <p>v27.0.1 "Core" - Fedora Maintenance Core with five destinations, platform neutrality, and reviewed changes.</p>
+        <ul>
+          <li>Added immutable PlatformProfile detection with fail-closed Traditional, Atomic, bootc, and unknown states</li>
+          <li>Consolidated maintenance into Home, Updates &amp; Apps, System Health, Protection &amp; Recovery, and Changes</li>
+          <li>Handed application discovery to the native software center and removed the duplicate marketplace surface</li>
+          <li>Removed the local API, background daemon, specialist suite, and Flatpak distribution bundle</li>
+        </ul>
+      </description>
+    </release>
     <release version="27.0.0" date="2026-09-13" type="development">
       <description>
-        <p>v27.0.0 "Core" - Fedora Maintenance Core: five destinations, platform neutrality, and streamlined maintenance.</p>
+        <p>Historical v27.0.0 "Marketplace Enhancement" tag preserved unchanged; v27.0.1 is the Core release identity.</p>
       </description>
     </release>
     <release version="26.0.3" date="2026-09-13">

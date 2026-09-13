@@ -22,7 +22,6 @@ from core.diagnostics.fedora44_readiness import (
 from core.diagnostics.readiness_actions import ReadinessActionService
 from core.executor.action_result import ActionResult
 from core.export.support_bundle_v3 import SupportBundleV3
-from core.export.support_bundle_v4 import SupportBundleV4
 from core.export.support_bundle_v5 import SupportBundleV5
 from services.desktop.kde44 import KDE44DesktopInfo, KDE44DesktopService
 from services.package.dnf5_health import DNF5HealthReport, DNF5HealthService, RepoRisk
@@ -60,14 +59,14 @@ class TestFedoraVersionReadiness(unittest.TestCase):
 
     def test_fedora44_passes(self):
         check = Fedora44Readiness._fedora_version_check(
-            {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44 (KDE Plasma)"}
+            {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44 (KDE Plasma)"}
         )
         self.assertEqual(check.status, "pass")
         self.assertIn("supported", check.summary)
 
     def test_fedora43_is_best_effort_warning(self):
         check = Fedora44Readiness._fedora_version_check(
-            {"VERSION_ID": "43", "PRETTY_NAME": "Fedora Linux 43 (KDE Plasma)"}
+            {"ID": "fedora", "VERSION_ID": "43", "PRETTY_NAME": "Fedora Linux 43 (KDE Plasma)"}
         )
         self.assertEqual(check.status, "warning")
         self.assertIn("best-effort", check.summary)
@@ -95,7 +94,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
 
     def test_fedora45_preview_accepts_fedora44_context(self):
         check = ReleaseReadiness._fedora_version_check(
-            {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44 (KDE Plasma)"},
+            {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44 (KDE Plasma)"},
             TARGETS["45-preview"],
         )
         self.assertEqual(check.status, "info")
@@ -146,7 +145,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         mock_flatpak,
         mock_tls,
     ):
-        mock_os_release.return_value = {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
+        mock_os_release.return_value = {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
         mock_desktop.return_value = _passing_desktop()
         mock_package.return_value = _passing_package()
         for mock_check, cid in (
@@ -167,7 +166,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
 
         report = ReleaseReadiness.run()
         self.assertEqual(report.target_metadata.key, "44")
-        self.assertEqual(report.target, "Fedora KDE 44")
+        self.assertEqual(report.target, "Fedora 44")
         self.assertNotEqual(report.status, "preview")
 
     @patch.object(ReleaseReadiness, "_fedora45_upgrade_checks", return_value=[])
@@ -189,7 +188,7 @@ class TestFedoraVersionReadiness(unittest.TestCase):
         mock_tls,
         mock_f45,
     ):
-        mock_os_release.return_value = {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
+        mock_os_release.return_value = {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
         mock_desktop.return_value = _passing_desktop()
         mock_package.return_value = _passing_package()
         for mock_check, cid in (
@@ -246,7 +245,7 @@ class TestFedora44ReadinessAggregation(unittest.TestCase):
         mock_flatpak,
         mock_tls,
     ):
-        mock_os_release.return_value = {"VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
+        mock_os_release.return_value = {"ID": "fedora", "VERSION_ID": "44", "PRETTY_NAME": "Fedora Linux 44"}
         mock_desktop.return_value = _passing_desktop()
         mock_package.return_value = _passing_package()
         for mock_check, cid in (

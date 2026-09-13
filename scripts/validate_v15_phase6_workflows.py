@@ -35,7 +35,8 @@ def validate() -> list[str]:
 
     expected_routes = {
         "maintenance:action-center": ("changes", "review", None),
-        "maintenance:smart-updates": ("software_updates", "updates", "maintenance:updates"),
+        # v27 folded Smart Updates into the canonical Updates workflow.
+        "maintenance:updates": ("software_updates", "updates", None),
         "health": ("system", "system_check", None),
         "logs": ("system", "troubleshooting", "diagnostics:watchtower"),
     }

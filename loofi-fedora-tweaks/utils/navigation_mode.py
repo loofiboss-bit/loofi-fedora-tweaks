@@ -9,11 +9,11 @@ logger = get_logger(__name__)
 
 
 class NavigationModeManager:
-    """Normalize legacy mode callers to the unified Specialist Tools surface."""
+    """Normalize legacy mode callers to the single maintained shell."""
 
     @staticmethod
     def get_mode() -> NavigationMode:
-        """Return the v20 unified navigation surface.
+        """Return the unified navigation surface.
 
         Persisted values remain readable for migration compatibility, but no
         longer hide product areas.

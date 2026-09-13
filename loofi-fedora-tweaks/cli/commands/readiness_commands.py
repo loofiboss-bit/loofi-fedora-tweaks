@@ -286,6 +286,7 @@ def cmd_action_center(args) -> int:
         ActionCenterOrchestrator,
         ActionCenterService,
         ActionPlanRejectedError,
+        ActionPlanNotFoundError,
         ActionPlanStore,
         ActionRunStore,
     )
@@ -299,6 +300,23 @@ def cmd_action_center(args) -> int:
         else:
             for line in lines:
                 _print(line)
+
+    def emit_plan(plan) -> None:
+        """Render one persisted plan consistently for plan/apply dry-runs."""
+        payload = {
+            "schema_version": 3,
+            "plan": plan.to_dict(),
+            "policy_decision": plan.policy_decision.to_dict(),
+        }
+        emit(
+            payload,
+            [
+                f"Plan {plan.plan_id}: {plan.action_id} [{plan.state}]",
+                f"Policy: {plan.policy_decision.reason_code} - {plan.policy_decision.explanation}",
+                f"Preview: {' '.join(plan.preview) if plan.preview else 'manual-only'}",
+                f"Expires: {plan.expires_at}",
+            ],
+        )
 
     if action in {"plan", "show", "apply", "verify"}:
         identifier = str(getattr(args, "action_id", "") or "")
@@ -346,20 +364,7 @@ def cmd_action_center(args) -> int:
                     emit(payload, [f"Invalid parameters for {identifier}: {parameter_decision.explanation}"])
                     return 1
                 plan = orchestrator.plan(identifier, parameters, target=target)
-                payload = {
-                    "schema_version": 3,
-                    "plan": plan.to_dict(),
-                    "policy_decision": plan.policy_decision.to_dict(),
-                }
-                emit(
-                    payload,
-                    [
-                        f"Plan {plan.plan_id}: {plan.action_id} [{plan.state}]",
-                        f"Policy: {plan.policy_decision.reason_code} - {plan.policy_decision.explanation}",
-                        f"Preview: {' '.join(plan.preview) if plan.preview else 'manual-only'}",
-                        f"Expires: {plan.expires_at}",
-                    ],
-                )
+                emit_plan(plan)
                 return 0 if plan.state != "blocked" else 1
 
             if action == "show":
@@ -382,10 +387,42 @@ def cmd_action_center(args) -> int:
                 return 0
 
             if action == "apply":
-                plan = orchestrator.get_plan(identifier)
+                # ``changes apply`` accepts either a persisted plan ID or a
+                # registered Action Center action ID.  The latter must go
+                # through the same typed-parameter and preflight path as an
+                # explicit plan; it must never be treated as a raw command.
+                try:
+                    plan = orchestrator.get_plan(identifier)
+                except ActionPlanNotFoundError:
+                    definition = catalog.get(identifier)
+                    if definition is None:
+                        raise
+                    from core.actions.direct import DirectActionParameterError, parse_typed_parameters
+
+                    try:
+                        parameters = parse_typed_parameters(
+                            list(getattr(args, "param", []) or []),
+                            definition.parameter_schema,
+                        )
+                    except DirectActionParameterError as exc:
+                        payload = {
+                            "schema_version": 4,
+                            "error": "invalid_action_parameters",
+                            "definition_id": identifier,
+                            "message": str(exc),
+                            "auto_apply": False,
+                        }
+                        emit(payload, [f"Invalid parameters for {identifier}: {exc}"])
+                        return 2
+                    plan = orchestrator.plan(identifier, parameters, target=target)
+
+                if getattr(args, "dry_run", False) is True:
+                    emit_plan(plan)
+                    return 0 if plan.state != "blocked" else 1
+
                 run = orchestrator.apply(
-                    identifier,
-                    confirmed=bool(getattr(args, "confirm", False)),
+                    plan.plan_id,
+                    confirmed=(getattr(args, "confirm", False) is True or getattr(args, "yes", False) is True),
                     accept_no_rollback=bool(getattr(args, "accept_no_rollback", False)),
                     timeout=_timeout(),
                 )

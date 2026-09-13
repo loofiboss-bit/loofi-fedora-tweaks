@@ -1,5 +1,15 @@
 # Plan för v27.0.0 — Fedora Maintenance Core
 
+## V27.0.1 release decision
+
+The reviewed Core implementation is released as v27.0.1 because the historical
+v27.0.0 Marketplace Enhancement tag must remain unchanged. Automated
+qualification is the blocking release gate for this version: the maintained
+surface measures 86.95% coverage against an 85% threshold. The repository-wide
+90% goal and physical/manual Fedora qualification are explicitly deferred to a
+follow-up release under the user's release decision; no manual result is
+inferred from rootless or offscreen evidence.
+
 ## Bedömning
 
 - **Teknisk grund: stark.** Full verifiering passerar: 7 151 tester, 61 hoppade, 86,40 % täckning, rena lint/type/arkitekturkontroller, byggbara RPM-paket och inga identifierade medium/höga Bandit-fynd.

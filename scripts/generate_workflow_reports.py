@@ -19,6 +19,7 @@ import argparse
 import ast
 import json
 import os
+import re
 import subprocess
 import sys
 import time
@@ -33,6 +34,7 @@ REPORTS_DIR = ROOT / ".workflow" / "reports"
 PYTEST_CMD = [
     sys.executable, "-m", "pytest", "tests/",
     "--tb=no", "-p", "no:faulthandler", "-q",
+    "--cov=loofi-fedora-tweaks", "--cov-report=term",
 ]
 
 
@@ -125,6 +127,7 @@ def run_tests() -> dict:
     failed = _extract_count(summary_line, "failed")
     skipped = _extract_count(summary_line, "skipped")
     errors = _extract_count(summary_line, "error")
+    coverage_percent = _extract_coverage(lines)
 
     return {
         "returncode": result.returncode,
@@ -137,6 +140,7 @@ def run_tests() -> dict:
         "summary_line": summary_line,
         "stdout_tail": stdout_tail,
         "stderr_tail": stderr_tail,
+        "coverage_percent": coverage_percent,
     }
 
 
@@ -149,6 +153,23 @@ def _extract_count(line: str, keyword: str) -> int:
     if m:
         return int(m.group(1))
     return 0
+
+
+def _extract_coverage(lines: list[str]) -> float | None:
+    """Extract the total line coverage percentage from pytest-cov output.
+
+    The exact number of source files and columns can change between coverage
+    versions, but the terminal report keeps a ``TOTAL ... NN%`` row.  Return
+    ``None`` when pytest-cov is unavailable or the run failed before producing
+    a report so callers can represent coverage as unverified.
+    """
+    for line in reversed(lines):
+        if not re.search(r"\bTOTAL\b", line):
+            continue
+        match = re.search(r"\bTOTAL\b.*?(\d+(?:\.\d+)?)%\s*$", line)
+        if match:
+            return float(match.group(1))
+    return None
 
 
 def generate_test_results(version: str, test_data: dict) -> dict:
@@ -166,7 +187,7 @@ def generate_test_results(version: str, test_data: dict) -> dict:
     )
     total = test_data["total"]
     rate = f"{round(test_data['passed'] / total * 100)}%" if total else "0%"
-    return {
+    payload = {
         "version": f"v{version}",
         "phase": "P4_TEST",
         "date": datetime.now(timezone.utc).strftime("%Y-%m-%d"),
@@ -200,6 +221,10 @@ def generate_test_results(version: str, test_data: dict) -> dict:
             "notes": f"v{version} test suite: {test_data['summary_line']}",
         },
     }
+    coverage_percent = test_data.get("coverage_percent")
+    if isinstance(coverage_percent, (int, float)):
+        payload["coverage_percent"] = coverage_percent
+    return payload
 
 
 def generate_run_manifest(version: str) -> dict:

@@ -1,46 +1,61 @@
-#!/bin/bash
-# Loofi Fedora Tweaks - Easy Installer
-# Usage: curl -fsSL https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/install.sh | bash
+#!/usr/bin/env bash
+# Loofi Fedora Tweaks installer
 #
-# ⚠️  DEPRECATED: This installation method is not recommended.
-# Preferred methods: RPM/Copr repository or Flatpak.
-# See README.md for recommended installation instructions.
+# This helper configures the project's Fedora COPR repository and installs the
+# RPM. It intentionally requires an explicit acknowledgement because running a
+# remotely fetched shell script is less auditable than installing a published
+# RPM directly.
 
-set -e
+set -euo pipefail
 
-# ─── Deprecation Warning ───────────────────────────────────────────
-echo ""
-echo "╔══════════════════════════════════════════════════════════════╗"
-echo "║  ⚠️  WARNING: curl-pipe-bash installation is DEPRECATED     ║"
-echo "║                                                            ║"
-echo "║  This method downloads and runs code without verification. ║"
-echo "║  It is kept for backward compatibility but NOT recommended.║"
-echo "║                                                            ║"
-echo "║  Recommended installation method:                            ║"
-echo "║    • sudo dnf copr enable loofitheboss/loofi-fedora-tweaks ║"
-echo "║    • sudo dnf install loofi-fedora-tweaks                  ║"
-echo "║                                                            ║"
-echo "║  To proceed anyway, re-run with:                           ║"
-echo "║    bash install.sh --i-know-what-i-am-doing                ║"
-echo "╚══════════════════════════════════════════════════════════════╝"
-echo ""
+readonly COPR_PROJECT="loofitheboss/loofi-fedora-tweaks"
+readonly PACKAGE="loofi-fedora-tweaks"
+readonly ACK_FLAG="--i-know-what-i-am-doing"
 
-if [[ "$1" != "--i-know-what-i-am-doing" ]]; then
-    echo "❌ Aborting. Use --i-know-what-i-am-doing flag to proceed."
+fail() {
+    echo "Error: $*" >&2
+    exit 1
+}
+
+if [[ "${1:-}" != "${ACK_FLAG}" ]]; then
+    cat >&2 <<EOF
+This script changes the system package configuration and is intended for
+reviewed local copies only.
+
+Preferred installation:
+  Enable the '${COPR_PROJECT}' COPR repository with your package manager,
+  then install '${PACKAGE}' from the published RPM.
+
+To continue with this script, run:
+  bash install.sh ${ACK_FLAG}
+EOF
     exit 1
 fi
-# ─── End Deprecation Warning ───────────────────────────────────────
 
-echo "🚀 Installing Loofi Fedora Tweaks..."
+command -v pkexec >/dev/null 2>&1 || fail "pkexec is required; install polkit first."
 
-# Add repository
-echo "📦 Adding repository..."
-sudo dnf config-manager --add-repo https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/loofi-fedora-tweaks.repo
+if [[ -e /run/ostree-booted ]] && command -v rpm-ostree >/dev/null 2>&1; then
+    fail "This helper targets mutable Fedora. On an Atomic host, install the published RPM with rpm-ostree and reboot when Fedora requests it."
+fi
 
-# Install package
-echo "⬇️ Installing package..."
-sudo dnf install -y loofi-fedora-tweaks --refresh
+DNF_BIN=""
+if command -v dnf5 >/dev/null 2>&1; then
+    DNF_BIN="dnf5"
+elif command -v dnf >/dev/null 2>&1; then
+    DNF_BIN="dnf"
+else
+    fail "dnf5 or dnf is required."
+fi
 
-echo ""
-echo "✅ Installation complete!"
-echo "🎉 Run 'loofi-fedora-tweaks' or find it in your app menu."
+echo "Enabling Fedora COPR repository: ${COPR_PROJECT}"
+if ! "${DNF_BIN}" copr --help >/dev/null 2>&1; then
+    PLUGIN_PACKAGE="dnf-plugins-core"
+    [[ "${DNF_BIN}" == "dnf5" ]] && PLUGIN_PACKAGE="dnf5-plugins"
+    pkexec "${DNF_BIN}" install -y "${PLUGIN_PACKAGE}"
+fi
+pkexec "${DNF_BIN}" copr enable -y "${COPR_PROJECT}"
+
+echo "Installing ${PACKAGE}"
+pkexec "${DNF_BIN}" install -y --refresh "${PACKAGE}"
+
+echo "Installation complete. Launch with: ${PACKAGE}"

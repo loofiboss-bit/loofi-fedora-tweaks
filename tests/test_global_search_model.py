@@ -16,9 +16,19 @@ from core.navigation import (  # noqa: E402
 )
 
 
+def _traditional_context(*, mode=NavigationMode.STANDARD, **kwargs):
+    return NavigationContext(
+        mode=mode,
+        fedora_variant=FedoraVariant.TRADITIONAL,
+        capabilities=frozenset({"fedora", "dnf5"}),
+        **kwargs,
+    )
+
+
 class TestGlobalSearchModel(unittest.TestCase):
     def test_combines_routes_settings_and_actions(self):
         model = GlobalSearchModel(
+            _traditional_context(),
             configured_quick_actions=[
                 {
                     "id": "updates",
@@ -41,7 +51,7 @@ class TestGlobalSearchModel(unittest.TestCase):
 
     def test_standard_mode_does_not_leak_advanced_routes_or_suggestions(self):
         model = GlobalSearchModel(
-            NavigationContext(mode=NavigationMode.STANDARD),
+            _traditional_context(),
             configured_quick_actions=[
                 {"id": "gaming", "label": "Gaming Mode", "route_id": "gaming"}
             ],
@@ -50,7 +60,7 @@ class TestGlobalSearchModel(unittest.TestCase):
         route_ids = {result.route_id for result in model.all_results()}
 
         self.assertNotIn("gaming", route_ids)
-        self.assertIn("settings:advanced", route_ids)
+        self.assertNotIn("settings:advanced", route_ids)
 
     def test_missing_specialist_component_removes_results_and_pins_do_not_bypass(self):
         context = NavigationContext(
@@ -75,7 +85,7 @@ class TestGlobalSearchModel(unittest.TestCase):
         self.assertIn("fstrim-all", {result.action_id for result in results})
 
     def test_action_filter_contains_only_navigation_descriptors(self):
-        results = GlobalSearchModel().all_results(SearchFilter.ACTIONS)
+        results = GlobalSearchModel(_traditional_context()).all_results(SearchFilter.ACTIONS)
 
         self.assertTrue(results)
         self.assertTrue(
@@ -86,7 +96,7 @@ class TestGlobalSearchModel(unittest.TestCase):
     def test_action_center_results_only_target_action_center(self):
         results = [
             result
-            for result in GlobalSearchModel().all_results(SearchFilter.ACTIONS)
+            for result in GlobalSearchModel(_traditional_context()).all_results(SearchFilter.ACTIONS)
             if result.action_id is not None
         ]
 
@@ -107,6 +117,7 @@ class TestGlobalSearchModel(unittest.TestCase):
 
     def test_configured_quick_actions_become_ranked_suggestions(self):
         model = GlobalSearchModel(
+            _traditional_context(),
             configured_quick_actions=[
                 {
                     "id": "updates",
@@ -123,7 +134,7 @@ class TestGlobalSearchModel(unittest.TestCase):
 
     def test_favorites_are_ranked_as_pins_without_bypassing_policy(self):
         model = GlobalSearchModel(
-            NavigationContext(favorite_route_ids=frozenset({"network:dns"}))
+            _traditional_context(favorite_route_ids=frozenset({"network:dns"}))
         )
 
         results = model.search("dns")
@@ -132,7 +143,7 @@ class TestGlobalSearchModel(unittest.TestCase):
         self.assertEqual(results[0].route_id, "network:dns")
 
     def test_search_is_deterministic_and_limit_is_enforced(self):
-        model = GlobalSearchModel()
+        model = GlobalSearchModel(_traditional_context())
 
         first = model.search("system", limit=5)
         second = model.search("system", limit=5)

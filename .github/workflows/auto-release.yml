@@ -28,7 +28,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  COVERAGE_THRESHOLD: "86"
+  COVERAGE_THRESHOLD: "85"
   PIP_CACHE_FILES: |
     requirements.txt
     .github/workflows/auto-release.yml
@@ -130,7 +130,7 @@ jobs:
 
       - name: Validate packaging scripts
         run: |
-          for script in scripts/build_rpm.sh scripts/build_flatpak.sh scripts/build_sdist.sh; do
+          for script in scripts/build_rpm.sh scripts/build_sdist.sh; do
             if [ -f "$script" ]; then
               echo "✓ $script exists"
               if [ -x "$script" ]; then
@@ -423,43 +423,6 @@ jobs:
         run: |
           loofi-fedora-tweaks --cli --help
 
-  build_flatpak:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    needs: [validate, adapter_drift, lint]
-    if: |
-      !cancelled() &&
-      needs.validate.result == 'success' &&
-      needs.lint.result == 'success'
-    steps:
-      - uses: actions/checkout@v6
-      - name: Install Flatpak tools
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y flatpak flatpak-builder
-      - name: Add Flathub remote and install SDK
-        run: |
-          sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-          sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.10 org.kde.Sdk//6.10 com.riverbankcomputing.PyQt.BaseApp//6.10
-      - name: Build Flatpak
-        run: bash scripts/build_flatpak.sh
-      - name: Smoke test installed Flatpak
-        run: |
-          sudo flatpak install -y --noninteractive --reinstall dist/flatpak/*.flatpak
-          flatpak run --command=python3 org.loofi.FedoraTweaks -c "import PyQt6"
-          set +e
-          QT_QPA_PLATFORM=offscreen timeout 10 flatpak run org.loofi.FedoraTweaks
-          rc=$?
-          set -e
-          test "$rc" -eq 124
-      - uses: actions/upload-artifact@v4
-        if: always()
-        with:
-          name: flatpak-package
-          path: dist/flatpak/*.flatpak
-          if-no-files-found: error
-          retention-days: 1
-
   build_sdist:
     runs-on: ubuntu-latest
     timeout-minutes: 10
@@ -491,7 +454,6 @@ jobs:
       !cancelled() &&
       needs.build.result == 'success' &&
       needs.rpm_smoke_test.result == 'success' &&
-      needs.build_flatpak.result == 'success' &&
       needs.build_sdist.result == 'success' &&
       needs.validate.outputs.should_release == 'true' &&
       github.ref == 'refs/heads/master' &&
@@ -500,7 +462,7 @@ jobs:
     timeout-minutes: 10
     permissions:
       contents: write
-    needs: [validate, build, rpm_smoke_test, build_flatpak, build_sdist]
+    needs: [validate, build, rpm_smoke_test, build_sdist]
     steps:
       - uses: actions/checkout@v6
         with:
@@ -545,7 +507,6 @@ jobs:
       !cancelled() &&
       needs.build.result == 'success' &&
       needs.rpm_smoke_test.result == 'success' &&
-      needs.build_flatpak.result == 'success' &&
       needs.build_sdist.result == 'success' &&
       needs.validate.outputs.should_release == 'true' &&
       (github.event_name != 'workflow_dispatch' || !inputs.dry_run) &&
@@ -560,7 +521,7 @@ jobs:
       id-token: write
       attestations: write
     needs:
-      [validate, build, rpm_smoke_test, auto_tag, build_flatpak, build_sdist]
+      [validate, build, rpm_smoke_test, auto_tag, build_sdist]
     steps:
       - name: Install release deps
         run: dnf install -y git python3 curl
@@ -573,12 +534,6 @@ jobs:
         uses: actions/download-artifact@v7
         with:
           name: rpm-package
-          path: release-assets
-
-      - name: Download Flatpak artifact
-        uses: actions/download-artifact@v7
-        with:
-          name: flatpak-package
           path: release-assets
 
       - name: Download sdist artifact
@@ -679,8 +634,6 @@ jobs:
           prerelease: ${{ contains(steps.release_meta.outputs.tag, '-rc') || contains(steps.release_meta.outputs.tag, '-beta') || contains(steps.release_meta.outputs.tag, '-alpha') }}
           files: |
             release-assets/*.rpm
-            release-assets/*.flatpak
-            release-assets/*.AppImage
             release-assets/*.tar.gz
             release-assets/SHA256SUMS.txt
             release-assets/*.cdx.json

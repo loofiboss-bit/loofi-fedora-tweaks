@@ -37,6 +37,7 @@ def register_execution_commands(subparsers: Subparsers) -> None:
     apply_p.add_argument("--timeout", type=int, default=argparse.SUPPRESS, help="Execution timeout in seconds")
     apply_p.add_argument(
         "--target",
+        dest="release_target",
         choices=FEDORA_RELEASE_POLICY.action_targets,
         default=FEDORA_RELEASE_POLICY.stable_target,
         help="Fedora action target profile",

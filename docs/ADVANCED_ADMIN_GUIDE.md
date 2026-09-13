@@ -1,270 +1,108 @@
-# Loofi Fedora Tweaks — Advanced Admin Guide
+# Loofi Fedora Tweaks — Administration Guide
 
-> Version 27.0.0 "Core"
+> Version 27.0.1 "Core"
 
-Operational runbook for power users and Fedora administrators.
+This guide is for Fedora administrators who need repeatable diagnostics and a
+clear boundary around system changes.
 
----
+## Scope and trust boundary
 
-v27.0.0 Core simplifies the architecture to five destinations and strict Action Center execution.
-Physical and manual qualification remain separately reported
-gates; this guide does not treat rootless evidence as host qualification.
+Loofi ships one GUI and one intentionally small CLI. It has no background
+daemon, web API, remote-control endpoint, plugin marketplace, or sandbox
+distribution. Read-only inspection may run without administrator privileges.
+Persistent changes are created and executed only through the Changes workspace
+and its closed Action Center catalog.
 
-## 1) Operating Model
+The package uses the desktop's standard authorization agent through `pkexec`
+when a reviewed system operation requires administrator approval. It does not
+install project-specific Polkit policy files or grant standing privileges.
 
-Loofi entry modes:
+## Package installation
 
-- GUI: `loofi-fedora-tweaks`
-- CLI: `loofi-fedora-tweaks --cli ...`
-- daemon: `loofi-fedora-tweaks --daemon`
-- optional Web API: `loofi-fedora-tweaks --web`
-
-The primary shell exposes Home, Software & Updates, System, Network & Security,
-Desktop, and Settings. Specialist Tools remains grouped and searchable without
-a global mode switch. `Ctrl+K` searches all policy-visible routes and settings;
-`Ctrl+Shift+K` uses the same search model filtered to actions.
-
-The base package uses logical core/specialist isolation. It does not ship a
-physical `-extras` RPM. Core startup registers application-owned, data-only
-provider specifications without importing specialist UI modules, and page
-instances are created on demand. External Python plugin discovery and execution
-are retired. CLI, API, daemon, IPC, and stable route contracts remain
-independent of the current GUI surface.
-
-Platform behavior:
-
-- Traditional Fedora uses DNF.
-- Atomic Fedora uses rpm-ostree-aware paths and keeps unsupported mutations
-  manual-only.
-
----
-
-## 2) Privilege and Safety
-
-Privileged workflows rely on `pkexec`, the desktop polkit agent, and the
-installed `org.loofi.fedora-tweaks.policy` file. Never run Loofi with `sudo`.
-
-Verification:
+The supported Fedora package is published through COPR:
 
 ```bash
-which pkexec
-pkexec true
-ls /usr/share/polkit-1/actions/org.loofi.fedora-tweaks.policy
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
 ```
 
-Action Center is the only GUI that owns the verified maintenance
-plan/run/verify lifecycle. Home and global search may navigate or preselect,
-but cannot execute. The catalog contains 74 classified first-party definitions;
-unsupported host operations are explicit `manual_only` plans.
+Install from a downloaded RPM only after verifying its release checksum and
+source. The RPM contains the GUI, CLI, reviewed core services, assets, and
+documentation; there are no API or daemon subpackages.
 
-Operational invariants:
+## Platform detection
 
-- plans expire and receive a fresh apply-time preflight;
-- execution requires explicit confirmation;
-- medium/high-risk no-rollback paths require a separate acknowledgement;
-- a cross-process lease allows one mutation at a time;
-- verification is separate from command execution;
-- interrupted runs are preserved without automatic resume, retry, or rollback.
+At startup the core records an immutable platform profile containing the Fedora
+release, architecture, desktop, session, and deployment backend. Supported
+deployment backends are detected explicitly. If a value is unknown, dependent
+actions remain unavailable and the report says what could not be determined.
 
-Read-only review commands:
+This is a capability boundary, not a claim of identical desktop integration.
+Native settings handoffs appear only when the relevant desktop capability is
+known. Fedora Atomic variants may require a staged deployment and explicit
+restart before verification; the application never restarts the host itself.
+
+## Changes lifecycle
+
+Inspect the candidate action in **Changes** and confirm that it names:
+
+1. the exact change and affected resources;
+2. risk and expected impact;
+3. the required authorization;
+4. the independent verification method; and
+5. recovery guidance or the reason recovery is unavailable.
+
+Execution regenerates the command from the registered definition, performs a
+fresh preflight, acquires one cross-process mutation lease, and runs with a
+bounded timeout. A process exit code is only an execution fact; the verifier
+must confirm the resulting state. Interrupted and restart-required runs stay
+visible and require an explicit follow-up.
+
+## CLI operations
 
 ```bash
-loofi action-center list --target 44
-loofi action-center history --limit 20
-loofi action-center recommendations --target 44
+loofi-fedora-tweaks --cli info
+loofi-fedora-tweaks --cli check --json
+loofi-fedora-tweaks --cli updates check
+loofi-fedora-tweaks --cli troubleshoot profiles
+loofi-fedora-tweaks --cli changes list --json
+loofi-fedora-tweaks --cli changes show PLAN_ID
+loofi-fedora-tweaks --cli changes verify RUN_ID
+loofi-fedora-tweaks --cli activity list --limit 25
+loofi-fedora-tweaks --cli doctor
+loofi-fedora-tweaks --cli support-bundle
 ```
 
----
+The parser accepts only registered commands and closed parameter schemas. It
+does not accept arbitrary command vectors, shell fragments, remote targets, or
+unattended schedules.
 
-## 3) Weekly Maintenance Window
+## State and support
 
-1. Create a recovery point from **System → Recovery Points**.
-2. Review Home attention items and **Software & Updates → Upgrade Assistant**.
-3. Inspect supported maintenance in **Software & Updates → Action Center**.
-4. Run **Software & Updates → Updates**.
-5. Run reclaim analysis from **Software & Updates → Cleanup**.
-6. Validate **Network & Security → Security** and firewall state.
-7. Review **System → Performance**, Processes, Storage, and Troubleshooting for
-   regressions.
+User configuration, action plans, runs, check results, activity history, and
+backup metadata live under the user's XDG directories. Package removal does
+not delete this state. Writes use atomic replacement, bounded backups, private
+permissions, and readback. Unknown future schemas are read-only.
 
-![Upgrade Assistant](images/user-guide/upgrade-assistant.png)
+Use `doctor` to inspect prerequisites and `support-bundle` to export a bounded,
+redacted diagnostic record. Review the bundle before sharing it. It must not
+contain secrets, raw command output, or personal paths beyond the documented
+redaction contract.
 
-![Maintenance Updates](images/user-guide/maintenance-updates.png)
+## Verification commands
 
-![Security and Privacy](images/user-guide/security-privacy.png)
-
----
-
-## 4) Core Workflow Runbooks
-
-### Update the system
-
-Use **Software & Updates → Updates**. Preserve preview and confirmation steps.
-On Atomic Fedora, follow rpm-ostree guidance rather than forcing a DNF path.
-
-### Install an application
-
-Use **Software & Updates → Applications**. Confirm package source and requested
-change before installation.
-
-### Diagnose a slow system
-
-Run **System → Performance → Analyze Slow System** while the problem is active.
-Use the bounded snapshot to select the next inspection route. Do not tune,
-restart, or delete based on a single metric.
-
-![System Monitor](images/user-guide/system-monitor.png)
-
-For a broader guided session, open **System → Troubleshooting**, select
-`system_slow`, inspect the exact source budget, and start collection
-explicitly. Treat **Possibly related** changes as correlation, not causation.
-Use a compatible explicit rerun after any independently verified action;
-Action Center `verified` never implies troubleshooting `resolved`.
-
-### Free disk space
-
-Run **Software & Updates → Cleanup → Analyze Reclaimable Space**. Treat package
-cache, journal retention, and trim separately. DNF cache cleanup is
-manual-only on Atomic Fedora.
-
-### Protect or recover
-
-Use **System → Recovery Points** for snapshots, **Network & Security → Backups**
-for guided backup/restore, and **Settings → Repair Loofi** for state inspection.
-These surfaces reuse the established state, archive, and recovery contracts.
-
----
-
-## 5) Advanced and Specialist Operations
-
-Performance Tuning, Gaming, Development, Local Profiles, Loofi Link, AI Lab,
-Agents, Automation, State Teleport, Virtualization, Profiles, and Extensions
-belong to the grouped logical specialist component.
-
-If a specialist component is unavailable, the route remains fail-closed with
-an explanation. The six Standard destinations and five core workflows must
-remain usable. Do not work around an unavailable result by importing a missing
-UI module manually.
-
-Local profiles are explicit, data-only JSON. The Legacy Extensions view can
-inventory and export existing third-party directories, but it never imports or
-deletes their code. There is no supported Marketplace installation or external
-plugin execution path.
-
----
-
-## 6) CLI Automation Patterns
-
-Alias:
+From a source checkout:
 
 ```bash
-alias loofi='loofi-fedora-tweaks --cli'
+just lint
+just typecheck
+just test
+just check-packaging
+just validate-release
+just build-rpm
 ```
 
-Health snapshots:
-
-```bash
-loofi --json info > /tmp/loofi-info.json
-loofi --json health > /tmp/loofi-health.json
-```
-
-Maintenance inspection:
-
-```bash
-loofi action-center list --target 44
-loofi readiness --target 44 --advanced
-loofi logs errors --since "24h ago"
-loofi security-audit
-```
-
-Service and package triage:
-
-```bash
-loofi service list --filter failed
-loofi service status sshd
-loofi package recent --days 7
-```
-
-Use `--json` for automation and `--dry-run` where the command supports a
-preview. Do not strip Action Center confirmation flags or reuse expired plan
-IDs in scripts.
-
----
-
-## 7) Daemon and Web API Notes
-
-```bash
-loofi-fedora-tweaks --daemon
-loofi-fedora-tweaks --web
-```
-
-The daemon and API retain their package names and exact base-package EVR
-dependency. The API accepts loopback bindings only. Apart from rate-limited
-token issuance, its only write is `POST /api/action-center/plans`, which accepts
-one known definition and closed parameter object and never applies the returned
-plan. Manage the local API credential with `api-key
-status`, `api-key rotate`, and `api-key revoke`. The daemon may create plans but
-cannot confirm or execute host changes; GUI mode selection does not broaden
-either surface.
-
-Authenticated `GET /api/system-check/latest` returns only the latest bounded,
-privacy-safe persisted System Check result. It performs no collection. There
-are equivalent retrieval-only troubleshooting endpoints at
-`GET /api/troubleshooting/latest` and
-`GET /api/troubleshooting/sessions/SESSION_ID`. They read retained sessions
-only. There is no API endpoint to start a check or troubleshooting session,
-confirm or apply a plan, execute maintenance, or claim finding resolution.
-Use `loofi --json troubleshoot latest` and
-`loofi --json troubleshoot compare SESSION_ID FOLLOWUP_ID` for the versioned
-CLI payload.
-
----
-
-## 8) Incident Response Quick Playbooks
-
-Application failure:
-
-```bash
-tail -n 200 ~/.local/share/loofi-fedora-tweaks/startup.log
-loofi doctor
-```
-
-Privilege failure:
-
-```bash
-which pkexec
-pkexec true
-```
-
-State and support evidence:
-
-```bash
-loofi --json state doctor
-loofi support-bundle
-journalctl --user --since "2 hours ago"
-```
-
----
-
-## 9) Data Paths and Upgrade Integrity
-
-- `~/.config/loofi-fedora-tweaks/settings.json`
-- `~/.config/loofi-fedora-tweaks/profile.json`
-- `~/.config/loofi-fedora-tweaks/first_run_complete`
-- `~/.local/share/loofi-fedora-tweaks/startup.log`
-
-Proof preserves settings, navigation migration inputs, favorites, stable
-routes, and observability data. Writable Action Center v1-v3 state migrates
-atomically to schema v4; unknown future schemas remain read-only. Optional
-troubleshooting schema-v1 state retains at most 20 terminal sessions and also
-fails read-only on unknown future schemas. RPM scriptlets do not own or migrate
-per-user XDG state.
-
----
-
-## 10) Cross References
-
-- Beginner: `docs/BEGINNER_QUICK_GUIDE.md`
-- Full user guide: `docs/USER_GUIDE.md`
-- Verified maintenance: `docs/VERIFIED_MAINTENANCE.md`
-- Troubleshooting: `docs/TROUBLESHOOTING.md`
+Rootless or offscreen results prove code contracts only. Fedora desktop,
+authorization-agent, restart, Atomic deployment, and assistive-technology
+qualification require the corresponding physical environment and remain
+separate evidence until executed there.

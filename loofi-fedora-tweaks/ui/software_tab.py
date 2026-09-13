@@ -8,49 +8,35 @@ section navigation.
 
 import typing
 
-import logging
-
 from core.catalog_models import NativeHandoffId
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer, pyqtSignal
-from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
-    QFrame,
     QGroupBox,
     QHBoxLayout,
     QLabel,
     QListWidget,
     QPushButton,
-    QScrollArea,
     QStackedWidget,
     QTextEdit,
     QVBoxLayout,
     QWidget,
 )
 from utils.command_runner import CommandRunner
-from utils.software_utils import SoftwareUtils
 
 from ui.base_tab import BaseTab
 from ui.components import (
-    ApplicationRow,
     DetailsDisclosure,
-    FeedbackBanner,
     PageScaffold,
-    RetryButton,
-    SearchFilterRow,
-    SectionHeader,
 )
 from ui.native_handoff_card import NativeHandoffCard
-from ui.shared_states import EmptyState, LoadingState, UnavailableState
+from ui.shared_states import EmptyState
 from ui.tooltips import (
     SW_CODECS,
     SW_FLATHUB,
     SW_RPM_FUSION,
-    SW_SEARCH,
 )
-
-logger = logging.getLogger(__name__)
 
 
 # ---------------------------------------------------------------------------
@@ -59,16 +45,16 @@ logger = logging.getLogger(__name__)
 
 
 class _ApplicationsSubTab(BaseTab):
-    """Sub-tab containing all application management functionality.
+    """Hand application discovery to the desktop's native software center.
 
-    Preserves every feature from the original AppsTab:
-    - Remote/cached app config loading via AppConfigFetcher
-    - Scrollable app list with install status check
-    - Per-app install buttons (green = installed, clickable = available)
-    - Refresh Status button
-    - Output log with command feedback
+    Fedora desktops already own AppStream discovery, package provenance,
+    permissions, updates, and uninstall semantics.  Keeping a second remote
+    catalogue here made the product desktop-specific and created a second
+    package mutation path.  This page is intentionally a read-only handoff.
     """
 
+    # Keep the signal for the consolidated tab's stable plugin interface.  No
+    # application install/remove action is emitted from this view.
     actionCenterRequested = pyqtSignal(str, object)
 
     def __init__(self: typing.Any) -> None:
@@ -77,356 +63,48 @@ class _ApplicationsSubTab(BaseTab):
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
             self.tr("Applications"),
-            self.tr("Search the application catalogue and review install state before changing packages."),
+            self.tr("Use the software center provided by your desktop environment."),
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
         self.native_handoff = NativeHandoffCard(
-            NativeHandoffId.PLASMA_DISCOVER,
-            title=self.tr("Browse Application Store"),
+            NativeHandoffId.SOFTWARE_CENTER,
+            title=self.tr("Open the software center"),
             description=self.tr(
-                "Use your desktop software center for the complete application catalogue. "
-                "Loofi keeps verified Fedora maintenance actions below."
+                "Search, install, update, and remove applications in the native "
+                "AppStream software center. Loofi does not mirror or mutate its catalogue."
             ),
             button_text=self.tr("Open Software Store"),
         )
         layout.addWidget(self.native_handoff)
 
-        self.btn_refresh = RetryButton(
-            self.tr("Refresh status"),
-            description=self.tr("Check installation state again without changing the system."),
-        )
-        self.btn_refresh.setAccessibleName(self.tr("Refresh app status"))
-        self.btn_refresh.clicked.connect(self.refresh_list)
-        section_header = SectionHeader(
-            self.tr("Curated applications"),
-            self.tr("Search by name, source, or installation state."),
-            action=self.btn_refresh,
-        )
-        layout.addWidget(section_header)
-
-        # Application search and filtering
-        self.search_filters = SearchFilterRow(
-            self.tr("Search applications…"),
-            accessible_name=self.tr("Search applications"),
-        )
-        self._search_bar = self.search_filters.search
-        self._search_bar.setToolTip(SW_SEARCH)
-        self._search_bar.textChanged.connect(self._filter_apps)
-        self._source_filter = self.search_filters.add_choice_filter(
-            self.tr("Filter by application source"),
-            (
-                (self.tr("All sources"), "all"),
-                (self.tr("Fedora RPM"), "fedora"),
-                (self.tr("Flathub"), "flatpak"),
-                (self.tr("Other sources"), "other"),
-            ),
-        )
-        self._source_filter.setObjectName("applicationSourceFilter")
-        self._source_filter.currentIndexChanged.connect(
-            lambda _index: self._filter_apps(self._search_bar.text())
-        )
-        self._status_filter = self.search_filters.add_choice_filter(
-            self.tr("Filter by installation status"),
-            (
-                (self.tr("All statuses"), "all"),
-                (self.tr("Installed"), "installed"),
-                (self.tr("Available"), "available"),
-                (self.tr("Source setup required"), "unavailable"),
-            ),
-        )
-        self._status_filter.setObjectName("applicationStatusFilter")
-        self._status_filter.currentIndexChanged.connect(
-            lambda _index: self._filter_apps(self._search_bar.text())
-        )
-        layout.addWidget(self.search_filters)
-
-        self.application_feedback = FeedbackBanner(
-            self.tr("Ready to review applications"),
-            self.tr("Selecting an action opens Action Center; it does not change packages."),
-            kind="info",
-        )
-        self.application_feedback.setObjectName("applicationFeedback")
-        self.application_feedback.hide()
-        layout.addWidget(self.application_feedback)
-
-        self.catalog_loading = LoadingState(self.tr("Loading the application catalogue…"))
         self.catalog_empty = EmptyState(
-            self.tr("No applications to show"),
-            self.tr("The catalogue will load when this page is opened."),
+            self.tr("Application management is delegated"),
+            self.tr(
+                "The available software center is detected for this desktop. "
+                "If no handoff is available, use the desktop's documented package workflow."
+            ),
         )
-        self.catalog_unavailable = UnavailableState(
-            self.tr("Application catalogue unavailable"),
-            self.tr("Use Refresh Status to try the cached or remote catalogue again."),
-        )
-        self.filter_empty = EmptyState(
-            self.tr("No matching applications"),
-            self.tr("Clear or change the search and filters to see more results."),
-        )
-        self.catalog_loading.hide()
-        self.catalog_unavailable.hide()
-        self.filter_empty.hide()
-        layout.addWidget(self.catalog_loading)
+        self.catalog_empty.setProperty("handoffOnly", True)
         layout.addWidget(self.catalog_empty)
-        layout.addWidget(self.catalog_unavailable)
-        layout.addWidget(self.filter_empty)
+        layout.addStretch()
 
-        # Scroll Area for apps list
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
-        self.scroll_content = QWidget()
-        self.scroll_layout = QVBoxLayout()
-        self.scroll_content.setLayout(self.scroll_layout)
-        scroll.setWidget(self.scroll_content)
-
-        layout.addWidget(scroll)
-
-        # Output Area (Shared)
-        self.output_area = QTextEdit()
-        self.output_area.setReadOnly(True)
-        self.output_area.setMaximumHeight(200)
-
-        # Loading starts on explicit route activation, never in the constructor.
-        self.apps: list = []
-        self.fetcher = None
-        self._catalog_load_started = False
-        self.refresh_list()
-
-        self.output_details = DetailsDisclosure(summary=self.tr("Show application command output"))
-        self.output_details.add_widget(self.output_area)
-        layout.addWidget(self.output_details)
-
-    def load_apps(self: typing.Any) -> typing.Any:
-        """Start asynchronous loading of the app catalogue."""
-        from utils.remote_config import AppConfigFetcher
-
-        self.fetcher = AppConfigFetcher()
-        self.fetcher.config_ready.connect(self.on_apps_loaded)
-        self.fetcher.config_error.connect(self.on_apps_error)
-        self.fetcher.start()
-        return []  # Populated asynchronously
+        # Compatibility state for callers that used to trigger a refresh.  It
+        # is deliberately inert and never starts a remote request.
+        self.apps: list[object] = []
 
     def on_activate(self: typing.Any) -> None:
+        """Refresh only native availability when the route is shown."""
         self.native_handoff.refresh_availability()
-        if self._catalog_load_started:
-            return
-        self._catalog_load_started = True
-        self.catalog_empty.hide()
-        self.catalog_unavailable.hide()
-        self.catalog_loading.show()
-        self.apps = self.load_apps()
 
-    def on_apps_loaded(self: typing.Any, apps: typing.Any) -> typing.Any:
-        self.apps = apps
-        self.catalog_loading.hide()
-        self.catalog_unavailable.hide()
-        self.catalog_empty.setVisible(not bool(apps))
-        if not apps:
-            self.catalog_empty.set_message(self.tr("No applications matched the available catalogue."))
-        self.refresh_list()
-        self.append_output(self.tr("Apps list updated from remote/cache.\n"))
+    def refresh_list(self: typing.Any) -> None:
+        """Compatibility no-op; the native store owns its application list."""
+        self.native_handoff.refresh_availability()
 
-    def on_apps_error(self: typing.Any, error: typing.Any) -> typing.Any:
-        self.catalog_loading.hide()
-        self.catalog_empty.hide()
-        self.catalog_unavailable.set_message(self.tr("Catalogue loading failed: %s") % error)
-        self.catalog_unavailable.show()
-        self.append_output(self.tr("Error loading apps: {}\n").format(error))
-
-    def refresh_list(self: typing.Any) -> typing.Any:
-        """Clear and rebuild the apps list."""
-        while self.scroll_layout.count():
-            item = self.scroll_layout.takeAt(0)
-            widget = item.widget()
-            if widget:
-                widget.deleteLater()
-
-        for app in self.apps:
-            self.add_app_row(self.scroll_layout, app)
-        self.scroll_layout.addStretch()
-
-    def add_app_row(self: typing.Any, layout: typing.Any, app_data: typing.Any) -> typing.Any:
-        """Add one source-aware app row with a single install/remove action."""
-        from services.software import ApplicationOperationService
-
-        # Defensive access for potentially missing keys
-        app_name = app_data.get("name", "Unknown App")
-        app_desc = app_data.get("desc", app_data.get("description", ""))
-        presentation = ApplicationOperationService.describe(app_data)
-
-        # Check if installed
-        chk_cmd = app_data.get("check_cmd")
-        is_installed = False
-        if chk_cmd:
-            is_installed = self.check_installed(chk_cmd)
-
-        source_kind = (
-            "flatpak"
-            if presentation.source == "Flathub (Flatpak)"
-            else "fedora"
-            if presentation.source == "Fedora RPM"
-            else "other"
-        )
-        status_kind = (
-            "installed"
-            if is_installed
-            else "available"
-            if presentation.available
-            else "unavailable"
-        )
-        action_text = self.tr("Review install")
-        action_id = "install"
-        if is_installed:
-            action_text = self.tr("Review removal")
-            action_id = "remove"
-        elif not presentation.available:
-            action_text = ""
-            action_id = "unavailable"
-
-        row_widget = ApplicationRow(
-            presentation.package_id or str(app_name),
-            str(app_name),
-            str(app_desc),
-            source=presentation.source,
-            status=(
-                self.tr("Installed")
-                if is_installed
-                else self.tr("Available")
-                if presentation.available
-                else self.tr("Source setup required")
-            ),
-            status_kind="success" if is_installed else "neutral" if presentation.available else "warning",
-            action_text=action_text,
-            action_id=action_id,
-            icon=self._application_icon(app_data, presentation.package_id),
-            plan_summary=(
-                self.tr(
-                    "Package: %1 · Restart: shown in the plan · Verification: installation state is checked"
-                ).replace("%1", presentation.package_id or self.tr("not available"))
-            ),
-        )
-        row_widget.source_badge.setToolTip(presentation.explanation)
-        if is_installed:
-            row_widget.action_button.setObjectName("swInstalledBtn")
-        if not presentation.available:
-            row_widget.setToolTip(presentation.explanation)
-        row_widget.actionRequested.connect(
-            lambda requested, app=app_data: self.run_app_action(
-                app,
-                installed=requested == "remove",
-            )
-        )
-        row_widget.setProperty(
-            "appSearchText",
-            " ".join((str(app_name), str(app_desc), presentation.source)).lower(),
-        )
-        row_widget.setProperty("appSource", source_kind)
-        row_widget.setProperty("appStatus", status_kind)
-
-        layout.addWidget(row_widget)
-
-    @staticmethod
-    def _application_icon(app_data: typing.Mapping[str, object], package_id: str) -> QIcon:
-        """Prefer installed desktop-theme artwork and fall back in ApplicationRow."""
-        candidates = (
-            str(app_data.get("icon") or ""),
-            package_id,
-            package_id.lower(),
-        )
-        for candidate in candidates:
-            if not candidate:
-                continue
-            icon = QIcon.fromTheme(candidate)
-            if not icon.isNull():
-                return icon
-        return QIcon()
-
-    def check_installed(self: typing.Any, cmd: typing.Any) -> typing.Any:
-        """Run a check command silently to determine installation status."""
-        return SoftwareUtils.is_check_command_satisfied(cmd)
-
-    def install_app(self: typing.Any, app_data: typing.Any) -> typing.Any:
-        """Compatibility adapter for callers that still request installation."""
-        self.run_app_action(app_data, installed=False)
-
-    def run_app_action(self: typing.Any, app_data: typing.Any, *, installed: bool) -> None:
-        """Hand one normalized install/remove operation to Action Center."""
-        from services.software import ApplicationOperationService
-
-        presentation = ApplicationOperationService.describe(app_data)
-        if not presentation.available or presentation.source not in {"Fedora RPM", "Flathub (Flatpak)"}:
-            self.application_feedback.set_result(
-                "error",
-                self.tr("Application action unavailable"),
-                presentation.explanation,
-            )
-            self.application_feedback.show()
-            self.show_error(presentation.explanation)
-            return
-        source = "flatpak" if presentation.source == "Flathub (Flatpak)" else "fedora"
-        action_id = "remove-application" if installed else "install-application"
-        self.application_feedback.set_result(
-            "info",
-            self.tr("Opening Action Center"),
-            self.tr("Review the package source, restart impact, and verification before running the plan."),
-        )
-        self.application_feedback.show()
-        self.actionCenterRequested.emit(
-            action_id,
-            {"source": source, "package_id": presentation.package_id},
-        )
-
-    def append_output(self: typing.Any, text: typing.Any) -> typing.Any:
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-        self.output_area.insertPlainText(text)
-        self.output_area.moveCursor(self.output_area.textCursor().MoveOperation.End)
-
-    def command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
-        self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
-        # Refresh list to update status if installation succeeded
-        if exit_code == 0:
-            self.application_feedback.set_result(
-                "success",
-                self.tr("Application operation completed"),
-                self.tr("Installation state will now be checked again."),
-            )
-            self.application_feedback.show()
-            self.show_success(self.tr("Operation completed successfully"))
-            self.refresh_list()
-        else:
-            self.application_feedback.set_result(
-                "error",
-                self.tr("Application operation failed"),
-                self.tr("Review the technical output, then retry from the reviewed plan."),
-            )
-            self.application_feedback.show()
-            self.show_error(self.tr("Operation failed (exit code {})").format(exit_code))
-
-    def _filter_apps(self: typing.Any, text: str) -> typing.Any:
-        """Apply search, source, and installed-state filters together."""
-        query = text.strip().lower()
-        source = str(self._source_filter.currentData() or "all")
-        status = str(self._status_filter.currentData() or "all")
-        visible_count = 0
-        for i in range(self.scroll_layout.count()):
-            item = self.scroll_layout.itemAt(i)
-            widget = item.widget() if item else None
-            if widget is None:
-                continue
-            if not isinstance(widget, QFrame):
-                continue
-            search_text = str(widget.property("appSearchText") or "")
-            source_value = str(widget.property("appSource") or "")
-            status_value = str(widget.property("appStatus") or "")
-            matches_query = not query or query in search_text
-            matches_source = source == "all" or source == source_value
-            matches_status = status == "all" or status == status_value
-            visible = matches_query and matches_source and matches_status
-            widget.setVisible(visible)
-            visible_count += int(visible)
-        has_filters = bool(query) or source != "all" or status != "all"
-        self.filter_empty.setVisible(bool(self.apps) and has_filters and visible_count == 0)
+    def load_apps(self: typing.Any) -> list[object]:
+        """Return no local catalogue; retained for old embedders as a no-op."""
+        return []
 
 
 # ---------------------------------------------------------------------------

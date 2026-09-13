@@ -21,7 +21,7 @@ class TestV25SettingsUi(unittest.TestCase):
         store_cls.return_value.load.return_value = ExecutionSettings()
         tab = SettingsTab()
         self.assertEqual(len(tab.findChildren(QGroupBox, "safetyExecutionGroup")), 1)
-        self.assertEqual(tab.execution_mode_combo.currentData(), "direct")
+        self.assertEqual(tab.execution_mode_combo.currentData(), "review_first")
         self.assertTrue(tab.findChild(QCheckBox, "confirmMediumRisk").isChecked())
         self.assertIsInstance(tab.findChild(QComboBox, "executionModeCombo"), QComboBox)
         tab.close()

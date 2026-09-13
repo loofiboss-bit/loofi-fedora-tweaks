@@ -20,7 +20,7 @@ class TestExecutionSettings(unittest.TestCase):
         with tempfile.TemporaryDirectory() as temp_dir:
             store = ExecutionSettingsStore(Path(temp_dir) / "execution-settings.json")
             settings = store.load()
-            self.assertEqual(settings.effective_mode, "direct")
+            self.assertEqual(settings.effective_mode, "review_first")
             self.assertTrue(settings.confirm_medium_risk)
             self.assertTrue(settings.automatically_verify)
 

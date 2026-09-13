@@ -1,4 +1,4 @@
-# Release Checklist
+# Release Checklist — v27.0.1 "Core"
 
 Use this checklist before bumping a version. The CI pipeline handles tagging and publishing automatically.
 
@@ -45,7 +45,7 @@ grep '^version' pyproject.toml
 
 After running the bump script, fill in the scaffolded files:
 
-- [ ] `docs/releases/RELEASE-NOTES-vX.Y.Z.md` — Fill in the TODO placeholders
+- [ ] `docs/releases/RELEASE-NOTES-vX.Y.Z.md` — Fill in the release evidence
 - [ ] `CHANGELOG.md` — New version entry at top
 - [ ] `README.md` — Update "What Is New" section, version badge, test count
 - [ ] `ROADMAP.md` — Mark version as DONE, add NEXT placeholder
@@ -71,8 +71,8 @@ python3 scripts/sync_ai_adapters.py --check
 # Fedora review gate prerequisite
 python3 scripts/check_fedora_review.py
 
-# Tests (subset — full suite runs in CI)
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -x --tb=short -q
+# Tests (the full suite is the release gate)
+LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just test-coverage
 ```
 
 The `check_release_docs.py` script validates:
@@ -106,8 +106,10 @@ push to master
 
 - **Auto-tag**: Creates `vX.Y.Z` tag from `version.py` if it doesn't exist
 - **Idempotent release**: Skips publish if release already exists for that tag
-- **Non-blocking gates**: `typecheck` and `test` use `continue-on-error: true` (soft gates)
-- **Hard gates**: `validate`, `adapter_drift`, `lint`, `docs_gate`, `fedora_review` must pass for build to proceed
+- **Blocking gates**: validation, adapter drift, lint, typecheck, stabilization,
+  docs, tests, security, packaging, and the RPM smoke check must pass.
+- **Manual boundary**: physical desktop, Polkit-agent, reboot, Atomic,
+  keyboard, and Orca qualification remain explicitly unverified when skipped.
 
 ### If the pipeline fails
 
@@ -191,18 +193,19 @@ def test_version_is_current(self):
 validate -----------------------------------------+
 adapter_drift --+                                  |
 lint -----------+                                  |
-typecheck* -----+  (parallel gates)    +--> build --> auto_tag --> release
-docs_gate ------+                      |
-test* ----------+                      |
-security -------+----------------------+
-
-* = continue-on-error (soft gate)
+typecheck ------+  (parallel blocking gates)  +--> build --> auto_tag --> release
+stabilization --+                              |
+docs_gate ------+                              |
+test -----------+                              |
+security -------+------------------------------+
 ```
 
 ### ci.yml (PR/Push Checks)
 
 Runs on every push/PR. Same gates as auto-release minus build/tag/release.
-Includes additional packaging jobs: `package_flatpak`, `package_appimage`, `package_sdist`.
+Includes the source-distribution packaging job `package_sdist`; the release
+artifacts are the Fedora RPM and sdist. No Flatpak application bundle is built
+or published.
 
 ### Common Issues
 

@@ -3,7 +3,7 @@ Settings Tab - User-facing preferences UI.
 Part of v13.5 "UX Polish" update.
 
 Five stable subroutes selected by the application section navigator:
-  Appearance, Behavior, Specialist Tools, Repair Loofi, and About.
+  Appearance, Behavior, Application, Repair Loofi, and About.
 """
 
 import platform
@@ -96,9 +96,9 @@ class SettingsTab(QWidget, PluginInterface):
             self.tr("Configure startup, notifications, confirmations, and route restoration."),
         ))
         tabs.addWidget(self._scaffold_page(
-            self._build_advanced_tab(),
-            self.tr("Specialist Tools"),
-            self.tr("Review specialist availability and advanced application settings."),
+            self._build_application_tab(),
+            self.tr("Application"),
+            self.tr("Review logging, update checks, and local application maintenance."),
         ))
         tabs.addWidget(self._scaffold_page(
             self._build_state_tab(),
@@ -134,7 +134,7 @@ class SettingsTab(QWidget, PluginInterface):
             "settings": 0,
             "settings:appearance": 0,
             "settings:behavior": 1,
-            "settings:advanced": 2,
+            "settings:application": 2,
             "settings:repair": 3,
             "settings:about": 4,
         }
@@ -348,26 +348,25 @@ class SettingsTab(QWidget, PluginInterface):
         except (ExecutionSettingsFutureSchemaError, OSError, RuntimeError, TypeError, ValueError) as exc:
             self.execution_settings_status.setText(self.tr("Settings are read-only: %1").replace("%1", str(exc)))
 
-    # ----------------------------------------------------------- Advanced --
+    # --------------------------------------------------------- Application --
 
-    def _build_advanced_tab(self) -> QWidget:
+    def _build_application_tab(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setSpacing(12)
 
         help_label = QLabel(self.tr(
-            "Advanced settings for debugging and maintenance. "
-            "Only change these if you know what you're doing."
+            "Local application maintenance settings. Changes affect this app only."
         ))
         help_label.setWordWrap(True)
         help_label.setObjectName("settingsHelpText")
         layout.addWidget(help_label)
 
-        mode_group = QGroupBox(self.tr("Specialist Tools"))
+        mode_group = QGroupBox(self.tr("Maintenance availability"))
         mode_form = QFormLayout(mode_group)
         self._mode_desc = QLabel(
             self.tr(
-                "Specialist tools are always available. Each system change still has its own review and confirmation."
+                "The maintained Fedora workflows are available in this build. System changes still require explicit review and confirmation."
             )
         )
         self._mode_desc.setWordWrap(True)
@@ -539,16 +538,9 @@ class SettingsTab(QWidget, PluginInterface):
         label = getattr(self, "_component_status", None)
         if label is None:
             return
-        context = getattr(self._main_window, "_navigation_context", None)
-        installed = getattr(context, "installed_components", frozenset({"core", "specialist"}))
-        if "specialist" in installed:
-            text = self.tr(
-                "Core and specialist tools are included in this build. Changing mode never installs packages."
-            )
-        else:
-            text = self.tr(
-                "This build does not include specialist tools. Your distribution may provide them as an optional component."
-            )
+        text = self.tr(
+            "The Fedora Maintenance Core is built in. Optional desktop tools are opened through the native desktop settings when available."
+        )
         label.setText(text)
 
     def _on_theme_changed(self, theme_name: str):
@@ -709,9 +701,9 @@ class SettingsTab(QWidget, PluginInterface):
         )
 
     def _sync_mode_controls(self) -> None:
-        """Keep the unified specialist-tools description after reset."""
+        """Refresh the local application maintenance description after reset."""
         self._mode_desc.setText(
             self.tr(
-                "Specialist tools are always available. Each system change still has its own review and confirmation."
+                "Core tools are always available. Each system change still has its own review and confirmation."
             )
         )

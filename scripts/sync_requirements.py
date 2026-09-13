@@ -1,5 +1,11 @@
 #!/usr/bin/env python3
-"""Generate the compatibility requirements file from pyproject metadata."""
+"""Generate the runtime requirements file from pyproject metadata.
+
+The file is consumed by source checkouts and CI.  Optional integrations are no
+longer part of the product surface, so only the application's core runtime
+dependencies are mirrored here.  Development tools stay in the ``dev`` extra
+and are installed explicitly by the relevant workflow.
+"""
 
 from __future__ import annotations
 
@@ -15,12 +21,7 @@ OUTPUT = ROOT / "requirements.txt"
 def render() -> str:
     data = tomllib.loads(PYPROJECT.read_text(encoding="utf-8"))
     project = data["project"]
-    optional = project.get("optional-dependencies", {})
-    dependencies = [
-        *project.get("dependencies", []),
-        *optional.get("api", []),
-        *optional.get("daemon", []),
-    ]
+    dependencies = list(project.get("dependencies", []))
     return "# Generated from pyproject.toml by scripts/sync_requirements.py; do not edit.\n" + "\n".join(dependencies) + "\n"
 
 

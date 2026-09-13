@@ -1,456 +1,53 @@
-# Contributing
+# Contributing — v27.0.1 "Core"
 
-Guide to contributing to Loofi Fedora Tweaks development.
-
----
-
-## Development Setup
-
-### Clone and Setup
+## Development setup
 
 ```bash
-# Clone repository
 git clone https://github.com/loofiboss-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
-
-# Create virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
+python -m pip install -e '.[dev]'
 ```
 
-### Run From Source
+Run the GUI or reduced CLI from the source tree:
 
 ```bash
-# GUI mode
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
-
-# CLI mode
-PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --cli info
-
-# Daemon mode
-PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --daemon
+PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --cli --json info
 ```
 
----
-
-## Adding a New Feature
-
-Follow this **6-step checklist**:
-
-### 1. Create Business Logic Module
-
-Create `loofi-fedora-tweaks/utils/new_feature.py`:
-
-```python
-"""
-New feature business logic.
-"""
-import logging
-from typing import List, Tuple
-
-logger = logging.getLogger(__name__)
-
-
-class NewFeatureManager:
-    """Manager for new feature operations."""
-    
-    @staticmethod
-    def operation() -> Tuple[str, List[str], str]:
-        """Return operation tuple for execution.
-        
-        Returns:
-            Tuple of (command, args, description).
-        """
-        from utils.commands import PrivilegedCommand
-        return PrivilegedCommand.dnf("install", "package")
-```
-
-### 2. Create UI Tab
-
-Create `loofi-fedora-tweaks/ui/new_feature_tab.py`:
-
-```python
-"""
-New feature tab implementation.
-"""
-from PyQt6.QtWidgets import QVBoxLayout, QPushButton
-from ui.base_tab import BaseTab
-
-
-class NewFeatureTab(BaseTab):
-    """New feature tab."""
-    
-    def __init__(self):
-        super().__init__()
-        self.setObjectName("newFeatureTab")
-        self.init_ui()
-    
-    def init_ui(self):
-        """Initialize UI components."""
-        layout = QVBoxLayout(self)
-        
-        button = QPushButton(self.tr("Run Operation"))
-        button.clicked.connect(self.run_operation)
-        layout.addWidget(button)
-        
-        layout.addWidget(self.output_area)
-    
-    def run_operation(self):
-        """Execute operation."""
-        from utils.new_feature import NewFeatureManager
-        binary, args, desc = NewFeatureManager.operation()
-        self.run_command(binary, args)
-```
-
-### 3. Add CLI Subcommand
-
-Add to `loofi-fedora-tweaks/cli/main.py`:
-
-```python
-def cmd_newfeature(args):
-    """New feature CLI command."""
-    from utils.new_feature import NewFeatureManager
-    
-    if _json_output:
-        result = {"status": "success"}
-        _output_json(result)
-        return
-    
-    op = NewFeatureManager.operation()
-    run_operation(op)
-```
-
-Register in argument parser:
-
-```python
-# In main():
-parser_newfeature = subparsers.add_parser(
-    'newfeature',
-    help='New feature description'
-)
-parser_newfeature.set_defaults(func=cmd_newfeature)
-```
-
-### 4. Write Tests
-
-Create `tests/test_new_feature.py`:
-
-```python
-"""Tests for utils/new_feature.py"""
-import unittest
-import sys
-import os
-from unittest.mock import patch, MagicMock
-
-sys.path.append(os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
-
-from utils.new_feature import NewFeatureManager
-
-
-class TestNewFeatureManager(unittest.TestCase):
-    """Tests for NewFeatureManager."""
-    
-    @patch('utils.new_feature.PrivilegedCommand.dnf')
-    def test_operation_success(self, mock_dnf):
-        """Test successful operation."""
-        mock_dnf.return_value = ("pkexec", ["dnf", "install", "-y", "pkg"], "Installing...")
-        
-        result = NewFeatureManager.operation()
-        
-        self.assertIsNotNone(result)
-        self.assertEqual(len(result), 3)
-        mock_dnf.assert_called_once()
-    
-    @patch('utils.new_feature.SystemManager.get_package_manager')
-    def test_operation_atomic(self, mock_get_pm):
-        """Test operation on Atomic Fedora."""
-        mock_get_pm.return_value = 'rpm-ostree'
-        
-        result = NewFeatureManager.operation()
-        
-        # Should use rpm-ostree
-        self.assertIn('rpm-ostree', str(result))
-
-
-if __name__ == '__main__':
-    unittest.main()
-```
-
-### 5. Register Tab in MainWindow
-
-In `loofi-fedora-tweaks/ui/main_window.py`:
-
-```python
-# Add to _lazy_tab() loaders dict:
-"newfeature": lambda: __import__(
-    "ui.new_feature_tab",
-    fromlist=["NewFeatureTab"]
-).NewFeatureTab(),
-```
-
-Register with sidebar:
-
-```python
-# In _setup_sidebar():
-self.add_page(
-    "💡 Developer",  # Category
-    "newfeature",    # Tab ID
-    "New Feature",   # Display name
-    "🔧"            # Icon
-)
-```
-
-### 6. Update Documentation
-
-- `CHANGELOG.md` — Add entry under `[Unreleased]`
-- `README.md` — Update feature list if major feature
-- Release notes — Will be generated by maintainer
-
----
-
-## Module Header Template
-
-All new Python files should start with:
-
-```python
-"""
-Brief module description.
-
-Detailed explanation of what this module does.
-"""
-import logging
-from typing import Any, Dict, List, Optional, Tuple
-
-logger = logging.getLogger(__name__)
-
-
-# Module code here
-```
-
----
-
-## Critical Rules (NEVER VIOLATE)
-
-1. **Never use `sudo`** — Only `pkexec` for privilege escalation
-2. **Never hardcode `dnf`** — Use `SystemManager.get_package_manager()`
-3. **Never call subprocess from UI** — Extract to `utils/` module
-4. **Always unpack operations tuples** before `subprocess.run()`
-5. **Always add timeouts** to subprocess calls
-
----
-
-## Code Style
-
-### Imports
-
-Order: stdlib, blank line, third-party, blank line, local
-
-```python
-import logging
-import subprocess
-from typing import List, Tuple
-
-from PyQt6.QtWidgets import QWidget
-
-from utils.commands import PrivilegedCommand
-from utils.errors import LoofiError
-```
-
-### Type Hints
-
-```python
-def operation(package: str) -> Tuple[str, List[str], str]:
-    """Operation with type hints."""
-    pass
-```
-
-### Docstrings
-
-Google-style docstrings on all public methods:
-
-```python
-def install_package(package: str) -> bool:
-    """Install a package on the system.
-    
-    Args:
-        package: Package name to install.
-    
-    Returns:
-        True if successful, False otherwise.
-    
-    Raises:
-        DnfLockedError: If package manager is locked.
-    """
-    pass
-```
-
-### Error Handling
-
-```python
-try:
-    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-except subprocess.TimeoutExpired as e:
-    logger.debug("Command timed out: %s", e)
-    return False
-except (subprocess.SubprocessError, OSError) as e:
-    logger.debug("Command failed: %s", e)
-    return False
-```
-
----
-
-## Commit Style
-
-Use conventional commits:
-
-- `feat:` — New feature
-- `fix:` — Bug fix
-- `docs:` — Documentation only
-- `test:` — Test additions or fixes
-- `refactor:` — Code restructuring
-- `style:` — Formatting, whitespace
-- `chore:` — Build, tooling, dependencies
-
-**Examples:**
-
-```
-feat: add network monitoring tab
-fix: handle timeout in package search
-docs: update installation guide
-test: add tests for firewall manager
-refactor: extract subprocess calls from UI
-```
-
----
-
-## Pull Request Workflow
-
-### 1. Create Branch
+## Before opening a pull request
 
 ```bash
-git checkout -b feature/my-feature
-# or
-git checkout -b fix/issue-123
+LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify
+just check-packaging
+just validate-release
+just check-drift
 ```
 
-### 2. Make Changes
+The full test suite must pass with no failures. Keep coverage claims tied to
+the maintained V27 surface (85% blocking gate); do not claim repository-wide
+90% until it is measured and gated in a later release.
 
-- Keep commits focused and atomic
-- Run tests frequently
-- Update docs as you go
+## Architecture rules
 
-### 3. Run Quality Checks
+- Keep contracts, policy, persistence, and Action Center orchestration in
+  `core/`.
+- Keep host probes and adapters PyQt-free in `services/` or `utils/`.
+- Keep subprocesses and mutation authority out of `ui/`.
+- Keep `cli/` bounded, typed, and independent of UI imports.
+- Add every persistent host change as a closed Action Center definition with
+  fresh preflight, explicit confirmation, bounded execution, and independent
+  verification.
+- Treat unknown Fedora desktop/session/backend capability as unavailable.
 
-```bash
-# Lint
-flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722,E203
+Do not add a daemon, local Web API, external plugin execution, custom policy
+file, Flatpak distribution bundle, automatic reboot, retry, rollback, or
+unattended scheduler to the Core surface.
 
-# Type check
-mypy loofi-fedora-tweaks/ --ignore-missing-imports --no-error-summary
+## Documentation
 
-# Tests
-PYTHONPATH=loofi-fedora-tweaks python -m pytest tests/ -v
-
-# Security scan
-bandit -r loofi-fedora-tweaks/ -ll -ii --skip B103,B104,B108,B310,B404,B603,B602
-```
-
-### 4. Open Pull Request
-
-- **Title**: Clear, concise summary
-- **Description**: 
-  - What problem does this solve?
-  - What changes were made?
-  - How was it tested?
-  - Link to related issues
-- **Screenshots**: For UI changes
-- **Test evidence**: Paste test output
-
-### 5. Address Review Feedback
-
-- Respond to all comments
-- Make requested changes
-- Re-run tests after changes
-- Push updates to same branch
-
----
-
-## Testing Requirements
-
-See [Testing](Testing) for full guide. Summary:
-
-- **Mock all system calls** — No root required, no real packages
-- **Use `@patch` decorators** — Not context managers
-- **Test both paths** — Success AND failure
-- **Test Atomic + Traditional** — Both dnf and rpm-ostree
-- **Coverage**: Maintain 75%+ coverage for new code
-
----
-
-## Build & Package
-
-```bash
-# Build RPM
-bash scripts/build_rpm.sh
-
-# Output: rpmbuild/RPMS/noarch/loofi-fedora-tweaks-*.rpm
-
-# Test RPM install
-pkexec dnf install ./rpmbuild/RPMS/noarch/loofi-fedora-tweaks-*.rpm
-```
-
----
-
-## Reporting Bugs
-
-Use GitHub Issues: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues
-
-Include:
-1. **Fedora version** and desktop environment
-2. **Exact steps to reproduce**
-3. **Expected behavior** vs **actual behavior**
-4. **Error logs**:
-   ```bash
-   loofi-fedora-tweaks --cli support-bundle
-   ```
-5. **System info**:
-   ```bash
-   loofi-fedora-tweaks --cli info
-   loofi-fedora-tweaks --cli doctor
-   ```
-
----
-
-## Requesting Features
-
-Use GitHub Issues with:
-1. **Problem description** — What user problem does this solve?
-2. **Proposed solution** — UX/CLI behavior
-3. **Alternatives considered** — Other approaches
-4. **Additional context** — Screenshots, examples
-
----
-
-## Community
-
-- **GitHub Discussions**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/discussions
-- **Issue Tracker**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues
-- **Pull Requests**: https://github.com/loofiboss-bit/loofi-fedora-tweaks/pulls
-
----
-
-## License
-
-MIT License. By contributing, you agree your contributions will be licensed under MIT.
-
----
-
-## Next Steps
-
-- [Architecture](Architecture) — Understand codebase structure
-- [Testing](Testing) — Learn testing conventions
-- [Security Model](Security-Model) — Understand privilege system
-- [Plugin Development](Plugin-Development) — Create plugins instead of core features
+Update the README banner, active guides, release notes, AppStream metadata,
+roadmap, and wiki mirrors when behavior or version changes. Historical pages
+must be labeled as historical rather than reused as current instructions.

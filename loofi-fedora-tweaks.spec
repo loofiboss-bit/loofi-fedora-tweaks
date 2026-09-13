@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        27.0.0
+Version:        27.0.1
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -20,8 +20,10 @@ Requires:       python3-keyring
 Requires:       qt6-qtbase-gui
 Requires:       mesa-libGL
 Requires:       mesa-libEGL
+# pkexec is supplied by polkit and is the native authorization boundary for
+# reviewed system changes. The application does not ship custom polkit action
+# definitions; the desktop's standard agent handles authorization.
 Requires:       polkit
-Requires:       /usr/bin/notify-send
 Requires:       hicolor-icon-theme
 
 # Version renormalization: 50.0.0 → 1:1.0.0
@@ -43,7 +45,6 @@ and outcome verification separate.
 %install
 mkdir -p %{buildroot}%{_prefix}/lib/%{name}
 mkdir -p %{buildroot}%{_bindir}
-mkdir -p %{buildroot}%{_datadir}/polkit-1/actions
 mkdir -p %{buildroot}%{_datadir}/icons/hicolor/128x128/apps
 mkdir -p %{buildroot}%{_datadir}/metainfo
 
@@ -70,13 +71,6 @@ desktop-file-install \
     --dir=%{buildroot}%{_datadir}/applications \
     %{name}.desktop
 
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.firewall.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.network.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.storage.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.service-manage.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.kernel.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.security.policy %{buildroot}%{_datadir}/polkit-1/actions/
 install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/
 install -Dm 644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
 install -Dm 644 %{name}.1 %{buildroot}%{_mandir}/man1/%{name}.1
@@ -85,7 +79,7 @@ install -m 644 %{name}.metainfo.xml %{buildroot}%{_datadir}/metainfo/%{name}.met
 %check
 # Run basic import validation
 PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; from core.navigation import all_routes; assert all_routes(); print('Import OK')"
-appstream-util validate-relax --nonet %{name}.metainfo.xml || :
+appstream-util validate-relax --nonet %{name}.metainfo.xml
 
 %files
 %license LICENSE
@@ -93,13 +87,6 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_prefix}/lib/%{name}
 %attr(755,root,root) %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.firewall.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.network.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.storage.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.service-manage.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.kernel.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.security.policy
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
 %{_datadir}/metainfo/%{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*

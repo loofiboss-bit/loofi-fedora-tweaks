@@ -7,6 +7,7 @@ from typing import Any
 from core.navigation import (
     NavigationRoute,
     area_for_plugin,
+    destinations_for_mode,
     get_destination,
     placement_for_route,
     resolve,
@@ -34,9 +35,35 @@ class MainWindowShellMixin:
         if destination is None:
             return
 
+        # Settings is intentionally opened from the header gear instead of
+        # becoming a sixth primary destination.  Clear the primary selection
+        # and hide its secondary rail while the settings page is active;
+        # otherwise the previous destination (usually Changes) remains
+        # visually selected even though the content has changed.
+        primary_ids = {
+            item.id
+            for item in destinations_for_mode(
+                getattr(self, "_active_navigation_mode", None)
+            )
+        }
+        if destination.id not in primary_ids:
+            self._selecting_destination = True
+            try:
+                self.sidebar.clearSelection()
+                self.sidebar.setCurrentItem(None)
+            finally:
+                self._selecting_destination = False
+            self.destination_host.clear_explanation()
+            self.destination_host.hide()
+            self._active_destination_id = ""
+            return
+
         self._selecting_destination = True
         self.sidebar.select_destination(destination.id)
         self._selecting_destination = False
+        # Settings hides the secondary destination rail; restore it when the
+        # user returns to any primary destination from the sidebar or search.
+        self.destination_host.show()
 
         if destination.id != self._active_destination_id:
             self.destination_host.set_destination(

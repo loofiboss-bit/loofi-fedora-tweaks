@@ -57,12 +57,25 @@ def test_packaging_manifest_tracks_navigation_and_assets():
     assert "core/navigation/migrations.py" in expected
     assert "core/navigation/models.py" in expected
     assert "core/navigation/policy.py" in expected
+    assert "core/platform/profile.py" in expected
     assert "core/executor/command_facade.py" in expected
     assert "core/executor/command_policy.py" in expected
     assert "ui/layout_primitives.py" in expected
     assert "assets/base.qss" in expected
     assert "ui/design/theme_manager.py" in expected
     assert "resources/translations/en.ts" in expected
+    assert "config/apps.json" in expected
+
+
+def test_artifact_check_rejects_retired_runtime_surfaces():
+    module = _load_packaging_manifest_module()
+    names = {
+        "loofi_fedora_tweaks/main.py",
+        "loofi_fedora_tweaks/config/apps.json",
+        "loofi_fedora_tweaks/config/org.loofi.fedora-tweaks.policy",
+    }
+    errors = module._artifact_errors(names, artifact="fixture.tar.gz", wheel=True)
+    assert any("retired artifact" in error for error in errors)
 
 
 @unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")

@@ -1,6 +1,6 @@
 # Changelog
 
-## [27.0.0] - Unreleased - "Core"
+## [27.0.1] - 2026-09-13 - "Core"
 
 - Decommission specialist products (AI Lab, Agents, Automation, Loofi Link, State Teleport, Gaming, Development, Virtualization, Community, Extensions, Profiles).
 - Introduce immutable PlatformProfile with true Fedora neutrality (Workstation, KDE, Silverblue, Kinoite, Atomic).
@@ -8,6 +8,17 @@
 - Delegate software installation to native software centers via AppStream/XDG.
 - Enforce strict Action Center mutation boundary; remove direct subprocess execution from UI views.
 - Streamline CLI interface and eliminate local Web API and D-Bus daemons.
+- Ship the Core release as the unique v27.0.1 identity while preserving the
+  historical v27.0.0 Marketplace Enhancement tag unchanged.
+- Record 4,780 passing tests and 86.95% maintained-surface coverage against an
+  85% blocking gate; defer the repository-wide 90% target to the next release.
+- Keep physical, authorization-agent, reboot, Atomic, keyboard, and Orca gates
+  explicitly unverified under the authorized manual-test skip.
+
+## [27.0.0] - Historical - "Marketplace Enhancement"
+
+The historical v27.0.0 tag is preserved as the earlier Marketplace Enhancement
+lineage. The reviewed Fedora Maintenance Core release is v27.0.1.
 
 ## [26.0.3] - 2026-09-13 - "Everyday"
 

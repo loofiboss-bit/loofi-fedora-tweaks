@@ -150,9 +150,11 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
         migrated = True
 
     favorite_routes = _first(raw, "navigation.favorite_routes", "navigation.favorites", "favorite_tabs", "favorites")
-    if "favorite_routes" not in raw and favorite_routes is not None:
-        defaults["favorite_routes"] = _string_list(favorite_routes)
-        migrated = True
+    if favorite_routes is not None:
+        normalized_favorites = migrate_route_references(favorite_routes)
+        if defaults["favorite_routes"] != normalized_favorites:
+            defaults["favorite_routes"] = normalized_favorites
+            migrated = True
 
     last_route = _first(
         raw,
@@ -170,9 +172,11 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
     defaults["last_route_id"] = migrated_last_route
 
     hidden_routes = _first(raw, "navigation.hidden_routes", "hiddenRoutes", "hidden_routes")
-    if "hidden_routes" not in raw and hidden_routes is not None:
-        defaults["hidden_routes"] = _string_list(hidden_routes)
-        migrated = True
+    if hidden_routes is not None:
+        normalized_hidden = migrate_route_references(hidden_routes)
+        if defaults["hidden_routes"] != normalized_hidden:
+            defaults["hidden_routes"] = normalized_hidden
+            migrated = True
 
     window_geometry = _first(raw, "window.geometry", "main_window_geometry", "geometry")
     if "window_geometry" not in raw and window_geometry is not None:

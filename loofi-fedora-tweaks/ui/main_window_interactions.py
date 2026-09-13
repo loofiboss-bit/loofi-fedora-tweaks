@@ -27,7 +27,16 @@ from core.navigation import (
 from core.plugins import PluginInterface, PluginRegistry
 from core.plugins.metadata import CompatStatus, PluginMetadata
 from core.plugins.registry import CATEGORY_ICONS
-from PyQt6.QtCore import QRect, Qt, QTimer
+try:
+    from PyQt6.QtCore import QEvent, QRect, Qt, QTimer
+except ImportError:  # pragma: no cover - lightweight test doubles may omit QEvent
+    from PyQt6.QtCore import QRect, Qt, QTimer
+
+    class _FallbackEventType:
+        FontChange = object()
+
+    class QEvent:  # type: ignore[no-redef]
+        Type = _FallbackEventType()
 from PyQt6.QtGui import QKeySequence, QPainter, QShortcut
 from PyQt6.QtWidgets import (
     QFrame,
@@ -151,7 +160,10 @@ class MainWindowInteractionMixin:
         finding_context: typing.Any = None,
     ) -> bool:
         """Select an Action Center candidate without planning or running it."""
-        entry = self._sidebar_index.get("maintenance")
+        route = resolve("maintenance:action-center")
+        entry = self._sidebar_index.get(route.plugin_id) if route else None
+        # Compatibility fallback for callers that provide a pre-v27 registry.
+        entry = entry or self._sidebar_index.get("maintenance")
         if entry is None:
             return False
         widget = self._real_widget_for_entry(entry)
@@ -281,6 +293,24 @@ class MainWindowInteractionMixin:
             logger.debug("Responsive sidebar resize update failed", exc_info=True)
         QMainWindow.resizeEvent(self, event)
 
+    def changeEvent(self: typing.Any, event: typing.Any) -> None:
+        """Recalculate shell metrics when the user changes text scaling/theme."""
+        if event is not None and event.type() == QEvent.Type.FontChange:
+            try:
+                metrics = LayoutMetrics.from_widget(self)
+                self._metrics = metrics
+                self._line_height = metrics.line_height
+                self._breadcrumb_frame.setMinimumHeight(metrics.header_height)
+                self._status_frame.setMinimumHeight(metrics.status_height)
+                self._sidebar_toggle.setFixedHeight(max(36, int(metrics.line_height * 2.25)))
+                if not getattr(self, "_sidebar_collapsed", False):
+                    self._sidebar_expanded_width = metrics.sidebar_width
+                    self._sidebar_container.setFixedWidth(metrics.sidebar_width)
+                self._apply_responsive_shell(int(self.width()))
+            except (AttributeError, TypeError, ValueError, RuntimeError):
+                logger.debug("Responsive font metrics update failed", exc_info=True)
+        QMainWindow.changeEvent(self, event)
+
     def _sidebar_display_text(self: typing.Any, item: QTreeWidgetItem) -> str:
         """Return the expanded display text for a sidebar item."""
         name = item.data(0, _ROLE_NAME)
@@ -308,8 +338,8 @@ class MainWindowInteractionMixin:
 
     def _setup_keyboard_shortcuts(self: typing.Any) -> typing.Any:
         """Register destination-aware shell navigation shortcuts."""
-        # Ctrl+1 through Ctrl+7 select stable destinations.
-        for i in range(1, 8):
+        # Ctrl+1 through Ctrl+5 select the five stable destinations.
+        for i in range(1, 6):
             shortcut = QShortcut(QKeySequence(f"Ctrl+{i}"), self)
             shortcut.activated.connect(lambda idx=i - 1: self._select_category(idx))
 
@@ -374,7 +404,7 @@ class MainWindowInteractionMixin:
         shortcuts = (
             "Ctrl+K — Search routes, settings, and actions\n"
             "Ctrl+Shift+K — Search actions\n"
-            "Ctrl+1..7 — Switch destination\n"
+            "Ctrl+1..5 — Switch destination\n"
             "Ctrl+Tab — Next destination\n"
             "Ctrl+Shift+Tab — Previous destination\n"
             "Alt+Left/Right — Route history\n"
@@ -442,7 +472,7 @@ class MainWindowInteractionMixin:
             entry.tree_item.setToolTip(0, f"{desc}\n[{tooltip}]" if desc else tooltip)
 
     def apply_navigation_mode(self: typing.Any, mode: typing.Any = None) -> typing.Any:
-        """Apply the canonical Standard/Advanced navigation mode."""
+        """Apply the canonical focused navigation mode."""
         try:
             from utils.navigation_mode import NavigationModeManager
 

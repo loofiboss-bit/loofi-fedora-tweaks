@@ -42,13 +42,13 @@ class TestNavigationPolicyCompatibility(unittest.TestCase):
         self.assertEqual(result.direct_link_behavior, DirectLinkBehavior.EXPLAIN)
 
     def test_alias_resolves_to_canonical_route(self):
-        result = NavigationPolicy.evaluate("Action Center")
+        result = NavigationPolicy.evaluate("Action Center", _context())
 
         self.assertEqual(result.route_id, "changes")
         self.assertEqual(result.decision, NavigationDecision.VISIBLE)
 
     def test_dashboard_redirects_without_replacing_its_route_identity(self):
-        result = NavigationPolicy.evaluate("dashboard")
+        result = NavigationPolicy.evaluate("dashboard", _context())
 
         self.assertEqual(result.route_id, "dashboard")
         self.assertEqual(result.destination_id, "system")
@@ -212,7 +212,7 @@ class TestNavigationPolicyCoverage(unittest.TestCase):
                     self.assertIsInstance(result.decision, NavigationDecision)
                     outcomes += 1
 
-        self.assertEqual(outcomes, 45 * 4)
+        self.assertEqual(outcomes, 43 * 4)
         self.assertEqual(validate_navigation_policy(), [])
 
     def test_standard_mode_never_exposes_advanced_routes_through_favorites(self):

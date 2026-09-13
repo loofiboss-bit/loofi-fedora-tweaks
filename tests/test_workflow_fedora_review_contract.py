@@ -36,15 +36,21 @@ def test_ci_workflow_adapter_drift_checks_sync_and_render():
     assert "python3 scripts/sync_ai_adapters.py --render --check" in text
 
 
-def test_ci_workflow_flatpak_job_is_blocking():
+def test_ci_workflow_does_not_build_or_publish_flatpak():
     text = _read_text(CI_WORKFLOW)
 
-    assert "package_flatpak:" in text
-    assert "continue-on-error: true" not in text
-    assert "org.kde.Platform//6.10" in text
-    assert "org.kde.Sdk//6.10" in text
-    assert "com.riverbankcomputing.PyQt.BaseApp//6.10" in text
-    assert "flatpak run org.loofi.FedoraTweaks" in text
+    assert "package_flatpak:" not in text
+    assert "build_flatpak:" not in text
+    assert "scripts/build_flatpak.sh" not in text
+    assert "org.kde.Platform" not in text
+    assert "org.kde.Sdk" not in text
+    assert "flatpak run org.loofi.FedoraTweaks" not in text
+
+    auto_release = _read_text(AUTO_RELEASE_WORKFLOW)
+    assert "build_flatpak:" not in auto_release
+    assert "scripts/build_flatpak.sh" not in auto_release
+    assert "flatpak-package" not in auto_release
+    assert "release-assets/*.flatpak" not in auto_release
 
 
 def test_auto_release_workflow_has_required_fedora_review_gate():

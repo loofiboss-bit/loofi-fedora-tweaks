@@ -28,7 +28,10 @@ class ExecutionSettingsFutureSchemaError(ValueError):
 class ExecutionSettings:
     """User policy for the bounded direct-action adapter."""
 
-    execution_mode: ExecutionMode = "direct"
+    # Review-first is the safe, predictable default for every Fedora user.
+    # Direct mode remains an explicit opt-in for low-risk, policy-approved
+    # actions only.
+    execution_mode: ExecutionMode = "review_first"
     confirm_medium_risk: bool = True
     show_command_preview: bool = True
     automatically_verify: bool = True
@@ -60,7 +63,7 @@ class ExecutionSettings:
     @classmethod
     def from_payload(cls, payload: Mapping[str, Any]) -> "ExecutionSettings":
         """Parse known settings without accepting arbitrary policy values."""
-        mode = payload.get("execution_mode", "direct")
+        mode = payload.get("execution_mode", "review_first")
         if mode not in {"direct", "review_first"}:
             mode = "review_first"
         return cls(
@@ -175,9 +178,9 @@ class ExecutionSettingsStore:
     @staticmethod
     def _migrate_legacy(payload: Mapping[str, Any]) -> ExecutionSettings:
         """Migrate the old confirmation preference without enabling new authority."""
-        mode = payload.get("execution_mode", payload.get("mode", "direct"))
+        mode = payload.get("execution_mode", payload.get("mode", "review_first"))
         if mode not in {"direct", "review_first"}:
-            mode = "direct"
+            mode = "review_first"
         medium = payload.get("confirm_medium_risk", payload.get("confirm_dangerous_actions", True))
         auto_verify = payload.get("automatically_verify", payload.get("auto_verify", True))
         return ExecutionSettings(

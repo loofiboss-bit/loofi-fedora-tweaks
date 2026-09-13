@@ -223,10 +223,10 @@ class TestHardwareTabBluetooth(unittest.TestCase):
         with open(filepath, "r", encoding="utf-8") as f:
             source = f.read()
         self.assertIn("from services.hardware import BluetoothManager", source)
-        self.assertIn("create_bluetooth_card", source)
-        self.assertIn("_bt_power_on", source)
-        self.assertIn("_bt_power_off", source)
-        self.assertIn("_bt_scan", source)
+        self.assertIn("Hardware status", source)
+        self.assertNotIn("_bt_power_on", source)
+        self.assertNotIn("_bt_power_off", source)
+        self.assertNotIn("_bt_scan", source)
 
 
 class TestMainWindowRegistration(unittest.TestCase):

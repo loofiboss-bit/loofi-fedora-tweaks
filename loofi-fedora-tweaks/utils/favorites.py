@@ -26,7 +26,7 @@ class FavoritesManager:
     @staticmethod
     def _stable_id(value: str) -> str:
         """Normalize a favorite value to the canonical route/plugin ID when known."""
-        return canonical_persisted_route(value, preserve_unknown=True) or ""
+        return canonical_persisted_route(value, preserve_unknown=False) or ""
 
     @classmethod
     def _normalize_current_id(cls, value: str) -> str:

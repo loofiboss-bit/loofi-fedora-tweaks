@@ -312,7 +312,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 self.assertTrue(window.destination_host.explanation.isVisible())
                 gated += 1
 
-        self.assertEqual(opened + gated, 45)
+        # v27 keeps the route manifest deliberately small and canonical.
+        self.assertEqual(opened + gated, len(all_routes()))
         self.assertGreater(opened, 0)
         self.assertGreater(gated, 0)
 

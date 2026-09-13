@@ -23,8 +23,6 @@ class TestNavigationManifest(unittest.TestCase):
         required = [
             "maintenance:updates",
             "maintenance:cleanup",
-            "maintenance:smart-updates",
-            "maintenance:upgrade-assistant",
             "maintenance:overlays",
             "maintenance:action-center",
             "maintenance:health-timeline",
@@ -45,7 +43,7 @@ class TestNavigationManifest(unittest.TestCase):
             "diagnostics:boot",
             "settings:appearance",
             "settings:behavior",
-            "settings:advanced",
+            "settings:application",
             "settings:repair",
             "settings:about",
         ]
@@ -61,7 +59,7 @@ class TestNavigationManifest(unittest.TestCase):
         self.assertEqual(resolve("Repos").id, "software:repos")
         self.assertEqual(resolve("Privacy").id, "security:privacy")
         self.assertEqual(resolve("Processes").id, "system-monitor:processes")
-        self.assertEqual(resolve("HP Tweaks").id, "hardware")
+        self.assertIsNone(resolve("HP Tweaks"))
         self.assertEqual(resolve("monitor:processes").id, "system-monitor:processes")
 
     def test_risk_and_visibility_values_are_valid(self):
@@ -90,10 +88,10 @@ class TestNavigationManifest(unittest.TestCase):
             [area.label for area in default_areas()],
             [
                 "Home",
-                "Software & Updates",
-                "System & Hardware",
-                "Network & Security",
-                "Desktop & Settings",
+                "Updates & Apps",
+                "System Health",
+                "Protection & Recovery",
+                "Changes",
             ],
         )
 

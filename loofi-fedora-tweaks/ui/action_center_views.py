@@ -50,17 +50,25 @@ class ActionCenterMasterPane(QWidget):
             [
                 LocalViewItem(
                     "queue",
-                    self.tr("Review queue"),
-                    self.tr("Work that currently needs attention."),
+                    self.tr("Needs attention"),
+                    self.tr("Changes that need a decision or the next step."),
                 ),
                 LocalViewItem(
                     "catalog",
-                    self.tr("Action catalog"),
-                    self.tr("Browse available actions without creating a plan."),
+                    self.tr("Available actions"),
+                    self.tr("Browse actions without creating a plan."),
                 ),
             ]
         )
         self.body.addWidget(self.mode_switcher)
+
+        self.recent_changes_button = QuietButton(
+            self.tr("Show recent changes"),
+            description=self.tr("Review completed, waiting, and failed changes."),
+        )
+        self.recent_changes_button.setObjectName("actionCenterRecentChanges")
+        self.body.addWidget(self.recent_changes_button)
+
         self.lifecycle_controls = QWidget()
         lifecycle_layout = QVBoxLayout(self.lifecycle_controls)
         lifecycle_layout.setContentsMargins(0, 0, 0, 0)
@@ -205,7 +213,7 @@ class ActionCenterDetailPane(QWidget):
 
 
 class ActionCenterControls(QWidget):
-    """Encapsulates advanced reload, preview, history, and catalog controls."""
+    """Encapsulates readiness, history, and catalog controls."""
 
     def __init__(self, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -232,14 +240,14 @@ class ActionCenterControls(QWidget):
         target_load_row.addStretch()
 
         catalog_row = QHBoxLayout()
-        catalog_label = QLabel(self.tr("Available advanced action"))
+        catalog_label = QLabel(self.tr("Available action"))
         self.catalog_selector = QComboBox()
-        self.catalog_selector.setAccessibleName(self.tr("Available advanced Action Center action"))
+        self.catalog_selector.setAccessibleName(self.tr("Available Action Center action"))
         catalog_row.addWidget(catalog_label)
         catalog_row.addWidget(self.catalog_selector, 1)
 
         self.target_guidance = QLabel(
-            self.tr("Fedora %s preview target choices are available in Upgrade Assistant.")
+            self.tr("Fedora %s preview target choices are available in the readiness review.")
             % FEDORA_RELEASE_POLICY.preview_release
         )
         self.target_guidance.setObjectName("actionCenterTargetGuidance")

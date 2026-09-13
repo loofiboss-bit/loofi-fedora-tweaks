@@ -108,7 +108,7 @@ class TestSettingRows(unittest.TestCase):
             }
         )
 
-        self.assertIn("does not include specialist tools", tab._component_status.text())
+        self.assertIn("native desktop settings", tab._component_status.text())
         tab.deleteLater()
 
     @patch("ui.settings_tab.SettingsManager.instance")

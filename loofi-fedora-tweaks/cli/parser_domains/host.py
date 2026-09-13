@@ -8,14 +8,13 @@ Subparsers = argparse._SubParsersAction
 
 
 def register_host_commands(subparsers: Subparsers) -> None:
-    """Register smart update management."""
-    updates_parser = subparsers.add_parser("updates", help="Smart update management")
+    """Register read-only update inspection commands."""
+    updates_parser = subparsers.add_parser("updates", help="Inspect Fedora update sources")
     updates_parser.add_argument(
         "action",
-        choices=["check", "conflicts", "schedule", "rollback", "history"],
-        help="Update action to perform",
+        choices=["check", "conflicts", "history"],
+        help="Read-only update query to perform",
     )
-    updates_parser.add_argument("--time", default="02:00", help="Schedule time (HH:MM, default: 02:00)")
 
 
 def register_basic_host_commands(subparsers: Subparsers) -> None:

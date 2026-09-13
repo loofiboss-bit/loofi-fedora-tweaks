@@ -121,9 +121,14 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
                 "configure-network-dns",
                 "delete-recovery-point",
                 "enable-flathub",
-                "apply-performance-tuning",
             }.issubset({definition.id for definition in definitions if definition.operation_class == "manual_only"})
         )
+        self.assertFalse({
+            "apply-performance-tuning",
+            "local-profile-review",
+            "set-cpu-governor",
+            "set-fan-speed",
+        } & set(ids))
         self.assertFalse(catalog.denied("gaming-install-tools").allowed)
         self.assertEqual(catalog.denied("gaming-install-tools").reason_code, "manual_only")
 
@@ -139,7 +144,7 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
         plan = self.orchestrator.plan("dnf-clean-all")
 
         self.assertEqual(plan.state, "ready")
-        self.assertEqual(plan.preview, ["dnf", "clean", "all"])
+        self.assertEqual(plan.preview, ["dnf5", "clean", "all"])
         self.assertNotIn("pkexec", plan.preview)
         self.assertEqual(plan.expires_at - plan.created_at, 1800)
         self.assertTrue(plan.privileged)
@@ -219,7 +224,7 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
 
         self.assertEqual(plan.state, "blocked")
         self.assertEqual(plan.policy_decision.reason_code, "preview_target_read_only")
-        self.assertEqual(plan.preview, ["dnf", "clean", "all"])
+        self.assertEqual(plan.preview, ["dnf5", "clean", "all"])
 
     def test_unknown_action_is_persisted_as_manual_only_block(self):
         plan = self.orchestrator.plan("plugin-free-form-command", {"command": "echo bad"})
@@ -267,7 +272,7 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
         self.assertTrue(result.preview)
         self.assertEqual(result.data["schema_version"], 3)
         self.facade.preview.assert_called_once_with(
-            ["dnf", "clean", "all"], privileged=True, action_id="dnf-clean-all"
+            ["dnf5", "clean", "all"], privileged=True, action_id="dnf-clean-all"
         )
 
     def test_tampered_persisted_plan_fails_digest_validation(self):

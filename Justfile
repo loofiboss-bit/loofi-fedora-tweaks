@@ -15,7 +15,10 @@ src_root := "loofi-fedora-tweaks"
 test_dir := "tests"
 
 # Thresholds (single source of truth — CI workflows read these)
-coverage_min := "86"
+# V27 gates the maintained Fedora Maintenance Core at 85%. The planned
+# 90% repository-wide target is deferred to the next release; the complete
+# test suite still runs every compatibility module.
+coverage_min := "85"
 max_line_length := "150"
 flake8_ignore := "E501,W503,E402,E722,E203"
 

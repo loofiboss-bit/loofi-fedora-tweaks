@@ -130,8 +130,6 @@ _OVERRIDES = [
         verification="transaction or deployment readback",
         alias="activity recovery compatibility command",
     ),
-    _manual("cli:updates schedule", "updates", "schedule-system-update", guidance="Review timer, package-manager, and reboot behavior."),
-    _manual("cli:updates rollback", "updates", "rollback-latest-update", guidance="Select an exact transaction or deployment first."),
 ]
 
 PUBLIC_OPERATION_OVERRIDES: Mapping[str, PublicOperation] = MappingProxyType(

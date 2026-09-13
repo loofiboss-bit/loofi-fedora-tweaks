@@ -24,7 +24,7 @@ class TestV25Eligibility(unittest.TestCase):
 
     def test_manual_only_and_high_risk_never_become_direct(self) -> None:
         catalog = ActionCatalog()
-        for action_id in ("update-flatpak-application", "update-firmware"):
+        for action_id in ("enable-flathub", "update-firmware"):
             with self.subTest(action_id=action_id):
                 decision = classify_definition(catalog.get(action_id))
                 self.assertEqual(decision.kind, "review_required")

@@ -5,6 +5,7 @@ from __future__ import annotations
 from unittest.mock import MagicMock, patch
 
 from core.diagnostics.release_models import (
+    ReadinessCheck,
     TARGETS,
     ReleaseReadinessReport,
 )
@@ -16,6 +17,7 @@ from core.platform.profile import (
     PlatformProfile,
     SessionType,
 )
+from services.package.dnf5_health import DNF5HealthReport
 
 
 class TestReleaseTargets:
@@ -90,15 +92,25 @@ class TestFedoraVersionCheck:
 class TestReleaseReadinessReport:
     """Verify full readiness report generation and desktop neutrality."""
 
+    @patch.object(ReleaseReadiness, "_tls_check")
+    @patch.object(ReleaseReadiness, "_flatpak_check")
+    @patch.object(ReleaseReadiness, "_nvidia_check")
+    @patch.object(ReleaseReadiness, "_atomic_check")
+    @patch("core.diagnostics.release_readiness.DNF5HealthService.collect")
     @patch.object(
         ReleaseReadiness,
         "_os_release",
     )
-    @patch("services.system.system.SystemManager.get_platform_profile")
+    @patch("core.diagnostics.release_readiness.SystemManager.get_platform_profile")
     def test_run_produces_valid_neutral_report(
         self,
         mock_profile: MagicMock,
         mock_os_release: MagicMock,
+        mock_package: MagicMock,
+        mock_atomic: MagicMock,
+        mock_nvidia: MagicMock,
+        mock_flatpak: MagicMock,
+        mock_tls: MagicMock,
     ):
         mock_profile.return_value = PlatformProfile(
             os_id="fedora",
@@ -118,15 +130,38 @@ class TestReleaseReadinessReport:
             "PRETTY_NAME": "Fedora Linux 44 (Workstation Edition)",
             "VARIANT_ID": "workstation",
         }
+        mock_package.return_value = DNF5HealthReport(
+            package_manager="dnf5",
+            dnf5_available=True,
+            repo_probe_ok=True,
+        )
+        for mock_check, check_id in (
+            (mock_atomic, "atomic-status"),
+            (mock_nvidia, "nvidia-akmods-secureboot"),
+            (mock_flatpak, "flatpak-runtimes"),
+            (mock_tls, "tls-cert-compat"),
+        ):
+            mock_check.return_value = ReadinessCheck(
+                id=check_id,
+                title=check_id,
+                category="system",
+                status="pass",
+                severity="info",
+                summary="ok",
+                beginner_guidance="ok",
+            )
         report = ReleaseReadiness.run(target_key="44")
         assert isinstance(report, ReleaseReadinessReport)
         assert report.target == TARGETS["44"].label
         assert 0 <= report.score <= 100
-        assert report.status in ("ready", "caution", "not_ready")
+        assert report.status == "ready"
         assert len(report.checks) > 0
 
         # Verify desktop was neutral (desktop info is None for GNOME)
         assert report.desktop is None
+        assert {check.id for check in report.checks}.isdisjoint(
+            {"kde-plasma-version", "display-manager"}
+        )
 
         # Check serialization round-trip
         report_dict = report.to_dict()

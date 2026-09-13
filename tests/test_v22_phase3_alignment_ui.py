@@ -77,7 +77,7 @@ class TestV22Phase3AlignmentUi(unittest.TestCase):
 
         self.assertEqual([button.text() for button in primary], ["Review & Plan"])
         self.assertTrue(tab.load_preview_button.isHidden())
-        self.assertIn("Upgrade Assistant", tab.target_guidance.text())
+        self.assertIn("Fedora 45", tab.target_guidance.text())
         tab.deleteLater()
 
     def test_activity_initial_state_centers_its_only_load_action(self) -> None:

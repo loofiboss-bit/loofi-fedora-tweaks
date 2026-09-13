@@ -3,11 +3,17 @@
 from __future__ import annotations
 
 from dataclasses import dataclass, field
-from typing import Dict, List, Optional
+from typing import Any, Dict, List, Optional, Protocol
 
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
-from services.desktop.kde44 import KDE44DesktopInfo
 from services.package.dnf5_health import DNF5HealthReport
+
+
+class _SerializableReport(Protocol):
+    """Structural type for optional environment-specific report sections."""
+
+    def to_dict(self) -> Dict[str, Any]:
+        ...
 
 
 @dataclass(frozen=True)
@@ -75,7 +81,7 @@ class ReleaseTarget:
 TARGETS: Dict[str, ReleaseTarget] = {
     FEDORA_RELEASE_POLICY.stable_target: ReleaseTarget(
         key=FEDORA_RELEASE_POLICY.stable_target,
-        label=f"Fedora KDE {FEDORA_RELEASE_POLICY.stable_release}",
+        label=f"Fedora {FEDORA_RELEASE_POLICY.stable_release}",
         fedora_version=FEDORA_RELEASE_POLICY.stable_release,
         supported=True,
         compatible_versions=("43",),
@@ -93,7 +99,7 @@ TARGETS: Dict[str, ReleaseTarget] = {
             ReleaseChange(
                 "kde-oobe",
                 "Unified KDE setup",
-                "Fedora KDE variants use Plasma Setup for a more consistent first-run experience.",
+                "Fedora desktop variants may update first-run setup components for a more consistent experience.",
                 "info",
                 "https://fedoraproject.org/wiki/Releases/44/ChangeSet",
             ),
@@ -108,13 +114,13 @@ TARGETS: Dict[str, ReleaseTarget] = {
             ),
         ),
         docs_links=(
-            "https://fedoraproject.org/kde/download/",
+            "https://fedoraproject.org/workstation/download/",
             "https://fedoramagazine.org/announcing-fedora-linux-44/",
         ),
     ),
     FEDORA_RELEASE_POLICY.preview_target: ReleaseTarget(
         key=FEDORA_RELEASE_POLICY.preview_target,
-        label=f"Fedora KDE {FEDORA_RELEASE_POLICY.preview_release} Preview",
+        label=f"Fedora {FEDORA_RELEASE_POLICY.preview_release} Preview",
         fedora_version=FEDORA_RELEASE_POLICY.preview_release,
         supported=False,
         preview=True,
@@ -260,7 +266,7 @@ class ReleaseReadinessReport:
     status: str
     summary: str
     checks: List[ReadinessCheck] = field(default_factory=list)
-    desktop: Optional[KDE44DesktopInfo] = None
+    desktop: Optional[_SerializableReport] = None
     package: Optional[DNF5HealthReport] = None
     target_metadata: ReleaseTarget = field(default_factory=lambda: TARGETS[FEDORA_RELEASE_POLICY.stable_target])
     mode: str = "check"

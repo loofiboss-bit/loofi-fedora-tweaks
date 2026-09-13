@@ -106,6 +106,44 @@ def test_generate_test_results_passes_when_tests_executed_without_failures(tmp_p
     assert payload["release_gate"]["status"] == "PASS"
 
 
+def test_extract_coverage_reads_total_line_and_fails_closed():
+    module = _load_module(
+        "generate_workflow_reports_coverage_parser_test",
+        Path("scripts/generate_workflow_reports.py"),
+    )
+
+    assert module._extract_coverage(
+        ["TOTAL  1200  96  92.00%", "12 passed"]
+    ) == 92.0
+    assert module._extract_coverage(["12 passed"]) is None
+
+
+def test_generate_test_results_records_coverage_when_available(tmp_path):
+    module = _load_module(
+        "generate_workflow_reports_coverage_payload_test",
+        Path("scripts/generate_workflow_reports.py"),
+    )
+    module.ROOT = tmp_path
+    module.REPORTS_DIR = tmp_path / ".workflow" / "reports"
+
+    payload = module.generate_test_results(
+        "27.0.0",
+        {
+            "returncode": 0,
+            "passed": 10,
+            "failed": 0,
+            "skipped": 0,
+            "errors": 0,
+            "total": 10,
+            "duration_seconds": 1.2,
+            "summary_line": "10 passed",
+            "coverage_percent": 91.25,
+        },
+    )
+
+    assert payload["coverage_percent"] == 91.25
+
+
 @pytest.mark.parametrize(
     ("module_name", "script", "reader"),
     (

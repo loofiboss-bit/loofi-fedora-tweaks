@@ -13,6 +13,7 @@ import os
 import sys
 import unittest
 from unittest.mock import patch, MagicMock
+from types import SimpleNamespace
 
 import pytest
 
@@ -43,7 +44,7 @@ class TestPackageServiceFactory(unittest.TestCase):
         """Factory returns DnfPackageService for traditional Fedora."""
         mock_get_pm.return_value = "dnf"
 
-        service = get_package_service()
+        service = get_package_service(SimpleNamespace(deployment_backend="dnf5"))
 
         self.assertIsInstance(service, DnfPackageService)
 
@@ -52,7 +53,7 @@ class TestPackageServiceFactory(unittest.TestCase):
         """Factory returns RpmOstreePackageService for Atomic Fedora."""
         mock_get_pm.return_value = "rpm-ostree"
 
-        service = get_package_service()
+        service = get_package_service(SimpleNamespace(deployment_backend="rpm_ostree"))
 
         self.assertIsInstance(service, RpmOstreePackageService)
 

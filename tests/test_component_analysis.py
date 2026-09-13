@@ -52,6 +52,10 @@ class TestComponentGraph(unittest.TestCase):
         )
         self.assertTrue(report["rpm"]["base_owns_complete_application_tree"])
         self.assertFalse(report["rpm"]["extras_subpackage_defined"])
+        self.assertTrue(report["rpm"]["retired_subpackages_absent"])
+        self.assertTrue(report["rpm"]["custom_polkit_actions_absent"])
+        self.assertNotIn("api", report["surface_reachability"])
+        self.assertNotIn("daemon", report["surface_reachability"])
 
 
 if __name__ == "__main__":
