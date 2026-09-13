@@ -53,7 +53,7 @@ Fedora 45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
 - Release notes: [v27.0.1 Core](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v27.0.1.md)
-- Release: [v26.0.3 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v26.0.3)
+- Release: [v27.0.1 Core on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v27.0.1)
 - Release notes: [v26.0.3 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v26.0.3.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
