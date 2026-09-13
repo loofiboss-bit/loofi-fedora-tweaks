@@ -48,7 +48,10 @@ class _Runtime:
 
 class _Settings:
     def __init__(self, settings=None):
-        self.settings = settings or ExecutionSettings()
+        # These tests exercise the explicitly opted-in direct adapter.  The
+        # product default is covered separately by the execution-settings
+        # contract and is review-first.
+        self.settings = settings or ExecutionSettings(execution_mode="direct")
 
     def load(self):
         return self.settings
@@ -134,7 +137,9 @@ class TestV25DirectActions(unittest.TestCase):
     def test_auto_verify_can_be_disabled_without_claiming_verified(self):
         service = DirectActionService(
             orchestrator=self.orchestrator,
-            settings_store=_Settings(ExecutionSettings(automatically_verify=False)),
+            settings_store=_Settings(
+                ExecutionSettings(execution_mode="direct", automatically_verify=False)
+            ),
         )
         result = service.run("dnf-clean-all")
         self.assertEqual(result.status, "review_required")

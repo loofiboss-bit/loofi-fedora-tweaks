@@ -37,15 +37,12 @@ def _action_definitions() -> list[object]:
     sys.modules["core.actions"] = actions_package
     sys.modules["services.system"] = system_package
     try:
-        from core.actions.assurance import assurance_definitions
-        from core.actions.catalog import ActionCatalog, _first_party_definitions
-        from core.actions.metadata import with_haven_metadata
+        from core.actions.catalog import ActionCatalog
 
-        definitions = [
-            with_haven_metadata(definition)
-            for definition in [*_first_party_definitions(), *assurance_definitions()]
-        ]
-        return list(ActionCatalog(definitions).list())
+        # Validate the same filtered live catalog that the application exposes.
+        # Historical compatibility definitions are intentionally not part of
+        # the v27 public Action Center surface.
+        return list(ActionCatalog().list())
     finally:
         sys.modules.pop("core.actions", None)
         sys.modules.pop("services.system", None)
@@ -72,8 +69,6 @@ BANNED_MODULES = {
 PRESENTATION_ROOTS = (
     SOURCE / "ui",
     SOURCE / "cli",
-    SOURCE / "daemon",
-    SOURCE / "core" / "agents",
 )
 
 MUTATOR_PREFIXES = (
@@ -134,49 +129,6 @@ def _cli_operation_ids() -> set[str]:
             operations.add(f"cli:{' '.join((*prefix, str(choice)))}")
 
     walk(build_parser())
-    return operations
-
-
-def _api_operation_ids() -> set[str]:
-    """Derive FastAPI route methods and paths without importing optional API deps."""
-    operations: set[str] = {"api:POST /api/token"}
-    for path in sorted((SOURCE / "api" / "routes").glob("*.py")):
-        tree = ast.parse(path.read_text(encoding="utf-8"), filename=str(path))
-        prefix = ""
-        for node in ast.walk(tree):
-            if not isinstance(node, ast.Call):
-                continue
-            call_name = ""
-            if isinstance(node.func, ast.Name):
-                call_name = node.func.id
-            elif isinstance(node.func, ast.Attribute):
-                call_name = node.func.attr
-            if call_name == "APIRouter":
-                for keyword in node.keywords:
-                    if (
-                        keyword.arg == "prefix"
-                        and isinstance(keyword.value, ast.Constant)
-                        and isinstance(keyword.value.value, str)
-                    ):
-                        prefix = keyword.value.value
-            if call_name != "add_api_route" or not node.args:
-                continue
-            route = node.args[0]
-            if not isinstance(route, ast.Constant) or not isinstance(route.value, str):
-                continue
-            methods = next(
-                (
-                    keyword.value
-                    for keyword in node.keywords
-                    if keyword.arg == "methods"
-                ),
-                None,
-            )
-            if not isinstance(methods, (ast.List, ast.Tuple)):
-                continue
-            for method in methods.elts:
-                if isinstance(method, ast.Constant) and isinstance(method.value, str):
-                    operations.add(f"api:{method.value.upper()} {prefix}{route.value}")
     return operations
 
 
@@ -348,8 +300,17 @@ def validate() -> list[str]:
     errors = validate_product_catalog()
     entries = product_catalog()
     definitions = _action_definitions()
-    if len({entry.route_id for entry in entries}) != 81:
-        errors.append(f"stable route count changed: expected 81, got {len(entries)}")
+    retired_route_ids = {
+        "maintenance:smart-updates",
+        "settings:advanced",
+    }
+    active_route_ids = {entry.route_id for entry in entries}
+    leaked_retired = sorted(active_route_ids & retired_route_ids)
+    if leaked_retired:
+        errors.append(
+            "retired routes remain in the live catalog: "
+            + ", ".join(leaked_retired)
+        )
 
     for definition in definitions:
         if definition.operation_class not in {"host", "app_state", "session", "manual_only"}:
@@ -359,7 +320,7 @@ def validate() -> list[str]:
         if not definition.affected_resources:
             errors.append(f"action {definition.id} has no affected-resource declaration")
 
-    operation_ids = _cli_operation_ids() | _api_operation_ids()
+    operation_ids = _cli_operation_ids()
     errors.extend(
         validate_public_operation_inventory(
             operation_ids,
@@ -388,7 +349,11 @@ def validate() -> list[str]:
             errors.extend(_unguarded_command_runner_calls(path, tree))
 
     cli_source = (SOURCE / "cli" / "main.py").read_text(encoding="utf-8")
-    if "create_public_plans" not in cli_source or "closed_action_definition_required" not in cli_source:
+    # V27 keeps the public CLI boundary deliberately small.  The old
+    # ``create_public_plans`` helper belonged to the retired specialist
+    # command registry; the maintained equivalent is the typed Action Center
+    # planner used by the canonical command handlers.
+    if "_create_action_center_plan" not in cli_source or "closed_action_definition_required" not in cli_source:
         errors.append("CLI execution boundary is missing its closed Action Center plan gate")
     settings_source = (SOURCE / "ui" / "settings_tab.py").read_text(encoding="utf-8")
     if "self.mode_combo" in settings_source:
@@ -396,12 +361,21 @@ def validate() -> list[str]:
     navigation_mode_source = (SOURCE / "utils" / "navigation_mode.py").read_text(encoding="utf-8")
     if "return NavigationMode.ADVANCED" not in navigation_mode_source:
         errors.append("unified Specialist Tools navigation is not enforced")
-    agent_source = (SOURCE / "core" / "agents" / "agent_runner.py").read_text(encoding="utf-8")
-    if "classify_command(" not in agent_source or "Action Center" not in agent_source:
-        errors.append("agent raw-command boundary is missing its classification gate")
-    daemon_source = (SOURCE / "utils" / "daemon.py").read_text(encoding="utf-8")
-    if "install plugin" in daemon_source.lower() or "download plugin" in daemon_source.lower():
-        errors.append("daemon still advertises executable extension updates")
+
+    # Verify decommissioned subsystems are absent
+    if (SOURCE / "core" / "agents").exists():
+        errors.append("retired core.agents package remains present")
+    if (SOURCE / "daemon").exists():
+        errors.append("retired daemon package remains present")
+    if (SOURCE / "api").exists():
+        errors.append("retired api package remains present")
+    if (SOURCE / "ui" / "community_tab.py").exists():
+        errors.append("retired community tab remains present")
+    if (SOURCE / "utils" / "daemon.py").exists():
+        errors.append("retired daemon.py remains present")
+    if (SOURCE / "utils" / "api_server.py").exists():
+        errors.append("retired api_server.py remains present")
+
     scheduler_source = (SOURCE / "utils" / "scheduler.py").read_text(encoding="utf-8")
     if "PrivilegedCommand" in scheduler_source or "notify_preset_applied" in scheduler_source:
         errors.append("scheduler still contains unattended host-mutation code")
@@ -417,61 +391,11 @@ def validate() -> list[str]:
     for retired_symbol in ("HotReloadRequest", "HotReloadResult", "request_reload"):
         if retired_symbol in plugin_loader_source:
             errors.append(f"retired external hot-reload API remains active: {retired_symbol}")
-    community_source = (SOURCE / "ui" / "community_tab.py").read_text(encoding="utf-8")
-    for retired_symbol in (
-        "refresh_marketplace",
-        "download_marketplace_preset",
-        "_search_marketplace_plugins",
-        "_install_marketplace_plugin",
-    ):
-        if retired_symbol in community_source:
-            errors.append(f"retired Marketplace UI API remains active: {retired_symbol}")
     sandbox_source = (SOURCE / "services" / "security" / "sandbox.py").read_text(encoding="utf-8")
     if "PluginIsolationManager" in sandbox_source:
         errors.append("retired advisory plugin-isolation API remains active")
     if "install_firejail" in sandbox_source or "PrivilegedCommand" in sandbox_source:
         errors.append("application sandbox service still exposes a direct host installer")
-    handler_sources = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in (SOURCE / "daemon" / "handlers").glob("*_handler.py")
-    )
-    for forbidden in (
-        ".install_local(",
-        ".remove_local(",
-        ".update_local(",
-        ".start_unit(",
-        ".stop_unit(",
-        ".restart_unit(",
-        ".open_port_local(",
-        ".close_port_local(",
-        ".apply_dns_local(",
-    ):
-        if forbidden in handler_sources:
-            errors.append(f"daemon handler bypasses plan-only boundary: {forbidden}")
-
-    for route_path in sorted((SOURCE / "api" / "routes").glob("*.py")):
-        route_source = route_path.read_text(encoding="utf-8")
-        if "@router.post(" in route_source or "@router.put(" in route_source or "@router.delete(" in route_source:
-            errors.append(f"Web API mutation route remains: {route_path.relative_to(ROOT)}")
-        route_tree = ast.parse(route_source, filename=str(route_path))
-        for node in route_tree.body:
-            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                continue
-            is_get = any(
-                isinstance(decorator, ast.Call)
-                and isinstance(decorator.func, ast.Attribute)
-                and decorator.func.attr == "get"
-                for decorator in node.decorator_list
-            )
-            if is_get and "AuthManager.verify_bearer_token" not in ast.unparse(node.args):
-                errors.append(
-                    f"Web API GET lacks bearer authentication: {route_path.relative_to(ROOT)}:{node.lineno}"
-                )
-    api_server_source = (SOURCE / "utils" / "api_server.py").read_text(encoding="utf-8")
-    if '@app.post("/api/token")' not in api_server_source:
-        errors.append("Web API token issuance route is missing")
-    if "@app.get(" in api_server_source or ".mount(" in api_server_source:
-        errors.append("Web API exposes an unauthenticated app-level GET or static mount")
     return errors
 
 
@@ -481,7 +405,10 @@ def main() -> int:
         for error in errors:
             print(f"[product-contract] ERROR: {error}")
         return 1
-    print("[product-contract] OK: 81 routes, classified actions, built-in-only plugins, and guarded entrypoints")
+    print(
+        f"[product-contract] OK: {len(product_catalog())} routes, "
+        "classified actions, built-in-only plugins, and guarded entrypoints"
+    )
     return 0
 
 

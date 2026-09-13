@@ -1,5 +1,22 @@
 # Changelog
 
+## v27.0.1 — Core (2026-09-13)
+
+- Consolidated the application into five desktop-neutral destinations.
+- Added immutable capability-aware Fedora platform detection and fail-closed
+  readiness states.
+- Routed persistent changes through the reviewed Action Center lifecycle.
+- Replaced the duplicate application marketplace with a native software-center
+  handoff.
+- Removed the public specialist suite, local API/daemon, and Flatpak
+  distribution bundle.
+- Automated qualification: 4,780 passed, 73 skipped, 0 failed; 86.95%
+  maintained-surface coverage against an 85% gate. Repository-wide 90% and
+  physical/manual qualification are deferred.
+
+The historical v27.0.0 Marketplace Enhancement entry below is preserved for
+lineage; v27.0.1 is the current Core release.
+
 ## v23.0.2 — Compass
 
 - Added six bounded troubleshooting profiles and one explicit guided

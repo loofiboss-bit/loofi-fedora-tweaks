@@ -38,7 +38,7 @@ _BROKEN_PLACEMENT = RoutePlacement(
 
 
 class TestDestinationDefinitions(unittest.TestCase):
-    def test_standard_mode_has_exactly_six_destinations(self):
+    def test_standard_mode_has_exactly_five_destinations(self):
         self.assertEqual(
             [destination.id for destination in STANDARD_DESTINATIONS],
             [
@@ -46,8 +46,7 @@ class TestDestinationDefinitions(unittest.TestCase):
                 "software_updates",
                 "system",
                 "network_security",
-                "desktop",
-                "settings",
+                "changes",
             ],
         )
         self.assertEqual(
@@ -55,12 +54,9 @@ class TestDestinationDefinitions(unittest.TestCase):
             STANDARD_DESTINATIONS,
         )
 
-    def test_advanced_mode_adds_one_advanced_destination(self):
+    def test_advanced_mode_has_five_destinations(self):
         destinations = destinations_for_mode(NavigationMode.ADVANCED)
-
-        self.assertEqual(len(destinations), 7)
-        self.assertEqual(destinations[-1], ADVANCED_DESTINATION)
-        self.assertTrue(destinations[-1].advanced_only)
+        self.assertEqual(len(destinations), 5)
 
     def test_every_default_route_resolves_and_belongs_to_destination(self):
         for destination in all_destinations():
@@ -74,9 +70,9 @@ class TestRoutePlacements(unittest.TestCase):
         routes = all_routes()
         placements = [placement_for_route(route.id) for route in routes]
 
-        self.assertEqual(len(routes), 81)
+        self.assertEqual(len(routes), 43)
         self.assertTrue(all(placement is not None for placement in placements))
-        self.assertEqual(len({placement.route_id for placement in placements}), 81)
+        self.assertEqual(len({placement.route_id for placement in placements}), 43)
         self.assertEqual(validate_destinations(), [])
 
     def test_every_placement_has_explicit_section_metadata(self):
@@ -86,7 +82,7 @@ class TestRoutePlacements(unittest.TestCase):
             for section in sections_for_destination(destination.id)
         ]
 
-        self.assertEqual(len(sections), 62)
+        self.assertEqual(len(sections), 32)
         for route in all_routes():
             placement = placement_for_route(route.id)
             with self.subTest(route_id=route.id):
@@ -125,7 +121,6 @@ class TestRoutePlacements(unittest.TestCase):
         expected = {
             ("software_updates", "updates"): "Updates",
             ("settings", "appearance"): "Appearance",
-            ("desktop", "appearance"): "Appearance",
             ("network_security", "connections"): "Connections",
             ("network_security", "network_privacy"): "Connection Privacy",
             ("network_security", "privacy"): "System Privacy",
@@ -139,17 +134,14 @@ class TestRoutePlacements(unittest.TestCase):
         expected = {
             "atlas_dashboard": ("home", "overview"),
             "software:apps": ("software_updates", "applications"),
-            "maintenance:action-center": ("software_updates", "maintenance_review"),
+            "maintenance:action-center": ("changes", "review"),
             "maintenance:health-timeline": ("system", "system_check"),
             "system-monitor:processes": ("system", "processes"),
             "snapshots": ("system", "recovery_points"),
             "security:firewall": ("network_security", "firewall"),
-            "desktop:display": ("desktop", "displays"),
             "settings:behavior": ("settings", "behavior"),
             "settings:repair": ("settings", "repair"),
             "settings:about": ("settings", "about"),
-            "development:containers": ("advanced", "development"),
-            "profiles": ("advanced", "profiles"),
         }
         for route_id, placement_ids in expected.items():
             with self.subTest(route_id=route_id):
@@ -181,12 +173,9 @@ class TestRoutePlacements(unittest.TestCase):
             frozenset({FedoraVariant.TRADITIONAL, FedoraVariant.ATOMIC}),
         )
 
-    def test_smart_updates_route_redirects_to_canonical_updates_section(self):
-        placement = placement_for_route("maintenance:smart-updates")
-
-        self.assertEqual(placement.section_id, "updates")
-        self.assertEqual(placement.redirect_route_id, "maintenance:updates")
-        self.assertFalse(placement.discoverable)
+    def test_retired_specialist_update_routes_are_absent(self):
+        self.assertIsNone(placement_for_route("maintenance:smart-updates"))
+        self.assertIsNone(placement_for_route("maintenance:upgrade-assistant"))
 
     def test_health_is_canonical_system_check_while_logs_remain_compatible(self):
         health = placement_for_route("health")

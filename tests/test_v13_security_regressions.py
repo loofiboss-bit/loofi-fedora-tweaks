@@ -5,13 +5,6 @@ from unittest import TestCase
 from core.executor.command_policy import CommandValidationError, validate_command
 
 
-class TestApiCredentialBootstrap(TestCase):
-    def test_remote_api_key_generation_route_does_not_exist(self):
-        from fastapi.testclient import TestClient
-        from utils.api_server import APIServer
-
-        response = TestClient(APIServer().app).post("/api/key")
-        self.assertEqual(response.status_code, 404)
 
 
 class TestCommandPolicyArgumentLanguages(TestCase):

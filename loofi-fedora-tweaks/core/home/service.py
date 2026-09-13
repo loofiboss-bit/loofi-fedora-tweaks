@@ -45,8 +45,8 @@ _COMMON_TASKS = (
     HomeTask(
         "planned-changes",
         "Review planned changes",
-        "Review, confirm, and verify work in Action Center.",
-        "maintenance:action-center",
+        "Review, confirm, and verify work in Changes.",
+        "changes",
         "status-ok",
     ),
 )
@@ -906,6 +906,12 @@ class HomeService:
         data_state: HomeDataState,
         primary: Recommendation | None,
     ) -> HomeOverallState:
+        # An empty store is an onboarding state, not a warning. The Home
+        # surface has one explicit ``Run system check`` action for this case;
+        # it must not be styled as an incident merely because no observation
+        # exists yet.
+        if data_state == "empty":
+            return "unknown"
         if primary and primary.severity == "critical":
             return "critical"
         if primary and primary.kind != "no_action":
@@ -916,12 +922,12 @@ class HomeService:
 
     @staticmethod
     def _summary_text(data_state: HomeDataState, primary: Recommendation | None) -> str:
+        if data_state == "empty":
+            return "No system check has been run yet."
         if primary is not None and primary.severity == "critical":
             return "Saved system status contains an item that needs review."
         if primary is not None and primary.kind != "no_action":
             return "Saved system status contains an item that may need attention."
         if data_state == "fresh":
             return "Saved system status does not currently report an issue."
-        if data_state == "empty":
-            return "No saved system health snapshot is available yet."
         return "System status is not available."

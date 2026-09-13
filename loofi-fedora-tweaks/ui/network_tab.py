@@ -131,7 +131,7 @@ class NetworkTab(BaseTab):
         container = QVBoxLayout()
 
         self.connections_handoff = NativeHandoffCard(
-            NativeHandoffId.PLASMA_NETWORK_CONNECTIONS,
+            NativeHandoffId.NETWORK_SETTINGS,
             title=self.tr("Edit saved connections in Plasma"),
             description=self.tr(
                 "Use the native Plasma editor for connection profiles. "
@@ -197,13 +197,13 @@ class NetworkTab(BaseTab):
         btn_scan_wifi.clicked.connect(self._scan_wifi)
         wifi_btn_row.addWidget(btn_scan_wifi)
 
-        btn_connect_wifi = SecondaryButton(self.tr("Connect"))
-        btn_connect_wifi.setAccessibleName(self.tr("Connect Wi-Fi"))
+        btn_connect_wifi = SecondaryButton(self.tr("Review connection"))
+        btn_connect_wifi.setAccessibleName(self.tr("Review Wi-Fi connection"))
         btn_connect_wifi.clicked.connect(self._connect_wifi)
         wifi_btn_row.addWidget(btn_connect_wifi)
 
-        btn_disconnect_wifi = SecondaryButton(self.tr("Disconnect"))
-        btn_disconnect_wifi.setAccessibleName(self.tr("Disconnect Wi-Fi"))
+        btn_disconnect_wifi = SecondaryButton(self.tr("Review disconnect"))
+        btn_disconnect_wifi.setAccessibleName(self.tr("Review Wi-Fi disconnect"))
         btn_disconnect_wifi.clicked.connect(self._disconnect_wifi)
         wifi_btn_row.addWidget(btn_disconnect_wifi)
         wifi_btn_row.addStretch()
@@ -602,7 +602,7 @@ class NetworkTab(BaseTab):
         self.append_output(self.tr("WiFi scan complete. {} networks found.\n").format(len(rows)))
 
     def _connect_wifi(self: typing.Any) -> typing.Any:
-        """Connect to selected WiFi network."""
+        """Open a review plan instead of mutating NetworkManager directly."""
         row = self.wifi_table.currentRow()
         if row < 0:
             QMessageBox.warning(self, self.tr("Error"), self.tr("Select a WiFi network first."))
@@ -615,15 +615,23 @@ class NetworkTab(BaseTab):
                 self.tr("Cannot connect to a hidden network from here."),
             )
             return
-        self.append_output(self.tr("Connecting to {}...").format(ssid))
-        success = NetworkUtils.connect_wifi(ssid)
-        self.append_output(self.tr("Connected.\n") if success else self.tr("Connection failed.\n"))
+        self.actionCenterRequested.emit(
+            "legacy-ui-manual-review",
+            {},
+        )
+        self.append_output(
+            self.tr("Connection review opened for {}. No network change was made.\n").format(ssid)
+        )
 
     def _disconnect_wifi(self: typing.Any) -> typing.Any:
-        """Disconnect WiFi."""
-        self.append_output(self.tr("Disconnecting WiFi..."))
-        success = NetworkUtils.disconnect_wifi("wlan0")
-        self.append_output(self.tr("Disconnected.\n") if success else self.tr("Disconnect failed.\n"))
+        """Open a review plan instead of mutating NetworkManager directly."""
+        self.actionCenterRequested.emit(
+            "legacy-ui-manual-review",
+            {},
+        )
+        self.append_output(
+            self.tr("Disconnect review opened. No network change was made.\n")
+        )
 
     def _load_vpn(self: typing.Any) -> typing.Any:
         """Load VPN connections from NetworkManager."""

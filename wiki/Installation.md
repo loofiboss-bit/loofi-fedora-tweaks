@@ -1,232 +1,65 @@
-# Installation
+# Installation — v27.0.1 "Core"
 
-This guide covers system requirements and installation methods for Loofi Fedora Tweaks.
+Loofi Fedora Tweaks is distributed as one Fedora RPM. The supported package
+source is the Loofi COPR project; an sdist is available for development.
 
----
+## Requirements
 
-## System Requirements
+- Fedora 43 or 44 for the stable target; Fedora 45 is preview-only.
+- Python 3.12 or newer (provided by the RPM/runtime environment).
+- PyQt6 and a working desktop session for the GUI.
+- `pkexec` and the desktop's standard authorization agent for reviewed
+  privileged changes.
 
-### Base Requirements
+The core is desktop-neutral and detects GNOME, KDE, XFCE, Sway, and unknown
+sessions without assuming that a missing capability is supported. Traditional
+and Atomic/bootc backends are kept separate; an unknown backend is unavailable.
 
-- **Operating System**: Fedora 44 (Traditional or Atomic variants such as Silverblue/Kinoite); Fedora 45 is preview-only
-- **Python**: 3.12 or later
-- **PyQt6**: GUI framework (installable via `dnf` or `pip`)
-- **Polkit**: For privilege escalation (`pkexec`)
-
-### Optional Dependencies
-
-The following packages enable specific features but are not required for basic functionality:
-
-| Package | Feature Enabled | Install Command |
-|---------|----------------|-----------------|
-| `libvirt`, `virt-manager` | Virtualization tab (VM management) | `pkexec dnf install libvirt virt-manager` |
-| `ollama` | AI Lab (local LLM inference) | [Ollama Installation](https://ollama.ai/download) |
-| `firewalld` | Security & Network tab (firewall rules) | `pkexec dnf install firewalld` |
-| `avahi`, `nss-mdns` | Loofi Link (mDNS discovery) | `pkexec dnf install avahi avahi-tools nss-mdns` |
-| `gamemode` | Gaming tab (game optimization) | `pkexec dnf install gamemode` |
-| `timeshift` or `snapper` | Snapshots tab (system backups) | `pkexec dnf install timeshift` or `snapper` |
-| `podman`, `podman-compose` | Development tab (containers) | `pkexec dnf install podman podman-compose` |
-
----
-
-## Installation Methods
-
-### Method 1: Fedora COPR (Recommended)
-
-The package is published on [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/). This gives you automatic updates via `dnf`.
+## Install from COPR (recommended)
 
 ```bash
-# Enable the COPR repository
 pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
-
-# Install the package
 pkexec dnf install loofi-fedora-tweaks
+loofi-fedora-tweaks
 ```
 
-### Method 2: Release RPM
+The package installs the GUI, reduced CLI, desktop entry, and documentation.
+It does not install a daemon, local Web API, custom Polkit policy files, or a
+Flatpak application bundle.
 
-Download the latest RPM from the [Releases page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases):
+## Install a release RPM
+
+Download the RPM from the [GitHub release page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v27.0.1),
+then install it with the native backend:
 
 ```bash
-# Install with dnf (Traditional Fedora)
 pkexec dnf install ./loofi-fedora-tweaks-*.noarch.rpm
-
-# Or with rpm-ostree (Atomic Fedora)
-rpm-ostree install ./loofi-fedora-tweaks-*.noarch.rpm
-systemctl reboot
 ```
 
-The RPM automatically installs:
-- Application files to `/usr/share/loofi-fedora-tweaks/`
-- Desktop entry to `/usr/share/applications/`
-- Polkit policies to `/usr/share/polkit-1/actions/`
-- Shell completions to `/usr/share/bash-completion/completions/`
+On an Atomic/bootc host, use the host's documented image/package workflow;
+Loofi reports the capability and reboot state but never reboots automatically.
 
-### Method 3: Run From Source
-
-For development or testing, run directly from the source tree:
+## Run from source
 
 ```bash
-# Clone the repository
 git clone https://github.com/loofiboss-bit/loofi-fedora-tweaks.git
 cd loofi-fedora-tweaks
-
-# Create a virtual environment
 python3 -m venv .venv
 source .venv/bin/activate
-
-# Install dependencies
-pip install -r requirements.txt
-
-# Run the application
+python -m pip install -e '.[dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
 
-For CLI mode:
+The optional `install.sh` helper is guarded and requires an explicit
+acknowledgement. Never run the application as root.
+
+## Verify the installation
 
 ```bash
-PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --cli info
-```
-
----
-
-## Post-Installation
-
-### Verify Installation
-
-Check that the application is working:
-
-```bash
-# Display version and system info
-loofi-fedora-tweaks --cli info
-
-# Run dependency check
+loofi-fedora-tweaks --version
+loofi-fedora-tweaks --cli --json info
 loofi-fedora-tweaks --cli doctor
 ```
 
-Expected output from `--cli info`:
-```
-Loofi Fedora Tweaks v23.0.2 "Compass"
-Python: 3.12.x
-OS: Fedora 44
-Package Manager: dnf (or rpm-ostree on Atomic)
-```
-
-### Optional Shell Alias
-
-For convenience, add an alias to your `~/.bashrc` or `~/.zshrc`:
-
-```bash
-alias loofi='loofi-fedora-tweaks --cli'
-```
-
-Then reload your shell:
-
-```bash
-source ~/.bashrc  # or source ~/.zshrc
-```
-
-Now you can use shorter commands:
-
-```bash
-loofi info
-loofi health
-loofi cleanup all
-```
-
----
-
-## Uninstall
-
-### Uninstall COPR Package
-
-**Traditional Fedora:**
-
-```bash
-pkexec dnf remove loofi-fedora-tweaks
-pkexec dnf copr remove loofitheboss/loofi-fedora-tweaks
-```
-
-### Uninstall RPM Package
-
-**Traditional Fedora:**
-
-```bash
-pkexec dnf remove loofi-fedora-tweaks
-```
-
-**Atomic Fedora:**
-
-```bash
-rpm-ostree uninstall loofi-fedora-tweaks
-systemctl reboot
-```
-
-### Clean Up User Data
-
-The application stores configuration and logs in `~/.config/loofi-fedora-tweaks/`. To remove all user data:
-
-```bash
-rm -rf ~/.config/loofi-fedora-tweaks/
-rm -rf ~/.local/share/loofi-fedora-tweaks/
-```
-
-### Remove Source Installation
-
-If you installed from source, simply delete the cloned directory:
-
-```bash
-rm -rf loofi-fedora-tweaks/
-```
-
----
-
-## Troubleshooting Installation
-
-### PyQt6 Not Found
-
-If you get "No module named 'PyQt6'" errors:
-
-```bash
-# Traditional Fedora
-pkexec dnf install python3-pyqt6
-
-# Or via pip in a venv
-pip install PyQt6
-```
-
-### Qt Platform Plugin Errors
-
-If you see "Could not load the Qt platform plugin" errors:
-
-```bash
-pkexec dnf install qt6-qtwayland
-```
-
-Or force a specific platform:
-
-```bash
-QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
-```
-
-### Polkit Authentication Fails
-
-Ensure a polkit agent is running:
-
-```bash
-# GNOME
-ps aux | grep polkit-gnome-authentication-agent
-
-# KDE
-ps aux | grep polkit-kde-authentication-agent
-```
-
-If no agent is running, install and start one for your desktop environment.
-
----
-
-## Next Steps
-
-- [Getting Started](Getting-Started) — Learn the basics of GUI and CLI usage
-- [GUI Tabs Reference](GUI-Tabs-Reference) — Explore the catalog-backed GUI routes
-- [CLI Reference](CLI-Reference) — Master command-line automation
+Physical desktop, authorization, reboot, and fresh Atomic installation gates
+are separate evidence and remain unverified for v27.0.1.

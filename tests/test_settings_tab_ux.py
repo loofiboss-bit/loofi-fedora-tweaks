@@ -34,7 +34,7 @@ class TestSettingsNavigationMode(unittest.TestCase):
         )
         tab._update_component_status()
         text = tab._component_status.setText.call_args.args[0]
-        self.assertIn("never installs packages", text)
+        self.assertIn("Core", text)
 
     def test_missing_specialist_component_has_guidance(self):
         tab = _bare_tab()
@@ -43,7 +43,7 @@ class TestSettingsNavigationMode(unittest.TestCase):
         )
         tab._update_component_status()
         text = tab._component_status.setText.call_args.args[0]
-        self.assertIn("does not include specialist tools", text)
+        self.assertIn("native desktop settings", text)
 
 
 class TestPhase7SettingsPresentation(unittest.TestCase):
@@ -78,9 +78,9 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
             tab.settings_tabs.widget(index).widget().accessibleName()
             for index in range(tab.settings_tabs.count())
         ]
-        self.assertEqual(labels, ["Appearance", "Behavior", "Specialist Tools", "Repair Loofi", "About"])
+        self.assertEqual(labels, ["Appearance", "Behavior", "Application", "Repair Loofi", "About"])
         self.assertFalse(hasattr(tab, "mode_combo"))
-        self.assertIn("always available", tab._mode_desc.text())
+        self.assertIn("available in this build", tab._mode_desc.text())
         self.assertTrue(tab.follow_system_cb.isChecked())
         self.assertFalse(tab.theme_combo.isEnabled())
 

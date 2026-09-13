@@ -43,7 +43,7 @@ class TestActivityRecoveryTab(unittest.TestCase):
         self.assertIsNotNone(entry)
         assert entry is not None
         self.assertEqual(entry.plugin.module, "ui.activity_recovery_tab")
-        self.assertEqual(entry.destination.id, "system")
+        self.assertEqual(entry.destination.id, "network_security")
         self.assertFalse(entry.placement.advanced_only)
         self.assertEqual(validate_product_catalog(), [])
 

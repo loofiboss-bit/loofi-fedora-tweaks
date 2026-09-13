@@ -24,7 +24,7 @@ class NavigationArea:
 
 
 _HOME_PLUGINS = ("atlas_dashboard",)
-_SOFTWARE_PLUGINS = ("software", "maintenance", "snapshots", "virtualization")
+_SOFTWARE_PLUGINS = ("software", "maintenance")
 _SYSTEM_PLUGINS = (
     "system_info",
     "monitor",
@@ -32,20 +32,9 @@ _SYSTEM_PLUGINS = (
     "storage",
     "health",
     "diagnostics",
-    "performance",
-    "gaming",
 )
-_NETWORK_SECURITY_PLUGINS = ("network", "security", "backup")
-_DESKTOP_SETTINGS_PLUGINS = ("desktop", "settings", "profiles", "extensions", "development")
-_MORE_PLUGINS = (
-    "community",
-    "mesh",
-    "logs",
-    "ai_lab",
-    "agents",
-    "automation",
-    "teleport",
-)
+_NETWORK_SECURITY_PLUGINS = ("network", "security", "backup", "activity")
+_CHANGES_PLUGINS = ("changes",)
 
 
 _AREAS: tuple[NavigationArea, ...] = (
@@ -58,39 +47,31 @@ _AREAS: tuple[NavigationArea, ...] = (
     ),
     NavigationArea(
         id="software_updates",
-        label="Software & Updates",
+        label="Updates & Apps",
         icon="packages-software",
-        description="Applications, package sources, updates, snapshots, and virtual machines.",
+        description="Applications, Fedora updates, Flatpak status, and firmware review.",
         plugin_ids=_SOFTWARE_PLUGINS,
     ),
     NavigationArea(
-        id="system_hardware",
-        label="System & Hardware",
+        id="system",
+        label="System Health",
         icon="hardware-performance",
-        description="System details, health, monitoring, hardware, storage, and diagnostics.",
+        description="System details, health checks, monitoring, hardware, and diagnostics.",
         plugin_ids=_SYSTEM_PLUGINS,
     ),
     NavigationArea(
         id="network_security",
-        label="Network & Security",
+        label="Protection & Recovery",
         icon="security-shield",
-        description="Connectivity, privacy, hardening, and backup workflows.",
+        description="Connectivity, privacy, security posture, and recovery guidance.",
         plugin_ids=_NETWORK_SECURITY_PLUGINS,
     ),
     NavigationArea(
-        id="desktop_settings",
-        label="Desktop & Settings",
-        icon="appearance-theme",
-        description="Desktop appearance, preferences, profiles, extensions, and developer setup.",
-        plugin_ids=_DESKTOP_SETTINGS_PLUGINS,
-    ),
-    NavigationArea(
-        id="more",
-        label="More",
-        icon="developer-tools",
-        description="Advanced, experimental, automation, community, and log tools.",
-        plugin_ids=_MORE_PLUGINS,
-        advanced_only=True,
+        id="changes",
+        label="Changes",
+        icon="maintenance-health",
+        description="Review, run, and verify maintenance changes.",
+        plugin_ids=_CHANGES_PLUGINS,
     ),
 )
 

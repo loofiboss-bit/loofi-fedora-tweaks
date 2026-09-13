@@ -121,39 +121,14 @@ class TestAssuranceValidation(unittest.TestCase):
         self.assertFalse(definition.privilege_resolver({"source": "flatpak", "package_id": "org.mozilla.firefox"}, runtime))
 
     def test_local_profile_review_accepts_only_bounded_data(self):
-        definition = ActionCatalog().get("local-profile-review")
-        assert definition is not None
-        valid = {
-            "profile": "travel",
-            "settings": {
-                "schema_version": 1,
-                "name": "Travel",
-                "power_profile": "balanced",
-                "battery_limit": 80,
-            },
-        }
-
-        self.assertTrue(validate_parameters(definition, valid).allowed)
-        self.assertFalse(validate_parameters(definition, {**valid, "profile": "travel; reboot"}).allowed)
-        self.assertFalse(validate_parameters(definition, {**valid, "settings": []}).allowed)
-        self.assertFalse(
-            validate_parameters(
-                definition,
-                {**valid, "settings": {"unknown_setting": "value"}},
-            ).allowed
-        )
+        # Specialist profile tuning was intentionally removed from the v27
+        # product surface.  Unknown legacy IDs must stay deny-by-default.
+        self.assertIsNone(ActionCatalog().get("local-profile-review"))
 
     def test_manual_boundary_parameter_matrix_rejects_out_of_range_and_injection_values(self):
         cases = {
             "block-firewall-port": ({"port": 443, "protocol": "tcp"}, {"port": 0, "protocol": "tcp"}),
             "allow-usb-device": ({"device_id": "1234:abcd"}, {"device_id": "1234; reboot"}),
-            "set-grub-timeout": ({"seconds": 10}, {"seconds": 61}),
-            "set-cpu-governor": ({"governor": "performance"}, {"governor": "turbo"}),
-            "set-power-profile": ({"profile": "balanced"}, {"profile": "turbo"}),
-            "set-gpu-mode": ({"mode": "hybrid"}, {"mode": "discrete"}),
-            "set-fan-speed": ({"speed": -1}, {"speed": 101}),
-            "install-developer-tool": ({"tool": "rustup"}, {"tool": "curl | sh"}),
-            "apply-system-profile": ({"profile": "workstation"}, {"profile": "../../etc"}),
             "configure-hostname-privacy": (
                 {"connection": "Home WiFi", "hidden": True},
                 {"connection": "Home\nWiFi", "hidden": True},
@@ -162,24 +137,18 @@ class TestAssuranceValidation(unittest.TestCase):
                 {"connection": "Home WiFi", "dns": "1.1.1.1, 2606:4700:4700::1111"},
                 {"connection": "Home WiFi", "dns": "https://resolver.invalid"},
             ),
-            "service-control": (
-                {"service": "sshd.service", "action": "restart", "scope": "system"},
-                {"service": "sshd.service", "action": "reload-or-reboot", "scope": "system"},
-            ),
-            "configure-kernel-parameter": (
-                {"parameter": "ipv6.disable=1", "enabled": True},
-                {"parameter": "ipv6.disable=1;reboot", "enabled": True},
-            ),
-            "restore-grub-backup": ({"backup": "backup-1"}, {"backup": "../backup"}),
-            "configure-zram": (
-                {"size_percent": 50, "algorithm": "zstd"},
-                {"size_percent": 5, "algorithm": "gzip"},
+            "firewall-service-control": (
+                {"service": "ssh", "action": "add"},
+                {"service": "ssh; reboot", "action": "remove"},
             ),
         }
         catalog = ActionCatalog()
         for action_id, (valid, invalid) in cases.items():
             definition = catalog.get(action_id)
-            assert definition is not None
+            # Some retired specialist actions deliberately have no live
+            # definition.  Keep this matrix focused on maintained actions.
+            if definition is None:
+                self.fail(f"Maintained action missing from catalog: {action_id}")
             with self.subTest(action=action_id, case="valid"):
                 self.assertTrue(validate_parameters(definition, valid).allowed)
             with self.subTest(action=action_id, case="invalid"):

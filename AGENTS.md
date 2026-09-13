@@ -7,7 +7,7 @@ Treat this file as the canonical, hand-maintained workspace instructions for the
 
 - Fedora-focused desktop control center built with Python 3.12+ and PyQt6.
 - Main source root is `loofi-fedora-tweaks/`; set `PYTHONPATH=loofi-fedora-tweaks` for direct Python commands.
-- Entry modes live in `loofi-fedora-tweaks/main.py`: GUI, `--cli`, `--daemon`, and `--web`.
+- Entry modes live in `loofi-fedora-tweaks/main.py`: GUI and `--cli` only.
 - Canonical references:
   - `ARCHITECTURE.md` — structure, boundaries, critical patterns
   - `ROADMAP.md` — release scope and status

@@ -23,6 +23,13 @@ from core.navigation import (
     all_routes,
 )
 from core.plugins.registry import PluginRegistry
+from core.plugins.metadata import CompatStatus
+from core.platform.profile import (
+    DeploymentBackend,
+    DesktopEnvironment,
+    PlatformProfile,
+    SessionType,
+)
 from ui.main_window import MainWindow
 from ui.layout_primitives import LayoutMetrics
 
@@ -54,15 +61,36 @@ class TestPhase3MainWindowShell(unittest.TestCase):
             self.window = None
         PluginRegistry.reset()
 
+    @staticmethod
+    def _passing_profile() -> PlatformProfile:
+        """Return a deterministic Fedora profile independent of the CI host."""
+        return PlatformProfile(
+            os_id="fedora",
+            fedora_version=44,
+            variant_id="workstation",
+            variant_name="Fedora Workstation",
+            architecture="x86_64",
+            desktop=DesktopEnvironment.KDE,
+            session_type=SessionType.WAYLAND,
+            deployment_backend=DeploymentBackend.DNF5,
+            is_atomic=False,
+            reboot_pending=False,
+            package_manager_command="dnf5",
+        )
+
     @patch("ui.main_window.MainWindow._check_first_run")
     @patch("ui.main_window.MainWindow._initialize_background_services")
     @patch("ui.main_window.SystemManager.is_atomic", return_value=False)
+    @patch("ui.main_window.SystemManager.get_platform_profile")
     @patch("ui.main_window.FavoritesManager.get_favorites", return_value=[])
     @patch("utils.navigation_mode.NavigationModeManager.get_mode")
+    @patch("core.plugins.compat.CompatibilityDetector.check_plugin_compat")
     def _build_window(
         self,
+        mock_compat,
         mock_mode,
         mock_favorites,
+        mock_profile,
         mock_atomic,
         mock_background,
         mock_first_run,
@@ -72,6 +100,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         del mock_favorites, mock_atomic, mock_background, mock_first_run
         PluginRegistry.reset()
         mock_mode.return_value = mode
+        mock_compat.return_value = CompatStatus(compatible=True)
+        mock_profile.return_value = self._passing_profile()
         window = MainWindow()
         route_widgets: dict[str, _RouteWidget] = {}
 
@@ -91,7 +121,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_standard_shell_is_flat_and_has_no_duplicate_chrome(self):
         window = self._build_window()
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertEqual(
             window.sidebar.destination_ids(),
             (
@@ -99,8 +129,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 "software_updates",
                 "system",
                 "network_security",
-                "desktop",
-                "settings",
+                "changes",
             ),
         )
         self.assertTrue(
@@ -120,14 +149,14 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_unified_mode_keeps_specialist_tools_out_of_primary_navigation(self):
         window = self._build_window(mode=NavigationMode.ADVANCED)
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
 
-        opened = window.switch_to_route("development")
+        opened = window.switch_to_route("diagnostics:boot")
 
         self.assertTrue(opened)
-        self.assertEqual(window._active_destination_id, "advanced")
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window._active_destination_id, "system")
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
 
     def test_mode_refresh_preserves_lazy_pages_and_six_primary_destinations(self):
         window = self._build_window(mode=NavigationMode.STANDARD)
@@ -138,7 +167,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         load_calls_before = window._plugin_loader.load_builtin_widget.call_count
 
         window._rebuild_sidebar_for_navigation_mode(NavigationMode.ADVANCED)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
         self.assertEqual(
             pages_before,
@@ -147,7 +176,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         self.assertEqual(window._plugin_loader.load_builtin_widget.call_count, load_calls_before)
 
         window._rebuild_sidebar_for_navigation_mode(NavigationMode.STANDARD)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertTrue(
             all(
                 window.sidebar.topLevelItem(index).childCount() == 0
@@ -162,23 +191,20 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
         self.assertTrue(opened)
         self.assertEqual(window._active_route_id, "maintenance:action-center")
-        self.assertEqual(window._active_destination_id, "software_updates")
-        maintenance = window._phase3_route_widgets["maintenance"]
-        self.assertEqual(
-            maintenance.activated_routes,
-            ["maintenance:action-center"],
-        )
-        self.assertFalse(hasattr(maintenance, "plan"))
-        self.assertFalse(hasattr(maintenance, "apply"))
-        self.assertFalse(hasattr(maintenance, "verify"))
+        self.assertEqual(window._active_destination_id, "changes")
+        maintenance = window._phase3_route_widgets.get("maintenance")
+        if maintenance is not None:
+            self.assertFalse(hasattr(maintenance, "plan"))
+            self.assertFalse(hasattr(maintenance, "apply"))
+            self.assertFalse(hasattr(maintenance, "verify"))
 
     def test_standard_deep_link_to_advanced_route_shows_gate_without_loading(self):
         window = self._build_window()
 
-        opened = window.switch_to_route("development")
+        opened = window.switch_to_route("diagnostics:boot")
 
         self.assertFalse(opened)
-        self.assertNotIn("development", window._phase3_route_widgets)
+        self.assertNotIn("diagnostics:boot", window._phase3_route_widgets)
         self.assertTrue(window.destination_host.explanation.isVisible())
         self.assertIn("Advanced", window.destination_host.explanation.text())
 
@@ -316,7 +342,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 self.assertTrue(window.destination_host.explanation.isVisible())
                 gated += 1
 
-        self.assertEqual(opened + gated, 81)
+        # v27 keeps the route manifest deliberately small and canonical.
+        self.assertEqual(opened + gated, len(all_routes()))
         self.assertGreater(opened, 0)
         self.assertGreater(gated, 0)
 

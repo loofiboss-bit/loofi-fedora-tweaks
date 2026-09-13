@@ -16,6 +16,7 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QApplication, QTabBar
 
 from core.navigation import (
+    FedoraVariant,
     NavigationContext,
     NavigationMode,
     NavigationPolicy,
@@ -40,7 +41,7 @@ class TestDestinationSidebar(_QtTestCase):
     def tearDown(self):
         self.sidebar.close()
 
-    def test_standard_mode_is_exactly_six_flat_rows(self):
+    def test_standard_mode_is_exactly_five_flat_rows(self):
         self.sidebar.set_destinations(
             destinations_for_mode(NavigationMode.STANDARD)
         )
@@ -52,8 +53,7 @@ class TestDestinationSidebar(_QtTestCase):
                 "software_updates",
                 "system",
                 "network_security",
-                "desktop",
-                "settings",
+                "changes",
             ),
         )
         self.assertTrue(
@@ -63,13 +63,13 @@ class TestDestinationSidebar(_QtTestCase):
             )
         )
 
-    def test_advanced_mode_adds_only_advanced_destination(self):
+    def test_advanced_mode_maintains_five_destinations(self):
         self.sidebar.set_destinations(
             destinations_for_mode(NavigationMode.ADVANCED)
         )
 
-        self.assertEqual(self.sidebar.topLevelItemCount(), 7)
-        self.assertEqual(self.sidebar.destination_ids()[-1], "advanced")
+        self.assertEqual(self.sidebar.topLevelItemCount(), 5)
+        self.assertEqual(self.sidebar.destination_ids()[-1], "changes")
 
     def test_collapsed_mode_keeps_tooltips_and_selection(self):
         self.sidebar.set_destinations(all_destinations())
@@ -125,45 +125,50 @@ class TestDestinationSidebar(_QtTestCase):
 class TestDestinationHost(_QtTestCase):
     def setUp(self):
         self.host = DestinationHost()
-        self.standard = NavigationContext(mode=NavigationMode.STANDARD)
+        self.standard = NavigationContext(
+            mode=NavigationMode.STANDARD,
+            fedora_variant=FedoraVariant.TRADITIONAL,
+            capabilities=frozenset({"fedora", "dnf5"}),
+        )
 
     def tearDown(self):
         self.host.close()
 
     def test_shared_host_deduplicates_sections_and_keeps_action_center(self):
-        destination = get_destination("software_updates")
+        destination = get_destination("changes")
 
         self.host.set_destination(destination, self.standard)
 
         route_ids = self.host.route_ids()
-        self.assertIn("software:apps", route_ids)
-        self.assertIn("maintenance:action-center", route_ids)
-        self.assertNotIn("maintenance:smart-updates", route_ids)
+        self.assertIn("changes", route_ids)
         self.assertEqual(len(route_ids), len(set(route_ids)))
 
     def test_advanced_host_exposes_advanced_destination_sections(self):
-        destination = get_destination("advanced")
-        context = NavigationContext(mode=NavigationMode.ADVANCED)
+        destination = get_destination("system")
+        context = NavigationContext(
+            mode=NavigationMode.ADVANCED,
+            fedora_variant=FedoraVariant.TRADITIONAL,
+            capabilities=frozenset({"fedora", "dnf5"}),
+        )
 
         self.host.set_destination(destination, context)
 
-        self.assertIn("performance", self.host.route_ids())
-        self.assertIn("development", self.host.route_ids())
+        self.assertIn("storage", self.host.route_ids())
         self.assertGreater(len(self.host.route_ids()), 1)
 
     def test_active_subroute_selects_owning_section(self):
-        destination = get_destination("software_updates")
+        destination = get_destination("changes")
         self.host.set_destination(destination, self.standard)
 
         self.host.set_active_route("maintenance:action-center")
 
         self.assertEqual(
             self.host.navigator.active_section_id(),
-            "maintenance_review",
+            "review",
         )
 
     def test_gated_route_has_safe_explanation(self):
-        result = NavigationPolicy.evaluate("development", self.standard)
+        result = NavigationPolicy.evaluate("diagnostics:boot", self.standard)
 
         self.host.show_policy_result(result)
 
@@ -193,7 +198,7 @@ class TestDestinationHost(_QtTestCase):
             self.host.navigator.selector.itemText(index)
             for index in range(self.host.navigator.selector.count())
         ]
-        self.assertIn("Hardware & Power", labels)
+        self.assertIn("Hardware status", labels)
         self.assertIn("System Check", labels)
         self.assertTrue(all(label and "…" not in label for label in labels))
 

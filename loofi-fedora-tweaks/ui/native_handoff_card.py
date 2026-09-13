@@ -6,12 +6,14 @@ from PyQt6.QtCore import QProcess
 from PyQt6.QtWidgets import QFrame, QLabel, QVBoxLayout, QWidget
 
 from core.catalog_models import NativeHandoffId
+from core.platform.profile import PlatformProfile
 from services.desktop.native_handoff import NativeHandoffService
+from services.system.system import SystemManager
 from ui.components.actions import SecondaryButton
 
 
 class NativeHandoffCard(QFrame):
-    """Data-light bridge from an opaque handoff ID to a native Plasma UI."""
+    """Data-light bridge from an opaque handoff ID to a native desktop UI."""
 
     def __init__(
         self,
@@ -43,7 +45,7 @@ class NativeHandoffCard(QFrame):
 
         self.open_button = SecondaryButton(
             button_text,
-            description=self.tr("Open this setting in the native Plasma interface"),
+            description=self.tr("Open this setting in the native desktop interface"),
         )
         self.open_button.setEnabled(False)
         self.open_button.clicked.connect(self._launch)
@@ -62,7 +64,17 @@ class NativeHandoffCard(QFrame):
 
     def refresh_availability(self) -> None:
         """Refresh presentation only after the owning route is activated."""
-        availability = self._service.availability(self._handoff_id)
+        # Real native handoffs are always evaluated against the immutable
+        # platform profile.  Test doubles and explicitly supplied services
+        # keep the small one-argument contract used by embedders.
+        if type(self._service) is NativeHandoffService:
+            profile: PlatformProfile = SystemManager.get_platform_profile()
+            availability = self._service.availability(
+                self._handoff_id,
+                profile=profile,
+            )
+        else:
+            availability = self._service.availability(self._handoff_id)
         self.open_button.setEnabled(availability.available)
         self.status_label.setText(availability.detail)
         self.status_label.setAccessibleName(availability.detail)
@@ -72,7 +84,14 @@ class NativeHandoffCard(QFrame):
         )
 
     def _launch(self) -> None:
-        launch = self._service.prepare_launch(self._handoff_id)
+        if type(self._service) is NativeHandoffService:
+            profile: PlatformProfile = SystemManager.get_platform_profile()
+            launch = self._service.prepare_launch(
+                self._handoff_id,
+                profile=profile,
+            )
+        else:
+            launch = self._service.prepare_launch(self._handoff_id)
         if launch is None:
             self.refresh_availability()
             return
@@ -80,6 +99,6 @@ class NativeHandoffCard(QFrame):
         started = result[0] if isinstance(result, tuple) else bool(result)
         if not started:
             self.open_button.setEnabled(False)
-            message = self.tr("The native Plasma interface could not be started.")
+            message = self.tr("The native interface could not be started.")
             self.status_label.setText(message)
             self.status_label.setAccessibleName(message)

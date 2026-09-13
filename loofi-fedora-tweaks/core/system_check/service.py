@@ -472,7 +472,25 @@ class SystemCheckService:
         return tuple(findings)
 
     def _collect_pending_reboot(self, atomic: bool, collected_at: float) -> tuple[SystemFinding, ...]:
-        if not atomic or not self.system_manager.has_pending_deployment():
+        if not atomic:
+            return ()
+        pending = self.system_manager.has_pending_deployment()
+        if pending is None:
+            return (SystemFinding.build(
+                finding_id="pending-reboot-unknown",
+                category="updates",
+                severity="attention",
+                title="Deployment reboot state is unavailable",
+                summary="The deployment backend could not verify whether a reboot is required.",
+                evidence=self._evidence("pending-reboot", {"pending_deployment": None}, collected_at),
+                applicable_variants=frozenset({"atomic"}),
+                freshness_state="unknown",
+                affected_resources=("rpm-ostree-deployment", "boot-state"),
+                route_id="maintenance:updates",
+                manual_guidance="Inspect the deployment status manually before applying another update.",
+                manual_reason_code="pending-deployment-unknown",
+            ),)
+        if pending is not True:
             return ()
         facts = {"pending_deployment": True}
         return (SystemFinding.build(

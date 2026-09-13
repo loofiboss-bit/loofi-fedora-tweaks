@@ -14,7 +14,7 @@ BUDGETED_EXTRACTED_MODULES = frozenset(
         "cli/parser.py",
         "cli/parser_domains/host.py",
         "cli/parser_domains/observability.py",
-        "cli/parser_domains/specialist.py",
+        "cli/parser_domains/execution.py",
         "cli/parser_domains/support.py",
         "cli/commands/readiness_commands.py",
         "ui/main_window_interactions.py",

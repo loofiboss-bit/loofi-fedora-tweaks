@@ -23,9 +23,9 @@ class TestNavigationManifest(unittest.TestCase):
         required = [
             "maintenance:updates",
             "maintenance:cleanup",
-            "maintenance:smart-updates",
-            "maintenance:upgrade-assistant",
             "maintenance:overlays",
+            "maintenance:action-center",
+            "maintenance:health-timeline",
             "system-monitor:performance",
             "system-monitor:processes",
             "software:apps",
@@ -39,24 +39,13 @@ class TestNavigationManifest(unittest.TestCase):
             "network:dns",
             "network:privacy",
             "network:monitoring",
-            "desktop:director",
-            "desktop:theming",
-            "desktop:display",
-            "development:containers",
-            "development:developer",
-            "automation:scheduler",
-            "automation:replicator",
-            "community:presets",
-            "community:marketplace",
-            "community:plugins",
-            "community:featured",
             "diagnostics:watchtower",
             "diagnostics:boot",
-            "ai-lab:models",
-            "loofi-link:devices",
-            "virtualization:vms",
             "settings:appearance",
-            "agents:dashboard",
+            "settings:behavior",
+            "settings:application",
+            "settings:repair",
+            "settings:about",
         ]
         for route_id in required:
             self.assertIsNotNone(get_route(route_id), route_id)
@@ -70,7 +59,7 @@ class TestNavigationManifest(unittest.TestCase):
         self.assertEqual(resolve("Repos").id, "software:repos")
         self.assertEqual(resolve("Privacy").id, "security:privacy")
         self.assertEqual(resolve("Processes").id, "system-monitor:processes")
-        self.assertEqual(resolve("HP Tweaks").id, "hardware")
+        self.assertIsNone(resolve("HP Tweaks"))
         self.assertEqual(resolve("monitor:processes").id, "system-monitor:processes")
 
     def test_risk_and_visibility_values_are_valid(self):
@@ -99,10 +88,10 @@ class TestNavigationManifest(unittest.TestCase):
             [area.label for area in default_areas()],
             [
                 "Home",
-                "Software & Updates",
-                "System & Hardware",
-                "Network & Security",
-                "Desktop & Settings",
+                "Updates & Apps",
+                "System Health",
+                "Protection & Recovery",
+                "Changes",
             ],
         )
 
@@ -123,7 +112,7 @@ class TestNavigationManifest(unittest.TestCase):
         PluginRegistry.reset()
         loaded = PluginLoader().load_builtins(context={})
         try:
-            self.assertIn("virtualization", loaded)
+            self.assertIn("atlas_dashboard", loaded)
             plugin_routes = {route.id for route in all_routes() if ":" not in route.id}
             self.assertTrue(set(loaded).issubset(plugin_routes))
             self.assertEqual(validate_routes(loaded, resolve_icon_path), [])

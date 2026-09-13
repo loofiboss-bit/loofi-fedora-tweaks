@@ -9,6 +9,7 @@ import os
 import sys
 import unittest
 from unittest.mock import MagicMock, patch
+from types import SimpleNamespace
 
 # Add source path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
@@ -426,14 +427,14 @@ class TestGetPackageService(unittest.TestCase):
     def test_returns_dnf_service_for_traditional_fedora(self, mock_pm):
         """Factory returns DnfPackageService for traditional Fedora."""
         mock_pm.return_value = "dnf"
-        service = get_package_service()
+        service = get_package_service(SimpleNamespace(deployment_backend="dnf5"))
         self.assertIsInstance(service, DnfPackageService)
 
     @patch('services.package.service.SystemManager.get_package_manager')
     def test_returns_rpm_ostree_service_for_atomic_fedora(self, mock_pm):
         """Factory returns RpmOstreePackageService for Atomic Fedora."""
         mock_pm.return_value = "rpm-ostree"
-        service = get_package_service()
+        service = get_package_service(SimpleNamespace(deployment_backend="rpm_ostree"))
         self.assertIsInstance(service, RpmOstreePackageService)
 
 

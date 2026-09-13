@@ -7,6 +7,7 @@ from typing import Any
 
 _ACTION_EXPORTS = {
     "ActionCatalog": ("core.actions.catalog", "ActionCatalog"),
+    "ACTIVE_ACTION_IDS": ("core.actions.catalog", "ACTIVE_ACTION_IDS"),
     "SystemActionRuntime": ("core.actions.catalog", "SystemActionRuntime"),
     "ActionDefinition": ("core.actions.contracts", "ActionDefinition"),
     "ActionLifecycleError": ("core.actions.contracts", "ActionLifecycleError"),

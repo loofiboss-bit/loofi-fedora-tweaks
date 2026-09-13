@@ -1,4 +1,4 @@
-"""Release readiness diagnostics for supported Fedora KDE targets."""
+"""Read-only, capability-aware readiness diagnostics for Fedora releases."""
 
 from __future__ import annotations
 
@@ -9,7 +9,7 @@ import re
 import subprocess
 import time
 import glob
-from typing import Dict, List
+from typing import Any, Dict, List
 
 from core.diagnostics.release_models import (
     TARGETS,
@@ -19,7 +19,7 @@ from core.diagnostics.release_models import (
     ReleaseTarget,
 )
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
-from services.desktop.kde44 import KDE44DesktopInfo, KDE44DesktopService
+from services.desktop.kde44 import KDE44DesktopService
 from services.package.dnf5_health import DNF5HealthReport, DNF5HealthService
 from services.security.secureboot import SecureBootManager
 from services.system.system import SystemManager, cached_which
@@ -89,8 +89,21 @@ class ReleaseReadiness:
         target: ReleaseTarget | None = None,
     ) -> ReadinessCheck:
         target = target or cls.get_target(cls.TARGET_KEY)
+        distro_id = os_release.get("ID", "").strip().lower()
         version = os_release.get("VERSION_ID", "")
         pretty = os_release.get("PRETTY_NAME", "Unknown Fedora release")
+        if distro_id != "fedora":
+            return ReadinessCheck(
+                id="fedora-version",
+                title="Fedora Distribution",
+                category="system",
+                status="error",
+                severity="error",
+                summary="This host is not identified as Fedora.",
+                beginner_guidance="Loofi Fedora Tweaks supports Fedora desktop systems only.",
+                advanced_detail=json.dumps(os_release, indent=2, sort_keys=True),
+                command_preview=["cat", "/etc/os-release"],
+            )
         if version == target.fedora_version:
             return ReadinessCheck(
                 id="fedora-version",
@@ -152,7 +165,7 @@ class ReleaseReadiness:
     @classmethod
     def _desktop_checks(
         cls,
-        desktop: KDE44DesktopInfo,
+        desktop: Any,
         target: ReleaseTarget | None = None,
     ) -> List[ReadinessCheck]:
         target = target or cls.get_target(cls.TARGET_KEY)
@@ -162,7 +175,7 @@ class ReleaseReadiness:
         checks.append(
             ReadinessCheck(
                 id="kde-plasma-version",
-                title="KDE Plasma Version",
+                title="Desktop Toolkit Version",
                 category="desktop",
                 status=plasma_status,
                 severity="info" if plasma_status == "pass" else "warning",
@@ -198,7 +211,7 @@ class ReleaseReadiness:
         checks.append(
             ReadinessCheck(
                 id="session-type",
-                title="Wayland Session",
+                title="Session Type",
                 category="desktop",
                 status=session_status,
                 severity="info" if session_status == "pass" else "warning",
@@ -213,12 +226,12 @@ class ReleaseReadiness:
         checks.append(
             ReadinessCheck(
                 id="display-manager",
-                title="Plasma Login Manager",
+                title="Display Manager",
                 category="desktop",
                 status=dm_status,
                 severity="info" if dm_status == "pass" else "warning",
                 summary=f"Display manager: {desktop.display_manager}",
-                beginner_guidance="SDDM is the expected login manager for Fedora KDE." if dm_status != "pass" else "SDDM is active.",
+                beginner_guidance="The detected display manager is available." if dm_status == "pass" else "Display-manager details need manual review.",
                 advanced_detail=desktop.display_manager_detail,
                 command_preview=["systemctl", "status", "display-manager.service", "--no-pager"],
             )
@@ -329,8 +342,9 @@ class ReleaseReadiness:
         return checks
 
     @classmethod
-    def _atomic_check(cls) -> ReadinessCheck:
-        if not SystemManager.is_atomic():
+    def _atomic_check(cls, profile: Any | None = None) -> ReadinessCheck:
+        profile = profile or SystemManager.get_platform_profile()
+        if not getattr(profile, "is_atomic", False):
             return ReadinessCheck(
                 id="atomic-status",
                 title="Atomic Fedora Status",
@@ -345,14 +359,28 @@ class ReleaseReadiness:
 
         pending = SystemManager.has_pending_deployment()
         layered = SystemManager.get_layered_packages()
+        pending_status = "warning" if pending is True else "review" if pending is None else "pass"
+        pending_severity = "warning" if pending is True else "attention" if pending is None else "info"
         return ReadinessCheck(
             id="atomic-status",
             title="Atomic Fedora Status",
             category="system",
-            status="warning" if pending else "pass",
-            severity="warning" if pending else "info",
-            summary="Atomic Fedora detected; reboot pending." if pending else "Atomic Fedora detected.",
-            beginner_guidance="Reboot before making more changes." if pending else "rpm-ostree state looks ready.",
+            status=pending_status,
+            severity=pending_severity,
+            summary=(
+                "Atomic Fedora detected; reboot pending."
+                if pending is True
+                else "Atomic Fedora detected; reboot state could not be verified."
+                if pending is None
+                else "Atomic Fedora detected."
+            ),
+            beginner_guidance=(
+                "Reboot before making more changes."
+                if pending is True
+                else "Inspect rpm-ostree status before making more changes."
+                if pending is None
+                else "rpm-ostree state looks ready."
+            ),
             advanced_detail=json.dumps({"pending_deployment": pending, "layered_packages": layered}, indent=2, sort_keys=True),
             command_preview=["rpm-ostree", "status", "--json"],
             recommendation=(
@@ -428,11 +456,13 @@ class ReleaseReadiness:
         )
 
     @classmethod
-    def _flatpak_check(cls) -> ReadinessCheck:
+    def _flatpak_check(cls, desktop_env: str = "kde") -> ReadinessCheck:
+        check_title = "Flatpak KDE Runtimes" if desktop_env == "kde" else "Flatpak Runtimes"
+        check_id = "flatpak-kde-runtimes" if desktop_env == "kde" else "flatpak-runtimes"
         if not cached_which("flatpak"):
             return ReadinessCheck(
-                id="flatpak-kde-runtimes",
-                title="Flatpak KDE Runtimes",
+                id=check_id,
+                title=check_title,
                 category="software",
                 status="info",
                 severity="info",
@@ -442,18 +472,23 @@ class ReleaseReadiness:
             )
         result = cls._run(["flatpak", "list", "--runtime", "--columns=application,branch"], timeout=20)
         output = result.stdout if result and result.returncode == 0 else ""
-        kde_lines = [line for line in output.splitlines() if "KDE" in line or "org.kde" in line]
+        if desktop_env == "kde":
+            lines = [line for line in output.splitlines() if "KDE" in line or "org.kde" in line]
+            runtime_name = "KDE Flatpak"
+        else:
+            lines = [line.strip() for line in output.splitlines() if line.strip()]
+            runtime_name = "Flatpak"
         return ReadinessCheck(
-            id="flatpak-kde-runtimes",
-            title="Flatpak KDE Runtimes",
+            id=check_id,
+            title=check_title,
             category="software",
-            status="pass" if kde_lines else "info",
+            status="pass" if lines else "info",
             severity="info",
-            summary=f"{len(kde_lines)} KDE Flatpak runtime(s) detected.",
-            beginner_guidance="KDE Flatpak runtimes are present."
-            if kde_lines
-            else "Install apps normally; Flatpak will pull KDE runtimes when needed.",
-            advanced_detail="\n".join(kde_lines)[:3000],
+            summary=f"{len(lines)} {runtime_name} runtime(s) detected.",
+            beginner_guidance=f"{runtime_name} runtimes are present."
+            if lines
+            else f"Install apps normally; Flatpak will pull {runtime_name} runtimes when needed.",
+            advanced_detail="\n".join(lines)[:3000],
             command_preview=["flatpak", "list", "--runtime", "--columns=application,branch"],
         )
 
@@ -837,20 +872,118 @@ class ReleaseReadiness:
         }
 
     @classmethod
+    def _neutral_desktop_checks(
+        cls,
+        profile: Any,
+        target: ReleaseTarget | None = None,
+    ) -> List[ReadinessCheck]:
+        target = target or cls.get_target(cls.TARGET_KEY)
+        checks: List[ReadinessCheck] = []
+        from core.platform.profile import DesktopEnvironment, SessionType
+
+        raw_desk = getattr(profile, "desktop", DesktopEnvironment.UNKNOWN)
+        try:
+            desk_val = raw_desk if isinstance(raw_desk, DesktopEnvironment) else DesktopEnvironment(str(getattr(raw_desk, "value", raw_desk)))
+        except (TypeError, ValueError):
+            desk_val = DesktopEnvironment.UNKNOWN
+        desk_name = desk_val.value.upper() if desk_val is not DesktopEnvironment.UNKNOWN else "Generic Desktop"
+        checks.append(
+            ReadinessCheck(
+                id="desktop-environment",
+                title="Desktop Environment",
+                category="desktop",
+                status="pass" if desk_val != DesktopEnvironment.UNKNOWN else "info",
+                severity="info",
+                summary=f"Desktop: {desk_name}",
+                beginner_guidance="Desktop environment detected." if desk_val != DesktopEnvironment.UNKNOWN else "Generic/custom desktop session detected.",
+                advanced_detail=f"desktop={desk_val.value}",
+            )
+        )
+
+        raw_session = getattr(profile, "session_type", SessionType.UNKNOWN)
+        try:
+            sess_val = raw_session if isinstance(raw_session, SessionType) else SessionType(str(getattr(raw_session, "value", raw_session)))
+        except (TypeError, ValueError):
+            sess_val = SessionType.UNKNOWN
+        session_status = "pass" if sess_val == SessionType.WAYLAND else ("warning" if sess_val == SessionType.X11 else "info")
+        checks.append(
+            ReadinessCheck(
+                id="session-type",
+                title="Wayland Session",
+                category="desktop",
+                status=session_status,
+                severity="info" if session_status != "warning" else "warning",
+                summary=f"Session type: {sess_val.value}",
+                beginner_guidance=(
+                    "Wayland session detected."
+                    if session_status == "pass"
+                    else (
+                        "X11 session detected; Wayland is recommended where supported."
+                        if session_status == "warning"
+                        else "Session type could not be confirmed."
+                    )
+                ),
+                advanced_detail=f"session_type={sess_val.value}",
+                command_preview=["printenv", "XDG_SESSION_TYPE"],
+            )
+        )
+        return checks
+
+    @classmethod
     def run(cls, target_key: str | None = None, mode: str = "check") -> ReleaseReadinessReport:
+        profile = SystemManager.get_platform_profile()
         target = cls.get_target(target_key or cls.TARGET_KEY)
         os_release = cls._os_release()
-        desktop = KDE44DesktopService.collect()
-        package = DNF5HealthService.collect()
+        from core.platform.profile import DesktopEnvironment
+
+        desktop: Any | None = None
         checks: List[ReadinessCheck] = []
         checks.append(cls._fedora_version_check(os_release, target))
-        checks.extend(cls._desktop_checks(desktop, target))
-        checks.extend(cls._package_checks(package))
-        checks.append(cls._atomic_check())
+
+        if profile.desktop == DesktopEnvironment.KDE:
+            desktop = KDE44DesktopService.collect()
+            checks.extend(cls._desktop_checks(desktop, target))
+        else:
+            checks.extend(cls._neutral_desktop_checks(profile, target))
+
+        package: DNF5HealthReport | None = None
+        backend = getattr(profile.deployment_backend, "value", "unknown")
+        if backend == "dnf5":
+            package = DNF5HealthService.collect()
+            checks.extend(cls._package_checks(package))
+        elif backend == "rpm_ostree":
+            checks.append(cls._atomic_check(profile))
+        elif backend == "bootc":
+            checks.append(
+                ReadinessCheck(
+                    id="deployment-backend",
+                    title="Deployment Backend",
+                    category="system",
+                    status="info",
+                    severity="info",
+                    summary="bootc deployment detected; package mutation remains manual-only.",
+                    beginner_guidance="Use bootc's native workflow for changes until a verified integration is available.",
+                    advanced_detail="bootc backend is intentionally read-only in this release.",
+                    command_preview=["bootc", "status"],
+                )
+            )
+        else:
+            checks.append(
+                ReadinessCheck(
+                    id="deployment-backend",
+                    title="Deployment Backend",
+                    category="system",
+                    status="error",
+                    severity="error",
+                    summary="The deployment backend could not be identified.",
+                    beginner_guidance="No package-changing action is available until the Fedora deployment stack is known.",
+                    advanced_detail="backend=unknown",
+                )
+            )
         checks.append(cls._nvidia_check())
-        checks.append(cls._flatpak_check())
+        checks.append(cls._flatpak_check("generic"))
         checks.append(cls._tls_check())
-        if target.key == "45-preview" or mode == "upgrade-plan":
+        if package is not None and (target.key == "45-preview" or mode == "upgrade-plan"):
             checks.extend(cls._fedora45_upgrade_checks(package))
 
         score = cls._score(checks)

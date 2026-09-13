@@ -33,7 +33,7 @@ def _item() -> SimpleNamespace:
 
 class _SettingsStore:
     def load(self):
-        return ExecutionSettings()
+        return ExecutionSettings(execution_mode="direct")
 
 
 class TestV25GuiDirectAction(unittest.TestCase):

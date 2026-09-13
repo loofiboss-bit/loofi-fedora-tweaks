@@ -22,19 +22,26 @@ _SECTION_BY_DESTINATION_AND_ID = {
 }
 _DESTINATION_BY_ID = {destination.id: destination for destination in _DESTINATIONS}
 
-STANDARD_DESTINATIONS = tuple(item for item in _DESTINATIONS if not item.advanced_only)
-ADVANCED_DESTINATION = next(item for item in _DESTINATIONS if item.advanced_only)
+CORE_DESTINATION_IDS: tuple[str, ...] = (
+    "home",
+    "software_updates",
+    "system",
+    "network_security",
+    "changes",
+)
+STANDARD_DESTINATIONS = tuple(
+    item for item in _DESTINATIONS if item.id in CORE_DESTINATION_IDS
+)
+ADVANCED_DESTINATION = next((item for item in _DESTINATIONS if item.advanced_only), None)
 
 
 def all_destinations() -> tuple[Destination, ...]:
-    """Return all destination definitions, including Advanced."""
+    """Return all destination definitions, including Settings."""
     return _DESTINATIONS
 
 
-def destinations_for_mode(mode: NavigationMode) -> tuple[Destination, ...]:
-    """Return standard destinations and optional Advanced destination."""
-    if mode is NavigationMode.ADVANCED:
-        return _DESTINATIONS
+def destinations_for_mode(mode: NavigationMode | None = None) -> tuple[Destination, ...]:
+    """Return the five primary core destinations."""
     return STANDARD_DESTINATIONS
 
 

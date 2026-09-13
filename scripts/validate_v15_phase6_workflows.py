@@ -34,8 +34,9 @@ def validate() -> list[str]:
         errors.append("the v14 executable catalog is no longer preserved")
 
     expected_routes = {
-        "maintenance:action-center": ("software_updates", "maintenance_review", None),
-        "maintenance:smart-updates": ("software_updates", "updates", "maintenance:updates"),
+        "maintenance:action-center": ("changes", "review", None),
+        # v27 folded Smart Updates into the canonical Updates workflow.
+        "maintenance:updates": ("software_updates", "updates", None),
         "health": ("system", "system_check", None),
         "logs": ("system", "troubleshooting", "diagnostics:watchtower"),
     }

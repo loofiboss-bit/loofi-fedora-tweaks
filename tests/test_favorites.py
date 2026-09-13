@@ -52,10 +52,10 @@ class TestFavoritesManager(unittest.TestCase):
     @patch('builtins.open', mock_open(read_data='["Updates", "Cleanup", "stale legacy"]'))
     @patch('utils.favorites.os.path.isfile', return_value=True)
     def test_get_favorites_migrates_legacy_labels(self, mock_isfile, mock_save):
-        """Legacy labels migrate while unknown values remain recoverable."""
+        """Legacy labels migrate while unknown values are dropped."""
         result = FavoritesManager.get_favorites()
-        self.assertEqual(result, ["maintenance:updates", "maintenance:cleanup", "stale legacy"])
-        mock_save.assert_called_once_with(["maintenance:updates", "maintenance:cleanup", "stale legacy"])
+        self.assertEqual(result, ["maintenance:updates", "maintenance:cleanup"])
+        mock_save.assert_called_once_with(["maintenance:updates", "maintenance:cleanup"])
 
     @patch.object(FavoritesManager, '_save')
     @patch.object(FavoritesManager, '_load', return_value=[])

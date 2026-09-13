@@ -16,6 +16,60 @@ if TYPE_CHECKING:
 _UNIT_PATTERN = re.compile(r"^[A-Za-z0-9_.@:-]+$")
 _TRIMMED_PATTERN = re.compile(r"^\s*\S.*:\s+.+(?:trimmed|bytes?)", re.IGNORECASE)
 
+# The v27 product is intentionally smaller than the historical action
+# inventory.  These are the operations that belong to the five maintained
+# destinations.  Legacy specialist/tuning definitions remain in their
+# compatibility modules so old state can be read, but they are not discoverable
+# or selectable from the live Action Center catalog.
+ACTIVE_ACTION_IDS = frozenset(
+    {
+        "dnf-clean-all",
+        "restart-failed-service",
+        "fstrim-all",
+        "update-fedora-system",
+        "dnf5-history-undo",
+        "rpm-ostree-rollback",
+        "update-flatpaks",
+        "update-firmware",
+        "install-application",
+        "remove-application",
+        "vacuum-journal",
+        "autoremove-packages",
+        "create-recovery-point",
+        "enable-rpm-fusion",
+        "install-multimedia-codecs",
+        "enable-flathub",
+        "enable-loofi-copr",
+        "remove-old-kernels",
+        "remove-unused-flatpaks",
+        "enable-mac-randomization",
+        "disable-mac-randomization",
+        "configure-hostname-privacy",
+        "configure-network-dns",
+        "allow-firewall-port",
+        "block-firewall-port",
+        "firewall-service-control",
+        "set-firewall-default-zone",
+        "reload-firewall",
+        "enable-firewall-service",
+        "disable-firewall-service",
+        "remove-fedora-telemetry",
+        "start-usbguard-service",
+        "allow-usb-device",
+        "block-usb-device",
+        "enroll-fingerprint",
+        "generate-mok-key",
+        "enroll-mok-key",
+        "restore-recovery-point",
+        "delete-recovery-point",
+        "control-bluetooth-device",
+        "configure-kernel-parameter",
+        "restart-audio-session",
+        "legacy-ui-manual-review",
+        "legacy-cli-manual-review",
+    }
+)
+
 
 class SystemActionRuntime:
     """Read-only probe adapter backed by CommandFacade and SystemManager."""
@@ -33,11 +87,64 @@ class SystemActionRuntime:
 
         self.system_manager = system_manager
 
+    def platform_profile(self) -> object:
+        """Return the single immutable platform snapshot used by actions."""
+        return self.system_manager.get_platform_profile()
+
+    def _profile_backend(self) -> tuple[object | None, str | None]:
+        """Return a validated profile backend and a legacy injected value.
+
+        Production callers provide a :class:`PlatformProfile`.  A few older
+        embedders inject only ``is_atomic``/``get_package_manager`` on their
+        SystemManager double; retaining that adapter keeps the Action Center
+        boundary testable without weakening real host detection.
+        """
+        from core.platform.profile import DeploymentBackend, PlatformProfile
+
+        profile = self.platform_profile()
+        backend = getattr(profile, "deployment_backend", None)
+        if isinstance(backend, str):
+            try:
+                backend = DeploymentBackend(backend)
+            except ValueError:
+                backend = None
+        if isinstance(profile, PlatformProfile) and isinstance(backend, DeploymentBackend):
+            return backend, None
+
+        legacy = getattr(self.system_manager, "get_package_manager", lambda: "unknown")()
+        return None, str(getattr(legacy, "value", legacy))
+
     def is_atomic(self) -> bool:
-        return bool(self.system_manager.is_atomic())
+        from core.platform.profile import DeploymentBackend
+
+        backend, legacy = self._profile_backend()
+        if backend is not None:
+            return backend in (DeploymentBackend.RPM_OSTREE, DeploymentBackend.BOOTC)
+        if legacy is not None:
+            return legacy == DeploymentBackend.RPM_OSTREE.value or bool(
+                getattr(self.system_manager, "is_atomic", lambda: False)()
+            )
+        return False
 
     def package_manager(self) -> str:
-        return str(self.system_manager.get_package_manager())
+        from core.platform.profile import DeploymentBackend
+
+        backend, legacy = self._profile_backend()
+        if backend is not None:
+            # ``_profile_backend`` keeps a structural return type so legacy
+            # embedders can provide a lightweight profile double.  Read the
+            # enum value defensively instead of assuming mypy can narrow the
+            # object at this boundary.
+            value = str(getattr(backend, "value", backend))
+        else:
+            value = legacy or "unknown"
+        return {
+            DeploymentBackend.DNF5.value: "dnf5",
+            "dnf": "dnf5",  # compatibility spelling from legacy adapters
+            DeploymentBackend.RPM_OSTREE.value: "rpm-ostree",
+            "rpm-ostree": "rpm-ostree",  # legacy injected spelling
+            DeploymentBackend.BOOTC.value: "bootc",
+        }.get(value, "unknown")
 
     def fedora_version(self) -> str:
         """Return the actual Fedora host version, or empty outside Fedora."""
@@ -122,6 +229,7 @@ class ActionCatalog:
             selected = [
                 with_haven_metadata(definition)
                 for definition in [*_first_party_definitions(), *assurance_definitions()]
+                if definition.id in ACTIVE_ACTION_IDS
             ]
         else:
             selected = list(definitions)
@@ -232,7 +340,9 @@ def _first_party_definitions() -> list[ActionDefinition]:
 
 def _render_dnf_clean(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> list[str]:
     manager = runtime.package_manager()
-    return [manager if manager in {"dnf", "dnf5"} else "dnf", "clean", "all"]
+    if manager not in {"dnf", "dnf5"}:
+        return []
+    return ["dnf5", "clean", "all"]
 
 
 def _preflight_dnf_clean(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
@@ -274,6 +384,7 @@ def _verify_dnf_clean(_run: ActionRun, _plan: object, runtime: ActionRuntime) ->
     manager = runtime.package_manager()
     if manager not in {"dnf", "dnf5"}:
         return ActionResult.fail("Package manager changed after execution.", action_id="dnf-clean-all")
+    manager = "dnf5"
     repo = runtime.execute_read_only([manager, "repolist", "--enabled"], action_id="dnf-clean-all-verify-repos", timeout=60)
     if not repo.success:
         return ActionResult.fail("Enabled repository health check failed.", exit_code=repo.exit_code, action_id="dnf-clean-all")

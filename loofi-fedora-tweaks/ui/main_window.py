@@ -6,7 +6,6 @@ from typing import TYPE_CHECKING
 
 from core.navigation import (
     DirectLinkBehavior,
-    FedoraVariant,
     NavigationContext,
     NavigationDecision,
     NavigationMode,
@@ -262,6 +261,7 @@ class MainWindow(
         self._bc_page.setObjectName("bcPage")
         self._bc_desc = self._breadcrumb_frame.description
         self._bc_desc.setObjectName("bcDesc")
+        self._breadcrumb_frame.settings_button.clicked.connect(lambda: self.switch_to_route("settings"))
         right_side.addWidget(self._breadcrumb_frame)
 
     def _build_destination_stack(self, right_side: QVBoxLayout) -> None:
@@ -422,17 +422,17 @@ class MainWindow(
             lazy = self._wrap_spec_in_lazy(spec)
             self._add_plugin_page(meta, lazy, compat, visible_in_sidebar=False)
 
-        is_atomic = SystemManager.is_atomic()
-        self._navigation_context = NavigationContext(
+        profile = SystemManager.get_platform_profile()
+        self._platform_profile = profile
+        self._navigation_context = NavigationContext.from_platform_profile(
+            profile,
             mode=mode,
             installed_components=discover_builtin_components(specs),
-            fedora_variant=(FedoraVariant.ATOMIC if is_atomic else FedoraVariant.TRADITIONAL),
-            capabilities=frozenset({"rpm-ostree"} if is_atomic else {"dnf"}),
             incompatible_plugin_ids=frozenset(incompatible_plugin_ids),
             favorite_route_ids=frozenset(favorites),
         )
-        # Specialist routes remain policy-visible and searchable through the
-        # unified navigation context, while the primary shell stays at the six
+        # Maintained routes remain policy-visible and searchable through the
+        # unified navigation context while the primary shell stays at five
         # product destinations.
         self.sidebar.set_destinations(destinations_for_mode(NavigationMode.STANDARD))
 
@@ -516,7 +516,11 @@ class MainWindow(
         """Open a persisted maintenance run without creating or executing work."""
         if not self.switch_to_route("maintenance:action-center"):
             return
-        entry = self._sidebar_index.get("maintenance")
+        route = resolve("maintenance:action-center")
+        entry = self._sidebar_index.get(route.plugin_id) if route else None
+        # Keep the compatibility fallback for injected/test registries that
+        # still expose the pre-v27 maintenance plugin id.
+        entry = entry or self._sidebar_index.get("maintenance")
         if entry is not None:
             widget = self._real_widget_for_entry(entry)
             select = getattr(widget, "preselect_run", None)

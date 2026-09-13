@@ -10,36 +10,14 @@ from core.catalog_models import CapabilityState, NativeHandoffId
 from core.product_catalog import CATALOG_DATA, catalog_entry, catalog_routes
 
 
-_LEGACY_PROJECTION_HASHES = {
-    "plugins": "4de0e1042361f087c983236cddd0bdc1cfd98931bbdcb48e3ba3a952cf959fb0",
-    "routes": "400b721a36174970f4327694e5627b5990f58e9032095c4b42827e09e965c970",
-    "placements": "092a027bcd33afb9b40b1c3bf8a51a7734677148dfc7cb91b82b01cc793238d5",
-    "sections": "542de516155e36734421165fadb88ae934573e8d6ee2e28705217adf6433bd50",
-    "destinations": "cc6df4c11cfbbae78f3e6f85d13b0a74f90cdd16d16550624ce8360619cddca4",
+_V27_PROJECTION_HASHES = {
+    "plugins": "5430324e6308c4a9df55c6de31ec55b50e50c554d09e0e5e1a723ed75264f02a",
+    "routes": "20a61c20d052c1bcdc4d1e8a0e25ee66085a341a3c0a7201e1897ed34db14a04",
+    "placements": "d19ac8d8cd69510db2223a3bf2a40aaf156e6d0803b00252b57094fe3384d33e",
+    "sections": "a7fd8ff688f87dba87201765345872aa7a307e90938d027db111ea191130bff5",
+    "destinations": "19a577b070261a149179fe36dcec7ec015f1cb1fe6b25568cc40007180a31f05",
 }
-_LEGACY_ROUTE_ORDER_HASH = "c89ecb919719171982bf46a9ab5dfd0f49558b3f5386e01d58218e4630726560"
-
-
-def _legacy_projection(records):
-    """Normalize approved presentation-only changes before legacy comparison."""
-    def normalize(value):
-        if isinstance(value, dict):
-            projected = {
-                key: normalize(item)
-                for key, item in value.items()
-                if key != "native_handoff_id"
-            }
-            if projected.get("id") == "settings:advanced" or (
-                projected.get("id") == "advanced"
-                and projected.get("destination_id") == "settings"
-            ):
-                projected["label"] = "Advanced Tools"
-            return projected
-        if isinstance(value, (list, tuple)):
-            return tuple(normalize(item) for item in value)
-        return value
-
-    return tuple(normalize(record) for record in records)
+_V27_ROUTE_ORDER_HASH = "f9b57f8cfe572e80e0207fe0158f9745f4846c6f9bb846f245964a13f3c5b178"
 
 
 def _serialized_hash(records) -> str:
@@ -48,32 +26,32 @@ def _serialized_hash(records) -> str:
 
 
 class TestDestinationOwnedCatalogRecords(unittest.TestCase):
-    def test_legacy_serialized_projections_remain_exact(self):
-        for key, expected_hash in _LEGACY_PROJECTION_HASHES.items():
+    def test_serialized_projections_remain_exact(self):
+        for key, expected_hash in _V27_PROJECTION_HASHES.items():
             with self.subTest(projection=key):
-                self.assertEqual(_serialized_hash(_legacy_projection(CATALOG_DATA[key])), expected_hash)
+                self.assertEqual(_serialized_hash(CATALOG_DATA[key]), expected_hash)
 
     def test_route_order_and_identity_remain_exact(self):
         route_ids = tuple(route.id for route in catalog_routes())
 
-        self.assertEqual(len(route_ids), 81)
-        self.assertEqual(len(set(route_ids)), 81)
-        self.assertEqual(_serialized_hash(route_ids), _LEGACY_ROUTE_ORDER_HASH)
+        self.assertEqual(len(route_ids), 43)
+        self.assertEqual(len(set(route_ids)), 43)
+        self.assertEqual(_serialized_hash(route_ids), _V27_ROUTE_ORDER_HASH)
 
-    def test_specialist_settings_uses_current_plain_language(self):
+    def test_application_settings_uses_current_plain_language(self):
         route = next(
             record
             for record in CATALOG_DATA["routes"]
-            if record["id"] == "settings:advanced"
+            if record["id"] == "settings:application"
         )
         section = next(
             record
             for record in CATALOG_DATA["sections"]
-            if record["id"] == "advanced"
+            if record["id"] == "application"
             and record["destination_id"] == "settings"
         )
-        self.assertEqual(route["label"], "Specialist Tools")
-        self.assertEqual(section["label"], "Specialist Tools")
+        self.assertEqual(route["label"], "Application")
+        self.assertEqual(section["label"], "Application")
 
     def test_native_handoff_metadata_is_limited_to_the_architecture_allowlist(self):
         handoffs = {
@@ -87,14 +65,11 @@ class TestDestinationOwnedCatalogRecords(unittest.TestCase):
             {
                 "software:apps": NativeHandoffId.PLASMA_DISCOVER.value,
                 "network:connections": NativeHandoffId.PLASMA_NETWORK_CONNECTIONS.value,
-                "desktop:theming": NativeHandoffId.PLASMA_APPEARANCE.value,
-                "desktop:display": NativeHandoffId.PLASMA_DISPLAY.value,
-                "desktop:director": NativeHandoffId.PLASMA_WINDOW_MANAGEMENT.value,
             },
         )
         self.assertEqual(
-            catalog_entry("desktop:display").placement.native_handoff_id,
-            NativeHandoffId.PLASMA_DISPLAY,
+            catalog_entry("software:apps").placement.native_handoff_id,
+            NativeHandoffId.PLASMA_DISCOVER,
         )
 
     def test_capability_states_are_data_only_presentation_values(self):

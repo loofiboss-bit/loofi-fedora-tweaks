@@ -241,6 +241,7 @@ def _install_stubs():
     action_center_views_mod = types.ModuleType("ui.action_center_views")
     action_center_views_mod.ActionCenterMasterPane = _MasterPane
     action_center_views_mod.ActionCenterDetailPane = _DetailPane
+    action_center_views_mod.ActionCenterControls = _Dummy
 
     class _ActionCenterWorker(_Dummy):
         def __init__(self, *args, **kwargs):
@@ -1513,7 +1514,8 @@ class TestOverlaysSubTab(unittest.TestCase):
         tab.remove_selected()
         mock_pm.remove.assert_not_called()
         tab.actionCenterRequested.emit.assert_called_once_with(
-            "remove-application", {"source": "fedora", "package_id": "vim"}
+            "legacy-ui-manual-review",
+            {"description": "Review rpm-ostree uninstall for the selected layered package: vim"},
         )
 
     @patch.object(
@@ -1713,83 +1715,6 @@ class TestSmartUpdatesSubTab(unittest.TestCase):
         call_args = self.tab._append_output.call_args[0][0]
         self.assertIn("ERROR", call_args)
 
-    # -- _schedule_update --
-
-    @patch("utils.update_manager.UpdateManager.get_schedule_commands")
-    @patch("utils.update_manager.UpdateManager.schedule_update")
-    def test_schedule_update_success(self, mock_schedule, mock_cmds):
-        """Scheduling is retired and never runs commands."""
-        mock_schedule.return_value = MagicMock()
-        mock_cmds.return_value = [
-            ("pkexec", ["systemctl", "enable", "test.timer"], "Enabling timer"),
-        ]
-        self.tab._append_output = MagicMock()
-        self.tab._schedule_update()
-        self.tab.runner.run_command.assert_not_called()
-        mock_schedule.assert_not_called()
-
-    @patch("utils.update_manager.UpdateManager.get_schedule_commands")
-    @patch("utils.update_manager.UpdateManager.schedule_update")
-    def test_schedule_update_multiple_commands(self, mock_schedule, mock_cmds):
-        """_schedule_update() runs all returned commands."""
-        mock_schedule.return_value = MagicMock()
-        mock_cmds.return_value = [
-            ("pkexec", ["cmd1"], "Step 1"),
-            ("pkexec", ["cmd2"], "Step 2"),
-        ]
-        self.tab._append_output = MagicMock()
-        self.tab._schedule_update()
-        self.tab.runner.run_command.assert_not_called()
-
-    @patch(
-        "utils.update_manager.UpdateManager.schedule_update",
-        side_effect=OSError("Schedule failed"),
-    )
-    def test_schedule_update_error(self, mock_schedule):
-        """_schedule_update() appends error on exception."""
-        self.tab._append_output = MagicMock()
-        self.tab._schedule_update()
-        call_args = self.tab._append_output.call_args[0][0]
-        self.assertIn("disabled", call_args)
-
-    # -- _rollback_last --
-
-    @patch("utils.update_manager.UpdateManager.rollback_last")
-    def test_rollback_last_success(self, mock_rollback):
-        """_rollback_last() runs the rollback command."""
-        mock_rollback.return_value = (
-            "pkexec",
-            ["dnf", "history", "undo", "last", "-y"],
-            "Rolling back...",
-        )
-        self.tab._append_output = MagicMock()
-        self.tab._rollback_last()
-        self.tab.runner.run_command.assert_not_called()
-        mock_rollback.assert_not_called()
-
-    @patch("utils.update_manager.UpdateManager.rollback_last")
-    def test_rollback_last_appends_description(self, mock_rollback):
-        """_rollback_last() appends the description to output."""
-        mock_rollback.return_value = (
-            "pkexec",
-            ["dnf", "history", "undo", "last", "-y"],
-            "Rolling back...",
-        )
-        self.tab._append_output = MagicMock()
-        self.tab._rollback_last()
-        desc_call = self.tab._append_output.call_args[0][0]
-        self.assertIn("manual-only", desc_call)
-
-    @patch(
-        "utils.update_manager.UpdateManager.rollback_last",
-        side_effect=OSError("Rollback failed"),
-    )
-    def test_rollback_last_error(self, mock_rollback):
-        """_rollback_last() appends error on exception."""
-        self.tab._append_output = MagicMock()
-        self.tab._rollback_last()
-        call_args = self.tab._append_output.call_args[0][0]
-        self.assertIn("manual-only", call_args)
 
 
 # ===================================================================
@@ -1918,8 +1843,8 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
         self.assertIn("class _OverlaysSubTab", self.source)
 
     def test_has_smart_updates_subtab(self):
-        """Module contains _SmartUpdatesSubTab class."""
-        self.assertIn("class _SmartUpdatesSubTab", self.source)
+        """v27 keeps the canonical Updates workflow and retires this class."""
+        self.assertNotIn("class _SmartUpdatesSubTab", self.source)
 
     def test_action_center_is_the_only_execution_authority(self):
         """Maintenance host execution declares the Action Center authority."""
@@ -1942,6 +1867,17 @@ class TestMaintenanceTabSourceLevel(unittest.TestCase):
 # ===================================================================
 # Cleanup stubs on module unload
 # ===================================================================
+
+
+# These specialist surfaces were intentionally removed in v27.  Keep the
+# historical test classes importable for downstream suites, but do not run
+# assertions against widgets that no longer exist in the maintained product.
+TestUpgradeAssistantSubTab = unittest.skip(
+    "v27 removed the specialist Upgrade Assistant route"
+)(TestUpgradeAssistantSubTab)
+TestSmartUpdatesSubTab = unittest.skip(
+    "v27 folded Smart Updates into the canonical Updates workflow"
+)(TestSmartUpdatesSubTab)
 
 
 TestUpdatesSubTabSystemUpdateStep = unittest.skip(

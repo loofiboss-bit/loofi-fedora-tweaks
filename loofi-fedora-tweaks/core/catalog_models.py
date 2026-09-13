@@ -35,13 +35,26 @@ class CapabilityState(str, Enum):
 
 
 class NativeHandoffId(str, Enum):
-    """Opaque identifiers for the fixed native desktop handoff allowlist."""
+    """Semantic identifiers for the fixed native desktop handoff allowlist.
 
-    PLASMA_DISCOVER = "plasma.discover"
-    PLASMA_NETWORK_CONNECTIONS = "plasma.network.connections"
-    PLASMA_APPEARANCE = "plasma.appearance"
-    PLASMA_DISPLAY = "plasma.display"
-    PLASMA_WINDOW_MANAGEMENT = "plasma.window.management"
+    The identifier describes the user capability, never the desktop that may
+    provide it.  Deprecated Plasma-shaped member names remain aliases so
+    persisted v26 state can be read without reintroducing Plasma assumptions.
+    """
+
+    SOFTWARE_CENTER = "software.center"
+    NETWORK_SETTINGS = "network.settings"
+    APPEARANCE_SETTINGS = "desktop.appearance"
+    DISPLAY_SETTINGS = "desktop.display"
+    WINDOW_MANAGEMENT = "desktop.window_management"
+
+    # Compatibility aliases for state written by earlier releases.  They do
+    # not create additional targets or imply that Plasma is required.
+    PLASMA_DISCOVER = SOFTWARE_CENTER
+    PLASMA_NETWORK_CONNECTIONS = NETWORK_SETTINGS
+    PLASMA_APPEARANCE = APPEARANCE_SETTINGS
+    PLASMA_DISPLAY = DISPLAY_SETTINGS
+    PLASMA_WINDOW_MANAGEMENT = WINDOW_MANAGEMENT
 
 
 @dataclass(frozen=True)

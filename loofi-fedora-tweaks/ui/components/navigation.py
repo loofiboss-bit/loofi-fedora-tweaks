@@ -64,14 +64,14 @@ class SectionNavigator(QFrame):
         filter_layout.setSpacing(6)
         self.filter_input = QLineEdit(self.filter_panel)
         self.filter_input.setObjectName("sectionFilter")
-        self.filter_input.setAccessibleName(self.tr("Filter specialist tools"))
-        self.filter_input.setPlaceholderText(self.tr("Filter specialist tools"))
+        self.filter_input.setAccessibleName(self.tr("Filter tools"))
+        self.filter_input.setPlaceholderText(self.tr("Filter tools"))
         self.filter_input.setClearButtonEnabled(True)
         self.filter_input.textChanged.connect(self._rebuild_visible_sections)
         filter_layout.addWidget(self.filter_input)
         self.group_filter = QComboBox(self.filter_panel)
         self.group_filter.setObjectName("sectionGroupFilter")
-        self.group_filter.setAccessibleName(self.tr("Specialist tool group"))
+        self.group_filter.setAccessibleName(self.tr("Tool group"))
         self.group_filter.currentIndexChanged.connect(self._rebuild_visible_sections)
         filter_layout.addWidget(self.group_filter)
         layout.addWidget(self.filter_panel)
@@ -82,10 +82,10 @@ class SectionNavigator(QFrame):
         overview_layout = QVBoxLayout(self.group_overview)
         overview_layout.setContentsMargins(16, 16, 16, 16)
         overview_layout.setSpacing(8)
-        self.overview_title = QLabel(self.tr("Specialist tool groups"))
+        self.overview_title = QLabel(self.tr("Tool groups"))
         self.overview_title.setObjectName("sectionOverviewTitle")
         self.overview_description = QLabel(
-            self.tr("Choose a group below, or search all specialist tools.")
+            self.tr("Choose a group below, or search all tools.")
         )
         self.overview_description.setObjectName("sectionOverviewDescription")
         self.overview_description.setWordWrap(True)
@@ -100,7 +100,7 @@ class SectionNavigator(QFrame):
 
         self.match_count = QLabel()
         self.match_count.setObjectName("sectionMatchCount")
-        self.match_count.setAccessibleName(self.tr("Specialist tool search results"))
+        self.match_count.setAccessibleName(self.tr("Tool search results"))
         layout.addWidget(self.match_count)
         self.match_count.hide()
 
@@ -108,7 +108,7 @@ class SectionNavigator(QFrame):
         self.no_results.setObjectName("sectionNoResults")
         no_results_layout = QVBoxLayout(self.no_results)
         no_results_layout.setContentsMargins(16, 16, 16, 16)
-        self.no_results_title = QLabel(self.tr("No specialist tools found"))
+        self.no_results_title = QLabel(self.tr("No tools found"))
         self.no_results_title.setObjectName("stateTitle")
         self.no_results_message = QLabel(
             self.tr("Try another search term or choose All groups.")
@@ -212,7 +212,7 @@ class SectionNavigator(QFrame):
             )
             button.setObjectName("sectionGroupButton")
             button.setAccessibleName(
-                self.tr("Show %1 specialist tools").replace("%1", group)
+                self.tr("Show %1 tools").replace("%1", group)
             )
             button.clicked.connect(
                 lambda _checked=False, selected=group: self._select_group(selected)
@@ -268,7 +268,7 @@ class SectionNavigator(QFrame):
                 header.setData(Qt.ItemDataRole.AccessibleTextRole, section.group)
                 header.setData(
                     Qt.ItemDataRole.AccessibleDescriptionRole,
-                    self.tr("Specialist tool group"),
+                    self.tr("Tool group"),
                 )
                 self.rail.addItem(header)
                 previous_group = section.group
@@ -322,7 +322,7 @@ class SectionNavigator(QFrame):
         )
         if self._filtering_enabled:
             self.match_count.setText(
-                self.tr("%1 specialist tools")
+                self.tr("%1 tools")
                 .replace("%1", str(len(self._visible_section_indexes)))
             )
         self._apply_mode(self._compact)

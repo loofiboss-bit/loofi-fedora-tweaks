@@ -3,16 +3,16 @@
 import typing
 
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
+from core.plugins.metadata import PluginMetadata
+from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QThread, Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QComboBox,
     QHBoxLayout,
     QInputDialog,
     QLabel,
     QMessageBox,
     QSplitter,
     QVBoxLayout,
-    QWidget,
 )
 
 from ui.base_tab import BaseTab
@@ -22,7 +22,6 @@ from ui.action_center_presentation import (
     action_center_group_for_state,
     candidate_details,
     filter_lifecycle_records,
-    format_history_records,
     lifecycle_presence_copy,
     plan_details,
     preview_lines,
@@ -31,9 +30,14 @@ from ui.action_center_presentation import (
     run_banner_facts,
     run_details,
 )
-from ui.action_center_views import ActionCenterDetailPane, ActionCenterMasterPane
+from ui.action_center_views import (
+    ActionCenterControls,
+    ActionCenterDetailPane,
+    ActionCenterMasterPane,
+)
 from ui.action_center_worker import ActionCenterOperationWorker
-from ui.components import PrimaryButton, QuietButton, SecondaryButton
+from ui.action_center_history import ActionCenterHistoryMixin
+from ui.components import PrimaryButton
 from ui.components.layout import PageScaffold
 from ui.maintenance_direct import DirectActionUiMixin
 from ui.shared_states import DetailsDisclosure, ResultBanner
@@ -42,7 +46,7 @@ from ui.shared_states import DetailsDisclosure, ResultBanner
 _ActionCenterOperationWorker = ActionCenterOperationWorker
 
 
-class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
+class _ActionCenterSubTab(ActionCenterHistoryMixin, DirectActionUiMixin, BaseTab):
     """Review, asynchronously run, verify, and inspect v17 action plans."""
 
     systemCheckRequested = pyqtSignal(object)
@@ -78,8 +82,8 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
-            self.tr("Action Center"),
-            self.tr("Review planned changes and follow each one through verification."),
+            self.tr("Changes"),
+            self.tr("Review needs attention and recent changes, then follow each one through verification."),
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
@@ -98,59 +102,26 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self.lifecycle_view = self.master_pane.lifecycle_view
         self.action_list = self.master_pane.action_list
         self.mode_switcher.viewActivated.connect(self._show_master_mode)
+        self.master_pane.recent_changes_button.clicked.connect(self._show_recent_changes)
         self.lifecycle_view.currentIndexChanged.connect(self._show_lifecycle_view)
 
-        advanced_widget = QWidget()
-        advanced_widget.setObjectName("actionCenterControls")
-        advanced_layout = QVBoxLayout(advanced_widget)
-        advanced_layout.setContentsMargins(0, 0, 0, 0)
-        target_load_row = QHBoxLayout()
+        self.advanced_controls = ActionCenterControls()
+        self.load_stable_button = self.advanced_controls.load_stable_button
+        self.load_stable_button.clicked.connect(lambda: self._load_target(FEDORA_RELEASE_POLICY.stable_target))
+        self.load_preview_button = self.advanced_controls.load_preview_button
+        self.load_preview_button.clicked.connect(lambda: self._load_target(FEDORA_RELEASE_POLICY.preview_target))
+        self.preview_button = self.advanced_controls.preview_button
+        self.preview_button.clicked.connect(self._preview_selected)
+        self.history_button = self.advanced_controls.history_button
+        self.history_button.clicked.connect(self._show_history)
+        self.catalog_selector = self.advanced_controls.catalog_selector
+        self.catalog_selector.currentIndexChanged.connect(self._select_advanced_candidate)
+        self.target_guidance = self.advanced_controls.target_guidance
+
         target_review_row = QHBoxLayout()
-        load_stable = SecondaryButton(self.tr("Reload Fedora %s Actions") % FEDORA_RELEASE_POLICY.stable_release)
-        self.load_stable_button = load_stable
-        load_stable.clicked.connect(lambda: self._load_target(FEDORA_RELEASE_POLICY.stable_target))
-        target_load_row.addWidget(load_stable)
-
-        load_preview = SecondaryButton(self.tr("Load Fedora %s Preview Actions") % FEDORA_RELEASE_POLICY.preview_release)
-        self.load_preview_button = load_preview
-        load_preview.clicked.connect(lambda: self._load_target(FEDORA_RELEASE_POLICY.preview_target))
-        load_preview.hide()
-
-        preview_button = QuietButton(self.tr("Preview Selected"))
-        self.preview_button = preview_button
-        preview_button.clicked.connect(self._preview_selected)
-        target_load_row.addWidget(preview_button)
-
-        history_button = QuietButton(self.tr("Show History"))
-        self.history_button = history_button
-        history_button.clicked.connect(self._show_history)
-        target_load_row.addWidget(history_button)
-        target_load_row.addStretch()
-
-        catalog_row = QHBoxLayout()
-        catalog_label = QLabel(self.tr("Available advanced action"))
-        self.catalog_selector = QComboBox()
-        self.catalog_selector.setAccessibleName(self.tr("Available advanced Action Center action"))
-        self.catalog_selector.currentIndexChanged.connect(
-            self._select_advanced_candidate
-        )
-        catalog_row.addWidget(catalog_label)
-        catalog_row.addWidget(self.catalog_selector, 1)
-
-        self.target_guidance = QLabel(
-            self.tr(
-                "Fedora %s preview target choices are available in Upgrade Assistant."
-            )
-            % FEDORA_RELEASE_POLICY.preview_release
-        )
-        self.target_guidance.setObjectName("actionCenterTargetGuidance")
-        self.target_guidance.setWordWrap(True)
-        self.target_guidance.setAccessibleName(self.tr("Release target guidance"))
-
-        review_button = PrimaryButton(self.tr("Review & Plan"))
-        self.review_button = review_button
-        review_button.clicked.connect(self._plan_selected)
-        target_review_row.addWidget(review_button)
+        self.review_button = PrimaryButton(self.tr("Review & Plan"))
+        self.review_button.clicked.connect(self._plan_selected)
+        target_review_row.addWidget(self.review_button)
 
         self.run_button = PrimaryButton(self.tr("Run Plan"))
         self.run_button.clicked.connect(self._run_current_plan)
@@ -171,14 +142,9 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self.check_again_button.setVisible(False)
         target_review_row.addWidget(self.check_again_button)
 
-        advanced_layout.addLayout(target_load_row)
-        advanced_layout.addLayout(catalog_row)
-        advanced_layout.addWidget(self.target_guidance)
-        self.advanced_review_tools = DetailsDisclosure(
-            summary=self.tr("Show advanced review tools")
-        )
+        self.advanced_review_tools = DetailsDisclosure(summary=self.tr("Show more review tools"))
         self.advanced_review_tools.setObjectName("actionCenterAdvancedTools")
-        self.advanced_review_tools.add_widget(advanced_widget)
+        self.advanced_review_tools.add_widget(self.advanced_controls)
         layout.addWidget(self.advanced_review_tools)
 
         self.presentation_banner = ResultBanner(
@@ -259,7 +225,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self._set_loading(False)
         self.catalog_selector.blockSignals(True)
         self.catalog_selector.clear()
-        self.catalog_selector.addItem(self.tr("Choose an advanced action…"), "")
+        self.catalog_selector.addItem(self.tr("Choose an action…"), "")
         for item in self._items:
             self.catalog_selector.addItem(item.title, item.id)
         self.catalog_selector.blockSignals(False)
@@ -285,7 +251,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
                 self.tr("Nothing needs review"),
                 self.tr(
                     "No planned maintenance item needs review right now. "
-                    "Available catalog actions remain under advanced review tools."
+                    "Available catalog actions remain under the review tools."
                 ),
             )
             self.detail_area.setPlainText(
@@ -539,11 +505,17 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         if self._operation_thread is not None:
             QMessageBox.warning(self, self.tr("Action Center Busy"), self.tr("Wait for the current Action Center operation to finish."))
             return
-        thread = QThread(self)
+        thread = QThread()
         worker = _ActionCenterOperationWorker(operation)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
-        worker.finished.connect(on_success)
+
+        def _safe_success(result: typing.Any) -> None:
+            try:
+                on_success(result)
+            except RuntimeError:
+                pass
+        worker.finished.connect(_safe_success)
         worker.finished.connect(thread.quit)
         worker.failed.connect(lambda message: QMessageBox.warning(self, failure_title, message))
         worker.failed.connect(self._operation_failed)
@@ -554,6 +526,21 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self._operation_thread = thread
         self._operation_worker = worker
         thread.start()
+
+    def closeEvent(self, event: typing.Any) -> None:
+        if self._operation_thread is not None and self._operation_thread.isRunning():
+            self._operation_thread.quit()
+            self._operation_thread.wait(500)
+        super().closeEvent(event)
+
+    def __del__(self) -> None:
+        try:
+            if hasattr(self, "_operation_thread") and self._operation_thread is not None:
+                if self._operation_thread.isRunning():
+                    self._operation_thread.quit()
+                    self._operation_thread.wait(200)
+        except (RuntimeError, TypeError, AttributeError, OSError):
+            pass
 
     def _operation_failed(self: typing.Any, message: str) -> None:
         """Restore the saved run's next step when a check cannot finish."""
@@ -866,24 +853,14 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
             )
         )
 
-    def _show_history(self: typing.Any) -> None:
-        from core.actions import ActionPlanStore, ActionRunStore
+    def metadata(self: typing.Any) -> PluginMetadata:
+        return getattr(self, "_METADATA", None) or plugin_metadata_for_module(__name__)
 
-        history = self._service.recent_history(limit=25)
-        plans = ActionPlanStore().list(limit=25)
-        runs = ActionRunStore().list(limit=25)
-        if not history and not plans and not runs:
-            self.selected_summary.setText(
-                self.tr("No Action Center history has been recorded.")
-            )
-            self.detail_area.setPlainText(self.tr("No Action Center history recorded."))
-            return
-        lines = format_history_records(plans, runs, history)
-        self.selected_summary.setText(
-            self.tr("Loaded %d recent Action Center records.") % len(lines)
-        )
-        self.detail_area.setPlainText("\n".join(lines))
-        viable = next((plan for plan in reversed(plans) if plan.state in {"ready", "needs_review"} and not plan.is_expired()), None)
-        if viable is not None:
-            self._current_plan = viable
-            self._set_lifecycle_primary("run", enabled=True)
+
+class ChangesTab(_ActionCenterSubTab):
+    """Changes destination tab."""
+
+    _METADATA = plugin_metadata_for_module(__name__)
+
+
+ActionCenterTab = ChangesTab

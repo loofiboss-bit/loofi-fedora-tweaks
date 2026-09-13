@@ -54,9 +54,12 @@ class UpdateCheckWorker(QThread):
 class UpdateOverviewWidget(QWidget):
     """Inspection never creates a plan or starts an update."""
 
+    snapshotChanged = pyqtSignal(object)
+
     def __init__(self, service: UpdateOverviewService | None = None) -> None:
         super().__init__()
         self.service = service or UpdateOverviewService()
+        self.snapshot = UpdateOverviewSnapshot()
         self._worker: UpdateCheckWorker | None = None
         self._accept_results = True
         self.setObjectName("updateOverview")
@@ -121,6 +124,7 @@ class UpdateOverviewWidget(QWidget):
         super().showEvent(event)
 
     def set_snapshot(self, snapshot: UpdateOverviewSnapshot) -> None:
+        self.snapshot = snapshot
         states = {
             "unchecked": (self.tr("Not checked"), "info"),
             "up_to_date": (self.tr("No updates available"), "success"),
@@ -155,3 +159,4 @@ class UpdateOverviewWidget(QWidget):
             self.tr("Some results need attention") if warning else self.tr("Update overview"),
             self.tr("Results could not be saved. Existing saved data was preserved.") if snapshot.storage_status != "ok" else self.tr("Review one source below. Action Center checks its current state before running the plan."),
         )
+        self.snapshotChanged.emit(snapshot)

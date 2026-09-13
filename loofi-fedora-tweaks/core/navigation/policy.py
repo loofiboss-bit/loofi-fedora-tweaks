@@ -257,7 +257,10 @@ def validate_navigation_policy() -> list[str]:
     """Return errors when a registered route lacks a valid policy outcome."""
     errors = validate_destinations()
     contexts = (
-        NavigationContext(),
+        NavigationContext(
+            fedora_variant=FedoraVariant.TRADITIONAL,
+            capabilities=frozenset({"dnf5", "fedora"}),
+        ),
         NavigationContext(
             fedora_variant=FedoraVariant.ATOMIC,
             capabilities=frozenset({"rpm-ostree"}),

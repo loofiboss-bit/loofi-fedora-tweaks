@@ -78,22 +78,6 @@ class TestTabMargins(unittest.TestCase):
 
         tab.close()
 
-    def test_desktop_tab_margins(self):
-        """Verify Desktop delegates spacing to route page scaffolds."""
-        mod = importlib.import_module("ui.desktop_tab")
-        DesktopTab = mod.DesktopTab
-        from ui.components import PageScaffold
-
-        tab = DesktopTab()
-        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
-        scaffolds = tab.findChildren(PageScaffold)
-        self.assertEqual(len(scaffolds), 3)
-        for scaffold in scaffolds:
-            left, top, right, bottom = scaffold.content_layout.getContentsMargins()
-            self.assertGreater(min(left, top, right, bottom), 0)
-
-        tab.close()
-
     def test_security_tab_margins(self):
         """Verify Security delegates spacing to route page scaffolds."""
         mod = importlib.import_module("ui.security_tab")
@@ -104,25 +88,6 @@ class TestTabMargins(unittest.TestCase):
         self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
         scaffolds = tab.findChildren(PageScaffold)
         self.assertEqual(len(scaffolds), 4)
-        for scaffold in scaffolds:
-            left, top, right, bottom = scaffold.content_layout.getContentsMargins()
-            self.assertGreater(min(left, top, right, bottom), 0)
-
-        tab.close()
-
-    @patch("ui.ai_enhanced_tab.AIEnhancedTab._create_models_tab", side_effect=_stub_widget)
-    @patch("ui.ai_enhanced_tab.AIEnhancedTab._create_voice_tab", side_effect=_stub_widget)
-    @patch("ui.ai_enhanced_tab.AIEnhancedTab._create_knowledge_tab", side_effect=_stub_widget)
-    def test_ai_enhanced_tab_margins(self, *_mocks):
-        """Verify AI Lab delegates spacing to route page scaffolds."""
-        mod = importlib.import_module("ui.ai_enhanced_tab")
-        AIEnhancedTab = mod.AIEnhancedTab
-        from ui.components import PageScaffold
-
-        tab = AIEnhancedTab()
-        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
-        scaffolds = tab.findChildren(PageScaffold)
-        self.assertEqual(len(scaffolds), 3)
         for scaffold in scaffolds:
             left, top, right, bottom = scaffold.content_layout.getContentsMargins()
             self.assertGreater(min(left, top, right, bottom), 0)

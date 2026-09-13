@@ -185,7 +185,10 @@ class HealthRegistry:
             # This is a slower check, we might want to run it differently in the future
             pm = SystemManager.get_package_manager()
             if SystemManager.is_atomic():
-                if SystemManager.has_pending_deployment():
+                pending = SystemManager.has_pending_deployment()
+                if pending is None:
+                    return HealthResult(check_id, "unknown", "Deployment reboot state could not be verified.")
+                if pending:
                     return HealthResult(check_id, "unhealthy", "Update pending: reboot required to apply.")
                 return HealthResult(check_id, "healthy", "System is up to date.")
             else:
@@ -197,7 +200,10 @@ class HealthRegistry:
         if check_id == "atomic-pending-reboot":
             if not SystemManager.is_atomic():
                 return HealthResult(check_id, "skipped", "Check only applicable to Atomic Fedora.")
-            if SystemManager.has_pending_deployment():
+            pending = SystemManager.has_pending_deployment()
+            if pending is None:
+                return HealthResult(check_id, "unknown", "Deployment reboot state could not be verified.")
+            if pending:
                 return HealthResult(check_id, "unhealthy", "New deployment waiting for reboot.")
             return HealthResult(check_id, "healthy", "No pending deployments.")
 

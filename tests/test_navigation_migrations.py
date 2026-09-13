@@ -60,10 +60,7 @@ class TestRouteMigration(unittest.TestCase):
             ["dashboard", "system_info", "Updates", "future:route", "future:route"]
         )
 
-        self.assertEqual(
-            migrated,
-            ["system_info", "maintenance:updates", "future:route"],
-        )
+        self.assertEqual(migrated, ["system_info", "maintenance:updates"])
 
     def test_non_collection_route_state_returns_empty_list(self):
         self.assertEqual(migrate_route_references("maintenance:updates"), [])
@@ -126,7 +123,7 @@ class TestSettingsNavigationMigration(unittest.TestCase):
         self.assertEqual(migrated["last_route_id"], "system_info")
         self.assertEqual(
             migrated["favorite_routes"],
-            ["atlas_dashboard", "system_info", "future:route"],
+            ["atlas_dashboard", "system_info"],
         )
 
     def test_new_mode_is_source_of_truth_for_legacy_shell_adapter(self):
@@ -152,7 +149,7 @@ class TestSettingsNavigationMigration(unittest.TestCase):
 
         self.assertEqual(
             first["hidden_routes"],
-            ["system_info", "maintenance:updates", "future:route"],
+            ["system_info", "maintenance:updates"],
         )
         self.assertFalse(changed)
         self.assertEqual(first, second)

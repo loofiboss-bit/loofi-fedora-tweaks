@@ -439,132 +439,8 @@ class TestFirstRunWizard(unittest.TestCase):
 
 
 # ---------------------------------------------------------------------------
-# ProfilesTab (ui/profiles_tab.py)
+# BaseTab subclass smoke tests — StorageTab, SnapshotTab
 # ---------------------------------------------------------------------------
-class TestProfilesTab(unittest.TestCase):
-    """Tests for ProfilesTab widget."""
-
-    @patch("utils.profiles.ProfileManager")
-    def test_init(self, mock_pm):
-        from ui.profiles_tab import ProfilesTab
-        t = ProfilesTab()
-        self.assertIsNotNone(t)
-        self.assertTrue(hasattr(t, '_METADATA'))
-
-    @patch("utils.profiles.ProfileManager")
-    def test_metadata(self, mock_pm):
-        from ui.profiles_tab import ProfilesTab
-        t = ProfilesTab()
-        self.assertEqual(t._METADATA.id, "profiles")
-
-
-# ---------------------------------------------------------------------------
-# HealthTimelineTab (ui/health_timeline_tab.py)
-# ---------------------------------------------------------------------------
-class TestHealthTimelineTab(unittest.TestCase):
-    """Tests for HealthTimelineTab widget."""
-
-    @patch("core.system_check.presentation.SystemCheckPresentationService")
-    def test_init(self, service_cls):
-        service_cls.return_value.load.return_value = SimpleNamespace(
-            latest_state="unavailable",
-            latest_completed_at=None,
-            findings=(),
-            unavailable_sources=(),
-            history=(),
-            metrics=(),
-        )
-        from ui.health_timeline_tab import HealthTimelineTab
-        t = HealthTimelineTab()
-        self.assertIsNotNone(t)
-        self.assertTrue(hasattr(t, 'presentation_service'))
-        self.assertFalse(hasattr(t, 'timeline'))
-
-    @patch("core.system_check.presentation.SystemCheckPresentationService")
-    def test_metadata(self, service_cls):
-        service_cls.return_value.load.return_value = SimpleNamespace(
-            latest_state="unavailable",
-            latest_completed_at=None,
-            findings=(),
-            unavailable_sources=(),
-            history=(),
-            metrics=(),
-        )
-        from ui.health_timeline_tab import HealthTimelineTab
-        t = HealthTimelineTab()
-        self.assertEqual(t._METADATA.id, "health")
-
-
-# ---------------------------------------------------------------------------
-# CommandPalette compatibility adapter (ui/command_palette.py)
-# ---------------------------------------------------------------------------
-class TestCommandPalette(unittest.TestCase):
-    """Tests for the legacy name backed by global search."""
-
-    def test_init(self):
-        from ui.command_palette import CommandPalette
-        callback = MagicMock()
-        d = CommandPalette(on_action=callback)
-        self.assertIsNotNone(d)
-        self.assertTrue(hasattr(d, '_model'))
-        d.close()
-
-    def test_populate_empty_filter(self):
-        from ui.command_palette import CommandPalette
-        callback = MagicMock()
-        d = CommandPalette(on_action=callback)
-        d._populate_results("")
-        self.assertGreaterEqual(len(d._visible_results), 0)
-        d.close()
-
-    def test_populate_with_filter(self):
-        from ui.command_palette import CommandPalette
-        callback = MagicMock()
-        d = CommandPalette(on_action=callback)
-        d._populate_results("nonexistent_xyz_filter")
-        d.close()
-
-    def test_activate_entry(self):
-        from ui.command_palette import CommandPalette
-        callback = MagicMock()
-        d = CommandPalette(on_action=callback)
-        # Manually trigger if there are entries
-        if d.results_list.count() > 0:
-            item = d.results_list.item(0)
-            d._activate_item(item)
-            callback.assert_called_once()
-        d.close()
-
-
-# ---------------------------------------------------------------------------
-# BaseTab subclass smoke tests — AgentsTab, LogsTab, StorageTab,
-# PerformanceTab, SnapshotTab
-# ---------------------------------------------------------------------------
-class TestAgentsTabSmoke(unittest.TestCase):
-    """Smoke test for AgentsTab."""
-
-    @patch("PyQt6.QtCore.QTimer.singleShot")
-    @patch("PyQt6.QtCore.QTimer.start")
-    def test_init(self, mock_timer_start, mock_single_shot):
-        from ui.agents_tab import AgentsTab
-        t = AgentsTab()
-        self.assertIsNotNone(t)
-        self.assertTrue(hasattr(t, '_METADATA'))
-        self.assertEqual(t._METADATA.id, "agents")
-
-
-class TestLogsTabSmoke(unittest.TestCase):
-    """Smoke test for LogsTab."""
-
-    @patch("PyQt6.QtCore.QTimer.singleShot")
-    def test_init(self, mock_single_shot):
-        from ui.logs_tab import LogsTab
-        t = LogsTab()
-        self.assertIsNotNone(t)
-        self.assertEqual(t._METADATA.id, "logs")
-        self.assertIsNotNone(t._live_timer)
-
-
 class TestStorageTabSmoke(unittest.TestCase):
     """Smoke test for StorageTab."""
 
@@ -574,18 +450,6 @@ class TestStorageTabSmoke(unittest.TestCase):
         t = StorageTab()
         self.assertIsNotNone(t)
         self.assertEqual(t._METADATA.id, "storage")
-
-
-class TestPerformanceTabSmoke(unittest.TestCase):
-    """Smoke test for PerformanceTab."""
-
-    @patch("PyQt6.QtCore.QTimer.singleShot")
-    @patch("PyQt6.QtCore.QTimer.start")
-    def test_init(self, mock_timer_start, mock_single_shot):
-        from ui.performance_tab import PerformanceTab
-        t = PerformanceTab()
-        self.assertIsNotNone(t)
-        self.assertEqual(t._METADATA.id, "performance")
 
 
 class TestSnapshotTabSmoke(unittest.TestCase):
@@ -608,7 +472,10 @@ class TestCommandPaletteDeep(unittest.TestCase):
     def test_build_feature_registry(self):
         from ui.command_palette import CommandPalette
         d = CommandPalette(on_action=MagicMock())
-        self.assertTrue(d._model.all_results())
+        # The compatibility adapter has no platform facts of its own.  The
+        # v27 fail-closed default therefore keeps the index empty; the live
+        # MainWindow supplies its detected NavigationContext explicitly.
+        self.assertFalse(d._model.all_results())
         d.close()
 
     def test_filter_case_insensitive(self):

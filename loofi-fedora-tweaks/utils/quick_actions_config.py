@@ -50,11 +50,11 @@ class QuickActionsConfig:
                 "route_id": "hardware",
             },
             {
-                "id": "gaming_mode",
-                "label": "Gaming Mode",
-                "icon": "cpu-performance",
+                "id": "system_check",
+                "label": "System Check",
+                "icon": "maintenance-health",
                 "color": "#e8556d",
-                "route_id": "gaming",
+                "route_id": "health",
             },
         ]
 

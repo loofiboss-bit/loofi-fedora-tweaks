@@ -291,7 +291,7 @@ class TestStateMigration(unittest.TestCase):
             })
 
             self.assertEqual(mgr.get("favorite_routes"), ["atlas_dashboard", "maintenance:updates"])
-            self.assertEqual(mgr.get("hidden_routes"), ["settings:advanced", "system:hardware"])
+            self.assertEqual(mgr.get("hidden_routes"), [])
 
     def test_window_geometry_migrates_from_legacy_list(self):
         with tempfile.TemporaryDirectory() as tmpdir:
@@ -323,7 +323,7 @@ class TestStateMigration(unittest.TestCase):
             self.assertEqual(second["theme"], "highcontrast")
             self.assertEqual(second["navigation_mode"], "advanced")
             self.assertEqual(second["favorite_routes"], ["software:apps"])
-            self.assertEqual(second["hidden_routes"], ["settings:advanced"])
+            self.assertEqual(second["hidden_routes"], [])
             self.assertEqual(second["window_geometry"], {"x": 1, "y": 2, "width": 800, "height": 600})
 
 

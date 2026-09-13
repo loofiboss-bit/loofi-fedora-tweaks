@@ -10,30 +10,17 @@ Subparsers = argparse._SubParsersAction
 
 
 def _register_health_commands(subparsers: Subparsers) -> None:
-    """Register system information, health, and maintenance commands."""
+    """Register system information and check commands."""
     subparsers.add_parser("info", help="Show system information")
 
-    health_parser = subparsers.add_parser("health", help="System Check and compatibility health commands")
-    health_subparsers = health_parser.add_subparsers(dest="health_action", help="System Check commands")
-    health_subparsers.add_parser("check", help="Run and persist the explicit read-only System Check")
-    health_subparsers.add_parser("findings", help="Show findings from the latest saved System Check")
-    health_subparsers.add_parser("comparison", help="Show the latest compatible before/after finding outcomes")
-    health_history_parser = health_subparsers.add_parser("history", help="Show saved checks and before/after history")
-    health_history_parser.add_argument("--limit", type=int, default=10, help="History limit")
-    health_snapshot_parser = health_subparsers.add_parser("snapshot", help="Record a My Fedora Today health snapshot")
-    health_snapshot_parser.add_argument(
-        "--target", choices=FEDORA_RELEASE_POLICY.action_targets, default=FEDORA_RELEASE_POLICY.stable_target, help="Readiness target profile"
+    check_parser = subparsers.add_parser("check", help="Run and persist the explicit read-only System Check")
+    check_parser.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
+    check_parser.add_argument(
+        "--target",
+        choices=FEDORA_RELEASE_POLICY.action_targets,
+        default=FEDORA_RELEASE_POLICY.stable_target,
+        help="Readiness target profile",
     )
-    health_timeline_parser = health_subparsers.add_parser("timeline", help="Compatibility alias for persisted health snapshots")
-    health_timeline_parser.add_argument("--limit", type=int, default=10, help="Snapshot limit")
-
-    maintenance_parser = subparsers.add_parser("maintenance", help="Daily maintenance health commands")
-    maintenance_subparsers = maintenance_parser.add_subparsers(dest="maintenance_action", help="Maintenance commands")
-    maintenance_today_parser = maintenance_subparsers.add_parser("today", help="Show My Fedora Today maintenance state")
-    maintenance_today_parser.add_argument(
-        "--target", choices=FEDORA_RELEASE_POLICY.action_targets, default=FEDORA_RELEASE_POLICY.stable_target, help="Readiness target profile"
-    )
-    maintenance_today_parser.add_argument("--json", action="store_true", help="Output in JSON format")
 
 
 def _register_activity_command(subparsers: Subparsers) -> None:
@@ -142,23 +129,13 @@ def _register_troubleshooting_command(subparsers: Subparsers) -> None:
     )
 
 
-def _register_monitoring_commands(subparsers: Subparsers) -> None:
-    """Register bounded read-only system monitoring commands."""
-    disk_parser = subparsers.add_parser("disk", help="Disk usage information")
-    disk_parser.add_argument("--details", action="store_true", help="Show large directories")
-
-    process_parser = subparsers.add_parser("processes", help="Show top processes")
-    process_parser.add_argument("-n", "--count", type=int, default=10, help="Number of processes to show")
-    process_parser.add_argument("--sort", choices=["cpu", "memory"], default="cpu", help="Sort by")
-
-    subparsers.add_parser("temperature", help="Show temperature readings")
-    netmon_parser = subparsers.add_parser("netmon", help="Network interface monitoring")
-    netmon_parser.add_argument("--connections", action="store_true", help="Show active connections")
+register_health_commands = _register_health_commands
+register_troubleshooting_command = _register_troubleshooting_command
+register_activity_command = _register_activity_command
 
 
 def register_observability_commands(subparsers: Subparsers) -> None:
     """Register the leading public information and observability grammar."""
     _register_health_commands(subparsers)
-    _register_activity_command(subparsers)
     _register_troubleshooting_command(subparsers)
-    _register_monitoring_commands(subparsers)
+    _register_activity_command(subparsers)

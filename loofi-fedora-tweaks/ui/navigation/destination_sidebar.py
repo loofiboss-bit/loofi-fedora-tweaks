@@ -21,8 +21,7 @@ _PRESENTATION_GROUPS = {
     "software_updates": "Manage",
     "system": "Manage",
     "network_security": "Manage",
-    "desktop": "Personalize",
-    "settings": "Personalize",
+    "changes": "Review",
 }
 
 

@@ -9,6 +9,12 @@ import unittest
 
 class TestTroubleshootingArchitecture(unittest.TestCase):
     def test_import_starts_no_probe_write_timer_thread_or_ui(self):
+        import os
+        from pathlib import Path
+
+        source_root = str(Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks")
+        env = os.environ.copy()
+        env["PYTHONPATH"] = source_root
         script = r"""
 import pathlib
 import subprocess
@@ -36,6 +42,7 @@ assert "core.change_journal.service" not in sys.modules
             text=True,
             check=False,
             timeout=10,
+            env=env,
         )
 
         self.assertEqual(probe.returncode, 0, probe.stderr)

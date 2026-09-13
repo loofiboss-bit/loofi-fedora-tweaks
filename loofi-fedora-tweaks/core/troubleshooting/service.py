@@ -259,8 +259,9 @@ class DefaultEvidenceCollector:
         session: TroubleshootingSession,
         started_at: float,
     ) -> SourceEvidence:
-        pending = bool(SystemManager.has_pending_deployment())
-        facts = {"pending_deployment": pending}
+        pending_raw = SystemManager.has_pending_deployment()
+        pending = pending_raw is True
+        facts = {"pending_deployment": pending_raw}
         findings = (
             self._finding(
                 session,
@@ -277,7 +278,21 @@ class DefaultEvidenceCollector:
                     reason_code="review-pending-deployment",
                 ),
             ),
-        ) if pending else ()
+        ) if pending else ((self._finding(
+            session,
+            source_id="deployment-state",
+            finding_type="deployment-state-unknown",
+            category="updates",
+            severity="attention",
+            title="Deployment state could not be verified",
+            summary="Inspect the deployment backend before applying another change.",
+            evidence=facts,
+            resources=("rpm-ostree-deployment", "boot-state"),
+            next_step=NextStep.manual(
+                "Run rpm-ostree status --json or the backend's documented status command manually.",
+                reason_code="deployment-state-unknown",
+            ),
+        ),) if pending_raw is None else ())
         return self._completed("deployment-state", session, started_at, facts, findings)
 
     def _pending_reboot(
@@ -285,8 +300,9 @@ class DefaultEvidenceCollector:
         session: TroubleshootingSession,
         started_at: float,
     ) -> SourceEvidence:
-        pending = session.variant == "atomic" and bool(SystemManager.has_pending_deployment())
-        facts = {"pending_reboot": pending}
+        pending_raw = SystemManager.has_pending_deployment() if session.variant == "atomic" else False
+        pending = pending_raw is True
+        facts = {"pending_reboot": pending_raw}
         findings = (
             self._finding(
                 session,
@@ -303,7 +319,21 @@ class DefaultEvidenceCollector:
                     reason_code="pending-deployment-reboot",
                 ),
             ),
-        ) if pending else ()
+        ) if pending else ((self._finding(
+            session,
+            source_id="pending-reboot",
+            finding_type="pending-reboot-unknown",
+            category="deployment",
+            severity="attention",
+            title="Reboot requirement is unknown",
+            summary="The current deployment could not be checked for staged work.",
+            evidence=facts,
+            resources=("rpm-ostree-deployment", "boot-state"),
+            next_step=NextStep.manual(
+                "Inspect the current deployment state before applying another update.",
+                reason_code="pending-deployment-unknown",
+            ),
+        ),) if pending_raw is None else ())
         return self._completed("pending-reboot", session, started_at, facts, findings)
 
     def _application_inventory(

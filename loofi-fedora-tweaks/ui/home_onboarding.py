@@ -6,7 +6,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QLabel, QWidget
 
 from core.home.onboarding import ONBOARDING_STEPS, OnboardingState
-from ui.components import ActionBar, Card, InlineNotice, PrimaryButton, QuietButton, StatusBadge
+from ui.components import ActionBar, Card, InlineNotice, QuietButton, SecondaryButton, StatusBadge
 
 
 class HomeOnboardingCard(Card):
@@ -40,7 +40,9 @@ class HomeOnboardingCard(Card):
         self.dismiss_button.setObjectName("homeOnboardingDismiss")
         self.dismiss_button.clicked.connect(self.dismissRequested)
         actions.add_action(self.dismiss_button)
-        self.advance_button = PrimaryButton()
+        # Onboarding is supporting guidance; keep the single primary Home
+        # action reserved for the explicit system check.
+        self.advance_button = SecondaryButton()
         self.advance_button.setObjectName("homeOnboardingAdvance")
         self.advance_button.clicked.connect(self.advanceRequested)
         actions.add_action(self.advance_button, primary=True)

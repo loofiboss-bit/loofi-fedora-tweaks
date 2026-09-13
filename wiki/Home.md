@@ -1,9 +1,9 @@
 # Loofi Fedora Tweaks Wiki
 
-Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
+Loofi Fedora Tweaks is a focused, desktop-neutral Fedora maintenance core.
 
-**Local candidate:** v26.0.3 "Everyday"<br>
-**Supported target:** Fedora 44<br>
+**Current release:** v27.0.1 "Core"<br>
+**Stable targets:** Fedora 43 and 44<br>
 **Preview target:** Fedora 45
 
 ## What Loofi does
@@ -13,26 +13,21 @@ Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
   is applied.
 - Maintenance outcomes are verified separately from command completion.
 - Traditional and Atomic Fedora paths remain distinct.
-- The optional API is loopback-only and cannot apply plans.
+- Desktop-neutral core operating across all official Fedora desktop environments.
 
 ## Navigation
 
-The unified shell has six destinations:
+The unified shell has five destinations:
 
-1. **Home** for current state, attention items, and common tasks.
-2. **Software & Updates** for applications, repositories, updates, cleanup,
-   Fedora upgrades, and Action Center.
-3. **System** for system details, performance, processes, hardware, storage,
-   diagnostics, health history, and recovery points.
-4. **Network & Security** for connections, DNS, privacy, firewall, exposure,
-   and backups.
-5. **Desktop** for appearance, displays, and window behavior.
-6. **Settings** for application behavior, Specialist Tools, Repair Loofi, and
-   About.
+1. **Home** for system state, single recommended action, and common tasks.
+2. **Updates & Apps** for system, Flatpak, and firmware updates, and neutral app handoff.
+3. **System Health** for System Check, symptom troubleshooting, storage, hardware, and support bundle.
+4. **Protection & Recovery** for firewall, exposure, backups, exact rollbacks, and activity.
+5. **Changes** for the Action Center review and verification workspace.
 
-Built-in specialist providers load only when opened through Specialist Tools,
-search, favorites, or a stable deep link. Discoverability never changes
-confirmation or privilege policy.
+The v27 core has no separate specialist product, executable extension system,
+background daemon, web API, or Flatpak application bundle. Flatpak remains an
+optional host update source inside **Updates & Apps**.
 
 ## Current guides
 
@@ -50,16 +45,16 @@ repository guides linked above are the current usage and development sources.
 
 ## Release status
 
-Proof is the current public release. Its rootless/offscreen qualification and
-public publication evidence are reported separately. Physical Fedora KDE,
-keyboard, accessibility, reboot, and manual recovery gates remain unverified.
-The public baseline remains v24.0.0 "Flow", whose historical release evidence
-is preserved separately. Fedora 45 remains preview-only.
+v27.0.1 "Core" is the current public release. v26.0.3 "Everyday" is the
+previous public release. Automated rootless/offscreen qualification passed;
+physical desktop and keyboard use, accessibility, Polkit, reboot, and fresh
+Atomic qualification remain unverified by the explicit release decision.
+Fedora 45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release notes: [v25.0.4 Proof](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v25.0.4.md)
-- Release: [v24.0.0 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v24.0.0)
-- Release notes: [v24.0.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v24.0.0.md)
+- Release notes: [v27.0.1 Core](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v27.0.1.md)
+- Release: [v26.0.3 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v26.0.3)
+- Release notes: [v26.0.3 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v26.0.3.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 

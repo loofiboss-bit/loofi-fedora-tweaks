@@ -7,6 +7,7 @@ from typing import Any
 
 from PyQt6.QtWidgets import (
     QComboBox,
+    QHBoxLayout,
     QLabel,
     QListWidget,
     QListWidgetItem,
@@ -14,12 +15,15 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from ui.components import (
     ActionCenterWorkItem,
     ConfirmationRiskPanel,
     DetailsDisclosure,
     LocalViewItem,
     LocalViewSwitcher,
+    QuietButton,
+    SecondaryButton,
     SectionHeader,
 )
 
@@ -46,17 +50,25 @@ class ActionCenterMasterPane(QWidget):
             [
                 LocalViewItem(
                     "queue",
-                    self.tr("Review queue"),
-                    self.tr("Work that currently needs attention."),
+                    self.tr("Needs attention"),
+                    self.tr("Changes that need a decision or the next step."),
                 ),
                 LocalViewItem(
                     "catalog",
-                    self.tr("Action catalog"),
-                    self.tr("Browse available actions without creating a plan."),
+                    self.tr("Available actions"),
+                    self.tr("Browse actions without creating a plan."),
                 ),
             ]
         )
         self.body.addWidget(self.mode_switcher)
+
+        self.recent_changes_button = QuietButton(
+            self.tr("Show recent changes"),
+            description=self.tr("Review completed, waiting, and failed changes."),
+        )
+        self.recent_changes_button.setObjectName("actionCenterRecentChanges")
+        self.body.addWidget(self.recent_changes_button)
+
         self.lifecycle_controls = QWidget()
         lifecycle_layout = QVBoxLayout(self.lifecycle_controls)
         lifecycle_layout.setContentsMargins(0, 0, 0, 0)
@@ -200,4 +212,51 @@ class ActionCenterDetailPane(QWidget):
         self.detail_area.setPlainText("\n".join(technical_lines))
 
 
-__all__ = ["ActionCenterDetailPane", "ActionCenterMasterPane"]
+class ActionCenterControls(QWidget):
+    """Encapsulates readiness, history, and catalog controls."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self.setObjectName("actionCenterControls")
+        layout = QVBoxLayout(self)
+        layout.setContentsMargins(0, 0, 0, 0)
+
+        target_load_row = QHBoxLayout()
+        self.load_stable_button = SecondaryButton(
+            self.tr("Reload Fedora %s Actions") % FEDORA_RELEASE_POLICY.stable_release
+        )
+        target_load_row.addWidget(self.load_stable_button)
+
+        self.load_preview_button = SecondaryButton(
+            self.tr("Load Fedora %s Preview Actions") % FEDORA_RELEASE_POLICY.preview_release
+        )
+        self.load_preview_button.hide()
+
+        self.preview_button = QuietButton(self.tr("Preview Selected"))
+        target_load_row.addWidget(self.preview_button)
+
+        self.history_button = QuietButton(self.tr("Show History"))
+        target_load_row.addWidget(self.history_button)
+        target_load_row.addStretch()
+
+        catalog_row = QHBoxLayout()
+        catalog_label = QLabel(self.tr("Available action"))
+        self.catalog_selector = QComboBox()
+        self.catalog_selector.setAccessibleName(self.tr("Available Action Center action"))
+        catalog_row.addWidget(catalog_label)
+        catalog_row.addWidget(self.catalog_selector, 1)
+
+        self.target_guidance = QLabel(
+            self.tr("Fedora %s preview target choices are available in the readiness review.")
+            % FEDORA_RELEASE_POLICY.preview_release
+        )
+        self.target_guidance.setObjectName("actionCenterTargetGuidance")
+        self.target_guidance.setWordWrap(True)
+        self.target_guidance.setAccessibleName(self.tr("Release target guidance"))
+
+        layout.addLayout(target_load_row)
+        layout.addLayout(catalog_row)
+        layout.addWidget(self.target_guidance)
+
+
+__all__ = ["ActionCenterControls", "ActionCenterDetailPane", "ActionCenterMasterPane"]

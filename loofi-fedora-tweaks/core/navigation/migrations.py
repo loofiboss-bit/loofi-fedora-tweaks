@@ -10,6 +10,12 @@ from .manifest import resolve
 from .models import NavigationMode
 
 _DEFAULT_ROUTE_ID = "atlas_dashboard"
+_RETIRED_ROUTE_IDS = frozenset(
+    {
+        "maintenance:smart-updates",
+        "settings:advanced",
+    }
+)
 _MODE_ALIASES = {
     "beginner": NavigationMode.STANDARD,
     "standard": NavigationMode.STANDARD,
@@ -42,6 +48,9 @@ def canonical_persisted_route(
             return text
         return fallback
 
+    if route.id in _RETIRED_ROUTE_IDS:
+        return fallback
+
     placement = placement_for_route(route.id)
     if placement and placement.redirect_route_id:
         return placement.redirect_route_id
@@ -51,7 +60,7 @@ def canonical_persisted_route(
 def migrate_route_references(
     values: object,
     *,
-    preserve_unknown: bool = True,
+    preserve_unknown: bool = False,
 ) -> list[str]:
     """Normalize and de-duplicate a persisted route collection."""
     if isinstance(values, (str, bytes)) or not isinstance(values, Iterable):
@@ -80,7 +89,9 @@ def migrate_quick_action(action: Mapping[str, Any]) -> dict[str, Any]:
     if route_value:
         route_id = canonical_persisted_route(
             route_value,
-            preserve_unknown="route_id" in migrated,
+            # Unknown and retired specialist routes are intentionally dropped
+            # during the v27 state migration.
+            preserve_unknown=False,
         )
         if route_id:
             migrated["route_id"] = route_id

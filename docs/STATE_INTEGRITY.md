@@ -1,57 +1,82 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v26.0.3 "Everyday" keeps application-owned state under
-standard XDG config, data, cache, and runtime directories. Fedora 44 is the
-supported baseline; Fedora 45 remains preview/advisory.
+Loofi Fedora Tweaks v27.0.1 "Core" keeps application-owned state under the
+user's standard XDG config, data, cache, and runtime directories. State is
+separate from the Fedora deployment and is preserved when the RPM is removed.
 
-## Beginner: check and back up
+## State Doctor
 
-Proof is the current public release. It preserves the existing state contracts
-and adds versioned Safety & Execution settings.
-
-Open **Settings → State & Recovery** and select **Run State Doctor**. The doctor is read-only: it checks registered paths, permissions, JSON/JSONL readability, SQLite integrity, stale locks, and recovery availability without changing files.
-
-![State Doctor in the real Settings page](images/user-guide/state-doctor.png)
-
-![Restore preview using the same archive service](images/user-guide/restore-preview.png)
-
-![Canonical collector status](images/user-guide/collector-status.png)
-
-The same contracts are available in the CLI:
+Run the read-only diagnostic command:
 
 ```bash
-loofi-fedora-tweaks --cli --json state doctor
-loofi-fedora-tweaks --cli state backup --output loofi-state.zip
-loofi-fedora-tweaks --cli --json state restore plan loofi-state.zip
+loofi-fedora-tweaks --cli doctor
 ```
 
-Review restore plans in **Settings → State & Recovery**. Applying a restore
-accepts only the ID produced for the same validated archive and creates a
-rollback archive before replacing any domain.
+State Doctor checks registered paths, permissions, JSON/JSONL readability,
+SQLite integrity, stale locks, and recovery availability without changing
+files. It reports incomplete or unavailable sources instead of repairing them
+silently.
 
-## Advanced: schemas, locks, and recovery
+## Durable state rules
 
-- Schema IDs are independent of application versions. Migrations advance exactly one version, are idempotent, retain old input, and record completion after verified readback.
-- Unsupported future schemas are read-only and never overwritten.
-- JSON/text state writes use a same-directory temporary file, `fsync`, atomic replace, directory `fsync`, private permissions, readback verification, and a bounded `.lkg` copy.
-- Concurrent GUI, CLI, and daemon access uses advisory locks with bounded timeouts and a typed busy result.
-- Numeric health metrics remain SQLite data. Structured health snapshots remain JSON. `ObservabilityService` reports both without conflating their schemas.
-- The daemon collector is read-only. It never upgrades, cleans, resets, restores, flashes firmware, or restarts services.
+- JSON and JSONL writes use a same-directory temporary file, `fsync`, atomic
+  replacement, directory `fsync`, private permissions, and readback.
+- A bounded last-known-good copy is retained where the state domain supports
+  recovery.
+- Concurrent GUI and CLI access uses advisory locks with bounded timeouts and
+  a typed busy result.
+- Unsupported future schemas are read-only and are never overwritten.
+- Migrations retain the original input and record completion only after verified
+  readback.
+- Numeric metrics and structured snapshots remain separate schemas; support
+  export does not rewrite either store.
 
-## Archive threat model
+## Preserved domains
 
-Default backups exclude credentials, authentication state, raw logs, plugin code, and caches. Archives are rejected for path traversal, duplicate paths/domains, oversized entries, unsupported schemas, missing content, or SHA-256 mismatch.
+The application preserves system checks, update snapshots, Action Center plans
+and runs, activity history, and backup metadata. Specialist or retired feature
+data is not imported into the v27 product surface. Package removal and the
+repository uninstaller do not delete user state.
 
-For corruption, disk-full, permissions, stale locks, and migration failures, preserve the original evidence and follow the domain-specific next step printed by State Doctor. Never delete corrupt input before a recovery copy exists.
+## Action plans and recovery
 
-## Traditional and Atomic capability matrix
+Action plans persist a registered action ID and validated parameters, not an
+authoritative command supplied by a file or user. Before execution the current
+definition regenerates the command and performs fresh preflight. A single
+cross-process lease prevents concurrent mutations. Interrupted, failed, and
+restart-required runs remain inspectable and require explicit follow-up.
 
-The typed runtime registry lives in `core.platform.capabilities`. Unsupported actions remain visible with a reason and safe alternative.
+If recovery is unavailable, the plan says so before authorization. Loofi never
+creates an automatic rollback, restarts the host, retries a failed operation,
+or resumes an interrupted run.
 
-| Action family | Traditional | Atomic | Atomic guidance |
-| --- | --- | --- | --- |
-| Package install/remove/update | Supported | Supported | Use rpm-ostree layering/staged deployments or Flatpak |
-| Autoremove | Supported | Unsupported | The base image is managed as a deployment |
-| Cache cleanup | Supported | Read-only | Inspect usage; avoid immutable-base mutation |
-| Service/firewall/firmware | Supported | Supported | Same explicit confirmation and Polkit boundary |
-| State restore | Supported | Supported | User state is independent of the immutable base |
+## Archives and privacy
+
+Support and recovery archives are bounded and reject path traversal, duplicate
+entries, oversized content, unsupported schemas, missing content, and digest
+mismatches. Diagnostic exports redact secrets, credentials, personal paths,
+hostnames, network identifiers, and raw process output. Review an archive
+before sharing it.
+
+## Atomic and traditional deployments
+
+The runtime records the deployment backend explicitly. Traditional Fedora and
+Atomic Fedora use different package and restart semantics. An operation is
+shown only when its capability, authorization, verification, and recovery
+contract is known. Unknown or bootc backends remain unavailable rather than
+falling back to a traditional assumption.
+
+Some Atomic changes require a staged deployment and a restart through the
+normal Fedora workflow. Verification is a separate explicit step after the
+new deployment is booted; Loofi does not restart the machine itself.
+
+## If state is damaged
+
+1. Stop any second package or maintenance transaction.
+2. Run `loofi-fedora-tweaks --cli doctor` and save its output.
+3. Preserve the original files and last-known-good copy.
+4. Create a support bundle and review it before sharing.
+5. Follow the domain-specific recovery guidance shown by the doctor.
+
+Never delete a corrupt input before a recovery copy exists. Report the exact
+state domain, schema, version, and reproduction steps in the issue tracker.

@@ -31,14 +31,12 @@ ROUTE_SCREENSHOTS = [
     ("troubleshoot.png", "diagnostics", False),
     ("cleanup-preview.png", "maintenance:cleanup", False),
     ("action-center.png", "maintenance:action-center", False),
-    ("upgrade-assistant.png", "maintenance:upgrade-assistant", False),
+    ("settings-application.png", "settings:application", False),
     ("system-monitor.png", "system-monitor:processes", False),
     ("maintenance-updates.png", "maintenance:updates", False),
     ("network-overview.png", "network:connections", False),
     ("security-privacy.png", "security:privacy", False),
     ("settings-appearance.png", "settings:appearance", False),
-    ("ai-lab-models.png", "ai-lab:models", True),
-    ("community-legacy-extensions.png", "community:presets", True),
 ]
 
 

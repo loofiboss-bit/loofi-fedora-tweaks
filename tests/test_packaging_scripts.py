@@ -57,147 +57,25 @@ def test_packaging_manifest_tracks_navigation_and_assets():
     assert "core/navigation/migrations.py" in expected
     assert "core/navigation/models.py" in expected
     assert "core/navigation/policy.py" in expected
+    assert "core/platform/profile.py" in expected
     assert "core/executor/command_facade.py" in expected
     assert "core/executor/command_policy.py" in expected
     assert "ui/layout_primitives.py" in expected
     assert "assets/base.qss" in expected
     assert "ui/design/theme_manager.py" in expected
     assert "resources/translations/en.ts" in expected
+    assert "config/apps.json" in expected
 
 
-@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
-def test_build_flatpak_missing_dependency(tmp_path):
-    env = _base_env(tmp_path)
-    (tmp_path / "bin").mkdir(parents=True, exist_ok=True)
-
-    # Restrict PATH to only contain the tmp bin dir so real flatpak-builder
-    # is not found.  Keep basic system utilities available via coreutils stubs.
-    env["PATH"] = str(tmp_path / "bin")
-
-    result = subprocess.run(
-        [BASH, "scripts/build_flatpak.sh"],
-        cwd=ROOT,
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert result.returncode != 0
-    output = result.stderr + result.stdout
-    assert output.strip()
-
-
-@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
-def test_build_flatpak_success_with_stub_tools(tmp_path):
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir(parents=True, exist_ok=True)
-
-    _write_executable(
-        bin_dir / "flatpak-builder",
-        "#!/bin/bash\n"
-        "repo=''\n"
-        "for arg in \"$@\"; do\n"
-        "  case $arg in\n"
-        "    --repo=*) repo=\"${arg#--repo=}\" ;;\n"
-        "  esac\n"
-        "done\n"
-        "mkdir -p \"$repo\"\n"
-        "exit 0\n",
-    )
-    _write_executable(
-        bin_dir / "flatpak",
-        "#!/bin/bash\n"
-        "if [[ \"$1\" == \"build-bundle\" ]]; then\n"
-        "  touch \"$3\"\n"
-        "fi\n"
-        "exit 0\n",
-    )
-    _write_executable(bin_dir / "tar", "#!/bin/bash\nexit 0\n")
-
-    env = _base_env(tmp_path)
-    result = subprocess.run(
-        [BASH, "scripts/build_flatpak.sh"],
-        cwd=ROOT,
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert result.returncode == 0
-    version = _extract_version(ROOT / "loofi-fedora-tweaks" / "version.py")
-    expected_bundle = ROOT / "dist" / "flatpak" / \
-        f"loofi-fedora-tweaks-v{version}.flatpak"
-    assert expected_bundle.exists()
-
-
-@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
-def test_build_flatpak_missing_manifest(tmp_path):
-    project_root = tmp_path / "project"
-    (project_root / "scripts").mkdir(parents=True, exist_ok=True)
-    (project_root / "loofi-fedora-tweaks").mkdir(parents=True, exist_ok=True)
-
-    copy2(ROOT / "scripts" / "build_flatpak.sh",
-          project_root / "scripts" / "build_flatpak.sh")
-    (project_root / "loofi-fedora-tweaks" / "version.py").write_text(
-        '__version__ = "30.0.0"\n',
-        encoding="utf-8",
-    )
-
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir(parents=True, exist_ok=True)
-    _write_executable(bin_dir / "flatpak-builder", "#!/bin/bash\nexit 0\n")
-    _write_executable(bin_dir / "flatpak", "#!/bin/bash\nexit 0\n")
-    _write_executable(bin_dir / "tar", "#!/bin/bash\nexit 0\n")
-
-    env = _base_env(tmp_path)
-    result = subprocess.run(
-        [BASH, "scripts/build_flatpak.sh"],
-        cwd=project_root,
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert result.returncode != 0
-    assert "Flatpak manifest not found" in (result.stderr + result.stdout)
-
-
-@unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")
-def test_build_flatpak_version_parse_failure(tmp_path):
-    project_root = tmp_path / "project"
-    (project_root / "scripts").mkdir(parents=True, exist_ok=True)
-    (project_root / "loofi-fedora-tweaks").mkdir(parents=True, exist_ok=True)
-
-    copy2(ROOT / "scripts" / "build_flatpak.sh",
-          project_root / "scripts" / "build_flatpak.sh")
-    (project_root / "loofi-fedora-tweaks" / "version.py").write_text(
-        '__version_codename__ = "Distribution & Reliability"\n',
-        encoding="utf-8",
-    )
-    (project_root / "org.loofi.FedoraTweaks.yml").write_text(
-        "app-id: org.loofi.FedoraTweaks\n", encoding="utf-8")
-
-    bin_dir = tmp_path / "bin"
-    bin_dir.mkdir(parents=True, exist_ok=True)
-    _write_executable(bin_dir / "flatpak-builder", "#!/bin/bash\nexit 0\n")
-    _write_executable(bin_dir / "flatpak", "#!/bin/bash\nexit 0\n")
-    _write_executable(bin_dir / "tar", "#!/bin/bash\nexit 0\n")
-
-    env = _base_env(tmp_path)
-    result = subprocess.run(
-        [BASH, "scripts/build_flatpak.sh"],
-        cwd=project_root,
-        env=env,
-        capture_output=True,
-        text=True,
-        check=False,
-    )
-
-    assert result.returncode != 0
-    assert "Failed to parse version" in (result.stderr + result.stdout)
+def test_artifact_check_rejects_retired_runtime_surfaces():
+    module = _load_packaging_manifest_module()
+    names = {
+        "loofi_fedora_tweaks/main.py",
+        "loofi_fedora_tweaks/config/apps.json",
+        "loofi_fedora_tweaks/config/org.loofi.fedora-tweaks.policy",
+    }
+    errors = module._artifact_errors(names, artifact="fixture.tar.gz", wheel=True)
+    assert any("retired artifact" in error for error in errors)
 
 
 @unittest.skipIf(sys.platform == "win32", "Bash scripts require bash shell not available on Windows")

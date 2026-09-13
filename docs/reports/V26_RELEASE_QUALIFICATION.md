@@ -1,6 +1,6 @@
 # v26.0.3 "Everyday" Local Qualification
 
-Status: local candidate qualified; not published.
+Status: complete and published. Public release evidence is recorded in [V26_RELEASE_PUBLICATION.md](V26_RELEASE_PUBLICATION.md).
 
 ## Baseline recorded before implementation
 
@@ -71,7 +71,6 @@ Offscreen rendering qualification (`.tmp/v26-ui/manifest.json`):
 | Real update execution & reboot | unverified | No physical OS reboot or host package mutation was performed |
 | Clean Fedora KDE 44 host installation | unverified | Local packaging built; no bare-metal host install executed |
 | Fresh Atomic / Kinoite host | unverified | No Atomic environment was used for physical testing |
-| Remote Git publication (commit, push, tag) | not requested | Local candidate only; publication is outside this task |
+| Remote Git publication (commit, push, tag) | passed | Public release v26.0.3 published on 2026-09-13 (run 34754130936, COPR 10981363) |
 
-No user host mutation, install, restart or remote-service change was performed.
-No commit, tag, push or release is part of this local candidate.
+Public release v26.0.3 is published and verified. No physical host mutation or reboot was performed during qualification.

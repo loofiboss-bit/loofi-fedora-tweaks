@@ -5,10 +5,6 @@ import os
 import sys
 import unittest
 from unittest.mock import MagicMock, patch
-
-from fastapi.routing import APIRoute
-from fastapi.testclient import TestClient
-
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
 from cli.parser import build_parser  # noqa: E402
@@ -150,66 +146,6 @@ class TestActivityCli(unittest.TestCase):
 
         self.assertEqual(result, 1)
         self.assertIn("manually", print_fn.call_args.args[0])
-
-
-class TestActivityApi(unittest.TestCase):
-    @staticmethod
-    def _iter_routes(routes):
-        """Traverse direct and mounted FastAPI routes across supported versions."""
-        for route in routes:
-            path = getattr(route, "path", "")
-            methods = getattr(route, "methods", None) or set()
-            if isinstance(route, APIRoute) and path:
-                for method in methods:
-                    yield path, method
-                continue
-
-            original_router = getattr(route, "original_router", None)
-            if original_router is not None:
-                yield from TestActivityApi._iter_routes(
-                    getattr(original_router, "routes", ()),
-                )
-
-    @classmethod
-    def _routes(cls):
-        from utils.api_server import APIServer
-
-        return set(cls._iter_routes(APIServer().app.routes))
-
-    def test_activity_requires_authentication(self):
-        from utils.api_server import APIServer
-
-        response = TestClient(APIServer().app).get("/api/activity")
-
-        self.assertIn(response.status_code, {401, 403})
-
-    @patch("core.change_journal.ChangeJournalService")
-    def test_activity_snapshot_is_read_only(self, service_cls):
-        service_cls.return_value.snapshot.return_value = _snapshot()
-        from api.routes.system import get_activity
-
-        payload = get_activity(limit=25, source="dnf5", _auth="token")
-
-        self.assertTrue(payload["read_only"])
-        self.assertEqual(payload["schema"], "loofi.change-journal/v1")
-        self.assertEqual(payload["events"][0]["source"], "dnf5")
-
-    @patch("core.change_journal.ChangeJournalService")
-    def test_single_event_is_read_only(self, service_cls):
-        service_cls.return_value.get.return_value = _event()
-        from api.routes.system import get_activity_event
-
-        payload = get_activity_event(_event().event_id, _auth="token")
-
-        self.assertTrue(payload["read_only"])
-        self.assertEqual(payload["event"]["recovery"]["kind"], "action_center")
-
-    def test_api_exposes_no_activity_mutation_route(self):
-        routes = self._routes()
-
-        self.assertIn(("/api/activity", "GET"), routes)
-        self.assertIn(("/api/activity/{event_id}", "GET"), routes)
-        self.assertNotIn(("/api/activity/{event_id}/recover", "POST"), routes)
 
 
 if __name__ == "__main__":

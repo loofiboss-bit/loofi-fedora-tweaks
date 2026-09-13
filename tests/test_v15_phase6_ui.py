@@ -30,19 +30,17 @@ class TestPhase6UiAdapters(unittest.TestCase):
         cls.StorageTab = StorageTab
         cls.WatchtowerSubTab = _WatchtowerSubTab
 
-    @patch("ui.maintenance_tab.SystemManager.get_package_manager", return_value="dnf")
+    @patch("ui.maintenance_tab.SystemManager.get_package_manager", return_value="dnf5")
     @patch("ui.maintenance_tab.SystemManager.is_atomic", return_value=False)
-    def test_updates_owns_advanced_options_and_action_center_is_dedicated(self, _atomic, _manager):
+    def test_updates_and_action_center_are_dedicated(self, _atomic, _manager):
         tab = self.MaintenanceTab()
 
         labels = [label for label, _factory in tab._sub_tab_factories]
         self.assertEqual(labels[:3], ["Updates", "Action Center", "Cleanup"])
         self.assertNotIn("Smart Updates", labels)
         updates = tab._loaded_tabs[0]
-        self.assertFalse(updates.advanced_group.isChecked())
-
-        self.assertTrue(tab.activate_route(resolve("maintenance:smart-updates")))
-        self.assertTrue(updates.advanced_group.isChecked())
+        self.assertFalse(hasattr(updates, "advanced_group"))
+        self.assertTrue(tab.activate_route(resolve("maintenance:action-center")))
 
         tab.deleteLater()
 

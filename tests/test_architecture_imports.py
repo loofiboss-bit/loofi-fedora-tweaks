@@ -320,7 +320,6 @@ class TestServicesNamespaceImports:
         import services.software
         import services.storage
         import services.system
-        import services.virtualization
 
         assert services.desktop is not None
         assert services.hardware is not None
@@ -329,7 +328,6 @@ class TestServicesNamespaceImports:
         assert services.software is not None
         assert services.storage is not None
         assert services.system is not None
-        assert services.virtualization is not None
 
 
 class TestImportPerformance:

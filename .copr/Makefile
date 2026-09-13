@@ -15,7 +15,6 @@ srpm:
 	mkdir -p "$$STAGE/$(NAME)"; \
 	cp -r loofi-fedora-tweaks/* "$$STAGE/$(NAME)/"; \
 	cp $(NAME).desktop "$$STAGE/"; \
-	cp $(NAME)-api.service "$$STAGE/"; \
 	cp $(NAME).metainfo.xml "$$STAGE/"; \
 	cp LICENSE "$$STAGE/"; \
 	cp README.md "$$STAGE/"; \

@@ -24,6 +24,7 @@ EXPECTED_SOURCE_SUFFIXES = (
     "core/navigation/migrations.py",
     "core/navigation/models.py",
     "core/navigation/policy.py",
+    "core/platform/profile.py",
     "core/plugins/spec.py",
     "core/plugins/components.py",
     "core/executor/command_facade.py",
@@ -43,15 +44,23 @@ EXPECTED_SOURCE_SUFFIXES = (
     "assets/icons/icon-map.json",
     "assets/icons/svg/update.svg",
     "resources/translations/en.ts",
-    "config/org.loofi.fedora-tweaks.policy",
-    "agents/cleanup.json",
+    "config/apps.json",
 )
 
 EXPECTED_ROOT_SUFFIXES = (
     "loofi-fedora-tweaks.desktop",
     "loofi-fedora-tweaks.metainfo.xml",
     "loofi-fedora-tweaks.1",
+)
+
+RETIRED_ARTIFACT_MARKERS = (
+    "loofi-fedora-tweaks.service",
     "loofi-fedora-tweaks-api.service",
+    "api_server.py",
+    "auth.py",
+    "daemon.py",
+    ".flatpak",
+    ".policy",
 )
 
 
@@ -71,7 +80,6 @@ def _static_metadata_errors() -> list[str]:
         '"assets*"': "assets package data must be included",
         '"resources*"': "resources package data must be included",
         '"config*"': "config package data must be included",
-        '"agents*"': "agents package data must be included",
     }
     return [message for needle, message in checks.items() if needle not in text]
 
@@ -79,6 +87,13 @@ def _static_metadata_errors() -> list[str]:
 def _build_artifacts(out_dir: Path) -> list[str]:
     if shutil.which("python3") is None and not sys.executable:
         return ["python executable not available for packaging build"]
+    # Setuptools reuses ``build/lib`` when it exists.  A stale checkout can
+    # therefore leak deleted API/daemon/policy files into an otherwise clean
+    # wheel.  The directory is generated output, so remove this exact build
+    # target before asking the backend to assemble fresh artifacts.
+    build_dir = ROOT / "build"
+    if build_dir.exists():
+        shutil.rmtree(build_dir)
     result = subprocess.run(
         [sys.executable, "-m", "build", "--sdist", "--wheel", "--outdir", str(out_dir)],
         cwd=str(ROOT),
@@ -109,6 +124,14 @@ def _has_suffix(names: set[str], suffix: str) -> bool:
 
 def _artifact_errors(names: set[str], *, artifact: str, wheel: bool) -> list[str]:
     errors: list[str] = []
+    for marker in RETIRED_ARTIFACT_MARKERS:
+        retired = sorted(
+            name
+            for name in names
+            if name.endswith(marker) or f"/{marker}" in name
+        )
+        if retired:
+            errors.append(f"{artifact} contains retired artifact(s): {', '.join(retired)}")
     for suffix in EXPECTED_SOURCE_SUFFIXES:
         if not _has_suffix(names, suffix):
             errors.append(f"{artifact} missing {suffix}")

@@ -26,8 +26,9 @@ def handle_info(
             "package_manager": pm,
             "power_profile": profile,
         }
-        if is_atomic and system_manager_cls.has_pending_deployment():
-            data["pending_deployment"] = True
+        if is_atomic:
+            pending = system_manager_cls.has_pending_deployment()
+            data["pending_deployment"] = pending
         output_json(data)
     else:
         print_fn("═══════════════════════════════════════════")
@@ -37,8 +38,12 @@ def handle_info(
         print_fn(f"📦 Package Manager: {pm}")
         print_fn(f"⚡ Power Profile: {profile}")
 
-        if is_atomic and system_manager_cls.has_pending_deployment():
-            print_fn("🔄 Pending deployment: ⚠️  Reboot required")
+        if is_atomic:
+            pending = system_manager_cls.has_pending_deployment()
+            if pending is True:
+                print_fn("🔄 Pending deployment: ⚠️  Reboot required")
+            elif pending is None:
+                print_fn("🔄 Pending deployment: ?  Could not verify reboot state")
 
     return 0
 

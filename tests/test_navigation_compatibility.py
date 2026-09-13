@@ -15,8 +15,8 @@ from core.navigation import (
 
 class TestSystemCheckNavigationCompatibility(unittest.TestCase):
     def test_catalog_counts_and_standard_destination_count_stay_fixed(self):
-        self.assertEqual(len(all_routes()), 81)
-        self.assertEqual(len(STANDARD_DESTINATIONS), 6)
+        self.assertEqual(len(all_routes()), 43)
+        self.assertEqual(len(STANDARD_DESTINATIONS), 5)
 
     def test_both_health_routes_use_one_canonical_plugin_and_section(self):
         health = resolve("health")

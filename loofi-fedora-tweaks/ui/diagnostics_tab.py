@@ -12,17 +12,13 @@ from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
-    QCheckBox,
     QComboBox,
     QGroupBox,
     QHBoxLayout,
-    QInputDialog,
     QLabel,
-    QLineEdit,
     QMenu,
     QMessageBox,
     QPushButton,
-    QSlider,
     QStackedWidget,
     QTabWidget,
     QTextEdit,
@@ -51,8 +47,8 @@ class _WatchtowerSubTab(QWidget):
     """Sub-tab with system diagnostics and service management.
 
     Preserves every feature from the original WatchtowerTab:
-    - Services browser with filter (Gaming / Failed / Active / All User)
-    - Right-click context menu: Start, Stop, Restart, Mask, Unmask
+    - Services browser with failed/active/all-user filters
+    - Right-click context menu that routes review requests to Action Center
     - Boot analysis with time summary, slow services, optimisation tips
     - Journal viewer with error counts, failed services, panic log export
     - Internal QTabWidget for its own three sub-sections
@@ -106,7 +102,6 @@ class _WatchtowerSubTab(QWidget):
 
         self.service_filter = QComboBox()
         self.service_filter.setAccessibleName(self.tr("Service filter"))
-        self.service_filter.addItem(self.tr("Gaming Services"), "gaming")
         self.service_filter.addItem(self.tr("Failed Services"), "failed")
         self.service_filter.addItem(self.tr("Active Services"), "active")
         self.service_filter.addItem(self.tr("All User Services"), "all")
@@ -273,10 +268,6 @@ class _WatchtowerSubTab(QWidget):
         # Get user services
         services = ServiceManager.list_units(UnitScope.USER, filter_type)
 
-        # Add gaming services from system scope too
-        if filter_type == "gaming":
-            services.extend(ServiceManager.list_units(UnitScope.SYSTEM, filter_type))
-
         for service in services:
             item = QTreeWidgetItem(
                 [
@@ -314,27 +305,11 @@ class _WatchtowerSubTab(QWidget):
         menu = QMenu()
 
         if service.state == UnitState.FAILED and service.scope == UnitScope.SYSTEM:
-            review_action = menu.addAction(self.tr("Review Restart in Action Center"))
+            review_action = menu.addAction(self.tr("Review restart in Action Center"))
             review_action.triggered.connect(lambda: self._review_failed_service(service.name))
-            menu.addSeparator()
-
-        if service.state == UnitState.ACTIVE:
-            stop_action = menu.addAction(self.tr("Stop"))
-            stop_action.triggered.connect(lambda: self._service_action("stop", service))
-
-            restart_action = menu.addAction(self.tr("Restart"))
-            restart_action.triggered.connect(lambda: self._service_action("restart", service))
         else:
-            start_action = menu.addAction(self.tr("Start"))
-            start_action.triggered.connect(lambda: self._service_action("start", service))
-
-        menu.addSeparator()
-
-        mask_action = menu.addAction(self.tr("Mask (Disable)"))
-        mask_action.triggered.connect(lambda: self._service_action("mask", service))
-
-        unmask_action = menu.addAction(self.tr("Unmask"))
-        unmask_action.triggered.connect(lambda: self._service_action("unmask", service))
+            review_action = menu.addAction(self.tr("Review service guidance"))
+            review_action.triggered.connect(lambda: self._service_action("review", service))
 
         menu.exec(self.service_tree.viewport().mapToGlobal(position))
 
@@ -352,7 +327,7 @@ class _WatchtowerSubTab(QWidget):
         """Route general service changes to manual Action Center review."""
         scope = getattr(service.scope, "value", str(service.scope))
         self.actionCenterRequested.emit(
-            "service-control",
+            "legacy-ui-manual-review",
             {"service": str(service.name), "action": str(action), "scope": str(scope)},
         )
         self.service_log.append(self.tr("Review this service change in Action Center."))
@@ -440,18 +415,7 @@ class _WatchtowerSubTab(QWidget):
 
 
 class _BootSubTab(QWidget):
-    """Sub-tab for kernel parameters, ZRAM, and Secure Boot management.
-
-    Preserves every feature from the original BootTab:
-    - Current kernel cmdline display
-    - Common parameter quick-add checkboxes (AMD GPU, Intel IOMMU,
-      NVIDIA modesetting, mitigations, watchdog)
-    - Custom parameter add/remove
-    - GRUB backup / restore
-    - ZRAM configuration (size slider, compression algorithm)
-    - Secure Boot status and MOK key generation / enrollment
-    - Output log
-    """
+    """Read-only boot diagnostics plus reviewed Secure Boot handoffs."""
 
     actionCenterRequested = pyqtSignal(str, object)
 
@@ -466,7 +430,7 @@ class _BootSubTab(QWidget):
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
             self.tr("Boot Diagnostics"),
-            self.tr("Inspect and manage boot-time configuration and security."),
+            self.tr("Inspect boot-time state and review supported security handoffs."),
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
@@ -495,11 +459,15 @@ class _BootSubTab(QWidget):
     # ==================== Kernel Section ==================================
 
     def create_kernel_section(self: typing.Any) -> QGroupBox:
-        """Create the kernel parameters section."""
+        """Create a read-only kernel state section.
+
+        Kernel parameters and GRUB configuration are intentionally outside the
+        maintained product boundary.  Users can still copy the observed state
+        into a support bundle or follow their distribution's native tooling.
+        """
         group = QGroupBox(self.tr("Kernel Parameters"))
         layout = QVBoxLayout(group)
 
-        # Current parameters display
         current_layout = QHBoxLayout()
         current_layout.addWidget(QLabel(self.tr("Current cmdline:")))
         self.current_params_label = QLabel()
@@ -507,121 +475,30 @@ class _BootSubTab(QWidget):
         self.current_params_label.setObjectName("diagKernelParams")
         current_layout.addWidget(self.current_params_label, 1)
         layout.addLayout(current_layout)
-
-        # Common parameters checkboxes
-        params_group = QGroupBox(self.tr("Quick Add Parameters"))
-        params_layout = QVBoxLayout(params_group)
-
-        self.param_checkboxes = {}
-        common_params = [
-            ("amdgpu.ppfeaturemask=0xffffffff", self.tr("AMD GPU: Enable all power features")),
-            ("intel_iommu=on", self.tr("Intel IOMMU: GPU passthrough support")),
-            ("nvidia-drm.modeset=1", self.tr("NVIDIA: Kernel modesetting")),
-            ("mitigations=off", self.tr("Disable CPU mitigations (unsafe but faster)")),
-            ("nowatchdog", self.tr("Disable watchdog (reduce interrupts)")),
-        ]
-
-        for param, desc in common_params:
-            cb = QCheckBox(desc)
-            cb.setAccessibleName(desc)
-            cb.setProperty("param", param)
-            cb.stateChanged.connect(lambda state, p=param: self.on_param_toggled(p, state))
-            self.param_checkboxes[param] = cb
-            params_layout.addWidget(cb)
-
-        layout.addWidget(params_group)
-
-        # Custom parameter input
-        custom_layout = QHBoxLayout()
-        custom_layout.addWidget(QLabel(self.tr("Custom:")))
-        self.custom_param_input = QLineEdit()
-        self.custom_param_input.setAccessibleName(self.tr("Custom kernel parameter"))
-        self.custom_param_input.setPlaceholderText("e.g., mem=4G")
-        custom_layout.addWidget(self.custom_param_input)
-
-        add_btn = QPushButton(self.tr("Add"))
-        add_btn.setAccessibleName(self.tr("Add custom parameter"))
-        add_btn.clicked.connect(self.add_custom_param)
-        custom_layout.addWidget(add_btn)
-
-        remove_btn = QPushButton(self.tr("Remove"))
-        remove_btn.setAccessibleName(self.tr("Remove custom parameter"))
-        remove_btn.clicked.connect(self.remove_custom_param)
-        custom_layout.addWidget(remove_btn)
-
-        layout.addLayout(custom_layout)
-
-        # Backup/Restore
-        backup_layout = QHBoxLayout()
-        backup_btn = QPushButton(self.tr("Backup GRUB"))
-        backup_btn.setAccessibleName(self.tr("Backup GRUB"))
-        backup_btn.clicked.connect(self.backup_grub)
-        backup_layout.addWidget(backup_btn)
-
-        restore_btn = QPushButton(self.tr("Restore Backup"))
-        restore_btn.setAccessibleName(self.tr("Restore Backup"))
-        restore_btn.clicked.connect(self.restore_grub)
-        backup_layout.addWidget(restore_btn)
-
-        backup_layout.addStretch()
-        layout.addLayout(backup_layout)
+        note = QLabel(
+            self.tr(
+                "Kernel and boot-loader changes are not offered here. "
+                "Use the native Fedora workflow after reviewing this state."
+            )
+        )
+        note.setWordWrap(True)
+        layout.addWidget(note)
 
         return group
 
     # ==================== ZRAM Section ====================================
 
     def create_zram_section(self: typing.Any) -> QGroupBox:
-        """Create the ZRAM configuration section."""
+        """Create a read-only ZRAM state section."""
         group = QGroupBox(self.tr("ZRAM (Compressed Swap)"))
         layout = QVBoxLayout(group)
 
-        # Status
-        status_layout = QHBoxLayout()
         self.zram_status_label = QLabel()
-        status_layout.addWidget(self.zram_status_label)
-        status_layout.addStretch()
-        layout.addLayout(status_layout)
-
-        # Size slider
-        size_layout = QHBoxLayout()
-        size_layout.addWidget(QLabel(self.tr("Size (% of RAM):")))
-
-        self.zram_slider = QSlider(Qt.Orientation.Horizontal)
-        self.zram_slider.setAccessibleName(self.tr("ZRAM size percent of RAM"))
-        self.zram_slider.setMinimum(25)
-        self.zram_slider.setMaximum(150)
-        self.zram_slider.setValue(100)
-        self.zram_slider.setTickInterval(25)
-        self.zram_slider.setTickPosition(QSlider.TickPosition.TicksBelow)
-        self.zram_slider.valueChanged.connect(self.on_zram_slider_changed)
-        size_layout.addWidget(self.zram_slider)
-
-        self.zram_size_label = QLabel("100%")
-        self.zram_size_label.setMinimumWidth(50)
-        size_layout.addWidget(self.zram_size_label)
-
-        layout.addLayout(size_layout)
-
-        # Algorithm
-        algo_layout = QHBoxLayout()
-        algo_layout.addWidget(QLabel(self.tr("Compression:")))
-
-        self.zram_algo_combo = QComboBox()
-        self.zram_algo_combo.setAccessibleName(self.tr("ZRAM compression algorithm"))
-        for algo, desc in ZramManager.ALGORITHMS.items():
-            self.zram_algo_combo.addItem(f"{algo} - {desc}", algo)
-        algo_layout.addWidget(self.zram_algo_combo, 1)
-
-        layout.addLayout(algo_layout)
-
-        # Apply button
-        btn_layout = QHBoxLayout()
-        apply_btn = QPushButton(self.tr("Apply ZRAM Settings"))
-        apply_btn.setAccessibleName(self.tr("Apply ZRAM Settings"))
-        apply_btn.clicked.connect(self.apply_zram)
-        btn_layout.addWidget(apply_btn)
-        btn_layout.addStretch()
-        layout.addLayout(btn_layout)
+        self.zram_status_label.setWordWrap(True)
+        layout.addWidget(self.zram_status_label)
+        note = QLabel(self.tr("ZRAM configuration is observed for diagnostics and is not changed by this application."))
+        note.setWordWrap(True)
+        layout.addWidget(note)
 
         return group
 
@@ -677,12 +554,6 @@ class _BootSubTab(QWidget):
         current = KernelManager.get_current_params()
         self.current_params_label.setText(" ".join(current[:10]) + ("..." if len(current) > 10 else ""))
 
-        # Update checkboxes
-        for param, cb in self.param_checkboxes.items():
-            cb.blockSignals(True)
-            cb.setChecked(KernelManager.has_param(param))
-            cb.blockSignals(False)
-
     def refresh_zram(self: typing.Any) -> typing.Any:
         """Refresh ZRAM status."""
         config = ZramManager.get_current_config()
@@ -700,16 +571,6 @@ class _BootSubTab(QWidget):
         status_parts.append(f"{config.algorithm}")
 
         self.zram_status_label.setText(" | ".join(status_parts))
-
-        self.zram_slider.blockSignals(True)
-        self.zram_slider.setValue(config.size_percent)
-        self.zram_slider.blockSignals(False)
-        self.zram_size_label.setText(f"{config.size_percent}%")
-
-        # Set algorithm combobox
-        idx = self.zram_algo_combo.findData(config.algorithm)
-        if idx >= 0:
-            self.zram_algo_combo.setCurrentIndex(idx)
 
     def refresh_secureboot(self: typing.Any) -> typing.Any:
         """Refresh Secure Boot status."""
@@ -731,78 +592,6 @@ class _BootSubTab(QWidget):
     def log(self: typing.Any, message: str) -> typing.Any:
         """Add message to output log."""
         self.output_text.append(message)
-
-    # ==================== Kernel actions ==================================
-
-    def on_param_toggled(self: typing.Any, param: str, state: int) -> typing.Any:
-        """Handle parameter checkbox toggle."""
-        self.actionCenterRequested.emit(
-            "configure-kernel-parameter",
-            {"parameter": param, "enabled": state == Qt.CheckState.Checked.value},
-        )
-        self.log(self.tr("Review the kernel parameter change in Action Center."))
-
-    def add_custom_param(self: typing.Any) -> typing.Any:
-        """Add a custom kernel parameter."""
-        param = self.custom_param_input.text().strip()
-        if param:
-            self.actionCenterRequested.emit("configure-kernel-parameter", {"parameter": param, "enabled": True})
-            self.log(self.tr("Review the kernel parameter change in Action Center."))
-            self.custom_param_input.clear()
-
-    def remove_custom_param(self: typing.Any) -> typing.Any:
-        """Remove a custom kernel parameter."""
-        param = self.custom_param_input.text().strip()
-        if param:
-            self.actionCenterRequested.emit("configure-kernel-parameter", {"parameter": param, "enabled": False})
-            self.log(self.tr("Review the kernel parameter change in Action Center."))
-            self.custom_param_input.clear()
-
-    def backup_grub(self: typing.Any) -> typing.Any:
-        """Create GRUB backup."""
-        result = KernelManager.backup_grub()
-        self.log(result.message)
-        if result.backup_path:
-            self.log(self.tr("Saved to: {}").format(result.backup_path))
-
-    def restore_grub(self: typing.Any) -> typing.Any:
-        """Restore GRUB from backup."""
-        backups = KernelManager.get_backups()
-        if not backups:
-            self.log(self.tr("No backups available."))
-            return
-
-        # Show backup selection
-        items = [str(b.name) for b in backups[:10]]
-        item, ok = QInputDialog.getItem(
-            self,
-            self.tr("Select Backup"),
-            self.tr("Choose a backup to restore:"),
-            items,
-            0,
-            False,
-        )
-
-        if ok and item:
-            self.actionCenterRequested.emit("restore-grub-backup", {"backup": str(item)})
-            self.log(self.tr("Review GRUB restoration guidance in Action Center."))
-
-    # ==================== ZRAM actions ====================================
-
-    def on_zram_slider_changed(self: typing.Any, value: int) -> typing.Any:
-        """Update ZRAM size label."""
-        self.zram_size_label.setText(f"{value}%")
-
-    def apply_zram(self: typing.Any) -> typing.Any:
-        """Apply ZRAM settings."""
-        size = self.zram_slider.value()
-        algo = self.zram_algo_combo.currentData()
-
-        self.actionCenterRequested.emit(
-            "configure-zram",
-            {"size_percent": int(size), "algorithm": str(algo)},
-        )
-        self.log(self.tr("Review ZRAM configuration guidance in Action Center."))
 
     # ==================== Secure Boot actions ==============================
 

@@ -1,15 +1,10 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 26.0.3 "Everyday" local candidate
+> Version 27.0.1 "Core"
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
 Use this guide for a safe first run in under 10 minutes.
-
-The current public release is v25.0.4 "Proof". Historical v25.0.0–v25.0.3
-tags remain preserved as separate historical lineages.
-
----
 
 ## 1) Install and launch
 
@@ -19,181 +14,68 @@ pkexec dnf install loofi-fedora-tweaks
 loofi-fedora-tweaks
 ```
 
-Optional CLI alias:
+The first launch opens Home. Before the first check it shows an honest
+not-yet-checked state and offers one **Run system check** action. Opening the
+application or browsing a page does not probe or modify the host.
+
+## 2) Learn the five destinations
+
+1. **Home** — system status, one recommended next action, and common tasks.
+2. **Updates & Apps** — system, Flatpak, and firmware checks plus native
+   software-center handoff.
+3. **System Health** — read-only checks, troubleshooting, storage, hardware,
+   and support export.
+4. **Protection & Recovery** — firewall exposure, backups, recovery points,
+   and supported rollback guidance.
+5. **Changes** — the single review and verification workspace for persistent
+   changes.
+
+Settings are opened with the header gear. There is no separate specialist
+product, background daemon, web API, or sandbox distribution.
+
+## 3) Three useful workflows
+
+### Check for updates
+
+Open **Updates & Apps**, choose **Check for updates**, select a source, review
+the resulting plan, and run it from **Changes**. System, Flatpak, and firmware
+results stay separate; unavailable is not reported as up to date.
+
+### Diagnose a problem
+
+Open **System Health → Troubleshooting**, choose one symptom, and start the
+read-only check explicitly. Review the result and any safe next step. No repair
+starts automatically.
+
+### Review a change
+
+Open **Changes** to inspect **Needs attention** and **Recent**. Each change
+explains what will happen, risk, authorization, verification, and recovery.
+Only an explicit confirmation runs a supported mutation, and verification is a
+separate step.
+
+## 4) Optional CLI
 
 ```bash
 alias loofi='loofi-fedora-tweaks --cli'
-```
 
-The first launch opens Home with integrated guidance. It can be dismissed or
-resumed, remembers your step, and only opens existing pages. It does not run a
-check, install packages, create a plan, start services, or modify the host.
-
-Proof adds a bounded direct path for eligible low-risk maintenance requests.
-Medium-risk requests receive one compact confirmation; high-risk, manual-only,
-unsupported, and incomplete actions remain in review.
-
-Loofi detects the Fedora variant automatically. Traditional Fedora uses DNF;
-Atomic Fedora uses rpm-ostree-aware or manual-only paths where an operation is
-not safe to automate.
-
----
-
-## 2) Learn the UI in 30 seconds
-
-The primary shell has exactly six destinations:
-
-1. **Home**
-2. **Software & Updates**
-3. **System**
-4. **Network & Security**
-5. **Desktop**
-6. **Settings**
-
-Pages load when you open them. Specialist development, automation,
-virtualization, local-profile, and sharing tools remain grouped and searchable
-under **Specialist Tools**. Built-in pages load on demand; external Python
-plugins and the public Marketplace are retired and are not an execution path.
-
-In **Settings → Behavior → Safety & Execution**, choose **Direct** for eligible
-requests or **Review first** to require the Action Center review flow.
-
-Useful shortcuts:
-
-- `Ctrl+K` opens global search for routes, settings, and safe action entries.
-- `Ctrl+Shift+K` opens the same policy-backed search model filtered to actions.
-- `F1` opens shortcut help.
-
-Search results obey the same Fedora-variant, component, and safety policy
-as normal navigation. Search may open or preselect an Action Center item, but it
-never plans or runs an action.
-
-![Loofi Home](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/user-guide/home-dashboard.png)
-
----
-
-## 3) Five Core Workflows
-
-### Update the system
-
-Open **Software & Updates → Updates**, review the available updates, and create
-a plan. Action Center shows the exact plan before a separate apply step.
-
-![Maintenance Updates](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/user-guide/maintenance-updates.png)
-
-### Install an application
-
-Open **Software & Updates → Applications**, select an application, and create a
-review plan. Installing never starts as a side effect of creating the plan.
-
-### Diagnose a slow system
-
-Open **System → Performance** and run **Analyze Slow System**. The result uses a
-bounded, read-only snapshot and links to supporting process or storage details.
-
-![System Monitor](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/user-guide/system-monitor.png)
-
-For guided troubleshooting, open **System → Troubleshooting**, select a problem
-profile, review its sources, and start the bounded read-only collection
-explicitly. A result may show one safe next step; it never repairs the system
-automatically.
-
-### Free disk space
-
-Open **Software & Updates → Cleanup** and run the reclaim analysis before
-deleting or trimming anything. Review each category separately.
-
-### Protect or recover the system
-
-Open **System → Recovery Points** to create or inspect snapshots. Use
-**Network & Security → Backups** for guided backup and restore workflows.
-
----
-
-## 4) Verified Maintenance
-
-Open **Software & Updates → Action Center** for supported maintenance actions.
-Action Center applies the same safety lifecycle to all supported host changes:
-
-1. Review the exact action and preflight evidence.
-2. Create an expiring plan.
-3. Confirm the reviewed plan explicitly.
-4. Accept missing rollback only when the UI requires it.
-5. Run one bounded mutation at a time.
-6. Verify the outcome separately.
-
-The 74 first-party definitions declare their operation class, Fedora variants,
-reboot policy, affected resources, confirmation, verification, and recovery
-policy. Unsupported host operations remain `manual_only`. Loofi never treats
-command exit code zero as verified success by itself.
-
-Safe CLI examples:
-
-```bash
-loofi action-center list --target 44
-loofi action-center history --limit 10
-loofi readiness --target 44
-loofi action-center plan dnf-clean-all
-loofi action-center show PLAN_ID
-```
-
-Creating a plan does not apply it. Review and apply the exact plan separately
-in Action Center.
-
-For an eligible request, the local Proof path can be previewed or run through
-the same Action Center authority:
-
-```bash
-loofi run dnf-clean-all --dry-run --json
-loofi activity list --status succeeded
-```
-
----
-
-## 5) Weekly Routine
-
-1. Check Home for prioritized attention items.
-2. Review and install system updates.
-3. Run reclaim analysis instead of direct broad cleanup.
-4. Check System performance and storage when something feels slow.
-5. Create a recovery point before risky work.
-6. Review Action Center history after verified maintenance.
-
----
-
-## 6) Useful CLI Commands
-
-```bash
 loofi info
-loofi health
+loofi check
+loofi updates check
 loofi troubleshoot profiles
-loofi troubleshoot run system_slow
-loofi troubleshoot latest
-loofi fedora44-readiness
-loofi readiness actions --target 44
+loofi changes list
+loofi activity list
 loofi doctor
-loofi security-audit
 loofi support-bundle
 ```
 
----
+Add `--json` before a command for machine-readable output. The CLI has the
+same closed action catalog and safety boundary as the GUI.
 
-## 7) Next Docs
+## 5) Next docs
 
-- [Full user guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/USER_GUIDE.md)
-- [Fedora KDE 44 readiness](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/FEDORA_KDE_44_READINESS.md)
-- [Verified maintenance](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/VERIFIED_MAINTENANCE.md)
-- [Advanced operations](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/ADVANCED_ADMIN_GUIDE.md)
-- [Troubleshooting](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TROUBLESHOOTING.md)
-
-## Everyday local candidate: updates and follow-up
-
-Open Software & Updates → Updates and select **Check for updates**. System,
-Flatpak and Firmware retain separate status and timestamps. An unavailable source
-is not the same as having no updates. Expand source details for versions and
-restart guidance. Select one source to review its Action Center plan; the saved
-overview never authorizes execution.
-
-Home lists saved maintenance that needs attention. Open its run, then use
-**Check result** when verification is pending. Waiting for restart is not final
-success. Neither opening Home nor following a run retries or reboots the system.
+- [Full user guide](../docs/USER_GUIDE.md)
+- [Verified maintenance](../docs/VERIFIED_MAINTENANCE.md)
+- [State integrity](../docs/STATE_INTEGRITY.md)
+- [Troubleshooting](../docs/TROUBLESHOOTING.md)
+- [Documentation index](../README.md)

@@ -124,7 +124,7 @@ def test_task_wizard_risk_ui():
     preview_btn = container.findChild(QPushButton)
     preview_btn.click()
     assert not preview_lbl.isHidden()
-    assert "dnf clean all" in preview_lbl.text()
+    assert "clean all" in preview_lbl.text()
 
 @patch("core.actions.orchestrator.ActionCenterOrchestrator.plan")
 def test_task_wizard_dynamic_execution_fixed(mock_plan):

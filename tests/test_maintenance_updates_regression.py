@@ -121,6 +121,7 @@ def _install_maintenance_import_stubs():
     action_center_views_module = types.ModuleType("ui.action_center_views")
     action_center_views_module.ActionCenterDetailPane = _Dummy
     action_center_views_module.ActionCenterMasterPane = _Dummy
+    action_center_views_module.ActionCenterControls = _Dummy
 
     command_runner_module = types.ModuleType("utils.command_runner")
     command_runner_module.CommandRunner = _Dummy

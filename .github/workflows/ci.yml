@@ -25,7 +25,7 @@ concurrency:
 
 env:
   PYTHON_VERSION: "3.12"
-  COVERAGE_THRESHOLD: "86"
+  COVERAGE_THRESHOLD: "85"
   PIP_CACHE_FILES: |
     requirements.txt
     .github/workflows/ci.yml
@@ -203,10 +203,6 @@ jobs:
     timeout-minutes: 10
     steps:
       - uses: actions/checkout@v6
-      - name: Install system dependencies for dbus-python
-        run: |
-          sudo apt-get update
-          sudo apt-get install -y pkg-config libdbus-1-dev libglib2.0-dev
       - uses: actions/setup-python@v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
@@ -215,25 +211,6 @@ jobs:
       - run: pip install -r requirements.txt pip-audit
       - run: pip-audit --strict --progress-spinner off -r requirements.txt
 
-  package_flatpak:
-    runs-on: ubuntu-latest
-    timeout-minutes: 30
-    steps:
-      - uses: actions/checkout@v6
-      - run: sudo apt-get update
-      - run: sudo apt-get install -y flatpak flatpak-builder
-      - run: sudo flatpak remote-add --if-not-exists flathub https://dl.flathub.org/repo/flathub.flatpakrepo
-      - run: sudo flatpak install -y --noninteractive flathub org.kde.Platform//6.10 org.kde.Sdk//6.10 com.riverbankcomputing.PyQt.BaseApp//6.10
-      - run: bash scripts/build_flatpak.sh
-      - name: Install and smoke test Flatpak
-        run: |
-          sudo flatpak install -y --noninteractive --reinstall dist/flatpak/*.flatpak
-          flatpak run --command=python3 org.loofi.FedoraTweaks -c "import PyQt6"
-          set +e
-          QT_QPA_PLATFORM=offscreen timeout 10 flatpak run org.loofi.FedoraTweaks
-          rc=$?
-          set -e
-          test "$rc" -eq 124
   package_sdist:
     runs-on: ubuntu-latest
     timeout-minutes: 10

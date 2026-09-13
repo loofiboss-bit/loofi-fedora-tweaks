@@ -258,14 +258,15 @@ class SystemService(BaseSystemService):
         return SystemManager.get_package_manager()
 
     @staticmethod
-    def has_pending_reboot() -> bool:
+    def has_pending_reboot() -> bool | None:
         """
         Check if system has pending changes requiring reboot.
 
         Delegates to SystemManager for Atomic detection.
 
         Returns:
-            bool: True if reboot needed, False otherwise
+            bool | None: True if reboot needed, False if clear, or None when
+                the deployment state cannot be verified.
         """
         payload = daemon_client.call_json("SystemHasPendingReboot")
         if isinstance(payload, bool):

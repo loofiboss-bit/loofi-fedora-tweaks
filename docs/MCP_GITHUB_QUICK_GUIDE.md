@@ -1,28 +1,17 @@
-# GitHub MCP (Workspace) — Quick Guide
+# GitHub MCP Quick Guide — Retired in v27.0.1
 
-## Fast setup (recommended)
+This historical page is retained so old links remain readable. V27.0.1 does
+not ship an MCP server, a web API, a token file, or a remote control plane.
+There is no `.vscode/mcp.json` setup required for the application.
 
-1. Open this workspace in VS Code.
-2. Create token file:
-	- `cp .vscode/mcp.env.example .vscode/mcp.env`
-3. Edit `.vscode/mcp.env` and set:
-	- `GITHUB_PERSONAL_ACCESS_TOKEN=YOUR_NEW_PAT`
-4. Restart the GitHub MCP server in VS Code.
+Use the current repository automation instead:
 
-This workspace reads the token from `.vscode/mcp.env` via Docker `--env-file` in `.vscode/mcp.json`.
+- run `LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify` locally;
+- use `.github/workflows/ci.yml` for pull-request validation;
+- use the GitHub CodeQL default setup for Python and GitHub Actions scanning;
+- use `.github/workflows/auto-release.yml` for the exact master/tag release;
+- use `.github/workflows/publish-wiki.yml` for tracked wiki publication.
 
-## Requirements
-
-- Docker installed and running.
-- A GitHub PAT with the scopes you need (usually `repo`, optionally `read:org`).
-
-## If server does not start
-
-- Verify Docker: `docker --version` and `docker info`.
-- Restart VS Code, then restart the GitHub MCP server.
-- Confirm `.vscode/mcp.env` exists and contains `GITHUB_PERSONAL_ACCESS_TOKEN=...`.
-
-## Security
-
-- Never commit a PAT to files.
-- If a token is ever pasted in chat/history, revoke it and create a new one.
+Never put a GitHub token, password, or other secret in the repository, an
+issue, a pull request, or application state. The current security model is
+documented in [the Action Center security guide](../wiki/Security-Model.md).

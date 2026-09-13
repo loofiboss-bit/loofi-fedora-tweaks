@@ -1,0 +1,35 @@
+{
+  "version": "v27.0.1",
+  "phase": "P4_TEST",
+  "date": "2026-09-13",
+  "generated_at": "2026-09-13T21:05:34+00:00",
+  "scope": "v27.0.1 full test suite",
+  "status": "pass",
+  "summary": {
+    "total_tests": 4853,
+    "passed": 4780,
+    "failed": 0,
+    "skipped": 73,
+    "errors": 0,
+    "duration_seconds": 81.78,
+    "pass_rate": "98%"
+  },
+  "commands": [
+    {
+      "cmd": "/usr/bin/python3 -m pytest tests/ --tb=no -p no:faulthandler -q --cov=loofi-fedora-tweaks --cov-report=term",
+      "result": "passed",
+      "passed": 4780,
+      "failed": 0
+    }
+  ],
+  "lint": {
+    "tool": "flake8",
+    "args": "--max-line-length=150 --ignore=E501,W503,E402,E722,E203",
+    "status": "pass"
+  },
+  "release_gate": {
+    "status": "PASS",
+    "notes": "v27.0.1 test suite: =========== 4780 passed, 73 skipped, 16 warnings in 78.36s (0:01:18) ==========="
+  },
+  "coverage_percent": 87.0
+}

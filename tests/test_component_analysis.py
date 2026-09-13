@@ -43,23 +43,19 @@ class TestComponentGraph(unittest.TestCase):
         report = analysis.analyze()
 
         self.assertEqual(report["schema_version"], 1)
-        self.assertEqual(report["components"]["core"]["entry_module_count"], 18)
-        self.assertEqual(
-            report["components"]["specialist"]["entry_module_count"], 11
-        )
+        self.assertEqual(report["components"]["core"]["entry_module_count"], 16)
+        self.assertNotIn("specialist", report["components"])
         self.assertEqual(report["graph"]["missing_entry_modules"], [])
         self.assertGreater(report["graph"]["project_module_count"], 100)
         self.assertGreater(
             report["surface_reachability"]["cli"]["reachable_count"], 0
         )
-        self.assertGreater(
-            report["surface_reachability"]["api"]["specialist_exclusive_count"],
-            0,
-        )
         self.assertTrue(report["rpm"]["base_owns_complete_application_tree"])
         self.assertFalse(report["rpm"]["extras_subpackage_defined"])
-        self.assertTrue(report["rpm"]["api_requires_exact_base"])
-        self.assertTrue(report["rpm"]["daemon_requires_exact_base"])
+        self.assertTrue(report["rpm"]["retired_subpackages_absent"])
+        self.assertTrue(report["rpm"]["custom_polkit_actions_absent"])
+        self.assertNotIn("api", report["surface_reachability"])
+        self.assertNotIn("daemon", report["surface_reachability"])
 
 
 if __name__ == "__main__":

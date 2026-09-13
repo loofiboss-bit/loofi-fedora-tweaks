@@ -46,23 +46,13 @@ def _state() -> SystemCheckPageState:
 
 
 class TestSystemCheckParser(unittest.TestCase):
-    def test_new_and_compatibility_health_commands_parse(self):
+    def test_canonical_check_command_parses(self):
         parser = build_parser()
-        for command in (
-            "check",
-            "findings",
-            "history",
-            "comparison",
-            "snapshot",
-            "timeline",
-        ):
-            with self.subTest(command=command):
-                args = parser.parse_args(["health", command])
-                self.assertEqual(args.command, "health")
-                self.assertEqual(args.health_action, command)
+        args = parser.parse_args(["check"])
+        self.assertEqual(args.command, "check")
 
     def test_global_json_applies_to_system_check_commands(self):
-        args = build_parser().parse_args(["--json", "health", "findings"])
+        args = build_parser().parse_args(["--json", "check"])
         self.assertTrue(args.json)
 
 

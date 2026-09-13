@@ -18,9 +18,9 @@ class TestProductCatalogIntegration(unittest.TestCase):
         catalog = {entry.route_id: entry for entry in product_catalog()}
 
         self.assertEqual(validate_product_catalog(), [])
-        self.assertIn("community:marketplace", catalog)
-        self.assertFalse(catalog["community:marketplace"].placement.discoverable)
-        self.assertEqual(catalog["community:marketplace"].compatibility_redirect, "community:presets")
+        self.assertIn("atlas_dashboard", catalog)
+        self.assertIn("maintenance:action-center", catalog)
+        self.assertEqual(len(catalog), 43)
 
     def test_static_specs_register_without_constructing_widgets(self):
         registry = PluginRegistry.instance()

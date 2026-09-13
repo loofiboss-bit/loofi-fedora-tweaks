@@ -66,7 +66,7 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
 
         self.assertFalse(tab.status_unavailable.isHidden())
         self.assertTrue(tab.status_grid.isHidden())
-        self.assertEqual(tab.status_unavailable.title_label.text(), "Not checked yet")
+        self.assertEqual(tab.status_unavailable.title_label.text(), "No system check has been run yet")
         self.assertNotIn("Status unavailable", tab.status_unavailable.message_label.text())
 
         provider.summary = lambda: _empty_home_summary(data_state="error")

@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        26.0.3
+Version:        27.0.1
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -20,8 +20,10 @@ Requires:       python3-keyring
 Requires:       qt6-qtbase-gui
 Requires:       mesa-libGL
 Requires:       mesa-libEGL
+# pkexec is supplied by polkit and is the native authorization boundary for
+# reviewed system changes. The application does not ship custom polkit action
+# definitions; the desktop's standard agent handles authorization.
 Requires:       polkit
-Requires:       /usr/bin/notify-send
 Requires:       hicolor-icon-theme
 
 # Version renormalization: 50.0.0 → 1:1.0.0
@@ -29,39 +31,10 @@ Obsoletes:      loofi-fedora-tweaks < 1:1.0.0
 Provides:       loofi-fedora-tweaks = 1:%{version}-%{release}
 
 %description
-A Fedora KDE control center for software, maintenance, system inspection,
-security, recovery, desktop configuration, and application settings. The base
-package includes the GUI and CLI. Specialist tools such as development, local
-AI, virtualization, automation, and device sharing are logically isolated and
-loaded only when their Advanced routes are opened.
-
-The verified Action Center keeps planning, confirmation, execution, and outcome
-verification separate. Fedora KDE 44 remains the stable supported target and
-Fedora 45 remains preview-only.
-
-%package api
-Summary:        Optional Loofi Fedora Tweaks Web API runtime
-Requires:       %{name} = %{epoch}:%{version}-%{release}
-Requires:       python3-fastapi
-Requires:       python3-uvicorn
-Requires:       python3-jwt
-Requires:       python3-bcrypt
-Requires:       python3-httpx
-Requires:       python3-python-multipart
-
-%description api
-Optional FastAPI/Uvicorn web API runtime for Loofi Fedora Tweaks.
-Install this package only when the headless web API mode is needed.
-
-%package daemon
-Summary:        Optional Loofi Fedora Tweaks user daemon runtime
-Requires:       %{name} = %{epoch}:%{version}-%{release}
-Requires:       python3-dbus
-Requires:       python3-gobject-base
-
-%description daemon
-Optional user daemon runtime and systemd user service for Loofi Fedora Tweaks.
-The base GUI and CLI package does not require the daemon service.
+A desktop-neutral Fedora maintenance core for system health, updates,
+protection, recovery, and verified changes. The package includes the GUI and CLI.
+The verified Changes workspace keeps planning, confirmation, execution,
+and outcome verification separate.
 
 %prep
 %setup -q
@@ -72,15 +45,10 @@ The base GUI and CLI package does not require the daemon service.
 %install
 mkdir -p %{buildroot}%{_prefix}/lib/%{name}
 mkdir -p %{buildroot}%{_bindir}
-mkdir -p %{buildroot}%{_datadir}/polkit-1/actions
-mkdir -p %{buildroot}%{_userunitdir}
 mkdir -p %{buildroot}%{_datadir}/icons/hicolor/128x128/apps
- mkdir -p %{buildroot}%{_datadir}/metainfo
+mkdir -p %{buildroot}%{_datadir}/metainfo
 
 cp -r loofi-fedora-tweaks/* %{buildroot}%{_prefix}/lib/%{name}/
-
-# Remove the duplicate systemd service from the app tree
-rm -f %{buildroot}%{_prefix}/lib/%{name}/config/loofi-fedora-tweaks.service
 
 # Remove pre-compiled bytecode; rpmbuild generates fresh .pyc via brp-python-bytecompile
 find %{buildroot}%{_prefix}/lib/%{name} -type d -name '__pycache__' -exec rm -rf {} +  2>/dev/null || :
@@ -103,15 +71,6 @@ desktop-file-install \
     --dir=%{buildroot}%{_datadir}/applications \
     %{name}.desktop
 
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.firewall.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.network.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.storage.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.service-manage.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.kernel.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 loofi-fedora-tweaks/config/org.loofi.fedora-tweaks.security.policy %{buildroot}%{_datadir}/polkit-1/actions/
-install -m 644 %{name}-api.service %{buildroot}%{_userunitdir}/%{name}-api.service
-install -m 644 loofi-fedora-tweaks/config/loofi-fedora-tweaks.service %{buildroot}%{_userunitdir}/
 install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/
 install -Dm 644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
 install -Dm 644 %{name}.1 %{buildroot}%{_mandir}/man1/%{name}.1
@@ -120,25 +79,7 @@ install -m 644 %{name}.metainfo.xml %{buildroot}%{_datadir}/metainfo/%{name}.met
 %check
 # Run basic import validation
 PYTHONPATH=loofi-fedora-tweaks python3 -c "import main; from core.navigation import all_routes; assert all_routes(); print('Import OK')"
-appstream-util validate-relax --nonet %{name}.metainfo.xml || :
-
-%post api
-%systemd_user_post %{name}-api.service
-
-%preun api
-%systemd_user_preun %{name}-api.service
-
-%postun api
-%systemd_user_postun_with_restart %{name}-api.service
-
-%post daemon
-%systemd_user_post %{name}.service
-
-%preun daemon
-%systemd_user_preun %{name}.service
-
-%postun daemon
-%systemd_user_postun_with_restart %{name}.service
+appstream-util validate-relax --nonet %{name}.metainfo.xml
 
 %files
 %license LICENSE
@@ -146,22 +87,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml || :
 %{_prefix}/lib/%{name}
 %attr(755,root,root) %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.firewall.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.network.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.storage.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.service-manage.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.kernel.policy
-%{_datadir}/polkit-1/actions/org.loofi.fedora-tweaks.security.policy
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
 %{_datadir}/metainfo/%{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
-
-%files api
-%{_userunitdir}/loofi-fedora-tweaks-api.service
-
-%files daemon
-%{_userunitdir}/loofi-fedora-tweaks.service
 
 %changelog
 * Sun Jul 26 2026 Loofi <loofi@example.com> - 21.0.0-1

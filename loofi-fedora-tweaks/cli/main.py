@@ -1,156 +1,73 @@
-"""
-Loofi CLI - Command-line interface for Loofi Fedora Tweaks.
-Enables headless operation and scripting.
+"""Public CLI entry point for Fedora Maintenance Core.
+
+The CLI deliberately exposes a small, read-first command surface.  Legacy
+specialist commands are no longer registered by :mod:`cli.parser`; keeping
+their handlers imported here made the application look larger than it is and
+caused retired code to load during every invocation.  Canonical handlers are
+imported lazily where practical so ``loofi --help`` remains fast and safe on
+minimal Fedora installations.
 """
 
-import typing
+from __future__ import annotations
 
 import json as json_module
 import logging
 import os
 import sys
+import typing
 from typing import Any, Dict, List, Optional
 
-from core.executor.operations import TweakOps
-from core.fedora_release_policy import FEDORA_RELEASE_POLICY
+from cli.commands import readiness_commands as _readiness_commands
 from cli.parser import build_parser
-from cli.commands.readiness_commands import (
-    cmd_action_center,
-    cmd_fedora44_readiness,
-    cmd_readiness,
-    cmd_state,
-)
-from cli.commands.readiness_commands import _cmd_readiness_action as _cmd_readiness_action  # noqa: F401
-from cli.commands.readiness_commands import _print_action_result as _print_action_result  # noqa: F401
-from cli.commands.readiness_commands import _print_readiness_report as _print_readiness_report  # noqa: F401
-from cli.commands.readiness_commands import _print_release_plan as _print_release_plan  # noqa: F401
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY
+from version import __version__, __version_codename__
 
 logger = logging.getLogger(__name__)
 
-from core.diagnostics import HealthTimeline  # noqa: E402
-from services.hardware import (
-    BluetoothManager,  # noqa: E402
-    DiskManager,  # noqa: E402
-    TemperatureManager,  # noqa: E402
-)
-from services.network import (
-    NetworkMonitor,  # noqa: E402
-    PortAuditor,  # noqa: E402
-)
-from services.security import FirewallManager  # noqa: E402
-from services.system import (
-    ProcessManager,  # noqa: E402
-    SystemManager,  # noqa: E402
-)
-from services.system.system import cached_which  # noqa: E402
-from cli.commands.system_commands import (  # noqa: E402
-    handle_disk,
-    handle_health,
-    handle_info,
-    handle_netmon,
-    handle_processes,
-    handle_temperature,
-)
-from cli.commands.ops_commands import (  # noqa: E402
-    handle_tweak,
-)
-from cli.commands.user_commands import (  # noqa: E402
-    handle_focus_mode,
-    handle_preset,
-    handle_profile,
-)
-from cli.commands.insight_commands import (  # noqa: E402
-    handle_ai_models,
-    handle_security_audit,
-)
-from cli.commands.diagnostic_commands import (  # noqa: E402
-    handle_audit_log,
-    handle_doctor,
-    handle_support_bundle,
-)
-from cli.commands.hardware_commands import (  # noqa: E402
-    handle_bluetooth,
-    handle_display,
-    handle_hardware,
-    handle_storage,
-    handle_vfio,
-    handle_vm,
-)
-from cli.commands.update_commands import (  # noqa: E402
-    handle_self_update,
-    handle_updates,
-)
-from cli.commands.plugin_commands import (  # noqa: E402
-    handle_plugins,
-)
-from cli.commands.network_mesh_commands import (  # noqa: E402
-    handle_mesh,
-    handle_teleport,
-)
-from cli.commands.tuning_commands import (  # noqa: E402
-    handle_backup,
-    handle_boot,
-    handle_snapshot,
-)
-from cli.commands.service_package_commands import (  # noqa: E402
-    handle_extension,
-    handle_flatpak_manage,
-    handle_package,
-    handle_service,
-)
-from cli.commands.firewall_commands import handle_firewall  # noqa: E402
-from cli.commands.agent_commands import handle_agent  # noqa: E402
-from cli.commands.activity_commands import handle_activity  # noqa: E402
-from cli.commands.health_history_commands import handle_health_history  # noqa: E402
-from cli.commands.troubleshooting_commands import handle_troubleshoot  # noqa: E402
-from cli.action_plans import create_public_plans, manual_guidance  # noqa: E402
-from utils.focus_mode import FocusMode  # noqa: E402
-from utils.journal import JournalManager  # noqa: E402
-from utils.monitor import SystemMonitor  # noqa: E402
-from utils.package_explorer import PackageExplorer  # noqa: E402
-from core.plugins.legacy import LegacyExtensionService  # noqa: E402
-from utils.presets import PresetManager  # noqa: E402
-from utils.profiles import ProfileManager  # noqa: E402
-from utils.service_explorer import ServiceExplorer  # noqa: E402
-from utils.storage import StorageManager  # noqa: E402
-from utils.update_checker import UpdateChecker  # noqa: E402
-from version import __version__, __version_codename__  # noqa: E402
+# Preserve the small set of readiness helpers that older embedders import
+# from ``cli.main`` without importing the retired command registry.
+_cmd_readiness_action = _readiness_commands._cmd_readiness_action
+_print_action_result = _readiness_commands._print_action_result
+_print_readiness_report = _readiness_commands._print_readiness_report
+_print_release_plan = _readiness_commands._print_release_plan
+cmd_action_center = _readiness_commands.cmd_action_center
+cmd_fedora44_readiness = _readiness_commands.cmd_fedora44_readiness
+cmd_readiness = _readiness_commands.cmd_readiness
+cmd_state = _readiness_commands.cmd_state
 
-# Add parent to path for imports
+# Add the source root for installed/editable and direct-script execution.
 sys.path.insert(0, str(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
 
-
-# Global flag for JSON output
+# Global presentation flags are intentionally process-local.  The parser is
+# rebuilt for each invocation, while command modules use these callbacks for a
+# consistent text/JSON contract.
 _json_output = False
-
-# Global operation timeout (default 300s, configurable via --timeout)
 _operation_timeout = 300
-
-# Global dry-run state shared by compatibility handlers.
 _dry_run = False
 
-# Keep the original timeline class reference so tests can patch either
-# cli.main.HealthTimeline or utils.health_timeline.HealthTimeline.
-_DEFAULT_HEALTH_TIMELINE_CLASS = HealthTimeline
 
-
-def _print(text: typing.Any) -> typing.Any:
-    """Print text (suppressed in JSON mode)."""
+def _print(text: Any) -> Any:
+    """Print text unless JSON output was requested."""
     if not _json_output:
         # CLI stdout is an explicit caller-facing response, not application logging.
         # codeql[py/clear-text-logging-sensitive-data]
         print(text)
 
 
-def _output_json(data: typing.Any) -> typing.Any:
-    """Output JSON data and exit."""
+def _output_json(data: Any) -> Any:
+    """Serialize one caller-facing JSON response."""
     # CLI stdout is an explicit caller-facing response, not application logging.
     # codeql[py/clear-text-logging-sensitive-data]
     print(json_module.dumps(data, indent=2, default=str))
 
 
-def run_operation(op_result: typing.Any, timeout: typing.Any = None) -> typing.Any:
-    """Fail closed for callers that still supply an unclassified command tuple."""
+def run_operation(op_result: Any, timeout: Any = None) -> Any:
+    """Fail closed for callers that still supply an unclassified operation.
+
+    This compatibility helper is intentionally inert.  All mutations must be
+    named Action Center definitions and pass through preview, confirmation,
+    execution, and verification.
+    """
     del op_result, timeout
     payload = {
         "schema_version": 4,
@@ -165,7 +82,8 @@ def run_operation(op_result: typing.Any, timeout: typing.Any = None) -> typing.A
     return False
 
 
-def _create_action_center_plan(action_id: str, parameters: Dict[str, Any]) -> typing.Any:
+def _create_action_center_plan(action_id: str, parameters: Dict[str, Any]) -> Any:
+    """Create a reviewed Action Center plan for compatibility callers."""
     from core.actions import ActionCatalog, ActionCenterOrchestrator
     from core.actions.catalog import validate_parameters
 
@@ -181,7 +99,8 @@ def _create_action_center_plan(action_id: str, parameters: Dict[str, Any]) -> ty
     return ActionCenterOrchestrator(catalog=catalog).plan(action_id, parameters)
 
 
-def _emit_legacy_plans(plans: typing.Any) -> int:
+def _emit_legacy_plans(plans: Any) -> int:
+    """Render plans for retained activity/recovery presentation adapters."""
     summaries = [
         {
             "plan_id": plan.plan_id,
@@ -214,83 +133,12 @@ def _emit_legacy_plans(plans: typing.Any) -> int:
     return 0
 
 
-def cmd_cleanup(args: typing.Any) -> typing.Any:
-    """Create independent cleanup plans; never auto-apply legacy commands."""
-    mapping = {
-        "dnf": ("dnf-clean-all", {}),
-        "journal": ("vacuum-journal", {"days": args.days}),
-        "trim": ("fstrim-all", {}),
-        "autoremove": ("autoremove-packages", {}),
-    }
-    if args.action == "rpmdb":
-        return manual_guidance(
-            "cli:cleanup rpmdb",
-            "RPM database repair is manual-only under Troubleshooting.",
-            json_output=_json_output,
-            output_json=_output_json,
-            print_fn=_print,
-        )
-    actions = ["dnf", "journal", "trim"] if args.action == "all" else [args.action]
-    plans = [_create_action_center_plan(*mapping[action]) for action in actions]
-    return _emit_legacy_plans(plans)
+def cmd_info(_args: Any) -> Any:
+    """Show Fedora deployment and package-manager information."""
+    from cli.commands.system_commands import handle_info
+    from core.executor.operations import TweakOps
+    from services.system import SystemManager
 
-
-def cmd_tweak(args: typing.Any) -> typing.Any:
-    """Inspect tweak state or create one named Action Center review plan."""
-    if args.action == "status":
-        return handle_tweak(
-            args=args,
-            json_output=_json_output,
-            output_json=_output_json,
-            print_fn=_print,
-            run_operation=run_operation,
-            tweak_ops_cls=TweakOps,
-            system_manager_cls=SystemManager,
-        )
-    requests = {
-        "power": ("set-power-profile", {"profile": args.profile}),
-        "audio": ("restart-audio-session", {}),
-        "battery": ("set-battery-limit", {"limit": args.limit}),
-    }
-    if args.action not in requests:
-        return 1
-    action_id, parameters = requests[args.action]
-    return _emit_legacy_plans([_create_action_center_plan(action_id, parameters)])
-
-
-def cmd_advanced(args: typing.Any) -> typing.Any:
-    """Create a named Action Center review plan; never mutate the host."""
-    requests = {
-        "dnf-tweaks": ("optimize-dnf-config", {}),
-        "bbr": ("enable-tcp-bbr", {}),
-        "gamemode": ("install-gamemode", {}),
-        "swappiness": ("set-swappiness", {"value": args.value}),
-    }
-    if args.action not in requests:
-        return 1
-    action_id, parameters = requests[args.action]
-    return _emit_legacy_plans([_create_action_center_plan(action_id, parameters)])
-
-
-def cmd_network(args: typing.Any) -> typing.Any:
-    """Create an exact connection-scoped DNS review plan."""
-    if args.action != "dns":
-        return 1
-    dns = {
-        "cloudflare": "1.1.1.1 1.0.0.1",
-        "google": "8.8.8.8 8.8.4.4",
-        "quad9": "9.9.9.9 149.112.112.112",
-        "opendns": "208.67.222.222 208.67.220.220",
-    }[args.provider]
-    plan = _create_action_center_plan(
-        "configure-network-dns",
-        {"connection": args.connection, "dns": dns},
-    )
-    return _emit_legacy_plans([plan])
-
-
-def cmd_info(_args: typing.Any) -> typing.Any:
-    """Show system information."""
     return handle_info(
         json_output=_json_output,
         output_json=_output_json,
@@ -302,8 +150,10 @@ def cmd_info(_args: typing.Any) -> typing.Any:
     )
 
 
-def cmd_activity(args: typing.Any) -> int:
-    """Inspect inert change history or create one reviewed recovery plan."""
+def cmd_activity(args: Any) -> int:
+    """Inspect the Trusted Change Journal and recovery guidance."""
+    from cli.commands.activity_commands import handle_activity
+
     return handle_activity(
         args,
         json_output=_json_output,
@@ -314,65 +164,49 @@ def cmd_activity(args: typing.Any) -> int:
     )
 
 
-def cmd_run(args: typing.Any) -> int:
-    """Run one registered action through the v25 direct-action adapter."""
-    from core.actions import DirectActionService
-    from core.actions.direct import DirectActionParameterError, parse_typed_parameters
+def cmd_check(args: Any) -> Any:
+    """Run the explicit, read-only System Check."""
+    setattr(args, "health_action", "check")
+    return cmd_health(args)
 
-    service = DirectActionService()
-    definition = service.orchestrator.catalog.get(str(args.action_id))
-    try:
-        parameters = parse_typed_parameters(
-            list(getattr(args, "param", []) or []),
-            definition.parameter_schema if definition is not None else {},
+
+def cmd_changes(args: Any) -> int:
+    """Route the public ``changes`` grammar to the Action Center."""
+    action = getattr(args, "changes_action", None) or getattr(args, "action", "list")
+    # ``changes list`` is a recorded history view.  Readiness candidates are
+    # exposed only by the internal Action Center command so users do not
+    # confuse available recommendations with completed changes.
+    if action == "list":
+        action = "history"
+    setattr(args, "action", action)
+
+    if hasattr(args, "id"):
+        setattr(args, "action_id", args.id)
+        setattr(args, "target", FEDORA_RELEASE_POLICY.stable_target)
+    elif action == "apply" and hasattr(args, "target"):
+        # The positional action/plan identifier must be captured before the
+        # optional Fedora release target replaces ``args.target``.
+        setattr(args, "action_id", args.target)
+        setattr(
+            args,
+            "target",
+            getattr(args, "release_target", FEDORA_RELEASE_POLICY.stable_target),
         )
-    except DirectActionParameterError as exc:
-        payload = {
-            "schema": "loofi.direct-action/v1",
-            "schema_version": 1,
-            "action_id": str(args.action_id),
-            "status": "review_required",
-            "label": "Review required",
-            "error": "invalid_parameters",
-            "message": str(exc),
-            "plan_id": "",
-            "run_id": "",
-            "correlation_id": "",
-            "preview": [],
-            "confirmation_required": False,
-            "dry_run": False,
-            "exit_code": 2,
-        }
-        if _json_output:
-            _output_json(payload)
-        else:
-            _print(payload["message"])
-        return 2
-
-    result = service.run(
-        str(args.action_id),
-        parameters,
-        yes=bool(getattr(args, "yes", False)),
-        dry_run=bool(getattr(args, "dry_run", False)),
-        timeout=int(getattr(args, "timeout", _operation_timeout)),
-        target=str(getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target)),
-    )
-    payload = result.to_dict()
-    payload["exit_code"] = result.exit_code
-    if _json_output:
-        _output_json(payload)
-    else:
-        _print(f"{result.display_label}: {result.action_id}")
-        _print(result.message)
-        if result.plan_id:
-            _print(f"Plan: {result.plan_id}")
-        if result.preview:
-            _print("Preview: " + " ".join(result.preview))
-    return int(result.exit_code)
+        setattr(args, "confirm", getattr(args, "yes", False) is True)
+    elif action == "verify" and hasattr(args, "run_id"):
+        # Verification operates on the persisted run, never on a plan ID.
+        setattr(args, "action_id", args.run_id)
+        setattr(args, "target", FEDORA_RELEASE_POLICY.stable_target)
+    elif not hasattr(args, "target"):
+        setattr(args, "target", FEDORA_RELEASE_POLICY.stable_target)
+    return cmd_action_center(args)
 
 
-def cmd_troubleshoot(args: typing.Any) -> int:
+def cmd_troubleshoot(args: Any) -> int:
     """Run or inspect one bounded troubleshooting session."""
+    from cli.commands.troubleshooting_commands import handle_troubleshoot
+    from utils.journal import JournalManager
+
     return handle_troubleshoot(
         args,
         json_output=_json_output,
@@ -382,22 +216,22 @@ def cmd_troubleshoot(args: typing.Any) -> int:
     )
 
 
-def cmd_health(args: typing.Any) -> typing.Any:
-    """Run or read the canonical System Check and preserve health aliases."""
+def cmd_health(args: Any) -> Any:
+    """Run/read canonical checks and retained observability aliases."""
     action = getattr(args, "health_action", None)
     if action == "check":
         from core.system_check.presentation import PRESENTATION_SCHEMA_ID, PRESENTATION_SCHEMA_VERSION
         from core.system_check.service import SystemCheckService
 
         result = SystemCheckService().run()
-        check_payload = {
+        payload = {
             "schema_id": PRESENTATION_SCHEMA_ID,
             "schema_version": PRESENTATION_SCHEMA_VERSION,
             "command": "check",
             "data": {"result": result.to_dict()},
         }
         if _json_output:
-            _output_json(check_payload)
+            _output_json(payload)
         else:
             _print(f"System Check: {result.state}")
             _print(f"Findings: {len(result.findings)}")
@@ -408,9 +242,7 @@ def cmd_health(args: typing.Any) -> typing.Any:
     if action in {"findings", "history"}:
         from core.system_check.presentation import SystemCheckPresentationService
 
-        state = SystemCheckPresentationService().load(
-            history_limit=getattr(args, "limit", 10)
-        )
+        state = SystemCheckPresentationService().load(history_limit=getattr(args, "limit", 10))
         state_data = state.to_dict()
         if action == "findings":
             data = {
@@ -428,14 +260,14 @@ def cmd_health(args: typing.Any) -> typing.Any:
                 "snapshot_error": state.snapshot_error,
                 "metric_error": state.metric_error,
             }
-        presentation_payload = {
+        payload = {
             "schema_id": state.schema_id,
             "schema_version": state.schema_version,
             "command": action,
             "data": data,
         }
         if _json_output:
-            _output_json(presentation_payload)
+            _output_json(payload)
         elif action == "findings":
             _print("Current System Check findings")
             if not state.findings:
@@ -466,9 +298,12 @@ def cmd_health(args: typing.Any) -> typing.Any:
         from core.observability import MaintenanceTrendAnalyzer, ObservabilityService
 
         service = ObservabilityService()
-        snapshot = service.collect_snapshot(target=getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target), source="cli")
+        snapshot = service.collect_snapshot(
+            target=getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target),
+            source="cli",
+        )
         timeline = service.snapshots.load()
-        snapshot_payload: dict[str, typing.Any] = {
+        snapshot_payload: dict[str, Any] = {
             "schema_version": 1,
             "snapshot": snapshot.to_dict(),
             "trend_summary": MaintenanceTrendAnalyzer(timeline).analyze().to_dict(),
@@ -477,7 +312,7 @@ def cmd_health(args: typing.Any) -> typing.Any:
             _output_json(snapshot_payload)
         else:
             _print("My Fedora Today snapshot recorded.")
-            _print(snapshot_payload["trend_summary"]["summary"])
+            _print(str(snapshot_payload["trend_summary"]["summary"]))
         return 0
 
     if action == "timeline":
@@ -494,6 +329,14 @@ def cmd_health(args: typing.Any) -> typing.Any:
                 _print(f"- {snapshot['timestamp']}: {snapshot['app_version']} {snapshot['app_codename']}")
         return 0
 
+    # The compatibility alias is intentionally lazy: the canonical parser
+    # exposes ``check`` and the dedicated maintenance destinations instead.
+    from cli.commands.system_commands import handle_health
+    from core.executor.operations import TweakOps
+    from services.hardware import DiskManager
+    from services.system import SystemManager
+    from utils.monitor import SystemMonitor
+
     return handle_health(
         json_output=_json_output,
         output_json=_output_json,
@@ -505,12 +348,13 @@ def cmd_health(args: typing.Any) -> typing.Any:
     )
 
 
-def cmd_maintenance(args: typing.Any) -> typing.Any:
-    """Show v12 daily maintenance health payloads."""
+def cmd_maintenance(args: Any) -> Any:
+    """Show the daily maintenance snapshot and safe next action."""
     action = getattr(args, "maintenance_action", "today")
     if action != "today":
+        payload = {"schema_version": 1, "error": "unknown_maintenance_command", "action": action}
         if _json_output:
-            _output_json({"schema_version": 1, "error": "unknown_maintenance_command", "action": action})
+            _output_json(payload)
         else:
             _print(f"Unknown maintenance command: {action}")
         return 1
@@ -519,628 +363,85 @@ def cmd_maintenance(args: typing.Any) -> typing.Any:
     from core.diagnostics.daily_maintenance import DailyMaintenanceService
     from core.observability import HealthSnapshot, HealthTimelineStore, MaintenanceTrendAnalyzer
 
+    target = getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target)
     report = DailyMaintenanceService().collect()
-    action_items = ActionCenterService().candidates_from_readiness(getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target))
+    action_items = ActionCenterService().candidates_from_readiness(target)
     snapshot = HealthSnapshot.from_daily_maintenance(
-        report, action_center_items=action_items, fedora_target=getattr(args, "target", FEDORA_RELEASE_POLICY.stable_target)
+        report,
+        action_center_items=action_items,
+        fedora_target=target,
     )
     timeline = [*HealthTimelineStore().load(), snapshot]
-    payload: dict[str, typing.Any] = {
+    maintenance_payload: dict[str, Any] = {
         "schema_version": 1,
         "daily_maintenance": report.to_dict(),
         "snapshot": snapshot.to_dict(),
         "trend_summary": MaintenanceTrendAnalyzer(timeline).analyze().to_dict(),
     }
     if _json_output or getattr(args, "json", False):
-        _output_json(payload)
+        _output_json(maintenance_payload)
     else:
         _print("My Fedora Today")
-        _print(str(payload["trend_summary"]["summary"]))
+        _print(str(maintenance_payload["trend_summary"]["summary"]))
         _print(report.recommended_action)
         for card in report.cards:
             _print(f"- {card.title}: {card.state} - {card.summary}")
     return 0
 
 
-def cmd_disk(args: typing.Any) -> typing.Any:
-    """Show disk usage information."""
-    return handle_disk(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        disk_manager_cls=DiskManager,
-    )
+def cmd_doctor(_args: Any) -> Any:
+    """Run read-only platform and dependency diagnostics."""
+    from cli.commands.diagnostic_commands import handle_doctor
+    from services.system.system import cached_which
 
-
-def cmd_processes(args: typing.Any) -> typing.Any:
-    """Show top processes."""
-    return handle_processes(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        process_manager_cls=ProcessManager,
-    )
-
-
-def cmd_temperature(_args: typing.Any) -> typing.Any:
-    """Show temperature readings."""
-    return handle_temperature(
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        temperature_manager_cls=TemperatureManager,
-    )
-
-
-def cmd_netmon(args: typing.Any) -> typing.Any:
-    """Show network interface stats."""
-    return handle_netmon(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        network_monitor_cls=NetworkMonitor,
-    )
-
-
-def cmd_doctor(_args: typing.Any) -> typing.Any:
-    """Run system diagnostics and check dependencies."""
     return handle_doctor(_json_output, _output_json, _print, which_fn=cached_which)
 
 
-def cmd_hardware(_args: typing.Any) -> typing.Any:
-    """Show detected hardware profile."""
-    from services.hardware.hardware_profiles import detect_hardware_profile
-
-    return handle_hardware(_json_output, _output_json, _print, detect_hardware_profile)
-
-
-def cmd_self_update(args: typing.Any) -> typing.Any:
-    """Check and run self-update flow."""
-    return handle_self_update(args, _json_output, _output_json, _print, SystemManager, UpdateChecker, __version__)
-
-
-def cmd_plugins(args: typing.Any) -> typing.Any:
-    """Inventory quarantined legacy extensions without executing them."""
-    return handle_plugins(
-        args,
-        _json_output,
-        _output_json,
-        _print,
-        LegacyExtensionService,
-    )
-
-
-def cmd_plugin_marketplace(args: typing.Any) -> typing.Any:
-    """Return the stable retirement response for legacy callers."""
-    del args
-    payload = {
-        "schema_version": 3,
-        "error": "feature_retired",
-        "feature": "plugin-marketplace",
-        "message": "External Marketplace distribution is retired.",
-        "alternative": "Use built-in features or local profiles.",
-    }
-    if _json_output:
-        _output_json(payload)
-    else:
-        _print(payload["message"])
-        _print(payload["alternative"])
-    return 2
-
-
-def cmd_api_key(args: typing.Any) -> typing.Any:
-    """Rotate, revoke, or inspect the local Web API credential."""
-    from utils.auth import AuthManager
-
-    if args.action == "rotate":
-        api_key = AuthManager.generate_api_key()
-        payload = {
-            "schema_version": 3,
-            "status": "rotated",
-            "api_key": api_key,
-            "warning": "This key is shown once. Store it in a password manager.",
-        }
-    elif args.action == "revoke":
-        AuthManager.revoke_api_key()
-        payload = {"schema_version": 3, "status": "revoked"}
-    else:
-        payload = {
-            "schema_version": 3,
-            "status": "active" if AuthManager.has_api_key() else "not_configured",
-        }
-    if _json_output:
-        _output_json(payload)
-    else:
-        _print(payload["status"])
-        if "api_key" in payload:
-            _print(payload["api_key"])
-            _print(payload["warning"])
-    return 0
-
-
-def cmd_support_bundle(_args: typing.Any) -> typing.Any:
-    """Export support bundle ZIP."""
-    return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
-
-
-# Maintenance and observability commands
-
-
-def cmd_vm(args: typing.Any) -> typing.Any:
-    """Handle VM subcommand."""
-    from services.virtualization import VMManager
-
-    return handle_vm(args, _json_output, _output_json, _print, VMManager)
-
-
-def cmd_vfio(args: typing.Any) -> typing.Any:
-    """Handle VFIO GPU passthrough subcommand."""
-    from services.virtualization import VFIOAssistant
-
-    return handle_vfio(args, _json_output, _output_json, _print, VFIOAssistant)
-
-
-def cmd_mesh(args: typing.Any) -> typing.Any:
-    """Handle mesh networking subcommand."""
-    from services.network import MeshDiscovery
-
-    return handle_mesh(args, _json_output, _output_json, _print, MeshDiscovery)
-
-
-def cmd_teleport(args: typing.Any) -> typing.Any:
-    """Handle state teleport subcommand."""
-    from services.storage import StateTeleportManager
-
-    return handle_teleport(args, _json_output, _output_json, _print, StateTeleportManager)
-
-
-def cmd_ai_models(args: typing.Any) -> typing.Any:
-    """Handle AI models subcommand."""
-    from core.ai import RECOMMENDED_MODELS, AIModelManager
-
-    return handle_ai_models(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        ai_model_manager_cls=AIModelManager,
-        recommended_models=RECOMMENDED_MODELS,
-    )
-
-
-def cmd_preset(args: typing.Any) -> typing.Any:
-    """Handle preset subcommand."""
-    return handle_preset(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        json_module=json_module,
-        preset_manager_cls=PresetManager,
-    )
-
-
-def cmd_focus_mode(args: typing.Any) -> typing.Any:
-    """Handle focus-mode subcommand."""
-    return handle_focus_mode(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        focus_mode_cls=FocusMode,
-    )
-
-
-def cmd_security_audit(_args: typing.Any) -> typing.Any:
-    """Handle security-audit subcommand."""
-    return handle_security_audit(
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        port_auditor_cls=PortAuditor,
-    )
-
-
-def cmd_profile(args: typing.Any) -> typing.Any:
-    """Handle profile subcommand."""
-    return handle_profile(
-        args=args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        profile_manager_cls=ProfileManager,
-    )
-
-
-def cmd_health_history(args: typing.Any) -> typing.Any:
-    """Handle health-history subcommand."""
-    timeline_cls = HealthTimeline
-    if timeline_cls is _DEFAULT_HEALTH_TIMELINE_CLASS:
-        from utils import health_timeline as health_timeline_module
-
-        timeline_cls = health_timeline_module.HealthTimeline
-    return handle_health_history(
-        args,
-        json_output=_json_output,
-        output_json=_output_json,
-        print_fn=_print,
-        timeline_cls=timeline_cls,
-    )
-
-
-# Navigation and workflow commands
-
-
-def cmd_tuner(args: typing.Any) -> typing.Any:
-    """Handle tuner subcommand."""
-    from utils.auto_tuner import AutoTuner
-
-    if args.action == "analyze":
-        workload = AutoTuner.detect_workload()
-        rec = AutoTuner.recommend(workload)
-        current = AutoTuner.get_current_settings()
-        if _json_output:
-            _output_json(
-                {
-                    "workload": vars(workload),
-                    "recommendation": vars(rec),
-                    "current_settings": current,
-                }
-            )
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Performance Auto-Tuner")
-            _print("═══════════════════════════════════════════")
-            _print(f"\n  Workload Detected: {workload.name}")
-            _print(f"  CPU: {workload.cpu_percent:.1f}%  Memory: {workload.memory_percent:.1f}%")
-            _print(f"  Description: {workload.description}")
-            _print("\n  Current Settings:")
-            for k, v in current.items():
-                _print(f"    {k}: {v}")
-            _print("\n  Recommendations:")
-            _print(f"    Governor: {rec.governor}")
-            _print(f"    Swappiness: {rec.swappiness}")
-            _print(f"    I/O Scheduler: {rec.io_scheduler}")
-            _print(f"    THP: {rec.thp}")
-            _print(f"    Reason: {rec.reason}")
-        return 0
-
-    elif args.action == "apply":
-        rec = AutoTuner.recommend()
-        return create_public_plans(
-            [
-                (
-                    "cli:tuner apply",
-                    {
-                        "settings": {
-                            "governor": rec.governor,
-                            "swappiness": rec.swappiness,
-                            "io_scheduler": rec.io_scheduler,
-                            "thp": rec.thp,
-                        }
-                    },
-                )
-            ],
-            json_output=_json_output,
-            output_json=_output_json,
-            print_fn=_print,
-        )
-
-    elif args.action == "history":
-        history = AutoTuner.get_tuning_history()
-        if _json_output:
-            _output_json([vars(h) for h in history])
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Tuning History")
-            _print("═══════════════════════════════════════════")
-            if not history:
-                _print("\n  (no tuning history)")
-            else:
-                import time
-
-                for entry in history[-10:]:
-                    ts = time.strftime("%Y-%m-%d %H:%M", time.localtime(entry.timestamp))
-                    _print(f"\n  {ts} — {entry.workload} (applied: {entry.applied})")
-        return 0
-
-    return 1
-
-
-def cmd_snapshot(args: typing.Any) -> typing.Any:
-    """Handle snapshot subcommand."""
-    if args.action == "create":
-        backend = getattr(args, "backend", None)
-        if backend not in {"timeshift", "snapper"}:
-            _print("Snapshot creation requires --backend timeshift|snapper; raw Btrfs remains manual-only.")
-            return 1
-        plan = _create_action_center_plan(
-            "create-recovery-point",
-            {"backend": backend, "description": args.label or "manual-snapshot"},
-        )
-        return _emit_legacy_plans([plan])
-    if args.action == "delete":
-        backend = getattr(args, "backend", None)
-        if backend not in {"timeshift", "snapper"} or not args.snapshot_id:
-            _print("Snapshot deletion requires --backend timeshift|snapper and a snapshot ID.")
-            return 1
-        return create_public_plans(
-            [
-                (
-                    "cli:snapshot delete",
-                    {"backend": backend, "snapshot_id": args.snapshot_id},
-                )
-            ],
-            json_output=_json_output,
-            output_json=_output_json,
-            print_fn=_print,
-        )
-    from utils.snapshot_manager import SnapshotManager
-
-    return handle_snapshot(args, _json_output, _output_json, _print, run_operation, SnapshotManager)
-
-
-def cmd_logs(args: typing.Any) -> typing.Any:
-    """Handle logs subcommand."""
-    from utils.smart_logs import SmartLogViewer
-
-    if args.action == "show":
-        entries = SmartLogViewer.get_logs(
-            unit=args.unit,
-            priority=args.priority,
-            since=args.since,
-            lines=args.lines,
-        )
-        if _json_output:
-            _output_json([vars(e) for e in entries])
-        else:
-            for e in entries:
-                marker = "⚠️ " if e.pattern_match else ""
-                _print(f"  {e.timestamp} [{e.priority_label}] {e.unit}: {marker}{e.message[:120]}")
-                if e.pattern_match:
-                    _print(f"    ↳ {e.pattern_match}")
-        return 0
-
-    elif args.action == "errors":
-        summary = SmartLogViewer.get_error_summary(since=args.since or "24h ago")
-        if _json_output:
-            _output_json(vars(summary))
-        else:
-            _print("═══════════════════════════════════════════")
-            _print("   Log Error Summary")
-            _print("═══════════════════════════════════════════")
-            _print(f"  Total entries: {summary.total_entries}")
-            _print(f"  Critical: {summary.critical_count}")
-            _print(f"  Errors: {summary.error_count}")
-            _print(f"  Warnings: {summary.warning_count}")
-            if summary.top_units:
-                _print("\n  Top Units:")
-                for unit, count in summary.top_units:
-                    _print(f"    {unit}: {count}")
-            if summary.detected_patterns:
-                _print("\n  Detected Patterns:")
-                for pattern, count in summary.detected_patterns:
-                    _print(f"    {pattern}: {count}")
-        return 0
-
-    elif args.action == "export":
-        if not args.path:
-            _print("❌ Export path required")
-            return 1
-        entries = SmartLogViewer.get_logs(since=args.since, lines=args.lines or 500)
-        fmt = "json" if args.path.endswith(".json") else "text"
-        success = SmartLogViewer.export_logs(entries, args.path, format=fmt)
-        icon = "✅" if success else "❌"
-        _print(f"{icon} Exported {len(entries)} entries to {args.path}")
-        return 0 if success else 1
-
-    return 1
-
-
-# Desktop and system commands
-
-
-def cmd_service(args: typing.Any) -> typing.Any:
-    """Handle service subcommand."""
-    return handle_service(args, _json_output, _output_json, _print, run_operation, ServiceExplorer)
-
-
-def cmd_package(args: typing.Any) -> typing.Any:
-    """Handle package subcommand."""
-    if args.action in {"install", "remove"}:
-        if not args.name:
-            _print("Package name required")
-            return 1
-        source = {"dnf": "fedora", "flatpak": "flatpak"}.get(getattr(args, "source", None) or "dnf")
-        if source is None:
-            _print("Install/remove requires an explicit --source dnf|flatpak.")
-            return 1
-        action_id = "install-application" if args.action == "install" else "remove-application"
-        plan = _create_action_center_plan(
-            action_id,
-            {"source": source, "package_id": args.name},
-        )
-        return _emit_legacy_plans([plan])
-    return handle_package(args, _json_output, _output_json, _print, run_operation, PackageExplorer)
-
-
-def cmd_firewall(args: typing.Any) -> typing.Any:
-    """Handle firewall subcommand."""
-    return handle_firewall(args, _json_output, _output_json, _print, run_operation, FirewallManager)
-
-
-# Hardware and storage commands
-
-
-def cmd_bluetooth(args: typing.Any) -> typing.Any:
-    """Handle bluetooth subcommand."""
-    return handle_bluetooth(args, _json_output, _output_json, _print, BluetoothManager)
-
-
-# Agent and automation commands
-
-
-def cmd_agent(args: typing.Any) -> typing.Any:
-    """Handle agent subcommand."""
-    from core.agents import AgentRegistry, AgentScheduler, AgentPlanner, AgentNotifier
-
-    return handle_agent(args, _json_output, _output_json, _print, run_operation, AgentRegistry, AgentScheduler, AgentPlanner, AgentNotifier)
-
-
-def cmd_storage(args: typing.Any) -> typing.Any:
-    """Handle storage subcommand."""
-    return handle_storage(args, _json_output, _output_json, _print, StorageManager)
-
-
-def cmd_audit_log(args: typing.Any) -> typing.Any:
-    """Show recent audit log entries."""
-    from services.security import AuditLogger
-
-    return handle_audit_log(args, _json_output, _output_json, _print, AuditLogger)
-
-
-# Package, update, extension, display, and backup commands
-
-
-def cmd_updates(args: typing.Any) -> typing.Any:
-    """Handle smart updates subcommand."""
+def cmd_updates(args: Any) -> Any:
+    """Inspect DNF5, rpm-ostree, or bootc update state."""
+    from cli.commands.update_commands import handle_updates
     from utils.update_manager import UpdateManager
 
     return handle_updates(args, _json_output, _output_json, _print, run_operation, UpdateManager)
 
 
-def cmd_extension(args: typing.Any) -> typing.Any:
-    """Handle extension management subcommand."""
-    from utils.extension_manager import ExtensionManager
+def cmd_support_bundle(_args: Any) -> Any:
+    """Export a redacted support bundle."""
+    from cli.commands.diagnostic_commands import handle_support_bundle
+    from utils.journal import JournalManager
 
-    return handle_extension(args, _json_output, _output_json, _print, run_operation, ExtensionManager)
-
-
-def cmd_flatpak_manage(args: typing.Any) -> typing.Any:
-    """Handle Flatpak management subcommand."""
-    from services.software import FlatpakManager
-
-    return handle_flatpak_manage(args, _json_output, _output_json, _print, run_operation, FlatpakManager)
+    return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
 
 
-def cmd_boot(args: typing.Any) -> typing.Any:
-    """Handle boot configuration subcommand."""
-    from utils.boot_config import BootConfigManager
-
-    return handle_boot(args, _json_output, _output_json, _print, run_operation, BootConfigManager)
-
-
-def cmd_display(args: typing.Any) -> typing.Any:
-    """Handle display configuration subcommand."""
-    from services.desktop import WaylandDisplayManager
-
-    return handle_display(
-        args,
-        _json_output,
-        _output_json,
-        _print,
-        run_operation,
-        WaylandDisplayManager,
-    )
-
-
-def cmd_backup(args: typing.Any) -> typing.Any:
-    """Handle backup subcommand."""
-    from utils.backup_wizard import BackupWizard
-
-    return handle_backup(
-        args,
-        _json_output,
-        _output_json,
-        _print,
-        run_operation,
-        BackupWizard,
-    )
-
-
-def _command_handlers() -> typing.Any:
-    """Return the command-to-domain-handler map."""
+def _command_handlers() -> dict[str, typing.Callable[[Any], Any]]:
+    """Return exactly the eight canonical v27 command handlers."""
     return {
         "info": cmd_info,
-        "health": cmd_health,
-        "maintenance": cmd_maintenance,
-        "activity": cmd_activity,
-        "troubleshoot": cmd_troubleshoot,
-        "disk": cmd_disk,
-        "processes": cmd_processes,
-        "temperature": cmd_temperature,
-        "netmon": cmd_netmon,
-        "cleanup": cmd_cleanup,
-        "tweak": cmd_tweak,
-        "advanced": cmd_advanced,
-        "network": cmd_network,
-        "doctor": cmd_doctor,
-        "hardware": cmd_hardware,
-        "plugins": cmd_plugins,
-        "plugin-marketplace": cmd_plugin_marketplace,
-        "api-key": cmd_api_key,
-        "support-bundle": cmd_support_bundle,
-        "state": cmd_state,
-        "readiness": cmd_readiness,
-        "action-center": cmd_action_center,
-        "fedora44-readiness": cmd_fedora44_readiness,
-        "vm": cmd_vm,
-        "vfio": cmd_vfio,
-        "mesh": cmd_mesh,
-        "teleport": cmd_teleport,
-        "ai-models": cmd_ai_models,
-        "preset": cmd_preset,
-        "focus-mode": cmd_focus_mode,
-        "security-audit": cmd_security_audit,
-        "profile": cmd_profile,
-        "health-history": cmd_health_history,
-        "tuner": cmd_tuner,
-        "snapshot": cmd_snapshot,
-        "logs": cmd_logs,
-        "service": cmd_service,
-        "package": cmd_package,
-        "firewall": cmd_firewall,
-        "bluetooth": cmd_bluetooth,
-        "storage": cmd_storage,
-        "agent": cmd_agent,
-        "self-update": cmd_self_update,
-        "audit-log": cmd_audit_log,
+        "check": cmd_check,
         "updates": cmd_updates,
-        "extension": cmd_extension,
-        "flatpak-manage": cmd_flatpak_manage,
-        "boot": cmd_boot,
-        "display": cmd_display,
-        "backup": cmd_backup,
-        "run": cmd_run,
+        "troubleshoot": cmd_troubleshoot,
+        "changes": cmd_changes,
+        "activity": cmd_activity,
+        "doctor": cmd_doctor,
+        "support-bundle": cmd_support_bundle,
     }
 
 
-def main(argv: Optional[List[str]] = None) -> typing.Any:
-    """Parse CLI arguments and dispatch one domain handler."""
+def main(argv: Optional[List[str]] = None) -> Any:
+    """Parse one CLI invocation and dispatch its canonical handler."""
     parser = build_parser()
     args = parser.parse_args(argv)
 
-    # Set JSON mode
-    globals()["_json_output"] = getattr(args, "json", False)
-
-    # Set operation timeout from --timeout flag
-    globals()["_operation_timeout"] = getattr(args, "timeout", 300)
-
-    # Set dry-run mode from --dry-run flag
-    globals()["_dry_run"] = getattr(args, "dry_run", False)
+    globals()["_json_output"] = bool(getattr(args, "json", False))
+    globals()["_operation_timeout"] = int(getattr(args, "timeout", 300))
+    globals()["_dry_run"] = bool(getattr(args, "dry_run", False))
 
     if args.command is None:
         parser.print_help()
         return 0
 
     handler = _command_handlers().get(args.command)
-    if handler:
-        return handler(args)
-
-    return 0
+    return handler(args) if handler else 0
 
 
 if __name__ == "__main__":

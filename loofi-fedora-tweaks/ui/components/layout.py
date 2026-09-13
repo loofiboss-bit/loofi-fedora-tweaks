@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import (
     QLabel,
     QPushButton,
     QSizePolicy,
+    QToolButton,
     QVBoxLayout,
     QWidget,
 )
@@ -20,6 +21,7 @@ from PyQt6.QtWidgets import (
 from ui.components.actions import ActionBar
 from ui.components.feedback import StatusBadge
 from ui.design import DesignTokens
+from ui.icon_pack import get_qicon
 from ui.presentation import button_label, visible_label
 
 
@@ -84,6 +86,15 @@ class PageHeader(QFrame):
         self.action_bar.setAccessibleName(self.tr("Page actions"))
         self.actions_layout = self.action_bar.row_layout
         top_row.addWidget(self.action_bar)
+
+        self.settings_button = QToolButton(self)
+        self.settings_button.setObjectName("pageHeaderSettingsButton")
+        self.settings_button.setMinimumSize(36, 36)
+        self.settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.settings_button.setIcon(get_qicon("settings", size=20))
+        self.settings_button.setAccessibleName(self.tr("Application settings"))
+        self.settings_button.setToolTip(self.tr("Settings"))
+        top_row.addWidget(self.settings_button)
 
         self.title = QLabel("")
         self.title.setObjectName("pageHeaderTitle")

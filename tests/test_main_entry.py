@@ -103,17 +103,6 @@ class TestStartupTheme(unittest.TestCase):
         self.assertEqual(_theme_file_for("light"), "base.qss")
 
 
-class TestMainDaemon(unittest.TestCase):
-    """Tests for main() --daemon mode."""
-
-    @patch("sys.argv", ["loofi-fedora-tweaks", "--daemon"])
-    @patch("daemon.runtime.run_daemon")
-    def test_daemon_mode(self, mock_run):
-        from main import main
-        main()
-        mock_run.assert_called_once()
-
-
 class TestMainCLI(unittest.TestCase):
     """Tests for main() --cli mode."""
 
@@ -125,20 +114,6 @@ class TestMainCLI(unittest.TestCase):
             main()
         self.assertEqual(cm.exception.code, 0)
         mock_cli.assert_called_once_with(["status"])
-
-
-class TestMainWeb(unittest.TestCase):
-    """Tests for main() --web mode."""
-
-    @patch("sys.argv", ["loofi-fedora-tweaks", "--web"])
-    @patch("utils.api_server.APIServer")
-    @patch("time.sleep", side_effect=KeyboardInterrupt)
-    def test_web_mode(self, mock_sleep, mock_api_class):
-        mock_server = MagicMock()
-        mock_api_class.return_value = mock_server
-        from main import main
-        main()
-        mock_server.start.assert_called_once()
 
 
 class TestMainGUI(unittest.TestCase):

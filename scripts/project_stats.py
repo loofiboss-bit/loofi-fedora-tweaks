@@ -137,43 +137,67 @@ def read_race_lock() -> dict[str, str]:
     return result
 
 
-def read_coverage_from_reports() -> str:
-    """Try to read latest coverage from workflow reports."""
+def _current_report(
+    reports_dir: Path,
+    prefix: str,
+    version: str | None,
+) -> Path | None:
+    """Return the report for ``version`` without reusing an older release.
+
+    Project statistics are committed metadata, so selecting the newest file by
+    filename is unsafe: a v18 report would otherwise continue to describe a
+    v27 checkout until somebody happened to generate another report.  When a
+    version is supplied, only its exact canonical report name is accepted.
+    """
+    if not version:
+        return None
+    candidate = reports_dir / f"{prefix}-v{version}.json"
+    return candidate if candidate.is_file() else None
+
+
+def _read_report_value(path: Path, *keys: str) -> object | None:
+    """Read a scalar from a report, including the standard summary mapping."""
+    try:
+        data = json.loads(path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError):
+        return None
+    if not isinstance(data, dict):
+        return None
+    for key in keys:
+        value = data.get(key)
+        if value is not None:
+            return value
+    summary = data.get("summary")
+    if isinstance(summary, dict):
+        for key in keys:
+            value = summary.get(key)
+            if value is not None:
+                return value
+    return None
+
+
+def read_coverage_from_reports(version: str | None = None) -> str:
+    """Read coverage for the current version, never an older release."""
     reports_dir = ROOT / ".workflow" / "reports"
-    if not reports_dir.exists():
-        return "80"  # fallback to CI threshold
-
-    # Look for test-results files, get latest
-    results = sorted(reports_dir.glob("test-results-*.json"), reverse=True)
-    for result_file in results:
-        try:
-            data = json.loads(result_file.read_text(encoding="utf-8"))
-            cov = data.get("coverage_percent")
-            if cov is not None:
-                return str(cov)
-        except (json.JSONDecodeError, OSError):
-            continue
-
-    return "80"  # fallback to CI threshold
+    if reports_dir.exists():
+        result_file = _current_report(reports_dir, "test-results", version)
+        if result_file is not None:
+            coverage = _read_report_value(result_file, "coverage_percent", "coverage")
+            if coverage is not None:
+                return str(coverage)
+    return "unverified"
 
 
-def read_test_count_from_reports() -> str:
-    """Try to read latest test count from workflow reports."""
+def read_test_count_from_reports(version: str | None = None) -> str:
+    """Read test count for the current version, never an older release."""
     reports_dir = ROOT / ".workflow" / "reports"
-    if not reports_dir.exists():
-        return "0"  # fallback — unknown count
-
-    results = sorted(reports_dir.glob("test-results-*.json"), reverse=True)
-    for result_file in results:
-        try:
-            data = json.loads(result_file.read_text(encoding="utf-8"))
-            count = data.get("test_count")
+    if reports_dir.exists():
+        result_file = _current_report(reports_dir, "test-results", version)
+        if result_file is not None:
+            count = _read_report_value(result_file, "test_count", "total_tests", "total")
             if count is not None:
                 return str(count)
-        except (json.JSONDecodeError, OSError):
-            continue
-
-    return "0"  # fallback — unknown count
+    return "unverified"
 
 
 # ---------------------------------------------------------------------------
@@ -199,8 +223,8 @@ def gather_stats() -> dict[str, Any]:
         "test_file_count": count_test_files(),
         "utils_module_count": count_utils_modules(),
         # From reports (with fallbacks)
-        "test_count": read_test_count_from_reports(),
-        "coverage": read_coverage_from_reports(),
+        "test_count": read_test_count_from_reports(version_info["version"]),
+        "coverage": read_coverage_from_reports(version_info["version"]),
         # From ROADMAP.md
         "active_version": roadmap["active_version"],
         "next_version": roadmap["next_version"],
@@ -230,6 +254,10 @@ def write_stats_json(stats: dict[str, Any]) -> None:
 
 def write_stats_markdown(stats: dict[str, Any]) -> None:
     """Write human-readable stats summary."""
+    coverage = stats["coverage"]
+    coverage_label = coverage if coverage == "unverified" else f"{coverage}%"
+    test_count = stats["test_count"]
+    test_count_label = test_count if test_count == "unverified" else f"{test_count}+"
     lines = [
         f'# Project Stats — v{stats["version"]} "{stats["codename"]}"',
         "",
@@ -243,8 +271,8 @@ def write_stats_markdown(stats: dict[str, Any]) -> None:
         f"| Python | {stats['python_version']}+ |",
         f"| UI Tabs | {stats['tab_count']} |",
         f"| Test Files | {stats['test_file_count']} |",
-        f"| Test Count | {stats['test_count']}+ |",
-        f"| Coverage | {stats['coverage']}% |",
+        f"| Test Count | {test_count_label} |",
+        f"| Coverage | {coverage_label} |",
         f"| Utils Modules | {stats['utils_module_count']} |",
         f"| Active Version | {stats['active_version'] or 'stable'} |",
         f"| Pipeline | {stats['pipeline_version']} ({stats['pipeline_status']}) |",
