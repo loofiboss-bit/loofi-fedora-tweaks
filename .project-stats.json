@@ -27,11 +27,11 @@
   "utils_module_count": 75,
   "test_count": "4853",
   "coverage": "87.0",
-  "active_version": "27.0.1",
+  "active_version": "",
   "next_version": "",
-  "roadmap_status": "active",
+  "roadmap_status": "stable",
   "pipeline_version": "v27.0.1",
-  "pipeline_status": "active",
+  "pipeline_status": "complete",
   "python_version": "3.12",
   "framework": "PyQt6"
 }

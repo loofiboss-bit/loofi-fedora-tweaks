@@ -10,7 +10,7 @@
 - Streamline CLI interface and eliminate local Web API and D-Bus daemons.
 - Ship the Core release as the unique v27.0.1 identity while preserving the
   historical v27.0.0 Marketplace Enhancement tag unchanged.
-- Record 4,780 passing tests and 86.95% maintained-surface coverage against an
+- Record 4,780 passing tests and 86.94% maintained-surface coverage against an
   85% blocking gate; defer the repository-wide 90% target to the next release.
 - Keep physical, authorization-agent, reboot, Atomic, keyboard, and Orca gates
   explicitly unverified under the authorized manual-test skip.

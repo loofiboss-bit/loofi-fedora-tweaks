@@ -47,7 +47,7 @@ current product contract.
 - **Quality gates:** lint, mypy type checking, architecture, stabilization,
   product-contract, system-check, packaging-manifest, dependency-sync, and
   bytecode compilation passed locally.
-- **Coverage:** 86.95% line coverage for the maintained V27 surface against an
+- **Coverage:** 86.94% line coverage for the maintained V27 surface against an
   85% blocking gate. The planned repository-wide 90% target is deferred to the
   next release; compatibility-only modules remain exercised by the full test
   suite but are outside this maintained-surface measurement.
@@ -65,3 +65,10 @@ This is a breaking product-scope release. Scripts should use the reduced CLI
 and treat `available`, `unavailable`, `stale`, and `error` as distinct states.
 Install the single COPR RPM; no daemon, API package, or Flatpak bundle is
 required.
+
+## Publication
+
+The public release is available on [GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v27.0.1)
+and through [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/).
+Exact tag, checksum, attestation, signed RPM, CI, and wiki evidence is recorded
+in the [V27 publication report](../reports/V27_RELEASE_PUBLICATION.md).

@@ -1,6 +1,7 @@
 import pytest
 import os
 import sys
+from unittest.mock import patch
 
 # Add source path to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
@@ -34,7 +35,11 @@ def test_v4_integration_flow():
 
     # 5. Support Bundle
     bundle_gen = SupportBundleV2(registry)
-    bundle = bundle_gen.generate_bundle()
+    # Keep this legacy integration-shape test host independent.  Substitute
+    # only the package-manager executable so the registry still exercises its
+    # real checks without depending on a live DNF repository and network.
+    with patch("services.system.system.SystemManager.get_package_manager", return_value="echo"):
+        bundle = bundle_gen.generate_bundle()
     assert bundle["v"] == "4.0.0-atlas"
     assert "system" in bundle
     assert "health" in bundle

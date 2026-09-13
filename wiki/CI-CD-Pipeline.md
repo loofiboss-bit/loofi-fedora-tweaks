@@ -16,7 +16,7 @@ the package service, and the wiki after the workflow completes.
 ## Blocking quality contract
 
 The maintained V27 surface uses an 85% coverage threshold. v27.0.1 measured
-86.95% locally with 4,780 tests passed and 73 skipped. The full suite still
+86.94% locally with 4,780 tests passed and 73 skipped. The full suite still
 runs compatibility modules; the repository-wide 90% target is deferred to the
 next release.
 

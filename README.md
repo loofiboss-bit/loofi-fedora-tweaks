@@ -46,7 +46,7 @@ and fresh Atomic qualification are intentionally reported as unverified for
 this release; no manual test result is inferred from offscreen or rootless
 evidence.
 
-The maintained V27 surface reaches 86.95% local line coverage with an 85%
+The maintained V27 surface reaches 86.94% local line coverage with an 85%
 blocking gate. The planned repository-wide 90% target is deferred to the next
 release so this version can ship without overstating coverage.
 

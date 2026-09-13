@@ -3,7 +3,7 @@
 ## Current evidence
 
 - **Automated suite:** 4,780 passed, 73 skipped, 0 failed.
-- **Coverage:** 86.95% line coverage for the maintained V27 surface; the
+- **Coverage:** 86.94% line coverage for the maintained V27 surface; the
   blocking gate is 85%.
 - **Quality:** lint, mypy, architecture, product-contract, stabilization,
   packaging, dependency-sync, and compile checks passed locally.

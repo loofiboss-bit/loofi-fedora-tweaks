@@ -10,7 +10,7 @@
   handoff.
 - Removed the public specialist suite, local API/daemon, and Flatpak
   distribution bundle.
-- Automated qualification: 4,780 passed, 73 skipped, 0 failed; 86.95%
+- Automated qualification: 4,780 passed, 73 skipped, 0 failed; 86.94%
   maintained-surface coverage against an 85% gate. Repository-wide 90% and
   physical/manual qualification are deferred.
 

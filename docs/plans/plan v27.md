@@ -1,23 +1,30 @@
-# Plan för v27.0.0 — Fedora Maintenance Core
+# Plan för V27 — Fedora Maintenance Core
 
 ## V27.0.1 release decision
 
 The reviewed Core implementation is released as v27.0.1 because the historical
 v27.0.0 Marketplace Enhancement tag must remain unchanged. Automated
 qualification is the blocking release gate for this version: the maintained
-surface measures 86.95% coverage against an 85% threshold. The repository-wide
+surface measures 86.94% coverage against an 85% threshold. The repository-wide
 90% goal and physical/manual Fedora qualification are explicitly deferred to a
 follow-up release under the user's release decision; no manual result is
 inferred from rootless or offscreen evidence.
 
-## Bedömning
+## Publication outcome
+
+V27.0.1 was published through the canonical master-push workflow after the
+automated gates passed. The exact tag, GitHub assets, attestations, COPR RPM,
+and wiki readback are recorded in the [public release evidence](../reports/V27_RELEASE_PUBLICATION.md).
+The historical v27.0.0 tag remains unchanged.
+
+## Baseline assessment
 
 - **Teknisk grund: stark.** Full verifiering passerar: 7 151 tester, 61 hoppade, 86,40 % täckning, rena lint/type/arkitekturkontroller, byggbara RPM-paket och inga identifierade medium/höga Bandit-fynd.
 - **Produktomfång: ohållbart.** 29 plugins, 81 rutter, 74 systemåtgärder och cirka 100 000 produktkodrader gör appen svår att förstå och underhålla.
 - **Användarresa:** Home är delvis motsägelsefullt före första kontrollen; Updates är funktionellt men splittrat; Troubleshooting är sunt och tydligt; Action Center är säkert men överlastat; Applications duplicerar systemets programbutik och är Plasma-specifikt.
 - **Plattformsstöd:** produkten är egentligen Fedora KDE 44-fokuserad. Desktopdetektering styr nästan inga funktioner, Atomic-stödet är ofullständigt kvalificerat och flera hårdvaruverktyg gör snäva antaganden.
 - **Tillgänglighet:** grundkomponenterna har bra namn och disclosures, men 200 % text skär av navigation och den nuvarande rapporten påstår fokusbevis trots att manifestet inte observerade tangentbordsfokus.
-- **Publicering:** v26.0.3 publicerades den 13 september 2026 med grön CI och lyckad COPR-build 10981363, men `master`-README och flera versionsdokument säger fortfarande “local candidate”. Detta måste rättas omedelbart. [GitHub-release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v26.0.3)
+- **Publicering:** v26.0.3 publicerades den 13 september 2026 med grön CI och lyckad COPR-build 10981363, men `master`-README och flera versionsdokument sade fortfarande “local candidate”. Det baslinjeproblemet rättas genom V27:s dokumentations- och publiceringsarbete. [GitHub-release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v26.0.3)
 
 ## Produkt- och implementationsändringar
 

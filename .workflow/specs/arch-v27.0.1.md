@@ -62,7 +62,7 @@ application bundle.
 
 The full deterministic test suite runs compatibility modules as well as the
 maintained surface. v27.0.1 uses an 85% blocking coverage gate for the
-maintained Fedora Maintenance Core and measured 86.95% locally. The
+maintained Fedora Maintenance Core and measured 86.94% locally. The
 repository-wide 90% target is explicitly deferred to the next release.
 
 Physical desktop, authorization-agent, reboot, fresh Atomic, manual keyboard,
