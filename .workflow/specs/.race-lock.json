@@ -1,19 +1,17 @@
 {
-  "version": "v25.0.4",
-  "started_at": "20260812_103114",
-  "status": "complete",
-  "target_version": "v25.0.4",
-  "phase": "public-complete",
-  "baseline_commit": "0d7314b9fd086a662ba94b7dd5e51e0fbf39bd0b",
-  "product_version": "v25.0.4",
-  "product_codename": "Proof",
-  "target_codename": "Proof",
+  "version": "v26.0.3",
+  "started_at": "20260911_100657",
+  "status": "active",
+  "target_version": "v26.0.3",
+  "phase": "local-qualification",
+  "baseline_commit": "d45ccda87fe74ffbc4188dc7e71fb5508e5dbdb1",
+  "product_version": "v26.0.3",
+  "product_codename": "Everyday",
+  "target_codename": "Everyday",
   "current_public_release": "v25.0.4",
   "current_release_commit": "d93deaf801edd1fe9f2e240e5eee243890ce09d1",
-  "baseline_product_version": "v24.0.0",
-  "baseline_product_codename": "Flow",
-  "local_candidate_prepared_at": "2026-08-08T11:08:30+02:00",
-  "release_authorized_at": "2026-08-08T11:56:38+02:00",
+  "baseline_product_version": "v25.0.4",
+  "baseline_product_codename": "Proof",
   "v24_historical_tag_collision": {
     "tag": "v24.0.0",
     "historical_commit": "dd2a23f8bfb837d3f20e2fc65e63c21a11cb8cd8",
@@ -63,21 +61,21 @@
     "legacy_peeled_commit": "adc4cef116d147bd5b845f0ec98c3a1970b8b054"
   },
   "physical_gates": {
-    "offscreen_reference_screens_100_percent": "passed",
-    "offscreen_reference_screens_140_percent": "passed",
-    "deterministic_scale_contracts": "passed-100-125-140-150-200",
     "fedora44_kde_wayland": "unverified",
     "fresh_atomic": "unverified",
     "manual_keyboard": "unverified",
-    "audible_orca": "unverified"
+    "audible_orca": "unverified",
+    "polkit": "unverified",
+    "reboot_completion": "unverified",
+    "clean_kde_install": "unverified"
   },
   "external_release_gates": {
-    "commit_and_exact_tag": "passed-v25.0.4-canonical-workflow",
-    "ci_and_codeql": "passed",
-    "github_assets_checksums_attestations": "passed",
-    "copr_packages_signatures": "passed",
-    "clean_fedora44_install": "unverified",
-    "public_docs_and_wiki": "passed"
+    "commit_and_exact_tag": "not_requested_for_local_candidate",
+    "ci_and_codeql": "not_requested_for_local_candidate",
+    "github_assets_checksums_attestations": "not_requested_for_local_candidate",
+    "copr_packages_signatures": "not_requested_for_local_candidate",
+    "clean_fedora44_install": "not_requested_for_local_candidate",
+    "public_docs_and_wiki": "not_requested_for_local_candidate"
   },
   "current_public_release_evidence": {
     "release_commit": "d93deaf801edd1fe9f2e240e5eee243890ce09d1",
@@ -97,6 +95,6 @@
     "closure_ci_attempt": 2,
     "closure_codeql_run": 31591133767
   },
-  "bumped_at": "2026-08-12T10:31:14.374030+00:00",
-  "completed_at": "2026-08-12T13:28:02+02:00"
+  "bumped_at": "2026-09-11T10:06:57.993496+00:00",
+  "publication_authorized": false
 }

@@ -23,7 +23,17 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v23.0.2 | Compass | DONE | [Hotfix architecture](.workflow/specs/arch-v23.0.2.md), [tasks](.workflow/specs/tasks-v23.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v23.0.2.md), [public evidence](docs/reports/V23_RELEASE_PUBLICATION.md) |
 | v23.1.0 | Compass | DONE | [Canonical plan](docs/plans/loofi-fedora-tweaks-v23.1-implementation-plan.md), [architecture](.workflow/specs/arch-v23.1.0.md), [tasks](.workflow/specs/tasks-v23.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v23.1.0.md) |
 | v24.0.0 | Flow | DONE | [Architecture](.workflow/specs/arch-v24.0.0.md), [tasks](.workflow/specs/tasks-v24.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v24.0.0.md), [qualification](docs/reports/V24_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V24_RELEASE_PUBLICATION.md) |
+| v26.0.3 | Everyday | ACTIVE (local candidate) | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
+
+## [ACTIVE] v26.0.3 "Everyday" — Daily Maintenance
+
+Local candidate: explicit System/Flatpak/Firmware overview, saved-run follow-up,
+plain-language actions and rootless qualification. No publication is authorized.
+See the [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md),
+[tasks](.workflow/specs/tasks-v26.0.3.md),
+[architecture](.workflow/specs/arch-v26.0.3.md) and
+[qualification](docs/reports/V26_RELEASE_QUALIFICATION.md).
 
 ## [DONE] v25.0.4 "Proof" — Bounded Direct Execution and Outcome Evidence
 

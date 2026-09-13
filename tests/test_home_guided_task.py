@@ -62,6 +62,14 @@ class TestGuidedTask(unittest.TestCase):
         self.assertIsNotNone(active)
         self.assertEqual(active.source_id, "run-running")
 
+    def test_follow_up_is_bounded_deduplicated_and_uses_saved_ids(self):
+        runs = [SimpleNamespace(run_id=f"run-{i}", state="verifying", updated_at=i) for i in range(6)]
+        primary = GuidedTask("primary", "run", "Review", "Review result", "maintenance:action-center", "run-5")
+        tasks = HomeService._follow_up_tasks((*runs, runs[4]), primary)
+        self.assertEqual([task.source_id for task in tasks], ["run-4", "run-3", "run-2"])
+        self.assertTrue(all(task.title == "Result needs checking" for task in tasks))
+        self.assertEqual(tasks, HomeService._follow_up_tasks((*runs, runs[4]), primary))
+
     def test_system_check_task_binds_saved_check_id(self):
         recommendation = Recommendation(
             "partial",

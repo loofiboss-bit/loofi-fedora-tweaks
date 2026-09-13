@@ -1,5 +1,13 @@
 # Changelog
 
+## [26.0.3] - Unreleased - "Everyday"
+
+- Add explicit update inspection with independent source results and protected saved state.
+- Preserve run IDs when following pending maintenance from Home.
+- Expose pending result checks and distinguish reboot waiting from verified success.
+- Refine update details and action wording without changing execution authority.
+
+
 <!-- markdownlint-configure-file {"MD024": {"siblings_only": true}} -->
 
 All notable changes to this project will be documented in this file.

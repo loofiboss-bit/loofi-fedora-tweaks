@@ -9,7 +9,7 @@ class DirectActionUiMixin:
     def _add_direct_action_button(self: typing.Any, target_review_row: typing.Any) -> None:
         from ui.components import PrimaryButton
 
-        self.direct_button = PrimaryButton(self.tr("Run with Proof"))
+        self.direct_button = PrimaryButton(self.tr("Run action"))
         self.direct_button.setToolTip(
             self.tr(
                 "Use the configured direct-action policy with fresh preflight and independent verification."
@@ -90,7 +90,7 @@ class DirectActionUiMixin:
         self._set_lifecycle_primary("direct", enabled=False)
         self.presentation_banner.set_result(
             "info",
-            self.tr("Proof execution in progress"),
+            self.tr("Maintenance in progress"),
             self.tr("Fresh preflight, one execution, and independent verification are running."),
         )
         context = self._requested_finding_context
@@ -103,7 +103,7 @@ class DirectActionUiMixin:
                 target=self._target_key,
             ),
             self._accept_direct_result,
-            self.tr("Proof Execution Failed"),
+            self.tr("Action failed"),
         )
 
     def _accept_direct_result(self: typing.Any, result: typing.Any) -> None:
@@ -112,11 +112,13 @@ class DirectActionUiMixin:
         from core.actions.direct import DirectActionResult
 
         if not isinstance(result, DirectActionResult):
-            QMessageBox.warning(self, self.tr("Proof Execution Failed"), self.tr("The direct-action result was invalid."))
+            QMessageBox.warning(self, self.tr("Action failed"), self.tr("The direct-action result was invalid."))
             return
         service = self._direct_service_instance()
+        self._current_run = None
+        self._current_plan = None
         self.presentation_banner.set_result(
-            "success" if result.status in {"completed_verified", "completed_awaiting_reboot"} else "warning",
+            "success" if result.status == "completed_verified" else "warning",
             result.display_label,
             result.message,
         )
@@ -144,4 +146,5 @@ class DirectActionUiMixin:
                     f"{self.tr('Recovery')}: {result.outcome.recovery.status}",
                 ],
             )
-        self._set_lifecycle_primary("", enabled=False)
+        if self._current_run is None:
+            self._set_lifecycle_primary("", enabled=False)

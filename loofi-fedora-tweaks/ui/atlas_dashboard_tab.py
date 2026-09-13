@@ -272,15 +272,13 @@ class AtlasDashboardTab(BaseTab):
             task_grid.add_card(self._task_card(task))
         self.tasks_container.addWidget(task_grid)
 
-        if summary.active_work is not None:
+        follow_ups = summary.follow_up_tasks or ((summary.active_work,) if summary.active_work is not None else ())
+        if follow_ups:
             self.active_work_container.addWidget(
-                self._section_label(self.tr("Active work"))
+                self._section_label(self.tr("Maintenance follow-up"))
             )
-            self._add_guided_task(
-                summary.active_work,
-                primary=False,
-                target=self.active_work_container,
-            )
+            for follow_up in follow_ups:
+                self._add_guided_task(follow_up, primary=False, target=self.active_work_container)
 
         if summary.recent_change is not None:
             self.recent_container.addWidget(self._section_label(self.tr("Recent activity")))
@@ -609,7 +607,13 @@ class AtlasDashboardTab(BaseTab):
             .replace("%1", self.tr(task.action_label))
             .replace("%2", self.tr(task.title))
         )
-        self._connect_route_button(button, task.route_id)
+        if task.source in {"run", "reboot"}:
+            button.setProperty("routeId", task.route_id)
+            button.setProperty("runId", task.source_id)
+            button.setObjectName("homeActionCenterLink")
+            button.clicked.connect(lambda _checked=False: self._open_saved_run(task.source_id))
+        else:
+            self._connect_route_button(button, task.route_id)
         actions.add_action(button, primary=True)
         card.add_widget(actions)
         container.addWidget(card)
@@ -731,3 +735,12 @@ class AtlasDashboardTab(BaseTab):
         switch = getattr(main_window, "switch_to_route", None)
         if callable(switch):
             switch(route_id)
+
+    def _open_saved_run(self, run_id: str) -> None:
+        """Navigate to an existing run; no planning or verification on Home."""
+        main_window = self.main_window or self.window()
+        opener = getattr(main_window, "_open_action_center_run", None)
+        if callable(opener):
+            opener(run_id)
+        else:
+            self._open_route("maintenance:action-center")

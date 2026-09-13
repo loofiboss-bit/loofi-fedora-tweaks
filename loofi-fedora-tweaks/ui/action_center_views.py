@@ -176,5 +176,28 @@ class ActionCenterDetailPane(QWidget):
         self.detail_area.setAccessibleName(self.tr("Selected change technical details"))
         self.body.addWidget(self.detail_disclosure, 1)
 
+    def apply_details(self, details: Any) -> None:
+        """Apply safety facts, plain summary, and technical disclosure."""
+        self.risk_panel.set_review_facts(
+            risk=details.risk,
+            scope=details.scope,
+            requirements=details.requirements,
+            validation=details.validation,
+            rollback=details.rollback,
+        )
+        self.set_selected_details(
+            list(details.summary_lines),
+            list(details.technical_lines),
+        )
+
+    def set_selected_details(
+        self,
+        summary_lines: list[str],
+        technical_lines: list[str],
+    ) -> None:
+        """Keep user outcome and safety facts visible above technical metadata."""
+        self.selected_summary.setText("\n".join(summary_lines))
+        self.detail_area.setPlainText("\n".join(technical_lines))
+
 
 __all__ = ["ActionCenterDetailPane", "ActionCenterMasterPane"]

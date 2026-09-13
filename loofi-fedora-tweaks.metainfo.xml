@@ -40,6 +40,11 @@
   </provides>
 
   <releases>
+    <release version="26.0.3" date="2026-09-11" type="development">
+      <description>
+        <p>v26.0.3 "Everyday" - local candidate for explicit update inspection and saved-run follow-up.</p>
+      </description>
+    </release>
     <release version="25.0.4" date="2026-08-12">
       <description>
         <p>v25.0.4 "Proof" - bounded direct execution and outcome evidence</p>

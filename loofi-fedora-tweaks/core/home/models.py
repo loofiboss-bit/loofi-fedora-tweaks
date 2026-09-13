@@ -136,6 +136,7 @@ class HomeSummary:
     primary_task: GuidedTask | None = None
     active_work: GuidedTask | None = None
     last_verified_change: RecentChange | None = None
+    follow_up_tasks: tuple[GuidedTask, ...] = ()
 
     def __post_init__(self) -> None:
         if len(self.attention_items) > 3:

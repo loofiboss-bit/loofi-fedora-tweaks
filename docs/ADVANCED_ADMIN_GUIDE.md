@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 25.0.4 "Proof" public release
+> Version 26.0.3 "Everyday" local candidate
 
 Operational runbook for power users and Fedora administrators.
 

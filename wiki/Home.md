@@ -2,7 +2,7 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Current release:** v25.0.4 "Proof"<br>
+**Local candidate:** v26.0.3 "Everyday"<br>
 **Supported target:** Fedora 44<br>
 **Preview target:** Fedora 45
 

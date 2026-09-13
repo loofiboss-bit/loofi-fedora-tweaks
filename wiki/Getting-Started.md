@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 25.0.4 "Proof" public release
+> Version 26.0.3 "Everyday" local candidate
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -185,3 +185,15 @@ loofi support-bundle
 - [Verified maintenance](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/VERIFIED_MAINTENANCE.md)
 - [Advanced operations](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/ADVANCED_ADMIN_GUIDE.md)
 - [Troubleshooting](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TROUBLESHOOTING.md)
+
+## Everyday local candidate: updates and follow-up
+
+Open Software & Updates → Updates and select **Check for updates**. System,
+Flatpak and Firmware retain separate status and timestamps. An unavailable source
+is not the same as having no updates. Expand source details for versions and
+restart guidance. Select one source to review its Action Center plan; the saved
+overview never authorizes execution.
+
+Home lists saved maintenance that needs attention. Open its run, then use
+**Check result** when verification is pending. Waiting for restart is not final
+success. Neither opening Home nor following a run retries or reboots the system.

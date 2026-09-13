@@ -1,8 +1,7 @@
 # Documentation
 
-This is the documentation map for the public v25.0.4 "Proof" release.
-Historical v25 tags remain preserved; v25.0.4 is the separate Proof release
-identity.
+This map covers the unpublished v26.0.3 "Everyday" local candidate.
+Historical releases and their evidence remain unchanged.
 
 ## Use Loofi
 
@@ -24,7 +23,7 @@ The repository [README](../README.md) is the product overview and quick start.
 The getting-started guide above is the canonical source mirrored to
 `wiki/Getting-Started.md`; CI rejects drift.
 
-The current public baseline remains v24.0.0 "Flow". It is retained as
+The current public baseline is v25.0.4 "Proof". It is retained as
 historical compatibility and qualification evidence, not as current guidance.
 
 ## Contribute
@@ -70,3 +69,6 @@ competing with current guidance:
 
 Historical files describe the release named in each file. They are not current
 usage instructions.
+
+- [Everyday plan](plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md) — local candidate scope
+- [Everyday qualification](reports/V26_RELEASE_QUALIFICATION.md) — evidence and limits
