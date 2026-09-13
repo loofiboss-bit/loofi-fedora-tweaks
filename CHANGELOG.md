@@ -1,6 +1,15 @@
 # Changelog
 
-## [26.0.3] - Unreleased - "Everyday"
+## [27.0.0] - Unreleased - "Core"
+
+- Decommission specialist products (AI Lab, Agents, Automation, Loofi Link, State Teleport, Gaming, Development, Virtualization, Community, Extensions, Profiles).
+- Introduce immutable PlatformProfile with true Fedora neutrality (Workstation, KDE, Silverblue, Kinoite, Atomic).
+- Consolidate application down to five focused destinations: Home, Updates & Apps, System Health, Protection & Recovery, and Changes.
+- Delegate software installation to native software centers via AppStream/XDG.
+- Enforce strict Action Center mutation boundary; remove direct subprocess execution from UI views.
+- Streamline CLI interface and eliminate local Web API and D-Bus daemons.
+
+## [26.0.3] - 2026-09-13 - "Everyday"
 
 - Add explicit update inspection with independent source results and protected saved state.
 - Preserve run IDs when following pending maintenance from Home.

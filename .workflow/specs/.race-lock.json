@@ -1,17 +1,17 @@
 {
-  "version": "v26.0.3",
-  "started_at": "20260911_100657",
+  "version": "v27.0.0",
+  "started_at": "20260913_140000",
   "status": "active",
-  "target_version": "v26.0.3",
-  "phase": "local-qualification",
-  "baseline_commit": "d45ccda87fe74ffbc4188dc7e71fb5508e5dbdb1",
-  "product_version": "v26.0.3",
-  "product_codename": "Everyday",
-  "target_codename": "Everyday",
-  "current_public_release": "v25.0.4",
-  "current_release_commit": "d93deaf801edd1fe9f2e240e5eee243890ce09d1",
-  "baseline_product_version": "v25.0.4",
-  "baseline_product_codename": "Proof",
+  "target_version": "v27.0.0",
+  "phase": "v27-core-implementation",
+  "baseline_commit": "53ad83487fa5bd972c2832178920bb001b8a989f",
+  "product_version": "v27.0.0",
+  "product_codename": "Core",
+  "target_codename": "Core",
+  "current_public_release": "v26.0.3",
+  "current_release_commit": "53ad83487fa5bd972c2832178920bb001b8a989f",
+  "baseline_product_version": "v26.0.3",
+  "baseline_product_codename": "Everyday",
   "v24_historical_tag_collision": {
     "tag": "v24.0.0",
     "historical_commit": "dd2a23f8bfb837d3f20e2fc65e63c21a11cb8cd8",
@@ -60,6 +60,14 @@
     "legacy_tag_object": "496ab1edb608a7420083b6541ddbc61b64a432f0",
     "legacy_peeled_commit": "adc4cef116d147bd5b845f0ec98c3a1970b8b054"
   },
+  "v27_historical_tag_collision": {
+    "tag": "v27.0.0",
+    "historical_commit": "b103a20ae495dc2c167668057f531ed3e762d313",
+    "historical_codename": "Marketplace Enhancement",
+    "status": "preserved-as-legacy",
+    "legacy_tag": "legacy-v27.0.0-marketplace-enhancement",
+    "legacy_commit": "b103a20ae495dc2c167668057f531ed3e762d313"
+  },
   "physical_gates": {
     "fedora44_kde_wayland": "unverified",
     "fresh_atomic": "unverified",
@@ -78,23 +86,19 @@
     "public_docs_and_wiki": "not_requested_for_local_candidate"
   },
   "current_public_release_evidence": {
-    "release_commit": "d93deaf801edd1fe9f2e240e5eee243890ce09d1",
-    "tag_object": "2d65b52f74dadb5258a114b1c66897fc744ec4e0",
-    "auto_release_run": 31589208342,
-    "ci_run": 31589208350,
-    "codeql_run": 31589207822,
-    "wiki_run": 31591133495,
+    "release_commit": "53ad83487fa5bd972c2832178920bb001b8a989f",
+    "tag_object": "49b58aa046333aa1a7210b5d63d369c08f9d3b35",
+    "auto_release_run": 34754130936,
+    "ci_run": 34754130958,
+    "codeql_run": 34754130799,
+    "wiki_run": 34754130937,
     "github_release_assets": 8,
     "verified_attestations": 8,
-    "copr_build": 10855992,
-    "copr_evr": "1:25.0.4-1.fc44",
+    "copr_build": 10981363,
+    "copr_evr": "1:26.0.3-1.fc44",
     "copr_key_fingerprint": "4079C862B1977B9BF49768354FE905DF539BA887",
-    "wiki_commit": "79ff84cf3158a4ed3b9dff1727a3f0e0326184dc",
-    "closure_auto_release_run": 31591133511,
-    "closure_ci_run": 31591133498,
-    "closure_ci_attempt": 2,
-    "closure_codeql_run": 31591133767
+    "wiki_commit": "6ba5d98f69b683201e6c86526dccd44cdd5d1fc5"
   },
-  "bumped_at": "2026-09-11T10:06:57.993496+00:00",
+  "bumped_at": "2026-09-13T14:00:00.000000+00:00",
   "publication_authorized": false
 }

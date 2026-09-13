@@ -3,22 +3,22 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: v26.0.3 "Everyday" (local candidate) | **Current public release**: 25.0.4 "Proof" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: v27.0.0 "Core" (active) | **Current public release**: 26.0.3 "Everyday" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora (desktop-neutral)
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
-> V21, V22, Compass 23.1.0, and Flow 24.0.0 preceded the public Proof release.
-> Proof release 25.0.4 adds a bounded direct-action policy projection over Action
-> Center. Historical v25 tags remain preserved under separate lineages;
-> release 25.0.4 is the unambiguous Proof release identity.
+> V21, V22, Compass 23.1.0, Flow 24.0.0, Proof 25.0.4, and Everyday 26.0.3 preceded this release.
+> Everyday release 26.0.3 was published on 2026-09-13 via COPR build 10981363.
+> Core release 27.0.0 transforms the application into a desktop-neutral Fedora Maintenance Core.
 > Fresh Atomic and manual physical accessibility qualification remain open
 > and are not inferred from offscreen evidence.
 
-## Active Everyday architecture
+## Active Fedora Maintenance Core architecture
 
-The local Everyday candidate adds explicit update inspection and saved-run
-follow-up. See the [Everyday contract](.workflow/specs/arch-v26.0.3.md) and
-[plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md). Public release remains
-release 25.0.4 (Proof); local qualification does not imply publication or physical tests.
+The Core architecture transforms the product into a desktop-neutral maintenance core with five destinations
+(Home, Updates & Apps, System Health, Protection & Recovery, and Changes), an immutable `PlatformProfile`,
+and strict Action Center mutation boundaries.
+See the [Core architecture contract](.workflow/specs/arch-v27.0.0.md) and
+[plan](docs/plans/plan%20v27.md). Current public release is 26.0.3 Everyday.
 
 
 ## Preserved Proof architecture

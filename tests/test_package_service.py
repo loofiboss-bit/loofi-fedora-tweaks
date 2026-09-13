@@ -78,7 +78,7 @@ class TestDnfPackageService(unittest.TestCase):
         mock_worker_class.assert_called_once()
         call_args = mock_worker_class.call_args
         self.assertEqual(call_args[0][0], "pkexec")
-        self.assertIn("dnf", call_args[0][1])
+        self.assertIn(call_args[0][1][0], ("dnf", "dnf5"))
         self.assertIn("install", call_args[0][1])
         self.assertIn("vim", call_args[0][1])
 

@@ -37,8 +37,6 @@ ROUTE_SCREENSHOTS = [
     ("network-overview.png", "network:connections", False),
     ("security-privacy.png", "security:privacy", False),
     ("settings-appearance.png", "settings:appearance", False),
-    ("ai-lab-models.png", "ai-lab:models", True),
-    ("community-legacy-extensions.png", "community:presets", True),
 ]
 
 

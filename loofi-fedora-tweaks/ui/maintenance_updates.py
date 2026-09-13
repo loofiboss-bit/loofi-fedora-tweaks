@@ -815,8 +815,7 @@ class _OverlaysSubTab(QWidget):
 class _SmartUpdatesSubTab(QWidget):
     """Sub-tab for advanced update management.
 
-    Uses UpdateManager to check updates, preview conflicts,
-    schedule updates, and rollback.
+    Uses UpdateManager to check updates and preview conflicts.
     """
 
     def __init__(self: typing.Any) -> None:
@@ -846,25 +845,6 @@ class _SmartUpdatesSubTab(QWidget):
         self.updates_list.setMinimumHeight(120)
         check_layout.addWidget(self.updates_list)
         layout.addWidget(check_group)
-
-        # Schedule & Rollback
-        actions_group = QGroupBox(self.tr("Actions"))
-        actions_layout = QVBoxLayout(actions_group)
-
-        schedule_row = QHBoxLayout()
-        self.btn_schedule = QPushButton(self.tr("Schedule Update (02:00)"))
-        self.btn_schedule.setAccessibleName(self.tr("Schedule Update"))
-        self.btn_schedule.clicked.connect(self._schedule_update)
-        schedule_row.addWidget(self.btn_schedule)
-
-        self.btn_rollback = QPushButton(self.tr("Rollback Last Update"))
-        self.btn_rollback.setAccessibleName(self.tr("Rollback Last Update"))
-        self.btn_rollback.setObjectName("dangerAction")
-        self.btn_rollback.clicked.connect(self._rollback_last)
-        schedule_row.addWidget(self.btn_rollback)
-        schedule_row.addStretch()
-        actions_layout.addLayout(schedule_row)
-        layout.addWidget(actions_group)
 
         # Output
         self.output_area = QTextEdit()
@@ -913,17 +893,6 @@ class _SmartUpdatesSubTab(QWidget):
                 self.updates_list.addItem(QListWidgetItem(self.tr("No conflicts detected.")))
         except (RuntimeError, OSError, ValueError) as e:
             self._append_output(f"[ERROR] {e}\n")
-
-    def _schedule_update(self: typing.Any) -> typing.Any:
-        self._append_output(
-            self.tr(
-                "Unattended update execution is disabled. Create and review the Fedora, "
-                "Flatpak, and firmware plans in Action Center when you are present.\n"
-            )
-        )
-
-    def _rollback_last(self: typing.Any) -> typing.Any:
-        self._append_output(self.tr("Rollback remains manual-only. Loofi never initiates rollback or reboot automatically.\n"))
 
 
 # ---------------------------------------------------------------------------

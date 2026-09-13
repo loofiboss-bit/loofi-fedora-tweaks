@@ -1,6 +1,6 @@
 # Documentation
 
-This map covers the unpublished v26.0.3 "Everyday" local candidate.
+This map covers the v27.0.0 "Core" candidate.
 Historical releases and their evidence remain unchanged.
 
 ## Use Loofi

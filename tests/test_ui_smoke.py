@@ -13,13 +13,7 @@ TAB_MODULES = {
     "ui.software_tab": "SoftwareTab",
     "ui.security_tab": "SecurityTab",
     "ui.network_tab": "NetworkTab",
-    "ui.gaming_tab": "GamingTab",
-    "ui.desktop_tab": "DesktopTab",
-    "ui.development_tab": "DevelopmentTab",
-    "ui.automation_tab": "AutomationTab",
-    "ui.community_tab": "CommunityTab",
     "ui.diagnostics_tab": "DiagnosticsTab",
-    "ui.virtualization_tab": "VirtualizationTab",
 }
 
 

@@ -133,6 +133,12 @@ class TestSystemCheckModels(unittest.TestCase):
             )
 
     def test_domain_imports_no_pyqt_module(self):
+        import os
+        from pathlib import Path
+
+        source_root = str(Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks")
+        env = os.environ.copy()
+        env["PYTHONPATH"] = source_root
         probe = subprocess.run(
             [
                 sys.executable,
@@ -146,6 +152,7 @@ class TestSystemCheckModels(unittest.TestCase):
             text=True,
             check=False,
             timeout=10,
+            env=env,
         )
         self.assertEqual(probe.returncode, 0, probe.stderr)
 

@@ -754,33 +754,6 @@ class TestFedora44Packaging(unittest.TestCase):
         self.assertTrue(arch.exists())
         self.assertIn(__version_codename__, notes.read_text(encoding="utf-8"))
 
-    def test_spec_splits_api_and_daemon_dependencies(self):
-        spec = (self.ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
-        base_section = spec.split("%package api", 1)[0]
-        self.assertNotIn("Requires:       python3-fastapi", base_section)
-        self.assertNotIn("Requires:       python3-uvicorn", base_section)
-        self.assertIn("%package api", spec)
-        self.assertIn("%package daemon", spec)
-        self.assertIn("Requires:       python3-fastapi", spec)
-        self.assertIn("Requires:       python3-dbus", spec)
-        self.assertIn("%{_userunitdir}/loofi-fedora-tweaks-api.service", spec)
-
-    def test_daemon_unit_allows_only_its_required_user_state_paths(self):
-        unit = (
-            self.ROOT / "loofi-fedora-tweaks" / "config" / "loofi-fedora-tweaks.service"
-        ).read_text(encoding="utf-8")
-        self.assertIn("ProtectHome=read-only", unit)
-        self.assertIn(
-            "ReadWritePaths=%h/.config/loofi-fedora-tweaks "
-            "%h/.local/share/loofi-fedora-tweaks",
-            unit,
-        )
-        self.assertIn("RuntimeDirectory=loofi-fedora-tweaks", unit)
-        self.assertIn("RuntimeDirectoryMode=0700", unit)
-        self.assertIn("StateDirectory=loofi-fedora-tweaks", unit)
-        self.assertIn("StateDirectoryMode=0700", unit)
-        self.assertNotIn("%h/.cache", unit)
-
     def test_workflows_target_fedora44(self):
         for rel_path in (
             ".github/workflows/copr-publish.yml",

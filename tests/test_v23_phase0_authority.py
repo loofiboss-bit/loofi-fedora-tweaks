@@ -70,7 +70,7 @@ class TestV23Phase0Authority(unittest.TestCase):
         entry = catalog_entry("diagnostics")
         logs = catalog_entry("logs")
 
-        self.assertEqual(len(routes), 81)
+        self.assertEqual(len(routes), 45)
         self.assertIsNotNone(entry)
         self.assertEqual(entry.destination.id, "system")
         self.assertEqual(entry.section.id, "troubleshooting")

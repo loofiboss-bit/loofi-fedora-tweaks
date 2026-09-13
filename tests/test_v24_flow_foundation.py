@@ -78,20 +78,20 @@ class TestFlowSemanticFoundation(unittest.TestCase):
         self.assertTrue(header.status.isVisible() or not header.isVisible())
         self.assertEqual(header.status.accessibleName(), "Ready")
 
-    def test_navigation_groups_six_stable_destinations_without_new_ids(self) -> None:
+    def test_navigation_groups_five_stable_destinations_without_new_ids(self) -> None:
         sidebar = DestinationSidebar()
         sidebar.set_destinations(destinations_for_mode(NavigationMode.STANDARD))
 
         self.assertEqual(
             sidebar.destination_ids(),
-            ("home", "software_updates", "system", "network_security", "desktop", "settings"),
+            ("home", "software_updates", "system", "network_security", "changes"),
         )
         self.assertEqual(
             sidebar.presentation_groups(),
             (
                 ("Overview", ("home",)),
                 ("Manage", ("software_updates", "system", "network_security")),
-                ("Personalize", ("desktop", "settings")),
+                ("Review", ("changes",)),
             ),
         )
 

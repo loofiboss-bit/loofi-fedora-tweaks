@@ -1,6 +1,6 @@
 # Screenshots
 
-Current deterministic UI evidence for the **v26.0.3 "Everyday"** local candidate
+Current deterministic UI evidence for the **v27.0.0 "Core"** candidate
 is stored once in the main repository. These contact sheets show wide and
 compact layouts without duplicating binary assets in the wiki.
 

@@ -1,13 +1,13 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v26.0.3 "Everyday" keeps the read-only release
-readiness center, guided Upgrade Assistant, verified Action Center entry points,
-and health history inside the six-destination shell. Fedora KDE 44 is the
-supported stable target. Fedora 45 remains preview-only and advisory.
+Loofi Fedora Tweaks v27.0.0 "Core" provides a desktop-neutral release
+readiness check, guided Upgrade Assistant, verified Action Center entry points,
+and health history inside the five-destination shell. Fedora 43 and 44 are the
+supported stable targets. Fedora 45 remains preview-only and advisory.
 
 ## Run It
 
-Proof is the current public release. Physical-host, reboot, and manual
+v26.0.3 "Everyday" is the current public release. Physical-host, reboot, and manual
 qualification remain separate gates and are not inferred from rootless checks.
 
 GUI:

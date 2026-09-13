@@ -1,13 +1,13 @@
 # Loofi Fedora Tweaks — Advanced Admin Guide
 
-> Version 26.0.3 "Everyday" local candidate
+> Version 27.0.0 "Core"
 
 Operational runbook for power users and Fedora administrators.
 
 ---
 
-Proof adds bounded direct execution and outcome evidence over the existing
-Action Center. Physical and manual qualification remain separately reported
+v27.0.0 Core simplifies the architecture to five destinations and strict Action Center execution.
+Physical and manual qualification remain separately reported
 gates; this guide does not treat rootless evidence as host qualification.
 
 ## 1) Operating Model

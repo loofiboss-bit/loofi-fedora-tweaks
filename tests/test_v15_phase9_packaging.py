@@ -38,27 +38,15 @@ class TestPhase9PackageMetadata(unittest.TestCase):
         ]
 
         self.assertEqual(project["dependencies"], ["PyQt6>=6.7", "keyring>=25.0"])
-        self.assertEqual(
-            project["optional-dependencies"]["daemon"], ["dbus-python>=1.3"]
-        )
+        self.assertNotIn("daemon", project.get("optional-dependencies", {}))
         self.assertNotIn("requests", " ".join(project["dependencies"]))
 
     def test_rpm_drops_emoji_font_and_preserves_api_daemon_boundaries(self):
         spec = (ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
-        api = spec.split("%package api", 1)[1].split("%package daemon", 1)[0]
-        daemon = spec.split("%package daemon", 1)[1].split("%prep", 1)[0]
 
         self.assertNotIn("google-noto-color-emoji-fonts", spec)
-        self.assertIn(
-            "Requires:       %{name} = %{epoch}:%{version}-%{release}", api
-        )
-        self.assertIn("Requires:       python3-fastapi", api)
-        self.assertIn("Requires:       python3-python-multipart", api)
-        self.assertIn(
-            "Requires:       %{name} = %{epoch}:%{version}-%{release}", daemon
-        )
-        self.assertIn("Requires:       python3-dbus", daemon)
-        self.assertIn("Requires:       python3-gobject-base", daemon)
+        self.assertNotIn("%package api", spec)
+        self.assertNotIn("%package daemon", spec)
         self.assertNotIn("%package extras", spec)
 
     def test_package_descriptions_separate_core_and_specialist_capability(self):
@@ -68,16 +56,17 @@ class TestPhase9PackageMetadata(unittest.TestCase):
         )
 
         self.assertIn("Fedora maintenance and desktop control center", spec)
-        self.assertIn("Specialist tools", spec)
         self.assertIn(
             "<summary>Fedora maintenance and desktop control center</summary>",
             appstream,
         )
-        self.assertIn("Specialist development", appstream)
 
     def test_rpm_scriptlets_do_not_own_or_migrate_user_state(self):
         spec = (ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
-        scriptlets = spec.split("%post api", 1)[1].split("%files", 1)[0]
+        scriptlets = ""
+        for tag in ("%pre", "%post", "%preun", "%postun"):
+            if tag in spec:
+                scriptlets += spec.split(tag, 1)[1].split("%", 1)[0]
 
         for user_state in (
             ".config/loofi-fedora-tweaks",
@@ -101,10 +90,10 @@ class TestV14UpgradeCompatibility(unittest.TestCase):
         )
         self.assertTrue(changed)
         self.assertEqual(settings["navigation_mode"], NavigationMode.ADVANCED.value)
-        self.assertEqual(settings["last_route_id"], "maintenance:action-center")
+        self.assertEqual(settings["last_route_id"], "changes")
         self.assertEqual(
             settings["favorite_routes"],
-            ["atlas_dashboard", "maintenance:action-center", "future:route"],
+            ["atlas_dashboard", "changes", "future:route"],
         )
 
         with tempfile.TemporaryDirectory() as tmpdir:

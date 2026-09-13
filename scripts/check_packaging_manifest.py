@@ -44,14 +44,12 @@ EXPECTED_SOURCE_SUFFIXES = (
     "assets/icons/svg/update.svg",
     "resources/translations/en.ts",
     "config/org.loofi.fedora-tweaks.policy",
-    "agents/cleanup.json",
 )
 
 EXPECTED_ROOT_SUFFIXES = (
     "loofi-fedora-tweaks.desktop",
     "loofi-fedora-tweaks.metainfo.xml",
     "loofi-fedora-tweaks.1",
-    "loofi-fedora-tweaks-api.service",
 )
 
 
@@ -71,7 +69,6 @@ def _static_metadata_errors() -> list[str]:
         '"assets*"': "assets package data must be included",
         '"resources*"': "resources package data must be included",
         '"config*"': "config package data must be included",
-        '"agents*"': "agents package data must be included",
     }
     return [message for needle, message in checks.items() if needle not in text]
 

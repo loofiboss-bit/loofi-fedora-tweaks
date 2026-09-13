@@ -116,66 +116,16 @@ def main(argv: list[str] | None = None):
         description="System tweaks and maintenance for Fedora",
     )
     parser.add_argument(
-        "--daemon",
-        "-d",
-        action="store_true",
-        help="Run as background daemon for scheduled tasks",
-    )
-    parser.add_argument(
         "--cli",
         "-c",
         action="store_true",
         help="Run in command-line mode (pass remaining args to CLI)",
     )
-    parser.add_argument("--web", action="store_true", help="Run headless Loofi Web API server")
     parser.add_argument("--version", "-v", action="version", version=f"%(prog)s {__version__}")
 
     args, remaining = parser.parse_known_args(arguments)
 
-    if args.daemon:
-        # Run in daemon mode
-        try:
-            from daemon.runtime import run_daemon
-        except ImportError as exc:
-            print(
-                "ERROR: Daemon dependencies are missing. Install loofi-fedora-tweaks-daemon and retry.",
-                file=sys.stderr,
-            )
-            _log.critical("Daemon dependency import failed: %s", exc, exc_info=True)
-            sys.exit(1)
-
-        run_daemon()
-    elif args.web:
-        try:
-            from utils.api_server import APIServer
-        except ImportError as exc:
-            print(
-                "ERROR: Web API dependencies are missing. Install loofi-fedora-tweaks-api and retry.",
-                file=sys.stderr,
-            )
-            _log.critical("Web API dependency import failed: %s", exc, exc_info=True)
-            sys.exit(1)
-
-        api_host = os.getenv("LOOFI_API_HOST", "127.0.0.1")
-        try:
-            api_port = int(os.getenv("LOOFI_API_PORT", "8000"))
-        except ValueError:
-            _log.warning("Invalid LOOFI_API_PORT; falling back to 8000")
-            api_port = 8000
-        try:
-            server = APIServer(host=api_host, port=api_port)
-        except ValueError as exc:
-            print(f"ERROR: {exc}", file=sys.stderr)
-            _log.error("Web API configuration rejected: %s", exc)
-            sys.exit(2)
-        server.start()
-        _log.info("Loofi Web API started on %s:%s", server.host, server.port)
-        try:
-            while True:
-                __import__("time").sleep(1)
-        except KeyboardInterrupt:
-            _log.info("Loofi Web API shutting down")
-    elif args.cli:
+    if args.cli:
         # Run CLI mode
         from cli.main import main as cli_main
 

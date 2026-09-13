@@ -785,6 +785,7 @@ def _install_stubs():
             self.title = _DummyLabel()
             self.description = _DummyLabel()
             self.actions = []
+            self.settings_button = _DummyToolButton()
 
         def set_content(self, area, title, description=""):
             self.eyebrow.setText(area)

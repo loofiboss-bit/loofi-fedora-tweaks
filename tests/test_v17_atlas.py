@@ -203,33 +203,6 @@ class TestNetworkTabOverhaul(unittest.TestCase):
         self.assertIn("from services.network import NetworkMonitor", source)
 
 
-class TestGamingTabNormalization(unittest.TestCase):
-    """Test that GamingTab uses BaseTab and the Haven mutation boundary."""
-
-    def test_gaming_tab_inherits_base_tab(self):
-        filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "gaming_tab.py")
-        with open(filepath, "r", encoding="utf-8") as f:
-            source = f.read()
-        self.assertIn("class GamingTab(BaseTab)", source)
-        self.assertIn("from ui.base_tab import BaseTab", source)
-
-    def test_gaming_tab_uses_action_center(self):
-        filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "gaming_tab.py")
-        with open(filepath, "r", encoding="utf-8") as f:
-            source = f.read()
-        self.assertIn("actionCenterRequested = pyqtSignal", source)
-        self.assertIn('self.actionCenterRequested.emit("install-application"', source)
-
-    def test_gaming_tab_no_hardcoded_dnf(self):
-        """Ensure no raw pkexec dnf commands remain."""
-        filepath = os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "ui", "gaming_tab.py")
-        with open(filepath, "r", encoding="utf-8") as f:
-            source = f.read()
-        # Should not have raw pkexec dnf strings (the old pattern)
-        self.assertNotIn('"pkexec", ["dnf"', source)
-        self.assertNotIn("'pkexec', ['dnf'", source)
-
-
 class TestStorageTabStructure(unittest.TestCase):
     """Test StorageTab file structure."""
 

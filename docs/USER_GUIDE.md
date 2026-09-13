@@ -1,12 +1,12 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 26.0.3 "Everyday" local candidate
+> Version 27.0.0 "Core"
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
 `docs/ADVANCED_ADMIN_GUIDE.md`.
 
-This guide documents the local Everyday candidate; public downloads remain on Proof. Physical Fedora Wayland,
+This guide documents the active Core candidate; the current public release is v26.0.3 "Everyday". Physical Fedora Wayland,
 reboot, and manual accessibility qualification remain separately reported
 gates and are not inferred from offscreen evidence.
 
@@ -393,7 +393,7 @@ The historical Architecture Hardening tag object is preserved under
 commit, artifact, signature, checksum, SBOM/provenance, CI, COPR, Fedora 44
 installation, and public-documentation readback.
 
-## Everyday local candidate: updates and follow-up
+## Core maintenance: updates and follow-up
 
 Open Software & Updates → Updates and select **Check for updates**. System,
 Flatpak and Firmware retain separate status and timestamps. An unavailable source

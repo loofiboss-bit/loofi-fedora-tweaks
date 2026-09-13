@@ -1,25 +1,19 @@
-# Loofi Fedora Tweaks v27.0.0 — Marketplace Enhancement
+# v27.0.0 "Core" — Fedora Maintenance Core
 
-**Release Date:** 2026-02-12  
-**Codename:** Marketplace Enhancement  
-**Type:** Minor feature release
-
----
+Pre-release local candidate. Current public release is v26.0.3 "Everyday".
 
 ## Highlights
 
-- Added CDN-first marketplace index loading with signed metadata support, cache usage, and fallback behavior.
-- Added plugin ratings/reviews flows across API, CLI, and Community tab UX.
-- Added verified publisher trust state and badge output in plugin listing/detail surfaces.
-- Added opt-in plugin analytics pipeline with default-off consent and anonymized batched events.
-- Added plugin hot-reload contracts and rollback-safe reload flow integration.
-- Strengthened plugin isolation policy enforcement in sandbox-related execution paths.
-- Updated Plugin SDK, roadmap, changelog, README, and package metadata for v27 alignment.
+- Five focused destinations: Home, Updates & Apps, System Health, Protection & Recovery, and Changes.
+- True Fedora neutrality via immutable `PlatformProfile` supporting Workstation, KDE, Silverblue, Kinoite, and Atomic desktops.
+- Application management delegated neutrally to installed desktop software center via AppStream/XDG (`appstream://`).
+- Strict Action Center mutation boundary for all system changes; direct subprocess mutation removed from UI views.
+- Decommissioned specialist and experimental suites (AI Lab, Agents, Automation, Loofi Link, State Teleport, Gaming, Development, Virtualization, Community Marketplace, and extensions).
+- Streamlined CLI: `info`, `check`, `updates`, `troubleshoot`, `changes`, `activity`, `doctor`, and `support-bundle`.
+- Native Polkit execution via allowlisted system tools.
 
----
+## Architecture and Migration
 
-## Validation
-
-- `flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722`
-- `python loofi-fedora-tweaks/main.py --version`
-
+This is an intentional breaking major release. Legacy CLI subcommands, specialist data models,
+and retired routes are decommissioned. Safety and history data (system checks, update snapshots,
+Action Center plans, execution logs, and backup records) are preserved.

@@ -84,12 +84,12 @@ class _ApplicationsSubTab(BaseTab):
 
         self.native_handoff = NativeHandoffCard(
             NativeHandoffId.PLASMA_DISCOVER,
-            title=self.tr("Browse beyond the curated catalogue"),
+            title=self.tr("Browse Application Store"),
             description=self.tr(
-                "Use Plasma Discover for the complete graphical software catalogue. "
-                "Loofi keeps the verified Fedora actions below."
+                "Use your desktop software center for the complete application catalogue. "
+                "Loofi keeps verified Fedora maintenance actions below."
             ),
-            button_text=self.tr("Open Plasma Discover"),
+            button_text=self.tr("Open Software Store"),
         )
         layout.addWidget(self.native_handoff)
 

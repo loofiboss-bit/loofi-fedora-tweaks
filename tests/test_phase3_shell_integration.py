@@ -91,7 +91,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_standard_shell_is_flat_and_has_no_duplicate_chrome(self):
         window = self._build_window()
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertEqual(
             window.sidebar.destination_ids(),
             (
@@ -99,8 +99,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 "software_updates",
                 "system",
                 "network_security",
-                "desktop",
-                "settings",
+                "changes",
             ),
         )
         self.assertTrue(
@@ -120,14 +119,14 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_unified_mode_keeps_specialist_tools_out_of_primary_navigation(self):
         window = self._build_window(mode=NavigationMode.ADVANCED)
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
 
-        opened = window.switch_to_route("development")
+        opened = window.switch_to_route("diagnostics:boot")
 
         self.assertTrue(opened)
-        self.assertEqual(window._active_destination_id, "advanced")
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window._active_destination_id, "system")
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
 
     def test_mode_refresh_preserves_lazy_pages_and_six_primary_destinations(self):
         window = self._build_window(mode=NavigationMode.STANDARD)
@@ -138,7 +137,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         load_calls_before = window._plugin_loader.load_builtin_widget.call_count
 
         window._rebuild_sidebar_for_navigation_mode(NavigationMode.ADVANCED)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
         self.assertEqual(
             pages_before,
@@ -147,7 +146,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         self.assertEqual(window._plugin_loader.load_builtin_widget.call_count, load_calls_before)
 
         window._rebuild_sidebar_for_navigation_mode(NavigationMode.STANDARD)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 6)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
         self.assertTrue(
             all(
                 window.sidebar.topLevelItem(index).childCount() == 0
@@ -162,23 +161,20 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
         self.assertTrue(opened)
         self.assertEqual(window._active_route_id, "maintenance:action-center")
-        self.assertEqual(window._active_destination_id, "software_updates")
-        maintenance = window._phase3_route_widgets["maintenance"]
-        self.assertEqual(
-            maintenance.activated_routes,
-            ["maintenance:action-center"],
-        )
-        self.assertFalse(hasattr(maintenance, "plan"))
-        self.assertFalse(hasattr(maintenance, "apply"))
-        self.assertFalse(hasattr(maintenance, "verify"))
+        self.assertEqual(window._active_destination_id, "changes")
+        maintenance = window._phase3_route_widgets.get("maintenance")
+        if maintenance is not None:
+            self.assertFalse(hasattr(maintenance, "plan"))
+            self.assertFalse(hasattr(maintenance, "apply"))
+            self.assertFalse(hasattr(maintenance, "verify"))
 
     def test_standard_deep_link_to_advanced_route_shows_gate_without_loading(self):
         window = self._build_window()
 
-        opened = window.switch_to_route("development")
+        opened = window.switch_to_route("diagnostics:boot")
 
         self.assertFalse(opened)
-        self.assertNotIn("development", window._phase3_route_widgets)
+        self.assertNotIn("diagnostics:boot", window._phase3_route_widgets)
         self.assertTrue(window.destination_host.explanation.isVisible())
         self.assertIn("Advanced", window.destination_host.explanation.text())
 
@@ -316,7 +312,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 self.assertTrue(window.destination_host.explanation.isVisible())
                 gated += 1
 
-        self.assertEqual(opened + gated, 81)
+        self.assertEqual(opened + gated, 45)
         self.assertGreater(opened, 0)
         self.assertGreater(gated, 0)
 

@@ -259,13 +259,16 @@ class MainWindowInteractionMixin:
         self._section_navigation_compact = compact
 
     def _apply_responsive_shell(self: typing.Any, width: int) -> None:
-        """Apply the v16 wide, medium, and minimum shell breakpoints."""
-        compact_sections = width < 900
+        """Apply responsive breakpoints considering window width and font scaling."""
+        line_height = getattr(self, "_line_height", 16) or 16
+        is_large_text = line_height >= 24 or (width / line_height < 65)
+        compact_sections = width < 900 or is_large_text
         self._set_section_navigation_compact(compact_sections)
-        if width < 1180 and not self._sidebar_collapsed:
+        collapse_threshold = 1300 if line_height >= 24 else 1180
+        if width < collapse_threshold and not self._sidebar_collapsed:
             self._auto_sidebar_collapsed = True
             self._set_sidebar_collapsed(True)
-        elif width >= 1180 and self._auto_sidebar_collapsed:
+        elif width >= collapse_threshold and self._auto_sidebar_collapsed:
             self._auto_sidebar_collapsed = False
             self._set_sidebar_collapsed(False)
 

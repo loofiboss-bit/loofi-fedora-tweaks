@@ -25,17 +25,17 @@ class TestComponentAvailability(unittest.TestCase):
     def test_complete_checkout_exposes_core_and_specialist_components(self):
         self.assertEqual(
             discover_builtin_components(source_root=SOURCE_ROOT),
-            frozenset({"core", "specialist"}),
+            frozenset({"core"}),
         )
 
     def test_one_missing_specialist_module_disables_only_specialist_bundle(self):
-        missing = "ui.ai_enhanced_tab"
+        missing = "ui.atlas_dashboard_tab"
 
         components = discover_builtin_components(
             module_available=lambda module: module != missing
         )
 
-        self.assertEqual(components, frozenset({"core"}))
+        self.assertEqual(components, frozenset())
 
     def test_module_paths_are_resolved_without_importing_plugins(self):
         path = module_source_path("ui.atlas_dashboard_tab", source_root=SOURCE_ROOT)
@@ -121,7 +121,7 @@ class TestCoreOnlyStartup(unittest.TestCase):
             run = json.loads(output.read_text(encoding="utf-8"))["runs"][0]
 
         self.assertEqual(core_contract["status"], "passed")
-        self.assertEqual(len(core_contract["standard_destinations"]), 6)
+        self.assertEqual(len(core_contract["standard_destinations"]), 5)
         self.assertEqual(len(core_contract["core_workflows"]), 5)
         self.assertEqual(
             core_contract["action_center_variants"],

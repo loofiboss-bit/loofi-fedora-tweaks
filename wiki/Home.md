@@ -2,8 +2,8 @@
 
 Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
 
-**Local candidate:** v26.0.3 "Everyday"<br>
-**Supported target:** Fedora 44<br>
+**Candidate:** v27.0.0 "Core"<br>
+**Supported targets:** Fedora 43 and 44<br>
 **Preview target:** Fedora 45
 
 ## What Loofi does
@@ -13,22 +13,17 @@ Loofi Fedora Tweaks is a Fedora maintenance and desktop control center.
   is applied.
 - Maintenance outcomes are verified separately from command completion.
 - Traditional and Atomic Fedora paths remain distinct.
-- The optional API is loopback-only and cannot apply plans.
+- Desktop-neutral core operating across all official Fedora desktop environments.
 
 ## Navigation
 
-The unified shell has six destinations:
+The unified shell has five destinations:
 
-1. **Home** for current state, attention items, and common tasks.
-2. **Software & Updates** for applications, repositories, updates, cleanup,
-   Fedora upgrades, and Action Center.
-3. **System** for system details, performance, processes, hardware, storage,
-   diagnostics, health history, and recovery points.
-4. **Network & Security** for connections, DNS, privacy, firewall, exposure,
-   and backups.
-5. **Desktop** for appearance, displays, and window behavior.
-6. **Settings** for application behavior, Specialist Tools, Repair Loofi, and
-   About.
+1. **Home** for system state, single recommended action, and common tasks.
+2. **Updates & Apps** for system, Flatpak, and firmware updates, and neutral app handoff.
+3. **System Health** for System Check, symptom troubleshooting, storage, hardware, and support bundle.
+4. **Protection & Recovery** for firewall, exposure, backups, exact rollbacks, and activity.
+5. **Changes** for the Action Center review and verification workspace.
 
 Built-in specialist providers load only when opened through Specialist Tools,
 search, favorites, or a stable deep link. Discoverability never changes

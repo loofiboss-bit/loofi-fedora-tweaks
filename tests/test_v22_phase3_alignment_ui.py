@@ -9,7 +9,7 @@ from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication, QLabel, QPushButton
 
-from core.navigation import ADVANCED_DESTINATION, NavigationContext, NavigationMode
+from core.navigation import NavigationContext, NavigationMode
 from ui.activity_recovery_tab import ActivityRecoveryTab
 from ui.maintenance_action_center import _ActionCenterSubTab
 from ui.navigation.destination_host import DestinationHost
@@ -35,26 +35,6 @@ class TestV22Phase3AlignmentUi(unittest.TestCase):
             "QWidget {\n    background-color: $color_window;",
             qss,
         )
-
-    def test_specialist_tools_start_with_group_overview_and_have_zero_state(
-        self,
-    ) -> None:
-        host = DestinationHost()
-        host.set_destination(
-            ADVANCED_DESTINATION,
-            NavigationContext(mode=NavigationMode.ADVANCED),
-        )
-
-        self.assertTrue(host.navigator.group_overview.isVisibleTo(host))
-        self.assertFalse(host.navigator.rail.isVisible())
-        self.assertGreaterEqual(len(host.navigator._group_buttons), 6)
-
-        host.navigator.filter_input.setText("no-such-specialist-tool")
-        self.app.processEvents()
-
-        self.assertTrue(host.navigator.no_results.isVisibleTo(host))
-        self.assertEqual(host.navigator.visible_section_ids(), ())
-        host.deleteLater()
 
     @patch.object(
         _ActionCenterSubTab,

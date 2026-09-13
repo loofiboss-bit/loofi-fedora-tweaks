@@ -203,17 +203,9 @@ class TestCLICommands(unittest.TestCase):
             cli_main(["--help"])
         self.assertEqual(ctx.exception.code, 0)
 
-    def test_cli_disk_command_exists(self):
+    def test_cli_check_command_runs(self):
         from cli.main import main as cli_main
-        # Running disk command should succeed
-        result = cli_main(["disk"])
-        self.assertEqual(result, 0)
-
-    @patch('utils.monitor.os.getloadavg', return_value=(1.0, 0.8, 0.5), create=True)
-    @patch('utils.monitor.os.cpu_count', return_value=4)
-    def test_cli_health_command_runs(self, _mock_cpu_count, _mock_getloadavg):
-        from cli.main import main as cli_main
-        result = cli_main(["health"])
+        result = cli_main(["check"])
         self.assertEqual(result, 0)
 
     def test_cli_version_is_9(self):

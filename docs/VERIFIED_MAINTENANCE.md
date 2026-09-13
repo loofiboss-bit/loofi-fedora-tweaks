@@ -1,10 +1,8 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v26.0.3 "Everyday" uses Action Center as the trust boundary
-for supported host changes across GUI, CLI, daemon, automation, scheduler, and
-agent entry points. The catalog contains 74 definitions declaring operation class, Fedora variants,
-reboot policy, affected resources, preflight, confirmation, verification, and
-recovery policy. Fedora 44 is the supported target; Fedora 45 remains
+Loofi Fedora Tweaks v27.0.0 "Core" uses Action Center as the trust boundary
+for supported host changes across GUI and CLI entry points.
+Fedora 43 and 44 are the supported targets; Fedora 45 remains
 preview-only.
 
 Proof is the current public release. It adds a bounded direct-action adapter

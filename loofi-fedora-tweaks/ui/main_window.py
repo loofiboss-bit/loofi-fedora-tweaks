@@ -262,6 +262,7 @@ class MainWindow(
         self._bc_page.setObjectName("bcPage")
         self._bc_desc = self._breadcrumb_frame.description
         self._bc_desc.setObjectName("bcDesc")
+        self._breadcrumb_frame.settings_button.clicked.connect(lambda: self.switch_to_route("settings"))
         right_side.addWidget(self._breadcrumb_frame)
 
     def _build_destination_stack(self, right_side: QVBoxLayout) -> None:

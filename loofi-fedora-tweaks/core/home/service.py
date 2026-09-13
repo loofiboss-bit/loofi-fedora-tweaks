@@ -45,8 +45,8 @@ _COMMON_TASKS = (
     HomeTask(
         "planned-changes",
         "Review planned changes",
-        "Review, confirm, and verify work in Action Center.",
-        "maintenance:action-center",
+        "Review, confirm, and verify work in Changes.",
+        "changes",
         "status-ok",
     ),
 )
@@ -923,5 +923,5 @@ class HomeService:
         if data_state == "fresh":
             return "Saved system status does not currently report an issue."
         if data_state == "empty":
-            return "No saved system health snapshot is available yet."
+            return "No system check has been run yet."
         return "System status is not available."

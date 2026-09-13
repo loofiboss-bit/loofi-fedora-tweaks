@@ -72,8 +72,6 @@ BANNED_MODULES = {
 PRESENTATION_ROOTS = (
     SOURCE / "ui",
     SOURCE / "cli",
-    SOURCE / "daemon",
-    SOURCE / "core" / "agents",
 )
 
 MUTATOR_PREFIXES = (
@@ -348,8 +346,8 @@ def validate() -> list[str]:
     errors = validate_product_catalog()
     entries = product_catalog()
     definitions = _action_definitions()
-    if len({entry.route_id for entry in entries}) != 81:
-        errors.append(f"stable route count changed: expected 81, got {len(entries)}")
+    if len({entry.route_id for entry in entries}) != 45:
+        errors.append(f"stable route count changed: expected 45, got {len(entries)}")
 
     for definition in definitions:
         if definition.operation_class not in {"host", "app_state", "session", "manual_only"}:
@@ -359,7 +357,7 @@ def validate() -> list[str]:
         if not definition.affected_resources:
             errors.append(f"action {definition.id} has no affected-resource declaration")
 
-    operation_ids = _cli_operation_ids() | _api_operation_ids()
+    operation_ids = _cli_operation_ids()
     errors.extend(
         validate_public_operation_inventory(
             operation_ids,
@@ -396,12 +394,21 @@ def validate() -> list[str]:
     navigation_mode_source = (SOURCE / "utils" / "navigation_mode.py").read_text(encoding="utf-8")
     if "return NavigationMode.ADVANCED" not in navigation_mode_source:
         errors.append("unified Specialist Tools navigation is not enforced")
-    agent_source = (SOURCE / "core" / "agents" / "agent_runner.py").read_text(encoding="utf-8")
-    if "classify_command(" not in agent_source or "Action Center" not in agent_source:
-        errors.append("agent raw-command boundary is missing its classification gate")
-    daemon_source = (SOURCE / "utils" / "daemon.py").read_text(encoding="utf-8")
-    if "install plugin" in daemon_source.lower() or "download plugin" in daemon_source.lower():
-        errors.append("daemon still advertises executable extension updates")
+
+    # Verify decommissioned subsystems are absent
+    if (SOURCE / "core" / "agents").exists():
+        errors.append("retired core.agents package remains present")
+    if (SOURCE / "daemon").exists():
+        errors.append("retired daemon package remains present")
+    if (SOURCE / "api").exists():
+        errors.append("retired api package remains present")
+    if (SOURCE / "ui" / "community_tab.py").exists():
+        errors.append("retired community tab remains present")
+    if (SOURCE / "utils" / "daemon.py").exists():
+        errors.append("retired daemon.py remains present")
+    if (SOURCE / "utils" / "api_server.py").exists():
+        errors.append("retired api_server.py remains present")
+
     scheduler_source = (SOURCE / "utils" / "scheduler.py").read_text(encoding="utf-8")
     if "PrivilegedCommand" in scheduler_source or "notify_preset_applied" in scheduler_source:
         errors.append("scheduler still contains unattended host-mutation code")
@@ -417,61 +424,11 @@ def validate() -> list[str]:
     for retired_symbol in ("HotReloadRequest", "HotReloadResult", "request_reload"):
         if retired_symbol in plugin_loader_source:
             errors.append(f"retired external hot-reload API remains active: {retired_symbol}")
-    community_source = (SOURCE / "ui" / "community_tab.py").read_text(encoding="utf-8")
-    for retired_symbol in (
-        "refresh_marketplace",
-        "download_marketplace_preset",
-        "_search_marketplace_plugins",
-        "_install_marketplace_plugin",
-    ):
-        if retired_symbol in community_source:
-            errors.append(f"retired Marketplace UI API remains active: {retired_symbol}")
     sandbox_source = (SOURCE / "services" / "security" / "sandbox.py").read_text(encoding="utf-8")
     if "PluginIsolationManager" in sandbox_source:
         errors.append("retired advisory plugin-isolation API remains active")
     if "install_firejail" in sandbox_source or "PrivilegedCommand" in sandbox_source:
         errors.append("application sandbox service still exposes a direct host installer")
-    handler_sources = "\n".join(
-        path.read_text(encoding="utf-8")
-        for path in (SOURCE / "daemon" / "handlers").glob("*_handler.py")
-    )
-    for forbidden in (
-        ".install_local(",
-        ".remove_local(",
-        ".update_local(",
-        ".start_unit(",
-        ".stop_unit(",
-        ".restart_unit(",
-        ".open_port_local(",
-        ".close_port_local(",
-        ".apply_dns_local(",
-    ):
-        if forbidden in handler_sources:
-            errors.append(f"daemon handler bypasses plan-only boundary: {forbidden}")
-
-    for route_path in sorted((SOURCE / "api" / "routes").glob("*.py")):
-        route_source = route_path.read_text(encoding="utf-8")
-        if "@router.post(" in route_source or "@router.put(" in route_source or "@router.delete(" in route_source:
-            errors.append(f"Web API mutation route remains: {route_path.relative_to(ROOT)}")
-        route_tree = ast.parse(route_source, filename=str(route_path))
-        for node in route_tree.body:
-            if not isinstance(node, (ast.FunctionDef, ast.AsyncFunctionDef)):
-                continue
-            is_get = any(
-                isinstance(decorator, ast.Call)
-                and isinstance(decorator.func, ast.Attribute)
-                and decorator.func.attr == "get"
-                for decorator in node.decorator_list
-            )
-            if is_get and "AuthManager.verify_bearer_token" not in ast.unparse(node.args):
-                errors.append(
-                    f"Web API GET lacks bearer authentication: {route_path.relative_to(ROOT)}:{node.lineno}"
-                )
-    api_server_source = (SOURCE / "utils" / "api_server.py").read_text(encoding="utf-8")
-    if '@app.post("/api/token")' not in api_server_source:
-        errors.append("Web API token issuance route is missing")
-    if "@app.get(" in api_server_source or ".mount(" in api_server_source:
-        errors.append("Web API exposes an unauthenticated app-level GET or static mount")
     return errors
 
 
@@ -481,7 +438,7 @@ def main() -> int:
         for error in errors:
             print(f"[product-contract] ERROR: {error}")
         return 1
-    print("[product-contract] OK: 81 routes, classified actions, built-in-only plugins, and guarded entrypoints")
+    print("[product-contract] OK: 45 routes, classified actions, built-in-only plugins, and guarded entrypoints")
     return 0
 
 

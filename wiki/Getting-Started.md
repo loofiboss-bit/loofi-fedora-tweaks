@@ -1,13 +1,12 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 26.0.3 "Everyday" local candidate
+> Version 27.0.0 "Core"
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
 Use this guide for a safe first run in under 10 minutes.
 
-The current public release is v25.0.4 "Proof". Historical v25.0.0–v25.0.3
-tags remain preserved as separate historical lineages.
+The current public release is v26.0.3 "Everyday". Earlier releases remain documented in release notes.
 
 ---
 
@@ -186,7 +185,7 @@ loofi support-bundle
 - [Advanced operations](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/ADVANCED_ADMIN_GUIDE.md)
 - [Troubleshooting](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TROUBLESHOOTING.md)
 
-## Everyday local candidate: updates and follow-up
+## Core maintenance: updates and follow-up
 
 Open Software & Updates → Updates and select **Check for updates**. System,
 Flatpak and Firmware retain separate status and timestamps. An unavailable source

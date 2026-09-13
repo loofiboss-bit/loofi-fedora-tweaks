@@ -115,10 +115,6 @@ verify:
 build-rpm:
     bash scripts/build_rpm.sh
 
-# Build Flatpak bundle
-build-flatpak:
-    bash scripts/build_flatpak.sh
-
 # Build source distribution
 build-sdist:
     bash scripts/build_sdist.sh

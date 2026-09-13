@@ -44,7 +44,7 @@ class TestNavigationPolicyCompatibility(unittest.TestCase):
     def test_alias_resolves_to_canonical_route(self):
         result = NavigationPolicy.evaluate("Action Center")
 
-        self.assertEqual(result.route_id, "maintenance:action-center")
+        self.assertEqual(result.route_id, "changes")
         self.assertEqual(result.decision, NavigationDecision.VISIBLE)
 
     def test_dashboard_redirects_without_replacing_its_route_identity(self):
@@ -104,14 +104,14 @@ class TestNavigationPolicySafety(unittest.TestCase):
 
         for result in (traditional, atomic):
             self.assertEqual(result.decision, NavigationDecision.VISIBLE)
-            self.assertEqual(result.destination_id, "software_updates")
+            self.assertEqual(result.destination_id, "changes")
             self.assertEqual(result.risk, "medium")
             self.assertEqual(result.direct_link_behavior, DirectLinkBehavior.ALLOW)
 
     def test_favorite_does_not_bypass_advanced_mode_gate(self):
         result = NavigationPolicy.evaluate(
-            "development",
-            _context(favorite_route_ids=frozenset({"development"})),
+            "diagnostics:boot",
+            _context(favorite_route_ids=frozenset({"diagnostics:boot"})),
         )
 
         self.assertTrue(result.is_favorite)
@@ -121,16 +121,16 @@ class TestNavigationPolicySafety(unittest.TestCase):
 
     def test_missing_component_is_unavailable_even_when_favorited(self):
         result = NavigationPolicy.evaluate(
-            "ai_lab",
+            "atlas_dashboard",
             _context(
                 mode=NavigationMode.ADVANCED,
-                installed_components=frozenset({"core"}),
-                favorite_route_ids=frozenset({"ai_lab"}),
+                installed_components=frozenset(),
+                favorite_route_ids=frozenset({"atlas_dashboard"}),
             ),
         )
 
         self.assertEqual(result.decision, NavigationDecision.UNAVAILABLE)
-        self.assertEqual(result.required_component, "specialist")
+        self.assertEqual(result.required_component, "core")
         self.assertEqual(result.fallback_route_id, "atlas_dashboard")
         self.assertFalse(result.search_visible)
 
@@ -212,7 +212,7 @@ class TestNavigationPolicyCoverage(unittest.TestCase):
                     self.assertIsInstance(result.decision, NavigationDecision)
                     outcomes += 1
 
-        self.assertEqual(outcomes, 81 * 4)
+        self.assertEqual(outcomes, 45 * 4)
         self.assertEqual(validate_navigation_policy(), [])
 
     def test_standard_mode_never_exposes_advanced_routes_through_favorites(self):

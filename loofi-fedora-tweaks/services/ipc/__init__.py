@@ -1,20 +1,6 @@
-"""IPC client package for daemon communication."""
+"""IPC package stub for Fedora Maintenance Core."""
+from __future__ import annotations
 
-from services.ipc.daemon_client import DaemonClient, daemon_client
-from services.ipc.errors import (
-    DaemonClientError,
-    DaemonExecutionError,
-    DaemonRequiredModeError,
-    DaemonUnavailableError,
-    DaemonValidationError,
-)
+from services.ipc import daemon_client
 
-__all__ = [
-    "DaemonClient",
-    "DaemonClientError",
-    "DaemonExecutionError",
-    "DaemonRequiredModeError",
-    "DaemonUnavailableError",
-    "DaemonValidationError",
-    "daemon_client",
-]
+__all__ = ["daemon_client"]

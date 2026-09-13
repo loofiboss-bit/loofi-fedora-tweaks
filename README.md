@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v26.0.3 "Everyday" — local candidate
+# Loofi Fedora Tweaks v27.0.0 "Core" — Fedora Maintenance Core
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -7,25 +7,19 @@
 </p>
 
 <p align="center">
-  <strong>A focused Fedora maintenance and desktop control center</strong><br>
-  Six destinations, one Home, one search surface, safe system operations.
+  <strong>A focused Fedora maintenance core</strong><br>
+  Five destinations, one Home, one search surface, safe system operations.
 </p>
 
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v25.0.4">
-    <img src="https://img.shields.io/badge/Release-v25.0.4-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v25.0.4 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v27.0.0">
+    <img src="https://img.shields.io/badge/Release-v27.0.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v27.0.0 release"/>
   </a>
-  <img src="https://img.shields.io/badge/Fedora_KDE-44-blue?style=for-the-badge&logo=fedora" alt="Fedora KDE 44"/>
+  <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
   <img src="https://img.shields.io/badge/Coverage-86%25-brightgreen?style=for-the-badge&logo=pytest" alt="Coverage gate 86%"/>
-</p>
-
-<p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v25.0.0">
-    Historical v25.0.0 tag reference only — not the Proof release
-  </a>
 </p>
 
 ## What Loofi does
@@ -48,28 +42,23 @@ recovery, and desktop tasks into one KDE-friendly control center.
 - Traditional and Atomic Fedora paths stay distinct.
 - The optional API is loopback-only and cannot apply plans.
 
-This checkout contains the unpublished [Everyday candidate](docs/releases/RELEASE-NOTES-v26.0.3.md).
-The current public release remains [v25.0.4 Proof](docs/releases/RELEASE-NOTES-v25.0.4.md).
-The [reserved publication target](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v26.0.3)
-is not published; use the Proof release badge above for public downloads.
+This checkout contains the active [v27.0.0 Core candidate](docs/releases/RELEASE-NOTES-v27.0.0.md).
+The previous public release is [v26.0.3 Everyday](docs/releases/RELEASE-NOTES-v26.0.3.md)
+(published 2026-09-13 via COPR build 10981363).
 Earlier releases remain documented in the
 [release-note index](docs/releases/RELEASE_NOTES.md).
 
-## The six destinations
+## The five destinations
 
 | Destination | What belongs there |
 | --- | --- |
-| Home | Current state, the next useful action, attention items, and common tasks |
-| Software & Updates | Applications, repositories, updates, cleanup, Fedora upgrade, and Action Center |
-| System | System details, performance, processes, hardware, storage, diagnostics, health history, and recovery points |
-| Network & Security | Connections, DNS, privacy, firewall, exposure, and backups |
-| Desktop | Appearance, displays, and window behavior |
-| Settings | Appearance and behavior settings, Specialist Tools status, Repair Loofi, and About |
+| Home | System state, single recommended next action, and common maintenance tasks |
+| Updates & Apps | System, Flatpak, and firmware updates; neutral app store handoff |
+| System Health | System Check, symptom-driven troubleshooting, storage, hardware, and support bundle |
+| Protection & Recovery | Firewall, open ports, backup, exact DNF/rpm-ostree rollbacks, and activity history |
+| Changes | Action Center review and verification workspace |
 
-Specialist Tools keeps development, automation, virtualization, gaming, device
-sharing, local profiles, and other advanced built-in tools searchable without
-adding another top-level destination. Availability never weakens confirmation
-or privilege rules.
+Application settings are accessed via the window header gear icon rather than a separate destination tab.
 
 ## Five common workflows
 

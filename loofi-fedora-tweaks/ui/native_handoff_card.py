@@ -80,6 +80,6 @@ class NativeHandoffCard(QFrame):
         started = result[0] if isinstance(result, tuple) else bool(result)
         if not started:
             self.open_button.setEnabled(False)
-            message = self.tr("The native Plasma interface could not be started.")
+            message = self.tr("The native interface could not be started.")
             self.status_label.setText(message)
             self.status_label.setAccessibleName(message)

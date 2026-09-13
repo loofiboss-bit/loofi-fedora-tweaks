@@ -9,9 +9,6 @@ from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from fastapi.testclient import TestClient
-from fastapi.routing import APIRoute
-
 from cli.commands.troubleshooting_commands import (
     _run_with_cancellation,
     handle_troubleshoot,
@@ -266,89 +263,6 @@ class TestTroubleshootingCli(unittest.TestCase):
             output_json.call_args.args[0]["data"]["session_id"],
             SESSION_ID,
         )
-
-
-class TestTroubleshootingApi(unittest.TestCase):
-    @staticmethod
-    def _iter_routes(routes):
-        """Traverse direct and mounted FastAPI routes across supported versions."""
-        for route in routes:
-            path = getattr(route, "path", "")
-            methods = getattr(route, "methods", None) or set()
-            if isinstance(route, APIRoute) and path:
-                yield path, tuple(sorted(methods))
-                continue
-            original_router = getattr(route, "original_router", None)
-            if original_router is not None:
-                yield from TestTroubleshootingApi._iter_routes(
-                    getattr(original_router, "routes", ()),
-                )
-
-    @patch(
-        "core.troubleshooting.storage."
-        "TroubleshootingSessionStore.read"
-    )
-    def test_api_construction_does_not_read_or_collect_sessions(
-        self,
-        read,
-    ):
-        from utils.api_server import APIServer
-
-        APIServer()
-        read.assert_not_called()
-
-    @patch(
-        "api.routes.troubleshooting.TroubleshootingInspectionService"
-    )
-    def test_latest_and_known_session_are_authenticated_get_only(
-        self,
-        inspection_cls,
-    ):
-        from utils.api_server import APIServer
-        from utils.auth import AuthManager
-
-        inspection_cls.return_value.latest.return_value = _session()
-        inspection_cls.return_value.require.return_value = _session()
-        server = APIServer()
-        server.app.dependency_overrides[
-            AuthManager.verify_bearer_token
-        ] = lambda: "token"
-        client = TestClient(server.app)
-
-        latest = client.get("/api/troubleshooting/latest")
-        known = client.get(
-            f"/api/troubleshooting/sessions/{SESSION_ID}"
-        )
-
-        self.assertEqual(latest.status_code, 200)
-        self.assertTrue(latest.json()["read_only"])
-        self.assertEqual(
-            known.json()["session"]["session_id"],
-            SESSION_ID,
-        )
-        paths = set(self._iter_routes(server.app.routes))
-        self.assertIn(
-            (
-                "/api/troubleshooting/latest",
-                ("GET",),
-            ),
-            paths,
-        )
-        self.assertNotIn(
-            (
-                "/api/troubleshooting/run",
-                ("POST",),
-            ),
-            paths,
-        )
-
-    def test_latest_requires_authentication(self):
-        from utils.api_server import APIServer
-
-        response = TestClient(APIServer().app).get(
-            "/api/troubleshooting/latest"
-        )
-        self.assertIn(response.status_code, {401, 403})
 
 
 class TestSupportBundleV13(unittest.TestCase):

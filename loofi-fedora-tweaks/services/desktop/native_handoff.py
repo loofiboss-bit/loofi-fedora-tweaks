@@ -119,6 +119,25 @@ class NativeHandoffService:
         """Probe an executable and, for KCM targets, the exact module ID."""
         target = self.target(handoff_id)
         resolved = self._which(target.executable)
+        if (
+            handoff_id == NativeHandoffId.PLASMA_DISCOVER
+            or getattr(handoff_id, "value", handoff_id) == NativeHandoffId.PLASMA_DISCOVER.value
+        ) and not resolved:
+            if self._which("gnome-software"):
+                target = NativeHandoffTarget(
+                    NativeHandoffId.PLASMA_DISCOVER,
+                    "GNOME Software",
+                    "gnome-software",
+                )
+                resolved = self._which("gnome-software")
+            elif self._which("xdg-open"):
+                target = NativeHandoffTarget(
+                    NativeHandoffId.PLASMA_DISCOVER,
+                    "Software Center",
+                    "xdg-open",
+                    ("appstream://",),
+                )
+                resolved = self._which("xdg-open")
         if not resolved:
             return NativeHandoffAvailability(
                 target,

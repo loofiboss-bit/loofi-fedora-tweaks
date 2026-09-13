@@ -1,6 +1,6 @@
-# v26.0.3 "Everyday" — Local candidate
+# v26.0.3 "Everyday"
 
-Not published. Current public release remains v25.0.4 Proof.
+Published 2026-09-13. Public release evidence is recorded in [V26_RELEASE_PUBLICATION.md](../reports/V26_RELEASE_PUBLICATION.md).
 
 ## Changes
 
@@ -17,5 +17,5 @@ records and six destinations are preserved. The overview is advisory and uses
 versioned atomic saved state; future schemas are not overwritten.
 
 Physical Wayland, screen-reader, Polkit, reboot and fresh Kinoite qualification
-are separate from offscreen checks. See [qualification](../reports/V26_RELEASE_QUALIFICATION.md).
-No tag, release, installation or public-service change is part of this candidate.
+are separate from offscreen checks. See [qualification](../reports/V26_RELEASE_QUALIFICATION.md)
+and [publication evidence](../reports/V26_RELEASE_PUBLICATION.md).

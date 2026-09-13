@@ -163,7 +163,7 @@ class AtlasDashboardTab(BaseTab):
             status_grid.add_card(badge)
         self.state_card.add_widget(status_grid)
         self.status_unavailable = InlineNotice(
-            self.tr("Not checked yet"),
+            self.tr("No system check has been run yet"),
             self.tr("Run System Check to create the first saved status."),
             kind="neutral",
         )
@@ -229,7 +229,7 @@ class AtlasDashboardTab(BaseTab):
             if summary.data_state == "empty":
                 self.status_unavailable.set_notice(
                     "neutral",
-                    self.tr("Not checked yet"),
+                    self.tr("No system check has been run yet"),
                     self.tr("Run System Check to create the first saved status."),
                 )
             else:

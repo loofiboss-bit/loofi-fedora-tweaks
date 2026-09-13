@@ -24,7 +24,7 @@ class NavigationArea:
 
 
 _HOME_PLUGINS = ("atlas_dashboard",)
-_SOFTWARE_PLUGINS = ("software", "maintenance", "snapshots", "virtualization")
+_SOFTWARE_PLUGINS = ("software", "maintenance", "snapshots")
 _SYSTEM_PLUGINS = (
     "system_info",
     "monitor",
@@ -32,20 +32,10 @@ _SYSTEM_PLUGINS = (
     "storage",
     "health",
     "diagnostics",
-    "performance",
-    "gaming",
 )
 _NETWORK_SECURITY_PLUGINS = ("network", "security", "backup")
-_DESKTOP_SETTINGS_PLUGINS = ("desktop", "settings", "profiles", "extensions", "development")
-_MORE_PLUGINS = (
-    "community",
-    "mesh",
-    "logs",
-    "ai_lab",
-    "agents",
-    "automation",
-    "teleport",
-)
+_DESKTOP_SETTINGS_PLUGINS = ("settings", "changes", "activity")
+_MORE_PLUGINS: tuple[str, ...] = ()
 
 
 _AREAS: tuple[NavigationArea, ...] = (

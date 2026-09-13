@@ -54,15 +54,6 @@ from cli.commands.system_commands import (  # noqa: E402
 from cli.commands.ops_commands import (  # noqa: E402
     handle_tweak,
 )
-from cli.commands.user_commands import (  # noqa: E402
-    handle_focus_mode,
-    handle_preset,
-    handle_profile,
-)
-from cli.commands.insight_commands import (  # noqa: E402
-    handle_ai_models,
-    handle_security_audit,
-)
 from cli.commands.diagnostic_commands import (  # noqa: E402
     handle_audit_log,
     handle_doctor,
@@ -73,19 +64,10 @@ from cli.commands.hardware_commands import (  # noqa: E402
     handle_display,
     handle_hardware,
     handle_storage,
-    handle_vfio,
-    handle_vm,
 )
 from cli.commands.update_commands import (  # noqa: E402
     handle_self_update,
     handle_updates,
-)
-from cli.commands.plugin_commands import (  # noqa: E402
-    handle_plugins,
-)
-from cli.commands.network_mesh_commands import (  # noqa: E402
-    handle_mesh,
-    handle_teleport,
 )
 from cli.commands.tuning_commands import (  # noqa: E402
     handle_backup,
@@ -99,22 +81,74 @@ from cli.commands.service_package_commands import (  # noqa: E402
     handle_service,
 )
 from cli.commands.firewall_commands import handle_firewall  # noqa: E402
-from cli.commands.agent_commands import handle_agent  # noqa: E402
 from cli.commands.activity_commands import handle_activity  # noqa: E402
 from cli.commands.health_history_commands import handle_health_history  # noqa: E402
 from cli.commands.troubleshooting_commands import handle_troubleshoot  # noqa: E402
 from cli.action_plans import create_public_plans, manual_guidance  # noqa: E402
-from utils.focus_mode import FocusMode  # noqa: E402
 from utils.journal import JournalManager  # noqa: E402
 from utils.monitor import SystemMonitor  # noqa: E402
 from utils.package_explorer import PackageExplorer  # noqa: E402
-from core.plugins.legacy import LegacyExtensionService  # noqa: E402
-from utils.presets import PresetManager  # noqa: E402
-from utils.profiles import ProfileManager  # noqa: E402
 from utils.service_explorer import ServiceExplorer  # noqa: E402
 from utils.storage import StorageManager  # noqa: E402
 from utils.update_checker import UpdateChecker  # noqa: E402
 from version import __version__, __version_codename__  # noqa: E402
+
+
+class FocusMode:
+    """Retired focus mode stub."""
+    pass
+
+
+class PresetManager:
+    """Retired preset manager stub."""
+    pass
+
+
+class ProfileManager:
+    """Retired profile manager stub."""
+    pass
+
+
+class LegacyExtensionService:
+    """Retired legacy extension service stub."""
+    pass
+
+
+def handle_agent(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_mesh(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_teleport(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_plugins(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_focus_mode(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_preset(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_profile(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_ai_models(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
+
+def handle_security_audit(*args: typing.Any, **kwargs: typing.Any) -> int:
+    return 0
+
 
 # Add parent to path for imports
 sys.path.insert(0, str(os.path.dirname(os.path.dirname(os.path.abspath(__file__)))))
@@ -312,6 +346,23 @@ def cmd_activity(args: typing.Any) -> int:
         create_plan=_create_action_center_plan,
         emit_plans=_emit_legacy_plans,
     )
+
+
+def cmd_check(args: typing.Any) -> typing.Any:
+    """Run the explicit read-only System Check."""
+    setattr(args, "health_action", "check")
+    return cmd_health(args)
+
+
+def cmd_changes(args: typing.Any) -> int:
+    """Plan, apply, verify, and inspect Action Center maintenance changes."""
+    action = getattr(args, "changes_action", None) or getattr(args, "action", "list")
+    setattr(args, "action", action)
+    if hasattr(args, "id"):
+        setattr(args, "action_id", args.id)
+    elif hasattr(args, "target"):
+        setattr(args, "action_id", args.target)
+    return cmd_action_center(args)
 
 
 def cmd_run(args: typing.Any) -> int:
@@ -670,31 +721,23 @@ def cmd_support_bundle(_args: typing.Any) -> typing.Any:
 
 
 def cmd_vm(args: typing.Any) -> typing.Any:
-    """Handle VM subcommand."""
-    from services.virtualization import VMManager
-
-    return handle_vm(args, _json_output, _output_json, _print, VMManager)
+    """Retired VM subcommand stub."""
+    return 0
 
 
 def cmd_vfio(args: typing.Any) -> typing.Any:
-    """Handle VFIO GPU passthrough subcommand."""
-    from services.virtualization import VFIOAssistant
-
-    return handle_vfio(args, _json_output, _output_json, _print, VFIOAssistant)
+    """Retired VFIO GPU passthrough subcommand stub."""
+    return 0
 
 
 def cmd_mesh(args: typing.Any) -> typing.Any:
-    """Handle mesh networking subcommand."""
-    from services.network import MeshDiscovery
-
-    return handle_mesh(args, _json_output, _output_json, _print, MeshDiscovery)
+    """Retired mesh networking subcommand stub."""
+    return 0
 
 
 def cmd_teleport(args: typing.Any) -> typing.Any:
-    """Handle state teleport subcommand."""
-    from services.storage import StateTeleportManager
-
-    return handle_teleport(args, _json_output, _output_json, _print, StateTeleportManager)
+    """Retired state teleport subcommand stub."""
+    return 0
 
 
 def cmd_ai_models(args: typing.Any) -> typing.Any:
@@ -984,10 +1027,8 @@ def cmd_bluetooth(args: typing.Any) -> typing.Any:
 
 
 def cmd_agent(args: typing.Any) -> typing.Any:
-    """Handle agent subcommand."""
-    from core.agents import AgentRegistry, AgentScheduler, AgentPlanner, AgentNotifier
-
-    return handle_agent(args, _json_output, _output_json, _print, run_operation, AgentRegistry, AgentScheduler, AgentPlanner, AgentNotifier)
+    """Retired agent subcommand stub."""
+    return 0
 
 
 def cmd_storage(args: typing.Any) -> typing.Any:
@@ -1065,10 +1106,13 @@ def _command_handlers() -> typing.Any:
     """Return the command-to-domain-handler map."""
     return {
         "info": cmd_info,
+        "check": cmd_check,
         "health": cmd_health,
         "maintenance": cmd_maintenance,
         "activity": cmd_activity,
         "troubleshoot": cmd_troubleshoot,
+        "changes": cmd_changes,
+        "action-center": cmd_action_center,
         "disk": cmd_disk,
         "processes": cmd_processes,
         "temperature": cmd_temperature,
@@ -1085,19 +1129,7 @@ def _command_handlers() -> typing.Any:
         "support-bundle": cmd_support_bundle,
         "state": cmd_state,
         "readiness": cmd_readiness,
-        "action-center": cmd_action_center,
         "fedora44-readiness": cmd_fedora44_readiness,
-        "vm": cmd_vm,
-        "vfio": cmd_vfio,
-        "mesh": cmd_mesh,
-        "teleport": cmd_teleport,
-        "ai-models": cmd_ai_models,
-        "preset": cmd_preset,
-        "focus-mode": cmd_focus_mode,
-        "security-audit": cmd_security_audit,
-        "profile": cmd_profile,
-        "health-history": cmd_health_history,
-        "tuner": cmd_tuner,
         "snapshot": cmd_snapshot,
         "logs": cmd_logs,
         "service": cmd_service,
@@ -1105,14 +1137,10 @@ def _command_handlers() -> typing.Any:
         "firewall": cmd_firewall,
         "bluetooth": cmd_bluetooth,
         "storage": cmd_storage,
-        "agent": cmd_agent,
         "self-update": cmd_self_update,
         "audit-log": cmd_audit_log,
         "updates": cmd_updates,
-        "extension": cmd_extension,
         "flatpak-manage": cmd_flatpak_manage,
-        "boot": cmd_boot,
-        "display": cmd_display,
         "backup": cmd_backup,
         "run": cmd_run,
     }

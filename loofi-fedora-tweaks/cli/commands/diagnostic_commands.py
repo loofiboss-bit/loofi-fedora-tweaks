@@ -6,25 +6,46 @@ from services.system.system import cached_which
 
 
 def handle_doctor(json_output, output_json, print_fn, which_fn=None):
-    """Run system diagnostics and check dependencies."""
+    """Run system diagnostics and check dependencies, Fedora version, and Polkit status."""
     if which_fn is None:
         which_fn = cached_which
+
+    try:
+        from core.platform.profile import PlatformProfile
+
+        profile = PlatformProfile.detect()
+        fedora_ver = profile.fedora_version or "Unknown"
+        backend = profile.deployment_backend.value
+        desktop = profile.desktop.value
+        session = profile.session_type.value
+    except (OSError, RuntimeError, ValueError, TypeError, AttributeError, KeyError):
+        fedora_ver = "Unknown"
+        backend = "traditional"
+        desktop = "unknown"
+        session = "wayland"
 
     critical_tools = ["dnf", "pkexec", "systemctl", "flatpak"]
     optional_tools = [
         "fwupdmgr",
         "timeshift",
-        "nbfc",
-        "firejail",
-        "ollama",
-        "distrobox",
-        "podman",
+        "snapper",
     ]
 
     all_ok = True
 
+    # Check Polkit status via pkexec presence
+    polkit_active = which_fn("pkexec") is not None
+
     if json_output:
-        data = {"critical": {}, "optional": {}}
+        data = {
+            "fedora_version": fedora_ver,
+            "deployment_backend": backend,
+            "desktop": desktop,
+            "session_type": session,
+            "polkit_active": polkit_active,
+            "critical": {},
+            "optional": {},
+        }
         for tool in critical_tools:
             data["critical"][tool] = which_fn(tool) is not None
         for tool in optional_tools:
@@ -34,8 +55,12 @@ def handle_doctor(json_output, output_json, print_fn, which_fn=None):
         output_json(data)
     else:
         print_fn("═══════════════════════════════════════════")
-        print_fn("   System Doctor")
+        print_fn("   System Doctor - Fedora Maintenance Core")
         print_fn("═══════════════════════════════════════════")
+        print_fn(f"Fedora Version:      {fedora_ver}")
+        print_fn(f"Deployment Backend:  {backend}")
+        print_fn(f"Desktop Environment: {desktop} ({session})")
+        print_fn(f"Polkit Service:      {'✅ Active' if polkit_active else '❌ Inactive / Not running'}")
 
         print_fn("\nCritical Tools:")
         all_ok = True
@@ -53,7 +78,7 @@ def handle_doctor(json_output, output_json, print_fn, which_fn=None):
             print_fn(f"  {icon} {tool}")
 
         if all_ok:
-            print_fn("\n🟢 All critical dependencies found.")
+            print_fn("\n🟢 All critical dependencies and Polkit are healthy.")
         else:
             print_fn("\n🔴 Some critical tools are missing. Install them for full functionality.")
 

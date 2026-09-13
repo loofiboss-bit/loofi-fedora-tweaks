@@ -38,8 +38,8 @@ def verify(source_root: Path = SOURCE_ROOT) -> dict[str, object]:
 
     context = NavigationContext(installed_components=components)
     destinations = destinations_for_mode(NavigationMode.STANDARD)
-    if len(destinations) != 6:
-        errors.append("exactly six Standard destinations are required")
+    if len(destinations) != 5:
+        errors.append("exactly five Standard destinations are required")
     for destination in destinations:
         result = NavigationPolicy.evaluate(destination.default_route_id, context)
         if result.decision is NavigationDecision.UNAVAILABLE:

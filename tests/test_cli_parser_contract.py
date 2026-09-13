@@ -9,14 +9,16 @@ from cli.parser import build_parser
 
 
 EXPECTED_TOP_LEVEL_COMMANDS = (
-    "info", "health", "maintenance", "activity", "troubleshoot", "disk", "processes", "temperature", "netmon",
-    "cleanup", "tweak", "advanced", "network", "doctor", "hardware", "plugins", "api-key", "plugin-marketplace",
-    "support-bundle", "state", "readiness", "action-center", "fedora44-readiness", "vm", "vfio", "mesh", "teleport",
-    "ai-models", "preset", "focus-mode", "security-audit", "profile", "health-history", "tuner", "snapshot", "logs",
-    "service", "package", "firewall", "bluetooth", "storage", "self-update", "agent", "audit-log", "updates", "extension",
-    "flatpak-manage", "boot", "display", "backup", "run",
+    "info",
+    "check",
+    "updates",
+    "troubleshoot",
+    "changes",
+    "activity",
+    "doctor",
+    "support-bundle",
 )
-EXPECTED_PARSER_SNAPSHOT_SHA256 = "45089eae7e6178ae57f65d8298cb5a0fc9618c61337fde89ee9f3a3957e29293"
+EXPECTED_PARSER_SNAPSHOT_SHA256 = "9e7f4f2828f5cfa01e0b739e8122ec334739e8307bc4faea1ea1c11580f4bf89"
 
 
 def _normalize(value):
@@ -78,13 +80,13 @@ class TestCliParserContract(unittest.TestCase):
         self.assertEqual((defaults.json, defaults.timeout, defaults.dry_run), (False, 300, False))
         self.assertEqual((configured.json, configured.timeout, configured.dry_run), (True, 12, True))
 
-    def test_nested_action_center_and_troubleshoot_arguments_are_preserved(self):
-        action = build_parser().parse_args(
-            ["action-center", "plan", "install-application", "--source", "flatpak", "--package-id", "org.example.App"]
+    def test_nested_changes_and_troubleshoot_arguments_are_preserved(self):
+        changes = build_parser().parse_args(
+            ["changes", "apply", "install-application", "--param", "package-id=org.example.App", "--yes"]
         )
         troubleshoot = build_parser().parse_args(["troubleshoot", "compare", "before", "after"])
 
-        self.assertEqual((action.action, action.action_id, action.source, action.package_id), ("plan", "install-application", "flatpak", "org.example.App"))
+        self.assertEqual((changes.changes_action, changes.target, changes.param, changes.yes), ("apply", "install-application", ["package-id=org.example.App"], True))
         self.assertEqual((troubleshoot.troubleshoot_action, troubleshoot.session_id, troubleshoot.followup_id), ("compare", "before", "after"))
 
 

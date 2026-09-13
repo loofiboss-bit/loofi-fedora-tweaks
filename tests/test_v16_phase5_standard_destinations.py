@@ -23,7 +23,6 @@ STANDARD_MODULES = (
     "network_tab.py",
     "security_tab.py",
     "backup_tab.py",
-    "desktop_tab.py",
     "settings_tab.py",
 )
 
@@ -171,23 +170,6 @@ class TestPhase5RoutePresentation(unittest.TestCase):
             self._assert_current_page_scaffolded(tab.pages)
         self.assertIsInstance(tab.activity_details, DetailsDisclosure)
         self.assertFalse(tab.activity_details.details.isVisible())
-
-    @patch("ui.desktop_tab.QTimer.singleShot")
-    @patch("ui.desktop_tab.KWinManager.is_wayland", return_value=True)
-    @patch("ui.desktop_tab.KWinManager.is_kde", return_value=True)
-    def test_desktop_routes_use_scaffolded_pages(self, *_mocks):
-        from ui.desktop_tab import DesktopTab
-
-        tab = DesktopTab()
-        self.addCleanup(tab.deleteLater)
-        for route_id, index in (
-            ("desktop:director", 0),
-            ("desktop:theming", 1),
-            ("desktop:display", 2),
-        ):
-            self.assertTrue(tab.activate_route(resolve(route_id)))
-            self.assertEqual(tab.sub_tabs.currentIndex(), index)
-            self._assert_current_page_scaffolded(tab.sub_tabs)
 
     @patch("utils.navigation_mode.NavigationModeManager.get_mode", return_value=NavigationMode.STANDARD)
     @patch("ui.settings_tab.SettingsManager.instance")
