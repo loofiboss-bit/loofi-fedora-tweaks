@@ -3,17 +3,25 @@
 > Canonical architecture reference. Agent and instruction files link here
 > instead of duplicating project structure and invariants.
 >
-> **Current product version**: 25.0.4 "Proof" | **Current public release**: 25.0.4 "Proof" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
+> **Current product version**: v26.0.3 "Everyday" (local candidate) | **Current public release**: 25.0.4 "Proof" | **Python**: 3.12+ | **Framework**: PyQt6 | **Supported target**: Fedora KDE 44
 >
 > V20 is published on GitHub but its Fedora publication is blocked by COPR/Pulp.
 > V21, V22, Compass 23.1.0, and Flow 24.0.0 preceded the public Proof release.
-> Proof v25.0.4 adds a bounded direct-action policy projection over Action
+> Proof release 25.0.4 adds a bounded direct-action policy projection over Action
 > Center. Historical v25 tags remain preserved under separate lineages;
-> v25.0.4 is the unambiguous Proof release identity.
+> release 25.0.4 is the unambiguous Proof release identity.
 > Fresh Atomic and manual physical accessibility qualification remain open
 > and are not inferred from offscreen evidence.
 
-## Active Proof architecture
+## Active Everyday architecture
+
+The local Everyday candidate adds explicit update inspection and saved-run
+follow-up. See the [Everyday contract](.workflow/specs/arch-v26.0.3.md) and
+[plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md). Public release remains
+release 25.0.4 (Proof); local qualification does not imply publication or physical tests.
+
+
+## Preserved Proof architecture
 
 Proof extends the public Flow architecture without creating another host
 mutation authority. Its authority is the [Proof architecture contract](.workflow/specs/arch-v25.0.4.md),

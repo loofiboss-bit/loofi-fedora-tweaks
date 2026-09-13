@@ -512,6 +512,17 @@ class MainWindow(
         """Navigate through the canonical manifest; metadata remains inert."""
         self.switch_to_route(route_id)
 
+    def _open_action_center_run(self, run_id: str) -> None:
+        """Open a persisted maintenance run without creating or executing work."""
+        if not self.switch_to_route("maintenance:action-center"):
+            return
+        entry = self._sidebar_index.get("maintenance")
+        if entry is not None:
+            widget = self._real_widget_for_entry(entry)
+            select = getattr(widget, "preselect_run", None)
+            if callable(select):
+                select(run_id)
+
     def _open_action_center_request(self, action_id: str, parameters=None) -> None:
         """Navigate and preselect only; workflow adapters never create a plan."""
         if self.switch_to_route("maintenance:action-center"):

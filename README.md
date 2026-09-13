@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v25.0.4 "Proof"
+# Loofi Fedora Tweaks v26.0.3 "Everyday" — local candidate
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -33,6 +33,8 @@
 Loofi brings common Fedora maintenance, application, troubleshooting, cleanup,
 recovery, and desktop tasks into one KDE-friendly control center.
 
+- Explicit update inspection shows source status, freshness and details without applying changes.
+- Home links back to saved runs; **Check result** follows up pending verification.
 - First-run guidance is integrated into Home, resumable, dismissible, and
   navigation-only.
 - Troubleshooting follows Problem → Checks → Results and starts only when you
@@ -46,8 +48,10 @@ recovery, and desktop tasks into one KDE-friendly control center.
 - Traditional and Atomic Fedora paths stay distinct.
 - The optional API is loopback-only and cannot apply plans.
 
-This checkout contains the [v25.0.4 Proof release](docs/releases/RELEASE-NOTES-v25.0.4.md).
-The previous public release was [v24.0.0 Flow](docs/releases/RELEASE-NOTES-v24.0.0.md).
+This checkout contains the unpublished [Everyday candidate](docs/releases/RELEASE-NOTES-v26.0.3.md).
+The current public release remains [v25.0.4 Proof](docs/releases/RELEASE-NOTES-v25.0.4.md).
+The [reserved publication target](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v26.0.3)
+is not published; use the Proof release badge above for public downloads.
 Earlier releases remain documented in the
 [release-note index](docs/releases/RELEASE_NOTES.md).
 

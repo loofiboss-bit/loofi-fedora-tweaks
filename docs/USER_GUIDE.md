@@ -1,12 +1,12 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 25.0.4 "Proof" public release
+> Version 26.0.3 "Everyday" local candidate
 
 This guide covers daily use in GUI and CLI mode. For a short first run, see
 `docs/BEGINNER_QUICK_GUIDE.md`. For operational detail, see
 `docs/ADVANCED_ADMIN_GUIDE.md`.
 
-This guide documents the public Proof release. Physical Fedora Wayland,
+This guide documents the local Everyday candidate; public downloads remain on Proof. Physical Fedora Wayland,
 reboot, and manual accessibility qualification remain separately reported
 gates and are not inferred from offscreen evidence.
 
@@ -208,7 +208,7 @@ collapsed details and advanced review tools.
   operation class, Fedora variants, reboot policy, affected resources,
   parameters, preflight, confirmation, verification, and recovery policy.
 - Unsupported host operations produce non-executable `manual_only` plans.
-- Eligible low-risk requests may use **Run with Proof** when Safety & Execution
+- Eligible low-risk requests may use **Run action** when Safety & Execution
   is set to **Direct**. Medium-risk requests receive one compact confirmation;
   high-risk, incomplete, unsupported, unverifiable, and manual-only requests
   remain in review.
@@ -392,3 +392,15 @@ The historical Architecture Hardening tag object is preserved under
 `legacy-v23.0.0-architecture-hardening`. Its release evidence records exact
 commit, artifact, signature, checksum, SBOM/provenance, CI, COPR, Fedora 44
 installation, and public-documentation readback.
+
+## Everyday local candidate: updates and follow-up
+
+Open Software & Updates → Updates and select **Check for updates**. System,
+Flatpak and Firmware retain separate status and timestamps. An unavailable source
+is not the same as having no updates. Expand source details for versions and
+restart guidance. Select one source to review its Action Center plan; the saved
+overview never authorizes execution.
+
+Home lists saved maintenance that needs attention. Open its run, then use
+**Check result** when verification is pending. Waiting for restart is not final
+success. Neither opening Home nor following a run retries or reboots the system.

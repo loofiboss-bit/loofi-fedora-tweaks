@@ -130,7 +130,7 @@ class TestCanonicalHomeUi(unittest.TestCase):
         self.assertIsNotNone(action_link)
         action_link.click()
 
-        main_window.switch_to_route.assert_called_once_with("maintenance:action-center")
+        main_window._open_action_center_run.assert_called_once_with("run-1")
 
     def test_home_has_no_plan_run_or_verify_controls(self):
         tab = AtlasDashboardTab(home_service=_SummaryService(_summary()))
@@ -237,7 +237,7 @@ class TestCanonicalHomeUi(unittest.TestCase):
         action_link = tab.findChild(QPushButton, "homeActionCenterLink")
         action_link.setFocus()
         QTest.keyClick(action_link, Qt.Key.Key_Space)
-        main_window.switch_to_route.assert_called_once_with("maintenance:action-center")
+        main_window._open_action_center_run.assert_called_once_with("run-1")
 
 
 if __name__ == "__main__":

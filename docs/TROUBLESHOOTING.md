@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-Common issues and recovery steps for v25.0.4 "Proof".
+Common issues and recovery steps for v26.0.3 "Everyday".
 
 ## 1) Quick Diagnostics
 

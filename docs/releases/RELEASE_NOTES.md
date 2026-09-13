@@ -1,5 +1,7 @@
 # Release Notes -- Latest
 
+- [v26.0.3 Everyday — unpublished local candidate](RELEASE-NOTES-v26.0.3.md)
+
 Canonical "latest release notes index" for the project.
 
 ## Current Release

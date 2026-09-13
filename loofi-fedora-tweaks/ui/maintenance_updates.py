@@ -71,6 +71,10 @@ class _UpdatesSubTab(BaseTab):
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
+        from ui.update_overview import UpdateOverviewWidget
+
+        self.overview = UpdateOverviewWidget()
+        layout.addWidget(self.overview)
         self._add_update_overview(layout)
         self._add_source_actions(layout)
         self._add_advanced_sections(layout)
@@ -82,6 +86,7 @@ class _UpdatesSubTab(BaseTab):
         self.progress_bar.setTextVisible(True)
         self.progress_bar.setFormat("%p% - %v")
         layout.addWidget(self.action_progress)
+        self.action_progress.hide()
 
         self.output_area.setAccessibleName(self.tr("Update output"))
         self.output_area.setMaximumHeight(16777215)
@@ -93,7 +98,9 @@ class _UpdatesSubTab(BaseTab):
 
         update_guidance = QLabel(self._update_guidance())
         update_guidance.setWordWrap(True)
-        layout.addWidget(update_guidance)
+        self.plan_details = DetailsDisclosure(summary=self.tr("How update plans work"))
+        self.plan_details.add_widget(update_guidance)
+        layout.addWidget(self.plan_details)
         self.update_state = FeedbackBanner(
             self.tr("Ready to review updates"),
             self.tr("Choose System, Flatpak, or Firmware to create one reviewable plan."),
@@ -102,6 +109,7 @@ class _UpdatesSubTab(BaseTab):
         self.update_state.setObjectName("updatesState")
         self.update_state.setProperty("updateLifecycleState", "idle")
         layout.addWidget(self.update_state)
+        self.update_state.hide()
 
         self.update_summary = TaskSummary(
             self.tr("Update plan summary"),
@@ -111,7 +119,7 @@ class _UpdatesSubTab(BaseTab):
         self.update_summary.add_fact(self.tr("System mode"), self.package_manager)
         self.update_summary.add_fact(self.tr("Execution"), self.tr("Action Center only"))
         self.update_summary.add_fact(self.tr("Verification"), self.tr("Required after execution"))
-        layout.addWidget(self.update_summary)
+        self.plan_details.add_widget(self.update_summary)
 
         self.btn_update_all = QuietButton(
             self.tr("Why separate plans?"),
@@ -120,37 +128,29 @@ class _UpdatesSubTab(BaseTab):
         self.btn_update_all.setAccessibleName(self.tr("Explain independent update plans"))
         self.btn_update_all.setObjectName("maintUpdateAllBtn")
         self.btn_update_all.clicked.connect(self.run_update_all)
-        layout.addWidget(self.btn_update_all)
+        self.plan_details.add_widget(self.btn_update_all)
 
     def _add_source_actions(self, layout: QVBoxLayout) -> None:
         """Add one review action per existing update source."""
-        layout.addWidget(
-            SectionHeader(
-                self.tr("Choose an update source"),
-                self.tr("Each button creates a reviewable plan; no update starts on this page."),
-            )
-        )
-        btn_layout = QHBoxLayout()
-
         if self.package_manager == "rpm-ostree":
             self.btn_dnf = SecondaryButton(self.tr("Review System Update (rpm-ostree)"))
         else:
             self.btn_dnf = SecondaryButton(self.tr("Review System Update (DNF)"))
         self.btn_dnf.setAccessibleName(self.tr("Review System Update"))
         self.btn_dnf.clicked.connect(self.run_dnf_update)
-        btn_layout.addWidget(self.btn_dnf)
 
         self.btn_flatpak = SecondaryButton(self.tr("Review Flatpak Updates"))
         self.btn_flatpak.setAccessibleName(self.tr("Review Flatpak Updates"))
         self.btn_flatpak.clicked.connect(self.run_flatpak_update)
-        btn_layout.addWidget(self.btn_flatpak)
 
         self.btn_fw = SecondaryButton(self.tr("Review Firmware Updates"))
         self.btn_fw.setAccessibleName(self.tr("Review Firmware Updates"))
         self.btn_fw.clicked.connect(self.run_fw_update)
-        btn_layout.addWidget(self.btn_fw)
 
-        layout.addLayout(btn_layout)
+        overview_layout = self.overview.layout()
+        if isinstance(overview_layout, QVBoxLayout):
+            for source, button in (("system", self.btn_dnf), ("flatpak", self.btn_flatpak), ("firmware", self.btn_fw)):
+                overview_layout.insertWidget(overview_layout.indexOf(self.overview.rows[source][2]), button)
 
     def _add_advanced_sections(self, layout: QVBoxLayout) -> None:
         """Keep existing kernel and Smart Updates tools progressively disclosed."""
@@ -209,6 +209,7 @@ class _UpdatesSubTab(BaseTab):
         kind: str = "info",
     ) -> None:
         """Present an explicit update lifecycle without owning execution."""
+        self.update_state.show()
         self.update_state.setProperty("updateLifecycleState", lifecycle)
         self.update_state.set_result(kind, title, message)
         status_kind = {
@@ -243,6 +244,7 @@ class _UpdatesSubTab(BaseTab):
             self.tr("Update operation in progress"),
             str(status),
         )
+        self.action_progress.show()
         self.action_progress.status_label.setText(str(status))
         if percent == -1:
             if self.progress_bar.value() == 0 or self.progress_bar.value() == 100:
@@ -296,6 +298,7 @@ class _UpdatesSubTab(BaseTab):
         translate = getattr(self, "tr", lambda value: value)
         update_state = getattr(self, "update_state", None)
         if update_state is not None:
+            update_state.show()
             update_state.setProperty("updateLifecycleState", "review")
             update_state.set_result(
                 "info",

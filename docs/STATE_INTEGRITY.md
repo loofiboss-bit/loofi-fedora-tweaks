@@ -1,6 +1,6 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v25.0.4 "Proof" keeps application-owned state under
+Loofi Fedora Tweaks v26.0.3 "Everyday" keeps application-owned state under
 standard XDG config, data, cache, and runtime directories. Fedora 44 is the
 supported baseline; Fedora 45 remains preview/advisory.
 

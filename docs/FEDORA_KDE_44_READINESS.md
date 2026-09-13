@@ -1,6 +1,6 @@
 # Release Readiness
 
-Loofi Fedora Tweaks v25.0.4 "Proof" keeps the read-only release
+Loofi Fedora Tweaks v26.0.3 "Everyday" keeps the read-only release
 readiness center, guided Upgrade Assistant, verified Action Center entry points,
 and health history inside the six-destination shell. Fedora KDE 44 is the
 supported stable target. Fedora 45 remains preview-only and advisory.

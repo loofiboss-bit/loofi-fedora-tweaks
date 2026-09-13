@@ -173,6 +173,7 @@ class HomeService:
             check_now_available=True,
             primary_task=primary_task,
             active_work=active_work,
+            follow_up_tasks=self._follow_up_tasks(runs, primary_task),
             last_verified_change=last_verified_change,
         )
 
@@ -294,8 +295,8 @@ class HomeService:
             summary = "A reviewed maintenance run is waiting for reboot-aware verification."
             source: GuidedTaskSource = "reboot"
         elif state == "verifying":
-            title = "Verification in progress"
-            summary = "Action Center is verifying the reviewed maintenance result."
+            title = "Result needs checking"
+            summary = "Execution finished. Open the saved run and check its result."
             source = "run"
         else:
             title = "Maintenance in progress"
@@ -310,6 +311,23 @@ class HomeService:
             run_id,
             "Open Action Center",
         )
+
+    @classmethod
+    def _follow_up_tasks(cls, runs: Sequence[Any], primary_task: GuidedTask | None) -> tuple[GuidedTask, ...]:
+        """Project at most three distinct saved runs, without collecting or executing."""
+        tasks = []
+        seen = {primary_task.source_id} if primary_task is not None else set()
+        for run in sorted(runs, key=lambda item: float(getattr(item, "updated_at", 0.0) or 0.0), reverse=True):
+            run_id = str(getattr(run, "run_id", "") or "")
+            if not run_id or run_id in seen:
+                continue
+            task = cls._active_work_task((run,), None)
+            if task is not None:
+                tasks.append(task)
+                seen.add(run_id)
+            if len(tasks) == 3:
+                break
+        return tuple(tasks)
 
     @staticmethod
     def _list_action_state(store: Any) -> list[Any]:

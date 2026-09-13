@@ -21,11 +21,14 @@ from ui.action_center_presentation import (
     ActionCenterDetails,
     action_center_group_for_state,
     candidate_details,
+    filter_lifecycle_records,
+    format_history_records,
     lifecycle_presence_copy,
     plan_details,
     preview_lines,
     privilege_label,
     restart_label,
+    run_banner_facts,
     run_details,
 )
 from ui.action_center_views import ActionCenterDetailPane, ActionCenterMasterPane
@@ -156,7 +159,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
 
         self._add_direct_action_button(target_review_row)
 
-        self.verify_button = PrimaryButton(self.tr("Verify Run"))
+        self.verify_button = PrimaryButton(self.tr("Check result"))
         self.verify_button.clicked.connect(self._verify_current_run)
         self.verify_button.setEnabled(False)
         target_review_row.addWidget(self.verify_button)
@@ -260,6 +263,10 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         for item in self._items:
             self.catalog_selector.addItem(item.title, item.id)
         self.catalog_selector.blockSignals(False)
+        selected_run = self._current_run
+        if selected_run is not None:
+            self.preselect_run(str(selected_run.run_id))
+            return
         current_index = self.lifecycle_view.currentIndex()
         self._show_lifecycle_view(current_index if isinstance(current_index, int) else 0)
         selected = self._select_requested_action()
@@ -340,38 +347,9 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
             if getattr(plan, "plan_id", None)
         }
 
-        records: list[tuple[str, typing.Any]] = []
-        if group_id == "needs_review":
-            records.extend(
-                ("plan", plan)
-                for plan in plans
-                if action_center_group_for_state(str(plan.state)) == group_id
-            )
-            if self._requested_action_id:
-                records.extend(
-                    ("candidate", item)
-                    for item in self._items
-                    if self._ACTION_ID_ADAPTERS.get(item.id, item.id)
-                    == self._requested_action_id
-                )
-        elif group_id == "ready":
-            records.extend(
-                ("plan", plan)
-                for plan in plans
-                if action_center_group_for_state(str(plan.state)) == group_id
-            )
-        else:
-            if group_id == "failed":
-                records.extend(
-                    ("plan", plan)
-                    for plan in plans
-                    if action_center_group_for_state(str(plan.state)) == group_id
-                )
-            records.extend(
-                ("run", run)
-                for run in runs
-                if action_center_group_for_state(str(run.state)) == group_id
-            )
+        records = filter_lifecycle_records(
+            group_id, plans, runs, self._requested_action_id, self._items, self._ACTION_ID_ADAPTERS
+        )
 
         self._visible_records = records if review_mode else list(reversed(records))
         self.action_list.clear()
@@ -431,6 +409,28 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self.lifecycle_view.setCurrentIndex(0)
         self._show_lifecycle_view(0)
         self._select_requested_action()
+
+    def preselect_run(self, run_id: str) -> bool:
+        """Resolve the exact persisted run; never create a plan or execute it."""
+        try:
+            run = self._orchestrator_instance().get_run(str(run_id))
+        except (OSError, RuntimeError, TypeError, ValueError):
+            self.presentation_banner.set_result("warning", self.tr("Saved run unavailable"),
+                                                self.tr("The selected run could not be read. Review Action Center history."))
+            return False
+        self._requested_action_id = ""
+        group = action_center_group_for_state(str(run.state))
+        index = next(i for i, (key, _label) in enumerate(ACTION_CENTER_STATE_GROUPS) if key == group)
+        self.lifecycle_view.setCurrentIndex(index)
+        self._show_lifecycle_view(index)
+        for row, (kind, record) in enumerate(self._visible_records):
+            if kind == "run" and record.run_id == run.run_id:
+                self.action_list.setCurrentRow(row)
+                break
+        self._current_plan = None
+        self._current_run = run
+        self._show_run(run)
+        return True
 
     def preselect_action(
         self: typing.Any,
@@ -546,7 +546,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         worker.finished.connect(on_success)
         worker.finished.connect(thread.quit)
         worker.failed.connect(lambda message: QMessageBox.warning(self, failure_title, message))
-        worker.failed.connect(lambda _message: self._set_loading(False))
+        worker.failed.connect(self._operation_failed)
         worker.failed.connect(thread.quit)
         thread.finished.connect(worker.deleteLater)
         thread.finished.connect(thread.deleteLater)
@@ -554,6 +554,15 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self._operation_thread = thread
         self._operation_worker = worker
         thread.start()
+
+    def _operation_failed(self: typing.Any, message: str) -> None:
+        """Restore the saved run's next step when a check cannot finish."""
+        self._set_loading(False)
+        if self._current_run is not None:
+            self._show_run(self._current_run)
+            self.presentation_banner.set_result(
+                "warning", self.tr("Result cannot be confirmed"), str(message),
+            )
 
     def _clear_operation_worker(self: typing.Any) -> None:
         self._operation_thread = None
@@ -585,16 +594,9 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
             validation=details.validation,
             rollback=details.rollback,
         )
-        self._set_selected_details(
-            list(details.summary_lines),
-            list(details.technical_lines),
-        )
+        self._set_selected_details(list(details.summary_lines), list(details.technical_lines))
 
-    def _set_selected_details(
-        self,
-        summary_lines: list[str],
-        technical_lines: list[str],
-    ) -> None:
+    def _set_selected_details(self, summary_lines: list[str], technical_lines: list[str]) -> None:
         """Keep user outcome and safety facts visible above technical metadata."""
         self.selected_summary.setText("\n".join(summary_lines))
         self.detail_area.setPlainText("\n".join(technical_lines))
@@ -793,6 +795,8 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         self._show_run(self._current_run)
 
     def _verify_current_run(self: typing.Any) -> None:
+        if self._operation_thread is not None:
+            return
         run = self._current_run
         if run is None:
             QMessageBox.warning(self, self.tr("No Run"), self.tr("Run a reviewed plan before verification."))
@@ -828,6 +832,8 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
         )
 
     def _show_run(self: typing.Any, run: typing.Any) -> None:
+        level, title, message = run_banner_facts(run, self.tr)
+        self.presentation_banner.set_result(level, title, message)
         plan = self._plans_by_id.get(str(run.plan_id))
         privilege = (
             self._privilege_label("pkexec" if plan.privileged else "none")
@@ -845,18 +851,12 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
             self._set_lifecycle_primary("verify", enabled=True)
         else:
             self._set_lifecycle_primary("", enabled=False)
-        self.check_again_button.setToolTip(
-            self.tr("Run a later read-only System Check for: %1").replace(
-                "%1",
-                ", ".join(context.affected_resources)
-                if context is not None and context.affected_resources
-                else self.tr("the linked finding"),
-            )
-            if can_check_again
-            else self.tr(
-                "Finish verification and any required reboot before checking the finding again."
-            )
-        )
+        if can_check_again:
+            res = ", ".join(context.affected_resources) if context and context.affected_resources else self.tr("the linked finding")
+            tip = self.tr("Run a later read-only System Check for: %1").replace("%1", res)
+        else:
+            tip = self.tr("Finish verification and any required reboot before checking the finding again.")
+        self.check_again_button.setToolTip(tip)
         self._apply_details(
             run_details(
                 run,
@@ -878,16 +878,7 @@ class _ActionCenterSubTab(DirectActionUiMixin, BaseTab):
             )
             self.detail_area.setPlainText(self.tr("No Action Center history recorded."))
             return
-        lines = []
-        for plan in reversed(plans):
-            lines.append(f"{plan.plan_id}: {plan.action_id} [{plan.state}]")
-        for run in reversed(runs):
-            lines.append(f"{run.run_id}: {run.action_id} [{run.state}]")
-        for entry in history:
-            event = entry.get("event", "event")
-            action = entry.get("action", {})
-            title = action.get("title", action.get("id", "unknown")) if isinstance(action, dict) else "unknown"
-            lines.append(f"{event}: {title}")
+        lines = format_history_records(plans, runs, history)
         self.selected_summary.setText(
             self.tr("Loaded %d recent Action Center records.") % len(lines)
         )

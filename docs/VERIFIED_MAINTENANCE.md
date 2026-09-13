@@ -1,6 +1,6 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v25.0.4 "Proof" uses Action Center as the trust boundary
+Loofi Fedora Tweaks v26.0.3 "Everyday" uses Action Center as the trust boundary
 for supported host changes across GUI, CLI, daemon, automation, scheduler, and
 agent entry points. The catalog contains 74 definitions declaring operation class, Fedora variants,
 reboot policy, affected resources, preflight, confirmation, verification, and
@@ -40,7 +40,7 @@ not sufficient. If the application exits during a run, the run is preserved as
 ## Proof direct path
 
 When **Settings → Behavior → Safety & Execution** is set to **Direct**, an
-eligible low-risk request may use **Run with Proof**. The service still creates
+eligible low-risk request may use **Run action**. The service still creates
 the normal Action Center plan, performs fresh preflight, uses the configured
 confirmation policy, executes through Action Center, and attempts independent
 verification. Medium-risk actions require one compact confirmation when enabled.

@@ -256,15 +256,120 @@ def run_details(
     )
 
 
+def run_banner_facts(run: Any, translate: Callable[[str], object]) -> tuple[str, str, str]:
+    """Provide level, title, and descriptive message for a saved run's current state."""
+    state = str(getattr(run, "state", ""))
+
+    def t(value: str) -> str:
+        return str(translate(value))
+
+    mapping: dict[str, tuple[str, str, str]] = {
+        "succeeded": (
+            "success",
+            t("Completed and verified"),
+            t("The recorded result matches the reviewed change."),
+        ),
+        "awaiting_reboot": (
+            "warning",
+            t("Waiting for restart"),
+            t("Restart when convenient, then choose Check result. The change is not yet verified."),
+        ),
+        "verifying": (
+            "info",
+            t("Result needs checking"),
+            t("Choose Check result to verify the completed execution."),
+        ),
+        "verification_failed": (
+            "warning",
+            t("Verification failed"),
+            t("Review the verification details and recovery guidance before taking another action."),
+        ),
+        "running": (
+            "info",
+            t("Maintenance in progress"),
+            t("This saved run has not recorded a final result yet."),
+        ),
+    }
+    return mapping.get(
+        state,
+        ("warning", t("Result cannot be confirmed"), t("Review the execution details and recovery guidance.")),
+    )
+
+
+def filter_lifecycle_records(
+    group_id: str,
+    plans: list[Any],
+    runs: list[Any],
+    requested_action_id: str,
+    items: list[Any],
+    adapters: dict[str, str],
+) -> list[tuple[str, Any]]:
+    """Collect plans, runs, or candidates matching a specific lifecycle group."""
+    records: list[tuple[str, Any]] = []
+    if group_id == "needs_review":
+        records.extend(
+            ("plan", plan)
+            for plan in plans
+            if action_center_group_for_state(str(plan.state)) == group_id
+        )
+        if requested_action_id:
+            records.extend(
+                ("candidate", item)
+                for item in items
+                if adapters.get(getattr(item, "id", ""), getattr(item, "id", "")) == requested_action_id
+            )
+    elif group_id == "ready":
+        records.extend(
+            ("plan", plan)
+            for plan in plans
+            if action_center_group_for_state(str(plan.state)) == group_id
+        )
+    else:
+        if group_id == "failed":
+            records.extend(
+                ("plan", plan)
+                for plan in plans
+                if action_center_group_for_state(str(plan.state)) == group_id
+            )
+        records.extend(
+            ("run", run)
+            for run in runs
+            if action_center_group_for_state(str(run.state)) == group_id
+        )
+    return records
+
+
+def format_history_records(
+    plans: list[Any],
+    runs: list[Any],
+    history: list[dict[str, Any]],
+) -> list[str]:
+    """Build technical history line items from plans, runs, and audit events."""
+    lines: list[str] = []
+    for plan in reversed(plans):
+        lines.append(f"{plan.plan_id}: {plan.action_id} [{plan.state}]")
+    for run in reversed(runs):
+        lines.append(f"{run.run_id}: {run.action_id} [{run.state}]")
+    for entry in history:
+        event = entry.get("event", "event")
+        action = entry.get("action", {})
+        title = action.get("title", action.get("id", "unknown")) if isinstance(action, dict) else "unknown"
+        lines.append(f"{event}: {title}")
+    return lines
+
+
 __all__ = [
     "ACTION_CENTER_STATE_GROUPS",
     "ActionCenterDetails",
     "action_center_group_for_state",
     "candidate_details",
+    "filter_lifecycle_records",
+    "format_history_records",
     "lifecycle_presence_copy",
     "plan_details",
     "preview_lines",
     "privilege_label",
     "restart_label",
+    "run_banner_facts",
     "run_details",
 ]

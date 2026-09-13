@@ -131,6 +131,16 @@ class MaintenanceTab(BaseTab):
     def _open_action_center(self, action_id: str, parameters=None) -> None:
         self.preselect_action(action_id, parameters)
 
+    def preselect_run(self, run_id: str) -> bool:
+        """Select the saved run in the existing Action Center route."""
+        for index, (label, _factory) in enumerate(self._sub_tab_factories):
+            if label == self.tr("Action Center"):
+                self.tabs.setCurrentIndex(index)
+                self._lazy_load_sub_tab(index)
+                select = getattr(self._loaded_tabs.get(index), "preselect_run", None)
+                return bool(select(run_id)) if callable(select) else False
+        return False
+
     def preselect_action(
         self,
         action_id: str,
