@@ -1,40 +1,49 @@
 # Configuration & State Storage — v28.0.2 "Ease"
 
-Loofi Fedora Tweaks strictly follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) to keep configuration, runtime state, and logs organized and separated from system files.
+Loofi Fedora Tweaks keeps application state under the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) paths where the current state services apply them. Some legacy preference helpers still use the default home-relative configuration path; the exact scope is documented below.
 
 ---
 
 ## 1. Directory Locations
 
-All user state resides within your standard user directory:
+The following are the default locations; XDG overrides apply to the state services described in the environment table:
 
 | Path | Purpose | Content |
 | --- | --- | --- |
-| `~/.config/loofi-fedora-tweaks/` | Configuration | User preferences (theme, UI scale, window geometry) |
+| `~/.config/loofi-fedora-tweaks/` | Configuration | User preferences, onboarding, and configuration-owned state |
 | `~/.local/share/loofi-fedora-tweaks/` | Application State | System check history, Trusted Change Journal, active plans |
-| `~/.local/share/loofi-fedora-tweaks/logs/` | Runtime Logs | Application execution and diagnostic logs |
+| `~/.local/share/loofi-fedora-tweaks/startup.log` | Startup Log | GUI startup and early crash diagnostics |
+| `${XDG_STATE_HOME:-~/.local/state}/loofi-fedora-tweaks/app.log` | Runtime Log | Centralized application execution and diagnostic logs |
 | `~/.cache/loofi-fedora-tweaks/` | Transient Cache | Temporary inspection caches |
 
-Loofi never creates unmanaged files in `/etc`, `/var`, or your home root directory.
+Loofi never creates unmanaged system files in `/etc` or `/var`. A support bundle is an explicit user-requested archive and is written to your home directory by default.
 
 ---
 
 ## 2. Preference Storage (`settings.json`)
 
-User preferences are stored in JSON format with an explicit schema version:
+User preferences are stored as a flat JSON object with an explicit state schema version. The following is a representative persisted payload; values vary with the user's choices:
 
 ```json
 {
-  "schema_version": 2,
-  "appearance": {
-    "theme": "system",
-    "scale_factor": 1.0,
-    "navigation_layout": "expanded"
-  },
-  "behavior": {
-    "confirm_exit_with_active_plans": true,
-    "default_timeout_seconds": 300
-  }
+  "theme": "dark",
+  "follow_system_theme": true,
+  "start_minimized": false,
+  "show_notifications": true,
+  "confirm_dangerous_actions": true,
+  "restore_last_tab": false,
+  "last_tab_index": 0,
+  "log_level": "INFO",
+  "check_updates_on_start": true,
+  "navigation_mode": "standard",
+  "suppressed_confirmations": [],
+  "locale": "en",
+  "favorite_routes": [],
+  "hidden_routes": [],
+  "last_route_id": "atlas_dashboard",
+  "window_geometry": {},
+  "last_seen_version": "0.0.0",
+  "state_schema_version": 2
 }
 ```
 
@@ -66,8 +75,9 @@ The following environment variables can be used to control runtime behavior:
 | --- | --- | --- |
 | `QT_QPA_PLATFORM` | `wayland`, `xcb`, `offscreen` | Overrides Qt display server backend |
 | `LOOFI_IPC_MODE` | `standard`, `disabled` | Set to `disabled` during headless CI testing |
-| `XDG_CONFIG_HOME` | Absolute path | Custom location for user configuration files |
-| `XDG_DATA_HOME` | Absolute path | Custom location for persistent application state |
+| `XDG_CONFIG_HOME` | Absolute path | Custom location for core state configuration; legacy preference helpers retain `~/.config/loofi-fedora-tweaks/` |
+| `XDG_DATA_HOME` | Absolute path | Custom location for core persistent application state |
+| `XDG_STATE_HOME` | Absolute path | Custom location for the centralized application log |
 
 ---
 
@@ -76,14 +86,18 @@ The following environment variables can be used to control runtime behavior:
 To reset user preferences to fresh defaults without affecting system packages:
 
 ```bash
-rm -rf ~/.config/loofi-fedora-tweaks/settings.json
+rm -f ~/.config/loofi-fedora-tweaks/settings.json
 ```
 
-To clean all historical check snapshots and journals:
+To remove historical snapshots and journal records only, close Loofi first and delete the specific history files:
 
 ```bash
-rm -rf ~/.local/share/loofi-fedora-tweaks/
+rm -f ~/.local/share/loofi-fedora-tweaks/health_timeline_v12.json
+rm -f ~/.local/share/loofi-fedora-tweaks/health_timeline.db
+rm -f ~/.local/share/loofi-fedora-tweaks/action_center_history.jsonl
+rm -f ~/.local/share/loofi-fedora-tweaks/action_log.jsonl
 ```
 
-Resetting local state has **zero impact** on your installed Fedora packages or system configurations.
+Do not delete the entire application data directory: it also contains active plans, action runs, recovery state, and other inventory-managed domains. Substitute the corresponding `XDG_DATA_HOME` path when using a custom data root.
 
+Resetting local state has **zero impact** on your installed Fedora packages or system configurations.

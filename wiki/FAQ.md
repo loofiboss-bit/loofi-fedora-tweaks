@@ -43,12 +43,11 @@ When you want to discover or install new GUI applications, Loofi hands off the r
 ---
 
 ### Can I automate Loofi from terminal scripts?
-**Yes.** The CLI provides 8 commands (`info`, `check`, `updates`, `troubleshoot`, `changes`, `activity`, `doctor`, `support-bundle`). Passing the `--json` flag wraps output in a stable JSON envelope suitable for parsing with `jq`.
+**Yes.** The CLI provides 8 commands (`info`, `check`, `updates`, `troubleshoot`, `changes`, `activity`, `doctor`, `support-bundle`). Passing the `--json` flag selects command-specific JSON output suitable for parsing with `jq`; inspect each command's schema before automating it.
 
 ---
 
 ### How do I troubleshoot or file an issue?
-1. Run `loofi-fedora-tweaks --cli doctor` to check environment and authorization status.
+1. Run `loofi-fedora-tweaks --cli doctor` to check the environment and `pkexec` availability.
 2. Run `loofi-fedora-tweaks --cli support-bundle` to create a sanitized diagnostic ZIP.
 3. Open an issue on [GitHub Issues](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues) with the bundle and reproduction steps.
-

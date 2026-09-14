@@ -112,9 +112,10 @@ loofi doctor
 loofi support-bundle
 ```
 
-Use `--json` before a command when a stable machine-readable envelope is
-needed. Changes remain review-first: inspect the plan, confirm it explicitly,
-and verify the outcome separately.
+Use `--json` before a command for machine-readable output. JSON schemas are
+command-specific, so automation should validate the selected command's shape.
+Changes remain review-first: inspect the plan, confirm it explicitly, and
+verify the outcome separately.
 
 ## Safety model
 

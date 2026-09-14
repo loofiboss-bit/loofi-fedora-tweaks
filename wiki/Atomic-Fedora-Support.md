@@ -37,8 +37,8 @@ On Atomic hosts, updating the base system creates a new staged deployment tree:
 Loofi **never** runs `systemctl reboot` automatically.
 
 ```bash
-# Verify Atomic platform detection
-loofi --json info | jq '.data.deployment_backend'
+# Verify the detected package backend
+loofi --json info | jq -r '.package_manager'
 
 # Check for staged or pending ostree updates
 loofi updates check
@@ -57,4 +57,3 @@ loofi updates check
 ## Bootc Systems
 
 On Fedora systems managed via `bootc` (bootable containers), Loofi identifies the `bootc` backend and presents clear, manual guidance rather than attempting to route commands through `rpm-ostree`.
-

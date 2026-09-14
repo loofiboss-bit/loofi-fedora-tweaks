@@ -9,7 +9,7 @@ When experiencing issues with Loofi Fedora Tweaks or underlying system services,
 Always begin with these three read-only diagnostic checks:
 
 ```bash
-# 1. Inspect dependency health, Polkit agent, and environment
+# 1. Inspect dependency health, pkexec availability, and environment
 loofi-fedora-tweaks --cli doctor
 
 # 2. Inspect platform facts and detected deployment backend
@@ -19,7 +19,7 @@ loofi-fedora-tweaks --cli --json info
 loofi-fedora-tweaks --cli support-bundle
 ```
 
-The support bundle archive is created in your current working directory. It contains redacted environment facts and recent change journal records.
+The support bundle archive is created in your home directory by default as `~/loofi-support-bundle-YYYYMMDD_HHMMSS.zip`; the CLI output prints the exact path. It contains redacted environment facts and recent change journal records.
 
 ---
 
@@ -43,8 +43,7 @@ The support bundle archive is created in your current working directory. It cont
    QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
    ```
 4. **Inspect Application Logs**:
-   Application log files are stored in:
-   `~/.local/share/loofi-fedora-tweaks/logs/`
+   GUI startup diagnostics are stored in `~/.local/share/loofi-fedora-tweaks/startup.log`. The centralized application log is stored in `${XDG_STATE_HOME:-~/.local/state}/loofi-fedora-tweaks/app.log`.
 
 ---
 
@@ -116,4 +115,3 @@ When opening an issue on [GitHub Issues](https://github.com/loofiboss-bit/loofi-
 2. Desktop environment and display server (Wayland or X11).
 3. Output of `loofi-fedora-tweaks --cli doctor`.
 4. Relevant excerpts from the support bundle.
-

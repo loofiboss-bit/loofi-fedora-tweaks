@@ -57,7 +57,7 @@ loofi-fedora-tweaks --cli changes apply PLAN_ID --yes
 loofi-fedora-tweaks --cli changes verify RUN_ID
 ```
 
-Use `--json` before the command for a machine-readable envelope. The CLI
+Use `--json` before the command for machine-readable output. The CLI
 accepts only the closed catalog and typed parameters; it has no arbitrary shell
 or remote execution mode.
 

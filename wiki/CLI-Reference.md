@@ -22,7 +22,7 @@ alias loofi='loofi-fedora-tweaks --cli'
 
 | Option | Type | Description |
 | --- | --- | --- |
-| `--json` | flag | Output results wrapped in a stable machine-readable JSON envelope |
+| `--json` | flag | Output a command-specific machine-readable JSON payload |
 | `--timeout <seconds>` | integer | Maximum execution timeout in seconds (default: 300) |
 | `--dry-run` | flag | Generate and display the change plan without modifying the host |
 | `-v`, `--version` | flag | Print application version and codename |
@@ -39,7 +39,7 @@ loofi
 ├── troubleshoot     # Symptom-driven troubleshooting (profiles, run, compare, export)
 ├── changes          # Action Center workspace (list, show, apply, verify)
 ├── activity         # Trusted Change Journal inspection (list)
-├── doctor           # Self-diagnostics, Polkit agent check, dependency audit
+├── doctor           # Self-diagnostics, pkexec availability check, dependency audit
 └── support-bundle   # Export sanitized diagnostic archive (.zip)
 ```
 
@@ -131,7 +131,7 @@ loofi activity list
 
 ## 7. `loofi doctor`
 
-Performs an environment self-audit: validates Python dependencies, checks Polkit agent availability for `pkexec`, verifies package manager tools, and identifies desktop integration status.
+Performs an environment self-audit: validates Python dependencies, checks whether the `pkexec` executable is available, verifies package manager tools, and identifies desktop integration status. A running desktop Polkit agent must be checked separately.
 
 ```bash
 loofi doctor
@@ -152,17 +152,17 @@ loofi support-bundle
 
 ## Scripting with `--json` and `jq`
 
-Using the `--json` flag formats all output into a predictable envelope. The envelope contains `status`, `data`, and `errors`.
+The `--json` flag selects machine-readable output, but the schema is command-specific. Commands that expose a presentation envelope document their `data` fields; other commands return their native object or list shape.
 
 ```bash
-# Extract Fedora deployment backend
-loofi --json info | jq -r '.data.deployment_backend'
+# Extract the detected package manager from the info object
+loofi --json info | jq -r '.package_manager'
 
 # Count pending updates
-loofi --json updates check | jq '.data.total_updates'
+loofi --json updates check | jq 'length'
 
-# Check if SELinux is enforcing
-loofi --json check | jq '.data.selinux.status'
+# Read the System Check state from its presentation envelope
+loofi --json check | jq -r '.data.result.state'
 ```
 
 ---
@@ -170,6 +170,5 @@ loofi --json check | jq '.data.selinux.status'
 ## Safety & Non-interactive Execution
 
 - **No Shell Expansion**: Arguments are passed directly as typed vectors.
-- **Fail Closed**: Unknown Fedora variants, unrecognized desktop sessions, or missing Polkit agents halt execution rather than falling back to guessing.
+- **Fail Closed**: Unknown Fedora variants, unrecognized desktop sessions, or missing required authorization prerequisites halt execution rather than falling back to guessing.
 - **Explicit Confirmation**: `loofi changes apply` requires `--yes` in automated scripts; otherwise execution aborts.
-

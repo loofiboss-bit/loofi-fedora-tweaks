@@ -9,7 +9,7 @@ Loofi Fedora Tweaks enforces strict quality gates to guarantee system safety and
 - **Test Suite Results**: 4,804 passed, 73 skipped, 0 failures.
 - **Code Coverage**: 86.64% line coverage across the maintained core (blocking CI gate is 85%).
 - **Automated Validation**: Static typing (`mypy`), linting (`flake8`), architecture boundaries, packaging validation, and documentation link checks all pass cleanly.
-- **Evidence Boundaries**: Headless/offscreen tests prove logic, command construction, and catalog contracts. Physical display server integration, hardware battery controllers, and Polkit agents are verified through manual qualification gates.
+- **Evidence Boundaries**: Headless/offscreen tests prove logic, command construction, and catalog contracts. Physical display server integration, hardware battery controllers, Polkit agents, reboot behavior, and Atomic-host behavior remain explicitly unverified for this release; see the [release publication report](../docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
 
 ---
 
@@ -22,7 +22,7 @@ Run the test suite using `just`:
 LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just test
 
 # Run a specific test file
-just test-file test_product_catalog
+just test-file test_product_catalog_records
 
 # Run tests with code coverage check
 LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just test-coverage
@@ -59,4 +59,3 @@ python3 scripts/sync_wiki_docs.py --check
 # Validate RPM packaging metadata and AppStream XML
 just check-packaging
 ```
-

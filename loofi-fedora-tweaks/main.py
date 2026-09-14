@@ -8,17 +8,43 @@ sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 
 from version import __version__
 
-# Set up file logging so crashes are visible even when launched from desktop
+# Keep the startup log path available for error messages, but defer filesystem
+# writes until after the root-launch guard has run.
 LOG_DIR = os.path.expanduser("~/.local/share/loofi-fedora-tweaks")
-os.makedirs(LOG_DIR, exist_ok=True)
 LOG_FILE = os.path.join(LOG_DIR, "startup.log")
 
-logging.basicConfig(
-    filename=LOG_FILE,
-    level=logging.DEBUG,
-    format="%(asctime)s %(levelname)s %(name)s: %(message)s",
-    datefmt="%Y-%m-%d %H:%M:%S",
-)
+
+def _is_root_process() -> bool:
+    """Return whether the current process has root effective privileges."""
+    geteuid = getattr(os, "geteuid", None)
+    if not callable(geteuid):
+        return False
+    try:
+        return int(geteuid()) == 0
+    except OSError:
+        return False
+
+
+def _configure_logging() -> None:
+    """Set up startup logging after launch policy checks have completed."""
+    try:
+        os.makedirs(LOG_DIR, exist_ok=True)
+        logging.basicConfig(
+            filename=LOG_FILE,
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+    except OSError:
+        # Logging must not prevent a normal-user launch when the log directory
+        # is unavailable or not writable.
+        logging.basicConfig(
+            level=logging.DEBUG,
+            format="%(asctime)s %(levelname)s %(name)s: %(message)s",
+            datefmt="%Y-%m-%d %H:%M:%S",
+        )
+
+
 _log = logging.getLogger("loofi.main")
 
 
@@ -105,6 +131,16 @@ def _forwarded_cli_help(arguments: list[str]) -> list[str] | None:
 def main(argv: list[str] | None = None):
     """Main entry point with argument parsing."""
     arguments = list(sys.argv[1:] if argv is None else argv)
+
+    if _is_root_process():
+        print(
+            "ERROR: Do not run loofi-fedora-tweaks as root or with sudo. "
+            "Run it as a regular desktop user; privileged changes use pkexec.",
+            file=sys.stderr,
+        )
+        return 1
+
+    _configure_logging()
     cli_help = _forwarded_cli_help(arguments)
     if cli_help is not None:
         from cli.main import main as cli_main
@@ -198,4 +234,4 @@ def main(argv: list[str] | None = None):
 
 
 if __name__ == "__main__":
-    main()
+    raise SystemExit(main())
