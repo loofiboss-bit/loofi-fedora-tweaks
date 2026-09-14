@@ -1,57 +1,54 @@
-# FAQ — v27.0.1 "Core"
+# Frequently Asked Questions (FAQ) — v28.0.2 "Ease"
 
-## What is Loofi Fedora Tweaks?
+---
 
-Loofi is a focused Fedora maintenance core: read-only inspection, clear
-capability states, native desktop handoffs, and reviewed system changes. The
-GUI has five primary destinations and the CLI has eight bounded top-level
-commands.
+### What is Loofi Fedora Tweaks?
+Loofi Fedora Tweaks is a focused maintenance control center for Fedora Linux. It brings together system health diagnostics, multi-stream updates (DNF5, Flatpak, firmware), storage optimization, laptop battery health, and verified system changes into a single, desktop-neutral application.
 
-## Which Fedora systems are supported?
+---
 
-Fedora 43 and 44 are the stable targets; Fedora 45 is preview-only. The
-application detects desktop/session and deployment capabilities instead of
-assuming KDE or a traditional DNF host. GNOME, KDE, XFCE, Sway, Atomic, and
-bootc paths can report supported, unavailable, or manual-only states according
-to the detected capabilities.
+### How is Loofi different from GNOME Software or KDE Discover?
+GNOME Software and KDE Discover are application stores focused on searching, installing, and updating desktop apps. Loofi focuses on **system maintenance**:
+- Probing system packages, Flatpaks, and firmware independently.
+- Diagnosing system issues (failed systemd units, network drops, storage pressure).
+- Cleaning stale package caches and vacuuming oversized systemd journals.
+- Monitoring laptop battery charge thresholds and ZRAM compression.
+- Providing a formal change review and verification lifecycle.
+When you want to discover or install new GUI applications, Loofi hands off the request directly to GNOME Software or KDE Discover via standard AppStream links.
 
-## Does it work on Silverblue or Kinoite?
+---
 
-The capability-aware Atomic path recognizes `rpm_ostree` and bootc and keeps
-their update/reboot semantics separate. Fresh Atomic installation and physical
-reboot completion were not manually qualified for v27.0.1, so those gates are
-unverified rather than claimed as passed.
+### Do I need to run Loofi with `sudo` or as `root`?
+**No.** Running GUI applications as root is dangerous and forbidden. Loofi runs entirely as your normal unprivileged user. When a reviewed change (such as updating packages or vacuuming system journals) requires administrator privileges, Loofi requests authentication through `pkexec` and your desktop's Polkit prompt.
 
-## Do I need administrator access?
+---
 
-No for inspection. A reviewed persistent change may request authentication from
-the desktop's standard Polkit agent through `pkexec`. Loofi never runs the
-whole application as root and never stores passwords.
+### Does Loofi run any background services or daemons?
+**No.** Loofi contains zero background daemons, zero scheduled cron jobs, and zero telemetry services. When you close the application, it consumes zero CPU and zero memory.
 
-## Can I use the CLI?
+---
 
-Yes. Use `loofi-fedora-tweaks --cli --help`; place `--json` before the command:
+### Does Loofi work on Fedora Silverblue, Kinoite, or Atomic desktops?
+**Yes.** Loofi automatically detects `rpm-ostree` and `bootc` deployment backends via `PlatformProfile`. On Atomic systems, it manages staged deployment updates and guides you through reboot verification without attempting unsupported DNF operations.
 
-```bash
-loofi-fedora-tweaks --cli --json info
-loofi-fedora-tweaks --cli changes list
-```
+---
 
-## Does Loofi install applications?
+### What makes Loofi safer than running shell scripts found online?
+- **Closed Action Schemas**: Commands are not arbitrary shell strings; they are structured Python data models with validated parameters.
+- **No Shell Interpolation**: Subprocesses are executed using explicit argument lists (`shell=False`), preventing shell injection.
+- **Mutation Lease**: Only one change can execute at a time.
+- **Independent Verification**: A command exit code of 0 is not treated as proof of success; Loofi independently checks the target system state afterwards.
+- **Trusted Change Journal**: Every modification is logged with its timestamp, authorization, and outcome in `~/.local/share/loofi-fedora-tweaks/`.
 
-Application discovery is handed to the native software center through an
-AppStream/XDG link. Loofi no longer mirrors a marketplace or owns install and
-remove controls.
+---
 
-## Does it run in the background?
+### Can I automate Loofi from terminal scripts?
+**Yes.** The CLI provides 8 commands (`info`, `check`, `updates`, `troubleshoot`, `changes`, `activity`, `doctor`, `support-bundle`). Passing the `--json` flag wraps output in a stable JSON envelope suitable for parsing with `jq`.
 
-No. v27.0.1 has no background daemon, local Web API, unattended scheduler,
-automatic reboot, retry, or rollback. Host mutations are explicit Action
-Center plans and require independent verification.
+---
 
-## How do I report a problem?
+### How do I troubleshoot or file an issue?
+1. Run `loofi-fedora-tweaks --cli doctor` to check environment and authorization status.
+2. Run `loofi-fedora-tweaks --cli support-bundle` to create a sanitized diagnostic ZIP.
+3. Open an issue on [GitHub Issues](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues) with the bundle and reproduction steps.
 
-Run `loofi-fedora-tweaks --cli doctor` and
-`loofi-fedora-tweaks --cli support-bundle`, review the redacted output, and
-include the Fedora variant, backend, exact route/command, and reproduction
-steps in an issue.

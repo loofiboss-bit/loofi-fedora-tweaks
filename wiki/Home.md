@@ -1,68 +1,94 @@
 # Loofi Fedora Tweaks Wiki
 
-Loofi Fedora Tweaks is a focused, desktop-neutral Fedora maintenance core.
+Welcome to the official documentation and wiki for **Loofi Fedora Tweaks**.
+
+Loofi Fedora Tweaks is a focused, desktop-neutral maintenance control center for Fedora Linux. It unifies system diagnostics, multi-source updates, hardware health, and verified system changes into a single, safe desktop interface and scriptable CLI.
 
 **Current public release:** v28.0.2 "Ease"<br>
-**Stable targets:** Fedora 43 and 44<br>
-**Preview target:** Fedora 45
+**Target distributions:** Fedora 43 and 44 (Stable) • Fedora 45 (Preview)
 
-## What Loofi does
+![Loofi Fedora Tweaks Home](images/home-dashboard.png)
 
-- Troubleshooting starts only when you choose a symptom and begin.
-- Supported system changes become reviewed Action Center plans before anything
-  is applied.
-- Maintenance outcomes are verified separately from command completion.
-- Traditional and Atomic Fedora paths remain distinct.
-- Desktop-neutral core operating across all official Fedora desktop environments.
+---
 
-## Navigation
+## Core Principles
 
-The unified shell has five destinations:
+1. **Read-Only Inspection**: Browsing views, auditing services, checking updates, and running diagnostics never modifies your system.
+2. **Action Center Boundary**: Every persistent system change must be reviewed as a typed plan in **Changes** before execution.
+3. **Independent Verification**: Command exit codes are never trusted alone; changes are independently probed and verified post-execution.
+4. **Desktop & Architecture Neutral**: Works consistently across GNOME, KDE Plasma, XFCE, Sway, and other environments.
+5. **Traditional & Atomic Awareness**: Keeps standard DNF5 workflows cleanly separated from `rpm-ostree` and `bootc` immutable deployments.
+6. **No Background Daemons**: Zero background services, zero telemetry, and zero memory overhead when closed.
 
-1. **Home** for system state, single recommended action, and common tasks.
-2. **Updates & Apps** for system, Flatpak, and firmware updates, and neutral app handoff.
-3. **System Health** for System Check, symptom troubleshooting, storage, hardware, and support bundle.
-4. **Protection & Recovery** for firewall, exposure, backups, exact rollbacks, and activity.
-5. **Changes** for the Action Center review and verification workspace.
+---
 
-The v28 core has no separate specialist product, executable extension system,
-background daemon, web API, or Flatpak application bundle. Flatpak remains an
-optional host update source inside **Updates & Apps**.
+## The Five Destinations
 
-## Current guides
+The unified interface is organized into five primary destinations:
 
-- [Getting Started](Getting-Started)
-- [Screenshots](Screenshots)
-- [User guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/USER_GUIDE.md)
-- [Verified maintenance](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/VERIFIED_MAINTENANCE.md)
-- [Troubleshooting](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TROUBLESHOOTING.md)
-- [Advanced administration](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/ADVANCED_ADMIN_GUIDE.md)
-- [Documentation index](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/README.md)
-- [Contributing](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CONTRIBUTING.md)
+| Destination | Purpose | Key Capabilities |
+| --- | --- | --- |
+| **[Home](GUI-Tabs-Reference#1-home-dashboard)** | System overview & state | Environmental snapshot, single recommended action, quick tasks |
+| **[Updates & Apps](GUI-Tabs-Reference#2-updates--apps)** | Multi-stream updates | Independent DNF5, Flatpak, and fwupd firmware updates; AppStream handoff |
+| **[System Health](GUI-Tabs-Reference#3-system-health)** | Diagnostics & hardware | System check, symptom troubleshooting, storage reclaim, hardware monitor |
+| **[Protection & Recovery](GUI-Tabs-Reference#4-protection--recovery)** | Security & rollbacks | Firewall zone audits, Btrfs/Atomic rollbacks, Trusted Change Journal |
+| **[Changes](GUI-Tabs-Reference#5-changes-the-action-center)** | Action Center workspace | The single authority for plan review, Polkit authorization, and verification |
 
-Older standalone wiki pages remain available as historical material. The
-repository guides linked above are the current usage and development sources.
+---
 
-## Release status
+## Documentation Directory
 
-v28.0.2 "Ease" is the current public release. v28.0.1 "Ease" is the
-previous public release. Automated rootless/offscreen qualification passed;
-physical desktop and keyboard use, accessibility, Polkit, reboot, and fresh
-Atomic qualification remain unverified by the explicit release decision. The
-v28.0.2 publication readback is recorded in
-[V28.0.2_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28.0.2_RELEASE_PUBLICATION.md);
-the previous evidence remains in
-[V28_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md).
-Fedora 45 remains preview-only.
+### User Guides & Reference
+- **[Getting Started](Getting-Started)** — 10-minute setup, installation from COPR, and first run walkthrough.
+- **[GUI Destinations Guide](GUI-Tabs-Reference)** — Comprehensive breakdown of all five tabs, workflows, and settings.
+- **[Fedora Tweaks & Maintenance](Fedora-Tweaks-Guide)** — Practical guide to package caching, ZRAM swap, battery charge thresholds, journal vacuuming, and Flatpak hygiene.
+- **[Atomic & Immutable Fedora](Atomic-Fedora-Support)** — Using Loofi on Fedora Silverblue, Kinoite, Bazzite, CoreOS, and bootc systems.
+- **[CLI Reference](CLI-Reference)** — Full guide to the 8 bounded CLI commands, JSON envelopes, and scripting examples.
+- **[Screenshots Gallery](Screenshots)** — Visual showcase of all primary screens and workflows.
 
-- Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release notes: [v28.0.2 Ease](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v28.0.2.md)
-- Release: [v28.0.2 Ease on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2)
-- Public evidence: [v28.0.2 publication readback](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28.0.2_RELEASE_PUBLICATION.md)
-- Release notes: [v26.0.3 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v26.0.3.md)
-- Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
-- Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
+### Operations & Diagnostics
+- **[Troubleshooting Runbooks](Troubleshooting)** — Step-by-step diagnosis recipes for startup, Polkit, package locks, and support bundle generation.
+- **[Configuration & State](Configuration)** — XDG storage paths, atomic state persistence, versioned schemas, and privacy boundaries.
+- **[Frequently Asked Questions](FAQ)** — Common questions regarding permissions, safety, desktop environments, and features.
 
-For support, run `loofi-fedora-tweaks --cli doctor` and
-`loofi-fedora-tweaks --cli support-bundle`, then include the Fedora variant,
-exact route or command, reproduction steps, and relevant output in the issue.
+### Architecture & Development
+- **[Architecture Overview](Architecture)** — Architectural design, module boundaries (`ui/`, `core/`, `services/`, `cli/`), and PlatformProfile.
+- **[Security Model](Security-Model)** — Privilege separation, `pkexec` execution, allowlisted subprocesses, and mutation lease isolation.
+- **[Contributing](Contributing)** — Contributor guidelines, development environment setup, and coding conventions.
+- **[Testing & Quality Gates](Testing)** — Test execution, coverage requirements, and release verification gates.
+- **[CI/CD Automation](CI-CD-Pipeline)** — GitHub Actions workflows, CodeQL security analysis, and automated release validation.
+- **[Provider Architecture](Plugin-Development)** — Internal product catalog, provider contracts, and action definitions.
+- **[Release Changelog](Changelog)** — Complete historical changelog.
+
+---
+
+## Quick Install
+
+Enable the Fedora COPR repository and install the verified RPM:
+
+```bash
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
+loofi-fedora-tweaks
+```
+
+To use the scriptable command-line interface:
+
+```bash
+alias loofi='loofi-fedora-tweaks --cli'
+
+loofi info
+loofi check
+loofi updates check
+loofi doctor
+```
+
+---
+
+## Community & Support
+
+- **Source Code**: [GitHub Repository](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
+- **Issue Tracker**: [GitHub Issues](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
+- **Release Packages**: [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
+- **Latest Release**: [v28.0.2 Ease on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2)
+

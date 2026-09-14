@@ -24,6 +24,16 @@ previous public release report remains in
 The repository [README](../README.md) is the product overview. The getting
 started guide is mirrored byte-for-byte to [wiki/Getting-Started](../wiki/Getting-Started.md).
 
+## Official Wiki Guides
+
+- [Wiki Home](../wiki/Home.md) — Master portal and overview
+- [GUI Destinations Reference](../wiki/GUI-Tabs-Reference.md) — Detailed guide to the 5 destinations
+- [Fedora Tweaks & Maintenance](../wiki/Fedora-Tweaks-Guide.md) — Practical guide to DNF5 cache, ZRAM, battery thresholds, and cleanup
+- [Atomic & Immutable Support](../wiki/Atomic-Fedora-Support.md) — Silverblue, Kinoite, and bootc workflows
+- [CLI Reference](../wiki/CLI-Reference.md) — Command handbook and JSON scripting guide
+- [Screenshots Gallery](../wiki/Screenshots.md) — Visual interface catalog
+- [Frequently Asked Questions](../wiki/FAQ.md) — Common answers and clarifications
+
 ## Contribute
 
 - [Contributing](../CONTRIBUTING.md) — development workflow and engineering rules

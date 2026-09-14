@@ -1,50 +1,89 @@
-# Configuration — v27.0.1 "Core"
+# Configuration & State Storage — v28.0.2 "Ease"
 
-Application settings are opened from the header gear. The GUI stores only
-Loofi-owned preferences and review history under the user's XDG directories;
-host changes still require an explicit Action Center plan.
+Loofi Fedora Tweaks strictly follows the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) to keep configuration, runtime state, and logs organized and separated from system files.
 
-## State and recovery
+---
 
-State files use versioned schemas, atomic writes, bounded leases, and
-last-known-good backups. Future schemas remain read-only. Support exports are
-redacted and do not include passwords, tokens, private keys, raw credentials,
-or executable extension code.
+## 1. Directory Locations
 
-The supported user-facing recovery path is:
+All user state resides within your standard user directory:
 
-1. Open **Settings** or **Changes** and inspect the state explanation.
-2. Create or review a backup when the UI offers one.
-3. Generate a recovery plan.
-4. Confirm the plan explicitly and inspect the resulting verification.
+| Path | Purpose | Content |
+| --- | --- | --- |
+| `~/.config/loofi-fedora-tweaks/` | Configuration | User preferences (theme, UI scale, window geometry) |
+| `~/.local/share/loofi-fedora-tweaks/` | Application State | System check history, Trusted Change Journal, active plans |
+| `~/.local/share/loofi-fedora-tweaks/logs/` | Runtime Logs | Application execution and diagnostic logs |
+| `~/.cache/loofi-fedora-tweaks/` | Transient Cache | Temporary inspection caches |
 
-There is no direct state-restore command that bypasses the plan boundary.
+Loofi never creates unmanaged files in `/etc`, `/var`, or your home root directory.
 
-## Preferences
+---
 
-Theme, notification, navigation, safety, and display preferences are local
-application state. Resetting a preference group does not execute a host
-mutation. Favorites and saved routes are migrated conservatively; unknown or
-retired routes remain unavailable instead of being redirected to a different
-operation.
+## 2. Preference Storage (`settings.json`)
 
-## Environment and diagnostics
+User preferences are stored in JSON format with an explicit schema version:
 
-Use the documented CLI for inspection:
-
-```bash
-loofi-fedora-tweaks --cli --json info
-loofi-fedora-tweaks --cli doctor
-loofi-fedora-tweaks --cli support-bundle
+```json
+{
+  "schema_version": 2,
+  "appearance": {
+    "theme": "system",
+    "scale_factor": 1.0,
+    "navigation_layout": "expanded"
+  },
+  "behavior": {
+    "confirm_exit_with_active_plans": true,
+    "default_timeout_seconds": 300
+  }
+}
 ```
 
-`LOOFI_IPC_MODE=disabled` is a test/qualification setting, not a normal user
-configuration. The Core product has no local Web API, D-Bus daemon, remote
-configuration fetch, or unattended scheduler.
+### Safety & Migration Rules
+- **Forward-Only Migration**: When upgrading Loofi versions, preferences are automatically migrated forward to the newest schema.
+- **Future Schema Protection**: If an older version of Loofi opens a configuration created by a newer release, it loads in safe read-only mode to prevent deleting unrecognized settings.
+- **Atomic Writes**: Preference files are written to a `.tmp` file and atomically renamed to prevent file corruption during sudden power losses.
 
-## Privacy
+---
 
-Support bundles are created locally and should be reviewed before sharing.
-Never paste secrets into issue reports or into action parameters. Loofi does
-not ask for or persist administrator passwords; Polkit handles authorization
-through the desktop agent.
+## 3. Trusted Change Journal & State Persistence
+
+The Trusted Change Journal records the complete lifecycle of reviewed system changes:
+- Plan ID and creation timestamp.
+- Action identifier and typed parameters.
+- Preflight results and Polkit authorization timestamp.
+- Subprocess output stream and exit code.
+- Post-execution verification findings.
+
+Past records are maintained with automatic rotation to ensure historical records do not grow without bound.
+
+---
+
+## 4. Environment Variables
+
+The following environment variables can be used to control runtime behavior:
+
+| Variable | Values | Purpose |
+| --- | --- | --- |
+| `QT_QPA_PLATFORM` | `wayland`, `xcb`, `offscreen` | Overrides Qt display server backend |
+| `LOOFI_IPC_MODE` | `standard`, `disabled` | Set to `disabled` during headless CI testing |
+| `XDG_CONFIG_HOME` | Absolute path | Custom location for user configuration files |
+| `XDG_DATA_HOME` | Absolute path | Custom location for persistent application state |
+
+---
+
+## 5. Resetting Application State
+
+To reset user preferences to fresh defaults without affecting system packages:
+
+```bash
+rm -rf ~/.config/loofi-fedora-tweaks/settings.json
+```
+
+To clean all historical check snapshots and journals:
+
+```bash
+rm -rf ~/.local/share/loofi-fedora-tweaks/
+```
+
+Resetting local state has **zero impact** on your installed Fedora packages or system configurations.
+

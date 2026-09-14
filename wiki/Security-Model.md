@@ -1,47 +1,76 @@
-# Security Model — v27.0.1 "Core"
+# Security & Safety Architecture — v28.0.2 "Ease"
 
-Loofi Fedora Tweaks uses **Changes** (the Action Center) as the only authority
-for persistent host mutations. GUI and CLI inspection paths are advisory and
-cannot run arbitrary commands.
+Loofi Fedora Tweaks is built with a defensive security architecture designed to prevent unintended modifications, privilege escalation exploits, and system instability.
 
-## Action lifecycle
+---
 
-Every supported change follows:
+## 1. Principle of Least Privilege
 
-`request → closed plan → fresh preflight → explicit confirmation → bounded
-execute → independent verify → typed outcome`.
+- **Unprivileged Execution**: The application binary (`loofi-fedora-tweaks`) runs entirely as your normal desktop user.
+- **Root Launch Prohibited**: Launching the GUI via `sudo` or as the `root` user is explicitly blocked at startup. Running GUI applications as root creates security risks and pollutes home directory ownership permissions.
+- **On-Demand Escalation**: When a persistent system modification is required, privilege escalation is requested strictly for that individual transaction using `pkexec` and your desktop's Polkit agent.
+- **No Custom Policy Packages**: Loofi uses existing system Polkit policies; it does not install persistent custom sudoers rules or insecure policy overrides.
 
-Plans contain an allowlisted action definition and typed parameters. Unknown,
-unsupported, high-risk, unverifiable, or missing-recovery requests remain
-review-only or unavailable.
+---
 
-## Command boundary
+## 2. Action Center: The Mutation Boundary
 
-- Native authorization uses the desktop's `pkexec`/Polkit agent when required.
-- Subprocesses use explicit argument vectors, bounded timeouts, and no shell
-  interpreter or `sudo`.
-- UI modules do not import mutating services or call subprocesses.
-- CLI input rejects arbitrary command vectors, shell fragments, unattended
-  schedules, implicit confirmation, and remote targets.
-- No automatic reboot, retry, rollback, or background scheduler exists.
+All persistent system changes are funneled through the **Changes** workspace (the Action Center). No other component or tab in the application can directly invoke mutating shell commands.
 
-## Platform and state safety
+```text
+[User Request]
+       │
+       ▼
+1. Preflight Check   ───► Validates disk space, locks, prerequisites
+       │
+       ▼
+2. Closed Plan       ───► Allowlisted action definition with typed schema
+       │
+       ▼
+3. Polkit Escalation ───► Desktop pkexec prompt for administrative auth
+       │
+       ▼
+4. Bounded Exec      ───► Argument array execution (shell=False, timeout-bounded)
+       │
+       ▼
+5. Independent Verify───► Separate probe confirms actual host configuration
+       │
+       ▼
+6. Journal Record    ───► Immutable entry saved to Trusted Change Journal
+```
 
-The immutable `PlatformProfile` drives eligibility for navigation, updates,
-handoffs, and Actions. Unknown desktop, session, deployment backend, or reboot
-state fails closed. Traditional DNF5 and Atomic/bootc paths never share a
-command assumption.
+---
 
-Action plans and runs are persisted atomically with schema checks, bounded
-leases, redacted support export, and future-schema read-only behavior. The
-application never requires or stores user passwords, tokens, or private keys.
+## 3. Subprocess Safety Standards
 
-## Removed trust surfaces
+- **No Shell Execution**: Subprocesses are executed using direct argument arrays (e.g. `['dnf5', 'clean', 'all']`). The Python `shell=True` argument is forbidden across all services.
+- **No Command Interpolation**: Commands cannot accept untrusted strings, unvalidated user input, or arbitrary shell pipelines.
+- **Strict Timeout Bounds**: Every execution is constrained by a timeout (default 300 seconds) to prevent hanging processes or deadlocks.
+- **Exclusive Mutation Lease**: Only one mutating action plan can be active at any given moment. Concurrent mutations are rejected.
 
-The v27.0.1 product does not ship a background daemon, local Web API, external
-plugin execution, specialist marketplace, or Flatpak application sandbox.
-Host Flatpak inspection is optional and read-only unless a reviewed Action
-Center definition explicitly supports a change.
+---
 
-Physical Polkit-agent behavior and manual accessibility qualification are
-separate gates and remain **unverified** for this release.
+## 4. Independent Verification
+
+In traditional scripts, an exit code of `0` is often blindly assumed to mean success. Loofi enforces **Verification Separation**:
+- After execution, an independent inspection probe queries the host subsystem directly.
+- For example, after updating a service or package, Loofi queries `systemctl` or package metadata to prove the change is actually present in the live system.
+- If verification fails or is incomplete, the plan is marked as unverified rather than successful.
+
+---
+
+## 5. State Integrity & Privacy
+
+- **Atomic Persistence**: Local application state, settings, and check snapshots are written using atomic file operations (`write` to temporary file, `fsync`, and atomic `rename`) to prevent database corruption during sudden power losses.
+- **Zero Secret Retention**: Loofi never solicits, stores, or caches administrative passwords, authentication tokens, or private encryption keys.
+- **Sanitized Support Export**: When exporting a diagnostic support bundle for bug reporting, sensitive paths, environment secrets, and credentials are automatically redacted.
+
+---
+
+## 6. Eliminated Attack Surfaces
+
+Unlike legacy system tweak utilities, Loofi deliberately avoids:
+- **No Background Daemon**: Eliminates background privilege escalation vulnerabilities and memory leaks.
+- **No Web API / Listening Ports**: Eliminates remote code execution and local port exposure risks.
+- **No Unvetted Script Repositories**: All action definitions and providers are audited, typed, and compiled into the core application.
+

@@ -1,5 +1,24 @@
 # Changelog
 
+## v28.0.2 — Ease (2026-09-14)
+
+- Focused patch release for the battery-service review fixes from PR #40.
+- Advertise only the implemented standard sysfs battery backend; remove the unused HP BIOS support path.
+- Route service cleanup through validated `PrivilegedCommand` builders for disablement, unit removal, daemon reload, and failed-state reset.
+- Fail closed on non-zero command results, timeouts, and operating-system errors, with regression coverage for each branch and command validation.
+- Local deterministic verification records 4,804 passed, 73 skipped, and 830 subtests passed with 86.64% repository-wide coverage against the maintained 85% gate.
+- Public release evidence: [V28.0.2_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+
+## v28.0.1 — Ease (2026-09-14)
+
+- Centralize Fedora release support and typed DNF, rpm-ostree, bootc, and unknown backend decisions.
+- Publish independent, cancellable update-source results with bounded concurrency, per-source retry, atomic persistence, and retained prior observations after probe failure.
+- Distinguish empty, partial, corrupt, and future-schema history and add bounded Activity & Recovery continuation cursors.
+- Make fresh update sources open a direct review path and build action search from the active Action Center catalog with order-independent task language.
+- Add plain-language checked-result and next-step facts and isolate the test suite from user XDG state.
+- Local deterministic verification records 4,790 passed and 73 skipped tests with 87% repository-wide coverage.
+- Public release evidence: [V28_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md).
+
 ## v27.0.1 — Core (2026-09-13)
 
 - Consolidated the application into five desktop-neutral destinations.
