@@ -59,6 +59,11 @@ find %{buildroot}%{_prefix}/lib/%{name} -type d -exec chmod 755 {} +
 
 cat > %{buildroot}%{_bindir}/%{name} << 'EOF'
 #!/bin/bash
+if [[ ${EUID:-0} -eq 0 ]]; then
+    echo "ERROR: Do not run loofi-fedora-tweaks as root or with sudo. " \
+        "Run it as a regular desktop user; privileged changes use pkexec." >&2
+    exit 1
+fi
 APP_DIR=/usr/lib/loofi-fedora-tweaks
 LOG_DIR="${HOME}/.local/share/loofi-fedora-tweaks"
 mkdir -p "${LOG_DIR}"

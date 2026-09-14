@@ -61,7 +61,7 @@ In traditional scripts, an exit code of `0` is often blindly assumed to mean suc
 
 ## 5. State Integrity & Privacy
 
-- **Atomic Persistence**: Local application state, settings, and check snapshots are written using atomic file operations (`write` to temporary file, `fsync`, and atomic `rename`) to prevent database corruption during sudden power losses.
+- **Atomic Persistence**: Core state stores using the hardened atomic writer use a temporary file, `fsync`, atomic replacement, directory `fsync`, and readback verification. Legacy preference settings use a temporary file and atomic replacement, but do not claim `fsync` durability.
 - **Zero Secret Retention**: Loofi never solicits, stores, or caches administrative passwords, authentication tokens, or private encryption keys.
 - **Sanitized Support Export**: When exporting a diagnostic support bundle for bug reporting, sensitive paths, environment secrets, and credentials are automatically redacted.
 
@@ -73,4 +73,3 @@ Unlike legacy system tweak utilities, Loofi deliberately avoids:
 - **No Background Daemon**: Eliminates background privilege escalation vulnerabilities and memory leaks.
 - **No Web API / Listening Ports**: Eliminates remote code execution and local port exposure risks.
 - **No Unvetted Script Repositories**: All action definitions and providers are audited, typed, and compiled into the core application.
-

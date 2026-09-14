@@ -37,24 +37,33 @@ When introducing a new maintenance feature:
 Every persistent system modification requires a formal action definition:
 
 ```python
-@dataclass(frozen=True)
-class ActionDefinition:
-    action_id: str
-    title: str
-    description: str
-    risk_level: RiskLevel
-    requires_auth: bool
-    requires_reboot: bool
-    parameter_schema: dict[str, type]
-    preflight_check: Callable[..., PreflightResult]
-    execute_command: Callable[..., list[str]]
-    verify_result: Callable[..., VerificationResult]
+definition = ActionDefinition(
+    id="example-action",
+    capability_id="maintenance.example",
+    title="Example maintenance action",
+    description="Apply one reviewed maintenance operation.",
+    parameter_schema={},
+    risk_level="low",
+    privileged=True,
+    confirmation_policy="explicit",
+    recovery_guidance="Re-run the independent verification probe if needed.",
+    rollback_supported=False,
+    command_renderer=render_command,
+    preflight_checker=check_preconditions,
+    verifier=verify_result,
+    operation_class="host",
+    supported_variants=frozenset({"traditional", "atomic"}),
+    reboot_policy="none",
+    affected_resources=("example-resource",),
+)
 ```
 
 ### The Three Required Callbacks
-- **`preflight_check`**: Runs before execution to confirm preconditions (e.g. disk space, package manager lock availability, hardware support).
-- **`execute_command`**: Returns an explicit `list[str]` of command arguments (no shell string) to be passed to `pkexec`.
-- **`verify_result`**: Probes the host post-execution to confirm that the change took effect.
+- **`preflight_checker`**: Runs before execution to confirm preconditions (e.g. disk space, package manager lock availability, hardware support).
+- **`command_renderer`**: Returns an explicit sequence of command arguments (no shell string) for the audited executor.
+- **`verifier`**: Probes the host post-execution to confirm that the change took effect.
+
+`ActionDefinition` also requires a `capability_id`, typed `parameter_schema`, recovery guidance, and an explicit confirmation policy. Optional fields such as `parameter_validator` and `privilege_resolver` can tighten validation and privilege decisions further.
 
 ---
 
@@ -67,7 +76,6 @@ Every provider must be accompanied by comprehensive tests:
 
 ```bash
 # Run tests for your provider
-just test-file test_product_catalog
+just test-file test_product_catalog_records
 just test-file test_services_hardware_manager
 ```
-

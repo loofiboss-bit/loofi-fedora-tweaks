@@ -35,7 +35,7 @@ Selecting an issue symptom runs bounded, read-only diagnostic checks and outputs
 ![System Health Troubleshooting](images/troubleshoot.png)
 
 ### Storage & Safe Reclaim Preview
-Audits disk space across mount points and previews reclaimable bytes from package caches, thumbnail stores, and vacuumed systemd journals.
+Audits disk space across mount points and previews reclaimable bytes from package caches and vacuumed systemd journals. User thumbnail and application caches are left untouched.
 
 ![Storage Cleanup Preview](images/cleanup-preview.png)
 
@@ -70,13 +70,12 @@ The single authority for reviewing, authorizing (`pkexec`), executing, and indep
 
 ## 6. Settings & Doctor Diagnostics
 
-### Appearance & Navigation Preferences
-Configure application themes (Dark, Light, System), navigation styles, and custom text scaling.
+### Appearance Preferences
+Configure application themes (Dark, Light, System) and whether to follow the system theme.
 
 ![Settings & Appearance](images/settings-appearance.png)
 
 ### State Doctor
-Read-only self-test inspecting dependencies, environment health, and Polkit authorization readiness.
+Read-only self-test inspecting dependencies, environment health, and `pkexec` availability.
 
 ![State Doctor](images/state-doctor.png)
-

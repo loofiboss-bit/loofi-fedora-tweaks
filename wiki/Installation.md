@@ -39,7 +39,7 @@ loofi-fedora-tweaks
 If you prefer to install without enabling the COPR repository, download the signed RPM directly from GitHub:
 
 1. Visit the [v28.0.2 Release Page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2).
-2. Download `loofi-fedora-tweaks-28.0.2-1.fc43.noarch.rpm` (or your corresponding Fedora version).
+2. Download `loofi-fedora-tweaks-28.0.2-1.fc44.noarch.rpm` (or the RPM matching your Fedora release) from the release assets.
 3. Install the downloaded RPM using DNF:
 
 ```bash
@@ -89,4 +89,3 @@ pkexec dnf remove loofi-fedora-tweaks
 ```
 
 Uninstalling the package removes application binaries and desktop launchers. Personal configuration (`~/.config/loofi-fedora-tweaks/`) and the Trusted Change Journal (`~/.local/share/loofi-fedora-tweaks/`) are preserved so past maintenance records remain intact.
-

@@ -43,7 +43,7 @@ The unified interface is organized into five primary destinations:
 - **[GUI Destinations Guide](GUI-Tabs-Reference)** — Comprehensive breakdown of all five tabs, workflows, and settings.
 - **[Fedora Tweaks & Maintenance](Fedora-Tweaks-Guide)** — Practical guide to package caching, ZRAM swap, battery charge thresholds, journal vacuuming, and Flatpak hygiene.
 - **[Atomic & Immutable Fedora](Atomic-Fedora-Support)** — Using Loofi on Fedora Silverblue, Kinoite, Bazzite, CoreOS, and bootc systems.
-- **[CLI Reference](CLI-Reference)** — Full guide to the 8 bounded CLI commands, JSON envelopes, and scripting examples.
+- **[CLI Reference](CLI-Reference)** — Full guide to the 8 bounded CLI commands, command-specific JSON payloads, and scripting examples.
 - **[Screenshots Gallery](Screenshots)** — Visual showcase of all primary screens and workflows.
 
 ### Operations & Diagnostics
@@ -91,4 +91,3 @@ loofi doctor
 - **Issue Tracker**: [GitHub Issues](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - **Release Packages**: [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - **Latest Release**: [v28.0.2 Ease on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2)
-

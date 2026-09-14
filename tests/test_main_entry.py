@@ -106,6 +106,20 @@ class TestStartupTheme(unittest.TestCase):
 class TestMainCLI(unittest.TestCase):
     """Tests for main() --cli mode."""
 
+    @patch("builtins.print")
+    @patch("main._configure_logging")
+    @patch("main.os.geteuid", return_value=0)
+    def test_root_launch_is_rejected_before_dispatch(
+        self, mock_geteuid, mock_configure_logging, mock_print
+    ):
+        """Root launches must not reach CLI dispatch or touch user state."""
+        from main import main
+
+        self.assertEqual(main(["--cli", "--help"]), 1)
+        mock_configure_logging.assert_not_called()
+        mock_print.assert_called_once()
+        self.assertIn("root", mock_print.call_args.args[0].lower())
+
     @patch("sys.argv", ["loofi-fedora-tweaks", "--cli", "status"])
     @patch("cli.main.main", return_value=0)
     def test_cli_mode(self, mock_cli):

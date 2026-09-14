@@ -38,12 +38,11 @@ Fedora systems can accumulate gigabytes of cached data and historical journal lo
 
 ### Systemd Journal Pruning
 The `systemd-journald` service records system events continuously. On systems with heavy logging, journals can consume several gigabytes of `/var/log/journal/`.
-- **Verified Vacuuming**: Prunes logs older than 7 days or constrains journal size to a healthy maximum (e.g. 200 MB).
-- **Integrity Verification**: Verifies that active logs remain readable and `journalctl --verify` passes.
+- **Retention choices**: The reviewed action supports 7, 14, or 30 days and runs only after explicit plan review.
+- **Verification boundary**: After execution, Loofi compares journal disk usage before and after. It does not offer a size-cap mode or run `journalctl --verify`.
 
 ### User Cache Pruning
-- **Thumbnail & App Caches**: Reclaims space from `~/.cache/thumbnails/` and obsolete application cache directories.
-- **Zero Risk**: Never touches personal user documents, configurations in `~/.config`, or application databases.
+Loofi does not automatically delete thumbnail or application caches. Review those directories manually with the desktop tools of the relevant application; Loofi's reclaim analysis leaves them untouched.
 
 ---
 
@@ -112,4 +111,3 @@ Many Linux "tweaking" utilities advertise dubious performance scripts that can d
 | **Root Execution** | Strictly Forbidden | Loofi runs as a regular user; `pkexec` is invoked only for reviewed, specific operations. |
 | **Background Daemons** | None | No idle CPU usage, memory consumption, or background telemetry. |
 | **Change Lifecycle** | Plan → Auth → Run → Verify | Every modification is independently verified after execution. |
-

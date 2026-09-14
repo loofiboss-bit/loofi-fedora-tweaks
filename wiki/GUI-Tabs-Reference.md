@@ -77,14 +77,14 @@ Performs a read-only audit across critical Fedora subsystems:
 - Filesystem mount options and storage pressure.
 
 ### Symptom-Driven Troubleshooting
-Select from bounded diagnostic profiles (e.g., `system_slow`, `network_drop`, `audio_glitch`, `disk_space`). Each profile runs allowlisted read-only checks, formats findings, and offers at most one safe, actionable remedy.
+Select from bounded diagnostic profiles such as `system_slow`, `network_problem`, `storage_pressure`, and `boot_or_deployment`. Each profile runs allowlisted read-only checks, formats findings, and offers at most one safe, actionable remedy.
 
 ### Storage & Reclaim Analysis
 
 ![Storage Cleanup Preview](images/cleanup-preview.png)
 
 - Inspects disk utilization across Btrfs partitions and mount points.
-- Previews safe cleanup targets: old package cache, systemd journal logs, and thumbnail caches.
+- Previews supported cleanup targets: old package cache and systemd journal logs. User thumbnail and application caches are not modified by Loofi.
 - Displays an exact byte-count preview before anything is queued for cleanup.
 
 ### Hardware & Resource Monitor
@@ -156,9 +156,8 @@ Pressing `Ctrl+K` opens the quick launcher. Typing matches destinations, setting
 ![Settings & Appearance](images/settings-appearance.png)
 
 Accessible via the header gear icon:
-- **Appearance**: Toggle Light, Dark, or System theme; adjust UI scale factors.
-- **Navigation**: Switch between expanded sidebar, icon-only rail, or compact selector.
-- **Doctor Diagnostics**: Inspects application health, Polkit agent availability, and Python environment status.
+- **Appearance**: Toggle Light, Dark, or System theme and choose whether to follow the system theme.
+- **Navigation**: The shell responds to window width and text scaling; use the sidebar toggle when available. Settings does not persist a navigation-layout selector.
+- **Doctor Diagnostics**: Inspects application health, `pkexec` availability, and Python environment status. A running desktop Polkit agent must be checked separately.
 
 ![State Doctor](images/state-doctor.png)
-

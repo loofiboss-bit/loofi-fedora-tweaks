@@ -39,7 +39,7 @@ The canonical architecture contract is defined in [ARCHITECTURE.md](https://gith
 - **`ui/` (Presentation)**:
   Owns PyQt6 widgets, accessibility hints, theme styling, and responsive layout. UI code **never** directly invokes shell commands, package managers, or mutating file operations.
 - **`cli/` (Command-Line Interface)**:
-  Parses bounded CLI arguments and emits formatted human text or structured `--json` envelopes. Completely decoupled from Qt; imports zero UI code.
+  Parses bounded CLI arguments and emits formatted human text or structured command-specific `--json` payloads. Completely decoupled from Qt; imports zero UI code.
 - **`core/` (Domain Logic & Contracts)**:
   Owns business logic, `PlatformProfile` detection, the immutable `ProductCatalog`, Action Center planning, mutation lease locking, and independent verification.
 - **`services/` (Probing & Adapters)**:
@@ -68,4 +68,3 @@ All persistent system modifications must be constructed as typed Action Center p
 - Mutation leases prevent concurrent write operations.
 - Execution requires explicit user authorization via Polkit (`pkexec`).
 - Verification is performed post-execution using an independent probe.
-
