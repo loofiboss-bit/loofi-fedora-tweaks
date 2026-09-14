@@ -409,7 +409,7 @@ jobs:
           path: rpm-install
       - name: Install RPM
         run: |
-          dnf install -y ./rpm-install/*.rpm
+          dnf install -y util-linux ./rpm-install/*.rpm
           useradd --create-home --shell /bin/bash smoke
       - name: Smoke test — verify binary exists
         run: |
