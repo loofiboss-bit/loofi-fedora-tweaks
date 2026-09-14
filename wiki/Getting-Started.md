@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 28.0.1 "Ease" release candidate
+> Version 28.0.1 "Ease" public release
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 

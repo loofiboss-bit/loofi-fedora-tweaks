@@ -39,12 +39,13 @@ include a web API.
 - Changes is the single review, confirmation, execution, and verification
   workspace for persistent system changes.
 
-This checkout contains the [v28.0.1 Ease release candidate](docs/releases/RELEASE-NOTES-v28.0.1.md),
-prepared for the canonical publication workflow. Until the tag and public
-readback complete, [v27.0.1 Core](docs/releases/RELEASE-NOTES-v27.0.1.md)
-remains the current public release. The deterministic suite is green in an
-isolated environment, while physical desktop, authorization, reboot, and fresh
-Atomic qualification remain explicitly unverified.
+The [v28.0.1 Ease release](docs/releases/RELEASE-NOTES-v28.0.1.md) is the
+current public release, published through the canonical workflow. The exact
+tag, assets, attestations, COPR package, and wiki readback are recorded in the
+[public release evidence](docs/reports/V28_RELEASE_PUBLICATION.md). The
+deterministic suite is green in an isolated environment, while physical
+desktop, authorization, reboot, and fresh Atomic qualification remain
+explicitly unverified.
 
 The current repository-wide local line coverage is 87% against the maintained
 85% blocking gate. The plan's 90% target remains open and is not presented as

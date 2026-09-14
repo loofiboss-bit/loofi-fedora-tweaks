@@ -1,10 +1,10 @@
 # Screenshots
 
-The v28.0.1 "Ease" release candidate is documented here. Historical
+The public v28.0.1 "Ease" release is documented here. Historical
 deterministic UI evidence retained for the earlier public Core release is
 stored once in the main repository. These contact sheets show
 wide and compact layouts without duplicating binary assets in the wiki; they
-are not proof of the final v27 shell or of a physical Fedora qualification.
+are not proof of a physical Fedora qualification.
 
 ## Home
 
@@ -32,5 +32,5 @@ are not proof of the final v27 shell or of a physical Fedora qualification.
 
 These are deterministic application captures, not proof of a physical display,
 high-DPI, keyboard, or screen-reader gate. The images were captured for an
-earlier product baseline and remain historical until a dedicated v27 capture
-set is produced and independently reviewed.
+earlier product baseline and remain historical evidence for the public v28
+release; the corresponding physical qualification gates remain unverified.

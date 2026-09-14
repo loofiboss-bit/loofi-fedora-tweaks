@@ -1,8 +1,9 @@
 # Architecture — v28.0.1 "Ease"
 
-Status: release candidate; the historical v28.0.0 workflow-reset record remains
-unchanged and v27.0.1 remains the current public release until v28.0.1 public
-readback completes.
+Status: public release complete; the historical v28.0.0 workflow-reset record
+remains unchanged. Exact publication evidence is recorded in
+`docs/reports/V28_RELEASE_PUBLICATION.md`; physical qualification remains
+separately tracked and explicitly unverified.
 
 ## Product boundary
 
@@ -89,6 +90,6 @@ Physical KDE/GNOME, rpm-ostree, Polkit, reboot, Orca, keyboard, theme, scale,
 small-screen, benchmark, and user-session evidence remains separate. Offscreen
 tests do not prove physical qualification. Read-only Home construction also
 avoids instantiating the history writer when no history file exists, so an
-empty read-only state does not create directories. Release publication is
-authorized for this request; external readback remains a required release
-gate.
+empty read-only state does not create directories. Release publication and
+external readback are complete for this request; physical and manual
+qualification remains a separate evidence gate.

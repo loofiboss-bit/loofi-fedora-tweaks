@@ -1,8 +1,9 @@
 # Tasks — v28.0.1 "Ease"
 
-Status: release candidate. The review fixes and deterministic qualification are
-being prepared for the authorized canonical publication workflow; physical
-host qualification remains a separately tracked, explicitly unverified gate.
+Status: public release complete. The review fixes, deterministic qualification,
+canonical publication, and public readback are recorded in
+`docs/reports/V28_RELEASE_PUBLICATION.md`; physical host qualification remains
+a separately tracked, explicitly unverified gate.
 
 ## P0 — trustworthy platform and state contracts
 
@@ -48,8 +49,8 @@ host qualification remains a separately tracked, explicitly unverified gate.
   Acceptance: old durable data remains readable, future schemas remain read-only, and no executable legacy undo vector is restored.
   Docs: `docs/STATE_INTEGRITY.md`
   Tests: `tests/test_history.py`, `tests/test_home_service.py`, `tests/test_update_overview.py`
-- [x] ID: EASE-010 | Files: version metadata, `.workflow/specs`, release documentation | Dep: EASE-001–EASE-009 | Agent: implementation | Description: Establish the first new candidate as v28.0.1 "Ease" while preserving the historical v28.0.0 workflow-reset record and v27.0.1 public evidence.
-  Acceptance: version.py, spec, pyproject, race lock, task spec, architecture spec, changelog, metainfo, README, roadmap, and release-note index agree on candidate status.
+- [x] ID: EASE-010 | Files: version metadata, `.workflow/specs`, release documentation | Dep: EASE-001–EASE-009 | Agent: implementation | Description: Establish v28.0.1 "Ease" as the public release while preserving the historical v28.0.0 workflow-reset record and v27.0.1 public evidence.
+  Acceptance: version.py, spec, pyproject, race lock, task spec, architecture spec, changelog, metainfo, README, roadmap, and release-note index agree on public-release status.
   Docs: `docs/releases/RELEASE-NOTES-v28.0.1.md`, `ROADMAP.md`
   Tests: `scripts/check_release_docs.py`, `scripts/bump_version.py --check`
 - [ ] [post-publish] ID: EASE-011 | Files: qualification reports and workflow evidence | Dep: EASE-001–EASE-010 | Agent: release qualification | Description: Record the maintained-surface 90% coverage target, packaging checks, benchmark comparison, and the documented Fedora 43/44 KDE/GNOME and rpm-ostree matrix.

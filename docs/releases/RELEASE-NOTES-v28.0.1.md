@@ -1,9 +1,10 @@
-# v28.0.1 "Ease" — Release Candidate
+# v28.0.1 "Ease" — Public Release
 
-**Candidate date:** 2026-09-14
+**Release date:** 2026-09-14
 **Codename:** Ease
-**Publication:** Prepared for the canonical publication workflow; v27.0.1
-"Core" remains the current public release until tag and public readback complete.
+**Publication:** Public, non-draft, non-prerelease GitHub release with a
+verified COPR package. See the [public release evidence](../reports/V28_RELEASE_PUBLICATION.md)
+for exact lineage and independent readback.
 
 ## Summary
 
@@ -47,21 +48,21 @@ future-schema preservation remain in place. The optional `activity list
 default output contract. No new runtime dependency, background service, host
 setting, reboot, or direct UI mutator was introduced.
 
-## Local verification status
+## Verification status
 
 - Deterministic full suite: 4,790 passed and 73 skipped after the review-fix
   race-lock is synchronized; the suite uses temporary XDG roots.
 - Repository-wide local coverage: 87%; the plan's 90% release target remains
   open and is not represented as achieved.
 - Lint, typecheck, architecture, product-contract, packaging, and release-doc
-  checks are separate gates and must be read back before publication.
+  checks passed as separate gates before publication.
 - Fedora 43/44 KDE/GNOME, rpm-ostree, Polkit, reboot, Orca, keyboard, theme,
   scale, small-screen, benchmark, and five-user-session gates are unverified.
 
 ## Upgrade and publication notes
 
-The v28.0.0 historical workflow-reset record is preserved. This release request
-authorizes the commit, push, tag, GitHub release, and COPR publication workflow.
+The v28.0.0 historical workflow-reset record is preserved. The commit, push,
+tag, GitHub release, COPR publication, and public readback are complete.
 Physical desktop, authorization-agent, reboot, Atomic, accessibility, and
 benchmark gates remain separately tracked and explicitly unverified until the
 corresponding evidence is collected.

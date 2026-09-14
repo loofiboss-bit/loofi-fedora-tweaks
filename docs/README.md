@@ -1,8 +1,8 @@
 # Documentation
 
-This map covers the v28.0.1 "Ease" release candidate prepared for the
-canonical publication workflow. Until the tag and public readback complete,
-the earlier Core release remains the current public release.
+This map covers the current public v28.0.1 "Ease" release. Exact tag, asset,
+attestation, COPR, and wiki evidence is recorded in the
+[public release report](reports/V28_RELEASE_PUBLICATION.md).
 
 ## Use Loofi
 
@@ -35,8 +35,9 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 - [Roadmap](../ROADMAP.md) — current release status
 - [Changelog](../CHANGELOG.md) — complete historical record
 - [Release notes](releases/RELEASE_NOTES.md) — release-note index
-- [v28.0.1 Ease release notes](releases/RELEASE-NOTES-v28.0.1.md) — current implementation scope
-- [v27.0.1 Core notes](releases/RELEASE-NOTES-v27.0.1.md) — current public release scope
+- [v28.0.1 Ease release notes](releases/RELEASE-NOTES-v28.0.1.md) — current public release scope
+- [v28.0.1 public release evidence](reports/V28_RELEASE_PUBLICATION.md) — exact publication readback
+- [v27.0.1 Core notes](releases/RELEASE-NOTES-v27.0.1.md) — previous public release scope
 - [v26.0.3 Everyday notes](releases/RELEASE-NOTES-v26.0.3.md) — previous public release
 
 Historical plans, reports, release notes, archives, and screenshots remain

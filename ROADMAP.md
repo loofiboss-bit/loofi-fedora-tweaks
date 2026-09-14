@@ -10,7 +10,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
-| v28.0.1 | Ease | ACTIVE | [architecture](.workflow/specs/arch-v28.0.1.md), [tasks](.workflow/specs/tasks-v28.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.1.md) |
+| v28.0.1 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.1.md), [tasks](.workflow/specs/tasks-v28.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.1.md), [public evidence](docs/reports/V28_RELEASE_PUBLICATION.md) |
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
 | v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
@@ -27,19 +27,20 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v28.0.1 "Ease" — Clearer Daily Maintenance
+## [DONE] v28.0.1 "Ease" — Clearer Daily Maintenance
 
-The v28.0.1 Ease release candidate refines the v27 Core without
-changing the five-destination product boundary. It centralizes release and
-deployment policy, makes update and history results source-aware, adds paged
-Activity & Recovery, and simplifies direct review and task search.
+Public release complete: v28.0.1 Ease refines the v27 Core without changing
+the five-destination product boundary. It centralizes release and deployment
+policy, makes update and history results source-aware, adds paged Activity &
+Recovery, and simplifies direct review and task search. See the [public release
+evidence](docs/reports/V28_RELEASE_PUBLICATION.md) for exact tag, assets,
+attestations, COPR package, and wiki readback.
 
 The local deterministic suite is green in isolated XDG roots. Repository-wide
 coverage is currently 87% against the maintained 85% gate; the planned 90%
-target and physical/manual Fedora qualification remain open for post-publish
-evidence. The authorized release workflow covers the exact commit, tag, public
-package publication, and readback; it does not include host installation or
-reboot.
+target and physical/manual Fedora qualification remain open as separate
+post-release evidence. Host installation and reboot were outside this release
+workflow.
 
 ## [DONE] v27.0.1 "Core" — Fedora Maintenance Core
 

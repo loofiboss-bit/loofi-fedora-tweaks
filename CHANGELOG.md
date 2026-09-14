@@ -2,9 +2,9 @@
 
 ## [28.0.1] - 2026-09-14 - "Ease"
 
-Release candidate prepared for the canonical publication workflow. v27.0.1
-"Core" remains the current public release until the v28.0.1 tag and public
-readback complete.
+Public release completed through the canonical publication workflow. Exact
+tag, assets, attestations, COPR package, and wiki readback are recorded in
+the [public release evidence](docs/reports/V28_RELEASE_PUBLICATION.md).
 
 - Centralize Fedora release support and typed DNF, rpm-ostree, bootc, and
   unknown backend decisions.
