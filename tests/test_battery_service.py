@@ -146,7 +146,6 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
             BatteryManager.SYSFS_PATH,
             "/sys/class/power_supply/BAT0/charge_control_end_threshold",
         )
-        self.assertIn("hp-bioscfg", BatteryManager.HP_BIOSCFG_PATH)
 
     @patch("services.hardware.battery.os.path.exists")
     def test_get_threshold_path_bat1(self, mock_exists):
@@ -172,10 +171,10 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         self.assertFalse(BatteryManager.is_sysfs_supported())
 
     @patch("services.hardware.battery.os.path.exists")
-    def test_is_supported_hp_bioscfg(self, mock_exists):
-        """is_supported returns True if hp-bioscfg is present."""
+    def test_is_supported_ignores_unimplemented_hp_backend(self, mock_exists):
+        """is_supported stays false until an implemented backend is present."""
         mock_exists.side_effect = lambda p: "hp-bioscfg" in p
-        self.assertTrue(BatteryManager.is_supported())
+        self.assertFalse(BatteryManager.is_supported())
 
     @patch("services.hardware.battery.os.path.exists")
     def test_is_supported_neither(self, mock_exists):
@@ -183,24 +182,49 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         mock_exists.return_value = False
         self.assertFalse(BatteryManager.is_supported())
 
-    @patch("services.hardware.battery.subprocess.run")
-    @patch("services.hardware.battery.os.path.exists")
-    def test_remove_service_success(self, mock_exists, mock_run):
+    @patch("services.hardware.battery.PrivilegedCommand.execute_and_log")
+    def test_remove_service_success(self, mock_execute):
         """remove_service runs disable, rm, daemon-reload, reset-failed."""
-        mock_exists.return_value = True
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_execute.return_value = subprocess.CompletedProcess(
+            args=[], returncode=0, stdout="", stderr=""
+        )
         cmd, args = self.mgr.remove_service()
         self.assertEqual(cmd, "echo")
         self.assertIn("removed", args[0].lower())
-        self.assertEqual(mock_run.call_count, 4)
+        self.assertEqual(mock_execute.call_count, 4)
+        self.assertEqual(mock_execute.call_args_list[0].args[0][1], [
+            "systemctl", "disable", "--now", "loofi-battery.service"
+        ])
+        self.assertEqual(mock_execute.call_args_list[1].args[0][1], [
+            "rm", "-f", "--", BatteryManager.SERVICE_PATH
+        ])
+        self.assertEqual(mock_execute.call_args_list[2].args[0][1], [
+            "systemctl", "daemon-reload"
+        ])
+        self.assertEqual(mock_execute.call_args_list[3].args[0][1], [
+            "systemctl", "reset-failed", "loofi-battery.service"
+        ])
+        for call in mock_execute.call_args_list:
+            self.assertEqual(call.kwargs["timeout"], 30)
 
-    @patch("services.hardware.battery.subprocess.run")
-    def test_remove_service_subprocess_error(self, mock_run):
+    @patch("services.hardware.battery.PrivilegedCommand.execute_and_log")
+    def test_remove_service_subprocess_error(self, mock_execute):
         """remove_service handles SubprocessError gracefully."""
-        mock_run.side_effect = subprocess.SubprocessError("fail")
+        mock_execute.side_effect = subprocess.SubprocessError("fail")
         cmd, args = self.mgr.remove_service()
         self.assertIsNone(cmd)
         self.assertIsNone(args)
+
+    @patch("services.hardware.battery.PrivilegedCommand.execute_and_log")
+    def test_remove_service_nonzero_result_returns_error(self, mock_execute):
+        """remove_service reports a failed cleanup command."""
+        mock_execute.return_value = subprocess.CompletedProcess(
+            args=[], returncode=1, stdout="", stderr="authorization cancelled"
+        )
+        cmd, args = self.mgr.remove_service()
+        self.assertIsNone(cmd)
+        self.assertIsNone(args)
+        mock_execute.assert_called_once()
 
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)

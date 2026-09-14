@@ -8,6 +8,9 @@ import os
 import subprocess
 from typing import Optional, Tuple
 
+from utils.commands import PrivilegedCommand
+from utils.errors import CommandTimeoutError
+
 logger = logging.getLogger(__name__)
 
 
@@ -16,9 +19,6 @@ class BatteryManager:
     SERVICE_PATH = "/etc/systemd/system/loofi-battery.service"
     CONFIG_PATH = "/etc/loofi-fedora-tweaks/battery.conf"
     SYSFS_PATH = "/sys/class/power_supply/BAT0/charge_control_end_threshold"
-    HP_BIOSCFG_PATH = (
-        "/sys/class/firmware-attributes/hp-bioscfg/attributes/Battery Health Manager/current_value"
-    )
 
     @classmethod
     def get_threshold_path(cls) -> str:
@@ -42,10 +42,12 @@ class BatteryManager:
     @classmethod
     def is_supported(cls) -> bool:
         """
-        Check if battery charge threshold control is supported on this system
-        either via standard sysfs or HP firmware attributes.
+        Check if the implemented battery threshold backend is available.
+
+        HP firmware attributes are intentionally not treated as support here:
+        this service only knows how to write the standard sysfs threshold node.
         """
-        return cls.is_sysfs_supported() or os.path.exists(cls.HP_BIOSCFG_PATH)
+        return cls.is_sysfs_supported()
 
     def set_limit(self, limit: int) -> Tuple[Optional[str], Optional[list]]:
         """
@@ -155,37 +157,24 @@ WantedBy=multi-user.target
         Returns:
             Tuple of (cmd, args) on success, or (None, None) on error.
         """
+        commands = (
+            PrivilegedCommand.systemctl_disable_now("loofi-battery.service"),
+            PrivilegedCommand.remove_file(self.SERVICE_PATH),
+            PrivilegedCommand.systemctl_daemon_reload(),
+            PrivilegedCommand.systemctl_reset_failed("loofi-battery.service"),
+        )
+
         try:
-            subprocess.run(
-                ["pkexec", "systemctl", "disable", "--now", "loofi-battery.service"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            if os.path.exists(self.SERVICE_PATH):
-                subprocess.run(
-                    ["pkexec", "rm", "-f", self.SERVICE_PATH],
-                    capture_output=True,
-                    text=True,
-                    check=False,
-                    timeout=30,
-                )
-            subprocess.run(
-                ["pkexec", "systemctl", "daemon-reload"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
-            subprocess.run(
-                ["pkexec", "systemctl", "reset-failed", "loofi-battery.service"],
-                capture_output=True,
-                text=True,
-                check=False,
-                timeout=30,
-            )
+            for command in commands:
+                result = PrivilegedCommand.execute_and_log(command, timeout=30)
+                if result.returncode != 0:
+                    logger.debug(
+                        "Battery service cleanup command failed (%s): %s",
+                        command[2],
+                        result.stderr,
+                    )
+                    return None, None
             return "echo", ["Battery limit service removed"]
-        except (subprocess.SubprocessError, OSError) as e:
+        except (CommandTimeoutError, subprocess.SubprocessError, OSError) as e:
             logger.debug("Error removing battery service: %s", e)
             return None, None

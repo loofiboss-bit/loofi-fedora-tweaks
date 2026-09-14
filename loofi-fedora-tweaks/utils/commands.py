@@ -32,6 +32,7 @@ POLKIT_MAP: Dict[str, str] = {
     "firewall-cmd": "org.loofi.fedora-tweaks.firewall",
     "nmcli": "org.loofi.fedora-tweaks.network",
     "tee": "org.loofi.fedora-tweaks.security",
+    "rm": "org.loofi.fedora-tweaks.security",
     "flatpak": "org.loofi.fedora-tweaks.package-manage",
 }
 
@@ -380,6 +381,43 @@ class PrivilegedCommand:
     @staticmethod
     @validated_action(
         {
+            "service": {"type": str, "required": True, "min_len": 1},
+        }
+    )
+    def systemctl_disable_now(service: str) -> CommandTuple:
+        """Build a command to disable and stop a system service."""
+        return (
+            "pkexec",
+            ["systemctl", "disable", "--now", service],
+            f"Disabling and stopping system service {service}...",
+        )
+
+    @staticmethod
+    def systemctl_daemon_reload() -> CommandTuple:
+        """Build a command to reload the systemd manager configuration."""
+        return (
+            "pkexec",
+            ["systemctl", "daemon-reload"],
+            "Reloading systemd manager configuration...",
+        )
+
+    @staticmethod
+    @validated_action(
+        {
+            "service": {"type": str, "required": True, "min_len": 1},
+        }
+    )
+    def systemctl_reset_failed(service: str) -> CommandTuple:
+        """Build a command to clear a service's failed state."""
+        return (
+            "pkexec",
+            ["systemctl", "reset-failed", service],
+            f"Clearing failed state for system service {service}...",
+        )
+
+    @staticmethod
+    @validated_action(
+        {
             "key": {"type": str, "required": True, "min_len": 1},
             "value": {"type": str, "required": True},
         }
@@ -403,6 +441,20 @@ class PrivilegedCommand:
         """Write content to a file via pkexec tee."""
         _ = content
         return ("pkexec", ["tee", path], f"Writing to {path}...")
+
+    @staticmethod
+    @validated_action(
+        {
+            "path": {"type": str, "required": True, "min_len": 1},
+        }
+    )
+    def remove_file(path: str) -> CommandTuple:
+        """Remove a file via pkexec without invoking a shell."""
+        return (
+            "pkexec",
+            ["rm", "-f", "--", path],
+            f"Removing {path}...",
+        )
 
     @staticmethod
     @validated_action(
