@@ -3,7 +3,7 @@
 **Release date:** 2026-09-14
 **Codename:** Ease
 **Publication:** Public, non-draft, non-prerelease GitHub release with a
-verified COPR package. See the [public release evidence](../reports/V28_RELEASE_PUBLICATION.md)
+verified COPR package. See the [public release evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md)
 for exact lineage and independent readback.
 
 ## Summary
