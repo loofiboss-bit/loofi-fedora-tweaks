@@ -1,6 +1,6 @@
 # Architecture — v28.0.3 "Ease"
 
-Status: direct maintenance execution release candidate.
+Status: public release architecture complete.
 
 ## Goals
 

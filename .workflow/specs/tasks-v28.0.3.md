@@ -1,7 +1,7 @@
 # Tasks — v28.0.3 "Ease"
 
-Status: active release candidate for direct maintenance execution and
-non-blocking physical/manual evidence.
+Status: public release and post-publication closure complete for direct
+maintenance execution and non-blocking physical/manual evidence.
 
 ## Patch scope
 
@@ -32,7 +32,7 @@ non-blocking physical/manual evidence.
   Acceptance: Canonical tag-driven workflow can publish without a physical/manual test prerequisite.
   Docs: `docs/RELEASE_CHECKLIST.md`, `SECURITY.md`
   Tests: CI workflow and release-doc validation.
-- [ ] [post-publish] ID: REL-003 | Files: `docs/reports/V28.0.3_RELEASE_PUBLICATION.md`, public GitHub/COPR/wiki surfaces | Dep: REL-002 | Description: Record exact tag lineage, workflow runs, assets, checksums, attestations, COPR metadata, wiki readback, and supplementary physical/manual statuses after publication.
+- [x] [post-publish] ID: REL-003 | Files: `docs/reports/V28.0.3_RELEASE_PUBLICATION.md`, public GitHub/COPR/wiki surfaces | Dep: REL-002 | Description: Record exact tag lineage, workflow runs, assets, checksums, attestations, COPR metadata, wiki readback, and supplementary physical/manual statuses after publication.
   Acceptance: Every named public surface is independently read back; any unrun physical/manual surface is explicitly recorded as `unverified` and does not block closure.
   Docs: `docs/reports/V28.0.3_RELEASE_PUBLICATION.md`
   Tests: Public readback commands and checksum verification.
