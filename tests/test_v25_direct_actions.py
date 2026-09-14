@@ -85,6 +85,12 @@ class TestV25DirectActions(unittest.TestCase):
         self.assertEqual(self.facade.execute.call_args.kwargs["authority"], "action_center")
         self.assertEqual(self.facade.execute.call_count, 1)
 
+    def test_medium_risk_automatic_update_runs_without_an_extra_app_confirmation(self):
+        service = DirectActionService(orchestrator=self.orchestrator, settings_store=_Settings())
+        result = service.run("update-fedora-system", execution_mode="direct")
+        self.assertEqual(result.status, "completed_awaiting_reboot")
+        self.assertEqual(self.facade.execute.call_count, 1)
+
     def test_medium_risk_requires_compact_confirmation(self):
         service = DirectActionService(orchestrator=self.orchestrator, settings_store=_Settings())
         result = service.run("restart-failed-service", {"service": "broken.service"})
@@ -114,6 +120,25 @@ class TestV25DirectActions(unittest.TestCase):
         self.assertEqual(review.status, "review_required")
         self.assertEqual(dry_run.status, "preview")
         self.assertTrue(dry_run.dry_run)
+        self.facade.execute.assert_not_called()
+
+    def test_explicit_review_first_stays_local_confirmation_when_gui_requests_direct(self):
+        settings_store = _Settings(ExecutionSettings(execution_mode="review_first"))
+        settings_store.explicit_mode = True
+        service = DirectActionService(orchestrator=self.orchestrator, settings_store=settings_store)
+        result = service.run("dnf-clean-all", execution_mode="direct")
+        self.assertEqual(result.status, "review_required")
+        self.assertTrue(result.confirmation_required)
+        self.facade.execute.assert_not_called()
+
+    def test_future_settings_require_a_confirmation_before_direct_execution(self):
+        service = DirectActionService(
+            orchestrator=self.orchestrator,
+            settings_store=_Settings(ExecutionSettings(execution_mode="direct", future_schema=True)),
+        )
+        result = service.run("dnf-clean-all", execution_mode="direct")
+        self.assertEqual(result.status, "review_required")
+        self.assertTrue(result.confirmation_required)
         self.facade.execute.assert_not_called()
 
     def test_preflight_block_is_truthful_and_no_fallback_command_runs(self):

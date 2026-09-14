@@ -160,4 +160,4 @@ def blocked_execution_message(command: str, args: Sequence[str]) -> str:
     classification = classify_command(command, args)
     if classification == "manual_only":
         return "The command is not classified for automatic execution and remains manual-only."
-    return "Host changes must be planned, reviewed, and confirmed in Action Center."
+    return "Host changes must use a registered Action Center action with fresh preflight and verification."

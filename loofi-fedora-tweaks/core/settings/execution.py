@@ -28,9 +28,9 @@ class ExecutionSettingsFutureSchemaError(ValueError):
 class ExecutionSettings:
     """User policy for the bounded direct-action adapter."""
 
-    # Review-first is the safe, predictable default for every Fedora user.
-    # Direct mode remains an explicit opt-in for low-risk, policy-approved
-    # actions only.
+    # The core/CLI default remains review-first. The GUI explicitly requests
+    # its compact direct flow while an explicitly persisted review-first choice
+    # is surfaced as a local confirmation instead of a route change.
     execution_mode: ExecutionMode = "review_first"
     confirm_medium_risk: bool = True
     show_command_preview: bool = True
@@ -89,12 +89,14 @@ class ExecutionSettingsStore:
         self.future_schema = False
         self.migration_required = False
         self.last_error = ""
+        self.explicit_mode = False
 
     def load(self) -> ExecutionSettings:
         """Load settings; newer schemas become review-first and stay untouched."""
         self.future_schema = False
         self.migration_required = False
         self.last_error = ""
+        self.explicit_mode = False
         if not self.path.exists():
             return ExecutionSettings.defaults()
         try:
@@ -107,6 +109,8 @@ class ExecutionSettingsStore:
             self.last_error = "Execution settings must be a JSON object."
             self.future_schema = True
             return replace(ExecutionSettings.defaults(), future_schema=True).with_notice(self.last_error)
+
+        self.explicit_mode = "execution_mode" in payload or "mode" in payload
 
         version = payload.get("schema_version", 0)
         schema = str(payload.get("schema", ""))

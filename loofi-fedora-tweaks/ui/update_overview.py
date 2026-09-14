@@ -228,6 +228,6 @@ class UpdateOverviewWidget(QWidget):
         self.feedback.set_result(
             "warning" if warning else "info",
             self.tr("Some results need attention") if warning else self.tr("Update overview"),
-            self.tr("Results could not be saved. Existing saved data was preserved; run a new check when storage is available.") if snapshot.storage_status != "ok" else self.tr("Review one source below. Action Center checks its current state before running the plan."),
+            self.tr("Results could not be saved. Existing saved data was preserved; run a new check when storage is available.") if snapshot.storage_status != "ok" else self.tr("Choose an update source below. Action Center prepares, runs, and verifies it here."),
         )
         self.snapshotChanged.emit(snapshot)

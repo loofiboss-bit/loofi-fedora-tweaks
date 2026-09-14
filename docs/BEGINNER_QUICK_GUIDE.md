@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 28.0.2 "Ease" public release
+> Version 28.0.3 "Ease" public release
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -27,8 +27,8 @@ application or browsing a page does not probe or modify the host.
    and support export.
 4. **Protection & Recovery** — firewall exposure, backups, recovery points,
    and supported rollback guidance.
-5. **Changes** — the single review and verification workspace for persistent
-   changes.
+5. **Changes** — history and advanced review for persistent changes. Normal
+   updates can be started from Updates & Apps.
 
 Settings are opened with the header gear. There is no separate specialist
 product, background daemon, web API, or sandbox distribution.
@@ -37,9 +37,11 @@ product, background daemon, web API, or sandbox distribution.
 
 ### Check for updates
 
-Open **Updates & Apps**, choose **Check for updates**, select a source, review
-the resulting plan, and run it from **Changes**. System, Flatpak, and firmware
-results stay separate; unavailable is not reported as up to date.
+Open **Updates & Apps**, choose **Check for updates**, then press **Update
+System**, **Update Flatpaks**, or **Update firmware**. Loofi prepares the exact
+scope and verifies the result on the same page. Sensitive actions ask once for
+confirmation; ordinary system and Flatpak updates do not require a separate
+review screen.
 
 ### Diagnose a problem
 

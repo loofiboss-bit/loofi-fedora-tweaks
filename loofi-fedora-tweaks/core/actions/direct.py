@@ -15,7 +15,7 @@ from core.actions.orchestrator import (
 )
 from core.actions.outcomes import OutcomeEvidenceComposer, OutcomeState, OutcomeSummary
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
-from core.settings.execution import ExecutionSettings, ExecutionSettingsStore
+from core.settings.execution import ExecutionMode, ExecutionSettings, ExecutionSettingsStore
 
 DirectActionStatus = Literal[
     "completed_verified",
@@ -50,6 +50,7 @@ class DirectActionResult:
     confirmation_required: bool = False
     settings_notice: str = ""
     dry_run: bool = False
+    reboot_policy: str = "none"
 
     @property
     def display_label(self) -> str:
@@ -82,6 +83,7 @@ class DirectActionResult:
             "confirmation_required": self.confirmation_required,
             "settings_notice": self.settings_notice,
             "dry_run": self.dry_run,
+            "reboot_policy": self.reboot_policy,
         }
 
     @property
@@ -171,6 +173,7 @@ class DirectActionService:
         confirmed: bool = False,
         yes: bool = False,
         dry_run: bool = False,
+        execution_mode: ExecutionMode | None = None,
         timeout: int = 120,
         target: str = FEDORA_RELEASE_POLICY.stable_target,
     ) -> DirectActionResult:
@@ -190,6 +193,63 @@ class DirectActionService:
         except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
             return self._error_result(action_id, eligibility, str(exc), settings)
 
+        return self._execute_plan(
+            plan,
+            eligibility,
+            settings=settings,
+            confirmed=confirmed,
+            yes=yes,
+            dry_run=dry_run,
+            execution_mode=execution_mode,
+            timeout=timeout,
+        )
+
+    def run_prepared(
+        self,
+        plan_id: str,
+        *,
+        confirmed: bool = False,
+        yes: bool = False,
+        execution_mode: ExecutionMode | None = None,
+        timeout: int = 120,
+    ) -> DirectActionResult:
+        """Execute one previously prepared plan after a local confirmation.
+
+        GUI callers use this two-step API so the confirmation covers the exact
+        preflight preview.  ``prepare_run`` rechecks the digest and host state,
+        therefore a changed scope is rejected instead of silently executing a
+        different command than the user confirmed.
+        """
+        settings = self.settings_store.load()
+        try:
+            plan = self.orchestrator.get_plan(str(plan_id))
+        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            eligibility = EligibilityDecision("", "blocked", False, "plan_not_found", str(exc))
+            return self._error_result("", eligibility, str(exc), settings)
+        eligibility = self.eligibility_for(plan.action_id)
+        return self._execute_plan(
+            plan,
+            eligibility,
+            settings=settings,
+            confirmed=confirmed,
+            yes=yes,
+            dry_run=False,
+            execution_mode=execution_mode,
+            timeout=timeout,
+        )
+
+    def _execute_plan(
+        self,
+        plan: ActionPlan,
+        eligibility: EligibilityDecision,
+        *,
+        settings: ExecutionSettings,
+        confirmed: bool,
+        yes: bool,
+        dry_run: bool,
+        execution_mode: ExecutionMode | None,
+        timeout: int,
+    ) -> DirectActionResult:
         preview = tuple(plan.preview)
         if plan.state == "blocked":
             return self._from_plan(
@@ -210,6 +270,30 @@ class DirectActionService:
                 preview=preview,
                 dry_run=True,
             )
+        if settings.future_schema and not (confirmed or yes):
+            return self._from_plan(
+                plan,
+                eligibility,
+                "review_required",
+                "Safety & Execution settings need review before this action can run.",
+                settings=settings,
+                preview=preview,
+                confirmation_required=True,
+            )
+        if (
+            getattr(self.settings_store, "explicit_mode", False)
+            and settings.execution_mode == "review_first"
+            and not (confirmed or yes)
+        ):
+            return self._from_plan(
+                plan,
+                eligibility,
+                "review_required",
+                "Review-first mode is enabled in Safety & Execution settings; confirm this prepared action locally to continue.",
+                settings=settings,
+                preview=preview,
+                confirmation_required=True,
+            )
         if eligibility.review_required or not eligibility.allowed:
             return self._from_plan(
                 plan,
@@ -219,7 +303,8 @@ class DirectActionService:
                 settings=settings,
                 preview=preview,
             )
-        if settings.effective_mode == "review_first":
+        effective_mode = execution_mode or settings.effective_mode
+        if effective_mode == "review_first":
             return self._from_plan(
                 plan,
                 eligibility,
@@ -228,18 +313,32 @@ class DirectActionService:
                 settings=settings,
                 preview=preview,
             )
-        medium_confirmation = eligibility.kind == "confirmation" and settings.confirm_medium_risk
-        if medium_confirmation and not (confirmed or yes):
+        # The compact high-risk confirmation is a GUI interaction policy. Keep
+        # the existing CLI/direct-adapter contract review-first unless the
+        # caller explicitly opts into the GUI execution mode.
+        if eligibility.risk_level == "high" and execution_mode != "direct":
             return self._from_plan(
                 plan,
                 eligibility,
                 "review_required",
-                "One compact confirmation is required for this medium-risk action.",
+                "High-risk actions require the full Action Center review flow outside the GUI.",
+                settings=settings,
+                preview=preview,
+            )
+        confirmation_required = eligibility.kind == "confirmation" and (
+            settings.confirm_medium_risk or eligibility.risk_level == "high"
+        )
+        if confirmation_required and not (confirmed or yes):
+            return self._from_plan(
+                plan,
+                eligibility,
+                "review_required",
+                "One compact confirmation is required before this action can run.",
                 settings=settings,
                 preview=preview,
                 confirmation_required=True,
             )
-        if eligibility.kind not in {"direct", "confirmation"} or eligibility.risk_level not in {"low", "medium"}:
+        if eligibility.kind not in {"direct", "confirmation"} or eligibility.risk_level not in {"low", "medium", "high"}:
             return self._from_plan(
                 plan,
                 eligibility,
@@ -252,7 +351,7 @@ class DirectActionService:
             run = self.orchestrator.apply(
                 plan.plan_id,
                 confirmed=True,
-                accept_no_rollback=eligibility.risk_level == "medium",
+                accept_no_rollback=eligibility.risk_level in {"medium", "high"},
                 timeout=max(1, min(3600, int(timeout))),
             )
             if settings.automatically_verify and run.state == "verifying":
@@ -297,6 +396,7 @@ class DirectActionService:
             confirmation_required=confirmation_required,
             settings_notice=settings.migration_notice,
             dry_run=dry_run,
+            reboot_policy=plan.reboot_policy,
         )
 
     def _from_run(
@@ -332,6 +432,7 @@ class DirectActionService:
             correlation_id=run.correlation_id,
             preview=preview,
             settings_notice=settings.migration_notice,
+            reboot_policy=plan.reboot_policy,
         )
 
     def _error_result(

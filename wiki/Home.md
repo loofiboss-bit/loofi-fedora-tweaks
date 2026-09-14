@@ -4,7 +4,7 @@ Welcome to the official documentation and wiki for **Loofi Fedora Tweaks**.
 
 Loofi Fedora Tweaks is a focused, desktop-neutral maintenance control center for Fedora Linux. It unifies system diagnostics, multi-source updates, hardware health, and verified system changes into a single, safe desktop interface and scriptable CLI.
 
-**Current public release:** v28.0.2 "Ease"<br>
+**Current public release:** v28.0.3 "Ease"<br>
 **Target distributions:** Fedora 43 and 44 (Stable) • Fedora 45 (Preview)
 
 ![Loofi Fedora Tweaks Home](images/home-dashboard.png)
@@ -14,7 +14,10 @@ Loofi Fedora Tweaks is a focused, desktop-neutral maintenance control center for
 ## Core Principles
 
 1. **Read-Only Inspection**: Browsing views, auditing services, checking updates, and running diagnostics never modifies your system.
-2. **Action Center Boundary**: Every persistent system change must be reviewed as a typed plan in **Changes** before execution.
+2. **Action Center Boundary**: Every persistent system change uses a typed plan
+   and the shared Action Center authority. Daily updates may start on
+   **Updates & Apps**; **Changes** remains the history and advanced review
+   workspace.
 3. **Independent Verification**: Command exit codes are never trusted alone; changes are independently probed and verified post-execution.
 4. **Desktop & Architecture Neutral**: Works consistently across GNOME, KDE Plasma, XFCE, Sway, and other environments.
 5. **Traditional & Atomic Awareness**: Keeps standard DNF5 workflows cleanly separated from `rpm-ostree` and `bootc` immutable deployments.
@@ -90,4 +93,4 @@ loofi doctor
 - **Source Code**: [GitHub Repository](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
 - **Issue Tracker**: [GitHub Issues](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
 - **Release Packages**: [Fedora COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
-- **Latest Release**: [v28.0.2 Ease on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2)
+- **Latest Release**: [v28.0.3 Ease on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.3)

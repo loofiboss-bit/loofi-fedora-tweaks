@@ -57,7 +57,7 @@ class TestSchemaAwareState(StateV14Case):
         findings = [item for item in result["findings"] if item["domain"] == "health_snapshots"]
         self.assertIn("State uses a newer schema and is read-only", [item["summary"] for item in findings])
 
-    def test_doctor_understands_action_run_jsonl_schema_key(self):
+    def test_doctor_accepts_current_action_run_jsonl_schema_key(self):
         target = self.inventory.get("action_runs").path
         target.parent.mkdir(parents=True)
         target.write_text(json.dumps({"action_run_schema_version": 4, "run_id": "future"}) + "\n", encoding="utf-8")
@@ -65,7 +65,7 @@ class TestSchemaAwareState(StateV14Case):
         result = StateDoctor(self.inventory).run()
 
         findings = [item for item in result["findings"] if item["domain"] == "action_runs"]
-        self.assertIn("State uses a newer schema and is read-only", [item["summary"] for item in findings])
+        self.assertNotIn("State uses a newer schema and is read-only", [item["summary"] for item in findings])
 
     def test_doctor_accepts_supported_action_run_v2_migration(self):
         target = self.inventory.get("action_runs").path
@@ -77,6 +77,18 @@ class TestSchemaAwareState(StateV14Case):
         findings = [item for item in result["findings"] if item["domain"] == "action_runs"]
         summaries = [item["summary"] for item in findings]
         self.assertNotIn("State requires an unavailable migration", summaries)
+
+    def test_doctor_preserves_a_real_future_action_run_schema(self):
+        target = self.inventory.get("action_runs").path
+        target.parent.mkdir(parents=True)
+        original = json.dumps({"action_run_schema_version": 5, "run_id": "future"}) + "\n"
+        target.write_text(original, encoding="utf-8")
+
+        result = StateDoctor(self.inventory).run()
+
+        findings = [item for item in result["findings"] if item["domain"] == "action_runs"]
+        self.assertIn("State uses a newer schema and is read-only", [item["summary"] for item in findings])
+        self.assertEqual(target.read_text(encoding="utf-8"), original)
 
     def test_timeline_migrates_supported_legacy_document_with_runner(self):
         target = self.inventory.get("health_snapshots").path
@@ -225,6 +237,26 @@ class TestRestoreRollback(StateV14Case):
 
 
 class TestArchiveThreatValidation(StateV14Case):
+    def test_future_action_run_schema_is_rejected_without_overwrite(self):
+        archive_path = Path(self.temp.name) / "future-action-run.zip"
+        domain = self.inventory.get("action_runs")
+        content = b'{"action_run_schema_version": 5, "run_id": "future"}\n'
+        name = f"state/{domain.id}/{domain.path.name}"
+        entry = {
+            "domain": domain.id,
+            "path": name,
+            "sha256": hashlib.sha256(content).hexdigest(),
+            "size": len(content),
+            "schema_id": domain.schema_id,
+            "schema_version": 5,
+        }
+        with zipfile.ZipFile(archive_path, "w") as archive:
+            archive.writestr(name, content)
+            archive.writestr("manifest.json", json.dumps({"archive_schema_version": 1, "entries": [entry]}))
+
+        with self.assertRaisesRegex(InvalidStateArchive, "Incompatible state schema"):
+            StateArchiveService(self.inventory).plan_restore(archive_path)
+
     def test_older_domain_schema_is_rejected_instead_of_written_unmigrated(self):
         archive_path = Path(self.temp.name) / "legacy-schema.zip"
         domain = self.inventory.get("settings")
@@ -301,6 +333,22 @@ class TestArchiveValidationBranches(StateV14Case):
 
         self.assertEqual(service._content_schema_version(domain, b'{"schema_version": 7}'), 7)
         self.assertEqual(service._content_schema_version(domain, b"not-json"), domain.schema_version)
+
+        action_runs = self.inventory.get("action_runs")
+        self.assertEqual(
+            service._content_schema_version(
+                action_runs,
+                b'{"action_run_schema_version": 5, "run_id": "future"}\n',
+            ),
+            5,
+        )
+        self.assertEqual(
+            service._content_schema_version(
+                action_runs,
+                b'not-json\n{"action_run_schema_version": 5, "run_id": "future"}\n',
+            ),
+            5,
+        )
 
         missing = Path(self.temp.name) / "missing.json"
         self.assertEqual(service._target_baseline(missing), {"exists": False, "sha256": None, "size": 0})

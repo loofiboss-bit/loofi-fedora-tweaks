@@ -1,6 +1,6 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v28.0.2 "Ease" keeps application-owned state under the
+Loofi Fedora Tweaks v28.0.3 "Ease" keeps application-owned state under the
 user's standard XDG config, data, cache, and runtime directories. State is
 separate from the Fedora deployment and is preserved when the RPM is removed.
 

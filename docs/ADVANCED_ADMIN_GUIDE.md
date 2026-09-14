@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 28.0.2 "Ease" public release
+> Version 28.0.3 "Ease" public release
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.
@@ -10,8 +10,10 @@ clear boundary around system changes.
 Loofi ships one GUI and one intentionally small CLI. It has no background
 daemon, web API, remote-control endpoint, plugin marketplace, or sandbox
 distribution. Read-only inspection may run without administrator privileges.
-Persistent changes are created and executed only through the Changes workspace
-and its closed Action Center catalog.
+Persistent changes are always executed through the closed Action Center
+catalog. Supported daily system, Flatpak, and firmware updates can start on
+Updates & Apps and keep their preparation, confirmation, and verification
+result there; Changes remains the shared history and advanced review surface.
 
 The package uses the desktop's standard authorization agent through `pkexec`
 when a reviewed system operation requires administrator approval. It does not
@@ -42,9 +44,20 @@ Native settings handoffs appear only when the relevant desktop capability is
 known. Fedora Atomic variants may require a staged deployment and explicit
 restart before verification; the application never restarts the host itself.
 
-## Changes lifecycle
+## Updates and Changes lifecycle
 
-Inspect the candidate action in **Changes** and confirm that it names:
+For routine maintenance, open **Updates & Apps**, run a fresh check, and
+choose **Update System**, **Update Flatpaks**, or **Update firmware**. Normal
+system and Flatpak updates run without an extra application confirmation.
+Firmware, removal, recovery, and other sensitive actions show one confirmation
+with the exact scope, impact, and restart requirement. Authorization prompts
+from the desktop are shown when host privileges are needed.
+
+The Action Center performs preparation, execution, and verification on the
+originating page. **Changes** keeps the running work, history, detailed plans,
+and advanced review tools.
+
+When reviewing an action in **Changes**, confirm that it names:
 
 1. the exact change and affected resources;
 2. risk and expected impact;

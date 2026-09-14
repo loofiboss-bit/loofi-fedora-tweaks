@@ -38,6 +38,11 @@
   </provides>
 
   <releases>
+    <release version="28.0.3" date="2026-09-14" type="stable">
+      <description>
+        <p>v28.0.3 "Ease": direct in-place updates, compact risk confirmation, automatic verification, and synchronized Action Center state v4.</p>
+      </description>
+    </release>
     <release version="28.0.2" date="2026-09-14" type="stable">
       <description>
         <p>v28.0.2 "Ease": fail-closed battery-service cleanup and validated privileged command handling.</p>

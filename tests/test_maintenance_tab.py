@@ -17,7 +17,7 @@ import sys
 import types
 import unittest
 from types import SimpleNamespace
-from unittest.mock import MagicMock, call, patch
+from unittest.mock import MagicMock, patch
 
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
@@ -1912,22 +1912,18 @@ TestCleanupSubTab.test_run_autoremove_success = unittest.skip(
 
 
 class TestAssuranceHandoffs(unittest.TestCase):
-    def test_update_buttons_emit_independent_action_ids(self):
+    def test_update_buttons_start_independent_direct_operations(self):
         tab = _mt._UpdatesSubTab()
         tab.actionCenterRequested.emit = MagicMock()
+        tab._start_direct_operation = MagicMock()
 
         tab.run_dnf_update()
         tab.run_flatpak_update()
         tab.run_fw_update()
 
-        self.assertEqual(
-            tab.actionCenterRequested.emit.call_args_list,
-            [
-                call("update-fedora-system", {}),
-                call("update-flatpaks", {}),
-                call("update-firmware", {}),
-            ],
-        )
+        tab.actionCenterRequested.emit.assert_not_called()
+        self.assertEqual(tab._start_direct_operation.call_count, 3)
+        self.assertEqual(tab._pending_update["action_id"], "update-firmware")
 
     def test_autoremove_emits_one_review_request(self):
         tab = _mt._CleanupSubTab()

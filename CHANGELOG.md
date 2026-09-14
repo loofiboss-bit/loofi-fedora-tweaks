@@ -1,5 +1,21 @@
 # Changelog
 
+## [28.0.3] - 2026-09-14 - "Ease"
+
+Direct maintenance execution and release-evidence policy update.
+
+- Run normal system and Flatpak updates from **Updates & Apps** with the
+  existing Action Center authority, automatic verification, and no forced
+  navigation to Changes.
+- Keep one compact confirmation for firmware, removal, rollback, and other
+  sensitive operations, bound to the prepared scope.
+- Separate technical risk from interaction policy while preserving fresh
+  preflight, privilege checks, mutation leases, and duplicate-run protection.
+- Synchronize Action Center plan/run persistence on schema v4 and preserve
+  unknown future formats as read-only state with actionable diagnostics.
+- Make physical/manual qualification supplementary evidence rather than a
+  release blocker; each release records its status explicitly.
+
 ## [28.0.2] - 2026-09-14 - "Ease"
 
 Focused patch release for the battery-service review fixes from PR #40.

@@ -10,9 +10,8 @@ from typing import List, Mapping
 from core.actions.contracts import ActionPlan, ActionRun
 from core.state.atomic_io import advisory_lock, atomic_write_json, atomic_write_text
 from core.state.paths import StatePaths
+from core.state.version_constants import ACTION_PLAN_SCHEMA_VERSION, ACTION_RUN_SCHEMA_VERSION
 
-ACTION_PLAN_SCHEMA_VERSION = 4
-ACTION_RUN_SCHEMA_VERSION = 4
 MAX_ACTION_PLANS = 50
 MAX_ACTION_RUNS = 100
 
@@ -37,9 +36,18 @@ class ActionPlanStore:
             return []
         if not isinstance(payload, Mapping):
             return []
-        version = int(payload.get("schema_version", 0))
+        try:
+            version = int(payload.get("schema_version", 0))
+        except (TypeError, ValueError) as exc:
+            raise ActionStoreVersionError(
+                "Action Center plan state has an invalid schema version; preserve it "
+                "and use a compatible recovery path."
+            ) from exc
         if version not in {1, 2, 3, ACTION_PLAN_SCHEMA_VERSION}:
-            raise ActionStoreVersionError(f"Unsupported action plan schema version: {version}")
+            raise ActionStoreVersionError(
+                f"Action Center plan state uses unsupported schema version {version}; "
+                "preserve it and use a compatible newer application."
+            )
         raw_plans = payload.get("plans", [])
         if not isinstance(raw_plans, list):
             return []
@@ -106,9 +114,18 @@ class ActionRunStore:
                 continue
             if not isinstance(raw, Mapping):
                 continue
-            version = int(raw.get("action_run_schema_version", 0))
+            try:
+                version = int(raw.get("action_run_schema_version", 0))
+            except (TypeError, ValueError) as exc:
+                raise ActionStoreVersionError(
+                    "Action Center run state has an invalid schema version; preserve it "
+                    "and use a compatible recovery path."
+                ) from exc
             if version not in {1, 2, 3, ACTION_RUN_SCHEMA_VERSION}:
-                raise ActionStoreVersionError(f"Unsupported action run schema version: {version}")
+                raise ActionStoreVersionError(
+                    f"Action Center run state uses unsupported schema version {version}; "
+                    "preserve it and use a compatible newer application."
+                )
             migration_required = migration_required or version in {1, 2, 3}
             try:
                 runs.append(ActionRun.from_dict(raw))

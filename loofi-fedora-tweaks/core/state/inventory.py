@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from core.state.paths import StatePaths
+from core.state.version_constants import ACTION_PLAN_SCHEMA_VERSION, ACTION_RUN_SCHEMA_VERSION
 
 
 @dataclass(frozen=True)
@@ -50,8 +51,8 @@ class StateInventory:
             ("metric_timeline", "observability", p.data / "health_timeline.db", "loofi.metric-timeline", 1, "private", "30 days", "sqlite-integrity"),
             ("action_history", "action-center", p.data / "action_center_history.jsonl", "loofi.action-history", 3, "private", "100 events", "archive-corrupt"),
             ("action_log", "executor", p.data / "action_log.jsonl", "loofi.action-log", 1, "sensitive", "500 events", "archive-corrupt"),
-            ("action_plans", "action-center", p.data / "action_plans.json", "loofi.action-plans", 3, "private", "50 plans", "last-known-good"),
-            ("action_runs", "action-center", p.data / "action_runs.jsonl", "loofi.action-runs", 3, "private", "100 events", "archive-corrupt"),
+            ("action_plans", "action-center", p.data / "action_plans.json", "loofi.action-plans", ACTION_PLAN_SCHEMA_VERSION, "private", "50 plans", "last-known-good"),
+            ("action_runs", "action-center", p.data / "action_runs.jsonl", "loofi.action-runs", ACTION_RUN_SCHEMA_VERSION, "private", "100 events", "archive-corrupt"),
             (
                 "troubleshooting_sessions",
                 "troubleshooting",

@@ -206,12 +206,32 @@ class StateArchiveService:
 
     @staticmethod
     def _content_schema_version(domain: StateDomain, content: bytes) -> int:
-        if domain.path.suffix != ".json":
+        if domain.path.suffix not in {".json", ".jsonl"}:
             return domain.schema_version
         try:
-            payload = json.loads(content)
-            if isinstance(payload, dict) and "schema_version" in payload:
-                return int(payload["schema_version"])
+            if domain.path.suffix == ".jsonl":
+                payloads = []
+                for line in content.decode("utf-8").splitlines():
+                    if not line.strip():
+                        continue
+                    try:
+                        payloads.append(json.loads(line))
+                    except json.JSONDecodeError:
+                        continue
+            else:
+                payloads = [json.loads(content)]
+            version_key = "schema_version"
+            if domain.id == "action_history":
+                version_key = "action_center_schema_version"
+            elif domain.id == "action_runs":
+                version_key = "action_run_schema_version"
+            versions = [
+                int(payload[version_key])
+                for payload in payloads
+                if isinstance(payload, dict) and version_key in payload
+            ]
+            if versions:
+                return max(versions)
         except (UnicodeDecodeError, json.JSONDecodeError, TypeError, ValueError):
             pass
         return domain.schema_version

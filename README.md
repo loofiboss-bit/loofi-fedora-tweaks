@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v28.0.2 "Ease"
+# Loofi Fedora Tweaks v28.0.3 "Ease"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -8,14 +8,14 @@
 
 <p align="center">
   <strong>A focused Fedora maintenance core</strong><br>
-  Five destinations, one review surface, and verified system changes.
+  Five destinations, one Action Center authority, and verified system changes.
 </p>
 
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2">
-    <img src="https://img.shields.io/badge/Release-v28.0.2-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v28.0.2 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.3">
+    <img src="https://img.shields.io/badge/Release-v28.0.3-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v28.0.3 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -29,25 +29,27 @@ and independently verified results. It does not run a background service or
 include a web API.
 
 - Home shows current state, one recommended next action, and common tasks.
-- Updates & Apps checks system packages, Flatpak, and firmware independently;
-  application discovery can be handed off to the desktop's native software
-  center.
+- Updates & Apps checks and runs system packages, Flatpak, and firmware
+  independently; application discovery can be handed off to the desktop's
+  native software center.
 - System Health provides read-only checks, symptom-driven troubleshooting,
   storage and hardware inspection, and support export.
 - Protection & Recovery groups firewall exposure, backups, recovery points,
   and supported rollback guidance.
-- Changes is the single review, confirmation, execution, and verification
-  workspace for persistent system changes.
+- Changes remains the shared history and advanced review workspace for persistent
+  system changes. Everyday updates can start and finish from Updates & Apps.
 
-The [public v28.0.2 Ease release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2)
-contains the merged battery-service review fixes from PR #40. Exact tag,
-asset, attestation, COPR, and wiki readback are recorded in the
-[v28.0.2 public release evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+The [public v28.0.3 Ease release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.3)
+contains direct in-place updates, compact risk confirmation, automatic result
+verification, and the v4 Action Center state contract. Exact tag, asset,
+attestation, COPR, and wiki readback are recorded in the
+[v28.0.3 public release evidence](docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
 The previous public release record remains available in
-[V28_RELEASE_PUBLICATION.md](docs/reports/V28_RELEASE_PUBLICATION.md).
-The deterministic suite is green in an isolated environment, while physical
-desktop, authorization, reboot, and fresh Atomic qualification remain
-explicitly unverified.
+[V28.0.2_RELEASE_PUBLICATION.md](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+The deterministic suite is green in an isolated environment. Physical desktop,
+authorization, reboot, Atomic, keyboard, and Orca checks are supplementary
+evidence: each release records their status as verified, pending, or
+`unverified`, and they never block publication.
 
 The current repository-wide local line coverage is 87% against the maintained
 85% blocking gate. The plan's 90% target remains open and is not presented as
@@ -114,12 +116,15 @@ loofi support-bundle
 
 Use `--json` before a command for machine-readable output. JSON schemas are
 command-specific, so automation should validate the selected command's shape.
-Changes remain review-first: inspect the plan, confirm it explicitly, and
-verify the outcome separately.
+The CLI remains review-first: inspect the plan, confirm it explicitly, and
+verify the outcome separately. The GUI uses the same Action Center authority
+but presents compact confirmation and verified results on the page where the
+action started.
 
 ## Safety model
 
-- UI views are read-only until they hand an explicit request to Changes.
+- UI views do not run arbitrary commands. Supported everyday actions may start
+  directly from their owning page through the Action Center authority.
 - Commands are list-based, allowlisted, timeout-bounded, and never use a shell
   interpreter.
 - A plan contains a closed action and typed parameters, not an arbitrary command

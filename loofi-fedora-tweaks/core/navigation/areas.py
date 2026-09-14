@@ -49,7 +49,7 @@ _AREAS: tuple[NavigationArea, ...] = (
         id="software_updates",
         label="Updates & Apps",
         icon="packages-software",
-        description="Applications, Fedora updates, Flatpak status, and firmware review.",
+        description="Applications, Fedora updates, Flatpak status, and firmware updates.",
         plugin_ids=_SOFTWARE_PLUGINS,
     ),
     NavigationArea(

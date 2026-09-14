@@ -76,10 +76,11 @@ class TestV27UpdatesJourney:
         deployment_backend=MagicMock(value="dnf5"),
         package_manager_name="dnf5",
     ))
-    def test_fresh_source_opens_review_directly(self, _profile):
+    def test_fresh_source_starts_direct_preparation(self, _profile):
         tab = _UpdatesSubTab()
         try:
             requests: list[tuple[str, object]] = []
+            tab._start_direct_operation = MagicMock()
             tab.actionCenterRequested.connect(
                 lambda action_id, parameters: requests.append((action_id, parameters))
             )
@@ -103,8 +104,10 @@ class TestV27UpdatesJourney:
             assert tab.btn_dnf.isEnabled()
 
             tab.btn_dnf.click()
-            assert requests == [("update-fedora-system", {})]
-            assert tab.update_state.property("updateLifecycleState") == "review"
+            assert requests == []
+            tab._start_direct_operation.assert_called_once()
+            assert tab.update_state.property("updateLifecycleState") == "preparing"
+            assert tab.btn_dnf.isEnabled() is False
         finally:
             tab.deleteLater()
 

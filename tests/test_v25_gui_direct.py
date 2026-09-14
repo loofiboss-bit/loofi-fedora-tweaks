@@ -6,7 +6,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox
 
 from core.actions.direct import DirectActionResult
 from core.actions.eligibility import EligibilityDecision
@@ -15,10 +15,10 @@ from core.settings.execution import ExecutionSettings
 from ui.maintenance_action_center import _ActionCenterSubTab
 
 
-def _item() -> SimpleNamespace:
+def _item(action_id: str = "dnf-clean-all") -> SimpleNamespace:
     return SimpleNamespace(
-        id="dnf-clean-all",
-        title="Clean package cache",
+        id=action_id,
+        title="Update firmware" if action_id == "update-firmware" else "Clean package cache",
         description="Remove stale package cache data.",
         manual_only=False,
         command_preview=(),
@@ -91,8 +91,8 @@ class TestV25GuiDirectAction(unittest.TestCase):
         tab.action_list.currentRow.return_value = 0
         result = DirectActionResult(
             action_id="dnf-clean-all",
-            status="completed_verified",
-            message="Verified.",
+            status="preview",
+            message="Prepared.",
             eligibility=EligibilityDecision(
                 "dnf-clean-all", "direct", True, "low_risk_direct", "Ready", risk_level="low"
             ),
@@ -105,29 +105,98 @@ class TestV25GuiDirectAction(unittest.TestCase):
                 "verification-succeeded",
                 recovery=RecoveryReadiness(False, "manual_guidance"),
             ),
-            plan_id="",
+            plan_id="plan-1",
             run_id="",
+        )
+        verified = DirectActionResult(
+            action_id="dnf-clean-all",
+            status="completed_verified",
+            message="Verified.",
+            eligibility=result.eligibility,
+            outcome=result.outcome,
+            plan_id="plan-1",
+            run_id="run-1",
         )
         service = MagicMock()
         service.eligibility_for.return_value = result.eligibility
         service.settings_store = _SettingsStore()
         service.run.return_value = result
+        service.run_prepared.return_value = verified
+        service.orchestrator.get_plan.side_effect = OSError("test store")
+        service.orchestrator.get_run.side_effect = OSError("test store")
         tab._direct_service = service
         tab._show_item(item)
         tab.runner.run_command = MagicMock()
 
         tab._run_direct_selected()
+        QApplication.processEvents()
 
         service.run.assert_called_once_with(
             "dnf-clean-all",
             {},
             finding_context=None,
-            confirmed=True,
+            dry_run=True,
+            execution_mode="direct",
             target=tab._target_key,
+        )
+        service.run_prepared.assert_called_once_with(
+            "plan-1",
+            confirmed=True,
+            execution_mode="direct",
         )
         tab.runner.run_command.assert_not_called()
         self.assertIn("Completed and verified", tab.selected_summary.text())
         warning.assert_not_called()
+
+    @patch.object(_ActionCenterSubTab, "_load_target")
+    @patch.object(
+        _ActionCenterSubTab,
+        "_start_operation",
+        autospec=True,
+        side_effect=lambda _tab, operation, on_success, _title: on_success(operation()),
+    )
+    @patch("PyQt6.QtWidgets.QMessageBox.question", return_value=QMessageBox.StandardButton.No)
+    def test_sensitive_direct_action_cancel_never_runs_prepared_plan(
+        self,
+        question: MagicMock,
+        _operation: MagicMock,
+        _load: MagicMock,
+    ) -> None:
+        tab = _ActionCenterSubTab()
+        self.addCleanup(tab.deleteLater)
+        item = _item("update-firmware")
+        tab._items = [item]
+        tab._visible_records = [("candidate", item)]
+        tab.action_list = MagicMock()
+        tab.action_list.currentRow.return_value = 0
+
+        eligibility = EligibilityDecision(
+            "update-firmware", "confirmation", True, "explicit_confirmation",
+            "One confirmation.", risk_level="high", confirmation_required=True,
+        )
+        preview = DirectActionResult(
+            action_id="update-firmware",
+            status="preview",
+            message="Prepared.",
+            eligibility=eligibility,
+            outcome=OutcomeSummary(
+                "update-firmware", "plan-fw", "", "", "unverified", "Prepared",
+                recovery=RecoveryReadiness(False, "manual_guidance"),
+            ),
+            plan_id="plan-fw",
+        )
+        service = MagicMock()
+        service.eligibility_for.return_value = eligibility
+        service.settings_store = _SettingsStore()
+        service.run.return_value = preview
+        tab._direct_service = service
+        tab._show_item(item)
+
+        tab._run_direct_selected()
+
+        question.assert_called_once()
+        service.run_prepared.assert_not_called()
+        self.assertIsNone(tab._prepared_direct_result)
 
 
 if __name__ == "__main__":

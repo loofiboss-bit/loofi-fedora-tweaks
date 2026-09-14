@@ -5,10 +5,11 @@ from __future__ import annotations
 import json
 import time
 from pathlib import Path
-from typing import Any
+from typing import Any, Callable
 
 from core.state.atomic_io import advisory_lock, atomic_write_json
 from core.state.schema import SchemaRegistry
+from core.state.version_constants import ACTION_PLAN_SCHEMA_VERSION, ACTION_RUN_SCHEMA_VERSION
 
 
 class MigrationRunner:
@@ -44,6 +45,11 @@ def registry_for_inventory(inventory: Any) -> SchemaRegistry:
         )
     for schema_id in ("loofi.action-plans", "loofi.action-runs"):
         if any(domain.schema_id == schema_id for domain in inventory.all()):
+            current_version = (
+                ACTION_PLAN_SCHEMA_VERSION
+                if schema_id == "loofi.action-plans"
+                else ACTION_RUN_SCHEMA_VERSION
+            )
             registry.add_migration(
                 schema_id,
                 1,
@@ -54,4 +60,18 @@ def registry_for_inventory(inventory: Any) -> SchemaRegistry:
                 2,
                 lambda payload: {**payload, "schema_version": 3},
             )
+            registry.add_migration(
+                schema_id,
+                3,
+                _migration_to_version(current_version),
+            )
     return registry
+
+
+def _migration_to_version(version: int) -> Callable[[dict[str, Any]], dict[str, Any]]:
+    """Build a typed one-step migration without duplicating current versions."""
+
+    def migrate(payload: dict[str, Any]) -> dict[str, Any]:
+        return {**payload, "schema_version": version}
+
+    return migrate

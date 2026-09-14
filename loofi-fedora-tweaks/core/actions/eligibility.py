@@ -12,6 +12,7 @@ _VALID_RISKS = frozenset({"low", "medium", "high"})
 _VALID_OPERATION_CLASSES = frozenset({"host", "app_state", "session", "manual_only"})
 _VALID_VARIANTS = frozenset({"traditional", "atomic"})
 _VALID_REBOOT_POLICIES = frozenset({"none", "may_require", "required"})
+_VALID_INTERACTION_POLICIES = frozenset({"risk", "automatic", "confirm", "review"})
 
 
 @dataclass(frozen=True)
@@ -98,7 +99,10 @@ def classify_definition(definition: ActionDefinition | None, *, action_id: str =
             "This action is guidance-only and cannot run through direct execution.",
             **common,
         )
-    if definition.risk_level == "high":
+    interaction_policy = str(getattr(definition, "interaction_policy", "risk"))
+    if interaction_policy == "review" or (
+        definition.risk_level == "high" and interaction_policy != "confirm"
+    ):
         return EligibilityDecision(
             definition.id,
             "review_required",
@@ -107,13 +111,17 @@ def classify_definition(definition: ActionDefinition | None, *, action_id: str =
             "High-risk actions require the full Action Center review flow.",
             **common,
         )
-    if definition.risk_level == "medium":
+    if interaction_policy == "confirm" or (
+        interaction_policy == "risk" and definition.risk_level == "medium"
+    ):
+        risk_label = "high-risk" if definition.risk_level == "high" else "medium-risk"
+        reason_code = "explicit_confirmation" if interaction_policy == "confirm" else "medium_risk_confirmation"
         return EligibilityDecision(
             definition.id,
             "confirmation",
             True,
-            "medium_risk_confirmation",
-            "This medium-risk action requires one compact confirmation before execution.",
+            reason_code,
+            f"This {risk_label} action requires one compact confirmation before execution.",
             confirmation_required=True,
             **common,
         )
@@ -163,6 +171,8 @@ def _metadata_issues(definition: ActionDefinition) -> list[str]:
         issues.append("risk_level")
     if definition.confirmation_policy not in {"explicit", "explicit-no-rollback"}:
         issues.append("confirmation_policy")
+    if str(getattr(definition, "interaction_policy", "risk")) not in _VALID_INTERACTION_POLICIES:
+        issues.append("interaction_policy")
     if not definition.recovery_guidance:
         issues.append("recovery_guidance")
     if not isinstance(definition.rollback_supported, bool):

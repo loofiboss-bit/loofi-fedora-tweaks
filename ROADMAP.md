@@ -10,6 +10,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
+| v28.0.3 | Ease | ACTIVE | [architecture](.workflow/specs/arch-v28.0.3.md), [tasks](.workflow/specs/tasks-v28.0.3.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.3.md) |
 | v28.0.2 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.2.md), [tasks](.workflow/specs/tasks-v28.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.2.md), [public evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md) |
 | v28.0.1 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.1.md), [tasks](.workflow/specs/tasks-v28.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.1.md), [public evidence](docs/reports/V28_RELEASE_PUBLICATION.md) |
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
@@ -27,6 +28,21 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v27.0.1 | Core | DONE | [Plan](docs/plans/plan%20v27.md), [architecture](.workflow/specs/arch-v27.0.1.md), [tasks](.workflow/specs/tasks-v27.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v27.0.1.md), [public evidence](docs/reports/V27_RELEASE_PUBLICATION.md) |
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
+
+## [ACTIVE] v28.0.3 "Ease" — Direct Maintenance Execution
+
+This patch makes normal system and Flatpak updates executable from Updates &
+Apps through the existing Action Center, with automatic verification on the
+originating page. Firmware, removal, rollback, and other sensitive changes use
+one compact confirmation bound to the prepared scope. Action Center plans and
+runs use the synchronized v4 state contract, while future formats remain
+read-only and preserve their history.
+
+Automated tests, static checks, packaging, security analysis, and release-doc
+validation are the publication gates. Physical desktop, authorization-agent,
+reboot, Atomic, keyboard, and Orca checks are supplementary evidence; each
+release records their status as verified, pending, or `unverified` without
+blocking publication.
 
 ## [DONE] v28.0.2 "Ease" — Fail-Closed Battery-Service Cleanup
 
