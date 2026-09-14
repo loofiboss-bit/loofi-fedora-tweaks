@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v28.0.1 "Ease"
+# Loofi Fedora Tweaks v28.0.2 "Ease"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -14,8 +14,8 @@
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.1">
-    <img src="https://img.shields.io/badge/Release-v28.0.1-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v28.0.1 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2">
+    <img src="https://img.shields.io/badge/Release-v28.0.2-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v28.0.2 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -39,11 +39,12 @@ include a web API.
 - Changes is the single review, confirmation, execution, and verification
   workspace for persistent system changes.
 
-The [v28.0.1 Ease release](docs/releases/RELEASE-NOTES-v28.0.1.md) is the
-current public release, published through the canonical workflow. The exact
-tag, assets, attestations, COPR package, and wiki readback are recorded in the
-[public release evidence](docs/reports/V28_RELEASE_PUBLICATION.md). The
-deterministic suite is green in an isolated environment, while physical
+The [v28.0.2 Ease release candidate](docs/releases/RELEASE-NOTES-v28.0.2.md)
+contains the merged battery-service review fixes from PR #40. Canonical tag,
+asset, attestation, COPR, and wiki readback will be recorded after the
+tag-driven publication workflow completes. The previous public release record
+remains available in [V28_RELEASE_PUBLICATION.md](docs/reports/V28_RELEASE_PUBLICATION.md).
+The deterministic suite is green in an isolated environment, while physical
 desktop, authorization, reboot, and fresh Atomic qualification remain
 explicitly unverified.
 

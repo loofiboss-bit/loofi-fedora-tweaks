@@ -1,6 +1,6 @@
 # Screenshots
 
-The public v28.0.1 "Ease" release is documented here. Historical
+The v28.0.2 "Ease" release candidate is documented here. Historical
 deterministic UI evidence retained for the earlier public Core release is
 stored once in the main repository. These contact sheets show
 wide and compact layouts without duplicating binary assets in the wiki; they

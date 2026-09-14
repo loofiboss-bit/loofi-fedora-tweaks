@@ -1,5 +1,19 @@
 # Changelog
 
+## [28.0.2] - 2026-09-14 - "Ease"
+
+Focused patch release for the battery-service review fixes from PR #40.
+
+- Advertise only the implemented standard sysfs battery backend; remove the
+  unused HP BIOS support path.
+- Route service cleanup through validated `PrivilegedCommand` builders for
+  disablement, unit removal, daemon reload, and failed-state reset.
+- Fail closed on non-zero command results, timeouts, and operating-system
+  errors, with regression coverage for each branch and command validation.
+- Local deterministic verification records 4,804 passed, 73 skipped, and 830
+  subtests passed with 86.64% repository-wide coverage against the maintained
+  85% gate. Physical/manual gates remain separate and unverified.
+
 ## [28.0.1] - 2026-09-14 - "Ease"
 
 Public release completed through the canonical publication workflow. Exact

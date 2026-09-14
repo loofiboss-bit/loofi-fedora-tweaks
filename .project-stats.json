@@ -1,5 +1,5 @@
 {
-  "version": "28.0.1",
+  "version": "28.0.2",
   "codename": "Ease",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 18,
@@ -27,10 +27,10 @@
   "utils_module_count": 75,
   "test_count": "unverified",
   "coverage": "unverified",
-  "active_version": "",
+  "active_version": "28.0.2",
   "next_version": "",
-  "roadmap_status": "stable",
-  "pipeline_version": "v28.0.1",
+  "roadmap_status": "active",
+  "pipeline_version": "v28.0.2",
   "pipeline_status": "active",
   "python_version": "3.12",
   "framework": "PyQt6"

@@ -2,7 +2,7 @@
 
 Loofi Fedora Tweaks is a focused, desktop-neutral Fedora maintenance core.
 
-**Current public release:** v28.0.1 "Ease"<br>
+**Current release candidate:** v28.0.2 "Ease"<br>
 **Stable targets:** Fedora 43 and 44<br>
 **Preview target:** Fedora 45
 
@@ -45,18 +45,19 @@ repository guides linked above are the current usage and development sources.
 
 ## Release status
 
-v28.0.1 "Ease" is the current public release. v27.0.1 "Core" is the previous
-public release. Automated rootless/offscreen qualification passed; physical
-desktop and keyboard use, accessibility, Polkit, reboot, and fresh Atomic
-qualification remain unverified by the explicit release decision. See the
-[public release evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md)
-for exact tag, assets, attestations, COPR package, and wiki readback.
+v28.0.2 "Ease" is the current release candidate. v28.0.1 "Ease" is the
+previous public release. Automated rootless/offscreen qualification passed;
+physical desktop and keyboard use, accessibility, Polkit, reboot, and fresh
+Atomic qualification remain unverified by the explicit release decision. The
+v28.0.2 publication readback will be linked here after the canonical workflow
+completes; the previous evidence remains in
+[V28_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md).
 Fedora 45 remains preview-only.
 
 - Repository: [loofiboss-bit/loofi-fedora-tweaks](https://github.com/loofiboss-bit/loofi-fedora-tweaks)
-- Release notes: [v28.0.1 Ease](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v28.0.1.md)
-- Release: [v28.0.1 Ease on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.1)
-- Public evidence: [v28.0.1 publication report](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md)
+- Release notes: [v28.0.2 Ease](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v28.0.2.md)
+- Release: [v28.0.2 Ease on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2)
+- Public evidence: v28.0.2 publication readback pending; see the previous [v28.0.1 publication report](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md)
 - Release notes: [v26.0.3 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v26.0.3.md)
 - Fedora packages: [COPR](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/)
 - Issues: [Issue tracker](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues)
