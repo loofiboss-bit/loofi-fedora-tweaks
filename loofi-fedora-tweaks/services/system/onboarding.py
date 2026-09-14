@@ -41,12 +41,14 @@ def _read_os_release(path: Path = Path("/etc/os-release")) -> dict[str, str]:
 
 
 def _support_for_version(version: str) -> tuple[str, str]:
-    if version == FEDORA_RELEASE_POLICY.stable_release:
-        return "Supported", f"Fedora {FEDORA_RELEASE_POLICY.stable_release} is the verified stable target for this release."
-    if version == FEDORA_RELEASE_POLICY.preview_release:
+    classification = FEDORA_RELEASE_POLICY.classify_host(version)
+    if classification == "supported":
+        return "Supported", f"Fedora {version} is a verified stable release for this product version."
+    if classification == "preview":
         return "Preview", f"Fedora {FEDORA_RELEASE_POLICY.preview_release} support is advisory and remains read-only where capability policy requires it."
     if version:
-        return "Not verified", f"Fedora {version} is outside this release's verified Fedora {FEDORA_RELEASE_POLICY.stable_release} target."
+        stable = ", ".join(FEDORA_RELEASE_POLICY.supported_stable_releases)
+        return "Not verified", f"Fedora {version} is outside this release's verified Fedora {stable} targets."
     return "Unknown", "The Fedora release could not be identified; availability remains capability-aware."
 
 
@@ -57,14 +59,27 @@ def collect_welcome_system_summary(
 ) -> WelcomeSystemSummary:
     """Collect local presentation facts without changing the system."""
     release_data = dict(release) if release is not None else _read_os_release()
-    is_atomic = SystemManager.is_atomic() if atomic is None else bool(atomic)
+    profile = None
+    if atomic is None:
+        profile = SystemManager.get_platform_profile()
+        is_atomic = bool(profile.is_atomic)
+    else:
+        is_atomic = bool(atomic)
     version = str(release_data.get("VERSION_ID", "")).strip()
     variant = str(release_data.get("VARIANT", "")).strip()
     if not variant:
         variant = SystemManager.get_variant_name()
-    package_manager = "rpm-ostree" if is_atomic else "dnf"
-    deployment_mode = "Atomic" if is_atomic else "Traditional"
-    if is_atomic:
+    if profile is not None:
+        package_manager = profile.package_manager_name
+        deployment_mode = profile.deployment_backend.value
+    else:
+        package_manager = "rpm-ostree" if is_atomic else "dnf"
+        deployment_mode = "Atomic" if is_atomic else "Traditional"
+    if profile is not None and profile.deployment_backend.value == "bootc":
+        behavior = "This bootc host is detected, but update and recovery actions remain manual until the backend capability is qualified."
+    elif profile is not None and profile.deployment_backend.value == "unknown":
+        behavior = "The deployment backend is unknown; update and recovery actions remain unavailable until the host can be identified safely."
+    elif is_atomic:
         behavior = "Base-system package changes are staged as deployments and normally require a reboot."
     else:
         behavior = "Package changes use the traditional DNF transaction model with explicit preview and confirmation."

@@ -20,11 +20,28 @@ collect_ignore = []
 # Force offscreen Qt rendering in CI (must be set before any PyQt6 import)
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+# Every test process gets fresh XDG roots.  This keeps cache, history, and
+# state observations independent from the developer's desktop and makes a
+# test that forgets an explicit path fail locally rather than mutate a host
+# configuration file.
+_TEST_XDG_ROOT = tempfile.mkdtemp(prefix="loofi-test-xdg-")
+os.environ["HOME"] = os.path.join(_TEST_XDG_ROOT, "home")
+os.environ["XDG_CONFIG_HOME"] = os.path.join(_TEST_XDG_ROOT, "config")
+os.environ["XDG_DATA_HOME"] = os.path.join(_TEST_XDG_ROOT, "data")
+os.environ["XDG_CACHE_HOME"] = os.path.join(_TEST_XDG_ROOT, "cache")
+os.environ["XDG_STATE_HOME"] = os.path.join(_TEST_XDG_ROOT, "state")
+
 import pytest  # noqa: E402
 from unittest.mock import patch, MagicMock  # noqa: E402
 
 # Ensure the app source is on the path for all test modules
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
+
+
+@pytest.fixture(scope="session", autouse=True)
+def _isolated_xdg():
+    yield
+    shutil.rmtree(_TEST_XDG_ROOT, ignore_errors=True)
 
 
 # ── Clear all LRU caches before every test ─────────────────────────────

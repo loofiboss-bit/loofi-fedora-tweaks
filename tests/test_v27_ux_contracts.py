@@ -72,8 +72,11 @@ class TestV27UpdatesJourney:
     def setup_class(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
 
-    @patch("ui.maintenance_updates.SystemManager.get_package_manager", return_value="dnf")
-    def test_source_must_be_checked_and_selected_before_review(self, _manager):
+    @patch("ui.maintenance_updates.SystemManager.get_platform_profile", return_value=MagicMock(
+        deployment_backend=MagicMock(value="dnf5"),
+        package_manager_name="dnf5",
+    ))
+    def test_fresh_source_opens_review_directly(self, _profile):
         tab = _UpdatesSubTab()
         try:
             requests: list[tuple[str, object]] = []
@@ -97,9 +100,6 @@ class TestV27UpdatesJourney:
             tab.overview.set_snapshot(snapshot)
             assert tab.btn_dnf.isEnabled()
 
-            tab.btn_dnf.click()
-            assert requests == []
-            assert tab.update_state.property("updateLifecycleState") == "source_selected"
             tab.btn_dnf.click()
             assert requests == [("update-fedora-system", {})]
             assert tab.update_state.property("updateLifecycleState") == "review"

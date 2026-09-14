@@ -51,14 +51,14 @@ class TestWelcomeSystemSummary(unittest.TestCase):
         self.assertIn("staged", summary.behavior)
         self.assertIn("reboot", summary.behavior)
 
-    def test_other_and_unknown_releases_are_not_claimed_supported(self):
-        outside = collect_welcome_system_summary(
+    def test_fedora_43_and_unknown_releases_use_central_policy(self):
+        supported = collect_welcome_system_summary(
             release={"VERSION_ID": "43", "VARIANT": "Workstation"}, atomic=False
         )
         unknown = collect_welcome_system_summary(
             release={"VARIANT": "Workstation"}, atomic=False
         )
-        self.assertEqual(outside.support_status, "Not verified")
+        self.assertEqual(supported.support_status, "Supported")
         self.assertEqual(unknown.support_status, "Unknown")
 
 

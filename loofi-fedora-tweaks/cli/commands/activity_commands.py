@@ -34,6 +34,7 @@ def handle_activity(
                 else None
             ),
             search=getattr(args, "search", None),
+            cursor=getattr(args, "cursor", None),
             refresh=refresh,
         )
         payload = snapshot.to_dict()

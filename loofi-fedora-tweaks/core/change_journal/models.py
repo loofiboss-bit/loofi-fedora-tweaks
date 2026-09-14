@@ -152,12 +152,14 @@ class ChangeJournalSnapshot:
     generated_at: float
     truncated: bool = False
     schema: str = CHANGE_JOURNAL_SCHEMA
+    next_cursor: str | None = None
 
     def to_dict(self) -> dict[str, Any]:
         return {
             "schema": self.schema,
             "generated_at": self.generated_at,
             "truncated": self.truncated,
+            "next_cursor": self.next_cursor,
             "events": [event.to_dict() for event in self.events],
             "sources": [source.to_dict() for source in self.sources],
         }

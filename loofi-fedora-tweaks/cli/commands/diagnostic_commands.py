@@ -48,6 +48,7 @@ def handle_doctor(
         session = SessionType.UNKNOWN.value
         reboot_pending: bool | None = None
         reboot_status = "unknown"
+        support_status = "unknown"
         platform_ok = False
     else:
         fedora_ver = profile.fedora_version
@@ -56,7 +57,12 @@ def handle_doctor(
         session = profile.session_type.value
         reboot_pending = profile.reboot_pending
         reboot_status = profile.reboot_status.value
-        platform_ok = profile.is_fedora and profile.deployment_backend is not DeploymentBackend.UNKNOWN
+        support_status = profile.support_status
+        platform_ok = (
+            profile.is_fedora
+            and support_status in {"supported", "preview"}
+            and profile.deployment_backend is not DeploymentBackend.UNKNOWN
+        )
 
     # Flatpak and fwupd are optional integrations.  The deployment backend's
     # package tool is the only backend-specific critical dependency.
@@ -89,6 +95,7 @@ def handle_doctor(
     if json_output:
         data = {
             "fedora_version": fedora_ver,
+            "support_status": support_status,
             "deployment_backend": backend,
             "desktop": desktop,
             "session_type": session,
@@ -107,6 +114,7 @@ def handle_doctor(
         print_fn("   System Doctor - Fedora Maintenance Core")
         print_fn("═══════════════════════════════════════════")
         print_fn(f"Fedora Version:      {fedora_ver if fedora_ver is not None else 'Unknown'}")
+        print_fn(f"Support Status:      {support_status}")
         print_fn(f"Deployment Backend:  {backend}")
         print_fn(f"Desktop Environment: {desktop} ({session})")
         print_fn(f"Reboot Status:       {reboot_status}")

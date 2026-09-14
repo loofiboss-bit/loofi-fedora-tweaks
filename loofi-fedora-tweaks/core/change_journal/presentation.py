@@ -31,6 +31,7 @@ class ActivityPresentationState:
     empty_visible: bool = False
     details_visible: bool = False
     refresh_enabled: bool = False
+    load_more_enabled: bool = False
     recovery_review_visible: bool = False
 
 
@@ -75,12 +76,13 @@ def snapshot_state(snapshot: ChangeJournalSnapshot) -> ActivityPresentationState
             empty_visible=True,
             refresh_enabled=True,
         )
-    if snapshot.truncated:
+    if snapshot.truncated or snapshot.next_cursor:
         return ActivityPresentationState(
             "truncated",
-            f"{source_summary} · Showing the newest 100 changes",
+            f"{source_summary} · More changes are available",
             table_visible=True,
             refresh_enabled=True,
+            load_more_enabled=True,
         )
     if partial or unavailable:
         return ActivityPresentationState(

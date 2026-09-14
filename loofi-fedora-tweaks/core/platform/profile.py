@@ -14,6 +14,8 @@ from enum import Enum
 from pathlib import Path
 from typing import Callable, Mapping
 
+from core.fedora_release_policy import FEDORA_RELEASE_POLICY, FedoraSupportStatus
+
 
 class DeploymentBackend(str, Enum):
     """Underlying package and OS deployment technology."""
@@ -93,12 +95,23 @@ class PlatformProfile:
 
     @property
     def is_supported_release(self) -> bool:
-        """Supported stable releases for v27 are Fedora 43 and 44."""
-        return self.is_fedora and self.fedora_version in (43, 44)
+        """Return whether the host is one of the verified stable releases."""
+        return self.is_fedora and FEDORA_RELEASE_POLICY.is_supported_version(
+            str(self.fedora_version)
+        )
 
     @property
     def is_preview_release(self) -> bool:
-        return self.is_fedora and self.fedora_version == 45
+        return self.is_fedora and FEDORA_RELEASE_POLICY.is_preview_version(
+            str(self.fedora_version)
+        )
+
+    @property
+    def support_status(self) -> FedoraSupportStatus:
+        """Return the central release-support classification."""
+        if not self.is_fedora:
+            return "unknown"
+        return FEDORA_RELEASE_POLICY.classify_host(str(self.fedora_version))
 
     @property
     def package_manager_name(self) -> str:
@@ -135,6 +148,7 @@ class PlatformProfile:
         return {
             "os_id": self.os_id,
             "fedora_version": self.fedora_version,
+            "support_status": self.support_status,
             "variant_id": self.variant_id,
             "variant_name": self.variant_name,
             "architecture": self.architecture,

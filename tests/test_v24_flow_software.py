@@ -30,8 +30,11 @@ class TestV24UpdatesFlow(unittest.TestCase):
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
 
-    @patch("ui.maintenance_updates.SystemManager.get_package_manager", return_value="dnf")
-    def test_update_lifecycle_distinguishes_check_available_and_review(self, _manager: MagicMock) -> None:
+    @patch("ui.maintenance_updates.SystemManager.get_platform_profile", return_value=MagicMock(
+        deployment_backend=MagicMock(value="dnf5"),
+        package_manager_name="dnf5",
+    ))
+    def test_update_lifecycle_distinguishes_check_available_and_review(self, _profile: MagicMock) -> None:
         tab = _UpdatesSubTab()
         self.addCleanup(tab.deleteLater)
         requests: list[tuple[str, object]] = []
@@ -47,8 +50,11 @@ class TestV24UpdatesFlow(unittest.TestCase):
         self.assertEqual(requests, [("update-fedora-system", {})])
         self.assertFalse(tab.runner.is_running())
 
-    @patch("ui.maintenance_updates.SystemManager.get_package_manager", return_value="rpm-ostree")
-    def test_atomic_plan_explains_deployment_restart(self, _manager: MagicMock) -> None:
+    @patch("ui.maintenance_updates.SystemManager.get_platform_profile", return_value=MagicMock(
+        deployment_backend=MagicMock(value="rpm_ostree"),
+        package_manager_name="rpm-ostree",
+    ))
+    def test_atomic_plan_explains_deployment_restart(self, _profile: MagicMock) -> None:
         tab = _UpdatesSubTab()
         self.addCleanup(tab.deleteLater)
 
@@ -57,8 +63,11 @@ class TestV24UpdatesFlow(unittest.TestCase):
         self.assertIn("new Atomic deployment", tab._update_guidance())
         self.assertIn("Required to use the new deployment", tab.update_state.message_label.text())
 
-    @patch("ui.maintenance_updates.SystemManager.get_package_manager", return_value="dnf")
-    def test_terminal_and_cancelled_states_are_explicit(self, _manager: MagicMock) -> None:
+    @patch("ui.maintenance_updates.SystemManager.get_platform_profile", return_value=MagicMock(
+        deployment_backend=MagicMock(value="dnf5"),
+        package_manager_name="dnf5",
+    ))
+    def test_terminal_and_cancelled_states_are_explicit(self, _profile: MagicMock) -> None:
         tab = _UpdatesSubTab()
         self.addCleanup(tab.deleteLater)
 

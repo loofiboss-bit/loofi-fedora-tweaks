@@ -61,7 +61,34 @@ class _UpdatesSubTab(BaseTab):
 
     def __init__(self: typing.Any) -> None:
         super().__init__()
-        self.package_manager = SystemManager.get_package_manager()
+        profile_reader = getattr(SystemManager, "get_platform_profile", None)
+        profile_detection_failed = False
+        if callable(profile_reader):
+            try:
+                profile = profile_reader()
+            except (OSError, RuntimeError, TypeError, ValueError):
+                profile = None
+                profile_detection_failed = True
+        else:
+            profile = None
+        if profile is not None:
+            self.deployment_backend = str(
+                getattr(getattr(profile, "deployment_backend", None), "value", "unknown")
+            )
+            self.package_manager = str(
+                getattr(profile, "package_manager_name", "unknown")
+            )
+        elif profile_detection_failed:
+            self.package_manager = "unknown"
+            self.deployment_backend = "unknown"
+        else:
+            self.package_manager = SystemManager.get_package_manager()
+            self.deployment_backend = {
+                "dnf": "dnf5",
+                "dnf5": "dnf5",
+                "rpm-ostree": "rpm_ostree",
+                "bootc": "bootc",
+            }.get(self.package_manager, "unknown")
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
@@ -135,8 +162,12 @@ class _UpdatesSubTab(BaseTab):
 
     def _add_source_actions(self, layout: QVBoxLayout) -> None:
         """Add one explicit select-then-review action per update source."""
-        if self.package_manager == "rpm-ostree":
+        if self.deployment_backend == "rpm_ostree":
             self.btn_dnf = SecondaryButton(self.tr("Review System Update (rpm-ostree)"))
+        elif self.deployment_backend == "bootc":
+            self.btn_dnf = SecondaryButton(self.tr("System updates require manual bootc guidance"))
+        elif self.deployment_backend == "unknown":
+            self.btn_dnf = SecondaryButton(self.tr("System update backend is unknown"))
         else:
             self.btn_dnf = SecondaryButton(self.tr("Review System Update (DNF)"))
         self.btn_dnf.setAccessibleName(self.tr("Select System updates"))
@@ -185,6 +216,10 @@ class _UpdatesSubTab(BaseTab):
             button.setProperty("readyForReview", ready)
             if source != self._selected_source:
                 label = {
+                    "system": self.tr("Review System"),
+                    "flatpak": self.tr("Review Flatpak"),
+                    "firmware": self.tr("Review Firmware"),
+                }[source] if ready else {
                     "system": self.tr("Select System"),
                     "flatpak": self.tr("Select Flatpak"),
                     "firmware": self.tr("Select Firmware"),
@@ -193,7 +228,7 @@ class _UpdatesSubTab(BaseTab):
                     self.tr("%1 updates").replace("%1", label)
                 )
                 button.setAccessibleName(
-                    self.tr("Select %1 updates").replace("%1", label)
+                    self.tr("Review %1 updates" if ready else "Select %1 updates").replace("%1", label)
                 )
 
     def _select_or_review_source(self, source: str) -> None:
@@ -205,6 +240,13 @@ class _UpdatesSubTab(BaseTab):
         }
         button = buttons.get(source)
         if button is None or not button.isEnabled():
+            return
+        if button.property("readyForReview") is True:
+            {
+                "system": self.run_dnf_update,
+                "flatpak": self.run_flatpak_update,
+                "firmware": self.run_fw_update,
+            }[source]()
             return
         if self._selected_source != source:
             previous = buttons.get(self._selected_source or "")
@@ -272,10 +314,20 @@ class _UpdatesSubTab(BaseTab):
 
 
     def _update_guidance(self) -> str:
-        if self.package_manager == "rpm-ostree":
+        if self.deployment_backend == "rpm_ostree":
             return str(self.tr(
                 "System updates create a new Atomic deployment. Review the plan, restart when requested, "
                 "then let Action Center verify the new deployment."
+            ))
+        if self.deployment_backend == "bootc":
+            return str(self.tr(
+                "This host uses bootc. System update and recovery actions remain manual until the backend "
+                "capability is qualified; no update plan is created here."
+            ))
+        if self.deployment_backend == "unknown":
+            return str(self.tr(
+                "The deployment backend could not be identified safely. System update and recovery actions "
+                "remain unavailable until the host is identified."
             ))
         return str(self.tr(
             "System updates change the current Fedora installation. Review one source at a time, "
@@ -329,8 +381,14 @@ class _UpdatesSubTab(BaseTab):
                 button.setProperty("sourceStatus", "available" if count else "up_to_date")
                 button.setProperty("readyForReview", ready)
                 if self._selected_source != source_id:
-                    button.setText(self.tr("Select %1 updates").replace("%1", label))
-                    button.setAccessibleName(self.tr("Select %1 updates").replace("%1", label))
+                    button.setText(
+                        self.tr("Review %1 updates" if ready else "Select %1 updates")
+                        .replace("%1", label)
+                    )
+                    button.setAccessibleName(
+                        self.tr("Review %1 updates" if ready else "Select %1 updates")
+                        .replace("%1", label)
+                    )
         self._set_update_state(
             "available",
             self.tr("Updates available"),
@@ -362,9 +420,18 @@ class _UpdatesSubTab(BaseTab):
 
     def run_dnf_update(self: typing.Any) -> typing.Any:
         translate = getattr(self, "tr", lambda value: value)
+        backend = getattr(self, "deployment_backend", None)
+        if backend in {"bootc", "unknown"}:
+            self._set_update_state(
+                "unavailable",
+                translate("System update unavailable"),
+                self._update_guidance(),
+                kind="warning",
+            )
+            return
         restart = (
             translate("Required to use the new deployment")
-            if getattr(self, "package_manager", "") == "rpm-ostree"
+            if backend == "rpm_ostree"
             else translate("Shown in the plan when required")
         )
         _UpdatesSubTab._request_update_plan(

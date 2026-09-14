@@ -1,6 +1,6 @@
 # Historical Fedora KDE 44 Readiness Note
 
-This filename is retained for links from earlier releases. The v27.0.1 Core
+This filename is retained for links from earlier releases. The v28.0.1 Ease
 readiness model is Fedora-neutral and is not a KDE 44 product gate. It uses
 the immutable `PlatformProfile`, probes desktop-specific checks only when the
 detected desktop requires them, and keeps unknown values unavailable.

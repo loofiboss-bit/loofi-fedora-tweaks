@@ -86,9 +86,9 @@ class NavigationContext:
         contradictory = (backend is DeploymentBackend.DNF5 and is_atomic) or (
             backend_is_atomic and not is_atomic
         )
-        if backend is DeploymentBackend.UNKNOWN or contradictory:
+        if backend in {DeploymentBackend.UNKNOWN, DeploymentBackend.BOOTC} or contradictory:
             variant = FedoraVariant.UNKNOWN
-        elif backend_is_atomic or is_atomic:
+        elif backend is DeploymentBackend.RPM_OSTREE and (backend_is_atomic or is_atomic):
             variant = FedoraVariant.ATOMIC
         else:
             variant = FedoraVariant.TRADITIONAL

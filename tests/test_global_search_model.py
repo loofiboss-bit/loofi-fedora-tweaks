@@ -100,10 +100,15 @@ class TestGlobalSearchModel(unittest.TestCase):
             if result.action_id is not None
         ]
 
-        self.assertEqual(
-            {result.action_id for result in results},
-            {"dnf-clean-all", "restart-failed-service", "fstrim-all"},
+        action_ids = {result.action_id for result in results}
+        self.assertTrue(
+            {"dnf-clean-all", "restart-failed-service", "fstrim-all"}.issubset(
+                action_ids
+            )
         )
+        self.assertIn("update-fedora-system", action_ids)
+        self.assertIn("update-flatpaks", action_ids)
+        self.assertIn("update-firmware", action_ids)
         self.assertEqual(
             {result.route_id for result in results},
             {"maintenance:action-center"},
@@ -114,6 +119,26 @@ class TestGlobalSearchModel(unittest.TestCase):
             if result.action_id == "restart-failed-service"
         )
         self.assertEqual(restart.risk, "medium")
+
+    def test_task_words_are_order_independent_and_use_catalog_actions(self):
+        model = GlobalSearchModel(_traditional_context())
+
+        free_space = {
+            result.action_id
+            for result in model.search("space free disk", search_filter=SearchFilter.ACTIONS)
+        }
+        updates = {
+            result.action_id
+            for result in model.search("updates", search_filter=SearchFilter.ACTIONS)
+        }
+        slow = {
+            result.action_id
+            for result in model.search("system slow", search_filter=SearchFilter.ACTIONS)
+        }
+
+        self.assertIn("fstrim-all", free_space)
+        self.assertIn("update-fedora-system", updates)
+        self.assertIn("restart-failed-service", slow)
 
     def test_configured_quick_actions_become_ranked_suggestions(self):
         model = GlobalSearchModel(

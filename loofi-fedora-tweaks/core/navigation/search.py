@@ -14,6 +14,7 @@ from .destinations import get_destination
 from .manifest import NavigationRoute, all_routes, resolve
 from .models import FedoraVariant, NavigationContext, NavigationDecision
 from .policy import NavigationPolicy
+from core.actions.catalog import ActionCatalog
 
 
 class SearchFilter(Enum):
@@ -49,55 +50,16 @@ class SearchResult:
     suggested: bool = False
 
 
-@dataclass(frozen=True)
-class _ActionDefinition:
-    id: str
-    label: str
-    description: str
-    route_id: str
-    keywords: tuple[str, ...]
-    risk: str
-    action_id: str | None = None
-    allowed_variants: frozenset[FedoraVariant] = frozenset(
-        {FedoraVariant.TRADITIONAL, FedoraVariant.ATOMIC}
-    )
-    required_capabilities: frozenset[str] = frozenset()
-
-
-_ACTION_CENTER_ACTIONS: tuple[_ActionDefinition, ...] = (
-    _ActionDefinition(
-        id="action-center:dnf-clean-all",
-        label="Clean package metadata cache",
-        description="Open Action Center to review and plan Traditional Fedora cache cleanup.",
-        route_id="maintenance:action-center",
-        keywords=("dnf", "dnf5", "cache", "metadata", "cleanup"),
-        risk="low",
-        action_id="dnf-clean-all",
-        allowed_variants=frozenset({FedoraVariant.TRADITIONAL}),
-        # PlatformProfile exposes the canonical DNF5 capability.  Keep the
-        # search index aligned with that vocabulary so a detected Fedora
-        # Workstation actually surfaces the cache-clean review action.
-        required_capabilities=frozenset({"dnf5"}),
-    ),
-    _ActionDefinition(
-        id="action-center:restart-failed-service",
-        label="Restart a failed service",
-        description="Open Action Center to select, review, and plan a failed-service restart.",
-        route_id="maintenance:action-center",
-        keywords=("systemd", "service", "failed", "restart"),
-        risk="medium",
-        action_id="restart-failed-service",
-    ),
-    _ActionDefinition(
-        id="action-center:fstrim-all",
-        label="Trim supported filesystems",
-        description="Open Action Center to review storage support and plan filesystem trim.",
-        route_id="maintenance:action-center",
-        keywords=("fstrim", "ssd", "discard", "storage"),
-        risk="low",
-        action_id="fstrim-all",
-    ),
-)
+_ACTION_ALIASES: dict[str, tuple[str, ...]] = {
+    "dnf-clean-all": ("free disk space", "cleanup", "cache"),
+    "fstrim-all": ("free disk space", "ssd", "storage"),
+    "autoremove-packages": ("free disk space", "unused packages", "cleanup"),
+    "vacuum-journal": ("free disk space", "cleanup", "logs"),
+    "update-fedora-system": ("updates", "update", "system"),
+    "update-flatpaks": ("updates", "update", "flatpak"),
+    "update-firmware": ("updates", "update", "firmware"),
+    "restart-failed-service": ("slow system", "slow", "service", "system"),
+}
 
 
 class GlobalSearchModel:
@@ -222,15 +184,25 @@ class GlobalSearchModel:
             )
 
     def _action_center_results(self) -> Iterable[SearchResult]:
-        for definition in _ACTION_CENTER_ACTIONS:
-            if self._context.fedora_variant not in definition.allowed_variants:
+        route = resolve("maintenance:action-center")
+        if route is None:
+            return
+        for definition in ActionCatalog().list():
+            if definition.operation_class == "manual_only":
                 continue
-            if not definition.required_capabilities.issubset(
-                self._context.capabilities
-            ):
+            allowed_variants = frozenset(
+                FedoraVariant(value)
+                for value in definition.supported_variants
+                if value in {item.value for item in FedoraVariant}
+            )
+            if self._context.fedora_variant not in allowed_variants:
                 continue
-            route = resolve(definition.route_id)
-            if route is None:
+            required_capabilities: frozenset[str] = frozenset()
+            if allowed_variants == frozenset({FedoraVariant.TRADITIONAL}):
+                required_capabilities = frozenset({"dnf5"})
+            elif allowed_variants == frozenset({FedoraVariant.ATOMIC}):
+                required_capabilities = frozenset({"rpm-ostree"})
+            if not required_capabilities.issubset(self._context.capabilities):
                 continue
             policy = NavigationPolicy.evaluate(route.id, self._context)
             if (
@@ -239,14 +211,20 @@ class GlobalSearchModel:
             ):
                 continue
             yield self._result_for_route(
-                result_id=definition.id,
-                label=definition.label,
-                description=definition.description,
+                result_id=f"action-center:{definition.id}",
+                label=definition.title,
+                description=f"Open Action Center to review and plan {definition.description.lower()}",
                 kind=SearchResultKind.ACTION,
                 route=route,
-                keywords=definition.keywords,
-                risk=definition.risk,
-                action_id=definition.action_id,
+                keywords=(
+                    definition.id,
+                    definition.capability_id,
+                    definition.title,
+                    definition.description,
+                    *_ACTION_ALIASES.get(definition.id, ()),
+                ),
+                risk=str(getattr(definition.risk_level, "value", definition.risk_level)),
+                action_id=definition.id,
                 pinned=policy.is_favorite,
             )
 
@@ -288,6 +266,22 @@ class GlobalSearchModel:
         priority = (20 if result.pinned else 0) + (10 if result.suggested else 0)
         if not query:
             return 1 + priority
+        tokens = tuple(token for token in query.casefold().split() if token)
+        fields = (
+            result.label.casefold(),
+            result.destination_label.casefold(),
+            result.description.casefold(),
+            *(keyword.casefold() for keyword in result.keywords),
+        )
+        if not all(any(token in field for field in fields) for token in tokens):
+            return 0
+        if len(tokens) > 1:
+            phrase = " ".join(tokens)
+            if phrase in result.label.casefold():
+                return 120 + priority
+            if phrase in result.description.casefold():
+                return 80 + priority
+            return 60 + sum(5 for token in tokens if token in result.label.casefold()) + priority
         label = result.label.casefold()
         destination = result.destination_label.casefold()
         description = result.description.casefold()

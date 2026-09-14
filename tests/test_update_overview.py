@@ -108,6 +108,18 @@ class TestUpdateOverview(unittest.TestCase):
         self.responses["system"] = ActionResult(False, "offline", 1)
         self.assertEqual([source.status for source in self.service.check().sources], ["error", "up_to_date", "up_to_date"])
 
+    def test_failed_probe_preserves_previous_candidates(self):
+        self.responses["system"] = ActionResult(False, "", 100, stdout="kernel.x86_64 6.9-1.fc44 updates\n")
+        first = self.service.check().sources[0]
+        self.responses["system"] = ActionResult(False, "offline", 1)
+
+        second = self.service.check().sources[0]
+
+        self.assertEqual(first.status, "available")
+        self.assertEqual(second.status, "error")
+        self.assertEqual(second.error_code, "query_failed")
+        self.assertEqual(second.items, first.items)
+
     def test_missing_tools_are_distinct(self):
         self.which.side_effect = lambda tool: None if tool == "flatpak" else tool
         snapshot = self.service.check()

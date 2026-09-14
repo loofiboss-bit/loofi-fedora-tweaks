@@ -529,8 +529,27 @@ class ActionCenterOrchestrator:
 
     def _host_target_decision(self, target: str) -> PolicyDecision | None:
         """Keep preview hosts read-only even if a caller claims the stable target."""
+        profile_reader = getattr(self.runtime, "platform_profile", None)
+        profile = profile_reader() if callable(profile_reader) else None
+        profile_status = str(getattr(profile, "support_status", ""))
+        if profile_status == "unknown":
+            return PolicyDecision(
+                False,
+                "host_release_unknown",
+                "The Fedora release is outside the verified support policy.",
+                "Use a supported Fedora 43 or 44 host, or review the platform manually.",
+                {"target": target, "support_status": profile_status},
+            )
         version_reader = getattr(self.runtime, "fedora_version", None)
         host_version = str(version_reader() if callable(version_reader) else "").strip()
+        if host_version and self.release_policy.classify_host(host_version) == "unknown":
+            return PolicyDecision(
+                False,
+                "host_release_unknown",
+                f"Fedora {host_version} is outside the verified support policy.",
+                "Use Fedora 43 or 44 for supported maintenance actions.",
+                {"target": target, "host_fedora_version": host_version},
+            )
         if self.release_policy.is_stable_target(target) and self.release_policy.host_is_preview(host_version):
             return PolicyDecision(
                 False,
@@ -543,6 +562,25 @@ class ActionCenterOrchestrator:
 
     def _variant_decision(self, definition: ActionDefinition) -> PolicyDecision | None:
         """Reject an action when its declared Fedora variant excludes this host."""
+        profile_reader = getattr(self.runtime, "platform_profile", None)
+        profile = profile_reader() if callable(profile_reader) else None
+        backend = getattr(getattr(profile, "deployment_backend", None), "value", getattr(profile, "deployment_backend", ""))
+        if backend == "unknown":
+            return PolicyDecision(
+                False,
+                "backend_unknown",
+                "The deployment backend could not be verified.",
+                "Review the host manually before making a system change.",
+                {"deployment_backend": backend},
+            )
+        if backend == "bootc":
+            return PolicyDecision(
+                False,
+                "bootc_manual_only",
+                "bootc host changes require a qualified manual workflow.",
+                "Follow the bootc host documentation and verify the result manually.",
+                {"deployment_backend": backend},
+            )
         variant = "atomic" if self.runtime.is_atomic() else "traditional"
         if variant in definition.supported_variants:
             return None

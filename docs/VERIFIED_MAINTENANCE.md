@@ -1,6 +1,6 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v27.0.1 "Core" uses **Changes** as the one trust boundary
+Loofi Fedora Tweaks v28.0.1 "Ease" uses **Changes** as the one trust boundary
 for persistent system changes from both GUI and CLI.
 
 ## The lifecycle

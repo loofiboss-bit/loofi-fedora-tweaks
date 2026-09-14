@@ -49,6 +49,7 @@ class ChangeJournalService:
         statuses: Iterable[str] | None = None,
         reboot_required: bool | None = None,
         search: str | None = None,
+        cursor: str | None = None,
         refresh: bool = False,
     ) -> ChangeJournalSnapshot:
         bounded_limit = min(MAX_LIMIT, max(1, int(limit)))
@@ -63,6 +64,7 @@ class ChangeJournalService:
             tuple(sorted(selected_statuses)),
             reboot_required,
             normalized_search,
+            str(cursor or "")[:160],
         )
         now = float(self.clock())
         if (
@@ -78,7 +80,21 @@ class ChangeJournalService:
         for adapter in self.sources:
             if selected and adapter.source not in selected:
                 continue
-            result = adapter.collect(since=since)
+            try:
+                result = adapter.collect(since=since)
+            except (OSError, RuntimeError, TypeError, ValueError) as exc:
+                # One broken local source must not erase evidence collected from
+                # the other sources.  The source remains visible as unavailable.
+                source_statuses.append(
+                    ChangeSourceStatus(
+                        adapter.source,
+                        "unavailable",
+                        now,
+                        "source_read_failed",
+                        type(exc).__name__,
+                    )
+                )
+                continue
             source_statuses.append(result.status)
             for event in result.events:
                 if since is not None and event.occurred_at < float(since):
@@ -97,12 +113,22 @@ class ChangeJournalService:
             key=lambda event: (-event.occurred_at, event.source, event.event_id),
         )
         correlated = self._correlate(ordered)
-        truncated = len(correlated) > bounded_limit
+        start = 0
+        if cursor:
+            cursor_value = str(cursor)[:160]
+            for index, event in enumerate(correlated):
+                if event.event_id == cursor_value:
+                    start = index + 1
+                    break
+        page = correlated[start : start + bounded_limit]
+        next_cursor = page[-1].event_id if start + bounded_limit < len(correlated) and page else None
+        truncated = next_cursor is not None
         snapshot = ChangeJournalSnapshot(
-            events=tuple(correlated[:bounded_limit]),
+            events=tuple(page),
             sources=tuple(sorted(source_statuses, key=lambda status: status.source)),
             generated_at=now,
             truncated=truncated,
+            next_cursor=next_cursor,
         )
         self._cache_key = key
         self._cache_at = now

@@ -1,6 +1,6 @@
 {
-  "version": "27.0.1",
-  "codename": "Core",
+  "version": "28.0.1",
+  "codename": "Ease",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 18,
   "tab_names": [
@@ -25,13 +25,13 @@
   ],
   "test_file_count": 285,
   "utils_module_count": 75,
-  "test_count": "4853",
-  "coverage": "87.0",
-  "active_version": "",
+  "test_count": "unverified",
+  "coverage": "unverified",
+  "active_version": "28.0.1",
   "next_version": "",
-  "roadmap_status": "stable",
-  "pipeline_version": "v27.0.1",
-  "pipeline_status": "complete",
+  "roadmap_status": "active",
+  "pipeline_version": "v28.0.1",
+  "pipeline_status": "active",
   "python_version": "3.12",
   "framework": "PyQt6"
 }
