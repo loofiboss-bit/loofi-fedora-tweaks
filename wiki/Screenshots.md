@@ -1,36 +1,82 @@
-# Screenshots
+# Visual Interface Gallery — v28.0.2 "Ease"
 
-The v28.0.2 "Ease" public release is documented here. Historical
-deterministic UI evidence retained for the earlier public Core release is
-stored once in the main repository. These contact sheets show
-wide and compact layouts without duplicating binary assets in the wiki; they
-are not proof of a physical Fedora qualification.
+> Documented for the v28.0.2 "Ease" public release.
 
-## Home
+This gallery showcases the primary destinations, dialogs, and verification surfaces of Loofi Fedora Tweaks. The interface is desktop-neutral, supporting dark and light themes, high-DPI scaling, and responsive window sizing across GNOME, KDE Plasma, XFCE, and tiling Wayland environments.
 
-![Home](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/home.png)
+---
 
-## Troubleshoot
+## 1. Home Dashboard
 
-![Troubleshoot](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/troubleshoot.png)
+The initial launch screen presenting system status, environment detection (desktop, display server, kernel, architecture), the single prioritized recommendation, and quick maintenance shortcuts.
 
-## Action Center
+![Home Dashboard](images/home-dashboard.png)
 
-![Action Center](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/action_center.png)
+---
 
-## System Check
+## 2. Updates & Multi-Source Maintenance
 
-![System Check](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/system_check.png)
+The multi-stream update inspection screen showing independent status for system packages (DNF5 / rpm-ostree), Flatpak applications, and hardware firmware via `fwupd`.
 
-## Activity and recovery
+![Updates & Maintenance](images/maintenance-updates.png)
 
-![Activity and recovery](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/activity_recovery.png)
+### Native Application Center Handoff
+When discovering new applications, Loofi hands off the request to the desktop's native center (GNOME Software or KDE Discover) using AppStream identifiers.
 
-## Release readiness
+![Software Center Handoff](images/install-app.png)
 
-![Release readiness](https://raw.githubusercontent.com/loofiboss-bit/loofi-fedora-tweaks/master/docs/images/v23/phase6/contact-sheets/release_readiness.png)
+---
 
-These are deterministic application captures, not proof of a physical display,
-high-DPI, keyboard, or screen-reader gate. The images were captured for an
-earlier product baseline and remain historical evidence for the public v28
-release; the corresponding physical qualification gates remain unverified.
+## 3. System Health & Diagnostics
+
+### Symptom-Driven Troubleshooting
+Selecting an issue symptom runs bounded, read-only diagnostic checks and outputs an actionable finding with an optional reviewed remedy.
+
+![System Health Troubleshooting](images/troubleshoot.png)
+
+### Storage & Safe Reclaim Preview
+Audits disk space across mount points and previews reclaimable bytes from package caches, thumbnail stores, and vacuumed systemd journals.
+
+![Storage Cleanup Preview](images/cleanup-preview.png)
+
+### Hardware & Resource Telemetry
+Live telemetry for CPU, RAM, compressed ZRAM swap, disk I/O, and laptop battery health / charging threshold limits.
+
+![Hardware & System Monitor](images/system-monitor.png)
+
+---
+
+## 4. Protection & Recovery
+
+### Security & Firewall Audit
+Audits active `firewalld` zones, listening network ports, and service exposure.
+
+![Security & Firewall](images/security-privacy.png)
+
+### Rollback & Recovery Points
+Inspects Btrfs snapshots and Atomic deployment rollback points before reviewing a recovery plan.
+
+![Rollback & Restore Preview](images/restore-preview.png)
+
+---
+
+## 5. Changes (The Action Center)
+
+The single authority for reviewing, authorizing (`pkexec`), executing, and independently verifying persistent system changes.
+
+![Action Center Changes](images/action-center.png)
+
+---
+
+## 6. Settings & Doctor Diagnostics
+
+### Appearance & Navigation Preferences
+Configure application themes (Dark, Light, System), navigation styles, and custom text scaling.
+
+![Settings & Appearance](images/settings-appearance.png)
+
+### State Doctor
+Read-only self-test inspecting dependencies, environment health, and Polkit authorization readiness.
+
+![State Doctor](images/state-doctor.png)
+

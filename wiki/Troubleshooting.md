@@ -1,69 +1,119 @@
-# Troubleshooting — v27.0.1 "Core"
+# Troubleshooting Runbooks — v28.0.2 "Ease"
 
-Start with the read-only diagnostics:
+When experiencing issues with Loofi Fedora Tweaks or underlying system services, follow these diagnostic runbooks. Loofi is built to fail closed: when a capability is missing or unverified, it reports the exact reason rather than guessing.
+
+---
+
+## 1. Initial Diagnostic Triad
+
+Always begin with these three read-only diagnostic checks:
 
 ```bash
+# 1. Inspect dependency health, Polkit agent, and environment
 loofi-fedora-tweaks --cli doctor
+
+# 2. Inspect platform facts and detected deployment backend
 loofi-fedora-tweaks --cli --json info
+
+# 3. Export a sanitized diagnostic archive
 loofi-fedora-tweaks --cli support-bundle
 ```
 
-Review the support bundle before sharing it. Remove private paths or other
-information that is not needed for the issue.
+The support bundle archive is created in your current working directory. It contains redacted environment facts and recent change journal records.
 
-## The application does not start
+---
 
-Check Python, the installed binary, and the desktop runtime:
+## 2. The Application Does Not Launch
 
-```bash
-python3 --version
-command -v loofi-fedora-tweaks
-loofi-fedora-tweaks --version
-```
+### Symptom: Command returns immediately or shows error
+1. **Verify Binary & Version**:
+   ```bash
+   which loofi-fedora-tweaks
+   loofi-fedora-tweaks --version
+   ```
+2. **Check for Prohibited Root Launch**:
+   If you launched with `sudo loofi-fedora-tweaks`, the application will abort. Loofi must run as a regular desktop user.
+3. **Qt Platform Plugin Errors**:
+   On Wayland sessions, if Qt cannot initialize the Wayland client:
+   ```bash
+   # Test with explicit Wayland platform
+   QT_QPA_PLATFORM=wayland loofi-fedora-tweaks
 
-For a source checkout:
+   # Fallback test with X11 / XWayland
+   QT_QPA_PLATFORM=xcb loofi-fedora-tweaks
+   ```
+4. **Inspect Application Logs**:
+   Application log files are stored in:
+   `~/.local/share/loofi-fedora-tweaks/logs/`
 
-```bash
-python3 -m venv .venv
-source .venv/bin/activate
-python -m pip install -e '.[dev]'
-PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py --version
-```
+---
 
-Do not run the GUI as root. If Qt reports a missing platform plugin, repair the
-desktop's normal Qt/Wayland packages or use the session's documented fallback.
+## 3. Authorization Dialog Does Not Appear
 
-## A source is unavailable
+### Symptom: Applying a change hangs or fails with authorization error
+Persistent system changes require privilege escalation via Polkit through `pkexec`.
+1. **Verify `pkexec` binary**:
+   ```bash
+   command -v pkexec
+   pkexec --version
+   ```
+2. **Check Active Desktop Polkit Agent**:
+   Ensure your desktop environment has a running authentication agent:
+   - GNOME: `/usr/libexec/polkit-gnome-authentication-agent-1`
+   - KDE: `/usr/libexec/polkit-kde-authentication-agent-1`
+   - Sway / Hyprland: `polkit-gnome` or `polkit-kde-agent`
+3. **User Cancellation**:
+   If the Polkit prompt was dismissed or timed out, the change remains staged in **Changes**. You can open **Changes** and trigger execution again.
 
-Open **Updates & Apps** and inspect the source details. System packages,
-Flatpak, and firmware are independent. Missing binaries, remotes, unsupported
-deployment backends, and failed probes stay unavailable/failed; they are not
-reported as up to date.
+---
 
-## Authorization does not appear
+## 4. Package Manager or DNF Lock Contention
 
-Reviewed persistent changes use the desktop's standard Polkit agent through
-`pkexec`:
+### Symptom: Update checks or package changes fail with lock error
+DNF5 protects its state using lock files. If another package transaction (e.g. background check from GNOME Software or KDE Discover) is running:
+- Do not run `kill -9` on DNF5 processes.
+- Allow the active transaction to complete.
+- Verify whether other package managers are running:
+  ```bash
+  ps aux | grep -E 'dnf|rpm-ostree|packagekit'
+  ```
+- Once clear, re-run `loofi updates check`.
 
-```bash
-command -v pkexec
-pkexec --version
-```
+---
 
-If authorization is cancelled, the plan remains unexecuted. Start it again
-from **Changes** after the desktop agent is available. Loofi does not install
-custom policy files or store credentials.
+## 5. Updates & Apps Shows Source as "Unavailable"
 
-## A change is stuck or needs a restart
+### Symptom: One source shows an error or unavailable status
+Loofi treats system packages, Flatpaks, and firmware as separate sources.
+- **System Packages**: On Atomic hosts, DNF is intentionally unavailable; `rpm-ostree` is used instead.
+- **Flatpak**: If the `flatpak` binary is missing or no remotes are configured, Flatpak is marked unavailable.
+- **Firmware (`fwupd`)**: Ensure the `fwupd` daemon is running:
+  ```bash
+  systemctl status fwupd.service
+  ```
 
-Inspect the plan/run in **Changes**. Do not start a second package transaction.
-After using the normal desktop restart controls, run the explicit verification
-step for the recorded run. Loofi never reboots, retries, or rolls back
-automatically.
+---
 
-## Atomic or bootc host
+## 6. Atomic Staged Deployment Awaiting Reboot
 
-Run `loofi --json info` and confirm the deployment backend. A staged deployment
-may require a restart; unknown or unsupported operations remain unavailable.
-See [Atomic Fedora Support](Atomic-Fedora-Support) for the capability-aware
-workflow.
+### Symptom: Update executed, but system still reports previous versions
+On Fedora Silverblue, Kinoite, and Atomic desktops, `rpm-ostree` creates staged deployment trees:
+1. The upgrade is downloaded and staged into a new ostree commit.
+2. The change only becomes active when you reboot.
+3. Loofi deliberately **does not** reboot your machine automatically.
+4. Restart when convenient using normal desktop controls.
+5. After reboot, run:
+   ```bash
+   loofi changes verify RUN_ID
+   ```
+
+---
+
+## 7. Reporting an Issue
+
+When opening an issue on [GitHub Issues](https://github.com/loofiboss-bit/loofi-fedora-tweaks/issues), include:
+1. Fedora release and architecture (`cat /etc/fedora-release && uname -m`).
+2. Desktop environment and display server (Wayland or X11).
+3. Output of `loofi-fedora-tweaks --cli doctor`.
+4. Relevant excerpts from the support bundle.
+

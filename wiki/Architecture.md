@@ -1,37 +1,71 @@
-# Architecture — v27.0.1 "Core"
+# Architecture — v28.0.2 "Ease"
 
-The repository's canonical architecture contract is
-[ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md)
-and [.workflow/specs/arch-v27.0.1.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/.workflow/specs/arch-v27.0.1.md).
+Loofi Fedora Tweaks is structured as a layered, modular desktop application with clean boundaries between UI presentation, domain logic, system service probing, and execution authority.
 
-## Runtime shape
+The canonical architecture contract is defined in [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md) and [.workflow/specs/arch-v28.0.2.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/.workflow/specs/arch-v28.0.2.md).
+
+---
+
+## 1. Runtime Layering
 
 ```text
-main.py
-├── GUI: ui/ → core/ + services/ (typed state and signals)
-└── CLI: cli/ → core/ + services/ (no UI imports)
+                     main.py
+                        │
+         ┌──────────────┴──────────────┐
+         ▼                             ▼
+    GUI (ui/)                      CLI (cli/)
+   (PyQt6 views)              (Argparse commands)
+         │                             │
+         └──────────────┬──────────────┘
+                        ▼
+                  core/ (Domain)
+     ├── PlatformProfile (Detection authority)
+     ├── ProductCatalog (Navigation & capability contracts)
+     ├── ActionCenterOrchestrator (Planning & mutation authority)
+     └── Storage / State (Atomic persistence & Journal)
+                        │
+                        ▼
+                services/ (Probes)
+     ├── DNF5 / rpm-ostree / bootc adapters
+     ├── Flatpak / fwupd inspection
+     ├── Systemd / Journal / Health checks
+     └── Hardware / Battery / ZRAM monitors
 ```
 
-The five primary destinations are Home, Updates & Apps, System Health,
-Protection & Recovery, and Changes. Settings is a header-level route.
+---
 
-## Boundaries
+## 2. Layer Boundaries & Responsibilities
 
-- `core/` owns immutable contracts, catalog policy, Action Center planning,
-  persistence, diagnostics, and verification.
-- `services/` owns bounded, PyQt-free host probes and adapters.
-- `ui/` owns presentation and accessibility; it does not run subprocesses.
-- `cli/` parses the reduced public interface and serializes typed results; it
-  does not import UI modules or execute arbitrary commands.
-- `PlatformProfile` is the shared Fedora version/desktop/session/backend
-  authority and fails closed when detection is unknown.
+- **`ui/` (Presentation)**:
+  Owns PyQt6 widgets, accessibility hints, theme styling, and responsive layout. UI code **never** directly invokes shell commands, package managers, or mutating file operations.
+- **`cli/` (Command-Line Interface)**:
+  Parses bounded CLI arguments and emits formatted human text or structured `--json` envelopes. Completely decoupled from Qt; imports zero UI code.
+- **`core/` (Domain Logic & Contracts)**:
+  Owns business logic, `PlatformProfile` detection, the immutable `ProductCatalog`, Action Center planning, mutation lease locking, and independent verification.
+- **`services/` (Probing & Adapters)**:
+  Performs bounded, read-only system inspection across systemd, DNF5, ostree, Flatpak, and hardware sysfs nodes. Free of Qt dependencies.
+- **`utils/` (Low-Level Primitives)**:
+  File I/O helpers, safe subprocess execution wrappers, and JSON serialization.
 
-## Distribution boundary
+---
 
-The supported artifact is one COPR-backed RPM (plus a development sdist). The
-Core release has no background daemon, local Web API, specialist suite,
-external plugin execution, custom Polkit policy package, or Flatpak bundle.
+## 3. PlatformProfile: The Detection Authority
 
-Older wiki pages may describe historical releases; they are not current runtime
-or packaging instructions. See the current [CLI reference](CLI-Reference),
-[Installation](Installation), and [Security Model](Security-Model).
+`PlatformProfile` is the shared, immutable authority across both GUI and CLI. It queries and caches:
+- Fedora version (`43`, `44`, `45-preview`, or `unknown`).
+- Deployment backend (`dnf5`, `rpm_ostree`, `bootc`, or `unknown`).
+- Desktop environment (`GNOME`, `KDE`, `XFCE`, `Sway`, `generic`).
+- Display server (`wayland` or `x11`).
+
+If an unrecognized backend or distribution is detected, `PlatformProfile` **fails closed**, disabling incompatible mutation workflows rather than assuming traditional Fedora defaults.
+
+---
+
+## 4. Single Mutation Authority
+
+All persistent system modifications must be constructed as typed Action Center plans within `core.action_center`.
+- UI buttons and CLI commands only stage plans.
+- Mutation leases prevent concurrent write operations.
+- Execution requires explicit user authorization via Polkit (`pkexec`).
+- Verification is performed post-execution using an independent probe.
+

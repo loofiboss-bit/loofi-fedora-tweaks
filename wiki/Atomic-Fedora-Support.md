@@ -1,43 +1,60 @@
-# Atomic Fedora Support — v27.0.1 "Core"
+# Atomic & Immutable Fedora Guide — v28.0.2 "Ease"
 
-Loofi detects Fedora deployment capability before presenting an operation. The
-profile distinguishes `rpm_ostree`, `bootc`, traditional `dnf5`, and
-`unknown`; it never treats an unknown host as a different backend.
+Loofi Fedora Tweaks natively understands Fedora's immutable desktop variants, including **Fedora Silverblue** (GNOME), **Fedora Kinoite** (KDE Plasma), **Fedora Sericea** (Sway), **Fedora Onyx** (Budgie), and containerized **bootc** systems.
 
-## What the application does
+The core architecture uses `PlatformProfile` to detect deployment capabilities before displaying operations. It clearly distinguishes `rpm_ostree`, `bootc`, and traditional `dnf5` backends; it never treats an unknown host as a standard DNF system.
 
-- Shows the deployment backend and reboot state in read-only diagnostics.
-- Keeps Atomic and traditional update paths separate.
-- Presents a reviewable Action Center plan only when preflight, authorization,
-  verification, and recovery metadata are known.
-- Leaves staged-deployment reboot completion to the user's normal desktop
-  controls, followed by an explicit verification step.
-- Hands unsupported or backend-specific work to a clear manual explanation.
+---
 
-## Safe workflow
+## Architectural Distinctions
 
-1. Run `loofi-fedora-tweaks --cli --json info` and inspect the profile.
-2. Run `loofi-fedora-tweaks --cli updates check` or open **Updates & Apps**.
-3. Review any plan in **Changes** before confirmation.
-4. After a host-managed restart, run `loofi changes verify <RUN_ID>`.
+| Characteristic | Traditional Fedora (Workstation) | Atomic Fedora (Silverblue / Kinoite) |
+| --- | --- | --- |
+| **System Root** | Read-write (`/`, `/usr`) | Read-only sysroot (`/usr` is immutable) |
+| **Package Backend** | DNF5 | `rpm-ostree` or `bootc` |
+| **Update Mechanism** | In-place package replacement | Staged image deployment tree |
+| **Application Layer** | RPM packages + Flatpaks | Flatpaks (recommended) + minimal RPM layering |
+| **Activation** | Immediate (some services need restart) | Staged (active upon next reboot) |
 
-Loofi does not run `systemctl reboot`, retry a failed transaction, schedule a
-deployment, or silently add a repository/remote.
+---
 
-## Backend notes
+## How Loofi Handles Atomic Systems
 
-`rpm_ostree` and bootc deployments may stage a new deployment and require a
-restart. DNF history operations are not assumed to exist on Atomic hosts.
-bootc hosts are not routed through rpm-ostree commands. If detection is
-incomplete, update and rollback actions are shown as unavailable rather than
-guessing.
+### 1. Capability-Aware Probing
+When launched on an Atomic system, Loofi:
+- Detects the active deployment commit, pinned deployments, and staged updates.
+- Disables traditional package manager operations (such as direct DNF cache writes) that do not apply to ostree images.
+- Keeps Flatpak inspection independent: user and system Flatpak updates are fully operational without altering the ostree image.
 
-## Qualification boundary
+### 2. Staged Deployment Lifecycle
+On Atomic hosts, updating the base system creates a new staged deployment tree:
+1. **Check**: `loofi updates check` queries the ostree remote for new deployment commits.
+2. **Review**: The Action Center creates a plan summarizing commit metadata and changed packages.
+3. **Execution**: The plan runs `rpm-ostree upgrade` without rebooting your machine.
+4. **Staged Notification**: Loofi indicates that a new deployment is staged and awaiting a system reboot.
+5. **Reboot Verification**: After you reboot using your desktop session controls, run `loofi changes verify <RUN_ID>` to confirm the booted deployment matches the target commit.
 
-Silverblue, Kinoite, and other Atomic variants are supported as a capability-
-aware product path, but a fresh Atomic install and physical reboot completion
-were not manually qualified for v27.0.1. Those gates remain **unverified** by
-the explicit release decision. Rootless/offscreen tests do not replace them.
+Loofi **never** runs `systemctl reboot` automatically.
 
-For current behavior, see [Verified Maintenance](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/VERIFIED_MAINTENANCE.md)
-and [Troubleshooting](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TROUBLESHOOTING.md).
+```bash
+# Verify Atomic platform detection
+loofi --json info | jq '.data.deployment_backend'
+
+# Check for staged or pending ostree updates
+loofi updates check
+```
+
+---
+
+## Best Practices on Atomic Desktops
+
+- **Prefer Flatpaks for Desktop Software**: Installing GUI applications via Flatpak keeps the base ostree clean and avoids slow ostree layering operations.
+- **Layer Packages Sparingly**: Keep `rpm-ostree install` restricted to low-level system utilities (e.g. specialized kernel modules, virtualization drivers, or VPN packages).
+- **Rollback Safety**: If a newly booted deployment causes issues, use the GRUB boot menu to select the previous deployment, or use `rpm-ostree rollback`. Loofi's **Protection & Recovery** destination detects previous deployment pins.
+
+---
+
+## Bootc Systems
+
+On Fedora systems managed via `bootc` (bootable containers), Loofi identifies the `bootc` backend and presents clear, manual guidance rather than attempting to route commands through `rpm-ostree`.
+

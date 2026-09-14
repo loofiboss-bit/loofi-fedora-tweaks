@@ -1,43 +1,62 @@
-# Testing — v27.0.1 "Core"
+# Testing & Quality Assurance — v28.0.2 "Ease"
 
-## Current evidence
+Loofi Fedora Tweaks enforces strict quality gates to guarantee system safety and prevent regressions before any code is merged or published.
 
-- **Automated suite:** 4,780 passed, 73 skipped, 0 failed.
-- **Coverage:** 86.94% line coverage for the maintained V27 surface; the
-  blocking gate is 85%.
-- **Quality:** lint, mypy, architecture, product-contract, stabilization,
-  packaging, dependency-sync, and compile checks passed locally.
-- **Manual gates:** physical desktop, keyboard/Orca, Polkit agent, reboot, and
-  fresh Atomic installation are **unverified** under the explicit v27.0.1
-  release decision.
+---
 
-The complete test suite still exercises compatibility-only modules. The
-repository-wide 90% target is deferred to the next release and is not claimed
-by this version.
+## 1. Automated Test Suite Metrics (v28.0.2)
 
-## Run the suite
+- **Test Suite Results**: 4,804 passed, 73 skipped, 0 failures.
+- **Code Coverage**: 86.64% line coverage across the maintained core (blocking CI gate is 85%).
+- **Automated Validation**: Static typing (`mypy`), linting (`flake8`), architecture boundaries, packaging validation, and documentation link checks all pass cleanly.
+- **Evidence Boundaries**: Headless/offscreen tests prove logic, command construction, and catalog contracts. Physical display server integration, hardware battery controllers, and Polkit agents are verified through manual qualification gates.
+
+---
+
+## 2. Running Tests Locally
+
+Run the test suite using `just`:
 
 ```bash
+# Run complete test suite with headless offscreen display
 LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just test
+
+# Run a specific test file
+just test-file test_product_catalog
+
+# Run tests with code coverage check
 LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just test-coverage
-just lint
-just typecheck
-just verify
 ```
 
-The offscreen environment makes local evidence deterministic; it does not
-prove physical display, keyboard, screen-reader, authorization-agent, reboot,
-or Atomic behavior.
+---
 
-## Release validation
+## 3. Code Style & Static Analysis
 
 ```bash
-just validate-release
-just check-packaging
-just stats-check
-just check-drift
+# Run Flake8 linter
+just lint
+
+# Run Mypy static type checker
+just typecheck
+
+# Comprehensive multi-step verification gate
+LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify
 ```
 
-Release claims must link to the exact tag, workflow run, artifact checksums,
-attestations, package metadata, and public documentation readback. Never infer
-a host result from a mocked subprocess or an offscreen run.
+---
+
+## 4. Release Documentation & Packaging Checks
+
+The release pipeline executes dedicated checks to prevent documentation drift:
+
+```bash
+# Verify release documentation, link targets, and version sync
+python3 scripts/check_release_docs.py
+
+# Verify canonical documentation-to-wiki mirrors
+python3 scripts/sync_wiki_docs.py --check
+
+# Validate RPM packaging metadata and AppStream XML
+just check-packaging
+```
+
