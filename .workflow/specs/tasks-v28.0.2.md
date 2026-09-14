@@ -1,7 +1,7 @@
 # Tasks — v28.0.2 "Ease"
 
-Status: public release published; post-publication closure is being recorded
-for the merged battery-service review fixes.
+Status: public release and post-publication closure complete for the merged
+battery-service review fixes.
 
 ## Patch scope
 
@@ -24,11 +24,11 @@ for the merged battery-service review fixes.
   Acceptance: Version, codename, release notes, changelog, roadmap, AppStream metadata, active docs, and race lock agree on v28.0.2.
   Docs: `README.md`, `ROADMAP.md`, `CHANGELOG.md`
   Tests: `check_release_docs.py --require-publish-ready-tasks` and full local verification.
-- [ ] [post-publish] ID: REL-002 | Files: release evidence report | Dep: REL-001 | Description: Record exact tag lineage, workflow runs, GitHub assets, checksums, attestations, COPR metadata, and public readback after canonical publication.
+- [x] [post-publish] ID: REL-002 | Files: release evidence report | Dep: REL-001 | Description: Record exact tag lineage, workflow runs, GitHub assets, checksums, attestations, COPR metadata, and public readback after canonical publication.
   Acceptance: Every named public release surface is independently read back and linked from the current documentation.
   Docs: `docs/reports/V28.0.2_RELEASE_PUBLICATION.md`
   Tests: Public readback commands and checksums verification.
-- [ ] [post-publish] ID: REL-003 | Files: physical/manual qualification record | Dep: REL-002 | Description: Keep physical Fedora, authorization, reboot, Atomic, keyboard, Orca, and clean-install gates explicitly classified after publication.
+- [x] [post-publish] ID: REL-003 | Files: physical/manual qualification record | Dep: REL-002 | Description: Keep physical Fedora, authorization, reboot, Atomic, keyboard, Orca, and clean-install gates explicitly classified after publication.
   Acceptance: No rootless or offscreen result is presented as physical qualification.
   Docs: `docs/reports/V28.0.2_RELEASE_PUBLICATION.md`
   Tests: Manual gates are reported as verified, pending, or unverified with evidence.
