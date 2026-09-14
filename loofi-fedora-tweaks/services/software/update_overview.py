@@ -48,6 +48,7 @@ class UpdateSourceResult:
     reboot_required: bool | None = None
     error_code: str = ""
     stale: bool = True
+    items_retained: bool = False
 
 
 @dataclass(frozen=True)
@@ -252,9 +253,26 @@ class UpdateOverviewService:
         error = record.get("error_code", "")
         if not isinstance(error, str) or len(error) > 64:
             raise ValueError("Invalid error")
-        if (record["status"] == "available") != bool(parsed):
-            raise ValueError("Inconsistent candidate status")
-        return UpdateSourceResult(record["source"], record["status"], checked, tuple(parsed), reboot, error, self._stale(checked))
+        items_retained = record.get("items_retained", False)
+        if type(items_retained) is not bool:
+            raise ValueError("Invalid retained candidate state")
+        if record["status"] == "available":
+            if not parsed or items_retained:
+                raise ValueError("Inconsistent candidate status")
+        elif parsed and not items_retained:
+            raise ValueError("Inconsistent retained candidate state")
+        if items_retained and not parsed:
+            raise ValueError("Retained candidate state has no items")
+        return UpdateSourceResult(
+            source=record["source"],
+            status=record["status"],
+            checked_at=checked,
+            items=tuple(parsed),
+            reboot_required=reboot,
+            error_code=error,
+            stale=self._stale(checked),
+            items_retained=items_retained,
+        )
 
     def _stale(self, checked: str) -> bool:
         if not checked:
@@ -342,6 +360,15 @@ class UpdateOverviewService:
             support_status = "unknown"
         previous = self.load()
         results = {item.source: item for item in previous.sources}
+        identity_changed = (
+            previous.backend != backend.value
+            or previous.support_status != support_status
+        )
+        if identity_changed:
+            results = {
+                source: replace(result, stale=True)
+                for source, result in results.items()
+            }
         storage_status = "ok"
 
         def publish(source_result: UpdateSourceResult) -> None:
@@ -359,6 +386,8 @@ class UpdateOverviewService:
                     source_result,
                     items=previous_result.items,
                     reboot_required=previous_result.reboot_required,
+                    stale=source_result.stale or identity_changed,
+                    items_retained=True,
                 )
             results[source_result.source] = source_result
             candidate = UpdateOverviewSnapshot(

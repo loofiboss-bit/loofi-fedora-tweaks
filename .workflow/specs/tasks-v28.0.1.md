@@ -1,8 +1,8 @@
 # Tasks — v28.0.1 "Ease"
 
-Status: implementation candidate. The code and deterministic qualification are
-being prepared locally; public release, tag, push, package publication, and
-physical host qualification remain separately authorized gates.
+Status: release candidate. The review fixes and deterministic qualification are
+being prepared for the authorized canonical publication workflow; physical
+host qualification remains a separately tracked, explicitly unverified gate.
 
 ## P0 — trustworthy platform and state contracts
 
@@ -50,21 +50,22 @@ physical host qualification remain separately authorized gates.
   Tests: `tests/test_history.py`, `tests/test_home_service.py`, `tests/test_update_overview.py`
 - [x] ID: EASE-010 | Files: version metadata, `.workflow/specs`, release documentation | Dep: EASE-001–EASE-009 | Agent: implementation | Description: Establish the first new candidate as v28.0.1 "Ease" while preserving the historical v28.0.0 workflow-reset record and v27.0.1 public evidence.
   Acceptance: version.py, spec, pyproject, race lock, task spec, architecture spec, changelog, metainfo, README, roadmap, and release-note index agree on candidate status.
-  Docs: `docs/plans/V28Ease.md`, `docs/releases/RELEASE-NOTES-v28.0.1.md`, `ROADMAP.md`
+  Docs: `docs/releases/RELEASE-NOTES-v28.0.1.md`, `ROADMAP.md`
   Tests: `scripts/check_release_docs.py`, `scripts/bump_version.py --check`
-- [ ] ID: EASE-011 | Files: qualification reports and workflow evidence | Dep: EASE-001–EASE-010 | Agent: release qualification | Description: Run the maintained-surface 90% coverage target, packaging checks, benchmark comparison, and the documented Fedora 43/44 KDE/GNOME and rpm-ostree matrix.
+- [ ] [post-publish] ID: EASE-011 | Files: qualification reports and workflow evidence | Dep: EASE-001–EASE-010 | Agent: release qualification | Description: Record the maintained-surface 90% coverage target, packaging checks, benchmark comparison, and the documented Fedora 43/44 KDE/GNOME and rpm-ostree matrix.
   Acceptance: coverage and performance thresholds are evidenced without excluding new code; RPM/sdist checks pass; all advertised host matrices have read-back evidence.
   Docs: `docs/reports/V28_EASE_QUALIFICATION.md`
   Tests: `just verify`, `just check-packaging`, `just build-rpm`, `just build-sdist`, physical test matrix
-- [ ] ID: EASE-012 | Files: qualification reports and release surfaces | Dep: EASE-011 | Agent: release qualification | Description: Complete Polkit allow/deny/cancel, real reboot verification, Orca, keyboard, light/dark, 100–200% scale, small-screen, and five-user-session gates before publication.
+- [ ] [post-publish] ID: EASE-012 | Files: qualification reports and release surfaces | Dep: EASE-011 | Agent: release qualification | Description: Record Polkit allow/deny/cancel, real reboot verification, Orca, keyboard, light/dark, 100–200% scale, small-screen, and five-user-session gates when those physical sessions are available.
   Acceptance: physical/manual evidence is recorded for every advertised environment; offscreen evidence is not substituted for host proof.
   Docs: `docs/reports/V28_EASE_QUALIFICATION.md`
   Tests: documented physical Fedora sessions
 
 ## Explicit boundaries
 
-- No commit, push, tag, GitHub/COPR/KDE Store publication, host package
-  installation, reboot, desktop-setting change, background service, or new
-  runtime dependency is part of this implementation task.
+- Commit, push, tag, GitHub release, and COPR publication are authorized for
+  this release request. Host package installation, reboot, desktop-setting
+  changes, background services, and new runtime dependencies remain outside
+  the release workflow.
 - Unchecked tasks are release gates, not evidence that the local implementation
   was skipped. They require a separately authorized qualification run.

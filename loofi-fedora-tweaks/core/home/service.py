@@ -6,6 +6,7 @@ import re
 import time
 from collections.abc import Callable, Mapping, Sequence
 from datetime import datetime, timezone
+from pathlib import Path
 from typing import Any
 
 from core.actions.stores import ActionPlanStore, ActionRunStore
@@ -73,10 +74,8 @@ class HomeService:
         if history_source is not None:
             self.history_source = history_source
         else:
-            history_manager = HistoryManager()
-            self.history_source = (
-                history_manager if history_manager._path().exists() else None
-            )
+            history_path = Path(HistoryManager.HISTORY_FILE)
+            self.history_source = HistoryManager() if history_path.exists() else None
         if notification_source is not None:
             self.notification_source = notification_source
         else:

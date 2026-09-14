@@ -1,7 +1,8 @@
 # Architecture — v28.0.1 "Ease"
 
-Status: local implementation candidate; the historical v28.0.0 workflow-reset
-record remains unchanged and v27.0.1 remains the current public release.
+Status: release candidate; the historical v28.0.0 workflow-reset record remains
+unchanged and v27.0.1 remains the current public release until v28.0.1 public
+readback completes.
 
 ## Product boundary
 
@@ -41,10 +42,13 @@ is cooperative and never creates a success result.
 
 The schema is version 2. v1 observations remain readable but stale until a
 new backend-aware check. A failed, unsupported, missing-tool, or cancelled
-probe cannot replace a previous candidate list with an empty success. The
-current failure is shown alongside the retained observation. The UI exposes
-one explicit check button, per-source retry, cancellation, and a direct
-`Review <source> updates` action only for a fresh supported result.
+probe cannot replace a previous candidate list with an empty success. Retained
+items are explicitly marked in the persisted record so a current failure stays
+decodable, and a backend or support-policy identity change marks prior sources
+stale before new results arrive. The current failure is shown alongside the
+retained observation. The UI exposes one explicit check button, per-source
+retry, cancellation, and a direct `Review <source> updates` action only for a
+fresh result allowed by the supported backend policy.
 
 ## Change Journal and history
 
@@ -58,7 +62,8 @@ executes legacy command vectors.
 store. The service bounds pages, retains per-source availability, isolates a
 broken source from healthy sources, and returns an opaque `next_cursor`. The
 Activity UI and `activity list --cursor` use pages of 25; selection is retained
-when a page is appended.
+when a page is appended. A filter change invalidates the continuation cursor,
+and an in-flight result for an older filter is discarded rather than merged.
 
 ## Search and Changes
 
@@ -82,5 +87,8 @@ typecheck, architecture, product-contract, packaging, and coverage checks.
 
 Physical KDE/GNOME, rpm-ostree, Polkit, reboot, Orca, keyboard, theme, scale,
 small-screen, benchmark, and user-session evidence remains separate. Offscreen
-tests do not prove physical qualification. Release publication and external
-readback require a later explicit authorization.
+tests do not prove physical qualification. Read-only Home construction also
+avoids instantiating the history writer when no history file exists, so an
+empty read-only state does not create directories. Release publication is
+authorized for this request; external readback remains a required release
+gate.

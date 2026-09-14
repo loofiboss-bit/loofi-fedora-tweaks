@@ -1,8 +1,9 @@
-# v28.0.1 "Ease" — Implementation Candidate
+# v28.0.1 "Ease" — Release Candidate
 
 **Candidate date:** 2026-09-14
 **Codename:** Ease
-**Publication:** Not published; v27.0.1 "Core" remains the current public release.
+**Publication:** Prepared for the canonical publication workflow; v27.0.1
+"Core" remains the current public release until tag and public readback complete.
 
 ## Summary
 
@@ -28,6 +29,11 @@ bounded pages without turning storage errors into empty success.
 - Made fresh update sources open a direct `Review <source> updates` path while
   keeping Changes as the only review, execution, verification, and recovery
   authority.
+- Addressed review feedback by making retained observations round-trip safely,
+  invalidating them across backend/support-policy changes, gating direct review
+  on the supported platform policy, resetting Activity pagination on filter
+  changes, exposing CLI continuation markers, and keeping read-only Home
+  construction free of history-directory creation.
 - Reused the active Action Center catalog for search and added order-independent
   task language for freeing disk space, updates, and a slow system.
 - Added plain-language checked-result and next-step facts to Changes and
@@ -43,7 +49,7 @@ setting, reboot, or direct UI mutator was introduced.
 
 ## Local verification status
 
-- Deterministic full suite: 4,785 passed and 73 skipped after the candidate
+- Deterministic full suite: 4,790 passed and 73 skipped after the review-fix
   race-lock is synchronized; the suite uses temporary XDG roots.
 - Repository-wide local coverage: 87%; the plan's 90% release target remains
   open and is not represented as achieved.
@@ -54,7 +60,8 @@ setting, reboot, or direct UI mutator was introduced.
 
 ## Upgrade and publication notes
 
-The v28.0.0 historical workflow-reset record is preserved. This candidate does
-not authorize a commit, push, tag, GitHub release, COPR build, KDE Store update,
-host installation, or reboot. Those actions require a separate explicit
-release/host request after all open qualification gates pass.
+The v28.0.0 historical workflow-reset record is preserved. This release request
+authorizes the commit, push, tag, GitHub release, and COPR publication workflow.
+Physical desktop, authorization-agent, reboot, Atomic, accessibility, and
+benchmark gates remain separately tracked and explicitly unverified until the
+corresponding evidence is collected.

@@ -117,6 +117,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._events_by_id: dict[str, ChangeEvent] = {}
         self._worker: ActivityJournalWorker | None = None
         self._next_cursor: str | None = None
+        self._page_filter_key: tuple[tuple[str, Any], ...] | None = None
         self.presentation_state = initial_state()
         self._setup_ui()
         self._apply_presentation_state(self.presentation_state)
@@ -175,6 +176,12 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.until_input.setPlaceholderText(self.tr("Until date (YYYY-MM-DD)"))
         for widget in (self.source_filter, self.status_filter, self.reboot_filter, self.search_input, self.since_input, self.until_input):
             filter_row.addWidget(widget)
+        self.source_filter.currentIndexChanged.connect(self._filters_changed)
+        self.status_filter.currentIndexChanged.connect(self._filters_changed)
+        self.reboot_filter.currentIndexChanged.connect(self._filters_changed)
+        self.search_input.textChanged.connect(self._filters_changed)
+        self.since_input.textChanged.connect(self._filters_changed)
+        self.until_input.textChanged.connect(self._filters_changed)
         self.scaffold.add_layout(filter_row)
 
         actions = ActionBar()
@@ -320,11 +327,18 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         """Start one explicit, non-overlapping local collection."""
         if self._worker is not None and self._worker.isRunning():
             return
+        filters = self._current_filters()
+        filter_key = self._filter_key(filters)
+        append = bool(
+            append
+            and self._next_cursor
+            and self._page_filter_key == filter_key
+        )
         self.load_button.set_loading(True, self.tr("Loading activity…"))
         if not append:
             self._next_cursor = None
+            self._page_filter_key = filter_key
             self._apply_presentation_state(loading_state())
-        filters = self._current_filters()
         worker = ActivityJournalWorker(
             self.journal_service,
             refresh=refresh,
@@ -333,6 +347,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             parent=self,
         )
         worker.setProperty("appendPage", append)
+        worker.setProperty("filterKey", filter_key)
         worker.finished.connect(self._loaded)
         worker.error.connect(self._load_failed)
         worker.finished.connect(worker.deleteLater)
@@ -343,6 +358,28 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
     def _loaded(self, result: object) -> None:
         if not isinstance(result, ChangeJournalSnapshot):
             self._load_failed(self.tr("The activity source returned an invalid result."))
+            return
+        requested_filter_key = (
+            self._worker.property("filterKey")
+            if self._worker is not None
+            else None
+        )
+        current_filter_key = self._filter_key(self._current_filters())
+        if requested_filter_key is not None and requested_filter_key != current_filter_key:
+            self._worker = None
+            self._next_cursor = None
+            self._page_filter_key = None
+            self.load_button.reset_state()
+            self.load_button.setText(
+                self.tr("Load again") if self._snapshot is not None else self.tr("Load activity")
+            )
+            self._apply_presentation_state(
+                snapshot_state(self._snapshot) if self._snapshot is not None else initial_state()
+            )
+            self.feedback.setText(
+                self.tr("Filters changed while loading. Load again to use the new filters.")
+            )
+            self.load_more_button.setEnabled(False)
             return
         append = bool(self._worker and self._worker.property("appendPage"))
         selected_event = self._selected_event() if append else None
@@ -361,6 +398,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             )
         self._snapshot = result
         self._next_cursor = result.next_cursor
+        self._page_filter_key = requested_filter_key or current_filter_key
         self._events_by_id = {event.event_id: event for event in result.events}
         self.load_button.reset_state()
         self.load_button.setText(self.tr("Load again"))
@@ -368,6 +406,16 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.source_status.setText(self._source_status_text(result))
         self._render_events(result.events, selected_event_id=selected_id)
         self._worker = None
+
+    def _filters_changed(self, *_args: object) -> None:
+        """Invalidate continuation cursors when the query changes."""
+        self._next_cursor = None
+        self._page_filter_key = None
+        self.load_more_button.setEnabled(False)
+
+    @staticmethod
+    def _filter_key(filters: Mapping[str, Any]) -> tuple[tuple[str, Any], ...]:
+        return tuple(sorted(filters.items()))
 
     def _load_failed(self, message: str) -> None:
         self.load_button.reset_state()

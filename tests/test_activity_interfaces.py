@@ -83,6 +83,7 @@ class TestActivityCli(unittest.TestCase):
                 ChangeSourceStatus("fwupd", "unavailable", 101.0, "tool_unavailable"),
             ),
             snapshot.generated_at,
+            next_cursor="next-page",
         )
         service_cls.return_value.snapshot.return_value = partial
         from cli.main import cmd_activity
@@ -100,6 +101,7 @@ class TestActivityCli(unittest.TestCase):
         rendered = " ".join(call.args[0] for call in print_fn.call_args_list)
         self.assertIn("DNF transaction 42", rendered)
         self.assertIn("Partial sources: fwupd", rendered)
+        self.assertIn("Next cursor: next-page", rendered)
 
     @patch("cli.main._emit_legacy_plans", return_value=0)
     @patch("cli.main._create_action_center_plan")

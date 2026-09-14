@@ -39,8 +39,9 @@ include a web API.
 - Changes is the single review, confirmation, execution, and verification
   workspace for persistent system changes.
 
-This checkout contains the [v28.0.1 Ease implementation candidate](docs/releases/RELEASE-NOTES-v28.0.1.md).
-It has not been published; [v27.0.1 Core](docs/releases/RELEASE-NOTES-v27.0.1.md)
+This checkout contains the [v28.0.1 Ease release candidate](docs/releases/RELEASE-NOTES-v28.0.1.md),
+prepared for the canonical publication workflow. Until the tag and public
+readback complete, [v27.0.1 Core](docs/releases/RELEASE-NOTES-v27.0.1.md)
 remains the current public release. The deterministic suite is green in an
 isolated environment, while physical desktop, authorization, reboot, and fresh
 Atomic qualification remain explicitly unverified.

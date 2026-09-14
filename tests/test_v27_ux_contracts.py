@@ -95,7 +95,9 @@ class TestV27UpdatesJourney:
                     ),
                     UpdateSourceResult("flatpak"),
                     UpdateSourceResult("firmware"),
-                )
+                ),
+                backend="dnf5",
+                support_status="supported",
             )
             tab.overview.set_snapshot(snapshot)
             assert tab.btn_dnf.isEnabled()
@@ -103,6 +105,36 @@ class TestV27UpdatesJourney:
             tab.btn_dnf.click()
             assert requests == [("update-fedora-system", {})]
             assert tab.update_state.property("updateLifecycleState") == "review"
+        finally:
+            tab.deleteLater()
+
+    @patch("ui.maintenance_updates.SystemManager.get_platform_profile", return_value=MagicMock(
+        deployment_backend=MagicMock(value="dnf5"),
+        package_manager_name="dnf5",
+    ))
+    def test_preview_source_remains_visible_but_cannot_open_review(self, _profile):
+        tab = _UpdatesSubTab()
+        try:
+            snapshot = UpdateOverviewSnapshot(
+                sources=(
+                    UpdateSourceResult(
+                        "system",
+                        "available",
+                        "2026-09-13T10:00:00+00:00",
+                        (UpdateItem("bash.x86_64", "5.2"),),
+                        stale=False,
+                    ),
+                    UpdateSourceResult("flatpak"),
+                    UpdateSourceResult("firmware"),
+                ),
+                backend="dnf5",
+                support_status="preview",
+            )
+            tab.overview.set_snapshot(snapshot)
+
+            assert tab.btn_dnf.property("sourceStatus") == "available"
+            assert tab.btn_dnf.property("reviewPolicyAllowed") is False
+            assert not tab.btn_dnf.isEnabled()
         finally:
             tab.deleteLater()
 

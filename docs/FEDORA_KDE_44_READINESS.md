@@ -16,7 +16,8 @@ Use the maintained documentation instead:
 The supported public CLI is deliberately limited to eight Core commands:
 `info`, `check`, `updates`, `troubleshoot`, `changes`, `activity`, `doctor`,
 and `support-bundle`. Historical readiness, daemon, API, and KDE-specific
-command examples are not part of v27 and must not be copied into new guides.
+command examples are not part of the v28.0.1 product contract and must not be
+copied into new guides.
 
 Physical desktop, reboot, authorization, and Atomic/bootc qualification remain
 `unverified` until the corresponding matrix is run on real Fedora hosts.

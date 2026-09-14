@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v28.0.1 "Ease" implementation candidate.
+> Canonical architecture reference for the v28.0.1 "Ease" release candidate.
 > The supported product
 > is a desktop-neutral Fedora application built with Python 3.12+ and PyQt6.
 
@@ -17,7 +17,7 @@ when optional host tools are missing: each source reports an explicit
 `available`, `unavailable`, `stale`, or `error` state instead of pretending
 that a different Fedora setup was detected.
 
-The Ease candidate preserves the intentionally small Core boundary:
+The Ease release candidate preserves the intentionally small Core boundary:
 
 - five primary destinations: Home, Updates & Apps, System Health, Protection &
   Recovery, and Changes;
@@ -272,7 +272,7 @@ authorization-agent behavior, reboot completion, or Atomic installation.  For
 v28.0.1 these gates are intentionally recorded as unverified under the
 authorized manual-test skip; they must not be inferred from rootless tests.
 The maintained coverage gate remains 85% (87% repository-wide measured locally
-for this candidate); the plan's repository-wide 90% target remains open.
+for this release candidate); the plan's repository-wide 90% target remains open.
 
 ## Versioning
 

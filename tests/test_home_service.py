@@ -3,7 +3,10 @@
 from __future__ import annotations
 
 import unittest
+import tempfile
+from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from core.actions.contracts import (
     ActionPlan,
@@ -18,6 +21,7 @@ from core.system_check.models import (
     SystemCheckResult,
     SystemFinding,
 )
+from utils.history import HistoryManager
 
 
 class _ListSource:
@@ -158,6 +162,23 @@ class TestRecommendationOrdering(unittest.TestCase):
 
 
 class TestHomeServiceStates(unittest.TestCase):
+    def test_missing_history_does_not_create_xdg_parent(self):
+        with tempfile.TemporaryDirectory() as directory:
+            history_path = Path(directory) / "config" / "history.json"
+            with patch.object(HistoryManager, "HISTORY_FILE", str(history_path)):
+                with patch.object(HistoryManager, "__init__", return_value=None) as history_init:
+                    service = HomeService(
+                        snapshot_store=_ListSource(),
+                        state_source=_StateSource(),
+                        plan_store=_ListSource(),
+                        run_store=_ListSource(),
+                        notification_source=_NotificationSource(),
+                    )
+
+            self.assertIsNone(service.history_source)
+            history_init.assert_not_called()
+            self.assertFalse(history_path.parent.exists())
+
     def test_verified_change_and_recovery_warning_are_projected_from_saved_runs(self):
         plan = SimpleNamespace(
             plan_id="plan-risky",

@@ -35,7 +35,7 @@ silently.
 
 The application preserves system checks, update snapshots, Action Center plans
 and runs, activity history, and backup metadata. Specialist or retired feature
-data is not imported into the v27 product surface. Package removal and the
+data is not imported into the v28 product surface. Package removal and the
 repository uninstaller do not delete user state.
 
 ## Action plans and recovery

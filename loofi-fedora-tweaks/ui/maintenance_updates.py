@@ -200,6 +200,13 @@ class _UpdatesSubTab(BaseTab):
             str(getattr(result, "source", "")): result
             for result in getattr(snapshot, "sources", ())
         }
+        backend_value = getattr(snapshot, "backend", "unknown")
+        backend = str(getattr(backend_value, "value", backend_value))
+        support_status = str(getattr(snapshot, "support_status", "unknown"))
+        review_policy_allowed = (
+            support_status == "supported"
+            and backend in {"dnf5", "rpm_ostree"}
+        )
         buttons = {
             "system": self.btn_dnf,
             "flatpak": self.btn_flatpak,
@@ -208,11 +215,13 @@ class _UpdatesSubTab(BaseTab):
         for source, button in buttons.items():
             result = results.get(source)
             status = str(getattr(result, "status", "unchecked"))
-            ready = status in {"available", "up_to_date"} and not bool(
+            fresh_result = status in {"available", "up_to_date"} and not bool(
                 getattr(result, "stale", True)
             )
+            ready = fresh_result and review_policy_allowed
             button.setEnabled(ready)
             button.setProperty("sourceStatus", status)
+            button.setProperty("reviewPolicyAllowed", review_policy_allowed)
             button.setProperty("readyForReview", ready)
             if source != self._selected_source:
                 label = {

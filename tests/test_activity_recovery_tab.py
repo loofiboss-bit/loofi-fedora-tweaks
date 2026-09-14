@@ -108,3 +108,22 @@ class TestActivityRecoveryTab(unittest.TestCase):
         self.assertEqual(tab.property("presentationState"), "manual-only")
         self.assertEqual(tab.recovery_guidance.text(), "Use the vendor documentation.")
         tab.close()
+
+    def test_filter_change_invalidates_load_more_cursor(self):
+        tab = ActivityRecoveryTab(journal_service=SimpleNamespace())
+        snapshot = _snapshot(recovery=RecoveryCapability())
+        snapshot = ChangeJournalSnapshot(
+            snapshot.events,
+            snapshot.sources,
+            snapshot.generated_at,
+            next_cursor="next-page",
+        )
+
+        tab._loaded(snapshot)
+        self.assertTrue(tab.load_more_button.isEnabled())
+
+        tab.status_filter.setCurrentIndex(1)
+
+        self.assertIsNone(tab._next_cursor)
+        self.assertFalse(tab.load_more_button.isEnabled())
+        tab.close()

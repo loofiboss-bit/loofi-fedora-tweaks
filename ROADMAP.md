@@ -10,7 +10,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
-| v28.0.1 | Ease | ACTIVE | [Plan](docs/plans/V28Ease.md), [architecture](.workflow/specs/arch-v28.0.1.md), [tasks](.workflow/specs/tasks-v28.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.1.md) |
+| v28.0.1 | Ease | ACTIVE | [architecture](.workflow/specs/arch-v28.0.1.md), [tasks](.workflow/specs/tasks-v28.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.1.md) |
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
 | v17.0.0 | Assurance | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V17_PLAN.md), [architecture](.workflow/specs/arch-v17.0.0.md), [tasks](.workflow/specs/tasks-v17.0.0.md) |
@@ -29,15 +29,17 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 ## [ACTIVE] v28.0.1 "Ease" — Clearer Daily Maintenance
 
-The v28.0.1 Ease implementation candidate refines the v27 Core without
+The v28.0.1 Ease release candidate refines the v27 Core without
 changing the five-destination product boundary. It centralizes release and
 deployment policy, makes update and history results source-aware, adds paged
 Activity & Recovery, and simplifies direct review and task search.
 
 The local deterministic suite is green in isolated XDG roots. Repository-wide
 coverage is currently 87% against the maintained 85% gate; the planned 90%
-target and physical/manual Fedora qualification remain open. No tag, commit,
-push, package publication, host installation, or reboot is part of this stage.
+target and physical/manual Fedora qualification remain open for post-publish
+evidence. The authorized release workflow covers the exact commit, tag, public
+package publication, and readback; it does not include host installation or
+reboot.
 
 ## [DONE] v27.0.1 "Core" — Fedora Maintenance Core
 

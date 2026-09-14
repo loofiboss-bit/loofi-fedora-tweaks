@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 28.0.1 "Ease" implementation candidate
+> Version 28.0.1 "Ease" release candidate
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.
