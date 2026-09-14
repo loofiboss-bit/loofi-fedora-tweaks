@@ -1,6 +1,6 @@
 # V28.0.1 "Ease" — Public Release Evidence
 
-**Status:** public release complete; post-release wiki sync is being read back
+**Status:** public release complete
 **Publication date:** 2026-09-14
 **Release:** [v28.0.1 Ease](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.1)
 
@@ -87,9 +87,11 @@ specifications, user guides, AppStream metadata, and repository wiki sources
 identify v28.0.1 Ease as the public release. The Getting Started guide remains
 byte-identical between `docs/` and the repository wiki source.
 
-The post-release wiki workflow and a fresh public wiki checkout will be added
-to this section after the master documentation commit completes. Until that
-readback is recorded, this report does not claim hidden-wiki publication.
+The [post-release wiki workflow](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/runs/34831752895)
+completed successfully and published wiki commit
+`0fe5d369dcfdf8889a7bd5a296cc7bc0c48e11fa`. A fresh public wiki checkout
+contains the updated Home, Getting Started, and Screenshots pages; the
+Getting Started file matches `docs/BEGINNER_QUICK_GUIDE.md` byte-for-byte.
 
 ## Remaining explicit limits
 
