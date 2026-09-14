@@ -1,7 +1,7 @@
 {
   "version": "v28.0.2",
   "started_at": "20260914_103925",
-  "status": "closed",
+  "status": "complete",
   "target_version": "v28.0.2",
   "phase": "publication",
   "baseline_commit": "53ad83487fa5bd972c2832178920bb001b8a989f",
