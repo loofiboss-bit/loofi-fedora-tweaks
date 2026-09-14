@@ -83,6 +83,7 @@ def test_platform_profile_fedora_kde(tmp_path: Path):
     assert profile.is_atomic is False
     assert profile.reboot_pending is False
     assert profile.is_supported_release is True
+    assert profile.support_status == "supported"
     assert profile.is_preview_release is False
     assert profile.package_manager_name == "dnf5"
 
@@ -121,6 +122,7 @@ def test_platform_profile_silverblue(tmp_path: Path):
     assert profile.reboot_pending is True
     assert profile.is_supported_release is True
     assert profile.package_manager_name == "rpm-ostree"
+    assert profile.support_status == "supported"
 
 
 def test_platform_profile_bootc(tmp_path: Path):
@@ -256,4 +258,3 @@ def test_platform_profile_edge_cases(tmp_path: Path, monkeypatch: pytest.MonkeyP
         bootc_booted_path=tmp_path / "nonexistent",
     )
     assert profile_err.is_fedora is False
-

@@ -1,6 +1,6 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v27.0.1 "Core" keeps application-owned state under the
+Loofi Fedora Tweaks v28.0.1 "Ease" keeps application-owned state under the
 user's standard XDG config, data, cache, and runtime directories. State is
 separate from the Fedora deployment and is preserved when the RPM is removed.
 
@@ -35,7 +35,7 @@ silently.
 
 The application preserves system checks, update snapshots, Action Center plans
 and runs, activity history, and backup metadata. Specialist or retired feature
-data is not imported into the v27 product surface. Package removal and the
+data is not imported into the v28 product surface. Package removal and the
 repository uninstaller do not delete user state.
 
 ## Action plans and recovery

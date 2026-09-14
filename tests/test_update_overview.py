@@ -6,9 +6,11 @@ import tempfile
 import unittest
 from datetime import datetime, timedelta, timezone
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from core.executor.action_result import ActionResult
+from core.platform.profile import DeploymentBackend
 from services.software.update_overview import OverviewCancelled, OverviewRuntime, UpdateOverviewService
 
 
@@ -107,6 +109,53 @@ class TestUpdateOverview(unittest.TestCase):
     def test_failure_does_not_hide_other_sources(self):
         self.responses["system"] = ActionResult(False, "offline", 1)
         self.assertEqual([source.status for source in self.service.check().sources], ["error", "up_to_date", "up_to_date"])
+
+    def test_failed_probe_preserves_previous_candidates(self):
+        self.responses["system"] = ActionResult(False, "", 100, stdout="kernel.x86_64 6.9-1.fc44 updates\n")
+        first = self.service.check().sources[0]
+        self.responses["system"] = ActionResult(False, "offline", 1)
+
+        second = self.service.check().sources[0]
+
+        self.assertEqual(first.status, "available")
+        self.assertEqual(second.status, "error")
+        self.assertEqual(second.error_code, "query_failed")
+        self.assertEqual(second.items, first.items)
+
+    def test_retained_candidates_round_trip_with_current_failure(self):
+        self.responses["system"] = ActionResult(False, "", 100, stdout="kernel.x86_64 6.9-1.fc44 updates\n")
+        first = self.service.check().sources[0]
+        self.responses["system"] = ActionResult(False, "offline", 1)
+
+        second = self.service.check().sources[0]
+        record = json.loads(self.path.read_text())["sources"][0]
+
+        self.assertTrue(record["items_retained"])
+        self.assertTrue(second.items_retained)
+        self.assertEqual(self.service.load().sources[0], second)
+        self.assertEqual(first.items, second.items)
+
+    def test_saved_results_become_stale_when_platform_identity_changes(self):
+        self.runtime.platform_profile.return_value = SimpleNamespace(
+            deployment_backend=DeploymentBackend.DNF5,
+            package_manager_command="dnf5",
+            support_status="supported",
+        )
+        self.responses["system"] = ActionResult(False, "", 100, stdout="kernel.x86_64 6.9-1.fc44 updates\n")
+        first = self.service.check(sources=("system",))
+        self.assertFalse(first.sources[0].stale)
+
+        self.runtime.platform_profile.return_value = SimpleNamespace(
+            deployment_backend=DeploymentBackend.RPM_OSTREE,
+            package_manager_name="rpm-ostree",
+            support_status="preview",
+        )
+        second = self.service.check(sources=("flatpak",))
+
+        self.assertEqual(second.backend, DeploymentBackend.RPM_OSTREE.value)
+        self.assertEqual(second.support_status, "preview")
+        self.assertTrue(second.sources[0].stale)
+        self.assertFalse(second.sources[1].stale)
 
     def test_missing_tools_are_distinct(self):
         self.which.side_effect = lambda tool: None if tool == "flatpak" else tool

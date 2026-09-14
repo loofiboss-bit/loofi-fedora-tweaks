@@ -1,7 +1,8 @@
 # Screenshots
 
-Historical deterministic UI evidence retained for the **v27.0.1 "Core"**
-release is stored once in the main repository. These contact sheets show
+The v28.0.1 "Ease" release candidate is documented here. Historical
+deterministic UI evidence retained for the earlier public Core release is
+stored once in the main repository. These contact sheets show
 wide and compact layouts without duplicating binary assets in the wiki; they
 are not proof of the final v27 shell or of a physical Fedora qualification.
 

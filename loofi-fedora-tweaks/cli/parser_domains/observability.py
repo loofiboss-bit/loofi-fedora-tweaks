@@ -39,6 +39,10 @@ def _register_activity_command(subparsers: Subparsers) -> None:
     )
     activity_list.add_argument("--limit", type=int, default=25)
     activity_list.add_argument(
+        "--cursor",
+        help="Continue after the opaque marker returned by the previous page",
+    )
+    activity_list.add_argument(
         "--source",
         choices=["action_center", "dnf5", "rpm_ostree", "flatpak", "fwupd", "loofi_app", "session"],
         action="append",

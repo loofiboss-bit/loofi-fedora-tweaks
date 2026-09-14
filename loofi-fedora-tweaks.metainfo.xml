@@ -38,6 +38,11 @@
   </provides>
 
   <releases>
+    <release version="28.0.1" date="2026-09-14" type="stable">
+      <description>
+        <p>v28.0.1 "Ease": clearer backend policy, source-owned update checks, and paged activity history.</p>
+      </description>
+    </release>
     <release version="27.0.1" date="2026-09-13" type="stable">
       <description>
         <p>v27.0.1 "Core" - Fedora Maintenance Core with five destinations, platform neutrality, and reviewed changes.</p>

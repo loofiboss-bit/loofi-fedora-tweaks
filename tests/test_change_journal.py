@@ -3,6 +3,7 @@
 import json
 import os
 import sys
+import tempfile
 import unittest
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
@@ -20,11 +21,13 @@ from core.change_journal.service import ChangeJournalService  # noqa: E402
 from core.change_journal.sources import (  # noqa: E402
     DNF5HistorySource,
     FlatpakHistorySource,
+    LoofiHistorySource,
     RpmOstreeHistorySource,
     SourceResult,
 )
 from core.execution_policy import classify_command  # noqa: E402
 from core.executor.action_result import ActionResult  # noqa: E402
+from utils.history import HistoryManager  # noqa: E402
 
 
 class TestChangeJournalModels(unittest.TestCase):
@@ -163,6 +166,21 @@ class TestJSONSources(unittest.TestCase):
             "host",
         )
 
+    def test_loofi_history_read_error_is_unavailable_not_empty_success(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = os.path.join(directory, "history.json")
+            with open(path, "w", encoding="utf-8") as handle:
+                handle.write("not-json")
+
+            result = LoofiHistorySource(
+                history=HistoryManager(path),
+                clock=lambda: 100,
+            ).collect()
+
+        self.assertEqual(result.events, ())
+        self.assertEqual(result.status.availability, "unavailable")
+        self.assertEqual(result.status.error_code, "JSONDecodeError")
+
 
 class _FakeSource:
     def __init__(self, source, events, availability="available"):
@@ -218,6 +236,55 @@ class TestChangeJournalService(unittest.TestCase):
         self.assertEqual(snapshot.events[0].correlation_ids, (action_event.event_id,))
         self.assertEqual(source_a.calls, 1)
         self.assertIs(service.snapshot(limit=1), snapshot)
+
+    def test_snapshot_exposes_next_cursor_for_load_more(self):
+        events = [
+            ChangeEvent(
+                stable_event_id("dnf5", str(index)),
+                "dnf5",
+                float(300 - index),
+                "user",
+                f"Package change {index}",
+                ("package-manager",),
+            )
+            for index in range(3)
+        ]
+        service = ChangeJournalService(
+            sources=[_FakeSource("dnf5", events)],
+            clock=lambda: 400.0,
+        )
+
+        first = service.snapshot(limit=2)
+        second = service.snapshot(limit=2, cursor=first.next_cursor)
+
+        self.assertTrue(first.truncated)
+        self.assertEqual(first.next_cursor, first.events[-1].event_id)
+        self.assertFalse(second.truncated)
+        self.assertEqual([event.event_id for event in second.events], [events[2].event_id])
+
+    def test_broken_source_does_not_hide_other_sources(self):
+        class BrokenSource(_FakeSource):
+            def collect(self, *, since=None):
+                raise OSError("unreadable")
+
+        healthy_event = ChangeEvent(
+            stable_event_id("dnf5", "healthy"),
+            "dnf5",
+            200.0,
+            "user",
+            "Healthy source event",
+            ("package-manager",),
+        )
+        snapshot = ChangeJournalService(
+            sources=[BrokenSource("fwupd", []), _FakeSource("dnf5", [healthy_event])],
+            clock=lambda: 300.0,
+        ).snapshot()
+
+        self.assertEqual([event.event_id for event in snapshot.events], [healthy_event.event_id])
+        self.assertEqual(
+            next(status for status in snapshot.sources if status.source == "fwupd").availability,
+            "unavailable",
+        )
 
     def test_partial_source_is_preserved_in_snapshot(self):
         source = _FakeSource("fwupd", [], availability="partial")

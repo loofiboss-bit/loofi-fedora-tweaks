@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        27.0.1
+Version:        28.0.1
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 

@@ -11,7 +11,6 @@ from __future__ import annotations
 
 import json
 import logging
-import os
 import uuid
 from dataclasses import dataclass, field
 from datetime import datetime, timezone
@@ -20,6 +19,7 @@ from typing import Any, List, Mapping
 
 from core.privacy import redact_payload, redact_text
 from core.state.atomic_io import advisory_lock, atomic_write_bytes, atomic_write_json
+from core.state.paths import StatePaths
 from utils.containers import Result
 
 logger = logging.getLogger(__name__)
@@ -82,10 +82,23 @@ class HistoryEntry:
 class HistoryManager:
     """Atomic compatibility store for Loofi-owned application activity."""
 
-    HISTORY_FILE = os.path.expanduser("~/.config/loofi-fedora-tweaks/history.json")
+    HISTORY_FILE = str(StatePaths.from_environment().config / "history.json")
 
-    def __init__(self):
+    def __init__(self, path: str | Path | None = None):
+        if path is not None:
+            self.HISTORY_FILE = str(path)
+        self._last_read_status = "missing"
+        self._last_read_error = ""
         Path(self.HISTORY_FILE).parent.mkdir(parents=True, exist_ok=True, mode=0o700)
+
+    @property
+    def read_status(self) -> str:
+        """Return the result of the most recent read without hiding failures."""
+        return self._last_read_status
+
+    @property
+    def read_error(self) -> str:
+        return self._last_read_error
 
     def log_change(
         self,
@@ -178,12 +191,16 @@ class HistoryManager:
     def _load_entries(self) -> list[HistoryEntry]:
         path = self._path()
         if not path.exists():
+            self._last_read_status = "missing"
+            self._last_read_error = ""
             return []
         with advisory_lock(path):
             try:
                 raw_bytes = path.read_bytes()
                 payload = json.loads(raw_bytes.decode("utf-8"))
-            except (OSError, UnicodeDecodeError, json.JSONDecodeError):
+            except (OSError, UnicodeDecodeError, json.JSONDecodeError) as exc:
+                self._last_read_status = "error"
+                self._last_read_error = type(exc).__name__
                 return []
 
             legacy = isinstance(payload, list)
@@ -192,22 +209,37 @@ class HistoryManager:
             elif isinstance(payload, Mapping):
                 version = int(payload.get("schema_version", 0))
                 if version > HISTORY_SCHEMA_VERSION:
+                    self._last_read_status = "future_schema"
+                    self._last_read_error = str(version)
                     raise HistoryVersionError(
                         f"Unsupported history schema version: {version}"
                     )
                 if version != HISTORY_SCHEMA_VERSION:
+                    self._last_read_status = "error"
+                    self._last_read_error = "unsupported_schema"
                     return []
                 raw_entries = payload.get("entries", [])
             else:
+                self._last_read_status = "error"
+                self._last_read_error = "invalid_envelope"
                 return []
 
             if not isinstance(raw_entries, list):
+                self._last_read_status = "error"
+                self._last_read_error = "invalid_entries"
                 return []
-            entries = [
-                HistoryEntry.from_dict(item)
-                for item in raw_entries[-MAX_HISTORY_ENTRIES:]
-                if isinstance(item, Mapping)
-            ]
+            entries: list[HistoryEntry] = []
+            skipped = False
+            for item in raw_entries[-MAX_HISTORY_ENTRIES:]:
+                if not isinstance(item, Mapping):
+                    skipped = True
+                    continue
+                try:
+                    entries.append(HistoryEntry.from_dict(item))
+                except (TypeError, ValueError, KeyError):
+                    skipped = True
+            self._last_read_status = "partial" if skipped else "available"
+            self._last_read_error = "invalid_entries" if skipped else ""
             if legacy:
                 self._migrate_legacy_unlocked(path, raw_bytes, entries)
             return entries

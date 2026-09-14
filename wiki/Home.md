@@ -2,7 +2,8 @@
 
 Loofi Fedora Tweaks is a focused, desktop-neutral Fedora maintenance core.
 
-**Current release:** v27.0.1 "Core"<br>
+**Current implementation candidate:** v28.0.1 "Ease"<br>
+**Current public release:** Core<br>
 **Stable targets:** Fedora 43 and 44<br>
 **Preview target:** Fedora 45
 

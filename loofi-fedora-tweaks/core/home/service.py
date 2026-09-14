@@ -73,10 +73,9 @@ class HomeService:
         self.run_store = run_store or ActionRunStore()
         if history_source is not None:
             self.history_source = history_source
-        elif Path(HistoryManager.HISTORY_FILE).exists():
-            self.history_source = HistoryManager()
         else:
-            self.history_source = None
+            history_path = Path(HistoryManager.HISTORY_FILE)
+            self.history_source = HistoryManager() if history_path.exists() else None
         if notification_source is not None:
             self.notification_source = notification_source
         else:

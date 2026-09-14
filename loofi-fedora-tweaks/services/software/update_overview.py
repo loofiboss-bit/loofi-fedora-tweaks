@@ -9,6 +9,7 @@ import time
 import re
 import shutil
 import subprocess
+from concurrent.futures import ThreadPoolExecutor, as_completed
 from dataclasses import asdict, dataclass, replace
 from datetime import datetime, timezone
 from pathlib import Path
@@ -18,6 +19,7 @@ from threading import Event
 from core.actions.catalog import SystemActionRuntime
 from core.actions.contracts import ActionRuntime
 from core.executor.action_result import ActionResult
+from core.platform.profile import DeploymentBackend, PlatformProfile
 from core.state.atomic_io import advisory_lock, atomic_write_json
 from core.state.paths import StatePaths
 
@@ -46,6 +48,7 @@ class UpdateSourceResult:
     reboot_required: bool | None = None
     error_code: str = ""
     stale: bool = True
+    items_retained: bool = False
 
 
 @dataclass(frozen=True)
@@ -53,6 +56,8 @@ class UpdateOverviewSnapshot:
     sources: tuple[UpdateSourceResult, ...] = tuple(UpdateSourceResult(source) for source in SOURCES)
     system_mode: str = "unknown"
     storage_status: str = "ok"
+    backend: str = DeploymentBackend.UNKNOWN.value
+    support_status: str = "unknown"
 
 
 class OverviewCancelled(Exception):
@@ -162,6 +167,10 @@ class UpdateOverviewService:
         """Cooperatively stop the current check on application shutdown."""
         self._cancelled.set()
 
+    def reset_cancel(self) -> None:
+        """Allow a deliberate new check after a previous check was cancelled."""
+        self._cancelled.clear()
+
     def _check_cancelled(self) -> None:
         if self._cancelled.is_set():
             raise OverviewCancelled()
@@ -183,9 +192,9 @@ class UpdateOverviewService:
             version = payload.get("schema_version")
             if type(version) is not int:
                 raise ValueError("Invalid schema")
-            if version > 1:
+            if version > 2:
                 return UpdateOverviewSnapshot(storage_status="future_schema")
-            if version != 1 or payload.get("system_mode") not in {"traditional", "atomic", "unknown"}:
+            if version not in {1, 2} or payload.get("system_mode") not in {"traditional", "atomic", "bootc", "unknown"}:
                 raise ValueError("Invalid schema")
             records = payload.get("sources")
             if not isinstance(records, list) or len(records) != len(SOURCES):
@@ -193,7 +202,30 @@ class UpdateOverviewService:
             sources = tuple(self._decode_source(record) for record in records)
             if tuple(source.source for source in sources) != SOURCES:
                 raise ValueError("Invalid source order")
-            return UpdateOverviewSnapshot(sources, payload["system_mode"])
+            if version == 1:
+                # v27 caches contain useful observations but no trustworthy
+                # backend identity. Keep them visible while requiring a new
+                # check before they can unlock an update review.
+                sources = tuple(replace(source, stale=True) for source in sources)
+                return UpdateOverviewSnapshot(
+                    sources=sources,
+                    system_mode=payload["system_mode"],
+                    storage_status="legacy_schema",
+                    backend=DeploymentBackend.UNKNOWN.value,
+                    support_status="unknown",
+                )
+            backend = payload.get("backend", DeploymentBackend.UNKNOWN.value)
+            if backend not in {item.value for item in DeploymentBackend}:
+                raise ValueError("Invalid backend")
+            support_status = payload.get("support_status", "unknown")
+            if support_status not in {"supported", "preview", "unknown"}:
+                raise ValueError("Invalid support status")
+            return UpdateOverviewSnapshot(
+                sources=sources,
+                system_mode=payload["system_mode"],
+                backend=str(backend),
+                support_status=str(support_status),
+            )
         except FileNotFoundError:
             return UpdateOverviewSnapshot()
         except (OSError, ValueError, TypeError, KeyError):
@@ -221,9 +253,26 @@ class UpdateOverviewService:
         error = record.get("error_code", "")
         if not isinstance(error, str) or len(error) > 64:
             raise ValueError("Invalid error")
-        if (record["status"] == "available") != bool(parsed):
-            raise ValueError("Inconsistent candidate status")
-        return UpdateSourceResult(record["source"], record["status"], checked, tuple(parsed), reboot, error, self._stale(checked))
+        items_retained = record.get("items_retained", False)
+        if type(items_retained) is not bool:
+            raise ValueError("Invalid retained candidate state")
+        if record["status"] == "available":
+            if not parsed or items_retained:
+                raise ValueError("Inconsistent candidate status")
+        elif parsed and not items_retained:
+            raise ValueError("Inconsistent retained candidate state")
+        if items_retained and not parsed:
+            raise ValueError("Retained candidate state has no items")
+        return UpdateSourceResult(
+            source=record["source"],
+            status=record["status"],
+            checked_at=checked,
+            items=tuple(parsed),
+            reboot_required=reboot,
+            error_code=error,
+            stale=self._stale(checked),
+            items_retained=items_retained,
+        )
 
     def _stale(self, checked: str) -> bool:
         if not checked:
@@ -234,37 +283,190 @@ class UpdateOverviewService:
         age = (self._clock() - timestamp).total_seconds()
         return age < 0 or age >= STALE_SECONDS
 
-    def check(self) -> UpdateOverviewSnapshot:
-        """Refresh each source, then atomically persist observations when compatible."""
+    def _resolve_backend(self) -> tuple[DeploymentBackend, object | None, bool]:
+        """Resolve one typed backend; the bool marks the legacy test fallback."""
+        assert self._runtime is not None
+        profile_reader = getattr(self._runtime, "platform_profile", None)
+        if callable(profile_reader):
+            try:
+                profile = profile_reader()
+            except (OSError, RuntimeError, TypeError, ValueError):
+                profile = None
+            raw_backend = getattr(profile, "deployment_backend", None)
+            if isinstance(raw_backend, DeploymentBackend):
+                return raw_backend, profile, False
+            if isinstance(raw_backend, str):
+                try:
+                    return DeploymentBackend(raw_backend), profile, False
+                except ValueError:
+                    pass
+        try:
+            return (
+                DeploymentBackend.RPM_OSTREE
+                if bool(self._runtime.is_atomic())
+                else self._legacy_dnf_backend(),
+                None,
+                True,
+            )
+        except (OSError, RuntimeError, TypeError, ValueError, AttributeError):
+            return DeploymentBackend.UNKNOWN, None, True
+
+    def _legacy_dnf_backend(self) -> DeploymentBackend:
+        runtime = self._runtime
+        assert runtime is not None
+        manager = str(runtime.package_manager()).strip().lower()
+        if manager in {"dnf", "dnf5"}:
+            return DeploymentBackend.DNF5
+        if manager == "rpm-ostree":
+            return DeploymentBackend.RPM_OSTREE
+        if manager == "bootc":
+            return DeploymentBackend.BOOTC
+        return DeploymentBackend.UNKNOWN
+
+    @staticmethod
+    def _system_mode(backend: DeploymentBackend) -> str:
+        return {
+            DeploymentBackend.DNF5: "traditional",
+            DeploymentBackend.RPM_OSTREE: "atomic",
+            DeploymentBackend.BOOTC: "bootc",
+            DeploymentBackend.UNKNOWN: "unknown",
+        }[backend]
+
+    def check(
+        self,
+        *,
+        sources: tuple[Source, ...] = SOURCES,
+        on_source_result: Callable[[UpdateOverviewSnapshot], None] | None = None,
+    ) -> UpdateOverviewSnapshot:
+        """Refresh sources independently and publish each completed result.
+
+        Real platform runtimes use at most three concurrent read-only probes.
+        Legacy injected runtimes stay sequential for compatibility with older
+        integrations and deterministic tests.
+        """
         self._check_cancelled()
         if self._runtime is None:
             from core.executor.command_facade import CommandFacade
 
             self._runtime = OverviewRuntime(CommandFacade(), cancelled=self._cancelled)
-        try:
-            mode = "atomic" if self._runtime.is_atomic() else "traditional"
-        except (OSError, RuntimeError):
-            mode = "unknown"
-        results = []
-        for source in SOURCES:
-            self._check_cancelled()
-            results.append(self._check_source(source, mode))
+        backend, profile, legacy_runtime = self._resolve_backend()
+        mode = self._system_mode(backend)
+        support_status = (
+            "supported"
+            if legacy_runtime
+            else str(getattr(profile, "support_status", "unknown"))
+        )
+        if support_status not in {"supported", "preview", "unknown"}:
+            support_status = "unknown"
+        previous = self.load()
+        results = {item.source: item for item in previous.sources}
+        identity_changed = (
+            previous.backend != backend.value
+            or previous.support_status != support_status
+        )
+        if identity_changed:
+            results = {
+                source: replace(result, stale=True)
+                for source, result in results.items()
+            }
+        storage_status = "ok"
+
+        def publish(source_result: UpdateSourceResult) -> None:
+            nonlocal storage_status
+            previous_result = results.get(source_result.source)
+            if (
+                source_result.status in {"error", "missing_tool", "unsupported"}
+                and previous_result is not None
+                and previous_result.items
+            ):
+                # A failed probe is not evidence that a previously observed
+                # candidate disappeared. Keep that observation visible while
+                # exposing the current failure status to the UI and callers.
+                source_result = replace(
+                    source_result,
+                    items=previous_result.items,
+                    reboot_required=previous_result.reboot_required,
+                    stale=source_result.stale or identity_changed,
+                    items_retained=True,
+                )
+            results[source_result.source] = source_result
+            candidate = UpdateOverviewSnapshot(
+                sources=tuple(results[source] for source in SOURCES),
+                system_mode=mode,
+                storage_status=storage_status,
+                backend=backend.value,
+                support_status=support_status,
+            )
+            if not legacy_runtime:
+                saved = self._persist(candidate)
+                if saved.storage_status != "ok":
+                    storage_status = saved.storage_status
+                    candidate = replace(candidate, storage_status=storage_status)
+            if on_source_result is not None:
+                try:
+                    on_source_result(candidate)
+                except (RuntimeError, TypeError, ValueError):
+                    pass
+
+        selected_sources = tuple(source for source in SOURCES if source in sources)
+        if legacy_runtime:
+            for source in selected_sources:
+                self._check_cancelled()
+                publish(
+                    self._check_source(
+                        source,
+                        backend,
+                        profile=profile,
+                        support_status=support_status,
+                    )
+                )
+        else:
+            with ThreadPoolExecutor(max_workers=min(3, max(1, len(selected_sources)))) as executor:
+                futures = {
+                    executor.submit(
+                        self._check_source,
+                        source,
+                        backend,
+                        profile=profile,
+                        support_status=support_status,
+                    ): source
+                    for source in selected_sources
+                }
+                for future in as_completed(futures):
+                    self._check_cancelled()
+                    publish(future.result())
         self._check_cancelled()
-        sources = tuple(results)
-        snapshot = UpdateOverviewSnapshot(sources, mode)
+        snapshot = UpdateOverviewSnapshot(
+            sources=tuple(results[source] for source in SOURCES),
+            system_mode=mode,
+            storage_status=storage_status,
+            backend=backend.value,
+            support_status=support_status,
+        )
+        return self._persist(snapshot) if legacy_runtime else snapshot
+
+    def _persist(self, snapshot: UpdateOverviewSnapshot) -> UpdateOverviewSnapshot:
+        """Write one schema-versioned snapshot without replacing future data."""
         try:
             with advisory_lock(self.path):
                 self._check_cancelled()
-                # Re-read under the same lock used for writes, including after a
-                # failed load: a newer client may have saved while checking.
                 try:
                     payload = self._read()
                 except FileNotFoundError:
                     payload = {}
-                if isinstance(payload.get("schema_version"), int) and payload["schema_version"] > 1:
+                if isinstance(payload.get("schema_version"), int) and payload["schema_version"] > 2:
                     return replace(snapshot, storage_status="future_schema")
-                self._check_cancelled()
-                saved = {"schema_version": 1, "system_mode": mode, "sources": [asdict(source) for source in sources]}
+                if payload.get("schema_version") == 2 and (
+                    "backend" not in payload or "sources" not in payload
+                ):
+                    return replace(snapshot, storage_status="future_schema")
+                saved = {
+                    "schema_version": 2,
+                    "backend": snapshot.backend,
+                    "support_status": snapshot.support_status,
+                    "system_mode": snapshot.system_mode,
+                    "sources": [asdict(source) for source in snapshot.sources],
+                }
                 if len(json.dumps(saved, indent=2, sort_keys=True).encode("utf-8")) > MAX_BYTES:
                     return replace(snapshot, storage_status="unavailable")
                 self._check_cancelled()
@@ -273,18 +475,44 @@ class UpdateOverviewService:
             return replace(snapshot, storage_status="unavailable")
         return snapshot
 
-    def _check_source(self, source: Source, mode: str) -> UpdateSourceResult:
+    def _check_source(
+        self,
+        source: Source,
+        backend: DeploymentBackend | str,
+        *,
+        profile: object | None = None,
+        support_status: str = "supported",
+    ) -> UpdateSourceResult:
+        if not isinstance(backend, DeploymentBackend):
+            try:
+                backend = DeploymentBackend(str(backend))
+            except ValueError:
+                backend = DeploymentBackend.UNKNOWN
         checked = self._clock().isoformat()
         base = UpdateSourceResult(source, checked_at=checked, stale=False)
         try:
             assert self._runtime is not None
             if source == "system":
-                if mode == "unknown":
-                    return replace(base, status="unsupported", error_code="system_mode_unknown")
-                tool = "rpm-ostree" if mode == "atomic" else self._runtime.package_manager()
+                if support_status == "unknown":
+                    return replace(base, status="unsupported", error_code="fedora_release_unknown")
+                if backend is DeploymentBackend.UNKNOWN:
+                    return replace(base, status="unsupported", error_code="backend_unknown")
+                if backend is DeploymentBackend.BOOTC:
+                    return replace(base, status="unsupported", error_code="bootc_manual_guidance")
+                if backend is DeploymentBackend.RPM_OSTREE:
+                    tool = "rpm-ostree"
+                elif isinstance(profile, PlatformProfile):
+                    tool = profile.package_manager_name
+                elif profile is not None:
+                    tool = str(
+                        getattr(profile, "package_manager_command", "")
+                        or getattr(profile, "package_manager_name", "dnf5")
+                    )
+                else:
+                    tool = str(self._runtime.package_manager())
                 if tool not in {"dnf", "dnf5", "rpm-ostree"}:
                     return replace(base, status="unsupported", error_code="package_manager_unsupported")
-                vector = [tool, "upgrade", "--preview"] if mode == "atomic" else [tool, "check-update", "--quiet"]
+                vector = [tool, "upgrade", "--preview"] if backend is DeploymentBackend.RPM_OSTREE else [tool, "check-update", "--quiet"]
             elif source == "flatpak":
                 tool = "flatpak"
                 vector = [tool, "remote-ls", "--updates", "--columns=ref,commit"]
@@ -305,14 +533,14 @@ class UpdateOverviewService:
                 return replace(base, status="error", error_code="timeout")
             if source == "firmware":
                 return self._firmware(base, result)
-            accepted = {0, 100} if source == "system" and mode == "traditional" else {0}
+            accepted = {0, 100} if source == "system" and backend is DeploymentBackend.DNF5 else {0}
             if result.exit_code not in accepted and not (result.exit_code is None and result.success):
                 return replace(base, status="error", error_code="timeout" if result.exit_code == -1 else "query_failed")
             reboot: bool | None
             if source == "flatpak":
                 items = self._flatpak(result.stdout)
                 reboot = False
-            elif mode == "atomic":
+            elif backend is DeploymentBackend.RPM_OSTREE:
                 items = self._atomic(result.stdout)
                 reboot = True if items else None
             else:

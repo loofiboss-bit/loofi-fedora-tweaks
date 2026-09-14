@@ -1,5 +1,26 @@
 # Changelog
 
+## [28.0.1] - 2026-09-14 - "Ease"
+
+Release candidate prepared for the canonical publication workflow. v27.0.1
+"Core" remains the current public release until the v28.0.1 tag and public
+readback complete.
+
+- Centralize Fedora release support and typed DNF, rpm-ostree, bootc, and
+  unknown backend decisions.
+- Publish independent, cancellable update-source results with bounded
+  concurrency, per-source retry, atomic persistence, and retained prior
+  observations after probe failure.
+- Distinguish empty, partial, corrupt, and future-schema history and add
+  bounded Activity & Recovery continuation cursors.
+- Make fresh update sources open a direct review path and build action search
+  from the active Action Center catalog with order-independent task language.
+- Add plain-language checked-result and next-step facts and isolate the test
+  suite from user XDG state.
+- Local deterministic verification currently records 4,790 passed and 73
+  skipped tests with 87% repository-wide coverage; the planned 90% target and
+  physical/manual gates remain open.
+
 ## [27.0.1] - 2026-09-13 - "Core"
 
 - Decommission specialist products (AI Lab, Agents, Automation, Loofi Link, State Teleport, Gaming, Development, Virtualization, Community, Extensions, Profiles).

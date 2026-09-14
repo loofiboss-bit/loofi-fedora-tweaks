@@ -59,6 +59,7 @@ class _JournalService(Protocol):
         statuses: Iterable[str] | None = None,
         reboot_required: bool | None = None,
         search: str | None = None,
+        cursor: str | None = None,
         refresh: bool = False,
     ) -> ChangeJournalSnapshot:
         ...
@@ -70,15 +71,21 @@ class _JournalService(Protocol):
 class ActivityJournalWorker(BaseWorker):
     """Collect trusted local history away from the UI thread."""
 
-    def __init__(self, service: _JournalService, *, refresh: bool, filters: dict[str, Any], parent=None) -> None:
+    def __init__(self, service: _JournalService, *, refresh: bool, filters: dict[str, Any], cursor: str | None = None, parent=None) -> None:
         super().__init__(parent)
         self.service = service
         self.refresh_sources = refresh
         self.filters: dict[str, Any] = dict(filters)
+        self.cursor = cursor
 
     def do_work(self) -> ChangeJournalSnapshot:
         self.report_progress(self.tr("Reading trusted local sources…"), 30)
-        result = self.service.snapshot(limit=100, refresh=self.refresh_sources, **self.filters)
+        result = self.service.snapshot(
+            limit=25,
+            cursor=self.cursor,
+            refresh=self.refresh_sources,
+            **self.filters,
+        )
         self.report_progress(self.tr("Preparing activity history…"), 90)
         return result
 
@@ -109,6 +116,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._snapshot: ChangeJournalSnapshot | None = None
         self._events_by_id: dict[str, ChangeEvent] = {}
         self._worker: ActivityJournalWorker | None = None
+        self._next_cursor: str | None = None
+        self._page_filter_key: tuple[tuple[str, Any], ...] | None = None
         self.presentation_state = initial_state()
         self._setup_ui()
         self._apply_presentation_state(self.presentation_state)
@@ -167,6 +176,12 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.until_input.setPlaceholderText(self.tr("Until date (YYYY-MM-DD)"))
         for widget in (self.source_filter, self.status_filter, self.reboot_filter, self.search_input, self.since_input, self.until_input):
             filter_row.addWidget(widget)
+        self.source_filter.currentIndexChanged.connect(self._filters_changed)
+        self.status_filter.currentIndexChanged.connect(self._filters_changed)
+        self.reboot_filter.currentIndexChanged.connect(self._filters_changed)
+        self.search_input.textChanged.connect(self._filters_changed)
+        self.since_input.textChanged.connect(self._filters_changed)
+        self.until_input.textChanged.connect(self._filters_changed)
         self.scaffold.add_layout(filter_row)
 
         actions = ActionBar()
@@ -185,6 +200,14 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.refresh_button.clicked.connect(lambda: self.load_activity(refresh=True))
         self.refresh_button.setEnabled(False)
         actions.add_action(self.refresh_button)
+        self.load_more_button = SecondaryButton(
+            self.tr("Load more"),
+            description=self.tr("Read the next batch of recorded changes."),
+        )
+        self.load_more_button.setObjectName("activityLoadMoreButton")
+        self.load_more_button.clicked.connect(lambda: self.load_activity(refresh=False, append=True))
+        self.load_more_button.setEnabled(False)
+        actions.add_action(self.load_more_button)
         actions.add_action(self.load_button, primary=True)
         self.export_json_button = SecondaryButton(self.tr("Export JSON…"))
         self.export_json_button.setObjectName("activityExportJson")
@@ -295,18 +318,36 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.feedback.setVisible(state.state != "initial")
         self.empty_load_button.setVisible(state.state == "initial")
         self.refresh_button.setEnabled(state.refresh_enabled)
+        self.load_more_button.setEnabled(state.load_more_enabled)
         self.review_button.setVisible(state.recovery_review_visible)
         self.export_json_button.setEnabled(state.details_visible)
         self.export_markdown_button.setEnabled(state.details_visible)
 
-    def load_activity(self, *, refresh: bool) -> None:
+    def load_activity(self, *, refresh: bool, append: bool = False) -> None:
         """Start one explicit, non-overlapping local collection."""
         if self._worker is not None and self._worker.isRunning():
             return
-        self.load_button.set_loading(True, self.tr("Loading activity…"))
-        self._apply_presentation_state(loading_state())
         filters = self._current_filters()
-        worker = ActivityJournalWorker(self.journal_service, refresh=refresh, filters=filters, parent=self)
+        filter_key = self._filter_key(filters)
+        append = bool(
+            append
+            and self._next_cursor
+            and self._page_filter_key == filter_key
+        )
+        self.load_button.set_loading(True, self.tr("Loading activity…"))
+        if not append:
+            self._next_cursor = None
+            self._page_filter_key = filter_key
+            self._apply_presentation_state(loading_state())
+        worker = ActivityJournalWorker(
+            self.journal_service,
+            refresh=refresh,
+            filters=filters,
+            cursor=self._next_cursor if append else None,
+            parent=self,
+        )
+        worker.setProperty("appendPage", append)
+        worker.setProperty("filterKey", filter_key)
         worker.finished.connect(self._loaded)
         worker.error.connect(self._load_failed)
         worker.finished.connect(worker.deleteLater)
@@ -318,14 +359,63 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         if not isinstance(result, ChangeJournalSnapshot):
             self._load_failed(self.tr("The activity source returned an invalid result."))
             return
+        requested_filter_key = (
+            self._worker.property("filterKey")
+            if self._worker is not None
+            else None
+        )
+        current_filter_key = self._filter_key(self._current_filters())
+        if requested_filter_key is not None and requested_filter_key != current_filter_key:
+            self._worker = None
+            self._next_cursor = None
+            self._page_filter_key = None
+            self.load_button.reset_state()
+            self.load_button.setText(
+                self.tr("Load again") if self._snapshot is not None else self.tr("Load activity")
+            )
+            self._apply_presentation_state(
+                snapshot_state(self._snapshot) if self._snapshot is not None else initial_state()
+            )
+            self.feedback.setText(
+                self.tr("Filters changed while loading. Load again to use the new filters.")
+            )
+            self.load_more_button.setEnabled(False)
+            return
+        append = bool(self._worker and self._worker.property("appendPage"))
+        selected_event = self._selected_event() if append else None
+        selected_id = selected_event.event_id if selected_event is not None else None
+        if append and self._snapshot is not None:
+            merged_events = tuple(self._snapshot.events) + tuple(
+                event for event in result.events if event.event_id not in self._events_by_id
+            )
+            result = ChangeJournalSnapshot(
+                events=merged_events,
+                sources=result.sources,
+                generated_at=result.generated_at,
+                truncated=result.truncated,
+                schema=result.schema,
+                next_cursor=result.next_cursor,
+            )
         self._snapshot = result
+        self._next_cursor = result.next_cursor
+        self._page_filter_key = requested_filter_key or current_filter_key
         self._events_by_id = {event.event_id: event for event in result.events}
         self.load_button.reset_state()
         self.load_button.setText(self.tr("Load again"))
         self._apply_presentation_state(snapshot_state(result))
         self.source_status.setText(self._source_status_text(result))
-        self._render_events(result.events)
+        self._render_events(result.events, selected_event_id=selected_id)
         self._worker = None
+
+    def _filters_changed(self, *_args: object) -> None:
+        """Invalidate continuation cursors when the query changes."""
+        self._next_cursor = None
+        self._page_filter_key = None
+        self.load_more_button.setEnabled(False)
+
+    @staticmethod
+    def _filter_key(filters: Mapping[str, Any]) -> tuple[tuple[str, Any], ...]:
+        return tuple(sorted(filters.items()))
 
     def _load_failed(self, message: str) -> None:
         self.load_button.reset_state()
@@ -338,7 +428,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         )
         self._worker = None
 
-    def _render_events(self, events: tuple[ChangeEvent, ...]) -> None:
+    def _render_events(self, events: tuple[ChangeEvent, ...], *, selected_event_id: str | None = None) -> None:
         self.table.setRowCount(0)
         if not events:
             self.empty_state.title_label.setText(self.tr("No recorded changes"))
@@ -361,6 +451,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
                 item.setData(Qt.ItemDataRole.UserRole, event.event_id)
                 item.setToolTip(value)
                 self.table.setItem(row, column, item)
+            if selected_event_id == event.event_id:
+                self.table.selectRow(row)
 
     def _selected_event(self) -> ChangeEvent | None:
         row = self.table.currentRow()
@@ -373,6 +465,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         if event is None:
             return
         self._apply_presentation_state(selected_state(event))
+        self.load_more_button.setEnabled(bool(self._next_cursor))
         self.detail_card.set_heading(event.summary, self.tr("Recorded by %1").replace(
             "%1", self._SOURCE_LABELS.get(event.source, event.source)
         ))

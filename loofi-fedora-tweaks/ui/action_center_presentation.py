@@ -229,12 +229,22 @@ def run_details(
         if context is not None
         else t("Finding resolution: not linked")
     )
+    if run.state == "awaiting_reboot":
+        next_step = t("Restart when convenient, then choose Check result.")
+    elif run.state in {"running", "verifying"}:
+        next_step = t("Wait for the operation to finish, then choose Check result.")
+    elif run.state == "succeeded":
+        next_step = t("No further step is required; review the recorded result if needed.")
+    else:
+        next_step = t("Review the recorded result and recovery guidance before retrying.")
     return ActionCenterDetails(
         summary_lines=(
             f"{t('Intended outcome')}: {title}",
             f"{t('Affected components')}: {resources}",
             f"{t('Privilege required')}: {privilege}",
             f"{t('Restart requirement')}: {reboot}",
+            f"{t('What was checked')}: {validation}",
+            f"{t('Next step')}: {next_step}",
             f"{t('Verification')}: {validation}",
             f"{t('Recovery guidance')}: {run.recovery_status}",
         ),

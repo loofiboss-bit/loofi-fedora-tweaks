@@ -14,6 +14,7 @@ from core.change_journal.models import (
     ChangeSource,
     ChangeSourceStatus,
     RecoveryCapability,
+    SourceAvailability,
     stable_event_id,
 )
 from core.executor.command_facade import CommandFacade
@@ -419,7 +420,17 @@ class LoofiHistorySource:
         collected_at = float(self.clock())
         try:
             events: list[ChangeEvent] = []
-            for entry in self.history.get_recent(50):
+            entries = self.history.get_recent(50)
+            read_status = str(getattr(self.history, "read_status", "available"))
+            read_error = str(getattr(self.history, "read_error", ""))
+            availability: SourceAvailability = (
+                "partial"
+                if read_status == "partial"
+                else "unavailable"
+                if read_status in {"error", "future_schema"}
+                else "available"
+            )
+            for entry in entries:
                 occurred_at = _timestamp(entry.timestamp)
                 if since is not None and occurred_at < since:
                     continue
@@ -445,7 +456,19 @@ class LoofiHistorySource:
                 )
             return SourceResult(
                 tuple(events),
-                ChangeSourceStatus(self.source, "available", collected_at),
+                ChangeSourceStatus(
+                    self.source,
+                    availability,
+                    collected_at,
+                    read_error if availability in {"partial", "unavailable"} else "",
+                    (
+                        "Some application history entries could not be read."
+                        if availability == "partial"
+                        else "Application history could not be read."
+                        if availability == "unavailable"
+                        else ""
+                    ),
+                ),
             )
         except HistoryVersionError as exc:
             return SourceResult(

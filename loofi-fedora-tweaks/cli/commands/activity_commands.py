@@ -34,6 +34,7 @@ def handle_activity(
                 else None
             ),
             search=getattr(args, "search", None),
+            cursor=getattr(args, "cursor", None),
             refresh=refresh,
         )
         payload = snapshot.to_dict()
@@ -57,6 +58,8 @@ def handle_activity(
             ]
             if unavailable:
                 print_fn(f"Partial sources: {', '.join(unavailable)}")
+            if snapshot.next_cursor:
+                print_fn(f"Next cursor: {snapshot.next_cursor}")
         return 0
 
     event_id = str(getattr(args, "event_id", ""))

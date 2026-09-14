@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v27.0.1 "Core" release.
+> Canonical architecture reference for the v28.0.1 "Ease" release candidate.
 > The supported product
 > is a desktop-neutral Fedora application built with Python 3.12+ and PyQt6.
 
@@ -17,7 +17,7 @@ when optional host tools are missing: each source reports an explicit
 `available`, `unavailable`, `stale`, or `error` state instead of pretending
 that a different Fedora setup was detected.
 
-The v27 Core boundary is intentionally small:
+The Ease release candidate preserves the intentionally small Core boundary:
 
 - five primary destinations: Home, Updates & Apps, System Health, Protection &
   Recovery, and Changes;
@@ -27,12 +27,12 @@ The v27 Core boundary is intentionally small:
 - GUI and CLI as the only runtime entry modes;
 - a COPR-backed RPM as the supported distribution artifact.
 
-The Core release does not ship a background service, local web API, D-Bus
+The product does not ship a background service, local web API, D-Bus
 runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
-The authoritative v27 contract is [.workflow/specs/arch-v27.0.1.md](.workflow/specs/arch-v27.0.1.md)
-and the implementation plan is [docs/plans/plan v27.md](docs/plans/plan%20v27.md).
+The authoritative v28 contract is [.workflow/specs/arch-v28.0.1.md](.workflow/specs/arch-v28.0.1.md)
+and the implementation plan is [docs/plans/V28Ease.md](docs/plans/V28Ease.md).
 
 ## Runtime entry modes
 
@@ -269,10 +269,10 @@ custom polkit action installation.
 
 Local/offscreen evidence does not prove physical desktop accessibility,
 authorization-agent behavior, reboot completion, or Atomic installation.  For
-v27.0.1 these gates are intentionally recorded as unverified under the
+v28.0.1 these gates are intentionally recorded as unverified under the
 authorized manual-test skip; they must not be inferred from rootless tests.
-The maintained V27 coverage gate is 85% (86.95% measured locally); the
-repository-wide 90% target is deferred to the next release.
+The maintained coverage gate remains 85% (87% repository-wide measured locally
+for this release candidate); the plan's repository-wide 90% target remains open.
 
 ## Versioning
 

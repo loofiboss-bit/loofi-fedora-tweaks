@@ -295,12 +295,15 @@ class TestPhase3PlansAndCleanup(unittest.TestCase):
         tab.action_list.blockSignals(False)
 
     @patch(
-        "ui.maintenance_updates.SystemManager.get_package_manager",
-        return_value="rpm-ostree",
+        "ui.maintenance_updates.SystemManager.get_platform_profile",
+        return_value=SimpleNamespace(
+            deployment_backend=SimpleNamespace(value="rpm_ostree"),
+            package_manager_name="rpm-ostree",
+        ),
     )
     def test_updates_explain_restart_and_verification_before_action_center(
         self,
-        _mock_package_manager,
+        _mock_profile,
     ):
         tab = _UpdatesSubTab()
         self.addCleanup(tab.deleteLater)
