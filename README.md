@@ -39,11 +39,12 @@ include a web API.
 - Changes is the single review, confirmation, execution, and verification
   workspace for persistent system changes.
 
-The [v28.0.2 Ease release candidate](docs/releases/RELEASE-NOTES-v28.0.2.md)
-contains the merged battery-service review fixes from PR #40. Canonical tag,
-asset, attestation, COPR, and wiki readback will be recorded after the
-tag-driven publication workflow completes. The previous public release record
-remains available in [V28_RELEASE_PUBLICATION.md](docs/reports/V28_RELEASE_PUBLICATION.md).
+The [public v28.0.2 Ease release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2)
+contains the merged battery-service review fixes from PR #40. Exact tag,
+asset, attestation, COPR, and wiki readback are recorded in the
+[v28.0.2 public release evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+The previous public release record remains available in
+[V28_RELEASE_PUBLICATION.md](docs/reports/V28_RELEASE_PUBLICATION.md).
 The deterministic suite is green in an isolated environment, while physical
 desktop, authorization, reboot, and fresh Atomic qualification remain
 explicitly unverified.

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 28.0.2 "Ease" release candidate
+> Version 28.0.2 "Ease" public release
 
 This guide covers the supported GUI and CLI surfaces. For a short first run,
 see [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see

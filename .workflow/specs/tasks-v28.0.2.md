@@ -1,6 +1,7 @@
 # Tasks — v28.0.2 "Ease"
 
-Status: patch release candidate for the merged battery-service review fixes.
+Status: public release published; post-publication closure is being recorded
+for the merged battery-service review fixes.
 
 ## Patch scope
 

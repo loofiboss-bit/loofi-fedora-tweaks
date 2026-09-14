@@ -4,6 +4,10 @@
 
 Focused patch release for the battery-service review fixes from PR #40.
 
+Public release completed through the canonical tag-driven workflow. Exact tag,
+assets, attestations, COPR package, and wiki readback are recorded in the
+[v28.0.2 public release evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+
 - Advertise only the implemented standard sysfs battery backend; remove the
   unused HP BIOS support path.
 - Route service cleanup through validated `PrivilegedCommand` builders for

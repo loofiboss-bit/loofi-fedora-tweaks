@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 28.0.2 "Ease" release candidate
+> Version 28.0.2 "Ease" public release
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

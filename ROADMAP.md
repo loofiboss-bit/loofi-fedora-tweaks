@@ -10,7 +10,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
-| v28.0.2 | Ease | ACTIVE | [architecture](.workflow/specs/arch-v28.0.2.md), [tasks](.workflow/specs/tasks-v28.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.2.md) |
+| v28.0.2 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.2.md), [tasks](.workflow/specs/tasks-v28.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.2.md), [public evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md) |
 | v28.0.1 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.1.md), [tasks](.workflow/specs/tasks-v28.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.1.md), [public evidence](docs/reports/V28_RELEASE_PUBLICATION.md) |
 | v15.0.0 | Essentials | DONE | [Architecture](.workflow/specs/arch-v15.0.0.md), [tasks](.workflow/specs/tasks-v15.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v15.0.0.md) |
 | v16.0.0 | Clarity | DONE | [Canonical plan](docs/plans/LOOFI_FEDORA_TWEAKS_V16_PLAN.md), [architecture](.workflow/specs/arch-v16.0.0.md), [tasks](.workflow/specs/tasks-v16.0.0.md) |
@@ -28,9 +28,9 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v28.0.2 "Ease" — Fail-Closed Battery-Service Cleanup
+## [DONE] v28.0.2 "Ease" — Fail-Closed Battery-Service Cleanup
 
-Release candidate for the battery-service review fixes merged from PR #40.
+Public release for the battery-service review fixes merged from PR #40.
 The patch keeps the v28 Core product boundary intact, removes the misleading
 firmware-specific support claim, and makes privileged cleanup fail closed with
 validated command construction and explicit result handling.
@@ -38,8 +38,9 @@ validated command construction and explicit result handling.
 Local deterministic verification is green with 4,804 tests passed, 73 skipped,
 830 subtests passed, and 86.64% repository-wide coverage against the maintained
 85% gate. Canonical tag publication, GitHub assets and attestations, COPR, and
-public wiki readback are completed by the release workflow; physical and manual
-qualification remains a separate evidence track.
+public wiki readback are recorded in the
+[v28.0.2 public release evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md);
+physical and manual qualification remains a separate evidence track.
 
 ## [DONE] v28.0.1 "Ease" — Clearer Daily Maintenance
 

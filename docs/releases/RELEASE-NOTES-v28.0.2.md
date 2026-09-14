@@ -14,6 +14,12 @@ authority.
 The patch advertises only the implemented standard sysfs battery backend and
 makes privileged service cleanup explicit, validated, bounded, and fail-closed.
 
+The public release is available as
+[v28.0.2 on GitHub](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2).
+Exact tag lineage, assets, checksums, attestations, COPR publication, and
+documentation readback are recorded in the
+[public release evidence](../reports/V28.0.2_RELEASE_PUBLICATION.md).
+
 ## Highlights
 
 - Removed the unused HP BIOS configuration path from battery support detection.
