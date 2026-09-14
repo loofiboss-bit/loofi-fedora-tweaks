@@ -58,6 +58,32 @@ class TestPrivilegedCommandBuilders(unittest.TestCase):
         self.assertEqual(binary, "systemctl")
         self.assertIn("--user", args)
 
+    def test_systemctl_disable_now(self):
+        from utils.commands import PrivilegedCommand
+        binary, args, desc = PrivilegedCommand.systemctl_disable_now(
+            "loofi-battery.service")
+        self.assertEqual(binary, "pkexec")
+        self.assertEqual(
+            args,
+            ["systemctl", "disable", "--now", "loofi-battery.service"],
+        )
+
+    def test_systemctl_daemon_reload(self):
+        from utils.commands import PrivilegedCommand
+        binary, args, desc = PrivilegedCommand.systemctl_daemon_reload()
+        self.assertEqual(binary, "pkexec")
+        self.assertEqual(args, ["systemctl", "daemon-reload"])
+
+    def test_systemctl_reset_failed(self):
+        from utils.commands import PrivilegedCommand
+        binary, args, desc = PrivilegedCommand.systemctl_reset_failed(
+            "loofi-battery.service")
+        self.assertEqual(binary, "pkexec")
+        self.assertEqual(
+            args,
+            ["systemctl", "reset-failed", "loofi-battery.service"],
+        )
+
     def test_sysctl(self):
         from utils.commands import PrivilegedCommand
         binary, args, desc = PrivilegedCommand.sysctl("vm.swappiness", "10")
@@ -70,6 +96,21 @@ class TestPrivilegedCommandBuilders(unittest.TestCase):
             "/etc/test.conf", "content")
         self.assertEqual(binary, "pkexec")
         self.assertIn("tee", args)
+
+    def test_remove_file(self):
+        from utils.commands import PrivilegedCommand
+        binary, args, desc = PrivilegedCommand.remove_file(
+            "/etc/systemd/system/loofi-battery.service")
+        self.assertEqual(binary, "pkexec")
+        self.assertEqual(
+            args,
+            [
+                "rm",
+                "-f",
+                "--",
+                "/etc/systemd/system/loofi-battery.service",
+            ],
+        )
 
     def test_flatpak(self):
         from utils.commands import PrivilegedCommand
@@ -152,6 +193,23 @@ class TestParameterValidation(unittest.TestCase):
             PrivilegedCommand.write_file("", "content")
 
     @patch("utils.audit.AuditLogger.log_validation_failure")
+    def test_remove_file_rejects_path_traversal(self, mock_log_fail):
+        from utils.commands import PrivilegedCommand
+        from utils.errors import ValidationError
+        with self.assertRaises(ValidationError) as ctx:
+            PrivilegedCommand.remove_file("/etc/../etc/shadow")
+        self.assertIn("traversal", str(ctx.exception).lower())
+
+    @patch("utils.audit.AuditLogger.log_validation_failure")
+    def test_systemctl_helpers_reject_empty_service(self, mock_log_fail):
+        from utils.commands import PrivilegedCommand
+        from utils.errors import ValidationError
+        with self.assertRaises(ValidationError):
+            PrivilegedCommand.systemctl_disable_now("")
+        with self.assertRaises(ValidationError):
+            PrivilegedCommand.systemctl_reset_failed("")
+
+    @patch("utils.audit.AuditLogger.log_validation_failure")
     def test_validation_failure_is_audit_logged(self, mock_log_fail):
         from utils.commands import PrivilegedCommand
         from utils.errors import ValidationError
@@ -179,6 +237,7 @@ class TestPolkitMap(unittest.TestCase):
         self.assertIn("dnf", POLKIT_MAP)
         self.assertIn("rpm-ostree", POLKIT_MAP)
         self.assertIn("systemctl", POLKIT_MAP)
+        self.assertIn("rm", POLKIT_MAP)
         self.assertIn("firewall-cmd", POLKIT_MAP)
 
     def test_get_polkit_action_id_pkexec_dnf(self):

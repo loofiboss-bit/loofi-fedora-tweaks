@@ -8,6 +8,9 @@ import os
 import subprocess
 from typing import Optional, Tuple
 
+from utils.commands import PrivilegedCommand
+from utils.errors import CommandTimeoutError
+
 logger = logging.getLogger(__name__)
 
 
@@ -15,6 +18,36 @@ class BatteryManager:
     SCRIPT_PATH = "/usr/local/bin/loofi-battery-limit.sh"
     SERVICE_PATH = "/etc/systemd/system/loofi-battery.service"
     CONFIG_PATH = "/etc/loofi-fedora-tweaks/battery.conf"
+    SYSFS_PATH = "/sys/class/power_supply/BAT0/charge_control_end_threshold"
+
+    @classmethod
+    def get_threshold_path(cls) -> str:
+        """
+        Returns the active sysfs path if available, or falls back to SYSFS_PATH.
+        """
+        for bat in ("BAT0", "BAT1"):
+            path = f"/sys/class/power_supply/{bat}/charge_control_end_threshold"
+            if os.path.exists(path):
+                return path
+        return cls.SYSFS_PATH
+
+    @classmethod
+    def is_sysfs_supported(cls) -> bool:
+        """Check if any standard sysfs charge control node exists."""
+        for bat in ("BAT0", "BAT1"):
+            if os.path.exists(f"/sys/class/power_supply/{bat}/charge_control_end_threshold"):
+                return True
+        return False
+
+    @classmethod
+    def is_supported(cls) -> bool:
+        """
+        Check if the implemented battery threshold backend is available.
+
+        HP firmware attributes are intentionally not treated as support here:
+        this service only knows how to write the standard sysfs threshold node.
+        """
+        return cls.is_sysfs_supported()
 
     def set_limit(self, limit: int) -> Tuple[Optional[str], Optional[list]]:
         """
@@ -33,14 +66,16 @@ class BatteryManager:
         except (OSError, IOError) as e:
             logger.debug("Failed to save battery config: %s", e)
 
-        # 2. Create the Systemd Service content
+        # 2. Determine sysfs path and create the Systemd Service content with ConditionPathExists
+        threshold_path = self.get_threshold_path()
         service_content = f"""[Unit]
-Description=Restore HP Battery Charge Limit ({limit}%)
+Description=Restore Battery Charge Limit ({limit}%)
+ConditionPathExists={threshold_path}
 After=multi-user.target
 
 [Service]
 Type=oneshot
-ExecStart=/bin/sh -c 'echo {limit} > /sys/class/power_supply/BAT0/charge_control_end_threshold'
+ExecStart=/bin/sh -c 'echo {limit} > {threshold_path}'
 RemainAfterExit=yes
 
 [Install]
@@ -94,7 +129,7 @@ WantedBy=multi-user.target
                 [
                     "pkexec",
                     "tee",
-                    "/sys/class/power_supply/BAT0/charge_control_end_threshold",
+                    threshold_path,
                 ],
                 input=str(limit),
                 capture_output=True,
@@ -113,4 +148,33 @@ WantedBy=multi-user.target
 
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Error preparing battery service: %s", e)
+            return None, None
+
+    def remove_service(self) -> Tuple[Optional[str], Optional[list]]:
+        """
+        Disables and removes the loofi-battery systemd service.
+
+        Returns:
+            Tuple of (cmd, args) on success, or (None, None) on error.
+        """
+        commands = (
+            PrivilegedCommand.systemctl_disable_now("loofi-battery.service"),
+            PrivilegedCommand.remove_file(self.SERVICE_PATH),
+            PrivilegedCommand.systemctl_daemon_reload(),
+            PrivilegedCommand.systemctl_reset_failed("loofi-battery.service"),
+        )
+
+        try:
+            for command in commands:
+                result = PrivilegedCommand.execute_and_log(command, timeout=30)
+                if result.returncode != 0:
+                    logger.debug(
+                        "Battery service cleanup command failed (%s): %s",
+                        command[2],
+                        result.stderr,
+                    )
+                    return None, None
+            return "echo", ["Battery limit service removed"]
+        except (CommandTimeoutError, subprocess.SubprocessError, OSError) as e:
+            logger.debug("Error removing battery service: %s", e)
             return None, None
