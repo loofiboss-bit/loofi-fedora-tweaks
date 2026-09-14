@@ -410,18 +410,19 @@ jobs:
       - name: Install RPM
         run: |
           dnf install -y ./rpm-install/*.rpm
+          useradd --create-home --shell /bin/bash smoke
       - name: Smoke test — verify binary exists
         run: |
-          command -v loofi-fedora-tweaks || { echo "::error::Binary not found after RPM install"; exit 1; }
+          su -s /bin/bash smoke -c 'command -v loofi-fedora-tweaks' || { echo "::error::Binary not found after RPM install"; exit 1; }
       - name: Smoke test — version output
         run: |
-          loofi-fedora-tweaks --version
+          su -s /bin/bash smoke -c 'loofi-fedora-tweaks --version'
       - name: Smoke test — CLI version
         run: |
-          loofi-fedora-tweaks --cli --version
+          su -s /bin/bash smoke -c 'loofi-fedora-tweaks --cli --version'
       - name: Smoke test — CLI help
         run: |
-          loofi-fedora-tweaks --cli --help
+          su -s /bin/bash smoke -c 'loofi-fedora-tweaks --cli --help'
 
   build_sdist:
     runs-on: ubuntu-latest
