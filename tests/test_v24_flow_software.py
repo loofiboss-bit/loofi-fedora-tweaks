@@ -34,10 +34,11 @@ class TestV24UpdatesFlow(unittest.TestCase):
         deployment_backend=MagicMock(value="dnf5"),
         package_manager_name="dnf5",
     ))
-    def test_update_lifecycle_distinguishes_check_available_and_review(self, _profile: MagicMock) -> None:
+    def test_update_lifecycle_distinguishes_check_available_and_preparing(self, _profile: MagicMock) -> None:
         tab = _UpdatesSubTab()
         self.addCleanup(tab.deleteLater)
         requests: list[tuple[str, object]] = []
+        tab._start_direct_operation = MagicMock()
         tab.actionCenterRequested.connect(lambda action_id, parameters: requests.append((action_id, parameters)))
 
         tab.set_checking("Fedora system packages")
@@ -46,8 +47,9 @@ class TestV24UpdatesFlow(unittest.TestCase):
         self.assertEqual(tab.update_state.property("updateLifecycleState"), "available")
         tab.run_dnf_update()
 
-        self.assertEqual(tab.update_state.property("updateLifecycleState"), "review")
-        self.assertEqual(requests, [("update-fedora-system", {})])
+        self.assertEqual(tab.update_state.property("updateLifecycleState"), "preparing")
+        self.assertEqual(requests, [])
+        tab._start_direct_operation.assert_called_once()
         self.assertFalse(tab.runner.is_running())
 
     @patch("ui.maintenance_updates.SystemManager.get_platform_profile", return_value=MagicMock(
@@ -57,11 +59,13 @@ class TestV24UpdatesFlow(unittest.TestCase):
     def test_atomic_plan_explains_deployment_restart(self, _profile: MagicMock) -> None:
         tab = _UpdatesSubTab()
         self.addCleanup(tab.deleteLater)
+        tab._start_direct_operation = MagicMock()
 
         tab.run_dnf_update()
 
         self.assertIn("new Atomic deployment", tab._update_guidance())
-        self.assertIn("Required to use the new deployment", tab.update_state.message_label.text())
+        self.assertEqual(tab.update_state.property("updateLifecycleState"), "preparing")
+        self.assertEqual(tab._pending_update["restart"], "Required to use the new deployment")
 
     @patch("ui.maintenance_updates.SystemManager.get_platform_profile", return_value=MagicMock(
         deployment_backend=MagicMock(value="dnf5"),

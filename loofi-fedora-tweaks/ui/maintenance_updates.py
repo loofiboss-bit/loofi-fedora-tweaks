@@ -49,13 +49,9 @@ from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
 from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
 from ui.maintenance_action_center import _ActionCenterOperationWorker
 
-# ---------------------------------------------------------------------------
-# Sub-tab: Updates
-# ---------------------------------------------------------------------------
-
 
 class _UpdatesSubTab(BaseTab):
-    """Preview-first entry point for independent verified update plans."""
+    """Run supported updates in place through the Action Center authority."""
 
     actionCenterRequested = pyqtSignal(str, object)
 
@@ -93,7 +89,7 @@ class _UpdatesSubTab(BaseTab):
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
             self.tr("Updates"),
-            self.tr("Review system, Flatpak, and firmware updates before applying changes."),
+            self.tr("Update system packages, Flatpaks, and firmware with clear status and automatic verification."),
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
@@ -106,6 +102,13 @@ class _UpdatesSubTab(BaseTab):
         self._add_update_overview(layout)
         self._add_source_actions(layout)
         self._add_advanced_sections(layout)
+        from core.actions import DirectActionService
+
+        self._direct_service = DirectActionService()
+        self._direct_thread: QThread | None = None
+        self._direct_worker: _ActionCenterOperationWorker | None = None
+        self._pending_update: dict[str, str] | None = None
+        self._prepared_update: typing.Any | None = None
         self.overview.snapshotChanged.connect(self._on_overview_snapshot)
         self._on_overview_snapshot(self.overview.snapshot)
 
@@ -124,7 +127,7 @@ class _UpdatesSubTab(BaseTab):
         self.runner.progress_update.connect(self.update_progress)
 
     def _add_update_overview(self, layout: QVBoxLayout) -> None:
-        """Add risk and state context before any plan handoff."""
+        """Add compact status context without making a review page mandatory."""
 
         update_guidance = QLabel(self._update_guidance())
         update_guidance.setWordWrap(True)
@@ -132,8 +135,8 @@ class _UpdatesSubTab(BaseTab):
         self.plan_details.add_widget(update_guidance)
         layout.addWidget(self.plan_details)
         self.update_state = FeedbackBanner(
-            self.tr("Ready to review updates"),
-            self.tr("Choose System, Flatpak, or Firmware to create one reviewable plan."),
+            self.tr("Ready to update"),
+            self.tr("Choose an update source. Loofi checks it, runs it, and verifies the result here."),
             kind="info",
         )
         self.update_state.setObjectName("updatesState")
@@ -142,9 +145,9 @@ class _UpdatesSubTab(BaseTab):
         self.update_state.hide()
 
         self.update_summary = TaskSummary(
-            self.tr("Update plan summary"),
-            self.tr("One source per plan keeps package lists, restart impact, and verification explicit."),
-            status=self.tr("Awaiting source selection"),
+            self.tr("Update details"),
+            self.tr("Each update is prepared and verified by Action Center in the background."),
+            status=self.tr("Ready"),
         )
         self.update_summary.add_fact(self.tr("System mode"), self.package_manager)
         self.update_summary.add_fact(self.tr("Execution"), self.tr("Action Center only"))
@@ -152,8 +155,8 @@ class _UpdatesSubTab(BaseTab):
         self.plan_details.add_widget(self.update_summary)
 
         self.btn_update_all = QuietButton(
-            self.tr("Why separate plans?"),
-            description=self.tr("Explain why update sources are reviewed independently."),
+            self.tr("Why are sources separate?"),
+            description=self.tr("Each source has its own preflight and verification so one failure cannot hide another."),
         )
         self.btn_update_all.setAccessibleName(self.tr("Explain independent update plans"))
         self.btn_update_all.setObjectName("maintUpdateAllBtn")
@@ -161,31 +164,29 @@ class _UpdatesSubTab(BaseTab):
         self.plan_details.add_widget(self.btn_update_all)
 
     def _add_source_actions(self, layout: QVBoxLayout) -> None:
-        """Add one explicit select-then-review action per update source."""
+        """Add one direct action per update source."""
         if self.deployment_backend == "rpm_ostree":
-            self.btn_dnf = SecondaryButton(self.tr("Review System Update (rpm-ostree)"))
+            self.btn_dnf = SecondaryButton(self.tr("Update System (rpm-ostree)"))
         elif self.deployment_backend == "bootc":
             self.btn_dnf = SecondaryButton(self.tr("System updates require manual bootc guidance"))
         elif self.deployment_backend == "unknown":
             self.btn_dnf = SecondaryButton(self.tr("System update backend is unknown"))
         else:
-            self.btn_dnf = SecondaryButton(self.tr("Review System Update (DNF)"))
-        self.btn_dnf.setAccessibleName(self.tr("Select System updates"))
+            self.btn_dnf = SecondaryButton(self.tr("Update System (DNF)"))
+        self.btn_dnf.setAccessibleName(self.tr("Update System"))
         self.btn_dnf.setProperty("sourceId", "system")
         self.btn_dnf.clicked.connect(lambda _checked=False: self._select_or_review_source("system"))
 
-        self.btn_flatpak = SecondaryButton(self.tr("Select Flatpak updates"))
-        self.btn_flatpak.setAccessibleName(self.tr("Select Flatpak updates"))
+        self.btn_flatpak = SecondaryButton(self.tr("Update Flatpaks"))
+        self.btn_flatpak.setAccessibleName(self.tr("Update Flatpaks"))
         self.btn_flatpak.setProperty("sourceId", "flatpak")
         self.btn_flatpak.clicked.connect(lambda _checked=False: self._select_or_review_source("flatpak"))
 
-        self.btn_fw = SecondaryButton(self.tr("Select Firmware updates"))
-        self.btn_fw.setAccessibleName(self.tr("Select Firmware updates"))
+        self.btn_fw = SecondaryButton(self.tr("Update firmware"))
+        self.btn_fw.setAccessibleName(self.tr("Update firmware"))
         self.btn_fw.setProperty("sourceId", "firmware")
         self.btn_fw.clicked.connect(lambda _checked=False: self._select_or_review_source("firmware"))
 
-        # A source cannot enter the Action Center until the explicit read-only
-        # overview has established a fresh result for it.
         for button in (self.btn_dnf, self.btn_flatpak, self.btn_fw):
             button.setEnabled(False)
 
@@ -195,7 +196,7 @@ class _UpdatesSubTab(BaseTab):
                 overview_layout.insertWidget(overview_layout.indexOf(self.overview.rows[source][2]), button)
 
     def _on_overview_snapshot(self, snapshot: object) -> None:
-        """Enable source review only after a fresh, truthful source check."""
+        """Enable direct execution only after a fresh, truthful source check."""
         results = {
             str(getattr(result, "source", "")): result
             for result in getattr(snapshot, "sources", ())
@@ -203,7 +204,7 @@ class _UpdatesSubTab(BaseTab):
         backend_value = getattr(snapshot, "backend", "unknown")
         backend = str(getattr(backend_value, "value", backend_value))
         support_status = str(getattr(snapshot, "support_status", "unknown"))
-        review_policy_allowed = (
+        execution_policy_allowed = (
             support_status == "supported"
             and backend in {"dnf5", "rpm_ostree"}
         )
@@ -218,30 +219,29 @@ class _UpdatesSubTab(BaseTab):
             fresh_result = status in {"available", "up_to_date"} and not bool(
                 getattr(result, "stale", True)
             )
-            ready = fresh_result and review_policy_allowed
+            ready = fresh_result and execution_policy_allowed
             button.setEnabled(ready)
             button.setProperty("sourceStatus", status)
-            button.setProperty("reviewPolicyAllowed", review_policy_allowed)
+            button.setProperty("reviewPolicyAllowed", execution_policy_allowed)
             button.setProperty("readyForReview", ready)
+            button.setProperty("readyForExecution", ready)
             if source != self._selected_source:
                 label = {
-                    "system": self.tr("Review System"),
-                    "flatpak": self.tr("Review Flatpak"),
-                    "firmware": self.tr("Review Firmware"),
+                    "system": self.tr("Update System"),
+                    "flatpak": self.tr("Update Flatpaks"),
+                    "firmware": self.tr("Update firmware"),
                 }[source] if ready else {
-                    "system": self.tr("Select System"),
-                    "flatpak": self.tr("Select Flatpak"),
-                    "firmware": self.tr("Select Firmware"),
+                    "system": self.tr("Check System updates"),
+                    "flatpak": self.tr("Check Flatpak updates"),
+                    "firmware": self.tr("Check firmware updates"),
                 }[source]
-                button.setText(
-                    self.tr("%1 updates").replace("%1", label)
-                )
+                button.setText(label)
                 button.setAccessibleName(
-                    self.tr("Review %1 updates" if ready else "Select %1 updates").replace("%1", label)
+                    label
                 )
 
     def _select_or_review_source(self, source: str) -> None:
-        """Make source selection a visible step before Action Center review."""
+        """Start the selected source directly after the fresh overview check."""
         buttons = {
             "system": self.btn_dnf,
             "flatpak": self.btn_flatpak,
@@ -250,56 +250,13 @@ class _UpdatesSubTab(BaseTab):
         button = buttons.get(source)
         if button is None or not button.isEnabled():
             return
-        if button.property("readyForReview") is True:
+        if button.property("readyForExecution") is True or button.property("readyForReview") is True:
             {
                 "system": self.run_dnf_update,
                 "flatpak": self.run_flatpak_update,
                 "firmware": self.run_fw_update,
             }[source]()
             return
-        if self._selected_source != source:
-            previous = buttons.get(self._selected_source or "")
-            if previous is not None:
-                previous.setText(
-                    self.tr("Select %1 updates").replace(
-                        "%1",
-                        {
-                            "system": self.tr("System"),
-                            "flatpak": self.tr("Flatpak"),
-                            "firmware": self.tr("Firmware"),
-                        }[str(previous.property("sourceId"))],
-                    )
-                )
-            self._selected_source = source
-            source_label = {
-                "system": self.tr("System"),
-                "flatpak": self.tr("Flatpak"),
-                "firmware": self.tr("Firmware"),
-            }[source]
-            button.setText(
-                self.tr("Review %1 changes").replace("%1", source_label)
-            )
-            button.setAccessibleName(
-                self.tr("Review %1 changes").replace("%1", source_label)
-            )
-            self._set_update_state(
-                "source_selected",
-                self.tr("Source selected"),
-                self.tr("%1 is selected. Choose Review changes to inspect the exact plan.").replace(
-                    "%1", source_label
-                ),
-            )
-            self.update_summary.set_status(
-                self.tr("Source selected"),
-                kind="info",
-                description=source_label,
-            )
-            return
-        {
-            "system": self.run_dnf_update,
-            "flatpak": self.run_flatpak_update,
-            "firmware": self.run_fw_update,
-        }[source]()
 
     def _add_advanced_sections(self, layout: QVBoxLayout) -> None:
         """Add the bounded kernel inspection and cleanup entry points."""
@@ -325,8 +282,8 @@ class _UpdatesSubTab(BaseTab):
     def _update_guidance(self) -> str:
         if self.deployment_backend == "rpm_ostree":
             return str(self.tr(
-                "System updates create a new Atomic deployment. Review the plan, restart when requested, "
-                "then let Action Center verify the new deployment."
+                "System updates create a new Atomic deployment. Loofi prepares and verifies it here; "
+                "restart only when Fedora reports that the new deployment is ready."
             ))
         if self.deployment_backend == "bootc":
             return str(self.tr(
@@ -339,8 +296,8 @@ class _UpdatesSubTab(BaseTab):
                 "remain unavailable until the host is identified."
             ))
         return str(self.tr(
-            "System updates change the current Fedora installation. Review one source at a time, "
-            "then let Action Center verify the result."
+            "System updates change the current Fedora installation. Loofi checks the package manager, "
+            "runs one source at a time, and verifies the result automatically."
         ))
 
     def _set_update_state(
@@ -351,21 +308,24 @@ class _UpdatesSubTab(BaseTab):
         *,
         kind: str = "info",
     ) -> None:
-        """Present an explicit update lifecycle without owning execution."""
+        """Present the update lifecycle while execution remains Action Center-owned."""
         self.update_state.show()
         self.update_state.setProperty("updateLifecycleState", lifecycle)
         self.update_state.set_result(kind, title, message)
         status_kind = {
             "succeeded": "success",
+            "completed": "success",
+            "awaiting_reboot": "warning",
+            "verification_failed": "error",
             "failed": "error",
+            "blocked": "warning",
+            "review_required": "warning",
             "cancelled": "warning",
             "unavailable": "warning",
         }.get(lifecycle, "info")
         self.update_summary.set_status(title, kind=status_kind, description=message)
 
     def set_checking(self, source: str) -> None:
-        # A new inspection invalidates the previous selection until the fresh
-        # source result is available. This keeps the review handoff truthful.
         self._selected_source = None
         for button in (self.btn_dnf, self.btn_flatpak, self.btn_fw):
             button.setEnabled(False)
@@ -376,8 +336,6 @@ class _UpdatesSubTab(BaseTab):
         )
 
     def set_updates_available(self, source: str, count: int) -> None:
-        # Keep the helper useful for injected check services and tests: an
-        # explicit availability result is enough to unlock review.
         source_buttons = (
             ("system", self.btn_dnf, self.tr("System")),
             ("flatpak", self.btn_flatpak, self.tr("Flatpak")),
@@ -389,24 +347,23 @@ class _UpdatesSubTab(BaseTab):
                 button.setEnabled(ready)
                 button.setProperty("sourceStatus", "available" if count else "up_to_date")
                 button.setProperty("readyForReview", ready)
+                button.setProperty("readyForExecution", ready)
                 if self._selected_source != source_id:
                     button.setText(
-                        self.tr("Review %1 updates" if ready else "Select %1 updates")
+                        self.tr("Update %1" if ready else "Check %1 updates")
                         .replace("%1", label)
                     )
                     button.setAccessibleName(
-                        self.tr("Review %1 updates" if ready else "Select %1 updates")
+                        self.tr("Update %1" if ready else "Check %1 updates")
                         .replace("%1", label)
                     )
         self._set_update_state(
             "available",
             self.tr("Updates available"),
-            self.tr("%1 has %2 available update(s). Review the source before creating a plan.")
+            self.tr("%1 has %2 available update(s). Choose Update to prepare and run it on this page.")
             .replace("%1", source)
             .replace("%2", str(max(0, count))),
         )
-
-    # -- Progress ----------------------------------------------------------
 
     def update_progress(self: typing.Any, percent: typing.Any, status: typing.Any) -> typing.Any:
         self._set_update_state(
@@ -424,8 +381,6 @@ class _UpdatesSubTab(BaseTab):
             self.progress_bar.setRange(0, 100)
             self.progress_bar.setValue(percent)
             self.progress_bar.setFormat(f"{percent}% - {status}")
-
-    # -- Individual update actions -----------------------------------------
 
     def run_dnf_update(self: typing.Any) -> typing.Any:
         translate = getattr(self, "tr", lambda value: value)
@@ -475,29 +430,217 @@ class _UpdatesSubTab(BaseTab):
         restart_requirement: str,
     ) -> None:
         translate = getattr(self, "tr", lambda value: value)
-        update_state = getattr(self, "update_state", None)
-        if update_state is not None:
-            update_state.show()
-            update_state.setProperty("updateLifecycleState", "review")
-            update_state.set_result(
-                "info",
-                translate("Opening Action Center"),
-                translate(
-                    "Source: %1 · Restart: %2 · Verification: required after the reviewed plan runs."
-                )
-                .replace("%1", source)
-                .replace("%2", restart_requirement),
+        if not hasattr(self, "_direct_service"):
+            self.actionCenterRequested.emit(action_id, {})
+            return
+        if getattr(self, "_direct_thread", None) is not None:
+            self._set_update_state(
+                "running",
+                translate("An update is already running"),
+                translate("Wait for the current update to finish before starting another one."),
+                kind="warning",
             )
-        update_summary = getattr(self, "update_summary", None)
-        if update_summary is not None:
-            update_summary.set_status(
-                translate("Plan review requested"),
-                kind="info",
-                description=source,
-            )
-        self.actionCenterRequested.emit(action_id, {})
+            return
+        self._pending_update = {
+            "action_id": action_id,
+            "source": source,
+            "restart": restart_requirement,
+        }
+        self._prepared_update = None
+        self._set_update_state(
+            "preparing",
+            translate("Preparing update"),
+            translate("Checking the current host and preparing the exact update scope…"),
+        )
+        self.update_summary.set_status(
+            translate("Preparing"),
+            kind="info",
+            description=source,
+        )
+        self.action_progress.show()
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setFormat(translate("Preparing update…"))
+        self.action_progress.status_label.setText(translate("Checking preconditions"))
+        self._set_update_buttons_enabled(False)
+        self._start_direct_operation(
+            lambda: self._direct_service.run(
+                action_id,
+                {},
+                dry_run=True,
+                execution_mode="direct",
+            ),
+            self._accept_direct_preview,
+            translate("Update preparation failed"),
+        )
 
-    # -- Update All (sequential queue) -------------------------------------
+    def _set_update_buttons_enabled(self, enabled: bool) -> None:
+        for button in (self.btn_dnf, self.btn_flatpak, self.btn_fw, self.btn_update_all):
+            button.setEnabled(enabled)
+
+    def _restore_update_buttons(self) -> None:
+        self._on_overview_snapshot(getattr(self.overview, "snapshot", None))
+        self.btn_update_all.setEnabled(True)
+
+    def _start_direct_operation(
+        self,
+        operation: typing.Callable[[], typing.Any],
+        on_success: typing.Callable[[typing.Any], None],
+        failure_title: str,
+    ) -> None:
+        """Run one Action Center operation off the GUI thread."""
+        if self._direct_thread is not None:
+            return
+        thread = QThread(self)
+        worker = _ActionCenterOperationWorker(operation)
+        worker.moveToThread(thread)
+        thread.started.connect(worker.run)
+
+        def safe_success(result: typing.Any) -> None:
+            try:
+                on_success(result)
+            except (RuntimeError, TypeError, ValueError) as exc:
+                self._direct_operation_failed(str(exc), failure_title)
+
+        worker.finished.connect(safe_success)
+        worker.finished.connect(thread.quit)
+        worker.failed.connect(lambda message: self._direct_operation_failed(message, failure_title))
+        worker.failed.connect(thread.quit)
+        thread.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+        thread.finished.connect(self._clear_direct_operation)
+        self._direct_thread = thread
+        self._direct_worker = worker
+        thread.start()
+
+    def _clear_direct_operation(self) -> None:
+        self._direct_thread = None
+        self._direct_worker = None
+
+    def _accept_direct_preview(self, result: typing.Any) -> None:
+        from core.actions.direct import DirectActionResult
+
+        if not isinstance(result, DirectActionResult):
+            self._direct_operation_failed(
+                self.tr("The prepared update result was invalid."),
+                self.tr("Update preparation failed"),
+            )
+            return
+        self._prepared_update = result
+        if result.status != "preview" or not result.plan_id:
+            self._present_direct_result(result)
+            self._prepared_update = None
+            self._restore_update_buttons()
+            return
+
+        settings = self._direct_service.settings_store.load()
+        needs_confirmation = (
+            result.eligibility.kind == "confirmation"
+            or (
+                (
+                    getattr(self._direct_service.settings_store, "explicit_mode", False)
+                    or settings.future_schema
+                )
+                and settings.effective_mode == "review_first"
+            )
+        )
+        if needs_confirmation:
+            source = (self._pending_update or {}).get("source", result.action_id)
+            restart = {
+                "required": self.tr("Required"),
+                "may_require": self.tr("May be required"),
+                "none": self.tr("Not normally required"),
+            }.get(
+                str(getattr(result, "reboot_policy", "none")),
+                (self._pending_update or {}).get("restart", self.tr("Check result")),
+            )
+            preview = " ".join(result.preview) if result.preview else self.tr("The exact command is protected by Action Center.")
+            answer = QMessageBox.question(
+                self,
+                self.tr("Confirm update"),
+                self.tr(
+                    "Update %1 now?\n\nScope: %2\nRestart: %3\nPrepared operation: %4"
+                ).replace("%1", source).replace("%2", ", ".join(result.outcome.affected_resources) or self.tr("system state"))
+                .replace("%3", restart)
+                .replace("%4", preview),
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                self._set_update_state(
+                    "cancelled",
+                    self.tr("Update cancelled"),
+                    self.tr("No change was applied."),
+                    kind="warning",
+                )
+                self._prepared_update = None
+                self._restore_update_buttons()
+                return
+        QTimer.singleShot(0, self._run_prepared_update)
+
+    def _run_prepared_update(self) -> None:
+        prepared = self._prepared_update
+        if prepared is None:
+            return
+        if self._direct_thread is not None:
+            QTimer.singleShot(10, self._run_prepared_update)
+            return
+        self._set_update_state(
+            "running",
+            self.tr("Updating"),
+            self.tr("Action Center is applying the prepared update and verifying the result."),
+        )
+        self.action_progress.status_label.setText(self.tr("Applying update"))
+        self.progress_bar.setRange(0, 0)
+        self.progress_bar.setFormat(self.tr("Applying update…"))
+        self._start_direct_operation(
+            lambda: self._direct_service.run_prepared(
+                prepared.plan_id,
+                confirmed=True,
+                execution_mode="direct",
+            ),
+            self._accept_direct_result,
+            self.tr("Update failed"),
+        )
+
+    def _accept_direct_result(self, result: typing.Any) -> None:
+        self._prepared_update = None
+        self._present_direct_result(result)
+        self._restore_update_buttons()
+
+    def _present_direct_result(self, result: typing.Any) -> None:
+        status = str(getattr(result, "status", "failed"))
+        label = str(getattr(result, "display_label", "Update result"))
+        message = str(getattr(result, "message", result))
+        lifecycle = {
+            "completed_verified": "succeeded",
+            "completed_awaiting_reboot": "awaiting_reboot",
+            "completed_verification_failed": "verification_failed",
+            "preview": "prepared",
+            "blocked_by_preflight": "blocked",
+            "review_required": "review_required",
+            "cancelled": "cancelled",
+        }.get(status, "failed")
+        kind = {
+            "succeeded": "success",
+            "awaiting_reboot": "warning",
+            "verification_failed": "error",
+            "blocked": "warning",
+            "review_required": "warning",
+            "cancelled": "warning",
+        }.get(lifecycle, "error")
+        preview = tuple(getattr(result, "preview", ()) or ())
+        if preview:
+            message = f"{message}\n\n{self.tr('Prepared scope')}: {' '.join(preview)}"
+        self._set_update_state(lifecycle, label, message, kind=kind)
+        self.action_progress.show()
+        self.progress_bar.setRange(0, 100)
+        self.progress_bar.setValue(100 if status.startswith("completed_") else 0)
+        self.progress_bar.setFormat(self.tr("Done") if status.startswith("completed_") else label)
+        self.action_progress.status_label.setText(label)
+
+    def _direct_operation_failed(self, message: str, title: str) -> None:
+        self._prepared_update = None
+        self._set_update_state("failed", title, str(message), kind="error")
+        self.action_progress.status_label.setText(title)
+        self._restore_update_buttons()
 
     def run_update_all(self: typing.Any) -> typing.Any:
         update_state = getattr(self, "update_state", None)
@@ -508,10 +651,8 @@ class _UpdatesSubTab(BaseTab):
                 self.tr("Separate plans keep package lists, restart requirements, and verification clear."),
             )
         self.output_area.setPlainText(
-            self.tr("Choose one review button to create one Action Center plan.")
+            self.tr("Choose one update source. Action Center prepares and verifies each source separately.")
         )
-
-    # -- Helpers -----------------------------------------------------------
 
     def start_process(self: typing.Any) -> typing.Any:
         self._set_update_state(
@@ -531,10 +672,6 @@ class _UpdatesSubTab(BaseTab):
     def on_command_finished(self: typing.Any, exit_code: typing.Any) -> typing.Any:
         self.append_output(self.tr("\nCommand finished with exit code: {}").format(exit_code))
 
-        # Command completion must not bypass the preview gate. Only
-        # sources with a fresh, supported overview result become selectable.
-        # The ``readyForReview`` property is also absent on legacy injected
-        # button doubles, where the historical helper contract is retained.
         for button in (self.btn_dnf, self.btn_flatpak, self.btn_fw):
             ready = button.property("readyForReview")
             button.setEnabled(ready if isinstance(ready, bool) else True)
@@ -571,10 +708,6 @@ class _UpdatesSubTab(BaseTab):
         self.run_command(cmd, args, description)
 
 
-# ---------------------------------------------------------------------------
-# Sub-tab: Cleanup
-# ---------------------------------------------------------------------------
-
 
 class _CleanupSubTab(BaseTab):
     """Sub-tab containing all cleanup and maintenance functionality.
@@ -602,10 +735,8 @@ class _CleanupSubTab(BaseTab):
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
-        # Use BaseTab's output_area and runner (no shadowing)
         self.output_area.setAccessibleName(self.tr("Cleanup output"))
 
-        # Cleanup Group
         cleanup_group = QGroupBox(self.tr("Safe cleanup choices"))
         cleanup_layout = QVBoxLayout()
         cleanup_group.setLayout(cleanup_layout)
@@ -624,7 +755,6 @@ class _CleanupSubTab(BaseTab):
 
         layout.addWidget(cleanup_group)
 
-        # Maintenance Group
         maint_group = QGroupBox(self.tr("Additional cleanup and maintenance"))
         maint_group.setObjectName("cleanupAdvancedChoices")
         maint_layout = QVBoxLayout()
@@ -654,7 +784,6 @@ class _CleanupSubTab(BaseTab):
         btn_rpmdb.clicked.connect(self._show_rpmdb_manual_guidance)
         maint_layout.addWidget(btn_rpmdb)
 
-        # Timeshift Check
         ts_layout = QHBoxLayout()
         btn_check_ts = QPushButton(self.tr("Check for Timeshift Snapshots"))
         btn_check_ts.setAccessibleName(self.tr("Check for Timeshift Snapshots"))
@@ -801,10 +930,6 @@ class _CleanupSubTab(BaseTab):
             self.show_error(self.tr("Cleanup failed (exit code {})").format(exit_code))
 
 
-# ---------------------------------------------------------------------------
-# Sub-tab: Overlays (Atomic / rpm-ostree only)
-# ---------------------------------------------------------------------------
-
 
 class _OverlaysSubTab(QWidget):
     """Sub-tab for managing rpm-ostree layered packages.
@@ -840,7 +965,6 @@ class _OverlaysSubTab(QWidget):
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
-        # Info Card
         info_frame = QFrame()
         info_frame.setObjectName("maintOverlayInfoFrame")
         info_layout = QVBoxLayout(info_frame)
@@ -854,7 +978,6 @@ class _OverlaysSubTab(QWidget):
         desc_label.setObjectName("maintOverlayDesc")
         info_layout.addWidget(desc_label)
 
-        # Pending Reboot Warning
         self.reboot_warning = QLabel(self.tr("Pending changes require reboot."))
         self.reboot_warning.setObjectName("maintRebootWarning")
         self.reboot_warning.setVisible(False)
@@ -862,7 +985,6 @@ class _OverlaysSubTab(QWidget):
 
         layout.addWidget(info_frame)
 
-        # Layered Packages List
         packages_group = QGroupBox(self.tr("Layered Packages"))
         packages_layout = QVBoxLayout(packages_group)
 
@@ -870,7 +992,6 @@ class _OverlaysSubTab(QWidget):
         self.packages_list.setMinimumHeight(200)
         packages_layout.addWidget(self.packages_list)
 
-        # Buttons
         btn_layout = QHBoxLayout()
 
         self.btn_refresh = QPushButton(self.tr("Refresh"))
@@ -895,7 +1016,6 @@ class _OverlaysSubTab(QWidget):
         packages_layout.addLayout(btn_layout)
         layout.addWidget(packages_group)
 
-        # Reboot Button
         self.btn_reboot = QPushButton(self.tr("Reboot to Apply Changes"))
         self.btn_reboot.setAccessibleName(self.tr("Reboot to Apply Changes"))
         self.btn_reboot.setObjectName("maintRebootBtn")
@@ -920,7 +1040,6 @@ class _OverlaysSubTab(QWidget):
             item.setForeground(semantic_qcolor("text_muted"))
             self.packages_list.addItem(item)
 
-        # Check for pending reboot
         has_pending = SystemManager.has_pending_deployment()
         self.reboot_warning.setVisible(has_pending is True or has_pending is None)
         self.btn_reboot.setVisible(has_pending is True)
@@ -940,8 +1059,6 @@ class _OverlaysSubTab(QWidget):
             )
             return
 
-        # Accept the pre-v15 decorated value if an existing widget or plugin
-        # supplies it, while new rows remain plain text.
         pkg_name = selected.text().removeprefix("\U0001f4e6 ").strip()
 
         if "No layered" in pkg_name:
@@ -997,8 +1114,3 @@ class _OverlaysSubTab(QWidget):
                 self.tr("Reboot remains manual"),
                 self.tr("Loofi never initiates a reboot. Use the desktop session controls when ready."),
             )
-
-
-# ---------------------------------------------------------------------------
-# Action Center sub-tab
-# ---------------------------------------------------------------------------

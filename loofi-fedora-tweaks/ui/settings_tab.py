@@ -366,7 +366,7 @@ class SettingsTab(QWidget, PluginInterface):
         mode_form = QFormLayout(mode_group)
         self._mode_desc = QLabel(
             self.tr(
-                "The maintained Fedora workflows are available in this build. System changes still require explicit review and confirmation."
+                "The maintained Fedora workflows are available in this build. Everyday updates run from their owning page; sensitive changes still ask for explicit confirmation."
             )
         )
         self._mode_desc.setWordWrap(True)
@@ -704,6 +704,6 @@ class SettingsTab(QWidget, PluginInterface):
         """Refresh the local application maintenance description after reset."""
         self._mode_desc.setText(
             self.tr(
-                "Core tools are always available. Each system change still has its own review and confirmation."
+                "Core tools are always available. Direct actions still use fresh preflight, Action Center authority, and independent verification."
             )
         )

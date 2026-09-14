@@ -23,6 +23,7 @@ RunState = Literal[
     "interrupted",
 ]
 ConfirmationPolicy = Literal["explicit", "explicit-no-rollback"]
+InteractionPolicy = Literal["risk", "automatic", "confirm", "review"]
 OperationClass = Literal["host", "app_state", "session", "manual_only"]
 SupportedVariant = Literal["traditional", "atomic"]
 RebootPolicy = Literal["none", "may_require", "required"]
@@ -259,6 +260,10 @@ class ActionDefinition:
     affected_resources: tuple[str, ...] = ()
     parameter_validator: ParameterValidator | None = field(default=None, repr=False, compare=False)
     privilege_resolver: PrivilegeResolver | None = field(default=None, repr=False, compare=False)
+    # Technical risk and user interaction are separate policies.  ``risk``
+    # keeps the historical risk-derived behaviour for actions that have not
+    # opted into the compact GUI flow.
+    interaction_policy: InteractionPolicy = "risk"
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -270,6 +275,7 @@ class ActionDefinition:
             "risk_level": self.risk_level,
             "privileged": self.privileged,
             "confirmation_policy": self.confirmation_policy,
+            "interaction_policy": self.interaction_policy,
             "recovery_guidance": self.recovery_guidance,
             "rollback_supported": self.rollback_supported,
             "operation_class": self.operation_class,
@@ -306,6 +312,9 @@ class ActionPlan:
     created_at: float = field(default_factory=time.time)
     expires_at: float = 0.0
     state_history: list[dict[str, Any]] = field(default_factory=list)
+    # Appended after the historical positional fields so older integrations
+    # keep their constructor compatibility while new plans persist the policy.
+    interaction_policy: InteractionPolicy = "risk"
 
     def transition(self, target: PlanState, reason: str, *, at: float | None = None) -> None:
         _transition(self.state, target, PLAN_TRANSITIONS)
@@ -334,6 +343,7 @@ class ActionPlan:
             "supported_variants": sorted(self.supported_variants),
             "reboot_policy": self.reboot_policy,
             "affected_resources": list(self.affected_resources),
+            "interaction_policy": self.interaction_policy,
             "finding_context": self.finding_context.to_dict() if self.finding_context else None,
             "state": self.state,
             "created_at": self.created_at,
@@ -365,6 +375,11 @@ class ActionPlan:
             ),
             reboot_policy=_validated_value(payload.get("reboot_policy", "none"), _REBOOT_POLICIES, "reboot_policy"),  # type: ignore[arg-type]
             affected_resources=tuple(str(item) for item in payload.get("affected_resources", [])),
+            interaction_policy=_validated_value(
+                payload.get("interaction_policy", "risk"),
+                frozenset({"risk", "automatic", "confirm", "review"}),
+                "interaction_policy",
+            ),  # type: ignore[arg-type]
             finding_context=(
                 FindingContext.from_dict(finding_context)
                 if isinstance(finding_context, Mapping)

@@ -1,6 +1,6 @@
 # GUI Destinations Reference — v28.0.2 "Ease"
 
-Loofi Fedora Tweaks features a focused, desktop-neutral graphical interface designed around five primary destinations and one unified change management workspace. The interface adheres to strict safety boundaries: navigating between screens is completely read-only, and persistent host modifications are only executed after explicit review in **Changes**.
+Loofi Fedora Tweaks features a focused, desktop-neutral graphical interface designed around five primary destinations and one unified change management workspace. The interface adheres to strict safety boundaries: navigating between screens is completely read-only, and persistent host modifications are executed only through the shared Action Center authority. Daily updates can start and finish on **Updates & Apps**; **Changes** retains history and advanced review.
 
 ---
 

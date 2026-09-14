@@ -78,6 +78,11 @@ Run tests before opening a PR:
 just verify
 ```
 
+Physical desktop and manual interaction checks are supplementary evidence, not
+release blockers. When they are not run, record the affected surfaces as
+`unverified` or `pending` in the release evidence instead of treating them as
+an incomplete automated gate.
+
 Testing expectations:
 
 - Mock all system calls (`subprocess`, filesystem, command discovery).

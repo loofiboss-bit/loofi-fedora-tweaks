@@ -10,6 +10,7 @@ _ACTION_EXPORTS = {
     "ACTIVE_ACTION_IDS": ("core.actions.catalog", "ACTIVE_ACTION_IDS"),
     "SystemActionRuntime": ("core.actions.catalog", "SystemActionRuntime"),
     "ActionDefinition": ("core.actions.contracts", "ActionDefinition"),
+    "InteractionPolicy": ("core.actions.contracts", "InteractionPolicy"),
     "ActionLifecycleError": ("core.actions.contracts", "ActionLifecycleError"),
     "ActionPlan": ("core.actions.contracts", "ActionPlan"),
     "ActionRun": ("core.actions.contracts", "ActionRun"),

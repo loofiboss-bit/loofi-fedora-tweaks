@@ -84,9 +84,11 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
 
 The repository requires unit and integration tests, architecture and
 trust-boundary checks, lint, type checking, Bandit, dependency audit, CodeQL,
-package builds, and SBOM generation as release gates. Flow passed its public
-gates; Proof is public, but physical-host, installation, and reboot evidence
-remain separate and a green rootless suite alone is not physical qualification.
+package builds, and SBOM generation as automated release gates. Physical-host,
+installation, reboot, accessibility, and manual interaction checks are
+supplementary evidence: their status is recorded as verified, pending, or
+unverified and never blocks publication. A green rootless suite alone is not
+physical qualification.
 
 ## Scope
 

@@ -1,10 +1,10 @@
-"""Proof direct-action controls for the Action Center surface."""
+"""Direct-action controls backed by the Action Center lifecycle."""
 
 import typing
 
 
 class DirectActionUiMixin:
-    """Keep Proof-specific presentation and interaction out of the main view."""
+    """Keep compact execution interaction out of the main Action Center view."""
 
     def _add_direct_action_button(self: typing.Any, target_review_row: typing.Any) -> None:
         from ui.components import PrimaryButton
@@ -26,11 +26,9 @@ class DirectActionUiMixin:
         eligibility = service.eligibility_for(
             self._ACTION_ID_ADAPTERS.get(item.id, item.id)
         )
-        settings = service.settings_store.load()
         if (
             eligibility.allowed
             and eligibility.kind in {"direct", "confirmation"}
-            and settings.effective_mode == "direct"
         ):
             self._set_lifecycle_primary("direct", enabled=True)
 
@@ -77,21 +75,13 @@ class DirectActionUiMixin:
             return
         action_id = self._ACTION_ID_ADAPTERS.get(item.id, item.id)
         service = self._direct_service_instance()
-        eligibility = service.eligibility_for(action_id)
-        settings = service.settings_store.load()
-        if eligibility.kind == "confirmation" and settings.confirm_medium_risk:
-            answer = QMessageBox.question(
-                self,
-                self.tr("Confirm medium-risk action"),
-                self.tr("Run this medium-risk action once after a fresh preflight and verify the result?"),
-            )
-            if answer != QMessageBox.StandardButton.Yes:
-                return
+        self._pending_direct_action = (action_id, parameters)
+        self._prepared_direct_result = None
         self._set_lifecycle_primary("direct", enabled=False)
         self.presentation_banner.set_result(
             "info",
-            self.tr("Maintenance in progress"),
-            self.tr("Fresh preflight, one execution, and independent verification are running."),
+            self.tr("Preparing action"),
+            self.tr("Fresh preflight is checking the exact scope before any change is applied."),
         )
         context = self._requested_finding_context
         self._start_operation(
@@ -99,8 +89,97 @@ class DirectActionUiMixin:
                 action_id,
                 parameters,
                 finding_context=context,
-                confirmed=True,
+                dry_run=True,
+                execution_mode="direct",
                 target=self._target_key,
+            ),
+            self._accept_direct_preview,
+            self.tr("Action failed"),
+        )
+
+    def _accept_direct_preview(self: typing.Any, result: typing.Any) -> None:
+        from PyQt6.QtCore import QTimer
+        from PyQt6.QtWidgets import QMessageBox
+
+        from core.actions.direct import DirectActionResult
+
+        if not isinstance(result, DirectActionResult):
+            QMessageBox.warning(self, self.tr("Action failed"), self.tr("The direct-action result was invalid."))
+            self._set_lifecycle_primary("", enabled=False)
+            return
+        self._prepared_direct_result = result
+        if result.status != "preview" or not result.plan_id:
+            self._accept_direct_result(result)
+            return
+        service = self._direct_service_instance()
+        settings = service.settings_store.load()
+        needs_confirmation = (
+            result.eligibility.kind == "confirmation"
+            or (
+                (
+                    getattr(service.settings_store, "explicit_mode", False)
+                    or settings.future_schema
+                )
+                and settings.effective_mode == "review_first"
+            )
+        )
+        if needs_confirmation:
+            preview = " ".join(result.preview) if result.preview else self.tr("Protected Action Center operation")
+            reboot = {
+                "required": self.tr("Required"),
+                "may_require": self.tr("May be required"),
+                "none": self.tr("Not normally required"),
+            }.get(str(getattr(result, "reboot_policy", "none")), self.tr("Check result"))
+            change = next(
+                (
+                    str(fact.value)
+                    for fact in getattr(result.outcome, "expected", ())
+                    if getattr(fact, "key", "") == "expected_change"
+                ),
+                result.message,
+            )
+            answer = QMessageBox.question(
+                self,
+                self.tr("Confirm action"),
+                self.tr(
+                    "Run %1 now?\n\nChange: %2\nAffected resources: %3\nRestart: %4\nPrepared operation: %5"
+                ).replace("%1", result.action_id)
+                .replace("%2", change)
+                .replace("%3", ", ".join(result.outcome.affected_resources) or self.tr("system state"))
+                .replace("%4", reboot)
+                .replace("%5", preview),
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                self._prepared_direct_result = None
+                self.presentation_banner.set_result(
+                    "warning",
+                    self.tr("Action cancelled"),
+                    self.tr("No change was applied."),
+                )
+                self._set_lifecycle_primary("", enabled=False)
+                return
+        QTimer.singleShot(0, self._run_prepared_direct)
+
+    def _run_prepared_direct(self: typing.Any) -> None:
+        from PyQt6.QtCore import QTimer
+
+        prepared = getattr(self, "_prepared_direct_result", None)
+        if prepared is None:
+            return
+        if self._operation_thread is not None:
+            QTimer.singleShot(10, self._run_prepared_direct)
+            return
+        service = self._direct_service_instance()
+        self.presentation_banner.set_result(
+            "info",
+            self.tr("Maintenance in progress"),
+            self.tr("Action Center is applying the prepared change and verifying the result."),
+        )
+        self._start_operation(
+            lambda: service.run_prepared(
+                prepared.plan_id,
+                confirmed=True,
+                execution_mode="direct",
             ),
             self._accept_direct_result,
             self.tr("Action failed"),
@@ -114,6 +193,8 @@ class DirectActionUiMixin:
         if not isinstance(result, DirectActionResult):
             QMessageBox.warning(self, self.tr("Action failed"), self.tr("The direct-action result was invalid."))
             return
+        self._prepared_direct_result = None
+        self._pending_direct_action = None
         service = self._direct_service_instance()
         self._current_run = None
         self._current_plan = None

@@ -1,4 +1,4 @@
-# Release Checklist — v27.0.1 "Core"
+# Release Checklist — v28.0.3 "Ease"
 
 Use this checklist before bumping a version. The CI pipeline handles tagging and publishing automatically.
 
@@ -108,8 +108,9 @@ push to master
 - **Idempotent release**: Skips publish if release already exists for that tag
 - **Blocking gates**: validation, adapter drift, lint, typecheck, stabilization,
   docs, tests, security, packaging, and the RPM smoke check must pass.
-- **Manual boundary**: physical desktop, Polkit-agent, reboot, Atomic,
-  keyboard, and Orca qualification remain explicitly unverified when skipped.
+- **Supplementary evidence**: physical desktop, Polkit-agent, reboot, Atomic,
+  keyboard, and Orca checks are optional. Record each surface as verified,
+  pending, or unverified in the release evidence; none is a publication blocker.
 
 ### If the pipeline fails
 

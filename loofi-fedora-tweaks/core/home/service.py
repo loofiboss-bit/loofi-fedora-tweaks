@@ -38,7 +38,7 @@ _ATTENTION_STATES = frozenset({"attention", "pending", "updates_available", "war
 _UPDATE_PENDING_STATES = frozenset({"attention", "pending", "updates_available"})
 
 _COMMON_TASKS = (
-    HomeTask("updates", "Check for updates", "Review Fedora, Flatpak, or firmware updates.", "maintenance:updates", "update"),
+    HomeTask("updates", "Check for updates", "Check and run Fedora, Flatpak, or firmware updates.", "maintenance:updates", "update"),
     HomeTask("applications", "Install an app", "Find Fedora or Flatpak apps and create an install plan.", "software:apps", "packages-software"),
     HomeTask("troubleshoot", "Troubleshoot a problem", "Start a read-only check from the symptom you notice.", "diagnostics", "maintenance-health"),
     HomeTask("cleanup", "Free space", "Preview reclaimable space before creating a cleanup plan.", "maintenance:cleanup", "cleanup"),
@@ -521,7 +521,7 @@ class HomeService:
                 ))
             elif self._state(update) in _UPDATE_PENDING_STATES or int(update.get("pending_count", 0) or 0) > 0:
                 items.append(Recommendation(
-                    "pending-updates", "pending_updates", "Review system updates",
+                    "pending-updates", "pending_updates", "Run available system updates",
                     str(update.get("summary") or "Important system updates are available."),
                     "maintenance:updates", "attention",
                 ))

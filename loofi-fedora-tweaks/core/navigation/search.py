@@ -213,7 +213,7 @@ class GlobalSearchModel:
             yield self._result_for_route(
                 result_id=f"action-center:{definition.id}",
                 label=definition.title,
-                description=f"Open Action Center to review and plan {definition.description.lower()}",
+                description=f"Inspect or run through Action Center: {definition.description.lower()}",
                 kind=SearchResultKind.ACTION,
                 route=route,
                 keywords=(

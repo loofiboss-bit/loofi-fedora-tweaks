@@ -22,13 +22,41 @@ class TestV25Eligibility(unittest.TestCase):
         self.assertEqual(decision.kind, "blocked")
         self.assertFalse(decision.allowed)
 
-    def test_manual_only_and_high_risk_never_become_direct(self) -> None:
+    def test_manual_only_stays_guided_and_firmware_uses_one_confirmation(self) -> None:
         catalog = ActionCatalog()
-        for action_id in ("enable-flathub", "update-firmware"):
+        manual = classify_definition(catalog.get("enable-flathub"))
+        self.assertEqual(manual.kind, "review_required")
+        self.assertFalse(manual.direct_allowed)
+
+        firmware = classify_definition(catalog.get("update-firmware"))
+        self.assertEqual(firmware.kind, "confirmation")
+        self.assertTrue(firmware.allowed)
+        self.assertTrue(firmware.confirmation_required)
+        self.assertEqual(firmware.risk_level, "high")
+
+    def test_normal_updates_are_direct_even_when_their_technical_risk_is_medium(self) -> None:
+        catalog = ActionCatalog()
+        system = classify_definition(catalog.get("update-fedora-system"))
+        flatpak = classify_definition(catalog.get("update-flatpaks"))
+        self.assertEqual(system.kind, "direct")
+        self.assertEqual(system.risk_level, "medium")
+        self.assertEqual(flatpak.kind, "direct")
+
+    def test_recovery_actions_use_one_confirmation_but_keep_high_technical_risk(self) -> None:
+        catalog = ActionCatalog()
+        for action_id in ("dnf5-history-undo", "rpm-ostree-rollback"):
             with self.subTest(action_id=action_id):
                 decision = classify_definition(catalog.get(action_id))
-                self.assertEqual(decision.kind, "review_required")
-                self.assertFalse(decision.direct_allowed)
+                self.assertEqual(decision.kind, "confirmation")
+                self.assertTrue(decision.allowed)
+                self.assertEqual(decision.risk_level, "high")
+
+    def test_automatic_policy_cannot_downgrade_high_risk(self) -> None:
+        definition = ActionCatalog().get("update-firmware")
+        assert definition is not None
+        decision = classify_definition(replace(definition, interaction_policy="automatic"))
+        self.assertEqual(decision.kind, "review_required")
+        self.assertFalse(decision.allowed)
 
     def test_medium_risk_is_one_confirmation_not_unattended_direct(self) -> None:
         decision = classify_definition(ActionCatalog().get("restart-failed-service"))

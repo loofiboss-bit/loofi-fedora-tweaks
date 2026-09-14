@@ -239,6 +239,7 @@ class ActionCenterOrchestrator:
             supported_variants=definition.supported_variants,
             reboot_policy=definition.reboot_policy,
             affected_resources=definition.affected_resources,
+            interaction_policy=definition.interaction_policy,
             finding_context=finding_context,
             created_at=now,
             expires_at=now + PLAN_TTL_SECONDS,

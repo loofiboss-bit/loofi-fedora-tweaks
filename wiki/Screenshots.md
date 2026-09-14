@@ -1,6 +1,6 @@
-# Visual Interface Gallery — v28.0.2 "Ease"
+# Visual Interface Gallery — v28.0.3 "Ease"
 
-> Documented for the v28.0.2 "Ease" public release.
+> Documented for the v28.0.3 "Ease" public release.
 
 This gallery showcases the primary destinations, dialogs, and verification surfaces of Loofi Fedora Tweaks. The interface is desktop-neutral, supporting dark and light themes, high-DPI scaling, and responsive window sizing across GNOME, KDE Plasma, XFCE, and tiling Wayland environments.
 

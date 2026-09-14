@@ -1,13 +1,16 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v28.0.2 "Ease" uses **Changes** as the one trust boundary
-for persistent system changes from both GUI and CLI.
+Loofi Fedora Tweaks v28.0.3 "Ease" uses the **Action Center** as the one trust
+boundary for persistent system changes from both GUI and CLI. Updates & Apps
+can start and finish supported daily updates in place; Changes remains the
+shared history and advanced review surface.
 
 ## The lifecycle
 
-Open **Changes** and inspect **Needs attention** or **Recent**. Catalog browsing,
-search, and details are inert. A plan is created only after an explicit review
-request.
+Open **Updates & Apps** for daily system, Flatpak, and firmware updates, or
+open **Changes** to inspect **Needs attention** or **Recent**. Catalog browsing,
+search, and details are inert. A plan is created only after a fresh preflight;
+sensitive actions add one concrete confirmation.
 
 Every review shows five facts:
 

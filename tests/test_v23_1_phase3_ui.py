@@ -307,6 +307,7 @@ class TestPhase3PlansAndCleanup(unittest.TestCase):
     ):
         tab = _UpdatesSubTab()
         self.addCleanup(tab.deleteLater)
+        tab._start_direct_operation = MagicMock()
         requests = []
         tab.actionCenterRequested.connect(
             lambda action_id, parameters: requests.append((action_id, parameters))
@@ -314,10 +315,10 @@ class TestPhase3PlansAndCleanup(unittest.TestCase):
 
         tab.run_dnf_update()
 
-        self.assertEqual(requests, [("update-fedora-system", {})])
-        message = tab.update_state.message_label.text()
-        self.assertIn("Restart:", message)
-        self.assertIn("Verification:", message)
+        self.assertEqual(requests, [])
+        self.assertEqual(tab.update_state.property("updateLifecycleState"), "preparing")
+        self.assertIn("new Atomic deployment", tab._update_guidance())
+        self.assertEqual(tab._pending_update["restart"], "Required to use the new deployment")
 
     def test_cleanup_previews_first_and_keeps_advanced_choices_closed(self):
         tab = _CleanupSubTab()

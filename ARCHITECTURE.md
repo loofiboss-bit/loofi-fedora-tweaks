@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v28.0.2 "Ease" public release.
+> Canonical architecture reference for the v28.0.3 "Ease" public release.
 > The supported product
 > is a desktop-neutral Fedora application built with Python 3.12+ and PyQt6.
 
@@ -31,10 +31,9 @@ The product does not ship a background service, local web API, D-Bus
 runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
-The authoritative v28 contract is [.workflow/specs/arch-v28.0.2.md](.workflow/specs/arch-v28.0.2.md).
-The previous public release record is [V28_RELEASE_PUBLICATION.md](docs/reports/V28_RELEASE_PUBLICATION.md).
-The v28.0.2 publication record is added after the canonical release workflow
-completes.
+The authoritative v28 contract is [.workflow/specs/arch-v28.0.3.md](.workflow/specs/arch-v28.0.3.md).
+The previous public release record is [V28.0.2_RELEASE_PUBLICATION.md](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+The current publication record is [V28.0.3_RELEASE_PUBLICATION.md](docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
 
 ## Runtime entry modes
 
@@ -151,7 +150,7 @@ is advisory and does not create a mutation plan implicitly.
 change follows this lifecycle:
 
 ```text
-inspect → select → review plan → authorize → execute → verify
+inspect → prepare exact scope → compact authorize when required → execute → verify
 ```
 
 Plans contain a closed action ID and typed parameters, never a command vector
@@ -174,10 +173,13 @@ evidence and does not imply that a generic Undo operation is available.
 ## Updates and native application handoff
 
 Updates & Apps keeps system packages, Flatpak applications, and firmware as
-independent sources.  Each follows `Check → Select source → Review changes →
-Run → Verify`; a missing binary or unsupported backend is shown as unavailable
-with a safe next step.  Flatpak remains an optional host update source, not a
-distribution format for this application.
+independent sources. A fresh source result enables `Update System`, `Update
+Flatpaks`, or `Update firmware` on the same page. The Action Center prepares
+the exact scope, requests one compact confirmation for sensitive actions, and
+records verification without forcing navigation to Changes. A missing binary
+or unsupported backend is shown as unavailable with a safe next step. Flatpak
+remains an optional host update source, not a distribution format for this
+application.
 
 Application discovery is handed to the installed desktop software center via
 AppStream/XDG metadata when available.  Loofi does not maintain a second app
@@ -270,9 +272,10 @@ component reachability and verifies that the RPM has no retired subpackages or
 custom polkit action installation.
 
 Local/offscreen evidence does not prove physical desktop accessibility,
-authorization-agent behavior, reboot completion, or Atomic installation.  For
-v28.0.2 these gates are intentionally recorded as unverified under the
-authorized manual-test skip; they must not be inferred from rootless tests.
+authorization-agent behavior, reboot completion, or Atomic installation.
+Physical and manual checks are supplementary release evidence rather than
+blocking gates.  Each release records them as verified, pending, or
+`unverified`; rootless tests must never be presented as physical qualification.
 The maintained coverage gate remains 85% (87% repository-wide measured locally
 for this release); the plan's repository-wide 90% target remains open.
 

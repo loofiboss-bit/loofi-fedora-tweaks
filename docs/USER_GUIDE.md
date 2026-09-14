@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 28.0.2 "Ease" public release
+> Version 28.0.3 "Ease" public release
 
 This guide covers the supported GUI and CLI surfaces. For a short first run,
 see [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -71,13 +71,15 @@ until its own follow-up confirms the result.
 
 ## 4) Updates & Apps
 
-Updates follows one source at a time through this sequence:
+Updates checks one source at a time and keeps the result on the Updates page:
 
 1. **Check** — collect a bounded source-specific result.
-2. **Select source** — choose system packages, Flatpak, or firmware.
-3. **Review changes** — inspect the exact summary, risk, and restart expectation.
-4. **Run** — confirm the reviewed plan in Changes.
-5. **Verify** — inspect the source again and record the outcome.
+2. **Update** — choose **Update System**, **Update Flatpaks**, or **Update firmware**.
+3. **Authorize when needed** — sensitive actions show one concrete confirmation with scope and restart impact.
+4. **Verify** — Action Center checks the result automatically and keeps the outcome visible on the same page.
+
+Changes remains available for history, advanced plan inspection, and recovery
+guidance. It is not required for a normal update.
 
 An unavailable source is not the same as an up-to-date source. Missing tools,
 missing remotes, unsupported deployment backends, and failed probes remain
@@ -108,9 +110,10 @@ verification method, and recovery limits before it can be reviewed.
 
 ## 7) Changes
 
-Changes is the only workspace that can create and run a persistent system
-change. It is divided into **Needs attention** and **Recent**, with a
-state-driven primary action. Every item explains five things:
+Changes is the shared history and advanced review workspace for persistent
+system changes. It is divided into **Needs attention** and **Recent**, with a
+state-driven primary action. Everyday updates can finish on Updates & Apps;
+Changes keeps the same records and detailed tools. Every item explains five things:
 
 1. what will change;
 2. the risk and affected scope;
