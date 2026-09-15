@@ -28,7 +28,7 @@ release closure is recorded after canonical publication and readback.
   architecture, release notes, and package metadata.
 - [x] QUAL-001 | Pass isolated verification, release-document, architecture,
   product, packaging, drift, and RPM build gates.
-- [ ] [post-publish] PUB-001 | Record exact tag lineage, GitHub workflow and
+- [x] [post-publish] PUB-001 | Record exact tag lineage, GitHub workflow and
   assets, checksums, attestations, COPR build and package metadata, and public
   wiki readback in the v29.0.1 publication report.
 
