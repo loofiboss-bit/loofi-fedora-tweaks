@@ -1,4 +1,4 @@
-"""Public CLI entry point for Fedora Maintenance Core.
+"""Public CLI entry point for the curated Fedora Utility.
 
 The CLI deliberately exposes a small, read-first command surface.  Legacy
 specialist commands are no longer registered by :mod:`cli.parser`; keeping
@@ -100,7 +100,12 @@ def _create_action_center_plan(action_id: str, parameters: Dict[str, Any]) -> An
 
 
 def _emit_legacy_plans(plans: Any) -> int:
-    """Render plans for retained activity/recovery presentation adapters."""
+    """Render plans for retained activity/recovery presentation adapters.
+
+    ``changes`` remains a compatibility spelling for the v29 Activity surface;
+    execution still uses the canonical plan endpoint when a caller explicitly
+    asks to apply a plan.
+    """
     summaries = [
         {
             "plan_id": plan.plan_id,
@@ -109,7 +114,7 @@ def _emit_legacy_plans(plans: Any) -> int:
             "review_required": True,
             "auto_apply": False,
             "next_action": (
-                f"loofi-fedora-tweaks --cli action-center apply {plan.plan_id} --confirm"
+                f"loofi-fedora-tweaks --cli changes apply {plan.plan_id} --yes"
                 if plan.state != "blocked"
                 else plan.recovery_guidance
             ),
@@ -171,13 +176,21 @@ def cmd_check(args: Any) -> Any:
 
 
 def cmd_changes(args: Any) -> int:
-    """Route the public ``changes`` grammar to the Action Center."""
+    """Keep the public ``changes`` grammar as an Activity compatibility alias.
+
+    History/detail operations now use the canonical Activity service.  The
+    explicit ``apply`` and ``verify`` verbs remain Action Center-compatible so
+    existing scripts can complete persisted plans and runs during v29.
+    """
     action = getattr(args, "changes_action", None) or getattr(args, "action", "list")
-    # ``changes list`` is a recorded history view.  Readiness candidates are
-    # exposed only by the internal Action Center command so users do not
-    # confuse available recommendations with completed changes.
     if action == "list":
-        action = "history"
+        setattr(args, "activity_action", "list")
+        return cmd_activity(args)
+    if action == "show":
+        setattr(args, "activity_action", "show")
+        setattr(args, "event_id", getattr(args, "id", ""))
+        return cmd_activity(args)
+
     setattr(args, "action", action)
 
     if hasattr(args, "id"):

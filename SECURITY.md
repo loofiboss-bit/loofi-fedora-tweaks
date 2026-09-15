@@ -4,14 +4,14 @@
 
 | Version | Support |
 |---|---|
-| 25.x | Current public Proof release support |
-| 24.x | Previous public release support |
-| 23.x | Critical security fixes only |
-| < 23 | End of life |
+| 29.0.1 | Current Utility release support |
+| 28.x | Previous public release support |
+| 27.x | Critical security fixes only |
+| < 27 | End of life |
 
-v25.0.4 "Proof" is the current public release; v24.0.0 "Flow" is the previous
-public release. Historical v25.0.0–v25.0.3 tags are preserved without
-modification, and v25.0.4 is the separate Proof release identity.
+v29.0.1 "Utility" is the current release; v28.0.3 "Ease" is the previous
+public release. The historical `v29.0.0` tag belongs to an earlier lineage and
+is not the Utility Renovation release.
 
 ## Reporting a Vulnerability
 
@@ -26,12 +26,12 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
 - Privileged commands use Polkit (`pkexec`), never `sudo`.
 - Commands use argument vectors, never `shell=True`, and subprocess calls have
   explicit timeouts.
-- Action Center plans expire, are re-preflighted before execution, and never
+- Internal action plans expire, are re-preflighted before execution, and never
   persist an authoritative command vector.
 - Every operation is classified as `host`, `app_state`, `session`, or
   `manual_only`; unclassified mutations fail the release gate.
-- GUI and CLI direct-action entrypoints may execute only through the bounded
-  DirectActionService over Action Center. Host changes still require fresh
+- GUI and CLI entrypoints may execute only through the shared operation
+  controller over the internal orchestrator. Host changes still require fresh
   preflight, policy-appropriate confirmation, a lease, and independent
   verification.
 - Unknown, incomplete, manual-only, high-risk, unsupported, unverifiable, and
@@ -71,14 +71,13 @@ mitigation. Do not open a public issue for an unpatched vulnerability.
 - State restore rejects path traversal, duplicate entries, unsupported schemas,
   oversized data, and hash mismatches.
 
-### Local Web API
+### Runtime exposure
 
-- The optional API accepts only loopback hosts. A non-loopback
-  `LOOFI_API_HOST` stops startup.
-- The API is read-only except for token issuance.
-- Token issuance is rate-limited. API keys can be rotated or revoked locally.
-- Authenticated `GET` routes expose status and inspection data; there is no
-  remote mutation endpoint.
+- The supported product has GUI and CLI entry points only.
+- It does not expose a local web API, background daemon, remote mutation
+  endpoint, or externally loaded executable plugin surface.
+- Compatibility state from retired surfaces is treated as local user-owned
+  data and is never interpreted as authority to execute code.
 
 ## Security Testing
 
@@ -94,7 +93,7 @@ physical qualification.
 
 In scope: privilege-boundary bypasses, command or argument injection, external
 code execution, secret disclosure, API authentication/binding bypasses, unsafe
-state restore, and Action Center confirmation bypasses.
+state restore, and internal operation-confirmation bypasses.
 
 Out of scope: attacks requiring physical access, social engineering, local
 denial of service without a boundary bypass, and vulnerabilities wholly owned by

@@ -1,81 +1,35 @@
-# Visual Interface Gallery — v28.0.3 "Ease"
+# Visual Interface Gallery — v29.0.1 "Utility"
 
-> Documented for the v28.0.3 "Ease" public release.
+> Captured from the v29.0.1 application with an isolated profile.
 
-This gallery showcases the primary destinations, dialogs, and verification surfaces of Loofi Fedora Tweaks. The interface is desktop-neutral, supporting dark and light themes, high-DPI scaling, and responsive window sizing across GNOME, KDE Plasma, XFCE, and tiling Wayland environments.
+The images below document the task-oriented shell. Offscreen captures verify
+rendering and route integration but do not claim physical desktop, keyboard,
+scaling, or assistive-technology qualification.
 
----
+## Home
 
-## 1. Home Dashboard
+![Home](images/home-dashboard.png)
 
-The initial launch screen presenting system status, environment detection (desktop, display server, kernel, architecture), the single prioritized recommendation, and quick maintenance shortcuts.
+## Install
 
-![Home Dashboard](images/home-dashboard.png)
+![Install](images/install-app.png)
 
----
+## Tune
 
-## 2. Updates & Multi-Source Maintenance
+![Tune](images/tune-profile.png)
 
-The multi-stream update inspection screen showing independent status for system packages (DNF5 / rpm-ostree), Flatpak applications, and hardware firmware via `fwupd`.
+## Fix
 
-![Updates & Maintenance](images/maintenance-updates.png)
+![Fix](images/troubleshoot.png)
 
-### Native Application Center Handoff
-When discovering new applications, Loofi hands off the request to the desktop's native center (GNOME Software or KDE Discover) using AppStream identifiers.
+## Update
 
-![Software Center Handoff](images/install-app.png)
+![Update](images/maintenance-updates.png)
 
----
+## Activity & Recovery
 
-## 3. System Health & Diagnostics
+![Activity & Recovery](images/activity-recovery.png)
 
-### Symptom-Driven Troubleshooting
-Selecting an issue symptom runs bounded, read-only diagnostic checks and outputs an actionable finding with an optional reviewed remedy.
+## Settings
 
-![System Health Troubleshooting](images/troubleshoot.png)
-
-### Storage & Safe Reclaim Preview
-Audits disk space across mount points and previews reclaimable bytes from package caches and vacuumed systemd journals. User thumbnail and application caches are left untouched.
-
-![Storage Cleanup Preview](images/cleanup-preview.png)
-
-### Hardware & Resource Telemetry
-Live telemetry for CPU, RAM, compressed ZRAM swap, disk I/O, and laptop battery health / charging threshold limits.
-
-![Hardware & System Monitor](images/system-monitor.png)
-
----
-
-## 4. Protection & Recovery
-
-### Security & Firewall Audit
-Audits active `firewalld` zones, listening network ports, and service exposure.
-
-![Security & Firewall](images/security-privacy.png)
-
-### Rollback & Recovery Points
-Inspects Btrfs snapshots and Atomic deployment rollback points before reviewing a recovery plan.
-
-![Rollback & Restore Preview](images/restore-preview.png)
-
----
-
-## 5. Changes (The Action Center)
-
-The single authority for reviewing, authorizing (`pkexec`), executing, and independently verifying persistent system changes.
-
-![Action Center Changes](images/action-center.png)
-
----
-
-## 6. Settings & Doctor Diagnostics
-
-### Appearance Preferences
-Configure application themes (Dark, Light, System) and whether to follow the system theme.
-
-![Settings & Appearance](images/settings-appearance.png)
-
-### State Doctor
-Read-only self-test inspecting dependencies, environment health, and `pkexec` availability.
-
-![State Doctor](images/state-doctor.png)
+![Settings](images/settings-appearance.png)

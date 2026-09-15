@@ -75,7 +75,7 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
         self.assertEqual(tab.status_unavailable.title_label.text(), "Status check failed")
         self.assertIn("Check failed", tab.freshness_label.text())
 
-    def test_home_keeps_the_five_core_workflows_visible(self):
+    def test_home_keeps_the_four_utility_jobs_visible(self):
         from core.home.service import _COMMON_TASKS
 
         self.assertEqual(
@@ -83,9 +83,8 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
             [
                 "updates",
                 "applications",
+                "tune",
                 "troubleshoot",
-                "cleanup",
-                "planned-changes",
             ],
         )
 

@@ -28,6 +28,47 @@ class MainWindowShellMixin:
 
     def _sync_destination_shell(self: Any, route_id: str) -> None:
         """Synchronize primary and secondary navigation for a stable route."""
+        utility_destination_for_route = getattr(
+            self,
+            "_utility_destination_for_route",
+            lambda _route_id: "",
+        )
+        utility_destination_id = utility_destination_for_route(route_id)
+        utility_ready = bool(getattr(self, "_utility_shell_ready", False))
+        if utility_ready and utility_destination_id:
+            # v29 keeps primary navigation at user jobs.  Detailed routes
+            # still resolve through the core policy but never create a second
+            # competing destination rail.
+            self._selecting_destination = True
+            try:
+                self.sidebar.select_destination(utility_destination_id)
+            finally:
+                self._selecting_destination = False
+            self.destination_host.clear_explanation()
+            self.destination_host.hide()
+            self._active_destination_id = utility_destination_id
+            return
+
+        route = resolve(str(route_id))
+        if utility_ready and route is not None and (
+            route.id == "activity"
+            or route.plugin_id == "activity"
+            or route.id == "settings"
+            or route.plugin_id == "settings"
+        ):
+            # Activity & Recovery and Settings are header-owned secondary
+            # surfaces; they should not leave a stale primary selection.
+            self._selecting_destination = True
+            try:
+                self.sidebar.clearSelection()
+                self.sidebar.setCurrentItem(None)
+            finally:
+                self._selecting_destination = False
+            self.destination_host.clear_explanation()
+            self.destination_host.hide()
+            self._active_destination_id = ""
+            return
+
         placement = placement_for_route(route_id)
         if placement is None:
             return
@@ -120,11 +161,17 @@ class MainWindowShellMixin:
             else None
         )
         area = area_for_plugin(route.plugin_id)
-        category = (
-            destination.label
-            if destination
-            else (area.label if area else route.category)
-        )
+        utility_ready = bool(getattr(self, "_utility_shell_ready", False))
+        if utility_ready and (route.id == "activity" or route.plugin_id == "activity"):
+            category = "Activity & Recovery"
+        elif utility_ready and (route.id == "settings" or route.plugin_id == "settings"):
+            category = "Settings"
+        else:
+            category = (
+                destination.label
+                if destination
+                else (area.label if area else route.category)
+            )
         category = visible_label(category)
         page_name = visible_label(route.label)
         self._bc_category.setText(category)

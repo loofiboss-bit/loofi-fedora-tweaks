@@ -24,6 +24,17 @@ from PyQt6.QtWidgets import (
 
 
 _MAX_RESULTS = 12
+_UTILITY_SEARCH_ROUTES = frozenset(
+    {
+        "atlas_dashboard",
+        "install",
+        "tune",
+        "fix",
+        "update",
+        "activity",
+        "settings",
+    }
+)
 
 
 class GlobalSearchDialog(QDialog):
@@ -120,6 +131,13 @@ class GlobalSearchDialog(QDialog):
                 result
                 for result in results
                 if result.kind is not SearchResultKind.ACTION
+                and result.route_id
+                not in {"changes", "maintenance:action-center"}
+                and (
+                    result.task_id is not None
+                    or result.route_id in _UTILITY_SEARCH_ROUTES
+                    or result.route_id.startswith("settings:")
+                )
             )
         self._visible_results = tuple(results[:_MAX_RESULTS])
         for result in self._visible_results:

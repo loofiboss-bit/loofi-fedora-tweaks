@@ -310,7 +310,7 @@ class SettingsTab(QWidget, PluginInterface):
         form.addRow("", self.auto_verify_cb)
 
         self.open_action_center_on_failure_cb = QCheckBox(
-            self.tr("Open Action Center when verification fails")
+            self.tr("Open Activity & Recovery when verification fails")
         )
         self.open_action_center_on_failure_cb.setObjectName("openActionCenterOnVerificationFailure")
         self.open_action_center_on_failure_cb.setChecked(
@@ -330,7 +330,7 @@ class SettingsTab(QWidget, PluginInterface):
             getattr(self.execution_settings_store, "last_error", "") or ""
         )
         self.execution_settings_status.setText(
-            notice or self.tr("Direct mode still uses fresh preflight, Action Center, and independent verification.")
+            notice or self.tr("Direct mode still uses fresh preflight, the internal orchestrator, and independent verification.")
         )
         form.addRow("", self.execution_settings_status)
         layout.addWidget(group)
@@ -343,7 +343,7 @@ class SettingsTab(QWidget, PluginInterface):
         try:
             self.execution_settings = self.execution_settings_store.update(**{key: value})
             self.execution_settings_status.setText(
-                self.tr("Safety & Execution settings saved. Direct actions remain bounded by Action Center.")
+                self.tr("Safety & Execution settings saved. Direct actions remain bounded by the verified operation controller.")
             )
         except (ExecutionSettingsFutureSchemaError, OSError, RuntimeError, TypeError, ValueError) as exc:
             self.execution_settings_status.setText(self.tr("Settings are read-only: %1").replace("%1", str(exc)))
@@ -704,6 +704,6 @@ class SettingsTab(QWidget, PluginInterface):
         """Refresh the local application maintenance description after reset."""
         self._mode_desc.setText(
             self.tr(
-                "Core tools are always available. Direct actions still use fresh preflight, Action Center authority, and independent verification."
+                "Core tools are always available. Direct actions still use fresh preflight, internal operation authority, and independent verification."
             )
         )

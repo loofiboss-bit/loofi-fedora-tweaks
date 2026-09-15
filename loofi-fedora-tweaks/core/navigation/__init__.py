@@ -54,6 +54,12 @@ from core.navigation.search import (
     SearchResult,
     SearchResultKind,
 )
+from core.navigation.task_search import (
+    canonical_utility_route,
+    search_utility_tasks,
+    utility_route_redirect,
+    utility_routes,
+)
 
 __all__ = [
     "ADVANCED_DESTINATION",
@@ -72,6 +78,7 @@ __all__ = [
     "SearchFilter",
     "SearchResult",
     "SearchResultKind",
+    "canonical_utility_route",
     "RoutePlacement",
     "SectionDefinition",
     "all_areas",
@@ -95,8 +102,11 @@ __all__ = [
     "resolve",
     "routes_for_palette",
     "routes_for_quick_actions",
+    "search_utility_tasks",
     "validate_areas",
     "validate_destinations",
     "validate_navigation_policy",
     "validate_routes",
+    "utility_route_redirect",
+    "utility_routes",
 ]

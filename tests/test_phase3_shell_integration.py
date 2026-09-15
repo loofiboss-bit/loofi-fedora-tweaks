@@ -126,10 +126,10 @@ class TestPhase3MainWindowShell(unittest.TestCase):
             window.sidebar.destination_ids(),
             (
                 "home",
-                "software_updates",
-                "system",
-                "network_security",
-                "changes",
+                "install",
+                "tune",
+                "fix",
+                "update",
             ),
         )
         self.assertTrue(
@@ -155,7 +155,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         opened = window.switch_to_route("diagnostics:boot")
 
         self.assertTrue(opened)
-        self.assertEqual(window._active_destination_id, "system")
+        self.assertEqual(window._active_destination_id, "fix")
         self.assertEqual(window.sidebar.topLevelItemCount(), 5)
 
     def test_mode_refresh_preserves_lazy_pages_and_six_primary_destinations(self):
@@ -184,19 +184,14 @@ class TestPhase3MainWindowShell(unittest.TestCase):
             )
         )
 
-    def test_action_center_navigation_only_activates_its_stable_route(self):
+    def test_action_center_compatibility_route_opens_activity(self):
         window = self._build_window()
 
         opened = window.switch_to_route("maintenance:action-center")
 
         self.assertTrue(opened)
-        self.assertEqual(window._active_route_id, "maintenance:action-center")
-        self.assertEqual(window._active_destination_id, "changes")
-        maintenance = window._phase3_route_widgets.get("maintenance")
-        if maintenance is not None:
-            self.assertFalse(hasattr(maintenance, "plan"))
-            self.assertFalse(hasattr(maintenance, "apply"))
-            self.assertFalse(hasattr(maintenance, "verify"))
+        self.assertEqual(window._active_route_id, "activity")
+        self.assertEqual(window._active_destination_id, "")
 
     def test_standard_deep_link_to_advanced_route_shows_gate_without_loading(self):
         window = self._build_window()
@@ -216,7 +211,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         self.assertTrue(window.navigate_back())
 
         self.assertEqual(window._active_route_id, "system_info")
-        self.assertEqual(window.sidebar.current_destination_id(), "system")
+        self.assertEqual(window.sidebar.current_destination_id(), "tune")
 
     def test_collapse_preserves_destination_selection_and_tooltips(self):
         window = self._build_window()
@@ -226,7 +221,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
         self.assertEqual(
             window.sidebar.current_destination_id(),
-            "network_security",
+            "fix",
         )
         for index in range(window.sidebar.topLevelItemCount()):
             item = window.sidebar.topLevelItem(index)
@@ -257,8 +252,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 window.destination_host.navigator.selector.count()
             )
         ]
-        self.assertIn("System Information", labels)
-        self.assertTrue(all(label and "…" not in label for label in labels))
+        self.assertEqual(labels, [])
+        self.assertFalse(window.destination_host.isVisible())
 
         window.resize(1180, 720)
         self.app.processEvents()

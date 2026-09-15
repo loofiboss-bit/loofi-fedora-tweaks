@@ -19,6 +19,14 @@ import services  # noqa: E402
 from core.execution_policy import classify_command, presentation_operation_class  # noqa: E402
 from core.product_catalog import product_catalog, validate_product_catalog  # noqa: E402
 from core.actions.public_operations import validate_public_operation_inventory  # noqa: E402
+from core.tasks import validate_task_catalog  # noqa: E402
+from core.catalog_records.utility import (  # noqa: E402
+    TASK_ROUTE_RECORDS,
+    TASK_ROUTE_REDIRECTS,
+    action_classifications,
+    validate_route_classifications,
+)
+from core.navigation.manifest import all_routes  # noqa: E402
 
 
 def _action_definitions() -> list[object]:
@@ -298,6 +306,28 @@ def _unguarded_command_runner_calls(path: Path, tree: ast.AST) -> list[str]:
 
 def validate() -> list[str]:
     errors = validate_product_catalog()
+    # v29 task metadata is a second, product-facing projection of the audited
+    # action definitions. Keep its lifecycle and safety invariants in the
+    # same contract gate as the legacy catalog instead of relying on UI tests.
+    errors.extend(f"task catalog: {error}" for error in validate_task_catalog())
+    errors.extend(
+        f"route classification: {error}"
+        for error in validate_route_classifications(route.id for route in all_routes())
+    )
+    action_classes = action_classifications(definition for definition in _action_definitions())
+    if set(action_classes) != {str(definition.id) for definition in _action_definitions()}:
+        errors.append("action classification inventory is incomplete")
+    utility_ids = tuple(record.get("id") for record in TASK_ROUTE_RECORDS)
+    if utility_ids[:5] != ("home", "install", "tune", "fix", "update"):
+        errors.append("v29 utility shell must expose Home, Install, Tune, Fix, and Update first")
+    if set(TASK_ROUTE_REDIRECTS) != {"changes", "maintenance:action-center"}:
+        errors.append("v29 compatibility redirects must cover changes and maintenance:action-center")
+    action_center_source = (SOURCE / "core" / "actions" / "center.py").read_text(encoding="utf-8")
+    if "def execute_next" in action_center_source:
+        errors.append("legacy ActionCenterService.execute_next remains an execution path")
+    queue_source = (SOURCE / "core" / "actions" / "queue.py").read_text(encoding="utf-8")
+    if "execution_disabled = True" not in queue_source:
+        errors.append("legacy ActionQueue is not explicitly marked read-only")
     entries = product_catalog()
     definitions = _action_definitions()
     retired_route_ids = {

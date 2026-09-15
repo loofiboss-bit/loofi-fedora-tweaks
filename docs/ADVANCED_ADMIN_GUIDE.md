@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 28.0.3 "Ease" public release
+> Version 29.0.1 "Utility" release
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.
@@ -10,10 +10,10 @@ clear boundary around system changes.
 Loofi ships one GUI and one intentionally small CLI. It has no background
 daemon, web API, remote-control endpoint, plugin marketplace, or sandbox
 distribution. Read-only inspection may run without administrator privileges.
-Persistent changes are always executed through the closed Action Center
-catalog. Supported daily system, Flatpak, and firmware updates can start on
-Updates & Apps and keep their preparation, confirmation, and verification
-result there; Changes remains the shared history and advanced review surface.
+Persistent changes are always executed through the closed internal action
+catalog and shared operation controller. Install, Tune, Fix, and Update keep
+preparation, confirmation, execution, and verification on the owning page;
+Activity & Recovery keeps shared history and follow-up state.
 
 The package uses the desktop's standard authorization agent through `pkexec`
 when a reviewed system operation requires administrator approval. It does not
@@ -44,20 +44,20 @@ Native settings handoffs appear only when the relevant desktop capability is
 known. Fedora Atomic variants may require a staged deployment and explicit
 restart before verification; the application never restarts the host itself.
 
-## Updates and Changes lifecycle
+## Task lifecycle
 
-For routine maintenance, open **Updates & Apps**, run a fresh check, and
-choose **Update System**, **Update Flatpaks**, or **Update firmware**. Normal
+For routine maintenance, open **Update**, run a fresh source check, and choose
+the single state-driven action for System, Flatpak, or Firmware. Normal
 system and Flatpak updates run without an extra application confirmation.
 Firmware, removal, recovery, and other sensitive actions show one confirmation
 with the exact scope, impact, and restart requirement. Authorization prompts
 from the desktop are shown when host privileges are needed.
 
-The Action Center performs preparation, execution, and verification on the
-originating page. **Changes** keeps the running work, history, detailed plans,
-and advanced review tools.
+The internal orchestrator performs preparation, execution, and verification on
+the originating page. **Activity & Recovery** keeps running work, history,
+reboot follow-up, and recovery guidance.
 
-When reviewing an action in **Changes**, confirm that it names:
+When reviewing an operation, confirm that it names:
 
 1. the exact change and affected resources;
 2. risk and expected impact;

@@ -215,7 +215,7 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.data_state, "fresh")
         self.assertEqual(summary.overall_state, "good")
         self.assertEqual(summary.primary_recommendation.kind, "no_action")
-        self.assertEqual(len(summary.common_tasks), 5)
+        self.assertEqual(len(summary.common_tasks), 4)
         self.assertEqual(
             [(item.id, item.state) for item in summary.status_items],
             [
@@ -287,7 +287,7 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.data_state, "empty")
         self.assertEqual(summary.overall_state, "unknown")
         self.assertEqual(summary.primary_recommendation.kind, "first_health_review")
-        self.assertEqual(summary.primary_recommendation.route_id, "maintenance:health-timeline")
+        self.assertEqual(summary.primary_recommendation.route_id, "utility:fix")
         self.assertIsNone(summary.last_checked_at)
         self.assertEqual(summary.freshness_state, "unavailable")
         self.assertTrue(summary.check_now_available)
@@ -367,13 +367,13 @@ class TestHomeServiceStates(unittest.TestCase):
         self.assertEqual(summary.primary_recommendation.kind, "state_integrity")
         self.assertLessEqual(len(summary.attention_items), 3)
 
-    def test_interrupted_action_run_links_to_action_center_without_execution(self):
+    def test_interrupted_action_run_links_to_activity_without_execution(self):
         run = ActionRun("run-1", "plan-1", "dnf-clean-all", "corr", state="interrupted", updated_at=99_000.0)
 
         summary = _service(snapshots=[_snapshot(100_000.0)], runs=[run]).summary()
 
         self.assertEqual(summary.primary_recommendation.kind, "action_run_review")
-        self.assertEqual(summary.primary_recommendation.route_id, "maintenance:action-center")
+        self.assertEqual(summary.primary_recommendation.route_id, "activity")
         self.assertIn("interrupted", summary.primary_recommendation.summary)
 
     def test_verified_link_requires_a_later_check_before_resolution(self):

@@ -96,7 +96,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
     actionCenterRequested = pyqtSignal(str, object)
     _METADATA = plugin_metadata_for_module(__name__)
     _SOURCE_LABELS = {
-        "action_center": "Action Center",
+        "action_center": "Change journal",
         "dnf5": "DNF5",
         "rpm_ostree": "rpm-ostree",
         "flatpak": "Flatpak",
@@ -118,6 +118,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._worker: ActivityJournalWorker | None = None
         self._next_cursor: str | None = None
         self._page_filter_key: tuple[tuple[str, Any], ...] | None = None
+        self._requested_run_id = ""
         self.presentation_state = initial_state()
         self._setup_ui()
         self._apply_presentation_state(self.presentation_state)
@@ -141,7 +142,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             self.tr("History is evidence, not an undo script"),
             self.tr(
                 "Loofi reads local records only when you ask. Recovery is offered only when "
-                "the current system state can be checked again in Action Center."
+                "the current system state can be checked again in the supported workflow."
             ),
             kind="info",
         )
@@ -149,6 +150,13 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.scaffold.add_widget(notice)
 
         filter_row = QHBoxLayout()
+        self.activity_view_filter = QComboBox()
+        self.activity_view_filter.setObjectName("activityViewFilter")
+        self.activity_view_filter.setAccessibleName(self.tr("Activity view"))
+        self.activity_view_filter.addItem(self.tr("Needs you"), "needs_you")
+        self.activity_view_filter.addItem(self.tr("In progress"), "in_progress")
+        self.activity_view_filter.addItem(self.tr("History"), "history")
+        filter_row.addWidget(self.activity_view_filter)
         self.source_filter = QComboBox()
         self.source_filter.setObjectName("activitySourceFilter")
         self.source_filter.addItem(self.tr("All sources"), "")
@@ -176,6 +184,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.until_input.setPlaceholderText(self.tr("Until date (YYYY-MM-DD)"))
         for widget in (self.source_filter, self.status_filter, self.reboot_filter, self.search_input, self.since_input, self.until_input):
             filter_row.addWidget(widget)
+        self.activity_view_filter.currentIndexChanged.connect(self._filters_changed)
         self.source_filter.currentIndexChanged.connect(self._filters_changed)
         self.status_filter.currentIndexChanged.connect(self._filters_changed)
         self.reboot_filter.currentIndexChanged.connect(self._filters_changed)
@@ -290,7 +299,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.recovery_guidance.setObjectName("activityRecoveryGuidance")
         self.recovery_guidance.setWordWrap(True)
         self.review_button = PrimaryButton(
-            self.tr("Review recovery in Action Center"),
+            self.tr("Review recovery"),
             description=self.tr("Open a fresh recovery review. This does not apply a change."),
         )
         self.review_button.setObjectName("activityReviewRecovery")
@@ -302,6 +311,20 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.detail_card.add_widget(self.recovery_guidance)
         self.detail_card.add_widget(self.review_button)
         self.scaffold.add_widget(self.detail_card)
+
+    def remember_run_id(self, run_id: str) -> None:
+        """Retain a compatibility run identifier without executing it.
+
+        Activity events are source-owned and may not contain a one-to-one run
+        record. Keeping the ID as a bounded presentation hint lets a later
+        load explain what the user came from without fabricating an event.
+        """
+        self._requested_run_id = str(run_id or "").strip()[:128]
+        if self._requested_run_id:
+            self.feedback.setText(
+                self.tr("Activity opened from run %1. Load activity to find its recorded result.")
+                .replace("%1", self._requested_run_id)
+            )
 
     def _apply_presentation_state(
         self,
@@ -502,7 +525,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
                 description=self.tr("Current state will be checked again before a plan is created."),
             )
             self.recovery_guidance.setText(
-                recovery.guidance or self.tr("Review this recovery in Action Center.")
+                recovery.guidance or self.tr("Review this recovery in the supported workflow.")
             )
         elif recovery.kind == "manual_guidance":
             self.detail_status.set_status(self.tr("Manual recovery guidance"), kind="neutral")
@@ -518,12 +541,20 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         filters: dict[str, object] = {}
         source = str(self.source_filter.currentData() or "")
         state = str(self.status_filter.currentData() or "")
+        view = str(self.activity_view_filter.currentData() or "needs_you")
         reboot = str(self.reboot_filter.currentData() or "")
         search = self.search_input.text().strip()[:120]
         if source:
             filters["sources"] = (source,)
         if state:
             filters["statuses"] = (state,)
+        elif view:
+            view_statuses = {
+                "needs_you": ("failed", "verification_failed", "awaiting_reboot", "interrupted"),
+                "in_progress": ("running", "verifying"),
+                "history": ("succeeded", "cancelled", "recorded"),
+            }
+            filters["statuses"] = view_statuses.get(view, view_statuses["needs_you"])
         if reboot:
             filters["reboot_required"] = reboot == "required"
         if search:

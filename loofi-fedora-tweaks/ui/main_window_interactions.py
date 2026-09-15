@@ -144,14 +144,31 @@ class MainWindowInteractionMixin:
             logger.debug("Global search module not available", exc_info=True)
 
     def _activate_global_search_result(self: typing.Any, result: typing.Any) -> bool:
-        """Navigate to a result and optionally preselect an Action Center item."""
+        """Navigate to a result and focus a goal without executing it."""
         route_id = str(getattr(result, "route_id", "") or "")
         if not route_id or not self.switch_to_route(route_id):
             return False
+        task_id = str(getattr(result, "task_id", "") or "")
+        if task_id:
+            self._focus_utility_task(task_id, route_id)
+            return True
         action_id = str(getattr(result, "action_id", "") or "")
         if action_id:
             self._preselect_action_center(action_id)
         return True
+
+    def _focus_utility_task(self: typing.Any, task_id: str, route_id: str) -> bool:
+        """Focus a task card after global goal search navigation."""
+        route = self._resolve_shell_route(route_id) if hasattr(self, "_resolve_shell_route") else None
+        plugin_id = str(getattr(route, "plugin_id", "")) if route is not None else ""
+        if not plugin_id and route_id in {"install", "tune", "fix", "update"}:
+            plugin_id = f"utility_{route_id}"
+        entry = getattr(self, "_sidebar_index", {}).get(plugin_id)
+        if entry is None:
+            return False
+        widget = entry.page_widget
+        focus = getattr(widget, "focus_task", None)
+        return bool(focus(task_id)) if callable(focus) else False
 
     def _preselect_action_center(
         self: typing.Any,
@@ -566,6 +583,27 @@ class MainWindowInteractionMixin:
         if attributes.get("_runtime_cleaned", False):
             return
         self._runtime_cleaned = True
+        cancel_utility = getattr(self, "_cancel_utility_operation", None)
+        if callable(cancel_utility):
+            try:
+                cancel_utility()
+            except (RuntimeError, TypeError, ValueError):
+                logger.debug("Failed to cancel utility operation during shutdown", exc_info=True)
+        utility_adapter = getattr(self, "_utility_operation_adapter", None)
+        wait_utility = getattr(utility_adapter, "wait", None)
+        if callable(wait_utility):
+            try:
+                wait_utility(5000)
+            except (RuntimeError, TypeError, ValueError):
+                logger.debug("Failed to wait for utility operation during shutdown", exc_info=True)
+        utility_update = getattr(self, "_sidebar_index", {}).get("utility_update")
+        update_page = getattr(utility_update, "page_widget", None)
+        cleanup_update = getattr(update_page, "cleanup", None)
+        if callable(cleanup_update):
+            try:
+                cleanup_update()
+            except (RuntimeError, TypeError, ValueError):
+                logger.debug("Failed to stop the Update source check during shutdown", exc_info=True)
         self._set_active_plugin("")
 
         status_timer = getattr(self, "_status_timer", None)

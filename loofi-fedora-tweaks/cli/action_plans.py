@@ -58,7 +58,7 @@ def create_public_plans(
                 "review_required": True,
                 "auto_apply": False,
                 "next_action": (
-                    f"loofi-fedora-tweaks --cli action-center apply {plan.plan_id} --confirm"
+                    f"loofi-fedora-tweaks --cli changes apply {plan.plan_id} --yes"
                     if plan.state != "blocked"
                     else operation.recovery_guidance
                 ),

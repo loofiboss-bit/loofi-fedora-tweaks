@@ -15,6 +15,7 @@ from .manifest import NavigationRoute, all_routes, resolve
 from .models import FedoraVariant, NavigationContext, NavigationDecision
 from .policy import NavigationPolicy
 from core.actions.catalog import ActionCatalog
+from core.tasks import TaskArea, TaskCatalog, TaskContext, TaskExecutionMode
 
 
 class SearchFilter(Enum):
@@ -48,6 +49,12 @@ class SearchResult:
     action_id: str | None = None
     pinned: bool = False
     suggested: bool = False
+    # Product-task metadata is optional so persisted v15 route/action results
+    # remain byte-for-byte compatible. A task result is still navigation only;
+    # the task ID lets the owning landing page focus the requested card.
+    task_id: str | None = None
+    availability: str = ""
+    manual_only: bool = False
 
 
 _ACTION_ALIASES: dict[str, tuple[str, ...]] = {
@@ -71,9 +78,15 @@ class GlobalSearchModel:
         *,
         configured_quick_actions: object = (),
     ) -> None:
+        # A context-free model is retained as an inert compatibility adapter
+        # for the legacy command-palette constructor.  Live shell callers pass
+        # the detected NavigationContext explicitly, which is the only safe
+        # point at which v29 task discovery may be projected.
+        context_provided = context is not None
         self._context = context or NavigationContext()
         self._configured_quick_actions = configured_quick_actions
         self._results = self._build_results()
+        self._task_results = self._build_task_results() if context_provided else ()
 
     def all_results(
         self,
@@ -86,7 +99,10 @@ class GlobalSearchModel:
                 for result in self._results
                 if result.kind is SearchResultKind.ACTION
             )
-        return self._results
+        # Keep the existing route/action index intact while adding the v29
+        # goal-oriented projection. Task entries use the normal route kind,
+        # so older consumers that only understand routes remain compatible.
+        return (*self._results, *self._task_results)
 
     def search(
         self,
@@ -123,6 +139,78 @@ class GlobalSearchModel:
         results.extend(self._configured_action_results())
         results.extend(self._action_center_results())
         return tuple(results)
+
+    def _build_task_results(self) -> tuple[SearchResult, ...]:
+        """Project the canonical v29 task catalog into navigation results.
+
+        Task metadata never includes command vectors or callbacks. The result
+        only carries a stable task ID and owning landing route; the shell
+        resolves the descriptor again before focusing the card.
+        """
+        catalog = TaskCatalog()
+        context = TaskContext.from_navigation_context(self._context)
+        destination_labels = {
+            "home": "Home",
+            "install": "Install",
+            "tune": "Tune",
+            "fix": "Fix",
+            "update": "Update",
+            "activity": "Activity & Recovery",
+        }
+        results: list[SearchResult] = []
+        for descriptor in catalog.all():
+            if not descriptor.discoverable:
+                continue
+            # ``TaskDescriptor`` accepts a string for readable deserialization;
+            # its runtime contract normalizes the value to ``TaskArea``. Keep
+            # the local narrowing explicit for mypy and older callers.
+            area_value = (
+                descriptor.area.value
+                if isinstance(descriptor.area, TaskArea)
+                else str(descriptor.area)
+            )
+            eligibility = catalog.eligibility(descriptor, context)
+            # Action mode remains an audited action review surface. v29 task
+            # discovery belongs to ordinary goal search and never duplicates
+            # the privileged action list there.
+            kind = (
+                SearchResultKind.SETTING
+                if descriptor.execution_mode is TaskExecutionMode.HANDOFF
+                else SearchResultKind.ROUTE
+            )
+            status = eligibility.status.replace("_", " ")
+            description = descriptor.description
+            if status not in {"supported", "read only", "native handoff"}:
+                description = f"{description} ({status.title()})"
+            results.append(
+                SearchResult(
+                    id=f"task:{descriptor.id}",
+                    label=descriptor.title,
+                    description=description,
+                    kind=kind,
+                    route_id=descriptor.route_id,
+                    destination_id=area_value,
+                    destination_label=destination_labels.get(
+                        area_value,
+                        area_value.title(),
+                    ) or area_value.title(),
+                    keywords=(
+                        descriptor.id,
+                        descriptor.goal,
+                        descriptor.group,
+                        *descriptor.keywords,
+                    ),
+                    risk=descriptor.risk,
+                    task_id=descriptor.id,
+                    availability=eligibility.status,
+                    manual_only=descriptor.manual_only,
+                )
+            )
+        return tuple(results)
+
+    def task_results(self) -> tuple[SearchResult, ...]:
+        """Return only the v29 task projection for consumers that need it."""
+        return self._task_results
 
     def _route_results(self) -> Iterable[SearchResult]:
         for route in all_routes():

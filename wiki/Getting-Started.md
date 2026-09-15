@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 28.0.3 "Ease" public release
+> Version 29.0.1 "Utility" release
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -14,47 +14,51 @@ pkexec dnf install loofi-fedora-tweaks
 loofi-fedora-tweaks
 ```
 
-The first launch opens Home. Before the first check it shows an honest
-not-yet-checked state and offers one **Run system check** action. Opening the
-application or browsing a page does not probe or modify the host.
+The first launch opens Home. Browsing a page does not modify the host. Loofi
+checks availability before it offers an executable operation, and unknown
+deployment backends remain unavailable.
 
 ## 2) Learn the five destinations
 
-1. **Home** — system status, one recommended next action, and common tasks.
-2. **Updates & Apps** — system, Flatpak, and firmware checks plus native
-   software-center handoff.
-3. **System Health** — read-only checks, troubleshooting, storage, hardware,
-   and support export.
-4. **Protection & Recovery** — firewall exposure, backups, recovery points,
-   and supported rollback guidance.
-5. **Changes** — history and advanced review for persistent changes. Normal
-   updates can be started from Updates & Apps.
+1. **Home** — Fedora profile, current status, one recommended next step, and
+   shortcuts to everyday jobs.
+2. **Install** — search the curated application catalog, filter by category,
+   select several applications, and review each source.
+3. **Tune** — start from Minimal, Recommended, or Power User and edit the
+   low-risk, verifiable selection before review.
+4. **Fix** — choose the symptom you recognise, inspect the findings, and use
+   one supported repair, instruction, or native-settings handoff.
+5. **Update** — check System, Flatpak, and Firmware independently and follow
+   the single action shown on each card.
 
-Settings are opened with the header gear. There is no separate specialist
-product, background daemon, web API, or sandbox distribution.
+Activity & Recovery and Settings are opened from the header. The internal
+execution engine is not a destination and is not required terminology for
+normal work.
 
-## 3) Three useful workflows
+## 3) Complete common jobs
 
-### Check for updates
+### Install several applications
 
-Open **Updates & Apps**, choose **Check for updates**, then press **Update
-System**, **Update Flatpaks**, or **Update firmware**. Loofi prepares the exact
-scope and verifies the result on the same page. Sensitive actions ask once for
-confirmation; ordinary system and Flatpak updates do not require a separate
-review screen.
+Open **Install**, search or choose a category, select the applications, and
+choose **Review selected applications**. Confirm the source summary. Each item
+keeps its own result, so one failed installation does not hide the others.
+
+### Review a Tune profile
+
+Open **Tune**, select a profile, and edit the checked operations. Profiles
+exclude high-risk, boot, display, and manual-only changes. Ordered operations
+stop after the first unexpected failure and never roll back automatically.
 
 ### Diagnose a problem
 
-Open **System Health → Troubleshooting**, choose one symptom, and start the
-read-only check explicitly. Review the result and any safe next step. No repair
-starts automatically.
+Open **Fix**, choose the symptom, and start the read-only diagnosis. Loofi
+shows findings before offering one next step. There is no global **Fix all**.
 
-### Review a change
+### Update Fedora
 
-Open **Changes** to inspect **Needs attention** and **Recent**. Each change
-explains what will happen, risk, authorization, verification, and recovery.
-Only an explicit confirmation runs a supported mutation, and verification is a
-separate step.
+Open **Update**. Each source shows one button: **Check**, **Update**,
+**Continue**, or **Verify**. A reboot-required result stays in Activity &
+Recovery until you return and verify it.
 
 ## 4) Optional CLI
 
@@ -65,19 +69,19 @@ loofi info
 loofi check
 loofi updates check
 loofi troubleshoot profiles
-loofi changes list
 loofi activity list
 loofi doctor
 loofi support-bundle
 ```
 
-Add `--json` before a command for machine-readable output. The CLI has the
-same closed action catalog and safety boundary as the GUI.
+`changes` remains a v29 compatibility alias for Activity list/detail and for
+explicit completion of older saved plans. Add `--json` before a command for
+machine-readable output.
 
 ## 5) Next docs
 
 - [Full user guide](../docs/USER_GUIDE.md)
-- [Verified maintenance](../docs/VERIFIED_MAINTENANCE.md)
+- [Verified operations](../docs/VERIFIED_MAINTENANCE.md)
 - [State integrity](../docs/STATE_INTEGRITY.md)
 - [Troubleshooting](../docs/TROUBLESHOOTING.md)
 - [Documentation index](../README.md)

@@ -1,4 +1,4 @@
-# Configuration & State Storage — v28.0.2 "Ease"
+# Configuration & State Storage — v29.0.1 "Utility"
 
 Loofi Fedora Tweaks keeps application state under the [XDG Base Directory Specification](https://specifications.freedesktop.org/basedir-spec/basedir-spec-latest.html) paths where the current state services apply them. Some legacy preference helpers still use the default home-relative configuration path; the exact scope is documented below.
 

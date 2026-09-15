@@ -1,43 +1,33 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 28.0.3 "Ease" public release
+> Version 29.0.1 "Utility" release
 
-This guide covers the supported GUI and CLI surfaces. For a short first run,
-see [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
+This guide covers the supported GUI and CLI. For a short first run, see
+[Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
 [Advanced administration](ADVANCED_ADMIN_GUIDE.md).
 
-## 1) Product scope
+## Product scope
 
-Loofi is a focused Fedora maintenance core. It combines read-only inspection,
-safe handoff to native desktop tools, and reviewed system changes in one
-application. The product has five destinations:
+Loofi is a curated Fedora utility with five primary destinations:
 
 | Destination | Purpose |
 | --- | --- |
-| **Home** | Current status, one recommended next action, and common tasks |
-| **Updates & Apps** | System, Flatpak, and firmware checks; native software-center handoff |
-| **System Health** | System Check, troubleshooting, storage, hardware, and support export |
-| **Protection & Recovery** | Firewall exposure, backups, recovery points, and rollback guidance |
-| **Changes** | Review, authorization, execution, and verification of persistent changes |
+| **Home** | Fedora profile, current status, recommendation, and job shortcuts |
+| **Install** | Curated application search, category filters, source labels, and multi-select review |
+| **Tune** | Editable Minimal, Recommended, and Power User selections |
+| **Fix** | Symptom-first diagnostics and one supported next step |
+| **Update** | Independent System, Flatpak, and Firmware state cards |
 
-Application settings are opened from the header gear. There is no separate
-specialist product, background service, remote API, or sandbox distribution.
+Activity & Recovery and Settings are secondary header surfaces. The product
+has no background daemon, web API, arbitrary shell execution, or unattended
+automation. Unknown desktop or deployment detection remains unavailable rather
+than falling back to a Traditional Fedora assumption.
 
-Unknown desktop, session, or deployment detection is shown as unavailable. It
-does not silently become a traditional Fedora or “no restart needed” result.
-
-## 2) Install and launch
-
-Install the published Fedora package from COPR:
+## Install and launch
 
 ```bash
 pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
 pkexec dnf install loofi-fedora-tweaks
-```
-
-Launch from the application menu or run:
-
-```bash
 loofi-fedora-tweaks
 ```
 
@@ -50,90 +40,69 @@ python -m pip install -e '.[dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
 
-The optional `install.sh` helper is guarded because a published RPM is easier
-to audit than a downloaded shell script. It never runs the application as
-root:
+## Home
 
-```bash
-bash install.sh --i-know-what-i-am-doing
-```
+Home shows the immutable Fedora profile, a compact status row, one recommended
+next step, shortcuts to Install, Tune, Fix, and Update, and current activity.
+Loading Home never starts a host probe or mutation.
 
-## 3) Home
+## Install
 
-Home reads saved state and displays one prioritized next action. On a new
-installation it says **No system check has been run yet** and offers one
-**Run system check** action. Constructing Home, opening a page, or following a
-saved run does not collect new data or mutate the host.
+Install is a curated catalog rather than an unrestricted package browser.
+Search by application name or goal, filter by category, and select several
+items. Every row shows its source and availability.
 
-After a check, Home distinguishes healthy, attention-needed, unavailable, and
-failed sources. A pending restart or pending verification remains visible
-until its own follow-up confirms the result.
+Flatpak is preferred for ordinary GUI applications. Fedora RPM is used for
+trusted system-integrated and command-line tools on Traditional Fedora. Atomic
+systems show Flatpak first and mark layered RPM operations as advanced and
+reboot-aware. Unsupported or unknown platforms fail closed.
 
-## 4) Updates & Apps
+Choose **Review selected applications** to inspect the bundle. Items execute
+independently and keep separate terminal outcomes. The bundle never retries,
+rolls back, or reboots automatically.
 
-Updates checks one source at a time and keeps the result on the Updates page:
+## Tune
 
-1. **Check** — collect a bounded source-specific result.
-2. **Update** — choose **Update System**, **Update Flatpaks**, or **Update firmware**.
-3. **Authorize when needed** — sensitive actions show one concrete confirmation with scope and restart impact.
-4. **Verify** — Action Center checks the result automatically and keeps the outcome visible on the same page.
+Tune provides three editable starting points:
 
-Changes remains available for history, advanced plan inspection, and recovery
-guidance. It is not required for a normal update.
+- **Minimal** — a small low-risk baseline.
+- **Recommended** — broadly useful verified Fedora maintenance.
+- **Power User** — additional implemented operations for experienced users.
 
-An unavailable source is not the same as an up-to-date source. Missing tools,
-missing remotes, unsupported deployment backends, and failed probes remain
-explicit in the result.
+Unavailable choices remain visible with an explanation. High-risk, boot,
+display, and manual-only operations are excluded from automatic profiles.
+Desktop-specific KDE or GNOME choices appear only when the capability is
+known. Ordered operations stop after the first unexpected failure.
 
-Application installation is not a second software store. When the desktop
-advertises a native software center, Loofi hands the selected AppStream item to
-that application; otherwise it explains why no safe handoff is available.
+## Fix
 
-## 5) System Health
+Fix begins with a symptom such as a slow system, network trouble, storage
+pressure, or boot/deployment concern. The diagnostic phase is read-only and
+presents findings before it offers one safe next step. Depending on the
+evidence, the next step is a supported verified operation, instructions, or a
+native system-settings handoff. There is no **Fix all** action.
 
-System Health contains read-only System Check, symptom-driven troubleshooting,
-storage inspection and reclaim analysis, hardware status, and support export.
-Choose a symptom, review the bounded checks, and start collection explicitly.
-Results identify missing or partial sources and offer at most one safe next
-step. No repair starts as a side effect of inspection.
+## Update
 
-Support bundles are redacted and bounded. They contain diagnostic facts and
-selected history, not secrets, arbitrary command output, or executable repair
-instructions.
+System, Flatpak, and Firmware are independent cards. Each card shows freshness,
+availability, count, details, and exactly one primary action:
 
-## 6) Protection & Recovery
+- **Check** collects a fresh source-specific result.
+- **Update** prepares, applies, and verifies the selected source.
+- **Continue** resumes post-reboot verification without rerunning the update.
+- **Verify** checks the saved outcome again.
 
-Protection & Recovery provides firewall and exposure inspection, backup and
-recovery-point workflows, supported rollback guidance, and activity history.
-Each operation states its capability, risk, required authorization,
-verification method, and recovery limits before it can be reviewed.
+Missing tools, remotes, authorization, or supported backends remain explicit.
+A source that could not be checked is never presented as up to date.
 
-## 7) Changes
+## Activity & Recovery
 
-Changes is the shared history and advanced review workspace for persistent
-system changes. It is divided into **Needs attention** and **Recent**, with a
-state-driven primary action. Everyday updates can finish on Updates & Apps;
-Changes keeps the same records and detailed tools. Every item explains five things:
+Activity groups **Needs you**, **In progress**, and **History**. It carries
+verification failures, reboot follow-up, and recovery guidance only where the
+saved operation requires them. Older `changes` and
+`maintenance:action-center` links resolve to the corresponding Activity state.
 
-1. what will change;
-2. the risk and affected scope;
-3. why authorization is needed;
-4. how the result will be verified; and
-5. what recovery or manual follow-up exists.
-
-The lifecycle is:
-
-```text
-preflight → review → explicit authorization → bounded run → independent verify
-```
-
-Plans expire, are checked again immediately before execution, and are protected
-by a single mutation lease. A successful process exit is not treated as a
-verified result. No automatic restart, retry, rollback, or resume occurs.
-
-## 8) CLI
-
-The CLI deliberately mirrors the five core journeys:
+## CLI
 
 ```bash
 alias loofi='loofi-fedora-tweaks --cli'
@@ -143,37 +112,30 @@ loofi check
 loofi updates check
 loofi troubleshoot profiles
 loofi troubleshoot run system_slow
-loofi changes list
-loofi changes show PLAN_ID
-loofi changes verify RUN_ID
 loofi activity list
+loofi activity show EVENT_ID
 loofi doctor
 loofi support-bundle
 ```
 
-Use `--json` before the command for machine-readable output. The CLI accepts
-only registered commands and typed parameters. It has no arbitrary shell,
-remote execution, or hidden mutation mode.
+Use `--json` before the command for machine-readable output. `changes` remains
+a compatibility alias during v29 for Activity list/detail and explicit saved
+plan completion. The CLI accepts registered commands and typed parameters only.
 
-## 9) Keyboard and accessibility
+## Keyboard and accessibility
 
-- `Ctrl+K` opens global search.
-- `Ctrl+Shift+K` filters search to actions.
+- `Ctrl+K` opens goal-based search.
 - `F1` opens shortcut help.
 - `Esc` closes transient panels and dialogs.
 
-Search results are pages first. An action result opens the corresponding review
-surface; selecting it never executes a command. The UI remains usable with
-keyboard navigation, high contrast, dark and light themes, and enlarged text;
-physical assistive-technology qualification is tracked separately until run.
+Search navigates to the task's owning page and returns focus to the selected
+task. Theme, scaling, keyboard, and assistive-technology physical qualification
+is recorded separately from offscreen automated checks.
 
-## 10) Troubleshooting the application
+## Support
 
-Run `loofi doctor` first. It reports missing desktop integration, unavailable
-system tools, unsupported deployment backends, and authorization prerequisites
-without changing the host. Then create a support bundle and include the
+Run `loofi doctor` first, then create a redacted support bundle. Include the
 reported version, Fedora variant, exact page, and reproduction steps in an
-issue.
-
-See [Troubleshooting](TROUBLESHOOTING.md), [State integrity](STATE_INTEGRITY.md),
-and [Verified maintenance](VERIFIED_MAINTENANCE.md) for deeper guidance.
+issue. See [Troubleshooting](TROUBLESHOOTING.md),
+[State integrity](STATE_INTEGRITY.md), and
+[Verified operations](VERIFIED_MAINTENANCE.md) for deeper guidance.

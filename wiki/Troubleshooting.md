@@ -1,4 +1,4 @@
-# Troubleshooting Runbooks — v28.0.2 "Ease"
+# Troubleshooting Runbooks — v29.0.1 "Utility"
 
 When experiencing issues with Loofi Fedora Tweaks or underlying system services, follow these diagnostic runbooks. Loofi is built to fail closed: when a capability is missing or unverified, it reports the exact reason rather than guessing.
 
@@ -62,7 +62,7 @@ Persistent system changes require privilege escalation via Polkit through `pkexe
    - KDE: `/usr/libexec/polkit-kde-authentication-agent-1`
    - Sway / Hyprland: `polkit-gnome` or `polkit-kde-agent`
 3. **User Cancellation**:
-   If the Polkit prompt was dismissed or timed out, the change remains staged in **Changes**. You can open **Changes** and trigger execution again.
+   If the Polkit prompt was dismissed or timed out, restart the task from its owning page. Saved follow-up state remains visible in **Activity & Recovery**.
 
 ---
 
@@ -80,7 +80,7 @@ DNF5 protects its state using lock files. If another package transaction (e.g. b
 
 ---
 
-## 5. Updates & Apps Shows Source as "Unavailable"
+## 5. Update shows a source as "Unavailable"
 
 ### Symptom: One source shows an error or unavailable status
 Loofi treats system packages, Flatpaks, and firmware as separate sources.

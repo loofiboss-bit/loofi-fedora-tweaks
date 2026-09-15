@@ -2,29 +2,21 @@
 
 Canonical screenshot assets for user-facing docs.
 
-**Last verified**: v23.1.0 release candidate on 2026-08-01
+**Last verified**: v29.0.1 "Utility" release candidate on 2026-09-15
 
-**Status**: The complete set was captured from the real application on Fedora
-44 KDE Plasma 6.7.3 under Wayland at 140% display scale. The deterministic
-temporary profile prevents local settings from entering the images, and the
-capture script redacts host-specific network addresses.
+**Status**: The current set is captured from the real PyQt application with an
+isolated temporary profile and the offscreen backend. It verifies rendering and
+route integration but does not claim physical desktop, keyboard, scaling, or
+assistive-technology qualification.
 
 ## Current Files
 
 - `home-dashboard.png` -- Home
-- `install-app.png` -- Install App
-- `troubleshoot.png` -- Troubleshoot
-- `cleanup-preview.png` -- Cleanup preview
-- `action-center.png` -- Action Center with a review-ready cleanup plan
-- `upgrade-assistant.png` -- Software & Updates > Maintenance > Upgrade Assistant
-- `release-readiness.png` -- Home > Release Readiness
-- `release-readiness-advanced.png` -- Release Readiness advanced details
-- `system-monitor.png` -- System > Performance and processes
-- `maintenance-updates.png` -- Software & Updates > Maintenance updates workflow
-- `network-overview.png` -- Network tab overview
-- `security-privacy.png` -- Security & Privacy tab
-- `ai-lab-models.png` -- Advanced route > AI Lab models view
-- `community-legacy-extensions.png` -- Advanced > Local Profiles > Legacy Extensions
+- `install-app.png` -- curated Install catalog
+- `tune-profile.png` -- editable Tune profile
+- `troubleshoot.png` -- symptom-first Fix
+- `maintenance-updates.png` -- System, Flatpak, and Firmware Update cards
+- `activity-recovery.png` -- Activity & Recovery
 - `settings-appearance.png` -- Settings > Appearance
 
 ## Referenced By
@@ -52,8 +44,8 @@ For manual verification after regeneration:
 
 1. Launch the app: `./run.sh` or `PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py`
 2. Set the window to a consistent size (e.g., 1280x800).
-3. Use the default dark theme (Abyss Dark through the semantic theme engine).
-4. Navigate to each tab listed above and capture the screenshot.
+3. Use the semantic dark theme.
+4. Navigate to each destination listed above and capture the screenshot.
 5. Save with the **same filename** to avoid breaking doc references.
 6. Optimize images: `optipng -o5 *.png` or similar.
 7. Verify rendering in Markdown preview before merging.
@@ -62,25 +54,10 @@ For manual verification after regeneration:
 
 | Screenshot | Navigate To | Notes |
 |------------|-------------|-------|
-| `home-dashboard.png` | Home | Show canonical Home and the six-destination Standard sidebar |
-| `install-app.png` | Software & Updates > Install App | Show search before any installation plan is created |
-| `troubleshoot.png` | System > Troubleshoot | Show the symptom-first starting point |
-| `cleanup-preview.png` | Software & Updates > Cleanup | Show safe defaults and preview-first guidance |
-| `action-center.png` | Software & Updates > Action Center | Show one closed, non-destructive review plan |
-| `upgrade-assistant.png` | Software & Updates > Maintenance > Upgrade Assistant | Show Fedora 44 stable and Fedora 45 preview planning |
-| `release-readiness.png` | Home > Release Readiness | Show grouped beginner readiness findings |
-| `release-readiness-advanced.png` | Home > Release Readiness > Advanced | Show command/recommendation metadata |
-| `system-monitor.png` | System > Performance | Show CPU/RAM/process data |
-| `maintenance-updates.png` | Software & Updates > Maintenance > Updates | Show update workflow |
-| `network-overview.png` | Network & Security > Network | Show connections view |
-| `security-privacy.png` | Network & Security > Security | Show security score |
-| `ai-lab-models.png` | Search/direct route > AI Lab | Show models list |
-| `community-legacy-extensions.png` | Advanced > Local Profiles > Legacy Extensions | Show local profiles and the non-executing legacy extension inventory |
+| `home-dashboard.png` | Home | Show Fedora profile, recommendation, and four job shortcuts |
+| `install-app.png` | Install | Show search, category filtering, source labels, and selection |
+| `tune-profile.png` | Tune | Show the editable profile and operation availability |
+| `troubleshoot.png` | Fix | Show the symptom-first starting point |
+| `maintenance-updates.png` | Update | Show the three state-driven source cards |
+| `activity-recovery.png` | Activity & Recovery | Show Needs you, In progress, and History |
 | `settings-appearance.png` | Settings > Appearance | Show appearance options |
-
-### Additional screenshots to consider next
-
-- `extensions-tab.png` -- Manage > Extensions (new in v37)
-- `backup-tab.png` -- Manage > Backup (new in v37)
-- `diagnostics-tab.png` -- Developer > Diagnostics
-- `agents-tab.png` -- Automation > Agents

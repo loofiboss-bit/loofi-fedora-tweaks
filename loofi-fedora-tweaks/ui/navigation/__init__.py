@@ -1,6 +1,16 @@
 """Shared v15 shell navigation components."""
 
 from ui.navigation.destination_host import DestinationHost, SecondaryRoute
-from ui.navigation.destination_sidebar import DestinationSidebar
+from ui.navigation.destination_sidebar import (
+    UTILITY_DESTINATIONS,
+    DestinationSidebar,
+    UtilityDestination,
+)
 
-__all__ = ["DestinationHost", "DestinationSidebar", "SecondaryRoute"]
+__all__ = [
+    "DestinationHost",
+    "DestinationSidebar",
+    "SecondaryRoute",
+    "UTILITY_DESTINATIONS",
+    "UtilityDestination",
+]

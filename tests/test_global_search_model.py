@@ -176,6 +176,17 @@ class TestGlobalSearchModel(unittest.TestCase):
         self.assertEqual(first, second)
         self.assertLessEqual(len(first), 5)
 
+    def test_goal_search_exposes_canonical_v29_tasks_without_callbacks(self):
+        model = GlobalSearchModel(_traditional_context())
+
+        results = model.search("flatpak install")
+
+        task = next(result for result in results if result.task_id == "install:flatpaks")
+        self.assertEqual(task.route_id, "install")
+        self.assertEqual(task.destination_id, "install")
+        self.assertFalse(task.manual_only)
+        self.assertFalse(any(callable(value) for value in task.__dict__.values()))
+
 
 if __name__ == "__main__":
     unittest.main()

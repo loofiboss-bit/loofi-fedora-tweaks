@@ -11,7 +11,7 @@ from scripts.capture_v8_user_guide_screenshots import ROUTE_SCREENSHOTS
 
 
 class TestV15ScreenshotCapture(unittest.TestCase):
-    def test_specialist_routes_switch_to_advanced_before_capture(self):
+    def test_capture_routes_are_available_in_the_utility_shell(self):
         standard = NavigationContext(
             mode=NavigationMode.STANDARD,
             installed_components=frozenset({"core", "specialist"}),
@@ -29,6 +29,12 @@ class TestV15ScreenshotCapture(unittest.TestCase):
             if not route_id:
                 continue
             with self.subTest(filename=filename):
+                # These four IDs are shell-owned aliases for the v29 landing
+                # pages. They deliberately do not revive entries in the
+                # compatibility navigation manifest.
+                if route_id in {"install", "tune", "fix", "update"}:
+                    self.assertFalse(requires_advanced)
+                    continue
                 selected_context = advanced if requires_advanced else standard
                 self.assertEqual(
                     NavigationPolicy.evaluate(route_id, selected_context).decision,

@@ -1,5 +1,19 @@
 # Changelog
 
+## v29.0.1 — Utility (2026-09-15)
+
+- Replaced the maintenance-oriented shell with Home, Install, Tune, Fix, and Update.
+- Added a shared task catalog, source-aware app bundles, editable Tune profiles, symptom-first Fix, and state-driven Update cards.
+- Removed legacy queue execution while retaining the internal orchestrator as the single mutation authority.
+- Preserved schema-v4 history and redirected old Changes links to Activity & Recovery.
+- Preserved the historical v29.0.0 tag and used v29.0.1 as the unambiguous Utility release identity.
+
+## v28.0.3 — Ease (2026-09-14)
+
+- Added direct in-page system and Flatpak updates with compact confirmation and automatic verification.
+- Synchronized schema-v4 action state and kept physical/manual qualification as explicitly recorded supplementary evidence.
+- Public release evidence: [V28.0.3_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
+
 ## v28.0.2 — Ease (2026-09-14)
 
 - Focused patch release for the battery-service review fixes from PR #40.

@@ -1,13 +1,13 @@
 {
-  "version": "v28.0.3",
-  "started_at": "20260914_212444",
-  "status": "complete",
-  "target_version": "v28.0.3",
-  "phase": "complete",
-  "baseline_commit": "53ad83487fa5bd972c2832178920bb001b8a989f",
-  "product_version": "v28.0.3",
-  "product_codename": "Ease",
-  "target_codename": "Ease",
+  "version": "v29.0.1",
+  "started_at": "20260915_111334",
+  "status": "active",
+  "target_version": "v29.0.1",
+  "phase": "release_candidate",
+  "baseline_commit": "5ed22c523b075abd2298fe4b9bd346678a0dca9f",
+  "product_version": "v29.0.1",
+  "product_codename": "Utility",
+  "target_codename": "Utility",
   "current_public_release": "v28.0.3",
   "current_release_commit": "958b4f2e1870cc2839e12232c5b0c7bcfc9542a3",
   "baseline_product_version": "v26.0.3",
@@ -68,6 +68,14 @@
     "legacy_tag": "legacy-v27.0.0-marketplace-enhancement",
     "legacy_commit": "b103a20ae495dc2c167668057f531ed3e762d313"
   },
+  "v29_historical_tag_collision": {
+    "tag": "v29.0.0",
+    "tag_object": "00bdcd1da8919a3d8681f383fd24cee380eb9d90",
+    "peeled_commit": "8b7ad97f6ec3d253a461bd25e901aa9a2d6454dc",
+    "historical_codename": "Usability & Polish",
+    "status": "preserved-unmodified",
+    "utility_release_identity": "v29.0.1"
+  },
   "physical_gates": {
     "fedora44_kde_wayland": "unverified",
     "fresh_atomic": "unverified",
@@ -78,12 +86,12 @@
     "clean_kde_install": "unverified"
   },
   "external_release_gates": {
-    "commit_and_exact_tag": "passed-v28.0.3-canonical-workflow",
-    "ci_and_codeql": "passed-v28.0.3",
-    "github_assets_checksums_attestations": "passed-v28.0.3",
-    "copr_packages_signatures": "passed-v28.0.3-build-10985922",
+    "commit_and_exact_tag": "pending-v29.0.1",
+    "ci_and_codeql": "pending-v29.0.1",
+    "github_assets_checksums_attestations": "pending-v29.0.1",
+    "copr_packages_signatures": "pending-v29.0.1",
     "clean_fedora44_install": "authorized-skip",
-    "public_docs_and_wiki": "passed-v28.0.3-wiki-readback"
+    "public_docs_and_wiki": "pending-v29.0.1"
   },
   "current_public_release_evidence": {
     "release_commit": "958b4f2e1870cc2839e12232c5b0c7bcfc9542a3",
@@ -107,9 +115,7 @@
     "wiki_commit": "7a92b242e2d8d3a0be9ea5990f700d02d278435a",
     "publication_report": "docs/reports/V28.0.3_RELEASE_PUBLICATION.md"
   },
-  "bumped_at": "2026-09-14T21:24:44.830990+00:00",
-  "release_authorized_at": "2026-09-13T21:00:00+02:00",
-  "published_at": "2026-09-14T22:08:40Z",
-  "closed_at": "2026-09-14T22:20:44Z",
+  "bumped_at": "2026-09-15T11:13:34.648615+00:00",
+  "release_authorized_at": "2026-09-15T13:15:00+02:00",
   "publication_authorized": true
 }

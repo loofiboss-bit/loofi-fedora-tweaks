@@ -19,7 +19,7 @@ def build_parser() -> argparse.ArgumentParser:
     """Build the public CLI parser for Fedora Maintenance Core."""
     parser = argparse.ArgumentParser(
         prog="loofi",
-        description=f'Loofi Fedora Tweaks v{__version__} "{__version_codename__}" - Fedora Maintenance Core CLI',
+        description=f'Loofi Fedora Tweaks v{__version__} "{__version_codename__}" - Curated Fedora Utility CLI',
     )
     parser.add_argument(
         "-v",

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
+from dataclasses import dataclass
 
 from core.navigation.models import Destination
 from PyQt6.QtCore import QEvent, QSize, Qt, pyqtSignal
@@ -23,6 +24,62 @@ _PRESENTATION_GROUPS = {
     "network_security": "Manage",
     "changes": "Review",
 }
+
+
+@dataclass(frozen=True)
+class UtilityDestination:
+    """One user-facing destination in the v29 utility shell.
+
+    This is intentionally a UI projection rather than a replacement for the
+    canonical core navigation model.  It lets the shell expose five clear
+    jobs while legacy route IDs and plugin ownership remain available to the
+    policy layer underneath.
+    """
+
+    id: str
+    label: str
+    icon: str
+    default_route_id: str
+    description: str = ""
+
+
+UTILITY_DESTINATIONS: tuple[UtilityDestination, ...] = (
+    UtilityDestination(
+        "home",
+        "Home",
+        "home",
+        "atlas_dashboard",
+        "System status and the next useful Fedora task.",
+    ),
+    UtilityDestination(
+        "install",
+        "Install",
+        "install",
+        "utility:install",
+        "Discover applications and trusted software sources.",
+    ),
+    UtilityDestination(
+        "tune",
+        "Tune",
+        "settings",
+        "utility:tune",
+        "Review Fedora, privacy, performance, and desktop settings.",
+    ),
+    UtilityDestination(
+        "fix",
+        "Fix",
+        "maintenance-health",
+        "utility:fix",
+        "Diagnose a symptom and choose a supported repair.",
+    ),
+    UtilityDestination(
+        "update",
+        "Update",
+        "update",
+        "utility:update",
+        "Check system, Flatpak, and firmware updates.",
+    ),
+)
 
 
 class DestinationSidebar(QTreeWidget):
@@ -81,6 +138,53 @@ class DestinationSidebar(QTreeWidget):
                 ),
             )
             previous_group = group
+        if selected:
+            self.select_destination(selected)
+
+    def set_utility_destinations(
+        self,
+        destinations: Iterable[UtilityDestination] = UTILITY_DESTINATIONS,
+    ) -> None:
+        """Render the five concise v29 jobs used by the main shell.
+
+        ``set_destinations`` remains available for callers that need the
+        canonical core destination projection (and for compatibility tests).
+        The utility projection has no nested section rows, so it cannot grow
+        into another miniature settings tree.
+        """
+        selected = self.current_destination_id()
+        self.clear()
+        minimum_height = max(40, int(self.fontMetrics().height() * 2.35))
+        for destination in tuple(destinations):
+            item = QTreeWidgetItem(self)
+            item.setData(0, DESTINATION_ID_ROLE, destination.id)
+            item.setData(0, DESTINATION_LABEL_ROLE, destination.label)
+            item.setData(0, DESTINATION_ICON_ROLE, destination.icon)
+            item.setData(0, DESTINATION_GROUP_ROLE, self.tr("Main tasks"))
+            item.setData(
+                0,
+                Qt.ItemDataRole.AccessibleTextRole,
+                destination.label,
+            )
+            item.setData(
+                0,
+                Qt.ItemDataRole.AccessibleDescriptionRole,
+                destination.description or destination.label,
+            )
+            item.setText(0, "" if self._collapsed else destination.label)
+            item.setToolTip(
+                0,
+                destination.description or destination.label,
+            )
+            item.setSizeHint(0, QSize(0, minimum_height))
+            item.setIcon(
+                0,
+                get_qicon(
+                    destination.icon,
+                    size=20,
+                    tint=icon_tint_variant(destination.icon, selected=False),
+                ),
+            )
         if selected:
             self.select_destination(selected)
 

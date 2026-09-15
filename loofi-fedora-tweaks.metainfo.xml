@@ -5,20 +5,22 @@
   <project_license>MIT</project_license>
 
   <name>Loofi Fedora Tweaks</name>
-  <summary>Fedora maintenance and desktop control center</summary>
+  <summary>Curated Fedora utility for installing, tuning, fixing, and updating</summary>
 
   <description>
     <p>
-      A focused GUI control center for Fedora covering software maintenance,
-      system inspection, protection, recovery, and reviewed system changes.
+      A curated GUI utility for Fedora covering application installation,
+      safe tuning, symptom-driven diagnosis, updates, and reviewed system
+      changes.
     </p>
     <p>Features include:</p>
     <ul>
-      <li>Desktop-neutral Fedora readiness diagnostics with capability-aware guidance</li>
-      <li>Reviewed system changes with native desktop authorization and independent verification</li>
-      <li>Verified Action Center planning, confirmation, execution, and outcome checks</li>
-      <li>System updates, firmware status, package cleanup, and neutral software-center handoff</li>
-      <li>System health, troubleshooting, storage, protection, recovery, and change history</li>
+      <li>Home, Install, Tune, Fix, and Update task-oriented destinations</li>
+      <li>Curated Flatpak and Fedora RPM application selection with per-item results</li>
+      <li>Editable low-risk Tune profiles with capability-aware availability</li>
+      <li>Symptom-first diagnostics with one verified repair or explicit handoff</li>
+      <li>Independent System, Flatpak, and Firmware update cards</li>
+      <li>Reviewed system changes with native authorization and independent verification</li>
       <li>One small GUI and CLI surface with no background daemon, web API, or sandbox distribution</li>
     </ul>
   </description>
@@ -38,6 +40,11 @@
   </provides>
 
   <releases>
+    <release version="29.0.1" date="2026-09-15" type="stable">
+      <description>
+        <p>v29.0.1 "Utility": curated Install, Tune, Fix, and Update journeys on one shared verified operation lifecycle.</p>
+      </description>
+    </release>
     <release version="28.0.3" date="2026-09-14" type="stable">
       <description>
         <p>v28.0.3 "Ease": direct in-place updates, compact risk confirmation, automatic verification, and synchronized Action Center state v4.</p>

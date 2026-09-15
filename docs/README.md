@@ -1,17 +1,18 @@
 # Documentation
 
-This map covers the public v28.0.3 "Ease" release. Exact tag, asset,
-attestation, COPR, and wiki evidence are recorded in the
-[v28.0.3 public release report](reports/V28.0.3_RELEASE_PUBLICATION.md). The
-previous public release report remains in
-[V28.0.2_RELEASE_PUBLICATION.md](reports/V28.0.2_RELEASE_PUBLICATION.md).
+This map covers the v29.0.1 "Utility" release. The
+[Utility Renovation plan](plans/LOOFI_FEDORA_TWEAKS_V29_PLAN.md),
+[architecture specification](../.workflow/specs/arch-v29.0.1.md), and
+[release tasks](../.workflow/specs/tasks-v29.0.1.md) are the implementation
+authority. The previous public release report remains in
+[V28.0.3_RELEASE_PUBLICATION.md](reports/V28.0.3_RELEASE_PUBLICATION.md).
 
 ## Use Loofi
 
 - [Getting started](BEGINNER_QUICK_GUIDE.md) — install, the first run, and
   common workflows
 - [User guide](USER_GUIDE.md) — complete GUI and CLI usage
-- [Verified maintenance](VERIFIED_MAINTENANCE.md) — Changes lifecycle,
+- [Verified operations](VERIFIED_MAINTENANCE.md) — shared operation lifecycle,
   authorization, verification, and recovery
 - [State integrity](STATE_INTEGRITY.md) — durable state, migrations, locks,
   archives, and privacy
@@ -47,7 +48,7 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 - [Roadmap](../ROADMAP.md) — current release status
 - [Changelog](../CHANGELOG.md) — complete historical record
 - [Release notes](releases/RELEASE_NOTES.md) — release-note index
-- [v28.0.3 Ease release notes](releases/RELEASE-NOTES-v28.0.3.md) — current public release scope
+- [v29.0.1 Utility release notes](releases/RELEASE-NOTES-v29.0.1.md) — current release scope
 - [v28.0.3 public release evidence](reports/V28.0.3_RELEASE_PUBLICATION.md) — exact publication readback
 - [v28.0.2 public release evidence](reports/V28.0.2_RELEASE_PUBLICATION.md) — previous exact publication readback
 - [v27.0.1 Core notes](releases/RELEASE-NOTES-v27.0.1.md) — previous public release scope

@@ -73,7 +73,7 @@ class AtlasDashboardTab(BaseTab):
         "state-integrity": "Application state",
         "maintenance": "Updates, services, and disk",
         "storage-reclaim": "Reclaimable storage",
-        "action-center": "Action Center history",
+        "action-center": "Activity history",
         "pending-reboot": "Pending reboot",
     }
 
@@ -675,7 +675,7 @@ class AtlasDashboardTab(BaseTab):
     def _connect_route_button(self, button, route_id: str) -> None:
         button.setProperty("routeId", route_id)
         if route_id == "maintenance:action-center":
-            button.setObjectName("homeActionCenterLink")
+            button.setObjectName("homeActivityLink")
         button.clicked.connect(lambda _checked=False: self._open_route(route_id))
 
     def _update_status_badges(self, summary: HomeSummary) -> None:

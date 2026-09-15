@@ -1,8 +1,8 @@
-# Architecture — v28.0.2 "Ease"
+# Architecture — v29.0.1 "Utility"
 
 Loofi Fedora Tweaks is structured as a layered, modular desktop application with clean boundaries between UI presentation, domain logic, system service probing, and execution authority.
 
-The canonical architecture contract is defined in [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md) and [.workflow/specs/arch-v28.0.2.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/.workflow/specs/arch-v28.0.2.md).
+The canonical architecture contract is defined in [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md) and [.workflow/specs/arch-v29.0.1.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/.workflow/specs/arch-v29.0.1.md).
 
 ---
 
@@ -41,7 +41,7 @@ The canonical architecture contract is defined in [ARCHITECTURE.md](https://gith
 - **`cli/` (Command-Line Interface)**:
   Parses bounded CLI arguments and emits formatted human text or structured command-specific `--json` payloads. Completely decoupled from Qt; imports zero UI code.
 - **`core/` (Domain Logic & Contracts)**:
-  Owns business logic, `PlatformProfile` detection, the immutable `ProductCatalog`, Action Center planning, mutation lease locking, and independent verification.
+  Owns business logic, `PlatformProfile` detection, the task catalog, internal operation planning, mutation lease locking, and independent verification.
 - **`services/` (Probing & Adapters)**:
   Performs bounded, read-only system inspection across systemd, DNF5, ostree, Flatpak, and hardware sysfs nodes. Free of Qt dependencies.
 - **`utils/` (Low-Level Primitives)**:
@@ -63,7 +63,7 @@ If an unrecognized backend or distribution is detected, `PlatformProfile` **fail
 
 ## 4. Single Mutation Authority
 
-All persistent system modifications must be constructed as typed Action Center plans within `core.action_center`.
+All persistent system modifications must be constructed as typed plans within the internal `core.actions` orchestrator.
 - UI buttons and CLI commands only stage plans.
 - Mutation leases prevent concurrent write operations.
 - Execution requires explicit user authorization via Polkit (`pkexec`).

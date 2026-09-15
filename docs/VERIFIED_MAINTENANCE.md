@@ -1,16 +1,15 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v28.0.3 "Ease" uses the **Action Center** as the one trust
-boundary for persistent system changes from both GUI and CLI. Updates & Apps
-can start and finish supported daily updates in place; Changes remains the
-shared history and advanced review surface.
+Loofi Fedora Tweaks v29.0.1 "Utility" uses one internal orchestrator as the
+trust boundary for persistent system changes from both GUI and CLI. Install,
+Tune, Fix, and Update use the same controller while Activity & Recovery keeps
+saved outcomes and follow-up state.
 
 ## The lifecycle
 
-Open **Updates & Apps** for daily system, Flatpak, and firmware updates, or
-open **Changes** to inspect **Needs attention** or **Recent**. Catalog browsing,
-search, and details are inert. A plan is created only after a fresh preflight;
-sensitive actions add one concrete confirmation.
+Open the task's owning page and review its selection or source. Catalog
+browsing, search, and details are inert. A plan is created only after a fresh
+preflight; sensitive actions add one concrete confirmation.
 
 Every review shows five facts:
 
@@ -47,22 +46,23 @@ Supported source-specific maintenance can include:
 - selected service or firewall changes with an exact verifier; and
 - recovery-point creation or supported rollback guidance.
 
-Application discovery is handed to the desktop's native software center when a
-capability-aware AppStream handoff exists. Loofi is not distributed as a
-Flatpak and does not silently add remotes.
+The Install catalog prefers Flatpak for ordinary GUI applications and Fedora
+RPM for trusted system-integrated or command-line tools. Atomic RPM layering
+is advanced and reboot-aware. Loofi itself is distributed as an RPM and never
+silently adds a remote.
 
 ## CLI
 
 ```bash
-loofi-fedora-tweaks --cli changes list
-loofi-fedora-tweaks --cli changes show PLAN_ID
+loofi-fedora-tweaks --cli activity list
+loofi-fedora-tweaks --cli activity show EVENT_ID
 loofi-fedora-tweaks --cli changes apply PLAN_ID --yes
 loofi-fedora-tweaks --cli changes verify RUN_ID
 ```
 
-Use `--json` before the command for machine-readable output. The CLI
-accepts only the closed catalog and typed parameters; it has no arbitrary shell
-or remote execution mode.
+Use `--json` before the command for machine-readable output. `changes` is the
+v29 compatibility spelling for Activity list/detail and explicit completion of
+older saved plans. The CLI has no arbitrary shell or remote execution mode.
 
 ## What never happens automatically
 

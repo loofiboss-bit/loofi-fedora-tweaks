@@ -49,7 +49,7 @@ class TestPhase9PackageMetadata(unittest.TestCase):
         self.assertNotIn("%package daemon", spec)
         self.assertNotIn("%package extras", spec)
 
-    def test_package_descriptions_separate_core_and_specialist_capability(self):
+    def test_package_descriptions_present_the_curated_utility(self):
         spec = (ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
         appstream = (ROOT / "loofi-fedora-tweaks.metainfo.xml").read_text(
             encoding="utf-8"
@@ -57,7 +57,7 @@ class TestPhase9PackageMetadata(unittest.TestCase):
 
         self.assertIn("Fedora maintenance and desktop control center", spec)
         self.assertIn(
-            "<summary>Fedora maintenance and desktop control center</summary>",
+            "<summary>Curated Fedora utility for installing, tuning, fixing, and updating</summary>",
             appstream,
         )
 

@@ -10,6 +10,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
+| v29.0.1 | Utility | ACTIVE | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V29_PLAN.md), [architecture](.workflow/specs/arch-v29.0.1.md), [tasks](.workflow/specs/tasks-v29.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v29.0.1.md) |
 | v28.0.3 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.3.md), [tasks](.workflow/specs/tasks-v28.0.3.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.3.md), [public evidence](docs/reports/V28.0.3_RELEASE_PUBLICATION.md) |
 | v28.0.2 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.2.md), [tasks](.workflow/specs/tasks-v28.0.2.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.2.md), [public evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md) |
 | v28.0.1 | Ease | DONE | [architecture](.workflow/specs/arch-v28.0.1.md), [tasks](.workflow/specs/tasks-v28.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v28.0.1.md), [public evidence](docs/reports/V28_RELEASE_PUBLICATION.md) |
@@ -28,6 +29,21 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v27.0.1 | Core | DONE | [Plan](docs/plans/plan%20v27.md), [architecture](.workflow/specs/arch-v27.0.1.md), [tasks](.workflow/specs/tasks-v27.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v27.0.1.md), [public evidence](docs/reports/V27_RELEASE_PUBLICATION.md) |
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
+
+## [ACTIVE] v29.0.1 "Utility" — Curated Fedora Utility
+
+Utility reorganises the product around Home, Install, Tune, Fix, and Update.
+Normal work starts, runs, and verifies on its owning page; Activity & Recovery
+is the secondary history, reboot, verification, and recovery surface. The
+internal Action Center remains the single mutation authority without appearing
+as a normal destination.
+
+The historical `v29.0.0` tag belongs to the earlier "Usability & Polish"
+lineage and remains immutable. This release therefore uses the unambiguous
+`v29.0.1` identity. See the
+[implementation plan](docs/plans/LOOFI_FEDORA_TWEAKS_V29_PLAN.md),
+[architecture](.workflow/specs/arch-v29.0.1.md), and
+[release tasks](.workflow/specs/tasks-v29.0.1.md).
 
 ## [DONE] v28.0.3 "Ease" — Direct Maintenance Execution
 

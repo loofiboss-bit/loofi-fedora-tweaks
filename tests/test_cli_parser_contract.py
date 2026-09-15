@@ -18,7 +18,7 @@ EXPECTED_TOP_LEVEL_COMMANDS = (
     "doctor",
     "support-bundle",
 )
-EXPECTED_PARSER_SNAPSHOT_SHA256 = "a53efbd22f2aec5ac1005656a96cddeadbcc7caffd471963ab3858cd50900e9f"
+EXPECTED_PARSER_SNAPSHOT_SHA256 = "1ab05c5b546a1d8440385f58cd134dfcfe59d48b3d80625ba91a31a625339e3a"
 
 
 def _normalize(value):

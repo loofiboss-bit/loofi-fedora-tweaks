@@ -87,6 +87,15 @@ class PageHeader(QFrame):
         self.actions_layout = self.action_bar.row_layout
         top_row.addWidget(self.action_bar)
 
+        self.activity_button = QToolButton(self)
+        self.activity_button.setObjectName("pageHeaderActivityButton")
+        self.activity_button.setMinimumSize(36, 36)
+        self.activity_button.setCursor(Qt.CursorShape.PointingHandCursor)
+        self.activity_button.setIcon(get_qicon("history", size=20))
+        self.activity_button.setAccessibleName(self.tr("Activity and recovery"))
+        self.activity_button.setToolTip(self.tr("Activity & Recovery"))
+        top_row.addWidget(self.activity_button)
+
         self.settings_button = QToolButton(self)
         self.settings_button.setObjectName("pageHeaderSettingsButton")
         self.settings_button.setMinimumSize(36, 36)

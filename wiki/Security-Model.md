@@ -1,4 +1,4 @@
-# Security & Safety Architecture — v28.0.2 "Ease"
+# Security & Safety Architecture — v29.0.1 "Utility"
 
 Loofi Fedora Tweaks is built with a defensive security architecture designed to prevent unintended modifications, privilege escalation exploits, and system instability.
 
@@ -13,9 +13,9 @@ Loofi Fedora Tweaks is built with a defensive security architecture designed to 
 
 ---
 
-## 2. Action Center: The Mutation Boundary
+## 2. Internal orchestrator: the mutation boundary
 
-All persistent system changes are funneled through the **Changes** workspace (the Action Center). No other component or tab in the application can directly invoke mutating shell commands.
+All persistent system changes are funneled through the internal orchestrator. Owning pages may start reviewed work, but no UI component can directly invoke mutating shell commands.
 
 ```text
 [User Request]

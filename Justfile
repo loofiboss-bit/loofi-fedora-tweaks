@@ -168,7 +168,7 @@ validate-v23-phase6:
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v23_phase6.py
 
 validate-v23-1:
-	LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 -m pytest tests/test_v20_mutation_boundary.py tests/test_cli_parser_contract.py tests/test_main_window.py tests/test_v23_1_phase3_ui.py -q
+	LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 -m pytest tests/test_action_center.py tests/test_v29_vertical_flows.py tests/test_cli_parser_contract.py tests/test_main_window.py tests/test_v23_1_phase3_ui.py -q
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/check_stabilization_rules.py
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
 

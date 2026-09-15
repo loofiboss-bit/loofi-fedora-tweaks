@@ -337,7 +337,7 @@ class TroubleshootWidget(QWidget):
         self.next_step_button = SecondaryButton(
             self.tr("Open safe next step"),
             description=self.tr(
-                "Open the existing route or Action Center handoff. "
+                "Open the existing supported workflow or settings handoff. "
                 "No change is applied automatically."
             ),
         )
@@ -788,7 +788,7 @@ class TroubleshootWidget(QWidget):
         if step.kind == "action":
             return (
                 self.tr(
-                    "Next step: open Action Center and create a plan for review. "
+                    "Next step: review the suggested change before applying it. "
                     "Nothing runs automatically."
                 ),
                 True,

@@ -1,5 +1,27 @@
 # Changelog
 
+## [29.0.1] - 2026-09-15 - "Utility"
+
+Curated Fedora utility renovation.
+
+- Replace the maintenance-oriented primary navigation with Home, Install,
+  Tune, Fix, and Update while moving Activity & Recovery and Settings to
+  secondary header surfaces.
+- Add a shared TaskDescriptor catalog for navigation, search, owning pages,
+  capability gating, risk, verification, and recovery guidance.
+- Add searchable multi-select application installation with source labels,
+  Flatpak-first GUI defaults, Atomic-aware RPM handling, and per-item results.
+- Add editable Minimal, Recommended, and Power User Tune profiles that contain
+  only implemented, verifiable operations and stop on unexpected failure.
+- Add symptom-first Fix and independent System, Flatpak, and Firmware Update
+  flows with one state-driven primary action per source.
+- Remove legacy queue execution and route every host mutation through the
+  shared PyQt-free operation controller and internal orchestrator.
+- Preserve schema-v4 plans and runs, redirect old GUI routes to Activity &
+  Recovery, and keep `changes` as a v29 CLI compatibility alias.
+- Preserve the historical `v29.0.0` "Usability & Polish" tag unchanged and use
+  `v29.0.1` as the unambiguous Utility Renovation release identity.
+
 ## [28.0.3] - 2026-09-14 - "Ease"
 
 Direct maintenance execution and release-evidence policy update.

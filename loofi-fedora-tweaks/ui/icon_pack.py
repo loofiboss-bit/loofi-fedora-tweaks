@@ -45,6 +45,7 @@ _ICON_ALIASES: dict[str, str] = {
     "cpu": "cpu-performance",
     "developer": "developer-tools",
     "hardware": "hardware-performance",
+    "history": "logs",
     "home": "home",
     "info": "info",
     "install": "install",

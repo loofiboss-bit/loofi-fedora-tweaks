@@ -26,16 +26,12 @@ from ui.design import ThemeManager  # noqa: E402
 WINDOW_SIZE = QSize(1400, 900)
 
 ROUTE_SCREENSHOTS = [
-    ("home-dashboard.png", "", False),
-    ("install-app.png", "software:apps", False),
-    ("troubleshoot.png", "diagnostics", False),
-    ("cleanup-preview.png", "maintenance:cleanup", False),
-    ("action-center.png", "maintenance:action-center", False),
-    ("settings-application.png", "settings:application", False),
-    ("system-monitor.png", "system-monitor:processes", False),
-    ("maintenance-updates.png", "maintenance:updates", False),
-    ("network-overview.png", "network:connections", False),
-    ("security-privacy.png", "security:privacy", False),
+    ("home-dashboard.png", "home", False),
+    ("install-app.png", "install", False),
+    ("tune-profile.png", "tune", False),
+    ("troubleshoot.png", "fix", False),
+    ("maintenance-updates.png", "update", False),
+    ("activity-recovery.png", "activity", False),
     ("settings-appearance.png", "settings:appearance", False),
 ]
 
@@ -115,38 +111,17 @@ def _screenshot_home() -> Iterator[None]:
 
 
 def _capture_main_window(app: QApplication) -> None:
-    from core.actions import ActionCenterOrchestrator
-    from core.navigation.models import NavigationMode
     from ui.main_window import MainWindow
-
-    # Persist one closed, non-destructive review plan in the temporary profile
-    # so the Action Center capture demonstrates its primary user workflow.
-    ActionCenterOrchestrator().plan("dnf-clean-all", {})
 
     window = MainWindow()
     window.resize(WINDOW_SIZE)
     window.show()
     _settle(app, 1.5)
 
-    advanced_enabled = False
-    for filename, route_id, requires_advanced in ROUTE_SCREENSHOTS:
-        if requires_advanced and not advanced_enabled:
-            window.apply_navigation_mode(NavigationMode.ADVANCED)
-            advanced_enabled = True
-            _settle(app, 0.5)
+    for filename, route_id, _requires_advanced in ROUTE_SCREENSHOTS:
         if route_id and not window.switch_to_route(route_id):
             raise RuntimeError(f"route did not resolve in MainWindow: {route_id}")
         _settle(app, 1.0)
-        if route_id == "maintenance:action-center":
-            from ui.maintenance_action_center import _ActionCenterSubTab
-
-            action_center = window.findChild(_ActionCenterSubTab)
-            if action_center is None:
-                raise RuntimeError("Action Center page was not realized")
-            # Drive the real selector so the captured label and work list stay
-            # in the same lifecycle state.
-            action_center.lifecycle_view.setCurrentIndex(1)
-            _settle(app, 0.5)
         _sanitize_route_capture(window, route_id)
         _save_widget(window, filename)
 

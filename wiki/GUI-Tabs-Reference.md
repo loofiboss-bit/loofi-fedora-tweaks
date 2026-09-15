@@ -1,163 +1,69 @@
-# GUI Destinations Reference — v28.0.2 "Ease"
+# GUI Reference — v29.0.1 "Utility"
 
-Loofi Fedora Tweaks features a focused, desktop-neutral graphical interface designed around five primary destinations and one unified change management workspace. The interface adheres to strict safety boundaries: navigating between screens is completely read-only, and persistent host modifications are executed only through the shared Action Center authority. Daily updates can start and finish on **Updates & Apps**; **Changes** retains history and advanced review.
-
----
-
-## Navigation Architecture
+The interface is organised around five jobs. Selecting a destination or search
+result only navigates; execution begins from a reviewable task on its owning
+page.
 
 ```text
-Header Bar: [Search Ctrl+K] [Doctor Status] [Settings ⚙]
-├── 1. Home                     (System status, single recommended action, quick tasks)
-├── 2. Updates & Apps           (System, Flatpak & firmware updates; AppStream handoff)
-├── 3. System Health            (System check, troubleshooting, storage, hardware, support bundle)
-├── 4. Protection & Recovery    (Firewall exposure, snapshots, rollback guidance, journal)
-└── 5. Changes                  (Action Center review, confirmation, execution & verification)
+Header: [Search] [Activity & Recovery] [Settings]
+├── Home
+├── Install
+├── Tune
+├── Fix
+└── Update
 ```
 
-The sidebar adapts responsively to window width and font scaling, supporting expanded sidebar, icon rail, and compact dropdown layouts.
+## Home
 
----
+Home displays the Fedora profile, compact status, one recommended next step,
+shortcuts to the four jobs, and current activity.
 
-## 1. Home Dashboard
+![Home](images/home-dashboard.png)
 
-The Home dashboard provides an immediate, transparent snapshot of system state without triggering background operations or host modifications.
+## Install
 
-![Home Dashboard](images/home-dashboard.png)
+Install provides a curated searchable app catalog with category filters,
+installed state, source labels, and multi-select review. Flatpak is preferred
+for ordinary GUI applications. Traditional Fedora may use RPM for trusted CLI
+and system-integrated tools; Atomic RPM layering is advanced and reboot-aware.
 
-### Key Features
-- **System Identity & Environment**: Displays Fedora version, kernel release, desktop environment (GNOME, KDE Plasma, XFCE, Sway, etc.), display server (Wayland / X11), and architecture.
-- **Prioritized Recommendation**: Highlights exactly one recommended action based on system health. If no check has been run, it prompts: *"No system check has been run yet"*.
-- **Quick Actions**: Rapid shortcuts for frequent read-only checks, including checking updates, auditing firewall status, or reviewing storage usage.
-- **Read-Only Safety**: Constructing the Home view or refreshing state never applies changes or initiates background daemon tasks.
+![Install](images/install-app.png)
 
----
+## Tune
 
-## 2. Updates & Apps
+Tune starts from Minimal, Recommended, or Power User. The checked operations
+remain editable. Profiles contain implemented, verifiable operations only and
+exclude high-risk, boot, display, and manual-only changes.
 
-The Updates & Apps destination handles software updates across multiple independent streams and provides clean handoff to native desktop app stores.
+![Tune](images/tune-profile.png)
 
-![Updates & Maintenance](images/maintenance-updates.png)
+## Fix
 
-### Independent Update Streams
-Rather than bundling package managers into one fragile process, Loofi probes three sources separately:
-1. **System Packages**:
-   - Traditional Fedora: DNF5 package transactions and security errata.
-   - Atomic Fedora: `rpm-ostree` deployment trees and staged commits.
-2. **Flatpak Applications**: Queries system-wide (`/var/lib/flatpak`) and user (`~/.local/share/flatpak`) remotes (e.g. Flathub, Fedora Flatpaks).
-3. **Hardware Firmware**: Interfaces with `fwupd` to detect UEFI, SSD, and peripheral firmware updates.
+Fix begins with a symptom. Read-only diagnostics present findings before one
+supported operation, instruction, or native-settings handoff is offered. There
+is no **Fix all**.
 
-If one source is slow or offline, other sources continue uninterrupted. An unavailable source is never falsely marked as "up to date".
+![Fix](images/troubleshoot.png)
 
-### Review Updates Workflow
-When updates are available, clicking **Review updates** generates an Action Center plan with:
-- Detailed package changelogs and download sizes.
-- Risk assessment and restart requirements.
-- An explicit handoff to **Changes** for confirmation.
+## Update
 
-### Native App Center Handoff
+System, Flatpak, and Firmware are separate cards with freshness, count,
+details, and one primary action: **Check**, **Update**, **Continue**, or
+**Verify**.
 
-![Software Center Handoff](images/install-app.png)
+![Update](images/maintenance-updates.png)
 
-Loofi does not attempt to clone an application marketplace. When discovering or installing new software, Loofi hands off the request to the desktop's native center (GNOME Software or KDE Discover) using standard AppStream identifiers.
+## Activity & Recovery
 
----
+The secondary Activity surface groups **Needs you**, **In progress**, and
+**History**. It owns reboot follow-up, explicit verification, and recovery
+guidance for saved operations.
 
-## 3. System Health
+![Activity & Recovery](images/activity-recovery.png)
 
-System Health provides deep diagnostics, symptom-based troubleshooting, hardware telemetry, and support bundle generation.
+## Settings and accessibility
 
-![System Health Troubleshooting](images/troubleshoot.png)
-
-### System Check
-Performs a read-only audit across critical Fedora subsystems:
-- Package manager database consistency.
-- Systemd unit health (detecting failed services).
-- SELinux enforcement status.
-- Filesystem mount options and storage pressure.
-
-### Symptom-Driven Troubleshooting
-Select from bounded diagnostic profiles such as `system_slow`, `network_problem`, `storage_pressure`, and `boot_or_deployment`. Each profile runs allowlisted read-only checks, formats findings, and offers at most one safe, actionable remedy.
-
-### Storage & Reclaim Analysis
-
-![Storage Cleanup Preview](images/cleanup-preview.png)
-
-- Inspects disk utilization across Btrfs partitions and mount points.
-- Previews supported cleanup targets: old package cache and systemd journal logs. User thumbnail and application caches are not modified by Loofi.
-- Displays an exact byte-count preview before anything is queued for cleanup.
-
-### Hardware & Resource Monitor
-
-![Hardware & System Monitor](images/system-monitor.png)
-
-- Real-time CPU, RAM, and ZRAM compressed swap usage.
-- Storage disk I/O metrics and partition consumption.
-- Laptop battery health and charge threshold status.
-
-### Redacted Support Bundle
-Exports a sanitized `.zip` archive containing system diagnostic logs, Fedora version information, and recent change journal records for reporting bugs on GitHub. Personal tokens, credentials, and passwords are automatically excluded.
-
----
-
-## 4. Protection & Recovery
-
-Protection & Recovery centralizes security hygiene, system rollback capabilities, and durable change history.
-
-![Security & Firewall](images/security-privacy.png)
-
-### Firewall & Network Exposure
-- Audits active `firewalld` zones (e.g., `FedoraWorkstation`, `public`, `home`).
-- Lists open ports and listening daemons (SSH, Samba, local web development servers).
-- Warns of unexpected exposure on untrusted network interfaces.
-
-### Backups & Rollbacks
-
-![Rollback & Restore Preview](images/restore-preview.png)
-
-- **Btrfs Snapshots**: Detects existing subvolume snapshots and guides recovery.
-- **Atomic Rollbacks**: On Silverblue / Kinoite hosts, inspects previous deployment pins and provides rollback instructions with verified reboot handling.
-
-### Trusted Change Journal
-A tamper-resistant, chronological audit log of every change executed through Loofi. Each record includes the plan ID, execution timestamp, authorization status, and post-execution verification result.
-
----
-
-## 5. Changes (The Action Center)
-
-Changes is the **exclusive authority** for executing persistent modifications to the host system. No other screen in the application can directly invoke mutating shell commands or alter system files.
-
-![Action Center Changes](images/action-center.png)
-
-### The Five-Stage Change Lifecycle
-
-```text
-1. Preflight Check   → Validates prerequisites, disk space, and package manager lock availability.
-2. Plan Review       → User reviews affected packages/files, risk tier, and reboot requirements.
-3. Authorization     → Polkit requests administrator credentials via desktop pkexec agent.
-4. Bounded Execution → Mutation runs via explicit argv list with strict timeout bounds (no shell).
-5. Independent Verify→ A separate read probe verifies the system state matches the desired outcome.
-```
-
-### Safety Guarantees
-- **Mutation Lease**: Only one change plan can execute at any time; concurrent mutations are blocked.
-- **No Silent Retries**: If an operation fails or authorization is canceled, the plan stays in its recorded state without silent retries.
-- **Verification Separation**: A process returning exit code `0` is not assumed to have succeeded; Loofi independently checks the target subsystem to confirm the actual change.
-
----
-
-## Header & Settings
-
-### Global Search (`Ctrl+K`)
-Pressing `Ctrl+K` opens the quick launcher. Typing matches destinations, settings, and safe action entry points. Pressing `Ctrl+Shift+K` restricts search results to actionable maintenance items. Selecting an action always navigates to its review surface in **Changes**; it never executes immediately.
-
-### Settings & Doctor
-
-![Settings & Appearance](images/settings-appearance.png)
-
-Accessible via the header gear icon:
-- **Appearance**: Toggle Light, Dark, or System theme and choose whether to follow the system theme.
-- **Navigation**: The shell responds to window width and text scaling; use the sidebar toggle when available. Settings does not persist a navigation-layout selector.
-- **Doctor Diagnostics**: Inspects application health, `pkexec` availability, and Python environment status. A running desktop Polkit agent must be checked separately.
-
-![State Doctor](images/state-doctor.png)
+Settings is opened from the header. Goal-based search uses `Ctrl+K`, returns
+focus to the selected task, and never executes from the result list. Layouts
+respond to window width and scaling, while physical keyboard, theme, scaling,
+and assistive-technology qualification is tracked separately.

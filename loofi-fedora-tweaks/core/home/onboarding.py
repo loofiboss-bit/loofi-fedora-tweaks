@@ -39,9 +39,9 @@ ONBOARDING_STEPS = (
     OnboardingStep(
         "review",
         "Review every system change",
-        "Action Center shows risk, scope, validation, and rollback information before Run Plan.",
-        "Open Action Center",
-        "maintenance:action-center",
+        "Every task shows risk, scope, validation, and recovery information before execution.",
+        "Open Activity & Recovery",
+        "activity",
     ),
 )
 

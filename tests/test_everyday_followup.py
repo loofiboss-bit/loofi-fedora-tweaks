@@ -35,9 +35,10 @@ class TestEverydayFollowup(unittest.TestCase):
 
     def test_navigation_passes_exact_run_id_to_existing_route(self):
         window = MagicMock()
-        window.switch_to_route.return_value = True
+        window._switch_to_internal_action_route.return_value = True
         MainWindow._open_action_center_run(window, "saved-run")
-        window.switch_to_route.assert_called_once_with("maintenance:action-center")
+        window._switch_to_internal_action_route.assert_called_once_with()
+        window.switch_to_route.assert_not_called()
         window._real_widget_for_entry.return_value.preselect_run.assert_called_once_with("saved-run")
 
     def test_duplicate_verification_click_does_not_dispatch(self):

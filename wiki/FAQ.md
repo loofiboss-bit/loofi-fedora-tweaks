@@ -1,20 +1,14 @@
-# Frequently Asked Questions (FAQ) — v28.0.2 "Ease"
+# Frequently Asked Questions (FAQ) — v29.0.1 "Utility"
 
 ---
 
 ### What is Loofi Fedora Tweaks?
-Loofi Fedora Tweaks is a focused maintenance control center for Fedora Linux. It brings together system health diagnostics, multi-stream updates (DNF5, Flatpak, firmware), storage optimization, laptop battery health, and verified system changes into a single, desktop-neutral application.
+Loofi Fedora Tweaks is a curated Fedora utility organised around Home, Install, Tune, Fix, and Update. It combines application selection, safe profiles, symptom-driven diagnostics, multi-source updates, and independently verified system changes.
 
 ---
 
 ### How is Loofi different from GNOME Software or KDE Discover?
-GNOME Software and KDE Discover are application stores focused on searching, installing, and updating desktop apps. Loofi focuses on **system maintenance**:
-- Probing system packages, Flatpaks, and firmware independently.
-- Diagnosing system issues (failed systemd units, network drops, storage pressure).
-- Cleaning stale package caches and vacuuming oversized systemd journals.
-- Monitoring laptop battery charge thresholds and ZRAM compression.
-- Providing a formal change review and verification lifecycle.
-When you want to discover or install new GUI applications, Loofi hands off the request directly to GNOME Software or KDE Discover via standard AppStream links.
+GNOME Software and KDE Discover are full application stores. Loofi provides a smaller curated catalog that can combine trusted Flatpak and Fedora RPM selections with the same review, authorization, and verification lifecycle used by Tune, Fix, and Update.
 
 ---
 

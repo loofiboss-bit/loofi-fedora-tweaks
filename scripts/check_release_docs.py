@@ -83,11 +83,12 @@ WIKI_MIRRORS = (
 )
 CURRENT_SCREENSHOT_PATHS = (
     "docs/images/user-guide/home-dashboard.png",
-    "docs/images/user-guide/maintenance-updates.png",
     "docs/images/user-guide/install-app.png",
+    "docs/images/user-guide/tune-profile.png",
     "docs/images/user-guide/troubleshoot.png",
-    "docs/images/user-guide/cleanup-preview.png",
-    "docs/images/user-guide/action-center.png",
+    "docs/images/user-guide/maintenance-updates.png",
+    "docs/images/user-guide/activity-recovery.png",
+    "docs/images/user-guide/settings-appearance.png",
 )
 
 VERSION_RE = re.compile(r'__version__\s*=\s*"([^"]+)"')

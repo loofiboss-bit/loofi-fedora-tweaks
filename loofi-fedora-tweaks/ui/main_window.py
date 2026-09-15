@@ -1,18 +1,12 @@
 """Route-aware application shell with lazy destination navigation."""
 
 import logging
-from dataclasses import dataclass, field
 from typing import TYPE_CHECKING
 
 from core.navigation import (
-    DirectLinkBehavior,
     NavigationContext,
-    NavigationDecision,
-    NavigationMode,
-    NavigationPolicy,
     NavigationRoute,
     area_for_plugin,
-    destinations_for_mode,
     get_destination,
     resolve,
 )
@@ -53,6 +47,7 @@ from ui.navigation import DestinationHost, DestinationSidebar
 from ui.main_window_interactions import MainWindowInteractionMixin
 from ui.main_window_services import MainWindowServiceMixin
 from ui.main_window_shell import MainWindowShellMixin
+from ui.main_window_utility import MainWindowUtilityMixin, SidebarEntry
 
 if TYPE_CHECKING:
     from core.application_runtime import ApplicationRuntime
@@ -74,21 +69,6 @@ _BADGE_SUFFIXES = {
     "recommended": "  [recommended]",
     "advanced": "  [advanced]",
 }
-
-
-@dataclass
-class SidebarEntry:
-    """Indexed sidebar tab entry for O(1) lookups by plugin ID."""
-
-    plugin_id: str
-    display_name: str
-    tree_item: QTreeWidgetItem | None
-    page_widget: QWidget
-    metadata: PluginMetadata
-    status: str = field(default="")
-    content_widget: QWidget | None = field(default=None)
-    area_id: str = field(default="")
-    visible_in_sidebar: bool = field(default=True)
 
 
 class SidebarItemDelegate(QStyledItemDelegate):
@@ -138,6 +118,7 @@ class DisabledPluginPage(QWidget):
 
 
 class MainWindow(
+    MainWindowUtilityMixin,
     MainWindowServiceMixin,
     MainWindowInteractionMixin,
     MainWindowShellMixin,
@@ -261,7 +242,17 @@ class MainWindow(
         self._bc_page.setObjectName("bcPage")
         self._bc_desc = self._breadcrumb_frame.description
         self._bc_desc.setObjectName("bcDesc")
-        self._breadcrumb_frame.settings_button.clicked.connect(lambda: self.switch_to_route("settings"))
+        # Keep the shell tolerant of lightweight compatibility headers used by
+        # older integrations/tests.  The production PageHeader exposes both
+        # secondary affordances, while a legacy stub may only provide Settings.
+        activity_button = getattr(self._breadcrumb_frame, "activity_button", None)
+        activity_clicked = getattr(activity_button, "clicked", None)
+        if activity_clicked is not None:
+            activity_clicked.connect(lambda: self.switch_to_route("activity"))
+        settings_button = getattr(self._breadcrumb_frame, "settings_button", None)
+        settings_clicked = getattr(settings_button, "clicked", None)
+        if settings_clicked is not None:
+            settings_clicked.connect(lambda: self.switch_to_route("settings"))
         right_side.addWidget(self._breadcrumb_frame)
 
     def _build_destination_stack(self, right_side: QVBoxLayout) -> None:
@@ -315,6 +306,7 @@ class MainWindow(
         self._active_destination_id = ""
         self._selecting_destination = False
         self._shell_uses_destinations = True
+        self._initialize_utility_state()
         self._route_history: list[str] = []
         self._route_history_index = -1
 
@@ -432,18 +424,10 @@ class MainWindow(
             favorite_route_ids=frozenset(favorites),
         )
         # Maintained routes remain policy-visible and searchable through the
-        # unified navigation context while the primary shell stays at five
-        # product destinations.
-        self.sidebar.set_destinations(destinations_for_mode(NavigationMode.STANDARD))
-
-    def _activate_destination(self, destination_id: str) -> None:
-        """Open a destination's policy-approved default route."""
-        if self._selecting_destination:
-            return
-        destination = get_destination(destination_id)
-        if destination is None:
-            return
-        self.switch_to_route(destination.default_route_id)
+        # unified navigation context.  The visible shell is a concise set of
+        # user jobs; it does not mirror the internal plugin catalogue.
+        self._register_utility_landing_pages()
+        self.sidebar.set_utility_destinations(self._utility_destinations)
 
     def _find_or_create_area(self, plugin_id: str, fallback_category: str) -> QTreeWidgetItem:
         """Find/create a focused sidebar area for a plugin."""
@@ -514,7 +498,22 @@ class MainWindow(
 
     def _open_action_center_run(self, run_id: str) -> None:
         """Open a persisted maintenance run without creating or executing work."""
-        if not self.switch_to_route("maintenance:action-center"):
+        # In the v29 shell persisted run links belong to Activity & Recovery.
+        # Keep the method name as a compatibility adapter for Home and older
+        # plugins, but never expose the retired review screen for normal
+        # navigation.  Internal action requests use the separate handoff
+        # method below and remain intentionally private.
+        if getattr(self, "_utility_shell_ready", False) is True:
+            if self.switch_to_route("activity"):
+                entry = self._sidebar_index.get("activity")
+                if entry is not None:
+                    widget = self._real_widget_for_entry(entry)
+                    remember = getattr(widget, "remember_run_id", None)
+                    if callable(remember):
+                        remember(str(run_id))
+            return
+        opened = getattr(self, "_switch_to_internal_action_route", lambda: self.switch_to_route("maintenance:action-center"))()
+        if not opened:
             return
         route = resolve("maintenance:action-center")
         entry = self._sidebar_index.get(route.plugin_id) if route else None
@@ -529,12 +528,14 @@ class MainWindow(
 
     def _open_action_center_request(self, action_id: str, parameters=None) -> None:
         """Navigate and preselect only; workflow adapters never create a plan."""
-        if self.switch_to_route("maintenance:action-center"):
+        opened = getattr(self, "_switch_to_internal_action_route", lambda: self.switch_to_route("maintenance:action-center"))()
+        if opened:
             self._preselect_action_center(action_id, parameters)
 
     def _open_system_check_action_request(self, action_id: str, context=None) -> None:
         """Carry identifiers only; Action Center re-resolves persisted evidence."""
-        if self.switch_to_route("maintenance:action-center"):
+        opened = getattr(self, "_switch_to_internal_action_route", lambda: self.switch_to_route("maintenance:action-center"))()
+        if opened:
             self._preselect_action_center(
                 action_id,
                 finding_context=dict(context or {}),
@@ -873,6 +874,12 @@ class MainWindow(
     def _on_breadcrumb_category_click(self):
         """Navigate to the current destination's default route."""
         if getattr(self, "_shell_uses_destinations", False) is True:
+            utility_default = self._utility_default_route(
+                getattr(self, "_active_destination_id", "")
+            )
+            if utility_default:
+                self.switch_to_route(utility_default)
+                return
             destination = get_destination(self._active_destination_id)
             if destination is not None:
                 self.switch_to_route(destination.default_route_id)
@@ -943,59 +950,6 @@ class MainWindow(
         has_message = bool(self._status_label.text().strip())
         has_undo = self._undo_btn.isVisible()
         self._status_frame.setVisible(has_message or has_undo)
-
-    def switch_to_route(self, route_id: str, *, record_history: bool = True) -> bool:
-        """Switch through policy to a canonical route ID or compatibility alias."""
-        route = resolve(str(route_id))
-        if not route:
-            logger.debug("switch_to_route: no route for '%s'", route_id)
-            return False
-
-        if getattr(self, "_shell_uses_destinations", False) is True:
-            result = NavigationPolicy.evaluate(route.id, self._navigation_context)
-            if result.direct_link_behavior is DirectLinkBehavior.REDIRECT and result.redirect_route_id:
-                return self.switch_to_route(
-                    result.redirect_route_id,
-                    record_history=record_history,
-                )
-            if result.decision is not NavigationDecision.VISIBLE:
-                self._sync_page_header_actions(None)
-                destination = get_destination(result.destination_id)
-                if destination is not None:
-                    self._selecting_destination = True
-                    self.sidebar.select_destination(destination.id)
-                    self._selecting_destination = False
-                self.destination_host.show_policy_result(result)
-                return False
-
-        entry = self._sidebar_index.get(route.plugin_id)
-        if not entry:
-            logger.debug(
-                "switch_to_route: route '%s' references unavailable plugin '%s'",
-                route.id,
-                route.plugin_id,
-            )
-            return False
-
-        if entry.tree_item is not None:
-            self.sidebar.setCurrentItem(entry.tree_item)
-        elif entry.content_widget is not None:
-            self.content_area.setCurrentWidget(entry.content_widget)
-        if getattr(self, "_shell_uses_destinations", False) is True:
-            self._sync_destination_shell(route.id)
-        self._active_route_id = route.id
-        self._set_active_plugin(route.plugin_id)
-        activated = self._activate_route_widget(route)
-        self._sync_page_header_actions(route)
-        if entry.tree_item is not None:
-            self._update_breadcrumb(entry.tree_item)
-        else:
-            self._update_header_for_route(route, entry)
-        if not activated:
-            logger.debug("switch_to_route: plugin selected but subroute did not activate: %s", route.id)
-        if record_history:
-            self._record_route_history(route.id)
-        return True
 
     def _record_route_history(self, route_id: str) -> None:
         """Record successful route navigation without duplicate adjacent entries."""

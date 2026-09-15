@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 28.0.3 "Ease" public release
+> Version 29.0.1 "Utility" release
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,
@@ -50,7 +50,7 @@ does not prevent the GUI from starting.
 
 ## A source is unavailable
 
-Open **Updates & Apps** and inspect the source details. System packages,
+Open **Update** and inspect the source details. System packages,
 Flatpak, and firmware are independent sources. Missing binaries, missing
 remotes, unsupported deployment backends, and failed probes are reported as
 unavailable or failed; they are never converted to “up to date”.
@@ -69,13 +69,13 @@ command -v pkexec
 pkexec --version
 ```
 
-If authorization is cancelled, the plan remains unexecuted. Start the action
-again from **Changes** after the agent is available. Loofi does not install
+If authorization is cancelled, the plan remains unexecuted. Start the task
+again from its owning page after the agent is available. Loofi does not install
 custom Polkit policy files and cannot grant administrator access to a user.
 
 ## An action is unavailable
 
-Open its details in **Changes**. An action is intentionally unavailable when
+Open its details on the owning page. An action is intentionally unavailable when
 capability, risk, authentication, verification, or recovery information is
 missing. Unknown desktop/session/backend detection fails closed. On Atomic
 hosts, some operations require a staged deployment and a later restart; follow
@@ -84,11 +84,11 @@ booted.
 
 ## Updates or changes are stuck
 
-Inspect the state in **Changes** and use the recorded explanation. Do not run a
+Inspect **Activity & Recovery** and use the recorded explanation. Do not run a
 second package transaction while one is active. A running or interrupted plan
 holds a bounded lease and never retries automatically. If a restart is
 required, restart the host using the normal desktop controls, then return to
-**Changes** and run the explicit verification step.
+**Activity & Recovery** and run the explicit verification step.
 
 ## Flatpak-specific checks
 

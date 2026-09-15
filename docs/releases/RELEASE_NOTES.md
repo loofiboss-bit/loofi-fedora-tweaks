@@ -1,5 +1,6 @@
 # Release Notes -- Latest
 
+- [v29.0.1 Utility public release](RELEASE-NOTES-v29.0.1.md)
 - [v28.0.3 Ease public release](RELEASE-NOTES-v28.0.3.md)
 - [v28.0.2 Ease public release](RELEASE-NOTES-v28.0.2.md)
 - [v28.0.1 Ease public release](RELEASE-NOTES-v28.0.1.md)
@@ -10,12 +11,12 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **Current public release:** v28.0.3 "Ease"
-- [Public release evidence](../reports/V28.0.3_RELEASE_PUBLICATION.md)
-- Previous public release: [v28.0.2 Ease](RELEASE-NOTES-v28.0.2.md)
+- **Current release candidate:** v29.0.1 "Utility"
+- Previous public release: [v28.0.3 Ease](RELEASE-NOTES-v28.0.3.md)
 
 ## Recent Releases
 
+- v29.0.1 "Utility" release: [RELEASE-NOTES-v29.0.1.md](RELEASE-NOTES-v29.0.1.md)
 - v28.0.3 "Ease" public release: [RELEASE-NOTES-v28.0.3.md](RELEASE-NOTES-v28.0.3.md)
 - v28.0.2 "Ease" public release: [RELEASE-NOTES-v28.0.2.md](RELEASE-NOTES-v28.0.2.md)
 - v28.0.1 "Ease" public release: [RELEASE-NOTES-v28.0.1.md](RELEASE-NOTES-v28.0.1.md)

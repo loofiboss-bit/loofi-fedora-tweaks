@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        28.0.3
+Version:        29.0.1
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -97,6 +97,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Tue Sep 15 2026 Loofi <loofi@example.com> - 29.0.1-1
+- v29.0.1 "Utility" - curated Install, Tune, Fix, and Update journeys with shared verified execution
+
 * Sun Jul 26 2026 Loofi <loofi@example.com> - 21.0.0-1
 - v21.0.0 "Resolve" - coherent guided work, responsive surfaces, and deterministic teardown
 

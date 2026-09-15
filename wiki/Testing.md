@@ -1,4 +1,4 @@
-# Testing & Quality Assurance — v28.0.3 "Ease"
+# Testing & Quality Assurance — v29.0.1 "Utility"
 
 Loofi Fedora Tweaks uses automated quality gates to protect system safety and
 prevent regressions before code is merged or published. Physical and manual
@@ -7,10 +7,10 @@ recorded as verified, pending, or unverified.
 
 ---
 
-## 1. Automated Test Suite Metrics (v28.0.3)
+## 1. Automated Test Suite Metrics (v29.0.1)
 
-- **Test Suite Results**: 4,804 passed, 73 skipped, 0 failures.
-- **Code Coverage**: 86.64% line coverage across the maintained core (blocking CI gate is 85%).
+- **Test Suite Results**: 4,850 passed, 73 skipped, 0 failures in local release qualification.
+- **Code Coverage**: 85.17% line coverage (blocking CI gate is 85%).
 - **Automated Validation**: Static typing (`mypy`), linting (`flake8`), architecture boundaries, packaging validation, and documentation link checks all pass cleanly.
 - **Evidence Boundaries**: Headless/offscreen tests prove logic, command construction, and catalog contracts. Physical display server integration, hardware controllers, Polkit agents, reboot behavior, and Atomic-host behavior are recorded separately and are not inferred from automated checks; see the release publication report for their status.
 

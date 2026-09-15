@@ -20,7 +20,14 @@ def _normalize_risk(value: str) -> ActionRisk:
 
 
 class ActionCenterService:
-    """Preview, queue, execute, verify, and record action candidates."""
+    """Preview and retain legacy candidates for read-only compatibility.
+
+    v29 execution is owned by :class:`OperationController`.  This service is
+    intentionally limited to candidate conversion, preview, queue/readback,
+    and history compatibility.  The former ``execute_next`` entrypoint is
+    intentionally absent; stale callers must migrate to the shared
+    ``OperationController``.
+    """
 
     def __init__(
         self,
@@ -152,27 +159,6 @@ class ActionCenterService:
         for item in queued:
             self.history.append({"event": "queued", "action": item.to_dict()})
         return queued
-
-    def execute_next(self, *, confirmed: bool = False, timeout: int = 120) -> ActionResult:
-        item = self.queue.next_ready()
-        if item is None:
-            return ActionResult.fail("No ready action is queued.")
-        if item.confirmation_required and not confirmed:
-            item.state = "needs_review"
-            self.history.append({"event": "blocked-confirmation", "action": item.to_dict()})
-            self.queue.finish_current("needs_review", "Confirmation required.")
-            return ActionResult.fail("Medium/high-risk action requires explicit confirmation.", data={"action_center": item.to_dict()}, action_id=item.id)
-        if not item.command_preview:
-            self.queue.finish_current("blocked", "Missing command preview.")
-            return ActionResult.fail("Action has no command preview.", data={"action_center": item.to_dict()}, action_id=item.id)
-
-        result = self.facade.execute(item.command_preview, privileged=False, timeout=timeout, action_id=item.id)
-        final_state = "succeeded" if result.success else "failed"
-        finished = self.queue.finish_current(final_state, result.message)
-        if finished:
-            self.history.append({"event": "executed", "result": result.to_dict(), "action": finished.to_dict()})
-        result.data = {**(result.data or {}), "action_center": finished.to_dict() if finished else item.to_dict()}
-        return result
 
     def recent_history(self, limit: int = 25) -> list[dict[str, object]]:
         return self.history.recent(limit=limit)

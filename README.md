@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v28.0.3 "Ease"
+# Loofi Fedora Tweaks v29.0.1 "Utility"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -7,15 +7,15 @@
 </p>
 
 <p align="center">
-  <strong>A focused Fedora maintenance core</strong><br>
-  Five destinations, one Action Center authority, and verified system changes.
+  <strong>A curated Fedora utility</strong><br>
+  Install, tune, fix, and update Fedora with reviewed, verifiable operations.
 </p>
 
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.3">
-    <img src="https://img.shields.io/badge/Release-v28.0.3-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v28.0.3 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1">
+    <img src="https://img.shields.io/badge/Release-v29.0.1-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v29.0.1 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -23,37 +23,34 @@
 
 ## What Loofi does
 
-Loofi Fedora Tweaks brings the most useful Fedora maintenance tasks into one
-small, desktop-neutral control center. It focuses on inspection, clear review,
-and independently verified results. It does not run a background service or
-include a web API.
+Loofi Fedora Tweaks brings common Fedora jobs into one small, desktop-neutral
+utility. The interface is organised around the work users want to complete:
 
-- Home shows current state, one recommended next action, and common tasks.
-- Updates & Apps checks and runs system packages, Flatpak, and firmware
-  independently; application discovery can be handed off to the desktop's
-  native software center.
-- System Health provides read-only checks, symptom-driven troubleshooting,
-  storage and hardware inspection, and support export.
-- Protection & Recovery groups firewall exposure, backups, recovery points,
-  and supported rollback guidance.
-- Changes remains the shared history and advanced review workspace for persistent
-  system changes. Everyday updates can start and finish from Updates & Apps.
+- **Install** — find trusted applications, select several, and see a result for
+  each installation.
+- **Tune** — review Minimal, Recommended, or Power User selections for Fedora,
+  privacy, performance, and supported KDE/GNOME settings.
+- **Fix** — start from a symptom, inspect evidence, and apply one verified repair
+  or open the correct native settings page.
+- **Update** — update system packages, Flatpaks, and firmware independently.
 
-The [public v28.0.3 Ease release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.3)
-contains direct in-place updates, compact risk confirmation, automatic result
-verification, and the v4 Action Center state contract. Exact tag, asset,
-attestation, COPR, and wiki readback are recorded in the
-[v28.0.3 public release evidence](docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
-The previous public release record remains available in
-[V28.0.2_RELEASE_PUBLICATION.md](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+Home is the launchpad. Activity & Recovery is the secondary place for
+pending verification, reboot follow-up, failures, and recovery guidance. The
+internal Action Center execution engine remains the safety boundary but is not a
+normal user-facing destination.
+
+The [v29.0.1 Utility release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1)
+adds the shared task catalog, source-aware application bundles, editable Tune
+profiles, symptom-first Fix flows, and independent state-driven Update cards.
+The historical `v29.0.0` tag remains unchanged and belongs to the earlier
+"Usability & Polish" lineage.
+
 The deterministic suite is green in an isolated environment. Physical desktop,
 authorization, reboot, Atomic, keyboard, and Orca checks are supplementary
 evidence: each release records their status as verified, pending, or
 `unverified`, and they never block publication.
 
-The current repository-wide local line coverage is 87% against the maintained
-85% blocking gate. The plan's 90% target remains open and is not presented as
-achieved.
+The maintained repository-wide line-coverage gate is 85%.
 
 ## Install
 
@@ -108,7 +105,6 @@ loofi info
 loofi check
 loofi updates check
 loofi troubleshoot profiles
-loofi changes list
 loofi activity list
 loofi doctor
 loofi support-bundle
@@ -116,15 +112,15 @@ loofi support-bundle
 
 Use `--json` before a command for machine-readable output. JSON schemas are
 command-specific, so automation should validate the selected command's shape.
-The CLI remains review-first: inspect the plan, confirm it explicitly, and
-verify the outcome separately. The GUI uses the same Action Center authority
-but presents compact confirmation and verified results on the page where the
-action started.
+The CLI remains review-first: inspect saved state, confirm an explicit
+compatibility plan when needed, and verify the outcome separately. The GUI
+uses the same internal orchestrator but presents compact confirmation and
+verified results on the page where the action started.
 
 ## Safety model
 
-- UI views do not run arbitrary commands. Supported everyday actions may start
-  directly from their owning page through the Action Center authority.
+- UI views do not run arbitrary commands. Supported everyday actions start
+  from their owning page through the shared operation controller.
 - Commands are list-based, allowlisted, timeout-bounded, and never use a shell
   interpreter.
 - A plan contains a closed action and typed parameters, not an arbitrary command

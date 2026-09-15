@@ -38,17 +38,10 @@ _ATTENTION_STATES = frozenset({"attention", "pending", "updates_available", "war
 _UPDATE_PENDING_STATES = frozenset({"attention", "pending", "updates_available"})
 
 _COMMON_TASKS = (
-    HomeTask("updates", "Check for updates", "Check and run Fedora, Flatpak, or firmware updates.", "maintenance:updates", "update"),
-    HomeTask("applications", "Install an app", "Find Fedora or Flatpak apps and create an install plan.", "software:apps", "packages-software"),
-    HomeTask("troubleshoot", "Troubleshoot a problem", "Start a read-only check from the symptom you notice.", "diagnostics", "maintenance-health"),
-    HomeTask("cleanup", "Free space", "Preview reclaimable space before creating a cleanup plan.", "maintenance:cleanup", "cleanup"),
-    HomeTask(
-        "planned-changes",
-        "Review planned changes",
-        "Review, confirm, and verify work in Changes.",
-        "changes",
-        "status-ok",
-    ),
+    HomeTask("updates", "Check for updates", "Check Fedora, Flatpak, or firmware independently.", "utility:update", "update"),
+    HomeTask("applications", "Install applications", "Search trusted Fedora and Flatpak choices.", "utility:install", "packages-software"),
+    HomeTask("tune", "Tune Fedora", "Review an editable low-risk profile.", "utility:tune", "settings"),
+    HomeTask("troubleshoot", "Fix a problem", "Start a read-only check from the symptom you notice.", "utility:fix", "maintenance-health"),
 )
 
 
@@ -96,8 +89,8 @@ class HomeService:
                 if error:
                     errors.append(f"health snapshot: {error}")
         state = self._read_source("state integrity", self.state_source.run, errors, default={})
-        plans = self._read_source("Action Center plans", lambda: self._list_action_state(self.plan_store), errors, default=[])
-        runs = self._read_source("Action Center runs", lambda: self._list_action_state(self.run_store), errors, default=[])
+        plans = self._read_source("operation plans", lambda: self._list_action_state(self.plan_store), errors, default=[])
+        runs = self._read_source("operation runs", lambda: self._list_action_state(self.run_store), errors, default=[])
         history = self._read_history(errors)
         notifications = self._read_notifications(errors)
 
@@ -108,25 +101,25 @@ class HomeService:
             recommendations.append(Recommendation(
                 "home-source-error", "source_error", "Home data needs attention",
                 "Some saved status sources could not be read. Review system health before making changes.",
-                "maintenance:health-timeline", "attention",
+                "utility:fix", "attention",
             ))
         elif not recommendations and data_state == "stale":
             recommendations.append(Recommendation(
                 "home-stale", "stale_data", "Refresh system health",
                 "The latest saved health snapshot is more than 24 hours old.",
-                "maintenance:health-timeline", "attention",
+                "utility:fix", "attention",
             ))
         elif not recommendations and data_state == "fresh":
             recommendations.append(Recommendation(
                 "home-good", "no_action", "No action required",
                 "Saved health and maintenance signals do not need attention.",
-                "maintenance:health-timeline", "info",
+                "utility:fix", "info",
             ))
         elif not recommendations and data_state == "empty":
             recommendations.append(Recommendation(
                 "home-first-review", "first_health_review", "Review system health",
                 "No saved status exists yet. Run a local System Check to create the first snapshot.",
-                "maintenance:health-timeline", "info",
+                "utility:fix", "info",
             ))
 
         ordered = ordered_recommendations(self._deduplicate_recommendations(recommendations))
@@ -299,16 +292,16 @@ class HomeService:
             source = "run"
         else:
             title = "Maintenance in progress"
-            summary = "A reviewed Action Center operation is still running."
+            summary = "A reviewed operation is still running."
             source = "run"
         return GuidedTask(
             f"active:{run_id}",
             source,
             title,
             summary,
-            "maintenance:action-center",
+            "activity",
             run_id,
-            "Open Action Center",
+            "Open Activity & Recovery",
         )
 
     @classmethod
@@ -421,8 +414,8 @@ class HomeService:
             run_state = str(getattr(latest_run, "state", ""))
             items.append(Recommendation(
                 "action-run-review", "action_run_review", "Review verified maintenance",
-                f"The latest Action Center run is {run_state.replace('_', ' ')} and requires manual review.",
-                "maintenance:action-center", "critical", len(problematic_runs),
+                f"The latest operation is {run_state.replace('_', ' ')} and requires manual review.",
+                "activity", "critical", len(problematic_runs),
             ))
 
         awaiting_reboot_runs = [
@@ -436,8 +429,8 @@ class HomeService:
                 "action-run-pending-reboot",
                 "pending_reboot",
                 "Restart before checking maintenance again",
-                "A verified Action Center step is waiting for reboot-aware verification.",
-                "maintenance:action-center",
+                "A verified operation is waiting for reboot-aware verification.",
+                "activity",
                 "attention",
                 len(awaiting_reboot_runs),
             ))
@@ -471,7 +464,7 @@ class HomeService:
                     f"resolution-check:{run.run_id}",
                     "resolution_check",
                     "Check maintenance outcome",
-                    "Action Center verification passed. Run a later System Check before treating the linked finding as resolved.",
+                    "Operation verification passed. Run a later System Check before treating the linked finding as resolved.",
                     "atlas_dashboard",
                     "attention",
                 ))
@@ -502,7 +495,7 @@ class HomeService:
                 items.append(Recommendation(
                     "pending-reboot", "pending_reboot", "Restart to finish an existing operation",
                     "A completed system operation is waiting for a reboot.",
-                    "maintenance:updates", "attention",
+                    "utility:update", "attention",
                 ))
             disk = self._mapping(getattr(latest, "disk_usage_summary", {})) or cards.get("disk-usage", {})
             if self._disk_pressure(disk):
@@ -517,13 +510,13 @@ class HomeService:
                 items.append(Recommendation(
                     "failed-update", "failed_update", "Review update health",
                     str(package.get("summary") or update.get("summary") or "An update or package operation needs review."),
-                    "maintenance:updates", "critical",
+                    "utility:update", "critical",
                 ))
             elif self._state(update) in _UPDATE_PENDING_STATES or int(update.get("pending_count", 0) or 0) > 0:
                 items.append(Recommendation(
                     "pending-updates", "pending_updates", "Run available system updates",
                     str(update.get("summary") or "Important system updates are available."),
-                    "maintenance:updates", "attention",
+                    "utility:update", "attention",
                 ))
             protection = self._mapping(getattr(latest, "rollback_snapshot_availability", {})) or cards.get("rollback", {})
             if protection and self._state(protection) in _PROBLEM_STATES:
@@ -544,7 +537,7 @@ class HomeService:
             if trend.recurring or trend.worsening:
                 items.append(Recommendation(
                     "repeated-health", "repeated_health", "Review recurring system health issues",
-                    trend.summary, "maintenance:health-timeline", "attention",
+                    trend.summary, "utility:fix", "attention",
                     len(trend.recurring) + len(trend.worsening),
                 ))
 
@@ -561,8 +554,8 @@ class HomeService:
         if review_count:
             items.append(Recommendation(
                 "action-center-review", "action_center_review", "Review maintenance options",
-                f"Action Center has {review_count} item(s) ready for explicit review.",
-                "maintenance:action-center", "attention", review_count,
+                f"Activity has {review_count} item(s) ready for explicit review.",
+                "activity", "attention", review_count,
             ))
         return items
 
@@ -597,7 +590,7 @@ class HomeService:
                 "system_check_partial",
                 "Some checks were unavailable",
                 f"The latest System Check could not read: {detail}.",
-                "maintenance:health-timeline",
+                "utility:fix",
                 "attention",
                 max(1, len(sources)),
             ))
@@ -620,13 +613,13 @@ class HomeService:
             action_id = str(raw.get("action_id", ""))
             route_id = str(raw.get("route_id", ""))
             if action_id:
-                route_id = "maintenance:action-center"
+                route_id = "activity"
             recommendations.append(Recommendation(
                 f"system-check:{raw.get('fingerprint', finding_id)}",
                 kind_by_id.get(finding_id, "system_check_finding"),
                 str(raw.get("title") or "System Check finding"),
                 str(raw.get("summary") or "The latest System Check found an item to review."),
-                route_id or "maintenance:health-timeline",
+                route_id or "utility:fix",
                 severity,  # type: ignore[arg-type]
             ))
         return recommendations
@@ -706,10 +699,10 @@ class HomeService:
         ) or cards.get("rollback", {})
 
         definitions = (
-            ("health", "System health", "maintenance:health-timeline", (), ()),
-            ("updates", "Updates", "maintenance:updates", (update, package), ("pending_updates", "pending_reboot", "failed_update")),
-            ("storage", "Storage", "storage", (disk,), ("disk_pressure",)),
-            ("recovery", "Recovery protection", "backup", (recovery,), ("missing_backup",)),
+            ("health", "System health", "utility:fix", (), ()),
+            ("updates", "Updates", "utility:update", (update, package), ("pending_updates", "pending_reboot", "failed_update")),
+            ("storage", "Storage", "utility:fix", (disk,), ("disk_pressure",)),
+            ("recovery", "Recovery protection", "activity", (recovery,), ("missing_backup",)),
         )
         statuses: list[HomeStatus] = []
         for status_id, title, route_id, payloads, kinds in definitions:

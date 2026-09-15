@@ -1,8 +1,15 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v28.0.3 "Ease" public release.
-> The supported product
-> is a desktop-neutral Fedora application built with Python 3.12+ and PyQt6.
+> Canonical architecture reference for the v29.0.1 "Utility" release.
+> The supported product is a desktop-neutral Fedora application built with
+> Python 3.12+ and PyQt6.
+
+The [v29 architecture specification](.workflow/specs/arch-v29.0.1.md) retains
+the established safety boundary while replacing the visible
+maintenance-oriented shell with Home, Install, Tune, Fix, and Update. Activity
+& Recovery and Settings are secondary header surfaces. Action Center remains
+an internal execution engine, not a user-facing destination or required
+concept in normal workflows.
 
 This document describes the active product boundary.  Historical release notes
 may mention retired implementation details, but they are not supported runtime
@@ -10,20 +17,21 @@ or packaging contracts.
 
 ## Product boundary
 
-Loofi Fedora Tweaks is a focused Fedora maintenance application.  It combines
-read-only inspection, capability-aware guidance, and reviewed persistent
-changes in one small GUI and a matching CLI.  The application remains useful
+Loofi Fedora Tweaks is a curated Fedora utility. It combines application
+installation, safe tuning, symptom-driven diagnosis, updates, capability-aware
+guidance, and reviewed persistent changes in one small GUI and a matching CLI.
+The application remains useful
 when optional host tools are missing: each source reports an explicit
 `available`, `unavailable`, `stale`, or `error` state instead of pretending
 that a different Fedora setup was detected.
 
-The Ease public release preserves the intentionally small Core boundary:
+The Utility release preserves an intentionally small runtime boundary:
 
-- five primary destinations: Home, Updates & Apps, System Health, Protection &
-  Recovery, and Changes;
+- five primary destinations: Home, Install, Tune, Fix, and Update;
 - an immutable `PlatformProfile` for Fedora version, architecture, desktop,
   session, capabilities, and deployment backend;
 - one Action Center authority for every persistent host mutation;
+- one shared task catalog and one shared operation-controller lifecycle;
 - GUI and CLI as the only runtime entry modes;
 - a COPR-backed RPM as the supported distribution artifact.
 
@@ -31,9 +39,10 @@ The product does not ship a background service, local web API, D-Bus
 runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
-The authoritative v28 contract is [.workflow/specs/arch-v28.0.3.md](.workflow/specs/arch-v28.0.3.md).
-The previous public release record is [V28.0.2_RELEASE_PUBLICATION.md](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
-The current publication record is [V28.0.3_RELEASE_PUBLICATION.md](docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
+The authoritative release contract is
+[.workflow/specs/arch-v29.0.1.md](.workflow/specs/arch-v29.0.1.md).
+The previous public release record is
+[V28.0.3_RELEASE_PUBLICATION.md](docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
 
 ## Runtime entry modes
 
@@ -60,14 +69,14 @@ declare competing product metadata.
 | Order | Destination ID | Label | Default route |
 | ---: | --- | --- | --- |
 | 1 | `home` | Home | `atlas_dashboard` |
-| 2 | `software_updates` | Updates & Apps | `software:apps` |
-| 3 | `system` | System Health | `system_info` |
-| 4 | `network_security` | Protection & Recovery | `network` |
-| 5 | `changes` | Changes | `changes` |
+| 2 | `install` | Install | `install` |
+| 3 | `tune` | Tune | `tune` |
+| 4 | `fix` | Fix | `fix` |
+| 5 | `update` | Update | `update` |
 
-Settings remains a header-level route (`settings`) rather than a sixth primary
-destination.  Stable route IDs and compatibility redirects are preserved for
-existing saved links.  `NavigationPolicy` evaluates route, Fedora variant,
+Activity & Recovery and Settings remain header-level routes rather than
+primary destinations. Stable route IDs and compatibility redirects are
+preserved for existing saved links. `NavigationPolicy` evaluates route, Fedora variant,
 capability, component availability, and explicit compatibility mappings;
 missing or incomplete features return a typed unavailable explanation.
 
@@ -122,7 +131,7 @@ presentation-to-host shortcuts.
 is explicit for Fedora release, CPU architecture, desktop/session, and
 deployment backend (`dnf5`, `rpm_ostree`, `bootc`, or `unknown`).
 `core/platform/capabilities.py` derives the optional host-tool capabilities
-used by navigation, readiness, update sources, and Action Center eligibility.
+used by navigation, task availability, update sources, and action eligibility.
 
 Unknown values fail closed.  In particular, unknown deployment must not be
 treated as traditional Fedora, unknown desktop must not select KDE-specific
@@ -139,12 +148,12 @@ now` activation is the only entry point that starts the read-only System Check
 worker.  Completed, partial, cancelled, and failed results retain explicit
 source/progress/error state and refresh Home by rereading persisted data.
 
-System Health composes System Check, troubleshooting, storage, hardware, and
-support export.  Troubleshooting sessions use a closed profile catalog,
+Fix composes System Check and symptom-driven troubleshooting. Troubleshooting
+sessions use a closed profile catalog,
 bounded collection, immutable findings, and redacted persistence.  Inspection
 is advisory and does not create a mutation plan implicitly.
 
-## Action Center mutation boundary
+## Internal mutation boundary
 
 `core/actions` is the sole authority for persistent host changes.  Every
 change follows this lifecycle:
@@ -164,26 +173,25 @@ Verification is an independent step.  A zero exit code is not a successful
 maintenance result by itself.  Runs can remain `awaiting_reboot`, but the app
 never reboots, retries, rolls back, or resumes them automatically.  The user
 must explicitly run verification after the relevant host event.  Interrupted,
-failed, and verification-failed runs remain inspectable in Changes.
+failed, and verification-failed runs remain inspectable in Activity & Recovery.
 
-The five visible facts in Changes are: change, risk, authorization,
-verification, and rollback/recovery guidance.  Activity history is source-owned
-evidence and does not imply that a generic Undo operation is available.
+The five operation facts are change, risk, authorization, verification, and
+recovery guidance. Activity history is source-owned evidence and does not
+imply that a generic Undo operation is available.
 
-## Updates and native application handoff
+## Install, Tune, Fix, and Update
 
-Updates & Apps keeps system packages, Flatpak applications, and firmware as
-independent sources. A fresh source result enables `Update System`, `Update
-Flatpaks`, or `Update firmware` on the same page. The Action Center prepares
-the exact scope, requests one compact confirmation for sensitive actions, and
-records verification without forcing navigation to Changes. A missing binary
-or unsupported backend is shown as unavailable with a safe next step. Flatpak
-remains an optional host update source, not a distribution format for this
-application.
+`core/tasks` owns the shared TaskDescriptor, curated application catalog,
+Tune profiles, Fix symptoms, Update state projection, and bundle construction.
+Install selections continue per item after a failure. Tune selections execute
+in order and stop on the first unexpected failure. Fix shows findings before a
+supported operation or handoff. Update keeps system packages, Flatpak, and
+firmware as independent sources with one state-driven action per card.
 
-Application discovery is handed to the installed desktop software center via
-AppStream/XDG metadata when available.  Loofi does not maintain a second app
-store or silently choose a desktop-specific installer.
+A missing binary or unsupported backend is shown as unavailable with a safe
+next step. Flatpak is preferred for ordinary GUI applications; Traditional
+Fedora RPM choices are reserved for trusted system-integrated and CLI tools.
+Atomic RPM layering is advanced and reboot-aware.
 
 ## State, observability, and support
 
@@ -195,7 +203,7 @@ package upgrades and uninstall.
 
 `core/observability` reads metrics and structured health snapshots without
 creating hidden collectors.  `core/change_journal` records bounded local
-source evidence for package, firmware, Flatpak, Action Center, and application
+source evidence for package, firmware, Flatpak, internal action, and application
 activity.  Support bundles recursively redact paths, hostnames, emails,
 secrets, network identifiers, commands, and raw process output before export.
 
@@ -230,9 +238,9 @@ support-bundle
 ```
 
 `--json`, `--timeout`, and `--dry-run` are global inspection/planning controls.
-The CLI may inspect and create a reviewed plan, but only `changes apply` with
-explicit confirmation may execute an existing plan or named Action Center
-definition.  `changes verify` remains a separate explicit command.
+The CLI may inspect Activity state. During v29, only `changes apply` with
+explicit confirmation may execute an existing compatible plan;
+`changes verify` remains a separate explicit compatibility command.
 
 ## Packaging and distribution
 
