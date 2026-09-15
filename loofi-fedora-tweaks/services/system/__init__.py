@@ -38,6 +38,14 @@ def __getattr__(name: str):
         from utils.command_runner import CommandRunner
 
         return CommandRunner
+    if name == "BaseSystemService":
+        from services.system.base import BaseSystemService
+
+        return BaseSystemService
+    if name == "SystemService":
+        from services.system.service import SystemService
+
+        return SystemService
 
     raise AttributeError(name)
 

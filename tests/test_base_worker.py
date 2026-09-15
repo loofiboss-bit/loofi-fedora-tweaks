@@ -16,10 +16,10 @@ from typing import Any
 import os
 import pytest
 
-_SKIP_QT = os.environ.get("DISPLAY") is None and os.environ.get("WAYLAND_DISPLAY") is None
+_SKIP_QT = False
 
 try:
-    from PyQt6.QtCore import QCoreApplication
+    from PyQt6.QtWidgets import QApplication
     from core.workers import BaseWorker
 except ImportError:
     _SKIP_QT = True
@@ -30,7 +30,7 @@ except ImportError:
         def report_progress(self, *a, **kw): pass
         def is_cancelled(self): return False
 
-pytestmark = pytest.mark.skipif(_SKIP_QT, reason="Qt/PyQt6 not available in headless environment")
+pytestmark = pytest.mark.skipif(_SKIP_QT, reason="Qt/PyQt6 not available")
 
 
 class SimpleWorker(BaseWorker):
@@ -85,8 +85,8 @@ class TestBaseWorker(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create QCoreApplication if not already running."""
-        cls.app = QCoreApplication.instance() or QCoreApplication([])
+        """Create QApplication if not already running."""
+        cls.app = QApplication.instance() or QApplication([])
 
     def setUp(self):
         """Reset state before each test."""
@@ -274,8 +274,8 @@ class TestExampleWorkers(unittest.TestCase):
 
     @classmethod
     def setUpClass(cls):
-        """Create QCoreApplication if not already running."""
-        cls.app = QCoreApplication.instance() or QCoreApplication([])
+        """Create QApplication if not already running."""
+        cls.app = QApplication.instance() or QApplication([])
 
     def _flush_events(self):
         """Process queued Qt signals."""

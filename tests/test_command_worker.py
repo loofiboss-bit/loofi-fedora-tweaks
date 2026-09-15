@@ -17,7 +17,7 @@ from unittest.mock import patch, MagicMock
 
 import pytest
 
-_SKIP_QT = os.environ.get("DISPLAY") is None and os.environ.get("WAYLAND_DISPLAY") is None
+_SKIP_QT = False
 
 # Add source path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
@@ -29,7 +29,7 @@ try:
 except ImportError:
     _SKIP_QT = True
 
-pytestmark = pytest.mark.skipif(_SKIP_QT, reason="Qt/PyQt6 not available in headless environment")
+pytestmark = pytest.mark.skipif(_SKIP_QT, reason="Qt/PyQt6 not available")
 
 
 class TestCommandWorkerInit(unittest.TestCase):

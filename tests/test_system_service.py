@@ -16,8 +16,7 @@ from unittest.mock import MagicMock, patch
 
 import pytest
 
-_SKIP_QT = os.environ.get("DISPLAY") is None and os.environ.get(
-    "WAYLAND_DISPLAY") is None
+_SKIP_QT = False
 
 # Add source path
 sys.path.insert(0, os.path.join(os.path.dirname(
@@ -31,7 +30,7 @@ except ImportError:
     _SKIP_QT = True
 
 pytestmark = pytest.mark.skipif(
-    _SKIP_QT, reason="Qt/PyQt6 not available in headless environment")
+    _SKIP_QT, reason="Qt/PyQt6 not available")
 
 
 class TestSystemServiceInit(unittest.TestCase):
@@ -449,6 +448,14 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
     v2.11.0 TASK-006.
     """
 
+    def setUp(self):
+        from services.system.system import SystemManager
+        SystemManager._is_atomic_cached = None
+
+    def tearDown(self):
+        from services.system.system import SystemManager
+        SystemManager._is_atomic_cached = None
+
     def test_has_pending_deployment_on_atomic_true(
         self,
         mock_run,
@@ -456,7 +463,7 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
     ):
         """has_pending_deployment returns True when unbooted deployment exists.
         """
-        mock_exists.return_value = True  # is_atomic
+        mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout='{"deployments": [{"booted": false}, {"booted": true}]}'
@@ -476,7 +483,7 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
         """has_pending_deployment returns False when first deployment is
         booted.
         """
-        mock_exists.return_value = True
+        mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout='{"deployments": [{"booted": true}]}'
@@ -507,7 +514,7 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
         mock_exists,
     ):
         """has_pending_deployment returns False on command failure."""
-        mock_exists.return_value = True
+        mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(returncode=1, stdout="")
 
         from services.system.system import SystemManager
@@ -517,7 +524,7 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
 
     def test_get_layered_packages_success(self, mock_run, mock_exists):
         """get_layered_packages returns package list on atomic system."""
-        mock_exists.return_value = True
+        mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(
             returncode=0,
             stdout=(
@@ -544,7 +551,7 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
 
     def test_get_layered_packages_handles_failure(self, mock_run, mock_exists):
         """get_layered_packages returns empty list on command failure."""
-        mock_exists.return_value = True
+        mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(returncode=1, stdout="")
 
         from services.system.system import SystemManager

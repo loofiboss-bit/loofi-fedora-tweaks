@@ -11,7 +11,7 @@ from typing import Any
 import os
 import pytest
 
-_SKIP_QT = os.environ.get("DISPLAY") is None and os.environ.get("WAYLAND_DISPLAY") is None
+_SKIP_QT = False
 
 try:
     from core.workers import BaseWorker
@@ -24,7 +24,7 @@ except ImportError:
         def report_progress(self, *a, **kw): pass
         def is_cancelled(self): return False
 
-pytestmark = pytest.mark.skipif(_SKIP_QT, reason="Qt/PyQt6 not available in headless environment")
+pytestmark = pytest.mark.skipif(_SKIP_QT, reason="Qt/PyQt6 not available")
 
 
 class SimpleWorker(BaseWorker):
