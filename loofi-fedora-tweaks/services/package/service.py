@@ -93,7 +93,7 @@ class DnfPackageService(BasePackageService):
     def _package_manager_binary() -> str:
         """Return the non-atomic package manager binary for this service."""
         package_manager = SystemManager.get_package_manager()
-        return "dnf" if package_manager == "rpm-ostree" else package_manager
+        return "dnf5" if package_manager == "dnf5" else "dnf"
 
     @staticmethod
     def _from_daemon_payload(payload: object) -> ActionResult | None:

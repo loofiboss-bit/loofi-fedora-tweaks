@@ -440,8 +440,53 @@ class TestSystemServiceDaemonDelegation(unittest.TestCase):
         mock_system_manager.has_pending_deployment.assert_not_called()
 
 
+def _atomic_profile():
+    from core.platform.profile import (
+        DeploymentBackend,
+        DesktopEnvironment,
+        PlatformProfile,
+        SessionType,
+    )
+    return PlatformProfile(
+        os_id="fedora",
+        fedora_version=41,
+        variant_id="silverblue",
+        variant_name="Silverblue",
+        architecture="x86_64",
+        desktop=DesktopEnvironment.GNOME,
+        session_type=SessionType.WAYLAND,
+        deployment_backend=DeploymentBackend.RPM_OSTREE,
+        is_atomic=True,
+        reboot_pending=None,
+        package_manager_command="rpm-ostree",
+    )
+
+
+def _traditional_profile():
+    from core.platform.profile import (
+        DeploymentBackend,
+        DesktopEnvironment,
+        PlatformProfile,
+        SessionType,
+    )
+    return PlatformProfile(
+        os_id="fedora",
+        fedora_version=41,
+        variant_id="workstation",
+        variant_name="Workstation",
+        architecture="x86_64",
+        desktop=DesktopEnvironment.GNOME,
+        session_type=SessionType.WAYLAND,
+        deployment_backend=DeploymentBackend.DNF5,
+        is_atomic=False,
+        reboot_pending=None,
+        package_manager_command="dnf",
+    )
+
+
 @patch('services.system.system.os.path.exists')
 @patch('services.system.system.subprocess.run')
+@patch('services.system.system.SystemManager.get_platform_profile')
 class TestSystemManagerAtomicReadPaths(unittest.TestCase):
     """Tests for SystemManager intentional local-read paths.
 
@@ -458,11 +503,13 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
 
     def test_has_pending_deployment_on_atomic_true(
         self,
+        mock_get_profile,
         mock_run,
         mock_exists,
     ):
         """has_pending_deployment returns True when unbooted deployment exists.
         """
+        mock_get_profile.return_value = _atomic_profile()
         mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(
             returncode=0,
@@ -477,12 +524,14 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
 
     def test_has_pending_deployment_on_atomic_false(
         self,
+        mock_get_profile,
         mock_run,
         mock_exists,
     ):
         """has_pending_deployment returns False when first deployment is
         booted.
         """
+        mock_get_profile.return_value = _atomic_profile()
         mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(
             returncode=0,
@@ -496,10 +545,12 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
 
     def test_has_pending_deployment_on_traditional(
         self,
+        mock_get_profile,
         mock_run,
         mock_exists,
     ):
         """has_pending_deployment returns False on traditional Fedora."""
+        mock_get_profile.return_value = _traditional_profile()
         mock_exists.return_value = False  # not atomic
 
         from services.system.system import SystemManager
@@ -510,10 +561,12 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
 
     def test_has_pending_deployment_handles_failure(
         self,
+        mock_get_profile,
         mock_run,
         mock_exists,
     ):
         """has_pending_deployment returns False on command failure."""
+        mock_get_profile.return_value = _atomic_profile()
         mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(returncode=1, stdout="")
 
@@ -522,8 +575,14 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
 
         self.assertFalse(result)
 
-    def test_get_layered_packages_success(self, mock_run, mock_exists):
+    def test_get_layered_packages_success(
+        self,
+        mock_get_profile,
+        mock_run,
+        mock_exists,
+    ):
         """get_layered_packages returns package list on atomic system."""
+        mock_get_profile.return_value = _atomic_profile()
         mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(
             returncode=0,
@@ -539,8 +598,14 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
         self.assertIn("vim", packages)
         self.assertIn("htop", packages)
 
-    def test_get_layered_packages_on_traditional(self, mock_run, mock_exists):
+    def test_get_layered_packages_on_traditional(
+        self,
+        mock_get_profile,
+        mock_run,
+        mock_exists,
+    ):
         """get_layered_packages returns empty list on traditional Fedora."""
+        mock_get_profile.return_value = _traditional_profile()
         mock_exists.return_value = False
 
         from services.system.system import SystemManager
@@ -549,8 +614,14 @@ class TestSystemManagerAtomicReadPaths(unittest.TestCase):
         self.assertEqual(packages, [])
         mock_run.assert_not_called()
 
-    def test_get_layered_packages_handles_failure(self, mock_run, mock_exists):
+    def test_get_layered_packages_handles_failure(
+        self,
+        mock_get_profile,
+        mock_run,
+        mock_exists,
+    ):
         """get_layered_packages returns empty list on command failure."""
+        mock_get_profile.return_value = _atomic_profile()
         mock_exists.side_effect = lambda p: str(p) == "/run/ostree-booted"
         mock_run.return_value = MagicMock(returncode=1, stdout="")
 
