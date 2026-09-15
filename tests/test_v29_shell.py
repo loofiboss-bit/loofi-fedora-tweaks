@@ -5,6 +5,7 @@ from __future__ import annotations
 import os
 import sys
 import unittest
+from typing import cast
 from unittest.mock import patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
@@ -15,16 +16,42 @@ sys.path.insert(
 
 from PyQt6.QtWidgets import QApplication, QPushButton
 
+from core.platform.profile import (
+    DeploymentBackend,
+    DesktopEnvironment,
+    PlatformProfile,
+    SessionType,
+)
+from core.plugins.registry import PluginRegistry
+from services.system import SystemManager
 from ui.activity_recovery_tab import ActivityRecoveryTab
 from ui.main_window import MainWindow
 from ui.navigation import UTILITY_DESTINATIONS
 from ui.utility_landing_page import UtilityLandingPage, default_utility_tasks
 
 
+def _passing_profile() -> PlatformProfile:
+    return PlatformProfile(
+        os_id="fedora",
+        fedora_version="44",
+        variant_id="workstation",
+        variant_name="Fedora Workstation",
+        architecture="x86_64",
+        desktop=DesktopEnvironment.KDE,
+        session_type=SessionType.WAYLAND,
+        deployment_backend=DeploymentBackend.DNF5,
+        is_atomic=False,
+        reboot_pending=False,
+        package_manager_command="dnf5",
+    )
+
+
 class TestV29UtilityLandingPage(unittest.TestCase):
+    app: QApplication
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.app = QApplication.instance() or QApplication([])
+        cls.app = cast(QApplication, QApplication.instance() or QApplication([]))
 
     def test_each_job_has_a_single_primary_cta_and_bounded_groups(self) -> None:
         for destination_id, tasks in default_utility_tasks().items():
@@ -49,20 +76,27 @@ class TestV29UtilityLandingPage(unittest.TestCase):
 
 
 class TestV29MainWindowShell(unittest.TestCase):
+    app: QApplication
+    window: MainWindow | None
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.app = QApplication.instance() or QApplication([])
+        cls.app = cast(QApplication, QApplication.instance() or QApplication([]))
 
     def setUp(self) -> None:
         self.window = None
+        PluginRegistry.reset()
 
     def tearDown(self) -> None:
         if self.window is not None:
             self.window.close()
             self.app.processEvents()
+        PluginRegistry.reset()
 
     def _build(self) -> MainWindow:
-        with patch.object(MainWindow, "_check_first_run", lambda _self: None), patch.object(
+        with patch.object(SystemManager, "get_platform_profile", return_value=_passing_profile()), patch.object(
+            MainWindow, "_check_first_run", lambda _self: None
+        ), patch.object(
             MainWindow,
             "_initialize_background_services",
             lambda _self: None,
@@ -97,7 +131,12 @@ class TestV29MainWindowShell(unittest.TestCase):
         window = self._build()
         self.assertTrue(window.switch_to_route("install"))
         opened: list[str] = []
-        window.switch_to_route = lambda route_id, **_kwargs: opened.append(route_id) or True
+
+        def _record_route(route_id: str, **_kwargs: object) -> bool:
+            opened.append(route_id)
+            return True
+
+        window.switch_to_route = _record_route
         page = window._sidebar_index["utility_install"].page_widget
         page.primary_button.click()
 
@@ -122,9 +161,11 @@ class TestV29MainWindowShell(unittest.TestCase):
 
 
 class TestV29ActivityTerminology(unittest.TestCase):
+    app: QApplication
+
     @classmethod
     def setUpClass(cls) -> None:
-        cls.app = QApplication.instance() or QApplication([])
+        cls.app = cast(QApplication, QApplication.instance() or QApplication([]))
 
     def test_activity_surface_has_no_action_center_user_copy(self) -> None:
         tab = ActivityRecoveryTab(journal_service=object())
