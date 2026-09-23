@@ -57,6 +57,8 @@ class SidebarEntry:
 class MainWindowUtilityMixin:
     """Own v29 landing pages and compatibility-aware route navigation."""
 
+    _pending_runtime_shutdown: str | None
+
     def _initialize_utility_state(self: Any) -> None:
         """Initialize state for the five visible utility destinations."""
         self._utility_destinations: tuple[Any, ...] = ()
@@ -65,24 +67,14 @@ class MainWindowUtilityMixin:
         self._internal_action_route_navigation = False
         self._utility_operation_controller: Any | None = None
         self._utility_operation_adapter: Any | None = None
+        self._pending_runtime_shutdown: str | None = None
 
     def _register_utility_landing_pages(self: Any) -> None:
-        """Register inert v29 landing pages beside the lazy plugin pages."""
-        # Keep UI catalog imports lazy so headless callers and legacy tests can
-        # import MainWindow without realizing the complete component toolkit.
-        from core.tasks import ApplicationContext, TaskContext, UpdateOverviewState
+        """Register lightweight placeholders for the four workflow pages."""
+        from ui.lazy_widget import LazyWidget
         from ui.navigation import UTILITY_DESTINATIONS
-        from ui.utility_landing_page import default_utility_tasks
 
         self._utility_destinations = tuple(UTILITY_DESTINATIONS)
-        try:
-            task_context = TaskContext.from_platform_profile(self._platform_profile)
-        except (AttributeError, TypeError, ValueError):
-            task_context = TaskContext.from_navigation_context(self._navigation_context)
-        application_context = ApplicationContext.from_task_context(task_context)
-        tasks_by_destination = default_utility_tasks(
-            task_context
-        )
         destination_by_id = {
             destination.id: destination
             for destination in self._utility_destinations
@@ -91,17 +83,14 @@ class MainWindowUtilityMixin:
             destination = destination_by_id[destination_id]
             plugin_id = f"utility_{destination_id}"
             route_id = destination.default_route_id
-            page = self._create_utility_workflow_page(
-                destination_id,
-                destination,
-                task_context=task_context,
-                application_context=application_context,
-                fallback_tasks=tasks_by_destination[destination_id],
-                update_state=UpdateOverviewState(),
+
+            def load_page(selected_id: str = destination_id) -> QWidget:
+                return cast(QWidget, self._create_utility_workflow_page(selected_id))
+
+            page = LazyWidget(
+                load_page,
+                loading_text=self.tr("Loading %1…").replace("%1", destination.label),
             )
-            route_requested = getattr(page, "routeRequested", None)
-            if route_requested is not None and hasattr(route_requested, "connect"):
-                route_requested.connect(self._open_route_request)
             meta = PluginMetadata(
                 id=plugin_id,
                 name=destination.label,
@@ -143,20 +132,16 @@ class MainWindowUtilityMixin:
     def _create_utility_workflow_page(
         self: Any,
         destination_id: str,
-        destination: Any,
-        *,
-        task_context: Any,
-        application_context: Any,
-        fallback_tasks: tuple[Any, ...],
-        update_state: Any,
     ) -> QWidget:
-        """Create the product-facing workflow for one visible destination.
+        """Create one workflow on its first route visit and connect its signals."""
+        from core.tasks import ApplicationContext, TaskContext, UpdateOverviewState
 
-        The fallback launchpad remains available for injected/legacy shells,
-        while the real v29 window gets the dedicated Install, Tune, Fix, and
-        Update surfaces.  All workflow signals are connected here so the
-        shell remains the only owner of operation authority.
-        """
+        try:
+            task_context = TaskContext.from_platform_profile(self._platform_profile)
+        except (AttributeError, TypeError, ValueError):
+            task_context = TaskContext.from_navigation_context(self._navigation_context)
+        application_context = ApplicationContext.from_task_context(task_context)
+
         if destination_id == "install":
             from ui.install_workflow import InstallWorkflowPage
 
@@ -164,6 +149,7 @@ class MainWindowUtilityMixin:
             install_page.bundleReviewRequested.connect(
                 lambda selection, owner=install_page: self._review_utility_bundle(owner, selection)
             )
+            install_page.routeRequested.connect(self._open_route_request)
             return cast(QWidget, install_page)
         if destination_id == "tune":
             from ui.tune_workflow import TuneWorkflowPage
@@ -172,6 +158,9 @@ class MainWindowUtilityMixin:
             tune_page.bundleReviewRequested.connect(
                 lambda selection, owner=tune_page: self._review_utility_bundle(owner, selection)
             )
+            route_requested = getattr(tune_page, "routeRequested", None)
+            if route_requested is not None and hasattr(route_requested, "connect"):
+                route_requested.connect(self._open_route_request)
             return cast(QWidget, tune_page)
         if destination_id == "fix":
             from ui.fix_workflow import FixWorkflowPage
@@ -183,19 +172,32 @@ class MainWindowUtilityMixin:
         if destination_id == "update":
             from ui.update_workflow import UpdateWorkflowPage
 
-            update_page: Any = UpdateWorkflowPage(state=update_state)
+            update_page: Any = UpdateWorkflowPage(state=UpdateOverviewState())
             update_page.sourceActionRequested.connect(
                 lambda source, action, owner=update_page: self._handle_update_source_action(owner, source, action)
             )
             return cast(QWidget, update_page)
-        from ui.utility_landing_page import UtilityLandingPage
+        raise ValueError(f"Unknown utility workflow destination: {destination_id}")
 
-        return UtilityLandingPage(
-            destination_id,
-            destination.label,
-            destination.description,
-            fallback_tasks,
+    def _new_utility_operation_adapter(self: Any) -> Any:
+        """Create the single window-owned worker adapter for a reviewed change."""
+        from ui.operation_worker import OperationControllerQtAdapter
+
+        adapter = OperationControllerQtAdapter(parent=self)
+        adapter.stopped.connect(
+            lambda selected=adapter: self._utility_operation_adapter_stopped(selected)
         )
+        self._utility_operation_adapter = adapter
+        return adapter
+
+    def _utility_operation_adapter_stopped(self: Any, adapter: Any) -> None:
+        """Release a worker adapter only after its QThread has finished."""
+        if getattr(self, "_utility_operation_adapter", None) is adapter:
+            self._utility_operation_adapter = None
+        adapter.deleteLater()
+        resume_shutdown = getattr(self, "_resume_deferred_runtime_shutdown", None)
+        if callable(resume_shutdown):
+            resume_shutdown()
 
     def _set_utility_notice(self: Any, page: QWidget, kind: str, title: str, message: str) -> None:
         """Set a local workflow notice without coupling pages to the shell."""
@@ -211,7 +213,7 @@ class MainWindowUtilityMixin:
             self._set_utility_notice(page, "error", "Review unavailable", "The selected change set is malformed.")
             return False
         adapter = getattr(self, "_utility_operation_adapter", None)
-        if adapter is not None and bool(getattr(adapter, "running", False)):
+        if adapter is not None:
             self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish before starting another one.")
             return False
 
@@ -249,12 +251,13 @@ class MainWindowUtilityMixin:
     def _start_utility_bundle(self: Any, page: QWidget, selection: Any) -> bool:
         """Run a confirmed bundle through the shared Qt operation adapter."""
         from core.actions.operation_controller import OperationController
-        from ui.operation_worker import OperationControllerQtAdapter
 
+        if self._utility_operation_adapter is not None:
+            self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish before starting another one.")
+            return False
         if self._utility_operation_controller is None:
             self._utility_operation_controller = OperationController()
-        adapter = OperationControllerQtAdapter(parent=self)
-        self._utility_operation_adapter = adapter
+        adapter = self._new_utility_operation_adapter()
         self._set_utility_notice(page, "info", "Running", "The reviewed operations are running and will be verified individually.")
         adapter.started.connect(
             lambda: self._set_utility_notice(page, "info", "Running", "The reviewed operations are running and will be verified individually.")
@@ -277,6 +280,7 @@ class MainWindowUtilityMixin:
         )
         if not started:
             self._utility_operation_adapter = None
+            adapter.deleteLater()
             self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish before starting another one.")
         return bool(started)
 
@@ -351,10 +355,9 @@ class MainWindowUtilityMixin:
     ) -> bool:
         """Execute or verify one source with the shared Qt adapter."""
         from core.actions.operation_controller import OperationController
-        from ui.operation_worker import OperationControllerQtAdapter
 
         adapter = getattr(self, "_utility_operation_adapter", None)
-        if adapter is not None and bool(getattr(adapter, "running", False)):
+        if adapter is not None:
             setter = getattr(page, "set_notice", None)
             if callable(setter):
                 setter("warning", "Operation in progress", "Wait for the current operation to finish.")
@@ -385,8 +388,7 @@ class MainWindowUtilityMixin:
         setter = getattr(page, "set_notice", None)
         if callable(setter):
             setter("info", "Preparing", "The source is being preflighted before execution.")
-        new_adapter = OperationControllerQtAdapter(parent=self)
-        self._utility_operation_adapter = new_adapter
+        new_adapter = self._new_utility_operation_adapter()
         new_adapter.started.connect(
             lambda: setter("info", "Running", "The reviewed source operation is running and will be verified.")
             if callable(setter)
@@ -417,6 +419,7 @@ class MainWindowUtilityMixin:
         started = new_adapter.start(operation)
         if not started:
             self._utility_operation_adapter = None
+            new_adapter.deleteLater()
             if callable(setter):
                 setter("warning", "Operation in progress", "Wait for the current operation to finish.")
         return bool(started)
@@ -426,7 +429,6 @@ class MainWindowUtilityMixin:
         apply_outcome = getattr(page, "apply_outcome", None)
         if callable(apply_outcome):
             apply_outcome(source, outcome)
-        self._utility_operation_adapter = None
 
     def _utility_update_failed(self: Any, page: QWidget, source: str, message: str) -> None:
         """Keep failed update state visible and never retry automatically."""
@@ -435,7 +437,6 @@ class MainWindowUtilityMixin:
             from types import SimpleNamespace
 
             apply_outcome(source, SimpleNamespace(status="failed", message=message))
-        self._utility_operation_adapter = None
 
     def _cancel_utility_operation(self: Any) -> bool:
         """Cooperatively cancel a running utility operation during shutdown."""

@@ -1,5 +1,6 @@
 # Release Notes -- Latest
 
+- [v30.0.1 Steady local candidate](RELEASE-NOTES-v30.0.1.md)
 - [v29.0.1 Utility public release](RELEASE-NOTES-v29.0.1.md)
 - [v28.0.3 Ease public release](RELEASE-NOTES-v28.0.3.md)
 - [v28.0.2 Ease public release](RELEASE-NOTES-v28.0.2.md)
@@ -9,14 +10,16 @@
 
 Canonical "latest release notes index" for the project.
 
-## Current Release
+## Current Candidate
 
-- **Current release candidate:** v29.0.1 "Utility"
-- Previous public release: [v28.0.3 Ease](RELEASE-NOTES-v28.0.3.md)
+- **Local release candidate:** v30.0.1 "Steady"; not published or installable
+  from public repositories.
+- Previous public release: [v29.0.1 Utility](RELEASE-NOTES-v29.0.1.md)
 
 ## Recent Releases
 
-- v29.0.1 "Utility" release: [RELEASE-NOTES-v29.0.1.md](RELEASE-NOTES-v29.0.1.md)
+- v30.0.1 "Steady" local candidate: [RELEASE-NOTES-v30.0.1.md](RELEASE-NOTES-v30.0.1.md)
+- v29.0.1 "Utility" public release: [RELEASE-NOTES-v29.0.1.md](RELEASE-NOTES-v29.0.1.md)
 - v28.0.3 "Ease" public release: [RELEASE-NOTES-v28.0.3.md](RELEASE-NOTES-v28.0.3.md)
 - v28.0.2 "Ease" public release: [RELEASE-NOTES-v28.0.2.md](RELEASE-NOTES-v28.0.2.md)
 - v28.0.1 "Ease" public release: [RELEASE-NOTES-v28.0.1.md](RELEASE-NOTES-v28.0.1.md)

@@ -1,9 +1,9 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v29.0.1 "Utility" uses one internal orchestrator as the
+Loofi Fedora Tweaks v30.0.1 "Steady" retains one internal orchestrator as the
 trust boundary for persistent system changes from both GUI and CLI. Install,
 Tune, Fix, and Update use the same controller while Activity & Recovery keeps
-saved outcomes and follow-up state.
+saved outcomes and follow-up state. This is a local candidate; publication is pending.
 
 ## The lifecycle
 

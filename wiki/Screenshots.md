@@ -1,12 +1,16 @@
-# Visual Interface Gallery — v29.0.1 "Utility"
+# Visual Interface Gallery — v30.0.1 "Steady" candidate
 
-> Captured from the v29.0.1 application with an isolated profile.
+These static captures document the retained task-oriented shell and are not
+physical desktop qualification evidence.
 
 The images below document the task-oriented shell. Offscreen captures verify
 rendering and route integration but do not claim physical desktop, keyboard,
 scaling, or assistive-technology qualification.
 
 ## Home
+
+The captures are from the public v29.0.1 baseline; v30.0.1 retains these user
+workflows without adding application features.
 
 ![Home](images/home-dashboard.png)
 

@@ -1,9 +1,10 @@
-# Historical Fedora KDE 44 Readiness Note
+# Historical Fedora KDE 44 Readiness Note — v30.0.1 "Steady"
 
-This filename is retained for links from earlier releases. The v29.0.1 Utility
-readiness model is Fedora-neutral and is not a KDE 44 product gate. It uses
-the immutable `PlatformProfile`, probes desktop-specific checks only when the
-detected desktop requires them, and keeps unknown values unavailable.
+This v30.0.1 local candidate retains a Fedora-neutral readiness model; this
+filename is retained for links from earlier releases. It is not a KDE 44
+product gate. The model uses the immutable `PlatformProfile`, probes
+desktop-specific checks only when the detected desktop requires them, and
+keeps unknown values unavailable.
 
 Use the maintained documentation instead:
 

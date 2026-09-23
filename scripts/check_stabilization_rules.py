@@ -48,6 +48,9 @@ ALLOWED_BROAD_EXCEPTIONS = {
     ("loofi-fedora-tweaks/core/secrets.py", "SecretStore.set"),
     ("loofi-fedora-tweaks/core/secrets.py", "SecretStore.delete"),
     ("loofi-fedora-tweaks/ui/lazy_widget.py", "LazyWidget.ensure_loaded"),
+    # A worker-thread callback must turn unexpected operation failures into a
+    # terminal Qt signal instead of letting an exception escape its thread.
+    ("loofi-fedora-tweaks/ui/operation_worker.py", "OperationWorker.run"),
     ("loofi-fedora-tweaks/utils/error_handler.py", "_log_error"),
 }
 

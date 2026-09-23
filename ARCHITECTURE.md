@@ -1,15 +1,14 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v29.0.1 "Utility" release.
+> Canonical architecture reference for the v30.0.1 "Steady" release.
 > The supported product is a desktop-neutral Fedora application built with
 > Python 3.12+ and PyQt6.
 
-The [v29 architecture specification](.workflow/specs/arch-v29.0.1.md) retains
-the established safety boundary while replacing the visible
-maintenance-oriented shell with Home, Install, Tune, Fix, and Update. Activity
-& Recovery and Settings are secondary header surfaces. Action Center remains
-an internal execution engine, not a user-facing destination or required
-concept in normal workflows.
+The [v30 architecture specification](.workflow/specs/arch-v30.0.1.md) retains
+the v29 product and safety boundary while tightening durable operation results,
+worker cleanup, and first-visit loading for Install, Tune, Fix, and Update.
+Activity & Recovery and Settings are secondary header surfaces. Action Center
+remains the sole system-mutation authority.
 
 This document describes the active product boundary.  Historical release notes
 may mention retired implementation details, but they are not supported runtime
@@ -39,10 +38,10 @@ The product does not ship a background service, local web API, D-Bus
 runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
-The authoritative release contract is
-[.workflow/specs/arch-v29.0.1.md](.workflow/specs/arch-v29.0.1.md).
-The previous public release record is
-[V28.0.3_RELEASE_PUBLICATION.md](docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
+The active candidate contract is
+[.workflow/specs/arch-v30.0.1.md](.workflow/specs/arch-v30.0.1.md).
+The public baseline record is
+[V29.0.1_RELEASE_PUBLICATION.md](docs/reports/V29.0.1_RELEASE_PUBLICATION.md).
 
 ## Runtime entry modes
 

@@ -11,9 +11,9 @@ from __future__ import annotations
 
 from collections.abc import Callable
 from threading import Event
-from typing import Any
+from typing import Any, cast
 
-from PyQt6.QtCore import QObject, QThread, pyqtSignal
+from PyQt6.QtCore import QObject, QThread, Qt, pyqtSignal
 
 
 OperationCallable = Callable[[], Any]
@@ -50,12 +50,12 @@ class OperationWorker(QObject):
             return
         try:
             result = self._operation()
-        except (OSError, RuntimeError, ValueError, TypeError, AttributeError) as exc:
-            self.failed.emit(str(exc))
+        except Exception as exc:
+            self.failed.emit(f"{type(exc).__name__}: {exc}")
             return
-        if self.cancel_requested:
-            self.cancelled.emit()
-            return
+        # Cancellation cannot interrupt an operation that has crossed the
+        # execution boundary. Its durable result takes precedence over a late
+        # shutdown request so a completed host change is never hidden.
         self.finished.emit(result)
 
 
@@ -67,35 +67,46 @@ class OperationControllerQtAdapter(QObject):
     failed = pyqtSignal(str)
     cancelled = pyqtSignal()
     started = pyqtSignal()
+    stopped = pyqtSignal()
 
     def __init__(self, *, parent: QObject | None = None) -> None:
         super().__init__(parent)
         self._thread: QThread | None = None
         self._worker: OperationWorker | None = None
+        self._terminal: tuple[str, object] | None = None
 
     @property
     def running(self) -> bool:
         return self._thread is not None and self._thread.isRunning()
 
+    @property
+    def busy(self) -> bool:
+        """Return true until the GUI thread has delivered the terminal result."""
+        return self._thread is not None
+
     def start(self, operation: OperationCallable) -> bool:
         """Start one operation, rejecting overlap until the thread is done."""
-        if self.running:
+        if self._thread is not None:
             return False
         thread = QThread(self)
         worker = OperationWorker(operation)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.progress.connect(self.progress.emit)
-        worker.finished.connect(self._on_finished)
-        worker.failed.connect(self._on_failed)
-        worker.cancelled.connect(self._on_cancelled)
-        worker.finished.connect(thread.quit)
-        worker.failed.connect(thread.quit)
-        worker.cancelled.connect(thread.quit)
+        cast(Any, worker.finished).connect(self._record_finished, Qt.ConnectionType.DirectConnection)
+        cast(Any, worker.failed).connect(self._record_failed, Qt.ConnectionType.DirectConnection)
+        cast(Any, worker.cancelled).connect(self._record_cancelled, Qt.ConnectionType.DirectConnection)
+        # Quit from the worker's emitting thread. A queued connection targets
+        # the QThread object's GUI-thread affinity and can deadlock wait() or
+        # shutdown while that GUI thread is waiting for this worker.
+        cast(Any, worker.finished).connect(thread.quit, Qt.ConnectionType.DirectConnection)
+        cast(Any, worker.failed).connect(thread.quit, Qt.ConnectionType.DirectConnection)
+        cast(Any, worker.cancelled).connect(thread.quit, Qt.ConnectionType.DirectConnection)
         thread.finished.connect(worker.deleteLater)
-        thread.finished.connect(self._on_thread_finished)
+        cast(Any, thread.finished).connect(self._on_thread_finished, Qt.ConnectionType.QueuedConnection)
         self._thread = thread
         self._worker = worker
+        self._terminal = None
         self.started.emit()
         thread.start()
         return True
@@ -120,21 +131,33 @@ class OperationControllerQtAdapter(QObject):
             self.cancel()
         return self.wait(timeout_ms)
 
-    def _on_finished(self, result: object) -> None:
-        self.finished.emit(result)
+    def _record_finished(self, result: object) -> None:
+        self._terminal = ("finished", result)
 
-    def _on_failed(self, message: str) -> None:
-        self.failed.emit(str(message))
+    def _record_failed(self, message: str) -> None:
+        self._terminal = ("failed", str(message))
 
-    def _on_cancelled(self) -> None:
-        self.cancelled.emit()
+    def _record_cancelled(self) -> None:
+        self._terminal = ("cancelled", None)
 
     def _on_thread_finished(self) -> None:
         thread = self._thread
-        self._thread = None
+        if thread is None:
+            return
+        terminal = self._terminal
+        self._terminal = None
         self._worker = None
-        if thread is not None:
-            thread.deleteLater()
+        self._thread = None
+        thread.deleteLater()
+        if terminal is not None:
+            kind, payload = terminal
+            if kind == "finished":
+                self.finished.emit(payload)
+            elif kind == "failed":
+                self.failed.emit(str(payload))
+            else:
+                self.cancelled.emit()
+        self.stopped.emit()
 
 
 # Explicit names make migration from the former Action Center worker

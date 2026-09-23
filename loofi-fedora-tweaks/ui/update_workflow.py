@@ -171,6 +171,10 @@ class UpdateWorkflowPage(QWidget):
             next_status = "verification_failed"
             kind = "warning"
             title = "Verification failed"
+        elif status in {"cancelled", "interrupted"}:
+            next_status = "cancelled"
+            kind = "warning"
+            title = "Update cancelled"
         else:
             next_status = "failed"
             kind = "warning"
@@ -180,7 +184,7 @@ class UpdateWorkflowPage(QWidget):
         self.set_source(
             current.with_status(
                 next_status,  # type: ignore[arg-type]
-                stale=False,
+                stale=next_status == "cancelled",
                 run_id=run_id or current.run_id,
                 reboot_required=next_status == "awaiting_reboot",
                 message=message,
@@ -227,10 +231,11 @@ class UpdateWorkflowPage(QWidget):
                 "verifying": "Verifying",
                 "awaiting_reboot": "Reboot required",
                 "succeeded": "Updated",
+                "cancelled": "Update cancelled",
                 "failed": "Update failed",
                 "verification_failed": "Verification failed",
             }.get(state.status, state.status)
-            kind = "success" if state.status in {"up_to_date", "succeeded"} else "warning" if state.status in {"error", "failed", "verification_failed", "missing_tool", "unsupported"} else "info"
+            kind = "success" if state.status in {"up_to_date", "succeeded"} else "warning" if state.status in {"error", "cancelled", "failed", "verification_failed", "missing_tool", "unsupported"} else "info"
             badge.set_status(self.tr(label), kind=kind)
             freshness = self.tr("Fresh") if state.freshness == "fresh" else self.tr("Stale")
             count = self.tr("%1 item(s)").replace("%1", str(state.item_count))
