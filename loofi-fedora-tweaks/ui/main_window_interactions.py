@@ -95,6 +95,7 @@ _BADGE_SUFFIXES = {
 class MainWindowInteractionMixin:
     """Behavioral shell mixin kept separate from route/page construction."""
 
+    _pending_runtime_shutdown: str | None
     tray_icon: QSystemTrayIcon | None
     _toast_widget: NotificationToast | None
 
@@ -555,13 +556,34 @@ class MainWindowInteractionMixin:
             )
 
     def quit_app(self: typing.Any) -> typing.Any:
-        self._request_runtime_shutdown()
-        from PyQt6.QtWidgets import QApplication
+        if self._request_runtime_shutdown(action="quit"):
+            from PyQt6.QtWidgets import QApplication
 
-        QApplication.quit()
+            QApplication.quit()
 
-    def _request_runtime_shutdown(self: typing.Any) -> None:
-        """Use the process runtime when present, with a direct test fallback."""
+    def _request_runtime_shutdown(self: typing.Any, *, action: str = "close") -> bool:
+        """Defer teardown until a durable operation has reached its terminal state."""
+        adapter = getattr(self, "_utility_operation_adapter", None)
+        adapter_busy = adapter is not None and (
+            getattr(adapter, "busy", False) is True
+            or getattr(adapter, "running", False) is True
+        )
+        if adapter is not None and adapter_busy:
+            current = getattr(self, "_pending_runtime_shutdown", None)
+            if current != "quit":
+                self._pending_runtime_shutdown = "quit" if action == "quit" else "close"
+            cancel = getattr(adapter, "cancel", None)
+            if callable(cancel):
+                cancel()
+            status_frame = getattr(self, "_status_frame", None)
+            status_label = getattr(self, "_status_label", None)
+            if status_frame is not None and status_label is not None:
+                status_label.setText(
+                    self.tr("Finishing the current system change and recording its result before closing.")
+                )
+                status_frame.show()
+            return False
+
         runtime = getattr(self, "__dict__", {}).get("_runtime")
         shutdown = getattr(runtime, "shutdown", None)
         if callable(shutdown):
@@ -569,8 +591,20 @@ class MainWindowInteractionMixin:
             # thread before ApplicationRuntime invokes its bounded hooks.
             self._request_runtime_stop()
             shutdown()
-            return
+            return True
         self._cleanup_runtime(5.0)
+        return True
+
+    def _resume_deferred_runtime_shutdown(self: typing.Any) -> None:
+        """Finish a close or quit request after the utility worker has stopped."""
+        action = getattr(self, "_pending_runtime_shutdown", None)
+        if action not in {"close", "quit"}:
+            return
+        self._pending_runtime_shutdown = None
+        if action == "quit":
+            self.quit_app()
+        else:
+            self.close()
 
     def _cleanup_runtime(self: typing.Any, timeout: float) -> None:
         """Backward-compatible direct cleanup for tests without a runtime."""
@@ -583,12 +617,6 @@ class MainWindowInteractionMixin:
         if attributes.get("_runtime_cleaned", False):
             return
         self._runtime_cleaned = True
-        cancel_utility = getattr(self, "_cancel_utility_operation", None)
-        if callable(cancel_utility):
-            try:
-                cancel_utility()
-            except (RuntimeError, TypeError, ValueError):
-                logger.debug("Failed to cancel utility operation during shutdown", exc_info=True)
         utility_adapter = getattr(self, "_utility_operation_adapter", None)
         wait_utility = getattr(utility_adapter, "wait", None)
         if callable(wait_utility):
@@ -598,6 +626,9 @@ class MainWindowInteractionMixin:
                 logger.debug("Failed to wait for utility operation during shutdown", exc_info=True)
         utility_update = getattr(self, "_sidebar_index", {}).get("utility_update")
         update_page = getattr(utility_update, "page_widget", None)
+        get_real_widget = getattr(update_page, "get_real_widget", None)
+        if callable(get_real_widget):
+            update_page = get_real_widget()
         cleanup_update = getattr(update_page, "cleanup", None)
         if callable(cleanup_update):
             try:
@@ -666,8 +697,10 @@ class MainWindowInteractionMixin:
             )
             event.ignore()
         else:
-            self._request_runtime_shutdown()
-            event.accept()
+            if self._request_runtime_shutdown(action="close"):
+                event.accept()
+            else:
+                event.ignore()
 
     def check_dependencies(self: typing.Any) -> typing.Any:
         from services.system.system import cached_which

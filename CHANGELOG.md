@@ -1,5 +1,21 @@
 # Changelog
 
+## [30.0.1] - Local candidate - "Steady"
+
+Stability and measured performance work on the public v29.0.1 Utility baseline.
+
+- Preserve Action Center run state and truthful operation outcomes through
+  execution timeouts, late cancellation, failed verification, and saved-state
+  acknowledgement errors.
+- Defer application shutdown until an active worker stops and its result is
+  delivered; release Qt thread objects and reject overlapping operations.
+- Load Install, Tune, Fix, and Update on first visit and reuse each page.
+- Add direct regression coverage for per-item Install results, Tune stop-on-
+  error, independent Update sources, reboot continuation, and worker/page
+  lifecycle cycles.
+- No user-facing features, public interfaces, action IDs, routes, or persisted
+  state schemas are added.
+
 ## [29.0.1] - 2026-09-15 - "Utility"
 
 Curated Fedora utility renovation.

@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v29.0.1 "Utility"
+# Loofi Fedora Tweaks v30.0.1 "Steady" — Local Release Candidate
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -14,8 +14,8 @@
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1">
-    <img src="https://img.shields.io/badge/Release-v29.0.1-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v29.0.1 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.0.1">
+    <img src="https://img.shields.io/badge/Local_Candidate-v30.0.1-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.0.1 local release candidate"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -39,16 +39,17 @@ pending verification, reboot follow-up, failures, and recovery guidance. The
 internal Action Center execution engine remains the safety boundary but is not a
 normal user-facing destination.
 
-The [v29.0.1 Utility release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1)
-adds the shared task catalog, source-aware application bundles, editable Tune
-profiles, symptom-first Fix flows, and independent state-driven Update cards.
-The historical `v29.0.0` tag remains unchanged and belongs to the earlier
-"Usability & Polish" lineage.
+The public [v29.0.1 Utility release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1)
+is the product baseline for this local v30.0.1 "Steady" candidate. Steady
+focuses on durable operation results, thread cleanup, and deferred workflow
+page loading without adding user-facing features. The candidate has not been
+published or installed. The historical `v30.0.0` tag remains
+unchanged.
 
-The deterministic suite is green in an isolated environment. Physical desktop,
-authorization, reboot, Atomic, keyboard, and Orca checks are supplementary
-evidence: each release records their status as verified, pending, or
-`unverified`, and they never block publication.
+The v29.0.1 public baseline passed its isolated release gate. Local v30.0.1
+automated qualification passed; physical desktop, authorization, reboot,
+Atomic, keyboard, and Orca checks remain explicitly `unverified`. Offscreen
+results do not establish physical qualification.
 
 The maintained repository-wide line-coverage gate is 85%.
 

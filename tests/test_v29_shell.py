@@ -14,6 +14,7 @@ sys.path.insert(
     os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"),
 )
 
+from PyQt6.QtCore import QEvent, QObject, QThread
 from PyQt6.QtWidgets import QApplication, QPushButton
 
 from core.platform.profile import (
@@ -137,10 +138,45 @@ class TestV29MainWindowShell(unittest.TestCase):
             return True
 
         window.switch_to_route = _record_route
-        page = window._sidebar_index["utility_install"].page_widget
+        page = window._real_widget_for_entry(window._sidebar_index["utility_install"])
         page.primary_button.click()
 
         self.assertEqual(opened, ["software:apps"])
+
+    def test_utility_workflows_load_once_when_opened(self) -> None:
+        window = self._build()
+        names = ("install", "tune", "fix", "update")
+        entries = [window._sidebar_index[f"utility_{name}"] for name in names]
+
+        self.assertTrue(all(entry.page_widget.get_real_widget() is None for entry in entries))
+        self.assertTrue(window.switch_to_route("install"))
+        install_page = window._real_widget_for_entry(entries[0])
+        self.assertIs(install_page, entries[0].page_widget.get_real_widget())
+        self.assertTrue(all(entry.page_widget.get_real_widget() is None for entry in entries[1:]))
+
+        self.assertTrue(window.switch_to_route("install"))
+        self.assertIs(install_page, window._real_widget_for_entry(entries[0]))
+
+        pages = {"install": install_page}
+        for name, entry in zip(names[1:], entries[1:]):
+            self.assertTrue(window.switch_to_route(name))
+            pages[name] = window._real_widget_for_entry(entry)
+            self.assertIs(pages[name], entry.page_widget.get_real_widget())
+
+        self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.app.processEvents()
+        child_counts = []
+        for index in range(30):
+            name = names[index % len(names)]
+            entry = entries[index % len(entries)]
+            self.assertTrue(window.switch_to_route(name))
+            self.assertIs(pages[name], window._real_widget_for_entry(entry))
+            self.assertTrue(window.switch_to_route("home"))
+            self.app.processEvents()
+            self.assertEqual(window.findChildren(QThread), [])
+            child_counts.append(len(window.findChildren(QObject)))
+
+        self.assertEqual(len(set(child_counts)), 1)
 
     def test_legacy_change_routes_open_activity_and_secondary_routes_clear_primary(self) -> None:
         window = self._build()

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 29.0.1 "Utility" release
+> Version 30.0.1 "Steady" local candidate; publication is pending.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

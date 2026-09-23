@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        29.0.1
+Version:        30.0.1
 Release:        1%{?dist}
 Summary:        Fedora maintenance and desktop control center
 
@@ -31,10 +31,10 @@ Obsoletes:      loofi-fedora-tweaks < 1:1.0.0
 Provides:       loofi-fedora-tweaks = 1:%{version}-%{release}
 
 %description
-A desktop-neutral Fedora maintenance core for system health, updates,
-protection, recovery, and verified changes. The package includes the GUI and CLI.
-The verified Changes workspace keeps planning, confirmation, execution,
-and outcome verification separate.
+Fedora maintenance and desktop control center for installing, tuning, fixing,
+and updating.
+The GUI and CLI route persistent changes through one reviewed and verifiable
+Action Center authority.
 
 %prep
 %setup -q
@@ -97,6 +97,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Wed Sep 23 2026 Loofi <loofi@example.com> - 30.0.1-1
+- Steady local candidate: durable operation results, worker cleanup, and lazy workflows
+
 * Tue Sep 15 2026 Loofi <loofi@example.com> - 29.0.1-1
 - v29.0.1 "Utility" - curated Install, Tune, Fix, and Update journeys with shared verified execution
 

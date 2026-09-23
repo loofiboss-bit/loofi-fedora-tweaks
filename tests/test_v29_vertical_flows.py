@@ -228,6 +228,31 @@ class TestV29VerticalWorkflowWidgets(unittest.TestCase):
         page.apply_outcome("unknown", SimpleNamespace(status="succeeded"))
         page.cleanup()
 
+    def test_cancelled_update_marks_only_its_source_stale(self):
+        from core.tasks import UpdateSourceState
+        from ui.update_workflow import UpdateWorkflowPage
+
+        page = UpdateWorkflowPage()
+        self.addCleanup(self._dispose, page)
+        system = UpdateSourceState(
+            "system",
+            "available",
+            4,
+            checked_at="2026-09-23T10:00:00Z",
+            stale=False,
+            run_id="system-run-old",
+        )
+        flatpak = UpdateSourceState("flatpak", "up_to_date", checked_at="2026-09-23T10:01:00Z", stale=False)
+        page.set_source(system)
+        page.set_source(flatpak)
+
+        page.apply_outcome("system", SimpleNamespace(status="cancelled", message="Stopped before completion."))
+
+        self.assertEqual(page.source_state("system").status, "cancelled")
+        self.assertTrue(page.source_state("system").stale)
+        self.assertEqual(page.source_state("system").run_id, "system-run-old")
+        self.assertEqual(page.source_state("flatpak"), flatpak)
+
     def test_update_continue_verifies_existing_run_without_rerunning(self):
         from ui.main_window_utility import MainWindowUtilityMixin
 

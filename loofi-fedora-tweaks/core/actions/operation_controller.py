@@ -11,6 +11,7 @@ from __future__ import annotations
 
 import time
 from dataclasses import dataclass, field, replace
+from subprocess import TimeoutExpired
 from typing import Any, Callable, Mapping, Sequence
 
 from core.actions.contracts import ActionPlan, ActionRun, PreparedActionRun
@@ -25,6 +26,14 @@ from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 
 OperationExecutor = Callable[..., ActionResult]
 OperationEventSink = Callable[["OperationEvent"], None]
+_OPERATION_ERRORS = (
+    ActionCenterError,
+    OSError,
+    RuntimeError,
+    TypeError,
+    ValueError,
+    TimeoutExpired,
+)
 
 
 class OperationControllerError(ActionCenterError):
@@ -86,7 +95,11 @@ class OperationTicket:
 
     @property
     def confirmation_required(self) -> bool:
-        return self.plan.state == "needs_review" or self.plan.risk_level in {"medium", "high"}
+        return (
+            self.plan.state == "needs_review"
+            or self.plan.confirmation_policy in {"explicit", "explicit-no-rollback"}
+            or self.plan.risk_level in {"medium", "high"}
+        )
 
     @property
     def blocked(self) -> bool:
@@ -255,7 +268,7 @@ class OperationController:
         if self.event_sink is not None:
             try:
                 self.event_sink(event)
-            except (AttributeError, RuntimeError, TypeError, ValueError):
+            except _OPERATION_ERRORS:
                 # Progress sinks are presentation concerns and must never
                 # change the trusted operation outcome.
                 pass
@@ -338,7 +351,7 @@ class OperationController:
             current_plan = plan
             try:
                 current_plan = self.orchestrator.get_plan(plan.plan_id)
-            except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError):
+            except _OPERATION_ERRORS:
                 pass
             requires_confirmation = exc.decision.reason_code in {
                 "confirmation_required",
@@ -365,7 +378,7 @@ class OperationController:
                 data={"reason_code": exc.decision.reason_code, "alternative": exc.decision.alternative},
                 events=(event,),
             )
-        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        except _OPERATION_ERRORS as exc:
             event = self._event(
                 "confirm",
                 "blocked",
@@ -468,7 +481,7 @@ class OperationController:
                     exit_code=-1,
                     action_id=token.action_id,
                 )
-        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        except _OPERATION_ERRORS as exc:
             result = ActionResult.fail(
                 f"Execution boundary failed: {exc}",
                 exit_code=-1,
@@ -476,21 +489,59 @@ class OperationController:
             )
         try:
             run = self.orchestrator.complete_run(token.run_id, result)
-        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
-            return OperationOutcome(
+        except _OPERATION_ERRORS as exc:
+            try:
+                saved_run = self.orchestrator.get_run(token.run_id)
+            except _OPERATION_ERRORS:
+                saved_run = None
+            if saved_run is None:
+                recovery_event = self._event(
+                    "recovery",
+                    "interrupted",
+                    "Execution returned, but its saved Action Center state could not be read.",
+                    action_id=token.action_id,
+                    plan_id=token.plan_id,
+                    run_id=token.run_id,
+                    correlation_id=token.correlation_id,
+                    data={"save_error": str(exc)},
+                )
+                return OperationOutcome(
+                    action_id=token.action_id,
+                    status="interrupted",
+                    phase="recovery",
+                    message="Execution returned, but its saved result could not be confirmed. Review Activity & Recovery.",
+                    plan_id=token.plan_id,
+                    run_id=token.run_id,
+                    correlation_id=token.correlation_id,
+                    plan=plan,
+                    prepared=token,
+                    result=result,
+                    recovery_guidance=plan.recovery_guidance,
+                    data={"execution_result": result.to_dict(), "save_error": str(exc)},
+                    events=(*prior_events, event, recovery_event),
+                )
+            phase, status = _state_status(saved_run.state)
+            recovery_event = self._event(
+                phase,
+                status,
+                f"Execution result could not be committed; saved run remains {saved_run.state}.",
                 action_id=token.action_id,
-                status="failed",
-                phase="recovery",
-                message=str(exc),
                 plan_id=token.plan_id,
                 run_id=token.run_id,
                 correlation_id=token.correlation_id,
+                data={"save_error": str(exc), "run_state": saved_run.state},
+            )
+            saved_outcome = self._outcome_from_run(
+                saved_run,
                 plan=plan,
                 prepared=token,
                 result=result,
-                recovery_guidance=plan.recovery_guidance,
-                data={"execution_result": result.to_dict()},
-                events=(*prior_events, event),
+                prior_events=(*prior_events, event, recovery_event),
+            )
+            return replace(
+                saved_outcome,
+                message=f"Execution result could not be committed; saved run remains {saved_run.state}. {exc}",
+                data={**saved_outcome.data, "save_error": str(exc)},
             )
         return self._outcome_from_run(
             run,
@@ -510,30 +561,77 @@ class OperationController:
         prior_events = prepared.events if isinstance(prepared, OperationOutcome) else (
             prepared.events if isinstance(prepared, OperationTicket) else ()
         )
+        plan: ActionPlan | None = None
         try:
             plan = self.orchestrator.get_plan(token.plan_id)
             run = self.orchestrator.complete_run(token.run_id, result)
-        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        except _OPERATION_ERRORS as exc:
+            try:
+                saved_run = self.orchestrator.get_run(token.run_id)
+            except _OPERATION_ERRORS:
+                saved_run = None
+            if saved_run is None:
+                message = f"Execution result could not be confirmed in Action Center storage: {exc}"
+                event = self._event(
+                    "recovery",
+                    "interrupted",
+                    message,
+                    action_id=token.action_id,
+                    plan_id=token.plan_id,
+                    run_id=token.run_id,
+                    correlation_id=token.correlation_id,
+                )
+                return OperationOutcome(
+                    action_id=token.action_id,
+                    status="interrupted",
+                    phase="recovery",
+                    message=message,
+                    plan_id=token.plan_id,
+                    run_id=token.run_id,
+                    correlation_id=token.correlation_id,
+                    prepared=token,
+                    result=result,
+                    data={"execution_result": result.to_dict(), "save_error": str(exc)},
+                    events=(*prior_events, event),
+                )
+            if plan is None:
+                try:
+                    plan = self.orchestrator.get_plan(saved_run.plan_id)
+                except _OPERATION_ERRORS:
+                    plan = None
+            phase, status = _state_status(saved_run.state)
+            message = f"Execution result could not be committed; saved run remains {saved_run.state}. {exc}"
             event = self._event(
-                "recovery",
-                "failed",
-                str(exc),
+                phase,
+                status,
+                message,
                 action_id=token.action_id,
                 plan_id=token.plan_id,
                 run_id=token.run_id,
                 correlation_id=token.correlation_id,
+                data={"save_error": str(exc), "run_state": saved_run.state},
             )
+            if plan is not None:
+                outcome = self._outcome_from_run(
+                    saved_run,
+                    plan=plan,
+                    prepared=token,
+                    result=result,
+                    prior_events=(*prior_events, event),
+                )
+                return replace(outcome, message=message)
             return OperationOutcome(
                 action_id=token.action_id,
-                status="failed",
-                phase="recovery",
-                message=str(exc),
+                status=status,
+                phase=phase,
+                message=message,
                 plan_id=token.plan_id,
                 run_id=token.run_id,
                 correlation_id=token.correlation_id,
+                run=saved_run,
                 prepared=token,
                 result=result,
-                data={"execution_result": result.to_dict()},
+                data={"execution_result": result.to_dict(), "run_state": saved_run.state},
                 events=(*prior_events, event),
             )
         event = self._event(
@@ -581,19 +679,43 @@ class OperationController:
         )
         try:
             verified = self.orchestrator.verify(run.run_id)
-        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
-            return OperationOutcome(
+        except _OPERATION_ERRORS as exc:
+            failure = ActionResult.fail(
+                f"Verification failed safely: {exc}",
+                exit_code=-1,
                 action_id=run.action_id,
-                status="verification_failed",
-                phase="recovery",
-                message=str(exc),
-                plan_id=run.plan_id,
-                run_id=run.run_id,
-                correlation_id=run.correlation_id,
+            )
+            try:
+                failed_run = self.orchestrator.complete_verification(run.run_id, failure)
+            except _OPERATION_ERRORS:
+                try:
+                    saved_run = self.orchestrator.get_run(run.run_id)
+                except _OPERATION_ERRORS:
+                    saved_run = run
+                phase, status = _state_status(saved_run.state)
+                failure_event = self._event(
+                    phase,
+                    status,
+                    f"Verification could not be recorded; saved run remains {saved_run.state}.",
+                    action_id=run.action_id,
+                    plan_id=run.plan_id,
+                    run_id=run.run_id,
+                    correlation_id=run.correlation_id,
+                    data={"verification_error": str(exc), "run_state": saved_run.state},
+                )
+                outcome = self._outcome_from_run(
+                    saved_run,
+                    plan=plan,
+                    prior_events=(*prior_events, event, failure_event),
+                )
+                return replace(
+                    outcome,
+                    message=f"Verification could not be recorded; saved run remains {saved_run.state}. {exc}",
+                )
+            return self._outcome_from_run(
+                failed_run,
                 plan=plan,
-                run=run,
-                recovery_guidance=plan.recovery_guidance,
-                events=(*prior_events, event),
+                prior_events=(*prior_events, event),
             )
         return self._outcome_from_run(
             verified,
@@ -676,7 +798,7 @@ class OperationController:
         """
         try:
             ticket = self.prepare(action_id, parameters, target=target)
-        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
+        except _OPERATION_ERRORS as exc:
             return OperationOutcome(
                 action_id=str(action_id),
                 status="blocked",
@@ -779,7 +901,7 @@ class OperationController:
                     )
                 )
                 outcome = self._outcome_from_raw(raw, action_id=item.action_id)
-            except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            except _OPERATION_ERRORS as exc:
                 outcome = OperationOutcome(
                     action_id=item.action_id,
                     status="failed",

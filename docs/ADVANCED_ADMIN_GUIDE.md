@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 29.0.1 "Utility" release
+> Version 30.0.1 "Steady" local candidate; publication is pending.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.

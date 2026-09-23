@@ -1,11 +1,11 @@
 # Documentation
 
-This map covers the v29.0.1 "Utility" release. The
-[Utility Renovation plan](plans/LOOFI_FEDORA_TWEAKS_V29_PLAN.md),
-[architecture specification](../.workflow/specs/arch-v29.0.1.md), and
-[release tasks](../.workflow/specs/tasks-v29.0.1.md) are the implementation
-authority. The previous public release report remains in
-[V28.0.3_RELEASE_PUBLICATION.md](reports/V28.0.3_RELEASE_PUBLICATION.md).
+This map covers the v30.0.1 "Steady" local release candidate. The
+[plan](plans/LOOFI_FEDORA_TWEAKS_V30_PLAN.md),
+[architecture specification](../.workflow/specs/arch-v30.0.1.md), and
+[release tasks](../.workflow/specs/tasks-v30.0.1.md) are the implementation
+authority. The candidate is local and unpublished; documentation describes the
+retained Utility workflows.
 
 ## Use Loofi
 
@@ -48,7 +48,9 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 - [Roadmap](../ROADMAP.md) — current release status
 - [Changelog](../CHANGELOG.md) — complete historical record
 - [Release notes](releases/RELEASE_NOTES.md) — release-note index
-- [v29.0.1 Utility release notes](releases/RELEASE-NOTES-v29.0.1.md) — current release scope
+- [v30.0.1 Steady candidate notes](releases/RELEASE-NOTES-v30.0.1.md) — local candidate scope
+- [v29.0.1 Utility public release](releases/RELEASE-NOTES-v29.0.1.md) — public baseline
+- [v29.0.1 public release evidence](reports/V29.0.1_RELEASE_PUBLICATION.md) — exact publication readback
 - [v28.0.3 public release evidence](reports/V28.0.3_RELEASE_PUBLICATION.md) — exact publication readback
 - [v28.0.2 public release evidence](reports/V28.0.2_RELEASE_PUBLICATION.md) — previous exact publication readback
 - [v27.0.1 Core notes](releases/RELEASE-NOTES-v27.0.1.md) — previous public release scope

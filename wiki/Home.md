@@ -1,10 +1,10 @@
-# Loofi Fedora Tweaks Wiki — v29.0.1 "Utility"
+# Loofi Fedora Tweaks Wiki — v30.0.1 "Steady" local candidate
 
 Welcome to the official documentation for Loofi Fedora Tweaks, a curated
 Fedora utility for installing applications, tuning safe settings, diagnosing
 problems, and updating the system.
 
-**Current release:** v29.0.1 "Utility"
+**Current candidate:** v30.0.1 "Steady" (local and unpublished)
 
 ![Loofi Fedora Tweaks Home](images/home-dashboard.png)
 
@@ -20,7 +20,8 @@ problems, and updating the system.
 5. Physical environment claims require physical evidence; unrun environments
    remain `unverified`.
 
-The previous public release is v28.0.3 "Ease".
+The current public release remains v29.0.1 "Utility"; the v30.0.1 candidate
+has not been published.
 
 ## The five destinations
 
