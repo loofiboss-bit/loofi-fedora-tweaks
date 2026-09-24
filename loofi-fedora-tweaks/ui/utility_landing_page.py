@@ -362,7 +362,9 @@ def default_utility_tasks(
         descriptor = catalog.get(task_id)
         if descriptor is None:
             continue
-        area = descriptor.area.value if isinstance(descriptor.area, TaskArea) else str(descriptor.area)
+        # This compatibility landing projection retains its historical Tune
+        # grouping; the live shell now owns these two tasks on Health.
+        area = "tune" if task_id.startswith("tune:") else descriptor.area.value if isinstance(descriptor.area, TaskArea) else str(descriptor.area)
         eligibility = catalog.eligibility(descriptor, context) if context is not None else None
         selected[area].append(
             UtilityTask.from_descriptor(

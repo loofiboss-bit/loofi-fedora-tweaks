@@ -1,13 +1,13 @@
 {
-  "version": "v30.0.1",
-  "started_at": "20260923_190331",
+  "version": "v30.1.0",
+  "started_at": "20260924_121534",
   "status": "active",
-  "target_version": "v30.0.1",
-  "phase": "release_candidate",
-  "baseline_commit": "59c6e008fd809b932dccb23e77e7912d1208b3bf",
-  "product_version": "v30.0.1",
-  "product_codename": "Steady",
-  "target_codename": "Steady",
+  "target_version": "v30.1.0",
+  "phase": "publication",
+  "baseline_commit": "d60856160a08991be8a7e0f76554593833e41fed",
+  "product_version": "v30.1.0",
+  "product_codename": "Personalize",
+  "target_codename": "Personalize",
   "current_public_release": "v29.0.1",
   "current_release_commit": "4eb839685badd4e7fc532c0360f0a4b6746c5c9f",
   "baseline_product_version": "v29.0.1",
@@ -86,12 +86,12 @@
     "clean_kde_install": "unverified"
   },
   "external_release_gates": {
-    "commit_and_exact_tag": "not-authorized-local-candidate",
-    "ci_and_codeql": "not-authorized-local-candidate",
-    "github_assets_checksums_attestations": "not-authorized-local-candidate",
-    "copr_packages_signatures": "not-authorized-local-candidate",
-    "clean_fedora44_install": "not-authorized-local-candidate",
-    "public_docs_and_wiki": "not-authorized-local-candidate"
+    "commit_and_exact_tag": "pending-public-readback",
+    "ci_and_codeql": "pending-public-readback",
+    "github_assets_checksums_attestations": "pending-public-readback",
+    "copr_packages_signatures": "pending-public-readback",
+    "clean_fedora44_install": "pending-public-readback",
+    "public_docs_and_wiki": "pending-public-readback"
   },
   "current_public_release_evidence": {
     "release_commit": "4eb839685badd4e7fc532c0360f0a4b6746c5c9f",
@@ -110,14 +110,14 @@
     "copr_evr": "1:29.0.1-1.fc44",
     "publication_report": "docs/reports/V29.0.1_RELEASE_PUBLICATION.md"
   },
-  "bumped_at": "2026-09-23T19:03:31.272580+00:00",
-  "publication_authorized": false,
+  "bumped_at": "2026-09-24T12:15:34.297622+00:00",
+  "publication_authorized": true,
   "v30_historical_tag_collision": {
     "tag": "v30.0.0",
     "tag_object": "59da1113e73f436e03fb4809976b4009f0736550",
     "peeled_commit": "59da1113e73f436e03fb4809976b4009f0736550",
     "historical_codename": "Distribution & Reliability",
     "status": "preserved-unmodified",
-    "candidate_release_identity": "v30.0.1"
+    "candidate_release_identity": "v30.1.0"
   }
 }

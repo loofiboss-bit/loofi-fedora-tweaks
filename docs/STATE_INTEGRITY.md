@@ -1,8 +1,7 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v30.0.1 "Steady" retains application-owned state under the
-user's standard XDG config, data, cache, and runtime directories. The candidate
-remains local and unpublished. State is separate from the Fedora deployment
+Loofi Fedora Tweaks v30.1.0 "Personalize" retains application-owned state under the
+user's standard XDG config, data, cache, and runtime directories. Physical desktop validation remains unverified. State is separate from the Fedora deployment
 and is preserved when the RPM is removed.
 
 ## State Doctor

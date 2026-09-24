@@ -67,6 +67,14 @@ ACTIVE_ACTION_IDS = frozenset(
         "restart-audio-session",
         "legacy-ui-manual-review",
         "legacy-cli-manual-review",
+        "set-gnome-color",
+        "set-gnome-animations",
+        "set-gnome-text-scale",
+        "set-gnome-battery",
+        "set-gnome-clock",
+        "set-kde-color",
+        "set-kde-animation",
+        "set-power-profile",
     }
 )
 
@@ -225,10 +233,11 @@ class ActionCatalog:
         if definitions is None:
             from core.actions.assurance import assurance_definitions
             from core.actions.metadata import with_haven_metadata
+            from core.actions.tweaks import tweak_action_definitions
 
             selected = [
                 with_haven_metadata(definition)
-                for definition in [*_first_party_definitions(), *assurance_definitions()]
+                for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions()]
                 if definition.id in ACTIVE_ACTION_IDS
             ]
         else:

@@ -1,10 +1,10 @@
-# Loofi Fedora Tweaks Wiki — v30.0.1 "Steady" local candidate
+# Loofi Fedora Tweaks Wiki — v30.1.0 "Personalize" release
 
 Welcome to the official documentation for Loofi Fedora Tweaks, a curated
 Fedora utility for installing applications, tuning safe settings, diagnosing
 problems, and updating the system.
 
-**Current candidate:** v30.0.1 "Steady" (local and unpublished)
+**Current release:** [v30.1.0 "Personalize"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0)
 
 ![Loofi Fedora Tweaks Home](images/home-dashboard.png)
 
@@ -20,18 +20,18 @@ problems, and updating the system.
 5. Physical environment claims require physical evidence; unrun environments
    remain `unverified`.
 
-The current public release remains v29.0.1 "Utility"; the v30.0.1 candidate
-has not been published.
+Physical GNOME, KDE, Atomic, Polkit, keyboard, Orca, and scaling checks remain
+unverified; automated qualification is recorded in the release notes.
 
 ## The five destinations
 
 | Destination | Purpose |
 | --- | --- |
 | **[Home](GUI-Tabs-Reference#home)** | Fedora profile, status, recommendation, and shortcuts |
-| **[Install](GUI-Tabs-Reference#install)** | Curated app search, source labels, and multi-select review |
-| **[Tune](GUI-Tabs-Reference#tune)** | Editable Minimal, Recommended, and Power User profiles |
-| **[Fix](GUI-Tabs-Reference#fix)** | Symptom-first diagnosis and one safe next step |
-| **[Update](GUI-Tabs-Reference#update)** | Independent System, Flatpak, and Firmware cards |
+| **[Apps](GUI-Tabs-Reference#install)** | Curated app search, source labels, and multi-select review |
+| **[Tweaks](GUI-Tabs-Reference#tune)** | Searchable desktop and power settings with current values |
+| **[Health](GUI-Tabs-Reference#fix)** | Symptom-first diagnosis and reviewed maintenance |
+| **[Updates](GUI-Tabs-Reference#update)** | Independent System, Flatpak, and Firmware cards |
 
 Activity & Recovery and Settings are secondary header surfaces.
 

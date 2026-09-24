@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 30.0.1 "Steady" local candidate; publication is pending.
+> Version 30.1.0 "Personalize" release; physical desktop validation remains pending.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -22,13 +22,13 @@ deployment backends remain unavailable.
 
 1. **Home** — Fedora profile, current status, one recommended next step, and
    shortcuts to everyday jobs.
-2. **Install** — search the curated application catalog, filter by category,
+2. **Apps** — search the curated application catalog, filter by category,
    select several applications, and review each source.
-3. **Tune** — start from Minimal, Recommended, or Power User and edit the
-   low-risk, verifiable selection before review.
-4. **Fix** — choose the symptom you recognise, inspect the findings, and use
+3. **Tweaks** — search settings, choose a value, and see the verified result
+   on the same row.
+4. **Health** — choose the symptom you recognise, inspect the findings, and use
    one supported repair, instruction, or native-settings handoff.
-5. **Update** — check System, Flatpak, and Firmware independently and follow
+5. **Updates** — check System, Flatpak, and Firmware independently and follow
    the single action shown on each card.
 
 Activity & Recovery and Settings are opened from the header. The internal
@@ -39,24 +39,24 @@ normal work.
 
 ### Install several applications
 
-Open **Install**, search or choose a category, select the applications, and
+Open **Apps**, search or choose a category, select the applications, and
 choose **Review selected applications**. Confirm the source summary. Each item
 keeps its own result, so one failed installation does not hide the others.
 
-### Review a Tune profile
+### Change a desktop setting
 
-Open **Tune**, select a profile, and edit the checked operations. Profiles
-exclude high-risk, boot, display, and manual-only changes. Ordered operations
-stop after the first unexpected failure and never roll back automatically.
+Open **Tweaks**, search for a setting, and choose a value. The row shows the
+current value and confirms it after an independent readback. Custom KDE values
+stay visible until you deliberately choose another value.
 
 ### Diagnose a problem
 
-Open **Fix**, choose the symptom, and start the read-only diagnosis. Loofi
+Open **Health**, choose the symptom, and start the read-only diagnosis. Loofi
 shows findings before offering one next step. There is no global **Fix all**.
 
 ### Update Fedora
 
-Open **Update**. Each source shows one button: **Check**, **Update**,
+Open **Updates**. Each source shows one button: **Check**, **Update**,
 **Continue**, or **Verify**. A reboot-required result stays in Activity &
 Recovery until you return and verify it.
 

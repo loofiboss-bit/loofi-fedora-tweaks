@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from pathlib import Path
 from typing import Literal, Sequence
 
@@ -110,6 +111,22 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
         return "session"
     if binary in _READ_ONLY_COMMANDS:
         return "read_only"
+    if binary == "kreadconfig6" and vector == ("--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", "--default", "1"):
+        return "read_only"
+    if binary == "kreadconfig6" and vector == ("--file", "kdeglobals", "--group", "General", "--key", "ColorScheme"):
+        return "read_only"
+    if binary == "kwriteconfig6" and vector[:7] == ("--notify", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor") and len(vector) == 8 and vector[-1] in {"0", "0.5", "1"}:
+        return "session"
+    if binary == "plasma-apply-colorscheme":
+        if vector == ("--list-schemes",):
+            return "read_only"
+        if len(vector) == 1 and re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?", vector[0]):
+            return "session"
+    if binary == "powerprofilesctl":
+        if vector in {("get",), ("list",)}:
+            return "read_only"
+        if len(vector) == 2 and vector[0] == "set" and vector[1] in {"power-saver", "balanced", "performance"}:
+            return "host"
     if binary in {"dnf", "dnf5"}:
         if first == "history" and len(vector) >= 2:
             return "read_only" if vector[1] in {"info", "list"} else "host"

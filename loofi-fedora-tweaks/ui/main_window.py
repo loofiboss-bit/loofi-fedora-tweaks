@@ -147,7 +147,7 @@ class MainWindow(
         self.setWindowFlag(Qt.WindowType.CustomizeWindowHint, False)
         self.setWindowTitle(self.tr("Loofi Fedora Tweaks"))
         self.setAccessibleName(self.tr("Loofi Fedora Tweaks"))
-        self.setAccessibleDescription(self.tr("Fedora system settings and maintenance control center"))
+        self.setAccessibleDescription(self.tr("Fedora tweaks, applications, health, and updates"))
         self._metrics = LayoutMetrics.from_widget(self)
         self._line_height = self._metrics.line_height
         self._apply_initial_geometry()
@@ -527,13 +527,25 @@ class MainWindow(
                 select(run_id)
 
     def _open_action_center_request(self, action_id: str, parameters=None) -> None:
-        """Navigate and preselect only; workflow adapters never create a plan."""
+        """Review a legacy action request on the visible Health page."""
+        if getattr(self, "_utility_shell_ready", False):
+            if self.switch_to_route("health"):
+                entry = self._sidebar_index.get("utility_fix")
+                if entry is not None:
+                    self._review_health_action(self._real_widget_for_entry(entry), action_id, parameters)
+            return
         opened = getattr(self, "_switch_to_internal_action_route", lambda: self.switch_to_route("maintenance:action-center"))()
         if opened:
             self._preselect_action_center(action_id, parameters)
 
     def _open_system_check_action_request(self, action_id: str, context=None) -> None:
-        """Carry identifiers only; Action Center re-resolves persisted evidence."""
+        """Review a persisted finding on Health after fresh evidence resolution."""
+        if getattr(self, "_utility_shell_ready", False):
+            if self.switch_to_route("health"):
+                entry = self._sidebar_index.get("utility_fix")
+                if entry is not None:
+                    self._review_health_finding(self._real_widget_for_entry(entry), action_id, context)
+            return
         opened = getattr(self, "_switch_to_internal_action_route", lambda: self.switch_to_route("maintenance:action-center"))()
         if opened:
             self._preselect_action_center(
