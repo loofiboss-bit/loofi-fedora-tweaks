@@ -1,7 +1,6 @@
-# Release Notes — v30.1.0 "Personalize" Local Candidate
+# Release Notes — v30.1.0 "Personalize"
 
-**Candidate date:** 2026-09-24<br>
-**Status:** Not published or installed.
+**Release date:** 2026-09-24
 
 ## Summary
 
@@ -18,13 +17,16 @@ diagnostics and everyday storage maintenance.
 - Kept old route links, CLI commands, action IDs, and saved Activity readable.
 - Kept Action Center as the internal execution authority; normal reviews now
   complete on the originating page or Health.
+- Require explicit acceptance for Health actions without automatic rollback.
+- Notify KDE applications of animation changes and accept installed color
+  schemes containing spaces.
 
 ## Qualification
 
 `LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify` passed with
-4,931 tests passed, 40 skipped, 852 subtests passed, and 85.96% line coverage.
-After the final maintenance-link focus change, 13 focused tweak and Health
-tests passed. `just stats-check`, `just validate-release`, `just check-packaging`,
+4,934 tests passed, 40 skipped, 852 subtests passed, and 86.00% line coverage.
+After review fixes, 15 focused tweak and Health tests passed. `just stats-check`,
+`just validate-release`, `just check-packaging`,
 and `git diff --check` passed. Offscreen Home and Tweaks captures were reviewed
 in light and dark themes at 100% and 200% Qt scaling; keyboard search and
 refresh navigation passed an automated test. Read-only KDE values were also
@@ -36,5 +38,5 @@ establish these results.
 
 ## Upgrade notes
 
-No persisted-state migration is required. This candidate does not authorize
-publication, installation, or changes to the current desktop session.
+No persisted-state migration is required. Installing or applying desktop
+changes remains a separate user action.

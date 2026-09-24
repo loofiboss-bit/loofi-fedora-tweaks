@@ -1,6 +1,6 @@
 # Historical Fedora KDE 44 Readiness Note — v30.1.0 "Personalize"
 
-This v30.1.0 local candidate retains a Fedora-neutral readiness model; this
+The v30.1.0 release retains a Fedora-neutral readiness model; this
 filename is retained for links from earlier releases. It is not a KDE 44
 product gate. The model uses the immutable `PlatformProfile`, probes
 desktop-specific checks only when the detected desktop requires them, and

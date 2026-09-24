@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v30.1.0 "Personalize" — Local Candidate
+# Loofi Fedora Tweaks v30.1.0 "Personalize"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0">
-    <img src="https://img.shields.io/badge/Local_Candidate-v30.1.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.1.0 local candidate"/>
+    <img src="https://img.shields.io/badge/Release-v30.1.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.1.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -39,9 +39,9 @@ pending verification, reboot follow-up, failures, and recovery guidance. The
 internal Action Center execution engine remains the safety boundary but is not a
 normal user-facing destination.
 
-The v30.1.0 candidate builds on the local v30.0.1 stability work. It has not
-been published or installed. The public baseline remains
-[v29.0.1 Utility](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1).
+v30.1.0 includes the v30.0.1 stability work and is distributed through the
+[GitHub release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0)
+and the Fedora COPR repository. Installation on this workstation is a separate action.
 
 The v30.0.1 automated qualification is recorded separately. Physical desktop,
 authorization, reboot, Atomic, keyboard, and Orca checks for v30.1.0 remain

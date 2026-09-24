@@ -10,7 +10,7 @@ from core.actions.contracts import ActionRuntime
 from core.executor.action_result import ActionResult
 
 
-_SCHEME = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+_SCHEME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
 _PROFILE = frozenset({"power-saver", "balanced", "performance"})
 _GNOME_KEYS = {
     "gnome-color": "color-scheme",
@@ -88,7 +88,7 @@ def command_for(tweak: Tweak, value: str) -> list[str]:
     if tweak.id == "kde-animation":
         if not allowed_value(tweak, value):
             raise ValueError("Unsupported Plasma animation speed.")
-        return ["kwriteconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", value]
+        return ["kwriteconfig6", "--notify", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", value]
     if tweak.id == "power-profile":
         if value not in _PROFILE:
             raise ValueError("Unsupported power profile.")

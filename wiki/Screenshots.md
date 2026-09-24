@@ -1,4 +1,4 @@
-# Visual Interface Gallery — v30.1.0 "Personalize" candidate
+# Visual Interface Gallery — v30.1.0 "Personalize" release
 
 These static captures document the retained task-oriented shell and are not
 physical desktop qualification evidence.

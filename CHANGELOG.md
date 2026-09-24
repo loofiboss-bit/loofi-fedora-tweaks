@@ -1,6 +1,6 @@
 # Changelog
 
-## [30.1.0] - Local candidate - "Personalize"
+## [30.1.0] - 2026-09-24 - "Personalize"
 
 - Present Home, Apps, Tweaks, Health, and Updates as the five primary destinations.
 - Add eight searchable, state-backed GNOME, KDE, and power controls with fresh
@@ -9,7 +9,9 @@
   CLI contracts, Activity history, and older route links readable.
 - Review legacy repair and System Check requests on Health while retaining the
   persisted-finding integrity check and internal Action Center authority.
-- Publication, installation, and physical desktop qualification are separate.
+- Require separate acceptance for Health operations without automatic rollback.
+- Notify KDE applications after animation changes and support installed color schemes with spaces.
+- Physical desktop qualification and workstation installation are separate from publication.
 
 ## [30.0.1] - Local candidate - "Steady"
 

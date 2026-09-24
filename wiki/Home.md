@@ -1,10 +1,10 @@
-# Loofi Fedora Tweaks Wiki — v30.1.0 "Personalize" local candidate
+# Loofi Fedora Tweaks Wiki — v30.1.0 "Personalize" release
 
 Welcome to the official documentation for Loofi Fedora Tweaks, a curated
 Fedora utility for installing applications, tuning safe settings, diagnosing
 problems, and updating the system.
 
-**Current candidate:** v30.1.0 "Personalize" (local and unpublished)
+**Current release:** [v30.1.0 "Personalize"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0)
 
 ![Loofi Fedora Tweaks Home](images/home-dashboard.png)
 
@@ -20,8 +20,8 @@ problems, and updating the system.
 5. Physical environment claims require physical evidence; unrun environments
    remain `unverified`.
 
-The current public release remains v29.0.1 "Utility"; the v30.1.0 candidate
-has not been published.
+Physical GNOME, KDE, Atomic, Polkit, keyboard, Orca, and scaling checks remain
+unverified; automated qualification is recorded in the release notes.
 
 ## The five destinations
 

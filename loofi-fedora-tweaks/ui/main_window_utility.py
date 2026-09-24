@@ -310,16 +310,29 @@ class MainWindowUtilityMixin:
         if dialog.exec() != QMessageBox.StandardButton.Ok:
             page.set_health_notice("neutral", self.tr("Cancelled"), self.tr("No change was made."))
             return
-        adapter.stopped.connect(lambda: self._run_reviewed_health_action(page, ticket))
+        accept_no_rollback = False
+        if ticket.plan.risk_level in {"medium", "high"} and not ticket.plan.rollback_supported:
+            answer = QMessageBox.question(
+                self,
+                self.tr("No Automatic Rollback"),
+                self.tr("This action has no supported rollback. Accept the recovery guidance and continue?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.No,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                page.set_health_notice("neutral", self.tr("Cancelled"), self.tr("No change was made."))
+                return
+            accept_no_rollback = True
+        adapter.stopped.connect(lambda: self._run_reviewed_health_action(page, ticket, accept_no_rollback))
 
-    def _run_reviewed_health_action(self: Any, page: Any, ticket: Any) -> bool:
+    def _run_reviewed_health_action(self: Any, page: Any, ticket: Any, accept_no_rollback: bool = False) -> bool:
         controller = self._utility_operation_controller
         if controller is None or self._utility_operation_adapter is not None:
             page.set_health_notice("warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
             return False
 
         def operation() -> Any:
-            prepared = controller.confirm(ticket, confirmed=True, accept_no_rollback=True)
+            prepared = controller.confirm(ticket, confirmed=True, accept_no_rollback=accept_no_rollback)
             if prepared.status != "prepared":
                 return prepared
             running = controller.run(prepared)

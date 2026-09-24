@@ -38,9 +38,9 @@ The product does not ship a background service, local web API, D-Bus
 runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
-The active candidate contract is
+The release architecture contract is
 [.workflow/specs/arch-v30.1.0.md](.workflow/specs/arch-v30.1.0.md).
-The public baseline record is
+The previous public baseline record is
 [V29.0.1_RELEASE_PUBLICATION.md](docs/reports/V29.0.1_RELEASE_PUBLICATION.md).
 
 ## Runtime entry modes

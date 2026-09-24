@@ -69,8 +69,8 @@ _GNOME_VALUES = {
 }
 _KDE_READ = ("--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", "--default", "1")
 _KDE_COLOR_READ = ("--file", "kdeglobals", "--group", "General", "--key", "ColorScheme")
-_KDE_WRITE = _KDE_READ[:-2]
-_SCHEME_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+_KDE_WRITE = ("--notify",) + _KDE_READ[:-2]
+_SCHEME_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
 
 
 def _reject(message: str) -> None:

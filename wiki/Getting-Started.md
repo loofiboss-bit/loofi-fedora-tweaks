@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 30.1.0 "Personalize" local candidate; publication is pending.
+> Version 30.1.0 "Personalize" release; physical desktop validation remains pending.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 

@@ -25,7 +25,7 @@
   Acceptance: Exact commands and outcomes recorded in candidate notes.
   Docs: `docs/releases/RELEASE-NOTES-v30.1.0.md`
   Tests: `just verify`, `just stats-check`, `just validate-release`, `just check-packaging`
-- [ ] ID: Q2 | Files: none | Dep: Q1 | Agent: Physical tester | Description: Test live GNOME, KDE, Polkit, keyboard, and scaling.
+- [ ] [post-publish] ID: Q2 | Files: none | Dep: Q1 | Agent: Physical tester | Description: Test live GNOME, KDE, Polkit, keyboard, and scaling.
   Acceptance: Each physical result is separately evidenced.
   Docs: `docs/releases/RELEASE-NOTES-v30.1.0.md`
   Tests: physical desktop sessions

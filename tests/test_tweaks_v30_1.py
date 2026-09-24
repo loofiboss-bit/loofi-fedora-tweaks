@@ -5,6 +5,7 @@ from __future__ import annotations
 import unittest
 import os
 from types import SimpleNamespace
+from unittest.mock import Mock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -15,7 +16,8 @@ from core.execution_policy import classify_command, execution_allowed
 from core.tasks.tweaks import BY_ID, TWEAKS, command_for, read_tweak, visible_tweaks
 from PyQt6.QtCore import Qt
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication
+from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
+from ui.main_window_utility import MainWindowUtilityMixin
 from ui.fix_workflow import FixWorkflowPage
 from ui.tweaks_page import TweaksPage
 
@@ -107,6 +109,15 @@ class TestTweakCatalog(unittest.TestCase):
         self.assertEqual(state.value, "PrivateScheme")
         self.assertNotIn(("PrivateScheme", "PrivateScheme"), state.choices)
 
+    def test_installed_kde_scheme_with_spaces_is_selectable(self) -> None:
+        runtime = FakeRuntime("kde")
+        runtime.output["kde-color"] = " * BreezeDark\n * My Custom Theme (current color scheme)\n"
+        runtime.kde_color_current = "My Custom Theme\n"
+        state = read_tweak(BY_ID["kde-color"], runtime.platform_profile(), runtime.execute_read_only)
+        self.assertIn(("My Custom Theme", "My Custom Theme"), state.choices)
+        validate_command_vector(command_for(BY_ID["kde-color"], "My Custom Theme"))
+        self.assertEqual(classify_command("plasma-apply-colorscheme", ["My Custom Theme"]), "session")
+
     def test_missing_tool_and_unknown_desktop_are_unavailable(self) -> None:
         runtime = FakeRuntime("gnome")
         runtime.fail = True
@@ -167,6 +178,11 @@ class TestTweakCatalog(unittest.TestCase):
         for tweak in (BY_ID["kde-color"], BY_ID["kde-animation"]):
             vector = command_for(tweak, "BreezeDark" if tweak.id == "kde-color" else "0.5")
             self.assertEqual(classify_command(vector[0], vector[1:]), "session")
+        animation = command_for(BY_ID["kde-animation"], "0.5")
+        self.assertEqual(animation[:2], ["kwriteconfig6", "--notify"])
+        validate_command_vector(animation)
+        with self.assertRaises(CommandValidationError):
+            validate_command_vector(animation[:1] + animation[2:])
         power = command_for(BY_ID["power-profile"], "balanced")
         self.assertFalse(execution_allowed(power[0], power[1:]))
         self.assertTrue(execution_allowed(power[0], power[1:], authority="action_center"))
@@ -229,6 +245,33 @@ class TestTweakPage(unittest.TestCase):
             self.assertTrue(page.focus_task("tune:package-cache"))
         finally:
             page.close()
+
+    def test_health_requires_separate_no_rollback_acceptance(self) -> None:
+        parent = QWidget()
+        parent._run_reviewed_health_action = Mock()  # type: ignore[attr-defined]
+        page = SimpleNamespace(set_health_notice=Mock())
+        adapter = SimpleNamespace(stopped=SimpleNamespace(connect=Mock()))
+        ticket = SimpleNamespace(
+            blocked=False,
+            plan=SimpleNamespace(action_id="journal-vacuum", risk_level="medium", rollback_supported=False, recovery_guidance="Review recovery guidance."),
+            preview=("journalctl --vacuum-time=1d",),
+        )
+        try:
+            with patch.object(QMessageBox, "exec", return_value=QMessageBox.StandardButton.Ok), patch.object(
+                QMessageBox, "question", return_value=QMessageBox.StandardButton.No
+            ) as question:
+                MainWindowUtilityMixin._show_health_review(parent, page, ticket, adapter)
+                question.assert_called_once()
+                adapter.stopped.connect.assert_not_called()
+            with patch.object(QMessageBox, "exec", return_value=QMessageBox.StandardButton.Ok), patch.object(
+                QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes
+            ):
+                MainWindowUtilityMixin._show_health_review(parent, page, ticket, adapter)
+                callback = adapter.stopped.connect.call_args.args[0]
+                callback()
+                parent._run_reviewed_health_action.assert_called_once_with(page, ticket, True)  # type: ignore[attr-defined]
+        finally:
+            parent.close()
 
 
 if __name__ == "__main__":

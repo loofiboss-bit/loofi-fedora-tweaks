@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 30.1.0 "Personalize" local candidate; publication is pending.
+> Version 30.1.0 "Personalize" release; physical desktop validation remains pending.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see

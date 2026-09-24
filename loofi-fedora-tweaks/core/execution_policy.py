@@ -115,12 +115,12 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
         return "read_only"
     if binary == "kreadconfig6" and vector == ("--file", "kdeglobals", "--group", "General", "--key", "ColorScheme"):
         return "read_only"
-    if binary == "kwriteconfig6" and vector[:6] == ("--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor") and len(vector) == 7 and vector[-1] in {"0", "0.5", "1"}:
+    if binary == "kwriteconfig6" and vector[:7] == ("--notify", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor") and len(vector) == 8 and vector[-1] in {"0", "0.5", "1"}:
         return "session"
     if binary == "plasma-apply-colorscheme":
         if vector == ("--list-schemes",):
             return "read_only"
-        if len(vector) == 1 and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", vector[0]):
+        if len(vector) == 1 and re.fullmatch(r"[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?", vector[0]):
             return "session"
     if binary == "powerprofilesctl":
         if vector in {("get",), ("list",)}:

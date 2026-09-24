@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 30.1.0 "Personalize" local candidate; publication is pending.
+> Version 30.1.0 "Personalize" release; physical desktop validation remains pending.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

@@ -1,9 +1,9 @@
 # Documentation
 
-This map covers the v30.1.0 "Personalize" local candidate. The
+This map covers the v30.1.0 "Personalize" release. The
 [architecture specification](../.workflow/specs/arch-v30.1.0.md) and
 [release tasks](../.workflow/specs/tasks-v30.1.0.md) are the implementation
-authority. The candidate is local and unpublished.
+authority.
 
 ## Use Loofi
 
@@ -46,9 +46,9 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 - [Roadmap](../ROADMAP.md) — current release status
 - [Changelog](../CHANGELOG.md) — complete historical record
 - [Release notes](releases/RELEASE_NOTES.md) — release-note index
-- [v30.1.0 Personalize candidate notes](releases/RELEASE-NOTES-v30.1.0.md) — current local scope
+- [v30.1.0 Personalize release notes](releases/RELEASE-NOTES-v30.1.0.md) — current release
 - [v30.0.1 Steady candidate notes](releases/RELEASE-NOTES-v30.0.1.md) — preceding local work
-- [v29.0.1 Utility public release](releases/RELEASE-NOTES-v29.0.1.md) — public baseline
+- [v29.0.1 Utility public release](releases/RELEASE-NOTES-v29.0.1.md) — previous public release
 - [v29.0.1 public release evidence](reports/V29.0.1_RELEASE_PUBLICATION.md) — exact publication readback
 - [v28.0.3 public release evidence](reports/V28.0.3_RELEASE_PUBLICATION.md) — exact publication readback
 - [v28.0.2 public release evidence](reports/V28.0.2_RELEASE_PUBLICATION.md) — previous exact publication readback
