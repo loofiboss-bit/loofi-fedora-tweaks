@@ -1,6 +1,6 @@
 {
-  "version": "30.0.1",
-  "codename": "Steady",
+  "version": "30.1.0",
+  "codename": "Personalize",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 18,
   "tab_names": [
@@ -23,14 +23,14 @@
     "system_check_tab",
     "system_info_tab"
   ],
-  "test_file_count": 291,
+  "test_file_count": 292,
   "utils_module_count": 75,
   "test_count": "unverified",
   "coverage": "unverified",
-  "active_version": "30.0.1",
+  "active_version": "30.1.0",
   "next_version": "",
   "roadmap_status": "active",
-  "pipeline_version": "v30.0.1",
+  "pipeline_version": "v30.1.0",
   "pipeline_status": "active",
   "python_version": "3.12",
   "framework": "PyQt6"

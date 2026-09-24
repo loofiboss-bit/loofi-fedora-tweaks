@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v30.0.1 "Steady" — Local Release Candidate
+# Loofi Fedora Tweaks v30.1.0 "Personalize" — Local Candidate
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -8,14 +8,14 @@
 
 <p align="center">
   <strong>A curated Fedora utility</strong><br>
-  Install, tune, fix, and update Fedora with reviewed, verifiable operations.
+  Find apps, adjust your desktop, maintain health, and update Fedora.
 </p>
 
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.0.1">
-    <img src="https://img.shields.io/badge/Local_Candidate-v30.0.1-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.0.1 local release candidate"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0">
+    <img src="https://img.shields.io/badge/Local_Candidate-v30.1.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.1.0 local candidate"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -26,30 +26,26 @@
 Loofi Fedora Tweaks brings common Fedora jobs into one small, desktop-neutral
 utility. The interface is organised around the work users want to complete:
 
-- **Install** — find trusted applications, select several, and see a result for
+- **Apps** — find trusted applications, select several, and see a result for
   each installation.
-- **Tune** — review Minimal, Recommended, or Power User selections for Fedora,
-  privacy, performance, and supported KDE/GNOME settings.
-- **Fix** — start from a symptom, inspect evidence, and apply one verified repair
+- **Tweaks** — search supported GNOME, KDE, and power settings, change one
+  value, and see its verified result in place.
+- **Health** — start from a symptom, inspect evidence, run storage maintenance, or apply one verified repair
   or open the correct native settings page.
-- **Update** — update system packages, Flatpaks, and firmware independently.
+- **Updates** — update system packages, Flatpaks, and firmware independently.
 
 Home is the launchpad. Activity & Recovery is the secondary place for
 pending verification, reboot follow-up, failures, and recovery guidance. The
 internal Action Center execution engine remains the safety boundary but is not a
 normal user-facing destination.
 
-The public [v29.0.1 Utility release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1)
-is the product baseline for this local v30.0.1 "Steady" candidate. Steady
-focuses on durable operation results, thread cleanup, and deferred workflow
-page loading without adding user-facing features. The candidate has not been
-published or installed. The historical `v30.0.0` tag remains
-unchanged.
+The v30.1.0 candidate builds on the local v30.0.1 stability work. It has not
+been published or installed. The public baseline remains
+[v29.0.1 Utility](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1).
 
-The v29.0.1 public baseline passed its isolated release gate. Local v30.0.1
-automated qualification passed; physical desktop, authorization, reboot,
-Atomic, keyboard, and Orca checks remain explicitly `unverified`. Offscreen
-results do not establish physical qualification.
+The v30.0.1 automated qualification is recorded separately. Physical desktop,
+authorization, reboot, Atomic, keyboard, and Orca checks for v30.1.0 remain
+`unverified` until run. Offscreen results do not establish physical qualification.
 
 The maintained repository-wide line-coverage gate is 85%.
 

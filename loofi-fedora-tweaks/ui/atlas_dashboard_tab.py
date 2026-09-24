@@ -133,7 +133,6 @@ class AtlasDashboardTab(BaseTab):
         self.onboarding_card.set_state(self.onboarding_state)
         self.onboarding_card.advanceRequested.connect(self._advance_onboarding)
         self.onboarding_card.dismissRequested.connect(self._dismiss_onboarding)
-        self.scaffold.add_widget(self.onboarding_card)
 
         self.state_card = Card(self.tr("System status"))
         self.state_card.setObjectName("homeState")
@@ -190,6 +189,7 @@ class AtlasDashboardTab(BaseTab):
         self.scaffold.add_layout(self.primary_container)
         self.scaffold.add_layout(self.attention_container)
         self.scaffold.add_layout(self.tasks_container)
+        self.scaffold.add_widget(self.onboarding_card)
         self.scaffold.add_layout(self.active_work_container)
         self.scaffold.add_layout(self.recent_container)
         self.scaffold.content_layout.addStretch()

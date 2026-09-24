@@ -119,7 +119,7 @@ class TestV29MainWindowShell(unittest.TestCase):
                 window.sidebar.topLevelItem(index).text(0)
                 for index in range(window.sidebar.topLevelItemCount())
             ],
-            ["Home", "Install", "Tune", "Fix", "Update"],
+            ["Home", "Apps", "Tweaks", "Health", "Updates"],
         )
         self.assertTrue(
             all(
@@ -194,6 +194,32 @@ class TestV29MainWindowShell(unittest.TestCase):
         self.assertEqual(window._active_route_id, "activity")
         activity = window._real_widget_for_entry(window._sidebar_index["activity"])
         self.assertEqual(activity._requested_run_id, "run-v29")
+
+    def test_old_and_new_workflow_routes_share_pages(self) -> None:
+        window = self._build()
+        for old, new, destination in (
+            ("install", "apps", "install"),
+            ("tune", "tweaks", "tune"),
+            ("fix", "health", "fix"),
+            ("update", "updates", "update"),
+        ):
+            self.assertTrue(window.switch_to_route(old))
+            first = window._real_widget_for_entry(window._sidebar_index[f"utility_{destination}"])
+            self.assertTrue(window.switch_to_route(new))
+            self.assertIs(first, window._real_widget_for_entry(window._sidebar_index[f"utility_{destination}"]))
+
+    def test_legacy_repair_requests_review_on_health(self) -> None:
+        window = self._build()
+        with patch.object(window, "_review_health_action", return_value=True) as review:
+            window._open_action_center_request("fstrim-all", {})
+            self.assertEqual(window._active_destination_id, "fix")
+            self.assertEqual(review.call_args.args[1:], ("fstrim-all", {}))
+
+        context = {"check_result_id": "saved", "finding_fingerprint": "a" * 64, "origin_route": "health"}
+        with patch.object(window, "_review_health_finding", return_value=True) as finding_review:
+            window._open_system_check_action_request("fstrim-all", context)
+            self.assertEqual(window._active_destination_id, "fix")
+            self.assertEqual(finding_review.call_args.args[1:], ("fstrim-all", context))
 
 
 class TestV29ActivityTerminology(unittest.TestCase):

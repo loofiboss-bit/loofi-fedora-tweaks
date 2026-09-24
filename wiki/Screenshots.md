@@ -1,4 +1,4 @@
-# Visual Interface Gallery — v30.0.1 "Steady" candidate
+# Visual Interface Gallery — v30.1.0 "Personalize" candidate
 
 These static captures document the retained task-oriented shell and are not
 physical desktop qualification evidence.
@@ -9,8 +9,8 @@ scaling, or assistive-technology qualification.
 
 ## Home
 
-The captures are from the public v29.0.1 baseline; v30.0.1 retains these user
-workflows without adding application features.
+The captures are from the public v29.0.1 baseline. They predate the v30.1.0
+navigation and Tweaks page and must not be treated as current UI evidence.
 
 ![Home](images/home-dashboard.png)
 

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 30.0.1 "Steady" local candidate; publication is pending.
+> Version 30.1.0 "Personalize" local candidate; publication is pending.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -13,10 +13,10 @@ Loofi is a curated Fedora utility with five primary destinations:
 | Destination | Purpose |
 | --- | --- |
 | **Home** | Fedora profile, current status, recommendation, and job shortcuts |
-| **Install** | Curated application search, category filters, source labels, and multi-select review |
-| **Tune** | Editable Minimal, Recommended, and Power User selections |
-| **Fix** | Symptom-first diagnostics and one supported next step |
-| **Update** | Independent System, Flatpak, and Firmware state cards |
+| **Apps** | Curated application search, category filters, source labels, and multi-select review |
+| **Tweaks** | Searchable GNOME, KDE, and power settings with current values |
+| **Health** | Symptom-first diagnostics, maintenance, and one supported next step |
+| **Updates** | Independent System, Flatpak, and Firmware state cards |
 
 Activity & Recovery and Settings are secondary header surfaces. The product
 has no background daemon, web API, arbitrary shell execution, or unattended
@@ -43,12 +43,12 @@ PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ## Home
 
 Home shows the immutable Fedora profile, a compact status row, one recommended
-next step, shortcuts to Install, Tune, Fix, and Update, and current activity.
+next step, shortcuts to Apps, Tweaks, Health, and Updates, and current activity.
 Loading Home never starts a host probe or mutation.
 
-## Install
+## Apps
 
-Install is a curated catalog rather than an unrestricted package browser.
+Apps is a curated catalog rather than an unrestricted package browser.
 Search by application name or goal, filter by category, and select several
 items. Every row shows its source and availability.
 
@@ -61,28 +61,25 @@ Choose **Review selected applications** to inspect the bundle. Items execute
 independently and keep separate terminal outcomes. The bundle never retries,
 rolls back, or reboots automatically.
 
-## Tune
+## Tweaks
 
-Tune provides three editable starting points:
+Search settings and choose one supported value. Each row shows the current
+value, availability, and a result after the application reads it back. GNOME
+offers color preference, animations, text size, battery percentage, and clock
+seconds. KDE offers installed color schemes and animation speed. Both desktops
+offer available power profiles. Custom KDE values are shown without changing
+them. A power profile change asks for confirmation.
 
-- **Minimal** — a small low-risk baseline.
-- **Recommended** — broadly useful verified Fedora maintenance.
-- **Power User** — additional implemented operations for experienced users.
+## Health
 
-Unavailable choices remain visible with an explanation. High-risk, boot,
-display, and manual-only operations are excluded from automatic profiles.
-Desktop-specific KDE or GNOME choices appear only when the capability is
-known. Ordered operations stop after the first unexpected failure.
-
-## Fix
-
-Fix begins with a symptom such as a slow system, network trouble, storage
+Health begins with a symptom such as a slow system, network trouble, storage
 pressure, or boot/deployment concern. The diagnostic phase is read-only and
 presents findings before it offers one safe next step. Depending on the
 evidence, the next step is a supported verified operation, instructions, or a
-native system-settings handoff. There is no **Fix all** action.
+native system-settings handoff. Storage trim and package cache cleanup are
+available here. There is no **Fix all** action.
 
-## Update
+## Updates
 
 System, Flatpak, and Firmware are independent cards. Each card shows freshness,
 availability, count, details, and exactly one primary action:
@@ -101,6 +98,7 @@ Activity groups **Needs you**, **In progress**, and **History**. It carries
 verification failures, reboot follow-up, and recovery guidance only where the
 saved operation requires them. Older `changes` and
 `maintenance:action-center` links resolve to the corresponding Activity state.
+Older Install, Tune, Fix, and Update route IDs continue to open their new pages.
 
 ## CLI
 

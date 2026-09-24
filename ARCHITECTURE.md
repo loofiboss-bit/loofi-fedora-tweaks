@@ -1,12 +1,12 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v30.0.1 "Steady" release.
+> Canonical architecture reference for the v30.1.0 "Personalize" release.
 > The supported product is a desktop-neutral Fedora application built with
 > Python 3.12+ and PyQt6.
 
-The [v30 architecture specification](.workflow/specs/arch-v30.0.1.md) retains
-the v29 product and safety boundary while tightening durable operation results,
-worker cleanup, and first-visit loading for Install, Tune, Fix, and Update.
+The [v30.1 architecture specification](.workflow/specs/arch-v30.1.0.md) retains
+the shared runtime safety boundary while adding direct state-backed settings
+and first-visit loading for Apps, Tweaks, Health, and Updates.
 Activity & Recovery and Settings are secondary header surfaces. Action Center
 remains the sole system-mutation authority.
 
@@ -26,7 +26,7 @@ that a different Fedora setup was detected.
 
 The Utility release preserves an intentionally small runtime boundary:
 
-- five primary destinations: Home, Install, Tune, Fix, and Update;
+- five primary destinations: Home, Apps, Tweaks, Health, and Updates;
 - an immutable `PlatformProfile` for Fedora version, architecture, desktop,
   session, capabilities, and deployment backend;
 - one Action Center authority for every persistent host mutation;
@@ -39,7 +39,7 @@ runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
 The active candidate contract is
-[.workflow/specs/arch-v30.0.1.md](.workflow/specs/arch-v30.0.1.md).
+[.workflow/specs/arch-v30.1.0.md](.workflow/specs/arch-v30.1.0.md).
 The public baseline record is
 [V29.0.1_RELEASE_PUBLICATION.md](docs/reports/V29.0.1_RELEASE_PUBLICATION.md).
 
@@ -68,10 +68,10 @@ declare competing product metadata.
 | Order | Destination ID | Label | Default route |
 | ---: | --- | --- | --- |
 | 1 | `home` | Home | `atlas_dashboard` |
-| 2 | `install` | Install | `install` |
-| 3 | `tune` | Tune | `tune` |
-| 4 | `fix` | Fix | `fix` |
-| 5 | `update` | Update | `update` |
+| 2 | `install` | Apps | `utility:install` |
+| 3 | `tune` | Tweaks | `utility:tune` |
+| 4 | `fix` | Health | `utility:fix` |
+| 5 | `update` | Updates | `utility:update` |
 
 Activity & Recovery and Settings remain header-level routes rather than
 primary destinations. Stable route IDs and compatibility redirects are

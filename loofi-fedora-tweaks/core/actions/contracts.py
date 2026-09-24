@@ -166,6 +166,9 @@ class PolicyDecision:
 class ActionRuntime(Protocol):
     """Read-only system probes available to catalog definitions."""
 
+    def platform_profile(self) -> object:
+        ...
+
     def is_atomic(self) -> bool:
         ...
 

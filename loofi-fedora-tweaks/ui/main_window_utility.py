@@ -27,9 +27,13 @@ from PyQt6.QtWidgets import QTreeWidgetItem, QWidget
 _UTILITY_ROUTE_ALIASES = {
     "home": "atlas_dashboard",
     "install": "utility:install",
+    "apps": "utility:install",
     "tune": "utility:tune",
+    "tweaks": "utility:tune",
     "fix": "utility:fix",
+    "health": "utility:fix",
     "update": "utility:update",
+    "updates": "utility:update",
 }
 
 # These routes are retained as compatibility inputs, but a direct user link
@@ -152,21 +156,26 @@ class MainWindowUtilityMixin:
             install_page.routeRequested.connect(self._open_route_request)
             return cast(QWidget, install_page)
         if destination_id == "tune":
-            from ui.tune_workflow import TuneWorkflowPage
+            from ui.tweaks_page import TweaksPage
 
-            tune_page: Any = TuneWorkflowPage(context=task_context)
-            tune_page.bundleReviewRequested.connect(
-                lambda selection, owner=tune_page: self._review_utility_bundle(owner, selection)
+            tweaks_page: Any = TweaksPage(self._platform_profile)
+            tweaks_page.refreshRequested.connect(
+                lambda owner=tweaks_page: self._start_tweak_snapshot(owner)
             )
-            route_requested = getattr(tune_page, "routeRequested", None)
-            if route_requested is not None and hasattr(route_requested, "connect"):
-                route_requested.connect(self._open_route_request)
-            return cast(QWidget, tune_page)
+            tweaks_page.changeRequested.connect(
+                lambda tweak_id, value, owner=tweaks_page: self._start_tweak_change(owner, tweak_id, value)
+            )
+            return cast(QWidget, tweaks_page)
         if destination_id == "fix":
             from ui.fix_workflow import FixWorkflowPage
 
             fix_page: Any = FixWorkflowPage()
-            fix_page.actionCenterRequested.connect(self._open_action_center_request)
+            fix_page.actionCenterRequested.connect(
+                lambda action_id, parameters, owner=fix_page: self._review_health_action(owner, action_id, parameters)
+            )
+            fix_page.maintenanceRequested.connect(
+                lambda action_id, owner=fix_page: self._review_health_action(owner, action_id, {})
+            )
             fix_page.routeRequested.connect(self._open_route_request)
             return cast(QWidget, fix_page)
         if destination_id == "update":
@@ -189,6 +198,144 @@ class MainWindowUtilityMixin:
         )
         self._utility_operation_adapter = adapter
         return adapter
+
+    def _start_tweak_snapshot(self: Any, page: Any) -> bool:
+        """Read current settings on the window-owned worker, without UI blocking."""
+        if self._utility_operation_adapter is not None:
+            page.set_error(self.tr("Another operation is in progress. Refresh when it finishes."))
+            return False
+        from core.actions.catalog import SystemActionRuntime
+        from core.executor.command_facade import CommandFacade
+        from core.tasks.tweaks import snapshot
+
+        page.set_busy(True, self.tr("Reading current settings…"))
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(page.set_states)
+        adapter.failed.connect(page.set_error)
+        adapter.cancelled.connect(lambda: page.set_error(self.tr("Reading was cancelled.")))
+        return bool(adapter.start(lambda: snapshot(page.profile, SystemActionRuntime(CommandFacade()))))
+
+    def _start_tweak_change(self: Any, page: Any, tweak_id: str, value: str) -> bool:
+        """Apply one typed setting through the durable operation controller."""
+        from core.actions.operation_controller import OperationController
+        from core.tasks.tweaks import BY_ID
+        from PyQt6.QtWidgets import QMessageBox
+
+        tweak = BY_ID.get(str(tweak_id))
+        if tweak is None or self._utility_operation_adapter is not None:
+            page.restore_selection(tweak_id)
+            page.set_error(self.tr("Another operation is in progress. Try again when it finishes."))
+            return False
+        if tweak.system_wide:
+            answer = QMessageBox.question(
+                self,
+                self.tr("Change power profile"),
+                self.tr("Apply the selected power profile to this computer?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
+            )
+            if answer != QMessageBox.StandardButton.Yes:
+                page.restore_selection(tweak_id)
+                return False
+        if self._utility_operation_controller is None:
+            self._utility_operation_controller = OperationController()
+        controller = self._utility_operation_controller
+        page.set_busy(True, self.tr("Applying and verifying %1…").replace("%1", self.tr(tweak.title)))
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(lambda outcome: page.set_outcome(tweak_id, value, outcome))
+        adapter.failed.connect(lambda message: page.set_error(str(message)))
+        adapter.cancelled.connect(lambda: page.set_error(self.tr("The operation was cancelled. Refresh to see the current value.")))
+        adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
+        return bool(adapter.start(lambda: controller.execute(tweak.action_id, {"value": value}, confirmed=True)))
+
+    def _review_health_action(self: Any, page: Any, action_id: str, parameters: Any) -> bool:
+        """Prepare one Health action before asking for explicit user approval."""
+        from core.actions.catalog import ActionCatalog
+        from core.actions.operation_controller import OperationController
+
+        definition = ActionCatalog().get(str(action_id))
+        if definition is None or definition.operation_class == "manual_only":
+            guidance = getattr(definition, "recovery_guidance", "") if definition is not None else ""
+            page.set_health_notice("warning", self.tr("Manual step"), guidance or self.tr("This repair needs manual guidance; no change was started."))
+            return False
+        if self._utility_operation_adapter is not None:
+            page.set_health_notice("warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
+            return False
+        if self._utility_operation_controller is None:
+            self._utility_operation_controller = OperationController()
+        controller = self._utility_operation_controller
+        page.set_health_notice("info", self.tr("Checking"), self.tr("Preparing the exact scope of this change."))
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(lambda ticket: self._show_health_review(page, ticket, adapter))
+        adapter.failed.connect(lambda message: page.set_health_notice("error", self.tr("Unavailable"), str(message)))
+        return bool(adapter.start(lambda: controller.prepare(str(action_id), dict(parameters or {}))))
+
+    def _review_health_finding(self: Any, page: Any, action_id: str, context: Any) -> bool:
+        """Resolve saved System Check evidence before showing a Health review."""
+        from core.actions.operation_controller import OperationController, OperationTicket
+
+        if self._utility_operation_adapter is not None:
+            page.set_health_notice("warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
+            return False
+        if self._utility_operation_controller is None:
+            self._utility_operation_controller = OperationController()
+        controller = self._utility_operation_controller
+        evidence = dict(context or {})
+        page.set_health_notice("info", self.tr("Checking"), self.tr("Rechecking the saved finding before review."))
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(lambda plan: self._show_health_review(page, OperationTicket(plan), adapter))
+        adapter.failed.connect(lambda message: page.set_health_notice("error", self.tr("Finding unavailable"), str(message)))
+        return bool(adapter.start(lambda: controller.orchestrator.plan_from_finding(
+            check_result_id=str(evidence.get("check_result_id", "")),
+            finding_fingerprint=str(evidence.get("finding_fingerprint", "")),
+            origin_route=str(evidence.get("origin_route", "")),
+            expected_action_id=str(action_id),
+        )))
+
+    def _show_health_review(self: Any, page: Any, ticket: Any, adapter: Any) -> None:
+        from PyQt6.QtWidgets import QMessageBox
+
+        if ticket.blocked:
+            decision = ticket.plan.policy_decision
+            page.set_health_notice("warning", self.tr("Unavailable"), " ".join(part for part in (decision.explanation, decision.alternative) if part))
+            return
+        dialog = QMessageBox(self)
+        dialog.setIcon(QMessageBox.Icon.Warning)
+        dialog.setWindowTitle(self.tr("Review change"))
+        dialog.setText(str(ticket.plan.action_id).replace("-", " ").title())
+        dialog.setInformativeText(self.tr("Apply this exact change and verify its result?"))
+        dialog.setDetailedText("\n".join([*ticket.preview, ticket.plan.recovery_guidance]))
+        dialog.setStandardButtons(QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok)
+        dialog.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        if dialog.exec() != QMessageBox.StandardButton.Ok:
+            page.set_health_notice("neutral", self.tr("Cancelled"), self.tr("No change was made."))
+            return
+        adapter.stopped.connect(lambda: self._run_reviewed_health_action(page, ticket))
+
+    def _run_reviewed_health_action(self: Any, page: Any, ticket: Any) -> bool:
+        controller = self._utility_operation_controller
+        if controller is None or self._utility_operation_adapter is not None:
+            page.set_health_notice("warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
+            return False
+
+        def operation() -> Any:
+            prepared = controller.confirm(ticket, confirmed=True, accept_no_rollback=True)
+            if prepared.status != "prepared":
+                return prepared
+            running = controller.run(prepared)
+            return controller.verify(running) if running.status == "verifying" else running
+
+        page.set_health_notice("info", self.tr("Running"), self.tr("The change is running and will be checked afterward."))
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(
+            lambda outcome: page.set_health_notice(
+                "success" if outcome.success else "warning",
+                self.tr("Verified") if outcome.success else self.tr("Needs attention"),
+                " ".join(part for part in (str(outcome.message), str(outcome.recovery_guidance) if not outcome.success else "") if part),
+            )
+        )
+        adapter.failed.connect(lambda message: page.set_health_notice("error", self.tr("Failed"), str(message)))
+        return bool(adapter.start(operation))
 
     def _utility_operation_adapter_stopped(self: Any, adapter: Any) -> None:
         """Release a worker adapter only after its QThread has finished."""

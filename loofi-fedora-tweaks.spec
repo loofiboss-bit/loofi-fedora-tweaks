@@ -1,8 +1,8 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        30.0.1
+Version:        30.1.0
 Release:        1%{?dist}
-Summary:        Fedora maintenance and desktop control center
+Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
 License:        MIT
 URL:            https://github.com/loofiboss-bit/loofi-fedora-tweaks
@@ -31,8 +31,7 @@ Obsoletes:      loofi-fedora-tweaks < 1:1.0.0
 Provides:       loofi-fedora-tweaks = 1:%{version}-%{release}
 
 %description
-Fedora maintenance and desktop control center for installing, tuning, fixing,
-and updating.
+Fedora utility for apps, desktop tweaks, health, and updates.
 The GUI and CLI route persistent changes through one reviewed and verifiable
 Action Center authority.
 
@@ -97,6 +96,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Thu Sep 24 2026 Loofi <loofi@example.com> - 30.1.0-1
+- Personalize local candidate: direct verified tweaks and Health maintenance
+
 * Wed Sep 23 2026 Loofi <loofi@example.com> - 30.0.1-1
 - Steady local candidate: durable operation results, worker cleanup, and lazy workflows
 

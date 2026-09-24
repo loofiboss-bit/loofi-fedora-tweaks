@@ -40,8 +40,8 @@ _UPDATE_PENDING_STATES = frozenset({"attention", "pending", "updates_available"}
 _COMMON_TASKS = (
     HomeTask("updates", "Check for updates", "Check Fedora, Flatpak, or firmware independently.", "utility:update", "update"),
     HomeTask("applications", "Install applications", "Search trusted Fedora and Flatpak choices.", "utility:install", "packages-software"),
-    HomeTask("tune", "Tune Fedora", "Review an editable low-risk profile.", "utility:tune", "settings"),
-    HomeTask("troubleshoot", "Fix a problem", "Start a read-only check from the symptom you notice.", "utility:fix", "maintenance-health"),
+    HomeTask("tune", "Explore tweaks", "Change supported Fedora and desktop settings.", "utility:tune", "settings"),
+    HomeTask("troubleshoot", "Check system health", "Start from a symptom or run reviewed maintenance.", "utility:fix", "maintenance-health"),
 )
 
 

@@ -55,9 +55,9 @@ class TestPhase9PackageMetadata(unittest.TestCase):
             encoding="utf-8"
         )
 
-        self.assertIn("Fedora maintenance and desktop control center", spec)
+        self.assertIn("Fedora apps, desktop tweaks, health, and updates utility", spec)
         self.assertIn(
-            "<summary>Curated Fedora utility for installing, tuning, fixing, and updating</summary>",
+            "<summary>Curated Fedora utility for apps, tweaks, health, and updates</summary>",
             appstream,
         )
 
