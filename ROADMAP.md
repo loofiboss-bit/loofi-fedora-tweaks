@@ -10,6 +10,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
+| v30.2.0 | Comfort | ACTIVE — PUBLICATION | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V30_2_PLAN.md), [architecture](.workflow/specs/arch-v30.2.0.md), [tasks](.workflow/specs/tasks-v30.2.0.md), [candidate notes](docs/releases/RELEASE-NOTES-v30.2.0.md) |
 | v30.1.0 | Personalize | DONE | [architecture](.workflow/specs/arch-v30.1.0.md), [tasks](.workflow/specs/tasks-v30.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v30.1.0.md) |
 | v30.0.1 | Steady | LOCAL CANDIDATE | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V30_PLAN.md), [architecture](.workflow/specs/arch-v30.0.1.md), [tasks](.workflow/specs/tasks-v30.0.1.md), [candidate notes](docs/releases/RELEASE-NOTES-v30.0.1.md) |
 | v29.0.1 | Utility | DONE | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V29_PLAN.md), [architecture](.workflow/specs/arch-v29.0.1.md), [tasks](.workflow/specs/tasks-v29.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v29.0.1.md), [public evidence](docs/reports/V29.0.1_RELEASE_PUBLICATION.md) |
@@ -31,6 +32,18 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v27.0.1 | Core | DONE | [Plan](docs/plans/plan%20v27.md), [architecture](.workflow/specs/arch-v27.0.1.md), [tasks](.workflow/specs/tasks-v27.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v27.0.1.md), [public evidence](docs/reports/V27_RELEASE_PUBLICATION.md) |
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
+
+## [ACTIVE] v30.2.0 "Comfort" — Desktop Settings and Explicit Restoration
+
+Comfort extends the catalog from eight to fourteen controls and
+adds restoration of the latest verified normal change per setting. Restoration
+uses saved metadata and fresh preflight, blocks drift and subsequent attempts,
+and consumes its offer after a verified restore. The five destinations,
+Action Center authority, routes, and schema-v4 history remain intact.
+Full GitHub, COPR, and wiki publication was authorized on 2026-10-01.
+Workstation installation, profiles, bulk restoration, and automatic rollback
+remain outside scope. Qualification evidence and unverified
+physical checks are tracked in the [local report](docs/reports/V30.2.0_LOCAL_QUALIFICATION.md).
 
 ## [DONE] v30.1.0 "Personalize" — Direct Fedora Tweaks
 

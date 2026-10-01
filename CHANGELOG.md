@@ -1,5 +1,15 @@
 # Changelog
 
+## [30.2.0] - 2026-10-01 - "Comfort"
+
+- Add KDE file opening, double-click interval, smooth scrolling, and scrollbar click behavior.
+- Add GNOME 12/24-hour clock format and weekday display.
+- Restore the latest eligible verified Loofi change through a separate confirmed and verified run.
+- Preserve exact valid custom numeric values in versioned before/after metadata within existing schema-v4 verification results.
+- Block restoration after external drift, later attempts, consumed restores, unavailable choices, or missing history.
+- Report verified saved settings and explain when KDE applications may need reopening.
+- Keep bulk restoration and automatic rollback outside this release; physical checks remain separately unverified.
+
 ## [30.1.0] - 2026-09-24 - "Personalize"
 
 - Present Home, Apps, Tweaks, Health, and Updates as the five primary destinations.

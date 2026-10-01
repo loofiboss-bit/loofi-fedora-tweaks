@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Mapping, Sequence
 from core.actions.contracts import ActionDefinition, ActionRun, ActionRuntime, PolicyDecision
 from core.executor.action_result import ActionResult
 from core.executor.command_facade import CommandFacade
+from core.actions.stores import ActionRunStore
 if TYPE_CHECKING:
     from services.system.system import SystemManager
 
@@ -75,6 +76,26 @@ ACTIVE_ACTION_IDS = frozenset(
         "set-kde-color",
         "set-kde-animation",
         "set-power-profile",
+        "set-gnome-clock-format",
+        "set-gnome-clock-weekday",
+        "set-kde-single-click",
+        "set-kde-double-click-interval",
+        "set-kde-smooth-scroll",
+        "set-kde-scrollbar-click",
+        "restore-gnome-color",
+        "restore-gnome-animations",
+        "restore-gnome-text-scale",
+        "restore-gnome-battery",
+        "restore-gnome-clock",
+        "restore-gnome-clock-format",
+        "restore-gnome-clock-weekday",
+        "restore-kde-color",
+        "restore-kde-animation",
+        "restore-kde-single-click",
+        "restore-kde-double-click-interval",
+        "restore-kde-smooth-scroll",
+        "restore-kde-scrollbar-click",
+        "restore-power-profile",
     }
 )
 
@@ -86,14 +107,21 @@ class SystemActionRuntime:
         self,
         facade: CommandFacade,
         system_manager: type["SystemManager"] | None = None,
+        *,
+        run_store: ActionRunStore | None = None,
     ):
         self.facade = facade
+        self.run_store = run_store or ActionRunStore()
         if system_manager is None:
             from services.system.system import SystemManager
 
             system_manager = SystemManager
 
         self.system_manager = system_manager
+
+    def tweak_runs(self) -> list[ActionRun]:
+        """Read the authoritative store strictly, without migration or repair."""
+        return self.run_store.list_read_only(strict=True)
 
     def platform_profile(self) -> object:
         """Return the single immutable platform snapshot used by actions."""

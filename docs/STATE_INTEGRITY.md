@@ -1,6 +1,6 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v30.1.0 "Personalize" retains application-owned state under the
+Loofi Fedora Tweaks v30.2.0 "Comfort" retains application-owned state under the
 user's standard XDG config, data, cache, and runtime directories. Physical desktop validation remains unverified. State is separate from the Fedora deployment
 and is preserved when the RPM is removed.
 
@@ -80,3 +80,24 @@ new deployment is booted; Loofi does not restart the machine itself.
 
 Never delete a corrupt input before a recovery copy exists. Report the exact
 state domain, schema, version, and reproduction steps in the issue tracker.
+
+## Tweak restoration evidence
+
+Comfort captures versioned tweak identity and exact before/after values in
+`verification_result.data`, without changing the outer schema-v4 format or
+atomic persistence. Restoration accepts only a source run ID and resolves
+values from verified history; caller-supplied settings cannot override it.
+Fresh preflight blocks external drift, later attempts, already consumed
+restores, unavailable choices, and missing or legacy evidence. History pruning
+can remove eligibility. A restore is a new verified run, never an automatic
+rollback; durable acknowledgement failure cannot be shown as saved success.
+
+A persisted running or verifying run reserves the mutation boundary, including
+when execution acknowledgement cannot be saved. Activity & Recovery must resolve
+that run before another mutation starts. Malformed history blocks writes and
+startup migration; no unreadable record is silently dropped or overwritten.
+Stored creation order, rather than wall-clock timestamps or result updates,
+determines the latest attempt. Execution and verification success must both be
+boolean true. Custom numeric writes are additionally limited at the executor
+boundary to the matching Action Center restore action; legacy callers and
+ordinary set actions cannot submit them.

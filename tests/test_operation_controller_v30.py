@@ -358,6 +358,7 @@ class TestOperationControllerLifecycle(_ControllerFixture):
         completed = self.controller.complete(prepared, result)
         self.assertEqual(completed.status, "verifying")
         self.assertEqual(completed.run.state, "verifying")
+        self.assertTrue(self.controller.verify(completed).success)
 
         next_prepared = self.controller.confirm(self.controller.prepare("controller-test"), confirmed=True)
         assert next_prepared.prepared is not None

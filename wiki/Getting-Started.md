@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 30.1.0 "Personalize" release; physical desktop validation remains pending.
+> Version 30.2.0 "Comfort" local candidate; physical desktop validation remains pending.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -47,7 +47,14 @@ keeps its own result, so one failed installation does not hide the others.
 
 Open **Tweaks**, search for a setting, and choose a value. The row shows the
 current value and confirms it after an independent readback. Custom KDE values
-stay visible until you deliberately choose another value.
+stay visible until you deliberately choose another value. KDE offers click and
+scroll behavior; GNOME offers clock format and weekday display. A saved KDE
+setting may require reopening affected applications.
+
+Use **Restore previous value** to review and confirm the latest eligible Loofi
+change. External changes, later attempts, missing history, and removed choices
+block restoration. A successful restore is separately verified and consumes
+the offer.
 
 ### Diagnose a problem
 

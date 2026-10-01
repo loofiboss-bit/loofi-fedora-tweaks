@@ -40,9 +40,14 @@
   </provides>
 
   <releases>
-    <release version="30.1.0" date="2026-09-24" type="development">
+    <release version="30.2.0" date="2026-10-01" type="stable">
       <description>
-        <p>v30.1.0 "Personalize" local candidate: direct Fedora tweaks and in-place Health reviews. Not published.</p>
+        <p>v30.2.0 "Comfort": fourteen desktop and power controls with explicit, independently verified restoration of eligible Loofi changes.</p>
+      </description>
+    </release>
+    <release version="30.1.0" date="2026-09-24" type="stable">
+      <description>
+        <p>v30.1.0 "Personalize": direct Fedora tweaks and in-place Health reviews.</p>
       </description>
     </release>
     <release version="30.0.1" date="2026-09-23" type="development">

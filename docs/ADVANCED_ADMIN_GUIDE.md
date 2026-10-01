@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 30.1.0 "Personalize" release; physical desktop validation remains pending.
+> Version 30.2.0 "Comfort" local candidate; physical desktop validation remains pending.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.

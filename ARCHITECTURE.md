@@ -1,10 +1,10 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v30.1.0 "Personalize" release.
+> Canonical architecture reference for the v30.2.0 "Comfort" local candidate.
 > The supported product is a desktop-neutral Fedora application built with
 > Python 3.12+ and PyQt6.
 
-The [v30.1 architecture specification](.workflow/specs/arch-v30.1.0.md) retains
+The [v30.2 architecture specification](.workflow/specs/arch-v30.2.0.md) retains
 the shared runtime safety boundary while adding direct state-backed settings
 and first-visit loading for Apps, Tweaks, Health, and Updates.
 Activity & Recovery and Settings are secondary header surfaces. Action Center
@@ -39,9 +39,21 @@ runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
 The release architecture contract is
-[.workflow/specs/arch-v30.1.0.md](.workflow/specs/arch-v30.1.0.md).
-The previous public baseline record is
-[V29.0.1_RELEASE_PUBLICATION.md](docs/reports/V29.0.1_RELEASE_PUBLICATION.md).
+[.workflow/specs/arch-v30.2.0.md](.workflow/specs/arch-v30.2.0.md).
+The public baseline is `v30.1.0` Personalize, commit `737a550`.
+
+## Comfort tweak restoration
+
+The closed catalog contains fourteen controls, with seven visible on KDE and
+eight on GNOME, including their shared power profile. Every setter records
+versioned before/after metadata under `verification_result.data`; the outer
+schema-v4 storage format stays unchanged. A restore action accepts only
+`source_run_id` and resolves its own tweak and exact previous value from
+verified history. Fresh preflight rejects drift, subsequent change attempts,
+missing/pruned history, already consumed restores, and unavailable choices.
+Restoration is a new verified run, with no automatic rollback or redo. The UI
+reports verified saved configuration rather than promising active effects in
+already open KDE applications.
 
 ## Runtime entry modes
 

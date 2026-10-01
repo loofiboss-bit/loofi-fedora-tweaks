@@ -6,6 +6,8 @@ import re
 from pathlib import Path
 from typing import Literal, Sequence
 
+from core.tweak_commands import custom_numeric_tweak, tweak_command_class
+
 ExecutionClass = Literal["read_only", "host", "app_state", "session", "manual_only"]
 ExecutionAuthority = Literal["legacy", "action_center"]
 
@@ -93,11 +95,15 @@ def _unwrap(command: str, args: Sequence[str]) -> tuple[str, tuple[str, ...], bo
     binary = Path(str(command)).name
     vector = tuple(str(item) for item in args)
     privileged = False
-    if binary == "flatpak-spawn" and vector[:1] == ("--host",) and len(vector) >= 2:
-        binary, vector = Path(vector[1]).name, vector[2:]
-    if binary == "pkexec" and vector:
-        privileged = True
-        binary, vector = Path(vector[0]).name, vector[1:]
+    # Each pass consumes arguments, so even nested wrappers terminate.
+    while True:
+        if binary == "flatpak-spawn" and vector[:1] == ("--host",) and len(vector) >= 2:
+            binary, vector = Path(vector[1]).name, vector[2:]
+        elif binary == "pkexec" and vector:
+            privileged = True
+            binary, vector = Path(vector[0]).name, vector[1:]
+        else:
+            break
     return binary, vector, privileged
 
 
@@ -107,16 +113,12 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
     first = vector[0] if vector else ""
     if privileged:
         return "host"
+    if binary in {"gsettings", "kreadconfig6", "kwriteconfig6"}:
+        return tweak_command_class(binary, vector) or "manual_only"
     if binary in _SESSION_COMMANDS:
         return "session"
     if binary in _READ_ONLY_COMMANDS:
         return "read_only"
-    if binary == "kreadconfig6" and vector == ("--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", "--default", "1"):
-        return "read_only"
-    if binary == "kreadconfig6" and vector == ("--file", "kdeglobals", "--group", "General", "--key", "ColorScheme"):
-        return "read_only"
-    if binary == "kwriteconfig6" and vector[:7] == ("--notify", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor") and len(vector) == 8 and vector[-1] in {"0", "0.5", "1"}:
-        return "session"
     if binary == "plasma-apply-colorscheme":
         if vector == ("--list-schemes",):
             return "read_only"
@@ -166,7 +168,12 @@ def execution_allowed(
     args: Sequence[str],
     *,
     authority: ExecutionAuthority = "legacy",
+    action_id: str = "",
 ) -> bool:
+    binary, vector, privileged = _unwrap(command, args)
+    custom_tweak = custom_numeric_tweak(binary, vector)
+    if custom_tweak:
+        return not privileged and authority == "action_center" and action_id == f"restore-{custom_tweak}"
     classification = classify_command(command, args)
     if classification in {"read_only", "session", "app_state"}:
         return True

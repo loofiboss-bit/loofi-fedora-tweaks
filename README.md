@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v30.1.0 "Personalize"
+# Loofi Fedora Tweaks v30.2.0 "Comfort"
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -14,8 +14,8 @@
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0">
-    <img src="https://img.shields.io/badge/Release-v30.1.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.1.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0">
+    <img src="https://img.shields.io/badge/Release_preparation-v30.2.0-orange?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.2.0 release preparation"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -39,13 +39,21 @@ pending verification, reboot follow-up, failures, and recovery guidance. The
 internal Action Center execution engine remains the safety boundary but is not a
 normal user-facing destination.
 
-v30.1.0 includes the v30.0.1 stability work and is distributed through the
-[GitHub release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0)
-and the Fedora COPR repository. Installation on this workstation is a separate action.
+v30.2.0 "Comfort" adds fourteen desktop and
+power controls, with explicit restoration of the latest eligible Loofi change.
+KDE adds file opening, double-click interval, smooth scrolling, and scrollbar
+click behavior; GNOME adds clock format and weekday display. Restore reads the
+saved history and checks the current setting before writing. A verified saved
+KDE setting may require affected applications to reopen.
 
-The v30.0.1 automated qualification is recorded separately. Physical desktop,
-authorization, reboot, Atomic, keyboard, and Orca checks for v30.1.0 remain
-`unverified` until run. Offscreen results do not establish physical qualification.
+The latest published version remains
+[v30.1.0 Personalize](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0).
+Full GitHub, COPR, and wiki publication was authorized on 2026-10-01 and is
+in progress. Installing from COPR installs the published package.
+Local evidence is recorded in the
+[qualification report](docs/reports/V30.2.0_LOCAL_QUALIFICATION.md).
+Physical GNOME, KDE, Atomic, keyboard, scaling, and Orca checks remain
+`unverified`. Publication and workstation installation are separate actions.
 
 The maintained repository-wide line-coverage gate is 85%.
 

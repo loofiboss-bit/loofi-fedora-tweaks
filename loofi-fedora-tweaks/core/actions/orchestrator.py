@@ -76,7 +76,7 @@ class ActionCenterOrchestrator:
         self.plan_store = plan_store or ActionPlanStore()
         self.run_store = run_store or ActionRunStore()
         self.lease_path = lease_path or (StatePaths.from_environment().runtime / "action_center_mutation")
-        self.runtime = runtime or SystemActionRuntime(self.facade, system_manager)
+        self.runtime = runtime or SystemActionRuntime(self.facade, system_manager, run_store=self.run_store)
         self.clock = clock
         self.id_factory = id_factory or (lambda: str(uuid.uuid4()))
         self.release_policy = release_policy
@@ -301,6 +301,12 @@ class ActionCenterOrchestrator:
         lease = self._acquire_lease()
         run_id = ""
         try:
+            if any(candidate.state in {"running", "verifying"} for candidate in self.run_store.list_read_only(strict=True)):
+                raise ActionPlanRejectedError(PolicyDecision(
+                    False,
+                    "verification_pending",
+                    "Another change is running or awaiting verification. Check its result in Activity & Recovery before starting another change.",
+                ))
             plan = self.get_plan(plan_id)
             definition = self._definition_for(plan.action_id)
             now = self.clock()
@@ -703,5 +709,9 @@ class ActionCenterOrchestrator:
             return
         try:
             self.run_store.interrupt_incomplete(now=self.clock())
+        except (OSError, ValueError):
+            # Inspection remains available; mutation will surface the store error.
+            # Never repair or overwrite corrupt history implicitly at startup.
+            return
         finally:
             lease.__exit__(None, None, None)

@@ -100,10 +100,16 @@ class ActionRunStore:
         self.path = path or (StatePaths.from_environment().data / "action_runs.jsonl")
         self.max_runs = max(1, max_runs)
 
-    def _load_unlocked(self, *, migrate: bool = True) -> list[ActionRun]:
+    def _load_unlocked(self, *, migrate: bool = True, strict: bool = False) -> list[ActionRun]:
+        # Any path that can migrate or rewrite state must preserve corrupt input.
+        strict = strict or migrate
         try:
             lines = self.path.read_text(encoding="utf-8").splitlines()
+        except FileNotFoundError:
+            return []
         except OSError:
+            if strict:
+                raise
             return []
         runs: list[ActionRun] = []
         migration_required = False
@@ -111,8 +117,12 @@ class ActionRunStore:
             try:
                 raw = json.loads(line)
             except (json.JSONDecodeError, TypeError):
+                if strict:
+                    raise ValueError("Action history contains an unreadable record.")
                 continue
             if not isinstance(raw, Mapping):
+                if strict:
+                    raise ValueError("Action history contains an invalid record.")
                 continue
             try:
                 version = int(raw.get("action_run_schema_version", 0))
@@ -130,6 +140,8 @@ class ActionRunStore:
             try:
                 runs.append(ActionRun.from_dict(raw))
             except (KeyError, TypeError, ValueError):
+                if strict:
+                    raise ValueError("Action history contains an invalid run.")
                 continue
         if migrate and migration_required:
             self._write_unlocked(runs)
@@ -146,10 +158,10 @@ class ActionRunStore:
             runs = self._load_unlocked()
         return runs[-limit:] if limit is not None else runs
 
-    def list_read_only(self, *, limit: int | None = None) -> List[ActionRun]:
+    def list_read_only(self, *, limit: int | None = None, strict: bool = False) -> List[ActionRun]:
         """Read supported runs without migrating or rewriting their store."""
         with advisory_lock(self.path):
-            runs = self._load_unlocked(migrate=False)
+            runs = self._load_unlocked(migrate=False, strict=strict)
         return runs[-limit:] if limit is not None else runs
 
     def get(self, run_id: str) -> ActionRun | None:
@@ -157,8 +169,14 @@ class ActionRunStore:
 
     def save(self, run: ActionRun) -> None:
         with advisory_lock(self.path):
-            runs = [candidate for candidate in self._load_unlocked() if candidate.run_id != run.run_id]
-            runs.append(run)
+            runs = self._load_unlocked()
+            for index, candidate in enumerate(runs):
+                if candidate.run_id == run.run_id:
+                    runs[index] = run
+                    break
+            else:
+                runs.append(run)
+            # Preserve creation order even across result updates and clock changes.
             self._write_unlocked(runs)
 
     def interrupt_incomplete(self, *, now: float | None = None) -> List[ActionRun]:

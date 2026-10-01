@@ -93,7 +93,7 @@ class ActionExecutor(BaseActionExecutor):
         """
         args = args or []
 
-        if not execution_allowed(command, args, authority=authority):
+        if not execution_allowed(command, args, authority=authority, action_id=action_id):
             result = ActionResult.fail(
                 blocked_execution_message(command, args),
                 exit_code=126,

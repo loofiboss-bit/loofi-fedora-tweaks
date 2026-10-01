@@ -5,6 +5,8 @@ from __future__ import annotations
 import re
 from typing import FrozenSet, Sequence
 
+from core.tweak_commands import tweak_command_class
+
 
 class CommandValidationError(ValueError):
     """Raised when a command fails executor policy validation."""
@@ -60,16 +62,6 @@ COMMAND_ALLOWLIST: FrozenSet[str] = frozenset(
 _WRAPPERS: FrozenSet[str] = frozenset({"pkexec", "flatpak-spawn"})
 _REJECTED_EXECUTABLES: FrozenSet[str] = frozenset({"sudo", "sh", "bash", "zsh", "fish", "dash"})
 _RPM_EVALUATION_FLAGS: FrozenSet[str] = frozenset({"--eval", "-E", "--define", "--macros", "--rcfile"})
-_GNOME_VALUES = {
-    "color-scheme": frozenset({"default", "prefer-light", "prefer-dark"}),
-    "enable-animations": frozenset({"true", "false"}),
-    "text-scaling-factor": frozenset({"1.0", "1.25", "1.5"}),
-    "show-battery-percentage": frozenset({"true", "false"}),
-    "clock-show-seconds": frozenset({"true", "false"}),
-}
-_KDE_READ = ("--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", "--default", "1")
-_KDE_COLOR_READ = ("--file", "kdeglobals", "--group", "General", "--key", "ColorScheme")
-_KDE_WRITE = ("--notify",) + _KDE_READ[:-2]
 _SCHEME_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
 
 
@@ -114,17 +106,8 @@ def validate_command(command: str, args: Sequence[str] | None = None) -> None:
     if executable == "rpm" and any(str(arg).split("=", 1)[0] in _RPM_EVALUATION_FLAGS for arg in args):
         _reject("rpm macro evaluation and configuration flags are rejected by policy")
 
-    if executable == "gsettings":
-        if len(args) not in {3, 4} or args[0] not in {"get", "set"} or args[1] != "org.gnome.desktop.interface":
-            _reject("gsettings is limited to reviewed GNOME interface settings")
-        key = args[2]
-        if key not in _GNOME_VALUES or (args[0] == "get" and len(args) != 3) or (args[0] == "set" and (len(args) != 4 or args[3] not in _GNOME_VALUES[key])):
-            _reject("gsettings key or value is outside the reviewed tweak catalog")
-
-    if executable == "kreadconfig6" and tuple(args) not in {_KDE_READ, _KDE_COLOR_READ}:
-        _reject("kreadconfig6 is limited to reviewed Plasma settings")
-    if executable == "kwriteconfig6" and (tuple(args[:-1]) != _KDE_WRITE or len(args) != len(_KDE_WRITE) + 1 or args[-1] not in {"0", "0.5", "1"}):
-        _reject("kwriteconfig6 is limited to reviewed Plasma animation speeds")
+    if executable in {"gsettings", "kreadconfig6", "kwriteconfig6"} and tweak_command_class(executable, args) is None:
+        _reject("Setting command is outside the reviewed keys, shapes, and value types")
     if executable == "plasma-apply-colorscheme" and tuple(args) != ("--list-schemes",):
         if len(args) != 1 or not _SCHEME_PATTERN.fullmatch(args[0]):
             _reject("Plasma color schemes must be reviewed installed identifiers")

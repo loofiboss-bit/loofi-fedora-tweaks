@@ -5,6 +5,7 @@ from __future__ import annotations
 from typing import Any
 
 from core.tasks.tweaks import TweakState, visible_tweaks
+from core.tweak_commands import values_equal
 from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
@@ -17,6 +18,7 @@ class TweaksPage(QWidget):
 
     refreshRequested = pyqtSignal()
     changeRequested = pyqtSignal(str, str)
+    restoreRequested = pyqtSignal(str, str)
 
     def __init__(self, profile: object, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -24,7 +26,9 @@ class TweaksPage(QWidget):
         self._shown_once = False
         self._busy = False
         self._rows: dict[str, tuple[SettingRow, QComboBox]] = {}
-        self._last_change: tuple[str, str, bool, str] | None = None
+        self._last_changes: dict[str, tuple[str, bool, str, bool]] = {}
+        self._restore_buttons: dict[str, QPushButton] = {}
+        self._restore_notices: dict[str, QLabel] = {}
         self.setObjectName("tweaksPage")
         self.setAccessibleName(self.tr("Fedora tweaks"))
         root = QVBoxLayout(self)
@@ -74,6 +78,21 @@ class TweaksPage(QWidget):
             row.setObjectName(f"tweakRow_{tweak.id}")
             group.add_widget(row)
             self._rows[tweak.id] = (row, control)
+            restore = QPushButton(self.tr("Restore previous value"))
+            restore.setObjectName(f"tweakRestore_{tweak.id}")
+            restore.setAccessibleName(self.tr("Restore previous value for %1").replace("%1", self.tr(tweak.title)))
+            restore.setEnabled(False)
+            restore.hide()
+            restore.clicked.connect(lambda _checked=False, item=tweak.id: self._restore_selected(item))
+            row_layout = row.layout()
+            assert row_layout is not None
+            row_layout.addWidget(restore)
+            self._restore_buttons[tweak.id] = restore
+            notice = QLabel()
+            notice.setWordWrap(True)
+            notice.hide()
+            row_layout.addWidget(notice)
+            self._restore_notices[tweak.id] = notice
             control.activated.connect(lambda _index, item=tweak.id: self._selected(item))
         if not self._rows:
             self.status_label.setText(self.tr("Tweak controls are unavailable until a supported Fedora desktop is detected."))
@@ -106,6 +125,12 @@ class TweaksPage(QWidget):
             return
         self.changeRequested.emit(tweak_id, value)
 
+    def _restore_selected(self, tweak_id: str) -> None:
+        button = self._restore_buttons[tweak_id]
+        source_id = str(button.property("sourceRunId") or "")
+        if not self._busy and button.isEnabled() and source_id:
+            self.restoreRequested.emit(tweak_id, source_id)
+
     def restore_selection(self, tweak_id: str) -> None:
         _row, control = self._rows[tweak_id]
         index = control.findData(control.property("currentValue"))
@@ -117,6 +142,8 @@ class TweaksPage(QWidget):
         self.refresh_button.setEnabled(not busy)
         for _row, control in self._rows.values():
             control.setEnabled(not busy and bool(control.property("ready")))
+        for button in self._restore_buttons.values():
+            button.setEnabled(not busy and bool(button.property("ready")) and bool(button.property("sourceRunId")))
         if message:
             self.status_label.setText(message)
 
@@ -127,6 +154,16 @@ class TweaksPage(QWidget):
             if pair is None:
                 continue
             row, control = pair
+            restore = self._restore_buttons[state.tweak.id]
+            restore.setProperty("sourceRunId", state.restore_run_id)
+            restore.setProperty("restoreValue", state.restore_value)
+            restore.setProperty("ready", state.status == "ready")
+            restore.setEnabled(state.status == "ready" and bool(state.restore_run_id) and not self._busy)
+            restore.setVisible(bool(state.restore_run_id or state.restore_message))
+            notice = self._restore_notices[state.tweak.id]
+            restore_text = self.tr("Previous value: %1").replace("%1", state.restore_value) if state.restore_run_id else self.tr(state.restore_message)
+            notice.setText(restore_text)
+            notice.setVisible(bool(restore_text))
             control.blockSignals(True)
             control.clear()
             control.setProperty("ready", state.status == "ready")
@@ -142,31 +179,54 @@ class TweaksPage(QWidget):
             control.blockSignals(False)
             if state.status != "ready":
                 row.set_feedback(state.message or self.tr("This setting is unavailable."), kind="dependency")
-            elif self._last_change and self._last_change[0] == state.tweak.id:
-                _id, target, success, message = self._last_change
-                if success and state.value == target:
-                    row.set_feedback(self.tr("Saved and verified: %1").replace("%1", state.value), kind="saved")
+            elif state.tweak.id in self._last_changes:
+                target, success, message, restored = self._last_changes[state.tweak.id]
+                if success and values_equal(state.tweak.id, state.value, target):
+                    text = self.tr("Previous value restored and verified: %1") if restored else self.tr("Saved setting verified: %1")
+                    text = text.replace("%1", state.value)
+                    if state.tweak.desktop == "kde":
+                        text += " " + self.tr("Reopen affected applications if the change is not visible yet.")
+                    row.set_feedback(text, kind="saved")
                 else:
                     detail = message or self.tr("The change could not be verified.")
                     row.set_feedback(self.tr("Current value: %1. %2 Refresh and try again.").replace("%1", state.value).replace("%2", detail), kind="error")
             else:
                 row.clear_feedback()
 
-    def set_outcome(self, tweak_id: str, target: str, outcome: object) -> None:
+    def set_outcome(self, tweak_id: str, target: str, outcome: object, *, restored: bool = False) -> None:
         success = bool(getattr(outcome, "success", False))
         message = str(getattr(outcome, "message", ""))
-        self._last_change = (tweak_id, target, success, message)
+        self._last_changes[tweak_id] = (target, success, message, restored)
         row, _control = self._rows[tweak_id]
         if success:
-            row.set_feedback(self.tr("Setting verified. Refreshing its current value…"), kind="changed")
+            row.set_feedback(self.tr("Saved setting verified. Refreshing its current value…"), kind="changed")
         else:
             self.restore_selection(tweak_id)
             row.set_feedback(message or self.tr("The change was not verified."), kind="error")
         self.status_label.setText(message or self.tr("Refreshing current settings…"))
 
+    def set_restore_error(self, tweak_id: str, message: str) -> None:
+        """Invalidate one restoration offer without misreporting other rows."""
+        self.set_busy(False, message)
+        self._last_changes.pop(tweak_id, None)
+        row, control = self._rows[tweak_id]
+        control.setProperty("ready", False)
+        control.setEnabled(False)
+        button = self._restore_buttons[tweak_id]
+        button.setProperty("sourceRunId", "")
+        button.setEnabled(False)
+        row.set_feedback(message, kind="error")
+        notice = self._restore_notices[tweak_id]
+        notice.setText(self.tr("Refresh this setting before trying again."))
+        notice.show()
+
     def set_error(self, message: str) -> None:
         self.set_busy(False, self.tr("Could not read current settings: %1. Refresh to retry.").replace("%1", message))
+        for button in self._restore_buttons.values():
+            button.setProperty("ready", False)
+            button.setEnabled(False)
         for row, control in self._rows.values():
+            control.setProperty("ready", False)
             index = control.findData(control.property("currentValue"))
             if index >= 0:
                 control.setCurrentIndex(index)

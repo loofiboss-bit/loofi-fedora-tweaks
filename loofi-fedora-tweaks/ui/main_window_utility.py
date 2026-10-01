@@ -165,6 +165,9 @@ class MainWindowUtilityMixin:
             tweaks_page.changeRequested.connect(
                 lambda tweak_id, value, owner=tweaks_page: self._start_tweak_change(owner, tweak_id, value)
             )
+            tweaks_page.restoreRequested.connect(
+                lambda tweak_id, source_id, owner=tweaks_page: self._start_tweak_restore(owner, tweak_id, source_id)
+            )
             return cast(QWidget, tweaks_page)
         if destination_id == "fix":
             from ui.fix_workflow import FixWorkflowPage
@@ -213,7 +216,9 @@ class MainWindowUtilityMixin:
         adapter.finished.connect(page.set_states)
         adapter.failed.connect(page.set_error)
         adapter.cancelled.connect(lambda: page.set_error(self.tr("Reading was cancelled.")))
-        return bool(adapter.start(lambda: snapshot(page.profile, SystemActionRuntime(CommandFacade()))))
+        controller = self._utility_operation_controller
+        runtime = controller.orchestrator.runtime if controller is not None else SystemActionRuntime(CommandFacade())
+        return bool(adapter.start(lambda: snapshot(page.profile, runtime)))
 
     def _start_tweak_change(self: Any, page: Any, tweak_id: str, value: str) -> bool:
         """Apply one typed setting through the durable operation controller."""
@@ -222,7 +227,10 @@ class MainWindowUtilityMixin:
         from PyQt6.QtWidgets import QMessageBox
 
         tweak = BY_ID.get(str(tweak_id))
-        if tweak is None or self._utility_operation_adapter is not None:
+        if tweak is None:
+            page.set_error(self.tr("The requested setting is unavailable."))
+            return False
+        if self._utility_operation_adapter is not None:
             page.restore_selection(tweak_id)
             page.set_error(self.tr("Another operation is in progress. Try again when it finishes."))
             return False
@@ -247,6 +255,70 @@ class MainWindowUtilityMixin:
         adapter.cancelled.connect(lambda: page.set_error(self.tr("The operation was cancelled. Refresh to see the current value.")))
         adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
         return bool(adapter.start(lambda: controller.execute(tweak.action_id, {"value": value}, confirmed=True)))
+
+    def _start_tweak_restore(self: Any, page: Any, tweak_id: str, source_id: str) -> bool:
+        """Prepare a source-bound restoration before presenting exact values."""
+        from core.actions.operation_controller import OperationController
+        from core.tasks.tweaks import BY_ID
+
+        if tweak_id not in BY_ID or self._utility_operation_adapter is not None:
+            page.set_error(self.tr("Another operation is in progress or the setting is unavailable. Refresh and try again."))
+            return False
+        if self._utility_operation_controller is None:
+            self._utility_operation_controller = OperationController()
+        controller = self._utility_operation_controller
+        page.set_busy(True, self.tr("Checking the saved change and current value…"))
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(lambda ticket: self._show_tweak_restore_review(page, tweak_id, ticket, adapter))
+        adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
+        adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, self.tr("Restore preparation was cancelled. Refresh to retry.")))
+        return bool(adapter.start(lambda: controller.prepare(f"restore-{tweak_id}", {"source_run_id": source_id})))
+
+    def _show_tweak_restore_review(self: Any, page: Any, tweak_id: str, ticket: Any, adapter: Any) -> None:
+        from core.tasks.tweaks import BY_ID
+        from PyQt6.QtWidgets import QMessageBox
+
+        if ticket.blocked:
+            page.set_restore_error(tweak_id, str(ticket.plan.policy_decision.explanation))
+            adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
+            return
+        facts = ticket.plan.policy_decision.facts
+        answer = QMessageBox.question(
+            self,
+            self.tr("Restore previous value"),
+            self.tr("Restore %1 from %2 to %3? The saved result will be verified.")
+            .replace("%1", self.tr(BY_ID[tweak_id].title))
+            .replace("%2", str(facts["current"]))
+            .replace("%3", str(facts["requested"])),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
+        )
+        if answer != QMessageBox.StandardButton.Yes:
+            page.set_busy(False, self.tr("Restore cancelled. No change was made."))
+            return
+        adapter.stopped.connect(lambda: self._run_tweak_restore(page, tweak_id, ticket))
+
+    def _run_tweak_restore(self: Any, page: Any, tweak_id: str, ticket: Any) -> bool:
+        controller = self._utility_operation_controller
+        if controller is None or self._utility_operation_adapter is not None:
+            page.set_error(self.tr("Another operation is in progress. Refresh when it finishes."))
+            return False
+
+        def operation() -> Any:
+            prepared = controller.confirm(ticket, confirmed=True)
+            if prepared.status != "prepared":
+                return prepared
+            running = controller.run(prepared)
+            return controller.verify(running) if running.status == "verifying" else running
+
+        target = str(ticket.plan.policy_decision.facts["requested"])
+        page.set_busy(True, self.tr("Restoring and verifying the previous value…"))
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(lambda outcome: page.set_outcome(tweak_id, target, outcome, restored=True))
+        adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
+        adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, self.tr("Restoration was cancelled. Refresh to see the current value.")))
+        adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
+        return bool(adapter.start(operation))
 
     def _review_health_action(self: Any, page: Any, action_id: str, parameters: Any) -> bool:
         """Prepare one Health action before asking for explicit user approval."""

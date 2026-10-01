@@ -1,17 +1,35 @@
 {
-  "version": "v30.1.0",
-  "started_at": "20260924_121534",
+  "version": "v30.2.0",
+  "target_version": "v30.2.0",
+  "started_at": "20260930",
   "status": "active",
-  "target_version": "v30.1.0",
   "phase": "publication",
-  "baseline_commit": "d60856160a08991be8a7e0f76554593833e41fed",
-  "product_version": "v30.1.0",
-  "product_codename": "Personalize",
-  "target_codename": "Personalize",
-  "current_public_release": "v29.0.1",
-  "current_release_commit": "4eb839685badd4e7fc532c0360f0a4b6746c5c9f",
-  "baseline_product_version": "v29.0.1",
-  "baseline_product_codename": "Utility",
+  "baseline_commit": "737a550ee716da8b9ddff5b125cf165db57ef4e9",
+  "product_version": "v30.2.0",
+  "product_codename": "Comfort",
+  "target_codename": "Comfort",
+  "baseline_product_version": "v30.1.0",
+  "baseline_product_codename": "Personalize",
+  "current_public_release": "v30.1.0",
+  "current_release_commit": "737a550ee716da8b9ddff5b125cf165db57ef4e9",
+  "publication_authorized": true,
+  "delivery": "public-release",
+  "physical_gates": {
+    "kde": "unverified",
+    "gnome": "unverified",
+    "traditional": "unverified",
+    "atomic": "unverified",
+    "manual_keyboard": "unverified",
+    "scaling": "unverified",
+    "audible_orca": "unverified"
+  },
+  "external_release_gates": {
+    "commit_push_pr": "authorized-pending",
+    "github_release": "authorized-pending",
+    "copr": "authorized-pending",
+    "public_wiki": "authorized-pending",
+    "workstation_install": "not-authorized"
+  },
   "v24_historical_tag_collision": {
     "tag": "v24.0.0",
     "historical_commit": "dd2a23f8bfb837d3f20e2fc65e63c21a11cb8cd8",
@@ -76,42 +94,6 @@
     "status": "preserved-unmodified",
     "utility_release_identity": "v29.0.1"
   },
-  "physical_gates": {
-    "fedora44_kde_wayland": "unverified",
-    "fresh_atomic": "unverified",
-    "manual_keyboard": "unverified",
-    "audible_orca": "unverified",
-    "polkit": "unverified",
-    "reboot_completion": "unverified",
-    "clean_kde_install": "unverified"
-  },
-  "external_release_gates": {
-    "commit_and_exact_tag": "pending-public-readback",
-    "ci_and_codeql": "pending-public-readback",
-    "github_assets_checksums_attestations": "pending-public-readback",
-    "copr_packages_signatures": "pending-public-readback",
-    "clean_fedora44_install": "pending-public-readback",
-    "public_docs_and_wiki": "pending-public-readback"
-  },
-  "current_public_release_evidence": {
-    "release_commit": "4eb839685badd4e7fc532c0360f0a4b6746c5c9f",
-    "tag": "v29.0.1",
-    "tag_object": "d63ae0c078a3f8a9099c8b67c3c9c008a47ddf39",
-    "published_at": "2026-09-15T12:35:15Z",
-    "auto_release_run": 34968749905,
-    "ci_run": 34968750136,
-    "codeql_run": 34968749065,
-    "github_release_url": "https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v29.0.1",
-    "github_release_assets": 5,
-    "verified_attestations": 1,
-    "github_release_checksums": "passed",
-    "copr_build": 10987802,
-    "copr_chroot": "fedora-44-x86_64",
-    "copr_evr": "1:29.0.1-1.fc44",
-    "publication_report": "docs/reports/V29.0.1_RELEASE_PUBLICATION.md"
-  },
-  "bumped_at": "2026-09-24T12:15:34.297622+00:00",
-  "publication_authorized": true,
   "v30_historical_tag_collision": {
     "tag": "v30.0.0",
     "tag_object": "59da1113e73f436e03fb4809976b4009f0736550",
@@ -119,5 +101,7 @@
     "historical_codename": "Distribution & Reliability",
     "status": "preserved-unmodified",
     "candidate_release_identity": "v30.1.0"
-  }
+  },
+  "publication_authorized_at": "2026-10-01",
+  "publication_authorization": "User: Lansera och g\u00e5 live fullt ut"
 }

@@ -3,22 +3,16 @@
 from __future__ import annotations
 
 import re
-from dataclasses import dataclass
+from dataclasses import dataclass, replace
 from typing import Callable, Sequence
 
 from core.actions.contracts import ActionRuntime
 from core.executor.action_result import ActionResult
+from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector
 
 
-_SCHEME = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
-_PROFILE = frozenset({"power-saver", "balanced", "performance"})
-_GNOME_KEYS = {
-    "gnome-color": "color-scheme",
-    "gnome-animations": "enable-animations",
-    "gnome-text-scale": "text-scaling-factor",
-    "gnome-battery": "show-battery-percentage",
-    "gnome-clock": "clock-show-seconds",
-}
+_SCHEME = SCHEME_PATTERN
+_GNOME_KEYS = GNOME_KEYS
 
 
 @dataclass(frozen=True)
@@ -40,6 +34,9 @@ class TweakState:
     value: str = ""
     choices: tuple[tuple[str, str], ...] = ()
     message: str = ""
+    restore_run_id: str = ""
+    restore_value: str = ""
+    restore_message: str = ""
 
 
 TWEAKS = (
@@ -48,6 +45,12 @@ TWEAKS = (
     Tweak("gnome-text-scale", "Text size", "Scale interface text without changing display resolution.", "Appearance", "gnome", "set-gnome-text-scale", (("1.0", "100%"), ("1.25", "125%"), ("1.5", "150%"))),
     Tweak("gnome-battery", "Battery percentage", "Show the battery percentage in the GNOME status area.", "Desktop", "gnome", "set-gnome-battery", (("true", "On"), ("false", "Off"))),
     Tweak("gnome-clock", "Clock seconds", "Show seconds in the GNOME top bar clock.", "Desktop", "gnome", "set-gnome-clock", (("true", "On"), ("false", "Off"))),
+    Tweak("gnome-clock-format", "Clock format", "Use a 12-hour or 24-hour GNOME clock.", "Desktop", "gnome", "set-gnome-clock-format", (("12h", "12 hours"), ("24h", "24 hours"))),
+    Tweak("gnome-clock-weekday", "Clock weekday", "Show the weekday alongside the GNOME clock.", "Desktop", "gnome", "set-gnome-clock-weekday", (("true", "Show"), ("false", "Hide"))),
+    Tweak("kde-single-click", "Open files and folders", "Choose single-click or double-click opening in KDE applications.", "Interaction", "kde", "set-kde-single-click", (("true", "Single click"), ("false", "Double click"))),
+    Tweak("kde-double-click-interval", "Double-click interval", "Choose how much time is allowed between the two clicks.", "Interaction", "kde", "set-kde-double-click-interval", (("200", "200 ms"), ("400", "400 ms"), ("600", "600 ms"), ("800", "800 ms"))),
+    Tweak("kde-smooth-scroll", "Smooth scrolling", "Enable or disable smooth scrolling in supported KDE applications.", "Interaction", "kde", "set-kde-smooth-scroll", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-scrollbar-click", "Scrollbar track click", "Choose whether clicking the scrollbar track moves one page or jumps to the clicked position.", "Interaction", "kde", "set-kde-scrollbar-click", (("true", "Move one page"), ("false", "Jump to position"))),
     Tweak("kde-color", "Color scheme", "Choose an installed Plasma color scheme; custom schemes remain available.", "Appearance", "kde", "set-kde-color", ()),
     Tweak("kde-animation", "Animation speed", "Choose a Plasma animation speed; custom values remain untouched until changed.", "Appearance", "kde", "set-kde-animation", (("0", "Instant"), ("0.5", "Fast"), ("1", "Normal"))),
     Tweak("power-profile", "Power profile", "Choose an available power profile for this computer.", "Power", "all", "set-power-profile", (), True),
@@ -76,21 +79,23 @@ def allowed_value(tweak: Tweak, value: str, choices: Sequence[tuple[str, str]] |
     return value in {choice for choice, _label in (choices if choices is not None else tweak.choices)}
 
 
-def command_for(tweak: Tweak, value: str) -> list[str]:
+def command_for(tweak: Tweak, value: str, *, restoring: bool = False) -> list[str]:
+    if not valid_value(tweak.id, value):
+        raise ValueError("Unsupported setting literal.")
     if tweak.id in _GNOME_KEYS:
-        if not allowed_value(tweak, value):
+        if not (restoring or allowed_value(tweak, value)):
             raise ValueError("Unsupported GNOME tweak value.")
         return ["gsettings", "set", "org.gnome.desktop.interface", _GNOME_KEYS[tweak.id], value]
     if tweak.id == "kde-color":
         if not _SCHEME.fullmatch(value):
             raise ValueError("Unsupported Plasma color scheme identifier.")
         return ["plasma-apply-colorscheme", value]
-    if tweak.id == "kde-animation":
-        if not allowed_value(tweak, value):
-            raise ValueError("Unsupported Plasma animation speed.")
-        return ["kwriteconfig6", "--notify", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", value]
+    if tweak.id in KDE_KEYS:
+        if not (restoring or allowed_value(tweak, value)):
+            raise ValueError("Unsupported Plasma setting choice.")
+        return kde_write_vector(tweak.id, value)
     if tweak.id == "power-profile":
-        if value not in _PROFILE:
+        if not valid_value(tweak.id, value):
             raise ValueError("Unsupported power profile.")
         return ["powerprofilesctl", "set", value]
     raise ValueError("Unknown tweak.")
@@ -101,8 +106,8 @@ def _read_vector(tweak: Tweak) -> list[str]:
         return ["gsettings", "get", "org.gnome.desktop.interface", _GNOME_KEYS[tweak.id]]
     if tweak.id == "kde-color":
         return ["plasma-apply-colorscheme", "--list-schemes"]
-    if tweak.id == "kde-animation":
-        return ["kreadconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", "--default", "1"]
+    if tweak.id in KDE_KEYS:
+        return kde_read_vector(tweak.id)
     if tweak.id == "power-profile":
         return ["powerprofilesctl", "get"]
     raise ValueError("Unknown tweak.")
@@ -150,22 +155,10 @@ def read_tweak(
         if not available.success:
             return TweakState(tweak, "unavailable", message="Available power profiles could not be read.")
         choices = tuple((name, name.replace("-", " ").title()) for name in ("power-saver", "balanced", "performance") if re.search(rf"(?m)^\s*\*?\s*{name}:\s*$", available.stdout))
-    elif tweak.id in {"gnome-color"}:
-        value = output.strip("'")
-    elif tweak.id in {"gnome-animations", "gnome-battery", "gnome-clock"}:
-        value = output.lower()
-    elif tweak.id == "gnome-text-scale":
-        try:
-            value = str(float(output))
-        except ValueError:
-            return TweakState(tweak, "error", message="The current text scale could not be parsed.")
     else:
-        value = output
-    if tweak.id == "kde-animation":
-        try:
-            value = f"{float(output):g}"
-        except ValueError:
-            return TweakState(tweak, "error", message="The current animation speed could not be parsed.")
+        value = output.strip("'") if tweak.id in {"gnome-color", "gnome-clock-format"} else output
+    if tweak.id != "kde-color" and not valid_value(tweak.id, value):
+        return TweakState(tweak, "error", message="The current setting value is invalid or outside its supported range.")
     if not value:
         return TweakState(tweak, "error", message="The current value could not be read.")
     if not choices:
@@ -174,4 +167,12 @@ def read_tweak(
 
 
 def snapshot(profile: object, runtime: ActionRuntime) -> tuple[TweakState, ...]:
-    return tuple(read_tweak(tweak, profile, runtime.execute_read_only) for tweak in visible_tweaks(profile))
+    from core.tasks.tweak_history import restoration_for, read_tweak_runs
+
+    runs, history_error = read_tweak_runs(runtime)
+    states = []
+    for tweak in visible_tweaks(profile):
+        state = read_tweak(tweak, profile, runtime.execute_read_only)
+        offer = restoration_for(tweak, state, runs)
+        states.append(replace(state, restore_run_id=offer.source_run_id, restore_value=offer.before, restore_message=history_error or offer.message))
+    return tuple(states)

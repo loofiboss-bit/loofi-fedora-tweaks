@@ -1,5 +1,18 @@
 # Changelog
 
+## v30.2.0 — Comfort (2026-10-01)
+
+- Add four KDE click/scroll settings and two GNOME clock settings, for fourteen catalog controls.
+- Restore the latest eligible verified Loofi tweak change through explicit confirmation and separate verification.
+- Block drift, later attempts, consumed restores, removed choices, and missing history; preserve exact valid numeric values.
+- Preserve source-bound restoration and separate physical qualification from automated results.
+
+## v30.1.0 — Personalize (2026-09-24)
+
+- Present Home, Apps, Tweaks, Health, and Updates as the five primary destinations.
+- Add eight state-backed desktop/power controls and independent readback.
+- Move everyday storage maintenance to Health and preserve saved routes/action IDs.
+
 ## v29.0.1 — Utility (2026-09-15)
 
 - Replaced the maintenance-oriented shell with Home, Install, Tune, Fix, and Update.

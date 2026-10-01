@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 30.1.0 "Personalize" release; physical desktop validation remains pending.
+> Version 30.2.0 "Comfort" local candidate; physical desktop validation remains pending.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -63,12 +63,30 @@ rolls back, or reboots automatically.
 
 ## Tweaks
 
-Search settings and choose one supported value. Each row shows the current
-value, availability, and a result after the application reads it back. GNOME
-offers color preference, animations, text size, battery percentage, and clock
-seconds. KDE offers installed color schemes and animation speed. Both desktops
-offer available power profiles. Custom KDE values are shown without changing
-them. A power profile change asks for confirmation.
+Search settings and choose one supported value. Each row shows its current
+value, explanation, availability, and independently verified saved result.
+Missing tools or unreadable values explain why the change is unavailable.
+
+| Desktop | Controls |
+| --- | --- |
+| KDE | Installed color scheme, animation speed, file opening by single/double click, double-click interval (200/400/600/800 ms), smooth scrolling, scrollbar click behavior, power profile |
+| GNOME | Color preference, animations, text size, battery percentage, clock seconds, 12/24-hour clock format, weekday in the clock, power profile |
+
+Custom numeric values remain visible and are preserved exactly when captured
+for restoration. A power profile change asks for confirmation. Saved KDE
+configuration may require reopening affected applications; saved verification
+does not prove an immediate effect in open programs.
+
+Choose **Restore previous value** on an eligible row to review its current and
+previous values, then confirm. Loofi offers only the latest verified normal
+change per setting. It reads the setting again before restoring and blocks if
+it changed externally, a later change attempt exists, a scheme/profile was
+removed, or history is missing. Older runs without restoration metadata and
+pruned history cannot be restored. Successful restoration consumes the offer;
+a new normal change creates a new offer. Restoration records a separate run
+and verifies it independently. There is no automatic rollback, bulk restore,
+or redo. A failed write or verification is shown as a failure rather than a
+saved result.
 
 ## Health
 
@@ -137,3 +155,11 @@ reported version, Fedora variant, exact page, and reproduction steps in an
 issue. See [Troubleshooting](TROUBLESHOOTING.md),
 [State integrity](STATE_INTEGRITY.md), and
 [Verified operations](VERIFIED_MAINTENANCE.md) for deeper guidance.
+
+### Custom scalar restoration bounds
+
+Restoration preserves the captured scalar without display rounding. GNOME text
+scale must be between 0.5 and 3; KDE animation duration must be finite and
+nonnegative; KDE double-click interval must be an integer between 100 and
+2000 ms. These custom values come only from verified saved evidence, not
+arbitrary caller input. Invalid or unreadable values block modification.

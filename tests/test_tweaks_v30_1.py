@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 import os
+from dataclasses import replace
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -36,6 +37,12 @@ READ_OUTPUTS = {
     "gnome-text-scale": "1.25\n",
     "gnome-battery": "false\n",
     "gnome-clock": "true\n",
+    "gnome-clock-format": "'24h'\n",
+    "gnome-clock-weekday": "true\n",
+    "kde-single-click": "false\n",
+    "kde-double-click-interval": "400\n",
+    "kde-smooth-scroll": "true\n",
+    "kde-scrollbar-click": "false\n",
     "kde-color": " * BreezeDark\n * CustomTheme (current color scheme)\n * BreezeLight\n",
     "kde-animation": "0.70710678\n",
     "power-profile": "balanced\n",
@@ -69,11 +76,11 @@ class FakeRuntime:
 
 
 class TestTweakCatalog(unittest.TestCase):
-    def test_eight_controls_are_desktop_scoped_on_both_backends(self) -> None:
-        self.assertEqual(len(TWEAKS), 8)
+    def test_fourteen_controls_are_desktop_scoped_on_both_backends(self) -> None:
+        self.assertEqual(len(TWEAKS), 14)
         for backend in ("dnf5", "rpm_ostree"):
-            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 6)
-            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 3)
+            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 8)
+            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 7)
         self.assertEqual(visible_tweaks(profile("unknown")), ())
         self.assertEqual(visible_tweaks(profile("kde", "bootc")), ())
 
@@ -97,7 +104,7 @@ class TestTweakCatalog(unittest.TestCase):
         speed = read_tweak(BY_ID["kde-animation"], runtime.platform_profile(), runtime.execute_read_only)
         self.assertEqual(scheme.value, "CustomTheme")
         self.assertIn(("CustomTheme", "CustomTheme"), scheme.choices)
-        self.assertEqual(speed.value, "0.707107")
+        self.assertEqual(speed.value, "0.70710678")
         self.assertNotIn((speed.value, "Custom"), speed.choices)
         self.assertTrue(all(call[0] != "kwriteconfig6" for call in runtime.calls))
 
@@ -145,11 +152,11 @@ class TestTweakCatalog(unittest.TestCase):
         runtime = FakeRuntime("gnome")
         definition = ActionCatalog().get("set-gnome-battery")
         self.assertIsNotNone(definition)
-        plan = SimpleNamespace(parameters={"value": "true"})
-        failed = definition.verifier(SimpleNamespace(), plan, runtime)
+        plan = SimpleNamespace(parameters={"value": "true"}, policy_decision=SimpleNamespace(facts={"current": "false"}))
+        failed = definition.verifier(SimpleNamespace(action_id="set-gnome-battery"), plan, runtime)
         self.assertEqual(failed.state, "failed")
         runtime.output["gnome-battery"] = "true\n"
-        success = definition.verifier(SimpleNamespace(), plan, runtime)
+        success = definition.verifier(SimpleNamespace(action_id="set-gnome-battery"), plan, runtime)
         self.assertEqual(success.state, "succeeded")
 
     def test_command_policy_rejects_unreviewed_settings_and_options(self) -> None:
@@ -202,7 +209,7 @@ class TestTweakPage(unittest.TestCase):
             self.assertEqual(control.currentData(), "false")
             page.set_outcome("gnome-battery", "true", SimpleNamespace(success=True, message="Verified"))
             self.assertNotEqual(row.feedback_label.property("feedbackKind"), "saved")
-            page.set_states((SimpleNamespace(tweak=state.tweak, status="ready", value="true", choices=state.choices, message=""),))
+            page.set_states((replace(state, value="true"),))
             self.assertEqual(row.feedback_label.property("feedbackKind"), "saved")
             page.search_input.setText("battery")
             self.assertTrue(row.isVisibleTo(page))

@@ -1,4 +1,4 @@
-# GUI Reference — v29.0.1 "Utility"
+# GUI Reference — v30.2.0 "Comfort"
 
 The interface is organised around five jobs. Selecting a destination or search
 result only navigates; execution begins from a reviewable task on its owning
@@ -7,10 +7,10 @@ page.
 ```text
 Header: [Search] [Activity & Recovery] [Settings]
 ├── Home
-├── Install
-├── Tune
-├── Fix
-└── Update
+├── Apps
+├── Tweaks
+├── Health
+└── Updates
 ```
 
 ## Home
@@ -20,32 +20,47 @@ shortcuts to the four jobs, and current activity.
 
 ![Home](images/home-dashboard.png)
 
-## Install
+## Apps
 
-Install provides a curated searchable app catalog with category filters,
+<a id="install"></a>
+
+Apps provides a curated searchable app catalog with category filters,
 installed state, source labels, and multi-select review. Flatpak is preferred
 for ordinary GUI applications. Traditional Fedora may use RPM for trusted CLI
 and system-integrated tools; Atomic RPM layering is advanced and reboot-aware.
 
 ![Install](images/install-app.png)
 
-## Tune
+## Tweaks
 
-Tune starts from Minimal, Recommended, or Power User. The checked operations
-remain editable. Profiles contain implemented, verifiable operations only and
-exclude high-risk, boot, display, and manual-only changes.
+<a id="tune"></a>
 
-![Tune](images/tune-profile.png)
+Tweaks shows fourteen capability-scoped controls: seven on KDE and eight on
+GNOME including shared power profiles. Current values, unavailable explanations,
+and saved results stay on each row. KDE includes file opening, double-click
+interval, smooth scrolling, and scrollbar behavior; GNOME includes clock format
+and weekday display. Custom numeric values remain visible.
 
-## Fix
+**Restore previous value** reviews the latest eligible verified change. Fresh
+preflight blocks drift, later attempts, missing history, and removed choices.
+A separately verified restore consumes its offer. KDE saved configuration may
+require affected applications to reopen. There are no profiles or bulk restore.
 
-Fix begins with a symptom. Read-only diagnostics present findings before one
+The gallery captures predate Comfort; see [Screenshots](Screenshots).
+
+## Health
+
+<a id="fix"></a>
+
+Health begins with a symptom. Read-only diagnostics present findings before one
 supported operation, instruction, or native-settings handoff is offered. There
 is no **Fix all**.
 
 ![Fix](images/troubleshoot.png)
 
-## Update
+## Updates
+
+<a id="update"></a>
 
 System, Flatpak, and Firmware are separate cards with freshness, count,
 details, and one primary action: **Check**, **Update**, **Continue**, or
