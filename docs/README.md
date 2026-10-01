@@ -46,8 +46,9 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 - [Roadmap](../ROADMAP.md) — current release status
 - [Changelog](../CHANGELOG.md) — complete historical record
 - [Release notes](releases/RELEASE_NOTES.md) — release-note index
-- [v30.2.0 Comfort](releases/RELEASE-NOTES-v30.2.0.md) — active implementation
+- [v30.2.0 Comfort](releases/RELEASE-NOTES-v30.2.0.md) — published release
 - [v30.2.0 local qualification](reports/V30.2.0_LOCAL_QUALIFICATION.md) — evidence and remaining physical checks
+- [v30.2.0 public release evidence](reports/V30.2.0_RELEASE_PUBLICATION.md) — GitHub, COPR, and wiki readback
 - [v30.1.0 Personalize release notes](releases/RELEASE-NOTES-v30.1.0.md) — current release
 - [v30.0.1 Steady candidate notes](releases/RELEASE-NOTES-v30.0.1.md) — preceding local work
 - [v29.0.1 Utility public release](releases/RELEASE-NOTES-v29.0.1.md) — previous public release

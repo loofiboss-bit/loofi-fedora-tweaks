@@ -35,7 +35,7 @@ GitHub, COPR, and wiki publication. Workstation installation remains outside sco
 
 ## Publication
 
-- [ ] ID: P1 [post-publish] | Files: release evidence and active documentation | Dep: Q1 | Agent: Codex | Description: Publish through the canonical master pipeline and independently read back tag lineage, GitHub assets/checksums/attestation, COPR build/package/repository, and public wiki.
+- [x] ID: P1 [post-publish] | Files: release evidence and active documentation | Dep: Q1 | Agent: Codex | Description: Publish through the canonical master pipeline and independently read back tag lineage, GitHub assets/checksums/attestation, COPR build/package/repository, and public wiki.
   Acceptance: Every named surface verified; immutable release tag retained; physical checks remain unverified.
   Docs: `docs/reports/V30.2.0_RELEASE_PUBLICATION.md`
   Tests: canonical release pipeline and independent public readback

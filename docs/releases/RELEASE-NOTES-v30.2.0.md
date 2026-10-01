@@ -1,6 +1,6 @@
 # Release Notes — v30.2.0 "Comfort"
 
-**Release date:** 2026-10-01.
+**Release date:** 2026-10-01. Published on GitHub and Fedora 44 COPR.
 
 ## Changes
 
@@ -17,7 +17,7 @@
 
 ## Qualification
 
-See the [local qualification report](../reports/V30.2.0_LOCAL_QUALIFICATION.md)
+See the [local qualification report](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V30.2.0_LOCAL_QUALIFICATION.md)
 for the passed local automated and package gates: 4,968 tests, 1,035 subtests,
 85.98 percent line coverage, and extracted RPM/source CLI smoke checks.
 Physical KDE/GNOME, Traditional/Atomic, manual keyboard, scaling, and audible
@@ -33,3 +33,12 @@ restore, or automatic rollback. Existing routes/action IDs remain readable.
 
 The baseline is v30.1.0 master `737a550`. On 2026-10-01 the user authorized full GitHub, COPR, and wiki publication.
 Workstation installation remains outside scope.
+
+## Public verification
+
+The canonical pipeline passed on source `8becbf696fae3d931d7602e05b195cc1850775c8`.
+The immutable annotated tag, five GitHub assets, checksums, and attestations
+passed independent readback. COPR build `11060103` succeeded for
+`fedora-44-x86_64`; the signed package and repository container installation
+read back `1:30.2.0-1.fc44` / version `30.2.0`. The public wiki was independently
+read back. See the [publication report](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V30.2.0_RELEASE_PUBLICATION.md).

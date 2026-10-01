@@ -1,6 +1,6 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v30.2.0 "Comfort" local candidate.
+> Canonical architecture reference for the v30.2.0 "Comfort" release.
 > The supported product is a desktop-neutral Fedora application built with
 > Python 3.12+ and PyQt6.
 

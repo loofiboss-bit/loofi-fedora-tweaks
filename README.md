@@ -15,7 +15,7 @@
 
 <p align="center">
   <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0">
-    <img src="https://img.shields.io/badge/Release_preparation-v30.2.0-orange?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.2.0 release preparation"/>
+    <img src="https://img.shields.io/badge/Release-v30.2.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.2.0 release"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
@@ -46,14 +46,14 @@ click behavior; GNOME adds clock format and weekday display. Restore reads the
 saved history and checks the current setting before writing. A verified saved
 KDE setting may require affected applications to reopen.
 
-The latest published version remains
-[v30.1.0 Personalize](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0).
-Full GitHub, COPR, and wiki publication was authorized on 2026-10-01 and is
-in progress. Installing from COPR installs the published package.
-Local evidence is recorded in the
-[qualification report](docs/reports/V30.2.0_LOCAL_QUALIFICATION.md).
-Physical GNOME, KDE, Atomic, keyboard, scaling, and Orca checks remain
-`unverified`. Publication and workstation installation are separate actions.
+The current public release is
+[v30.2.0 Comfort](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0).
+GitHub release assets, checksums, attestations, and the signed Fedora 44 COPR
+package passed independent public readback. See the
+[publication report](docs/reports/V30.2.0_RELEASE_PUBLICATION.md) and
+[local qualification](docs/reports/V30.2.0_LOCAL_QUALIFICATION.md).
+Physical GNOME, KDE, Traditional/Atomic, keyboard, scaling, and Orca checks remain
+`unverified`. Publishing the package does not update the workstation automatically.
 
 The maintained repository-wide line-coverage gate is 85%.
 

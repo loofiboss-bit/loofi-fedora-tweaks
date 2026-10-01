@@ -2,16 +2,16 @@
   "version": "v30.2.0",
   "target_version": "v30.2.0",
   "started_at": "20260930",
-  "status": "active",
-  "phase": "publication",
+  "status": "complete",
+  "phase": "published",
   "baseline_commit": "737a550ee716da8b9ddff5b125cf165db57ef4e9",
   "product_version": "v30.2.0",
   "product_codename": "Comfort",
   "target_codename": "Comfort",
   "baseline_product_version": "v30.1.0",
   "baseline_product_codename": "Personalize",
-  "current_public_release": "v30.1.0",
-  "current_release_commit": "737a550ee716da8b9ddff5b125cf165db57ef4e9",
+  "current_public_release": "v30.2.0",
+  "current_release_commit": "8becbf696fae3d931d7602e05b195cc1850775c8",
   "publication_authorized": true,
   "delivery": "public-release",
   "physical_gates": {
@@ -24,10 +24,10 @@
     "audible_orca": "unverified"
   },
   "external_release_gates": {
-    "commit_push_pr": "authorized-pending",
-    "github_release": "authorized-pending",
-    "copr": "authorized-pending",
-    "public_wiki": "authorized-pending",
+    "commit_push_pr": "passed-public-readback",
+    "github_release": "passed-public-readback",
+    "copr": "passed-public-readback",
+    "public_wiki": "passed-public-readback",
     "workstation_install": "not-authorized"
   },
   "v24_historical_tag_collision": {
@@ -103,5 +103,24 @@
     "candidate_release_identity": "v30.1.0"
   },
   "publication_authorized_at": "2026-10-01",
-  "publication_authorization": "User: Lansera och g\u00e5 live fullt ut"
+  "publication_authorization": "User: Lansera och g\u00e5 live fullt ut",
+  "current_public_release_evidence": {
+    "tag": "v30.2.0",
+    "tag_object": "407e27de0e8502cb6e5cc58f6a2c42c5bcee910f",
+    "release_commit": "8becbf696fae3d931d7602e05b195cc1850775c8",
+    "published_at": "2026-10-01T10:04:29Z",
+    "auto_release_run": 36844458625,
+    "auto_release_attempt": 2,
+    "ci_run": 36844458707,
+    "codeql_run": 36844456523,
+    "github_release_url": "https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0",
+    "github_release_assets": 5,
+    "github_release_checksums": "passed",
+    "verified_attestations": 5,
+    "copr_build": 11060103,
+    "copr_chroot": "fedora-44-x86_64",
+    "copr_evr": "1:30.2.0-1.fc44",
+    "copr_signature": "passed",
+    "publication_report": "docs/reports/V30.2.0_RELEASE_PUBLICATION.md"
+  }
 }

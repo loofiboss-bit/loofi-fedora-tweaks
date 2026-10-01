@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 30.2.0 "Comfort" local candidate; physical desktop validation remains pending.
+> Version 30.2.0 "Comfort"; physical desktop validation remains pending.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 

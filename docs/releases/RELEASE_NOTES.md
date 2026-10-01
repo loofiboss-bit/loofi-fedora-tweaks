@@ -14,8 +14,8 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **Local candidate:** [v30.2.0 Comfort](RELEASE-NOTES-v30.2.0.md).
-- **Published release:** [v30.1.0 Personalize](RELEASE-NOTES-v30.1.0.md).
+- **Published release:** [v30.2.0 Comfort](RELEASE-NOTES-v30.2.0.md).
+- **Previous release:** [v30.1.0 Personalize](RELEASE-NOTES-v30.1.0.md).
 - v30.0.1 "Steady" remains an unpublished local candidate.
 - Previous public release: [v29.0.1 Utility](RELEASE-NOTES-v29.0.1.md)
 

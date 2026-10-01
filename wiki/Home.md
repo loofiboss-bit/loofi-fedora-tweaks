@@ -4,11 +4,11 @@ Welcome to the official documentation for Loofi Fedora Tweaks, a curated
 Fedora utility for installing applications, tuning safe settings, diagnosing
 problems, and updating the system.
 
-**Release preparation:** v30.2.0 "Comfort"; full publication is in progress.
+**Current release:** [v30.2.0 "Comfort"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0), available on GitHub and Fedora 44 COPR.
 Tweaks provides fourteen capability-scoped controls and explicit, verified
 restoration of the latest eligible saved change.
 
-**Published release:** [v30.1.0 "Personalize"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0)
+**Previous release:** [v30.1.0 "Personalize"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0)
 
 ![Loofi Fedora Tweaks Home](images/home-dashboard.png)
 
