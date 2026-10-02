@@ -8,7 +8,7 @@ from typing import Callable, Sequence
 
 from core.actions.contracts import ActionRuntime
 from core.executor.action_result import ActionResult
-from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector
+from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector, gnome_schema
 
 
 _SCHEME = SCHEME_PATTERN
@@ -25,6 +25,7 @@ class Tweak:
     action_id: str
     choices: tuple[tuple[str, str], ...]
     system_wide: bool = False
+    privileged: bool = False
 
 
 @dataclass(frozen=True)
@@ -47,13 +48,21 @@ TWEAKS = (
     Tweak("gnome-clock", "Clock seconds", "Show seconds in the GNOME top bar clock.", "Desktop", "gnome", "set-gnome-clock", (("true", "On"), ("false", "Off"))),
     Tweak("gnome-clock-format", "Clock format", "Use a 12-hour or 24-hour GNOME clock.", "Desktop", "gnome", "set-gnome-clock-format", (("12h", "12 hours"), ("24h", "24 hours"))),
     Tweak("gnome-clock-weekday", "Clock weekday", "Show the weekday alongside the GNOME clock.", "Desktop", "gnome", "set-gnome-clock-weekday", (("true", "Show"), ("false", "Hide"))),
+    Tweak("gnome-button-layout", "Window titlebar buttons", "Choose which window control buttons appear in GNOME application titlebars.", "Desktop", "gnome", "set-gnome-button-layout", ((":appmenu,close", "Close only (Fedora default)"), (":minimize,maximize,close", "Minimize, Maximize, Close"), ("close,minimize,maximize:", "Left side controls"))),
+    Tweak("gnome-tap-to-click", "Touchpad tap-to-click", "Tap the touchpad to click instead of pressing down.", "Interaction", "gnome", "set-gnome-tap-to-click", (("true", "On"), ("false", "Off"))),
+    Tweak("gnome-night-light", "Night Light", "Warm display colors at night to reduce eye strain.", "Appearance", "gnome", "set-gnome-night-light", (("true", "On"), ("false", "Off"))),
+    Tweak("gnome-sound-overamp", "Sound over-amplification", "Allow volume above 100% in GNOME volume controls.", "Desktop", "gnome", "set-gnome-sound-overamp", (("true", "On (>100%)"), ("false", "Off (100% max)"))),
+    Tweak("gnome-font-antialiasing", "Font antialiasing", "Configure font rendering mode for sharp text display.", "Appearance", "gnome", "set-gnome-font-antialiasing", (("rgba", "Subpixel LCD (ClearType)"), ("grayscale", "Grayscale"), ("none", "None"))),
     Tweak("kde-single-click", "Open files and folders", "Choose single-click or double-click opening in KDE applications.", "Interaction", "kde", "set-kde-single-click", (("true", "Single click"), ("false", "Double click"))),
     Tweak("kde-double-click-interval", "Double-click interval", "Choose how much time is allowed between the two clicks.", "Interaction", "kde", "set-kde-double-click-interval", (("200", "200 ms"), ("400", "400 ms"), ("600", "600 ms"), ("800", "800 ms"))),
     Tweak("kde-smooth-scroll", "Smooth scrolling", "Enable or disable smooth scrolling in supported KDE applications.", "Interaction", "kde", "set-kde-smooth-scroll", (("true", "On"), ("false", "Off"))),
     Tweak("kde-scrollbar-click", "Scrollbar track click", "Choose whether clicking the scrollbar track moves one page or jumps to the clicked position.", "Interaction", "kde", "set-kde-scrollbar-click", (("true", "Move one page"), ("false", "Jump to position"))),
     Tweak("kde-color", "Color scheme", "Choose an installed Plasma color scheme; custom schemes remain available.", "Appearance", "kde", "set-kde-color", ()),
     Tweak("kde-animation", "Animation speed", "Choose a Plasma animation speed; custom values remain untouched until changed.", "Appearance", "kde", "set-kde-animation", (("0", "Instant"), ("0.5", "Fast"), ("1", "Normal"))),
+    Tweak("kde-tap-to-click", "Touchpad tap-to-click", "Tap the touchpad to click in KDE Plasma.", "Interaction", "kde", "set-kde-tap-to-click", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-night-color", "Night Color", "Warm display colors at night in KDE Plasma.", "Appearance", "kde", "set-kde-night-color", (("true", "On"), ("false", "Off"))),
     Tweak("power-profile", "Power profile", "Choose an available power profile for this computer.", "Power", "all", "set-power-profile", (), True),
+    Tweak("dnf-parallel-downloads", "DNF parallel downloads", "Speed up package downloads by downloading multiple packages simultaneously.", "System & Packaging", "all", "set-dnf-parallel-downloads", (("3", "3 (Fedora default)"), ("5", "5 (Fast)"), ("10", "10 (Ultra fast - Recommended)"), ("15", "15 (Maximum)")), True, True),
 )
 BY_ID = {tweak.id: tweak for tweak in TWEAKS}
 BY_ACTION = {tweak.action_id: tweak for tweak in TWEAKS}
@@ -85,7 +94,7 @@ def command_for(tweak: Tweak, value: str, *, restoring: bool = False) -> list[st
     if tweak.id in _GNOME_KEYS:
         if not (restoring or allowed_value(tweak, value)):
             raise ValueError("Unsupported GNOME tweak value.")
-        return ["gsettings", "set", "org.gnome.desktop.interface", _GNOME_KEYS[tweak.id], value]
+        return ["gsettings", "set", gnome_schema(tweak.id), _GNOME_KEYS[tweak.id], value]
     if tweak.id == "kde-color":
         if not _SCHEME.fullmatch(value):
             raise ValueError("Unsupported Plasma color scheme identifier.")
@@ -98,18 +107,24 @@ def command_for(tweak: Tweak, value: str, *, restoring: bool = False) -> list[st
         if not valid_value(tweak.id, value):
             raise ValueError("Unsupported power profile.")
         return ["powerprofilesctl", "set", value]
+    if tweak.id == "dnf-parallel-downloads":
+        if not (restoring or allowed_value(tweak, value)):
+            raise ValueError("Unsupported DNF parallel downloads choice.")
+        return ["dnf5", "config-manager", "setopt", f"max_parallel_downloads={value}"]
     raise ValueError("Unknown tweak.")
 
 
 def _read_vector(tweak: Tweak) -> list[str]:
     if tweak.id in _GNOME_KEYS:
-        return ["gsettings", "get", "org.gnome.desktop.interface", _GNOME_KEYS[tweak.id]]
+        return ["gsettings", "get", gnome_schema(tweak.id), _GNOME_KEYS[tweak.id]]
     if tweak.id == "kde-color":
         return ["plasma-apply-colorscheme", "--list-schemes"]
     if tweak.id in KDE_KEYS:
         return kde_read_vector(tweak.id)
     if tweak.id == "power-profile":
         return ["powerprofilesctl", "get"]
+    if tweak.id == "dnf-parallel-downloads":
+        return ["dnf5", "--dump-main-config"]
     raise ValueError("Unknown tweak.")
 
 
@@ -136,6 +151,8 @@ def read_tweak(
     desktop = _profile_desktop(profile)
     if desktop == "unknown" or tweak.desktop not in {"all", desktop}:
         return TweakState(tweak, "unavailable", message="This Fedora desktop or deployment is not supported.")
+    if tweak.id == "dnf-parallel-downloads" and bool(getattr(profile, "is_atomic", False)):
+        return TweakState(tweak, "unavailable", message="DNF configuration is not supported on Atomic Fedora.")
     result = execute_read_only(_read_vector(tweak), action_id=f"{tweak.action_id}-read", timeout=8)
     if not result.success:
         return TweakState(tweak, "unavailable", message=result.message or "The required system tool is unavailable.")
@@ -155,8 +172,17 @@ def read_tweak(
         if not available.success:
             return TweakState(tweak, "unavailable", message="Available power profiles could not be read.")
         choices = tuple((name, name.replace("-", " ").title()) for name in ("power-saver", "balanced", "performance") if re.search(rf"(?m)^\s*\*?\s*{name}:\s*$", available.stdout))
+    elif tweak.id == "dnf-parallel-downloads":
+        match = re.search(r"(?m)^\s*max_parallel_downloads\s*=\s*(\d+)", output)
+        if match:
+            value = match.group(1)
+        elif output.isdigit():
+            value = output
+        else:
+            value = ""
+        choices = tweak.choices
     else:
-        value = output.strip("'") if tweak.id in {"gnome-color", "gnome-clock-format"} else output
+        value = output.strip("'") if tweak.id in {"gnome-color", "gnome-clock-format", "gnome-button-layout", "gnome-font-antialiasing"} else output
     if tweak.id != "kde-color" and not valid_value(tweak.id, value):
         return TweakState(tweak, "error", message="The current setting value is invalid or outside its supported range.")
     if not value:

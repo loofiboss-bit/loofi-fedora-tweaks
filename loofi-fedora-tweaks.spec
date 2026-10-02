@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        30.2.1
+Version:        31.0.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -96,6 +96,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Fri Oct 02 2026 Loofi <loofi@example.com> - 31.0.0-1
+- Mastery: Expanded tweak catalog (GNOME, KDE, DNF5), full CLI parity (tweaks/apps), and dynamic package manager resolution
+
 * Fri Oct 02 2026 Loofi <loofi@example.com> - 30.2.1-1
 - Comfort local candidate: private support exports, state integrity and reliable results
 

@@ -40,6 +40,11 @@
   </provides>
 
   <releases>
+    <release version="31.0.0" date="2026-10-02" type="development">
+      <description>
+        <p>v31.0.0 "Mastery": Expanded tweak catalog to 22 controls across GNOME, KDE, and DNF5, full CLI parity for tweaks and apps, and dynamic package manager resolution.</p>
+      </description>
+    </release>
     <release version="30.2.1" date="2026-10-02" type="development">
       <description>
         <p>v30.2.1 "Comfort" local candidate: private support exports, safe Activity shutdown, preserved state, accurate diagnostics and structured firmware verification. Not published.</p>

@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v30.2.1 "Comfort" — Local Candidate
+# Loofi Fedora Tweaks v31.0.0 "Mastery" — Local Candidate
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -23,12 +23,9 @@
 
 ## What Loofi does
 
-The local v30.2.1 candidate focuses on private support exports, safe Activity
-shutdown, preserved damaged state, accurate diagnostics, device-bound firmware
-verification, and application selections that survive filtering. See the
-[candidate notes](docs/releases/RELEASE-NOTES-v30.2.1.md),
-[review](docs/reports/V30.2.1_STABILIZATION_REVIEW.md), and
-[qualification](docs/reports/V30.2.1_LOCAL_QUALIFICATION.md). Publication and
+The local v31.0.0 candidate delivers comprehensive desktop setting mastery and
+command-line parity, expanding the tweak catalog across GNOME, KDE, and DNF5.
+See the [candidate notes](docs/releases/RELEASE-NOTES-v31.0.0.md). Publication and
 workstation installation are outside this candidate's authority.
 
 Loofi Fedora Tweaks brings common Fedora jobs into one small, desktop-neutral

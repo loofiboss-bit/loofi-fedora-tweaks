@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 30.2.1 "Comfort"; physical desktop validation remains pending.
+> Version 31.0.0 "Mastery"; physical desktop validation remains pending.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see

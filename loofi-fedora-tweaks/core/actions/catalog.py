@@ -82,6 +82,14 @@ ACTIVE_ACTION_IDS = frozenset(
         "set-kde-double-click-interval",
         "set-kde-smooth-scroll",
         "set-kde-scrollbar-click",
+        "set-gnome-button-layout",
+        "set-gnome-tap-to-click",
+        "set-gnome-night-light",
+        "set-gnome-sound-overamp",
+        "set-gnome-font-antialiasing",
+        "set-kde-tap-to-click",
+        "set-kde-night-color",
+        "set-dnf-parallel-downloads",
         "restore-gnome-color",
         "restore-gnome-animations",
         "restore-gnome-text-scale",
@@ -89,13 +97,21 @@ ACTIVE_ACTION_IDS = frozenset(
         "restore-gnome-clock",
         "restore-gnome-clock-format",
         "restore-gnome-clock-weekday",
+        "restore-gnome-button-layout",
+        "restore-gnome-tap-to-click",
+        "restore-gnome-night-light",
+        "restore-gnome-sound-overamp",
+        "restore-gnome-font-antialiasing",
         "restore-kde-color",
         "restore-kde-animation",
         "restore-kde-single-click",
         "restore-kde-double-click-interval",
         "restore-kde-smooth-scroll",
         "restore-kde-scrollbar-click",
+        "restore-kde-tap-to-click",
+        "restore-kde-night-color",
         "restore-power-profile",
+        "restore-dnf-parallel-downloads",
     }
 )
 
@@ -379,7 +395,7 @@ def _render_dnf_clean(_parameters: Mapping[str, Any], runtime: ActionRuntime) ->
     manager = runtime.package_manager()
     if manager not in {"dnf", "dnf5"}:
         return []
-    return ["dnf5", "clean", "all"]
+    return [manager, "clean", "all"]
 
 
 def _preflight_dnf_clean(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
@@ -421,7 +437,6 @@ def _verify_dnf_clean(_run: ActionRun, _plan: object, runtime: ActionRuntime) ->
     manager = runtime.package_manager()
     if manager not in {"dnf", "dnf5"}:
         return ActionResult.fail("Package manager changed after execution.", action_id="dnf-clean-all")
-    manager = "dnf5"
     repo = runtime.execute_read_only([manager, "repolist", "--enabled"], action_id="dnf-clean-all-verify-repos", timeout=60)
     if not repo.success:
         return ActionResult.fail("Enabled repository health check failed.", exit_code=repo.exit_code, action_id="dnf-clean-all")

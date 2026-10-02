@@ -26,6 +26,8 @@ class TweaksPage(QWidget):
         self._shown_once = False
         self._busy = False
         self._rows: dict[str, tuple[SettingRow, QComboBox]] = {}
+        self._groups: dict[str, Card] = {}
+        self._group_rows: dict[str, list[SettingRow]] = {}
         self._last_changes: dict[str, tuple[str, bool, str, bool]] = {}
         self._restore_buttons: dict[str, QPushButton] = {}
         self._restore_notices: dict[str, QLabel] = {}
@@ -62,13 +64,13 @@ class TweaksPage(QWidget):
         self.status_label.setWordWrap(True)
         intro.add_widget(self.status_label)
 
-        groups: dict[str, Card] = {}
         for tweak in visible_tweaks(profile):
-            group = groups.get(tweak.group)
+            group = self._groups.get(tweak.group)
             if group is None:
                 group = Card(self.tr(tweak.group))
                 group.setObjectName(f"tweaksGroup{tweak.group}")
-                groups[tweak.group] = group
+                self._groups[tweak.group] = group
+                self._group_rows[tweak.group] = []
                 self.scaffold.add_widget(group)
             control = QComboBox()
             control.setObjectName(f"tweakControl_{tweak.id}")
@@ -78,6 +80,7 @@ class TweaksPage(QWidget):
             row.setObjectName(f"tweakRow_{tweak.id}")
             group.add_widget(row)
             self._rows[tweak.id] = (row, control)
+            self._group_rows[tweak.group].append(row)
             restore = QPushButton(self.tr("Restore previous value"))
             restore.setObjectName(f"tweakRestore_{tweak.id}")
             restore.setAccessibleName(self.tr("Restore previous value for %1").replace("%1", self.tr(tweak.title)))
@@ -115,6 +118,10 @@ class TweaksPage(QWidget):
         for row, _control in self._rows.values():
             text = f"{row.title_label.text()} {row.description_label.text()}".casefold()
             row.setVisible(not needle or needle in text)
+        for group_name, rows in self._group_rows.items():
+            card = self._groups.get(group_name)
+            if card is not None:
+                card.setVisible(any(not r.isHidden() for r in rows))
 
     def _selected(self, tweak_id: str) -> None:
         if self._busy:

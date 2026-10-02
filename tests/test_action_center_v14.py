@@ -33,7 +33,7 @@ from core.executor.action_result import ActionResult
 class FakeRuntime:
     def __init__(self):
         self.atomic = False
-        self.manager = "dnf"
+        self.manager = "dnf5"
         self.host_version = "44"
         self.busy = False
         self.failed = ["broken.service"]

@@ -39,13 +39,21 @@ READ_OUTPUTS = {
     "gnome-clock": "true\n",
     "gnome-clock-format": "'24h'\n",
     "gnome-clock-weekday": "true\n",
+    "gnome-button-layout": "':appmenu,close'\n",
+    "gnome-tap-to-click": "true\n",
+    "gnome-night-light": "false\n",
+    "gnome-sound-overamp": "false\n",
+    "gnome-font-antialiasing": "'rgba'\n",
     "kde-single-click": "false\n",
     "kde-double-click-interval": "400\n",
     "kde-smooth-scroll": "true\n",
     "kde-scrollbar-click": "false\n",
     "kde-color": " * BreezeDark\n * CustomTheme (current color scheme)\n * BreezeLight\n",
     "kde-animation": "0.70710678\n",
+    "kde-tap-to-click": "true\n",
+    "kde-night-color": "false\n",
     "power-profile": "balanced\n",
+    "dnf-parallel-downloads": "max_parallel_downloads = 10\n",
 }
 
 
@@ -76,11 +84,11 @@ class FakeRuntime:
 
 
 class TestTweakCatalog(unittest.TestCase):
-    def test_fourteen_controls_are_desktop_scoped_on_both_backends(self) -> None:
-        self.assertEqual(len(TWEAKS), 14)
+    def test_twenty_two_controls_are_desktop_scoped_on_both_backends(self) -> None:
+        self.assertEqual(len(TWEAKS), 22)
         for backend in ("dnf5", "rpm_ostree"):
-            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 8)
-            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 7)
+            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 14)
+            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 10)
         self.assertEqual(visible_tweaks(profile("unknown")), ())
         self.assertEqual(visible_tweaks(profile("kde", "bootc")), ())
 

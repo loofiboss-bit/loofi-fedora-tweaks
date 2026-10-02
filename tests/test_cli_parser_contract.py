@@ -17,8 +17,10 @@ EXPECTED_TOP_LEVEL_COMMANDS = (
     "activity",
     "doctor",
     "support-bundle",
+    "tweaks",
+    "apps",
 )
-EXPECTED_PARSER_SNAPSHOT_SHA256 = "1ab05c5b546a1d8440385f58cd134dfcfe59d48b3d80625ba91a31a625339e3a"
+EXPECTED_PARSER_SNAPSHOT_SHA256 = "6a832975d11029e0acbee233ff24a799a82f33b2bd17d4bf4bb05d054fe69842"
 
 
 def _normalize(value):
