@@ -1,16 +1,20 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v30.2.0 "Comfort" retains application-owned state under the
+Loofi Fedora Tweaks v30.2.1 "Comfort" retains application-owned state under the
 user's standard XDG config, data, cache, and runtime directories. Physical desktop validation remains unverified. State is separate from the Fedora deployment
 and is preserved when the RPM is removed.
 
 ## State Doctor
 
-Run the read-only diagnostic command:
+Open **Health → System Check** to collect the state-integrity findings, or use
+the corresponding diagnostic command:
 
 ```bash
-loofi-fedora-tweaks --cli doctor
+loofi-fedora-tweaks --cli --json check
 ```
+
+The separate `doctor` command inspects system dependencies, Fedora support,
+and Polkit availability; it does not run the application-state validator.
 
 State Doctor checks registered paths, permissions, JSON/JSONL readability,
 SQLite integrity, stale locks, and recovery availability without changing
@@ -73,10 +77,17 @@ new deployment is booted; Loofi does not restart the machine itself.
 ## If state is damaged
 
 1. Stop any second package or maintenance transaction.
-2. Run `loofi-fedora-tweaks --cli doctor` and save its output.
+2. Run Health → System Check (or `loofi-fedora-tweaks --cli --json check`)
+   and save the state-integrity findings and source errors.
 3. Preserve the original files and last-known-good copy.
 4. Create a support bundle and review it before sharing.
-5. Follow the domain-specific recovery guidance shown by the doctor.
+5. Follow the domain-specific recovery guidance shown by System Check.
+
+Plan saving and migration refuse malformed JSON, invalid documents, and
+invalid records. Neither the original `action_plans.json` nor its `.lkg` backup
+is replaced on that refusal. Preserve both files and inspect a copy before
+explicit recovery; a new save is not a repair. If a source cannot be loaded,
+System Check reports it as unavailable rather than treating it as empty.
 
 Never delete a corrupt input before a recovery copy exists. Report the exact
 state domain, schema, version, and reproduction steps in the issue tracker.

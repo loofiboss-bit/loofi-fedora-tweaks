@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 30.2.0 "Comfort"; physical desktop validation remains pending.
+> Version 30.2.1 "Comfort"; physical desktop validation remains pending.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

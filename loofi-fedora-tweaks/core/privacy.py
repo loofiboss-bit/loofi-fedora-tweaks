@@ -10,9 +10,10 @@ from typing import Any
 
 _SECRET_KEY_RE = re.compile(r"(?i)(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)")
 _SECRET_VALUE_RE = re.compile(
-    r"(?i)\b(token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)"
-    r"(?:\s*[:=]\s*|\s+)([^\s&]+)"
+    r"(?i)\b([A-Za-z0-9_-]*(?:token|password|passwd|secret|api[_-]?key|private[_-]?key|access[_-]?key|credential)[A-Za-z0-9_-]*)"
+    r"(?:[\"']?\s*[:=]\s*|\s+)(\"(?:\\.|[^\"\\])*(?:\"|$)|'(?:\\.|[^'\\])*(?:'|$)|[^\s&]+)"
 )
+_URL_CREDENTIAL_RE = re.compile(r"(?i)([a-z][a-z0-9+.-]*://)[^/\s:@]+:[^/\s@]+@")
 _AUTHORIZATION_RE = re.compile(r"(?i)(\bauthorization\s*:\s*)(bearer|basic)\s+([^\s,;]+)")
 _HOME_RE = re.compile(r"/home/[^/\s]+")
 _EMAIL_RE = re.compile(r"([A-Za-z0-9._%+-])[A-Za-z0-9._%+-]*(@[A-Za-z0-9.-]+)")
@@ -41,6 +42,7 @@ def _mask_ipv6_candidate(match: re.Match[str]) -> str:
 def redact_text(text: str, *, limit: int = 6000) -> str:
     """Mask private values in free-form text."""
     masked = _HOME_RE.sub("/home/<user>", text or "")
+    masked = _URL_CREDENTIAL_RE.sub(r"\1<masked>@", masked)
     masked = _AUTHORIZATION_RE.sub(r"\1\2 <masked>", masked)
     masked = _SECRET_VALUE_RE.sub(r"\1=<masked>", masked)
     masked = _EMAIL_RE.sub(r"\1***\2", masked)
@@ -54,7 +56,7 @@ def redact_text(text: str, *, limit: int = 6000) -> str:
 
 def redact_payload(value: Any, key_name: str = "") -> Any:
     """Recursively mask private values while preserving JSON shape."""
-    if _SECRET_KEY_RE.search(key_name):
+    if _SECRET_KEY_RE.search(key_name) or (isinstance(value, str) and key_name.lower() in {"authorization", "proxy-authorization"}):
         return "<masked>"
     if isinstance(value, dict):
         return {str(key): redact_payload(item, str(key)) for key, item in value.items()}
@@ -65,3 +67,13 @@ def redact_payload(value: Any, key_name: str = "") -> Any:
     if isinstance(value, str):
         return redact_text(value)
     return value
+
+
+def redact_command(command: list[str]) -> list[str]:
+    """Mask secret option values even when an argv flag and value are separate."""
+    result = []
+    secret_next = False
+    for part in command:
+        result.append("<masked>" if secret_next else redact_text(part))
+        secret_next = bool(part.startswith("-") and "=" not in part and _SECRET_KEY_RE.search(part))
+    return result

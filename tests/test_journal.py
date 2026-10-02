@@ -220,7 +220,7 @@ class TestExportSupportBundle(unittest.TestCase):
     @patch.object(JournalManager, "_get_system_info", return_value="sys data")
     @patch.object(JournalManager, "export_panic_log")
     def test_creates_zip_bundle(self, mock_panic, mock_sys, mock_recent, mock_run):
-        mock_panic.return_value = Result(True, "ok")
+        mock_panic.side_effect = lambda path, **kwargs: (path.write_text("panic data"), Result(True, "ok"))[1]
         mock_run.return_value = MagicMock(returncode=0, stdout="no failed")
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "bundle.zip"
@@ -235,7 +235,7 @@ class TestExportSupportBundle(unittest.TestCase):
     @patch.object(JournalManager, "_get_system_info", return_value="")
     @patch.object(JournalManager, "export_panic_log")
     def test_handles_systemctl_failure(self, mock_panic, mock_sys, mock_recent, mock_run):
-        mock_panic.return_value = Result(True, "ok")
+        mock_panic.side_effect = lambda path, **kwargs: (path.write_text("panic data"), Result(True, "ok"))[1]
         with tempfile.TemporaryDirectory() as tmpdir:
             out = Path(tmpdir) / "b.zip"
             result = JournalManager.export_support_bundle(out)

@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v30.2.0 "Comfort"
+# Loofi Fedora Tweaks v30.2.1 "Comfort" — Local Candidate
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -22,6 +22,14 @@
 </p>
 
 ## What Loofi does
+
+The local v30.2.1 candidate focuses on private support exports, safe Activity
+shutdown, preserved damaged state, accurate diagnostics, device-bound firmware
+verification, and application selections that survive filtering. See the
+[candidate notes](docs/releases/RELEASE-NOTES-v30.2.1.md),
+[review](docs/reports/V30.2.1_STABILIZATION_REVIEW.md), and
+[qualification](docs/reports/V30.2.1_LOCAL_QUALIFICATION.md). Publication and
+workstation installation are outside this candidate's authority.
 
 Loofi Fedora Tweaks brings common Fedora jobs into one small, desktop-neutral
 utility. The interface is organised around the work users want to complete:
@@ -56,6 +64,10 @@ Physical GNOME, KDE, Traditional/Atomic, keyboard, scaling, and Orca checks rema
 `unverified`. Publishing the package does not update the workstation automatically.
 
 The maintained repository-wide line-coverage gate is 85%.
+
+Fedora 43 and 44 are runtime compatibility targets. Actual RPM qualification
+is recorded per build and environment; runtime compatibility does not establish
+physical desktop, Atomic, firmware, or authorization-agent qualification.
 
 ## Install
 

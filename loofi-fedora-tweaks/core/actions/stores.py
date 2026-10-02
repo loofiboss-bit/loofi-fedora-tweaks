@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import math
 import time
 from pathlib import Path
 from typing import List, Mapping
@@ -20,6 +21,32 @@ class ActionStoreVersionError(ValueError):
     """Raised rather than overwriting state written by a newer application."""
 
 
+def _validate_plan_record(raw: Mapping) -> None:
+    """Reject fields that the historical reader would silently coerce or drop."""
+    for name in ("plan_id", "action_id"):
+        if not isinstance(raw.get(name), str) or not raw[name].strip():
+            raise ValueError(f"Invalid persisted {name}.")
+    for name in ("parameters", "policy_decision"):
+        if name in raw and not isinstance(raw[name], Mapping):
+            raise ValueError(f"Invalid persisted {name}.")
+    policy = raw.get("policy_decision", {})
+    if "facts" in policy and not isinstance(policy["facts"], Mapping):
+        raise ValueError("Invalid persisted policy facts.")
+    for name in ("preview", "affected_resources"):
+        if name in raw and (not isinstance(raw[name], list) or any(not isinstance(item, str) for item in raw[name])):
+            raise ValueError(f"Invalid persisted {name}.")
+    history = raw.get("state_history", [])
+    if not isinstance(history, list) or any(not isinstance(item, Mapping) for item in history):
+        raise ValueError("Invalid persisted state history.")
+    for name in ("created_at", "expires_at"):
+        if name in raw and (isinstance(raw[name], bool) or not math.isfinite(float(raw[name]))):
+            raise ValueError(f"Invalid persisted {name}.")
+    if "state" in raw and raw["state"] not in {"planned", "ready", "needs_review", "blocked"}:
+        raise ValueError("Invalid persisted plan state.")
+    if raw.get("finding_context") is not None and not isinstance(raw["finding_context"], Mapping):
+        raise ValueError("Invalid persisted finding context.")
+
+
 class ActionPlanStore:
     """Atomic JSON store retaining the newest 50 plans."""
 
@@ -32,12 +59,15 @@ class ActionPlanStore:
             payload = json.loads(self.path.read_text(encoding="utf-8"))
         except FileNotFoundError:
             return []
-        except (OSError, json.JSONDecodeError, TypeError, ValueError):
-            return []
+        except (json.JSONDecodeError, TypeError, ValueError) as exc:
+            raise ValueError("Action plans are unreadable; preserve the file and review State Doctor before recovery.") from exc
         if not isinstance(payload, Mapping):
-            return []
+            raise ValueError("Action plans contain an invalid document; preserve the file and review State Doctor before recovery.")
         try:
-            version = int(payload.get("schema_version", 0))
+            raw_version = payload.get("schema_version", 0)
+            if isinstance(raw_version, bool) or not isinstance(raw_version, (int, str)) or not str(raw_version).isdigit():
+                raise ValueError("Invalid plan schema version.")
+            version = int(raw_version)
         except (TypeError, ValueError) as exc:
             raise ActionStoreVersionError(
                 "Action Center plan state has an invalid schema version; preserve it "
@@ -48,17 +78,18 @@ class ActionPlanStore:
                 f"Action Center plan state uses unsupported schema version {version}; "
                 "preserve it and use a compatible newer application."
             )
-        raw_plans = payload.get("plans", [])
+        raw_plans = payload.get("plans")
         if not isinstance(raw_plans, list):
-            return []
+            raise ValueError("Action plans contain an invalid plan list; preserve the file and review State Doctor before recovery.")
         plans: list[ActionPlan] = []
         for raw in raw_plans:
             if not isinstance(raw, Mapping):
-                continue
+                raise ValueError("Action plans contain an invalid record; preserve the file and review State Doctor before recovery.")
             try:
+                _validate_plan_record(raw)
                 plans.append(ActionPlan.from_dict(raw))
-            except (KeyError, TypeError, ValueError):
-                continue
+            except (KeyError, TypeError, ValueError) as exc:
+                raise ValueError("Action plans contain an invalid plan; preserve the file and review State Doctor before recovery.") from exc
         if migrate and version in {1, 2, 3}:
             self._write_unlocked(plans)
         return plans

@@ -382,7 +382,20 @@ def _validate_release_surface(root: Path, version: str, codename: str | None, no
     readme = _read_text(README_FILE)
     if tag not in readme or (codename and codename not in readme):
         errors.append(f"README missing current release {tag} {codename or ''}".strip())
-    if f"releases/tag/{tag}" not in readme:
+    try:
+        candidate_lock = json.loads(RACE_LOCK_FILE.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        candidate_lock = {}
+    local_candidate = (
+        isinstance(candidate_lock, dict)
+        and candidate_lock.get("version") == tag
+        and candidate_lock.get("delivery") == "local-candidate"
+        and candidate_lock.get("publication_authorized") is False
+    )
+    if local_candidate:
+        if f"docs/releases/RELEASE-NOTES-{tag}.md" not in readme or "local candidate" not in readme.lower():
+            errors.append(f"README local candidate missing explicit status or notes link for {tag}")
+    elif f"releases/tag/{tag}" not in readme:
         errors.append(f"README release badge/link missing {tag}")
 
     roadmap = _read_text(ROADMAP_FILE)

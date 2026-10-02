@@ -12,7 +12,7 @@ from dataclasses import dataclass
 from typing import Any, cast
 
 from core.actions.stores import ActionPlanStore, ActionRunStore
-from core.diagnostics.daily_maintenance import DailyMaintenanceService, MaintenanceCard
+from core.diagnostics.daily_maintenance import DailyMaintenanceService, MaintenanceCard, root_usage_percent
 from core.observability.privacy import redact_payload
 from core.observability.snapshot import HealthSnapshot
 from core.observability.timeline import HealthTimelineStore
@@ -32,7 +32,6 @@ from core.system_check.models import (
 from services.storage.reclaim import ReclaimProbeService
 from services.system.system import SystemManager
 
-Collector = Callable[[bool, float], tuple[SystemFinding, ...]]
 ProgressCallback = Callable[[CheckProgress], None]
 QUICK_PROFILE_ID = "system-check-quick-v1"
 FIXTURE_PROFILE_ID = "system-check-fixture-v1"
@@ -47,6 +46,18 @@ _ALL_VARIANTS: frozenset[SupportedVariant] = frozenset({"traditional", "atomic"}
 _UNIT_PATTERN = re.compile(r"^[A-Za-z0-9_.@:-]+$")
 _PACKAGE_RECLAIM_THRESHOLD = 512 * 1024 * 1024
 _JOURNAL_RECLAIM_THRESHOLD = 1024 * 1024 * 1024
+
+
+@dataclass(frozen=True)
+class CollectorResult:
+    """Successful evidence and sub-probe errors from one bounded collector."""
+
+    findings: tuple[SystemFinding, ...] = ()
+    source_errors: tuple[CheckSourceError, ...] = ()
+    has_success: bool = True
+
+
+Collector = Callable[[bool, float], tuple[SystemFinding, ...] | CollectorResult]
 
 
 @dataclass(frozen=True)
@@ -132,11 +143,11 @@ class SystemCheckService:
         def emit_progress(source_id: str, stage: CheckProgressStage) -> None:
             if progress_callback is None:
                 return
-            unavailable = tuple(sorted(error.source_id for error in errors))
+            unavailable = tuple(sorted({error.source_id for error in errors}))
             progress = CheckProgress(
                 source_id=source_id,
                 stage=stage,
-                completed_sources=len(completed_sources) + len(errors),
+                completed_sources=len(set(completed_sources) | {error.source_id for error in errors}),
                 total_sources=len(self.collectors),
                 elapsed_seconds=max(0.0, self.monotonic() - worker_started_at),
                 unavailable_sources=unavailable,
@@ -146,14 +157,14 @@ class SystemCheckService:
             except (RuntimeError, TypeError, ValueError):
                 return
 
-        def invoke(spec: CollectorSpec) -> tuple[SystemFinding, ...]:
+        def invoke(spec: CollectorSpec) -> tuple[SystemFinding, ...] | CollectorResult:
             with starts_lock:
                 worker_starts[spec.source_id] = self.monotonic()
             return spec.collect(atomic, self.clock())
 
         worker_started_at = self.monotonic()
         executor = ThreadPoolExecutor(max_workers=min(4, len(self.collectors)), thread_name_prefix="system-check")
-        futures: dict[Future[tuple[SystemFinding, ...]], CollectorSpec] = {
+        futures: dict[Future[tuple[SystemFinding, ...] | CollectorResult], CollectorSpec] = {
             executor.submit(invoke, spec): spec for spec in self.collectors
         }
         pending = set(futures)
@@ -189,12 +200,21 @@ class SystemCheckService:
                         duration = max(0.0, (now - began) * 1000.0)
                         durations[spec.source_id] = duration
                         try:
-                            collected = future.result()
-                            for finding in collected:
+                            raw_result = future.result()
+                            collected = raw_result if isinstance(raw_result, CollectorResult) else CollectorResult(raw_result)
+                            for finding in collected.findings:
                                 validate_finding(finding)
-                            findings.extend(collected)
-                            completed_sources.append(spec.source_id)
-                            emit_progress(spec.source_id, "completed")
+                            findings.extend(collected.findings)
+                            errors.extend(CheckSourceError(
+                                spec.source_id,
+                                error.reason_code,
+                                str(redact_payload(error.message)),
+                                duration,
+                                error.timed_out,
+                            ) for error in collected.source_errors)
+                            if collected.has_success:
+                                completed_sources.append(spec.source_id)
+                            emit_progress(spec.source_id, "failed" if collected.source_errors else "completed")
                         except Exception as exc:  # noqa: BLE001 - collector isolation boundary
                             errors.append(CheckSourceError(
                                 spec.source_id,
@@ -297,14 +317,27 @@ class SystemCheckService:
             ))
         return tuple(findings)
 
-    def _collect_maintenance(self, atomic: bool, collected_at: float) -> tuple[SystemFinding, ...]:
+    def _collect_maintenance(self, atomic: bool, collected_at: float) -> CollectorResult:
         report = self.maintenance_service.collect_quick()
         if report.atomic != atomic:
             raise RuntimeError("Maintenance collector returned a conflicting Fedora variant.")
         findings: list[SystemFinding] = []
+        errors: list[CheckSourceError] = []
         for card in report.cards:
+            reason = card.error_reason_code
+            if card.id == "disk-usage" and card.state != "error" and _root_usage_percent(card.details) is None:
+                reason = "probe-invalid-output"
+            if card.state == "error" or reason:
+                errors.append(CheckSourceError(
+                    "maintenance",
+                    f"{card.id}-{reason or 'probe-failed'}",
+                    f"{card.title}: {card.summary}" if card.state == "error" else f"{card.title}: The query returned invalid root filesystem usage.",
+                    0.0,
+                    timed_out=reason == "probe-timeout",
+                ))
+                continue
             findings.extend(self._findings_from_card(card, atomic, collected_at))
-        return tuple(findings)
+        return CollectorResult(tuple(findings), tuple(errors), not report.cards or len(errors) < len(report.cards))
 
     def _findings_from_card(
         self,
@@ -337,14 +370,14 @@ class SystemCheckService:
             return findings
         if card.id == "disk-usage":
             usage = _root_usage_percent(card.details)
-            if card.state == "error" or (usage is not None and usage >= 90):
+            if usage is not None and usage >= 90:
                 disk_facts: dict[str, Any] = {"root_usage_percent": usage, "state": card.state}
                 return [SystemFinding.build(
                     finding_id="root-disk-pressure",
                     category="storage",
                     severity="critical" if usage is not None and usage >= 95 else "attention",
                     title="Root filesystem needs attention",
-                    summary=card.summary,
+                    summary=f"Root filesystem usage is {usage:g}%.",
                     evidence=self._evidence("maintenance", disk_facts, collected_at),
                     applicable_variants=_ALL_VARIANTS,
                     freshness_state="fresh",
@@ -510,8 +543,7 @@ class SystemCheckService:
 
 
 def _root_usage_percent(details: str) -> float | None:
-    percentages = re.findall(r"\b(\d{1,3})%\b", str(details))
-    return float(percentages[-1]) if percentages else None
+    return root_usage_percent(details)
 
 
 def _failed_service_units(details: str) -> tuple[str, ...]:

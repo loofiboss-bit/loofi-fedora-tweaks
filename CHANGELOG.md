@@ -1,5 +1,17 @@
 # Changelog
 
+## [30.2.1] - Local candidate - "Comfort"
+
+- Redact every support-archive member and replace completed exports atomically with private permissions.
+- Protect action-log permissions and serialize append/trim operations.
+- Keep Activity workers alive until actual thread termination and reject invalid date filters before collection.
+- Block writes and migration over corrupt plan storage while preserving original files and backups.
+- Parse disk-use percentages correctly and retain useful findings with explicit partial source failures.
+- Bind firmware verification to structured device, GUID, target-release, checksum, and update-state evidence.
+- Preserve application selections across search and category filters, including full review summaries.
+- Synchronize the manual and candidate documentation; retain the fourteen-control catalog and outer schema v4.
+- Keep publication, installation, and physical desktop qualification outside local delivery.
+
 ## [30.2.0] - 2026-10-01 - "Comfort"
 
 - Add KDE file opening, double-click interval, smooth scrolling, and scrollbar click behavior.

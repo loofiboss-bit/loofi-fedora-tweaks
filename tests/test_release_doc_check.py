@@ -1,10 +1,52 @@
 """Tests for scripts/check_release_docs.py."""
 
 import importlib.util
+import json
 import sys
+import tempfile
 import unittest
 from pathlib import Path
 from unittest.mock import MagicMock, patch
+
+
+class TestLocalCandidateAuthority(unittest.TestCase):
+    def setUp(self):
+        self.directory = tempfile.TemporaryDirectory()
+        self.addCleanup(self.directory.cleanup)
+        self.root = Path(self.directory.name)
+        self.module = _load_module("check_release_docs_local_candidate", Path("scripts/check_release_docs.py"))
+        _write_release_files(self.root)
+        _set_module_paths(self.module, self.root)
+        self.version = self.module.extract_version()
+        self.tag = f"v{self.version}"
+        self.readme = self.root / "README.md"
+        self.lock_path = self.root / ".workflow/specs/.race-lock.json"
+        lock = json.loads(self.lock_path.read_text())
+        lock.update(delivery="local-candidate", publication_authorized=False)
+        self.lock_path.write_text(json.dumps(lock))
+        self.readme.write_text(
+            f'# Loofi {self.tag} "TestRelease" Local Candidate\n'
+            f'[Candidate notes](docs/releases/RELEASE-NOTES-{self.tag}.md)\n'
+        )
+
+    def test_local_candidate_does_not_require_unpublished_tag_link(self):
+        self.assertEqual(self.module.validate_release_docs(self.root, require_logs=False), [])
+
+    def test_local_candidate_requires_explicit_status_and_notes_link(self):
+        original = self.readme.read_text()
+        for text in (original.replace("Local Candidate", ""), original.splitlines()[0]):
+            with self.subTest(text=text):
+                self.readme.write_text(text)
+                issues = self.module.validate_release_docs(self.root, require_logs=False)
+                self.assertTrue(any("README local candidate" in issue for issue in issues))
+
+    def test_publication_authority_or_mismatched_lock_keeps_public_link_gate(self):
+        original = json.loads(self.lock_path.read_text())
+        for changes in ({"publication_authorized": True}, {"delivery": "public-release"}, {"version": "other"}):
+            with self.subTest(changes=changes):
+                self.lock_path.write_text(json.dumps(dict(original, **changes)))
+                issues = self.module.validate_release_docs(self.root, require_logs=False)
+                self.assertTrue(any("README release badge/link" in issue for issue in issues))
 
 
 def _load_module(name: str, path: Path):

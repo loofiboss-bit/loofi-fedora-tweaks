@@ -8,8 +8,10 @@ import threading
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
+from unittest.mock import Mock
 
 from core.actions.stores import ActionPlanStore, ActionRunStore
+from core.diagnostics.daily_maintenance import MaintenanceCard
 from core.system_check.models import FindingEvidence, SystemFinding
 from core.system_check.service import CollectorSpec, SystemCheckService
 
@@ -140,6 +142,86 @@ class TestSystemCheckService(unittest.TestCase):
         self.assertTrue(all(update.elapsed_seconds >= 0.0 for update in updates))
         self.assertEqual(updates[-1].percentage, 100)
         self.assertEqual(updates[-1].unavailable_sources, ("failed",))
+
+    def _maintenance_check(self, cards, updates=None, timeline=None):
+        service = self._service((CollectorSpec("maintenance", 1.0, lambda _atomic, _at: ()),), timeline)
+        service.maintenance_service = Mock()
+        service.maintenance_service.collect_quick.return_value = SimpleNamespace(atomic=False, cards=cards)
+        service.collectors = (CollectorSpec("maintenance", 1.0, service._collect_maintenance),)
+        return service.run(progress_callback=updates.append if updates is not None else None)
+
+    def test_root_disk_thresholds_use_real_df_usage(self):
+        for percentage, severity in ((89, None), (90, "attention"), (95, "critical"), (96, "critical")):
+            with self.subTest(percentage=percentage):
+                card = MaintenanceCard("disk-usage", "Disk Usage", "success", "Root filesystem usage is available.", details=f"/dev/root 100G 96G 4G {percentage}% /")
+                result = self._maintenance_check([card])
+                self.assertEqual(result.state, "completed")
+                self.assertEqual(result.source_errors, ())
+                if severity is None:
+                    self.assertEqual(result.findings, ())
+                else:
+                    self.assertEqual(result.findings[0].finding_id, "root-disk-pressure")
+                    self.assertEqual(result.findings[0].severity, severity)
+                    self.assertEqual(result.findings[0].evidence.facts_dict()["root_usage_percent"], percentage)
+
+    def test_valid_findings_survive_multiple_errors_in_same_collector(self):
+        updates = []
+        timeline = _MemoryTimeline()
+        cards = [
+            MaintenanceCard("disk-usage", "Disk Usage", "success", "Review usage", details="96% /"),
+            MaintenanceCard("failed-services", "Failed Services", "error", "Permission denied", error_reason_code="probe-permission-denied"),
+            MaintenanceCard("package-health", "Package Health", "error", "Timed out", error_reason_code="probe-timeout"),
+        ]
+
+        result = self._maintenance_check(cards, updates, timeline)
+
+        self.assertEqual(result.state, "partial")
+        self.assertEqual(result.completed_sources, ("maintenance",))
+        self.assertEqual(result.findings[0].finding_id, "root-disk-pressure")
+        self.assertEqual(len(result.source_errors), 2)
+        self.assertEqual({error.source_id for error in result.source_errors}, {"maintenance"})
+        self.assertEqual({error.reason_code for error in result.source_errors}, {
+            "failed-services-probe-permission-denied", "package-health-probe-timeout",
+        })
+        self.assertTrue(next(error for error in result.source_errors if error.reason_code.endswith("timeout")).timed_out)
+        self.assertTrue(all(error.duration_ms >= 0 for error in result.source_errors))
+        self.assertEqual(updates[-1].completed_sources, 1)
+        self.assertEqual(updates[-1].percentage, 100)
+        self.assertEqual(updates[-1].unavailable_sources, ("maintenance",))
+        self.assertTrue(all(update.completed_sources <= update.total_sources for update in updates))
+        self.assertEqual(len(timeline.snapshots), 1)
+        self.assertEqual(len(timeline.snapshots[0].daily_maintenance["system_check"]["source_errors"]), 2)
+
+    def test_failed_service_query_is_a_source_error_without_fake_finding(self):
+        timeline = _MemoryTimeline()
+        result = self._maintenance_check([
+            MaintenanceCard("failed-services", "Failed Services", "error", "The query returned no result.", error_reason_code="probe-unavailable"),
+        ], timeline=timeline)
+
+        self.assertEqual(result.state, "failed")
+        self.assertEqual(result.completed_sources, ())
+        self.assertEqual(result.findings, ())
+        self.assertEqual(result.source_errors[0].reason_code, "failed-services-probe-unavailable")
+        self.assertEqual(timeline.snapshots, [])
+
+    def test_invalid_disk_output_is_partial_and_does_not_hide_service_finding(self):
+        result = self._maintenance_check([
+            MaintenanceCard("disk-usage", "Disk Usage", "success", "Root filesystem usage is available.", details="101% /"),
+            MaintenanceCard("failed-services", "Failed Services", "warning", "One failed unit", details="demo.service loaded failed failed Demo"),
+        ])
+
+        self.assertEqual(result.state, "partial")
+        self.assertEqual(result.source_errors[0].reason_code, "disk-usage-probe-invalid-output")
+        self.assertEqual([finding.finding_id for finding in result.findings], ["failed-service"])
+
+    def test_maintenance_variant_conflict_remains_isolated_failure(self):
+        service = self._service((CollectorSpec("maintenance", 1.0, lambda _atomic, _at: ()),))
+        service.maintenance_service = Mock()
+        service.maintenance_service.collect_quick.return_value = SimpleNamespace(atomic=True, cards=[])
+        service.collectors = (CollectorSpec("maintenance", 1.0, service._collect_maintenance),)
+        result = service.run(persist=False)
+        self.assertEqual(result.state, "failed")
+        self.assertEqual(result.source_errors[0].reason_code, "collector-failed")
 
     def test_collector_timeout_is_partial_and_bounded(self):
         release = threading.Event()

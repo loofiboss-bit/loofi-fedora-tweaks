@@ -17,6 +17,7 @@ from core.actions.contracts import (
 from core.executor.action_result import ActionResult
 from core.local_profiles import validate_local_profile
 from core.actions.public_boundary_definitions import public_boundary_definitions
+from core.actions.firmware_evidence import FIRMWARE_EVIDENCE_VERSION, candidates, history_status, valid_facts
 from core.actions.continuity_recovery import (
     _preflight_dnf5_history_undo,
     _preflight_fedora_update,
@@ -719,32 +720,37 @@ def _verify_flatpak_update(_run: ActionRun, plan: ActionPlan, runtime: ActionRun
 
 def _preflight_firmware_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
     result = runtime.execute_read_only(["fwupdmgr", "get-updates", "--json"], action_id="update-firmware-candidates", timeout=90)
-    devices = _firmware_records(_json_payload(result))
     if not result.success:
         return _blocked("firmware_query_failed", "Firmware updates could not be queried.")
-    if not devices:
+    try:
+        records = candidates(_json_payload(result))
+    except ValueError:
+        return _blocked("firmware_evidence_unavailable", "Firmware candidate evidence is incomplete; review fresh updates.")
+    if not records:
         return _blocked("no_firmware_updates", "No firmware updates are currently available.")
-    return _allowed("preflight_ok", f"{len(devices)} firmware updates are ready.", devices=devices)
+    return _allowed("preflight_ok", f"{len(records)} firmware updates are ready.",
+                    firmware_evidence_version=FIRMWARE_EVIDENCE_VERSION, devices=records)
 
 
 def _verify_firmware_update(run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
+    facts = plan.policy_decision.facts
+    if not valid_facts(facts):
+        return VerificationDecision.failed("Firmware evidence is incomplete or from an older plan; create and review a fresh plan.",
+                                           review_required=True)
     result = runtime.execute_read_only(["fwupdmgr", "get-history", "--json"], action_id="update-firmware-verify-history", timeout=60)
     if not result.success:
         return VerificationDecision.failed("Firmware history could not be queried.")
-    history_text = json.dumps(_json_payload(result), sort_keys=True)
-    missing = []
-    for item in plan.policy_decision.facts.get("devices", []):
-        if not isinstance(item, Mapping):
-            continue
-        identity = [str(item.get("guid", "")), str(item.get("version", ""))]
-        checksum = str(item.get("checksum", ""))
-        if not all(value and value in history_text for value in identity) or (checksum and checksum not in history_text):
-            missing.append(dict(item))
-    if not missing:
-        return VerificationDecision.succeeded("Firmware history contains every planned update.")
-    if _runtime_boot_id(runtime) == run.execution_boot_id:
-        return VerificationDecision.awaiting_reboot("Firmware application is awaiting reboot verification.", pending_devices=missing)
-    return VerificationDecision.failed("The expected firmware result was not recorded after reboot.", missing_devices=missing)
+    payload = _json_payload(result)
+    statuses = [(item, history_status(item, payload, started_at=run.started_at)) for item in facts["devices"]]
+    failed = [item for item, status in statuses if status == "failed"]
+    if failed:
+        return VerificationDecision.failed("Firmware history records a failed planned update.", failed_devices=failed)
+    pending = [item for item, status in statuses if status != "success"]
+    if not pending:
+        return VerificationDecision.succeeded("Firmware history verifies every planned device and target release.")
+    if run.execution_boot_id and _runtime_boot_id(runtime) == run.execution_boot_id:
+        return VerificationDecision.awaiting_reboot("Firmware application is awaiting reboot verification.", pending_devices=pending)
+    return VerificationDecision.failed("The expected firmware result was not recorded after reboot.", missing_devices=pending)
 
 
 def _render_application(parameters: Mapping[str, Any], runtime: ActionRuntime, *, installing: bool) -> list[str]:
@@ -960,26 +966,6 @@ def _tab_records(value: str) -> list[dict[str, str]]:
         parts = line.split("\t", 1)
         records.append({"id": parts[0], "value": parts[1] if len(parts) > 1 else ""})
     return records
-
-
-def _firmware_records(payload: Any) -> list[dict[str, str]]:
-    records: list[dict[str, str]] = []
-
-    def visit(value: Any) -> None:
-        if isinstance(value, dict):
-            guid = value.get("Guid") or value.get("DeviceId") or value.get("device_id")
-            version = value.get("Version") or value.get("version")
-            if guid and version:
-                records.append({"guid": str(guid), "version": str(version), "checksum": str(value.get("Checksum") or value.get("checksum") or "")})
-            for child in value.values():
-                visit(child)
-        elif isinstance(value, list):
-            for child in value:
-                visit(child)
-
-    visit(payload)
-    unique = {(item["guid"], item["version"]): item for item in records}
-    return list(unique.values())
 
 
 def _human_bytes(value: str) -> int:

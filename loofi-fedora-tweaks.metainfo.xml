@@ -40,6 +40,11 @@
   </provides>
 
   <releases>
+    <release version="30.2.1" date="2026-10-02" type="development">
+      <description>
+        <p>v30.2.1 "Comfort" local candidate: private support exports, safe Activity shutdown, preserved state, accurate diagnostics and structured firmware verification. Not published.</p>
+      </description>
+    </release>
     <release version="30.2.0" date="2026-10-01" type="stable">
       <description>
         <p>v30.2.0 "Comfort": fourteen desktop and power controls with explicit, independently verified restoration of eligible Loofi changes.</p>

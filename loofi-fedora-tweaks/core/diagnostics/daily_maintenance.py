@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 import shutil
 import subprocess
 import time
@@ -23,6 +24,7 @@ class MaintenanceCard:
     command_preview: list[str] = field(default_factory=list)
     requires_package: str = ""
     details: str = ""
+    error_reason_code: str = ""
 
     def to_dict(self) -> dict[str, object]:
         return {
@@ -68,10 +70,31 @@ class DailyMaintenanceService:
 
     @staticmethod
     def _run(cmd: list[str], timeout: int) -> subprocess.CompletedProcess[str] | None:
+        return subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=timeout)
+
+    def _probe(
+        self, cmd: list[str], timeout: int, card_id: str, title: str,
+    ) -> subprocess.CompletedProcess[str] | MaintenanceCard:
         try:
-            return subprocess.run(cmd, capture_output=True, text=True, check=False, timeout=timeout)
-        except (OSError, subprocess.SubprocessError, subprocess.TimeoutExpired):
-            return None
+            result = self._runner(cmd, timeout)
+        except subprocess.TimeoutExpired:
+            reason, message = "probe-timeout", "The query timed out."
+        except PermissionError:
+            reason, message = "probe-permission-denied", "Permission to query this source was denied."
+        except FileNotFoundError:
+            reason, message = "probe-unavailable", "The required query tool is unavailable."
+        except (OSError, subprocess.SubprocessError):
+            reason, message = "probe-failed", "The query could not be completed."
+        else:
+            if result is not None and result.returncode == 0:
+                return result
+            if result is None:
+                reason, message = "probe-unavailable", "The query returned no result."
+            elif re.search(r"permission denied|access denied|not permitted", result.stderr or "", re.IGNORECASE):
+                reason, message = "probe-permission-denied", "Permission to query this source was denied."
+            else:
+                reason, message = "probe-failed", f"The query exited with status {result.returncode}."
+        return MaintenanceCard(card_id, title, "error", message, cmd, error_reason_code=reason)
 
     def collect(self) -> DailyMaintenanceReport:
         atomic = SystemManager.is_atomic()
@@ -131,9 +154,10 @@ class DailyMaintenanceService:
     def _flatpak_card(self) -> MaintenanceCard:
         if not shutil.which("flatpak"):
             return MaintenanceCard("flatpak-updates", "Flatpak Updates", "unsupported", "Flatpak is not installed.", requires_package="flatpak")
-        result = self._runner(["flatpak", "remote-list"], 10)
-        state = "success" if result and result.returncode == 0 else "warning"
-        return MaintenanceCard("flatpak-updates", "Flatpak Updates", state, "Flatpak remotes can be queried." if state == "success" else "Flatpak remote state needs review.", ["flatpak", "update", "--appstream"])
+        result = self._probe(["flatpak", "remote-list"], 10, "flatpak-updates", "Flatpak Updates")
+        if isinstance(result, MaintenanceCard):
+            return result
+        return MaintenanceCard("flatpak-updates", "Flatpak Updates", "success", "Flatpak remotes can be queried.", ["flatpak", "update", "--appstream"])
 
     def _firmware_card(self) -> MaintenanceCard:
         if not shutil.which("fwupdmgr"):
@@ -141,16 +165,13 @@ class DailyMaintenanceService:
         return MaintenanceCard("firmware", "Firmware", "success", "Firmware checks are available.", ["fwupdmgr", "get-updates"])
 
     def _failed_services_card(self) -> MaintenanceCard:
-        result = self._runner(["systemctl", "--failed", "--no-legend"], 10)
-        if result is None or result.returncode != 0:
-            return MaintenanceCard(
-                id="failed-services",
-                title="Failed Services",
-                state="error",
-                summary="Unable to query failed services.",
-            )
-        output = (result.stdout if result else "").strip()
+        result = self._probe(["systemctl", "--failed", "--no-legend"], 10, "failed-services", "Failed Services")
+        if isinstance(result, MaintenanceCard):
+            return result
+        output = (result.stdout or "").strip()
         failed = [line for line in output.splitlines() if line.strip()]
+        if failed and not all(re.search(r"(?:^|\s)[A-Za-z0-9_.@:-]+\.(?:service|socket|mount|target|path|scope|slice|automount|swap|timer)(?:\s|$)", line) for line in failed):
+            return MaintenanceCard("failed-services", "Failed Services", "error", "The query returned an invalid failed service list.", ["systemctl", "--failed"], error_reason_code="probe-invalid-output")
         return MaintenanceCard(
             id="failed-services",
             title="Failed Services",
@@ -161,8 +182,12 @@ class DailyMaintenanceService:
         )
 
     def _journal_card(self) -> MaintenanceCard:
-        result = self._runner(["journalctl", "-p", "4", "-n", "20", "--no-pager"], 10)
-        output = (result.stdout if result else "").strip()
+        result = self._probe(["journalctl", "-p", "4", "-n", "20", "--no-pager"], 10, "journal-warnings", "Recent Journal Warnings")
+        if isinstance(result, MaintenanceCard):
+            return result
+        output = (result.stdout or "").strip()
+        if output == "-- No entries --":
+            output = ""
         return MaintenanceCard(
             id="journal-warnings",
             title="Recent Journal Warnings",
@@ -173,9 +198,13 @@ class DailyMaintenanceService:
         )
 
     def _disk_card(self) -> MaintenanceCard:
-        result = self._runner(["df", "-h", "/"], 8)
-        output = (result.stdout if result else "").strip()
-        return MaintenanceCard("disk-usage", "Disk Usage", "success" if output else "error", "Root filesystem usage is available." if output else "Unable to read disk usage.", ["df", "-h", "/"], details=output)
+        result = self._probe(["df", "-h", "/"], 8, "disk-usage", "Disk Usage")
+        if isinstance(result, MaintenanceCard):
+            return result
+        output = (result.stdout or "").strip()
+        if root_usage_percent(output) is None:
+            return MaintenanceCard("disk-usage", "Disk Usage", "error", "The query returned invalid root filesystem usage.", ["df", "-h", "/"], error_reason_code="probe-invalid-output")
+        return MaintenanceCard("disk-usage", "Disk Usage", "success", "Root filesystem usage is available.", ["df", "-h", "/"], details=output)
 
     @staticmethod
     def _package_health_card(atomic: bool, package: DNF5HealthReport) -> MaintenanceCard:
@@ -208,3 +237,17 @@ class DailyMaintenanceService:
             if card:
                 return f"Review {card.title}: {card.summary}"
         return "No immediate maintenance action is required."
+
+
+def root_usage_percent(details: str) -> float | None:
+    """Read only the root mount's integer Use% field from bounded df output."""
+    values: list[float] = []
+    for line in str(details).splitlines():
+        columns = line.split()
+        if len(columns) < 2 or columns[-1] != "/":
+            continue
+        match = re.fullmatch(r"(\d{1,3})%", columns[-2])
+        if match is None or not 0 <= int(match.group(1)) <= 100:
+            return None
+        values.append(float(match.group(1)))
+    return values[0] if len(values) == 1 else None

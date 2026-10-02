@@ -10,6 +10,7 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
+| v30.2.1 | Comfort | ACTIVE | [architecture](.workflow/specs/arch-v30.2.1.md), [tasks](.workflow/specs/tasks-v30.2.1.md), [local candidate notes](docs/releases/RELEASE-NOTES-v30.2.1.md) |
 | v30.2.0 | Comfort | DONE | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V30_2_PLAN.md), [architecture](.workflow/specs/arch-v30.2.0.md), [tasks](.workflow/specs/tasks-v30.2.0.md), [release notes](docs/releases/RELEASE-NOTES-v30.2.0.md) |
 | v30.1.0 | Personalize | DONE | [architecture](.workflow/specs/arch-v30.1.0.md), [tasks](.workflow/specs/tasks-v30.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v30.1.0.md) |
 | v30.0.1 | Steady | LOCAL CANDIDATE | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V30_PLAN.md), [architecture](.workflow/specs/arch-v30.0.1.md), [tasks](.workflow/specs/tasks-v30.0.1.md), [candidate notes](docs/releases/RELEASE-NOTES-v30.0.1.md) |
@@ -32,6 +33,23 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v27.0.1 | Core | DONE | [Plan](docs/plans/plan%20v27.md), [architecture](.workflow/specs/arch-v27.0.1.md), [tasks](.workflow/specs/tasks-v27.0.1.md), [release notes](docs/releases/RELEASE-NOTES-v27.0.1.md), [public evidence](docs/reports/V27_RELEASE_PUBLICATION.md) |
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
+
+## [ACTIVE] v30.2.1 "Comfort" — Local Stabilization Candidate
+
+The authorized scope is local implementation, regression coverage, full
+automated verification, and local RPM/source builds on v30.2.0 commit
+`15967f2`. Support privacy, Activity lifetime, plan-store integrity, partial
+diagnostics, structured firmware evidence, and persistent Apps selections
+take priority. The five destinations, eight CLI domains, fourteen tweaks,
+Action Center authority, and outer schema v4 remain intact.
+
+v30.2.0 remains the current public release. The subsequent user request
+authorizes commit, push, and pull request creation. Merging, tagging,
+publication, installation, and host changes require separate authorization.
+Physical KDE/GNOME, Traditional/Atomic, Polkit, keyboard, scaling, and audible
+Orca remain `unverified`. Fedora 43/44 runtime compatibility is separate from
+actual package qualification. Retired-module cleanup, AppImage work, and a
+wider distribution matrix are deferred.
 
 ## [DONE] v30.2.0 "Comfort" — Desktop Settings and Explicit Restoration
 

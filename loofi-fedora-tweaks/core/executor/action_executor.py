@@ -33,6 +33,8 @@ from typing import Any, Dict, List, Optional
 from core.executor.action_result import ActionResult
 from core.executor.base_executor import BaseActionExecutor
 from core.executor.command_policy import CommandValidationError, validate_command
+from core.privacy import redact_command, redact_payload, redact_text
+from core.state.atomic_io import advisory_lock, atomic_write_text
 from core.execution_policy import ExecutionAuthority, blocked_execution_message, execution_allowed
 
 logger = logging.getLogger(__name__)
@@ -49,6 +51,17 @@ _LOG_DIR = os.path.join(
     "loofi-fedora-tweaks",
 )
 _ACTION_LOG_FILE = os.path.join(_LOG_DIR, "action_log.jsonl")
+
+
+def _private_log_line(line: str) -> str:
+    """Sanitize historical entries as well as newly appended actions."""
+    try:
+        entry = json.loads(line)
+    except (ValueError, TypeError):
+        return redact_text(line, limit=2**63 - 1)
+    if isinstance(entry, dict) and isinstance(entry.get("cmd"), list) and all(isinstance(part, str) for part in entry["cmd"]):
+        entry["cmd"] = redact_command(entry["cmd"])
+    return json.dumps(redact_payload(entry))
 
 
 class ActionExecutor(BaseActionExecutor):
@@ -287,33 +300,32 @@ class ActionExecutor(BaseActionExecutor):
     def _log_action(self, cmd: List[str], result: ActionResult):
         """Append action to JSON-lines log file."""
         try:
-            os.makedirs(_LOG_DIR, exist_ok=True)
-            entry = {
-                "ts": result.timestamp,
-                "cmd": cmd,
-                "success": result.success,
-                "exit_code": result.exit_code,
-                "preview": result.preview,
-                "message": result.message[:200],
-            }
-            with open(_ACTION_LOG_FILE, "a") as fh:
-                fh.write(json.dumps(entry) + "\n")
-
-            # Trim log if too large
-            self._trim_log()
+            directory = Path(_LOG_DIR)
+            directory.mkdir(parents=True, exist_ok=True, mode=0o700)
+            directory.chmod(0o700)
+            path = Path(_ACTION_LOG_FILE)
+            entry = redact_payload({
+                "ts": result.timestamp, "cmd": redact_command(cmd), "success": result.success,
+                "exit_code": result.exit_code, "preview": result.preview, "message": redact_text(result.message, limit=200),
+            })
+            with advisory_lock(path):
+                lines = path.read_text(encoding="utf-8").splitlines() if path.exists() else []
+                lines.append(json.dumps(entry))
+                lines = [_private_log_line(line) for line in lines[-MAX_LOG_ENTRIES:]]
+                atomic_write_text(path, "\n".join(lines) + "\n", mode=0o600, keep_backup=False)
         except OSError:
-            pass  # Non-critical — don't fail actions over logging
+            pass  # Logging must not fail an otherwise valid action.
 
     def _trim_log(self):
-        """Keep log file bounded to MAX_LOG_ENTRIES lines."""
+        """Keep log file bounded under the same lock used by writers."""
         try:
             path = Path(_ACTION_LOG_FILE)
-            if not path.exists():
-                return
-            lines = path.read_text().splitlines()
-            if len(lines) > MAX_LOG_ENTRIES:
-                trimmed = lines[-MAX_LOG_ENTRIES:]
-                path.write_text("\n".join(trimmed) + "\n")
+            with advisory_lock(path):
+                if not path.exists():
+                    return
+                Path(_LOG_DIR).chmod(0o700)
+                lines = [_private_log_line(line) for line in path.read_text(encoding="utf-8").splitlines()[-MAX_LOG_ENTRIES:]]
+                atomic_write_text(path, "\n".join(lines) + "\n", mode=0o600, keep_backup=False)
         except OSError:
             pass
 
@@ -324,11 +336,14 @@ class ActionExecutor(BaseActionExecutor):
             path = Path(_ACTION_LOG_FILE)
             if not path.exists():
                 return []
-            lines = path.read_text().splitlines()
+            with advisory_lock(path):
+                Path(_LOG_DIR).chmod(0o700)
+                path.chmod(0o600)
+                lines = path.read_text(encoding="utf-8").splitlines()
             entries = []
             for line in lines[-limit:]:
                 try:
-                    entries.append(json.loads(line))
+                    entries.append(json.loads(_private_log_line(line)))
                 except json.JSONDecodeError:
                     continue
             return entries

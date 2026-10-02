@@ -6,6 +6,7 @@ Provides focused journalctl access with a "Panic Button" for
 exporting logs ready for support forums.
 """
 
+import json
 import logging
 import os
 import subprocess
@@ -15,6 +16,8 @@ from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Optional
+
+from core.privacy import redact_payload, redact_text
 
 logger = logging.getLogger(__name__)
 
@@ -38,7 +41,7 @@ class JournalManager:
     """
 
     @classmethod
-    def get_boot_errors(cls, priority: int = 3) -> str:
+    def get_boot_errors(cls, priority: int = 3, *, strict: bool = False) -> str:
         """
         Get error messages from current boot.
 
@@ -55,13 +58,17 @@ class JournalManager:
                 text=True,
                 timeout=30
             )
+            if strict and result.returncode != 0:
+                raise OSError(f"Collection failed (exit {result.returncode}): {result.stderr}")
             return result.stdout if result.returncode == 0 else ""
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get boot errors: %s", e)
+            if strict:
+                raise
             return ""
 
     @classmethod
-    def get_recent_errors(cls, since: str = "1 hour ago") -> str:
+    def get_recent_errors(cls, since: str = "1 hour ago", *, strict: bool = False) -> str:
         """
         Get recent error messages.
 
@@ -78,9 +85,13 @@ class JournalManager:
                 text=True,
                 timeout=30
             )
+            if strict and result.returncode != 0:
+                raise OSError(f"Collection failed (exit {result.returncode}): {result.stderr}")
             return result.stdout if result.returncode == 0 else ""
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get recent errors: %s", e)
+            if strict:
+                raise
             return ""
 
     @classmethod
@@ -109,7 +120,7 @@ class JournalManager:
             return ""
 
     @classmethod
-    def get_kernel_messages(cls, lines: int = 100) -> str:
+    def get_kernel_messages(cls, lines: int = 100, *, strict: bool = False) -> str:
         """
         Get kernel messages (dmesg-like).
 
@@ -123,9 +134,13 @@ class JournalManager:
                 text=True,
                 timeout=30
             )
+            if strict and result.returncode != 0:
+                raise OSError(f"Collection failed (exit {result.returncode}): {result.stderr}")
             return result.stdout if result.returncode == 0 else ""
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get kernel messages: %s", e)
+            if strict:
+                raise
             return ""
 
     @classmethod
@@ -141,14 +156,18 @@ class JournalManager:
                         info_lines.append(line.strip())
         except OSError as e:
             logger.debug("Failed to read os-release: %s", e)
+            info_lines.append("COLLECTION_ERROR=os-release unavailable")
 
         # Kernel version
         try:
             result = subprocess.run(["uname", "-r"], capture_output=True, text=True, timeout=15)
             if result.returncode == 0:
                 info_lines.append(f"KERNEL={result.stdout.strip()}")
+            else:
+                info_lines.append("COLLECTION_ERROR=kernel query failed")
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get kernel version: %s", e)
+            info_lines.append("COLLECTION_ERROR=kernel query unavailable")
 
         # Desktop environment
         de = os.environ.get("XDG_CURRENT_DESKTOP", "Unknown")
@@ -167,13 +186,16 @@ class JournalManager:
                     if "VGA" in line or "3D" in line:
                         info_lines.append(f"GPU={line.split(': ')[-1][:80]}")
                         break
+            else:
+                info_lines.append("COLLECTION_ERROR=GPU query failed")
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get GPU info: %s", e)
+            info_lines.append("COLLECTION_ERROR=GPU query unavailable")
 
         return "\n".join(info_lines)
 
     @classmethod
-    def export_panic_log(cls, output_path: Optional[Path] = None) -> Result:
+    def export_panic_log(cls, output_path: Optional[Path] = None, *, strict: bool = False) -> Result:
         """
         Export a forum-ready panic log.
 
@@ -228,14 +250,14 @@ class JournalManager:
             # Boot Errors
             sections.append("## BOOT ERRORS (Priority: Error and above)")
             sections.append("-" * 40)
-            errors = cls.get_boot_errors()
+            errors = cls.get_boot_errors(strict=True) if strict else cls.get_boot_errors()
             sections.append(errors if errors else "No errors found")
             sections.append("")
 
             # Kernel Messages
             sections.append("## RECENT KERNEL MESSAGES")
             sections.append("-" * 40)
-            kernel = cls.get_kernel_messages(lines=50)
+            kernel = cls.get_kernel_messages(lines=50, strict=True) if strict else cls.get_kernel_messages(lines=50)
             sections.append(kernel if kernel else "Unable to retrieve")
             sections.append("")
 
@@ -245,9 +267,12 @@ class JournalManager:
             sections.append("=" * 60)
 
             # Write file
-            content = "\n".join(sections)
-            with open(output_path, "w") as f:
-                f.write(content)
+            content = redact_text("\n".join(sections), limit=2**63 - 1)
+            from core.state.atomic_io import atomic_write_text
+
+            if not output_path.parent.is_dir():
+                raise OSError("The export directory does not exist.")
+            atomic_write_text(output_path, content, keep_backup=False)
 
             return Result(
                 True,
@@ -285,10 +310,18 @@ class JournalManager:
 
                 # Panic log
                 panic_path = tmp / "panic-log.txt"
-                panic_result = cls.export_panic_log(panic_path)
+                collection_errors = []
+                panic_result = cls.export_panic_log(panic_path, strict=True)
+                if not panic_result.success:
+                    collection_errors.append("panic-log: " + panic_result.message)
+                    panic_path.write_text("Collection failed: " + panic_result.message, encoding="utf-8")
 
                 # Recent errors
-                recent_errors = cls.get_recent_errors("6 hours ago")
+                try:
+                    recent_errors = cls.get_recent_errors("6 hours ago", strict=True)
+                except (subprocess.SubprocessError, OSError) as exc:
+                    collection_errors.append("recent-errors: " + str(exc))
+                    recent_errors = "Collection failed: " + str(exc)
                 (tmp / "recent-errors.txt").write_text(recent_errors or "No recent errors")
 
                 # Failed services
@@ -299,13 +332,18 @@ class JournalManager:
                         text=True,
                         timeout=10
                     )
+                    if result.returncode != 0:
+                        raise OSError(f"Collection failed (exit {result.returncode}): {result.stderr}")
                     (tmp / "failed-services.txt").write_text(result.stdout or "No failed services")
                 except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
                     logger.debug("Failed to query failed services for bundle: %s", e)
-                    (tmp / "failed-services.txt").write_text("Unable to query failed services")
+                    collection_errors.append("failed-services: " + str(e))
+                    (tmp / "failed-services.txt").write_text("Collection failed: " + str(e))
 
                 # System info
-                (tmp / "system-info.txt").write_text(cls._get_system_info() or "No system info")
+                system_info = cls._get_system_info()
+                collection_errors.extend(line for line in system_info.splitlines() if line.startswith("COLLECTION_ERROR="))
+                (tmp / "system-info.txt").write_text(system_info or "System information unavailable")
 
                 # Current release-readiness payload plus explicit legacy aliases.
                 try:
@@ -314,7 +352,7 @@ class JournalManager:
                     bundle = SupportBundleWriter.generate_bundle(
                         session_id=troubleshooting_session_id,
                     )
-                    bundle_text = __import__("json").dumps(bundle, indent=2, default=str)
+                    bundle_text = json.dumps(redact_payload(bundle), indent=2, default=str)
                     (tmp / "support-bundle.json").write_text(
                         bundle_text,
                         encoding="utf-8",
@@ -334,7 +372,9 @@ class JournalManager:
                             False,
                             "Failed to export the selected troubleshooting session.",
                         )
+                    collection_errors.append("structured-payload: unavailable")
                     fallback = '{"v": "7.0.0-aegis-support-v5", "error": "unavailable"}'
+                    (tmp / "support-bundle.json").write_text(fallback, encoding="utf-8")
                     (tmp / "support-bundle-v5.json").write_text(
                         fallback,
                         encoding="utf-8",
@@ -344,18 +384,42 @@ class JournalManager:
                         encoding="utf-8",
                     )
 
-                # Create ZIP
-                with zipfile.ZipFile(output_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
-                    for file in tmp.iterdir():
-                        zf.write(file, arcname=file.name)
+                (tmp / "collection-status.json").write_text(json.dumps(redact_payload({
+                    "status": "partial" if collection_errors else "complete",
+                    "errors": collection_errors,
+                })), encoding="utf-8")
 
-                size = output_path.stat().st_size if output_path.exists() else 0
+                # Sanitize every member at the archive boundary, including aliases.
+                # Build beside the destination so replace is atomic on its filesystem.
+                archive_path = None
+                try:
+                    with tempfile.NamedTemporaryFile(dir=output_path.parent, prefix=".loofi-support-", delete=False) as handle:
+                        archive_path = Path(handle.name)
+                        os.chmod(archive_path, 0o600)
+                    with zipfile.ZipFile(archive_path, "w", compression=zipfile.ZIP_DEFLATED) as zf:
+                        for file in sorted(tmp.iterdir()):
+                            content = file.read_text(encoding="utf-8")
+                            if file.suffix == ".json":
+                                content = json.dumps(redact_payload(json.loads(content)), indent=2, default=str)
+                            else:
+                                content = redact_text(content, limit=2**63 - 1)
+                            zf.writestr(file.name, content)
+                    with archive_path.open("rb") as handle:
+                        os.fsync(handle.fileno())
+                    size = archive_path.stat().st_size
+                    os.replace(archive_path, output_path)
+                    archive_path = None
+                finally:
+                    if archive_path is not None:
+                        archive_path.unlink(missing_ok=True)
+
                 return Result(
                     True,
-                    f"Support bundle exported to: {output_path}",
-                    {"path": str(output_path), "size": size, "panic_log_ok": panic_result.success}
+                    f"Support bundle exported to: {output_path}" + (" (partial collection; see collection-status.json)" if collection_errors else ""),
+                    {"path": str(output_path), "size": size, "panic_log_ok": panic_result.success, "collection_status": "partial" if collection_errors else "complete",
+                     "collection_errors": redact_payload(collection_errors)}
                 )
-        except OSError as e:
+        except (OSError, ValueError, zipfile.BadZipFile) as e:
             logger.debug("Failed to export support bundle: %s", e)
             return Result(False, f"Failed to export support bundle: {e}")
 
