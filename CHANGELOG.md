@@ -1,5 +1,17 @@
 # Changelog
 
+## [31.0.0] - 2026-10-02 - "Mastery"
+
+- Expand tweak catalog to 22 verified controls across GNOME, KDE, and system packaging.
+- Add GNOME window titlebar buttons, touchpad tap-to-click, night light, sound over-amplification, and font antialiasing.
+- Add KDE touchpad tap-to-click and night color with declarative configuration mapping.
+- Add DNF5 parallel downloads setting with Polkit privilege elevation and fail-closed host execution policy.
+- Deliver complete CLI parity with new `loofi tweaks` and `loofi apps` command domains.
+- Provide tabular text views and machine-readable JSON (`--json`) for tweaks and application management.
+- Replace hardcoded `dnf5` calls in catalog clean-all operations with dynamic `runtime.package_manager()` resolution.
+- Expand curated applications with Flatseal, Mission Center, Spotify, and Neovim.
+- Improve Tweaks page search responsiveness by hiding empty category cards.
+
 ## [30.2.1] - Local candidate - "Comfort"
 
 - Redact every support-archive member and replace completed exports atomically with private permissions.

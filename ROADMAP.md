@@ -10,7 +10,8 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 
 | Version | Codename | Status | Authority |
 | --- | --- | --- | --- |
-| v30.2.1 | Comfort | ACTIVE | [architecture](.workflow/specs/arch-v30.2.1.md), [tasks](.workflow/specs/tasks-v30.2.1.md), [local candidate notes](docs/releases/RELEASE-NOTES-v30.2.1.md) |
+| v31.0.0 | Mastery | ACTIVE | [architecture](.workflow/specs/arch-v31.0.0.md), [tasks](.workflow/specs/tasks-v31.0.0.md), [release notes](docs/releases/RELEASE-NOTES-v31.0.0.md) |
+| v30.2.1 | Comfort | DONE | [architecture](.workflow/specs/arch-v30.2.1.md), [tasks](.workflow/specs/tasks-v30.2.1.md), [local candidate notes](docs/releases/RELEASE-NOTES-v30.2.1.md) |
 | v30.2.0 | Comfort | DONE | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V30_2_PLAN.md), [architecture](.workflow/specs/arch-v30.2.0.md), [tasks](.workflow/specs/tasks-v30.2.0.md), [release notes](docs/releases/RELEASE-NOTES-v30.2.0.md) |
 | v30.1.0 | Personalize | DONE | [architecture](.workflow/specs/arch-v30.1.0.md), [tasks](.workflow/specs/tasks-v30.1.0.md), [release notes](docs/releases/RELEASE-NOTES-v30.1.0.md) |
 | v30.0.1 | Steady | LOCAL CANDIDATE | [plan](docs/plans/LOOFI_FEDORA_TWEAKS_V30_PLAN.md), [architecture](.workflow/specs/arch-v30.0.1.md), [tasks](.workflow/specs/tasks-v30.0.1.md), [candidate notes](docs/releases/RELEASE-NOTES-v30.0.1.md) |
@@ -34,7 +35,22 @@ history lives in [the archived roadmap](docs/archive/ROADMAP_HISTORY_THROUGH_V15
 | v26.0.3 | Everyday | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V26_PLAN.md), [qualification](docs/reports/V26_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V26_RELEASE_PUBLICATION.md) |
 | v25.0.4 | Proof | DONE | [Plan](docs/plans/LOOFI_FEDORA_TWEAKS_V25_PLAN.md), [architecture](.workflow/specs/arch-v25.0.4.md), [tasks](.workflow/specs/tasks-v25.0.4.md), [release notes](docs/releases/RELEASE-NOTES-v25.0.4.md), [audit](docs/reports/V25_DIRECT_ACTION_AUDIT.md), [qualification](docs/reports/V25_RELEASE_QUALIFICATION.md), [public evidence](docs/reports/V25_RELEASE_PUBLICATION.md) |
 
-## [ACTIVE] v30.2.1 "Comfort" — Local Stabilization Candidate
+## [ACTIVE] v31.0.0 "Mastery" — Tweak Expansion, CLI Parity & System Integration
+
+The authorized scope for v31.0.0 "Mastery" delivers comprehensive desktop setting
+mastery and command-line parity:
+- Expanded tweak catalog: 22 verified controls across GNOME (window buttons, tap-to-click,
+  night light, sound over-amplification, font antialiasing), KDE (touchpad tap-to-click,
+  night color), and privileged system packaging (DNF5 parallel downloads).
+- Full CLI parity: native `loofi tweaks` and `loofi apps` command domains supporting
+  tabular human output and structured machine JSON (`--json`).
+- Dynamic package manager resolution: catalog clean operations dynamically invoke
+  the detected host package manager (`runtime.package_manager()`) instead of hardcoding `dnf5`.
+- Application catalog expansion: Flatseal, Mission Center, Spotify, and Neovim added
+  to curated apps.
+- UI search filtering: automatic category card hiding when all child rows are filtered out.
+
+## [DONE] v30.2.1 "Comfort" — Local Stabilization Candidate
 
 The authorized scope is local implementation, regression coverage, full
 automated verification, and local RPM/source builds on v30.2.0 commit

@@ -22,6 +22,8 @@ class TestV27CliParser:
         "activity",
         "doctor",
         "support-bundle",
+        "tweaks",
+        "apps",
     }
 
     DECOMMISSIONED_COMMANDS = [
@@ -54,6 +56,10 @@ class TestV27CliParser:
             args = parser.parse_args(["troubleshoot", "profiles"])
         elif cmd == "updates":
             args = parser.parse_args(["updates", "check"])
+        elif cmd == "tweaks":
+            args = parser.parse_args(["tweaks", "list"])
+        elif cmd == "apps":
+            args = parser.parse_args(["apps", "list"])
         else:
             args = parser.parse_args([cmd])
         assert args.command == cmd

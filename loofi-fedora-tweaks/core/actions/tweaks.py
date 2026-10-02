@@ -89,8 +89,8 @@ def tweak_action_definitions() -> list[ActionDefinition]:
                 title=f"Restore {tweak.title}" if restoring else tweak.title,
                 description="Restore the previous value of the latest verified Loofi change." if restoring else tweak.description,
                 parameter_schema={"source_run_id" if restoring else "value": {"type": "string", "required": True}},
-                risk_level="low",
-                privileged=False,
+                risk_level="medium" if tweak.privileged else "low",
+                privileged=tweak.privileged,
                 confirmation_policy="explicit",
                 recovery_guidance="Review the current setting; restoration is available only for the latest verified change.",
                 rollback_supported=False,
@@ -99,6 +99,6 @@ def tweak_action_definitions() -> list[ActionDefinition]:
                 verifier=partial(_verify, tweak),
                 operation_class="host" if tweak.system_wide else "session",
                 affected_resources=(f"tweak:{tweak.id}",),
-                interaction_policy="confirm" if restoring else "automatic",
+                interaction_policy="confirm" if (restoring or tweak.privileged) else "automatic",
             ))
     return definitions

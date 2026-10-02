@@ -15,20 +15,44 @@ GNOME_KEYS = {
     "gnome-clock": "clock-show-seconds",
     "gnome-clock-format": "clock-format",
     "gnome-clock-weekday": "clock-show-weekday",
+    "gnome-button-layout": "button-layout",
+    "gnome-tap-to-click": "tap-to-click",
+    "gnome-night-light": "night-light-enabled",
+    "gnome-sound-overamp": "allow-volume-above-100-percent",
+    "gnome-font-antialiasing": "font-antialiasing",
 }
-KDE_KEYS = {
-    "kde-animation": ("AnimationDurationFactor", "1"),
-    "kde-single-click": ("SingleClick", "false"),
-    "kde-double-click-interval": ("DoubleClickInterval", "400"),
-    "kde-smooth-scroll": ("SmoothScroll", "true"),
-    "kde-scrollbar-click": ("ScrollbarLeftClickNavigatesByPage", "false"),
+GNOME_SCHEMAS = {
+    "gnome-button-layout": "org.gnome.desktop.wm.preferences",
+    "gnome-tap-to-click": "org.gnome.desktop.peripherals.touchpad",
+    "gnome-night-light": "org.gnome.settings-daemon.plugins.color",
+    "gnome-sound-overamp": "org.gnome.desktop.sound",
 }
+
+
+def gnome_schema(tweak_id: str) -> str:
+    """Return the gsettings schema name for a GNOME tweak."""
+    return GNOME_SCHEMAS.get(tweak_id, "org.gnome.desktop.interface")
+
+
+KDE_SPECS = {
+    "kde-animation": ("kdeglobals", "KDE", "AnimationDurationFactor", "1"),
+    "kde-single-click": ("kdeglobals", "KDE", "SingleClick", "false"),
+    "kde-double-click-interval": ("kdeglobals", "KDE", "DoubleClickInterval", "400"),
+    "kde-smooth-scroll": ("kdeglobals", "KDE", "SmoothScroll", "true"),
+    "kde-scrollbar-click": ("kdeglobals", "KDE", "ScrollbarLeftClickNavigatesByPage", "false"),
+    "kde-tap-to-click": ("kcminputrc", "Touchpad", "TapToClick", "true"),
+    "kde-night-color": ("kwinrc", "NightColor", "Active", "false"),
+}
+KDE_KEYS = {item: (spec[2], spec[3]) for item, spec in KDE_SPECS.items()}
 SCHEME_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
 _NUMERIC = re.compile(r"[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\Z")
 _ENUMS = {
     "gnome-color": frozenset({"default", "prefer-light", "prefer-dark"}),
     "gnome-clock-format": frozenset({"12h", "24h"}),
+    "gnome-button-layout": frozenset({":appmenu,close", ":minimize,maximize,close", "close,minimize,maximize:"}),
+    "gnome-font-antialiasing": frozenset({"rgba", "grayscale", "none"}),
     "power-profile": frozenset({"power-saver", "balanced", "performance"}),
+    "dnf-parallel-downloads": frozenset({"3", "5", "10", "15"}),
 }
 NUMERIC_TWEAKS = frozenset({"gnome-text-scale", "kde-animation", "kde-double-click-interval"})
 
@@ -70,20 +94,22 @@ def values_equal(tweak_id: str, first: str, second: str) -> bool:
 
 
 def kde_read_vector(tweak_id: str) -> list[str]:
-    key, default = KDE_KEYS[tweak_id]
-    return ["kreadconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", key, "--default", default]
+    file, group, key, default = KDE_SPECS[tweak_id]
+    return ["kreadconfig6", "--file", file, "--group", group, "--key", key, "--default", default]
 
 
 def kde_write_vector(tweak_id: str, value: str) -> list[str]:
-    key, _default = KDE_KEYS[tweak_id]
-    return ["kwriteconfig6", "--notify", "--file", "kdeglobals", "--group", "KDE", "--key", key, value]
+    file, group, key, _default = KDE_SPECS[tweak_id]
+    return ["kwriteconfig6", "--notify", "--file", file, "--group", group, "--key", key, value]
 
 
 def tweak_command_class(binary: str, args: Sequence[str]) -> Literal["read_only", "session"] | None:
     """Recognize exact reviewed GNOME/KDE vectors; unknown shapes fail closed."""
     vector = tuple(args)
-    if binary == "gsettings" and len(vector) in {3, 4} and vector[1] == "org.gnome.desktop.interface":
-        tweak_id = next((item for item, key in GNOME_KEYS.items() if key == vector[2]), "")
+    if binary == "gsettings" and len(vector) in {3, 4}:
+        schema = vector[1]
+        key = vector[2]
+        tweak_id = next((item for item, k in GNOME_KEYS.items() if k == key and gnome_schema(item) == schema), "")
         if tweak_id and vector[0] == "get" and len(vector) == 3:
             return "read_only"
         if tweak_id and vector[0] == "set" and len(vector) == 4 and valid_value(tweak_id, vector[3]):

@@ -134,7 +134,7 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
             return "read_only" if vector[1] in {"info", "list"} else "host"
         if first == "offline" and len(vector) >= 2:
             return "read_only" if vector[1] in {"log", "status"} else "host"
-        return "read_only" if first in {"check", "check-update", "info", "list", "repoquery", "repolist", "search"} else "host"
+        return "read_only" if first in {"check", "check-update", "info", "list", "repoquery", "repolist", "search", "--dump-main-config"} else "host"
     if binary == "rpm":
         return "read_only" if first.startswith("-q") else "host"
     if binary == "rpm-ostree":

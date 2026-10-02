@@ -6,11 +6,13 @@ import argparse
 
 from cli.parser_domains import (
     register_activity_command,
+    register_apps_command,
     register_execution_commands,
     register_health_commands,
     register_host_commands,
     register_support_commands,
     register_troubleshooting_command,
+    register_tweaks_command,
 )
 from version import __version__, __version_codename__
 
@@ -47,4 +49,6 @@ def build_parser() -> argparse.ArgumentParser:
     register_execution_commands(subparsers)       # changes
     register_activity_command(subparsers)         # activity
     register_support_commands(subparsers)         # doctor, support-bundle
+    register_tweaks_command(subparsers)           # tweaks
+    register_apps_command(subparsers)             # apps
     return parser

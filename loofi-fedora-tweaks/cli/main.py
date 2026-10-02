@@ -426,8 +426,22 @@ def cmd_support_bundle(_args: Any) -> Any:
     return handle_support_bundle(_json_output, _output_json, _print, JournalManager)
 
 
+def cmd_tweaks(args: Any) -> Any:
+    """Inspect, change, or restore desktop and system tweaks."""
+    from cli.commands.tweaks_commands import handle_tweaks
+
+    return handle_tweaks(args, _json_output, _output_json, _print, dry_run=_dry_run)
+
+
+def cmd_apps(args: Any) -> Any:
+    """List or install curated applications."""
+    from cli.commands.apps_commands import handle_apps
+
+    return handle_apps(args, _json_output, _output_json, _print, dry_run=_dry_run)
+
+
 def _command_handlers() -> dict[str, typing.Callable[[Any], Any]]:
-    """Return exactly the eight canonical v27 command handlers."""
+    """Return the canonical CLI command handlers."""
     return {
         "info": cmd_info,
         "check": cmd_check,
@@ -437,6 +451,8 @@ def _command_handlers() -> dict[str, typing.Callable[[Any], Any]]:
         "activity": cmd_activity,
         "doctor": cmd_doctor,
         "support-bundle": cmd_support_bundle,
+        "tweaks": cmd_tweaks,
+        "apps": cmd_apps,
     }
 
 

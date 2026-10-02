@@ -1,8 +1,8 @@
 # Documentation
 
-This map covers the local v30.2.1 "Comfort" candidate. The
-[architecture specification](../.workflow/specs/arch-v30.2.1.md) and
-[release tasks](../.workflow/specs/tasks-v30.2.1.md) are the implementation
+This map covers the local v31.0.0 "Mastery" candidate. The
+[architecture specification](../.workflow/specs/arch-v31.0.0.md) and
+[release tasks](../.workflow/specs/tasks-v31.0.0.md) are the implementation
 authority.
 
 ## Use Loofi

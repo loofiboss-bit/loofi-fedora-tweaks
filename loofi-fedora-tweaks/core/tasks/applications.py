@@ -209,6 +209,10 @@ def _default_applications() -> tuple[ApplicationRecord, ...]:
         ApplicationRecord("ripgrep", "ripgrep", "Fast recursive search for source trees and logs.", "Development", "fedora", "ripgrep", gui=False, keywords=("search", "cli", "development"), requires_reboot_on_atomic=True),
         ApplicationRecord("toolbox", "Toolbox", "Fedora development containers for immutable desktops.", "Development", "fedora", "toolbox", gui=False, keywords=("containers", "atomic", "development"), requires_reboot_on_atomic=True),
         ApplicationRecord("p7zip", "7-Zip", "Archive utility for common compressed formats.", "Utilities", "fedora", "p7zip", gui=False, keywords=("archive", "compression"), requires_reboot_on_atomic=True),
+        ApplicationRecord("flatseal", "Flatseal", "Review and modify Flatpak application permissions.", "Security", "flatpak", "com.github.tchx84.Flatseal", keywords=("permissions", "flatpak", "security")),
+        ApplicationRecord("mission-center", "Mission Center", "Modern hardware and resource monitor.", "Utilities", "flatpak", "io.missioncenter.MissionCenter", keywords=("monitor", "cpu", "gpu", "task manager")),
+        ApplicationRecord("spotify", "Spotify", "Online music streaming client.", "Media", "flatpak", "com.spotify.Client", keywords=("music", "audio", "streaming")),
+        ApplicationRecord("neovim", "Neovim", "Modern Vim-fork text editor for the terminal.", "Development", "fedora", "neovim", gui=False, keywords=("editor", "vim", "cli"), requires_reboot_on_atomic=True),
     )
 
 
