@@ -423,6 +423,9 @@ jobs:
       - name: Smoke test — CLI help
         run: |
           su -s /bin/bash smoke -c 'loofi-fedora-tweaks --cli --help'
+      - name: Smoke test — installed read-only JSON contracts
+        run: |
+          su -s /bin/bash smoke -c 'python3 scripts/package_smoke.py --launcher /usr/bin/loofi-fedora-tweaks'
 
   build_sdist:
     runs-on: ubuntu-latest

@@ -2,12 +2,14 @@
 
 from __future__ import annotations
 
+import math
 from collections.abc import Iterable, Mapping
 from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import QThread, Qt, pyqtSignal
+from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
     QAbstractItemView,
     QHeaderView,
@@ -90,6 +92,24 @@ class ActivityJournalWorker(BaseWorker):
         return result
 
 
+# Parentless workers must survive page destruction until QThread really exits.
+# BaseWorker.finished carries a result and is not QThread.finished().
+_ACTIVE_JOURNAL_WORKERS: set[ActivityJournalWorker] = set()
+
+
+def _stop_journal_workers(workers: set[ActivityJournalWorker]) -> None:
+    for worker in tuple(workers):
+        worker.cancel()
+        worker.requestInterruption()
+        worker.wait(100)
+
+
+def _journal_thread_finished(worker: ActivityJournalWorker, workers: set[ActivityJournalWorker]) -> None:
+    workers.discard(worker)
+    _ACTIVE_JOURNAL_WORKERS.discard(worker)
+    worker.deleteLater()
+
+
 class ActivityRecoveryTab(QWidget, PluginInterface):
     """Explicitly loaded activity ledger with inert recovery metadata."""
 
@@ -116,6 +136,10 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._snapshot: ChangeJournalSnapshot | None = None
         self._events_by_id: dict[str, ChangeEvent] = {}
         self._worker: ActivityJournalWorker | None = None
+        self._workers: set[ActivityJournalWorker] = set()
+        self._closing = False
+        workers = self._workers
+        self.destroyed.connect(lambda: _stop_journal_workers(workers))
         self._next_cursor: str | None = None
         self._page_filter_key: tuple[tuple[str, Any], ...] | None = None
         self._requested_run_id = ""
@@ -348,9 +372,16 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
 
     def load_activity(self, *, refresh: bool, append: bool = False) -> None:
         """Start one explicit, non-overlapping local collection."""
+        if self._closing:
+            return
         if self._worker is not None and self._worker.isRunning():
             return
-        filters = self._current_filters()
+        try:
+            filters = self._current_filters()
+        except ValueError as exc:
+            self.feedback.setText(str(exc))
+            self.feedback.setVisible(True)
+            return
         filter_key = self._filter_key(filters)
         append = bool(
             append
@@ -367,18 +398,39 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             refresh=refresh,
             filters=filters,
             cursor=self._next_cursor if append else None,
-            parent=self,
         )
         worker.setProperty("appendPage", append)
         worker.setProperty("filterKey", filter_key)
         worker.finished.connect(self._loaded)
         worker.error.connect(self._load_failed)
-        worker.finished.connect(worker.deleteLater)
-        worker.error.connect(worker.deleteLater)
+        self._workers.add(worker)
+        _ACTIVE_JOURNAL_WORKERS.add(worker)
+        workers = self._workers
+        QThread.finished.__get__(worker, QThread).connect(lambda: _journal_thread_finished(worker, workers))
         self._worker = worker
         worker.start()
 
+    def cleanup(self) -> None:
+        """Disconnect page callbacks and bound shutdown without destroying a thread."""
+        if self._closing:
+            return
+        self._closing = True
+        for worker in tuple(self._workers):
+            for signal, callback in ((worker.finished, self._loaded), (worker.error, self._load_failed)):
+                try:
+                    signal.disconnect(callback)
+                except (TypeError, RuntimeError):
+                    pass
+        _stop_journal_workers(self._workers)
+        self._worker = None
+
+    def closeEvent(self, event: QCloseEvent | None) -> None:
+        self.cleanup()
+        super().closeEvent(event)
+
     def _loaded(self, result: object) -> None:
+        if self._closing:
+            return
         if not isinstance(result, ChangeJournalSnapshot):
             self._load_failed(self.tr("The activity source returned an invalid result."))
             return
@@ -387,7 +439,11 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             if self._worker is not None
             else None
         )
-        current_filter_key = self._filter_key(self._current_filters())
+        try:
+            current_filter_key = self._filter_key(self._current_filters())
+        except ValueError as exc:
+            self._load_failed(str(exc))
+            return
         if requested_filter_key is not None and requested_filter_key != current_filter_key:
             self._worker = None
             self._next_cursor = None
@@ -441,6 +497,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         return tuple(sorted(filters.items()))
 
     def _load_failed(self, message: str) -> None:
+        if self._closing:
+            return
         self.load_button.reset_state()
         self._apply_presentation_state(
             error_state(
@@ -564,12 +622,18 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             if not value:
                 continue
             try:
-                filters[field] = float(value)
+                timestamp = float(value)
             except ValueError:
                 try:
-                    filters[field] = datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
-                except ValueError:
-                    self.feedback.setText(self.tr("Date filters must use YYYY-MM-DD or Unix timestamps."))
+                    timestamp = datetime.fromisoformat(value.replace("Z", "+00:00")).timestamp()
+                except (ValueError, OverflowError, OSError) as exc:
+                    raise ValueError(self.tr("Date filters must use YYYY-MM-DD or Unix timestamps.")) from exc
+            if not math.isfinite(timestamp):
+                raise ValueError(self.tr("Date filters must contain finite Unix timestamps."))
+            filters[field] = timestamp
+        since, until = filters.get("since"), filters.get("until")
+        if isinstance(since, float) and isinstance(until, float) and since > until:
+            raise ValueError(self.tr("The since date must not be later than the until date."))
         return filters
 
     def _source_status_text(self, snapshot: ChangeJournalSnapshot) -> str:

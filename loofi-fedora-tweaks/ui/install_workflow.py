@@ -42,6 +42,7 @@ class InstallWorkflowPage(QWidget):
         self.catalog = catalog or ApplicationCatalog()
         self.context = context
         self._rows: dict[str, tuple[ApplicationRecord, ApplicationEligibility, QListWidgetItem]] = {}
+        self._selected_ids: set[str] = set()
         self._last_bundle: object | None = None
         self._last_outcome: object | None = None
         self._compat_primary_button: QPushButton | None = None
@@ -157,15 +158,18 @@ class InstallWorkflowPage(QWidget):
 
     def selected_application_ids(self) -> tuple[str, ...]:
         return tuple(
-            application_id
-            for application_id, (_record, _eligibility, item) in self._rows.items()
-            if item.checkState() is Qt.CheckState.Checked
+            record.id for record in self.catalog.all(context=self.context)
+            if record.id in self._selected_ids
         )
 
     def _refresh_rows(self, *_args: Any) -> None:
-        previous = set(self.selected_application_ids()) if self._rows else set()
+        self._selected_ids.intersection_update(
+            record.id for record in self.catalog.all(context=self.context)
+            if self.catalog.eligibility(record, self.context).selectable
+        )
         query = self.search_input.text()
         category = str(self.category_filter.currentData() or "")
+        self.application_list.blockSignals(True)
         self.application_list.clear()
         self._rows.clear()
         for record, eligibility in self.catalog.search(query, category=category, context=self.context):
@@ -174,11 +178,12 @@ class InstallWorkflowPage(QWidget):
             item.setToolTip(eligibility.reason)
             item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
             if eligibility.selectable:
-                item.setCheckState(Qt.CheckState.Checked if record.id in previous else Qt.CheckState.Unchecked)
+                item.setCheckState(Qt.CheckState.Checked if record.id in self._selected_ids else Qt.CheckState.Unchecked)
             else:
                 item.setCheckState(Qt.CheckState.Unchecked)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
             self._rows[record.id] = (record, eligibility, item)
+        self.application_list.blockSignals(False)
         self._update_review_summary()
 
     @staticmethod
@@ -198,13 +203,18 @@ class InstallWorkflowPage(QWidget):
             self.review_summary.setText(self.tr("No applications selected."))
             self.review_button.setEnabled(False)
             return
-        names = [self._rows[item][0].name for item in selected if item in self._rows]
+        names = [record.name for item in selected if (record := self.catalog.get(item)) is not None]
         self.review_summary.setText(
             self.tr("%1 selected: %2").replace("%1", str(len(names))).replace("%2", ", ".join(names))
         )
         self.review_button.setEnabled(True)
 
-    def _on_item_changed(self, _item: QListWidgetItem) -> None:
+    def _on_item_changed(self, item: QListWidgetItem) -> None:
+        application_id = str(item.data(Qt.ItemDataRole.UserRole) or "")
+        if item.checkState() is Qt.CheckState.Checked:
+            self._selected_ids.add(application_id)
+        else:
+            self._selected_ids.discard(application_id)
         self._update_review_summary()
 
     def focus_task(self, task_id: str) -> bool:

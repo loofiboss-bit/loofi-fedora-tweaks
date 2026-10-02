@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 30.2.0 "Comfort"; physical desktop validation remains pending.
+> Version 30.2.1 "Comfort"; physical desktop validation remains pending.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -57,6 +57,9 @@ trusted system-integrated and command-line tools on Traditional Fedora. Atomic
 systems show Flatpak first and mark layered RPM operations as advanced and
 reboot-aware. Unsupported or unknown platforms fail closed.
 
+Selections survive search and category changes. The summary and review include
+hidden selected items; changing platform availability removes ineligible choices.
+
 Choose **Review selected applications** to inspect the bundle. Items execute
 independently and keep separate terminal outcomes. The bundle never retries,
 rolls back, or reboots automatically.
@@ -97,6 +100,9 @@ evidence, the next step is a supported verified operation, instructions, or a
 native system-settings handoff. Storage trim and package cache cleanup are
 available here. There is no **Fix all** action.
 
+Failed or unavailable probes remain explicit. A partial System Check preserves
+useful findings alongside source errors; missing evidence never proves health.
+
 ## Updates
 
 System, Flatpak, and Firmware are independent cards. Each card shows freshness,
@@ -111,6 +117,9 @@ Missing tools, remotes, authorization, or supported backends remain explicit.
 A source that could not be checked is never presented as up to date.
 
 ## Activity & Recovery
+
+Date filters accept ISO dates or finite Unix timestamps. Invalid dates or a
+reversed interval stop loading and preserve the previously displayed result.
 
 Activity groups **Needs you**, **In progress**, and **History**. It carries
 verification failures, reboot follow-up, and recovery guidance only where the

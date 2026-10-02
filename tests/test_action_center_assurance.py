@@ -440,7 +440,7 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
         updates = ("fwupdmgr", "get-updates", "--json")
         self.runtime.results[updates] = ActionResult.ok(
             "updates",
-            stdout=json.dumps({"Devices": [{"Guid": "GUID-1", "Version": "2", "Checksum": "sha256:abc"}]}),
+            stdout=json.dumps({"Devices": [{"DeviceId": "device-1", "Guid": ["GUID-1"], "Version": "1", "Releases": [{"Version": "2", "Checksum": ["sha256:abc"]}]}]}),
         )
         decision = definition.preflight_checker({}, self.runtime)
         self.runtime.results[("fwupdmgr", "get-history", "--json")] = ActionResult.ok("history", stdout="{}")

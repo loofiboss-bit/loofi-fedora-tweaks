@@ -1,12 +1,12 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the v30.2.0 "Comfort" release.
+> Canonical architecture reference for the local v30.2.1 "Comfort" candidate.
 > The supported product is a desktop-neutral Fedora application built with
 > Python 3.12+ and PyQt6.
 
-The [v30.2 architecture specification](.workflow/specs/arch-v30.2.0.md) retains
-the shared runtime safety boundary while adding direct state-backed settings
-and first-visit loading for Apps, Tweaks, Health, and Updates.
+The [v30.2.1 architecture specification](.workflow/specs/arch-v30.2.1.md) retains
+the shared runtime safety boundary while stabilizing private exports, state
+integrity, source results, firmware evidence, and page lifetimes.
 Activity & Recovery and Settings are secondary header surfaces. Action Center
 remains the sole system-mutation authority.
 
@@ -39,8 +39,9 @@ runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
 The release architecture contract is
-[.workflow/specs/arch-v30.2.0.md](.workflow/specs/arch-v30.2.0.md).
-The public baseline is `v30.1.0` Personalize, commit `737a550`.
+[.workflow/specs/arch-v30.2.1.md](.workflow/specs/arch-v30.2.1.md).
+The candidate baseline is `v30.2.0` at commit `15967f2`.
+The current public release remains `v30.2.0`; local work does not authorize publication.
 
 ## Comfort tweak restoration
 

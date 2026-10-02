@@ -1,8 +1,8 @@
 # Documentation
 
-This map covers the v30.2.0 "Comfort". The
-[architecture specification](../.workflow/specs/arch-v30.2.0.md) and
-[release tasks](../.workflow/specs/tasks-v30.2.0.md) are the implementation
+This map covers the local v30.2.1 "Comfort" candidate. The
+[architecture specification](../.workflow/specs/arch-v30.2.1.md) and
+[release tasks](../.workflow/specs/tasks-v30.2.1.md) are the implementation
 authority.
 
 ## Use Loofi
@@ -46,10 +46,13 @@ Repository-wide instructions live in [AGENTS.md](../AGENTS.md).
 - [Roadmap](../ROADMAP.md) — current release status
 - [Changelog](../CHANGELOG.md) — complete historical record
 - [Release notes](releases/RELEASE_NOTES.md) — release-note index
+- [v30.2.1 Comfort candidate](releases/RELEASE-NOTES-v30.2.1.md) — local stabilization scope and qualification boundaries
+- [v30.2.1 stabilization review](reports/V30.2.1_STABILIZATION_REVIEW.md) — fixes and evidence limits
+- [v30.2.1 local qualification](reports/V30.2.1_LOCAL_QUALIFICATION.md) — automated and installed-package evidence
 - [v30.2.0 Comfort](releases/RELEASE-NOTES-v30.2.0.md) — published release
 - [v30.2.0 local qualification](reports/V30.2.0_LOCAL_QUALIFICATION.md) — evidence and remaining physical checks
 - [v30.2.0 public release evidence](reports/V30.2.0_RELEASE_PUBLICATION.md) — GitHub, COPR, and wiki readback
-- [v30.1.0 Personalize release notes](releases/RELEASE-NOTES-v30.1.0.md) — current release
+- [v30.1.0 Personalize release notes](releases/RELEASE-NOTES-v30.1.0.md) — preceding public release
 - [v30.0.1 Steady candidate notes](releases/RELEASE-NOTES-v30.0.1.md) — preceding local work
 - [v29.0.1 Utility public release](releases/RELEASE-NOTES-v29.0.1.md) — previous public release
 - [v29.0.1 public release evidence](reports/V29.0.1_RELEASE_PUBLICATION.md) — exact publication readback

@@ -1,5 +1,6 @@
 # Release Notes -- Latest
 
+- [v30.2.1 Comfort local candidate](RELEASE-NOTES-v30.2.1.md)
 - [v30.2.0 Comfort](RELEASE-NOTES-v30.2.0.md)
 - [v30.1.0 Personalize release](RELEASE-NOTES-v30.1.0.md)
 - [v30.0.1 Steady local candidate](RELEASE-NOTES-v30.0.1.md)
@@ -14,6 +15,7 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
+- **Local candidate:** [v30.2.1 Comfort](RELEASE-NOTES-v30.2.1.md), not published or installed.
 - **Published release:** [v30.2.0 Comfort](RELEASE-NOTES-v30.2.0.md).
 - **Previous release:** [v30.1.0 Personalize](RELEASE-NOTES-v30.1.0.md).
 - v30.0.1 "Steady" remains an unpublished local candidate.

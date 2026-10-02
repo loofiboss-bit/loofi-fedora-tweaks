@@ -336,7 +336,7 @@ class TestSupportBundleV13(unittest.TestCase):
 
     @patch(
         "utils.journal.subprocess.run",
-        return_value=SimpleNamespace(stdout=""),
+        return_value=SimpleNamespace(stdout="", stderr="", returncode=0),
     )
     @patch.object(
         JournalManager,
@@ -378,7 +378,7 @@ class TestSupportBundleV13(unittest.TestCase):
 
     @patch(
         "utils.journal.subprocess.run",
-        return_value=SimpleNamespace(stdout=""),
+        return_value=SimpleNamespace(stdout="", stderr="", returncode=0),
     )
     @patch.object(
         JournalManager,

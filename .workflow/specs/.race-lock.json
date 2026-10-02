@@ -1,19 +1,19 @@
 {
-  "version": "v30.2.0",
-  "target_version": "v30.2.0",
-  "started_at": "20260930",
-  "status": "complete",
-  "phase": "published",
-  "baseline_commit": "737a550ee716da8b9ddff5b125cf165db57ef4e9",
-  "product_version": "v30.2.0",
+  "version": "v30.2.1",
+  "target_version": "v30.2.1",
+  "started_at": "20261002_192124",
+  "status": "active",
+  "phase": "local-qualified",
+  "baseline_commit": "15967f2550bd2f776bc07eb596a29a972e49fbf5",
+  "product_version": "v30.2.1",
   "product_codename": "Comfort",
   "target_codename": "Comfort",
-  "baseline_product_version": "v30.1.0",
-  "baseline_product_codename": "Personalize",
+  "baseline_product_version": "v30.2.0",
+  "baseline_product_codename": "Comfort",
   "current_public_release": "v30.2.0",
   "current_release_commit": "8becbf696fae3d931d7602e05b195cc1850775c8",
-  "publication_authorized": true,
-  "delivery": "public-release",
+  "publication_authorized": false,
+  "delivery": "local-candidate",
   "physical_gates": {
     "kde": "unverified",
     "gnome": "unverified",
@@ -21,13 +21,14 @@
     "atomic": "unverified",
     "manual_keyboard": "unverified",
     "scaling": "unverified",
-    "audible_orca": "unverified"
+    "audible_orca": "unverified",
+    "polkit": "unverified"
   },
   "external_release_gates": {
-    "commit_push_pr": "passed-public-readback",
-    "github_release": "passed-public-readback",
-    "copr": "passed-public-readback",
-    "public_wiki": "passed-public-readback",
+    "commit_push_pr": "authorized",
+    "github_release": "not-authorized",
+    "copr": "not-authorized",
+    "public_wiki": "not-authorized",
     "workstation_install": "not-authorized"
   },
   "v24_historical_tag_collision": {
@@ -102,8 +103,6 @@
     "status": "preserved-unmodified",
     "candidate_release_identity": "v30.1.0"
   },
-  "publication_authorized_at": "2026-10-01",
-  "publication_authorization": "User: Lansera och g\u00e5 live fullt ut",
   "current_public_release_evidence": {
     "tag": "v30.2.0",
     "tag_object": "407e27de0e8502cb6e5cc58f6a2c42c5bcee910f",
@@ -122,5 +121,9 @@
     "copr_evr": "1:30.2.0-1.fc44",
     "copr_signature": "passed",
     "publication_report": "docs/reports/V30.2.0_RELEASE_PUBLICATION.md"
-  }
+  },
+  "bumped_at": "2026-10-02T19:21:24.334597+00:00",
+  "local_delivery_authority": "User approved implementation, regression tests, local verification and RPM/source builds. A subsequent request authorizes commit, push and pull request creation; merging, tagging, release publication, installation and host mutation remain unauthorized.",
+  "local_qualification_report": "docs/reports/V30.2.1_LOCAL_QUALIFICATION.md",
+  "local_review_report": "docs/reports/V30.2.1_STABILIZATION_REVIEW.md"
 }
