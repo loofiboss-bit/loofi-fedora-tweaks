@@ -1,5 +1,5 @@
 {
-  "version": "31.0.0",
+  "version": "31.1.0",
   "codename": "Mastery",
   "app_name": "Loofi Fedora Tweaks",
   "tab_count": 18,
@@ -27,10 +27,10 @@
   "utils_module_count": 75,
   "test_count": "unverified",
   "coverage": "unverified",
-  "active_version": "31.0.0",
+  "active_version": "31.1.0",
   "next_version": "",
   "roadmap_status": "active",
-  "pipeline_version": "v31.0.0",
+  "pipeline_version": "v31.1.0",
   "pipeline_status": "active",
   "python_version": "3.12",
   "framework": "PyQt6"

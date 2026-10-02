@@ -1,7 +1,8 @@
 # Changelog
 
-## [31.0.0] - 2026-10-02 - "Mastery"
+## [31.1.0] - 2026-10-02 - "Mastery"
 
+- Release identity assigned to v31.1.0 to resolve historical tag collision with archived 2026-02-13 Smart UX tags.
 - Expand tweak catalog to 22 verified controls across GNOME, KDE, and system packaging.
 - Add GNOME window titlebar buttons, touchpad tap-to-click, night light, sound over-amplification, and font antialiasing.
 - Add KDE touchpad tap-to-click and night color with declarative configuration mapping.

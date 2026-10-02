@@ -1,10 +1,10 @@
 # ARCHITECTURE.md — Loofi Fedora Tweaks
 
-> Canonical architecture reference for the local v31.0.0 "Mastery" candidate.
+> Canonical architecture reference for the local v31.1.0 "Mastery" candidate.
 > The supported product is a desktop-neutral Fedora application built with
 > Python 3.12+ and PyQt6.
 
-The [v31.0.0 architecture specification](.workflow/specs/arch-v31.0.0.md) expands
+The [v31.1.0 architecture specification](.workflow/specs/arch-v31.1.0.md) expands
 the tweak catalog across GNOME, KDE, and DNF5, provides full CLI parity,
 and implements dynamic package manager resolution.
 Activity & Recovery and Settings are secondary header surfaces. Action Center
@@ -39,7 +39,7 @@ runtime, Flatpak application bundle, specialist suite, marketplace, unattended
 scheduler, automatic retry, automatic rollback, or automatic reboot.
 
 The release architecture contract is
-[.workflow/specs/arch-v31.0.0.md](.workflow/specs/arch-v31.0.0.md).
+[.workflow/specs/arch-v31.1.0.md](.workflow/specs/arch-v31.1.0.md).
 The candidate baseline is `v30.2.1` at commit `f4a71a9`.
 The current public release remains `v30.2.1`; local work does not authorize publication.
 

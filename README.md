@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks v31.0.0 "Mastery" — Local Candidate
+# Loofi Fedora Tweaks v31.1.0 "Mastery" — Local Candidate
 
 <!-- markdownlint-configure-file {"MD033": false} -->
 
@@ -23,9 +23,9 @@
 
 ## What Loofi does
 
-The local v31.0.0 candidate delivers comprehensive desktop setting mastery and
+The local v31.1.0 candidate delivers comprehensive desktop setting mastery and
 command-line parity, expanding the tweak catalog across GNOME, KDE, and DNF5.
-See the [candidate notes](docs/releases/RELEASE-NOTES-v31.0.0.md). Publication and
+See the [candidate notes](docs/releases/RELEASE-NOTES-v31.1.0.md). Publication and
 workstation installation are outside this candidate's authority.
 
 Loofi Fedora Tweaks brings common Fedora jobs into one small, desktop-neutral

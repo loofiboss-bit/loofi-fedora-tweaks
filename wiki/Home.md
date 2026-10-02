@@ -1,11 +1,11 @@
-# Loofi Fedora Tweaks Wiki — v31.0.0 "Mastery" Local Candidate
+# Loofi Fedora Tweaks Wiki — v31.1.0 "Mastery" Local Candidate
 
 Welcome to the official documentation for Loofi Fedora Tweaks, a curated
 Fedora utility for installing applications, tuning safe settings, diagnosing
 problems, and updating the system.
 
 The local candidate is documented in the
-[v31.0.0 notes](../docs/releases/RELEASE-NOTES-v31.0.0.md).
+[v31.1.0 notes](../docs/releases/RELEASE-NOTES-v31.1.0.md).
 Its publication and workstation installation are not authorized.
 
 **Current public release:** [v30.2.0 "Comfort"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0), available on GitHub and Fedora 44 COPR.

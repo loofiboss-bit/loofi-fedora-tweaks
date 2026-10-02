@@ -1,11 +1,11 @@
 {
-  "version": "v31.0.0",
-  "target_version": "v31.0.0",
-  "started_at": "20261002_224605",
+  "version": "v31.1.0",
+  "target_version": "v31.1.0",
+  "started_at": "20261002_215055",
   "status": "active",
   "phase": "local-qualified",
-  "baseline_commit": "f4a71a9f14bceeecf3cd4859209f0b00b9ce8da8",
-  "product_version": "v31.0.0",
+  "baseline_commit": "674da46e1f17813ac99011b2c9ec2c2cfa2055a5",
+  "product_version": "v31.1.0",
   "product_codename": "Mastery",
   "target_codename": "Mastery",
   "baseline_product_version": "v30.2.1",
@@ -103,6 +103,14 @@
     "status": "preserved-unmodified",
     "candidate_release_identity": "v30.1.0"
   },
+  "v31_historical_tag_collision": {
+    "tag": "v31.0.0",
+    "tag_object": "99ab3b24659c93013ee3c1cccf58a58bb3565405",
+    "peeled_commit": "b1ed758b60afa8b8336d611514651b135bc525b9",
+    "historical_codename": "Smart UX",
+    "status": "preserved-unmodified",
+    "candidate_release_identity": "v31.1.0"
+  },
   "current_public_release_evidence": {
     "tag": "v30.2.0",
     "tag_object": "407e27de0e8502cb6e5cc58f6a2c42c5bcee910f",
@@ -122,7 +130,7 @@
     "copr_signature": "passed",
     "publication_report": "docs/reports/V30.2.0_RELEASE_PUBLICATION.md"
   },
-  "bumped_at": "2026-10-02T19:21:24.334597+00:00",
+  "bumped_at": "2026-10-02T21:50:55.430112+00:00",
   "local_delivery_authority": "User approved implementation, regression tests, local verification and RPM/source builds. A subsequent request authorizes commit, push and pull request creation; merging, tagging, release publication, installation and host mutation remain unauthorized.",
   "local_qualification_report": "docs/reports/V30.2.1_LOCAL_QUALIFICATION.md",
   "local_review_report": "docs/reports/V30.2.1_STABILIZATION_REVIEW.md"

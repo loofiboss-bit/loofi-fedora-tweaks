@@ -1,4 +1,4 @@
-# Visual Interface Gallery — v31.0.0 "Mastery"
+# Visual Interface Gallery — v31.1.0 "Mastery"
 
 These static captures document the retained task-oriented shell and are not
 physical desktop qualification evidence.

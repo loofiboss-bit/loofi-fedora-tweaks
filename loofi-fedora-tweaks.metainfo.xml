@@ -40,9 +40,9 @@
   </provides>
 
   <releases>
-    <release version="31.0.0" date="2026-10-02" type="development">
+    <release version="31.1.0" date="2026-10-02" type="stable">
       <description>
-        <p>v31.0.0 "Mastery": Expanded tweak catalog to 22 controls across GNOME, KDE, and DNF5, full CLI parity for tweaks and apps, and dynamic package manager resolution.</p>
+        <p>v31.1.0 "Mastery": Expanded tweak catalog to 22 controls across GNOME, KDE, and DNF5, full CLI parity for tweaks and apps, and dynamic package manager resolution.</p>
       </description>
     </release>
     <release version="30.2.1" date="2026-10-02" type="development">

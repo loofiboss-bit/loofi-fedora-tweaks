@@ -1,6 +1,6 @@
 # Release Notes -- Latest
 
-- [v31.0.0 Mastery](RELEASE-NOTES-v31.0.0.md)
+- [v31.1.0 Mastery](RELEASE-NOTES-v31.1.0.md)
 - [v30.2.1 Comfort local candidate](RELEASE-NOTES-v30.2.1.md)
 - [v30.2.0 Comfort](RELEASE-NOTES-v30.2.0.md)
 - [v30.1.0 Personalize release](RELEASE-NOTES-v30.1.0.md)
@@ -16,7 +16,7 @@ Canonical "latest release notes index" for the project.
 
 ## Current Release
 
-- **Current release:** [v31.0.0 Mastery](RELEASE-NOTES-v31.0.0.md).
+- **Current release:** [v31.1.0 Mastery](RELEASE-NOTES-v31.1.0.md).
 - **Previous release:** [v30.2.1 Comfort](RELEASE-NOTES-v30.2.1.md).
 - v30.0.1 "Steady" remains an unpublished local candidate.
 - Previous public release: [v29.0.1 Utility](RELEASE-NOTES-v29.0.1.md)
