@@ -14,8 +14,25 @@
 ![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
 
 <p align="center">
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0">
-    <img src="https://img.shields.io/badge/Release-v30.2.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v30.2.0 release"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v31.1.0">
+    <img src="https://img.shields.io/badge/Release-v31.1.0-blue?style=for-the-badge&logo=github" alt="Loofi Fedora Tweaks v31.1.0 release"/>
+  </a>
+  <a href="https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/">
+    <img src="https://img.shields.io/badge/COPR-fedora--44-blue?style=for-the-badge&logo=fedora" alt="Fedora COPR"/>
+  </a>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/workflows/ci.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/loofiboss-bit/loofi-fedora-tweaks/ci.yml?branch=master&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI Status"/>
+  </a>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/workflows/codeql.yml">
+    <img src="https://img.shields.io/github/actions/workflow/status/loofiboss-bit/loofi-fedora-tweaks/codeql.yml?branch=master&style=for-the-badge&logo=github&label=CodeQL" alt="CodeQL"/>
+  </a>
+</p>
+
+<p align="center">
+  <img src="https://img.shields.io/badge/Tests-5%2C043%20passed-brightgreen?style=for-the-badge&logo=pytest" alt="5043 Tests Passed"/>
+  <img src="https://img.shields.io/badge/Coverage-85%25-brightgreen?style=for-the-badge" alt="Coverage 85%+"/>
+  <a href="LICENSE">
+    <img src="https://img.shields.io/badge/License-MIT-blue?style=for-the-badge" alt="MIT License"/>
   </a>
   <img src="https://img.shields.io/badge/Fedora-43_|_44-blue?style=for-the-badge&logo=fedora" alt="Fedora 43 and 44"/>
   <img src="https://img.shields.io/badge/Python-3.12+-green?style=for-the-badge&logo=python" alt="Python 3.12 or newer"/>
