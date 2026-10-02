@@ -23,8 +23,8 @@
   <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/workflows/ci.yml">
     <img src="https://img.shields.io/github/actions/workflow/status/loofiboss-bit/loofi-fedora-tweaks/ci.yml?branch=master&style=for-the-badge&logo=githubactions&logoColor=white&label=CI" alt="CI Status"/>
   </a>
-  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/workflows/codeql.yml">
-    <img src="https://img.shields.io/github/actions/workflow/status/loofiboss-bit/loofi-fedora-tweaks/codeql.yml?branch=master&style=for-the-badge&logo=github&label=CodeQL" alt="CodeQL"/>
+  <a href="https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/workflows/github-code-scanning/codeql">
+    <img src="https://img.shields.io/github/actions/workflow/status/loofiboss-bit/loofi-fedora-tweaks/dynamic/github-code-scanning/codeql?branch=master&style=for-the-badge&logo=github&label=CodeQL" alt="CodeQL"/>
   </a>
 </p>
 
