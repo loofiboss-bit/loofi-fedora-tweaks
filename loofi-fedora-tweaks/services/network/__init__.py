@@ -1,4 +1,4 @@
-"""Network services — monitoring, ports, mesh discovery, utilities.
+"""Network services — monitoring, ports, utilities.
 
 Migrated from utils/ in v2.0.0.
 """

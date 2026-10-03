@@ -49,6 +49,7 @@ class AppSettings:
 
     # UX
     navigation_mode: str = "standard"
+    show_advanced_tools: bool = False
     suppressed_confirmations: list = field(default_factory=list)
     locale: str = "en"
     favorite_routes: list = field(default_factory=list)

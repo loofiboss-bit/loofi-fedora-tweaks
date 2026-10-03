@@ -1,5 +1,17 @@
 # Changelog
 
+## [32.0.0] - 2026-10-03 - "Refocus"
+
+- Open on Tweaks; keep four everyday jobs (Tweaks, Apps, Updates, Health) in the sidebar and put System, Storage, Network, Security and Logs behind "Show advanced tools" in Settings.
+- Expand the tweak catalog from 22 to 61 declarative GNOME and KDE controls, add "Reset to default" and a "Changed from default" filter.
+- Remove unused dialogs, wizards, CLI domains, network mesh, and orphaned utilities and their tests.
+- Generate `docs/TWEAKS.md` from the catalog (`scripts/gen_tweaks_doc.py`).
+- Keep the maintenance regression test from leaking stubbed Qt modules into later tests.
+
+- Define the product: tweaks first, with Apps, Updates, and Health as supporting jobs (`docs/PRODUCT.md`).
+- Rewrite README and ROADMAP as product documents; remove historical reports, plans, and release-evidence files (kept in git history).
+- Retire the release-evidence tooling (`.workflow/`, documentation and version-contract validators, AI-adapter sync, screenshot capture phases) and its CI steps. Build, packaging, Fedora review, and COPR gates are unchanged.
+
 ## [31.1.0] - 2026-10-02 - "Mastery"
 
 - Release identity assigned to v31.1.0 to resolve historical tag collision with archived 2026-02-13 Smart UX tags.

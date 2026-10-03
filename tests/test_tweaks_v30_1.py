@@ -56,6 +56,13 @@ READ_OUTPUTS = {
     "dnf-parallel-downloads": "max_parallel_downloads = 10\n",
 }
 
+# Catalog entries added in v32 read back their first curated choice.
+for _tweak in TWEAKS:
+    if _tweak.id not in READ_OUTPUTS:
+        _value = _tweak.choices[0][0]
+        _quoted = _tweak.id.startswith("gnome-") and _value not in ("true", "false")
+        READ_OUTPUTS[_tweak.id] = f"'{_value}'\n" if _quoted else f"{_value}\n"
+
 
 class FakeRuntime:
     def __init__(self, desktop: str, backend: str = "dnf5") -> None:
@@ -85,10 +92,10 @@ class FakeRuntime:
 
 class TestTweakCatalog(unittest.TestCase):
     def test_twenty_two_controls_are_desktop_scoped_on_both_backends(self) -> None:
-        self.assertEqual(len(TWEAKS), 22)
+        self.assertEqual(len(TWEAKS), 61)
         for backend in ("dnf5", "rpm_ostree"):
-            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 14)
-            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 10)
+            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 41)
+            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 22)
         self.assertEqual(visible_tweaks(profile("unknown")), ())
         self.assertEqual(visible_tweaks(profile("kde", "bootc")), ())
 
@@ -169,7 +176,7 @@ class TestTweakCatalog(unittest.TestCase):
 
     def test_command_policy_rejects_unreviewed_settings_and_options(self) -> None:
         rejected = (
-            ["gsettings", "set", "org.gnome.desktop.privacy", "remember-recent-files", "false"],
+            ["gsettings", "set", "org.gnome.desktop.privacy", "disable-camera", "false"],
             ["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "unsafe"],
             ["kwriteconfig6", "--file", "kscreenlockerrc", "--group", "Daemon", "--key", "Autolock", "false"],
             ["plasma-apply-colorscheme", "--accent-color", "red"],

@@ -1,39 +1,25 @@
-# Visual Interface Gallery — v31.1.0 "Mastery"
+# Visual Interface Gallery — v32.0.0 "Refocus"
 
-These static captures document the retained task-oriented shell and are not
-physical desktop qualification evidence.
+Static offscreen captures of the shipped interface. They verify rendering and
+navigation but are not physical desktop, keyboard, scaling or assistive-technology
+qualification. Regenerate with `scripts/capture_v32_screenshots.py`.
 
-The images below document the task-oriented shell. Offscreen captures verify
-rendering and route integration but do not claim physical desktop, keyboard,
-scaling, or assistive-technology qualification.
+## Tweaks
 
-## Home
+![Tweaks](images/tweaks.png)
 
-The captures are from the public v29.0.1 baseline. They predate the v30.1.0
-navigation and Tweaks page and must not be treated as current UI evidence.
+## Apps
 
-![Home](images/home-dashboard.png)
+![Apps](images/apps.png)
 
-## Install
+## Updates
 
-![Install](images/install-app.png)
+![Updates](images/updates.png)
 
-## Tune
+## Health
 
-![Tune](images/tune-profile.png)
-
-## Fix
-
-![Fix](images/troubleshoot.png)
-
-## Update
-
-![Update](images/maintenance-updates.png)
-
-## Activity & Recovery
-
-![Activity & Recovery](images/activity-recovery.png)
+![Health](images/health.png)
 
 ## Settings
 
-![Settings](images/settings-appearance.png)
+![Settings](images/settings.png)

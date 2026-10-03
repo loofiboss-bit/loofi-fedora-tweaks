@@ -3,9 +3,9 @@
 from __future__ import annotations
 
 from collections.abc import Iterable
-from dataclasses import dataclass
 
 from core.navigation.models import Destination
+from core.navigation.routes import ShellRoute, visible_shell_routes
 from PyQt6.QtCore import QEvent, QSize, Qt, pyqtSignal
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
@@ -26,60 +26,11 @@ _PRESENTATION_GROUPS = {
 }
 
 
-@dataclass(frozen=True)
-class UtilityDestination:
-    """One user-facing destination in the v29 utility shell.
+# The shell navigation model lives in ``core.navigation.routes``; this alias
+# keeps the name used by the sidebar and its callers.
+UtilityDestination = ShellRoute
 
-    This is intentionally a UI projection rather than a replacement for the
-    canonical core navigation model.  It lets the shell expose five clear
-    jobs while legacy route IDs and plugin ownership remain available to the
-    policy layer underneath.
-    """
-
-    id: str
-    label: str
-    icon: str
-    default_route_id: str
-    description: str = ""
-
-
-UTILITY_DESTINATIONS: tuple[UtilityDestination, ...] = (
-    UtilityDestination(
-        "home",
-        "Home",
-        "home",
-        "atlas_dashboard",
-        "System status and the next useful Fedora task.",
-    ),
-    UtilityDestination(
-        "install",
-        "Apps",
-        "install",
-        "utility:install",
-        "Discover applications and trusted software sources.",
-    ),
-    UtilityDestination(
-        "tune",
-        "Tweaks",
-        "settings",
-        "utility:tune",
-        "Change supported Fedora and desktop settings directly.",
-    ),
-    UtilityDestination(
-        "fix",
-        "Health",
-        "maintenance-health",
-        "utility:fix",
-        "Diagnose a symptom and run reviewed maintenance.",
-    ),
-    UtilityDestination(
-        "update",
-        "Updates",
-        "update",
-        "utility:update",
-        "Check system, Flatpak, and firmware updates.",
-    ),
-)
+UTILITY_DESTINATIONS: tuple[UtilityDestination, ...] = visible_shell_routes(False)
 
 
 class DestinationSidebar(QTreeWidget):
@@ -145,7 +96,7 @@ class DestinationSidebar(QTreeWidget):
         self,
         destinations: Iterable[UtilityDestination] = UTILITY_DESTINATIONS,
     ) -> None:
-        """Render the five concise v29 jobs used by the main shell.
+        """Render the primary shell rows (four jobs, plus advanced rows when given).
 
         ``set_destinations`` remains available for callers that need the
         canonical core destination projection (and for compatibility tests).
@@ -155,12 +106,14 @@ class DestinationSidebar(QTreeWidget):
         selected = self.current_destination_id()
         self.clear()
         minimum_height = max(40, int(self.fontMetrics().height() * 2.35))
+        previous_advanced = False
         for destination in tuple(destinations):
             item = QTreeWidgetItem(self)
+            group = self.tr("Advanced") if destination.advanced else self.tr("Main tasks")
             item.setData(0, DESTINATION_ID_ROLE, destination.id)
             item.setData(0, DESTINATION_LABEL_ROLE, destination.label)
             item.setData(0, DESTINATION_ICON_ROLE, destination.icon)
-            item.setData(0, DESTINATION_GROUP_ROLE, self.tr("Main tasks"))
+            item.setData(0, DESTINATION_GROUP_ROLE, group)
             item.setData(
                 0,
                 Qt.ItemDataRole.AccessibleTextRole,
@@ -176,7 +129,9 @@ class DestinationSidebar(QTreeWidget):
                 0,
                 destination.description or destination.label,
             )
-            item.setSizeHint(0, QSize(0, minimum_height))
+            group_spacing = 12 if destination.advanced and not previous_advanced and self.topLevelItemCount() > 1 else 0
+            item.setSizeHint(0, QSize(0, minimum_height + group_spacing))
+            previous_advanced = destination.advanced
             item.setIcon(
                 0,
                 get_qicon(

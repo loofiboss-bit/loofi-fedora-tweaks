@@ -5,7 +5,7 @@ import unittest
 
 
 TAB_MODULES = {
-    "ui.atlas_dashboard_tab": "AtlasDashboardTab",
+    "ui.tweaks_page": "TweaksPage",
     "ui.system_info_tab": "SystemInfoTab",
     "ui.monitor_tab": "MonitorTab",
     "ui.maintenance_tab": "MaintenanceTab",

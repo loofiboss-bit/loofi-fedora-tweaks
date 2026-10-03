@@ -169,7 +169,17 @@ def _install_maintenance_import_stubs():
 class TestMaintenanceUpdatesRegression(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
+        # Load the real Qt bindings first so the stubs are restored to the real
+        # modules afterwards; dropping them would let later tests import PyQt6
+        # a second time and abort the interpreter.
+        try:
+            import PyQt6.QtCore  # noqa: F401
+            import PyQt6.QtGui  # noqa: F401
+            import PyQt6.QtWidgets  # noqa: F401
+        except ImportError:
+            pass
         cls._module_backup = {}
+        cls._modules_before = set(sys.modules)
         for module_name in (
             "PyQt6",
             "PyQt6.QtWidgets",
@@ -202,6 +212,11 @@ class TestMaintenanceUpdatesRegression(unittest.TestCase):
 
     @classmethod
     def tearDownClass(cls):
+        # Drop every module first imported while the Qt stubs were installed so
+        # later tests do not inherit classes bound to the stub widgets.
+        for module_name in set(sys.modules) - cls._modules_before:
+            if module_name.split(".")[0] in {"ui", "core", "services", "utils"}:
+                sys.modules.pop(module_name, None)
         for module_name in (
             "ui.maintenance_tab",
             "ui.maintenance_updates",

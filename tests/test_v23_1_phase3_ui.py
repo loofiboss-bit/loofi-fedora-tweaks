@@ -22,7 +22,6 @@ from PyQt6.QtWidgets import QApplication, QGroupBox, QWidget
 
 from core.home import HomeSummary
 from core.workflows import ReclaimAnalysisService
-from ui.atlas_dashboard_tab import AtlasDashboardTab
 from ui.design.theme_manager import ThemeManager
 from ui.maintenance_action_center import (
     ACTION_CENTER_STATE_GROUPS,
@@ -58,22 +57,6 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
-
-    def test_home_consolidates_unavailable_status_and_distinguishes_failure(self):
-        provider = SimpleNamespace(summary=lambda: _empty_home_summary())
-        tab = AtlasDashboardTab(home_service=provider)
-        self.addCleanup(tab.deleteLater)
-
-        self.assertFalse(tab.status_unavailable.isHidden())
-        self.assertTrue(tab.status_grid.isHidden())
-        self.assertEqual(tab.status_unavailable.title_label.text(), "No system check has been run yet")
-        self.assertNotIn("Status unavailable", tab.status_unavailable.message_label.text())
-
-        provider.summary = lambda: _empty_home_summary(data_state="error")
-        tab.refresh_summary()
-
-        self.assertEqual(tab.status_unavailable.title_label.text(), "Status check failed")
-        self.assertIn("Check failed", tab.freshness_label.text())
 
     def test_home_keeps_the_four_utility_jobs_visible(self):
         from core.home.service import _COMMON_TASKS

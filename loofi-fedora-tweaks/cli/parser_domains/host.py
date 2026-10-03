@@ -15,18 +15,3 @@ def register_host_commands(subparsers: Subparsers) -> None:
         choices=["check", "conflicts", "history"],
         help="Read-only update query to perform",
     )
-
-
-def register_basic_host_commands(subparsers: Subparsers) -> None:
-    """Compatibility stub."""
-    pass
-
-
-def register_system_management_commands(subparsers: Subparsers) -> None:
-    """Compatibility stub."""
-    pass
-
-
-def register_post_agent_commands(subparsers: Subparsers) -> None:
-    """Compatibility stub."""
-    pass

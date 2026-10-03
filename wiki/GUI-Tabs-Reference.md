@@ -1,84 +1,62 @@
-# GUI Reference — v30.2.0 "Comfort"
+# GUI Reference — v32.0.0 "Refocus"
 
-The interface is organised around five jobs. Selecting a destination or search
-result only navigates; execution begins from a reviewable task on its owning
-page.
+Loofi Fedora Tweaks opens on **Tweaks**. Four everyday jobs live in the sidebar;
+selecting a destination or search result only navigates, and any change starts
+from a reviewable task on its owning page.
 
 ```text
-Header: [Search] [Activity & Recovery] [Settings]
-├── Home
+Sidebar: [Search Ctrl+K]
+├── Tweaks   (start page)
 ├── Apps
-├── Tweaks
-├── Health
-└── Updates
+├── Updates
+└── Health
+Header: [Activity & Recovery] [Settings]
 ```
 
-## Home
-
-Home displays the Fedora profile, compact status, one recommended next step,
-shortcuts to the four jobs, and current activity.
-
-![Home](images/home-dashboard.png)
-
-## Apps
-
-<a id="install"></a>
-
-Apps provides a curated searchable app catalog with category filters,
-installed state, source labels, and multi-select review. Flatpak is preferred
-for ordinary GUI applications. Traditional Fedora may use RPM for trusted CLI
-and system-integrated tools; Atomic RPM layering is advanced and reboot-aware.
-
-![Install](images/install-app.png)
+Advanced pages (System, Storage, Network, Security, Logs) appear only after you
+turn on **Show advanced tools** in Settings.
 
 ## Tweaks
 
-<a id="tune"></a>
+Tweaks lists 61 declarative controls for GNOME and KDE Plasma, grouped by theme
+(Appearance, Desktop, Interaction, Privacy, Input, Windows, Sound, Power, System
+& Packaging). The full list with defaults is generated in
+[docs/TWEAKS.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TWEAKS.md).
 
-Tweaks shows fourteen capability-scoped controls: seven on KDE and eight on
-GNOME including shared power profiles. Current values, unavailable explanations,
-and saved results stay on each row. KDE includes file opening, double-click
-interval, smooth scrolling, and scrollbar behavior; GNOME includes clock format
-and weekday display. Custom numeric values remain visible.
+- Each row shows the current value read from the system. Changes are checked
+  before and after they run.
+- **Reset to default** appears on a row whose value differs from its default.
+- **Changed from default** filters the page to those rows.
+- **Restore previous value** reverts the latest verified change. A fresh check
+  blocks restores when the setting has drifted since.
+- Search matches titles and descriptions.
 
-**Restore previous value** reviews the latest eligible verified change. Fresh
-preflight blocks drift, later attempts, missing history, and removed choices.
-A separately verified restore consumes its offer. KDE saved configuration may
-require affected applications to reopen. There are no profiles or bulk restore.
+![Tweaks](images/tweaks.png)
 
-The gallery captures predate Comfort; see [Screenshots](Screenshots).
+## Apps
 
-## Health
+A curated, searchable catalog with installed state and source labels. Flatpak is
+preferred for GUI applications; RPM is used for trusted CLI and system tools.
 
-<a id="fix"></a>
-
-Health begins with a symptom. Read-only diagnostics present findings before one
-supported operation, instruction, or native-settings handoff is offered. There
-is no **Fix all**.
-
-![Fix](images/troubleshoot.png)
+![Apps](images/apps.png)
 
 ## Updates
 
-<a id="update"></a>
+System, Flatpak and Firmware are separate cards with one primary action each:
+**Check**, **Update**, **Continue** or **Verify**.
 
-System, Flatpak, and Firmware are separate cards with freshness, count,
-details, and one primary action: **Check**, **Update**, **Continue**, or
-**Verify**.
+![Updates](images/updates.png)
 
-![Update](images/maintenance-updates.png)
+## Health
 
-## Activity & Recovery
+Health starts from a symptom and runs read-only diagnostics before offering one
+supported operation or instruction. There is no **Fix all**.
 
-The secondary Activity surface groups **Needs you**, **In progress**, and
-**History**. It owns reboot follow-up, explicit verification, and recovery
-guidance for saved operations.
-
-![Activity & Recovery](images/activity-recovery.png)
+![Health](images/health.png)
 
 ## Settings and accessibility
 
-Settings is opened from the header. Goal-based search uses `Ctrl+K`, returns
-focus to the selected task, and never executes from the result list. Layouts
-respond to window width and scaling, while physical keyboard, theme, scaling,
-and assistive-technology qualification is tracked separately.
+Settings is opened from the header and holds the **Show advanced tools** switch.
+Search uses `Ctrl+K` and never executes from the result list.
+
+![Settings](images/settings.png)

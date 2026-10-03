@@ -61,11 +61,77 @@ TWEAKS = (
     Tweak("kde-animation", "Animation speed", "Choose a Plasma animation speed; custom values remain untouched until changed.", "Appearance", "kde", "set-kde-animation", (("0", "Instant"), ("0.5", "Fast"), ("1", "Normal"))),
     Tweak("kde-tap-to-click", "Touchpad tap-to-click", "Tap the touchpad to click in KDE Plasma.", "Interaction", "kde", "set-kde-tap-to-click", (("true", "On"), ("false", "Off"))),
     Tweak("kde-night-color", "Night Color", "Warm display colors at night in KDE Plasma.", "Appearance", "kde", "set-kde-night-color", (("true", "On"), ("false", "Off"))),
+    Tweak("gnome-hot-corners", "Hot corner", "Open the Activities overview when the pointer hits the top-left corner.", "Desktop", "gnome", "set-gnome-hot-corners", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-clock-date", "Clock date", "Show the date next to the time in the top bar.", "Desktop", "gnome", "set-gnome-clock-date", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-overlay-scrolling", "Overlay scrollbars", "Hide scrollbars until you scroll.", "Appearance", "gnome", "set-gnome-overlay-scrolling", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-locate-pointer", "Locate pointer", "Highlight the pointer when you press Ctrl.", "Interaction", "gnome", "set-gnome-locate-pointer", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-primary-paste", "Middle-click paste", "Paste selected text with a middle click.", "Interaction", "gnome", "set-gnome-primary-paste", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-recent-files", "Remember recent files", "Keep a list of recently used files.", "Privacy", "gnome", "set-gnome-recent-files", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-location", "Location services", "Let apps request your location.", "Privacy", "gnome", "set-gnome-location", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-auto-trash", "Empty trash automatically", "Delete old files from the trash automatically.", "Privacy", "gnome", "set-gnome-auto-trash", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-lock-enabled", "Automatic screen lock", "Lock the screen automatically when the screen turns off.", "Privacy", "gnome", "set-gnome-lock-enabled", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-notification-banners", "Notification banners", "Show notification banners on screen.", "Privacy", "gnome", "set-gnome-notification-banners", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-lock-notifications", "Notifications on lock screen", "Show notifications while the screen is locked.", "Privacy", "gnome", "set-gnome-lock-notifications", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-touchpad-natural-scroll", "Touchpad natural scrolling", "Content follows your fingers on the touchpad.", "Input", "gnome", "set-gnome-touchpad-natural-scroll", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-mouse-natural-scroll", "Mouse natural scrolling", "Content follows the wheel direction on a mouse.", "Input", "gnome", "set-gnome-mouse-natural-scroll", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-disable-while-typing", "Disable touchpad while typing", "Ignore accidental touchpad touches while typing.", "Input", "gnome", "set-gnome-disable-while-typing", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-click-method", "Touchpad click method", "Choose how physical touchpad clicks are interpreted.", "Input", "gnome", "set-gnome-click-method", (("default", "System default"), ("areas", "Button areas"), ("fingers", "Finger count"), ("none", "Off"),)),
+    Tweak("gnome-dynamic-workspaces", "Dynamic workspaces", "Create and remove workspaces automatically.", "Windows", "gnome", "set-gnome-dynamic-workspaces", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-edge-tiling", "Edge tiling", "Tile windows by dragging them to screen edges.", "Windows", "gnome", "set-gnome-edge-tiling", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-center-new-windows", "Center new windows", "Open new windows in the center of the screen.", "Windows", "gnome", "set-gnome-center-new-windows", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-attach-modal", "Attach dialogs to windows", "Keep modal dialogs attached to their parent window.", "Windows", "gnome", "set-gnome-attach-modal", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-auto-raise", "Raise windows on hover", "Bring a window to the front when the pointer rests on it.", "Windows", "gnome", "set-gnome-auto-raise", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-focus-mode", "Window focus", "Choose how windows receive keyboard focus.", "Windows", "gnome", "set-gnome-focus-mode", (("click", "Click to focus"), ("sloppy", "Focus follows mouse"), ("mouse", "Focus under mouse"),)),
+    Tweak("gnome-titlebar-double-click", "Titlebar double-click", "Choose what double-clicking a titlebar does.", "Windows", "gnome", "set-gnome-titlebar-double-click", (("toggle-maximize", "Maximize"), ("minimize", "Minimize"), ("lower", "Lower"), ("menu", "Window menu"), ("none", "Nothing"),)),
+    Tweak("gnome-accent-color", "Accent color", "Choose the GNOME accent color (GNOME 47 or newer).", "Appearance", "gnome", "set-gnome-accent-color", (("blue", "Blue"), ("teal", "Teal"), ("green", "Green"), ("yellow", "Yellow"), ("orange", "Orange"), ("red", "Red"), ("pink", "Pink"), ("purple", "Purple"), ("slate", "Slate"),)),
+    Tweak("gnome-font-hinting", "Font hinting", "Choose how fonts are fitted to the pixel grid.", "Appearance", "gnome", "set-gnome-font-hinting", (("none", "None"), ("slight", "Slight"), ("medium", "Medium"), ("full", "Full"),)),
+    Tweak("gnome-event-sounds", "System sounds", "Play sounds for system events.", "Sound", "gnome", "set-gnome-event-sounds", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-idle-dim", "Dim screen when idle", "Reduce brightness when the computer is idle.", "Power", "gnome", "set-gnome-idle-dim", (("true", "On"), ("false", "Off"),)),
+    Tweak("gnome-power-button", "Power button action", "Choose what pressing the power button does.", "Power", "gnome", "set-gnome-power-button", (("suspend", "Suspend"), ("hibernate", "Hibernate"), ("interactive", "Ask"), ("nothing", "Nothing"),)),
+    Tweak("kde-focus-policy", "Window focus", "Choose how windows receive keyboard focus in Plasma.", "Windows", "kde", "set-kde-focus-policy", (("ClickToFocus", "Click to focus"), ("FocusFollowsMouse", "Focus follows mouse"), ("FocusUnderMouse", "Focus under mouse"),)),
+    Tweak("kde-titlebar-double-click", "Titlebar double-click", "Choose what double-clicking a titlebar does.", "Windows", "kde", "set-kde-titlebar-double-click", (("Maximize", "Maximize"), ("Minimize", "Minimize"), ("Shade", "Roll up"), ("Lower", "Lower"), ("Nothing", "Nothing"),)),
+    Tweak("kde-blur", "Background blur", "Blur the background behind translucent windows.", "Appearance", "kde", "set-kde-blur", (("true", "On"), ("false", "Off"),)),
+    Tweak("kde-translucency", "Window translucency", "Make windows translucent while moving them.", "Appearance", "kde", "set-kde-translucency", (("true", "On"), ("false", "Off"),)),
+    Tweak("kde-wobbly-windows", "Wobbly windows", "Wobble windows while dragging them.", "Appearance", "kde", "set-kde-wobbly-windows", (("true", "On"), ("false", "Off"),)),
+    Tweak("kde-numlock", "NumLock on startup", "Choose the NumLock state at login.", "Input", "kde", "set-kde-numlock", (("0", "On"), ("1", "Off"), ("2", "Leave unchanged"),)),
+    Tweak("kde-key-repeat", "Holding a key", "Choose what happens when you hold down a key.", "Input", "kde", "set-kde-key-repeat", (("repeat", "Repeat the key"), ("accent", "Show accent menu"), ("nothing", "Do nothing"),)),
+    Tweak("kde-autolock", "Automatic screen lock", "Lock the screen automatically after inactivity.", "Privacy", "kde", "set-kde-autolock", (("true", "On"), ("false", "Off"),)),
+    Tweak("kde-lock-on-resume", "Lock after sleep", "Require a password after waking from sleep.", "Privacy", "kde", "set-kde-lock-on-resume", (("true", "On"), ("false", "Off"),)),
+    Tweak("kde-confirm-logout", "Confirm logout", "Ask for confirmation before logging out.", "Desktop", "kde", "set-kde-confirm-logout", (("true", "On"), ("false", "Off"),)),
+    Tweak("kde-login-mode", "On login", "Choose which session is restored at login.", "Desktop", "kde", "set-kde-login-mode", (("restorePreviousLogout", "Restore previous session"), ("restoreSavedSession", "Restore saved session"), ("emptySession", "Start empty"),)),
+    Tweak("kde-show-delete", "Show Delete command", "Show a permanent Delete command in context menus.", "Interaction", "kde", "set-kde-show-delete", (("true", "On"), ("false", "Off"),)),
     Tweak("power-profile", "Power profile", "Choose an available power profile for this computer.", "Power", "all", "set-power-profile", (), True),
     Tweak("dnf-parallel-downloads", "DNF parallel downloads", "Speed up package downloads by downloading multiple packages simultaneously.", "System & Packaging", "all", "set-dnf-parallel-downloads", (("3", "3 (Fedora default)"), ("5", "5 (Fast)"), ("10", "10 (Ultra fast - Recommended)"), ("15", "15 (Maximum)")), True, True),
 )
 BY_ID = {tweak.id: tweak for tweak in TWEAKS}
 BY_ACTION = {tweak.action_id: tweak for tweak in TWEAKS}
+
+# Fedora/upstream defaults for GNOME, power and packaging controls. KDE defaults
+# come from the reviewed kreadconfig6 specs so there is one source of truth.
+_DEFAULTS = {
+    "gnome-color": "default", "gnome-animations": "true", "gnome-text-scale": "1.0",
+    "gnome-battery": "false", "gnome-clock": "false", "gnome-clock-format": "24h",
+    "gnome-clock-weekday": "false", "gnome-button-layout": ":appmenu,close",
+    "gnome-tap-to-click": "true", "gnome-night-light": "false", "gnome-sound-overamp": "false",
+    "gnome-font-antialiasing": "grayscale", "gnome-hot-corners": "true", "gnome-clock-date": "false",
+    "gnome-overlay-scrolling": "true", "gnome-locate-pointer": "false", "gnome-primary-paste": "true",
+    "gnome-recent-files": "true", "gnome-location": "true", "gnome-auto-trash": "false",
+    "gnome-lock-enabled": "true", "gnome-notification-banners": "true", "gnome-lock-notifications": "true",
+    "gnome-touchpad-natural-scroll": "true", "gnome-mouse-natural-scroll": "false",
+    "gnome-disable-while-typing": "true", "gnome-click-method": "default",
+    "gnome-dynamic-workspaces": "true", "gnome-edge-tiling": "true", "gnome-center-new-windows": "false",
+    "gnome-attach-modal": "true", "gnome-auto-raise": "false", "gnome-focus-mode": "click",
+    "gnome-titlebar-double-click": "toggle-maximize", "gnome-accent-color": "blue",
+    "gnome-font-hinting": "slight", "gnome-event-sounds": "true", "gnome-idle-dim": "true",
+    "gnome-power-button": "suspend", "power-profile": "balanced", "dnf-parallel-downloads": "3",
+}
+
+
+def default_for(tweak: Tweak) -> str:
+    """Return the known default value for a tweak, or an empty string if none is defined."""
+    if tweak.id in KDE_KEYS:
+        return KDE_KEYS[tweak.id][1]
+    return _DEFAULTS.get(tweak.id, "")
 
 
 def _profile_desktop(profile: object) -> str:
@@ -182,7 +248,7 @@ def read_tweak(
             value = ""
         choices = tweak.choices
     else:
-        value = output.strip("'") if tweak.id in {"gnome-color", "gnome-clock-format", "gnome-button-layout", "gnome-font-antialiasing"} else output
+        value = output.strip("'") if tweak.id in _GNOME_KEYS else output
     if tweak.id != "kde-color" and not valid_value(tweak.id, value):
         return TweakState(tweak, "error", message="The current setting value is invalid or outside its supported range.")
     if not value:

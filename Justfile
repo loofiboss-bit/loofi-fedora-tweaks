@@ -130,144 +130,38 @@ build-appimage:
 build-all: build-rpm build-sdist
 
 # ============================================================
-#  AI Workflow & Agents
+#  Quality Gates
 # ============================================================
 
-# Generate project stats (.project-stats.json)
-stats:
-    PYTHONPATH={{src_root}} python3 scripts/project_stats.py
-
-# Check if stats are fresh (CI mode — fails on drift)
-stats-check:
-    PYTHONPATH={{src_root}} python3 scripts/project_stats.py --check
-
-# Sync AI agent adapters (canonical → Claude/Codex)
-sync-agents:
-    python3 scripts/sync_ai_adapters.py --render
-
-# Check for adapter drift (CI mode — fails if out of sync)
-check-drift:
-	python3 scripts/sync_ai_adapters.py --check
-
-validate-product-contract:
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
-
-# Compatibility command for v18-era automation.
-validate-haven: validate-product-contract
-
+# Code-rule checks (stabilization rules + architecture boundaries)
 validate-architecture:
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_architecture.py
-
-validate-system-check:
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_system_check_contract.py
-
-validate-v23-phase5:
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v23_phase5.py
-
-validate-v23-phase6:
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_v23_phase6.py
-
-validate-v23-1:
-	LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 -m pytest tests/test_action_center.py tests/test_v29_vertical_flows.py tests/test_cli_parser_contract.py tests/test_main_window.py tests/test_v23_1_phase3_ui.py -q
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/check_stabilization_rules.py
-	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
-
-validate-v19-ui-evidence:
-	QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_v19_system_check_states.py --check
-
-# Validate release documentation
-validate-release:
-    PYTHONPATH={{src_root}} python3 scripts/check_release_docs.py
+	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_architecture.py
 
 # Validate pyproject package metadata and wheel/sdist contents
 check-packaging:
     python3 scripts/sync_requirements.py --check
     PYTHONPATH={{src_root}} python3 scripts/check_packaging_manifest.py --build
 
-# Generate workflow reports (test results + run manifest)
-workflow-reports:
-    PYTHONPATH={{src_root}} python3 scripts/generate_workflow_reports.py
-
-# Run full autoprove verification suite
-autoprove:
-    bash scripts/autoprove.sh
-
 # ============================================================
 #  Version Management
 # ============================================================
 
-# Bump version (dry-run first, then confirm)
-bump-dry VERSION:
-    PYTHONPATH={{src_root}} python3 scripts/bump_version.py {{VERSION}} --dry-run
-
-# Bump version (actually applies changes)
-bump VERSION:
-    PYTHONPATH={{src_root}} python3 scripts/bump_version.py {{VERSION}}
-
 # Show current version
 version:
-    @python3 -c "import sys; sys.path.insert(0, '{{src_root}}'); from version import __version__, __version_codename__; print(f'{__version__} \"{__version_codename__}\"')"
+    @python3 -c "import sys; sys.path.insert(0, '{{src_root}}'); from version import __version__, __version_codename__; print(f'{__version__} \\"{__version_codename__}\\"')"
 
 # ============================================================
-#  MCP Servers
+#  Release
 # ============================================================
 
-# Start workflow MCP server (JSON-RPC over stdio)
-mcp-workflow:
-    python3 scripts/mcp_workflow_server.py
-
-# Start agent sync MCP server (JSON-RPC over stdio)
-mcp-agent-sync:
-    python3 scripts/mcp_agent_sync_server.py
-
-# Health check for GitHub MCP integration
-mcp-health:
-    bash scripts/mcp_github_health_check.sh
-
-# ============================================================
-#  Release Pipeline
-# ============================================================
-
-# Full release preparation (verify + validate + stats)
-release-prep:
-    @echo "=== Step 1: Verify code quality ==="
-    just verify
-    @echo ""
-    @echo "=== Step 2: Validate release docs ==="
-    just validate-release
-    @echo ""
-    @echo "=== Step 3: Check stats freshness ==="
-    just stats-check
-    @echo ""
-    @echo "=== Step 4: Check agent sync ==="
-    just check-drift
-    @echo ""
-    @echo "=== Step 5: Check packaging manifest ==="
-    just check-packaging
-    @echo ""
-    @echo "=== Step 6: Validate System Check trust contract ==="
-    just validate-system-check
-    @echo ""
-    @echo "=== Step 7: Validate v23.1 local release candidate ==="
-    just validate-v23-1
-    @echo ""
-    @echo "=== Step 8: Validate v19 UI evidence ==="
-    just validate-v19-ui-evidence
-    @echo ""
-    @echo "=== Release preparation complete ==="
+# Full release preparation (verify + architecture + packaging)
+release-prep: verify validate-architecture check-packaging
+    @echo "Release preparation complete."
 
 # ============================================================
 #  Utilities
 # ============================================================
-
-# Show project statistics summary
-info:
-    @echo "Loofi Fedora Tweaks"
-    @just version
-    @echo ""
-    @echo "Tabs:  $(find {{src_root}}/ui -name '*_tab.py' ! -name 'base_tab.py' | wc -l) feature tabs"
-    @echo "Tests: $(find {{test_dir}} -name 'test_*.py' | wc -l) test files"
-    @echo "Utils: $(find {{src_root}}/utils -name '*.py' ! -name '__init__.py' | wc -l) modules"
 
 # Clean build artifacts and caches
 clean:
@@ -276,7 +170,3 @@ clean:
     rm -f test-results.xml
     find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
     @echo "Cleaned."
-
-# Scaffold a new plugin
-create-plugin NAME:
-    bash scripts/create_plugin.sh {{NAME}}

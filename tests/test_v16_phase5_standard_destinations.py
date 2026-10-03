@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication, QStackedWidget
 
 from core.navigation import resolve
 from core.navigation.models import NavigationMode
-from ui.components import DetailsDisclosure, InlineNotice, PageScaffold
+from ui.components import DetailsDisclosure, PageScaffold
 
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -22,7 +19,6 @@ STANDARD_MODULES = (
     "maintenance_tab.py",
     "network_tab.py",
     "security_tab.py",
-    "backup_tab.py",
     "settings_tab.py",
 )
 
@@ -55,41 +51,7 @@ class TestPhase5SourceContract(unittest.TestCase):
             for marker in legacy_header_markers:
                 self.assertNotIn(marker, source, filename)
 
-    def test_visual_evidence_manifest_is_complete_and_current(self):
-        manifest_path = ROOT / "docs" / "reports" / "V16_PHASE5_SCREENSHOTS.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(manifest["phase"], 5)
-        self.assertEqual(len(manifest["captures"]), 8)
-        self.assertEqual(
-            {tuple(item["viewport"]) for item in manifest["captures"]},
-            {(860, 720), (1918, 1018)},
-        )
-        self.assertEqual(
-            {item["destination"] for item in manifest["captures"]},
-            {"software-updates", "network-security", "desktop", "settings"},
-        )
-        for item in manifest["captures"]:
-            image_path = ROOT / item["path"]
-            self.assertTrue(image_path.is_file(), image_path)
-            self.assertEqual(
-                hashlib.sha256(image_path.read_bytes()).hexdigest(),
-                item["sha256"],
-            )
-            self.assertEqual(item["captured_dimensions"], item["viewport"])
-
-    def test_capture_harness_uses_the_real_guarded_main_window(self):
-        source = (ROOT / "scripts" / "capture_v16_phase5.py").read_text(
-            encoding="utf-8"
-        )
-        for marker in (
-            "MainWindow()",
-            "isolated_capture_home()",
-            "guarded_subprocesses()",
-            'patch.object(CommandRunner, "run_command", reject_command)',
-            'window.apply_navigation_mode(NavigationMode.STANDARD)',
-        ):
-            self.assertIn(marker, source)
 
 
 class TestPhase5RoutePresentation(unittest.TestCase):
@@ -205,17 +167,6 @@ class TestPhase5RoutePresentation(unittest.TestCase):
             self.assertTrue(tab.activate_route(resolve(route_id)))
             self.assertEqual(tab.settings_tabs.currentIndex(), index)
             self._assert_current_page_scaffolded(tab.settings_tabs)
-
-    def test_backup_is_scaffolded_and_distinct_from_recovery_points(self):
-        from ui.backup_tab import BackupTab
-
-        tab = BackupTab()
-        self.addCleanup(tab.deleteLater)
-        self.assertTrue(tab.activate_route(SimpleNamespace(id="backup")))
-        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
-        self.assertEqual(len(tab.findChildren(PageScaffold)), 1)
-        self.assertIsInstance(tab.scope_notice, InlineNotice)
-        self.assertIn("recovery points", tab.scope_notice.message_label.text().lower())
 
     @patch("ui.maintenance_tab.SystemManager.get_package_manager", return_value="dnf")
     @patch("ui.maintenance_tab.SystemManager.is_atomic", return_value=False)

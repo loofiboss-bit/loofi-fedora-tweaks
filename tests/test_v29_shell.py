@@ -90,9 +90,14 @@ class TestV29MainWindowShell(unittest.TestCase):
 
     def tearDown(self) -> None:
         if self.window is not None:
+            cleanup = getattr(self.window, "cleanup", None)
+            if callable(cleanup):
+                cleanup(0.5)
             self.window.close()
             self.app.processEvents()
         PluginRegistry.reset()
+        from utils.settings import SettingsManager
+        SettingsManager._reset_instance()
 
     def _build(self) -> MainWindow:
         with patch.object(SystemManager, "get_platform_profile", return_value=_passing_profile()), patch.object(
@@ -119,7 +124,7 @@ class TestV29MainWindowShell(unittest.TestCase):
                 window.sidebar.topLevelItem(index).text(0)
                 for index in range(window.sidebar.topLevelItemCount())
             ],
-            ["Home", "Apps", "Tweaks", "Health", "Updates"],
+            ["Tweaks", "Apps", "Updates", "Health"],
         )
         self.assertTrue(
             all(
@@ -148,11 +153,15 @@ class TestV29MainWindowShell(unittest.TestCase):
         names = ("install", "tune", "fix", "update")
         entries = [window._sidebar_index[f"utility_{name}"] for name in names]
 
-        self.assertTrue(all(entry.page_widget.get_real_widget() is None for entry in entries))
+        # In v32, Tweaks (tune) is the start page and is realized on launch
+        self.assertIsNotNone(entries[1].page_widget.get_real_widget())
+        # The other utility pages are still lazily loaded
+        self.assertIsNone(entries[0].page_widget.get_real_widget())
+        self.assertIsNone(entries[2].page_widget.get_real_widget())
+        self.assertIsNone(entries[3].page_widget.get_real_widget())
         self.assertTrue(window.switch_to_route("install"))
         install_page = window._real_widget_for_entry(entries[0])
         self.assertIs(install_page, entries[0].page_widget.get_real_widget())
-        self.assertTrue(all(entry.page_widget.get_real_widget() is None for entry in entries[1:]))
 
         self.assertTrue(window.switch_to_route("install"))
         self.assertIs(install_page, window._real_widget_for_entry(entries[0]))

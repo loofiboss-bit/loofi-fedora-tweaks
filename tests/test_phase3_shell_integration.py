@@ -11,7 +11,6 @@ sys.path.insert(
     os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"),
 )
 
-from PyQt6.QtCore import QCoreApplication, QEvent
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication, QToolButton, QWidget
 
@@ -55,11 +54,15 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def tearDown(self):
         window = getattr(self, "window", None)
         if window is not None:
-            window.deleteLater()
-            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+            cleanup = getattr(window, "cleanup", None)
+            if callable(cleanup):
+                cleanup(0.5)
+            window.close()
             self.app.processEvents()
             self.window = None
         PluginRegistry.reset()
+        from utils.settings import SettingsManager
+        SettingsManager._reset_instance()
 
     @staticmethod
     def _passing_profile() -> PlatformProfile:
@@ -80,6 +83,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
     @patch("ui.main_window.MainWindow._check_first_run")
     @patch("ui.main_window.MainWindow._initialize_background_services")
+    @patch("ui.main_window.MainWindow._start_tweak_snapshot", return_value=True)
     @patch("ui.main_window.SystemManager.is_atomic", return_value=False)
     @patch("ui.main_window.SystemManager.get_platform_profile")
     @patch("ui.main_window.FavoritesManager.get_favorites", return_value=[])
@@ -92,12 +96,13 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         mock_favorites,
         mock_profile,
         mock_atomic,
+        mock_snapshot,
         mock_background,
         mock_first_run,
         *,
         mode=NavigationMode.STANDARD,
     ) -> MainWindow:
-        del mock_favorites, mock_atomic, mock_background, mock_first_run
+        del mock_favorites, mock_atomic, mock_snapshot, mock_background, mock_first_run
         PluginRegistry.reset()
         mock_mode.return_value = mode
         mock_compat.return_value = CompatStatus(compatible=True)
@@ -121,15 +126,14 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_standard_shell_is_flat_and_has_no_duplicate_chrome(self):
         window = self._build_window()
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
         self.assertEqual(
             window.sidebar.destination_ids(),
             (
-                "home",
-                "install",
                 "tune",
-                "fix",
+                "install",
                 "update",
+                "fix",
             ),
         )
         self.assertTrue(
@@ -149,14 +153,13 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_unified_mode_keeps_specialist_tools_out_of_primary_navigation(self):
         window = self._build_window(mode=NavigationMode.ADVANCED)
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
 
         opened = window.switch_to_route("diagnostics:boot")
 
         self.assertTrue(opened)
-        self.assertEqual(window._active_destination_id, "fix")
-        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
 
     def test_mode_refresh_preserves_lazy_pages_and_six_primary_destinations(self):
         window = self._build_window(mode=NavigationMode.STANDARD)
@@ -166,8 +169,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         }
         load_calls_before = window._plugin_loader.load_builtin_widget.call_count
 
-        window._rebuild_sidebar_for_navigation_mode(NavigationMode.ADVANCED)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
+        window.apply_advanced_tools(True)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 9)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
         self.assertEqual(
             pages_before,
@@ -175,8 +178,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         )
         self.assertEqual(window._plugin_loader.load_builtin_widget.call_count, load_calls_before)
 
-        window._rebuild_sidebar_for_navigation_mode(NavigationMode.STANDARD)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 5)
+        window.apply_advanced_tools(False)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
         self.assertTrue(
             all(
                 window.sidebar.topLevelItem(index).childCount() == 0
@@ -205,17 +208,18 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
     def test_route_history_preserves_destination_and_secondary_selection(self):
         window = self._build_window()
+        window.apply_advanced_tools(True)
         self.assertTrue(window.switch_to_route("system_info"))
         self.assertTrue(window.switch_to_route("network:dns"))
 
         self.assertTrue(window.navigate_back())
 
         self.assertEqual(window._active_route_id, "system_info")
-        self.assertEqual(window.sidebar.current_destination_id(), "tune")
+        self.assertEqual(window.sidebar.current_destination_id(), "system")
 
     def test_collapse_preserves_destination_selection_and_tooltips(self):
         window = self._build_window()
-        window.switch_to_route("network")
+        window.switch_to_route("utility:fix")
 
         window._set_sidebar_collapsed(True)
 

@@ -119,10 +119,6 @@ jobs:
             fi
           fi
 
-      - name: Validate release docs for release events
-        if: startsWith(github.ref, 'refs/tags/v') || github.event_name == 'workflow_dispatch'
-        run: python3 scripts/check_release_docs.py
-
       - name: Validate packaging manifest
         run: |
           pip install build
@@ -144,65 +140,6 @@ jobs:
               exit 1
             fi
           done
-
-  adapter_drift:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: "pip"
-          cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
-      - run: python3 scripts/sync_ai_adapters.py --check
-      - run: python3 scripts/sync_ai_adapters.py --render --check
-
-  pipeline_gate:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    needs: [validate]
-    if: needs.validate.outputs.should_release == 'true'
-    steps:
-      - uses: actions/checkout@v6
-      - name: Validate workflow specs exist
-        run: |
-          VER="v${{ needs.validate.outputs.version }}"
-          TASKS=".workflow/specs/tasks-${VER}.md"
-          ARCH=".workflow/specs/arch-${VER}.md"
-          MISSING=0
-
-          if [ ! -f "$TASKS" ]; then
-            echo "::error::Missing task spec: $TASKS"
-            MISSING=1
-          fi
-          if [ ! -f "$ARCH" ]; then
-            echo "::error::Missing arch spec: $ARCH"
-            MISSING=1
-          fi
-
-          if [ "$MISSING" -eq 1 ]; then
-            echo "Workflow specs are missing for ${VER}."
-            echo "Run: python3 scripts/bump_version.py ${VER#v}"
-            exit 1
-          fi
-
-      - name: Validate race-lock version
-        run: |
-          VER="v${{ needs.validate.outputs.version }}"
-          LOCK=".workflow/specs/.race-lock.json"
-          if [ ! -f "$LOCK" ]; then
-            echo "::error::Race lock file missing: $LOCK"
-            exit 1
-          fi
-          LOCK_VER=$(python3 -c "import json; print(json.load(open('$LOCK'))['version'])")
-          if [ "$LOCK_VER" != "$VER" ]; then
-            echo "::error::Race lock version ($LOCK_VER) does not match release version ($VER)"
-            exit 1
-          fi
-
-      - name: Validate release tasks are publish-ready
-        run: python3 scripts/check_release_docs.py --require-publish-ready-tasks
 
   lint:
     runs-on: ubuntu-latest
@@ -239,10 +176,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: python3 scripts/check_stabilization_rules.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
       - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_architecture.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_system_check_contract.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/project_stats.py --check
 
   fedora_review:
     runs-on: ubuntu-latest
@@ -294,7 +228,6 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
-      - run: python3 scripts/check_release_docs.py
       - run: pip install build
       - run: python3 scripts/check_packaging_manifest.py --build
 
@@ -355,12 +288,10 @@ jobs:
     runs-on: ubuntu-latest
     container: fedora:44
     timeout-minutes: 20
-    needs: [validate, pipeline_gate, adapter_drift, lint, typecheck, stabilization_rules, docs_gate, test, security]
+    needs: [validate, lint, typecheck, stabilization_rules, docs_gate, test, security]
     if: |
       !cancelled() &&
       needs.validate.result == 'success' &&
-      needs.pipeline_gate.result == 'success' &&
-      needs.adapter_drift.result == 'success' &&
       needs.lint.result == 'success' &&
       needs.typecheck.result == 'success' &&
       needs.stabilization_rules.result == 'success' &&

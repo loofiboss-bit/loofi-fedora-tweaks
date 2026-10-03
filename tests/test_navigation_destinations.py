@@ -4,7 +4,6 @@ import unittest
 from unittest.mock import patch
 
 from core.navigation.destinations import (
-    ADVANCED_DESTINATION,
     STANDARD_DESTINATIONS,
     all_destinations,
     destinations_for_mode,

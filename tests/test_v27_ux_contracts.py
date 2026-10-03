@@ -20,7 +20,6 @@ from services.software.update_overview import (
     UpdateOverviewSnapshot,
     UpdateSourceResult,
 )
-from ui.atlas_dashboard_tab import AtlasDashboardTab
 from ui.global_search import GlobalSearchDialog
 from ui.maintenance_updates import _UpdatesSubTab
 
@@ -44,27 +43,6 @@ def _empty_summary() -> HomeSummary:
         recent_change=None,
         freshness_state="unavailable",
     )
-
-
-class _SummaryProvider:
-    def summary(self) -> HomeSummary:
-        return _empty_summary()
-
-
-class TestV27HomePresentation:
-    def test_empty_home_has_one_explicit_system_check_action(self):
-        app = QApplication.instance() or QApplication([])
-        del app
-        tab = AtlasDashboardTab(home_service=_SummaryProvider())
-        try:
-            check = tab.findChild(QPushButton, "homeCheckNow")
-            assert check is not None
-            assert check.text() == "Run system check"
-            assert tab.findChild(QFrame, "homePrimaryRecommendation") is None
-            assert tab.status_unavailable.title_label.text() == "No system check has been run yet"
-            assert tab.state_card.property("overallState") == "unknown"
-        finally:
-            tab.deleteLater()
 
 
 class TestV27UpdatesJourney:

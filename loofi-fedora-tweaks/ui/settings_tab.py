@@ -254,6 +254,17 @@ class SettingsTab(QWidget, PluginInterface):
         )
         layout.addWidget(self._setting_rows["restore_last_tab"])
 
+        self.advanced_tools_cb = QCheckBox(self.tr("Show advanced tools"))
+        self.advanced_tools_cb.setAccessibleName(self.tr("Show advanced tools"))
+        self.advanced_tools_cb.setChecked(bool(self._mgr.get("show_advanced_tools")))
+        self.advanced_tools_cb.toggled.connect(self._on_advanced_tools_toggled)
+        self._setting_rows["show_advanced_tools"] = SettingRow(
+            self.tr("Advanced tools"),
+            self.tr("Add System, Storage, Network, Security, and Logs to the sidebar."),
+            self.advanced_tools_cb,
+        )
+        layout.addWidget(self._setting_rows["show_advanced_tools"])
+
         reset_behavior_btn = SecondaryButton(self.tr("Reset Behavior"))
         reset_behavior_btn.setAccessibleName(self.tr("Reset Behavior"))
         reset_behavior_btn.setToolTip(self.tr("Reset behavior settings to defaults"))
@@ -564,6 +575,13 @@ class SettingsTab(QWidget, PluginInterface):
     def _toggle_setting(self, key: str, value: bool):
         self._save_setting(key, value)
 
+    def _on_advanced_tools_toggled(self, checked: bool) -> None:
+        """Persist the switch and update the sidebar immediately."""
+        self._save_setting("show_advanced_tools", bool(checked))
+        apply = getattr(self._main_window, "apply_advanced_tools", None)
+        if callable(apply):
+            apply(bool(checked))
+
     def _on_log_level_changed(self, level: str):
         self._save_setting("log_level", level)
 
@@ -686,6 +704,7 @@ class SettingsTab(QWidget, PluginInterface):
             "show_notifications",
             "confirm_dangerous_actions",
             "restore_last_tab",
+            "show_advanced_tools",
         )
         reset_saved = bool(
             self._mgr.reset_group([*keys, "last_tab_index"])
@@ -694,6 +713,7 @@ class SettingsTab(QWidget, PluginInterface):
         self.notifications_cb.setChecked(self._mgr.get("show_notifications"))
         self.confirm_cb.setChecked(self._mgr.get("confirm_dangerous_actions"))
         self.restore_tab_cb.setChecked(self._mgr.get("restore_last_tab"))
+        self.advanced_tools_cb.setChecked(bool(self._mgr.get("show_advanced_tools")))
         self._set_persistence_feedback(
             keys,
             saved=reset_saved,

@@ -1,4 +1,4 @@
-# Loofi Fedora Tweaks Wiki — v31.1.0 "Mastery" Local Candidate
+# Loofi Fedora Tweaks Wiki — v32.0.0 "Refocus" Local Candidate
 
 Welcome to the official documentation for Loofi Fedora Tweaks, a curated
 Fedora utility for installing applications, tuning safe settings, diagnosing

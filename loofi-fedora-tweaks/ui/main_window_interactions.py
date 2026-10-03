@@ -606,6 +606,10 @@ class MainWindowInteractionMixin:
         else:
             self.close()
 
+    def cleanup(self: typing.Any, timeout: float = 0.5) -> None:
+        """Backward-compatible direct cleanup for tests and controlled shutdown."""
+        self._cleanup_runtime(timeout)
+
     def _cleanup_runtime(self: typing.Any, timeout: float) -> None:
         """Backward-compatible direct cleanup for tests without a runtime."""
         self._request_runtime_stop()
@@ -618,10 +622,10 @@ class MainWindowInteractionMixin:
             return
         self._runtime_cleaned = True
         utility_adapter = getattr(self, "_utility_operation_adapter", None)
-        wait_utility = getattr(utility_adapter, "wait", None)
-        if callable(wait_utility):
+        close_utility = getattr(utility_adapter, "close", None)
+        if callable(close_utility):
             try:
-                wait_utility(5000)
+                close_utility(2000)
             except (RuntimeError, TypeError, ValueError):
                 logger.debug("Failed to wait for utility operation during shutdown", exc_info=True)
         utility_update = getattr(self, "_sidebar_index", {}).get("utility_update")

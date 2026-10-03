@@ -181,7 +181,7 @@ class MainWindowServiceMixin:
             None,
         )
         if callable(set_utility_destinations):
-            set_utility_destinations()
+            set_utility_destinations(self._visible_shell_destinations())
         else:
             self.sidebar.set_destinations(destinations_for_mode(NavigationMode.STANDARD))
         self._active_destination_id = ""

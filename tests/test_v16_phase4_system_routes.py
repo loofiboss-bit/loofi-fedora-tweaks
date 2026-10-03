@@ -12,7 +12,6 @@ from core.navigation import resolve
 from ui.components import PageScaffold
 from ui.diagnostics_tab import DiagnosticsTab, _BootSubTab
 from ui.monitor_tab import MonitorTab
-from ui.snapshot_tab import SnapshotTab
 from ui.storage_tab import StorageTab
 
 
@@ -61,14 +60,6 @@ class TestPhase4SystemRouteStacks(unittest.TestCase):
             [label for label in tab.findChildren(type(tab.lbl_smart_model)) if label.objectName() == "header"],
             [],
         )
-
-    @patch("ui.snapshot_tab.QTimer.singleShot")
-    def test_recovery_uses_one_page_scaffold_without_legacy_header(self, _single_shot):
-        tab = SnapshotTab()
-        self.addCleanup(tab.deleteLater)
-
-        self.assertEqual(len(tab.findChildren(PageScaffold)), 1)
-        self.assertIsNone(tab.findChild(type(tab.backend_labels[0][1]), "snapHeader"))
 
     def test_hardware_system_check_and_maintenance_use_page_scaffolds(self):
         root = Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks" / "ui"
