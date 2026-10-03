@@ -427,7 +427,7 @@ class MainWindow(
         # unified navigation context.  The visible shell is a concise set of
         # user jobs; it does not mirror the internal plugin catalogue.
         self._register_utility_landing_pages()
-        self.sidebar.set_utility_destinations(self._utility_destinations)
+        self.sidebar.set_utility_destinations(self._visible_shell_destinations())
 
     def _find_or_create_area(self, plugin_id: str, fallback_category: str) -> QTreeWidgetItem:
         """Find/create a focused sidebar area for a plugin."""

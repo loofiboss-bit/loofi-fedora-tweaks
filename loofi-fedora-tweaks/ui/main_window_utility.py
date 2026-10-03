@@ -20,21 +20,17 @@ from core.navigation import (
     placement_for_route,
     resolve,
 )
+from core.navigation.routes import (
+    LEGACY_ALIASES,
+    advanced_shell_route_for,
+    all_shell_routes,
+    visible_shell_routes,
+)
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtWidgets import QTreeWidgetItem, QWidget
 
 
-_UTILITY_ROUTE_ALIASES = {
-    "home": "atlas_dashboard",
-    "install": "utility:install",
-    "apps": "utility:install",
-    "tune": "utility:tune",
-    "tweaks": "utility:tune",
-    "fix": "utility:fix",
-    "health": "utility:fix",
-    "update": "utility:update",
-    "updates": "utility:update",
-}
+_UTILITY_ROUTE_ALIASES = LEGACY_ALIASES
 
 # These routes are retained as compatibility inputs, but a direct user link
 # must open the trusted Activity ledger instead of the retired review screen.
@@ -76,14 +72,12 @@ class MainWindowUtilityMixin:
     def _register_utility_landing_pages(self: Any) -> None:
         """Register lightweight placeholders for the four workflow pages."""
         from ui.lazy_widget import LazyWidget
-        from ui.navigation import UTILITY_DESTINATIONS
-
-        self._utility_destinations = tuple(UTILITY_DESTINATIONS)
+        self._utility_destinations = all_shell_routes()
         destination_by_id = {
             destination.id: destination
             for destination in self._utility_destinations
         }
-        for destination_id in ("install", "tune", "fix", "update"):
+        for destination_id in ("tune", "install", "update", "fix"):
             destination = destination_by_id[destination_id]
             plugin_id = f"utility_{destination_id}"
             route_id = destination.default_route_id
@@ -102,7 +96,7 @@ class MainWindowUtilityMixin:
                 category="Utility",
                 icon=destination.icon,
                 badge="recommended",
-                order={"install": 10, "tune": 20, "fix": 30, "update": 40}[destination_id],
+                order={"tune": 10, "install": 20, "update": 30, "fix": 40}[destination_id],
             )
             route = NavigationRoute(
                 id=route_id,
@@ -693,10 +687,13 @@ class MainWindowUtilityMixin:
         }:
             return ""
 
+        advanced = advanced_shell_route_for(route.id)
+        if advanced is not None:
+            return advanced.id if self._advanced_tools_enabled() else ""
         placement = placement_for_route(route.id)
         destination_id = placement.destination_id if placement is not None else ""
         if destination_id == "home" or route.plugin_id == "atlas_dashboard":
-            return "home"
+            return ""
         if destination_id == "software_updates" or route.plugin_id == "software":
             if route.id.startswith("maintenance"):
                 return "update"
@@ -716,6 +713,36 @@ class MainWindowUtilityMixin:
         }:
             return "fix"
         return ""
+
+    def _advanced_tools_enabled(self: Any) -> bool:
+        """Return whether the user chose to show advanced tools."""
+        if hasattr(self, "_advanced_tools_override"):
+            return bool(self._advanced_tools_override)
+        from utils.settings import SettingsManager
+
+        try:
+            return bool(SettingsManager.instance().get("show_advanced_tools"))
+        except (KeyError, OSError, RuntimeError, TypeError, ValueError):
+            return False
+
+    def _visible_shell_destinations(self: Any) -> tuple[Any, ...]:
+        """Return the sidebar rows for the current simple/advanced mode."""
+        return visible_shell_routes(self._advanced_tools_enabled())
+
+    def apply_advanced_tools(self: Any, enabled: bool) -> None:
+        """Show or hide the advanced sidebar rows without rebuilding pages."""
+        self._advanced_tools_override = bool(enabled)
+        from utils.settings import SettingsManager
+
+        try:
+            SettingsManager.instance().set("show_advanced_tools", bool(enabled))
+        except (KeyError, OSError, RuntimeError, TypeError, ValueError):
+            pass
+        active = self._active_route_id
+        self.sidebar.set_utility_destinations(visible_shell_routes(bool(enabled)))
+        self._active_destination_id = ""
+        if active:
+            self._sync_destination_shell(active)
 
     def _utility_default_route(self: Any, destination_id: str) -> str:
         """Return the stable landing route for a visible utility destination."""

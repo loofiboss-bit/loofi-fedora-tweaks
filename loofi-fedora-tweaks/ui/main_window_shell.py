@@ -35,38 +35,19 @@ class MainWindowShellMixin:
         )
         utility_destination_id = utility_destination_for_route(route_id)
         utility_ready = bool(getattr(self, "_utility_shell_ready", False))
-        if utility_ready and utility_destination_id:
-            # v29 keeps primary navigation at user jobs.  Detailed routes
-            # still resolve through the core policy but never create a second
-            # competing destination rail.
+        if utility_ready:
             self._selecting_destination = True
             try:
-                self.sidebar.select_destination(utility_destination_id)
+                if utility_destination_id:
+                    self.sidebar.select_destination(utility_destination_id)
+                else:
+                    self.sidebar.clearSelection()
+                    self.sidebar.setCurrentItem(None)
             finally:
                 self._selecting_destination = False
             self.destination_host.clear_explanation()
             self.destination_host.hide()
             self._active_destination_id = utility_destination_id
-            return
-
-        route = resolve(str(route_id))
-        if utility_ready and route is not None and (
-            route.id == "activity"
-            or route.plugin_id == "activity"
-            or route.id == "settings"
-            or route.plugin_id == "settings"
-        ):
-            # Activity & Recovery and Settings are header-owned secondary
-            # surfaces; they should not leave a stale primary selection.
-            self._selecting_destination = True
-            try:
-                self.sidebar.clearSelection()
-                self.sidebar.setCurrentItem(None)
-            finally:
-                self._selecting_destination = False
-            self.destination_host.clear_explanation()
-            self.destination_host.hide()
-            self._active_destination_id = ""
             return
 
         placement = placement_for_route(route_id)

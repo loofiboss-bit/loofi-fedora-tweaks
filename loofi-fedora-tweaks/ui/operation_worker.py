@@ -18,6 +18,11 @@ from PyQt6.QtCore import QObject, QThread, Qt, pyqtSignal
 
 OperationCallable = Callable[[], Any]
 
+# A running QThread must never be destroyed.  When the owning window is deleted
+# mid-operation, Qt would destroy the (child) thread and abort the process, so
+# every started thread and worker is kept alive here until the thread finishes.
+_LIVE_OPERATIONS: set[tuple[QThread, QObject]] = set()
+
 
 class OperationWorker(QObject):
     """Run one controller operation on a Qt-owned worker thread."""
@@ -88,8 +93,10 @@ class OperationControllerQtAdapter(QObject):
         """Start one operation, rejecting overlap until the thread is done."""
         if self._thread is not None:
             return False
-        thread = QThread(self)
+        thread = QThread()
         worker = OperationWorker(operation)
+        live = (thread, worker)
+        _LIVE_OPERATIONS.add(live)
         worker.moveToThread(thread)
         thread.started.connect(worker.run)
         worker.progress.connect(self.progress.emit)
@@ -103,6 +110,8 @@ class OperationControllerQtAdapter(QObject):
         cast(Any, worker.failed).connect(thread.quit, Qt.ConnectionType.DirectConnection)
         cast(Any, worker.cancelled).connect(thread.quit, Qt.ConnectionType.DirectConnection)
         thread.finished.connect(worker.deleteLater)
+        thread.finished.connect(thread.deleteLater)
+        thread.destroyed.connect(lambda *_args, entry=live: _LIVE_OPERATIONS.discard(entry))
         cast(Any, thread.finished).connect(self._on_thread_finished, Qt.ConnectionType.QueuedConnection)
         self._thread = thread
         self._worker = worker

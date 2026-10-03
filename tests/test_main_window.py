@@ -1037,9 +1037,20 @@ def _install_stubs():
     nav_mod.all_routes = lambda: tuple(_routes.values())
     nav_mod.area_for_plugin = lambda plugin_id: _StubArea("system_hardware", "System")
     nav_mod.is_plugin_visible_for_level = lambda plugin_id, level, favorites=None: True
-    nav_mod.sidebar_areas_for_level = lambda level: (_StubArea("system_hardware", "System", plugin_ids=("hardware", "maintenance")),)
+    nav_mod.__path__ = []
     sys.modules["core.navigation"] = nav_mod
     core_mod.navigation = nav_mod
+
+    # Load core.navigation.routes so ui.main_window_utility can import it
+    routes_path = os.path.join(
+        os.path.dirname(__file__), "..", "loofi-fedora-tweaks", "core", "navigation", "routes.py"
+    )
+    import importlib.util
+    spec = importlib.util.spec_from_file_location("core.navigation.routes", routes_path)
+    routes_mod = importlib.util.module_from_spec(spec)
+    sys.modules["core.navigation.routes"] = routes_mod
+    spec.loader.exec_module(routes_mod)
+    nav_mod.routes = routes_mod
 
     # -- core.plugins.interface --
     iface_mod = types.ModuleType("core.plugins.interface")
@@ -1211,6 +1222,7 @@ _MODULE_KEYS = [
     "ui.wizard",
     "core",
     "core.navigation",
+    "core.navigation.routes",
     "core.plugins",
     "core.plugins.interface",
     "core.plugins.metadata",
