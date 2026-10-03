@@ -75,13 +75,8 @@ source = ["loofi-fedora-tweaks"]
 # entrypoints, the removed profile/mesh stacks, and deprecated utility shims.
 omit = [
     "loofi-fedora-tweaks/cli/action_plans.py",
-    "loofi-fedora-tweaks/cli/commands/firewall_commands.py",
-    "loofi-fedora-tweaks/cli/commands/hardware_commands.py",
     "loofi-fedora-tweaks/cli/commands/plugin_commands.py",
-    "loofi-fedora-tweaks/cli/commands/service_package_commands.py",
     "loofi-fedora-tweaks/cli/commands/system_commands.py",
-    "loofi-fedora-tweaks/cli/commands/tuning_commands.py",
-    "loofi-fedora-tweaks/cli/commands/user_commands.py",
     "loofi-fedora-tweaks/core/profiles/*",
     "loofi-fedora-tweaks/core/workers/troubleshooting_worker.py",
     "loofi-fedora-tweaks/core/diagnostics/gaming_audit.py",

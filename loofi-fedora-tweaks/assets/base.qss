@@ -530,16 +530,6 @@ QFrame#homePrimaryTask {
     border-radius: $radius_card;
 }
 
-QFrame#homeOnboarding {
-    background-color: $color_surface_raised;
-    border: $border_width solid $color_accent;
-    border-radius: $radius_card;
-}
-
-QLabel#homeOnboardingSafety {
-    color: $color_text_muted;
-}
-
 QFrame#homeAttentionItem {
     background-color: $color_surface;
 }

@@ -11,7 +11,6 @@ sys.path.insert(
     os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"),
 )
 
-from PyQt6.QtCore import QCoreApplication, QEvent
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication, QToolButton, QWidget
 

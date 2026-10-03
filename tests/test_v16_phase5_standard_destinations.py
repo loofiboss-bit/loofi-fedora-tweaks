@@ -2,18 +2,15 @@
 
 from __future__ import annotations
 
-import hashlib
-import json
 import unittest
 from pathlib import Path
-from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
 from PyQt6.QtWidgets import QApplication, QStackedWidget
 
 from core.navigation import resolve
 from core.navigation.models import NavigationMode
-from ui.components import DetailsDisclosure, InlineNotice, PageScaffold
+from ui.components import DetailsDisclosure, PageScaffold
 
 
 ROOT = Path(__file__).resolve().parents[1]

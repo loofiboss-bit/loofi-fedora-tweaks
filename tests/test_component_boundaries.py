@@ -2,19 +2,12 @@
 
 from __future__ import annotations
 
-import json
-import os
-import shutil
-import subprocess
-import sys
-import tempfile
 import unittest
 from pathlib import Path
 
 from core.navigation.models import FedoraVariant, NavigationContext, NavigationDecision
 from core.navigation.policy import NavigationPolicy
 from core.plugins.components import discover_builtin_components, module_source_path
-from core.plugins.spec import BUILTIN_PLUGIN_SPECS
 
 
 ROOT = Path(__file__).parents[1]
