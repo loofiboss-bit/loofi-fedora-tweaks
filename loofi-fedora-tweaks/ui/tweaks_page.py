@@ -14,7 +14,6 @@ from ui.components.settings import SettingRow
 
 
 from core.plugins.interface import PluginInterface
-from core.plugins.metadata import PluginMetadata
 
 
 class TweaksPage(QWidget, PluginInterface):
