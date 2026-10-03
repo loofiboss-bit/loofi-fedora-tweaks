@@ -16,7 +16,7 @@ from unittest.mock import MagicMock, patch
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
-from PyQt6.QtCore import QEvent, QEventLoop, QObject, QThread, QTimer, Qt
+from PyQt6.QtCore import QEvent, QObject, QThread, Qt
 from PyQt6.QtWidgets import QApplication
 
 from core.actions import ActionCatalog, ActionCenterOrchestrator, ActionPlanStore, ActionRunStore
@@ -448,21 +448,23 @@ class TestOperationControllerQtAdapter(unittest.TestCase):
         cls.app = QApplication.instance() or QApplication([])
 
     def _wait_for_stopped(self, adapter: OperationControllerQtAdapter) -> None:
-        loop = QEventLoop()
-        timer = QTimer()
-        stopped: list[bool] = []
-        on_stopped = lambda: stopped.append(True)
-        timer.setSingleShot(True)
-        adapter.stopped.connect(loop.quit)
-        adapter.stopped.connect(on_stopped)
-        timer.timeout.connect(loop.quit)
-        timer.start(3000)
-        loop.exec()
-        timer.stop()
-        adapter.stopped.disconnect(loop.quit)
-        adapter.stopped.disconnect(on_stopped)
-        self.assertTrue(stopped, "operation thread did not stop before timeout")
-        self.assertFalse(adapter.running)
+        thread = adapter._thread
+        self.assertIsNotNone(thread, "operation thread was not created")
+        if thread is None:
+            return
+
+        destroyed = threading.Event()
+        thread.destroyed.connect(destroyed.set, Qt.ConnectionType.DirectConnection)
+        self.assertTrue(thread.wait(3000), "operation thread did not stop before timeout")
+
+        # The worker thread has finished; now deliver its queued GUI cleanup
+        # without running a nested event loop while cycling worker objects.
+        self.app.sendPostedEvents(None, QEvent.Type.MetaCall)
+        self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+        self.app.processEvents()
+
+        self.assertFalse(adapter.busy, "adapter did not release its completed thread")
+        self.assertTrue(destroyed.is_set(), "completed QThread was not deleted")
 
     def test_worker_cancellation_before_execution_skips_callback(self) -> None:
         called: list[bool] = []

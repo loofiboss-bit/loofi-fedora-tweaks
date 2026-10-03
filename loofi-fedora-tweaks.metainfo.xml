@@ -40,6 +40,11 @@
   </provides>
 
   <releases>
+    <release version="32.0.2" date="2026-10-03" type="stable">
+      <description>
+        <p>v32.0.2 "Refocus": Tweaks-first navigation, simple and advanced modes, and 61 declarative GNOME and KDE controls with reset-to-default.</p>
+      </description>
+    </release>
     <release version="32.0.0" date="2026-10-03" type="development">
       <description>
         <p>v32.0.0 "Refocus" local candidate: Tweaks open first with Apps, Updates and Health as supporting jobs, advanced tools behind a setting, 61 declarative tweaks with reset-to-default, and a much smaller codebase. Not published.</p>

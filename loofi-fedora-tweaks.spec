@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.0.0
+Version:        32.0.2
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -96,6 +96,10 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Sat Oct 03 2026 Loofi <loofi@example.com> - 32.0.2-1
+- Refocus release: tweaks-first navigation, simple and advanced modes, and 61 declarative desktop controls
+- Stabilize repeated Qt worker shutdown and cleanup in the lifecycle regression suite
+
 * Sat Oct 03 2026 Loofi <loofi@example.com> - 32.0.0-1
 - Refocus: tweaks-first navigation, simple/advanced mode, 61 declarative tweaks with reset-to-default, and removal of unused tools and release-evidence files
 
