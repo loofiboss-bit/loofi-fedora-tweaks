@@ -1,12 +1,13 @@
 # Changelog
 
-## [32.0.0] - 2026-10-03 - "Refocus"
+## [32.0.2] - 2026-10-03 - "Refocus"
 
 - Open on Tweaks; keep four everyday jobs (Tweaks, Apps, Updates, Health) in the sidebar and put System, Storage, Network, Security and Logs behind "Show advanced tools" in Settings.
 - Expand the tweak catalog from 22 to 61 declarative GNOME and KDE controls, add "Reset to default" and a "Changed from default" filter.
 - Remove unused dialogs, wizards, CLI domains, network mesh, and orphaned utilities and their tests.
 - Generate `docs/TWEAKS.md` from the catalog (`scripts/gen_tweaks_doc.py`).
 - Keep the maintenance regression test from leaking stubbed Qt modules into later tests.
+- Replace nested Qt event-loop waits in the repeated worker lifecycle test with deterministic thread completion and cleanup checks.
 
 - Define the product: tweaks first, with Apps, Updates, and Health as supporting jobs (`docs/PRODUCT.md`).
 - Rewrite README and ROADMAP as product documents; remove historical reports, plans, and release-evidence files (kept in git history).

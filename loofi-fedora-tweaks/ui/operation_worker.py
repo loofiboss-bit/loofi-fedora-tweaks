@@ -157,7 +157,6 @@ class OperationControllerQtAdapter(QObject):
         self._terminal = None
         self._worker = None
         self._thread = None
-        thread.deleteLater()
         if terminal is not None:
             kind, payload = terminal
             if kind == "finished":
