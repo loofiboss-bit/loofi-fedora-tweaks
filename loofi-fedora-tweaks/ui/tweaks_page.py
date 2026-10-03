@@ -4,10 +4,10 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.tasks.tweaks import TweakState, visible_tweaks
+from core.tasks.tweaks import TweakState, default_for, visible_tweaks
 from core.tweak_commands import values_equal
 from PyQt6.QtCore import QTimer, pyqtSignal
-from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QLineEdit, QPushButton, QVBoxLayout, QWidget
 
 from ui.components import Card, PageScaffold
 from ui.components.settings import SettingRow
@@ -35,6 +35,8 @@ class TweaksPage(QWidget, PluginInterface):
         self._last_changes: dict[str, tuple[str, bool, str, bool]] = {}
         self._restore_buttons: dict[str, QPushButton] = {}
         self._restore_notices: dict[str, QLabel] = {}
+        self._reset_buttons: dict[str, QPushButton] = {}
+        self._changed: set[str] = set()
         self.setObjectName("tweaksPage")
         self.setAccessibleName(self.tr("Fedora tweaks"))
         root = QVBoxLayout(self)
@@ -62,6 +64,11 @@ class TweaksPage(QWidget, PluginInterface):
         self.refresh_button.setObjectName("tweaksRefresh")
         self.refresh_button.clicked.connect(self.refreshRequested.emit)
         search_row.addWidget(self.refresh_button)
+        self.changed_only = QCheckBox(self.tr("Changed from default"))
+        self.changed_only.setObjectName("tweaksChangedOnly")
+        self.changed_only.setAccessibleName(self.tr("Show only settings changed from default"))
+        self.changed_only.toggled.connect(lambda _checked: self._filter_rows(self.search_input.text()))
+        search_row.addWidget(self.changed_only)
         intro.add_widget(self._wrap(search_row))
         self.status_label = QLabel(self.tr("Reading current settings…"))
         self.status_label.setObjectName("tweaksStatus")
@@ -95,6 +102,15 @@ class TweaksPage(QWidget, PluginInterface):
             assert row_layout is not None
             row_layout.addWidget(restore)
             self._restore_buttons[tweak.id] = restore
+            reset = QPushButton(self.tr("Reset to default"))
+            reset.setObjectName(f"tweakReset_{tweak.id}")
+            reset.setAccessibleName(self.tr("Reset %1 to its default value").replace("%1", self.tr(tweak.title)))
+            reset.setProperty("defaultValue", default_for(tweak))
+            reset.setEnabled(False)
+            reset.hide()
+            reset.clicked.connect(lambda _checked=False, item=tweak.id: self._reset_selected(item))
+            row_layout.addWidget(reset)
+            self._reset_buttons[tweak.id] = reset
             notice = QLabel()
             notice.setWordWrap(True)
             notice.hide()
@@ -119,9 +135,10 @@ class TweaksPage(QWidget, PluginInterface):
 
     def _filter_rows(self, query: str) -> None:
         needle = query.strip().casefold()
-        for row, _control in self._rows.values():
+        changed_only = self.changed_only.isChecked()
+        for tweak_id, (row, _control) in self._rows.items():
             text = f"{row.title_label.text()} {row.description_label.text()}".casefold()
-            row.setVisible(not needle or needle in text)
+            row.setVisible((not needle or needle in text) and (not changed_only or tweak_id in self._changed))
         for group_name, rows in self._group_rows.items():
             card = self._groups.get(group_name)
             if card is not None:
@@ -135,6 +152,12 @@ class TweaksPage(QWidget, PluginInterface):
         if not value or value == str(control.property("currentValue") or ""):
             return
         self.changeRequested.emit(tweak_id, value)
+
+    def _reset_selected(self, tweak_id: str) -> None:
+        button = self._reset_buttons[tweak_id]
+        value = str(button.property("defaultValue") or "")
+        if not self._busy and button.isEnabled() and value:
+            self.changeRequested.emit(tweak_id, value)
 
     def _restore_selected(self, tweak_id: str) -> None:
         button = self._restore_buttons[tweak_id]
@@ -155,6 +178,8 @@ class TweaksPage(QWidget, PluginInterface):
             control.setEnabled(not busy and bool(control.property("ready")))
         for button in self._restore_buttons.values():
             button.setEnabled(not busy and bool(button.property("ready")) and bool(button.property("sourceRunId")))
+        for button in self._reset_buttons.values():
+            button.setEnabled(not busy and bool(button.property("ready")))
         if message:
             self.status_label.setText(message)
 
@@ -188,6 +213,21 @@ class TweaksPage(QWidget, PluginInterface):
                 control.setCurrentIndex(index)
             control.setEnabled(state.status == "ready" and not self._busy)
             control.blockSignals(False)
+            default = str(self._reset_buttons[state.tweak.id].property("defaultValue") or "")
+            is_changed = (
+                state.status == "ready"
+                and bool(default)
+                and any(value == default for value, _label in state.choices)
+                and not values_equal(state.tweak.id, state.value, default)
+            )
+            reset = self._reset_buttons[state.tweak.id]
+            reset.setProperty("ready", is_changed)
+            reset.setEnabled(is_changed and not self._busy)
+            reset.setVisible(is_changed)
+            if is_changed:
+                self._changed.add(state.tweak.id)
+            else:
+                self._changed.discard(state.tweak.id)
             if state.status != "ready":
                 row.set_feedback(state.message or self.tr("This setting is unavailable."), kind="dependency")
             elif state.tweak.id in self._last_changes:
@@ -203,6 +243,7 @@ class TweaksPage(QWidget, PluginInterface):
                     row.set_feedback(self.tr("Current value: %1. %2 Refresh and try again.").replace("%1", state.value).replace("%2", detail), kind="error")
             else:
                 row.clear_feedback()
+        self._filter_rows(self.search_input.text())
 
     def set_outcome(self, tweak_id: str, target: str, outcome: object, *, restored: bool = False) -> None:
         success = bool(getattr(outcome, "success", False))
@@ -233,7 +274,7 @@ class TweaksPage(QWidget, PluginInterface):
 
     def set_error(self, message: str) -> None:
         self.set_busy(False, self.tr("Could not read current settings: %1. Refresh to retry.").replace("%1", message))
-        for button in self._restore_buttons.values():
+        for button in [*self._restore_buttons.values(), *self._reset_buttons.values()]:
             button.setProperty("ready", False)
             button.setEnabled(False)
         for row, control in self._rows.values():
