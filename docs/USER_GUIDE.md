@@ -8,15 +8,18 @@ This guide covers the supported GUI and CLI. For a short first run, see
 
 ## Product scope
 
-Loofi is a curated Fedora utility with five primary destinations:
+Loofi is a curated Fedora utility that opens on **Tweaks** and keeps four everyday
+jobs in the sidebar:
 
 | Destination | Purpose |
 | --- | --- |
-| **Home** | Fedora profile, current status, recommendation, and job shortcuts |
+| **Tweaks** | Searchable GNOME and KDE settings with current values, reset to default, and undo |
 | **Apps** | Curated application search, category filters, source labels, and multi-select review |
-| **Tweaks** | Searchable GNOME, KDE, and power settings with current values |
-| **Health** | Symptom-first diagnostics, maintenance, and one supported next step |
 | **Updates** | Independent System, Flatpak, and Firmware state cards |
+| **Health** | Symptom-first diagnostics, maintenance, and one supported next step |
+
+System, Storage, Network, Security, and Logs are advanced pages. They appear only
+after you enable **Show advanced tools** in Settings.
 
 Activity & Recovery and Settings are secondary header surfaces. The product
 has no background daemon, web API, arbitrary shell execution, or unattended
@@ -39,12 +42,6 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
-
-## Home
-
-Home shows the immutable Fedora profile, a compact status row, one recommended
-next step, shortcuts to Apps, Tweaks, Health, and Updates, and current activity.
-Loading Home never starts a host probe or mutation.
 
 ## Apps
 
@@ -70,10 +67,13 @@ Search settings and choose one supported value. Each row shows its current
 value, explanation, availability, and independently verified saved result.
 Missing tools or unreadable values explain why the change is unavailable.
 
-| Desktop | Controls |
-| --- | --- |
-| KDE | Installed color scheme, animation speed, file opening by single/double click, double-click interval (200/400/600/800 ms), smooth scrolling, scrollbar click behavior, power profile |
-| GNOME | Color preference, animations, text size, battery percentage, clock seconds, 12/24-hour clock format, weekday in the clock, power profile |
+The catalog has 61 controls grouped as Appearance, Desktop, Interaction, Privacy,
+Input, Windows, Sound, Power, and System & Packaging. See
+[TWEAKS.md](TWEAKS.md) for the complete generated list with defaults.
+
+Use **Reset to default** on a row whose value differs from its default, or turn on
+**Changed from default** to list only those rows. Resetting runs through the same
+checked change flow as any other change.
 
 Custom numeric values remain visible and are preserved exactly when captured
 for restoration. A power profile change asks for confirmation. Saved KDE

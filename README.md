@@ -16,7 +16,7 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License"/></a>
 </p>
 
-![Loofi Fedora Tweaks Home](docs/images/user-guide/home-dashboard.png)
+![Loofi Fedora Tweaks — Tweaks](docs/images/v32/tweaks.png)
 
 ## What it does
 

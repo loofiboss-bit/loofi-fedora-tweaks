@@ -14,22 +14,23 @@ pkexec dnf install loofi-fedora-tweaks
 loofi-fedora-tweaks
 ```
 
-The first launch opens Home. Browsing a page does not modify the host. Loofi
+The first launch opens Tweaks. Browsing a page does not modify the host. Loofi
 checks availability before it offers an executable operation, and unknown
 deployment backends remain unavailable.
 
-## 2) Learn the five destinations
+## 2) Learn the four destinations
 
-1. **Home** — Fedora profile, current status, one recommended next step, and
-   shortcuts to everyday jobs.
+1. **Tweaks** — search settings, choose a value, and see the verified result
+   on the same row. Use **Reset to default** to undo a customisation.
 2. **Apps** — search the curated application catalog, filter by category,
    select several applications, and review each source.
-3. **Tweaks** — search settings, choose a value, and see the verified result
-   on the same row.
+3. **Updates** — check System, Flatpak, and Firmware independently and follow
+   the single action shown on each card.
 4. **Health** — choose the symptom you recognise, inspect the findings, and use
    one supported repair, instruction, or native-settings handoff.
-5. **Updates** — check System, Flatpak, and Firmware independently and follow
-   the single action shown on each card.
+
+Need more? Turn on **Show advanced tools** in Settings to add System, Storage,
+Network, Security, and Logs.
 
 Activity & Recovery and Settings are opened from the header. The internal
 execution engine is not a destination and is not required terminology for
