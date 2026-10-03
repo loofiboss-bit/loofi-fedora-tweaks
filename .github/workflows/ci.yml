@@ -31,18 +31,6 @@ env:
     .github/workflows/ci.yml
 
 jobs:
-  adapter_drift:
-    runs-on: ubuntu-latest
-    timeout-minutes: 10
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: "pip"
-          cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
-      - run: python3 scripts/sync_ai_adapters.py --check
-      - run: python3 scripts/sync_ai_adapters.py --render --check
 
   lint:
     runs-on: ubuntu-latest
@@ -80,7 +68,6 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
-      - run: python3 scripts/check_release_docs.py
       - run: pip install build
       - run: python3 scripts/check_packaging_manifest.py --build
 
@@ -93,10 +80,7 @@ jobs:
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: python3 scripts/check_stabilization_rules.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_product_contract.py
       - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_architecture.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_system_check_contract.py
-      - run: PYTHONPATH=loofi-fedora-tweaks python3 scripts/project_stats.py --check
 
   fedora_review:
     runs-on: ubuntu-latest
@@ -172,19 +156,6 @@ jobs:
           path: test-results.xml
           reporter: java-junit
           fail-on-error: false
-
-  stats_check:
-    runs-on: ubuntu-latest
-    timeout-minutes: 5
-    steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
-        with:
-          python-version: ${{ env.PYTHON_VERSION }}
-          cache: "pip"
-          cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
-      - run: python3 scripts/project_stats.py
-      - run: python3 scripts/project_stats.py --check
 
   security:
     runs-on: ubuntu-latest

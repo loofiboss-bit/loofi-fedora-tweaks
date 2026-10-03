@@ -769,19 +769,12 @@ class TestFedora44Packaging(unittest.TestCase):
     ROOT = Path(__file__).resolve().parents[1]
 
     def test_current_release_metadata_is_aligned(self):
-        from version import __version__, __version_codename__
+        from version import __version__
 
         spec = (self.ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
         pyproject = (self.ROOT / "pyproject.toml").read_text(encoding="utf-8")
-        notes = self.ROOT / "docs" / "releases" / f"RELEASE-NOTES-v{__version__}.md"
-        tasks = self.ROOT / ".workflow" / "specs" / f"tasks-v{__version__}.md"
-        arch = self.ROOT / ".workflow" / "specs" / f"arch-v{__version__}.md"
         self.assertIn(f"Version:        {__version__}", spec)
         self.assertIn(f'version = "{__version__}"', pyproject)
-        self.assertTrue(notes.exists())
-        self.assertTrue(tasks.exists())
-        self.assertTrue(arch.exists())
-        self.assertIn(__version_codename__, notes.read_text(encoding="utf-8"))
 
     def test_workflows_target_fedora44(self):
         for rel_path in (

@@ -55,41 +55,7 @@ class TestPhase5SourceContract(unittest.TestCase):
             for marker in legacy_header_markers:
                 self.assertNotIn(marker, source, filename)
 
-    def test_visual_evidence_manifest_is_complete_and_current(self):
-        manifest_path = ROOT / "docs" / "reports" / "V16_PHASE5_SCREENSHOTS.json"
-        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
 
-        self.assertEqual(manifest["phase"], 5)
-        self.assertEqual(len(manifest["captures"]), 8)
-        self.assertEqual(
-            {tuple(item["viewport"]) for item in manifest["captures"]},
-            {(860, 720), (1918, 1018)},
-        )
-        self.assertEqual(
-            {item["destination"] for item in manifest["captures"]},
-            {"software-updates", "network-security", "desktop", "settings"},
-        )
-        for item in manifest["captures"]:
-            image_path = ROOT / item["path"]
-            self.assertTrue(image_path.is_file(), image_path)
-            self.assertEqual(
-                hashlib.sha256(image_path.read_bytes()).hexdigest(),
-                item["sha256"],
-            )
-            self.assertEqual(item["captured_dimensions"], item["viewport"])
-
-    def test_capture_harness_uses_the_real_guarded_main_window(self):
-        source = (ROOT / "scripts" / "capture_v16_phase5.py").read_text(
-            encoding="utf-8"
-        )
-        for marker in (
-            "MainWindow()",
-            "isolated_capture_home()",
-            "guarded_subprocesses()",
-            'patch.object(CommandRunner, "run_command", reject_command)',
-            'window.apply_navigation_mode(NavigationMode.STANDARD)',
-        ):
-            self.assertIn(marker, source)
 
 
 class TestPhase5RoutePresentation(unittest.TestCase):

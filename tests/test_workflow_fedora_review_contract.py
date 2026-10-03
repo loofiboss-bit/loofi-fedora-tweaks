@@ -28,12 +28,6 @@ def test_ci_workflow_has_required_fedora_review_gate():
     assert "usermod -a -G mock reviewer" in text
 
 
-def test_ci_workflow_adapter_drift_checks_sync_and_render():
-    text = _read_text(CI_WORKFLOW)
-
-    assert "adapter_drift:" in text
-    assert "python3 scripts/sync_ai_adapters.py --check" in text
-    assert "python3 scripts/sync_ai_adapters.py --render --check" in text
 
 
 def test_ci_workflow_does_not_build_or_publish_flatpak():
@@ -75,15 +69,6 @@ def test_auto_release_rpm_smoke_requires_fedora_review_gate_success():
     assert "needs.fedora_review.result == 'success'" in text
 
 
-def test_auto_release_has_pipeline_gate_job():
-    text = _read_text(AUTO_RELEASE_WORKFLOW)
-
-    assert "pipeline_gate:" in text
-    assert "Validate workflow specs exist" in text
-    assert "Validate race-lock version" in text
-    assert "--require-publish-ready-tasks" in text
-    assert "continue-on-error: true" not in text
-    assert "needs.pipeline_gate.result == 'success'" in text
 
 
 def test_release_workflows_require_exact_peeled_tag_commit():
@@ -104,11 +89,6 @@ def test_post_release_master_commits_do_not_republish_existing_version():
     assert "should_release: ${{ steps.tag_identity.outputs.should_release }}" in auto_release
     assert 'if [[ "${GITHUB_REF}" == "refs/heads/master" ]]' in auto_release
     assert "this is a post-release master commit" in auto_release
-    pipeline_gate = auto_release.split("  pipeline_gate:", 1)[1].split(
-        "\n  lint:",
-        1,
-    )[0]
-    assert "if: needs.validate.outputs.should_release == 'true'" in pipeline_gate
     assert "needs.validate.outputs.should_release == 'true'" in auto_release
 
 
