@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 31.1.0 "Mastery"; physical desktop validation remains pending.
+> Version 32.0.0 "Refocus"; physical desktop validation remains pending.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 

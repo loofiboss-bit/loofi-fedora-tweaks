@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 31.1.0 "Mastery"; physical desktop validation remains pending.
+> Version 32.0.0 "Refocus"; physical desktop validation remains pending.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.

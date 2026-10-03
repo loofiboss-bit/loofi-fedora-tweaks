@@ -40,6 +40,11 @@
   </provides>
 
   <releases>
+    <release version="32.0.0" date="2026-10-03" type="development">
+      <description>
+        <p>v32.0.0 "Refocus" local candidate: Tweaks open first with Apps, Updates and Health as supporting jobs, advanced tools behind a setting, 61 declarative tweaks with reset-to-default, and a much smaller codebase. Not published.</p>
+      </description>
+    </release>
     <release version="31.1.0" date="2026-10-02" type="stable">
       <description>
         <p>v31.1.0 "Mastery": Expanded tweak catalog to 22 controls across GNOME, KDE, and DNF5, full CLI parity for tweaks and apps, and dynamic package manager resolution.</p>
