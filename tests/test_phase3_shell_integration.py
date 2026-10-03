@@ -58,7 +58,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
             if callable(cleanup):
                 cleanup(0.5)
             window.close()
-            window.deleteLater()
+            self.app.processEvents()
             self.window = None
         PluginRegistry.reset()
         from utils.settings import SettingsManager
