@@ -58,9 +58,8 @@ class TestPhase3MainWindowShell(unittest.TestCase):
             cleanup = getattr(window, "cleanup", None)
             if callable(cleanup):
                 cleanup(0.5)
+            window.close()
             window.deleteLater()
-            QCoreApplication.sendPostedEvents(None, QEvent.Type.DeferredDelete)
-            self.app.processEvents()
             self.window = None
         PluginRegistry.reset()
         from utils.settings import SettingsManager
