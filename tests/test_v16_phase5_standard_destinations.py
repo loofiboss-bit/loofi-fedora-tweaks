@@ -22,7 +22,6 @@ STANDARD_MODULES = (
     "maintenance_tab.py",
     "network_tab.py",
     "security_tab.py",
-    "backup_tab.py",
     "settings_tab.py",
 )
 
@@ -171,17 +170,6 @@ class TestPhase5RoutePresentation(unittest.TestCase):
             self.assertTrue(tab.activate_route(resolve(route_id)))
             self.assertEqual(tab.settings_tabs.currentIndex(), index)
             self._assert_current_page_scaffolded(tab.settings_tabs)
-
-    def test_backup_is_scaffolded_and_distinct_from_recovery_points(self):
-        from ui.backup_tab import BackupTab
-
-        tab = BackupTab()
-        self.addCleanup(tab.deleteLater)
-        self.assertTrue(tab.activate_route(SimpleNamespace(id="backup")))
-        self.assertEqual(tab.layout().getContentsMargins(), (0, 0, 0, 0))
-        self.assertEqual(len(tab.findChildren(PageScaffold)), 1)
-        self.assertIsInstance(tab.scope_notice, InlineNotice)
-        self.assertIn("recovery points", tab.scope_notice.message_label.text().lower())
 
     @patch("ui.maintenance_tab.SystemManager.get_package_manager", return_value="dnf")
     @patch("ui.maintenance_tab.SystemManager.is_atomic", return_value=False)

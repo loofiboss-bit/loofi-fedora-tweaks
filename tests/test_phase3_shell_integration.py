@@ -85,6 +85,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
     @patch("ui.main_window.MainWindow._check_first_run")
     @patch("ui.main_window.MainWindow._initialize_background_services")
+    @patch("ui.main_window.MainWindow._start_tweak_snapshot", return_value=True)
     @patch("ui.main_window.SystemManager.is_atomic", return_value=False)
     @patch("ui.main_window.SystemManager.get_platform_profile")
     @patch("ui.main_window.FavoritesManager.get_favorites", return_value=[])
@@ -97,12 +98,13 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         mock_favorites,
         mock_profile,
         mock_atomic,
+        mock_snapshot,
         mock_background,
         mock_first_run,
         *,
         mode=NavigationMode.STANDARD,
     ) -> MainWindow:
-        del mock_favorites, mock_atomic, mock_background, mock_first_run
+        del mock_favorites, mock_atomic, mock_snapshot, mock_background, mock_first_run
         PluginRegistry.reset()
         mock_mode.return_value = mode
         mock_compat.return_value = CompatStatus(compatible=True)

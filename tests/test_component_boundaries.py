@@ -29,7 +29,7 @@ class TestComponentAvailability(unittest.TestCase):
         )
 
     def test_one_missing_specialist_module_disables_only_specialist_bundle(self):
-        missing = "ui.atlas_dashboard_tab"
+        missing = "ui.storage_tab"
 
         components = discover_builtin_components(
             module_available=lambda module: module != missing
@@ -38,9 +38,9 @@ class TestComponentAvailability(unittest.TestCase):
         self.assertEqual(components, frozenset())
 
     def test_module_paths_are_resolved_without_importing_plugins(self):
-        path = module_source_path("ui.atlas_dashboard_tab", source_root=SOURCE_ROOT)
+        path = module_source_path("ui.storage_tab", source_root=SOURCE_ROOT)
 
-        self.assertEqual(path, SOURCE_ROOT / "ui" / "atlas_dashboard_tab.py")
+        self.assertEqual(path, SOURCE_ROOT / "ui" / "storage_tab.py")
         self.assertTrue(path.is_file())
 
     def test_action_center_stays_available_without_specialist_component(self):

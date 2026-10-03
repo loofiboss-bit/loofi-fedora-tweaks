@@ -13,14 +13,18 @@ from ui.components import Card, PageScaffold
 from ui.components.settings import SettingRow
 
 
-class TweaksPage(QWidget):
+from core.plugins.interface import PluginInterface
+from core.plugins.metadata import PluginMetadata
+
+
+class TweaksPage(QWidget, PluginInterface):
     """Render inspected values; request changes without owning execution."""
 
     refreshRequested = pyqtSignal()
     changeRequested = pyqtSignal(str, str)
     restoreRequested = pyqtSignal(str, str)
 
-    def __init__(self, profile: object, parent: QWidget | None = None) -> None:
+    def __init__(self, profile: object = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.profile = profile
         self._shown_once = False

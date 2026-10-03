@@ -606,6 +606,10 @@ class MainWindowInteractionMixin:
         else:
             self.close()
 
+    def cleanup(self: typing.Any, timeout: float = 0.5) -> None:
+        """Backward-compatible direct cleanup for tests and controlled shutdown."""
+        self._cleanup_runtime(timeout)
+
     def _cleanup_runtime(self: typing.Any, timeout: float) -> None:
         """Backward-compatible direct cleanup for tests without a runtime."""
         self._request_runtime_stop()

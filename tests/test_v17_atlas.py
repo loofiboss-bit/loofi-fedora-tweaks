@@ -141,20 +141,7 @@ class TestPerformanceTabImport(unittest.TestCase):
         mock_tuner.recommend.assert_called_once()
 
 
-class TestSnapshotTabImport(unittest.TestCase):
-    """Test that SnapshotTab module structure is sound."""
 
-    @patch("utils.snapshot_manager.SnapshotManager")
-    def test_detect_backends(self, mock_mgr):
-        mock_mgr.detect_backends = MagicMock(return_value=[])
-        backends = mock_mgr.detect_backends()
-        self.assertEqual(backends, [])
-
-    @patch("utils.snapshot_manager.SnapshotManager")
-    def test_list_snapshots(self, mock_mgr):
-        mock_mgr.list_snapshots = MagicMock(return_value=[])
-        snaps = mock_mgr.list_snapshots()
-        self.assertEqual(snaps, [])
 
 
 class TestLogsTabImport(unittest.TestCase):

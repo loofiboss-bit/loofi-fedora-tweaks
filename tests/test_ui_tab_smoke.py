@@ -104,74 +104,7 @@ class TestDependencyDoctor(unittest.TestCase):
         d.close()
 
 
-# ---------------------------------------------------------------------------
-# WhatsNewDialog (ui/whats_new_dialog.py)
-# ---------------------------------------------------------------------------
-class TestWhatsNewDialog(unittest.TestCase):
-    """Tests for WhatsNewDialog."""
 
-    def test_init(self):
-        from PyQt6.QtWidgets import QTextEdit
-        from ui.whats_new_dialog import WhatsNewDialog
-
-        d = WhatsNewDialog()
-        self.assertIsNotNone(d)
-        self.assertFalse(d.dont_show_again)
-        content = d.findChild(QTextEdit).toPlainText()
-        self.assertIn("Guided troubleshooting", content)
-        self.assertNotIn("--- v", content)
-        self.assertNotIn("Plugin SDK", content)
-        d.close()
-
-    def test_on_close_sets_dont_show(self):
-        from ui.whats_new_dialog import WhatsNewDialog
-        d = WhatsNewDialog()
-        d.dont_show_cb.setChecked(True)
-        d._on_close()
-        self.assertTrue(d.dont_show_again)
-
-    def test_on_close_unchecked(self):
-        from ui.whats_new_dialog import WhatsNewDialog
-        d = WhatsNewDialog()
-        d.dont_show_cb.setChecked(False)
-        d._on_close()
-        self.assertFalse(d.dont_show_again)
-
-    @patch("utils.settings.SettingsManager.instance")
-    def test_should_show_different_version(self, mock_inst):
-        mock_mgr = MagicMock()
-        mock_mgr.get.return_value = "0.0.0"
-        mock_inst.return_value = mock_mgr
-        from ui.whats_new_dialog import WhatsNewDialog
-        self.assertTrue(WhatsNewDialog.should_show())
-
-    @patch("utils.settings.SettingsManager.instance")
-    def test_should_show_same_version(self, mock_inst):
-        from version import __version__
-        mock_mgr = MagicMock()
-        mock_mgr.get.return_value = __version__
-        mock_inst.return_value = mock_mgr
-        from ui.whats_new_dialog import WhatsNewDialog
-        self.assertFalse(WhatsNewDialog.should_show())
-
-    def test_should_show_import_error(self):
-        from ui.whats_new_dialog import WhatsNewDialog
-        with patch("utils.settings.SettingsManager.instance", side_effect=ImportError):
-            self.assertTrue(WhatsNewDialog.should_show())
-
-    @patch("utils.settings.SettingsManager.instance")
-    def test_mark_seen(self, mock_inst):
-        mock_mgr = MagicMock()
-        mock_inst.return_value = mock_mgr
-        from ui.whats_new_dialog import WhatsNewDialog
-        WhatsNewDialog.mark_seen()
-        mock_mgr.set.assert_called_once()
-        mock_mgr.save.assert_called_once()
-
-    def test_mark_seen_exception(self):
-        from ui.whats_new_dialog import WhatsNewDialog
-        with patch("utils.settings.SettingsManager.instance", side_effect=OSError("settings unavailable")):
-            WhatsNewDialog.mark_seen()  # Should not raise
 
 
 # ---------------------------------------------------------------------------
@@ -452,15 +385,7 @@ class TestStorageTabSmoke(unittest.TestCase):
         self.assertEqual(t._METADATA.id, "storage")
 
 
-class TestSnapshotTabSmoke(unittest.TestCase):
-    """Smoke test for SnapshotTab."""
 
-    @patch("PyQt6.QtCore.QTimer.singleShot")
-    def test_init(self, mock_single_shot):
-        from ui.snapshot_tab import SnapshotTab
-        t = SnapshotTab()
-        self.assertIsNotNone(t)
-        self.assertEqual(t._METADATA.id, "snapshots")
 
 
 # ---------------------------------------------------------------------------

@@ -57,12 +57,9 @@ Thumbs.db
 # Claude Code local overrides (personal, not shared)
 .claude.local.md
 
-# Workflow reports are local artifacts except the committed Haven metrics source.
-.workflow/reports/*
-!.workflow/reports/test-results-v18.0.0.json
-
-# Generated project stats: JSON is a committed drift snapshot; other views are local.
-.project-stats.prev.json
+# Project stats and metrics (retired)
+.workflow/
+.project-stats*.json
 .project-stats.md
 .self-maintaining-progress.md
 
