@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 32.0.0 "Refocus"; physical desktop validation remains pending.
+> Version 32.1.0 "Wayfinder" (local candidate); physical desktop validation remains unverified.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -48,9 +48,10 @@ keeps its own result, so one failed installation does not hide the others.
 
 Open **Tweaks**, search for a setting, and choose a value. The row shows the
 current value and confirms it after an independent readback. Custom KDE values
-stay visible until you deliberately choose another value. KDE offers click and
-scroll behavior; GNOME offers clock format and weekday display. A saved KDE
-setting may require reopening affected applications.
+stay visible until you deliberately choose another value. GNOME Files offers
+single/double-click opening and a default folder view. KDE adds Dolphin's full
+path display and KWin's maximized titlebar behavior. A saved KDE setting may
+require reopening affected applications.
 
 Use **Restore previous value** to review and confirm the latest eligible Loofi
 change. External changes, later attempts, missing history, and removed choices

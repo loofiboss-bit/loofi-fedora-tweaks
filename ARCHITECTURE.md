@@ -1,313 +1,123 @@
-# ARCHITECTURE.md — Loofi Fedora Tweaks
+# Loofi Fedora Tweaks Architecture
 
-> Canonical architecture reference for the local v31.1.0 "Mastery" candidate.
-> The supported product is a desktop-neutral Fedora application built with
-> Python 3.12+ and PyQt6.
-
-The [v31.1.0 architecture specification](.workflow/specs/arch-v31.1.0.md) expands
-the tweak catalog across GNOME, KDE, and DNF5, provides full CLI parity,
-and implements dynamic package manager resolution.
-Activity & Recovery and Settings are secondary header surfaces. Action Center
-remains the sole system-mutation authority.
-
-This document describes the active product boundary.  Historical release notes
-may mention retired implementation details, but they are not supported runtime
-or packaging contracts.
+> Active architecture reference for the local v32.1.0 "Wayfinder" candidate.
+> The latest public release remains v32.0.2; this candidate has not been published.
 
 ## Product boundary
 
-Loofi Fedora Tweaks is a curated Fedora utility. It combines application
-installation, safe tuning, symptom-driven diagnosis, updates, capability-aware
-guidance, and reviewed persistent changes in one small GUI and a matching CLI.
-The application remains useful
-when optional host tools are missing: each source reports an explicit
-`available`, `unavailable`, `stale`, or `error` state instead of pretending
-that a different Fedora setup was detected.
+Loofi Fedora Tweaks is a Fedora desktop utility with a PyQt6 GUI and a small
+CLI. It presents curated per-user settings for GNOME and KDE alongside app
+installation, updates, and diagnostics. Missing applications, schemas, or host
+tools produce an unavailable state with an explanation.
 
-The Utility release preserves an intentionally small runtime boundary:
+The current tweak catalog contains 73 controls: 43 GNOME-only, 28 KDE-only,
+and two shared controls. The GUI and CLI project the controls supported by the
+detected Fedora desktop and deployment backend.
 
-- five primary destinations: Home, Apps, Tweaks, Health, and Updates;
-- an immutable `PlatformProfile` for Fedora version, architecture, desktop,
-  session, capabilities, and deployment backend;
-- one Action Center authority for every persistent host mutation;
-- one shared task catalog and one shared operation-controller lifecycle;
-- GUI and CLI as the only runtime entry modes;
-- a COPR-backed RPM as the supported distribution artifact.
+The product has no background service, local web API, remote-control endpoint,
+unattended scheduler, automatic retry, automatic rollback, or automatic reboot.
+The supported distribution package is one RPM built from
+`loofi-fedora-tweaks.spec`.
 
-The product does not ship a background service, local web API, D-Bus
-runtime, Flatpak application bundle, specialist suite, marketplace, unattended
-scheduler, automatic retry, automatic rollback, or automatic reboot.
+## Source of truth
 
-The release architecture contract is
-[.workflow/specs/arch-v31.1.0.md](.workflow/specs/arch-v31.1.0.md).
-The candidate baseline is `v30.2.1` at commit `f4a71a9`.
-The current public release remains `v30.2.1`; local work does not authorize publication.
+| Concern | Active source |
+| --- | --- |
+| Tweak IDs, labels, choices, and desktop scope | `loofi-fedora-tweaks/core/tasks/tweaks.py` |
+| GNOME schemas, KDE keys, command shapes, and value validation | `loofi-fedora-tweaks/core/tweak_commands.py` |
+| Set and restore actions, preflight, and independent verification | `loofi-fedora-tweaks/core/actions/tweaks.py` |
+| Explicit active action allowlist | `loofi-fedora-tweaks/core/actions/catalog.py` |
+| GUI rows, search, changed-only filter, reset, and restore controls | `loofi-fedora-tweaks/ui/tweaks_page.py` |
+| CLI list, get, set, and restore | `loofi-fedora-tweaks/cli/commands/tweaks_commands.py` |
+| Generated catalog reference | `docs/TWEAKS.md`, from `scripts/gen_tweaks_doc.py` |
 
-## Comfort tweak restoration
+Add a setting to the declarative catalog and its closed command metadata. The
+UI, CLI, action definitions, and catalog documentation consume these sources;
+they must not introduce a second setting registry.
 
-The closed catalog contains twenty-two controls, with ten visible on KDE and
-fourteen on GNOME, including their shared power profile and DNF parallel downloads. Every setter records
-versioned before/after metadata under `verification_result.data`; the outer
-schema-v4 storage format stays unchanged. A restore action accepts only
-`source_run_id` and resolves its own tweak and exact previous value from
-verified history. Fresh preflight rejects drift, subsequent change attempts,
-missing/pruned history, already consumed restores, and unavailable choices.
-Restoration is a new verified run, with no automatic rollback or redo. The UI
-reports verified saved configuration rather than promising active effects in
-already open KDE applications.
+## Change and restore boundary
 
-## Runtime entry modes
-
-All launches begin in `loofi-fedora-tweaks/main.py`.
-
-| Mode | Invocation | Boundary |
-| --- | --- | --- |
-| GUI | `loofi-fedora-tweaks` | `ui.main_window.MainWindow` and lazy PyQt widgets |
-| CLI | `loofi-fedora-tweaks --cli ...` | `cli.main`, parser domains, and domain services |
-
-The CLI never imports UI modules.  GUI views never execute subprocesses or
-import mutation services directly; they hand reviewed intent to the domain
-layer and receive typed state/results back.
-
-## Five destinations and routing
-
-`core/product_catalog_records.py` is the data authority for route, plugin,
-section, destination, capability, variant, risk, and handoff metadata.
-`core/product_catalog.py` composes immutable records, while
-`core/navigation/manifest.py` and `core/navigation/destinations.py` expose
-compatibility projections for existing consumers.  No second catalog may
-declare competing product metadata.
-
-| Order | Destination ID | Label | Default route |
-| ---: | --- | --- | --- |
-| 1 | `home` | Home | `atlas_dashboard` |
-| 2 | `install` | Apps | `utility:install` |
-| 3 | `tune` | Tweaks | `utility:tune` |
-| 4 | `fix` | Health | `utility:fix` |
-| 5 | `update` | Updates | `utility:update` |
-
-Activity & Recovery and Settings remain header-level routes rather than
-primary destinations. Stable route IDs and compatibility redirects are
-preserved for existing saved links. `NavigationPolicy` evaluates route, Fedora variant,
-capability, component availability, and explicit compatibility mappings;
-missing or incomplete features return a typed unavailable explanation.
-
-The shell owns primary selection and responsive layout.  At wide sizes the
-navigation is expanded; at medium sizes it becomes an icon rail; at narrow
-sizes it becomes a full-width selector.  The navigation component emits opaque
-route/section IDs and has no command or callback authority.
-
-## Source layout and layer rules
-
-```text
-loofi-fedora-tweaks/
-├── main.py                 # GUI/CLI dispatch only
-├── version.py              # Version and codename authority
-├── core/
-│   ├── actions/            # Plans, policy, execution, verification, leases
-│   ├── catalog_records/    # Immutable product catalog data
-│   ├── change_journal/     # Trusted local change records and presentation
-│   ├── diagnostics/        # Health and Fedora readiness contracts
-│   ├── export/             # Redacted support and migration exports
-│   ├── home/               # PyQt-free Home composition
-│   ├── navigation/         # Routes, destinations, policy, search, migration
-│   ├── observability/      # Read-only metrics, snapshots, and timelines
-│   ├── platform/           # Immutable platform profile and capabilities
-│   ├── state/              # XDG inventory, schemas, atomic I/O, backups
-│   ├── system_check/       # Bounded checks, findings, comparisons, handoff
-│   ├── troubleshooting/    # Bounded profiles and saved evidence
-│   └── workflows/          # Canonical workflow contracts
-├── services/               # PyQt-free typed domain services
-├── cli/                    # Public parser and command handlers
-├── ui/                     # PyQt6 presentation and workers
-├── utils/                  # Shared command, storage, and compatibility helpers
-├── config/                 # Data-only application catalog/configuration
-└── resources/              # Translations and packaged resources
-```
-
-| Layer | Owns | Must not own |
-| --- | --- | --- |
-| `core/` | Contracts, policy, orchestration, persistence, typed state | PyQt widgets or direct host mutation from presentation paths |
-| `services/` | Bounded domain collection and operation adapters | UI imports, shell strings, or hidden background work |
-| `ui/` | Presentation, signals, accessibility, lazy worker adapters | `subprocess`, command vectors, or policy decisions |
-| `cli/` | Argument parsing, serialization, and calls into domains | UI imports or arbitrary command execution |
-| `utils/` | Shared infrastructure and compatibility adapters | New feature-specific authority |
-
-The only approved Qt bridges in `core/` and `services/` are the existing worker
-or safety adapters.  Architecture tests enforce the allowlist and reject new
-presentation-to-host shortcuts.
-
-## Platform and capability model
-
-`core/platform/profile.py` defines the immutable `PlatformProfile`.  Detection
-is explicit for Fedora release, CPU architecture, desktop/session, and
-deployment backend (`dnf5`, `rpm_ostree`, `bootc`, or `unknown`).
-`core/platform/capabilities.py` derives the optional host-tool capabilities
-used by navigation, task availability, update sources, and action eligibility.
-
-Unknown values fail closed.  In particular, unknown deployment must not be
-treated as traditional Fedora, unknown desktop must not select KDE-specific
-behavior, and unknown reboot state must not be reported as safe to continue.
-Traditional, Atomic, and bootc branches remain separate in the domain layer;
-they are never inferred from a UI label.
-
-## Home and read-only inspection
-
-`core/home` reads existing persisted health, state, history, plans, runs, and
-backup metadata and returns a bounded `HomeSummary`.  Constructing Home does
-not probe the host, start a polling timer, or mutate state.  A visible `Check
-now` activation is the only entry point that starts the read-only System Check
-worker.  Completed, partial, cancelled, and failed results retain explicit
-source/progress/error state and refresh Home by rereading persisted data.
-
-Fix composes System Check and symptom-driven troubleshooting. Troubleshooting
-sessions use a closed profile catalog,
-bounded collection, immutable findings, and redacted persistence.  Inspection
-is advisory and does not create a mutation plan implicitly.
-
-## Internal mutation boundary
-
-`core/actions` is the sole authority for persistent host changes.  Every
+`core/actions` is the only authority for persistent host changes. A tweak
 change follows this lifecycle:
 
 ```text
-inspect → prepare exact scope → compact authorize when required → execute → verify
+inspect → prepare exact setting → authorize when required → execute → verify
 ```
 
-Plans contain a closed action ID and typed parameters, never a command vector
-supplied by the user, UI, document, or external source.  Before execution the
-orchestrator performs fresh preflight, validates the platform/backend and
-capabilities, checks expiry, obtains the mutation lease, and requires explicit
-confirmation for actions that need it.  The executor reconstructs the
-allowlisted command from the action definition.
+The action catalog accepts typed setting values and reconstructs allowlisted
+command vectors. UI code does not execute host commands. The CLI uses the same
+Action Center and does not accept arbitrary command text.
 
-Verification is an independent step.  A zero exit code is not a successful
-maintenance result by itself.  Runs can remain `awaiting_reboot`, but the app
-never reboots, retries, rolls back, or resumes them automatically.  The user
-must explicitly run verification after the relevant host event.  Interrupted,
-failed, and verification-failed runs remain inspectable in Activity & Recovery.
+Every setting is read before planning and independently read again after a
+change. A successful exit code without matching readback is a failed change.
+The action history stores the verified previous and resulting values inside
+the existing schema-v4 run record; no migration is needed for catalog-only
+settings. Restore accepts a verified `source_run_id`, checks that the setting
+has not drifted or been superseded, and records a separate verified action.
+There is no generic undo, bulk restore, or automatic rollback.
 
-The five operation facts are change, risk, authorization, verification, and
-recovery guidance. Activity history is source-owned evidence and does not
-imply that a generic Undo operation is available.
+All current controls are per-user settings. They do not require administrator
+authorization. KDE applications may need to be reopened before a setting is
+visible in an already open window.
 
-## Install, Tune, Fix, and Update
+## Desktop-specific settings
 
-`core/tasks` owns the shared TaskDescriptor, curated application catalog,
-Tune profiles, Fix symptoms, Update state projection, and bundle construction.
-Install selections continue per item after a failure. Tune selections execute
-in order and stop on the first unexpected failure. Fix shows findings before a
-supported operation or handoff. Update keeps system packages, Flatpak, and
-firmware as independent sources with one state-driven action per card.
+- GNOME settings use exact `gsettings` schema and key pairs. GNOME Files
+  controls use `org.gnome.nautilus.preferences`; when that schema is not
+  installed, the setting is unavailable.
+- KDE settings use closed `kreadconfig6` and `kwriteconfig6` vectors. The
+  Dolphin path control is unavailable when the `dolphin` executable is absent.
+- KWin borderless maximized windows use the `Windows` group in `kwinrc` and
+  default to false.
+- Fedora desktop and deployment detection comes from the immutable
+  `PlatformProfile`. Unknown or unsupported profiles fail closed.
 
-A missing binary or unsupported backend is shown as unavailable with a safe
-next step. Flatpak is preferred for ordinary GUI applications; Traditional
-Fedora RPM choices are reserved for trusted system-integrated and CLI tools.
-Atomic RPM layering is advanced and reboot-aware.
+## Runtime layers
 
-## State, observability, and support
+| Layer | Owns | Must not own |
+| --- | --- | --- |
+| `core/` | Contracts, policy, action orchestration, state, command metadata | Qt widgets or host changes from presentation paths |
+| `services/` | Bounded domain adapters and platform services | UI imports, shell strings, or hidden background work |
+| `ui/` | Presentation, signals, accessibility, workers | Subprocesses, command vectors, or mutation policy |
+| `cli/` | Argument parsing, serialization, and domain calls | UI imports or arbitrary command execution |
+| `utils/` | Shared infrastructure and compatibility adapters | New feature-specific authority |
 
-`core/state` owns XDG paths, versioned schemas, migrations, locks, backups,
-atomic replacement, readback, and State Doctor.  Writes use same-directory
-temporary files, `fsync`, private permissions, bounded last-known-good copies,
-and explicit future-schema read-only behavior.  User state is preserved across
-package upgrades and uninstall.
+All launches begin in `loofi-fedora-tweaks/main.py`. GUI widgets request
+domain work through existing controllers and workers. CLI `tweaks list`,
+`get`, `set`, and `restore` project the same catalog and actions as the GUI.
 
-`core/observability` reads metrics and structured health snapshots without
-creating hidden collectors.  `core/change_journal` records bounded local
-source evidence for package, firmware, Flatpak, internal action, and application
-activity.  Support bundles recursively redact paths, hostnames, emails,
-secrets, network identifiers, commands, and raw process output before export.
+## State and packaging
 
-## Commands, privilege, and safety
+`core/state` owns application state under the user's XDG directories. Reads
+and writes preserve the existing versioned plan and run formats, use bounded
+atomic persistence, and keep corrupt or future data read-only. Uninstalling
+the RPM preserves user state.
 
-- Never use `sudo`; privileged commands use the desktop's standard `pkexec`
-  authorization agent.
-- The RPM ships no project-specific polkit action files.  Authorization is not
-  granted by browsing, previewing, or reading a document.
-- Never use `shell=True`; subprocess calls are explicit list arguments with
-  bounded timeouts.
-- Always validate a `PrivilegedCommand` through the command policy before
-  execution and write audit evidence for the reviewed run.
-- Never execute an arbitrary command entered in the CLI, UI, or an imported
-  file.
-- Missing tools, unknown platforms, unsupported capabilities, stale plans, and
-  unverifiable outcomes fail closed with user-facing guidance.
-
-## CLI contract
-
-The public CLI intentionally mirrors the eight canonical domains:
-
-```text
-info
-check
-updates
-troubleshoot
-changes
-activity
-doctor
-support-bundle
-```
-
-`--json`, `--timeout`, and `--dry-run` are global inspection/planning controls.
-The CLI may inspect Activity state. During v29, only `changes apply` with
-explicit confirmation may execute an existing compatible plan;
-`changes verify` remains a separate explicit compatibility command.
-
-## Packaging and distribution
-
-The supported production package is one complete RPM built from
-`loofi-fedora-tweaks.spec` and published through the Loofi COPR project.  The
-base package owns the complete application tree; no API, daemon, or extras
-subpackage exists.  `requirements.txt` is generated from the runtime project
-dependencies and contains no retired service stack.
-
-Release CI builds and tests the RPM and source distribution.  It does not
-install SDKs or publish a Flatpak artifact.  `install.sh` is a guarded,
-auditable convenience wrapper around COPR and `uninstall.sh` removes only the
-package/repository paths it names while preserving user state.
-
-## Testing and release gates
-
-Use the repository command surface:
+The repository command surface is the maintained verification interface:
 
 ```bash
-just test
-just test-coverage
-just lint
-just typecheck
 just verify
-just check-packaging
-just validate-release
-just check-drift
 just build-rpm
-just build-sdist
+just check-packaging
+python3 scripts/gen_tweaks_doc.py --check
 ```
 
-Tests mock process, file, OS, and network probes; cover Traditional and Atomic
-branches; and remain rootless and deterministic.  `scripts/validate_architecture.py`
-checks import boundaries, annotation/function budgets, catalog authority, and
-the System Check domain.  `scripts/analyze_component_boundaries.py` records
-component reachability and verifies that the RPM has no retired subpackages or
-custom polkit action installation.
+`just verify` runs lint, type checking, architecture rules, tests, and the
+configured coverage gate. Source and RPM packaging checks do not prove the
+application has been qualified in a physical GNOME or KDE session; record
+those checks separately.
 
-Local/offscreen evidence does not prove physical desktop accessibility,
-authorization-agent behavior, reboot completion, or Atomic installation.
-Physical and manual checks are supplementary release evidence rather than
-blocking gates.  Each release records them as verified, pending, or
-`unverified`; rootless tests must never be presented as physical qualification.
-The maintained coverage gate remains 85% (87% repository-wide measured locally
-for this release); the plan's repository-wide 90% target remains open.
+## Wayfinder presentation and session activation
 
-## Versioning
+The catalog provides control kind, search terms, and application guidance.
+Tweaks combines an exclusive view, category, and text filter. Favorites are
+unique stable IDs in `favorite_tweaks` through SettingsManager; failed saves
+restore the prior visible favorite state. Editors distinguish the last verified
+value from a pending request and block mutations during active execution.
 
-Use the version helper for synchronized changes:
-
-```bash
-PYTHONPATH=loofi-fedora-tweaks \
-python3 scripts/bump_version.py VERSION --codename CODENAME
-```
-
-This updates the version authority, spec, project metadata, race lock,
-statistics, and release-note scaffolding.  Release publication and external
-readback remain explicit, separately authorized steps.
+KWin setting writes retain the established saved-value verification and
+source-bound restoration contracts. `core/actions/tweak_operations.py` is the
+shared GUI worker/CLI adapter for a separate `activate-kwin-tweak` action.
+Only the fixed KWin reconfigure call is allowed; supportInformation must match
+the requested runtime value. Failed activation is a session warning, preserves
+the saved change and restoration offer, and never restarts KWin or rolls back.

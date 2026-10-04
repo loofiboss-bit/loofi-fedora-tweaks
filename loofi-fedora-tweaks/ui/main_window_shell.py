@@ -13,7 +13,7 @@ from core.navigation import (
     resolve,
 )
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QWidget
+from PyQt6.QtWidgets import QScrollArea, QSizePolicy, QWidget
 
 from utils.log import get_logger
 from ui.presentation import visible_label
@@ -123,6 +123,8 @@ class MainWindowShellMixin:
 
         category = visible_label(category)
         page_name = visible_label(page_name)
+        if route and route.plugin_id in {"utility_tune", "utility_install", "utility_update", "utility_fix"}:
+            category = page_name
         self._bc_category.setText(category)
         self._bc_page.setText(page_name)
         self._bc_desc.setText(description)
@@ -144,7 +146,7 @@ class MainWindowShellMixin:
         area = area_for_plugin(route.plugin_id)
         utility_ready = bool(getattr(self, "_utility_shell_ready", False))
         if utility_ready and (route.id == "activity" or route.plugin_id == "activity"):
-            category = "Activity & Recovery"
+            category = "History & Undo"
         elif utility_ready and (route.id == "settings" or route.plugin_id == "settings"):
             category = "Settings"
         else:
@@ -154,7 +156,9 @@ class MainWindowShellMixin:
                 else (area.label if area else route.category)
             )
         category = visible_label(category)
-        page_name = visible_label(route.label)
+        page_name = visible_label("Advanced" if route.id == "settings:application" else ("History & Undo" if route.id == "activity" else route.label))
+        if route.plugin_id in {"utility_tune", "utility_install", "utility_update", "utility_fix"}:
+            category = page_name
         self._bc_category.setText(category)
         self._bc_page.setText(page_name)
         self._bc_desc.setText(route.description)
@@ -178,6 +182,13 @@ class MainWindowShellMixin:
             entry = self._sidebar_index.get(route.plugin_id)
             if entry is not None:
                 widget = self._real_widget_for_entry(entry)
+                if isinstance(widget, QWidget) and getattr(widget, "owns_scroll", False):
+                    host = widget.parentWidget()
+                    while host is not None and not isinstance(host, QScrollArea):
+                        host.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
+                        host = host.parentWidget()
+                    if isinstance(host, QScrollArea):
+                        host.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
                 provider = getattr(widget, "page_header_actions", None)
                 if callable(provider):
                     try:

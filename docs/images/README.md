@@ -1,15 +1,19 @@
 # Screenshots
 
-Current captures live in `v32/` and are regenerated with:
+Current Wayfinder captures live in `wayfinder/`. They use the real PyQt shell
+with a fixed KDE fixture and isolated app settings; no desktop values change.
 
 ```bash
-QT_QPA_PLATFORM=offscreen python3 scripts/capture_v32_screenshots.py docs/images/v32
+QT_SCALE_FACTOR=1 python3 scripts/capture_wayfinder_screenshots.py docs/images/wayfinder
+QT_SCALE_FACTOR=1.5 python3 scripts/capture_wayfinder_screenshots.py /tmp/wayfinder-150
+QT_SCALE_FACTOR=2 python3 scripts/capture_wayfinder_screenshots.py /tmp/wayfinder-200
 ```
 
-They come from the real PyQt application with the offscreen backend and a fixed GNOME profile. They verify rendering and navigation but are not physical desktop, scaling, or assistive-technology qualification.
+Each run captures Tweaks, Apps, Updates, Health, Settings, and History & Undo
+at 900x650 and 1280x800 logical pixels. Separate light, dark, and high contrast
+Tweaks captures exercise the existing theme contract. System font selection is
+unchanged; the offscreen platform's font/palette can differ from the live desktop.
 
-- `tweaks.png` — Tweaks (default start page)
-- `apps.png` — Apps
-- `updates.png` — Updates
-- `health.png` — Health
-- `settings.png` — Settings, including the advanced-tools switch
+These qualify rendering and navigation only. Physical interaction, actual
+Dolphin window behavior, GNOME sessions, and screen readers remain separate
+qualification requirements. Historical v32 images remain in `v32/`.

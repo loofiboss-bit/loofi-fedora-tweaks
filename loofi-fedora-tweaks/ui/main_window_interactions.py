@@ -738,6 +738,12 @@ class MainWindowInteractionMixin:
         from ui.design import ThemeManager
 
         if ThemeManager().apply(app, name):
+            from ui.design import semantic_color
+            header = getattr(self, "_breadcrumb_frame", None)
+            for attribute, icon in (("activity_button", "history"), ("settings_button", "settings")):
+                button = getattr(header, attribute, None)
+                if isinstance(button, QToolButton):
+                    button.setIcon(get_qicon(icon, size=20, tint=semantic_color("text")))
             sidebar = getattr(self, "sidebar", None)
             refresh_destination_icons = getattr(sidebar, "refresh_icon_tints", None)
             if callable(refresh_destination_icons):

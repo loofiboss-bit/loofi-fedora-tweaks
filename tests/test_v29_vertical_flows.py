@@ -110,7 +110,7 @@ class TestV29VerticalWorkflowWidgets(unittest.TestCase):
 
         page.search_input.setText("video")
         self.app.processEvents()
-        self.assertTrue(all("video" in item.text().casefold() or "vlc" in item.text().casefold() or "kdenlive" in item.text().casefold() for item in [page.application_list.item(index) for index in range(page.application_list.count())]))
+        self.assertTrue(all("video" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold() or "vlc" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold() or "kdenlive" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold() for item in [page.application_list.item(index) for index in range(page.application_list.count())]))
         page.search_input.clear()
         page.category_filter.setCurrentText("Development")
         self.app.processEvents()

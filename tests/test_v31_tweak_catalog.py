@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from unittest.mock import patch
 from types import SimpleNamespace
 
 from core.actions.catalog import ActionCatalog
@@ -22,10 +23,11 @@ from core.tweak_commands import (
 from test_tweaks_v30_1 import FakeRuntime, profile
 
 
+@patch("core.tasks.tweaks.kde_capability_error", return_value="")
 class TestV31TweakCatalog(unittest.TestCase):
     """Verify newly introduced v31 tweaks across GNOME, KDE, and DNF5."""
 
-    def test_new_gnome_tweaks_schema_and_command_validation(self) -> None:
+    def test_new_gnome_tweaks_schema_and_command_validation(self, _capability) -> None:
         new_gnome_keys = {
             "gnome-button-layout": ("org.gnome.desktop.wm.preferences", "button-layout"),
             "gnome-tap-to-click": ("org.gnome.desktop.peripherals.touchpad", "tap-to-click"),
@@ -50,7 +52,7 @@ class TestV31TweakCatalog(unittest.TestCase):
             with self.assertRaises(ValueError):
                 command_for(tweak, "invalid-malicious-value")
 
-    def test_new_kde_tweaks_specs_and_command_validation(self) -> None:
+    def test_new_kde_tweaks_specs_and_command_validation(self, _capability) -> None:
         new_kde_keys = {
             "kde-tap-to-click": ("kcminputrc", "Touchpad", "TapToClick"),
             "kde-night-color": ("kwinrc", "NightColor", "Active"),
@@ -74,7 +76,7 @@ class TestV31TweakCatalog(unittest.TestCase):
             with self.assertRaises(ValueError):
                 command_for(tweak, "unexpected-value")
 
-    def test_dnf_parallel_downloads_properties_and_execution(self) -> None:
+    def test_dnf_parallel_downloads_properties_and_execution(self, _capability) -> None:
         tweak = BY_ID["dnf-parallel-downloads"]
         self.assertEqual(tweak.desktop, "all")
         self.assertTrue(tweak.privileged)
@@ -105,7 +107,7 @@ class TestV31TweakCatalog(unittest.TestCase):
         atomic_state = read_tweak(tweak, atomic_prof, runtime.execute_read_only)
         self.assertEqual(atomic_state.status, "unavailable")
 
-    def test_action_catalog_contains_all_v31_actions(self) -> None:
+    def test_action_catalog_contains_all_v31_actions(self, _capability) -> None:
         catalog = ActionCatalog()
         v31_tweak_ids = [
             "gnome-button-layout",

@@ -36,12 +36,14 @@ from core.executor.command_policy import CommandValidationError, validate_comman
 from core.privacy import redact_command, redact_payload, redact_text
 from core.state.atomic_io import advisory_lock, atomic_write_text
 from core.execution_policy import ExecutionAuthority, blocked_execution_message, execution_allowed
+from core.tweak_commands import KWIN_SUPPORT
 
 logger = logging.getLogger(__name__)
 
 # Limits
 COMMAND_TIMEOUT = 120  # seconds
 MAX_STDOUT = 4000
+MAX_KWIN_SUPPORT = 1024 * 1024
 MAX_STDERR = 2000
 MAX_LOG_ENTRIES = 500
 
@@ -256,13 +258,20 @@ class ActionExecutor(BaseActionExecutor):
                 env=run_env,
             )
 
-            stdout = (proc.stdout or "")[:MAX_STDOUT]
+            # Only this reviewed read needs the complete DBus string tuple for
+            # runtime verification. Persistence still uses ActionResult's 4000
+            # character serialization cap; support details are never log text.
+            support_read = tuple(cmd) in {KWIN_SUPPORT, ("flatpak-spawn", "--host", *KWIN_SUPPORT)}
+            raw_stdout = proc.stdout or ""
+            if support_read and len(raw_stdout) > MAX_KWIN_SUPPORT:
+                return ActionResult.fail("KWin runtime information exceeded the supported size.", exit_code=-1, action_id=action_id)
+            stdout = raw_stdout[:MAX_KWIN_SUPPORT if support_read else MAX_STDOUT]
             stderr = (proc.stderr or "")[:MAX_STDERR]
 
             if proc.returncode == 0:
                 return ActionResult(
                     success=True,
-                    message=stdout.strip()[:300] or "OK",
+                    message="KWin runtime information read." if support_read else stdout.strip()[:300] or "OK",
                     exit_code=0,
                     stdout=stdout,
                     stderr=stderr,

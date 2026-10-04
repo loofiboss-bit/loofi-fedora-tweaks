@@ -10,6 +10,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from ui.components import Card, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
+from ui.components.layout import AdaptiveGrid
 
 
 class UpdateWorkflowPage(QWidget):
@@ -46,7 +47,12 @@ class UpdateWorkflowPage(QWidget):
             kind="info",
         )
         self.state_notice.setObjectName("updateWorkflowState")
+        self.state_notice.hide()
         self.scaffold.add_widget(self.state_notice)
+        self.source_grid = AdaptiveGrid(min_column_width=250, column_breakpoints=((820, 3),))
+        self.source_grid.setObjectName("updateSourceGrid")
+        self.scaffold.add_widget(self.source_grid)
+        self._checked_labels: dict[str, QLabel] = {}
         for source in UPDATE_SOURCES:
             self._add_source_card(source)
         self.scaffold.content_layout.addStretch()
@@ -68,6 +74,11 @@ class UpdateWorkflowPage(QWidget):
         details.setObjectName(f"update{source.title()}Details")
         details.setWordWrap(True)
         card.add_widget(details)
+        checked = QLabel()
+        checked.setObjectName(f"update{source.title()}CheckedAt")
+        checked.setWordWrap(True)
+        card.add_widget(checked)
+        self._checked_labels[source] = checked
         button = PrimaryButton(
             self.tr("Check"),
             description=self.tr("Check this update source"),
@@ -75,7 +86,7 @@ class UpdateWorkflowPage(QWidget):
         button.setObjectName(f"update{source.title()}Button")
         button.clicked.connect(lambda _checked=False, selected=source: self._request_source(selected))
         card.add_widget(button)
-        self.scaffold.add_widget(card)
+        self.source_grid.add_card(card)
         self._cards[source] = (card, status, details, button)
 
     def set_state(self, state: UpdateOverviewState) -> None:
@@ -92,6 +103,7 @@ class UpdateWorkflowPage(QWidget):
     def set_notice(self, kind: str, title: str, message: str) -> None:
         """Show a bounded lifecycle message without adding another CTA."""
         self.state_notice.set_notice(kind, self.tr(title), self.tr(message))
+        self.state_notice.show()
 
     def start_check(self, source: str) -> bool:
         """Run one explicit, read-only source check on a worker thread."""
@@ -221,7 +233,7 @@ class UpdateWorkflowPage(QWidget):
             label = {
                 "unchecked": "Not checked",
                 "checking": "Checking",
-                "up_to_date": "Up to date",
+                "up_to_date": "No updates",
                 "available": "Updates available",
                 "stale": "Check required",
                 "missing_tool": "Tool missing",
@@ -237,9 +249,27 @@ class UpdateWorkflowPage(QWidget):
             }.get(state.status, state.status)
             kind = "success" if state.status in {"up_to_date", "succeeded"} else "warning" if state.status in {"error", "cancelled", "failed", "verification_failed", "missing_tool", "unsupported"} else "info"
             badge.set_status(self.tr(label), kind=kind)
-            freshness = self.tr("Fresh") if state.freshness == "fresh" else self.tr("Stale")
-            count = self.tr("%1 item(s)").replace("%1", str(state.item_count))
-            details.setText(" · ".join(part for part in (freshness, count, state.message) if part))
+            if state.status == "unchecked":
+                summary = self.tr("Check this source to discover available updates.")
+            elif state.status == "up_to_date":
+                summary = self.tr("No updates were reported by this source.")
+            elif state.status == "awaiting_reboot" or state.reboot_required:
+                summary = self.tr("Restart the computer when ready, then continue verification.")
+            elif state.status in {"error", "failed", "cancelled", "stale"}:
+                summary = self.tr("Check this source again before applying changes.")
+            elif state.status == "verification_failed":
+                summary = self.tr("Verify the resulting state before another update.")
+            elif state.status in {"missing_tool", "unsupported"}:
+                summary = self.tr("This source is unavailable on this system.")
+            elif state.status == "available":
+                summary = self.tr("%1 updates available").replace("%1", str(state.item_count))
+                if state.stale:
+                    summary += self.tr(" · Check again before updating")
+            else:
+                summary = ""
+            details.setText("\n".join(part for part in (summary, state.message) if part))
+            checked = self._checked_labels[source]
+            checked.setText(self.tr("Last checked: %1").replace("%1", state.checked_at) if state.checked_at else self.tr("Last checked: Never"))
             button.setText(self.tr(cta.label))
             button.setAccessibleName(self.tr(cta.label))
             button.setToolTip(self.tr(cta.reason or cta.label))

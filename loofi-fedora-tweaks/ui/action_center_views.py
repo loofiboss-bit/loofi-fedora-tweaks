@@ -40,8 +40,8 @@ class ActionCenterMasterPane(QWidget):
         self.body.setSpacing(10)
         self.body.addWidget(
             SectionHeader(
-                self.tr("Work browser"),
-                self.tr("Selection shows details only; it never approves or runs a change."),
+                self.tr("Changes"),
+                "",
             )
         )
         self.mode_switcher = LocalViewSwitcher()
@@ -146,12 +146,20 @@ class ActionCenterMasterPane(QWidget):
                 status=self.tr(state.replace("_", " ").title()),
             )
             return
+        result_labels = {
+            "succeeded": self.tr("Verified"),
+            "verification_failed": self.tr("Verification failed"),
+            "awaiting_reboot": self.tr("Restart required"),
+            "failed": self.tr("Failed"),
+            "cancelled": self.tr("Cancelled"),
+            "interrupted": self.tr("Interrupted"),
+        }
         self.add_work_item(
             str(record.run_id),
             title,
-            self.tr("Recorded Action Center run"),
-            status=self.tr(state.replace("_", " ").title()),
-            status_kind="success" if state == "succeeded" else "error" if state in {"failed", "cancelled"} else "neutral",
+            self.tr("Saved result · select to review available next steps"),
+            status=result_labels.get(state, self.tr(state.replace("_", " ").title())),
+            status_kind="success" if state == "succeeded" else "error" if state in {"failed", "verification_failed"} else "neutral",
         )
 
 
@@ -167,8 +175,8 @@ class ActionCenterDetailPane(QWidget):
         self.body.setSpacing(10)
         self.body.addWidget(
             SectionHeader(
-                self.tr("Selected item"),
-                self.tr("Review scope and safety evidence before preparing or running a plan."),
+                self.tr("Result and next step"),
+                "",
             )
         )
         self.risk_panel = ConfirmationRiskPanel(

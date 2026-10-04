@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 32.0.0 "Refocus"; physical desktop validation remains pending.
+> Version 32.1.0 "Wayfinder" (local candidate); physical desktop validation remains unverified.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.

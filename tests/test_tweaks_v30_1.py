@@ -90,16 +90,18 @@ class FakeRuntime:
         return ActionResult.fail("Unknown read", action_id=action_id)
 
 
+@patch("core.tasks.tweaks.kde_capability_error", return_value="")
 class TestTweakCatalog(unittest.TestCase):
-    def test_twenty_two_controls_are_desktop_scoped_on_both_backends(self) -> None:
-        self.assertEqual(len(TWEAKS), 61)
+    def test_catalog_controls_are_desktop_scoped_on_both_backends(self, _capability) -> None:
+        self.assertEqual(len(TWEAKS), 73)
         for backend in ("dnf5", "rpm_ostree"):
-            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 41)
-            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 22)
+            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 45)
+            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 30)
         self.assertEqual(visible_tweaks(profile("unknown")), ())
         self.assertEqual(visible_tweaks(profile("kde", "bootc")), ())
 
-    def test_each_control_reads_and_accepts_only_curated_values(self) -> None:
+    @patch("core.tasks.tweaks.shutil.which", return_value="/usr/bin/dolphin")
+    def test_each_control_reads_and_accepts_only_curated_values(self, _which, _capability) -> None:
         for desktop in ("gnome", "kde"):
             runtime = FakeRuntime(desktop)
             for tweak in visible_tweaks(runtime.platform_profile()):
@@ -113,7 +115,7 @@ class TestTweakCatalog(unittest.TestCase):
                     with self.assertRaises(ValueError):
                         command_for(tweak, "--not-a-value")
 
-    def test_custom_kde_values_are_read_without_normalization_or_write(self) -> None:
+    def test_custom_kde_values_are_read_without_normalization_or_write(self, _capability) -> None:
         runtime = FakeRuntime("kde")
         scheme = read_tweak(BY_ID["kde-color"], runtime.platform_profile(), runtime.execute_read_only)
         speed = read_tweak(BY_ID["kde-animation"], runtime.platform_profile(), runtime.execute_read_only)
@@ -123,7 +125,7 @@ class TestTweakCatalog(unittest.TestCase):
         self.assertNotIn((speed.value, "Custom"), speed.choices)
         self.assertTrue(all(call[0] != "kwriteconfig6" for call in runtime.calls))
 
-    def test_uninstalled_kde_color_remains_visible_without_becoming_a_choice(self) -> None:
+    def test_uninstalled_kde_color_remains_visible_without_becoming_a_choice(self, _capability) -> None:
         runtime = FakeRuntime("kde")
         runtime.kde_color_current = "PrivateScheme\n"
         state = read_tweak(BY_ID["kde-color"], runtime.platform_profile(), runtime.execute_read_only)
@@ -131,7 +133,7 @@ class TestTweakCatalog(unittest.TestCase):
         self.assertEqual(state.value, "PrivateScheme")
         self.assertNotIn(("PrivateScheme", "PrivateScheme"), state.choices)
 
-    def test_installed_kde_scheme_with_spaces_is_selectable(self) -> None:
+    def test_installed_kde_scheme_with_spaces_is_selectable(self, _capability) -> None:
         runtime = FakeRuntime("kde")
         runtime.output["kde-color"] = " * BreezeDark\n * My Custom Theme (current color scheme)\n"
         runtime.kde_color_current = "My Custom Theme\n"
@@ -140,7 +142,7 @@ class TestTweakCatalog(unittest.TestCase):
         validate_command_vector(command_for(BY_ID["kde-color"], "My Custom Theme"))
         self.assertEqual(classify_command("plasma-apply-colorscheme", ["My Custom Theme"]), "session")
 
-    def test_missing_tool_and_unknown_desktop_are_unavailable(self) -> None:
+    def test_missing_tool_and_unknown_desktop_are_unavailable(self, _capability) -> None:
         runtime = FakeRuntime("gnome")
         runtime.fail = True
         state = read_tweak(BY_ID["gnome-color"], runtime.platform_profile(), runtime.execute_read_only)
@@ -150,7 +152,7 @@ class TestTweakCatalog(unittest.TestCase):
         self.assertEqual(other.status, "unavailable")
         self.assertEqual(len(runtime.calls), 1)
 
-    def test_external_state_change_is_observed_and_preflight_detects_drift(self) -> None:
+    def test_external_state_change_is_observed_and_preflight_detects_drift(self, _capability) -> None:
         runtime = FakeRuntime("gnome")
         tweak = BY_ID["gnome-animations"]
         first = read_tweak(tweak, runtime.platform_profile(), runtime.execute_read_only)
@@ -163,7 +165,7 @@ class TestTweakCatalog(unittest.TestCase):
         self.assertTrue(decision.allowed)
         self.assertEqual(decision.facts["current"], "false")
 
-    def test_verifier_requires_actual_readback(self) -> None:
+    def test_verifier_requires_actual_readback(self, _capability) -> None:
         runtime = FakeRuntime("gnome")
         definition = ActionCatalog().get("set-gnome-battery")
         self.assertIsNotNone(definition)
@@ -174,7 +176,7 @@ class TestTweakCatalog(unittest.TestCase):
         success = definition.verifier(SimpleNamespace(action_id="set-gnome-battery"), plan, runtime)
         self.assertEqual(success.state, "succeeded")
 
-    def test_command_policy_rejects_unreviewed_settings_and_options(self) -> None:
+    def test_command_policy_rejects_unreviewed_settings_and_options(self, _capability) -> None:
         rejected = (
             ["gsettings", "set", "org.gnome.desktop.privacy", "disable-camera", "false"],
             ["gsettings", "set", "org.gnome.desktop.interface", "color-scheme", "unsafe"],
@@ -185,7 +187,7 @@ class TestTweakCatalog(unittest.TestCase):
             with self.subTest(vector=vector), self.assertRaises(CommandValidationError):
                 validate_command_vector(vector)
 
-    def test_exact_read_and_write_shapes_cross_execution_boundary(self) -> None:
+    def test_exact_read_and_write_shapes_cross_execution_boundary(self, _capability) -> None:
         reads = (
             ["plasma-apply-colorscheme", "--list-schemes"],
             ["kreadconfig6", "--file", "kdeglobals", "--group", "KDE", "--key", "AnimationDurationFactor", "--default", "1"],
@@ -210,12 +212,13 @@ class TestTweakCatalog(unittest.TestCase):
         self.assertTrue(execution_allowed(power[0], power[1:], authority="action_center"))
 
 
+@patch("core.tasks.tweaks.kde_capability_error", return_value="")
 class TestTweakPage(unittest.TestCase):
     @classmethod
     def setUpClass(cls) -> None:
         cls.app = QApplication.instance() or QApplication([])
 
-    def test_current_value_search_and_saved_feedback_require_refresh(self) -> None:
+    def test_current_value_search_and_saved_feedback_require_refresh(self, _capability) -> None:
         page = TweaksPage(profile("gnome"))
         try:
             state = read_tweak(BY_ID["gnome-battery"], profile("gnome"), FakeRuntime("gnome").execute_read_only)
@@ -232,7 +235,7 @@ class TestTweakPage(unittest.TestCase):
         finally:
             page.close()
 
-    def test_failure_displays_actual_value_and_disables_uncertain_controls(self) -> None:
+    def test_failure_displays_actual_value_and_disables_uncertain_controls(self, _capability) -> None:
         page = TweaksPage(profile("gnome"))
         try:
             state = read_tweak(BY_ID["gnome-battery"], profile("gnome"), FakeRuntime("gnome").execute_read_only)
@@ -246,7 +249,7 @@ class TestTweakPage(unittest.TestCase):
         finally:
             page.close()
 
-    def test_search_and_refresh_are_keyboard_reachable(self) -> None:
+    def test_search_and_refresh_are_keyboard_reachable(self, _capability) -> None:
         page = TweaksPage(profile("gnome"))
         try:
             page.show()
@@ -260,7 +263,7 @@ class TestTweakPage(unittest.TestCase):
         finally:
             page.close()
 
-    def test_old_maintenance_task_ids_focus_health_actions(self) -> None:
+    def test_old_maintenance_task_ids_focus_health_actions(self, _capability) -> None:
         page = FixWorkflowPage()
         try:
             self.assertTrue(page.focus_task("tune:storage-trim"))
@@ -268,7 +271,7 @@ class TestTweakPage(unittest.TestCase):
         finally:
             page.close()
 
-    def test_health_requires_separate_no_rollback_acceptance(self) -> None:
+    def test_health_requires_separate_no_rollback_acceptance(self, _capability) -> None:
         parent = QWidget()
         parent._run_reviewed_health_action = Mock()  # type: ignore[attr-defined]
         page = SimpleNamespace(set_health_notice=Mock())

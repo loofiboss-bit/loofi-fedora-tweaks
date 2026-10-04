@@ -1,219 +1,104 @@
-# Release Checklist — v28.0.3 "Ease"
+# Release checklist
 
-Use this checklist before bumping a version. The CI pipeline handles tagging and publishing automatically.
+Use this checklist to prepare a version candidate and qualify its package.
+The repository's `master` push and `v*` tag workflows can publish automatically,
+so keep local verification separate from release authorization.
 
----
+## 1. Choose a version
 
-## 0. Version Bump (Automated)
-
-Run the bump script — it handles files, scaffolding, and warnings:
-
-```bash
-python3 scripts/bump_version.py X.Y.Z --codename "Codename"
-
-# Preview first:
-python3 scripts/bump_version.py X.Y.Z --codename "Codename" --dry-run
-```
-
-The script cascades across version metadata, workflow state, stats, templates, and release scaffolding:
-
-| # | Target | Field |
-|---|--------|-------|
-| 1 | `loofi-fedora-tweaks/version.py` | `__version__`, `__version_codename__` |
-| 2 | `loofi-fedora-tweaks.spec` | `Version:` |
-| 3 | `pyproject.toml` | `version` |
-| 4 | `.workflow/specs/.race-lock.json` | `target_version` |
-| 5 | `.project-stats.json` | regenerated via `project_stats.py` |
-| 6 | AI adapter templates | re-rendered via `sync_ai_adapters.py` |
-| 7 | `docs/releases/RELEASE-NOTES-vX.Y.Z.md` | scaffolded if missing |
-| 8 | `.workflow/specs/tasks-vX.Y.Z.md` | scaffolded if missing |
-| 9 | `.workflow/specs/arch-vX.Y.Z.md` | scaffolded if missing |
-
-It also **scans `tests/` for hardcoded version strings** and warns if any are found.
-
-Quick verify (after bump):
+Check the active source version and inspect local and remote tags before
+selecting the next version. Never reuse a tag that points to another commit
+lineage. The current release uses version `32.0.2`; `32.1.0` is the selected
+local candidate for the next settings update.
 
 ```bash
-python3 -c "import sys; sys.path.insert(0,'loofi-fedora-tweaks'); from version import __version__; print(__version__)"
-grep '^Version:' loofi-fedora-tweaks.spec | awk '{print $2}'
-grep '^version' pyproject.toml
+python3 scripts/bump_version.py --check
+git tag --list 'v32.1.0'
+git ls-remote --tags origin 'refs/tags/v32.1.0' 'refs/tags/v32.1.0^{}'
+python3 scripts/bump_version.py 32.1.0 --codename "Wayfinder" --dry-run
 ```
 
----
-
-## 1. Documentation
-
-After running the bump script, fill in the scaffolded files:
-
-- [ ] `docs/releases/RELEASE-NOTES-vX.Y.Z.md` — Fill in the release evidence
-- [ ] `CHANGELOG.md` — New version entry at top
-- [ ] `README.md` — Update "What Is New" section, version badge, test count
-- [ ] `ROADMAP.md` — Mark version as DONE, add NEXT placeholder
-- [ ] `docs/USER_GUIDE.md` — Update if behavior changed
-- [ ] `docs/TROUBLESHOOTING.md` — Update if new failure modes added
-
----
-
-## 2. Pre-Push Validation
-
-Run locally before pushing:
+After review, update only the active version sources:
 
 ```bash
-# Release docs gate (same check CI runs)
-python3 scripts/check_release_docs.py
-
-# Lint
-flake8 loofi-fedora-tweaks/ --max-line-length=150 --ignore=E501,W503,E402,E722,E203
-
-# Adapter sync check
-python3 scripts/sync_ai_adapters.py --check
-
-# Fedora review gate prerequisite
-python3 scripts/check_fedora_review.py
-
-# Tests (the full suite is the release gate)
-LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just test-coverage
+python3 scripts/bump_version.py 32.1.0 --codename "Wayfinder"
+python3 scripts/bump_version.py --check
 ```
 
-The `check_release_docs.py` script validates:
+The script checks and updates `loofi-fedora-tweaks/version.py`,
+`loofi-fedora-tweaks.spec`, and `pyproject.toml`. It does not require retired
+statistics or adapter tools and does not create workflow scaffolding.
 
-| Check | What it verifies |
-|-------|------------------|
-| Version sync | `version.py` == `.spec` == `pyproject.toml` |
-| CHANGELOG | Entry `## [X.Y.Z]` exists in `CHANGELOG.md` |
-| README | `README.md` exists and is non-empty |
-| Release notes | `docs/releases/RELEASE-NOTES-vX.Y.Z.md` exists and is non-empty |
-| Workflow specs | `.workflow/specs/tasks-vX.Y.Z.md`, `arch-vX.Y.Z.md`, and race lock target the current release |
-| Coverage gate | Justfile, CI, and auto-release enforce the same minimum |
-| Stale tests | No `tests/test_*.py` files hardcode the current version or codename |
+## 2. Keep documentation current
 
----
-
-## 3. Push to Master
-
-The **Auto Release Pipeline** runs automatically on every push to `master`:
-
-```
-push to master
-  -> validate (version alignment + packaging scripts)
-  -> adapter_drift, lint, typecheck, test, security, docs_gate, fedora_review (parallel)
-  -> build (RPM in Fedora 44 container)
-  -> auto_tag (creates vX.Y.Z tag if missing)
-  -> release (publishes GitHub Release with RPM artifact)
-```
-
-### Key behaviors
-
-- **Auto-tag**: Creates `vX.Y.Z` tag from `version.py` if it doesn't exist
-- **Idempotent release**: Skips publish if release already exists for that tag
-- **Blocking gates**: validation, adapter drift, lint, typecheck, stabilization,
-  docs, tests, security, packaging, and the RPM smoke check must pass.
-- **Supplementary evidence**: physical desktop, Polkit-agent, reboot, Atomic,
-  keyboard, and Orca checks are optional. Record each surface as verified,
-  pending, or unverified in the release evidence; none is a publication blocker.
-
-### If the pipeline fails
-
-1. Check the [Actions page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/actions/workflows/auto-release.yml) for the failing job
-2. Fix the issue locally and push again — the pipeline is idempotent
-3. If the tag already exists but release failed, the release job will create it on next push
-
----
-
-## 4. Post-Release Verification
-
-After the pipeline completes:
+- [ ] Add an accurate candidate entry to `CHANGELOG.md`.
+- [ ] Update `ROADMAP.md` without calling a local candidate released.
+- [ ] Regenerate `docs/TWEAKS.md` from the catalog.
+- [ ] Update current documentation version headings and preserve physical
+  qualification as pending or unverified until it has been performed.
 
 ```bash
-# Check release exists
-gh release view vX.Y.Z
-
-# Check RPM artifact is attached
-gh release view vX.Y.Z --json assets -q '.assets[].name'
-
-# Verify tag points to correct commit
-git log --oneline -1 vX.Y.Z
+python3 scripts/gen_tweaks_doc.py
+python3 scripts/gen_tweaks_doc.py --check
 ```
 
-Or check the [releases page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases).
+## 3. Verify code and packages
 
----
-
-## 5. Manual Release (Fallback)
-
-Use only if the automated pipeline can't handle a specific scenario:
+Run the maintained gates from the repository root:
 
 ```bash
-# Trigger manual release via GitHub Actions
-gh workflow run auto-release.yml -f version=X.Y.Z
-
-# Or dry run first
-gh workflow run auto-release.yml -f version=X.Y.Z -f dry_run=true
+just verify
+just build-rpm
+just check-packaging
 ```
 
----
+`just verify` includes lint, mypy, architecture checks, tests, and the 85%
+coverage gate. `just check-packaging` checks generated requirements and builds
+the package manifest. `just build-rpm` creates a local RPM; neither command
+installs it or publishes it.
 
-## Anti-Patterns (Do Not)
+Also inspect the final changes and working tree:
 
-These patterns caused CI failures in v40.0.0 and are now caught automatically:
-
-| Anti-Pattern | Why It Breaks | Automated Guard |
-|-------------|---------------|-----------------|
-| Hardcoded version in tests (`assertEqual(__version__, "40.0.0")`) | Fails on every bump | `check_release_docs.py` stale test scan + `bump_version.py` warning |
-| Missing release notes | `docs_gate` CI job fails | `bump_version.py` scaffolds automatically |
-| `pyproject.toml` version drift | Version mismatch | `bump_version.py` updates it + `check_release_docs.py` validates |
-| Per-release test files (`test_v38_clarity.py`) | Hardcode old version, break on bump | Don't create them; use version-agnostic assertions |
-
-### Safe version test patterns
-
-```python
-# GOOD: version-agnostic assertions that survive bumps
-def test_version_is_nonempty(self):
-    from version import __version__
-    self.assertTrue(len(__version__) > 0)
-
-def test_version_format(self):
-    from version import __version__
-    parts = __version__.split(".")
-    self.assertEqual(len(parts), 3)
-    for part in parts:
-        self.assertTrue(part.isdigit())
-
-# BAD: breaks on every version bump
-def test_version_is_current(self):
-    self.assertEqual(__version__, "40.0.0")  # stale next release!
+```bash
+git diff --check
+git status --short
+python3 scripts/bump_version.py --check
+python3 scripts/gen_tweaks_doc.py --check
 ```
 
----
+## 4. Qualify desktop behavior
 
-## CI Pipeline Architecture
+In a GNOME session, try all GNOME Files controls. In a KDE Plasma session,
+try the Dolphin and KWin controls, including KWin runtime readback. For each setting, verify the selected value
+by reading it back, then use its history-based restore and verify the previous
+value. Check that a missing Files schema or Dolphin installation is reported
+as unavailable. Do not infer physical desktop qualification from offscreen
+tests or package builds; record each desktop as verified, pending, or
+unverified.
 
-### auto-release.yml (Full Release)
+## 5. Understand publication triggers
 
-```
-validate -----------------------------------------+
-adapter_drift --+                                  |
-lint -----------+                                  |
-typecheck ------+  (parallel blocking gates)  +--> build --> auto_tag --> release
-stabilization --+                              |
-docs_gate ------+                              |
-test -----------+                              |
-security -------+------------------------------+
-```
+The CI workflow validates pull requests and pushes. The auto-release workflow
+also runs on pushes to `master` and `v*` tags; when all release gates pass, it
+can create the version tag and publish release artifacts, then publish to the
+configured COPR project. Do not push a candidate to `master`, create a release
+tag, or start a release workflow unless publication has been explicitly
+authorized.
 
-### ci.yml (PR/Push Checks)
+For an authorized release, verify the workflow's checks and independently read
+back the tag, GitHub release assets, and COPR build/package before describing
+the release as public. A green local build or an edited document is not
+publication evidence.
 
-Runs on every push/PR. Same gates as auto-release minus build/tag/release.
-Includes the source-distribution packaging job `package_sdist`; the release
-artifacts are the Fedora RPM and sdist. No Flatpak application bundle is built
-or published.
+## Local Wayfinder delivery
 
-### Common Issues
+Keep version `32.1.0` and codename `Wayfinder`; RPM `Release: 2` identifies the
+redesigned candidate. Capture the six main/secondary views at 900x650 and
+1280x800 logical pixels at 100%, 150%, and 200% scaling. Offscreen fixture
+screenshots qualify rendering only, not physical desktop or screen reader use.
 
-| Issue | Cause | Fix |
-|-------|-------|-----|
-| Release not published | GITHUB_TOKEN tags don't trigger new runs | Pipeline handles this -- release runs on same push as auto_tag |
-| Build skipped | Hard gate failed (lint, validate, adapter_drift, docs_gate) | Fix the failing gate and push again |
-| Duplicate release attempt | Multiple pushes for same version | Pipeline checks if release exists first and skips |
-| Version mismatch | `version.py` != `.spec` != `pyproject.toml` | Run `bump_version.py` (handles all three) |
-| docs_gate fails | Missing release notes or stale test assertions | Run `bump_version.py` (scaffolds notes, warns on stale tests) |
+After all gates pass, inventory the installed RPM and running application,
+back up app settings privately, and simulate the exact local RPM transaction.
+Upgrade the local package only after the simulation succeeds. Read back NEVRA,
+package integrity, CLI catalog, settings checksum, and package consistency.
+Do not delete user settings or publish this candidate.

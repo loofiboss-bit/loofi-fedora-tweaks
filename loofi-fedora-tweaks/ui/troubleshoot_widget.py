@@ -41,6 +41,7 @@ from ui.components import (
     SectionHeader,
     StatusBadge,
 )
+from ui.health_symptoms import HealthSymptomCardsMixin
 from ui.troubleshoot_presentation import (
     SESSION_STATUS,
     SOURCE_LABELS,
@@ -70,7 +71,7 @@ class _DefaultSessionHistory:
         )
 
 
-class TroubleshootWidget(QWidget):
+class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
     """One guided surface over the closed Compass profiles."""
 
     actionCenterRequested = pyqtSignal(str, object)
@@ -102,11 +103,8 @@ class TroubleshootWidget(QWidget):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
-            self.tr("Troubleshoot"),
-            self.tr(
-                "Choose what is going wrong, run a read-only check, "
-                "and review one safe next step."
-            ),
+            self.tr("Health"),
+            self.tr("Choose a symptom, review findings, and follow one next step."),
         )
         root.addWidget(self.scaffold)
 
@@ -171,7 +169,9 @@ class TroubleshootWidget(QWidget):
         for symptom_id, label, _profile_id, _limitation in self._SYMPTOMS:
             self.profile_selector.addItem(self.tr(label), symptom_id)
         self.profile_selector.currentIndexChanged.connect(self._profile_changed)
-        choose.add_widget(self.profile_selector)
+        # Keep the closed selector as the single source for routing and profile IDs.
+        self.profile_selector.hide()
+        self._build_symptom_cards(choose)
         self.application_input = QLineEdit()
         self.application_input.setObjectName("troubleshootApplicationId")
         self.application_input.setAccessibleName(self.tr("Application command"))
@@ -379,6 +379,7 @@ class TroubleshootWidget(QWidget):
         return page
 
     def _profile_changed(self, *_args: Any) -> None:
+        self._update_symptom_cards()
         profile = require_profile(self.selected_profile_id())
         checked_areas = []
         technical_lines = []

@@ -1,6 +1,6 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v32.0.0 "Refocus" retains one internal orchestrator as the
+Loofi Fedora Tweaks v32.1.0 "Wayfinder" (local candidate) retains one internal orchestrator as the
 trust boundary for persistent system changes from both GUI and CLI. Apps,
 Tweaks, Health, and Updates use the same controller while Activity & Recovery keeps
 saved outcomes and follow-up state. Physical desktop validation remains pending.

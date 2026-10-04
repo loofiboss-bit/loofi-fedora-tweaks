@@ -355,7 +355,7 @@ class TestPhase3ShellAndSettings(unittest.TestCase):
 
         content_pages = tab.findChildren(QWidget, "settingsContent")
         self.assertEqual(len(content_pages), 5)
-        self.assertTrue(all(page.maximumWidth() == 700 for page in content_pages))
+        self.assertTrue(all(page.maximumWidth() == 960 for page in content_pages))
 
     def test_main_window_title_does_not_include_version(self):
         from ui.main_window import MainWindow

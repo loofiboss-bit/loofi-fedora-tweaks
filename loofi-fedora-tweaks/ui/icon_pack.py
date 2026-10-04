@@ -17,6 +17,7 @@ _ICON_NAMES = (
     "cleanup",
     "cpu-performance",
     "developer-tools",
+    "favorite",
     "hardware-performance",
     "home",
     "info",
@@ -171,6 +172,7 @@ _SEMANTIC_ICONS: dict[str, tuple[tuple[str, ...], str]] = {
     "details": (("documentinfo", "dialog-information"), "info"),
     "error": (("dialog-error", "dialog-close"), "status-ok"),
     "filter": (("view-filter", "edit-find"), "search"),
+    "favorite": (("rating", "rating-unrated", "emblem-favorite"), "favorite"),
     "install": (("system-software-install", "list-add"), "install"),
     "loading": (("process-working", "view-refresh"), "restart"),
     "refresh": (("view-refresh", "system-software-update"), "update"),
@@ -362,7 +364,7 @@ def get_qicon(icon_value: str, size: int = 24, tint: str | None = None) -> QIcon
     icon_name = resolve_icon_name(icon_value)
     from_theme = getattr(QIcon, "fromTheme", None)
     for theme_name in _THEME_ICON_NAMES.get(icon_name, ()):
-        if not callable(from_theme):
+        if tint is not None or not callable(from_theme):
             break
         theme_icon = cast(QIcon, from_theme(theme_name))
         if not theme_icon.isNull():

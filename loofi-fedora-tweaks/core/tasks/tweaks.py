@@ -3,12 +3,15 @@
 from __future__ import annotations
 
 import re
+import shutil
 from dataclasses import dataclass, replace
+from pathlib import Path
+from xml.etree import ElementTree
 from typing import Callable, Sequence
 
 from core.actions.contracts import ActionRuntime
 from core.executor.action_result import ActionResult
-from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector, gnome_schema
+from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector, gnome_schema, KDE_SPECS, KWIN_RUNTIME_KEYS
 
 
 _SCHEME = SCHEME_PATTERN
@@ -26,6 +29,9 @@ class Tweak:
     choices: tuple[tuple[str, str], ...]
     system_wide: bool = False
     privileged: bool = False
+    control_kind: str = "auto"
+    search_terms: tuple[str, ...] = ()
+    effect_hint: str = ""
 
 
 @dataclass(frozen=True)
@@ -40,7 +46,7 @@ class TweakState:
     restore_message: str = ""
 
 
-TWEAKS = (
+TWEAKS: tuple[Tweak, ...] = (
     Tweak("gnome-color", "Color preference", "Choose how GNOME apps prefer light or dark colors.", "Appearance", "gnome", "set-gnome-color", (("default", "System default"), ("prefer-light", "Light"), ("prefer-dark", "Dark"))),
     Tweak("gnome-animations", "Animations", "Turn GNOME interface motion on or off.", "Appearance", "gnome", "set-gnome-animations", (("true", "On"), ("false", "Off"))),
     Tweak("gnome-text-scale", "Text size", "Scale interface text without changing display resolution.", "Appearance", "gnome", "set-gnome-text-scale", (("1.0", "100%"), ("1.25", "125%"), ("1.5", "150%"))),
@@ -88,6 +94,8 @@ TWEAKS = (
     Tweak("gnome-event-sounds", "System sounds", "Play sounds for system events.", "Sound", "gnome", "set-gnome-event-sounds", (("true", "On"), ("false", "Off"),)),
     Tweak("gnome-idle-dim", "Dim screen when idle", "Reduce brightness when the computer is idle.", "Power", "gnome", "set-gnome-idle-dim", (("true", "On"), ("false", "Off"),)),
     Tweak("gnome-power-button", "Power button action", "Choose what pressing the power button does.", "Power", "gnome", "set-gnome-power-button", (("suspend", "Suspend"), ("hibernate", "Hibernate"), ("interactive", "Ask"), ("nothing", "Nothing"),)),
+    Tweak("gnome-files-click-policy", "Open files and folders", "Choose whether a single or double click opens files and folders in GNOME Files.", "Files", "gnome", "set-gnome-files-click-policy", (("single", "Single click"), ("double", "Double click"))),
+    Tweak("gnome-files-default-folder-view", "Default folder view", "Choose the view used for folders in GNOME Files.", "Files", "gnome", "set-gnome-files-default-folder-view", (("icon-view", "Icons"), ("list-view", "List"))),
     Tweak("kde-focus-policy", "Window focus", "Choose how windows receive keyboard focus in Plasma.", "Windows", "kde", "set-kde-focus-policy", (("ClickToFocus", "Click to focus"), ("FocusFollowsMouse", "Focus follows mouse"), ("FocusUnderMouse", "Focus under mouse"),)),
     Tweak("kde-titlebar-double-click", "Titlebar double-click", "Choose what double-clicking a titlebar does.", "Windows", "kde", "set-kde-titlebar-double-click", (("Maximize", "Maximize"), ("Minimize", "Minimize"), ("Shade", "Roll up"), ("Lower", "Lower"), ("Nothing", "Nothing"),)),
     Tweak("kde-blur", "Background blur", "Blur the background behind translucent windows.", "Appearance", "kde", "set-kde-blur", (("true", "On"), ("false", "Off"),)),
@@ -100,9 +108,32 @@ TWEAKS = (
     Tweak("kde-confirm-logout", "Confirm logout", "Ask for confirmation before logging out.", "Desktop", "kde", "set-kde-confirm-logout", (("true", "On"), ("false", "Off"),)),
     Tweak("kde-login-mode", "On login", "Choose which session is restored at login.", "Desktop", "kde", "set-kde-login-mode", (("restorePreviousLogout", "Restore previous session"), ("restoreSavedSession", "Restore saved session"), ("emptySession", "Start empty"),)),
     Tweak("kde-show-delete", "Show Delete command", "Show a permanent Delete command in context menus.", "Interaction", "kde", "set-kde-show-delete", (("true", "On"), ("false", "Off"),)),
+    Tweak("kde-dolphin-show-full-path", "Show full path in location bar", "Show the complete folder path in Dolphin's location bar.", "Files", "kde", "set-kde-dolphin-show-full-path", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-borderless-maximized-windows", "Hide titlebar when maximized", "Hide the window titlebar when a window is maximized in KDE Plasma.", "Windows", "kde", "set-kde-borderless-maximized-windows", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-dolphin-editable-location", "Editable location bar", "Enter a folder path directly in Dolphin's location bar.", "Files", "kde", "set-kde-dolphin-editable-location", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-dolphin-remember-tabs", "Reopen folders and tabs", "Restore Dolphin's open folders and tabs when it starts.", "Files", "kde", "set-kde-dolphin-remember-tabs", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-dolphin-external-folders-new-tab", "Open external folders in a new tab", "Use a new Dolphin tab for folders opened by other applications.", "Files", "kde", "set-kde-dolphin-external-folders-new-tab", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-dolphin-confirm-close-tabs", "Confirm closing multiple tabs", "Ask before closing a Dolphin window containing multiple tabs.", "Files", "kde", "set-kde-dolphin-confirm-close-tabs", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-edge-tiling", "Edge tiling", "Tile windows by dragging them to screen edges in Plasma.", "Windows", "kde", "set-kde-edge-tiling", (("true", "On"), ("false", "Off"))),
+    Tweak("kde-focus-stealing-prevention", "Focus stealing prevention", "Limit how newly opened windows take keyboard focus.", "Windows", "kde", "set-kde-focus-stealing-prevention", (("0", "None"), ("1", "Low"), ("2", "Normal"), ("3", "High"), ("4", "Extreme"))),
+    Tweak("gnome-files-editable-location", "Editable location bar", "Enter a folder path directly in GNOME Files.", "Files", "gnome", "set-gnome-files-editable-location", (("true", "On"), ("false", "Off"))),
+    Tweak("gnome-files-date-format", "File date display", "Choose simple or detailed dates in GNOME Files.", "Files", "gnome", "set-gnome-files-date-format", (("simple", "Simple"), ("detailed", "Detailed"))),
     Tweak("power-profile", "Power profile", "Choose an available power profile for this computer.", "Power", "all", "set-power-profile", (), True),
     Tweak("dnf-parallel-downloads", "DNF parallel downloads", "Speed up package downloads by downloading multiple packages simultaneously.", "System & Packaging", "all", "set-dnf-parallel-downloads", (("3", "3 (Fedora default)"), ("5", "5 (Fast)"), ("10", "10 (Ultra fast - Recommended)"), ("15", "15 (Maximum)")), True, True),
 )
+
+
+# Presentation metadata is derived once from the canonical semantic choices.
+def _presentation(tweak: Tweak) -> Tweak:
+    labels = {label for _value, label in tweak.choices}
+    boolean = {value for value, _label in tweak.choices} == {"true", "false"}
+    kind = "switch" if boolean and all(label.startswith(("On", "Off", "Show", "Hide")) for label in labels) else "segmented" if 1 < len(tweak.choices) <= 3 else "dropdown"
+    terms = ("Dolphin", "files", "folders") if tweak.id.startswith("kde-dolphin-") else ("Files", "Nautilus", "folders") if tweak.id.startswith("gnome-files-") else ()
+    hint = "Saved settings and application in the current Plasma session are verified separately." if tweak.id in KWIN_RUNTIME_KEYS else "Reopen the file manager to apply this setting to existing windows." if terms else ""
+    return replace(tweak, control_kind=kind, search_terms=terms, effect_hint=hint)
+
+
+TWEAKS = tuple(_presentation(tweak) for tweak in TWEAKS)
 BY_ID = {tweak.id: tweak for tweak in TWEAKS}
 BY_ACTION = {tweak.action_id: tweak for tweak in TWEAKS}
 
@@ -124,6 +155,8 @@ _DEFAULTS = {
     "gnome-titlebar-double-click": "toggle-maximize", "gnome-accent-color": "blue",
     "gnome-font-hinting": "slight", "gnome-event-sounds": "true", "gnome-idle-dim": "true",
     "gnome-power-button": "suspend", "power-profile": "balanced", "dnf-parallel-downloads": "3",
+    "gnome-files-editable-location": "false", "gnome-files-date-format": "simple",
+    "gnome-files-click-policy": "double", "gnome-files-default-folder-view": "icon-view",
 }
 
 
@@ -209,6 +242,46 @@ def _parse_schemes(output: str) -> tuple[str, tuple[tuple[str, str], ...]]:
     return current, tuple(choices)
 
 
+_KDE_SCHEMA_LIMIT = 256 * 1024
+_DOLPHIN_SCHEMA = Path("/usr/share/config.kcfg/dolphin_generalsettings.kcfg")
+_KWIN_SCHEMA = Path("/usr/share/config.kcfg/kwin.kcfg")
+
+
+def kde_capability_error(tweak_id: str) -> str:
+    """Inspect only the installed, fixed schemas for reviewed file/window controls."""
+    if tweak_id.startswith("kde-dolphin-") and tweak_id in KDE_SPECS:
+        if shutil.which("dolphin") is None:
+            return "Dolphin is not installed."
+        path, application = _DOLPHIN_SCHEMA, "Dolphin"
+    elif tweak_id in KWIN_RUNTIME_KEYS:
+        if shutil.which("kwin_wayland") is None and shutil.which("kwin_x11") is None:
+            return "KWin is not installed."
+        path, application = _KWIN_SCHEMA, "KWin"
+    else:
+        return ""
+    for tool in ("kreadconfig6", "kwriteconfig6"):
+        if shutil.which(tool) is None:
+            return f"The required KDE settings tool {tool} is unavailable."
+    try:
+        with path.open("rb") as stream:
+            data = stream.read(_KDE_SCHEMA_LIMIT + 1)
+    except OSError:
+        return f"The installed {application} settings schema is unavailable."
+    if len(data) > _KDE_SCHEMA_LIMIT:
+        return f"The installed {application} settings schema exceeds the supported size."
+    try:
+        root = ElementTree.fromstring(data)
+    except (ElementTree.ParseError, ValueError):
+        return f"The installed {application} settings schema could not be read safely."
+    _file, group, key, _default = KDE_SPECS[tweak_id]
+    expected_type = "Int" if tweak_id == "kde-focus-stealing-prevention" else "Bool"
+    entries = [entry for section in root.findall(".//{*}group") if section.get("name") == group
+               for entry in section.findall("{*}entry") if entry.get("key", entry.get("name")) == key]
+    if len(entries) != 1 or entries[0].get("type") != expected_type:
+        return f"The installed {application} schema does not support {group}/{key}."
+    return ""
+
+
 def read_tweak(
     tweak: Tweak,
     profile: object,
@@ -219,6 +292,11 @@ def read_tweak(
         return TweakState(tweak, "unavailable", message="This Fedora desktop or deployment is not supported.")
     if tweak.id == "dnf-parallel-downloads" and bool(getattr(profile, "is_atomic", False)):
         return TweakState(tweak, "unavailable", message="DNF configuration is not supported on Atomic Fedora.")
+    if tweak.id.startswith("kde-dolphin-") and shutil.which("dolphin") is None:
+        return TweakState(tweak, "unavailable", message="Dolphin is not installed.")
+    capability_error = kde_capability_error(tweak.id)
+    if capability_error:
+        return TweakState(tweak, "unavailable", message=capability_error)
     result = execute_read_only(_read_vector(tweak), action_id=f"{tweak.action_id}-read", timeout=8)
     if not result.success:
         return TweakState(tweak, "unavailable", message=result.message or "The required system tool is unavailable.")

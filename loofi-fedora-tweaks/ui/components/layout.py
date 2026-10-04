@@ -20,7 +20,7 @@ from PyQt6.QtWidgets import (
 
 from ui.components.actions import ActionBar
 from ui.components.feedback import StatusBadge
-from ui.design import DesignTokens
+from ui.design import DesignTokens, semantic_color
 from ui.icon_pack import get_qicon
 from ui.presentation import button_label, visible_label
 
@@ -91,16 +91,16 @@ class PageHeader(QFrame):
         self.activity_button.setObjectName("pageHeaderActivityButton")
         self.activity_button.setMinimumSize(36, 36)
         self.activity_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.activity_button.setIcon(get_qicon("history", size=20))
-        self.activity_button.setAccessibleName(self.tr("Activity and recovery"))
-        self.activity_button.setToolTip(self.tr("Activity & Recovery"))
+        self.activity_button.setIcon(get_qicon("history", size=20, tint=semantic_color("text")))
+        self.activity_button.setAccessibleName(self.tr("History and undo"))
+        self.activity_button.setToolTip(self.tr("History & Undo"))
         top_row.addWidget(self.activity_button)
 
         self.settings_button = QToolButton(self)
         self.settings_button.setObjectName("pageHeaderSettingsButton")
         self.settings_button.setMinimumSize(36, 36)
         self.settings_button.setCursor(Qt.CursorShape.PointingHandCursor)
-        self.settings_button.setIcon(get_qicon("settings", size=20))
+        self.settings_button.setIcon(get_qicon("settings", size=20, tint=semantic_color("text")))
         self.settings_button.setAccessibleName(self.tr("Application settings"))
         self.settings_button.setToolTip(self.tr("Settings"))
         top_row.addWidget(self.settings_button)
@@ -108,6 +108,10 @@ class PageHeader(QFrame):
         self.title = QLabel("")
         self.title.setObjectName("pageHeaderTitle")
         self.title.setWordWrap(True)
+        title_font = QFont(self.font())
+        title_font.setPointSizeF(max(10.0, title_font.pointSizeF()) * 1.6)
+        title_font.setWeight(QFont.Weight.DemiBold)
+        self.title.setFont(title_font)
         self.description = QLabel("")
         self.description.setObjectName("pageHeaderDescription")
         self.description.setWordWrap(True)
