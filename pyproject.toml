@@ -25,6 +25,7 @@ classifiers = [
 dependencies = [
     "PyQt6>=6.7",
     "keyring>=25.0",
+    "defusedxml>=0.7.1",
 ]
 
 [project.optional-dependencies]

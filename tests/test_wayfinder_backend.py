@@ -385,7 +385,14 @@ class TestInstalledKDECapabilities(unittest.TestCase):
     @patch("core.tasks.tweaks.Path.open", new_callable=mock_open)
     @patch("core.tasks.tweaks.shutil.which", return_value="/usr/bin/tool")
     def test_invalid_oversized_or_wrong_group_type_schema_fails_closed(self, _which, opened):
-        for payload in (b"not XML", b"x" * (256 * 1024 + 1), b'<kcfg><group name="Other"><entry name="EditableUrl" type="Bool"/></group></kcfg>', b'<kcfg><group name="General"><entry name="EditableUrl" type="String"/></group></kcfg>'):
+        payloads = (
+            b"not XML",
+            b"x" * (256 * 1024 + 1),
+            b'<kcfg><group name="Other"><entry name="EditableUrl" type="Bool"/></group></kcfg>',
+            b'<kcfg><group name="General"><entry name="EditableUrl" type="String"/></group></kcfg>',
+            b'<!DOCTYPE kcfg [<!ENTITY expanded "unsafe">]><kcfg><group name="General"><entry name="EditableUrl" type="Bool">&expanded;</entry></group></kcfg>',
+        )
+        for payload in payloads:
             opened().read.return_value = payload
             self.assertTrue(kde_capability_error("kde-dolphin-editable-location"))
 

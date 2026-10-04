@@ -6,7 +6,8 @@ import re
 import shutil
 from dataclasses import dataclass, replace
 from pathlib import Path
-from xml.etree import ElementTree
+from defusedxml import ElementTree
+from defusedxml.common import DefusedXmlException
 from typing import Callable, Sequence
 
 from core.actions.contracts import ActionRuntime
@@ -270,8 +271,8 @@ def kde_capability_error(tweak_id: str) -> str:
     if len(data) > _KDE_SCHEMA_LIMIT:
         return f"The installed {application} settings schema exceeds the supported size."
     try:
-        root = ElementTree.fromstring(data)
-    except (ElementTree.ParseError, ValueError):
+        root = ElementTree.fromstring(data, forbid_dtd=True, forbid_entities=True, forbid_external=True)
+    except (DefusedXmlException, ElementTree.ParseError, ValueError):
         return f"The installed {application} settings schema could not be read safely."
     _file, group, key, _default = KDE_SPECS[tweak_id]
     expected_type = "Int" if tweak_id == "kde-focus-stealing-prevention" else "Bool"
