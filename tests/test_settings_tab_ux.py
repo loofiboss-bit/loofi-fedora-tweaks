@@ -78,7 +78,7 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
             tab.settings_tabs.widget(index).widget().accessibleName()
             for index in range(tab.settings_tabs.count())
         ]
-        self.assertEqual(labels, ["Appearance", "Behavior", "Application", "Repair Loofi", "About"])
+        self.assertEqual(labels, ["Appearance", "Behavior", "Advanced", "Repair Loofi", "About"])
         self.assertFalse(hasattr(tab, "mode_combo"))
         self.assertIn("available in this build", tab._mode_desc.text())
         self.assertTrue(tab.follow_system_cb.isChecked())

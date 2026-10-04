@@ -218,6 +218,7 @@ class MainWindowUtilityMixin:
         """Apply one typed setting through the durable operation controller."""
         from core.actions.operation_controller import OperationController
         from core.tasks.tweaks import BY_ID
+        from core.actions.tweak_operations import activate_verified_tweak
         from PyQt6.QtWidgets import QMessageBox
 
         tweak = BY_ID.get(str(tweak_id))
@@ -231,8 +232,11 @@ class MainWindowUtilityMixin:
         if tweak.system_wide:
             answer = QMessageBox.question(
                 self,
-                self.tr("Change power profile"),
-                self.tr("Apply the selected power profile to this computer?"),
+                self.tr("Change system setting"),
+                self.tr("%1\nCurrent: %2\nSelected: %3\nScope: this computer, all users.\nApply and verify this change?")
+                .replace("%1", self.tr(tweak.title))
+                .replace("%2", self.tr(dict(tweak.choices).get(str(page._rows[tweak_id][1].property("currentValue") or ""), str(page._rows[tweak_id][1].property("currentValue") or ""))))
+                .replace("%3", self.tr(dict(tweak.choices).get(value, value))),
                 QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
                 QMessageBox.StandardButton.Cancel,
             )
@@ -244,11 +248,23 @@ class MainWindowUtilityMixin:
         controller = self._utility_operation_controller
         page.set_busy(True, self.tr("Applying and verifying %1…").replace("%1", self.tr(tweak.title)))
         adapter = self._new_utility_operation_adapter()
-        adapter.finished.connect(lambda outcome: page.set_outcome(tweak_id, value, outcome))
+        page.set_pending(tweak_id, value)
+
+        def completed(result: Any) -> None:
+            outcome, activation = result
+            page.set_outcome(tweak_id, value, outcome)
+            if activation.message != outcome.message:
+                page.set_activation(tweak_id, activation.message)
+
+        def operation() -> Any:
+            outcome = controller.execute(tweak.action_id, {"value": value}, confirmed=True)
+            return outcome, activate_verified_tweak(controller, outcome)
+
+        adapter.finished.connect(completed)
         adapter.failed.connect(lambda message: page.set_error(str(message)))
         adapter.cancelled.connect(lambda: page.set_error(self.tr("The operation was cancelled. Refresh to see the current value.")))
         adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
-        return bool(adapter.start(lambda: controller.execute(tweak.action_id, {"value": value}, confirmed=True)))
+        return bool(adapter.start(operation))
 
     def _start_tweak_restore(self: Any, page: Any, tweak_id: str, source_id: str) -> bool:
         """Prepare a source-bound restoration before presenting exact values."""
@@ -293,24 +309,34 @@ class MainWindowUtilityMixin:
         adapter.stopped.connect(lambda: self._run_tweak_restore(page, tweak_id, ticket))
 
     def _run_tweak_restore(self: Any, page: Any, tweak_id: str, ticket: Any) -> bool:
+        from core.actions.tweak_operations import activate_verified_tweak
+
         controller = self._utility_operation_controller
         if controller is None or self._utility_operation_adapter is not None:
-            page.set_error(self.tr("Another operation is in progress. Refresh when it finishes."))
+            page.set_error(cast(Any, self).tr("Another operation is in progress. Refresh when it finishes."))
             return False
 
         def operation() -> Any:
             prepared = controller.confirm(ticket, confirmed=True)
             if prepared.status != "prepared":
-                return prepared
+                return prepared, activate_verified_tweak(controller, prepared)
             running = controller.run(prepared)
-            return controller.verify(running) if running.status == "verifying" else running
+            outcome = controller.verify(running) if running.status == "verifying" else running
+            return outcome, activate_verified_tweak(controller, outcome)
+
+        def completed(result: Any) -> None:
+            outcome, activation = result
+            page.set_outcome(tweak_id, target, outcome, restored=True)
+            if activation.message != outcome.message:
+                page.set_activation(tweak_id, activation.message)
 
         target = str(ticket.plan.policy_decision.facts["requested"])
-        page.set_busy(True, self.tr("Restoring and verifying the previous value…"))
+        page.set_busy(True, cast(Any, self).tr("Restoring and verifying the previous value…"))
         adapter = self._new_utility_operation_adapter()
-        adapter.finished.connect(lambda outcome: page.set_outcome(tweak_id, target, outcome, restored=True))
+        page.set_pending(tweak_id, target)
+        adapter.finished.connect(completed)
         adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
-        adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, self.tr("Restoration was cancelled. Refresh to see the current value.")))
+        adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, cast(Any, self).tr("Restoration was cancelled. Refresh to see the current value.")))
         adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
         return bool(adapter.start(operation))
 

@@ -1,5 +1,30 @@
 # Changelog
 
+## [32.1.0] - Unreleased - "Wayfinder"
+
+- Add GNOME Files controls for single/double-click opening and the default
+  folder view, using the upstream Nautilus schema defaults.
+- Add KDE Dolphin full-path and KWin borderless-maximized-window controls,
+  with unavailable reporting when Dolphin is not installed.
+- Preserve the existing Action Center preflight, closed command allowlist,
+  independent readback, and history-based restoration for all four settings.
+- Route confirmed CLI setting changes and restores through the shared
+  `OperationController`, including independent verification.
+- Update architecture, release, version, and roadmap guidance; simplify the
+  version tool to the active Python, RPM spec, and pyproject sources.
+- Expand to 73 settings with four more Dolphin controls, KWin edge tiling and
+  focus stealing prevention, and GNOME Files location entry and date format.
+- Redesign setting rows with switches, named segments, compound view/category/
+  search filters, persistent favorites, pending values, and contextual row menus.
+- Refresh Apps with source-marked rows and a fixed selection footer, Updates
+  with independent source cards, Health with symptom cards, Settings grouping,
+  and compact History & Undo disclosures.
+- Confirm system settings with their actual title, values, and computer scope.
+- Reconfigure KWin through a closed separate Action Center action and compare
+  runtime support information; distinguish saved verification from session effect.
+- Raise the local RPM release to 2 while retaining version 32.1.0 Wayfinder.
+  No public release is included; physical qualification is recorded separately.
+
 ## [32.0.2] - 2026-10-03 - "Refocus"
 
 - Open on Tweaks; keep four everyday jobs (Tweaks, Apps, Updates, Health) in the sidebar and put System, Storage, Network, Security and Logs behind "Show advanced tools" in Settings.

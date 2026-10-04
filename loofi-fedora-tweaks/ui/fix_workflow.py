@@ -80,10 +80,10 @@ class FixWorkflowPage(TroubleshootWidget):
                 except (IndexError, StopIteration, TypeError, ValueError):
                     continue
         if index < 0:
-            self.profile_selector.setFocus()
+            self.focus_selected_symptom()
             return key in {"fix", "fix:overview"}
         self.profile_selector.setCurrentIndex(index)
-        self.profile_selector.setFocus()
+        self.focus_selected_symptom()
         return True
 
     def _selected_symptom_for_id(self, symptom_id: str):

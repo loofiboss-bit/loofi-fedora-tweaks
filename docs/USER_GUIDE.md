@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 32.0.0 "Refocus"; physical desktop validation remains pending.
+> Version 32.1.0 "Wayfinder" (local candidate); physical desktop validation remains unverified.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -21,7 +21,7 @@ jobs in the sidebar:
 System, Storage, Network, Security, and Logs are advanced pages. They appear only
 after you enable **Show advanced tools** in Settings.
 
-Activity & Recovery and Settings are secondary header surfaces. The product
+History & Undo and Settings are secondary header surfaces. The product
 has no background daemon, web API, arbitrary shell execution, or unattended
 automation. Unknown desktop or deployment detection remains unavailable rather
 than falling back to a Traditional Fedora assumption.
@@ -63,12 +63,25 @@ rolls back, or reboots automatically.
 
 ## Tweaks
 
-Search settings and choose one supported value. Each row shows its current
+Combine All, Favorites, Changed, or Unavailable with a category and search.
+Search includes application names such as Dolphin, Files, and Nautilus. Use
+Clear filters when nothing matches. The star saves a per-setting favorite;
+favorites never change desktop values. Choose one supported value. Each row shows its current
 value, explanation, availability, and independently verified saved result.
 Missing tools or unreadable values explain why the change is unavailable.
+A pending choice appears beside the last verified value until readback finishes.
+The row menu contains reset to default and technical details; the previous
+verified value is offered separately. KWin changes also request a session
+reconfigure and compare runtime values. A session warning preserves the saved
+change and its restoration offer.
 
-The catalog has 61 controls grouped as Appearance, Desktop, Interaction, Privacy,
-Input, Windows, Sound, Power, and System & Packaging. See
+The catalog has 73 controls grouped as Appearance, Desktop, Files, Interaction,
+Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
+offers click behavior and default folder view; KDE adds Dolphin's full-path
+setting, editable location bar, session tabs, external folder tabs, and close-tab
+confirmation. KWin offers maximized-titlebar, edge tiling, and focus prevention.
+Files also offers an editable location bar and simple/detailed dates. Missing Files schemas or Dolphin
+are reported as unavailable. See
 [TWEAKS.md](TWEAKS.md) for the complete generated list with defaults.
 
 Use **Reset to default** on a row whose value differs from its default, or turn on
@@ -116,7 +129,7 @@ availability, count, details, and exactly one primary action:
 Missing tools, remotes, authorization, or supported backends remain explicit.
 A source that could not be checked is never presented as up to date.
 
-## Activity & Recovery
+## History & Undo
 
 Date filters accept ISO dates or finite Unix timestamps. Invalid dates or a
 reversed interval stop loading and preserve the previously displayed result.

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 32.0.0 "Refocus"; physical desktop validation remains pending.
+> Version 32.1.0 "Wayfinder" (local candidate); physical desktop validation remains unverified.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

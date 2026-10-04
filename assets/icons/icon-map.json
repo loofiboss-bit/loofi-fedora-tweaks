@@ -22,5 +22,6 @@
   "update": "assets/icons/svg/update.svg",
   "cleanup": "assets/icons/svg/cleanup.svg",
   "restart": "assets/icons/svg/restart.svg",
-  "logs": "assets/icons/svg/logs.svg"
+  "logs": "assets/icons/svg/logs.svg",
+  "favorite": "assets/icons/svg/favorite.svg"
 }

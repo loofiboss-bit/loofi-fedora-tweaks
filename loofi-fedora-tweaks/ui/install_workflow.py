@@ -7,7 +7,7 @@ the shared operation controller owned by the application shell.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, cast
 
 from core.tasks import (
     ApplicationCatalog,
@@ -15,10 +15,11 @@ from core.tasks import (
     ApplicationEligibility,
     ApplicationRecord,
 )
-from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QComboBox, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtCore import QEvent, QObject, QSize, Qt, pyqtSignal
+from PyQt6.QtGui import QIcon
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyle, QVBoxLayout, QWidget
 
-from ui.components import Card, InlineNotice, PageScaffold, PrimaryButton, SectionHeader
+from ui.components import Card, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
 
 
 class InstallWorkflowPage(QWidget):
@@ -43,6 +44,7 @@ class InstallWorkflowPage(QWidget):
         self.context = context
         self._rows: dict[str, tuple[ApplicationRecord, ApplicationEligibility, QListWidgetItem]] = {}
         self._selected_ids: set[str] = set()
+        self._row_checks: dict[str, QCheckBox] = {}
         self._last_bundle: object | None = None
         self._last_outcome: object | None = None
         self._compat_primary_button: QPushButton | None = None
@@ -56,12 +58,16 @@ class InstallWorkflowPage(QWidget):
             self.tr("Install"),
             self.tr("Find trusted applications, review their source, and install them together."),
         )
-        root.addWidget(self.scaffold)
+        self.owns_scroll = True
+        self.body_scroll = QScrollArea(self)
+        self.body_scroll.setObjectName("installBodyScroll")
+        self.body_scroll.setWidgetResizable(True)
+        self.body_scroll.setFrameShape(QScrollArea.Shape.NoFrame)
+        self.body_scroll.setWidget(self.scaffold)
+        self.body_scroll.setMinimumHeight(0)
+        root.addWidget(self.body_scroll, 1)
 
-        self.intro = Card(
-            self.tr("Curated applications"),
-            self.tr("Flatpak is preferred for ordinary GUI applications. Fedora RPM is used for trusted CLI and system tools."),
-        )
+        self.intro = Card()
         self.scaffold.add_widget(self.intro)
         self.search_input = QLineEdit()
         self.search_input.setObjectName("installApplicationSearch")
@@ -85,20 +91,24 @@ class InstallWorkflowPage(QWidget):
             kind="info",
         )
         self.state_notice.setObjectName("installWorkflowState")
+        self.state_notice.hide()
         self.intro.add_widget(self.state_notice)
+        self.match_summary = QLabel()
+        self.match_summary.setObjectName("installMatchSummary")
+        self.intro.add_widget(self.match_summary)
 
         self.application_list = QListWidget()
         self.application_list.setObjectName("installApplicationList")
         self.application_list.setAccessibleName(self.tr("Curated application catalog"))
         self.application_list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
         self.application_list.itemChanged.connect(self._on_item_changed)
-        self.scaffold.add_widget(SectionHeader(self.tr("Available applications"), self.tr("Selection never starts an operation.")))
+        viewport = self.application_list.viewport()
+        if viewport is not None:
+            viewport.installEventFilter(self)
+
         self.scaffold.add_widget(self.application_list, 1)
 
-        self.review_card = Card(
-            self.tr("Review selection"),
-            self.tr("Every selected application is an independent operation. One failure does not hide the others."),
-        )
+        self.review_card = Card()
         self.review_card.setObjectName("installReviewCard")
         self.review_summary = QLabel(self.tr("No applications selected."))
         self.review_summary.setObjectName("installReviewSummary")
@@ -111,7 +121,7 @@ class InstallWorkflowPage(QWidget):
         self.review_button.setObjectName("installReviewButton")
         self.review_button.clicked.connect(self.review_selection)
         self.review_card.add_widget(self.review_button)
-        self.scaffold.add_widget(self.review_card)
+        root.addWidget(self.review_card)
 
         self.results_card = Card(
             self.tr("Results"),
@@ -172,6 +182,7 @@ class InstallWorkflowPage(QWidget):
         self.application_list.blockSignals(True)
         self.application_list.clear()
         self._rows.clear()
+        self._row_checks.clear()
         for record, eligibility in self.catalog.search(query, category=category, context=self.context):
             item = QListWidgetItem(self._row_text(record, eligibility), self.application_list)
             item.setData(Qt.ItemDataRole.UserRole, record.id)
@@ -183,19 +194,92 @@ class InstallWorkflowPage(QWidget):
                 item.setCheckState(Qt.CheckState.Unchecked)
                 item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
             self._rows[record.id] = (record, eligibility, item)
+            self._add_application_row(record, eligibility, item)
         self.application_list.blockSignals(False)
+        count = self.application_list.count()
+        self.match_summary.setText(self.tr("%1 applications").replace("%1", str(count)) if count else self.tr("No applications match. Clear the search or change the category."))
+        self._resize_application_rows()
         self._update_review_summary()
 
-    @staticmethod
-    def _row_text(record: ApplicationRecord, eligibility: ApplicationEligibility) -> str:
-        state = {
-            "available": "Ready",
+    def _row_text(self, record: ApplicationRecord, eligibility: ApplicationEligibility) -> str:
+        return f"{record.name} · {record.source_label} · {self._state_label(eligibility.state)}"
+
+    def _state_label(self, state: str) -> str:
+        return self.tr({
+            "available": "Ready to review",
             "advanced": "Advanced · reboot may be required",
             "installed": "Installed",
             "offline": "Offline",
             "unavailable": "Unavailable",
-        }.get(eligibility.state, eligibility.state)
-        return f"{record.name} · {record.source_label} · {state}"
+        }.get(state, state))
+
+    def _add_application_row(self, record: ApplicationRecord, eligibility: ApplicationEligibility, item: QListWidgetItem) -> None:
+        row = QWidget()
+        row.setObjectName("applicationRow")
+        row.setAccessibleName(record.name)
+        layout = QHBoxLayout(row)
+        layout.setContentsMargins(12, 10, 12, 10)
+        check = QCheckBox()
+        check.setAccessibleName(self.tr("Select %1").replace("%1", record.name))
+        check.setChecked(record.id in self._selected_ids)
+        check.setEnabled(eligibility.selectable)
+        check.setToolTip(eligibility.reason)
+        check.toggled.connect(lambda checked, selected=item: selected.setCheckState(Qt.CheckState.Checked if checked else Qt.CheckState.Unchecked))
+        self._row_checks[record.id] = check
+        layout.addWidget(check)
+        icon = QLabel()
+        app_icon = QIcon.fromTheme(record.package_id, QIcon.fromTheme(record.id))
+        style = self.style()
+        if app_icon.isNull() and style is not None:
+            app_icon = style.standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        icon.setPixmap(app_icon.pixmap(32, 32))
+        layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignTop)
+        copy = QVBoxLayout()
+        title = QLabel(record.name)
+        title.setObjectName("applicationRowTitle")
+        title.setWordWrap(True)
+        copy.addWidget(title)
+        description = QLabel(self.tr(record.description))
+        description.setObjectName("applicationRowDescription")
+        description.setWordWrap(True)
+        copy.addWidget(description)
+        badges = QHBoxLayout()
+        source = StatusBadge(self.tr(record.source_label), kind="info")
+        source.setObjectName("applicationSourceBadge")
+        badges.addWidget(source)
+        status = QLabel(self._state_label(eligibility.state))
+        status.setObjectName("applicationStatusLabel")
+        status.setWordWrap(True)
+        badges.addWidget(status, 1)
+        copy.addLayout(badges)
+        if not eligibility.selectable:
+            reason = QLabel(self.tr(eligibility.reason))
+            reason.setWordWrap(True)
+            copy.addWidget(reason)
+        layout.addLayout(copy, 1)
+        # The accessible model retains identity while the widget supplies rich copy.
+        item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsUserCheckable)
+        item.setData(Qt.ItemDataRole.DisplayRole, "")
+        item.setData(Qt.ItemDataRole.AccessibleTextRole, self._row_text(record, eligibility))
+        item.setSizeHint(QSize(0, row.sizeHint().height()))
+        self.application_list.setItemWidget(item, row)
+
+    def eventFilter(self, watched: QObject | None, event: QEvent | None) -> bool:
+        if event is not None and event.type() == QEvent.Type.Resize and watched is self.application_list.viewport():
+            self._resize_application_rows()
+        return super().eventFilter(watched, event)
+
+    def _resize_application_rows(self) -> None:
+        viewport = self.application_list.viewport()
+        if viewport is None:
+            return
+        width = max(1, viewport.width())
+        for _record, _eligibility, item in self._rows.values():
+            row = self.application_list.itemWidget(item)
+            layout = row.layout() if row is not None else None
+            if row is not None and layout is not None:
+                height = layout.totalHeightForWidth(width)
+                item.setSizeHint(QSize(0, max(row.sizeHint().height(), height)))
 
     def _update_review_summary(self) -> None:
         selected = self.selected_application_ids()
@@ -204,9 +288,11 @@ class InstallWorkflowPage(QWidget):
             self.review_button.setEnabled(False)
             return
         names = [record.name for item in selected if (record := self.catalog.get(item)) is not None]
-        self.review_summary.setText(
-            self.tr("%1 selected: %2").replace("%1", str(len(names))).replace("%2", ", ".join(names))
-        )
+        summary_names = ", ".join(names[:3])
+        if len(names) > 3:
+            summary_names += self.tr(" and %1 more").replace("%1", str(len(names) - 3))
+        self.review_summary.setText(self.tr("%1 selected: %2").replace("%1", str(len(names))).replace("%2", summary_names))
+        self.review_summary.setToolTip(", ".join(names))
         self.review_button.setEnabled(True)
 
     def _on_item_changed(self, item: QListWidgetItem) -> None:
@@ -215,6 +301,11 @@ class InstallWorkflowPage(QWidget):
             self._selected_ids.add(application_id)
         else:
             self._selected_ids.discard(application_id)
+        check = self._row_checks.get(application_id)
+        if check is not None:
+            check.blockSignals(True)
+            check.setChecked(item.checkState() is Qt.CheckState.Checked)
+            check.blockSignals(False)
         self._update_review_summary()
 
     def focus_task(self, task_id: str) -> bool:
@@ -243,6 +334,7 @@ class InstallWorkflowPage(QWidget):
     def review_selection(self) -> object | None:
         """Build and emit a bundle; no package operation is started here."""
         self._update_review_summary()
+        self.state_notice.show()
         selected = self.selected_application_ids()
         if self.context is None:
             self.state_notice.set_notice(
@@ -263,7 +355,7 @@ class InstallWorkflowPage(QWidget):
             self.tr("%1 independent operations are ready for confirmation.").replace("%1", str(selection.count)),
         )
         self.bundleReviewRequested.emit(selection)
-        return selection
+        return cast(object, selection)
 
     def set_results(self, outcome: object) -> None:
         """Render per-application results from a BundleOutcome projection."""
@@ -272,7 +364,13 @@ class InstallWorkflowPage(QWidget):
         items = getattr(outcome, "items", ())
         for item in items:
             label = str(getattr(item, "status", "unknown")).replace("_", " ").title()
-            title = str(getattr(item, "action_id", "Application"))
+            item_id = str(getattr(item, "item_id", ""))
+            record = self.catalog.get(item_id)
+            if record is None and self._last_bundle is not None:
+                bundle_item = next((candidate for candidate in getattr(self._last_bundle, "items", ()) if candidate.item_id == item_id), None)
+                application_id = str(getattr(bundle_item, "metadata", {}).get("application_id", ""))
+                record = self.catalog.get(application_id)
+            title = record.name if record is not None else str(getattr(item, "action_id", "Application"))
             message = str(getattr(item, "message", ""))
             row = QListWidgetItem(f"{title} · {label}: {message}", self.results_list)
             row.setData(Qt.ItemDataRole.UserRole, str(getattr(item, "item_id", "")))

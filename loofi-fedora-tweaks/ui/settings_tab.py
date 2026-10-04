@@ -12,7 +12,7 @@ from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
-from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR
+from PyQt6.QtCore import PYQT_VERSION_STR, QT_VERSION_STR, QSignalBlocker
 from PyQt6.QtWidgets import (
     QApplication,
     QCheckBox,
@@ -25,6 +25,7 @@ from PyQt6.QtWidgets import (
     QMessageBox,
     QScrollArea,
     QStackedWidget,
+    QTabBar,
     QTextEdit,
     QVBoxLayout,
     QWidget,
@@ -97,8 +98,8 @@ class SettingsTab(QWidget, PluginInterface):
         ))
         tabs.addWidget(self._scaffold_page(
             self._build_application_tab(),
-            self.tr("Application"),
-            self.tr("Review logging, update checks, and local application maintenance."),
+            self.tr("Advanced"),
+            self.tr("Review diagnostic logging and application maintenance."),
         ))
         tabs.addWidget(self._scaffold_page(
             self._build_state_tab(),
@@ -111,13 +112,26 @@ class SettingsTab(QWidget, PluginInterface):
             self.tr("Review application, runtime, support, and compatibility information."),
         ))
         self.settings_tabs = tabs
+        self.section_selector = QTabBar()
+        self.section_selector.setObjectName("settingsSectionSelector")
+        self.section_selector.setAccessibleName(self.tr("Settings section"))
+        self.section_selector.setExpanding(False)
+        self.section_selector.setUsesScrollButtons(True)
+        self._section_routes = (
+            "settings:appearance", "settings:behavior", "settings:application",
+            "settings:repair", "settings:about",
+        )
+        for title in ("Appearance", "Behavior", "Advanced", "Repair Loofi", "About"):
+            self.section_selector.addTab(self.tr(title))
+        self.section_selector.currentChanged.connect(self._select_section)
+        outer.addWidget(self.section_selector)
         outer.addWidget(tabs)
 
     @staticmethod
     def _scaffold_page(page: QWidget, accessible_name: str, description: str) -> QScrollArea:
         """Wrap one settings route in the shared bounded page scaffold."""
         page.setObjectName("settingsContent")
-        page.setMaximumWidth(700)
+        page.setMaximumWidth(960)
         scaffold = PageScaffold(accessible_name, description)
         scaffold.add_widget(page)
         scaffold.content_layout.addStretch()
@@ -142,7 +156,23 @@ class SettingsTab(QWidget, PluginInterface):
         if index is None:
             return False
         self.settings_tabs.setCurrentIndex(index)
+        blocker = QSignalBlocker(self.section_selector)
+        self.section_selector.setCurrentIndex(index)
+        blocker.unblock()
         return True
+
+    def _select_section(self, index: int) -> None:
+        """Use shell navigation when available and keep standalone pages usable."""
+        if not 0 <= index < len(self._section_routes):
+            return
+        route_id = self._section_routes[index]
+        navigate = getattr(self._main_window, "switch_to_route", None)
+        if callable(navigate) and not navigate(route_id):
+            blocker = QSignalBlocker(self.section_selector)
+            self.section_selector.setCurrentIndex(self.settings_tabs.currentIndex())
+            blocker.unblock()
+            return
+        self.activate_route(route_id)
 
     # --------------------------------------------------------- Appearance --
 
@@ -150,13 +180,6 @@ class SettingsTab(QWidget, PluginInterface):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setSpacing(10)
-
-        help_label = QLabel(self.tr(
-            "Choose your visual theme. 'Follow system theme' auto-detects your desktop preference."
-        ))
-        help_label.setWordWrap(True)
-        help_label.setObjectName("settingsHelpText")
-        layout.addWidget(help_label)
 
         self.theme_combo = QComboBox()
         self.theme_combo.setAccessibleName(self.tr("Theme selector"))
@@ -365,13 +388,6 @@ class SettingsTab(QWidget, PluginInterface):
         page = QWidget()
         layout = QVBoxLayout(page)
         layout.setSpacing(12)
-
-        help_label = QLabel(self.tr(
-            "Local application maintenance settings. Changes affect this app only."
-        ))
-        help_label.setWordWrap(True)
-        help_label.setObjectName("settingsHelpText")
-        layout.addWidget(help_label)
 
         mode_group = QGroupBox(self.tr("Maintenance availability"))
         mode_form = QFormLayout(mode_group)

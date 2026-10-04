@@ -15,7 +15,7 @@ from PyQt6.QtWidgets import (
     QHeaderView,
     QComboBox,
     QFileDialog,
-    QHBoxLayout,
+    QGridLayout,
     QLabel,
     QLineEdit,
     QTableWidget,
@@ -41,6 +41,7 @@ from ui.components import (
     ActionBar,
     Card,
     DefinitionList,
+    DetailsDisclosure,
     EmptyState,
     InlineNotice,
     PageScaffold,
@@ -157,13 +158,13 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
-            self.tr("Activity & Recovery"),
+            self.tr("History & Undo"),
             self.tr("Review trusted local change history and prepare only supported recovery actions."),
         )
         root.addWidget(self.scaffold)
 
         notice = InlineNotice(
-            self.tr("History is evidence, not an undo script"),
+            self.tr("Verified recovery"),
             self.tr(
                 "Loofi reads local records only when you ask. Recovery is offered only when "
                 "the current system state can be checked again in the supported workflow."
@@ -173,14 +174,14 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         notice.setObjectName("activityTrustNotice")
         self.scaffold.add_widget(notice)
 
-        filter_row = QHBoxLayout()
+        filter_row = QGridLayout()
         self.activity_view_filter = QComboBox()
         self.activity_view_filter.setObjectName("activityViewFilter")
         self.activity_view_filter.setAccessibleName(self.tr("Activity view"))
         self.activity_view_filter.addItem(self.tr("Needs you"), "needs_you")
         self.activity_view_filter.addItem(self.tr("In progress"), "in_progress")
         self.activity_view_filter.addItem(self.tr("History"), "history")
-        filter_row.addWidget(self.activity_view_filter)
+        filter_row.addWidget(self.activity_view_filter, 0, 0)
         self.source_filter = QComboBox()
         self.source_filter.setObjectName("activitySourceFilter")
         self.source_filter.addItem(self.tr("All sources"), "")
@@ -206,8 +207,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.until_input = QLineEdit()
         self.until_input.setObjectName("activityUntilFilter")
         self.until_input.setPlaceholderText(self.tr("Until date (YYYY-MM-DD)"))
-        for widget in (self.source_filter, self.status_filter, self.reboot_filter, self.search_input, self.since_input, self.until_input):
-            filter_row.addWidget(widget)
+        for index, widget in enumerate((self.source_filter, self.status_filter, self.reboot_filter, self.search_input, self.since_input, self.until_input), start=1):
+            filter_row.addWidget(widget, index // 3, index % 3)
         self.activity_view_filter.currentIndexChanged.connect(self._filters_changed)
         self.source_filter.currentIndexChanged.connect(self._filters_changed)
         self.status_filter.currentIndexChanged.connect(self._filters_changed)
@@ -330,8 +331,11 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.review_button.clicked.connect(self._review_recovery)
         self.review_button.hide()
         self.detail_card.add_widget(self.detail_status)
-        self.detail_card.add_widget(self.detail_definitions)
-        self.detail_card.add_widget(self.related_label)
+        self.history_details = DetailsDisclosure(summary=self.tr("Show recorded details"))
+        self.history_details.setObjectName("historyRecordedDetails")
+        self.history_details.add_widget(self.detail_definitions)
+        self.history_details.add_widget(self.related_label)
+        self.detail_card.add_widget(self.history_details)
         self.detail_card.add_widget(self.recovery_guidance)
         self.detail_card.add_widget(self.review_button)
         self.scaffold.add_widget(self.detail_card)

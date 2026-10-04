@@ -1,7 +1,7 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.0.2
-Release:        1%{?dist}
+Version:        32.1.0
+Release:        2%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
 License:        MIT
@@ -17,6 +17,7 @@ BuildRequires:  systemd-rpm-macros
 Requires:       python3
 Requires:       python3-pyqt6
 Requires:       python3-keyring
+Requires:       python3-defusedxml
 Requires:       qt6-qtbase-gui
 Requires:       mesa-libGL
 Requires:       mesa-libEGL
@@ -96,6 +97,16 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Sun Oct 04 2026 Loofi <loofi@example.com> - 32.1.0-2
+- Redesign everyday flows, setting controls, filters, favorites, and history.
+- Add eight Dolphin, KWin, and GNOME Files settings; catalog totals 73.
+- Verify KWin session activation separately from saved configuration.
+
+* Sun Oct 04 2026 Loofi <loofi@example.com> - 32.1.0-1
+- Add GNOME Files click and default folder view controls.
+- Add Dolphin full-path and KWin maximized-window controls.
+- Route CLI setting changes and restores through Action Center verification.
+
 * Sat Oct 03 2026 Loofi <loofi@example.com> - 32.0.2-1
 - Refocus release: tweaks-first navigation, simple and advanced modes, and 61 declarative desktop controls
 - Stabilize repeated Qt worker shutdown and cleanup in the lifecycle regression suite

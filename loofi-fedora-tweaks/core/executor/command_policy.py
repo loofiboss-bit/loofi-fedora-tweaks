@@ -25,6 +25,8 @@ COMMAND_ALLOWLIST: FrozenSet[str] = frozenset(
         "flatpak",
         "free",
         "gsettings",
+        "dbus-send",
+        "gdbus",
         "fstrim",
         "fuser",
         "fwupdmgr",
@@ -106,7 +108,7 @@ def validate_command(command: str, args: Sequence[str] | None = None) -> None:
     if executable == "rpm" and any(str(arg).split("=", 1)[0] in _RPM_EVALUATION_FLAGS for arg in args):
         _reject("rpm macro evaluation and configuration flags are rejected by policy")
 
-    if executable in {"gsettings", "kreadconfig6", "kwriteconfig6"} and tweak_command_class(executable, args) is None:
+    if executable in {"gsettings", "kreadconfig6", "kwriteconfig6", "dbus-send", "gdbus"} and tweak_command_class(executable, args) is None:
         _reject("Setting command is outside the reviewed keys, shapes, and value types")
     if executable == "plasma-apply-colorscheme" and tuple(args) != ("--list-schemes",):
         if len(args) != 1 or not _SCHEME_PATTERN.fullmatch(args[0]):

@@ -53,6 +53,7 @@ class AppSettings:
     suppressed_confirmations: list = field(default_factory=list)
     locale: str = "en"
     favorite_routes: list = field(default_factory=list)
+    favorite_tweaks: list = field(default_factory=list)
     hidden_routes: list = field(default_factory=list)
     last_route_id: str = "atlas_dashboard"
     window_geometry: dict = field(default_factory=dict)
@@ -188,6 +189,10 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
     defaults["favorite_routes"] = migrate_route_references(favorite_values)
     if defaults["favorite_routes"] != favorite_values:
         migrated = True
+    favorite_tweaks = _string_list(defaults.get("favorite_tweaks"))
+    if defaults.get("favorite_tweaks") != favorite_tweaks:
+        migrated = True
+    defaults["favorite_tweaks"] = favorite_tweaks
     hidden_values = _string_list(defaults.get("hidden_routes"))
     defaults["hidden_routes"] = migrate_route_references(hidden_values)
     if defaults["hidden_routes"] != hidden_values:
@@ -271,7 +276,7 @@ class SettingsManager:
         """
         if key not in KNOWN_KEYS:
             raise KeyError(f"Unknown setting: {key!r}")
-        self._settings[key] = value
+        self._settings[key] = _string_list(value) if key == "favorite_tweaks" else value
 
     def reset(self) -> bool:
         """Restore every setting to its default value and persist."""

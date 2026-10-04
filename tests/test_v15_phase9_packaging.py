@@ -37,7 +37,10 @@ class TestPhase9PackageMetadata(unittest.TestCase):
             "project"
         ]
 
-        self.assertEqual(project["dependencies"], ["PyQt6>=6.7", "keyring>=25.0"])
+        self.assertEqual(
+            project["dependencies"],
+            ["PyQt6>=6.7", "keyring>=25.0", "defusedxml>=0.7.1"],
+        )
         self.assertNotIn("daemon", project.get("optional-dependencies", {}))
         self.assertNotIn("requests", " ".join(project["dependencies"]))
 
@@ -45,6 +48,7 @@ class TestPhase9PackageMetadata(unittest.TestCase):
         spec = (ROOT / "loofi-fedora-tweaks.spec").read_text(encoding="utf-8")
 
         self.assertNotIn("google-noto-color-emoji-fonts", spec)
+        self.assertIn("Requires:       python3-defusedxml", spec)
         self.assertNotIn("%package api", spec)
         self.assertNotIn("%package daemon", spec)
         self.assertNotIn("%package extras", spec)

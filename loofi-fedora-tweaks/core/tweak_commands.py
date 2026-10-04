@@ -47,6 +47,10 @@ GNOME_KEYS = {
     "gnome-event-sounds": "event-sounds",
     "gnome-idle-dim": "idle-dim",
     "gnome-power-button": "power-button-action",
+    "gnome-files-editable-location": "always-use-location-entry",
+    "gnome-files-date-format": "date-time-format",
+    "gnome-files-click-policy": "click-policy",
+    "gnome-files-default-folder-view": "default-folder-viewer",
 }
 GNOME_SCHEMAS = {
     "gnome-button-layout": "org.gnome.desktop.wm.preferences",
@@ -73,6 +77,10 @@ GNOME_SCHEMAS = {
     "gnome-event-sounds": "org.gnome.desktop.sound",
     "gnome-idle-dim": "org.gnome.settings-daemon.plugins.power",
     "gnome-power-button": "org.gnome.settings-daemon.plugins.power",
+    "gnome-files-editable-location": "org.gnome.nautilus.preferences",
+    "gnome-files-date-format": "org.gnome.nautilus.preferences",
+    "gnome-files-click-policy": "org.gnome.nautilus.preferences",
+    "gnome-files-default-folder-view": "org.gnome.nautilus.preferences",
 }
 
 
@@ -101,6 +109,14 @@ KDE_SPECS = {
     "kde-confirm-logout": ("ksmserverrc", "General", "confirmLogout", "true"),
     "kde-login-mode": ("ksmserverrc", "General", "loginMode", "restorePreviousLogout"),
     "kde-show-delete": ("kdeglobals", "KDE", "ShowDeleteCommand", "false"),
+    "kde-dolphin-editable-location": ("dolphinrc", "General", "EditableUrl", "false"),
+    "kde-dolphin-remember-tabs": ("dolphinrc", "General", "RememberOpenedTabs", "true"),
+    "kde-dolphin-external-folders-new-tab": ("dolphinrc", "General", "OpenExternallyCalledFolderInNewTab", "false"),
+    "kde-dolphin-confirm-close-tabs": ("dolphinrc", "General", "ConfirmClosingMultipleTabs", "true"),
+    "kde-edge-tiling": ("kwinrc", "Windows", "ElectricBorderTiling", "true"),
+    "kde-focus-stealing-prevention": ("kwinrc", "Windows", "FocusStealingPreventionLevel", "1"),
+    "kde-dolphin-show-full-path": ("dolphinrc", "General", "ShowFullPath", "false"),
+    "kde-borderless-maximized-windows": ("kwinrc", "Windows", "BorderlessMaximizedWindows", "false"),
 }
 KDE_KEYS = {item: (spec[2], spec[3]) for item, spec in KDE_SPECS.items()}
 SCHEME_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
@@ -118,6 +134,10 @@ _ENUMS = {
     "gnome-accent-color": frozenset({"blue", "teal", "green", "yellow", "orange", "red", "pink", "purple", "slate"}),
     "gnome-font-hinting": frozenset({"none", "slight", "medium", "full"}),
     "gnome-power-button": frozenset({"suspend", "hibernate", "interactive", "nothing"}),
+    "gnome-files-date-format": frozenset({"simple", "detailed"}),
+    "kde-focus-stealing-prevention": frozenset({"0", "1", "2", "3", "4"}),
+    "gnome-files-click-policy": frozenset({"single", "double"}),
+    "gnome-files-default-folder-view": frozenset({"icon-view", "list-view"}),
     "kde-focus-policy": frozenset({"ClickToFocus", "FocusFollowsMouse", "FocusUnderMouse"}),
     "kde-titlebar-double-click": frozenset({"Maximize", "Minimize", "Shade", "Lower", "Nothing"}),
     "kde-numlock": frozenset({"0", "1", "2"}),
@@ -176,6 +196,10 @@ def kde_write_vector(tweak_id: str, value: str) -> list[str]:
 def tweak_command_class(binary: str, args: Sequence[str]) -> Literal["read_only", "session"] | None:
     """Recognize exact reviewed GNOME/KDE vectors; unknown shapes fail closed."""
     vector = tuple(args)
+    if binary == "dbus-send" and vector == KWIN_RECONFIGURE[1:]:
+        return "session"
+    if binary == "gdbus" and vector == KWIN_SUPPORT[1:]:
+        return "read_only"
     if binary == "gsettings" and len(vector) in {3, 4}:
         schema = vector[1]
         key = vector[2]
@@ -212,3 +236,12 @@ def custom_numeric_tweak(binary: str, args: Sequence[str]) -> str:
         if tweak_id in KDE_KEYS and binary == "kwriteconfig6" and vector[:-1] == tuple(kde_write_vector(tweak_id, "")[1:-1]):
             return tweak_id if vector[-1] not in choices else ""
     return ""
+
+
+KWIN_RECONFIGURE = ("dbus-send", "--session", "--type=method_call", "--dest=org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure")
+KWIN_SUPPORT = ("gdbus", "call", "--session", "--dest", "org.kde.KWin", "--object-path", "/KWin", "--method", "org.kde.KWin.supportInformation")
+KWIN_RUNTIME_KEYS = {
+    "kde-edge-tiling": "electricBorderTiling",
+    "kde-focus-stealing-prevention": "focusStealingPreventionLevel",
+    "kde-borderless-maximized-windows": "borderlessMaximizedWindows",
+}

@@ -15,9 +15,21 @@ Give the application a clear purpose: tweaks first.
 - [x] Data-driven tweak catalog, growing from 22 to 50+ tweaks
 - [x] Per-tweak reset to default, undo, and "changed from default" filter
 
+## In progress — v32.1.0 "Wayfinder" (local candidate)
+
+- [x] Add GNOME Files click behavior and default folder view controls
+- [x] Add Dolphin full-path and KWin maximized-titlebar controls
+- [x] Keep catalog docs generated and align architecture, release, and version guidance
+- [x] Limit version management to the three active version sources
+- [x] Add four Dolphin, two KWin, and two GNOME Files settings (73 controls)
+- [x] Add semantic controls, compound filters, persistent favorites, and explicit pending values
+- [x] Redesign Apps, Updates, Health, Settings, and History & Undo
+- [x] Add separate verified KWin session activation through Action Center
+- [x] Complete candidate verification, RPM release 2, and local upgrade
+- [ ] Qualify physical GNOME, assistive technology, and visual desktop behavior
+
 ## Next
 
-- More desktop coverage: GNOME and KDE file-manager and window behavior
 - DNF/system tweaks: mirrors, automatic updates, Flathub, RPM Fusion and codecs
 - Shareable tweak profiles (export and re-apply)
 

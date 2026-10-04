@@ -1,0 +1,137 @@
+[
+  {
+    "capture": "tweaks-900x650",
+    "focus_traversals": 20,
+    "logical_size": [
+      900,
+      650
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "apps-900x650",
+    "focus_traversals": 20,
+    "logical_size": [
+      900,
+      650
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "updates-900x650",
+    "focus_traversals": 20,
+    "logical_size": [
+      900,
+      650
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "health-900x650",
+    "focus_traversals": 20,
+    "logical_size": [
+      900,
+      650
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "settings-900x650",
+    "focus_traversals": 20,
+    "logical_size": [
+      900,
+      650
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "activity-900x650",
+    "focus_traversals": 20,
+    "logical_size": [
+      900,
+      650
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "tweaks-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "apps-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "updates-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "health-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "settings-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "activity-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "tweaks-light-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "tweaks-dark-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  },
+  {
+    "capture": "tweaks-highcontrast-1280x800",
+    "focus_traversals": 20,
+    "logical_size": [
+      1280,
+      800
+    ],
+    "device_pixel_ratio": 1.0
+  }
+]

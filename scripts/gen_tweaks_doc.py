@@ -40,7 +40,7 @@ def render() -> str:
             choices = ", ".join(label for _value, label in tweak.choices) or "Read from system"
             default = default_for(tweak)
             default_text = labels.get(default, default) or "—"
-            notes = "needs authorization" if tweak.privileged else ""
+            notes = "; ".join(part for part in ("needs authorization" if tweak.privileged else "", tweak.effect_hint) if part)
             lines.append(f"| {tweak.title} (`{tweak.id}`) | {DESKTOP.get(tweak.desktop, tweak.desktop)} | {choices} | {default_text} | {notes} |")
         lines.append("")
     return "\n".join(lines).rstrip() + "\n"
