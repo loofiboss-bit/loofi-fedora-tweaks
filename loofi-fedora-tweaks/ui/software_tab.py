@@ -6,7 +6,14 @@ Uses a route-owned stack so the application shell remains the only owner of
 section navigation.
 """
 
+from __future__ import annotations
+
 import typing
+from typing import TYPE_CHECKING
+
+if TYPE_CHECKING:
+    from services.software.source_status import SourceScope, SourceStatus
+    from ui.operation_worker import OperationControllerQtAdapter
 
 from core.catalog_models import NativeHandoffId
 from core.plugins.metadata import PluginMetadata
@@ -126,31 +133,52 @@ class _RepositoriesSubTab(BaseTab):
 
     def __init__(self: typing.Any) -> None:
         super().__init__()
+        # Keep service imports lazy so importing this UI module does not
+        # initialize software services in lightweight embedders.
+        from services.software import source_status
+
+        self._source_status_api = source_status
+        self._source_status_service = source_status.SoftwareSourceStatusService()
+        self._source_status_adapter: OperationControllerQtAdapter | None = None
+        self._source_status_labels: dict[tuple[str, SourceScope], QLabel] = {}
+
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
             self.tr("Repositories"),
-            self.tr("Review software sources before enabling repositories or installing codecs."),
+            self.tr("Check locally configured software sources. Setup and codec installation remain guided manual steps."),
         )
         root.addWidget(self.scaffold)
         layout = self.scaffold.content_layout
 
+        self.source_status_note = QLabel(
+            self.tr("Status describes local configuration only; it does not check source availability or trust.")
+        )
+        self.source_status_note.setWordWrap(True)
+        self.source_status_note.setAccessibleName(self.tr("About software source status"))
+        layout.addWidget(self.source_status_note)
+
         # RPM Fusion Group
-        fusion_group = QGroupBox(self.tr("RPM Fusion (Essential for media codecs & drivers)"))
+        fusion_group = QGroupBox(self.tr("RPM Fusion"))
         fusion_layout = QVBoxLayout()
         fusion_group.setLayout(fusion_layout)
 
-        self.btn_enable_fusion = QPushButton(self.tr("Enable RPM Fusion (Free & Non-Free)"))
-        self.btn_enable_fusion.setAccessibleName(self.tr("Enable RPM Fusion"))
-        self.btn_enable_fusion.setToolTip(SW_RPM_FUSION)
-        self.btn_enable_fusion.clicked.connect(self.enable_rpm_fusion)
-        fusion_layout.addWidget(self.btn_enable_fusion)
+        fusion_layout.addWidget(self._new_source_status_label("rpmfusion-free", self._source_status_api.SourceScope.SYSTEM))
+        fusion_layout.addWidget(self._new_source_status_label("rpmfusion-nonfree", self._source_status_api.SourceScope.SYSTEM))
 
-        self.btn_install_codecs = QPushButton(self.tr("Install Multimedia Codecs (ffmpeg, gstreamer, etc.)"))
-        self.btn_install_codecs.setAccessibleName(self.tr("Install codecs"))
-        self.btn_install_codecs.setToolTip(SW_CODECS)
-        self.btn_install_codecs.clicked.connect(self.install_multimedia_codecs)
-        fusion_layout.addWidget(self.btn_install_codecs)
+        self.btn_rpm_fusion_guidance = QPushButton(self.tr("View RPM Fusion setup instructions"))
+        self.btn_rpm_fusion_guidance.setObjectName("rpmFusionSetupGuidance")
+        self.btn_rpm_fusion_guidance.setAccessibleName(self.tr("View RPM Fusion setup instructions"))
+        self.btn_rpm_fusion_guidance.setToolTip(SW_RPM_FUSION)
+        self.btn_rpm_fusion_guidance.clicked.connect(self.show_rpm_fusion_guidance)
+        fusion_layout.addWidget(self.btn_rpm_fusion_guidance)
+
+        self.btn_codec_guidance = QPushButton(self.tr("View multimedia codec installation instructions"))
+        self.btn_codec_guidance.setObjectName("codecSetupGuidance")
+        self.btn_codec_guidance.setAccessibleName(self.tr("View codec installation instructions"))
+        self.btn_codec_guidance.setToolTip(SW_CODECS)
+        self.btn_codec_guidance.clicked.connect(self.show_codec_guidance)
+        fusion_layout.addWidget(self.btn_codec_guidance)
 
         layout.addWidget(fusion_group)
 
@@ -159,11 +187,15 @@ class _RepositoriesSubTab(BaseTab):
         flathub_layout = QVBoxLayout()
         flathub_group.setLayout(flathub_layout)
 
-        self.btn_enable_flathub = QPushButton(self.tr("Enable Flathub Remote"))
-        self.btn_enable_flathub.setAccessibleName(self.tr("Enable Flathub"))
-        self.btn_enable_flathub.setToolTip(SW_FLATHUB)
-        self.btn_enable_flathub.clicked.connect(self.enable_flathub)
-        flathub_layout.addWidget(self.btn_enable_flathub)
+        flathub_layout.addWidget(self._new_source_status_label("flathub", self._source_status_api.SourceScope.SYSTEM))
+        flathub_layout.addWidget(self._new_source_status_label("flathub", self._source_status_api.SourceScope.USER))
+
+        self.btn_flathub_guidance = QPushButton(self.tr("View Flathub setup instructions"))
+        self.btn_flathub_guidance.setObjectName("flathubSetupGuidance")
+        self.btn_flathub_guidance.setAccessibleName(self.tr("View Flathub setup instructions"))
+        self.btn_flathub_guidance.setToolTip(SW_FLATHUB)
+        self.btn_flathub_guidance.clicked.connect(self.show_flathub_guidance)
+        flathub_layout.addWidget(self.btn_flathub_guidance)
 
         layout.addWidget(flathub_group)
 
@@ -174,12 +206,13 @@ class _RepositoriesSubTab(BaseTab):
 
         copr_layout.addWidget(QLabel(self.tr("Common COPR Repositories:")))
 
-        self.btn_copr_loofi = QPushButton(self.tr("Enable Loofi Fedora Tweaks COPR"))
-        self.btn_copr_loofi.setAccessibleName(self.tr("Enable Loofi COPR"))
-        self.btn_copr_loofi.clicked.connect(
-            lambda: self.actionCenterRequested.emit("enable-loofi-copr", {})
-        )
-        copr_layout.addWidget(self.btn_copr_loofi)
+        copr_layout.addWidget(self._new_source_status_label("loofi-copr", self._source_status_api.SourceScope.SYSTEM))
+
+        self.btn_loofi_copr_guidance = QPushButton(self.tr("View Loofi COPR setup instructions"))
+        self.btn_loofi_copr_guidance.setObjectName("loofiCoprSetupGuidance")
+        self.btn_loofi_copr_guidance.setAccessibleName(self.tr("View Loofi COPR setup instructions"))
+        self.btn_loofi_copr_guidance.clicked.connect(self.show_loofi_copr_guidance)
+        copr_layout.addWidget(self.btn_loofi_copr_guidance)
 
         layout.addWidget(copr_group)
 
@@ -191,16 +224,145 @@ class _RepositoriesSubTab(BaseTab):
         self.output_details.add_widget(self.output_area)
         layout.addWidget(self.output_details)
 
+        self.refresh_source_status_button = QPushButton(self.tr("Refresh source status"))
+        self.refresh_source_status_button.setObjectName("refreshSourceStatus")
+        self.refresh_source_status_button.setAccessibleName(self.tr("Refresh software source status"))
+        self.refresh_source_status_button.clicked.connect(self.refresh_source_status)
+        layout.addWidget(self.refresh_source_status_button)
+
     # -- Repository actions ------------------------------------------------
 
-    def enable_rpm_fusion(self: typing.Any) -> typing.Any:
+    def show_rpm_fusion_guidance(self: typing.Any) -> None:
         self.actionCenterRequested.emit("enable-rpm-fusion", {})
 
-    def install_multimedia_codecs(self: typing.Any) -> typing.Any:
+    def show_codec_guidance(self: typing.Any) -> None:
         self.actionCenterRequested.emit("install-multimedia-codecs", {})
 
-    def enable_flathub(self: typing.Any) -> typing.Any:
+    def show_flathub_guidance(self: typing.Any) -> None:
         self.actionCenterRequested.emit("enable-flathub", {})
+
+    def show_loofi_copr_guidance(self: typing.Any) -> None:
+        self.actionCenterRequested.emit("enable-loofi-copr", {})
+
+    def on_activate(self: typing.Any) -> None:
+        """Refresh local source status when the repositories route is opened."""
+        self.refresh_source_status()
+
+    def refresh_source_status(self: typing.Any) -> None:
+        if self._source_status_adapter is None:
+            from ui.operation_worker import OperationControllerQtAdapter
+
+            self._source_status_adapter = OperationControllerQtAdapter(parent=self)
+            self._source_status_adapter.finished.connect(self._apply_source_statuses)
+            self._source_status_adapter.failed.connect(self._on_source_status_failed)
+        if self._source_status_adapter.busy:
+            return
+        for label in self._source_status_labels.values():
+            label.setText(self.tr("Checking source status…"))
+            label.setAccessibleDescription(self.tr("Checking source status"))
+            label.setProperty("sourceState", self._source_status_api.SourceState.UNKNOWN.value)
+        self._source_status_adapter.start(self._source_status_service.snapshot)
+
+    def _new_source_status_label(self: typing.Any, source_id: str, scope: SourceScope) -> QLabel:
+        label = QLabel(self.tr("Status not checked yet"))
+        label.setObjectName(f"sourceStatus:{source_id}:{scope.value}")
+        label.setWordWrap(True)
+        label.setProperty("sourceState", self._source_status_api.SourceState.UNKNOWN.value)
+        source_name = {
+            "rpmfusion-free": self.tr("RPM Fusion Free"),
+            "rpmfusion-nonfree": self.tr("RPM Fusion Non-Free"),
+            "loofi-copr": self.tr("Loofi COPR"),
+            "flathub": self.tr("Flathub"),
+        }.get(source_id, self.tr("Software source"))
+        label.setAccessibleName(self.tr("{source} {scope} software source status").format(
+            source=source_name,
+            scope=self.tr(scope.value),
+        ))
+        label.setAccessibleDescription(self.tr("Status not checked yet"))
+        self._source_status_labels[(source_id, scope)] = label
+        return label
+
+    def _apply_source_statuses(self: typing.Any, result: object) -> None:
+        statuses = result if isinstance(result, (tuple, list)) else ()
+        by_key = {
+            (status.source_id, status.scope): status
+            for status in statuses
+            if isinstance(status, self._source_status_api.SourceStatus)
+        }
+        for key, label in self._source_status_labels.items():
+            status = by_key.get(key)
+            if status is None:
+                status = self._source_status_api.SourceStatus(
+                    key[0],
+                    key[1],
+                    self._source_status_api.SourceState.UNKNOWN,
+                    self._source_status_api.SourceStatusReason.PROBE_FAILED,
+                )
+            self._render_source_status(label, status)
+
+    def _on_source_status_failed(self: typing.Any, _message: str) -> None:
+        self._apply_source_statuses(
+            tuple(
+                self._source_status_api.SourceStatus(
+                    source_id,
+                    scope,
+                    self._source_status_api.SourceState.UNKNOWN,
+                    self._source_status_api.SourceStatusReason.PROBE_FAILED,
+                )
+                for source_id, scope in self._source_status_api.SOURCE_STATUS_KEYS
+            )
+        )
+
+    def _render_source_status(self: typing.Any, label: QLabel, status: SourceStatus) -> None:
+        source_names = {
+            "rpmfusion-free": self.tr("RPM Fusion Free"),
+            "rpmfusion-nonfree": self.tr("RPM Fusion Non-Free"),
+            "loofi-copr": self.tr("Loofi COPR"),
+            "flathub": self.tr("Flathub"),
+        }
+        scope_names = {
+            self._source_status_api.SourceScope.SYSTEM: self.tr("system"),
+            self._source_status_api.SourceScope.USER: self.tr("user"),
+        }
+        state_names = {
+            self._source_status_api.SourceState.ENABLED: self.tr("Enabled"),
+            self._source_status_api.SourceState.DISABLED: self.tr("Not enabled"),
+            self._source_status_api.SourceState.UNKNOWN: self.tr("Could not check"),
+        }
+        source_name = source_names.get(status.source_id, self.tr("Software source"))
+        scope_name = scope_names[status.scope]
+        state_name = state_names[status.state]
+        text = self.tr("{source} ({scope}): {state}").format(
+            source=source_name,
+            scope=scope_name,
+            state=state_name,
+        )
+        if status.state is self._source_status_api.SourceState.UNKNOWN:
+            reason_messages = {
+                self._source_status_api.SourceStatusReason.TOOL_UNAVAILABLE: self.tr("The required tool is not installed."),
+                self._source_status_api.SourceStatusReason.UNSUPPORTED_BACKEND: self.tr(
+                    "Repository status is not available for this Fedora deployment."
+                ),
+                self._source_status_api.SourceStatusReason.TIMEOUT: self.tr("The source status check timed out."),
+                self._source_status_api.SourceStatusReason.COMMAND_FAILED: self.tr("The source list could not be read (exit code {code}).").format(
+                    code=status.exit_code if status.exit_code is not None else self.tr("unknown")
+                ),
+                self._source_status_api.SourceStatusReason.INVALID_RESPONSE: self.tr("The tool returned an invalid source list."),
+                self._source_status_api.SourceStatusReason.PROBE_FAILED: self.tr("The source configuration could not be inspected."),
+            }
+            reason = status.reason or self._source_status_api.SourceStatusReason.PROBE_FAILED
+            text = self.tr("{status} {reason}").format(
+                status=text,
+                reason=reason_messages.get(reason, self.tr("The source configuration could not be inspected.")),
+            )
+        label.setText(text)
+        label.setProperty("sourceState", status.state.value)
+        label.setAccessibleName(self.tr("{source} {scope} source status: {state}").format(
+            source=source_name,
+            scope=scope_name,
+            state=state_name,
+        ))
+        label.setAccessibleDescription(text)
 
     # -- Helpers -----------------------------------------------------------
 
@@ -269,8 +431,12 @@ class SoftwareTab(BaseTab):
             self._activate_current_subtab()
 
     def _activate_current_subtab(self: typing.Any) -> None:
-        if self._route_active and self.tabs.currentIndex() == 0:
+        if not self._route_active:
+            return
+        if self.tabs.currentIndex() == 0:
             self._applications_tab.on_activate()
+        elif self.tabs.currentIndex() == 1:
+            self._repositories_tab.on_activate()
 
     def activate_route(self: typing.Any, route: typing.Any) -> bool:
         """Select a Software & Updates page from a stable route ID."""

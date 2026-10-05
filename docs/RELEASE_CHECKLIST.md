@@ -8,22 +8,18 @@ so keep local verification separate from release authorization.
 
 Check the active source version and inspect local and remote tags before
 selecting the next version. Never reuse a tag that points to another commit
-lineage. The current release uses version `32.0.2`; `32.1.0` is the selected
-local candidate for the next settings update.
+lineage. Select the next version and codename from the reviewed branch and
+available tag history; do not copy an older candidate value.
 
 ```bash
 python3 scripts/bump_version.py --check
-git tag --list 'v32.1.0'
-git ls-remote --tags origin 'refs/tags/v32.1.0' 'refs/tags/v32.1.0^{}'
-python3 scripts/bump_version.py 32.1.0 --codename "Wayfinder" --dry-run
+git tag --list 'v*'
+git ls-remote --tags origin
 ```
 
-After review, update only the active version sources:
-
-```bash
-python3 scripts/bump_version.py 32.1.0 --codename "Wayfinder"
-python3 scripts/bump_version.py --check
-```
+Run `scripts/bump_version.py` with the reviewed version and codename using
+`--dry-run`. Review its proposed changes, then repeat the command without
+`--dry-run` and run `--check` to confirm the active version sources agree.
 
 The script checks and updates `loofi-fedora-tweaks/version.py`,
 `loofi-fedora-tweaks.spec`, and `pyproject.toml`. It does not require retired
@@ -31,8 +27,8 @@ statistics or adapter tools and does not create workflow scaffolding.
 
 ## 2. Keep documentation current
 
-- [ ] Add an accurate candidate entry to `CHANGELOG.md`.
-- [ ] Update `ROADMAP.md` without calling a local candidate released.
+- [ ] Add an accurate unreleased or dated release entry to `CHANGELOG.md`.
+- [ ] Update `ROADMAP.md` to distinguish candidate, released, and deferred work.
 - [ ] Regenerate `docs/TWEAKS.md` from the catalog.
 - [ ] Update current documentation version headings and preserve physical
   qualification as pending or unverified until it has been performed.
@@ -90,15 +86,11 @@ back the tag, GitHub release assets, and COPR build/package before describing
 the release as public. A green local build or an edited document is not
 publication evidence.
 
-## Local Wayfinder delivery
+## Local package installation
 
-Keep version `32.1.0` and codename `Wayfinder`; RPM `Release: 2` identifies the
-redesigned candidate. Capture the six main/secondary views at 900x650 and
-1280x800 logical pixels at 100%, 150%, and 200% scaling. Offscreen fixture
-screenshots qualify rendering only, not physical desktop or screen reader use.
-
-After all gates pass, inventory the installed RPM and running application,
-back up app settings privately, and simulate the exact local RPM transaction.
-Upgrade the local package only after the simulation succeeds. Read back NEVRA,
-package integrity, CLI catalog, settings checksum, and package consistency.
-Do not delete user settings or publish this candidate.
+When local installation is explicitly in scope, inventory the installed RPM
+and running application, back up app settings privately, and simulate the
+exact package transaction. Install only after the simulation succeeds. Read
+back NEVRA, package integrity, CLI behavior, settings checksum, and package
+consistency. Preserve user settings and do not infer physical qualification
+from generated screenshots.

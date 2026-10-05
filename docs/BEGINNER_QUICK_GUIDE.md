@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 32.1.0 "Wayfinder" (local candidate); physical desktop validation remains unverified.
+> Version 32.1.0 "Wayfinder" (released 2026-10-04); physical desktop validation remains unverified.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 32.1.0 "Wayfinder" (local candidate); physical desktop validation remains unverified.
+> Version 32.1.0 "Wayfinder" (released 2026-10-04); physical desktop validation remains unverified.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.

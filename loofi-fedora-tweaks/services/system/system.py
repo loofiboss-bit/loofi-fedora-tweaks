@@ -233,14 +233,40 @@ class SystemManager:
         return cached_which("flatpak") is not None
 
     @classmethod
-    def is_flathub_enabled(cls) -> bool:
-        """Check if Flathub remote is configured."""
+    def is_flathub_enabled(cls, *, scope: str = "system") -> bool | None:
+        """Return Flathub state in one installation scope, preserving probe failures.
+
+        ``None`` means the remote list could not be read or validated. It must
+        not be treated as evidence that Flathub is disabled.
+        """
+        if scope not in {"system", "user"}:
+            return None
+        if cached_which("flatpak") is None:
+            return None
         try:
             result = subprocess.run(
-                ["flatpak", "remotes"], capture_output=True, text=True, check=False,
-                timeout=10
+                ["flatpak", "remotes", "--json", f"--{scope}"],
+                capture_output=True,
+                text=True,
+                check=False,
+                timeout=10,
             )
-            return "flathub" in result.stdout.lower()
-        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
-            logger.debug("Failed to check Flathub remote: %s", e)
-            return False
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as exc:
+            logger.debug("Failed to check Flathub remote in %s scope: %s", scope, exc)
+            return None
+        if result.returncode != 0 or not isinstance(result.stdout, str):
+            logger.debug("Flatpak remote check failed in %s scope with exit=%s", scope, result.returncode)
+            return None
+        try:
+            remotes = json.loads(result.stdout)
+        except (TypeError, ValueError, json.JSONDecodeError) as exc:
+            logger.debug("Flatpak returned invalid remote data in %s scope: %s", scope, exc)
+            return None
+        if not isinstance(remotes, list):
+            return None
+        names: list[str] = []
+        for remote in remotes:
+            if not isinstance(remote, dict) or not isinstance(remote.get("name"), str):
+                return None
+            names.append(remote["name"].casefold())
+        return "flathub" in names

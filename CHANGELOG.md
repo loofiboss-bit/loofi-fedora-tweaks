@@ -1,6 +1,13 @@
 # Changelog
 
-## [32.1.0] - Unreleased - "Wayfinder"
+## [Unreleased]
+
+- Show local status for RPM Fusion, Flathub, and Loofi COPR with explicit
+  manual setup guidance and an unknown state for failed checks.
+- Align release documentation with published Wayfinder 32.1.0 while retaining
+  physical desktop and assistive-technology qualification limits.
+
+## [32.1.0] - 2026-10-04 - "Wayfinder"
 
 - Add GNOME Files controls for single/double-click opening and the default
   folder view, using the upstream Nautilus schema defaults.
@@ -22,8 +29,8 @@
 - Confirm system settings with their actual title, values, and computer scope.
 - Reconfigure KWin through a closed separate Action Center action and compare
   runtime support information; distinguish saved verification from session effect.
-- Raise the local RPM release to 2 while retaining version 32.1.0 Wayfinder.
-  No public release is included; physical qualification is recorded separately.
+- Publish Wayfinder 32.1.0 as RPM release 2. Physical GNOME, KDE, and
+  screen-reader qualification remains separately recorded as unverified.
 
 ## [32.0.2] - 2026-10-03 - "Refocus"
 
