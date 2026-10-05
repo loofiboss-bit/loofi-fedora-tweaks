@@ -68,7 +68,7 @@ jobs:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
-      - run: pip install build
+      - run: pip install build 'defusedxml>=0.7.1'
       - run: python3 scripts/check_packaging_manifest.py --build
       - run: python3 scripts/gen_tweaks_doc.py --check
       - run: python3 scripts/bump_version.py --check
