@@ -1,18 +1,15 @@
-# Loofi Fedora Tweaks Wiki — v32.0.0 "Refocus" Local Candidate
+# Loofi Fedora Tweaks Wiki — v32.1.0 "Wayfinder"
 
 Welcome to the official documentation for Loofi Fedora Tweaks, a curated
 Fedora utility for installing applications, tuning safe settings, diagnosing
 problems, and updating the system.
 
-The local candidate is documented in the
-[v31.1.0 notes](../docs/releases/RELEASE-NOTES-v31.1.0.md).
-Its publication and workstation installation are not authorized.
+**Current public release:** [v32.1.0 "Wayfinder"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.1.0), published 2026-10-04.
+Wayfinder includes 73 desktop settings and redesigned application, update,
+health, settings, and history views. Physical GNOME, KDE, and screen-reader
+qualification remains unverified.
 
-**Current public release:** [v30.2.0 "Comfort"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.2.0), available on GitHub and Fedora 44 COPR.
-Tweaks provides fourteen capability-scoped controls and explicit, verified
-restoration of the latest eligible saved change.
-
-**Previous release:** [v30.1.0 "Personalize"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v30.1.0)
+**Previous release:** [v32.0.2 "Refocus"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.0.2)
 
 ![Loofi Fedora Tweaks Home](images/home-dashboard.png)
 

@@ -1,7 +1,7 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the local v32.1.0 "Wayfinder" candidate.
-> The latest public release remains v32.0.2; this candidate has not been published.
+> Active architecture reference for released v32.1.0 "Wayfinder".
+> Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
 

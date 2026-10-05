@@ -1,7 +1,9 @@
-# Wayfinder local qualification
+# Wayfinder 32.1.0 qualification record
 
-Candidate: **32.1.0 Wayfinder**, RPM **1:32.1.0-2.fc44.noarch**.
-Scope: source, package, and local installation. No public publication is included.
+Release: **32.1.0 Wayfinder**, RPM **1:32.1.0-2.fc44.noarch**, published
+2026-10-04. This record covers source, package, and local installation
+qualification. Physical desktop and assistive-technology checks remain
+unverified.
 
 ## Automated gates
 
@@ -73,7 +75,9 @@ confirmed local install completed successfully.
 - Critical installed source files match the verified checkout by SHA-256.
 - The app settings file is byte-for-byte unchanged across verification and installation.
 - `dnf5 --cacheonly check`: local package consistency passed; no live repository refresh.
-- No running Loofi application needed termination. This local qualification did not publish a release; PR preparation is a separate step.
+- No running Loofi application needed termination. These checks qualify the
+  local package and installation; they do not establish physical desktop or
+  assistive-technology behavior.
 
 RPM SHA-256: `97c19f6a4bf21aeeee5721b28c91548b0fdfec6437fa0f50f0e2fa7fa525b67f`.
 
