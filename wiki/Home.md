@@ -9,7 +9,7 @@ Coherence includes 73 desktop settings, clearer recovery guidance, bounded
 settings checks, and Flathub status before app review. Physical GNOME, visual,
 keyboard, screen-reader, and scaling qualification remains unverified.
 
-**Previous release:** [v32.0.2 "Refocus"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.0.2)
+**Previous release:** [v32.1.0 "Wayfinder"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.1.0)
 
 ![Loofi Fedora Tweaks Home](images/home-dashboard.png)
 
