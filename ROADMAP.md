@@ -31,10 +31,18 @@ Physical GNOME, KDE, assistive-technology, and live visual qualification remain
 unverified and are tracked separately in
 [Wayfinder validation](docs/WAYFINDER_VALIDATION.md).
 
-## Next
+## Completed — v32.2.0 "Coherence"
 
-- Show read-only local status and setup guidance for Flathub, RPM Fusion, and
-  Loofi COPR. Source changes and codec installation remain manual-only.
+- [x] State action-specific recovery and distinguish Loofi standard values from installed defaults
+- [x] Bound Tweaks snapshots to 20 seconds with progress, cancellation, schema reuse, and explicit partial results
+- [x] Show Flathub availability and installation scope before app review while preserving selections
+- [x] Mark local Flathub, RPM Fusion, and Loofi COPR status as complete with manual setup guidance
+- [x] Check generated catalog and synchronized version sources in local verification and CI
+
+Physical GNOME behavior, visual effects, keyboard and screen-reader support,
+scaling, and Atomic workflows remain unverified for this release. A KDE
+Dolphin setting was changed, read back, and restored on the development host;
+this does not qualify every setting or the full interface.
 
 ## Later
 

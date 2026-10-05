@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 32.1.0 "Wayfinder" (released 2026-10-04); physical desktop validation remains unverified.
+> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.
@@ -111,7 +111,8 @@ just lint
 just typecheck
 just test
 just check-packaging
-just validate-release
+python3 scripts/gen_tweaks_doc.py --check
+python3 scripts/bump_version.py --check
 just build-rpm
 ```
 

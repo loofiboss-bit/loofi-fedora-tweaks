@@ -1,14 +1,15 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for released v32.1.0 "Wayfinder".
+> Active architecture reference for v32.2.0 "Coherence".
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
 
 Loofi Fedora Tweaks is a Fedora desktop utility with a PyQt6 GUI and a small
-CLI. It presents curated per-user settings for GNOME and KDE alongside app
-installation, updates, and diagnostics. Missing applications, schemas, or host
-tools produce an unavailable state with an explanation.
+CLI. It presents curated per-user settings for GNOME and KDE, plus one
+system-wide DNF setting, alongside app installation, updates, and diagnostics.
+Missing applications, schemas, or host tools produce an unavailable state
+with an explanation.
 
 The current tweak catalog contains 73 controls: 43 GNOME-only, 28 KDE-only,
 and two shared controls. The GUI and CLI project the controls supported by the
@@ -56,9 +57,11 @@ settings. Restore accepts a verified `source_run_id`, checks that the setting
 has not drifted or been superseded, and records a separate verified action.
 There is no generic undo, bulk restore, or automatic rollback.
 
-All current controls are per-user settings. They do not require administrator
-authorization. KDE applications may need to be reopened before a setting is
-visible in an already open window.
+GNOME and KDE settings are per-user and do not require administrator
+authorization. The DNF parallel-download setting is system-wide and requires
+administrator authorization. Reset uses Loofi's curated standard value; it
+does not query the active desktop schema's current default. KDE applications
+may need to be reopened before a setting is visible in an already open window.
 
 ## Desktop-specific settings
 
@@ -100,12 +103,13 @@ just verify
 just build-rpm
 just check-packaging
 python3 scripts/gen_tweaks_doc.py --check
+python3 scripts/bump_version.py --check
 ```
 
-`just verify` runs lint, type checking, architecture rules, tests, and the
-configured coverage gate. Source and RPM packaging checks do not prove the
-application has been qualified in a physical GNOME or KDE session; record
-those checks separately.
+`just verify` runs lint, type checking, architecture rules, catalog and version
+consistency checks, tests, and the configured coverage gate. Source and RPM
+packaging checks do not prove the application has been qualified in a physical
+GNOME or KDE session; record those checks separately.
 
 ## Wayfinder presentation and session activation
 

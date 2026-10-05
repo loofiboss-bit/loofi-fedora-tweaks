@@ -28,8 +28,7 @@ Prefer the `Justfile` as the primary command surface.
 - Typecheck: `just typecheck`
 - Full verification: `just verify`
 - Build RPM: `just build-rpm`
-- Release-doc validation: `just validate-release`
-- Agent adapter drift: `just check-drift`
+- Product catalog and active version checks: `just check-product-catalog`
 
 Useful raw equivalents:
 

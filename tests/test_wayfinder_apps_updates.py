@@ -1,13 +1,14 @@
 """Wayfinder application identities, retained selection, and update source UX."""
 from types import SimpleNamespace
 import unittest
-from unittest.mock import Mock
+from unittest.mock import Mock, patch
 
 from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QLabel
 
 from core.catalog_models import FedoraVariant
 from core.tasks import ApplicationContext, UpdateSourceState
+from services.software.source_status import SourceScope, SourceState, SourceStatus, SourceStatusReason
 from ui.install_workflow import InstallWorkflowPage
 from ui.update_workflow import UpdateWorkflowPage
 
@@ -84,3 +85,50 @@ class TestWayfinderUpdateSources(unittest.TestCase):
         self.assertEqual(grid._columns, 3)
         for index, source in enumerate(("system", "flatpak", "firmware")):
             self.assertIs(grid.grid.itemAtPosition(0, index).widget(), self.page._cards[source][0])
+
+
+class TestWayfinderInstallSourceStatus(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from PyQt6.QtWidgets import QApplication
+
+        cls.app = QApplication.instance() or QApplication([])
+
+    @patch("ui.operation_worker.OperationControllerQtAdapter.start", return_value=True)
+    def test_flathub_scope_guidance_and_unknown_status_preserve_selection(self, start):
+        service = Mock()
+        page = InstallWorkflowPage(context=ApplicationContext(FedoraVariant.TRADITIONAL, frozenset({"fedora", "dnf5"}), online=True), source_status_service=service)
+        self.addCleanup(page.close)
+        start.assert_called_once()
+        self.assertIs(start.call_args.args[0], service.snapshot)
+        self.assertLess(page.scaffold.content_layout.indexOf(page.flathub_status_card), page.scaffold.content_layout.indexOf(page.application_list))
+
+        page._row_checks["firefox"].click()
+        page._apply_flathub_statuses((
+            SourceStatus("flathub", SourceScope.SYSTEM, SourceState.ENABLED),
+            SourceStatus("flathub", SourceScope.USER, SourceState.DISABLED),
+        ))
+        self.assertIn("System scope: Enabled", page.flathub_system_status.text())
+        self.assertIn("User scope: Not enabled", page.flathub_user_status.text())
+        self.assertTrue(page.flathub_guidance_button.isHidden())
+
+        page._apply_flathub_statuses((
+            SourceStatus("flathub", SourceScope.SYSTEM, SourceState.DISABLED),
+            SourceStatus("flathub", SourceScope.USER, SourceState.ENABLED),
+        ))
+        self.assertFalse(page.flathub_guidance_button.isHidden())
+        routes = []
+        page.routeRequested.connect(routes.append)
+        page.flathub_guidance_button.click()
+        self.assertEqual(routes, ["software:repos"])
+        self.assertEqual(page.selected_application_ids(), ("firefox",))
+
+        page._apply_flathub_statuses((
+            SourceStatus("flathub", SourceScope.SYSTEM, SourceState.UNKNOWN, SourceStatusReason.TIMEOUT),
+            SourceStatus("flathub", SourceScope.USER, SourceState.UNKNOWN, SourceStatusReason.TOOL_UNAVAILABLE),
+        ))
+        self.assertIn("Could not check", page.flathub_system_status.text())
+        self.assertIn("timed out", page.flathub_system_status.text())
+        self.assertEqual(page.flathub_system_status.property("sourceState"), "unknown")
+        self.assertFalse(page.flathub_guidance_button.isHidden())
+        self.assertEqual(page.selected_application_ids(), ("firefox",))

@@ -190,7 +190,7 @@ class ActionRuntime(Protocol):
     def fstrim_support(self) -> tuple[bool, dict[str, Any], str]:
         ...
 
-    def execute_read_only(self, vector: Sequence[str], *, action_id: str, timeout: int = 30) -> ActionResult:
+    def execute_read_only(self, vector: Sequence[str], *, action_id: str, timeout: float = 30) -> ActionResult:
         ...
 
 

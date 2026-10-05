@@ -1,4 +1,4 @@
-# GUI Reference — v32.0.0 "Refocus"
+# GUI Reference — v32.2.0 "Coherence"
 
 Loofi Fedora Tweaks opens on **Tweaks**. Four everyday jobs live in the sidebar;
 selecting a destination or search result only navigates, and any change starts
@@ -18,17 +18,20 @@ turn on **Show advanced tools** in Settings.
 
 ## Tweaks
 
-Tweaks lists 61 declarative controls for GNOME and KDE Plasma, grouped by theme
-(Appearance, Desktop, Interaction, Privacy, Input, Windows, Sound, Power, System
-& Packaging). The full list with defaults is generated in
+Tweaks lists 73 controls across GNOME, KDE Plasma, and shared system settings,
+grouped by theme (Appearance, Desktop, Interaction, Privacy, Input, Windows,
+Sound, Power, System & Packaging). The full list with Loofi standard values is generated in
 [docs/TWEAKS.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TWEAKS.md).
 
 - Each row shows the current value read from the system. Changes are checked
   before and after they run.
-- **Reset to default** appears on a row whose value differs from its default.
-- **Changed from default** filters the page to those rows.
-- **Restore previous value** reverts the latest verified change. A fresh check
-  blocks restores when the setting has drifted since.
+- **Use Loofi standard value** applies the catalog's curated reference value;
+  it does not necessarily match the installed desktop's own default.
+- **Restore previous value** is offered when verified history can safely
+  recover the immediately preceding value.
+- **Changed** filters settings that differ from Loofi's curated reference value.
+- A fresh check blocks restoration when the setting has drifted since the
+  verified change.
 - Search matches titles and descriptions.
 
 ![Tweaks](images/tweaks.png)

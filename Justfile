@@ -105,6 +105,9 @@ verify:
     @echo "=== Architecture ==="
     just validate-architecture
     @echo ""
+    @echo "=== Product catalog and version ==="
+    just check-product-catalog
+    @echo ""
     @echo "=== Tests + Coverage ==="
     just test-coverage
     @echo ""
@@ -137,6 +140,11 @@ build-all: build-rpm build-sdist
 validate-architecture:
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/check_stabilization_rules.py
 	PYTHONPATH=loofi-fedora-tweaks python3 scripts/validate_architecture.py
+
+# Keep generated catalog documentation and active version sources in sync
+check-product-catalog:
+    python3 scripts/gen_tweaks_doc.py --check
+    python3 scripts/bump_version.py --check
 
 # Validate pyproject package metadata and wheel/sdist contents
 check-packaging:

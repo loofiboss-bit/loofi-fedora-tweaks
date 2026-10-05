@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Make Fedora feel like your computer.</strong><br>
-  Search, change, and undo desktop and system settings for GNOME, KDE, and DNF.
+  Search, change, verify, and restore supported desktop and system settings for GNOME, KDE, and DNF.
 </p>
 
 <p align="center">
@@ -24,7 +24,7 @@ Tweaks come first. Everything else exists to support them.
 
 | | |
 |---|---|
-| **Tweaks** | Search a setting, change it, see it verified, undo it. GNOME and KDE appearance, desktop, window and input settings, plus DNF options. |
+| **Tweaks** | Search a setting, change it, and verify it. Restore a previous value where supported. GNOME and KDE appearance, desktop, window and input settings, plus DNF options. |
 | **Apps** | Find trusted applications and install several at once, with a result for each. |
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
@@ -69,7 +69,8 @@ Add `--json` before a command for machine-readable output.
 - The interface never runs arbitrary commands. Commands are allow-listed,
   list-based, time-limited, and never use a shell.
 - Privileged changes go through the desktop's standard authorization agent.
-- Every change is checked after it is applied and can be undone.
+- Every change is checked after it is applied. Previous values can be restored
+  where verified history supports it; other actions show their recovery guidance.
 - Nothing reboots, retries, or applies changes remotely on its own.
 
 ## Development

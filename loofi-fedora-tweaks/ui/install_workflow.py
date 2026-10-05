@@ -37,11 +37,14 @@ class InstallWorkflowPage(QWidget):
         *,
         catalog: ApplicationCatalog | None = None,
         context: ApplicationContext | None = None,
+        source_status_service: Any | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.catalog = catalog or ApplicationCatalog()
         self.context = context
+        self._source_status_service = source_status_service
+        self._source_status_adapter: Any | None = None
         self._rows: dict[str, tuple[ApplicationRecord, ApplicationEligibility, QListWidgetItem]] = {}
         self._selected_ids: set[str] = set()
         self._row_checks: dict[str, QCheckBox] = {}
@@ -84,6 +87,32 @@ class InstallWorkflowPage(QWidget):
             self.category_filter.addItem(category, category)
         self.category_filter.currentIndexChanged.connect(self._refresh_rows)
         self.intro.add_widget(self.category_filter)
+
+        self.flathub_status_card = Card(
+            self.tr("Flathub source status"),
+            self.tr("Status is local configuration only. App installation uses Flatpak's configured default scope."),
+        )
+        self.flathub_status_card.setObjectName("installFlathubStatus")
+        self.flathub_system_status = QLabel(self.tr("System scope: Status not checked yet"))
+        self.flathub_system_status.setObjectName("installFlathubSystemStatus")
+        self.flathub_system_status.setAccessibleName(self.tr("Flathub system scope status"))
+        self.flathub_user_status = QLabel(self.tr("User scope: Status not checked yet"))
+        self.flathub_user_status.setObjectName("installFlathubUserStatus")
+        self.flathub_user_status.setAccessibleName(self.tr("Flathub user scope status"))
+        self.flathub_status_card.add_widget(self.flathub_system_status)
+        self.flathub_status_card.add_widget(self.flathub_user_status)
+        self.flathub_refresh_button = QPushButton(self.tr("Refresh Flathub status"))
+        self.flathub_refresh_button.setObjectName("installFlathubRefresh")
+        self.flathub_refresh_button.setAccessibleName(self.tr("Refresh Flathub source status"))
+        self.flathub_refresh_button.clicked.connect(self.refresh_flathub_status)
+        self.flathub_status_card.add_widget(self.flathub_refresh_button)
+        self.flathub_guidance_button = QPushButton(self.tr("Review Flathub setup guidance"))
+        self.flathub_guidance_button.setObjectName("installFlathubGuidance")
+        self.flathub_guidance_button.setAccessibleName(self.tr("Review Flathub setup instructions"))
+        self.flathub_guidance_button.clicked.connect(lambda: self.routeRequested.emit("software:repos"))
+        self.flathub_guidance_button.hide()
+        self.flathub_status_card.add_widget(self.flathub_guidance_button)
+        self.scaffold.add_widget(self.flathub_status_card)
 
         self.state_notice = InlineNotice(
             self.tr("Select applications"),
@@ -136,6 +165,69 @@ class InstallWorkflowPage(QWidget):
         self.scaffold.add_widget(self.results_card)
         self.scaffold.content_layout.addStretch()
         self._refresh_rows()
+        if self._source_status_service is not None:
+            self.refresh_flathub_status()
+
+    def refresh_flathub_status(self) -> None:
+        """Read local Flathub scopes on a worker and keep failures explicit."""
+        if self._source_status_service is None:
+            return
+        if self._source_status_adapter is None:
+            from ui.operation_worker import OperationControllerQtAdapter
+
+            self._source_status_adapter = OperationControllerQtAdapter(parent=self)
+            self._source_status_adapter.finished.connect(self._apply_flathub_statuses)
+            self._source_status_adapter.failed.connect(self._flathub_status_failed)
+            self._source_status_adapter.stopped.connect(lambda: self.flathub_refresh_button.setEnabled(True))
+        if self._source_status_adapter.busy:
+            return
+        self.flathub_refresh_button.setEnabled(False)
+        self.flathub_system_status.setText(self.tr("System scope: Checking…"))
+        self.flathub_user_status.setText(self.tr("User scope: Checking…"))
+        self.flathub_guidance_button.hide()
+        self._source_status_adapter.start(self._source_status_service.snapshot)
+
+    def _apply_flathub_statuses(self, statuses: object) -> None:
+        """Render system and user remote state without conflating unknown and disabled."""
+        found: dict[str, object] = {}
+        for status in statuses if isinstance(statuses, (tuple, list)) else ():
+            if getattr(status, "source_id", "") == "flathub":
+                found[str(getattr(getattr(status, "scope", None), "value", ""))] = status
+        for scope, label in (("system", self.flathub_system_status), ("user", self.flathub_user_status)):
+            status = found.get(scope)
+            state = str(getattr(getattr(status, "state", None), "value", "unknown"))
+            state_text = {
+                "enabled": self.tr("Enabled"),
+                "disabled": self.tr("Not enabled"),
+                "unknown": self.tr("Could not check"),
+            }.get(state, self.tr("Could not check"))
+            scope_text = self.tr("System scope") if scope == "system" else self.tr("User scope")
+            message = f"{scope_text}: {state_text}"
+            if state == "unknown":
+                reason = getattr(getattr(status, "reason", None), "value", "")
+                reason_text = {
+                    "tool_unavailable": self.tr("Flatpak is not installed."),
+                    "unsupported_backend": self.tr("This Fedora deployment is not supported for this check."),
+                    "timeout": self.tr("The source check timed out."),
+                    "command_failed": self.tr("The configured sources could not be read."),
+                    "invalid_response": self.tr("Flatpak returned an invalid source list."),
+                    "probe_failed": self.tr("The source configuration could not be inspected."),
+                }.get(str(reason), self.tr("Refresh to check again."))
+                message = f"{message} {reason_text}"
+            label.setText(message)
+            label.setProperty("sourceState", state)
+            label.setAccessibleDescription(message)
+        system_state = str(getattr(getattr(found.get("system"), "state", None), "value", "unknown"))
+        self.flathub_guidance_button.setVisible(system_state != "enabled")
+
+    def _flathub_status_failed(self, _message: str) -> None:
+        """Keep an adapter failure distinct from a disabled source."""
+        from services.software.source_status import SourceScope, SourceState, SourceStatus, SourceStatusReason
+
+        self._apply_flathub_statuses((
+            SourceStatus("flathub", SourceScope.SYSTEM, SourceState.UNKNOWN, SourceStatusReason.PROBE_FAILED),
+            SourceStatus("flathub", SourceScope.USER, SourceState.UNKNOWN, SourceStatusReason.PROBE_FAILED),
+        ))
 
     @property
     def last_bundle(self) -> object | None:

@@ -318,7 +318,7 @@ class SystemActionRuntime:
         except OSError:
             return ""
 
-    def execute_read_only(self, vector: Sequence[str], *, action_id: str, timeout: int = 30) -> ActionResult:
+    def execute_read_only(self, vector: Sequence[str], *, action_id: str, timeout: float = 30) -> ActionResult:
         return self.facade.execute(vector, privileged=False, timeout=timeout, action_id=action_id)
 
     def package_manager_busy(self) -> bool:
