@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 32.1.0 "Wayfinder" (released 2026-10-04); physical desktop validation remains unverified.
+> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -13,7 +13,7 @@ jobs in the sidebar:
 
 | Destination | Purpose |
 | --- | --- |
-| **Tweaks** | Searchable GNOME and KDE settings with current values, reset to default, and undo |
+| **Tweaks** | Searchable GNOME and KDE settings with current values, verified changes, and recovery when supported |
 | **Apps** | Curated application search, category filters, source labels, and multi-select review |
 | **Updates** | Independent System, Flatpak, and Firmware state cards |
 | **Health** | Symptom-first diagnostics, maintenance, and one supported next step |
@@ -54,6 +54,13 @@ trusted system-integrated and command-line tools on Traditional Fedora. Atomic
 systems show Flatpak first and mark layered RPM operations as advanced and
 reboot-aware. Unsupported or unknown platforms fail closed.
 
+Apps shows Flathub status separately for system and user scopes before review.
+Installation follows Flatpak's configured default scope. A missing source opens
+the existing manual setup guidance; an unknown result explains why and can be
+checked again. Loofi never enables a source automatically, and the install
+preflight checks requirements again before execution. Selected apps remain
+selected when you visit setup guidance and return.
+
 Selections survive search and category changes. The summary and review include
 hidden selected items; changing platform availability removes ineligible choices.
 
@@ -70,8 +77,13 @@ favorites never change desktop values. Choose one supported value. Each row show
 value, explanation, availability, and independently verified saved result.
 Missing tools or unreadable values explain why the change is unavailable.
 A pending choice appears beside the last verified value until readback finishes.
-The row menu contains reset to default and technical details; the previous
-verified value is offered separately. KWin changes also request a session
+The current-state check has a shared 20-second limit. Progress reports how many
+settings have been checked; cancelling or reaching the limit keeps completed
+results and leaves unchecked values explicitly unknown.
+The row menu contains **Use Loofi standard value** and technical details. This
+curated reference may differ from the value the desktop chooses when a setting
+is unset. The previous verified value is offered separately when history
+permits restoration. KWin changes also request a session
 reconfigure and compare runtime values. A session warning preserves the saved
 change and its restoration offer.
 
@@ -82,11 +94,12 @@ setting, editable location bar, session tabs, external folder tabs, and close-ta
 confirmation. KWin offers maximized-titlebar, edge tiling, and focus prevention.
 Files also offers an editable location bar and simple/detailed dates. Missing Files schemas or Dolphin
 are reported as unavailable. See
-[TWEAKS.md](TWEAKS.md) for the complete generated list with defaults.
+[TWEAKS.md](TWEAKS.md) for the complete generated list with Loofi standard values.
 
-Use **Reset to default** on a row whose value differs from its default, or turn on
-**Changed from default** to list only those rows. Resetting runs through the same
-checked change flow as any other change.
+Use **Use Loofi standard value** on a row whose value differs from that
+reference, or turn on **Changed** to list those rows. Resetting runs through the
+same checked change flow as any other change. This operation is separate from
+**Restore previous value**, which restores an eligible value recorded by Loofi.
 
 Custom numeric values remain visible and are preserved exactly when captured
 for restoration. A power profile change asks for confirmation. Saved KDE

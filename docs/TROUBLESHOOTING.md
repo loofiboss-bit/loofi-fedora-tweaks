@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 32.1.0 "Wayfinder" (released 2026-10-04); physical desktop validation remains unverified.
+> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

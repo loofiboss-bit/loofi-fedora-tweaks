@@ -142,8 +142,12 @@ class MainWindowUtilityMixin:
 
         if destination_id == "install":
             from ui.install_workflow import InstallWorkflowPage
+            from services.software.source_status import SoftwareSourceStatusService
 
-            install_page: Any = InstallWorkflowPage(context=application_context)
+            install_page: Any = InstallWorkflowPage(
+                context=application_context,
+                source_status_service=SoftwareSourceStatusService(),
+            )
             install_page.bundleReviewRequested.connect(
                 lambda selection, owner=install_page: self._review_utility_bundle(owner, selection)
             )
@@ -155,6 +159,9 @@ class MainWindowUtilityMixin:
             tweaks_page: Any = TweaksPage(self._platform_profile)
             tweaks_page.refreshRequested.connect(
                 lambda owner=tweaks_page: self._start_tweak_snapshot(owner)
+            )
+            tweaks_page.cancelSnapshotRequested.connect(
+                lambda owner=tweaks_page: self._cancel_tweak_snapshot(owner)
             )
             tweaks_page.changeRequested.connect(
                 lambda tweak_id, value, owner=tweaks_page: self._start_tweak_change(owner, tweak_id, value)
@@ -205,14 +212,34 @@ class MainWindowUtilityMixin:
         from core.executor.command_facade import CommandFacade
         from core.tasks.tweaks import snapshot
 
-        page.set_busy(True, self.tr("Reading current settings…"))
         adapter = self._new_utility_operation_adapter()
         adapter.finished.connect(page.set_states)
         adapter.failed.connect(page.set_error)
-        adapter.cancelled.connect(lambda: page.set_error(self.tr("Reading was cancelled.")))
+        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Setting inspection cancelled. Refresh to try again.")))
         controller = self._utility_operation_controller
         runtime = controller.orchestrator.runtime if controller is not None else SystemActionRuntime(CommandFacade())
-        return bool(adapter.start(lambda: snapshot(page.profile, runtime)))
+        page.set_busy(True, self.tr("Reading current settings…"), cancellable=True)
+        started = adapter.start(
+            lambda: snapshot(
+                page.profile,
+                runtime,
+                is_cancelled=lambda: adapter.cancel_requested,
+                on_progress=lambda completed, total: page.snapshotProgress.emit(completed, total),
+            )
+        )
+        if not started:
+            page.set_busy(False, self.tr("Setting inspection could not be started. Refresh to try again."))
+        return bool(started)
+
+    def _cancel_tweak_snapshot(self: Any, page: Any) -> bool:
+        """Request cooperative cancellation of the active read-only snapshot."""
+        adapter = getattr(self, "_utility_operation_adapter", None)
+        cancel = getattr(adapter, "cancel", None)
+        if callable(cancel) and cancel():
+            page.cancel_snapshot_button.setEnabled(False)
+            page.status_label.setText(self.tr("Stopping after the current setting check…"))
+            return True
+        return False
 
     def _start_tweak_change(self: Any, page: Any, tweak_id: str, value: str) -> bool:
         """Apply one typed setting through the durable operation controller."""

@@ -26,6 +26,8 @@ class TweaksPage(QWidget, PluginInterface):
     refreshRequested = pyqtSignal()
     changeRequested = pyqtSignal(str, str)
     restoreRequested = pyqtSignal(str, str)
+    cancelSnapshotRequested = pyqtSignal()
+    snapshotProgress = pyqtSignal(int, int)
 
     def __init__(self, profile: object = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -48,6 +50,7 @@ class TweaksPage(QWidget, PluginInterface):
         self._favorite_buttons: dict[str, QToolButton] = {}
         self._pending: dict[str, str] = {}
         self._activation_messages: dict[str, str] = {}
+        self._reading = False
         self.setObjectName("tweaksPage")
         self.setAccessibleName(self.tr("Fedora tweaks"))
         root = QVBoxLayout(self)
@@ -73,6 +76,12 @@ class TweaksPage(QWidget, PluginInterface):
         self.refresh_button.setObjectName("tweaksRefresh")
         self.refresh_button.clicked.connect(self.refreshRequested.emit)
         search_row.addWidget(self.refresh_button)
+        self.cancel_snapshot_button = QPushButton(self.tr("Cancel check"))
+        self.cancel_snapshot_button.setObjectName("tweaksCancelCheck")
+        self.cancel_snapshot_button.setAccessibleName(self.tr("Cancel reading current settings"))
+        self.cancel_snapshot_button.clicked.connect(self.cancelSnapshotRequested.emit)
+        self.cancel_snapshot_button.hide()
+        search_row.addWidget(self.cancel_snapshot_button)
         intro.add_widget(self._wrap(search_row))
         filters = QHBoxLayout()
         self.category_filter = QComboBox()
@@ -89,6 +98,9 @@ class TweaksPage(QWidget, PluginInterface):
             button.setCheckable(True)
             button.setObjectName("tweaksView")
             button.setAccessibleName(self.tr("Show %1 settings").replace("%1", self.tr(label)))
+            if name == "changed":
+                button.setToolTip(self.tr("Shows settings that differ from Loofi's standard value."))
+                button.setAccessibleDescription(self.tr("Shows settings that differ from Loofi's standard value."))
             self._view_group.addButton(button)
             self._view_buttons[name] = button
             button.toggled.connect(lambda _checked: self._filter_rows(self.search_input.text()))
@@ -112,6 +124,7 @@ class TweaksPage(QWidget, PluginInterface):
         self.status_label.setObjectName("tweaksStatus")
         self.status_label.setWordWrap(True)
         intro.add_widget(self.status_label)
+        self.snapshotProgress.connect(self.set_snapshot_progress)
 
         for tweak in visible_tweaks(profile):
             group = self._groups.get(tweak.group)
@@ -154,16 +167,16 @@ class TweaksPage(QWidget, PluginInterface):
             menu_button.setText("⋯")
             menu_button.setObjectName("tweakRowActions")
             menu_button.setAccessibleName(self.tr("Actions for %1").replace("%1", self.tr(tweak.title)))
-            menu_button.setToolTip(self.tr("Default and technical details"))
+            menu_button.setToolTip(self.tr("Loofi standard value and technical details"))
             menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
             menu = QMenu(menu_button)
             menu_button.setMenu(menu)
             actions.addWidget(menu_button)
             row.control_layout.addLayout(actions)
             self._restore_buttons[tweak.id] = restore
-            reset = QPushButton(self.tr("Reset to default"))
+            reset = QPushButton(self.tr("Use Loofi standard value"))
             reset.setObjectName(f"tweakReset_{tweak.id}")
-            reset.setAccessibleName(self.tr("Reset %1 to its default value").replace("%1", self.tr(tweak.title)))
+            reset.setAccessibleName(self.tr("Set %1 to Loofi's standard value").replace("%1", self.tr(tweak.title)))
             reset.setProperty("defaultValue", default_for(tweak))
             reset.setEnabled(False)
             reset.hide()
@@ -172,7 +185,7 @@ class TweaksPage(QWidget, PluginInterface):
             reset_action.setDefaultWidget(reset)
             menu.addAction(reset_action)
             details_action = QWidgetAction(menu)
-            details = QLabel(self.tr("ID: %1\nDefault: %2\nScope: %3").replace("%1", tweak.id).replace("%2", self._label_for(tweak.id, default_for(tweak))).replace("%3", self.tr("System") if tweak.system_wide else self.tr("Current user")))
+            details = QLabel(self.tr("ID: %1\nLoofi standard: %2\nScope: %3").replace("%1", tweak.id).replace("%2", self._label_for(tweak.id, default_for(tweak))).replace("%3", self.tr("System") if tweak.system_wide else self.tr("Current user")))
             details.setWordWrap(True)
             details.setMargin(12)
             details_action.setDefaultWidget(details)
@@ -304,9 +317,12 @@ class TweaksPage(QWidget, PluginInterface):
         row = self._rows[tweak_id][0]
         row.value_label.setText(self.tr("Verified: %1").replace("%1", self._label_for(tweak_id, str(control.property("currentValue") or ""))))
 
-    def set_busy(self, busy: bool, message: str = "") -> None:
+    def set_busy(self, busy: bool, message: str = "", *, cancellable: bool = False) -> None:
         self._busy = busy
+        self._reading = busy and cancellable
         self.refresh_button.setEnabled(not busy)
+        self.cancel_snapshot_button.setVisible(self._reading)
+        self.cancel_snapshot_button.setEnabled(self._reading)
         for _row, control in self._rows.values():
             control.setEnabled(not busy and bool(control.property("ready")))
         for button in self._restore_buttons.values():
@@ -316,8 +332,29 @@ class TweaksPage(QWidget, PluginInterface):
         if message:
             self.status_label.setText(message)
 
+    def set_snapshot_progress(self, completed: int, total: int) -> None:
+        """Show inspection progress emitted from the background worker."""
+        if self._reading:
+            self.status_label.setText(
+                self.tr("Checking settings: %1 of %2").replace("%1", str(completed)).replace("%2", str(total))
+            )
+
     def set_states(self, states: tuple[TweakState, ...]) -> None:
-        self.set_busy(False, self.tr("Current settings loaded. Choose one value to change it."))
+        not_checked = sum(
+            state.message.startswith(("Not checked because", "Setting inspection cancelled"))
+            for state in states
+        )
+        checked = len(states) - not_checked
+        if not_checked:
+            message = (
+                self.tr("%1 of %2 settings checked; %3 were not checked, so their current values remain unknown. Refresh to continue.")
+                .replace("%1", str(checked))
+                .replace("%2", str(len(states)))
+                .replace("%3", str(not_checked))
+            )
+        else:
+            message = self.tr("Checked %1 settings. Choose one value to change it.").replace("%1", str(checked))
+        self.set_busy(False, message)
         for state in states:
             pair = self._rows.get(state.tweak.id)
             if pair is None:

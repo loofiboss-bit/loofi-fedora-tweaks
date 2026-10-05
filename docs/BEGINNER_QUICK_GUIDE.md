@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 32.1.0 "Wayfinder" (released 2026-10-04); physical desktop validation remains unverified.
+> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -21,7 +21,9 @@ deployment backends remain unavailable.
 ## 2) Learn the four destinations
 
 1. **Tweaks** — search settings, choose a value, and see the verified result
-   on the same row. Use **Reset to default** to undo a customisation.
+   on the same row. Use **Restore previous value** for a verified recovery
+   when available, or **Use Loofi standard value** to apply Loofi's curated
+   reference value.
 2. **Apps** — search the curated application catalog, filter by category,
    select several applications, and review each source.
 3. **Updates** — check System, Flatpak, and Firmware independently and follow

@@ -89,6 +89,12 @@ class OperationControllerQtAdapter(QObject):
         """Return true until the GUI thread has delivered the terminal result."""
         return self._thread is not None
 
+    @property
+    def cancel_requested(self) -> bool:
+        """Expose the worker's cooperative cancellation state to bounded tasks."""
+        worker = self._worker
+        return worker is None or worker.cancel_requested
+
     def start(self, operation: OperationCallable) -> bool:
         """Start one operation, rejecting overlap until the thread is done."""
         if self._thread is not None:

@@ -1,7 +1,7 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.1.0
-Release:        2%{?dist}
+Version:        32.2.0
+Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
 License:        MIT
@@ -97,6 +97,11 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Mon Oct 05 2026 Loofi <loofi@example.com> - 32.2.0-1
+- Coherence: clarify recovery and Loofi standard values, and bound Tweaks snapshots.
+- Show Flathub status and install scope in Apps; improve cancellation and partial results.
+- Verify generated catalog and active version sources in local and CI quality gates.
+
 * Sun Oct 04 2026 Loofi <loofi@example.com> - 32.1.0-2
 - Redesign everyday flows, setting controls, filters, favorites, and history.
 - Add eight Dolphin, KWin, and GNOME Files settings; catalog totals 73.

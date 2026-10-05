@@ -18,7 +18,7 @@ class CommandRequest:
     command: str
     args: tuple[str, ...] = field(default_factory=tuple)
     privileged: bool = False
-    timeout: int = COMMAND_TIMEOUT
+    timeout: float = COMMAND_TIMEOUT
     action_id: str = ""
     env: Mapping[str, str] | None = None
 
@@ -28,7 +28,7 @@ class CommandRequest:
         vector: Sequence[str],
         *,
         privileged: bool = False,
-        timeout: int = COMMAND_TIMEOUT,
+        timeout: float = COMMAND_TIMEOUT,
         action_id: str = "",
         env: Mapping[str, str] | None = None,
     ) -> "CommandRequest":
@@ -90,7 +90,7 @@ class CommandFacade:
         vector: Sequence[str],
         *,
         privileged: bool = False,
-        timeout: int = COMMAND_TIMEOUT,
+        timeout: float = COMMAND_TIMEOUT,
         action_id: str = "",
         env: Mapping[str, str] | None = None,
         authority: ExecutionAuthority = "legacy",

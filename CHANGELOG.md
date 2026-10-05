@@ -1,12 +1,18 @@
 # Changelog
 
-## [Unreleased]
+## [32.2.0] - 2026-10-05 - "Coherence"
 
+- Show Flathub system and user status before application review, with direct
+  access to the existing setup guidance and a retry for unknown results.
+- Bound Tweaks inspection to 20 seconds, reuse installed KDE schemas per
+  snapshot, show progress, and allow cooperative cancellation with partial
+  results clearly marked as unchecked.
+- Label catalog reference values as Loofi standards and describe restoration
+  only where verified history supports it.
+- Add generated catalog and active version checks to maintained verification
+  and CI workflows; remove obsolete verification commands from current guidance.
 - Show local status for RPM Fusion, Flathub, and Loofi COPR with explicit
   manual setup guidance and an unknown state for failed checks.
-- Align release documentation with published Wayfinder 32.1.0 while retaining
-  physical desktop and assistive-technology qualification limits.
-
 ## [32.1.0] - 2026-10-04 - "Wayfinder"
 
 - Add GNOME Files controls for single/double-click opening and the default

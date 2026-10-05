@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+import math
 import re
 import shutil
+import time
 from dataclasses import dataclass, replace
 from pathlib import Path
+from xml.etree.ElementTree import Element
 from defusedxml import ElementTree
 from defusedxml.common import DefusedXmlException
 from typing import Callable, Sequence
@@ -244,11 +247,14 @@ def _parse_schemes(output: str) -> tuple[str, tuple[tuple[str, str], ...]]:
 
 
 _KDE_SCHEMA_LIMIT = 256 * 1024
+_KDE_KCFG_DOCTYPE = b'<!DOCTYPE kcfg SYSTEM "http://www.kde.org/standards/kcfg/1.0/kcfg.dtd">'
+_SNAPSHOT_BUDGET_SECONDS = 20.0
 _DOLPHIN_SCHEMA = Path("/usr/share/config.kcfg/dolphin_generalsettings.kcfg")
 _KWIN_SCHEMA = Path("/usr/share/config.kcfg/kwin.kcfg")
+_KDESchemaCache = dict[Path, tuple[Element | None, str]]
 
 
-def kde_capability_error(tweak_id: str) -> str:
+def kde_capability_error(tweak_id: str, *, schema_cache: _KDESchemaCache | None = None) -> str:
     """Inspect only the installed, fixed schemas for reviewed file/window controls."""
     if tweak_id.startswith("kde-dolphin-") and tweak_id in KDE_SPECS:
         if shutil.which("dolphin") is None:
@@ -263,16 +269,32 @@ def kde_capability_error(tweak_id: str) -> str:
     for tool in ("kreadconfig6", "kwriteconfig6"):
         if shutil.which(tool) is None:
             return f"The required KDE settings tool {tool} is unavailable."
-    try:
-        with path.open("rb") as stream:
-            data = stream.read(_KDE_SCHEMA_LIMIT + 1)
-    except OSError:
-        return f"The installed {application} settings schema is unavailable."
-    if len(data) > _KDE_SCHEMA_LIMIT:
-        return f"The installed {application} settings schema exceeds the supported size."
-    try:
-        root = ElementTree.fromstring(data, forbid_dtd=True, forbid_entities=True, forbid_external=True)
-    except (DefusedXmlException, ElementTree.ParseError, ValueError):
+    cached = schema_cache.get(path) if schema_cache is not None else None
+    if cached is None:
+        try:
+            with path.open("rb") as stream:
+                data = stream.read(_KDE_SCHEMA_LIMIT + 1)
+        except OSError:
+            cached = (None, f"The installed {application} settings schema is unavailable.")
+        else:
+            if len(data) > _KDE_SCHEMA_LIMIT:
+                cached = (None, f"The installed {application} settings schema exceeds the supported size.")
+            else:
+                try:
+                    # KDE's installed KConfig schemas include this external DTD
+                    # declaration. Remove only the known declaration; parsing
+                    # still forbids every remaining DTD, entity, and external
+                    # reference so no content is fetched or expanded.
+                    data = data.replace(_KDE_KCFG_DOCTYPE, b"", 1)
+                    cached = (ElementTree.fromstring(data, forbid_dtd=True, forbid_entities=True, forbid_external=True), "")
+                except (DefusedXmlException, ElementTree.ParseError, ValueError):
+                    cached = (None, f"The installed {application} settings schema could not be read safely.")
+        if schema_cache is not None:
+            schema_cache[path] = cached
+    root, error = cached
+    if error:
+        return error
+    if root is None:
         return f"The installed {application} settings schema could not be read safely."
     _file, group, key, _default = KDE_SPECS[tweak_id]
     expected_type = "Int" if tweak_id == "kde-focus-stealing-prevention" else "Bool"
@@ -287,6 +309,8 @@ def read_tweak(
     tweak: Tweak,
     profile: object,
     execute_read_only: Callable[..., ActionResult],
+    *,
+    schema_cache: _KDESchemaCache | None = None,
 ) -> TweakState:
     desktop = _profile_desktop(profile)
     if desktop == "unknown" or tweak.desktop not in {"all", desktop}:
@@ -295,7 +319,7 @@ def read_tweak(
         return TweakState(tweak, "unavailable", message="DNF configuration is not supported on Atomic Fedora.")
     if tweak.id.startswith("kde-dolphin-") and shutil.which("dolphin") is None:
         return TweakState(tweak, "unavailable", message="Dolphin is not installed.")
-    capability_error = kde_capability_error(tweak.id)
+    capability_error = kde_capability_error(tweak.id, schema_cache=schema_cache) if schema_cache is not None else kde_capability_error(tweak.id)
     if capability_error:
         return TweakState(tweak, "unavailable", message=capability_error)
     result = execute_read_only(_read_vector(tweak), action_id=f"{tweak.action_id}-read", timeout=8)
@@ -337,13 +361,58 @@ def read_tweak(
     return TweakState(tweak, "ready", value=value, choices=choices)
 
 
-def snapshot(profile: object, runtime: ActionRuntime) -> tuple[TweakState, ...]:
+def snapshot(
+    profile: object,
+    runtime: ActionRuntime,
+    *,
+    budget_seconds: float = 20.0,
+    is_cancelled: Callable[[], bool] | None = None,
+    on_progress: Callable[[int, int], None] | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> tuple[TweakState, ...]:
+    """Inspect visible settings within one bounded, cancellable time budget."""
     from core.tasks.tweak_history import restoration_for, read_tweak_runs
 
     runs, history_error = read_tweak_runs(runtime)
-    states = []
-    for tweak in visible_tweaks(profile):
-        state = read_tweak(tweak, profile, runtime.execute_read_only)
+    tweaks = visible_tweaks(profile)
+    states: list[TweakState] = []
+    requested_budget = float(budget_seconds)
+    limit_seconds = min(_SNAPSHOT_BUDGET_SECONDS, max(0.0, requested_budget)) if math.isfinite(requested_budget) else 0.0
+    started_at = clock()
+    deadline = started_at + limit_seconds
+    schema_cache: _KDESchemaCache = {}
+    should_cancel = is_cancelled or (lambda: False)
+
+    def bounded_reader(vector: list[str], *, action_id: str, timeout: int = 8) -> ActionResult:
+        if should_cancel():
+            return ActionResult.fail("Setting inspection cancelled.")
+        remaining = deadline - clock()
+        if remaining <= 0:
+            return ActionResult.fail("The setting inspection time limit was reached.")
+        return runtime.execute_read_only(vector, action_id=action_id, timeout=min(float(timeout), remaining))
+
+    processed = 0
+    for index, tweak in enumerate(tweaks):
+        if should_cancel():
+            stop_message = "Setting inspection cancelled before this setting was checked."
+        elif clock() >= deadline:
+            limit = f"{limit_seconds:g}"
+            stop_message = f"Not checked because the {limit}-second setting inspection limit was reached."
+        else:
+            stop_message = ""
+        if stop_message:
+            remaining_states = tweaks[index:]
+            states.extend(TweakState(item, "unavailable", message=stop_message) for item in remaining_states)
+            if on_progress is not None:
+                on_progress(processed, len(tweaks))
+            break
+
+        state = read_tweak(tweak, profile, bounded_reader, schema_cache=schema_cache)
         offer = restoration_for(tweak, state, runs)
         states.append(replace(state, restore_run_id=offer.source_run_id, restore_value=offer.before, restore_message=history_error or offer.message))
+        processed += 1
+        if on_progress is not None:
+            on_progress(processed, len(tweaks))
+    if not tweaks and on_progress is not None:
+        on_progress(0, 0)
     return tuple(states)

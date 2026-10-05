@@ -83,7 +83,7 @@ class OverviewRuntime(SystemActionRuntime):
         if self.cancelled.is_set():
             raise OverviewCancelled()
 
-    def execute_read_only(self, vector, *, action_id: str, timeout: int = 30) -> ActionResult:
+    def execute_read_only(self, vector, *, action_id: str, timeout: float = 30) -> ActionResult:
         if tuple(vector) not in self._QUERIES:
             return ActionResult(False, "Unsupported overview query", exit_code=126, action_id=action_id)
         self._check_cancelled()
