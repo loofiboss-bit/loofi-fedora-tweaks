@@ -53,19 +53,18 @@ this does not qualify every setting or the full interface.
 Physical desktop and assistive-technology qualification remains separate from
 automated and rendering evidence.
 
-## Local candidate — v32.4.0 "Care"
+## v32.4.0 "Care" release
 
 - Installation-scoped app details, reported-size sorting, and source/installation filters
 - Optional libflatpak app/runtime support warnings and exact unused-runtime inspection
 - Reviewed runtime cleanup through Action Center with drift checks and independent inventory verification
 - Source-specific update diagnostics and shared GUI/CLI update observations
-- Include the existing personalization, permission, trust, search, accessibility, and scroll-region improvements from PR #56
+- Include the personalization, permission, trust, search, accessibility, and scroll-region improvements from PR #56
 - Evidence is recorded in [Care qualification](docs/CARE_VERIFICATION.md)
 - Physical KDE, GNOME, assistive-technology, and real-session Polkit qualification remains separate
 
-This checkout is a 32.4.0 candidate. Local verification does not publish it.
-The RPM was installed locally after a separate user request; merge and
-publication remain outstanding.
+The tag-driven release workflow publishes the GitHub assets and COPR package
+after the master validation, package, and smoke-test gates pass.
 
 ## Included candidate work — Personalization and app insight
 
@@ -75,8 +74,8 @@ publication remain outstanding.
 - [x] Complete full automated, packaging, and responsive rendering verification
 - [ ] Physical KDE, GNOME, and assistive-technology qualification
 
-Included in Care. The separately requested local RPM installation is recorded
-in the qualification evidence. Merge and publication remain outstanding.
+Included in Care; physical desktop and assistive-technology qualification
+remains unverified.
 
 ## Prior local work — Control center redesign
 

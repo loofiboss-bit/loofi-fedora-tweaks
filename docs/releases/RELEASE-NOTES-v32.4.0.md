@@ -1,36 +1,53 @@
 # Loofi Fedora Tweaks 32.4.0 — Care
 
-Care is an unreleased local candidate built on the existing personalization,
-trust, search, accessibility, and responsive-layout work in PR #56.
+Care adds clearer installed-app details, storage insight, safer Flatpak runtime
+cleanup, and source-specific update diagnostics to the Fedora desktop control
+center.
 
-## Applications and storage
+## Highlights
 
-Inspect an exact Flatpak installation for its origin remote, runtime, reported
-installed size, and locally recorded app/runtime end-of-life warnings. An absence
-of a recorded warning is not a support guarantee. Installed applications can be
-filtered by source and installation and sorted by name or reported size.
+- Inspect an installed app's version, installation scope, source, exact Flatpak
+  ref, runtime, reported size, and locally recorded app or runtime end-of-life
+  information.
+- Filter installed apps by source and installation, then sort by name or
+  reported size. Unknown sizes stay visible and sort last.
+- Review unused runtimes for one Flatpak installation and remove only the exact
+  reviewed refs through Action Center. A changed inventory requires a new
+  review; app data is preserved and partial outcomes are reported.
+- Diagnose failed System, Flatpak, or Firmware update checks with bounded,
+  read-only source observations and links to the recorded operation.
+- Keep GUI and CLI update status aligned, including when a source check fails.
+- Include reviewed desktop presets, installation-bound permission details,
+  search, accessibility, and responsive-layout improvements.
 
-Review unused runtimes in one installation, choose exact refs, and confirm their
-removal through Action Center. Changes to the reviewed inventory require a new
-review. Removal preserves application data, checks the remaining inventory, and
-records partial failures without an automatic rollback. System and named
-installations are shared; other users' private inventories are not inspected.
+## Safety and storage notes
 
-Reported installed sizes include shared objects and cannot promise reclaimed
-disk space. PyGObject and libflatpak are optional recommended RPM dependencies;
-missing support is explicitly unavailable and is never installed by the app.
+Reported app sizes are installation-reported values. Flatpak objects can be
+shared, so a size is not a promise of reclaimed disk space. The absence of a
+locally recorded end-of-life warning is not a support guarantee. System and
+named Flatpak installations are shared; cleanup inspection does not inspect
+other users' private app inventories. PyGObject and libflatpak are optional;
+the application does not install them automatically.
 
-## Updates
+## Install
 
-Source-specific diagnostics connect failed system, Flatpak, and firmware checks
-to Health and the exact recorded operation. Diagnostics are read-only. CLI and
-GUI update checks use the same source observations; a failed source is not
-reported as up to date.
+Download the RPM asset from this release and install it with:
 
-## Delivery status
+```bash
+pkexec dnf install ./loofi-fedora-tweaks-32.4.0-*.noarch.rpm
+```
 
-See [Care qualification](../CARE_VERIFICATION.md) for dated automated, isolated
-integration, rendering, and packaging evidence. Physical KDE/GNOME behavior,
-screen-reader use, and real-session Polkit prompts require separate verification.
-The built RPM has been installed locally. This candidate has not been merged or
-published; physical desktop and assistive-technology qualification remains open.
+Or install from the Loofi COPR repository:
+
+```bash
+pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
+pkexec dnf install loofi-fedora-tweaks
+```
+
+## Qualification
+
+Automated verification passed with 4,888 tests, 33 skipped, 1,961 subtests,
+and 85.27% coverage. Packaging and isolated Flatpak cleanup fixtures passed.
+See [Care qualification](../CARE_VERIFICATION.md) for the detailed evidence.
+Physical KDE/GNOME behavior, screen-reader use, and interactive Polkit prompts
+remain unverified.

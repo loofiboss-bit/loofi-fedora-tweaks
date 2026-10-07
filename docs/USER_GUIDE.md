@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Current checkout: 32.4.0 "Care", an unreleased local candidate. Physical desktop and assistive-technology validation remains unverified.
+> Current release: 32.4.0 "Care". Physical desktop and assistive-technology validation remains unverified.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see

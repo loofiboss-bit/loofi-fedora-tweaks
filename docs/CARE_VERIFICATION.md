@@ -1,12 +1,12 @@
 # Care qualification
 
-Verification record for the local v32.4.0 "Care" candidate, dated 2026-10-07.
+Verification evidence captured for the v32.4.0 "Care" release candidate on 2026-10-07 and 2026-10-08.
 The v32.4.0 RPM was installed on the host from a target-only DNF5 transaction.
-The change is on open PR #56; it has not been merged or published.
+At capture time, the change was on open PR #56 and had not been merged or published.
 
 ## Automated checks
 
-- `just verify` passed: 4,888 tests, 33 skipped, 1,961 subtests, and 85.26%
+- `just verify` passed: 4,888 tests, 33 skipped, 1,961 subtests, and 85.27%
   coverage (the repository threshold is 85%).
 - `just check-packaging` passed, including the source and package manifest check.
 - `just build-rpm` produced
@@ -49,5 +49,5 @@ service and preserve source and run identity.
 
 Physical KDE/GNOME behavior, screen-reader use, hardware input, and interactive
 Polkit prompts remain unverified. The render matrix is not a substitute for
-those checks. The RPM installation and PR push were completed separately;
-merge and publication remain outstanding.
+those checks. At capture time, the RPM installation and PR push had completed
+separately; merge and publication had not.

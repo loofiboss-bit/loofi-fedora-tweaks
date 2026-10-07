@@ -108,7 +108,7 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
-* Wed Oct 07 2026 Loofi <loofi@example.com> - 32.4.0-1
+* Thu Oct 08 2026 Loofi <loofi@example.com> - 32.4.0-1
 - Care: installation-scoped app insight, reviewed runtime cleanup, and update diagnostics.
 - Recommend optional libflatpak introspection without installing tools at runtime.
 
