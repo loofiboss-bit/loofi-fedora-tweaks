@@ -223,6 +223,19 @@ class TestGlobalSearchModel(unittest.TestCase):
         self.assertFalse(task.manual_only)
         self.assertFalse(any(callable(value) for value in task.__dict__.values()))
 
+    def test_tweak_search_is_platform_scoped_and_navigation_only(self):
+        kde = GlobalSearchModel(NavigationContext(fedora_variant=FedoraVariant.TRADITIONAL, capabilities=frozenset({"fedora", "dnf5", "desktop:kde"})))
+        gnome = GlobalSearchModel(NavigationContext(fedora_variant=FedoraVariant.TRADITIONAL, capabilities=frozenset({"fedora", "dnf5", "desktop:gnome"})))
+        kde_animation = next(result for result in kde.search("animation") if result.tweak_id == "kde-animation")
+        dolphin = next(result for result in kde.search("Dolphin") if result.tweak_id)
+        cursor = next(result for result in kde.search("cursor") if result.tweak_id)
+        self.assertEqual(kde_animation.route_id, "tune")
+        self.assertEqual(kde_animation.kind, SearchResultKind.SETTING)
+        self.assertTrue(dolphin.tweak_id.startswith("kde-dolphin-"))
+        self.assertIn(cursor.tweak_id, {"kde-focus-policy", "kde-tap-to-click"})
+        self.assertTrue(any(result.tweak_id == "gnome-animations" for result in gnome.search("animation")))
+        self.assertFalse(any(result.tweak_id and result.tweak_id.startswith("gnome-") for result in kde.search("animation")))
+
 
 if __name__ == "__main__":
     unittest.main()

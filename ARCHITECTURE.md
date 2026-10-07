@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for v32.2.0 "Coherence".
+> Active architecture reference for the v32.4.0 "Care" local candidate.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -12,7 +12,7 @@ system-wide DNF setting, alongside app installation, updates, and diagnostics.
 Missing applications, schemas, or host tools produce an unavailable state
 with an explanation.
 
-The current tweak catalog contains 73 controls: 43 GNOME-only, 28 KDE-only,
+The current tweak catalog contains 76 controls: 46 GNOME-only, 28 KDE-only,
 and two shared controls. The GUI and CLI project the controls supported by the
 detected Fedora desktop and deployment backend.
 
@@ -26,11 +26,12 @@ The supported distribution package is one RPM built from
 | Concern | Active source |
 | --- | --- |
 | Tweak IDs, labels, choices, and desktop scope | `loofi-fedora-tweaks/core/tasks/tweaks.py` |
+| Built-in reviewed desktop presets | `loofi-fedora-tweaks/core/tasks/tweak_presets.py` |
 | GNOME schemas, KDE keys, command shapes, and value validation | `loofi-fedora-tweaks/core/tweak_commands.py` |
 | Set and restore actions, preflight, and independent verification | `loofi-fedora-tweaks/core/actions/tweaks.py` |
 | Explicit active action allowlist | `loofi-fedora-tweaks/core/actions/catalog.py` |
-| GUI rows, search, changed-only filter, reset, and restore controls | `loofi-fedora-tweaks/ui/tweaks_page.py` |
-| CLI list, get, set, and restore | `loofi-fedora-tweaks/cli/commands/tweaks_commands.py` |
+| GUI rows, search, one-setting inspection, reset, and restore controls | `loofi-fedora-tweaks/ui/tweaks_page.py` |
+| CLI list, get, set, restore, and presets | `loofi-fedora-tweaks/cli/commands/tweaks_commands.py` |
 | Generated catalog reference | `docs/TWEAKS.md`, from `scripts/gen_tweaks_doc.py` |
 
 Add a setting to the declarative catalog and its closed command metadata. The
@@ -154,17 +155,65 @@ feedback, without adding a second action execution boundary.
 
 ## Everyday workflow extensions
 
+### Care local metadata and maintenance
+
+`FlatpakMaintenanceService` isolates optional GI/libflatpak in a fixed helper
+process. Inspection reads at most 1 MiB within 15 seconds and lazy capability
+loading never imports GI on application startup. The helper is shipped as
+`loofi-flatpak-maintenance`; wheel and RPM launchers resolve a specific trusted
+entry point. Executor policy accepts only its closed inspection/application
+shapes, without allowing arbitrary Python code or script paths.
+
+Unused snapshots bind installation, installed commits, unused refs, pinning and
+visible cross-installation dependency evidence. The existing
+`remove-unused-flatpaks` ID has an executable Action Center definition. Its
+preflight rejects drift; transaction `ready` verifies the exact uninstall set.
+Automatic dependencies, related operations and pruning are disabled. The
+non-root child uses native Flatpak/Polkit authorization for shared installations
+and normalizes its shared-transaction umask. No app data or permission store is
+deleted. Failure/interruption triggers bounded readback stored on the original
+run without rewriting its failure state; Activity projects only validated ref
+observations. Other users' private installations are not scanned.
+
+Installed-view filters operate only on the captured inventory. Existing
+window-owned workers reject obsolete app-detail and permission requests and
+participate in shutdown. Source-specific update diagnostics reuse closed
+Health profiles and existing session storage; exact run IDs must match the
+selected update action. CLI discovery uses the same update overview service as
+the GUI. Existing plan/run formats are retained.
+
 `core/tasks/tweak_profiles.py` defines strict portable profiles, immutable reviews,
 and sequential results. Review does not allocate persisted plans; each selected
 entry is prepared and revalidated just before Action Center execution.
+`core/tasks/tweak_presets.py` maps the closed Reduced motion and File navigation
+presets into those same profile reviews. `core/tasks/tweaks.py::inspect_one` reads
+one selected setting and its restore offer within an eight-second shared budget;
+the owning window routes this through its existing operation worker.
 `services/software/update_recovery.py` hydrates saved observations and durable run
 identities without executing updates. `core/tasks/next_steps.py` projects recorded
 dashboard observations into at most three navigation suggestions.
+
+Global settings search projects the current desktop's canonical tweak records
+into navigation results; it does not snapshot or write system settings.
+`ActivityJournalWorker` loads the latest 25 local Loofi runs on first visit and
+resolves a requested run ID through the journal source's exact lookup, independent
+of that recent-page limit. External history remains explicitly refreshed.
+
+Application preferences use state schema 3. The one-time migration disables the
+previous startup release-check flag, while a later explicit opt-in is preserved.
+The check starts asynchronously after the first GUI frame, has a four-second
+network timeout, reads only the Loofi release version, and does not download or
+install updates. Loofi notifications respect the saved notification preference;
+start-minimized is honored only with a visible system tray. Logging preferences
+update the existing Loofi logger and handlers only after settings save succeeds.
 
 Installed applications use source, installation, and full ref as identity.
 `core/actions/installed_applications.py` owns reviewed Flatpak removal and independent
 inventory verification. `services/hardware/diagnostic_probes.py` implements bounded,
 read-only sound/Bluetooth observations with unknown states and cancellation.
+Flatpak metadata permissions are read for one inventory-verified ref and installation.
+The parser retains category, key, and value; UI and JSON output redact environment
+values and identify the result as metadata rather than effective access.
 Window-owned operation workers and installed-page samplers participate in deferred
 shutdown; no worker is destroyed while running. Existing plan/run schemas remain
 unchanged. Portable profiles do not reactivate retired profile stacks.

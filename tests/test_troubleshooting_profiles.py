@@ -19,6 +19,8 @@ class TestTroubleshootingProfiles(unittest.TestCase):
                 "bluetooth_not_working",
                 "system_slow",
                 "updates_failed",
+                "flatpak_updates_failed",
+                "firmware_updates_failed",
                 "application_failed",
                 "network_problem",
                 "storage_pressure",

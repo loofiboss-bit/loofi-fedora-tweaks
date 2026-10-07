@@ -44,7 +44,40 @@ scaling, and Atomic workflows remain unverified for this release. A KDE
 Dolphin setting was changed, read back, and restored on the development host;
 this does not qualify every setting or the full interface.
 
-## Local candidate — Control center redesign
+## Completed — v32.3.0 "Clarity"
+
+- [x] Modernize the control center's visual presentation and responsive layout
+- [x] Improve application icon and desktop-file integration
+- [x] Keep the current tweak catalog at 76 verified controls
+
+Physical desktop and assistive-technology qualification remains separate from
+automated and rendering evidence.
+
+## v32.4.0 "Care" release
+
+- Installation-scoped app details, reported-size sorting, and source/installation filters
+- Optional libflatpak app/runtime support warnings and exact unused-runtime inspection
+- Reviewed runtime cleanup through Action Center with drift checks and independent inventory verification
+- Source-specific update diagnostics and shared GUI/CLI update observations
+- Include the personalization, permission, trust, search, accessibility, and scroll-region improvements from PR #56
+- Evidence is recorded in [Care qualification](docs/CARE_VERIFICATION.md)
+- Physical KDE, GNOME, assistive-technology, and real-session Polkit qualification remains separate
+
+The tag-driven release workflow publishes the GitHub assets and COPR package
+after the master validation, package, and smoke-test gates pass.
+
+## Included candidate work — Personalization and app insight
+
+- [x] Add Reduced motion and File navigation presets through existing profile review and Action Center execution
+- [x] Add an eight-second, one-setting inspection and refresh after a single change or restore
+- [x] Show installation-bound Flatpak metadata permissions in the GUI and CLI
+- [x] Complete full automated, packaging, and responsive rendering verification
+- [ ] Physical KDE, GNOME, and assistive-technology qualification
+
+Included in Care; physical desktop and assistive-technology qualification
+remains unverified.
+
+## Prior local work — Control center redesign
 
 - [x] Loofi design system and system-selected light/dark presentation
 - [x] Overview start route, Activity navigation, and explicit Tools disclosure
@@ -56,7 +89,7 @@ this does not qualify every setting or the full interface.
 No public release or local installation is implied. Physical desktop,
 assistive-technology, and unavailable hardware evidence remain separate.
 
-## Local candidate — Everyday
+## Prior local work — Everyday
 
 - [x] Prioritized Overview next steps from recorded observations
 - [x] Restore pending update verification after application or computer restart

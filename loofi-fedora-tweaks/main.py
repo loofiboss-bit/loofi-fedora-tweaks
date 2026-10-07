@@ -178,6 +178,10 @@ def main(argv: list[str] | None = None):
             from core.application_runtime import ApplicationRuntime, ShutdownResource
             from ui.main_window import MainWindow
             from utils.event_bus import EventBus
+            from utils.log import configure_log_level
+            from utils.settings import SettingsManager
+
+            configure_log_level(SettingsManager.instance().get("log_level", "INFO"))
         except ImportError as exc:
             _log.critical("Failed to import GUI modules: %s", exc, exc_info=True)
             _notify_error("Loofi — Import Error", str(exc))
@@ -224,6 +228,9 @@ def main(argv: list[str] | None = None):
             app.aboutToQuit.connect(window._request_runtime_stop)
             app.aboutToQuit.connect(runtime.shutdown)
             window.show()
+            from PyQt6.QtCore import QTimer
+
+            QTimer.singleShot(0, window.startup_after_show)
             _log.info("MainWindow shown successfully")
             sys.exit(app.exec())
 

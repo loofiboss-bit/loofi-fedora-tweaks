@@ -52,8 +52,10 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
     os.environ["QT_SCALE_FACTOR"] = scale
     fixture_root = Path(tempfile.mkdtemp(prefix="loofi-control-center-render-"))
     isolated_env = {f"XDG_{name}_HOME": str(fixture_root / name.lower()) for name in ("CONFIG", "DATA", "CACHE", "STATE")}
+    from PyQt6.QtCore import Qt
     from PyQt6.QtGui import QFont
-    from PyQt6.QtWidgets import QApplication, QLabel, QScrollArea
+    from PyQt6.QtWidgets import QApplication, QAbstractButton, QComboBox, QLabel, QScrollArea, QStyle, QStyleOptionComboBox, QTableWidget
+    from ui.design import semantic_qcolor
     from core.platform.profile import DeploymentBackend, DesktopEnvironment, PlatformProfile, SessionType
     from core.navigation.routes import all_shell_routes
     profile = PlatformProfile(os_id="fedora", fedora_version=44, variant_id="kde", variant_name="Fedora KDE",
@@ -156,9 +158,19 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                             install = window.findChild(InstallWorkflowPage)
                             install.installed_card.apply_inventory(installed)
                             install.view_filter.setCurrentIndex(install.view_filter.findData("installed"))
+                            from services.software.flatpak_maintenance import RefRecord, UnusedSnapshot
+                            insights = install.installed_card.insights
+                            insights.set_installations(("user", "system", "office"))
+                            runtime = RefRecord("runtime/org.example.OldPlatform/x86_64/1", "a" * 64, 120000000)
+                            insights._result(("unused", insights._generation, None, UnusedSnapshot(
+                                "user", True, refs=(runtime,), installed=(runtime,), digest="b" * 64,
+                            )))
                         for area in window.findChildren(QScrollArea):
                             area.verticalScrollBar().setValue(0)
-                        app.processEvents()
+                        # State-backed controls replace editors and reveal wrapped
+                        # values; let their queued parent layouts settle as on route entry.
+                        for _ in range(8):
+                            app.processEvents()
                         name = f"{route.replace(':', '-')}-{theme}-{width}x{height}"
                         window.grab().save(str(out / f"{name}.png"))
                         entry = window._sidebar_index.get(window._active_plugin_id)
@@ -166,12 +178,51 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                         assert not getattr(lazy, "load_error", ""), (route, getattr(lazy, "load_error", ""))
                         horizontal = []
                         wrapped_label_clipping = []
+                        control_text_clipping = []
+                        table_theme_issues = []
                         for label in window.findChildren(QLabel):
                             if label.isVisibleTo(window) and label.wordWrap():
                                 required = label.heightForWidth(label.width())
                                 if required > label.height() + 1:
                                     wrapped_label_clipping.append({"name": label.objectName(), "text": label.text(),
                                                                    "height": label.height(), "required": required})
+                        for button in window.findChildren(QAbstractButton):
+                            if not button.isVisibleTo(window) or not button.text().strip():
+                                continue
+                            icon_width = button.iconSize().width() + 8 if not button.icon().isNull() else 0
+                            available = max(0, button.contentsRect().width() - icon_width - 18)
+                            required = button.fontMetrics().horizontalAdvance(button.text())
+                            if required > available + 1:
+                                control_text_clipping.append({"type": "button", "name": button.objectName(), "text": button.text(), "available": available, "required": required})
+                        for combo in window.findChildren(QComboBox):
+                            if not combo.isVisibleTo(window) or not combo.currentText().strip():
+                                continue
+                            option = QStyleOptionComboBox()
+                            combo.initStyleOption(option)
+                            edit_rect = combo.style().subControlRect(
+                                QStyle.ComplexControl.CC_ComboBox,
+                                option,
+                                QStyle.SubControl.SC_ComboBoxEditField,
+                                combo,
+                            )
+                            required = combo.fontMetrics().horizontalAdvance(combo.currentText())
+                            if required > max(0, edit_rect.width()) + 1:
+                                control_text_clipping.append({"type": "combobox", "name": combo.objectName(), "text": combo.currentText(), "available": edit_rect.width(), "required": required})
+                        for table in window.findChildren(QTableWidget):
+                            if not table.isVisibleTo(window):
+                                continue
+                            for row_index in range(table.rowCount()):
+                                for column in range(table.columnCount()):
+                                    item = table.item(row_index, column)
+                                    if item is None:
+                                        continue
+                                    rect = table.visualItemRect(item)
+                                    required = table.fontMetrics().horizontalAdvance(item.text())
+                                    if required > max(0, rect.width() - 12) + 1:
+                                        table_theme_issues.append({"table": table.objectName(), "row": row_index, "column": column, "text": item.text(), "available": rect.width(), "required": required})
+                                    semantic = item.data(Qt.ItemDataRole.UserRole + 90)
+                                    if semantic and item.foreground().color() != semantic_qcolor(str(semantic)):
+                                        table_theme_issues.append({"table": table.objectName(), "row": row_index, "column": column, "semantic_color": semantic, "issue": "stale after theme change"})
                         for area in window.findChildren(QScrollArea):
                             if area.isVisibleTo(window) and area.horizontalScrollBar().maximum() > 0:
                                 horizontal.append(area.objectName())
@@ -184,7 +235,9 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                         results.append({"capture": name, "scale": scale, "large_text": large_text,
                                         "actual_size": [window.width(), window.height()], "horizontal_ranges": horizontal, "focus_traversals": 20,
                                         "route": route, "canonical_route": window._active_route_id,
-                                        "wrapped_label_clipping": wrapped_label_clipping})
+                                        "wrapped_label_clipping": wrapped_label_clipping,
+                                        "control_text_clipping": control_text_clipping,
+                                        "table_theme_issues": table_theme_issues})
             # Exercise longer translated descriptions without introducing fake UI data.
             window.switch_to_route("tweaks")
             page = window.findChild(TweaksPage)
@@ -200,6 +253,8 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
         (out / "rendering-checks.json").write_text(json.dumps(results, indent=2) + "\n")
         print(json.dumps({"captures": len(results), "scale": scale, "large_text": large_text,
                           "routes": routes, "wrapped_label_clipping_views": sum(bool(result["wrapped_label_clipping"]) for result in results),
+                          "control_text_clipping_views": sum(bool(result["control_text_clipping"]) for result in results),
+                          "table_theme_issue_views": sum(bool(result["table_theme_issues"]) for result in results),
                           "horizontal_scroll_views": sum(bool(result["horizontal_ranges"]) for result in results)}, indent=2))
 
 

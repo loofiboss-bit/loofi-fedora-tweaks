@@ -9,9 +9,11 @@ Migrated from utils/ports.py in v2.0.0.
 
 import logging
 import re
+import shutil
 import subprocess
 from dataclasses import dataclass
-from typing import Optional
+from datetime import datetime, timezone
+from typing import Literal, Optional
 
 from services.ipc import daemon_client
 from services.system.system import cached_which
@@ -39,6 +41,41 @@ class OpenPort:
     pid: int
     is_risky: bool = False
     risk_reason: str = ""
+
+
+@dataclass(frozen=True)
+class PortScanObservation:
+    """One bounded port scan whose status distinguishes empty from unknown."""
+
+    status: Literal["complete", "unavailable", "error", "stale"]
+    ports: tuple[OpenPort, ...] = ()
+    observed_at: str = ""
+    error: str = ""
+
+
+@dataclass(frozen=True)
+class FirewallObservation:
+    """Read-only firewalld state, with probe failures kept explicit."""
+
+    status: Literal["running", "stopped", "unavailable", "error", "stale"]
+    observed_at: str = ""
+    error: str = ""
+
+
+@dataclass(frozen=True)
+class SecurityScoreObservation:
+    """A limited port and firewall assessment, or an explicit unknown."""
+
+    status: Literal["complete", "unknown"]
+    score: int | None = None
+    rating: str = "Unknown"
+    open_ports: int | None = None
+    risky_ports: int | None = None
+    recommendations: tuple[str, ...] = ()
+    observed_at: str = ""
+    error: str = ""
+    ports_status: str = "unknown"
+    firewall_status: str = "unknown"
 
 
 class PortAuditor:
@@ -85,31 +122,40 @@ class PortAuditor:
         return normalized
 
     @classmethod
-    def scan_ports(cls) -> list[OpenPort]:
-        """Scan all open listening ports."""
+    def scan_ports(cls) -> PortScanObservation:
+        """Scan listening ports without treating a failed probe as empty."""
+        observed_at = datetime.now(timezone.utc).isoformat()
         data = daemon_client.call_json("PortAuditScan")
         if isinstance(data, list):
             result: list[OpenPort] = []
             for row in data:
-                if not isinstance(row, dict):
-                    continue
-                result.append(
-                    OpenPort(
-                        protocol=str(row.get("protocol", "")),
-                        port=int(row.get("port", 0) or 0),
-                        address=str(row.get("address", "")),
-                        process=str(row.get("process", "")),
-                        pid=int(row.get("pid", 0) or 0),
-                        is_risky=bool(row.get("is_risky", False)),
-                        risk_reason=str(row.get("risk_reason", "")),
+                try:
+                    if not isinstance(row, dict):
+                        raise ValueError("invalid port record")
+                    port = cls._normalize_port(int(row.get("port", 0) or 0))
+                    protocol = cls._normalize_protocol(str(row.get("protocol", ""))).upper()
+                    result.append(
+                        OpenPort(
+                            protocol=protocol,
+                            port=port,
+                            address=str(row.get("address", "")),
+                            process=str(row.get("process", "unknown")),
+                            pid=int(row.get("pid", 0) or 0),
+                            is_risky=bool(row.get("is_risky", False)),
+                            risk_reason=str(row.get("risk_reason", "")),
+                        )
                     )
-                )
-            return result
+                except (TypeError, ValueError, OverflowError) as exc:
+                    return PortScanObservation("error", observed_at=observed_at, error=f"Invalid port scan response: {exc}")
+            return PortScanObservation("complete", tuple(result), observed_at)
         return cls.scan_ports_local()
 
     @classmethod
-    def scan_ports_local(cls) -> list[OpenPort]:
-        """Local scan via ss."""
+    def scan_ports_local(cls) -> PortScanObservation:
+        """Local scan via ss, preserving unavailable and error states."""
+        observed_at = datetime.now(timezone.utc).isoformat()
+        if not shutil.which("ss"):
+            return PortScanObservation("unavailable", observed_at=observed_at, error="The ss network inspection tool is not installed.")
         ports = []
 
         try:
@@ -118,7 +164,7 @@ class PortAuditor:
                 ["ss", "-tulwn"], capture_output=True, text=True, timeout=10)
 
             if result.returncode != 0:
-                return []
+                return PortScanObservation("error", observed_at=observed_at, error=result.stderr.strip() or "The ss port scan failed.")
 
             for line in result.stdout.strip().split("\n")[1:]:  # Skip header
                 if not line.strip():
@@ -126,7 +172,7 @@ class PortAuditor:
 
                 parts = line.split()
                 if len(parts) < 5:
-                    continue
+                    return PortScanObservation("error", observed_at=observed_at, error="The ss port scan returned an incomplete row.")
 
                 protocol = parts[0].lower()
                 local_addr = parts[4]
@@ -138,9 +184,9 @@ class PortAuditor:
                     try:
                         port = int(addr_parts[1])
                     except ValueError:
-                        continue
+                        return PortScanObservation("error", observed_at=observed_at, error="The ss port scan returned an unreadable port number.")
                 else:
-                    continue
+                    return PortScanObservation("error", observed_at=observed_at, error="The ss port scan returned an unreadable address.")
 
                 # Get process info
                 process = "unknown"
@@ -176,11 +222,13 @@ class PortAuditor:
             # Enhance with process info from ss -tulpn (requires sudo)
             cls._enhance_with_process_info(ports)
 
-            return ports
+            return PortScanObservation("complete", tuple(ports), observed_at)
 
+        except FileNotFoundError:
+            return PortScanObservation("unavailable", observed_at=observed_at, error="The ss network inspection tool is not installed.")
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             logger.debug("Port scan failed: %s", e)
-            return []
+            return PortScanObservation("error", observed_at=observed_at, error=str(e) or "The ss port scan failed.")
 
     @classmethod
     def _enhance_with_process_info(cls, ports: list[OpenPort]):
@@ -221,17 +269,45 @@ class PortAuditor:
             logger.debug("Failed to enhance port info: %s", e)
 
     @classmethod
-    def get_risky_ports(cls) -> list[OpenPort]:
-        """Get only risky open ports."""
-        return [p for p in cls.scan_ports() if p.is_risky]
+    def get_risky_ports(cls) -> PortScanObservation:
+        """Filter risky ports without discarding the source observation status."""
+        observation = cls.scan_ports()
+        if observation.status != "complete":
+            return observation
+        return PortScanObservation(
+            observation.status,
+            tuple(port for port in observation.ports if port.is_risky),
+            observation.observed_at,
+        )
+
+    @classmethod
+    def observe_firewalld(cls) -> FirewallObservation:
+        """Check whether firewalld is active without folding probe failure into stopped."""
+        observed_at = datetime.now(timezone.utc).isoformat()
+        status = daemon_client.call_json("FirewallGetStatus")
+        if isinstance(status, dict) and isinstance(status.get("running"), bool):
+            return FirewallObservation("running" if status["running"] else "stopped", observed_at)
+        if not shutil.which("systemctl"):
+            return FirewallObservation("unavailable", observed_at, "The systemd service inspection tool is not installed.")
+        try:
+            result = subprocess.run(
+                ["systemctl", "is-active", "firewalld"], capture_output=True, text=True, timeout=5
+            )
+            state = (getattr(result, "stdout", "") or "").strip().lower()
+            if state == "active":
+                return FirewallObservation("running", observed_at)
+            if state == "inactive":
+                return FirewallObservation("stopped", observed_at)
+            return FirewallObservation("error", observed_at, result.stderr.strip() or "The firewalld state could not be determined.")
+        except subprocess.TimeoutExpired:
+            return FirewallObservation("error", observed_at, "Checking firewalld timed out.")
+        except (subprocess.SubprocessError, OSError) as exc:
+            return FirewallObservation("error", observed_at, str(exc) or "The firewalld state could not be checked.")
 
     @classmethod
     def is_firewalld_running(cls) -> bool:
         """Check if firewalld is running."""
-        status = daemon_client.call_json("FirewallGetStatus")
-        if isinstance(status, dict):
-            return bool(status.get("running", False))
-        return cls.is_firewalld_running_local()
+        return cls.observe_firewalld().status == "running"
 
     @classmethod
     def is_firewalld_running_local(cls) -> bool:
@@ -239,7 +315,7 @@ class PortAuditor:
         try:
             result = subprocess.run(
                 ["systemctl", "is-active", "firewalld"], capture_output=True, text=True, timeout=5)
-            return result.returncode == 0
+            return (getattr(result, "stdout", "") or "").strip().lower() == "active"
         except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to check firewalld status: %s", e)
             return False
@@ -407,21 +483,28 @@ class PortAuditor:
         return status
 
     @classmethod
-    def get_security_score(cls) -> dict:
+    def get_security_score(cls) -> SecurityScoreObservation:
         """
         Calculate a simple security score based on open ports.
 
         Returns score from 0-100 and recommendations.
         """
-        data = daemon_client.call_json("PortAuditSecurityScore")
-        if isinstance(data, dict):
-            return data
         return cls.get_security_score_local()
 
     @classmethod
-    def get_security_score_local(cls) -> dict:
-        """Local fallback for security score."""
-        ports = cls.scan_ports()
+    def get_security_score_local(cls) -> SecurityScoreObservation:
+        """Calculate a limited score only when both source observations are complete."""
+        port_scan = cls.scan_ports()
+        firewall = cls.observe_firewalld()
+        if port_scan.status != "complete" or firewall.status not in {"running", "stopped"}:
+            errors = [item.error for item in (port_scan, firewall) if item.error]
+            return SecurityScoreObservation(
+                "unknown", observed_at=port_scan.observed_at or firewall.observed_at,
+                error=" ".join(errors) or "Port and firewall observations are incomplete.",
+                ports_status=port_scan.status,
+                firewall_status=firewall.status,
+            )
+        ports = port_scan.ports
         risky = [p for p in ports if p.is_risky]
 
         # Start with 100, deduct for issues
@@ -444,16 +527,14 @@ class PortAuditor:
                     f"Review {p.process} on port {p.port}: {p.risk_reason}")
 
         # Check if firewall is running
-        if not cls.is_firewalld_running():
+        if firewall.status == "stopped":
             score -= 20
             recommendations.append("Firewall is not running!")
 
         score = max(0, score)
 
-        return {
-            "score": score,
-            "open_ports": len(ports),
-            "risky_ports": len(risky),
-            "recommendations": recommendations,
-            "rating": "Excellent" if score >= 90 else "Good" if score >= 70 else "Fair" if score >= 50 else "Poor",
-        }
+        return SecurityScoreObservation(
+            "complete", score, "Excellent" if score >= 90 else "Good" if score >= 70 else "Fair" if score >= 50 else "Poor",
+            len(ports), len(risky), tuple(recommendations), port_scan.observed_at, "",
+            port_scan.status, firewall.status,
+        )

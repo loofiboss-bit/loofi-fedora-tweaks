@@ -49,6 +49,7 @@ class _StdBtn:
 # Module-level button singletons for test assertions
 STD_BTN_YES = _StdBtn("Yes")
 STD_BTN_NO = _StdBtn("No")
+STD_BTN_CANCEL = _StdBtn("Cancel")
 
 
 class _Dummy:
@@ -99,7 +100,7 @@ def _install_monitor_import_stubs():
         setattr(qt_widgets, name, _Dummy)
 
     # QMessageBox needs StandardButton with enum-like attributes that support |
-    _std_btn = types.SimpleNamespace(Yes=STD_BTN_YES, No=STD_BTN_NO)
+    _std_btn = types.SimpleNamespace(Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL)
 
     qt_widgets.QMessageBox = type(
         "QMessageBox",
@@ -1002,7 +1003,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Kill with SIGTERM after confirmation should call ProcessManager.kill_process."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_YES
         mock_pm.kill_process.return_value = (True, "Killed")
@@ -1020,7 +1021,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Kill with SIGKILL after confirmation should use signal 9."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_YES
         mock_pm.kill_process.return_value = (True, "Force killed")
@@ -1036,7 +1037,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Declining the confirmation dialog should not call kill_process."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_NO
 
@@ -1050,7 +1051,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Failed kill should show a warning dialog, not information."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_YES
         mock_pm.kill_process.return_value = (False, "Permission denied")
@@ -1069,7 +1070,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Renice with confirmed dialog and valid input should succeed."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_YES
         mock_input.getInt.return_value = (10, True)
@@ -1089,7 +1090,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Declining the confirm dialog should not show input dialog."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_NO
 
@@ -1105,7 +1106,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Cancelling the input dialog should not call renice_process."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_YES
         mock_input.getInt.return_value = (5, False)  # ok=False means cancelled
@@ -1121,7 +1122,7 @@ class TestProcessesSubTab(unittest.TestCase):
         """Failed renice should show a warning, not information."""
         subtab = self._make_subtab()
         mock_msgbox.StandardButton = types.SimpleNamespace(
-            Yes=STD_BTN_YES, No=STD_BTN_NO
+            Yes=STD_BTN_YES, No=STD_BTN_NO, Cancel=STD_BTN_CANCEL
         )
         mock_msgbox.question.return_value = STD_BTN_YES
         mock_input.getInt.return_value = (-5, True)

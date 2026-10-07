@@ -377,6 +377,6 @@ class BaseTab(*_BaseTabBases):  # type: ignore[misc]
         msg_item = BaseTab.make_table_item(message, color=color)
         msg_item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
         table.setItem(0, 0, msg_item)
-        for col in range(1, table.columnCount()):
-            table.setItem(0, col, BaseTab.make_table_item("", color=color))
+        if table.columnCount() > 1:
+            table.setSpan(0, 0, 1, table.columnCount())
         BaseTab.ensure_table_row_heights(table)

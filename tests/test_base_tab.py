@@ -38,6 +38,15 @@ class TestBaseTabConfigureTable(unittest.TestCase):
 
         self.assertEqual(table.objectName(), "baseTable")
 
+    def test_empty_state_message_spans_the_table_width(self):
+        table = QTableWidget(0, 4)
+
+        BaseTab.set_table_empty_state(table, "No items were found.")
+
+        self.assertEqual(table.rowCount(), 1)
+        self.assertEqual(table.columnSpan(0, 0), 4)
+        self.assertEqual(table.item(0, 0).text(), "No items were found.")
+
     def test_configure_table_keeps_static_row_resize_mode(self):
         """configure_table avoids auto-resize that can hide empty-state rows."""
         table = QTableWidget(1, 2)

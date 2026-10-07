@@ -11,7 +11,7 @@ from core.actions.tweak_operations import activate_verified_tweak, activation_pa
 from core.executor.command_facade import CommandFacade
 from core.platform import detect_platform_profile
 from core.tasks.tweak_history import read_tweak_runs, restoration_for
-from core.tasks.tweaks import BY_ID, read_tweak, snapshot
+from core.tasks.tweaks import BY_ID, inspect_one, read_tweak, snapshot
 
 
 def handle_tweaks(
@@ -28,6 +28,8 @@ def handle_tweaks(
 
     if action == "profile":
         return _handle_profile(args, json_output, output_json, print_fn, profile, runtime, dry_run=dry_run)
+    if action == "preset":
+        return _handle_preset(args, json_output, output_json, print_fn, profile, runtime, dry_run=dry_run)
 
     if action == "list":
         states = snapshot(profile, runtime)
@@ -67,9 +69,7 @@ def handle_tweaks(
         if tweak is None:
             print_fn(f"Unknown tweak: {tweak_id}")
             return 1
-        runs, _ = read_tweak_runs(runtime)
-        state = read_tweak(tweak, profile, runtime.execute_read_only)
-        offer = restoration_for(tweak, state, runs)
+        state = inspect_one(tweak_id, profile, runtime)
         if json_output:
             output_json({
                 "schema_version": 1,
@@ -81,9 +81,9 @@ def handle_tweaks(
                 "status": state.status,
                 "value": state.value,
                 "choices": [dict(value=c[0], label=c[1]) for c in state.choices],
-                "restore_run_id": offer.source_run_id,
-                "restore_value": offer.before,
-                "message": state.message or offer.message,
+                "restore_run_id": state.restore_run_id,
+                "restore_value": state.restore_value,
+                "message": state.message or state.restore_message,
             })
         else:
             print_fn(f"Setting:     {tweak.title} ({tweak.id})")
@@ -96,8 +96,8 @@ def handle_tweaks(
                 for val, lbl in state.choices:
                     marker = " *" if val == state.value else ""
                     print_fn(f"  - {val}: {lbl}{marker}")
-            if offer.source_run_id:
-                print_fn(f"Restorable:  {offer.before} (from {offer.source_run_id})")
+            if state.restore_run_id:
+                print_fn(f"Restorable:  {state.restore_value} (from {state.restore_run_id})")
         return 0
 
     if action == "set":
@@ -228,4 +228,62 @@ def _handle_profile(args: Any, json_output: bool, output_json: Callable[[Any], N
             output_json({"schema": "loofi.tweak-profile-result/v1", "status": "failed", "message": str(exc), "entries": []})
         else:
             print_fn(f"Profile operation failed: {exc}")
+        return 1
+
+
+def _handle_preset(args: Any, json_output: bool, output_json: Callable[[Any], None], print_fn: Callable[[str], None],
+                   platform: object, runtime: Any, *, dry_run: bool) -> int:
+    """List, review, or apply built-in presets using portable profile authority."""
+    from core.tasks.tweak_presets import BY_PRESET_ID, list_presets, profile_for_preset
+    from core.tasks.tweak_profiles import apply_profile, review_profile
+
+    operation = args.preset_action
+    if operation == "list":
+        presets = list_presets()
+        if json_output:
+            output_json({"schema": "loofi.tweak-presets/v1", "presets": [item.to_dict() for item in presets]})
+        else:
+            for item in presets:
+                print_fn(f"{item.id}: {item.name} — {item.description} [{', '.join(sorted(item.settings))}]")
+        return 0
+
+    preset_id = str(args.preset_id).strip()
+    selected_preset = BY_PRESET_ID.get(preset_id)
+    if selected_preset is None:
+        message = f"Unknown tweak preset: {preset_id}"
+        if json_output:
+            output_json({"schema": "loofi.tweak-profile-result/v1", "status": "failed", "message": message, "entries": []})
+        else:
+            print_fn(message)
+        return 1
+    try:
+        profile = profile_for_preset(preset_id, platform)
+        controller = OperationController(
+            orchestrator=ActionCenterOrchestrator(catalog=ActionCatalog(), runtime=runtime),
+            facade=runtime.facade,
+        )
+        review = review_profile(profile, controller)
+        if operation == "apply" and getattr(args, "yes", False) and not dry_run:
+            result = apply_profile(review, controller, confirmed=True, selected_ids=getattr(args, "ids", None))
+            if json_output:
+                output_json({"preset": selected_preset.to_dict(), "result": result.to_dict()})
+            else:
+                for result_entry in result.entries:
+                    print_fn(f"{result_entry.id}: {result_entry.status} — {result_entry.message}")
+                print_fn(result.message)
+            return 0 if result.success else 1
+        if json_output:
+            output_json({"preset": selected_preset.to_dict(), "review": review.to_dict()})
+        else:
+            print_fn(f"Preset: {selected_preset.name} [{profile.desktop}]")
+            for review_entry in review.entries:
+                print_fn(f"{review_entry.id}: {review_entry.before or '?'} -> {review_entry.value} [{review_entry.status}] {review_entry.message}")
+            if operation == "apply":
+                print_fn("[dry-run] No settings changed." if dry_run else "Pass --yes to confirm execution.")
+        return 0
+    except (OSError, RuntimeError, TypeError, ValueError, TimeoutExpired) as exc:
+        if json_output:
+            output_json({"schema": "loofi.tweak-profile-result/v1", "status": "failed", "message": str(exc), "entries": []})
+        else:
+            print_fn(f"Preset operation failed: {exc}")
         return 1

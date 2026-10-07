@@ -3,6 +3,7 @@
 import os
 import sys
 import unittest
+import logging
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -46,6 +47,34 @@ class TestSettingsNavigationMode(unittest.TestCase):
         self.assertIn("native desktop settings", text)
 
 
+class TestLoofiLogLevel(unittest.TestCase):
+    @patch("utils.log._setup_root_logger")
+    def test_log_level_updates_existing_logger_and_handlers_without_duplicates(self, _setup):
+        from utils.log import configure_log_level
+
+        logger = logging.getLogger("loofi")
+        previous_level = logger.level
+        handler_levels = {handler: handler.level for handler in logger.handlers}
+        temporary = logging.NullHandler()
+        logger.addHandler(temporary)
+        handler_count = len(logger.handlers)
+        try:
+            self.assertTrue(configure_log_level("DEBUG"))
+            self.assertEqual(logger.level, logging.DEBUG)
+            self.assertEqual(temporary.level, logging.DEBUG)
+
+            self.assertTrue(configure_log_level("ERROR"))
+            self.assertEqual(logger.level, logging.ERROR)
+            self.assertEqual(temporary.level, logging.ERROR)
+            self.assertEqual(len(logger.handlers), handler_count)
+            self.assertFalse(configure_log_level("TRACE"))
+        finally:
+            logger.removeHandler(temporary)
+            logger.setLevel(previous_level)
+            for handler, level in handler_levels.items():
+                handler.setLevel(level)
+
+
 class TestPhase7SettingsPresentation(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
@@ -62,7 +91,7 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
             "confirm_dangerous_actions": True,
             "restore_last_tab": True,
             "log_level": "INFO",
-            "check_updates_on_start": True,
+            "check_updates_on_start": False,
         }
         manager.get.side_effect = lambda key, default=None: values.get(key, default)
         return manager
@@ -111,6 +140,36 @@ class TestPhase7SettingsPresentation(unittest.TestCase):
         self.assertIn(__version_codename__, text)
         self.assertIn("Fedora 44", text)
         self.assertIn("Fedora 45", text)
+
+    @patch("utils.log.configure_log_level")
+    @patch("ui.settings_tab.SettingsManager.instance")
+    def test_failed_log_setting_save_restores_control_without_runtime_effect(self, mock_instance, configure):
+        from ui.settings_tab import SettingsTab
+
+        manager = self._manager()
+        manager.save.return_value = False
+        mock_instance.return_value = manager
+        tab = SettingsTab()
+
+        tab._on_log_level_changed("DEBUG")
+
+        self.assertEqual(tab.log_combo.currentText(), "INFO")
+        self.assertEqual(manager.set.call_args_list[-1].args, ("log_level", "INFO"))
+        configure.assert_not_called()
+
+    @patch("utils.log.configure_log_level")
+    @patch("ui.settings_tab.SettingsManager.instance")
+    def test_saved_log_level_is_applied_once(self, mock_instance, configure):
+        from ui.settings_tab import SettingsTab
+
+        manager = self._manager()
+        manager.save.return_value = True
+        mock_instance.return_value = manager
+        tab = SettingsTab()
+
+        tab._on_log_level_changed("ERROR")
+
+        configure.assert_called_once_with("ERROR")
 
     @patch("core.state.StateDoctor")
     @patch("utils.navigation_mode.NavigationModeManager.get_mode", return_value=NavigationMode.STANDARD)

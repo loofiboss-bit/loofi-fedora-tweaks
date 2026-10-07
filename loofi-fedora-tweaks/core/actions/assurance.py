@@ -239,7 +239,6 @@ def _manual_boundary_definitions() -> list[ActionDefinition]:
         ("remove-fedora-telemetry", "Remove Fedora telemetry packages", "Telemetry package removal requires an exact package review.", ("packages", "telemetry")),
         ("legacy-cli-manual-review", "Review legacy CLI operation", "Legacy host commands are never executed directly and require a named Action Center workflow.", ("host-system",)),
         ("legacy-ui-manual-review", "Review legacy interface operation", "This host operation has no executable reviewed workflow and remains guided manual work.", ("host-system",)),
-        ("remove-unused-flatpaks", "Remove unused Flatpak runtimes", "Flatpak runtime cleanup remains guided manual work until the exact unused set can be verified.", ("flatpak-runtimes",)),
         ("enroll-fingerprint", "Enroll fingerprint", "Authentication enrollment remains guided manual work.", ("authentication", "fingerprint-reader")),
         ("generate-mok-key", "Generate MOK signing key", "Secure Boot key creation remains guided manual work.", ("secure-boot", "signing-keys")),
         ("enroll-mok-key", "Enroll MOK signing key", "Secure Boot key enrollment requires guided reboot-time verification.", ("secure-boot", "mok-database")),

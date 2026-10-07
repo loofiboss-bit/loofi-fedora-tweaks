@@ -17,7 +17,8 @@
     <ul>
       <li>Home, Apps, Tweaks, Health, and Updates task-oriented destinations</li>
       <li>Curated Flatpak and Fedora RPM application selection with per-item results</li>
-      <li>Searchable GNOME, KDE, and power settings with current values and verified results</li>
+      <li>Searchable GNOME, KDE, and power settings with focused current-value checks, verified results, and reviewed desktop presets</li>
+      <li>Installation-bound, read-only Flatpak permission details from app metadata</li>
       <li>Symptom-first diagnostics with one verified repair or explicit handoff</li>
       <li>Independent System, Flatpak, and Firmware update cards</li>
       <li>Reviewed system changes with native authorization and independent verification</li>
@@ -40,6 +41,11 @@
   </provides>
 
   <releases>
+    <release version="32.4.0" date="2026-10-08" type="stable">
+      <description>
+        <p>Care: installation-scoped application insight, reported-size filters, reviewed unused runtime removal, and source-specific update diagnostics.</p>
+      </description>
+    </release>
     <release version="32.0.2" date="2026-10-03" type="stable">
       <description>
         <p>v32.0.2 "Refocus": Tweaks-first navigation, simple and advanced modes, and 61 declarative GNOME and KDE controls with reset-to-default.</p>

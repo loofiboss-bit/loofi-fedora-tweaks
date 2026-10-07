@@ -20,7 +20,7 @@ from PyQt6.QtCore import QEvent, QObject, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyleOptionViewItem, QStyledItemDelegate, QVBoxLayout, QWidget
 
-from ui.components import Card, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
+from ui.components import Card, DetailsDisclosure, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
 from ui.icon_pack import get_qicon
 
 
@@ -114,8 +114,8 @@ class InstallWorkflowPage(QWidget):
         self.intro.add_widget(self.view_filter)
 
         self.flathub_status_card = Card(
-            self.tr("Flathub source status"),
-            self.tr("Status is local configuration only. App installation uses Flatpak's configured default scope."),
+            self.tr("App sources"),
+            self.tr("Source setup can affect which applications are available."),
         )
         self.flathub_status_card.setObjectName("installFlathubStatus")
         self.flathub_system_status = QLabel(self.tr("System scope: Status not checked yet"))
@@ -126,8 +126,14 @@ class InstallWorkflowPage(QWidget):
         self.flathub_user_status.setWordWrap(True)
         self.flathub_user_status.setObjectName("installFlathubUserStatus")
         self.flathub_user_status.setAccessibleName(self.tr("Flathub user scope status"))
-        self.flathub_status_card.add_widget(self.flathub_system_status)
-        self.flathub_status_card.add_widget(self.flathub_user_status)
+        self.flathub_summary = QLabel(self.tr("Source status has not been checked."))
+        self.flathub_summary.setObjectName("installFlathubSummary")
+        self.flathub_summary.setWordWrap(True)
+        self.flathub_status_card.add_widget(self.flathub_summary)
+        self.flathub_details = DetailsDisclosure(summary=self.tr("Show source setup details"))
+        self.flathub_details.add_widget(self.flathub_system_status)
+        self.flathub_details.add_widget(self.flathub_user_status)
+        self.flathub_status_card.add_widget(self.flathub_details)
         self.flathub_refresh_button = QPushButton(self.tr("Refresh Flathub status"))
         self.flathub_refresh_button.setObjectName("installFlathubRefresh")
         self.flathub_refresh_button.setAccessibleName(self.tr("Refresh Flathub source status"))
@@ -237,9 +243,12 @@ class InstallWorkflowPage(QWidget):
         self.flathub_status_card.setVisible(not installed)
         self.application_list.setVisible(not installed)
         self.review_card.setVisible(not installed)
-        self.search_input.setVisible(not installed)
+        self.search_input.setVisible(True)
+        self.search_input.setPlaceholderText(self.tr("Search installed applications…") if installed else self.tr("Search applications…"))
         self.category_filter.setVisible(not installed)
         self.match_summary.setVisible(not installed)
+        if installed:
+            self.installed_card.set_search(self.search_input.text())
 
     def _apply_installed_inventory(self, inventory: object) -> None:
         if self.context is not None:
@@ -301,6 +310,18 @@ class InstallWorkflowPage(QWidget):
             label.setAccessibleDescription(message)
         system_state = str(getattr(getattr(found.get("system"), "state", None), "value", "unknown"))
         self.flathub_guidance_button.setVisible(system_state != "enabled")
+        states = {
+            scope: str(getattr(getattr(value, "state", None), "value", "unknown"))
+            for scope, value in found.items()
+        }
+        self.flathub_summary.setText(
+            self.tr("System: %1 · User: %2")
+            .replace("%1", self._scope_summary(states.get("system", "unknown")))
+            .replace("%2", self._scope_summary(states.get("user", "unknown")))
+        )
+
+    def _scope_summary(self, state: str) -> str:
+        return self.tr({"enabled": "available", "disabled": "not enabled", "unknown": "unknown"}.get(state, "unknown"))
 
     def _flathub_status_failed(self, _message: str) -> None:
         """Keep an adapter failure distinct from a disabled source."""
@@ -350,6 +371,9 @@ class InstallWorkflowPage(QWidget):
         )
 
     def _refresh_rows(self, *_args: Any) -> None:
+        if self.view_filter.currentData() == "installed":
+            self.installed_card.set_search(self.search_input.text())
+            return
         self._selected_ids.intersection_update(
             record.id for record in self.catalog.all(context=self.context)
             if self.catalog.eligibility(record, self.context).selectable

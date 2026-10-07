@@ -365,7 +365,7 @@ class ActionCenterHistorySource:
                         "run_id": run.run_id,
                         "action_id": run.action_id,
                         "execution": _safe_result(run.execution_result),
-                        "verification": _safe_result(run.verification_result),
+                        "verification": _safe_result(run.verification_result, action_id=run.action_id),
                         "recovery": {
                             "status": run.recovery_status,
                             "rollback_supported": bool(plan.rollback_supported) if plan else False,
@@ -392,16 +392,66 @@ class ActionCenterHistorySource:
                 ),
             )
 
+    def get_run_event(self, run_id: str) -> ChangeEvent | None:
+        """Read one exact Action Center run without paging or migration."""
+        run = self.run_store.get(str(run_id))
+        if run is None:
+            return None
+        plans = self.plan_store.list_read_only()
+        plan = next((candidate for candidate in plans if candidate.plan_id == run.plan_id), None)
+        resources = tuple(plan.affected_resources) if plan else ("host-system",)
+        return ChangeEvent(
+            event_id=stable_event_id("action_center", f"run:{run.run_id}"),
+            source="action_center",
+            occurred_at=run.updated_at or run.created_at,
+            actor_class="user",
+            summary=f"Action Center run: {run.action_id}",
+            resources=resources,
+            after_facts={
+                "expected": {
+                    "action_id": run.action_id,
+                    "risk_level": plan.risk_level if plan else "unknown",
+                    "reboot_policy": plan.reboot_policy if plan else "unknown",
+                    "affected_resources": list(resources),
+                },
+                "plan_id": run.plan_id,
+                "run_id": run.run_id,
+                "action_id": run.action_id,
+                "execution": _safe_result(run.execution_result),
+                "verification": _safe_result(run.verification_result, action_id=run.action_id),
+                "recovery": {
+                    "status": run.recovery_status,
+                    "rollback_supported": bool(plan.rollback_supported) if plan else False,
+                },
+            },
+            state=run.state,
+            reboot_required=bool(getattr(run, "reboot_required", False)) or run.state == "awaiting_reboot",
+        )
 
-def _safe_result(result: Mapping[str, Any] | None) -> dict[str, Any]:
+
+def _safe_result(result: Mapping[str, Any] | None, *, action_id: str = "") -> dict[str, Any]:
     """Keep journal evidence typed while excluding raw output and vectors."""
     if not isinstance(result, Mapping):
         return {}
-    return {
+    safe = {
         key: result[key]
         for key in ("success", "message", "exit_code", "needs_reboot", "verification_state")
         if key in result
     }
+    if action_id == "remove-unused-flatpaks":
+        from services.software.flatpak_maintenance import REF_PATTERN, INSTALLATION_PATTERN
+        data = result.get("data", {})
+        if isinstance(data, Mapping):
+            for key in ("removed_refs", "remaining_refs", "unexpected_missing_refs"):
+                refs = data.get(key)
+                if isinstance(refs, list) and len(refs) <= 256 and all(
+                    isinstance(ref, str) and REF_PATTERN.fullmatch(ref) and ref.startswith("runtime/") for ref in refs
+                ):
+                    safe[key] = refs
+            installation = data.get("installation")
+            if isinstance(installation, str) and INSTALLATION_PATTERN.fullmatch(installation):
+                safe["installation"] = installation
+    return safe
 
 
 class LoofiHistorySource:

@@ -17,6 +17,16 @@ class NotificationManager:
     APP_NAME = "Loofi Fedora Tweaks"
     APP_ICON = "preferences-system"  # Standard system icon
 
+    @staticmethod
+    def _notifications_enabled() -> bool:
+        """Read the saved application-wide notification preference."""
+        try:
+            from utils.settings import SettingsManager
+
+            return bool(SettingsManager.instance().get("show_notifications", True))
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+            return True
+
     @classmethod
     def is_available(cls) -> bool:
         """Check if notifications can be sent."""
@@ -44,6 +54,8 @@ class NotificationManager:
         Returns:
             True if notification was sent successfully.
         """
+        if not cls._notifications_enabled():
+            return False
         if not cls.is_available():
             return False
 

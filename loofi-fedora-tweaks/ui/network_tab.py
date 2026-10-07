@@ -44,7 +44,6 @@ from ui.components import (
     SecondaryButton,
 )
 from ui.native_handoff_card import NativeHandoffCard
-from ui.design import semantic_qcolor
 from ui.tooltips import DIAG_NETWORK
 
 logger = logging.getLogger(__name__)
@@ -156,6 +155,7 @@ class NetworkTab(BaseTab):
             ]
         )
         self.iface_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.iface_table.horizontalHeader().setStretchLastSection(True)
         self.iface_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.iface_table)
         self._set_table_visible_rows(self.iface_table, visible_rows=3)
@@ -185,6 +185,7 @@ class NetworkTab(BaseTab):
             ]
         )
         self.wifi_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.wifi_table.horizontalHeader().setStretchLastSection(True)
         self.wifi_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.wifi_table)
         self._set_table_visible_rows(self.wifi_table, visible_rows=3)
@@ -223,6 +224,7 @@ class NetworkTab(BaseTab):
             ]
         )
         self.vpn_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.vpn_table.horizontalHeader().setStretchLastSection(True)
         self.vpn_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.vpn_table)
         self._set_table_visible_rows(self.vpn_table, visible_rows=3)
@@ -517,10 +519,9 @@ class NetworkTab(BaseTab):
 
     @staticmethod
     def _make_table_item(text: str) -> QTableWidgetItem:
-        """Create a table item with explicit readable foreground color."""
+        """Create an item that follows the active Qt palette."""
         item = QTableWidgetItem(str(text))
         item.setTextAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
-        item.setForeground(semantic_qcolor("text"))
         return item
 
     def _set_empty_table_state(self: typing.Any, table: QTableWidget, message: str) -> typing.Any:

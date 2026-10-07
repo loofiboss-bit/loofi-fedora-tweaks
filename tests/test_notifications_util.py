@@ -41,6 +41,11 @@ class TestIsAvailable(unittest.TestCase):
 class TestSend(unittest.TestCase):
     """Tests for send method."""
 
+    def setUp(self):
+        self.notifications_enabled = patch.object(NotificationManager, "_notifications_enabled", return_value=True)
+        self.notifications_enabled.start()
+        self.addCleanup(self.notifications_enabled.stop)
+
     @patch('utils.notifications.subprocess.run')
     @patch('utils.notifications.cached_which', return_value='/usr/bin/notify-send')
     def test_send_success(self, mock_which, mock_run):
@@ -61,6 +66,13 @@ class TestSend(unittest.TestCase):
         """send returns False when notify-send is not installed."""
         result = NotificationManager.send("Title", "Body")
         self.assertFalse(result)
+
+    @patch('utils.notifications.subprocess.run')
+    @patch('utils.notifications.cached_which', return_value='/usr/bin/notify-send')
+    @patch.object(NotificationManager, '_notifications_enabled', return_value=False)
+    def test_saved_preference_suppresses_system_notification(self, _preference, _which, mock_run):
+        self.assertFalse(NotificationManager.send("Title", "Body"))
+        mock_run.assert_not_called()
 
     @patch('utils.notifications.subprocess.run')
     @patch('utils.notifications.cached_which', return_value='/usr/bin/notify-send')

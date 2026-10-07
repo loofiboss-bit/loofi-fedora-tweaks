@@ -143,7 +143,7 @@ class InstalledApplicationTests(unittest.TestCase):
     def test_permissions_are_bound_to_exact_scope(self, _available, run):
         from services.software.flatpak import FlatpakManager
         run.return_value = SimpleNamespace(returncode=0, stdout="")
-        FlatpakManager.get_flatpak_permissions("app/org.mozilla.firefox/x86_64/stable", installation="work")
+        FlatpakManager.get_flatpak_permissions("app/org.mozilla.firefox/x86_64/stable", installation="work", strict=True)
         self.assertEqual(run.call_args_list[0].args[0], ["flatpak", "info", "--installation=work", "--show-permissions", "app/org.mozilla.firefox/x86_64/stable"])
 
 
@@ -170,6 +170,156 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
         self.assertFalse(page.installed_card.isHidden())
         self.assertTrue(page.flathub_status_card.isHidden())
         page.deleteLater()
+
+    def test_installed_search_filters_preserved_installation_identities(self):
+        from ui.install_workflow import InstallWorkflowPage
+        from services.software.installed_applications import InstalledInventory
+
+        inventory = InstalledInventory(parse_flatpak_inventory(
+            ROW + ROW.replace("\tuser\n", "\tsystem\n")
+        ))
+        page = InstallWorkflowPage(context=ApplicationContext(variant=FedoraVariant.TRADITIONAL))
+        page.installed_card.apply_inventory(inventory)
+        page.view_filter.setCurrentIndex(page.view_filter.findData("installed"))
+        page.search_input.setText("system")
+
+        visible = [app.installation for app, row in page.installed_card._application_rows if not row.isHidden()]
+
+        self.assertEqual(visible, ["system"])
+        self.assertIn("Showing 1 of 2", page.installed_card.search_summary.text())
+        self.assertEqual(page.installed_card.inventory, inventory)
+        page.deleteLater()
+
+    def test_permission_dialog_groups_known_grants_and_hides_environment_values(self):
+        from types import SimpleNamespace
+        from PyQt6.QtWidgets import QPlainTextEdit
+        from ui.installed_applications import FlatpakPermissionsDialog
+        from services.software.flatpak import FlatpakPermission
+
+        app = parse_flatpak_inventory(ROW)[0]
+        permissions = SimpleNamespace(permissions=[
+            FlatpakPermission("Context", "shared", "network"),
+            FlatpakPermission("Context", "filesystems", "home:ro"),
+            FlatpakPermission("Context", "filesystems", "!host"),
+            FlatpakPermission("Environment", "API_TOKEN", "secret-value"),
+            FlatpakPermission("Unknown section", "odd-key", "odd-value"),
+        ])
+        dialog = FlatpakPermissionsDialog(app, permissions)
+        rendered = dialog.findChild(QPlainTextEdit).toPlainText()
+        self.assertIn("Network", rendered)
+        self.assertIn("Files", rendered)
+        self.assertIn("read-only", rendered)
+        self.assertIn("Access denied", rendered)
+        self.assertIn("Technical details", rendered)
+        self.assertIn("Unknown section / odd-key: odd-value", rendered)
+        self.assertIn("Value hidden for privacy", rendered)
+        self.assertNotIn("secret-value", rendered)
+        dialog.close()
+
+    def test_permission_dialog_stays_readable_with_large_text_and_theme_palettes(self):
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtGui import QColor, QFont, QPalette
+        from PyQt6.QtTest import QTest
+        from PyQt6.QtWidgets import QDialogButtonBox, QPlainTextEdit
+        from ui.installed_applications import FlatpakPermissionsDialog
+        from services.software.flatpak import FlatpakPermission
+        from types import SimpleNamespace
+
+        app = parse_flatpak_inventory(ROW)[0]
+        permissions = SimpleNamespace(permissions=[FlatpakPermission("Context", "shared", "network")])
+        original_palette = self.app.palette()
+        try:
+            for base, text in (("#ffffff", "#111111"), ("#202124", "#f1f3f4")):
+                palette = QPalette(original_palette)
+                palette.setColor(QPalette.ColorRole.Base, QColor(base))
+                palette.setColor(QPalette.ColorRole.Text, QColor(text))
+                palette.setColor(QPalette.ColorRole.Window, QColor(base))
+                palette.setColor(QPalette.ColorRole.WindowText, QColor(text))
+                self.app.setPalette(palette)
+                dialog = FlatpakPermissionsDialog(app, permissions)
+                font = QFont(dialog.font())
+                font.setPointSize(20)
+                dialog.setFont(font)
+                dialog.resize(420, 320)
+                dialog.show()
+                self.app.processEvents()
+                details = dialog.findChild(QPlainTextEdit)
+                self.assertTrue(details.isReadOnly())
+                self.assertGreater(details.height(), 0)
+                self.assertEqual(details.palette().color(QPalette.ColorRole.Base).name(), base)
+                close = dialog.findChild(QDialogButtonBox).button(QDialogButtonBox.StandardButton.Close)
+                close.setFocus()
+                QTest.keyClick(close, Qt.Key.Key_Return)
+                self.app.processEvents()
+                self.assertFalse(dialog.isVisible())
+                dialog.deleteLater()
+        finally:
+            self.app.setPalette(original_palette)
+
+    def test_profile_selection_dialog_supports_keyboard_and_large_text(self):
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtGui import QFont
+        from PyQt6.QtTest import QTest
+        from ui.tweak_profiles import ProfileSelectionDialog
+
+        dialog = ProfileSelectionDialog(
+            "Review preset",
+            "Select the available changes. Unsupported settings remain visible with a reason.",
+            [("gnome-animations", "Animations: true → false [ready]", True),
+             ("missing-setting", "Missing setting: schema unavailable [unavailable]", False)],
+        )
+        font = QFont(dialog.font())
+        font.setPointSize(20)
+        dialog.setFont(font)
+        dialog.resize(420, 320)
+        dialog.show()
+        self.app.processEvents()
+        dialog.entries.setFocus()
+        dialog.entries.setCurrentRow(0)
+        QTest.keyClick(dialog.entries, Qt.Key.Key_Space)
+        self.assertEqual(dialog.selected_ids(), ())
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        self.assertFalse(dialog.isVisible())
+        dialog.deleteLater()
+
+    def test_late_permissions_for_a_previous_selection_are_ignored(self):
+        from types import SimpleNamespace
+        from services.software.installed_applications import InstalledApplicationService
+        from services.software.flatpak import FlatpakAppPermissions
+        from ui.installed_applications import InstalledApplicationsCard
+
+        card = InstalledApplicationsCard(service=InstalledApplicationService(probe=Mock()))
+        old_app = parse_flatpak_inventory(ROW)[0]
+        card._active_permission_request = (old_app, 1)
+        card._permission_generation = 2
+        card._permissions_result(FlatpakAppPermissions(old_app.app_id, old_app.name, []))
+        self.assertEqual(card._permission_dialogs, {})
+        card.cleanup()
+        card.close()
+
+    def test_selecting_another_app_closes_the_old_permission_dialog(self):
+        from types import SimpleNamespace
+        from ui.installed_applications import FlatpakPermissionsDialog, InstalledApplicationsCard
+
+        app = parse_flatpak_inventory(ROW)[0]
+        other = parse_flatpak_inventory(ROW.replace("x86_64", "aarch64"))[0]
+        card = InstalledApplicationsCard(service=Mock())
+        adapter = Mock(busy=False)
+        adapter.start.return_value = True
+        card._permissions_adapter = adapter
+        dialog = FlatpakPermissionsDialog(app, SimpleNamespace(permissions=[]), card)
+        dialog.open()
+        card._permission_generation = 1
+        card._permission_dialogs[1] = dialog
+
+        card.show_permissions(other)
+
+        self.assertFalse(dialog.isVisible())
+        self.assertEqual(card._active_permission_request, (other, 2))
+        adapter.start.assert_called_once()
+        card.request_stop()
+        card.close()
+        card.deleteLater()
 
     def test_inventory_identity_text_stays_readable_when_scaled(self):
         from PyQt6.QtGui import QFont
@@ -266,3 +416,38 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
         self.assertEqual(handle_apps(args, False, Mock(), Mock()), 1)
         instance.confirm.assert_not_called()
         instance.run.assert_not_called()
+
+    @patch("cli.commands.apps_commands.detect_platform_profile")
+    @patch("cli.commands.apps_commands.TaskContext.from_platform_profile")
+    @patch("cli.commands.apps_commands.InstalledApplicationService")
+    def test_cli_permissions_are_scoped_and_json_redacts_environment_values(self, service_class, task_context, platform):
+        from cli.commands.apps_commands import handle_apps
+        from services.software.flatpak import FlatpakAppPermissions, FlatpakPermission
+        from services.software.installed_applications import InstalledInventory, parse_flatpak_inventory
+        from core.tasks.catalog import TaskContext
+
+        platform.return_value = object()
+        task_context.return_value = TaskContext(variant=FedoraVariant.TRADITIONAL)
+        app = parse_flatpak_inventory(ROW)[0]
+        service = service_class.return_value
+        service.flatpaks.return_value = InstalledInventory((app,))
+        service.permissions.return_value = FlatpakAppPermissions(
+            app.app_id, app.name,
+            [FlatpakPermission("Environment", "API_TOKEN", "secret-value")],
+            app.ref, app.installation,
+        )
+        payloads = []
+        args = SimpleNamespace(apps_action="permissions", ref=app.ref, installation=app.installation)
+        self.assertEqual(handle_apps(args, True, payloads.append, Mock()), 0)
+        service.permissions.assert_called_once_with(app)
+        self.assertEqual(payloads[0]["installation"], "user")
+        self.assertEqual(payloads[0]["permissions"][0]["value"], "[hidden]")
+        self.assertNotIn("secret-value", str(payloads))
+
+        args.ref = "app/org.mozilla.firefox/aarch64/stable"
+        errors = []
+        self.assertEqual(handle_apps(args, True, errors.append, Mock()), 1)
+        self.assertEqual(service.permissions.call_count, 1)
+        self.assertEqual(errors[0]["schema"], "loofi.flatpak-permissions/v1")
+        self.assertEqual(errors[0]["status"], "unavailable")
+        self.assertEqual(errors[0]["permissions"], [])

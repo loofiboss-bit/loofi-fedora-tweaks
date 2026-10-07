@@ -9,14 +9,14 @@ from PyQt6.QtCore import Qt
 from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QInputDialog, QLabel, QListWidget, QListWidgetItem, QMessageBox, QVBoxLayout
 
 from core.actions.operation_controller import OperationController
-from core.tasks.tweaks import BY_ID
+from core.tasks.tweaks import BY_ID, snapshot
 from core.tasks.tweak_profiles import ProfileExport, ProfileResult, ProfileReview, apply_profile, export_profile, load_profile, review_profile, save_profile
 
 
 class ProfileSelectionDialog(QDialog):
     """Scrollable keyboard-accessible selection, with blocked rows visible."""
 
-    def __init__(self, title: str, subtitle: str, rows: list[tuple[str, str, bool]], parent: Any = None) -> None:
+    def __init__(self, title: str, subtitle: str, rows: list[tuple[str, str, bool]], parent: Any = None, *, accept_label: str = "Apply selected settings") -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(720, 480)
@@ -38,6 +38,15 @@ class ProfileSelectionDialog(QDialog):
             self.entries.addItem(item)
         layout.addWidget(self.entries)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        cancel_button = buttons.button(QDialogButtonBox.StandardButton.Cancel)
+        accept_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
+        if cancel_button is not None:
+            cancel_button.setDefault(True)
+            cancel_button.setAutoDefault(False)
+        if accept_button is not None:
+            accept_button.setText(self.tr(accept_label))
+            accept_button.setDefault(False)
+            accept_button.setAutoDefault(False)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -67,6 +76,52 @@ class TweakProfilesMixin:
             return False
         return True
 
+    def _start_tweak_preset(self: Any, page: Any, preset_id: str | None = None) -> bool:
+        """Review and apply a built-in preset through portable profile actions."""
+        from core.tasks.tweak_presets import PRESETS, profile_for_preset
+
+        if not self._profile_idle(page):
+            return False
+        # PlatformProfile exposes a desktop identity through the shared helper;
+        # resolve availability by attempting the closed preset mapping.
+        available = []
+        for preset in PRESETS:
+            try:
+                profile_for_preset(preset.id, page.profile)
+            except ValueError:
+                continue
+            available.append(preset)
+        if preset_id is not None:
+            available = [preset for preset in available if preset.id == preset_id]
+        if not available:
+            page.set_error(self.tr("No presets are available for this desktop."))
+            return False
+        if preset_id is None:
+            from PyQt6.QtWidgets import QInputDialog
+
+            names = [self.tr(preset.name) for preset in available]
+            chosen, accepted = QInputDialog.getItem(page, self.tr("Choose a desktop preset"),
+                                                    self.tr("Choose a preset to review:"), names, 0, False)
+            if not accepted:
+                return False
+            preset = available[names.index(chosen)]
+        else:
+            preset = available[0]
+        try:
+            profile = profile_for_preset(preset.id, page.profile)
+        except ValueError as exc:
+            page.set_error(str(exc))
+            return False
+        controller = self._profile_controller()
+        adapter = self._new_utility_operation_adapter(phase="review")
+        results: list[ProfileReview] = []
+        adapter.finished.connect(results.append)
+        adapter.failed.connect(page.set_error)
+        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Preset review cancelled.")))
+        adapter.stopped.connect(lambda: self._review_tweak_profile_import(page, results[0], preset.name) if results else None)
+        page.set_busy(True, self.tr("Reviewing preset settings…"), cancellable=True)
+        return bool(adapter.start(lambda: review_profile(profile, controller, is_cancelled=lambda: adapter.cancel_requested)))
+
     def _start_tweak_profile_export(self: Any, page: Any) -> bool:
         if not self._profile_idle(page):
             return False
@@ -87,7 +142,7 @@ class TweakProfilesMixin:
         page.set_busy(False, self.tr("Choose the settings to save."))
         rows = [(key, f"{page.tr(BY_ID[key].title)}: {value}", True) for key, value in exported.profile.settings]
         rows.extend((key, f"{key}: {reason}", False) for key, reason in exported.omitted)
-        dialog = ProfileSelectionDialog(self.tr("Save current settings"), self.tr("Choose supported user settings. Unavailable, custom and system-wide values are omitted."), rows, page)
+        dialog = ProfileSelectionDialog(self.tr("Save current settings"), self.tr("Choose supported user settings. Unavailable, custom and system-wide values are omitted."), rows, page, accept_label="Continue")
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         selected = set(dialog.selected_ids())
@@ -122,10 +177,11 @@ class TweakProfilesMixin:
         page.set_busy(True, self.tr("Reading and reviewing profile…"), cancellable=True)
         return bool(adapter.start(lambda: review_profile(load_profile(Path(filename)), controller, is_cancelled=lambda: adapter.cancel_requested)))
 
-    def _review_tweak_profile_import(self: Any, page: Any, review: ProfileReview) -> None:
+    def _review_tweak_profile_import(self: Any, page: Any, review: ProfileReview, preset_name: str | None = None) -> None:
         page.set_busy(False, self.tr("Review the profile changes before applying them."))
         rows = [(entry.id, f"{page.tr(entry.title)}: {entry.before or '?'} → {entry.value} [{page.tr(entry.status)}] {entry.message}", entry.status == "ready") for entry in review.entries]
-        dialog = ProfileSelectionDialog(self.tr("Review profile: %1").replace("%1", review.name),
+        title = self.tr("Review preset: %1").replace("%1", self.tr(preset_name)) if preset_name else self.tr("Review profile: %1").replace("%1", review.name)
+        dialog = ProfileSelectionDialog(title,
                                         self.tr("Apply only the checked changes. Each setting is verified; remaining changes stop if a value changed or verification fails. Previous values remain in Activity."), rows, page)
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
@@ -154,4 +210,27 @@ class TweakProfilesMixin:
         dialog.setIcon(QMessageBox.Icon.Information if result.success else QMessageBox.Icon.Warning)
         dialog.setDetailedText("\n".join(f"{entry.id}: {entry.status} — {entry.message}" for entry in result.entries))
         dialog.exec()
-        self._start_tweak_snapshot(page)
+        affected = tuple(entry.id for entry in result.entries if entry.status != "skipped")
+        if not affected:
+            return
+        controller = self._profile_controller()
+        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter.finished.connect(page.set_states)
+
+        def invalidate_affected(message: str) -> None:
+            for tweak_id in affected:
+                page.set_check_error(tweak_id, message)
+
+        adapter.failed.connect(invalidate_affected)
+        adapter.cancelled.connect(lambda: invalidate_affected(self.tr("Settings inspection cancelled. Previous values are not current.")))
+        page.set_busy(True, self.tr("Checking settings included in the profile…"), cancellable=True)
+        started = adapter.start(
+            lambda: snapshot(
+                page.profile,
+                controller.orchestrator.runtime,
+                tweak_ids=affected,
+                is_cancelled=lambda: adapter.cancel_requested,
+            )
+        )
+        if not started:
+            invalidate_affected(self.tr("Settings inspection could not be started. Refresh to try again."))

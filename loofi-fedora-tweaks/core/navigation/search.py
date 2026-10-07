@@ -17,6 +17,7 @@ from .routes import all_shell_routes
 from .policy import NavigationPolicy
 from core.actions.catalog import ActionCatalog
 from core.tasks import TaskArea, TaskCatalog, TaskContext, TaskExecutionMode
+from core.tasks.tweaks import TWEAKS
 
 
 class SearchFilter(Enum):
@@ -56,6 +57,7 @@ class SearchResult:
     task_id: str | None = None
     availability: str = ""
     manual_only: bool = False
+    tweak_id: str | None = None
 
 
 # Synthetic shell pages inherit their maintained manifest entry's visibility.
@@ -98,6 +100,7 @@ class GlobalSearchModel:
         self._configured_quick_actions = configured_quick_actions
         self._results = self._build_results()
         self._task_results = self._build_task_results() if context_provided else ()
+        self._tweak_results = self._build_tweak_results() if context_provided else ()
 
     def all_results(
         self,
@@ -113,7 +116,40 @@ class GlobalSearchModel:
         # Keep the existing route/action index intact while adding the v29
         # goal-oriented projection. Task entries use the normal route kind,
         # so older consumers that only understand routes remain compatible.
-        return (*self._results, *self._task_results)
+        return (*self._results, *self._task_results, *self._tweak_results)
+
+    def _build_tweak_results(self) -> tuple[SearchResult, ...]:
+        """Index platform-visible catalog settings without inspecting the system."""
+        desktops = {
+            capability.partition(":")[2]
+            for capability in self._context.capabilities
+            if capability.startswith("desktop:")
+        }
+        if len(desktops) != 1:
+            return ()
+        desktop = next(iter(desktops))
+        if desktop not in {"gnome", "kde"}:
+            return ()
+        results = []
+        for tweak in TWEAKS:
+            if tweak.desktop not in {"all", desktop}:
+                continue
+            keywords = tuple(dict.fromkeys((
+                tweak.id, tweak.group, tweak.desktop, *tweak.search_terms,
+                *(("cursor", "pointer") if "mouse" in tweak.id or "pointer" in tweak.id or tweak.id in {"kde-focus-policy", "kde-tap-to-click"} else ()),
+            )))
+            results.append(SearchResult(
+                id=f"tweak:{tweak.id}",
+                label=tweak.title,
+                description=tweak.description,
+                kind=SearchResultKind.SETTING,
+                route_id="tune",
+                destination_id="tune",
+                destination_label="Tweaks",
+                keywords=keywords,
+                tweak_id=tweak.id,
+            ))
+        return tuple(results)
 
     def search(
         self,

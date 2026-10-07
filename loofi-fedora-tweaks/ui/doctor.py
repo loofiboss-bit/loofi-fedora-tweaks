@@ -11,7 +11,7 @@ the dialog. All user-visible strings are wrapped in self.tr().
 
 from services.system.system import cached_which
 
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
 from PyQt6.QtWidgets import (
     QDialog,
@@ -97,9 +97,11 @@ class DependencyDoctor(QDialog):
             if path:
                 item.setIcon(QIcon.fromTheme("emblem-default"))
                 item.setForeground(semantic_qcolor("success"))
+                item.setData(Qt.ItemDataRole.UserRole + 90, "success")
             else:
                 item.setIcon(QIcon.fromTheme("emblem-important"))
                 item.setForeground(semantic_qcolor("error"))
+                item.setData(Qt.ItemDataRole.UserRole + 90, "error")
                 self.missing_tools.append(tool)
 
             self.tool_list.addItem(item)

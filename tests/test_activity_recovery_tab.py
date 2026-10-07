@@ -12,7 +12,7 @@ from core.change_journal.models import (
     RecoveryCapability,
 )
 from core.product_catalog import catalog_entry, validate_product_catalog
-from ui.activity_recovery_tab import ActivityRecoveryTab
+from ui.activity_recovery_tab import ActivityJournalWorker, ActivityRecoveryTab
 
 
 def _snapshot(*, recovery: RecoveryCapability) -> ChangeJournalSnapshot:
@@ -37,6 +37,32 @@ def _snapshot(*, recovery: RecoveryCapability) -> ChangeJournalSnapshot:
 
 
 class TestActivityRecoveryTab(unittest.TestCase):
+    def test_target_run_uses_exact_lookup_without_substituting_recent_activity(self):
+        event = ChangeEvent(
+            event_id="loofi_app:target",
+            source="loofi_app",
+            occurred_at=90.0,
+            actor_class="user",
+            summary="Older saved operation",
+            after_facts={"run_id": "target-run"},
+        )
+        service = SimpleNamespace(
+            get_run_event=unittest.mock.Mock(return_value=event),
+            snapshot=unittest.mock.Mock(),
+        )
+        worker = ActivityJournalWorker(
+            service,
+            refresh=False,
+            filters={"sources": ("loofi_app",)},
+            target_run_id="target-run",
+        )
+
+        result = worker.do_work()
+
+        self.assertEqual(result.events, (event,))
+        service.get_run_event.assert_called_once_with("target-run")
+        service.snapshot.assert_not_called()
+
     def test_route_is_catalog_owned_and_standard(self):
         entry = catalog_entry("activity")
 
@@ -57,6 +83,17 @@ class TestActivityRecoveryTab(unittest.TestCase):
         self.assertFalse(tab.detail_card.isVisible())
         self.assertFalse(tab.refresh_button.isEnabled())
         self.assertEqual(tab.property("presentationState"), "initial")
+        tab.close()
+
+    def test_recent_local_view_includes_loofi_and_action_center_runs(self):
+        tab = ActivityRecoveryTab(journal_service=SimpleNamespace())
+        tab.activity_view_filter.setCurrentIndex(tab.activity_view_filter.findData("history"))
+        tab.source_filter.setCurrentIndex(tab.source_filter.findData("local_loofi"))
+
+        filters = tab._current_filters()
+
+        self.assertEqual(filters["sources"], ("action_center", "loofi_app"))
+        self.assertNotIn("statuses", filters)
         tab.close()
 
     def test_action_center_recovery_handoff_contains_closed_metadata(self):

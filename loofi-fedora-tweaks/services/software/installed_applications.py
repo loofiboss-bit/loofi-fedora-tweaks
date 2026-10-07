@@ -8,7 +8,7 @@ from typing import Callable, Sequence
 
 from core.executor.action_result import ActionResult
 from core.tasks.applications import ApplicationCatalog
-from services.software.flatpak import FlatpakManager
+from services.software.flatpak import FlatpakAppPermissions, FlatpakManager
 
 _REF = re.compile(r"^app/[A-Za-z0-9][A-Za-z0-9._-]{1,255}/[A-Za-z0-9_-]+/[A-Za-z0-9._-]+$")
 _INSTALLATION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -34,6 +34,15 @@ class InstalledApplication:
     ref: str
     version: str = ""
     size: str = ""
+
+    @property
+    def size_bytes(self) -> int | None:
+        """Parse reported logical size for local sorting; never estimate savings."""
+        match = re.fullmatch(r"([0-9]+(?:[.,][0-9]+)?)\s*(B|kB|KB|MB|GB|TB|KiB|MiB|GiB|TiB)", self.size.strip())
+        if not match or len(match[1]) > 30:
+            return None
+        units = {"B": 1, "kB": 1000, "KB": 1000, "MB": 1000**2, "GB": 1000**3, "TB": 1000**4, "KiB": 1024, "MiB": 1024**2, "GiB": 1024**3, "TiB": 1024**4}
+        return int(float(match[1].replace(",", ".")) * units[match[2]])
 
     def to_dict(self) -> dict[str, str]:
         return asdict(self)
@@ -128,7 +137,42 @@ class InstalledApplicationService:
                 unknown.add("fedora")
         return InstalledInventory(tuple(apps), tuple(errors), frozenset(unknown))
 
-    def permissions(self, app: InstalledApplication) -> object:
+    def details(self, app: InstalledApplication):
+        if app.source != "flatpak":
+            raise ValueError("Detailed Flatpak metadata is unavailable for RPM applications.")
+        if not validate_ref(app.ref):
+            raise ValueError("The selected Flatpak identity is invalid.")
+        from services.software.flatpak_maintenance import FlatpakMaintenanceService
+        return FlatpakMaintenanceService().details(app.ref, app.installation)
+
+    def unused(self, installation: str):
+        from services.software.flatpak_maintenance import FlatpakMaintenanceService
+        return FlatpakMaintenanceService().unused(installation)
+
+    def installations(self):
+        from services.software.flatpak_maintenance import FlatpakMaintenanceService
+        return FlatpakMaintenanceService().installations()
+
+    def permissions(self, app: InstalledApplication) -> FlatpakAppPermissions:
         if app.source != "flatpak":
             raise ValueError("Permission inspection is only available for Flatpak applications.")
-        return FlatpakManager.get_flatpak_permissions(app.ref, installation=app.installation, strict=True)
+        if not validate_ref(app.ref) or app.ref.split("/")[1] != app.app_id:
+            raise ValueError("The selected Flatpak identity is invalid.")
+        return FlatpakManager.get_flatpak_permissions(
+            app.ref, installation=app.installation, name=app.name, strict=True,
+        )
+
+
+def filter_installed_applications(
+    inventory: InstalledInventory, *, query: str = "", source: str = "", installation: str = "", sort: str = "name",
+) -> tuple[InstalledApplication, ...]:
+    """Project captured inventory without probing any installation."""
+    query = query.strip().casefold()
+    apps = [app for app in inventory.applications
+            if (not source or app.source == source) and (not installation or app.installation == installation)
+            and (not query or query in " ".join((app.name, app.app_id, app.ref, app.installation, app.source, app.version)).casefold())]
+    if sort == "size":
+        apps.sort(key=lambda app: (app.size_bytes is None, -(app.size_bytes or 0), app.name.casefold(), app.installation, app.ref))
+    else:
+        apps.sort(key=lambda app: (app.name.casefold(), app.installation, app.ref))
+    return tuple(apps)

@@ -941,10 +941,12 @@ class _ProcessesSubTab(QWidget, ProcessSamplingMixin):
             if proc.state == "Z":
                 for col in range(self.process_tree.columnCount()):
                     item.setForeground(col, red_brush)
+                    item.setData(col, Qt.ItemDataRole.UserRole + 90, "error")
             # Colour-code: high CPU (>50%) in yellow
             elif proc.cpu_percent > 50.0:
                 for col in range(self.process_tree.columnCount()):
                     item.setForeground(col, yellow_brush)
+                    item.setData(col, Qt.ItemDataRole.UserRole + 90, "warning")
 
             self.process_tree.addTopLevelItem(item)
 
@@ -996,8 +998,8 @@ class _ProcessesSubTab(QWidget, ProcessSamplingMixin):
             self,
             self.tr("Confirm Kill"),
             self.tr("Send {signal} to process '{name}' (PID {pid})?").format(signal=signal_name, name=name, pid=pid),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
@@ -1014,8 +1016,8 @@ class _ProcessesSubTab(QWidget, ProcessSamplingMixin):
             self,
             self.tr("Confirm Renice"),
             self.tr("Change priority of process '{name}' (PID {pid})?").format(name=name, pid=pid),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
         )
 
         if reply != QMessageBox.StandardButton.Yes:

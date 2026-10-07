@@ -77,3 +77,17 @@ def get_logger(name: str) -> logging.Logger:
     if not name.startswith("loofi"):
         name = f"loofi.{name}"
     return logging.getLogger(name)
+
+
+def configure_log_level(level: str) -> bool:
+    """Apply one supported diagnostic level to Loofi and its existing handlers."""
+    normalized = str(level).upper()
+    numeric = getattr(logging, normalized, None)
+    if normalized not in {"DEBUG", "INFO", "WARNING", "ERROR"} or not isinstance(numeric, int):
+        return False
+    _setup_root_logger()
+    root = logging.getLogger("loofi")
+    root.setLevel(numeric)
+    for handler in root.handlers:
+        handler.setLevel(numeric)
+    return True

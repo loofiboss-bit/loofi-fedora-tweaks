@@ -9,7 +9,7 @@ import sys
 import unittest
 from unittest.mock import MagicMock, patch
 
-from services.network.ports import OpenPort, PortAuditor
+from services.network.ports import FirewallObservation, OpenPort, PortAuditor, PortScanObservation
 
 # Add source path to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(
@@ -60,44 +60,50 @@ class TestScanPorts(unittest.TestCase):
         "udp    UNCONN 0       0       0.0.0.0:5353        0.0.0.0:*\n"
     )
 
+    @patch('services.network.ports.shutil.which', return_value='/usr/bin/ss')
     @patch.object(PortAuditor, '_enhance_with_process_info')
     @patch('services.network.ports.subprocess.run')
-    def test_scan_ports_parses_ss_output(self, mock_run, mock_enhance):
-        """scan_ports parses ss output into OpenPort list."""
+    def test_scan_ports_parses_ss_output(self, mock_run, mock_enhance, mock_which):
+        """scan_ports parses ss output into a complete observation."""
         mock_run.return_value = MagicMock(returncode=0, stdout=self.SS_OUTPUT)
 
-        ports = PortAuditor.scan_ports()
+        observation = PortAuditor.scan_ports()
 
-        self.assertEqual(len(ports), 3)
-        port_numbers = [p.port for p in ports]
+        self.assertEqual(observation.status, "complete")
+        self.assertEqual(len(observation.ports), 3)
+        port_numbers = [p.port for p in observation.ports]
         self.assertIn(22, port_numbers)
         self.assertIn(8080, port_numbers)
 
+    @patch('services.network.ports.shutil.which', return_value='/usr/bin/ss')
     @patch.object(PortAuditor, '_enhance_with_process_info')
     @patch('services.network.ports.subprocess.run')
-    def test_scan_ports_detects_risky_port(self, mock_run, mock_enhance):
+    def test_scan_ports_detects_risky_port(self, mock_run, mock_enhance, mock_which):
         """scan_ports marks known risky ports."""
         mock_run.return_value = MagicMock(returncode=0, stdout=self.SS_OUTPUT)
 
-        ports = PortAuditor.scan_ports()
+        ports = PortAuditor.scan_ports().ports
 
         ssh_ports = [p for p in ports if p.port == 22]
         self.assertEqual(len(ssh_ports), 1)
         self.assertTrue(ssh_ports[0].is_risky)
 
+    @patch('services.network.ports.shutil.which', return_value='/usr/bin/ss')
     @patch('services.network.ports.subprocess.run')
-    def test_scan_ports_nonzero_exit(self, mock_run):
-        """scan_ports returns empty list on error."""
+    def test_scan_ports_nonzero_exit(self, mock_run, mock_which):
+        """scan_ports preserves command failure instead of reporting no ports."""
         mock_run.return_value = MagicMock(returncode=1, stdout="")
 
-        ports = PortAuditor.scan_ports()
-        self.assertEqual(ports, [])
+        observation = PortAuditor.scan_ports()
+        self.assertEqual(observation.status, "error")
+        self.assertEqual(observation.ports, ())
 
-    @patch('services.network.ports.subprocess.run', side_effect=OSError("ss not found"))
-    def test_scan_ports_exception(self, mock_run):
-        """scan_ports returns empty list on OSError exception."""
-        ports = PortAuditor.scan_ports()
-        self.assertEqual(ports, [])
+    @patch('services.network.ports.shutil.which', return_value=None)
+    def test_scan_ports_missing_tool(self, mock_which):
+        """Missing ss is distinguished from an empty completed scan."""
+        observation = PortAuditor.scan_ports_local()
+        self.assertEqual(observation.status, "unavailable")
+        self.assertEqual(observation.ports, ())
 
 
 # ---------------------------------------------------------------------------
@@ -110,15 +116,16 @@ class TestGetRiskyPorts(unittest.TestCase):
     @patch.object(PortAuditor, 'scan_ports')
     def test_get_risky_ports_filters(self, mock_scan):
         """get_risky_ports returns only risky ports."""
-        mock_scan.return_value = [
+        mock_scan.return_value = PortScanObservation("complete", (
             OpenPort("TCP", 22, "0.0.0.0", "sshd", 1, True, "SSH"),
             OpenPort("TCP", 8080, "127.0.0.1", "python", 2, False, ""),
             OpenPort("TCP", 23, "0.0.0.0", "telnetd", 3, True, "Telnet"),
-        ]
+        ))
 
         risky = PortAuditor.get_risky_ports()
-        self.assertEqual(len(risky), 2)
-        self.assertTrue(all(p.is_risky for p in risky))
+        self.assertEqual(risky.status, "complete")
+        self.assertEqual(len(risky.ports), 2)
+        self.assertTrue(all(p.is_risky for p in risky.ports))
 
 
 # ---------------------------------------------------------------------------
@@ -128,20 +135,23 @@ class TestGetRiskyPorts(unittest.TestCase):
 class TestFirewallStatus(unittest.TestCase):
     """Tests for firewall-related methods."""
 
+    @patch('services.network.ports.shutil.which', return_value='/usr/bin/systemctl')
     @patch('services.network.ports.subprocess.run')
-    def test_is_firewalld_running_true(self, mock_run):
+    def test_is_firewalld_running_true(self, mock_run, mock_which):
         """is_firewalld_running returns True when active."""
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.return_value = MagicMock(returncode=0, stdout="active\n")
         self.assertTrue(PortAuditor.is_firewalld_running())
 
+    @patch('services.network.ports.shutil.which', return_value='/usr/bin/systemctl')
     @patch('services.network.ports.subprocess.run')
-    def test_is_firewalld_running_false(self, mock_run):
+    def test_is_firewalld_running_false(self, mock_run, mock_which):
         """is_firewalld_running returns False when inactive."""
-        mock_run.return_value = MagicMock(returncode=3)
+        mock_run.return_value = MagicMock(returncode=3, stdout="inactive\n")
         self.assertFalse(PortAuditor.is_firewalld_running())
 
+    @patch('services.network.ports.shutil.which', return_value='/usr/bin/systemctl')
     @patch('services.network.ports.subprocess.run', side_effect=OSError("fail"))
-    def test_is_firewalld_running_exception(self, mock_run):
+    def test_is_firewalld_running_exception(self, mock_run, mock_which):
         """is_firewalld_running returns False on OSError."""
         self.assertFalse(PortAuditor.is_firewalld_running())
 
@@ -166,7 +176,7 @@ class TestBlockAllowPort(unittest.TestCase):
     @patch('services.network.ports.cached_which', return_value='/usr/bin/firewall-cmd')
     def test_block_port_success(self, mock_which, mock_firewalld, mock_run):
         """block_port returns success when firewall-cmd succeeds."""
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.return_value = MagicMock(returncode=0, stdout="active\n")
 
         result = PortAuditor.block_port(8080)
         self.assertTrue(result.success)
@@ -190,7 +200,7 @@ class TestBlockAllowPort(unittest.TestCase):
     @patch('services.network.ports.cached_which', return_value='/usr/bin/firewall-cmd')
     def test_allow_port_success(self, mock_which, mock_firewalld, mock_run):
         """allow_port returns success when firewall-cmd succeeds."""
-        mock_run.return_value = MagicMock(returncode=0)
+        mock_run.return_value = MagicMock(returncode=0, stdout="active\n")
 
         result = PortAuditor.allow_port(443)
         self.assertTrue(result.success)
@@ -249,27 +259,57 @@ class TestBlockAllowPort(unittest.TestCase):
 class TestGetSecurityScore(unittest.TestCase):
     """Tests for get_security_score."""
 
-    @patch.object(PortAuditor, 'is_firewalld_running', return_value=True)
+    @patch.object(PortAuditor, 'observe_firewalld', return_value=FirewallObservation("running"))
     @patch.object(PortAuditor, 'scan_ports')
     def test_security_score_no_risky_ports(self, mock_scan, mock_firewalld):
-        """Perfect score when no risky ports and firewall running."""
-        mock_scan.return_value = [
+        """Complete observations produce a score limited to ports and firewall."""
+        mock_scan.return_value = PortScanObservation("complete", (
             OpenPort("TCP", 8080, "127.0.0.1", "dev", 1, False, ""),
-        ]
+        ), "2026-10-07T00:00:00+00:00")
 
         score = PortAuditor.get_security_score()
-        self.assertEqual(score["score"], 100)
-        self.assertEqual(score["rating"], "Excellent")
+        self.assertEqual(score.status, "complete")
+        self.assertEqual(score.score, 100)
+        self.assertEqual(score.rating, "Excellent")
 
-    @patch.object(PortAuditor, 'is_firewalld_running', return_value=False)
+    @patch.object(PortAuditor, 'observe_firewalld', return_value=FirewallObservation("stopped"))
     @patch.object(PortAuditor, 'scan_ports')
     def test_security_score_no_firewall_deduction(self, mock_scan, mock_firewalld):
         """Score deducted when firewall is not running."""
-        mock_scan.return_value = []
+        mock_scan.return_value = PortScanObservation("complete")
 
         score = PortAuditor.get_security_score()
-        self.assertLess(score["score"], 100)
-        self.assertIn("Firewall", score["recommendations"][0])
+        self.assertLess(score.score, 100)
+        self.assertIn("Firewall", score.recommendations[0])
+
+    @patch.object(PortAuditor, 'observe_firewalld', return_value=FirewallObservation("running"))
+    @patch.object(PortAuditor, 'scan_ports', return_value=PortScanObservation("error", error="port query failed"))
+    def test_failed_port_query_has_unknown_score(self, mock_scan, mock_firewall):
+        score = PortAuditor.get_security_score()
+        self.assertEqual(score.status, "unknown")
+        self.assertIsNone(score.score)
+        self.assertIsNone(score.open_ports)
+        self.assertIn("port query failed", score.error)
+
+    @patch.object(PortAuditor, 'observe_firewalld', return_value=FirewallObservation("error", error="service probe failed"))
+    @patch.object(PortAuditor, 'scan_ports', return_value=PortScanObservation("complete"))
+    def test_unknown_firewall_has_no_numeric_score(self, _scan, _firewall):
+        score = PortAuditor.get_security_score()
+        self.assertEqual(score.status, "unknown")
+        self.assertIsNone(score.score)
+        self.assertIsNone(score.open_ports)
+        self.assertEqual(score.firewall_status, "error")
+
+    @patch("services.network.ports.PortAuditor.observe_firewalld", return_value=FirewallObservation("error", error="service probe failed"))
+    def test_firewall_status_button_reports_unknown_instead_of_stopped(self, _observe):
+        from types import SimpleNamespace
+        from ui.security_tab import SecurityTab
+
+        shell = SimpleNamespace(tr=lambda value: value, log=unittest.mock.Mock())
+        SecurityTab._check_firewall_status(shell)
+        message = shell.log.call_args.args[0]
+        self.assertIn("unknown", message)
+        self.assertNotIn("not running", message)
 
 
 if __name__ == '__main__':

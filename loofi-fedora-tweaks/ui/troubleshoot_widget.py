@@ -13,7 +13,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
-    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -41,6 +40,7 @@ from ui.components import (
     SectionHeader,
     StatusBadge,
 )
+from ui.components.layout import CurrentPageStack
 from ui.health_symptoms import HealthSymptomCardsMixin
 from ui.troubleshoot_presentation import (
     SESSION_STATUS,
@@ -92,6 +92,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.worker_factory = worker_factory
         self.history = history or _DefaultSessionHistory()
         self._worker: Any | None = None
+        self._update_run_id = ""
         self._closing = False
         self._current_session: TroubleshootingSession | None = None
         self._comparison: TroubleshootingComparison | None = None
@@ -143,7 +144,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         view_row.addWidget(self.view_switcher, 1)
         self.scaffold.add_layout(view_row)
 
-        self.stack = QStackedWidget()
+        self.stack = CurrentPageStack()
         self.stack.setObjectName("troubleshootViewStack")
         self.stack.addWidget(self._guided_page())
         self.stack.addWidget(self._results_page())
@@ -179,10 +180,15 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.application_input.setPlaceholderText(self.tr("Application command, for example firefox"))
         self.application_input.hide()
         choose.add_widget(self.application_input)
+        self._build_update_choices(choose)
         self.profile_limitation = InlineNotice("", "", kind="warning")
         self.profile_limitation.setObjectName("troubleshootProfileLimitation")
         self.profile_limitation.hide()
         choose.add_widget(self.profile_limitation)
+        self.start_button = PrimaryButton(self.tr("Check this problem"), description=self.tr("Run a read-only check for the selected symptom."))
+        self.start_button.setObjectName("troubleshootStart")
+        self.start_button.clicked.connect(self.start_session)
+        choose.add_widget(self.start_button)
         layout.addWidget(choose)
 
         checks = Card(
@@ -199,6 +205,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
             | Qt.TextInteractionFlag.TextSelectableByMouse
         )
         checks.add_widget(self.checks_label)
+        self._build_runtime_link(checks)
         self.technical_disclosure = DetailsDisclosure(
             summary=self.tr("Show technical details")
         )
@@ -235,13 +242,6 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.cancel_button.clicked.connect(self.cancel_session)
         self.cancel_button.hide()
         self.action_bar.add_action(self.cancel_button)
-        self.start_button = PrimaryButton(
-            self.tr("Start read-only check"),
-            description=self.tr("Run the checks for the selected symptom."),
-        )
-        self.start_button.setObjectName("troubleshootStart")
-        self.start_button.clicked.connect(self.start_session)
-        self.action_bar.add_action(self.start_button, primary=True)
         layout.addWidget(self.action_bar)
 
         self.progress = ActionProgress(self.tr("Preparing the selected check…"))
@@ -346,6 +346,11 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.next_step_button.setObjectName("troubleshootNextStep")
         self.next_step_button.clicked.connect(self._activate_next_step)
         self.finding_detail.add_widget(self.next_step_button)
+        self.recheck_button = SecondaryButton(self.tr("Recheck after returning"), description=self.tr("Run the read-only symptom check again only when you choose."))
+        self.recheck_button.setObjectName("troubleshootRecheck")
+        self.recheck_button.clicked.connect(self.start_session)
+        self.recheck_button.hide()
+        self.finding_detail.add_widget(self.recheck_button)
         self.finding_detail.hide()
         layout.addWidget(self.finding_detail)
 
@@ -382,8 +387,12 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
 
     def _profile_changed(self, *_args: Any) -> None:
         self._update_symptom_cards()
+        is_updates = self._selected_symptom()[2] == "updates_failed"
+        self.update_source_selector.setVisible(is_updates)
+        self.update_run_context.setVisible(is_updates and bool(self._update_run_id))
         profile = require_profile(self.selected_profile_id())
         self._show_device_settings(profile.id)
+        self.unused_runtimes_link.setVisible(profile.id == "storage_pressure")
         checked_areas = []
         technical_lines = []
         for budget in profile.source_budgets:
@@ -435,22 +444,14 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         else:
             self.profile_limitation.hide()
 
-    def selected_profile_id(self) -> str:
-        return self._selected_symptom()[2]
-
-    def _selected_symptom(self) -> tuple[str, str, str, str]:
-        symptom_id = str(self.profile_selector.currentData() or self._SYMPTOMS[0][0])
-        return next(
-            (symptom for symptom in self._SYMPTOMS if symptom[0] == symptom_id),
-            self._SYMPTOMS[0],
-        )
-
     def start_session(self) -> None:
         """Create the worker only after direct user activation."""
         if self._worker is not None and self._worker.isRunning():
             return
         profile = require_profile(self.selected_profile_id())
         parameters: dict[str, Any] = {}
+        if self._update_run_id and "run_id" in dict(profile.parameter_schema):
+            parameters["run_id"] = self._update_run_id
         if dict(profile.parameter_schema).get("application_id") is not None:
             application_id = self.application_input.text().strip()
             if not application_id:
@@ -830,6 +831,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         if step.kind == "action":
             self.actionCenterRequested.emit(step.target_id, step.parameters_dict())
         elif step.kind == "navigation":
+            self.recheck_button.show()
             self.routeRequested.emit(step.target_id, step.parameters_dict())
         elif step.kind == "collect":
             self.start_notice.set_notice(

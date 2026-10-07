@@ -55,6 +55,28 @@ class TestDefaults(unittest.TestCase):
     def test_default_log_level_is_info(self):
         self.assertEqual(AppSettings().log_level, "INFO")
 
+    def test_startup_release_check_defaults_off(self):
+        self.assertFalse(AppSettings().check_updates_on_start)
+
+    def test_schema_three_migration_requires_explicit_release_check_opt_in(self):
+        migrated, changed = migrate_settings({"state_schema_version": 2, "check_updates_on_start": True})
+        self.assertTrue(changed)
+        self.assertEqual(migrated["state_schema_version"], 3)
+        self.assertFalse(migrated["check_updates_on_start"])
+
+        current, changed = migrate_settings({
+            "state_schema_version": 3,
+            "check_updates_on_start": True,
+            "navigation_mode": "standard",
+            "last_route_id": "overview",
+            "hidden_routes": [],
+            "favorite_routes": [],
+            "favorite_tweaks": [],
+            "window_geometry": {},
+        })
+        self.assertFalse(changed)
+        self.assertTrue(current["check_updates_on_start"])
+
     def test_retired_plugin_analytics_is_not_persisted(self):
         self.assertNotIn("plugin_analytics_enabled", KNOWN_KEYS)
         self.assertNotIn("plugin_analytics_anonymous_id", KNOWN_KEYS)

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
+> Current release: 32.4.0 "Care". Physical desktop and assistive-technology validation remains unverified.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -126,7 +126,7 @@ permits restoration. KWin changes also request a session
 reconfigure and compare runtime values. A session warning preserves the saved
 change and its restoration offer.
 
-The catalog has 73 controls grouped as Appearance, Desktop, Files, Interaction,
+The catalog has 76 controls grouped as Appearance, Desktop, Files, Interaction,
 Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
 offers click behavior and default folder view; KDE adds Dolphin's full-path
 setting, editable location bar, session tabs, external folder tabs, and close-tab
@@ -134,6 +134,17 @@ confirmation. KWin offers maximized-titlebar, edge tiling, and focus prevention.
 Files also offers an editable location bar and simple/detailed dates. Missing Files schemas or Dolphin
 are reported as unavailable. See
 [TWEAKS.md](TWEAKS.md) for the complete generated list with Loofi standard values.
+
+Choose **Choose preset…** to review **Reduced motion** or **File navigation**
+for the detected desktop. Each supported setting shows its current and proposed
+value. Unavailable settings explain why; identical values are skipped. Uncheck
+any change you do not want, then confirm to apply the remaining changes one at a
+time. A failed verification stops the rest; completed changes remain in Activity.
+
+Use **Check current value** in a row's action menu to reread only that setting
+and its restoration offer. The check has an eight-second shared limit. If it
+fails or is cancelled, the row is marked unavailable until its next successful
+check; the other rows and filters remain as they were.
 
 Use **Use Loofi standard value** on a row whose value differs from that
 reference, or turn on **Changed** to list those rows. Resetting runs through the
@@ -272,9 +283,72 @@ Changes stop on cancellation, changed baseline, or failed verification. Restore
 supported changes from local verified Activity history. See [profile details](TWEAK_PROFILES.md).
 
 Apps includes **Installed** with Flatpak source, installation, ref, version, and
-reported size. The same app in two installations appears twice. Inspect permissions
-or review removal of exactly one installation. Running apps must be closed first;
-removal preserves their data. RPM removal opens the desktop software manager.
+reported size. The same app in two installations appears twice. **Show permissions**
+opens a read-only, installation-bound view of permissions declared by that app's
+metadata, grouped by network, files, audio, devices, display, and D-Bus. Environment
+values are hidden; unknown keys remain under **Technical details**. Portals and
+user overrides can change actual access.
+**Review removal** always targets exactly one installation. Running apps must be
+closed first; removal preserves their data. RPM removal opens the desktop software manager.
+
+### Care app details and runtime maintenance
+
+In **Installed**, combine search with source and installation filters. Choose
+**Largest first** to sort the reported logical sizes; missing sizes remain unknown
+and sort last. Filtering and sorting do not start a new inventory probe.
+
+**App details** reads the exact Flatpak ref and installation. It shows the source
+remote name, runtime, reported size, and locally recorded app/runtime end-of-life
+warnings or replacement refs. No recorded warning is not a continued-support
+guarantee. Permission metadata remains available through **Show permissions**.
+Source URLs and private environment values are not displayed.
+
+In **Unused Flatpak runtimes**, choose user, system, or a named installation.
+**Refresh installations** explicitly discovers named installations; you may also
+enter their name. **Inspect unused runtimes** reads local libflatpak evidence,
+then lets you select exact refs for **Review runtime cleanup**. The reviewed
+snapshot binds candidates, commits, pinning and visible dependency evidence.
+Changes to it require a new review. The operation preserves app data and checks
+the selected and remaining refs independently. A partial or interrupted removal
+keeps its observed refs in Activity; recovery is manual reinstallation.
+
+System and named installations are shared. The invoking user's dependency
+evidence can be inspected, but other users' private app inventories are not.
+Reported ref sizes include shared objects and are not a promise of freed space.
+Missing optional PyGObject/libflatpak support is unavailable; Loofi never
+installs these dependencies automatically.
+
+CLI examples (replace refs and installation names with inspected values):
+
+```bash
+loofi-fedora-tweaks --cli apps details app/org.mozilla.firefox/x86_64/stable --installation user
+loofi-fedora-tweaks --cli apps unused --installation user
+loofi-fedora-tweaks --cli apps cleanup --installation user --ref runtime/org.example.Unused/x86_64/stable
+```
+
+The cleanup command previews without `--yes`. Adding `--yes` explicitly accepts
+the exact reviewed runtime removal and manual reinstallation without rollback.
+Repeat `--ref` to select more runtimes. Global `--dry-run` never starts removal.
+
+### Diagnose one update source
+
+Failed check, update and verification cards offer **Diagnose**. The link opens
+Health with the source and exact recorded run selected, without running a check.
+Choose **Run diagnostics** explicitly. System uses existing package/deployment
+checks; Flatpak inspects local inventories, remotes and runtimes; Firmware
+inspects fwupd service and device availability. Failed or malformed evidence
+remains partial or unavailable. These checks do not update, repair or retry.
+
+```bash
+loofi-fedora-tweaks --cli --json updates check
+loofi-fedora-tweaks --cli --json updates diagnose --source flatpak
+loofi-fedora-tweaks --cli updates diagnose --source firmware --run-id RECORDED_RUN_ID
+```
+
+CLI and GUI update discovery share source observations. CLI returns a nonzero
+status when a source fails or cannot be checked, preserving useful source results.
+An exact run must belong to the selected source; missing or mismatched history
+does not select a different operation.
 
 Health has separate **Sound is not working** and **Bluetooth is not working**
 profiles. Each has a 15-second budget and cancellation. Missing tools, partial
@@ -288,9 +362,14 @@ CLI equivalents use the same services and action authority:
 loofi tweaks profile export --help
 loofi tweaks profile preview --help
 loofi tweaks profile apply --help
+loofi tweaks preset list
+loofi tweaks preset preview reduced-motion
+loofi tweaks preset apply file-navigation --yes
 loofi apps installed --help
+loofi apps permissions app/org.mozilla.firefox/x86_64/stable --installation user
 loofi apps remove --help
 ```
 
-Profile apply requires confirmation. Flatpak removal requires an explicit
-installation and confirmation; consult command help for exact arguments.
+Profile and preset apply require `--yes` to change settings. Flatpak permission
+inspection and removal require an explicit installation; removal also requires
+confirmation. Permission JSON hides environment values.

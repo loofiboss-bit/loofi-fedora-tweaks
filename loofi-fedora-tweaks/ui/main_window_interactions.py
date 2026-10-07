@@ -98,6 +98,8 @@ _BADGE_SUFFIXES = {
 
 
 class MainWindowInteractionMixin:
+    _startup_update_worker: object | None
+
     """Behavioral shell mixin kept separate from route/page construction."""
 
     _pending_runtime_shutdown: str | None
@@ -160,6 +162,15 @@ class MainWindowInteractionMixin:
             navigated = bool(route_id) and self.switch_to_route(route_id)
         if not navigated:
             return False
+        tweak_id = str(getattr(result, "tweak_id", "") or "")
+        if tweak_id:
+            entry = getattr(self, "_sidebar_index", {}).get("utility_tune")
+            page_widget = getattr(entry, "page_widget", None)
+            real_widget = getattr(page_widget, "get_real_widget", None)
+            if callable(real_widget):
+                page_widget = real_widget()
+            focus = getattr(page_widget, "focus_tweak", None)
+            return bool(focus(tweak_id)) if callable(focus) else False
         if task_id:
             self._focus_utility_task(task_id, route_id)
             return True
@@ -180,6 +191,39 @@ class MainWindowInteractionMixin:
         widget = entry.page_widget
         focus = getattr(widget, "focus_task", None)
         return bool(focus(task_id)) if callable(focus) else False
+
+    def _open_overview_task(self: typing.Any, task_id: str) -> None:
+        """Open an Overview shortcut without activating a system change."""
+        task_id = str(task_id)
+        if task_id == "installed":
+            if not self.switch_to_route("install"):
+                return
+            route = self._resolve_shell_route("install")
+            entry = self._sidebar_index.get(getattr(route, "plugin_id", ""))
+            page = self._real_widget_for_entry(entry) if entry is not None else None
+            view_filter = getattr(page, "view_filter", None)
+            if view_filter is not None:
+                index = view_filter.findData("installed")
+                if index >= 0:
+                    view_filter.setCurrentIndex(index)
+            return
+        if task_id not in {"click-behavior", "reduced-motion"}:
+            return
+        if not self.switch_to_route("tune"):
+            return
+        route = self._resolve_shell_route("tune")
+        entry = self._sidebar_index.get(getattr(route, "plugin_id", ""))
+        page = self._real_widget_for_entry(entry) if entry is not None else None
+        if page is None:
+            return
+        if task_id == "reduced-motion":
+            self._start_tweak_preset(page, preset_id="reduced-motion")
+            return
+        desktop = str(getattr(getattr(self._platform_profile, "desktop", None), "value", ""))
+        tweak_id = "kde-single-click" if desktop == "kde" else "gnome-files-click-policy" if desktop == "gnome" else ""
+        focus = getattr(page, "focus_tweak", None)
+        if tweak_id and callable(focus):
+            focus(tweak_id)
 
     def _preselect_action_center(
         self: typing.Any,
@@ -209,6 +253,21 @@ class MainWindowInteractionMixin:
         if parameters is None:
             return bool(preselect(action_id))
         return bool(preselect(action_id, parameters))
+
+    def _open_activity_status_result(self: typing.Any) -> None:
+        """Open Activity and select the exact run that produced this result."""
+        if not self.switch_to_route("activity"):
+            return
+        run_id = str(getattr(self, "_last_operation_run_id", "") or "")
+        if not run_id:
+            return
+        entry = self._sidebar_index.get("activity")
+        if entry is None:
+            return
+        widget = self._real_widget_for_entry(entry)
+        remember = getattr(widget, "remember_run_id", None)
+        if callable(remember):
+            remember(run_id)
 
     def _toggle_sidebar(self: typing.Any) -> typing.Any:
         """Toggle sidebar between expanded and collapsed states."""
@@ -446,8 +505,18 @@ class MainWindowInteractionMixin:
         )
         QMessageBox.information(self, self.tr("Keyboard Shortcuts"), shortcuts)
 
+    def _notifications_enabled(self: typing.Any) -> bool:
+        try:
+            from utils.settings import SettingsManager
+
+            return bool(SettingsManager.instance().get("show_notifications", True))
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+            return True
+
     def show_toast(self: typing.Any, title: str, message: str, category: str = "general") -> typing.Any:
         """Show an animated toast notification at the top-right."""
+        if not self._notifications_enabled():
+            return
         try:
             from ui.notification_toast import NotificationToast
 
@@ -521,7 +590,7 @@ class MainWindowInteractionMixin:
         """Keep startup non-blocking; Home owns resumable first-run guidance."""
         self.apply_navigation_mode()
 
-    def setup_tray(self: typing.Any) -> typing.Any:
+    def setup_tray(self: typing.Any) -> bool:
         from PyQt6.QtGui import QAction, QIcon
         from PyQt6.QtWidgets import QMenu, QSystemTrayIcon
 
@@ -553,15 +622,97 @@ class MainWindowInteractionMixin:
             tray_menu.addAction(quit_action)
             self.tray_icon.setContextMenu(tray_menu)
             self.tray_icon.show()
+            return bool(self.tray_icon.isVisible())
         else:
             self.tray_icon = None
+            return False
+
+    def startup_after_show(self: typing.Any) -> None:
+        """Apply opted-in launch preferences only after the first GUI frame."""
+        if getattr(self, "_start_minimized_requested", False):
+            if self.tray_icon is not None and self.tray_icon.isVisible():
+                self.hide()
+            else:
+                from PyQt6.QtWidgets import QMessageBox
+
+                QMessageBox.information(
+                    self,
+                    self.tr("Start minimized unavailable"),
+                    self.tr("No system tray is available, so Loofi will stay visible. You can change this preference in Settings."),
+                )
+        self._start_startup_update_check()
+
+    def _start_startup_update_check(self: typing.Any) -> None:
+        """Check only the Loofi release version in a bounded background worker."""
+        if getattr(self, "_startup_update_check_started", False):
+            return
+        self._startup_update_check_started = True
+        try:
+            from utils.settings import SettingsManager
+
+            enabled = bool(SettingsManager.instance().get("check_updates_on_start", False))
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+            enabled = False
+        if not enabled or getattr(self, "_startup_update_worker", None) is not None:
+            return
+        from PyQt6.QtCore import QThread, pyqtSignal
+
+        class StartupUpdateWorker(QThread):
+            resultReady = pyqtSignal(object, str)
+
+            def run(worker_self):
+                try:
+                    from utils.update_checker import UpdateChecker
+
+                    result = UpdateChecker.check_for_updates(timeout=4, use_cache=True)
+                    worker_self.resultReady.emit(result, "")
+                except (OSError, ValueError, KeyError) as exc:  # network and decoder failures stay in the UI status
+                    worker_self.resultReady.emit(None, type(exc).__name__)
+
+        worker = StartupUpdateWorker(self)
+        self._startup_update_worker = worker
+        worker.resultReady.connect(self._show_startup_update_result)
+        worker.finished.connect(lambda: self._release_startup_update_worker(worker))
+        worker.start()
+
+    def _release_startup_update_worker(self: typing.Any, worker: typing.Any) -> None:
+        if getattr(self, "_startup_update_worker", None) is worker:
+            self._startup_update_worker = None
+        worker.deleteLater()
+
+    def _show_startup_update_result(self: typing.Any, info: typing.Any, error: str) -> None:
+        if getattr(self, "_runtime_cleaned", False):
+            return
+        if info is None:
+            text = self.tr("Could not check Loofi updates.")
+            state = "warning"
+        elif bool(getattr(info, "offline", False)):
+            text = self.tr("Offline; showing cached Loofi version %1.").replace("%1", str(info.latest_version))
+            state = "warning"
+        elif bool(getattr(info, "is_newer", False)):
+            text = self.tr("Loofi %1 is available; current version %2.").replace("%1", str(info.latest_version)).replace("%2", str(info.current_version))
+            state = "warning"
+        else:
+            text = self.tr("Loofi is up to date (%1).").replace("%1", str(info.current_version))
+            state = "ok"
+        if error:
+            text = self.tr("Could not check Loofi updates (%1). ").replace("%1", error) + text
+        self._set_tab_status("utility_update", state, text)
+        status_label = getattr(self, "_status_label", None)
+        status_frame = getattr(self, "_status_frame", None)
+        if status_label is not None:
+            status_label.setText(text)
+        if status_frame is not None:
+            status_frame.show()
+        if self._notifications_enabled():
+            self.show_toast(self.tr("Loofi version check"), text, "system")
 
     def _toggle_focus_mode(self: typing.Any) -> typing.Any:
         """Toggle Focus Mode from tray."""
         result = FocusMode.toggle()
         self.focus_action.setChecked(FocusMode.is_active())
 
-        if self.tray_icon:
+        if self.tray_icon and self._notifications_enabled():
             message = result.get("message", "Focus Mode toggled")
             self.tray_icon.showMessage(
                 self.tr("Focus Mode"),
@@ -757,18 +908,23 @@ class MainWindowInteractionMixin:
         wait_for_thread = getattr(pulse_thread, "wait", None)
         if callable(wait_for_thread):
             stopped = wait_for_thread(max(0, int((deadline - monotonic()) * 1000))) is not False and stopped
+        update_worker = getattr(self, "_startup_update_worker", None)
+        wait_for_update = getattr(update_worker, "wait", None)
+        if callable(wait_for_update):
+            stopped = wait_for_update(max(0, int((deadline - monotonic()) * 1000))) is not False and stopped
         return stopped
 
     def closeEvent(self: typing.Any, event: typing.Any) -> typing.Any:
         tray_icon = getattr(self, "tray_icon", None)
         if tray_icon and tray_icon.isVisible():
             self.hide()
-            tray_icon.showMessage(
+            if self._notifications_enabled():
+                tray_icon.showMessage(
                 self.tr("Loofi Fedora Tweaks"),
                 self.tr("Minimized to tray."),
                 tray_icon.MessageIcon.Information,
                 2000,
-            )
+                )
             event.ignore()
         else:
             if self._request_runtime_shutdown(action="close"):
@@ -827,7 +983,39 @@ class MainWindowInteractionMixin:
             )
             if callable(refresh_section_icons):
                 refresh_section_icons()
+            self._refresh_semantic_item_colors()
             self.update()
+
+    def _refresh_semantic_item_colors(self: typing.Any) -> None:
+        """Re-resolve stored status roles against the active semantic palette."""
+        from PyQt6.QtWidgets import QListWidget, QTableWidget, QTreeWidget
+
+        role = Qt.ItemDataRole.UserRole + 90
+        for table in self.findChildren(QTableWidget):
+            for row in range(table.rowCount()):
+                for column in range(table.columnCount()):
+                    item = table.item(row, column)
+                    if item is not None:
+                        semantic = item.data(role)
+                        if semantic:
+                            item.setForeground(semantic_qcolor(str(semantic)))
+        for listing in self.findChildren(QListWidget):
+            for index in range(listing.count()):
+                item = listing.item(index)
+                semantic = item.data(role) if item is not None else None
+                if item is not None and semantic:
+                    item.setForeground(semantic_qcolor(str(semantic)))
+        for tree in self.findChildren(QTreeWidget):
+            iterator = QTreeWidgetItemIterator(tree)
+            while True:
+                item = iterator.value()
+                if item is None:
+                    break
+                for column in range(tree.columnCount()):
+                    semantic = item.data(column, role)
+                    if semantic:
+                        item.setForeground(column, semantic_qcolor(str(semantic)))
+                iterator += 1
 
     @staticmethod
     def detect_system_theme() -> str:

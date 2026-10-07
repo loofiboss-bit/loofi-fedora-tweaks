@@ -49,6 +49,9 @@ EXPECTED_SOURCE_SUFFIXES = (
     "core/actions/installed_applications.py",
     "services/software/update_recovery.py",
     "services/software/installed_applications.py",
+    "services/software/flatpak_maintenance.py",
+    "services/software/flatpak_maintenance_helper.py",
+    "core/actions/flatpak_cleanup.py",
     "services/hardware/diagnostic_probes.py",
     "ui/tweak_profiles.py",
     "ui/installed_applications.py",
@@ -60,6 +63,7 @@ EXPECTED_SOURCE_SUFFIXES = (
 )
 
 EXPECTED_ROOT_SUFFIXES = (
+    "scripts/loofi-flatpak-maintenance",
     "loofi-fedora-tweaks.desktop",
     "loofi-fedora-tweaks.metainfo.xml",
     "loofi-fedora-tweaks.1",
@@ -86,6 +90,7 @@ def _static_metadata_errors() -> list[str]:
         'package-dir = { "" = "loofi-fedora-tweaks" }': "pyproject must map top-level packages to loofi-fedora-tweaks/",
         'py-modules = ["main", "version"]': "pyproject must package main.py and version.py as top-level modules",
         'loofi-fedora-tweaks = "main:main"': "console entry point must target main:main",
+        'loofi-flatpak-maintenance = "services.software.flatpak_maintenance_helper:main"': "Flatpak helper console entry point is required",
         "include-package-data = true": "package data must be included",
         '"core*"': "core subpackages must be included",
         '"ui*"': "ui subpackages must be included",

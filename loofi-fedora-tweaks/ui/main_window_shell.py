@@ -160,7 +160,7 @@ class MainWindowShellMixin:
         area = area_for_plugin(route.plugin_id)
         utility_ready = bool(getattr(self, "_utility_shell_ready", False))
         if utility_ready and (route.id == "activity" or route.plugin_id == "activity"):
-            category = "History & Undo"
+            category = "Activity"
         elif utility_ready and (route.id == "settings" or route.plugin_id == "settings"):
             category = "Settings"
         else:
@@ -177,7 +177,7 @@ class MainWindowShellMixin:
             elif route.id == "overview":
                 category = "Overview"
         category = visible_label(category)
-        page_name = visible_label("Advanced" if route.id == "settings:application" else ("History & Undo" if route.id == "activity" else route.label))
+        page_name = visible_label("Advanced" if route.id == "settings:application" else ("Activity" if route.id == "activity" else route.label))
         if route.plugin_id in {"utility_tune", "utility_install", "utility_update", "utility_fix"}:
             category = page_name
         self._bc_category.setText(category)

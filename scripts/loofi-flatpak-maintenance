@@ -1,0 +1,11 @@
+#!/usr/bin/python3
+"""Launch the bounded local Flatpak helper from checkout or RPM."""
+import sys
+from pathlib import Path
+
+source = Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks"
+sys.path.insert(0, str(source if source.is_dir() else Path("/usr/lib/loofi-fedora-tweaks")))
+
+from services.software.flatpak_maintenance_helper import main
+
+raise SystemExit(main())

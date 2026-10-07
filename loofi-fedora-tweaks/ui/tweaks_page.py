@@ -7,6 +7,7 @@ from typing import Any
 from core.tasks.tweaks import TweakState, default_for, visible_tweaks
 from core.tweak_commands import values_equal
 from PyQt6.QtCore import QEvent, QTimer, Qt, pyqtSignal
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QButtonGroup, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu, QPushButton, QToolButton, QVBoxLayout, QWidget, QWidgetAction
 
 from ui.components import Card, PageScaffold
@@ -25,7 +26,9 @@ class TweaksPage(QWidget, PluginInterface):
 
     saveProfileRequested = pyqtSignal()
     loadProfileRequested = pyqtSignal()
+    choosePresetRequested = pyqtSignal()
     refreshRequested = pyqtSignal()
+    inspectRequested = pyqtSignal(str)
     changeRequested = pyqtSignal(str, str)
     restoreRequested = pyqtSignal(str, str)
     cancelSnapshotRequested = pyqtSignal()
@@ -69,38 +72,57 @@ class TweaksPage(QWidget, PluginInterface):
         intro.body.setContentsMargins(0, 0, 0, 4)
         intro.body.setSpacing(4)
         self.scaffold.add_widget(intro)
-        search_row = QHBoxLayout()
+        search_row = QGridLayout()
+        self._toolbar_layout = search_row
         search_row.setContentsMargins(0, 0, 0, 0)
-        search_row.setSpacing(6)
+        search_row.setHorizontalSpacing(6)
+        search_row.setVerticalSpacing(6)
         self.search_input = QLineEdit()
         self.search_input.setObjectName("tweaksSearch")
         self.search_input.setPlaceholderText(self.tr("Search settings…"))
         self.search_input.setAccessibleName(self.tr("Search tweaks"))
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._filter_rows)
-        search_row.addWidget(self.search_input, 1)
+        search_row.addWidget(self.search_input, 0, 0)
 
         self.refresh_button = QPushButton(self.tr("Refresh"))
         self.refresh_button.setObjectName("tweaksRefresh")
         self.refresh_button.clicked.connect(self.refreshRequested.emit)
-        search_row.addWidget(self.refresh_button)
+        search_row.addWidget(self.refresh_button, 0, 1)
 
         self.cancel_snapshot_button = QPushButton(self.tr("Cancel check"))
         self.cancel_snapshot_button.setObjectName("tweaksCancelCheck")
         self.cancel_snapshot_button.setAccessibleName(self.tr("Cancel reading current settings"))
         self.cancel_snapshot_button.clicked.connect(self.cancelSnapshotRequested.emit)
         self.cancel_snapshot_button.hide()
-        search_row.addWidget(self.cancel_snapshot_button)
+        search_row.addWidget(self.cancel_snapshot_button, 0, 2)
 
         self.save_profile_button = QPushButton(self.tr("Save profile…"))
         self.save_profile_button.setAccessibleName(self.tr("Save current settings as a portable profile"))
         self.save_profile_button.clicked.connect(self.saveProfileRequested.emit)
-        search_row.addWidget(self.save_profile_button)
 
         self.load_profile_button = QPushButton(self.tr("Load profile…"))
         self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
         self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
-        search_row.addWidget(self.load_profile_button)
+
+        self.preset_button = QPushButton(self.tr("Choose preset…"))
+        self.preset_button.setAccessibleName(self.tr("Choose and review a desktop settings preset"))
+        self.preset_button.clicked.connect(self.choosePresetRequested.emit)
+        self.profile_menu_button = QToolButton()
+        self.profile_menu_button.setText(self.tr("Profiles"))
+        self.profile_menu_button.setAccessibleName(self.tr("Profile and preset actions"))
+        self.profile_menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+        profile_menu = QMenu(self.profile_menu_button)
+        self.profile_menu_button.setMenu(profile_menu)
+        for label, signal in (("Save profile…", self.saveProfileRequested), ("Load profile…", self.loadProfileRequested), ("Choose preset…", self.choosePresetRequested)):
+            action = QAction(self.tr(label), profile_menu)
+            profile_menu.addAction(action)
+            action.triggered.connect(signal.emit)
+        search_row.addWidget(self.profile_menu_button, 0, 3)
+        self.save_profile_button.hide()
+        self.load_profile_button.hide()
+        self.preset_button.hide()
+        search_row.setColumnStretch(0, 1)
 
         intro.add_widget(self._wrap(search_row))
         filters = QGridLayout()
@@ -132,7 +154,7 @@ class TweaksPage(QWidget, PluginInterface):
         filters.setColumnStretch(5, 1)
         intro.add_widget(self._wrap(filters))
 
-        status_row = QHBoxLayout()
+        status_row = QVBoxLayout()
         status_row.setContentsMargins(0, 0, 0, 0)
         status_row.setSpacing(8)
         self.results_label = QLabel()
@@ -143,8 +165,8 @@ class TweaksPage(QWidget, PluginInterface):
         self.status_label = QLabel(self.tr("Reading current settings…"))
         self.status_label.setObjectName("tweaksStatus")
         self.status_label.setWordWrap(True)
-        self.status_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
-        status_row.addWidget(self.status_label, 1)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignLeft | Qt.AlignmentFlag.AlignVCenter)
+        status_row.addWidget(self.status_label)
         intro.add_widget(self._wrap(status_row))
 
         self.empty_state = Card(self.tr("No settings found"), self.tr("Try another search or clear your filters."))
@@ -206,6 +228,10 @@ class TweaksPage(QWidget, PluginInterface):
             menu_button.setMenu(menu)
             actions.addWidget(menu_button)
             row.control_layout.addLayout(actions)
+            inspect_action = QAction(self.tr("Check current value"), menu)
+            inspect_action.triggered.connect(lambda _checked=False, item=tweak.id: self.inspectRequested.emit(item))
+            menu.addAction(inspect_action)
+            menu.addSeparator()
             self._restore_buttons[tweak.id] = restore
             reset = QPushButton(self.tr("Use Loofi standard value"))
             reset.setObjectName(f"tweakReset_{tweak.id}")
@@ -239,7 +265,7 @@ class TweaksPage(QWidget, PluginInterface):
         self._refresh_favorite_icons()
 
     @staticmethod
-    def _wrap(layout: QHBoxLayout | QGridLayout) -> QWidget:
+    def _wrap(layout: QHBoxLayout | QGridLayout | QVBoxLayout) -> QWidget:
         widget = QWidget()
         widget.setLayout(layout)
         return widget
@@ -271,6 +297,23 @@ class TweaksPage(QWidget, PluginInterface):
 
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
+        if hasattr(self, "_toolbar_layout"):
+            toolbar_controls = (self.refresh_button, self.cancel_snapshot_button, self.profile_menu_button)
+            needed = self.search_input.minimumSizeHint().width() + sum(button.sizeHint().width() + 6 for button in toolbar_controls)
+            self._toolbar_layout.removeWidget(self.search_input)
+            for button in toolbar_controls:
+                self._toolbar_layout.removeWidget(button)
+            if needed > max(1, self.width() - 48):
+                self._toolbar_layout.addWidget(self.search_input, 0, 0, 1, 3)
+                self._toolbar_layout.addWidget(self.refresh_button, 1, 0)
+                self._toolbar_layout.addWidget(self.cancel_snapshot_button, 1, 1)
+                self._toolbar_layout.addWidget(self.profile_menu_button, 1, 2)
+            else:
+                self._toolbar_layout.addWidget(self.search_input, 0, 0)
+                self._toolbar_layout.addWidget(self.refresh_button, 0, 1)
+                self._toolbar_layout.addWidget(self.cancel_snapshot_button, 0, 2)
+                self._toolbar_layout.addWidget(self.profile_menu_button, 0, 3)
+            self._toolbar_layout.setColumnStretch(0, 1)
         if not hasattr(self, "_filter_layout"):
             return
         controls = (self.category_filter, *self._view_buttons.values())
@@ -290,6 +333,30 @@ class TweaksPage(QWidget, PluginInterface):
         self.category_filter.setCurrentIndex(0)
         self._view_buttons["all"].setChecked(True)
         self._filter_rows("")
+
+    def focus_tweak(self, tweak_id: str) -> bool:
+        """Reveal and focus a catalog setting without changing its value."""
+        entry = self._rows.get(str(tweak_id))
+        if entry is None:
+            self.status_label.setText(self.tr("This setting is not available for the current desktop."))
+            self.status_label.setFocus(Qt.FocusReason.OtherFocusReason)
+            return False
+        self.search_input.clear()
+        self.category_filter.setCurrentIndex(0)
+        self._view_buttons["all"].setChecked(True)
+        self._filter_rows("")
+        row, control = entry
+        scroll = row.parentWidget()
+        while scroll is not None and not hasattr(scroll, "ensureWidgetVisible"):
+            scroll = scroll.parentWidget()
+        if scroll is not None:
+            scroll.ensureWidgetVisible(row)
+        if control.isEnabled() and bool(control.property("ready")):
+            control.setFocus(Qt.FocusReason.OtherFocusReason)
+        else:
+            row.description_label.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
+            row.description_label.setFocus(Qt.FocusReason.OtherFocusReason)
+        return True
 
     def _filter_rows(self, query: str) -> None:
         if not hasattr(self, "category_filter"):
@@ -371,6 +438,8 @@ class TweaksPage(QWidget, PluginInterface):
         self._reading = busy and cancellable
         self.save_profile_button.setEnabled(not busy)
         self.load_profile_button.setEnabled(not busy)
+        self.preset_button.setEnabled(not busy)
+        self.profile_menu_button.setEnabled(not busy)
         self.cancel_snapshot_button.setText(self.tr("Cancel check"))
         self.refresh_button.setEnabled(not busy)
         self.cancel_snapshot_button.setVisible(self._reading)
@@ -490,6 +559,31 @@ class TweaksPage(QWidget, PluginInterface):
             self.restore_selection(tweak_id)
             row.set_feedback(message or self.tr("The change was not verified."), kind="error")
         self.status_label.setText(message or self.tr("Refreshing current settings…"))
+
+    def set_check_error(self, tweak_id: str, message: str) -> None:
+        """Mark one stale row unknown after its requested check fails."""
+        pair = self._rows.get(tweak_id)
+        self.set_busy(False, message)
+        if pair is None:
+            return
+        row, control = pair
+        self._last_changes.pop(tweak_id, None)
+        control.setProperty("ready", False)
+        control.setEnabled(False)
+        self._restore_buttons[tweak_id].setProperty("ready", False)
+        self._restore_buttons[tweak_id].setProperty("sourceRunId", "")
+        self._restore_buttons[tweak_id].setEnabled(False)
+        self._restore_buttons[tweak_id].setVisible(False)
+        self._restore_notices[tweak_id].clear()
+        self._restore_notices[tweak_id].hide()
+        self._reset_buttons[tweak_id].setProperty("ready", False)
+        self._reset_buttons[tweak_id].setEnabled(False)
+        self._reset_buttons[tweak_id].hide()
+        row.value_label.setText(self.tr("Current value unavailable"))
+        row.set_feedback(message, kind="error")
+        self._unavailable.add(tweak_id)
+        self._changed.discard(tweak_id)
+        self._filter_rows(self.search_input.text())
 
     def set_restore_error(self, tweak_id: str, message: str) -> None:
         """Invalidate one restoration offer without misreporting other rows."""

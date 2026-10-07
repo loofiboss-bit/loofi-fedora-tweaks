@@ -2,11 +2,11 @@
 
 from typing import Any
 
-from PyQt6.QtWidgets import QGridLayout
+from PyQt6.QtWidgets import QComboBox, QGridLayout, QLabel
 
 from core.catalog_models import NativeHandoffId
 from ui.native_handoff_card import NativeHandoffCard
-from ui.components import ClickableCard
+from ui.components import ClickableCard, SecondaryButton
 
 
 class HealthSymptomCardsMixin:
@@ -77,3 +77,60 @@ class HealthSymptomCardsMixin:
             card.setVisible(candidate == profile_id)
             if candidate == profile_id:
                 card.refresh_availability()
+
+    def _build_update_choices(self: Any, choose: Any) -> None:
+        self.update_source_selector = QComboBox()
+        self.update_source_selector.setObjectName("healthUpdateSource")
+        self.update_source_selector.setAccessibleName(self.tr("Update source to diagnose"))
+        for source, label in (("system", "System"), ("flatpak", "Flatpak"), ("firmware", "Firmware")):
+            self.update_source_selector.addItem(self.tr(label), source)
+        self.update_source_selector.currentIndexChanged.connect(self._update_source_changed)
+        choose.add_widget(self.update_source_selector)
+        self.update_run_context = QLabel()
+        self.update_run_context.setWordWrap(True)
+        choose.add_widget(self.update_run_context)
+
+    def _build_runtime_link(self: Any, checks: Any) -> None:
+        self.unused_runtimes_link = SecondaryButton(
+            self.tr("Inspect unused Flatpak runtimes"),
+            description=self.tr("Open Apps to inspect one installation before reviewing runtime cleanup."),
+        )
+        self.unused_runtimes_link.setObjectName("healthUnusedRuntimes")
+        self.unused_runtimes_link.clicked.connect(
+            lambda: self.routeRequested.emit("software:apps", {"section": "unused-runtimes"})
+        )
+        self.unused_runtimes_link.hide()
+        checks.add_widget(self.unused_runtimes_link)
+
+    def _update_source_changed(self: Any, *_args: Any) -> None:
+        self._update_run_id = ""
+        self._profile_changed()
+
+    def preselect_update_diagnosis(self: Any, source: str, run_id: str = "") -> bool:
+        """Prepare one source and exact run without starting a worker."""
+        index = self.update_source_selector.findData(source)
+        if index < 0:
+            return False
+        self.profile_selector.setCurrentIndex(self.profile_selector.findData("updates_failed"))
+        self.update_source_selector.setCurrentIndex(index)
+        self._update_run_id = run_id
+        self.update_run_context.setText(self.tr("Recorded run: %1").replace("%1", run_id))
+        self._profile_changed()
+        self.start_button.setFocus()
+        return True
+
+    def selected_profile_id(self: Any) -> str:
+        profile_id = str(self._selected_symptom()[2])
+        if profile_id == "updates_failed":
+            from services.software.update_diagnostics import SOURCE_PROFILES
+
+            return SOURCE_PROFILES[str(self.update_source_selector.currentData() or "system")]
+        return profile_id
+
+    def _selected_symptom(self: Any) -> tuple[str, str, str, str]:
+        symptoms: tuple[tuple[str, str, str, str], ...] = self._SYMPTOMS
+        symptom_id = str(self.profile_selector.currentData() or symptoms[0][0])
+        return next(
+            (symptom for symptom in symptoms if symptom[0] == symptom_id),
+            symptoms[0],
+        )

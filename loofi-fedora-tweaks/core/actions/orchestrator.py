@@ -423,6 +423,8 @@ class ActionCenterOrchestrator:
             else:
                 run.transition("failed", "execution-failed", at=now)
                 run.recovery_status = "manual-review-required"
+            if not result.success:
+                self._observe_failed_cleanup(run)
             self.run_store.save(run)
             return run
         finally:
@@ -438,6 +440,7 @@ class ActionCenterOrchestrator:
                 raise ActionCenterError(f"Run cannot be interrupted from state: {run.state}")
             run.transition("interrupted", reason, at=self.clock())
             run.recovery_status = "manual-review-required"
+            self._observe_failed_cleanup(run)
             self.run_store.save(run)
             return run
         finally:
@@ -445,6 +448,28 @@ class ActionCenterOrchestrator:
                 self._release_lease(run_id)
             elif lease is not None:
                 lease.__exit__(None, None, None)
+
+    def _observe_failed_cleanup(self, run: ActionRun) -> None:
+        """Read back a possibly partial cleanup without changing its failure state."""
+        if run.action_id != "remove-unused-flatpaks":
+            return
+        try:
+            plan = self.get_plan(run.plan_id)
+            definition = self._definition_for(run.action_id)
+            decision = definition.verifier(run, plan, self.runtime)
+            if isinstance(decision, ActionResult):
+                observation = decision
+            else:
+                observation = decision.to_result(action_id=run.action_id)
+        except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError):
+            observation = ActionResult.fail(
+                "The interrupted cleanup could not be inspected. Review the selected installation.",
+                action_id=run.action_id,
+            )
+        run.verification_result = observation.to_dict()
+        run.verification_attempts += 1
+        run.last_verified_at = self.clock()
+        run.recovery_status = "manual-review-required"
 
     def apply(
         self,

@@ -6,7 +6,7 @@ from types import SimpleNamespace
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
-from PyQt6.QtWidgets import QApplication, QLabel, QToolButton
+from PyQt6.QtWidgets import QApplication, QLabel, QToolButton, QWidgetAction
 
 from core.tasks.tweaks import BY_ID, TWEAKS, TweakState, default_for, visible_tweaks
 from core.tweak_commands import valid_value
@@ -80,7 +80,10 @@ class TestV32TweakPageDefaults(unittest.TestCase):
             tweak = BY_ID["gnome-hot-corners"]
             page.set_states((TweakState(tweak, "ready", value="false", choices=tweak.choices),))
             menu_button = page._rows[tweak.id][0].findChild(QToolButton, "tweakRowActions")
-            details = menu_button.menu().actions()[1].defaultWidget()
+            actions = menu_button.menu().actions()
+            self.assertEqual(actions[0].text(), "Check current value")
+            details_action = next(action for action in actions if isinstance(action, QWidgetAction) and isinstance(action.defaultWidget(), QLabel))
+            details = details_action.defaultWidget()
             self.assertIsInstance(details, QLabel)
             self.assertIn("Loofi standard:", details.text())
             self.assertIn("Current user", details.text())

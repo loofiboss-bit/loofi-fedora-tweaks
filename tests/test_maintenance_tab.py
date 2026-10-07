@@ -57,6 +57,7 @@ def _install_stubs():
     class _StubStandardButton:
         Yes = 1
         No = 0
+        Cancel = 2
 
     class _StubQMessageBox(_Dummy):
         StandardButton = _StubStandardButton

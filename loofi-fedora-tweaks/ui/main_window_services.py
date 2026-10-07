@@ -117,8 +117,11 @@ class MainWindowServiceMixin:
         """Start tray and Pulse only for an explicitly background-enabled app."""
         if not self._background_services_enabled():
             return
-        self.setup_tray()
-        self._start_pulse_listener()
+        self._start_minimized_requested = True
+        if self.setup_tray():
+            self._start_pulse_listener()
+        else:
+            self._tray_unavailable_start_minimized = True
 
     def _schedule_post_render_services(self: Any) -> None:
         """Record meaningful Home without starting hidden probes or timers."""

@@ -57,3 +57,15 @@ def register_tweaks_command(subparsers: Subparsers) -> None:
         if operation == "apply":
             operation_p.add_argument("--ids", nargs="+", help="Select only these available changed entries")
             operation_p.add_argument("--yes", action="store_true", help="Confirm the displayed profile changes")
+
+    preset_p = tweaks_sub.add_parser("preset", help="Review and apply curated desktop settings presets")
+    preset_sub = preset_p.add_subparsers(dest="preset_action", required=True)
+    preset_list_p = preset_sub.add_parser("list", help="List presets for GNOME and KDE Plasma")
+    preset_list_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+    for operation in ("preview", "apply"):
+        operation_p = preset_sub.add_parser(operation, help="Review a desktop preset" if operation == "preview" else "Apply a reviewed desktop preset")
+        operation_p.add_argument("preset_id", help="Preset identifier")
+        operation_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+        if operation == "apply":
+            operation_p.add_argument("--ids", nargs="+", help="Select only these available changed settings")
+            operation_p.add_argument("--yes", action="store_true", help="Confirm the displayed preset changes")

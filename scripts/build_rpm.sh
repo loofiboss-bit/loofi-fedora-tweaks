@@ -19,6 +19,8 @@ cp loofi-fedora-tweaks.metainfo.xml "$STAGE/"
 cp LICENSE "$STAGE/"
 cp README.md "$STAGE/"
 cp loofi-fedora-tweaks.1 "$STAGE/"
+mkdir -p "$STAGE/scripts"
+cp scripts/loofi-flatpak-maintenance "$STAGE/scripts/"
 
 # Ensure Python cache artifacts are never packaged
 find "$STAGE" -type d -name "__pycache__" -prune -exec rm -rf {} +

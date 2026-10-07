@@ -560,7 +560,7 @@ class TestComfortRestorePresentation(unittest.TestCase):
         from ui.tweaks_page import TweaksPage
         parent = QWidget()
         parent._record_global_operation_result = Mock()
-        parent._start_tweak_snapshot = Mock()
+        parent._start_tweak_inspection = Mock()
         page = TweaksPage(profile("gnome"))
         runtime = HistoryRuntime()
         runtime.output["gnome-battery"] = "true\n"
@@ -576,7 +576,7 @@ class TestComfortRestorePresentation(unittest.TestCase):
             self.assertTrue(page._rows["gnome-clock"][1].isEnabled())
             self.assertIn("outside Loofi", page._rows["gnome-battery"][0].feedback_label.text())
             adapter.stopped.connect.call_args.args[0]()
-            parent._start_tweak_snapshot.assert_called_once_with(page)
+            parent._start_tweak_inspection.assert_called_once_with(page, "gnome-battery")
         finally:
             page.close()
             parent.close()
