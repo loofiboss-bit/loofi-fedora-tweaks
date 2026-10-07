@@ -196,7 +196,8 @@ class ActionRunStore:
         return runs[-limit:] if limit is not None else runs
 
     def get(self, run_id: str) -> ActionRun | None:
-        return next((run for run in reversed(self.list()) if run.run_id == run_id), None)
+        # Targeted history navigation must not migrate or rewrite saved state.
+        return next((run for run in reversed(self.list_read_only()) if run.run_id == run_id), None)
 
     def save(self, run: ActionRun) -> None:
         with advisory_lock(self.path):

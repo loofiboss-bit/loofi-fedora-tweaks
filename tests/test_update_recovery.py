@@ -105,6 +105,34 @@ class TestUpdateRecovery(unittest.TestCase):
         self.assertEqual(update_cta(state).action, "update")
         self.assertEqual(state.run_id, "")
 
+    def test_snapshot_candidates_include_versions_timestamp_retention_and_omitted_count(self):
+        from core.tasks.update_flow import MAX_VISIBLE_UPDATE_DETAILS
+        from services.software.update_overview import UpdateItem
+
+        checked_at = datetime.fromtimestamp(200, timezone.utc).isoformat()
+        items = tuple(
+            UpdateItem(f"package-{index}", old_version="1.0", version="2.0")
+            for index in range(MAX_VISIBLE_UPDATE_DETAILS + 3)
+        )
+        self.overview.load.return_value = UpdateOverviewSnapshot(sources=(
+            UpdateSourceResult(
+                "system", "available", checked_at, items,
+                stale=True, items_retained=True,
+            ),
+            UpdateSourceResult("flatpak"),
+            UpdateSourceResult("firmware"),
+        ))
+
+        result = self.service.load().source("system")
+
+        self.assertEqual(result.checked_at, checked_at)
+        self.assertTrue(result.stale)
+        self.assertEqual(result.item_count, MAX_VISIBLE_UPDATE_DETAILS + 3)
+        self.assertIn("Previously observed candidates", result.details[0])
+        self.assertIn("package-0 · 1.0 → 2.0", result.details[1])
+        self.assertIn("3 additional updates are not shown", result.details[-1])
+        self.assertEqual(len(result.details), MAX_VISIBLE_UPDATE_DETAILS + 2)
+
 
 class TestRecoveredUpdatesPresentation(unittest.TestCase):
     @classmethod

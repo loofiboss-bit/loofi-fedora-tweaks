@@ -674,6 +674,8 @@ def _install_stubs():
     qt_widgets.QTreeWidget = _DummyTreeWidget
     qt_widgets.QTreeWidgetItem = _DummyTreeWidgetItem
     qt_widgets.QTreeWidgetItemIterator = _DummyTreeWidgetItemIterator
+    qt_widgets.QListWidget = _Dummy
+    qt_widgets.QTableWidget = _Dummy
     qt_widgets.QStackedWidget = _DummyStackedWidget
     qt_widgets.QScrollArea = _DummyScrollArea
     qt_widgets.QTabWidget = _Dummy

@@ -233,7 +233,7 @@ class SettingsTab(QWidget, PluginInterface):
         )
         self._setting_rows["start_minimized"] = SettingRow(
             self.tr("Startup"),
-            self.tr("Open the application in the notification area instead of showing the window."),
+            self.tr("Open in the notification area only when your desktop provides a working system tray; otherwise show the window."),
             self.start_minimized_cb,
         )
         layout.addWidget(self._setting_rows["start_minimized"])
@@ -246,7 +246,7 @@ class SettingsTab(QWidget, PluginInterface):
         )
         self._setting_rows["show_notifications"] = SettingRow(
             self.tr("Notifications"),
-            self.tr("Show desktop feedback for completed application activity."),
+            self.tr("Show Loofi toast and system-tray notifications for application activity."),
             self.notifications_cb,
         )
         layout.addWidget(self._setting_rows["show_notifications"])
@@ -344,7 +344,7 @@ class SettingsTab(QWidget, PluginInterface):
         form.addRow("", self.auto_verify_cb)
 
         self.open_action_center_on_failure_cb = QCheckBox(
-            self.tr("Open Activity & Recovery when verification fails")
+            self.tr("Open Activity when verification fails")
         )
         self.open_action_center_on_failure_cb.setObjectName("openActionCenterOnVerificationFailure")
         self.open_action_center_on_failure_cb.setChecked(
@@ -432,7 +432,7 @@ class SettingsTab(QWidget, PluginInterface):
         )
         self._setting_rows["check_updates_on_start"] = SettingRow(
             self.tr("Update checks"),
-            self.tr("Check for a newer Loofi release after the application starts."),
+            self.tr("Check once for a newer Loofi release after startup. This is off by default; nothing is downloaded or installed."),
             self.updates_cb,
         )
         layout.addWidget(self._setting_rows["check_updates_on_start"])
@@ -582,9 +582,9 @@ class SettingsTab(QWidget, PluginInterface):
 
     def _on_follow_system_toggled(self, checked: bool):
         saved = self._save_setting("follow_system_theme", checked)
-        self._sync_theme_dependency()
         if not saved:
             return
+        self._sync_theme_dependency()
         if self._main_window and hasattr(self._main_window, "load_theme"):
             self._main_window.load_theme("system" if checked else self.theme_combo.currentText())
 
@@ -593,7 +593,8 @@ class SettingsTab(QWidget, PluginInterface):
 
     def _on_advanced_tools_toggled(self, checked: bool) -> None:
         """Persist the switch and update the sidebar immediately."""
-        self._save_setting("show_advanced_tools", bool(checked))
+        if not self._save_setting("show_advanced_tools", bool(checked)):
+            return
         apply = getattr(self._main_window, "apply_advanced_tools", None)
         if callable(apply):
             apply(bool(checked))
@@ -612,15 +613,27 @@ class SettingsTab(QWidget, PluginInterface):
                     kind="error",
                 )
             return False
+        previous = self._mgr.get(key)
         try:
             self._mgr.set(key, value)
             saved = bool(self._mgr.save())
         except (KeyError, OSError, RuntimeError, TypeError, ValueError):
             saved = False
+        if not saved:
+            try:
+                self._mgr.set(key, previous)
+            except (KeyError, RuntimeError, TypeError, ValueError):
+                pass
+            self._restore_setting_control(key, previous)
+        elif key == "log_level":
+            from utils.log import configure_log_level
+
+            configure_log_level(str(value))
         if row is not None:
             if saved:
+                immediate = key in {"log_level", "show_notifications", "show_advanced_tools"}
                 row.set_feedback(
-                    self.tr("The change is stored for the next session."),
+                    self.tr("Saved and applied now.") if immediate else self.tr("Saved for the next session."),
                     kind="saved",
                 )
             else:
@@ -629,6 +642,28 @@ class SettingsTab(QWidget, PluginInterface):
                     kind="error",
                 )
         return saved
+
+    def _restore_setting_control(self, key: str, value) -> None:
+        """Restore the visible control after persistence rejects a setting."""
+        controls = {
+            "theme": ("theme_combo", "currentText"),
+            "follow_system_theme": ("follow_system_cb", "checked"),
+            "start_minimized": ("start_minimized_cb", "checked"),
+            "show_notifications": ("notifications_cb", "checked"),
+            "confirm_dangerous_actions": ("confirm_cb", "checked"),
+            "restore_last_tab": ("restore_tab_cb", "checked"),
+            "log_level": ("log_combo", "currentText"),
+            "check_updates_on_start": ("updates_cb", "checked"),
+            "show_advanced_tools": ("advanced_tools_cb", "checked"),
+        }
+        item = controls.get(key)
+        control = getattr(self, item[0], None) if item else None
+        setter = getattr(control, f"set{item[1][0].upper()}{item[1][1:]}", None) if item else None
+        if not callable(setter):
+            return
+        blocker = QSignalBlocker(control)
+        setter(value)
+        del blocker
 
     def _sync_theme_dependency(self) -> None:
         row = self._setting_rows.get("theme")
@@ -666,7 +701,8 @@ class SettingsTab(QWidget, PluginInterface):
             self.tr(
                 "This will restore all settings to their default values. Continue?"
             ),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
         )
         if reply != QMessageBox.StandardButton.Yes:
             return
@@ -690,7 +726,12 @@ class SettingsTab(QWidget, PluginInterface):
         )
         self._sync_theme_dependency()
 
-        if self._main_window and hasattr(self._main_window, "load_theme"):
+        if reset_saved:
+            from utils.log import configure_log_level
+
+            configure_log_level(str(self._mgr.get("log_level", "INFO")))
+
+        if reset_saved and self._main_window and hasattr(self._main_window, "load_theme"):
             selected = "system" if self._mgr.get("follow_system_theme") else self._mgr.get("theme")
             self._main_window.load_theme(selected)
 
@@ -709,7 +750,7 @@ class SettingsTab(QWidget, PluginInterface):
             success_message=self.tr("Appearance settings were reset to defaults."),
         )
         self._sync_theme_dependency()
-        if self._main_window and hasattr(self._main_window, "load_theme"):
+        if reset_saved and self._main_window and hasattr(self._main_window, "load_theme"):
             selected = "system" if self._mgr.get("follow_system_theme") else self._mgr.get("theme")
             self._main_window.load_theme(selected)
 

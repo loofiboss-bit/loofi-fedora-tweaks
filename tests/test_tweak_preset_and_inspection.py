@@ -117,6 +117,26 @@ class FocusedInspectionUiTests(unittest.TestCase):
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
 
+    def test_search_activation_reveals_setting_without_changing_its_value(self):
+        tweak = BY_ID["kde-animation"]
+        page = TweaksPage(profile("kde"))
+        changes = []
+        page.changeRequested.connect(lambda *args: changes.append(args))
+        try:
+            page.set_states((TweakState(tweak, "ready", value="0", choices=tweak.choices),))
+            page.search_input.setText("no matching result")
+            self.assertTrue(page._rows[tweak.id][0].isHidden())
+
+            self.assertTrue(page.focus_tweak(tweak.id))
+
+            row, control = page._rows[tweak.id]
+            self.assertFalse(row.isHidden())
+            self.assertEqual(page.search_input.text(), "")
+            self.assertEqual(control.property("currentValue"), "0")
+            self.assertEqual(changes, [])
+        finally:
+            page.close()
+
     def test_row_check_action_and_partial_read_preserve_other_rows_and_search(self):
         first = BY_ID["gnome-battery"]
         other = BY_ID["gnome-hot-corners"]

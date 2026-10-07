@@ -163,6 +163,7 @@ class TestOnConfirm(unittest.TestCase):
         mock_mgr.save.assert_called_once()
         dialog.accept.assert_called_once()
 
+
     @patch('ui.confirm_dialog.SettingsManager')
     def test_on_confirm_records_snapshot_request(self, mock_settings_cls):
         """When snapshot checkbox is checked, _snapshot_requested becomes True."""
@@ -223,6 +224,39 @@ class TestOnConfirm(unittest.TestCase):
 
         self.assertFalse(dialog._snapshot_requested)
         dialog.accept.assert_called_once()
+
+
+class TestConfirmationKeyboardDefaults(unittest.TestCase):
+    @classmethod
+    def setUpClass(cls):
+        from PyQt6.QtWidgets import QApplication
+        cls.app = QApplication.instance() or QApplication([])
+
+    def test_return_defaults_to_cancel_and_escape_rejects(self):
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtTest import QTest
+        from PyQt6.QtWidgets import QDialog, QPushButton
+        from ui.confirm_dialog import ConfirmActionDialog
+
+        dialog = ConfirmActionDialog(action="two reviewed changes", description="Review first.")
+        buttons = {button.text(): button for button in dialog.findChildren(QPushButton)}
+        cancel = buttons["Cancel"]
+        apply = buttons["Apply two reviewed changes"]
+        self.assertTrue(cancel.isDefault())
+        self.assertFalse(apply.autoDefault())
+
+        dialog.show()
+        QTest.keyClick(dialog, Qt.Key.Key_Return)
+        self.app.processEvents()
+        self.assertFalse(dialog.isVisible())
+        self.assertEqual(dialog.result(), QDialog.DialogCode.Rejected)
+
+        dialog = ConfirmActionDialog(action="one reviewed change")
+        dialog.show()
+        QTest.keyClick(dialog, Qt.Key.Key_Escape)
+        self.app.processEvents()
+        self.assertFalse(dialog.isVisible())
+        self.assertEqual(dialog.result(), QDialog.DialogCode.Rejected)
 
 
 if __name__ == '__main__':

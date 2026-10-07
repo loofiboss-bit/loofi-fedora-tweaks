@@ -28,6 +28,7 @@ UpdateStatus = Literal[
 UpdateButtonLabel = Literal["Check", "Update", "Continue", "Verify", "Review"]
 
 STALE_SECONDS = 24 * 60 * 60
+MAX_VISIBLE_UPDATE_DETAILS = 100
 
 UPDATE_SOURCES: tuple[UpdateSource, ...] = ("system", "flatpak", "firmware")
 UPDATE_ACTION_SOURCES = {
@@ -198,14 +199,29 @@ class UpdateOverviewState:
             if status == "available" and stale:
                 status = "stale"
             items = getattr(raw, "items", ())
+            candidates = tuple(items) if isinstance(items, (tuple, list)) else ()
+            retained = bool(getattr(raw, "items_retained", False))
+            detail_rows = []
+            for item in candidates[:MAX_VISIBLE_UPDATE_DETAILS]:
+                name = str(getattr(item, "name", "") or "Unknown package")
+                new_version = str(getattr(item, "version", "") or "")
+                old_version = str(getattr(item, "old_version", "") or "")
+                version_text = f"{old_version} → {new_version}" if old_version and new_version else new_version
+                detail_rows.append(f"{name} · {version_text}" if version_text else name)
+            omitted = max(0, len(candidates) - MAX_VISIBLE_UPDATE_DETAILS)
+            if omitted:
+                detail_rows.append(f"{omitted} additional updates are not shown.")
+            if retained:
+                detail_rows.insert(0, "Previously observed candidates; check again before updating.")
             values[source] = UpdateSourceState(
                 source=source,  # type: ignore[arg-type]
                 status=status,
-                item_count=len(items) if isinstance(items, (tuple, list)) else 0,
+                item_count=len(candidates),
                 checked_at=str(getattr(raw, "checked_at", "") or ""),
                 stale=stale,
                 reboot_required=bool(getattr(raw, "reboot_required", False)),
                 message=str(getattr(raw, "message", "") or getattr(raw, "error_code", "") or ""),
+                details=tuple(detail_rows),
                 metadata={"backend": str(getattr(snapshot, "backend", "") or "")},
             )
         return cls(tuple(values.get(source, UpdateSourceState(source)) for source in UPDATE_SOURCES))

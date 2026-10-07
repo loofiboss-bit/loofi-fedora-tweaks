@@ -168,6 +168,11 @@ class MainWindow(
         self.notif_panel = None
         self._toast_widget: NotificationToast | None = None
         self._post_render_services_scheduled = False
+        self._start_minimized_requested = False
+        self._tray_unavailable_start_minimized = False
+        self._startup_update_worker: object | None = None
+        self._startup_update_check_started = False
+        self._last_operation_run_id = ""
 
     def _build_application_shell(self) -> None:
         """Construct the central shell without realizing lazy destination pages."""
@@ -324,8 +329,8 @@ class MainWindow(
         sb_layout.addWidget(self._undo_btn)
 
         sb_layout.addStretch()
-        self._activity_status_button = QPushButton(self.tr("Open activity"))
-        self._activity_status_button.clicked.connect(lambda: self.switch_to_route("activity"))
+        self._activity_status_button = QPushButton(self.tr("Open Activity"))
+        self._activity_status_button.clicked.connect(self._open_activity_status_result)
         sb_layout.addWidget(self._activity_status_button)
         self._status_frame.setVisible(False)
         right_side.addWidget(self._status_frame)
@@ -537,6 +542,10 @@ class MainWindow(
                     self._dashboard_controller = DashboardController(parent=self)
                     self._dashboard_controller.set_suspended(not self.isVisible() or self.isMinimized())
                 setter(self._dashboard_controller)
+        if plugin_id == "overview":
+            set_profile = getattr(widget, "set_platform_profile", None)
+            if callable(set_profile):
+                set_profile(self._platform_profile)
         action_request = getattr(widget, "actionCenterRequested", None)
         if action_request is not None and hasattr(action_request, "connect"):
             action_request.connect(self._open_action_center_request)
@@ -549,6 +558,9 @@ class MainWindow(
         route_request = getattr(widget, "routeRequested", None)
         if route_request is not None and hasattr(route_request, "connect"):
             route_request.connect(self._open_route_request)
+        task_request = getattr(widget, "taskRequested", None)
+        if task_request is not None and hasattr(task_request, "connect"):
+            task_request.connect(self._open_overview_task)
         if plugin_id in {"overview", "atlas_dashboard"}:
             self._schedule_post_render_services()
         return widget
@@ -559,19 +571,14 @@ class MainWindow(
 
     def _open_action_center_run(self, run_id: str) -> None:
         """Open a persisted maintenance run without creating or executing work."""
-        # In the v29 shell persisted run links belong to Activity & Recovery.
+        # Persisted run links belong to Activity in the utility shell.
         # Keep the method name as a compatibility adapter for Home and older
         # plugins, but never expose the retired review screen for normal
         # navigation.  Internal action requests use the separate handoff
         # method below and remain intentionally private.
         if getattr(self, "_utility_shell_ready", False) is True:
-            if self.switch_to_route("activity"):
-                entry = self._sidebar_index.get("activity")
-                if entry is not None:
-                    widget = self._real_widget_for_entry(entry)
-                    remember = getattr(widget, "remember_run_id", None)
-                    if callable(remember):
-                        remember(str(run_id))
+            self._last_operation_run_id = str(run_id)
+            self._open_activity_status_result()
             return
         opened = getattr(self, "_switch_to_internal_action_route", lambda: self.switch_to_route("maintenance:action-center"))()
         if not opened:

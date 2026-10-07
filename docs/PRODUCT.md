@@ -25,6 +25,20 @@ KDE, and DNF alongside applications, updates, health, and verified history.
 **Activity** is a primary destination for recorded changes, independent
 verification, previous values, and action-specific recovery guidance.
 
+Global search includes the currently supported GNOME or KDE settings from the
+canonical tweak catalog. Selecting a setting opens Tweaks, reveals its row, and
+focuses the control or its availability explanation; search never changes a
+value. Apps keeps one search field for both the catalog and the already-read
+Installed inventory. Installed results retain separate user, system, and named
+Flatpak installations even when their application names match.
+
+On first opening Activity, Loofi asynchronously reads up to 25 recent local
+Loofi runs. Other recorded sources refresh only when the user asks. A link to a
+specific operation looks up that exact run, including runs outside the recent
+page; when the record is missing, Activity says so instead of selecting a
+different run. Health places its read-only check beside the chosen symptom and
+offers a deliberate recheck after the user returns from desktop settings.
+
 ## Advanced mode
 
 The **Tools** disclosure shows **System**, **Storage**,
@@ -74,3 +88,22 @@ opens the desktop software manager. Sound and Bluetooth checks report observatio
 without changing services, devices, volume, or connections.
 Flatpak permission inspection reports app metadata for one exact installation; it
 does not claim to include portal grants or user overrides.
+
+## Preferences and status
+
+The Loofi release check is off by default and can be enabled in Settings. When
+enabled, it runs once after the initial window appears, checks only the Loofi
+version with a bounded timeout, and never downloads or installs an update. The
+result appears in the app; a desktop notification is sent only when Loofi
+notifications are enabled. Offline or cached results are labeled. Start
+minimized hides the window only when the system tray is available; otherwise
+the window stays visible and explains why. The notification preference gates
+all Loofi notifications. Log level changes apply immediately after they are
+saved; other preference feedback says when a restart is needed.
+
+Security presents a bounded assessment of the observed listening ports and
+firewall state. An incomplete or failed observation is unknown and cannot be
+shown as zero ports or as a numeric score. Update review shows up to 100
+observed candidates per source, their reported old and new versions, the check
+time, and any omitted or retained candidates. A reviewed candidate list is an
+observation; the eventual package transaction can differ.

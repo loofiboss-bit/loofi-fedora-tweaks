@@ -148,6 +148,8 @@ class DirectActionUiMixin:
                 .replace("%3", ", ".join(result.outcome.affected_resources) or self.tr("system state"))
                 .replace("%4", reboot)
                 .replace("%5", preview),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
             )
             if answer != QMessageBox.StandardButton.Yes:
                 self._prepared_direct_result = None

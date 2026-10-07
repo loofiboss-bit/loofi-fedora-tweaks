@@ -166,6 +166,20 @@ the owning window routes this through its existing operation worker.
 identities without executing updates. `core/tasks/next_steps.py` projects recorded
 dashboard observations into at most three navigation suggestions.
 
+Global settings search projects the current desktop's canonical tweak records
+into navigation results; it does not snapshot or write system settings.
+`ActivityJournalWorker` loads the latest 25 local Loofi runs on first visit and
+resolves a requested run ID through the journal source's exact lookup, independent
+of that recent-page limit. External history remains explicitly refreshed.
+
+Application preferences use state schema 3. The one-time migration disables the
+previous startup release-check flag, while a later explicit opt-in is preserved.
+The check starts asynchronously after the first GUI frame, has a four-second
+network timeout, reads only the Loofi release version, and does not download or
+install updates. Loofi notifications respect the saved notification preference;
+start-minimized is honored only with a visible system tray. Logging preferences
+update the existing Loofi logger and handlers only after settings save succeeds.
+
 Installed applications use source, installation, and full ref as identity.
 `core/actions/installed_applications.py` owns reviewed Flatpak removal and independent
 inventory verification. `services/hardware/diagnostic_probes.py` implements bounded,

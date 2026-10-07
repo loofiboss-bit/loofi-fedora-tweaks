@@ -171,6 +171,25 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
         self.assertTrue(page.flathub_status_card.isHidden())
         page.deleteLater()
 
+    def test_installed_search_filters_preserved_installation_identities(self):
+        from ui.install_workflow import InstallWorkflowPage
+        from services.software.installed_applications import InstalledInventory
+
+        inventory = InstalledInventory(parse_flatpak_inventory(
+            ROW + ROW.replace("\tuser\n", "\tsystem\n")
+        ))
+        page = InstallWorkflowPage(context=ApplicationContext(variant=FedoraVariant.TRADITIONAL))
+        page.installed_card.apply_inventory(inventory)
+        page.view_filter.setCurrentIndex(page.view_filter.findData("installed"))
+        page.search_input.setText("system")
+
+        visible = [app.installation for app, row in page.installed_card._application_rows if not row.isHidden()]
+
+        self.assertEqual(visible, ["system"])
+        self.assertIn("Showing 1 of 2", page.installed_card.search_summary.text())
+        self.assertEqual(page.installed_card.inventory, inventory)
+        page.deleteLater()
+
     def test_permission_dialog_groups_known_grants_and_hides_environment_values(self):
         from types import SimpleNamespace
         from PyQt6.QtWidgets import QPlainTextEdit

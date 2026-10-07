@@ -183,6 +183,10 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.profile_limitation.setObjectName("troubleshootProfileLimitation")
         self.profile_limitation.hide()
         choose.add_widget(self.profile_limitation)
+        self.start_button = PrimaryButton(self.tr("Check this problem"), description=self.tr("Run a read-only check for the selected symptom."))
+        self.start_button.setObjectName("troubleshootStart")
+        self.start_button.clicked.connect(self.start_session)
+        choose.add_widget(self.start_button)
         layout.addWidget(choose)
 
         checks = Card(
@@ -235,13 +239,6 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.cancel_button.clicked.connect(self.cancel_session)
         self.cancel_button.hide()
         self.action_bar.add_action(self.cancel_button)
-        self.start_button = PrimaryButton(
-            self.tr("Start read-only check"),
-            description=self.tr("Run the checks for the selected symptom."),
-        )
-        self.start_button.setObjectName("troubleshootStart")
-        self.start_button.clicked.connect(self.start_session)
-        self.action_bar.add_action(self.start_button, primary=True)
         layout.addWidget(self.action_bar)
 
         self.progress = ActionProgress(self.tr("Preparing the selected check…"))
@@ -346,6 +343,11 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.next_step_button.setObjectName("troubleshootNextStep")
         self.next_step_button.clicked.connect(self._activate_next_step)
         self.finding_detail.add_widget(self.next_step_button)
+        self.recheck_button = SecondaryButton(self.tr("Recheck after returning"), description=self.tr("Run the read-only symptom check again only when you choose."))
+        self.recheck_button.setObjectName("troubleshootRecheck")
+        self.recheck_button.clicked.connect(self.start_session)
+        self.recheck_button.hide()
+        self.finding_detail.add_widget(self.recheck_button)
         self.finding_detail.hide()
         layout.addWidget(self.finding_detail)
 
@@ -830,6 +832,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         if step.kind == "action":
             self.actionCenterRequested.emit(step.target_id, step.parameters_dict())
         elif step.kind == "navigation":
+            self.recheck_button.show()
             self.routeRequested.emit(step.target_id, step.parameters_dict())
         elif step.kind == "collect":
             self.start_notice.set_notice(

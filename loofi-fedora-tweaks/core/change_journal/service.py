@@ -150,6 +150,17 @@ class ChangeJournalService:
             None,
         )
 
+    def get_run_event(self, run_id: str) -> ChangeEvent | None:
+        """Resolve one Action Center run directly, independent of page limits."""
+        for adapter in self.sources:
+            if adapter.source != "action_center":
+                continue
+            lookup = getattr(adapter, "get_run_event", None)
+            if callable(lookup):
+                event = lookup(str(run_id))
+                return event if isinstance(event, ChangeEvent) else None
+        return None
+
     def related(
         self,
         event_id: str,

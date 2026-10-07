@@ -45,7 +45,7 @@ class AppSettings:
 
     # Advanced
     log_level: str = "INFO"
-    check_updates_on_start: bool = True
+    check_updates_on_start: bool = False
 
     # UX
     navigation_mode: str = "standard"
@@ -54,19 +54,20 @@ class AppSettings:
     locale: str = "en"
     favorite_routes: list = field(default_factory=list)
     favorite_tweaks: list = field(default_factory=list)
+    overview_intro_dismissed: bool = False
     hidden_routes: list = field(default_factory=list)
     last_route_id: str = "overview"
     window_geometry: dict = field(default_factory=dict)
 
     # Version tracking
     last_seen_version: str = "0.0.0"
-    state_schema_version: int = 2
+    state_schema_version: int = 3
 
 
 # Canonical set of known setting keys (derived from the dataclass).
 _DEFAULTS = AppSettings()
 KNOWN_KEYS = set(asdict(_DEFAULTS).keys())
-STATE_SCHEMA_VERSION = 2
+STATE_SCHEMA_VERSION = 3
 
 
 def _first(raw: dict, *keys: str) -> Any:
@@ -120,6 +121,16 @@ def migrate_settings(raw: dict) -> tuple[dict, bool]:
     for key in defaults:
         if key in raw:
             defaults[key] = raw[key]
+
+    previous_schema = raw.get("state_schema_version", 0)
+    if not isinstance(previous_schema, int) or isinstance(previous_schema, bool):
+        previous_schema = 0
+    if previous_schema < 3:
+        # The old setting was saved but never executed. Require the user to opt
+        # in again before it can trigger a network request on application start.
+        defaults["check_updates_on_start"] = False
+        if raw.get("check_updates_on_start") is not False:
+            migrated = True
 
     legacy_theme = _first(raw, "appearance.theme", "ui.theme")
     if "theme" not in raw and legacy_theme in {"dark", "light", "highcontrast"}:
@@ -280,16 +291,24 @@ class SettingsManager:
 
     def reset(self) -> bool:
         """Restore every setting to its default value and persist."""
+        previous = self._settings
         self._settings = asdict(AppSettings())
-        return self.save()
+        if self.save():
+            return True
+        self._settings = previous
+        return False
 
     def reset_group(self, keys: list) -> bool:
         """Reset a specific group of setting keys to their defaults and persist."""
+        previous = dict(self._settings)
         defaults = asdict(AppSettings())
         for key in keys:
             if key in defaults:
                 self._settings[key] = defaults[key]
-        return self.save()
+        if self.save():
+            return True
+        self._settings = previous
+        return False
 
     def all(self) -> dict:
         """Return a shallow copy of the current settings dict."""

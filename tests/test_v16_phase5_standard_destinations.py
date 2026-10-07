@@ -10,6 +10,7 @@ from PyQt6.QtWidgets import QApplication, QStackedWidget
 
 from core.navigation import resolve
 from core.navigation.models import NavigationMode
+from services.network.ports import PortScanObservation, SecurityScoreObservation
 from ui.components import DetailsDisclosure, PageScaffold
 
 
@@ -104,17 +105,22 @@ class TestPhase5RoutePresentation(unittest.TestCase):
     @patch("ui.security_tab.SandboxManager.is_bubblewrap_installed", return_value=False)
     @patch("ui.security_tab.SandboxManager.is_firejail_installed", return_value=False)
     @patch("ui.security_tab.USBGuardManager.is_installed", return_value=False)
-    @patch("ui.security_tab.PortAuditor.scan_ports", return_value=[])
+    @patch(
+        "ui.security_tab.PortAuditor.scan_ports",
+        return_value=PortScanObservation(status="complete", ports=()),
+    )
     @patch("ui.security_tab.PortAuditor.is_firewalld_running", return_value=True)
     @patch(
         "ui.security_tab.PortAuditor.get_security_score",
-        return_value={
-            "score": 90,
-            "rating": "Good",
-            "open_ports": 0,
-            "risky_ports": 0,
-            "recommendations": [],
-        },
+        return_value=SecurityScoreObservation(
+            status="complete",
+            score=90,
+            rating="Good",
+            open_ports=0,
+            risky_ports=0,
+            firewall_status="running",
+            ports_status="complete",
+        ),
     )
     def test_security_routes_separate_state_changes_and_exposure(self, *_mocks):
         from ui.security_tab import SecurityTab

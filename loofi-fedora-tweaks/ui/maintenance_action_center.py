@@ -678,6 +678,8 @@ class _ActionCenterSubTab(ActionCenterHistoryMixin, DirectActionUiMixin, BaseTab
             self,
             self.tr("Confirm Action"),
             self.tr("Run the reviewed command now? The preflight will be checked again."),
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
         )
         if answer != QMessageBox.StandardButton.Yes:
             return
@@ -688,6 +690,8 @@ class _ActionCenterSubTab(ActionCenterHistoryMixin, DirectActionUiMixin, BaseTab
                 self,
                 self.tr("No Automatic Rollback"),
                 self.tr("This action has no supported rollback. Accept the recovery guidance and continue?"),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
             )
             if answer != QMessageBox.StandardButton.Yes:
                 return

@@ -27,6 +27,11 @@ from utils.notifications import NotificationManager
 class TestSendParameters(unittest.TestCase):
     """Verify that send() forwards all parameters to notify-send correctly."""
 
+    def setUp(self):
+        self.notifications_enabled = patch.object(NotificationManager, "_notifications_enabled", return_value=True)
+        self.notifications_enabled.start()
+        self.addCleanup(self.notifications_enabled.stop)
+
     @patch('utils.notifications.subprocess.run')
     @patch('utils.notifications.cached_which', return_value='/usr/bin/notify-send')
     def test_default_icon_is_dialog_information(self, _which, mock_run):
@@ -78,6 +83,11 @@ class TestSendParameters(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestSpecialCharacters(unittest.TestCase):
+    def setUp(self):
+        self.notifications_enabled = patch.object(NotificationManager, "_notifications_enabled", return_value=True)
+        self.notifications_enabled.start()
+        self.addCleanup(self.notifications_enabled.stop)
+
     """Notifications with special characters should not crash."""
 
     @patch('utils.notifications.subprocess.run')
@@ -109,6 +119,11 @@ class TestSpecialCharacters(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestErrorPaths(unittest.TestCase):
+    def setUp(self):
+        self.notifications_enabled = patch.object(NotificationManager, "_notifications_enabled", return_value=True)
+        self.notifications_enabled.start()
+        self.addCleanup(self.notifications_enabled.stop)
+
     """Exercise error handling paths in send()."""
 
     @patch('utils.notifications.subprocess.run',

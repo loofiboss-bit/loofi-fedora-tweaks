@@ -2,11 +2,11 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QPushButton, QLayout, QPlainTextEdit, QVBoxLayout
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QPushButton, QLayout, QVBoxLayout
 
 from core.catalog_models import NativeHandoffId
 from services.software.installed_applications import InstalledApplication, InstalledInventory
-from ui.components import Card
+from ui.components import Card, DetailsDisclosure
 from ui.operation_worker import OperationControllerQtAdapter
 from ui.native_handoff_card import NativeHandoffCard
 
@@ -26,18 +26,22 @@ class FlatpakPermissionsDialog(QDialog):
         )
         identity.setWordWrap(True)
         layout.addWidget(identity)
-        explanation = QLabel(self.tr(
+        permission_notice = QLabel(self.tr(
             "These permissions come from the app metadata. User overrides and desktop portals can change actual access."
         ))
-        explanation.setWordWrap(True)
-        layout.addWidget(explanation)
+        permission_notice.setWordWrap(True)
+        layout.addWidget(permission_notice)
 
         grouped: dict[str, list[str]] = {}
+        friendly: list[str] = []
         for permission in getattr(permissions, "permissions", ()):
             category = str(permission.category).strip()
             key = str(permission.key).strip()
             value = str(permission.value).strip()
             group, detail = self._describe(category, key, value)
+            plain_description = self._plain_language(category, key, value)
+            if plain_description and plain_description not in friendly:
+                friendly.append(plain_description)
             shown_value = self.tr("Value hidden for privacy") if category.lower() == "environment" else value
             line = self.tr("%1: %2").replace("%1", key).replace("%2", shown_value)
             if detail:
@@ -46,16 +50,21 @@ class FlatpakPermissionsDialog(QDialog):
                 line = self.tr("%1 / %2: %3").replace("%1", category).replace("%2", key).replace("%3", shown_value)
             grouped.setdefault(group, []).append(line)
 
-        details = QPlainTextEdit()
-        details.setReadOnly(True)
-        details.setAccessibleName(self.tr("Grouped app permissions"))
         if grouped:
             blocks = [f"{group}\n" + "\n".join(f"  {line}" for line in entries)
                       for group, entries in grouped.items()]
-            details.setPlainText("\n\n".join(blocks))
+            exact = "\n\n".join(blocks)
         else:
-            details.setPlainText(self.tr("No permissions were reported by the app metadata."))
-        layout.addWidget(details, 1)
+            exact = self.tr("No permissions were reported by the app metadata.")
+        if friendly:
+            summary = QLabel("\n".join(f"• {item}" for item in friendly))
+            summary.setObjectName("flatpakPermissionSummary")
+            summary.setWordWrap(True)
+            summary.setAccessibleName(self.tr("Plain-language permission summary"))
+            layout.addWidget(summary)
+        disclosure = DetailsDisclosure(exact, summary=self.tr("Show exact permission metadata"))
+        disclosure.setAccessibleName(self.tr("Exact Flatpak permission metadata"))
+        layout.addWidget(disclosure, 1)
         close = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
         close.rejected.connect(self.reject)
         close.accepted.connect(self.accept)
@@ -85,6 +94,28 @@ class FlatpakPermissionsDialog(QDialog):
             if normalized_key in {"sockets", "shared", "features", "filesystems"}:
                 return self.tr("Desktop and system access"), ""
         return self.tr("Technical details"), ""
+
+    def _plain_language(self, category: str, key: str, value: str) -> str:
+        """Explain a small closed set of known Flatpak grants without guessing."""
+        if category.lower() != "context":
+            return ""
+        normalized_key = key.lower()
+        if normalized_key == "shared" and value == "network":
+            return self.tr("Can connect to the network.")
+        if normalized_key == "sockets" and value in {"wayland", "x11", "fallback-x11"}:
+            return self.tr("Can display windows in your desktop session.")
+        if normalized_key == "sockets" and value in {"pulseaudio", "pipewire", "alsa"}:
+            return self.tr("Can use audio services.")
+        if normalized_key == "filesystems":
+            target, separator, mode = value.partition(":")
+            if target == "home":
+                access = self.tr("read-only") if separator and mode == "ro" else self.tr("read and write")
+                return self.tr("Has %1 access to your home folder.").replace("%1", access)
+            known_folders = {"xdg-download": "Downloads", "xdg-documents": "Documents", "xdg-pictures": "Pictures", "xdg-videos": "Videos", "xdg-music": "Music"}
+            if target in known_folders:
+                access = self.tr("read-only") if separator and mode == "ro" else self.tr("read and write")
+                return self.tr("Has %1 access to %2.").replace("%1", access).replace("%2", self.tr(known_folders[target]))
+        return ""
 
 
 class _InstalledApplicationRow(Card):
@@ -116,10 +147,16 @@ class InstalledApplicationsCard(Card):
         self.status = QLabel(self.tr("Installation status has not been checked."))
         self.status.setWordWrap(True)
         self.add_widget(self.status)
+        self.search_summary = QLabel()
+        self.search_summary.setObjectName("installedSearchSummary")
+        self.search_summary.setWordWrap(True)
+        self.add_widget(self.search_summary)
         self.software_handoff = NativeHandoffCard(NativeHandoffId.SOFTWARE_CENTER, title=self.tr("Manage Fedora RPM applications"), description=self.tr("Review RPM removal in your desktop software manager."), button_text=self.tr("Open software manager"), parent=self)
         self.software_handoff.hide()
         self.add_widget(self.software_handoff)
         self._rows = []
+        self._application_rows: list[tuple[InstalledApplication, _InstalledApplicationRow]] = []
+        self._search_query = ""
         self._permission_generation = 0
         self._active_permission_request = None
         self._pending_permission_request = None
@@ -181,9 +218,15 @@ class InstalledApplicationsCard(Card):
             self.body.removeWidget(row)
             row.deleteLater()
         self._rows = []
-        self.status.setText("\n".join(inventory.errors) if inventory.errors else self.tr("%1 installed applications").replace("%1", str(len(inventory.applications))))
+        self._application_rows = []
+        self.status.setText("\n".join(inventory.errors) if inventory.errors else self.tr("Installation inventory checked."))
         for app in inventory.applications:
-            row = _InstalledApplicationRow(app.name, f"{app.source} · {app.installation} · {app.version} · {app.size}\n{app.ref}")
+            installation = self.tr("System") if app.installation == "system" else self.tr("User") if app.installation == "user" else self.tr("Named installation")
+            version = app.version or self.tr("Version not reported")
+            row = _InstalledApplicationRow(app.name, self.tr("%1 · %2 installation · %3").replace("%1", version).replace("%2", installation).replace("%3", app.source.title()))
+            details = DetailsDisclosure(summary=self.tr("Show installation details"))
+            details.set_details(self.tr("Application ID: %1\nReference: %2\nSource: %3\nInstallation: %4\nSize: %5").replace("%1", app.app_id).replace("%2", app.ref).replace("%3", app.source).replace("%4", app.installation).replace("%5", app.size or self.tr("Not reported")))
+            row.add_widget(details)
             if app.source == "flatpak":
                 permissions = QPushButton(self.tr("Show permissions"))
                 permissions.clicked.connect(lambda _checked=False, item=app: self.show_permissions(item))
@@ -196,7 +239,28 @@ class InstalledApplicationsCard(Card):
             row.add_widget(remove)
             self.add_widget(row)
             self._rows.append(row)
+            self._application_rows.append((app, row))
+        self._apply_search()
         self.inventoryUpdated.emit(inventory)
+
+    def set_search(self, query: str) -> None:
+        self._search_query = str(query or "").strip().casefold()
+        self._apply_search()
+
+    def _apply_search(self) -> None:
+        query = self._search_query
+        matches = 0
+        for app, row in self._application_rows:
+            searchable = " ".join((app.name, app.app_id, app.source, app.installation, app.ref, app.version)).casefold()
+            visible = not query or query in searchable
+            row.setVisible(visible)
+            matches += int(visible)
+        if self.inventory.errors:
+            self.search_summary.setText(self.tr("Some installation sources could not be checked. Listed applications may be incomplete."))
+        elif query and matches == 0:
+            self.search_summary.setText(self.tr("No installed applications match this search."))
+        else:
+            self.search_summary.setText(self.tr("Showing %1 of %2 installed applications.").replace("%1", str(matches)).replace("%2", str(len(self._application_rows))))
 
     def show_permissions(self, app: InstalledApplication):
         if self.service is None or app.source != "flatpak":

@@ -103,8 +103,8 @@ class PageHeader(QFrame):
         self.activity_button.setMinimumSize(36, 36)
         self.activity_button.setCursor(Qt.CursorShape.PointingHandCursor)
         self.activity_button.setIcon(get_qicon("history", size=20, tint=semantic_color("text")))
-        self.activity_button.setAccessibleName(self.tr("History and undo"))
-        self.activity_button.setToolTip(self.tr("History & Undo"))
+        self.activity_button.setAccessibleName(self.tr("Activity"))
+        self.activity_button.setToolTip(self.tr("Activity"))
         top_row.addWidget(self.activity_button, 0, 3)
 
         self.settings_button = QToolButton(self)

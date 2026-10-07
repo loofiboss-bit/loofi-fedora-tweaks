@@ -16,7 +16,7 @@ from core.tasks.tweak_profiles import ProfileExport, ProfileResult, ProfileRevie
 class ProfileSelectionDialog(QDialog):
     """Scrollable keyboard-accessible selection, with blocked rows visible."""
 
-    def __init__(self, title: str, subtitle: str, rows: list[tuple[str, str, bool]], parent: Any = None) -> None:
+    def __init__(self, title: str, subtitle: str, rows: list[tuple[str, str, bool]], parent: Any = None, *, accept_label: str = "Apply selected settings") -> None:
         super().__init__(parent)
         self.setWindowTitle(title)
         self.resize(720, 480)
@@ -38,6 +38,15 @@ class ProfileSelectionDialog(QDialog):
             self.entries.addItem(item)
         layout.addWidget(self.entries)
         buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok)
+        cancel_button = buttons.button(QDialogButtonBox.StandardButton.Cancel)
+        accept_button = buttons.button(QDialogButtonBox.StandardButton.Ok)
+        if cancel_button is not None:
+            cancel_button.setDefault(True)
+            cancel_button.setAutoDefault(False)
+        if accept_button is not None:
+            accept_button.setText(self.tr(accept_label))
+            accept_button.setDefault(False)
+            accept_button.setAutoDefault(False)
         buttons.accepted.connect(self.accept)
         buttons.rejected.connect(self.reject)
         layout.addWidget(buttons)
@@ -67,7 +76,7 @@ class TweakProfilesMixin:
             return False
         return True
 
-    def _start_tweak_preset(self: Any, page: Any) -> bool:
+    def _start_tweak_preset(self: Any, page: Any, preset_id: str | None = None) -> bool:
         """Review and apply a built-in preset through portable profile actions."""
         from core.tasks.tweak_presets import PRESETS, profile_for_preset
 
@@ -82,17 +91,22 @@ class TweakProfilesMixin:
             except ValueError:
                 continue
             available.append(preset)
+        if preset_id is not None:
+            available = [preset for preset in available if preset.id == preset_id]
         if not available:
             page.set_error(self.tr("No presets are available for this desktop."))
             return False
-        from PyQt6.QtWidgets import QInputDialog
+        if preset_id is None:
+            from PyQt6.QtWidgets import QInputDialog
 
-        names = [self.tr(preset.name) for preset in available]
-        chosen, accepted = QInputDialog.getItem(page, self.tr("Choose a desktop preset"),
-                                                self.tr("Choose a preset to review:"), names, 0, False)
-        if not accepted:
-            return False
-        preset = available[names.index(chosen)]
+            names = [self.tr(preset.name) for preset in available]
+            chosen, accepted = QInputDialog.getItem(page, self.tr("Choose a desktop preset"),
+                                                    self.tr("Choose a preset to review:"), names, 0, False)
+            if not accepted:
+                return False
+            preset = available[names.index(chosen)]
+        else:
+            preset = available[0]
         try:
             profile = profile_for_preset(preset.id, page.profile)
         except ValueError as exc:
@@ -128,7 +142,7 @@ class TweakProfilesMixin:
         page.set_busy(False, self.tr("Choose the settings to save."))
         rows = [(key, f"{page.tr(BY_ID[key].title)}: {value}", True) for key, value in exported.profile.settings]
         rows.extend((key, f"{key}: {reason}", False) for key, reason in exported.omitted)
-        dialog = ProfileSelectionDialog(self.tr("Save current settings"), self.tr("Choose supported user settings. Unavailable, custom and system-wide values are omitted."), rows, page)
+        dialog = ProfileSelectionDialog(self.tr("Save current settings"), self.tr("Choose supported user settings. Unavailable, custom and system-wide values are omitted."), rows, page, accept_label="Continue")
         if dialog.exec() != QDialog.DialogCode.Accepted:
             return
         selected = set(dialog.selected_ids())

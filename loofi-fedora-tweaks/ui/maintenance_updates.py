@@ -44,7 +44,6 @@ from ui.components import (
     TaskSummary,
 )
 from ui.components.layout import PageScaffold
-from ui.design import semantic_qcolor
 from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
 from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
 from ui.maintenance_action_center import _ActionCenterOperationWorker
@@ -562,6 +561,8 @@ class _UpdatesSubTab(BaseTab):
                 ).replace("%1", source).replace("%2", ", ".join(result.outcome.affected_resources) or self.tr("system state"))
                 .replace("%3", restart)
                 .replace("%4", preview),
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
             )
             if answer != QMessageBox.StandardButton.Yes:
                 self._set_update_state(
@@ -1037,7 +1038,6 @@ class _OverlaysSubTab(QWidget):
                 self.packages_list.addItem(item)
         else:
             item = QListWidgetItem(self.tr("No layered packages (clean base image)"))
-            item.setForeground(semantic_qcolor("text_muted"))
             self.packages_list.addItem(item)
 
         has_pending = SystemManager.has_pending_deployment()
@@ -1068,7 +1068,8 @@ class _OverlaysSubTab(QWidget):
             self,
             self.tr("Confirm Removal"),
             self.tr("Remove '{}' from system overlays?\n\nThis requires a reboot.").format(pkg_name),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
@@ -1088,8 +1089,8 @@ class _OverlaysSubTab(QWidget):
             self,
             self.tr("Reset to Base Image"),
             self.tr("This will REMOVE ALL layered packages and reset to the clean base image.\n\nAre you absolutely sure?"),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-            QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
         )
 
         if reply == QMessageBox.StandardButton.Yes:
@@ -1105,7 +1106,8 @@ class _OverlaysSubTab(QWidget):
             self,
             self.tr("Reboot Now?"),
             self.tr("Reboot now to apply pending changes?"),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
+            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+            QMessageBox.StandardButton.Cancel,
         )
 
         if reply == QMessageBox.StandardButton.Yes:

@@ -98,6 +98,64 @@ class TestControlCenterShell(unittest.TestCase):
         self.assertIn("Review ready", window._status_label.text())
         self.assertNotIn("Activity", window._status_label.text())
 
+    def test_operation_result_run_id_is_carried_to_activity(self):
+        window, _, _, _ = self.build_window()
+        window._record_global_operation_result(SimpleNamespace(run_id="exact-run", message="Finished"), phase="change")
+
+        self.assertEqual(window._last_operation_run_id, "exact-run")
+        with patch("ui.activity_recovery_tab.ActivityRecoveryTab.remember_run_id") as remember:
+            window._open_activity_status_result()
+
+        remember.assert_called_once_with("exact-run")
+        self.assertEqual(window._active_route_id, "activity")
+
+    def test_startup_release_check_is_opt_in_asynchronous_and_one_shot(self):
+        window, _, _, _ = self.build_window(check_updates_on_start=False)
+        window._start_startup_update_check()
+        window._start_startup_update_check()
+        self.assertTrue(window._startup_update_check_started)
+        self.assertIsNone(window._startup_update_worker)
+
+        window, _, _, _ = self.build_window(
+            check_updates_on_start=True,
+            show_notifications=False,
+        )
+        info = SimpleNamespace(
+            offline=False,
+            is_newer=False,
+            current_version="32.2.0",
+            latest_version="32.2.0",
+        )
+        with patch("utils.update_checker.UpdateChecker.check_for_updates", return_value=info) as check:
+            window._start_startup_update_check()
+            worker = window._startup_update_worker
+            self.assertIsNotNone(worker)
+            self.assertTrue(worker.wait(5000))
+            self.app.processEvents()
+            window._start_startup_update_check()
+
+        check.assert_called_once_with(timeout=4, use_cache=True)
+        self.assertIn("32.2.0", window._status_label.text())
+
+    def test_startup_release_check_reports_cache_and_network_failure_without_notification(self):
+        window, _, _, _ = self.build_window(show_notifications=False)
+        with patch.object(window, "show_toast") as toast:
+            window._show_startup_update_result(
+                SimpleNamespace(
+                    offline=True,
+                    is_newer=False,
+                    current_version="32.2.0",
+                    latest_version="33.0.0",
+                ),
+                "",
+            )
+            self.assertIn("Offline", window._status_label.text())
+            self.assertIn("33.0.0", window._status_label.text())
+
+            window._show_startup_update_result(None, "URLError")
+            self.assertIn("URLError", window._status_label.text())
+            toast.assert_not_called()
+
     def test_tools_keyboard_disclosure_persists_and_failed_save_restores(self):
         window, prefs, manager, _ = self.build_window()
         item = window.sidebar._tools_item

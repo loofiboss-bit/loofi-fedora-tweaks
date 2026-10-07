@@ -73,7 +73,8 @@ addopts = "-v --tb=short"
 source = ["loofi-fedora-tweaks"]
 # These files remain available for migration and compatibility tests but are
 # outside the maintained V27 product surface: retired specialist CLI/UI
-# entrypoints, the removed profile/mesh stacks, and deprecated utility shims.
+# entrypoints (including the unregistered legacy log viewer), the removed
+# profile/mesh stacks, and deprecated utility shims.
 omit = [
     "loofi-fedora-tweaks/cli/action_plans.py",
     "loofi-fedora-tweaks/cli/commands/plugin_commands.py",
@@ -85,7 +86,6 @@ omit = [
     "loofi-fedora-tweaks/core/export/support_bundle_v13.py",
     "loofi-fedora-tweaks/services/desktop/tiling.py",
     "loofi-fedora-tweaks/ui/logs_tab.py",
-    "loofi-fedora-tweaks/ui/monitor_tab.py",
     "loofi-fedora-tweaks/ui/performance_tab.py",
     "loofi-fedora-tweaks/ui/snapshot_tab.py",
     "loofi-fedora-tweaks/utils/desktop_utils.py",

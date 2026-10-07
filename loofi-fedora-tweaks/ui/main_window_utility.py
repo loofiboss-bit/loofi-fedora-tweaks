@@ -225,6 +225,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
         """Create the single window-owned worker adapter for a reviewed change."""
         from ui.operation_worker import OperationControllerQtAdapter
 
+        self._last_operation_run_id = ""
         adapter = OperationControllerQtAdapter(parent=self)
         adapter.stopped.connect(
             lambda selected=adapter: self._utility_operation_adapter_stopped(selected)
@@ -245,6 +246,9 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
         if status is None:
             return
         outcome = result[0] if isinstance(result, tuple) and result else result
+        run_id = str(getattr(outcome, "run_id", "") or "")
+        if run_id:
+            self._last_operation_run_id = run_id
         fallback = self.tr("Inspection finished. No change was started.")
         if phase == "review":
             fallback = self.tr("Review ready. No change was started.")
@@ -511,6 +515,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
         dialog.setDetailedText("\n".join([*ticket.preview, ticket.plan.recovery_guidance]))
         dialog.setStandardButtons(QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok)
         dialog.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        dialog.setEscapeButton(QMessageBox.StandardButton.Cancel)
         if dialog.exec() != QMessageBox.StandardButton.Ok:
             self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
             self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
@@ -521,8 +526,8 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
                 self,
                 self.tr("No Automatic Rollback"),
                 self.tr("This action has no supported rollback. Accept the recovery guidance and continue?"),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.No,
-                QMessageBox.StandardButton.No,
+                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
+                QMessageBox.StandardButton.Cancel,
             )
             if answer != QMessageBox.StandardButton.Yes:
                 self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
@@ -612,7 +617,13 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
         dialog.setStandardButtons(
             QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok
         )
-        dialog.setDefaultButton(QMessageBox.StandardButton.Ok)
+        apply_button = dialog.button(QMessageBox.StandardButton.Ok)
+        if apply_button is not None:
+            apply_button.setText(
+                self.tr("Apply %1 changes").replace("%1", str(len(getattr(bundle, "items", ()))))
+            )
+        dialog.setDefaultButton(QMessageBox.StandardButton.Cancel)
+        dialog.setEscapeButton(QMessageBox.StandardButton.Cancel)
         if dialog.exec() != QMessageBox.StandardButton.Ok:
             self._set_utility_notice(page, "neutral", "Review cancelled", "No changes were made.")
             return False
@@ -668,7 +679,9 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
         source = str(source)
         action = str(action)
         if action == "recovery":
-            self.switch_to_route("activity")
+            source_state = getattr(page, "source_state", lambda _source: None)(source)
+            self._last_operation_run_id = str(getattr(source_state, "run_id", "") or "")
+            self._open_activity_status_result()
             return
         if action == "check":
             start_check = getattr(page, "start_check", None)
@@ -709,7 +722,20 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
             dialog.setStandardButtons(
                 QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok
             )
-            dialog.setDefaultButton(QMessageBox.StandardButton.Ok)
+            apply_button = dialog.button(QMessageBox.StandardButton.Ok)
+            if apply_button is not None:
+                apply_button.setText(self.tr("Apply %1 updates").replace("%1", str(item_count)))
+            candidates = tuple(getattr(source_state, "details", ()))
+            if candidates:
+                dialog.setDetailedText("\n".join(candidates))
+            detail_parts = [detail, self.tr("Nothing will reboot automatically.")]
+            checked_at = str(getattr(cast(Any, source_state), "checked_at", "") or "")
+            if checked_at:
+                detail_parts.append(self.tr("Observed at %1.").replace("%1", checked_at))
+            detail_parts.append(self.tr("The update transaction may differ from this earlier check."))
+            dialog.setInformativeText("\n".join(detail_parts))
+            dialog.setDefaultButton(QMessageBox.StandardButton.Cancel)
+            dialog.setEscapeButton(QMessageBox.StandardButton.Cancel)
             if dialog.exec() != QMessageBox.StandardButton.Ok:
                 setter = getattr(page, "set_notice", None)
                 if callable(setter):
@@ -771,10 +797,12 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
             lambda outcome: self._utility_update_finished(page, source, outcome)
         )
         new_adapter.failed.connect(
-            lambda message: self._utility_update_failed(page, source, str(message))
+            lambda message: self._utility_update_failed(page, source, str(message), run_id=run_id)
         )
         new_adapter.cancelled.connect(
-            lambda: self._utility_update_failed(page, source, "The update operation was cancelled before completion.")
+            lambda: self._utility_update_failed(
+                page, source, "The update operation was cancelled before completion.", run_id=run_id
+            )
         )
         if action == "verify":
             def operation() -> Any:
@@ -799,17 +827,22 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
 
     def _utility_update_finished(self: Any, page: QWidget, source: str, outcome: Any) -> None:
         """Render one update outcome without leaving the Update page."""
+        run_id = str(getattr(outcome, "run_id", "") or "")
+        if run_id:
+            self._last_operation_run_id = run_id
         apply_outcome = getattr(page, "apply_outcome", None)
         if callable(apply_outcome):
             apply_outcome(source, outcome)
 
-    def _utility_update_failed(self: Any, page: QWidget, source: str, message: str) -> None:
+    def _utility_update_failed(self: Any, page: QWidget, source: str, message: str, *, run_id: str = "") -> None:
         """Keep failed update state visible and never retry automatically."""
+        if run_id:
+            self._last_operation_run_id = str(run_id)
         apply_outcome = getattr(page, "apply_outcome", None)
         if callable(apply_outcome):
             from types import SimpleNamespace
 
-            apply_outcome(source, SimpleNamespace(status="failed", message=message))
+            apply_outcome(source, SimpleNamespace(status="failed", message=message, run_id=str(run_id)))
 
     def _cancel_utility_operation(self: Any) -> bool:
         """Cooperatively cancel a running utility operation during shutdown."""

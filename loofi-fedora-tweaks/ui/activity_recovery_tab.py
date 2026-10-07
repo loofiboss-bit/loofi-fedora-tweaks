@@ -8,7 +8,7 @@ from datetime import datetime
 from pathlib import Path
 from typing import Any, Protocol
 
-from PyQt6.QtCore import QThread, Qt, pyqtSignal
+from PyQt6.QtCore import QThread, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QCloseEvent
 from PyQt6.QtWidgets import (
     QAbstractItemView,
@@ -18,6 +18,7 @@ from PyQt6.QtWidgets import (
     QGridLayout,
     QLabel,
     QLineEdit,
+    QSizePolicy,
     QTableWidget,
     QTableWidgetItem,
     QVBoxLayout,
@@ -38,7 +39,6 @@ from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from core.workers import BaseWorker
 from ui.components import (
-    ActionBar,
     Card,
     DefinitionList,
     DetailsDisclosure,
@@ -74,21 +74,47 @@ class _JournalService(Protocol):
 class ActivityJournalWorker(BaseWorker):
     """Collect trusted local history away from the UI thread."""
 
-    def __init__(self, service: _JournalService, *, refresh: bool, filters: dict[str, Any], cursor: str | None = None, parent=None) -> None:
+    def __init__(self, service: _JournalService, *, refresh: bool, filters: dict[str, Any], cursor: str | None = None, target_run_id: str = "", parent=None) -> None:
         super().__init__(parent)
         self.service = service
         self.refresh_sources = refresh
         self.filters: dict[str, Any] = dict(filters)
         self.cursor = cursor
+        self.target_run_id = str(target_run_id or "")[:128]
 
     def do_work(self) -> ChangeJournalSnapshot:
         self.report_progress(self.tr("Reading trusted local sources…"), 30)
+        direct_lookup = getattr(self.service, "get_run_event", None)
+        if self.target_run_id and callable(direct_lookup):
+            event = direct_lookup(self.target_run_id)
+            result = ChangeJournalSnapshot(
+                events=(event,) if event is not None else (),
+                sources=(),
+                generated_at=0.0,
+                truncated=False,
+                next_cursor=None,
+            )
+            self.report_progress(self.tr("Preparing activity history…"), 90)
+            return result
         result = self.service.snapshot(
-            limit=25,
+            limit=500 if self.target_run_id else 25,
             cursor=self.cursor,
             refresh=self.refresh_sources,
             **self.filters,
         )
+        if self.target_run_id:
+            matching = tuple(
+                event for event in result.events
+                if str(event.after_facts.get("run_id", "")) == self.target_run_id
+            )
+            result = ChangeJournalSnapshot(
+                events=matching,
+                sources=result.sources,
+                generated_at=result.generated_at,
+                truncated=False,
+                schema=result.schema,
+                next_cursor=None,
+            )
         self.report_progress(self.tr("Preparing activity history…"), 90)
         return result
 
@@ -117,6 +143,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
     actionCenterRequested = pyqtSignal(str, object)
     _METADATA = plugin_metadata_for_module(__name__)
     _SOURCE_LABELS = {
+        "local_loofi": "Local Loofi",
         "action_center": "Change journal",
         "dnf5": "DNF5",
         "rpm_ostree": "rpm-ostree",
@@ -144,6 +171,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._next_cursor: str | None = None
         self._page_filter_key: tuple[tuple[str, Any], ...] | None = None
         self._requested_run_id = ""
+        self._initial_load_started = False
         self.presentation_state = initial_state()
         self._setup_ui()
         self._apply_presentation_state(self.presentation_state)
@@ -166,8 +194,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         notice = InlineNotice(
             self.tr("Verified recovery"),
             self.tr(
-                "Load local history to inspect changes. Available recovery actions check "
-                "the current state before you review them."
+                "Recent local activity loads automatically. Loofi checks the current "
+                "state again before you review a recovery action."
             ),
             kind="info",
         )
@@ -207,8 +235,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.until_input = QLineEdit()
         self.until_input.setObjectName("activityUntilFilter")
         self.until_input.setPlaceholderText(self.tr("Until date (YYYY-MM-DD)"))
-        for index, widget in enumerate((self.source_filter, self.status_filter, self.reboot_filter, self.search_input, self.since_input, self.until_input), start=1):
-            filter_row.addWidget(widget, index // 3, index % 3)
+        filter_row.addWidget(self.search_input, 0, 1, 1, 2)
         self.activity_view_filter.currentIndexChanged.connect(self._filters_changed)
         self.source_filter.currentIndexChanged.connect(self._filters_changed)
         self.status_filter.currentIndexChanged.connect(self._filters_changed)
@@ -217,42 +244,56 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.since_input.textChanged.connect(self._filters_changed)
         self.until_input.textChanged.connect(self._filters_changed)
         self.scaffold.add_layout(filter_row)
+        advanced_content = QWidget(self)
+        advanced_layout = QGridLayout(advanced_content)
+        for index, widget in enumerate((self.source_filter, self.status_filter, self.reboot_filter, self.since_input, self.until_input)):
+            advanced_layout.addWidget(widget, index // 3, index % 3)
+        self.advanced_filters = DetailsDisclosure(summary=self.tr("Advanced filters"), parent=self)
+        self.advanced_filters.add_widget(advanced_content)
+        self.scaffold.add_widget(self.advanced_filters)
 
-        actions = ActionBar()
+        actions = QWidget(self)
+        actions.setObjectName("activityActions")
+        actions.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Maximum)
         self.activity_actions = actions
+        self._activity_action_layout = QGridLayout(actions)
+        self._activity_action_layout.setContentsMargins(0, 0, 0, 0)
+        self._activity_action_layout.setHorizontalSpacing(8)
+        self._activity_action_layout.setVerticalSpacing(6)
         self.load_button = PrimaryButton(
-            self.tr("Load activity"),
+            self.tr("Load"),
             description=self.tr("Read the latest records from supported local sources."),
         )
         self.load_button.setObjectName("activityLoadButton")
+        self.load_button.setAccessibleName(self.tr("Load activity"))
         self.load_button.clicked.connect(lambda: self.load_activity(refresh=False))
         self.refresh_button = SecondaryButton(
-            self.tr("Refresh sources"),
+            self.tr("Refresh"),
             description=self.tr("Discard the short-lived cache and reread local sources."),
         )
         self.refresh_button.setObjectName("activityRefreshButton")
+        self.refresh_button.setAccessibleName(self.tr("Refresh activity sources"))
         self.refresh_button.clicked.connect(lambda: self.load_activity(refresh=True))
         self.refresh_button.setEnabled(False)
-        actions.add_action(self.refresh_button)
         self.load_more_button = SecondaryButton(
             self.tr("Load more"),
             description=self.tr("Read the next batch of recorded changes."),
         )
         self.load_more_button.setObjectName("activityLoadMoreButton")
+        self.load_more_button.setAccessibleName(self.tr("Load more activity"))
         self.load_more_button.clicked.connect(lambda: self.load_activity(refresh=False, append=True))
         self.load_more_button.setEnabled(False)
-        actions.add_action(self.load_more_button)
-        actions.add_action(self.load_button, primary=True)
-        self.export_json_button = SecondaryButton(self.tr("Export JSON…"))
+        self.export_json_button = SecondaryButton(self.tr("JSON…"))
         self.export_json_button.setObjectName("activityExportJson")
+        self.export_json_button.setAccessibleName(self.tr("Export selected activity as JSON"))
         self.export_json_button.clicked.connect(lambda: self._export_selected("json"))
         self.export_json_button.setEnabled(False)
-        self.export_markdown_button = SecondaryButton(self.tr("Export Markdown…"))
+        self.export_markdown_button = SecondaryButton(self.tr("Markdown…"))
         self.export_markdown_button.setObjectName("activityExportMarkdown")
+        self.export_markdown_button.setAccessibleName(self.tr("Export selected activity as Markdown"))
         self.export_markdown_button.clicked.connect(lambda: self._export_selected("markdown"))
         self.export_markdown_button.setEnabled(False)
-        actions.add_action(self.export_json_button)
-        actions.add_action(self.export_markdown_button)
+        self._layout_activity_actions()
         self.scaffold.add_widget(actions)
 
         self.feedback = QLabel(self.tr("Activity has not been loaded."))
@@ -341,18 +382,15 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.scaffold.add_widget(self.detail_card)
 
     def remember_run_id(self, run_id: str) -> None:
-        """Retain a compatibility run identifier without executing it.
-
-        Activity events are source-owned and may not contain a one-to-one run
-        record. Keeping the ID as a bounded presentation hint lets a later
-        load explain what the user came from without fabricating an event.
-        """
+        """Find and select one exact persisted run without substituting another."""
         self._requested_run_id = str(run_id or "").strip()[:128]
         if self._requested_run_id:
             self.feedback.setText(
-                self.tr("Activity opened from run %1. Load activity to find its recorded result.")
+                self.tr("Finding the requested run %1…")
                 .replace("%1", self._requested_run_id)
             )
+            if self._worker is None or not self._worker.isRunning():
+                self.load_activity(refresh=False)
 
     def _apply_presentation_state(
         self,
@@ -381,7 +419,11 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         if self._worker is not None and self._worker.isRunning():
             return
         try:
-            filters = self._current_filters()
+            filters = (
+                {"sources": ("action_center",), "search": self._requested_run_id}
+                if self._requested_run_id
+                else self._current_filters()
+            )
         except ValueError as exc:
             self.feedback.setText(str(exc))
             self.feedback.setVisible(True)
@@ -402,6 +444,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             refresh=refresh,
             filters=filters,
             cursor=self._next_cursor if append else None,
+            target_run_id=self._requested_run_id,
         )
         worker.setProperty("appendPage", append)
         worker.setProperty("filterKey", filter_key)
@@ -428,9 +471,64 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         _stop_journal_workers(self._workers)
         self._worker = None
 
+    def showEvent(self, event: Any) -> None:
+        super().showEvent(event)
+        if self._initial_load_started:
+            return
+        self._initial_load_started = True
+        # Let route hand-offs set an exact run ID before the initial local read.
+        QTimer.singleShot(0, self._load_initial_local_activity)
+
+    def _load_initial_local_activity(self) -> None:
+        if self._closing or self._snapshot is not None or (self._worker is not None and self._worker.isRunning()):
+            return
+        if not self._requested_run_id:
+            history_index = self.activity_view_filter.findData("history")
+            self.activity_view_filter.setCurrentIndex(history_index)
+            local_index = self.source_filter.findData("local_loofi")
+            self.source_filter.setCurrentIndex(local_index)
+        self.load_activity(refresh=False)
+
     def closeEvent(self, event: QCloseEvent | None) -> None:
         self.cleanup()
         super().closeEvent(event)
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._layout_activity_actions()
+
+    def _layout_activity_actions(self) -> None:
+        """Wrap action controls when their current font no longer fits one row."""
+        if not hasattr(self, "_activity_action_layout"):
+            return
+        buttons = (
+            self.refresh_button,
+            self.load_more_button,
+            self.export_json_button,
+            self.export_markdown_button,
+            self.load_button,
+        )
+        layout = self._activity_action_layout
+        needed = sum(button.sizeHint().width() for button in buttons) + layout.horizontalSpacing() * (len(buttons) - 1)
+        wrap = self.activity_actions.width() > 0 and needed > self.activity_actions.width()
+        for button in buttons:
+            layout.removeWidget(button)
+        for column in range(len(buttons) + 1):
+            layout.setColumnStretch(column, 0)
+        if wrap:
+            layout.addWidget(self.refresh_button, 0, 0)
+            layout.addWidget(self.load_more_button, 0, 1)
+            layout.addWidget(self.load_button, 0, 2)
+            layout.addWidget(self.export_json_button, 1, 0)
+            layout.addWidget(self.export_markdown_button, 1, 1)
+            layout.setColumnStretch(3, 1)
+        else:
+            layout.addWidget(self.refresh_button, 0, 0)
+            layout.addWidget(self.load_more_button, 0, 1)
+            layout.addWidget(self.export_json_button, 0, 2)
+            layout.addWidget(self.export_markdown_button, 0, 3)
+            layout.addWidget(self.load_button, 0, 5)
+            layout.setColumnStretch(4, 1)
 
     def _loaded(self, result: object) -> None:
         if self._closing:
@@ -438,13 +536,22 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         if not isinstance(result, ChangeJournalSnapshot):
             self._load_failed(self.tr("The activity source returned an invalid result."))
             return
+        if self._requested_run_id and self._worker is not None and self._worker.target_run_id != self._requested_run_id:
+            self._worker = None
+            QTimer.singleShot(0, lambda: self.load_activity(refresh=False))
+            return
         requested_filter_key = (
             self._worker.property("filterKey")
             if self._worker is not None
             else None
         )
         try:
-            current_filter_key = self._filter_key(self._current_filters())
+            current_filters = (
+                {"sources": ("action_center",), "search": self._requested_run_id}
+                if self._requested_run_id
+                else self._current_filters()
+            )
+            current_filter_key = self._filter_key(current_filters)
         except ValueError as exc:
             self._load_failed(str(exc))
             return
@@ -488,7 +595,27 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._apply_presentation_state(snapshot_state(result))
         self.source_status.setText(self._source_status_text(result))
         self._render_events(result.events, selected_event_id=selected_id)
+        if self._requested_run_id:
+            requested = self._requested_run_id
+            matching = next((event for event in result.events if str(event.after_facts.get("run_id", "")) == requested), None)
+            if matching is None:
+                self.feedback.setText(self.tr("The requested run %1 could not be found in local Activity records.").replace("%1", requested))
+                self.feedback.setVisible(True)
+            else:
+                self._requested_run_id = ""
+                self._select_event(matching.event_id)
+                self.feedback.setText(self.tr("Opened requested run %1.").replace("%1", requested))
+                self.feedback.setVisible(True)
         self._worker = None
+
+    def _select_event(self, event_id: str) -> None:
+        for row in range(self.table.rowCount()):
+            item = self.table.item(row, 0)
+            if item is not None and str(item.data(Qt.ItemDataRole.UserRole)) == event_id:
+                self.table.selectRow(row)
+                self.table.setCurrentCell(row, 0)
+                self._render_selected()
+                return
 
     def _filters_changed(self, *_args: object) -> None:
         """Invalidate continuation cursors when the query changes."""
@@ -606,17 +733,20 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         view = str(self.activity_view_filter.currentData() or "needs_you")
         reboot = str(self.reboot_filter.currentData() or "")
         search = self.search_input.text().strip()[:120]
-        if source:
+        if source == "local_loofi":
+            filters["sources"] = ("action_center", "loofi_app")
+        elif source:
             filters["sources"] = (source,)
         if state:
             filters["statuses"] = (state,)
-        elif view:
+        elif view and not (source == "local_loofi" and view == "history"):
             view_statuses = {
                 "needs_you": ("failed", "verification_failed", "awaiting_reboot", "interrupted"),
                 "in_progress": ("running", "verifying"),
                 "history": ("succeeded", "cancelled", "recorded"),
             }
-            filters["statuses"] = view_statuses.get(view, view_statuses["needs_you"])
+            if view in view_statuses:
+                filters["statuses"] = view_statuses[view]
         if reboot:
             filters["reboot_required"] = reboot == "required"
         if search:

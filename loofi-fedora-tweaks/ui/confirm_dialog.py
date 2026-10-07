@@ -170,12 +170,20 @@ class ConfirmActionDialog(QDialog):
 
         cancel_btn = QPushButton(self.tr("Cancel"))
         cancel_btn.setMinimumWidth(100)
+        cancel_btn.setDefault(True)
+        cancel_btn.setFocus()
         cancel_btn.clicked.connect(self.reject)
         btn_row.addWidget(cancel_btn)
 
-        confirm_btn = QPushButton(self.tr("Confirm"))
+        confirm_label = (
+            self.tr("Apply %1").replace("%1", action)
+            if action
+            else self.tr("Confirm")
+        )
+        confirm_btn = QPushButton(confirm_label)
         confirm_btn.setObjectName("dangerAction")
         confirm_btn.setMinimumWidth(100)
+        confirm_btn.setAutoDefault(False)
         confirm_btn.clicked.connect(self._on_confirm)
         btn_row.addWidget(confirm_btn)
         layout.addLayout(btn_row)

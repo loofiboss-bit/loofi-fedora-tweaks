@@ -8,7 +8,7 @@ and log export. Uses SmartLogViewer from utils/smart_logs.py.
 
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
-from PyQt6.QtCore import QTimer
+from PyQt6.QtCore import QTimer, Qt
 from PyQt6.QtWidgets import (
     QComboBox,
     QFileDialog,
@@ -324,13 +324,16 @@ class LogsTab(BaseTab):
                 prio_item = self.make_table_item(entry.priority_label)
                 if entry.priority <= 2:
                     prio_item.setForeground(semantic_qcolor("error"))
+                    prio_item.setData(Qt.ItemDataRole.UserRole + 90, "error")
                 elif entry.priority <= 4:
                     prio_item.setForeground(semantic_qcolor("warning"))
+                    prio_item.setData(Qt.ItemDataRole.UserRole + 90, "warning")
                 self.log_table.setItem(row, 2, prio_item)
 
                 msg_item = self.make_table_item(entry.message[:200])
                 if entry.pattern_match:
                     msg_item.setForeground(semantic_qcolor("error"))
+                    msg_item.setData(Qt.ItemDataRole.UserRole + 90, "error")
                     msg_item.setToolTip(f"Pattern: {entry.pattern_match}")
                 self.log_table.setItem(row, 3, msg_item)
             normalize = getattr(BaseTab, "ensure_table_row_heights", None)

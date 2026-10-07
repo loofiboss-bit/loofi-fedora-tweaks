@@ -263,6 +263,33 @@ class TestV29VerticalWorkflowWidgets(unittest.TestCase):
         shell._handle_update_source_action(page, "system", "continue")
         self.assertEqual(calls, [(page, "system", "verify", "run-after-reboot")])
 
+    def test_update_recovery_opens_the_exact_saved_run(self):
+        from ui.main_window_utility import MainWindowUtilityMixin
+
+        shell = MainWindowUtilityMixin()
+        calls = []
+        shell.switch_to_route = lambda _route: True
+        shell._open_activity_status_result = lambda: calls.append("opened")
+        page = SimpleNamespace(source_state=lambda _source: SimpleNamespace(run_id="failed-run"))
+
+        shell._handle_update_source_action(page, "system", "recovery")
+
+        self.assertEqual(shell._last_operation_run_id, "failed-run")
+        self.assertEqual(calls, ["opened"])
+
+    def test_update_failure_preserves_its_run_id_for_activity(self):
+        from ui.main_window_utility import MainWindowUtilityMixin
+
+        shell = MainWindowUtilityMixin()
+        page = SimpleNamespace(apply_outcome=lambda _source, outcome: setattr(page, "outcome", outcome))
+
+        shell._utility_update_finished(page, "system", SimpleNamespace(run_id="finished-run"))
+        self.assertEqual(shell._last_operation_run_id, "finished-run")
+
+        shell._utility_update_failed(page, "system", "Verification failed", run_id="failed-run")
+        self.assertEqual(shell._last_operation_run_id, "failed-run")
+        self.assertEqual(page.outcome.run_id, "failed-run")
+
     def test_fix_widget_uses_the_existing_symptom_surface(self):
         from ui.fix_workflow import FixWorkflowPage
 

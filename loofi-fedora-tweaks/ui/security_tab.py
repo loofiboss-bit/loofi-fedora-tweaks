@@ -37,7 +37,6 @@ from PyQt6.QtWidgets import (
     QWidget,
 )
 from services.network import PortAuditor
-from services.security import FirewallManager
 from services.system import SystemManager
 from utils.command_runner import CommandRunner
 from services.security import SandboxManager
@@ -183,64 +182,80 @@ class SecurityTab(QWidget, PluginInterface):
         return True
 
     def _create_score_section(self: typing.Any) -> QGroupBox:
-        """Create security score display."""
-        group = QGroupBox(self.tr("Security Score"))
+        """Create a limited port and firewall assessment with honest unknown states."""
+        group = QGroupBox(self.tr("Port and firewall assessment"))
         layout = QVBoxLayout(group)
-
-        # Get security score
-        score_data = PortAuditor.get_security_score()
-        score = score_data["score"]
-        rating = score_data["rating"]
-
-        # Color based on score
-        if score >= 90:
-            score_level = "good"
-        elif score >= 70:
-            score_level = "ok"
-        elif score >= 50:
-            score_level = "warning"
-        else:
-            score_level = "bad"
-
-        score_label = QLabel(f"{score}/100 - {rating}")
-        score_label.setObjectName("secScoreLabel")
-        score_label.setProperty("scoreLevel", score_level)
-        if score_label.style() is not None:
-            _style = score_label.style()
-            assert _style is not None
-            _style.unpolish(score_label)
-            _style.polish(score_label)
-        layout.addWidget(score_label)
-
-        # Stats
+        scope = QLabel(self.tr("This assessment covers listening ports and firewalld only."))
+        scope.setWordWrap(True)
+        layout.addWidget(scope)
+        self.score_label = QLabel()
+        self.score_label.setObjectName("secScoreLabel")
+        layout.addWidget(self.score_label)
         stats_layout = QHBoxLayout()
-        stats_layout.addWidget(QLabel(f"Open Ports: {score_data['open_ports']}"))
-        stats_layout.addWidget(QLabel(f"Risky Ports: {score_data['risky_ports']}"))
-
-        fw_status = self.tr("Running") if PortAuditor.is_firewalld_running() else self.tr("Stopped")
-        stats_layout.addWidget(QLabel(f"Firewall: {fw_status}"))
+        self.score_ports = QLabel()
+        self.score_risky = QLabel()
+        self.score_firewall = QLabel()
+        for label in (self.score_ports, self.score_risky, self.score_firewall):
+            stats_layout.addWidget(label)
         stats_layout.addStretch()
         layout.addLayout(stats_layout)
-
-        # Recommendations
-        if score_data["recommendations"]:
-            rec_label = QLabel(self.tr("Recommendations:"))
-            rec_label.setObjectName("secRecLabel")
-            layout.addWidget(rec_label)
-
-            for rec in score_data["recommendations"][:3]:  # Limit to 3
-                rec_item = QLabel(self.tr("Warning: {} ").format(rec).strip())
-                rec_item.setObjectName("secRecItem")
-                rec_item.setWordWrap(True)
-                layout.addWidget(rec_item)
-
-        # Refresh button
-        refresh_btn = QPushButton(self.tr("Refresh Score"))
-        refresh_btn.setAccessibleName(self.tr("Refresh Score"))
+        self.score_error = QLabel()
+        self.score_error.setObjectName("cardDescription")
+        self.score_error.setWordWrap(True)
+        layout.addWidget(self.score_error)
+        self.score_recommendations = QVBoxLayout()
+        layout.addLayout(self.score_recommendations)
+        self.score_checked = QLabel()
+        self.score_checked.setObjectName("cardDescription")
+        layout.addWidget(self.score_checked)
+        refresh_btn = QPushButton(self.tr("Refresh assessment"))
         refresh_btn.clicked.connect(self._refresh_score)
         layout.addWidget(refresh_btn)
-
+        self._update_score_display(PortAuditor.get_security_score())
         return group
+
+    def _update_score_display(self: typing.Any, observation: typing.Any) -> None:
+        """Render only facts supported by the latest bounded observations."""
+        if observation.status == "complete" and observation.score is not None:
+            score_level = "good" if observation.score >= 90 else "ok" if observation.score >= 70 else "warning" if observation.score >= 50 else "bad"
+            self.score_label.setText(
+                self.tr("%1/100 — %2").replace("%1", str(observation.score)).replace("%2", self.tr(observation.rating))
+            )
+            self.score_label.setProperty("scoreLevel", score_level)
+            self.score_ports.setText(self.tr("Open ports: %1").replace("%1", str(observation.open_ports)))
+            self.score_risky.setText(self.tr("Risky ports: %1").replace("%1", str(observation.risky_ports)))
+        else:
+            self.score_label.setText(self.tr("Assessment unavailable"))
+            self.score_label.setProperty("scoreLevel", "unknown")
+            self.score_ports.setText(
+                self.tr("Open ports: Unknown (%1)").replace("%1", self.tr(observation.ports_status.title()))
+            )
+            self.score_risky.setText(self.tr("Risky ports: Unknown"))
+        self.score_firewall.setText(
+            self.tr("Firewall: %1").replace("%1", self.tr(observation.firewall_status.title()))
+        )
+        self.score_error.setText(observation.error)
+        if self.score_label.style() is not None:
+            style = self.score_label.style()
+            style.unpolish(self.score_label)
+            style.polish(self.score_label)
+        while self.score_recommendations.count():
+            item = self.score_recommendations.takeAt(0)
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+        if observation.recommendations:
+            rec_label = QLabel(self.tr("Recommendations:"))
+            rec_label.setObjectName("secRecLabel")
+            self.score_recommendations.addWidget(rec_label)
+            for recommendation in observation.recommendations[:3]:
+                rec_item = QLabel(self.tr("Review: %1").replace("%1", recommendation))
+                rec_item.setObjectName("secRecItem")
+                rec_item.setWordWrap(True)
+                self.score_recommendations.addWidget(rec_item)
+        self.score_checked.setText(
+            self.tr("Observed: %1").replace("%1", observation.observed_at) if observation.observed_at else ""
+        )
 
     def _create_ports_section(self: typing.Any) -> QGroupBox:
         """Create port auditor section."""
@@ -414,23 +429,28 @@ class SecurityTab(QWidget, PluginInterface):
         return group
 
     def _refresh_score(self: typing.Any) -> typing.Any:
-        """Refresh security score."""
-        self.log("Rescanning security...")
-        # Would need to rebuild the section - simplified for now
-        self.log("Security scan complete.")
+        """Refresh and render current read-only port and firewall observations."""
+        self._update_score_display(PortAuditor.get_security_score())
 
     def _refresh_ports(self: typing.Any) -> typing.Any:
         """Refresh port list."""
         self.port_table.clearSpans()
         self.port_table.setRowCount(0)
 
-        ports = PortAuditor.scan_ports()
-
-        if not ports:
-            BaseTab.set_table_empty_state(self.port_table, self.tr("No open ports detected"))
+        observation = PortAuditor.scan_ports()
+        if observation.status != "complete":
+            BaseTab.set_table_empty_state(
+                self.port_table,
+                self.tr("Port results unavailable: %1").replace(
+                    "%1", observation.error or self.tr(observation.status.title())
+                ),
+            )
+            return
+        if not observation.ports:
+            BaseTab.set_table_empty_state(self.port_table, self.tr("No listening ports were reported by the completed scan."))
             return
 
-        for port in ports:
+        for port in observation.ports:
             row = self.port_table.rowCount()
             self.port_table.insertRow(row)
 
@@ -442,6 +462,7 @@ class SecurityTab(QWidget, PluginInterface):
             status_item = QTableWidgetItem(self.tr("Risk") if port.is_risky else self.tr("OK"))
             if port.is_risky:
                 status_item.setForeground(semantic_qcolor("error"))
+                status_item.setData(Qt.ItemDataRole.UserRole + 90, "error")
             self.port_table.setItem(row, 4, status_item)
 
         normalize = getattr(BaseTab, "ensure_table_row_heights", None)
@@ -578,10 +599,19 @@ class SecurityTab(QWidget, PluginInterface):
         return group
 
     def _check_firewall_status(self: typing.Any) -> typing.Any:
-        """Log current firewall status using service layer."""
-        status = FirewallManager.get_status()
-        self.log(f"Firewall running: {status.running}")
-        self.log(f"Default zone: {status.default_zone or 'unknown'}")
+        """Report running, stopped, or unknown without collapsing probe errors."""
+        observation = PortAuditor.observe_firewalld()
+        if observation.status == "running":
+            message = self.tr("Firewall is running.")
+        elif observation.status == "stopped":
+            message = self.tr("Firewall is not running.")
+        else:
+            message = self.tr("Firewall status is unknown: %1").replace(
+                "%1", observation.error or self.tr(observation.status.title())
+            )
+        if observation.observed_at:
+            message += " " + self.tr("Observed at %1.").replace("%1", observation.observed_at)
+        self.log(message)
 
     def _enable_firewall(self: typing.Any) -> typing.Any:
         """Enable firewalld via service layer."""

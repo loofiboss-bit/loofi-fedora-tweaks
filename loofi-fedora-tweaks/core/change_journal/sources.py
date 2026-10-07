@@ -392,6 +392,42 @@ class ActionCenterHistorySource:
                 ),
             )
 
+    def get_run_event(self, run_id: str) -> ChangeEvent | None:
+        """Read one exact Action Center run without paging or migration."""
+        run = self.run_store.get(str(run_id))
+        if run is None:
+            return None
+        plans = self.plan_store.list_read_only()
+        plan = next((candidate for candidate in plans if candidate.plan_id == run.plan_id), None)
+        resources = tuple(plan.affected_resources) if plan else ("host-system",)
+        return ChangeEvent(
+            event_id=stable_event_id("action_center", f"run:{run.run_id}"),
+            source="action_center",
+            occurred_at=run.updated_at or run.created_at,
+            actor_class="user",
+            summary=f"Action Center run: {run.action_id}",
+            resources=resources,
+            after_facts={
+                "expected": {
+                    "action_id": run.action_id,
+                    "risk_level": plan.risk_level if plan else "unknown",
+                    "reboot_policy": plan.reboot_policy if plan else "unknown",
+                    "affected_resources": list(resources),
+                },
+                "plan_id": run.plan_id,
+                "run_id": run.run_id,
+                "action_id": run.action_id,
+                "execution": _safe_result(run.execution_result),
+                "verification": _safe_result(run.verification_result),
+                "recovery": {
+                    "status": run.recovery_status,
+                    "rollback_supported": bool(plan.rollback_supported) if plan else False,
+                },
+            },
+            state=run.state,
+            reboot_required=bool(getattr(run, "reboot_required", False)) or run.state == "awaiting_reboot",
+        )
+
 
 def _safe_result(result: Mapping[str, Any] | None) -> dict[str, Any]:
     """Keep journal evidence typed while excluding raw output and vectors."""

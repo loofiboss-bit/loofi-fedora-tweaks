@@ -237,6 +237,7 @@ def _format_time(value):
 
 class OverviewPage(QWidget, PluginInterface):
     routeRequested = pyqtSignal(str)
+    taskRequested = pyqtSignal(str)
     refreshRequested = pyqtSignal()
 
     def __init__(self, profile=None, parent=None):
@@ -250,6 +251,8 @@ class OverviewPage(QWidget, PluginInterface):
         self._rows = {}
         self._cards = {}
         self._empty = {}
+        self._has_registered_problem = False
+        self._intro_dismissed = False
         root = QVBoxLayout(self)
         root.setContentsMargins(20, 12, 20, 12)
         root.setSpacing(12)
@@ -269,6 +272,19 @@ class OverviewPage(QWidget, PluginInterface):
         self.notice = InlineNotice(self.tr("Collecting system information"), self.tr("Measurements run while this page is visible."))
         self.notice.setObjectName("overviewNotice")
         root.addWidget(self.notice)
+        self.intro_card = Card(self.tr("Start with a useful setting"), self.tr("Find a control, review motion preferences, or see what is installed."), parent=self)
+        self.intro_card.setObjectName("overviewIntro")
+        self._intro_buttons = {}
+        for task_id, title in (("click-behavior", "Find click behavior"), ("reduced-motion", "Review Reduced motion"), ("installed", "Open Installed")):
+            button = QuietButton(self.tr(title))
+            button.setAccessibleName(self.tr(title))
+            button.clicked.connect(lambda _checked=False, selected=task_id: self.taskRequested.emit(selected))
+            self.intro_card.add_widget(button)
+            self._intro_buttons[task_id] = button
+        self.dismiss_intro_button = QuietButton(self.tr("Dismiss"))
+        self.dismiss_intro_button.clicked.connect(self._dismiss_intro)
+        self.intro_card.add_widget(self.dismiss_intro_button)
+        root.addWidget(self.intro_card)
         self.next_steps_card = Card(self.tr("Next steps"), parent=self)
         self.next_steps_empty = QLabel(self.tr("Suggestions appear after the first measurement."))
         self.next_steps_empty.setWordWrap(True)
@@ -323,6 +339,49 @@ class OverviewPage(QWidget, PluginInterface):
 
     def create_widget(self):
         return self
+
+    def set_platform_profile(self, profile) -> None:
+        """Show only starter actions supported by the detected desktop."""
+        self.profile = profile
+        desktop = str(getattr(getattr(profile, "desktop", None), "value", "unknown"))
+        self._intro_buttons["click-behavior"].setVisible(desktop in {"kde", "gnome"})
+        try:
+            from core.tasks.tweak_presets import profile_for_preset
+
+            profile_for_preset("reduced-motion", profile)
+            reduced_motion = True
+        except (ImportError, ValueError, TypeError):
+            reduced_motion = False
+        self._intro_buttons["reduced-motion"].setVisible(reduced_motion)
+        self._load_intro_preference()
+
+    def _load_intro_preference(self) -> None:
+        try:
+            from utils.settings import SettingsManager
+
+            self._intro_dismissed = bool(SettingsManager.instance().get("overview_intro_dismissed", False))
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+            self._intro_dismissed = False
+        self._update_intro_visibility()
+
+    def _dismiss_intro(self) -> None:
+        try:
+            from utils.settings import SettingsManager
+
+            manager = SettingsManager.instance()
+            previous = manager.get("overview_intro_dismissed", False)
+            manager.set("overview_intro_dismissed", True)
+            if not manager.save():
+                manager.set("overview_intro_dismissed", previous)
+                self.notice.set_notice("error", self.tr("Could not save preference"), self.tr("The introduction remains visible."))
+                return
+            self._intro_dismissed = True
+            self._update_intro_visibility()
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+            self.notice.set_notice("error", self.tr("Could not save preference"), self.tr("The introduction remains visible."))
+
+    def _update_intro_visibility(self) -> None:
+        self.intro_card.setVisible(not self._intro_dismissed and not self._has_registered_problem)
 
     def set_controller(self, controller):
         if self._controller is controller:
@@ -433,6 +492,8 @@ class OverviewPage(QWidget, PluginInterface):
                 self._reflow(self.width())
 
     def _show_next_steps(self, suggestions):
+        self._has_registered_problem = bool(suggestions)
+        self._update_intro_visibility()
         self.next_steps_card.setVisible(bool(suggestions))
         if not suggestions:
             for row in self._next_step_rows:

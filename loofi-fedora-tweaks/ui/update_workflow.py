@@ -297,7 +297,8 @@ class UpdateWorkflowPage(QWidget):
                     summary += self.tr(" · Check again before updating")
             else:
                 summary = ""
-            details.setText("\n".join(part for part in (summary, state.message) if part))
+            candidate_detail = "\n".join(state.details)
+            details.setText("\n".join(part for part in (summary, state.message, candidate_detail) if part))
             checked = self._checked_labels[source]
             checked.setText(self.tr("Last checked: %1").replace("%1", state.checked_at) if state.checked_at else self.tr("Last checked: Never"))
             button.setText(self.tr(cta.label))
