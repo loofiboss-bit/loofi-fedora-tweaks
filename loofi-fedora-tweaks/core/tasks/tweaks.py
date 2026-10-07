@@ -51,6 +51,9 @@ class TweakState:
 
 
 TWEAKS: tuple[Tweak, ...] = (
+    Tweak("gnome-mouse-left-handed", "Left-handed mouse", "Swap the primary and secondary mouse buttons.", "Input", "gnome", "set-gnome-mouse-left-handed", (("true", "On"), ("false", "Off"))),
+    Tweak("gnome-mouse-acceleration", "Mouse acceleration", "Choose how pointer speed responds to mouse movement.", "Input", "gnome", "set-gnome-mouse-acceleration", (("default", "System default"), ("flat", "Constant speed"), ("adaptive", "Adaptive"))),
+    Tweak("gnome-keyboard-repeat", "Keyboard repeat", "Repeat a key while it is held down.", "Input", "gnome", "set-gnome-keyboard-repeat", (("true", "On"), ("false", "Off"))),
     Tweak("gnome-color", "Color preference", "Choose how GNOME apps prefer light or dark colors.", "Appearance", "gnome", "set-gnome-color", (("default", "System default"), ("prefer-light", "Light"), ("prefer-dark", "Dark"))),
     Tweak("gnome-animations", "Animations", "Turn GNOME interface motion on or off.", "Appearance", "gnome", "set-gnome-animations", (("true", "On"), ("false", "Off"))),
     Tweak("gnome-text-scale", "Text size", "Scale interface text without changing display resolution.", "Appearance", "gnome", "set-gnome-text-scale", (("1.0", "100%"), ("1.25", "125%"), ("1.5", "150%"))),
@@ -144,6 +147,7 @@ BY_ACTION = {tweak.action_id: tweak for tweak in TWEAKS}
 # Fedora/upstream defaults for GNOME, power and packaging controls. KDE defaults
 # come from the reviewed kreadconfig6 specs so there is one source of truth.
 _DEFAULTS = {
+    "gnome-mouse-left-handed": "false", "gnome-mouse-acceleration": "default", "gnome-keyboard-repeat": "true",
     "gnome-color": "default", "gnome-animations": "true", "gnome-text-scale": "1.0",
     "gnome-battery": "false", "gnome-clock": "false", "gnome-clock-format": "24h",
     "gnome-clock-weekday": "false", "gnome-button-layout": ":appmenu,close",

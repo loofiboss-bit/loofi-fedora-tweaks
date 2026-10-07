@@ -25,9 +25,16 @@ UpdateStatus = Literal[
     "failed",
     "verification_failed",
 ]
-UpdateButtonLabel = Literal["Check", "Update", "Continue", "Verify"]
+UpdateButtonLabel = Literal["Check", "Update", "Continue", "Verify", "Review"]
+
+STALE_SECONDS = 24 * 60 * 60
 
 UPDATE_SOURCES: tuple[UpdateSource, ...] = ("system", "flatpak", "firmware")
+UPDATE_ACTION_SOURCES = {
+    "update-fedora-system": "system",
+    "update-flatpaks": "flatpak",
+    "update-firmware": "firmware",
+}
 
 
 @dataclass(frozen=True)
@@ -114,11 +121,13 @@ class UpdateCTA:
 def update_cta(state: UpdateSourceState) -> UpdateCTA:
     """Resolve exactly one state-driven CTA without starting an operation."""
 
+    if state.metadata.get("recovery_required") or state.status == "verification_failed":
+        return UpdateCTA("Review", True, "recovery", state.message or "Review this update in Activity.")
     if state.status == "checking":
         return UpdateCTA("Check", False, "check", "A source check is already running.")
     if state.status == "preparing":
         return UpdateCTA("Update", False, "update", state.message or "An update is already being prepared.")
-    if state.status in {"verifying", "verification_failed"}:
+    if state.status == "verifying":
         return UpdateCTA("Verify", True, "verify", state.message or "Verify the resulting source state.")
     if state.status == "awaiting_reboot" or state.reboot_required and state.status not in {"unchecked", "checking", "available"}:
         return UpdateCTA("Continue", True, "continue", state.message or "Continue after the required reboot.")

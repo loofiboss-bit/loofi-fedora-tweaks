@@ -23,6 +23,8 @@ from core.plugins.interface import PluginInterface
 class TweaksPage(QWidget, PluginInterface):
     """Render inspected values; request changes without owning execution."""
 
+    saveProfileRequested = pyqtSignal()
+    loadProfileRequested = pyqtSignal()
     refreshRequested = pyqtSignal()
     changeRequested = pyqtSignal(str, str)
     restoreRequested = pyqtSignal(str, str)
@@ -75,6 +77,17 @@ class TweaksPage(QWidget, PluginInterface):
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._filter_rows)
         search_row.addWidget(self.search_input, 1)
+        self.save_profile_button = QPushButton(self.tr("Save current settings…"))
+        self.save_profile_button.setAccessibleName(self.tr("Save current settings as a portable profile"))
+        self.save_profile_button.clicked.connect(self.saveProfileRequested.emit)
+        self.load_profile_button = QPushButton(self.tr("Load profile…"))
+        self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
+        self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
+        profile_row = QHBoxLayout()
+        profile_row.addWidget(self.save_profile_button)
+        profile_row.addWidget(self.load_profile_button)
+        profile_row.addStretch()
+        intro.add_widget(self._wrap(profile_row))
         self.refresh_button = QPushButton(self.tr("Refresh"))
         self.refresh_button.setObjectName("tweaksRefresh")
         self.refresh_button.clicked.connect(self.refreshRequested.emit)
@@ -343,6 +356,9 @@ class TweaksPage(QWidget, PluginInterface):
     def set_busy(self, busy: bool, message: str = "", *, cancellable: bool = False) -> None:
         self._busy = busy
         self._reading = busy and cancellable
+        self.save_profile_button.setEnabled(not busy)
+        self.load_profile_button.setEnabled(not busy)
+        self.cancel_snapshot_button.setText(self.tr("Cancel check"))
         self.refresh_button.setEnabled(not busy)
         self.cancel_snapshot_button.setVisible(self._reading)
         self.cancel_snapshot_button.setEnabled(self._reading)

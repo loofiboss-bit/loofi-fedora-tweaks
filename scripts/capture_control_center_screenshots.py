@@ -47,7 +47,7 @@ def fixture_snapshot():
                              stamp, maintenance, (12.0, 30.0, 18.0, 40.0))
 
 
-def capture(out: Path, scale: str, large_text: bool):
+def capture(out: Path, scale: str, large_text: bool, installed_view: bool = False):
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
     os.environ["QT_SCALE_FACTOR"] = scale
     fixture_root = Path(tempfile.mkdtemp(prefix="loofi-control-center-render-"))
@@ -95,6 +95,13 @@ def capture(out: Path, scale: str, large_text: bool):
         PluginRegistry.reset()
         SettingsManager._reset_instance()
         sample = fixture_snapshot()
+        from services.software.installed_applications import InstalledApplication, InstalledInventory
+        installed = InstalledInventory(applications=(
+            InstalledApplication("Example browser", "org.example.Browser", "flatpak", "user", "app/org.example.Browser/x86_64/stable", "1.0", "120 MB"),
+            InstalledApplication("Example browser", "org.example.Browser", "flatpak", "system", "app/org.example.Browser/x86_64/stable", "1.0", "120 MB"),
+            InstalledApplication("Example RPM", "example", "fedora", "system", "example", "1.0", "20 MB"),
+        ))
+        scope.enter_context(patch("services.software.installed_applications.InstalledApplicationService.snapshot", return_value=installed))
         scope.enter_context(patch("services.system.dashboard.DashboardService.collect", return_value=sample))
         scope.enter_context(patch("ui.main_window.MainWindow._check_first_run"))
         scope.enter_context(patch("ui.main_window.MainWindow._initialize_background_services"))
@@ -144,6 +151,11 @@ def capture(out: Path, scale: str, large_text: bool):
                             page = window.findChild(TweaksPage)
                             page.set_states(tuple(TweakState(tweak, "ready", value=default_for(tweak) or tweak.choices[0][0], choices=tweak.choices)
                                                   for tweak in visible_tweaks(profile) if tweak.choices))
+                        if route == "apps" and installed_view:
+                            from ui.install_workflow import InstallWorkflowPage
+                            install = window.findChild(InstallWorkflowPage)
+                            install.installed_card.apply_inventory(installed)
+                            install.view_filter.setCurrentIndex(install.view_filter.findData("installed"))
                         for area in window.findChildren(QScrollArea):
                             area.verticalScrollBar().setValue(0)
                         app.processEvents()
@@ -196,5 +208,6 @@ if __name__ == "__main__":
     parser.add_argument("output", type=Path)
     parser.add_argument("--scale", default="1")
     parser.add_argument("--large-text", action="store_true")
+    parser.add_argument("--installed-view", action="store_true", help="Capture the Installed Apps view")
     arguments = parser.parse_args()
-    capture(arguments.output, arguments.scale, arguments.large_text)
+    capture(arguments.output, arguments.scale, arguments.large_text, arguments.installed_view)

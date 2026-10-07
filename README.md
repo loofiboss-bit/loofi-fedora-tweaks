@@ -27,7 +27,7 @@ recorded maintenance. Then choose the task you want to perform.
 |---|---|
 | **Overview** | CPU, memory, GPU, storage, network, temperatures, and battery where supported. Unavailable readings explain why. |
 | **Tweaks** | Search a setting, change it, and verify it. Restore a previous value where supported. GNOME and KDE appearance, desktop, window and input settings, plus DNF options. |
-| **Apps** | Find trusted applications and install several at once, with a result for each. |
+| **Apps** | Install trusted applications, inspect installed apps, and review scoped Flatpak removal. |
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
@@ -96,3 +96,11 @@ See [CONTRIBUTING](CONTRIBUTING.md), [ARCHITECTURE](ARCHITECTURE.md), and the
 ## License
 
 MIT
+
+### Everyday workflows (local candidate)
+
+Overview prioritizes recorded next steps. Updates restores pending verification
+after reopening without repeating an update. Tweaks supports [portable profiles](docs/TWEAK_PROFILES.md)
+within the same desktop environment. Apps lists installed Flatpaks by installation
+and preserves app data when removing them. Health provides read-only sound and
+Bluetooth diagnostics. See [qualification](docs/EVERYDAY_VERIFICATION.md).

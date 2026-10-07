@@ -2,6 +2,8 @@
 
 SOURCE_LABELS = {
     "system-check": "System Check",
+    "audio-state": "Audio services, default output and volume",
+    "bluetooth-state": "Bluetooth service, adapter, radio and paired devices",
     "observability": "Saved resource trends",
     "change-journal": "Trusted Change Journal",
     "package-health": "Package health",
@@ -34,14 +36,14 @@ SYMPTOMS = (
     (
         "sound_not_working",
         "Sound is not working",
-        "system_slow",
-        "This general check does not read device-specific audio logs. Open sound settings if it finds no system-wide issue.",
+        "sound_not_working",
+        "This check reads audio metadata. Confirm actual playback yourself.",
     ),
     (
         "bluetooth_not_working",
         "Bluetooth is not working",
-        "system_slow",
-        "This general check does not scan Bluetooth devices. Open Bluetooth settings if it finds no system-wide issue.",
+        "bluetooth_not_working",
+        "This check reads local Bluetooth metadata without scanning or pairing. Confirm device connectivity yourself.",
     ),
     ("updates_failed", "Updates failed", "updates_failed", ""),
     ("app_wont_start", "An app will not start", "application_failed", ""),

@@ -255,11 +255,33 @@ class DashboardService:
                                              reason="" if valid else "VRAM counters are unavailable"))
             elif vendor == "0x10de":
                 readings.extend(self._nvidia(identifier, label, device))
+            elif vendor == "0x8086":
+                readings.extend(self._intel(identifier, label, card))
             else:
                 readings.append(self._metric(identifier, "gpu", label, None, "%", str(device), status="unavailable",
                                              reason="GPU utilization is not exposed by this driver"))
         return readings or [self._metric("gpu.none", "gpu", "GPU", None, "%", "/sys/class/drm",
                                          status="unavailable", reason="No graphics adapter detected")]
+
+    def _intel(self, identifier: str, label: str, card: Path) -> list[MetricReading]:
+        act = self._number(card / "gt_act_freq_mhz")
+        if act is None:
+            act = self._number(card / "gt/gt0/rps_act_freq_mhz")
+        if act is None:
+            act = self._number(card / "gt_cur_freq_mhz")
+        max_freq = self._number(card / "gt_max_freq_mhz")
+        if max_freq is None:
+            max_freq = self._number(card / "gt/gt0/rps_max_freq_mhz")
+        if act is not None and max_freq is not None and max_freq > 0 and 0 <= act <= max_freq:
+            pct = round(act / max_freq * 100.0, 1)
+            detail = f"{int(act)} / {int(max_freq)} MHz"
+            return [self._metric(identifier, "gpu", label, pct, "%", str(card),
+                                 detail=detail, status="ready")]
+        if act is not None:
+            return [self._metric(identifier, "gpu", label, float(act), "MHz", str(card),
+                                 detail=f"{int(act)} MHz", status="ready")]
+        return [self._metric(identifier, "gpu", label, None, "%", str(card), status="unavailable",
+                             reason="Intel GPU frequency counters are unavailable")]
 
     def _nvidia(self, identifier: str, label: str, device: Path) -> list[MetricReading]:
         executable = shutil.which("nvidia-smi")
@@ -334,7 +356,8 @@ class DashboardService:
                 detail = f"Saved check: {state}; {count} findings"
                 if latest.collection_errors:
                     detail += f"; {len(latest.collection_errors)} sources unavailable"
-                result["health"] = {"status": state, "detail": detail, "sampled_at": latest.timestamp}
+                result["health"] = {"status": state, "detail": detail, "sampled_at": latest.timestamp,
+                                    "findings": tuple(item for item in findings if isinstance(item, dict)) if isinstance(findings, list) else ()}
             else:
                 result["health"] = {"status": "error" if store.last_error else "unchecked",
                                     "detail": "Saved health results are unreadable" if store.last_error else "No saved health check",
@@ -342,12 +365,15 @@ class DashboardService:
         except (OSError, ValueError):
             result["health"] = {"status": "error", "detail": "Saved health results are unreadable", "sampled_at": None}
         try:
-            runs = ActionRunStore().list_read_only(limit=5, strict=True)
+            runs = ActionRunStore().list_read_only(limit=100, strict=True)
             if runs:
                 latest_run = max(runs, key=lambda run: run.updated_at)
                 result["activity"] = {"status": latest_run.state, "detail": latest_run.action_id,
                                       "sampled_at": latest_run.completed_at or latest_run.updated_at,
-                                      "verified": bool((latest_run.verification_result or {}).get("success", False))}
+                                      "verified": bool((latest_run.verification_result or {}).get("success", False)),
+                                      "runs": tuple({"status": run.state, "action_id": run.action_id,
+                                                     "sampled_at": run.completed_at or run.updated_at}
+                                                    for run in runs)}
             else:
                 result["activity"] = {"status": "unchecked", "detail": "No saved changes", "sampled_at": None}
         except (OSError, ValueError):

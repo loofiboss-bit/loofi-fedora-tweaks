@@ -101,6 +101,17 @@ class TestDashboardService(unittest.TestCase):
         read.side_effect = lambda path: values.get(path.name)
         self.assertEqual([metric.value for metric in self.service._gpus()], [50, 20])
 
+    @patch.object(DashboardService, "_paths", return_value=[Path("/sys/class/drm/card0")])
+    @patch.object(DashboardService, "_read")
+    def test_intel_freq_and_ratio(self, read, _):
+        values = {"vendor": "0x8086", "runtime_status": "active", "gt_act_freq_mhz": "650", "gt_max_freq_mhz": "1300"}
+        read.side_effect = lambda path: values.get(path.name)
+        metrics = self.service._gpus()
+        self.assertEqual(len(metrics), 1)
+        self.assertEqual(metrics[0].value, 50.0)
+        self.assertEqual(metrics[0].status, "ready")
+        self.assertEqual(metrics[0].detail, "650 / 1300 MHz")
+
     @patch("services.system.dashboard.shutil.which", return_value="/usr/bin/nvidia-smi")
     @patch("services.system.dashboard.subprocess.run", side_effect=subprocess.TimeoutExpired("nvidia-smi", 2))
     @patch.object(Path, "resolve", return_value=Path("/sys/devices/0000:01:00.0"))
@@ -207,14 +218,16 @@ class TestDashboardService(unittest.TestCase):
         result = self.service._maintenance()
         self.assertEqual(result["updates"]["sources"][0]["count"], 1)
         self.assertEqual(result["health"]["status"], "partial")
+        self.assertEqual(result["health"]["findings"], ({"id": "disk"},))
         self.assertIn("1 sources unavailable", result["health"]["detail"])
         self.assertEqual(result["activity"]["status"], "failed")
         self.assertFalse(result["activity"]["verified"])
+        self.assertEqual(result["activity"]["runs"][0]["action_id"], "set-tweak")
         updates.return_value.load.assert_called_once_with()
         updates.return_value.check.assert_not_called()
         health.return_value.load_read_only.assert_called_once_with()
         health.return_value.collect_and_append.assert_not_called()
-        actions.return_value.list_read_only.assert_called_once_with(limit=5, strict=True)
+        actions.return_value.list_read_only.assert_called_once_with(limit=100, strict=True)
         actions.return_value.save.assert_not_called()
         run.assert_not_called()
 

@@ -108,6 +108,17 @@ def validate_command(command: str, args: Sequence[str] | None = None) -> None:
     if executable == "rpm" and any(str(arg).split("=", 1)[0] in _RPM_EVALUATION_FLAGS for arg in args):
         _reject("rpm macro evaluation and configuration flags are rejected by policy")
 
+    if executable == "flatpak" and args and args[0] == "uninstall" and "--no-related" in args:
+        # Installed-app removal has one closed, scope-bound shape. Other
+        # historical Flatpak builders remain governed by their audited actions.
+        valid_scope = len(args) == 6 and (
+            args[1] in {"--user", "--system"}
+            or re.fullmatch(r"--installation=[A-Za-z0-9][A-Za-z0-9_.-]{0,127}", args[1]) is not None
+        )
+        valid_ref = len(args) == 6 and re.fullmatch(r"app/[A-Za-z0-9][A-Za-z0-9._-]{1,255}/[A-Za-z0-9_-]+/[A-Za-z0-9._-]+", args[5]) is not None
+        if not valid_scope or not valid_ref or args[2:5] != ["--assumeyes", "--noninteractive", "--no-related"]:
+            _reject("Installed Flatpak removal requires one exact ref and explicit installation, preserving data")
+
     if executable in {"gsettings", "kreadconfig6", "kwriteconfig6", "dbus-send", "gdbus"} and tweak_command_class(executable, args) is None:
         _reject("Setting command is outside the reviewed keys, shapes, and value types")
     if executable == "plasma-apply-colorscheme" and tuple(args) != ("--list-schemes",):

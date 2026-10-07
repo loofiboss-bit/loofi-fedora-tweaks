@@ -6,7 +6,7 @@ import logging
 import shutil
 import time
 from collections.abc import Callable
-from concurrent.futures import Future, ThreadPoolExecutor
+from concurrent.futures import Future, ThreadPoolExecutor, TimeoutError as FutureTimeoutError
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Protocol
@@ -105,6 +105,8 @@ class DefaultEvidenceCollector:
     ) -> SourceEvidence:
         if cancellation.is_cancelled():
             return self._state(source_id, session, "cancelled", started_at)
+        if source_id in {"audio-state", "bluetooth-state"}:
+            return self._hardware(source_id, session, started_at, cancellation)
         if source_id == "system-check":
             return self._system_check(session, cancellation)
         if source_id == "observability":
@@ -140,6 +142,58 @@ class DefaultEvidenceCollector:
             started_at,
             reason_code="collector-unavailable",
             message="This bounded evidence source is unavailable on the current host.",
+        )
+
+    def _hardware(
+        self, source_id: str, session: TroubleshootingSession,
+        started_at: float, cancellation: CancellationSignal,
+    ) -> SourceEvidence:
+        from services.hardware.diagnostic_probes import HardwareDiagnosticProbe
+
+        kind = "audio" if source_id == "audio-state" else "bluetooth"
+        remaining = max(0.0, session.started_at + 14.0 - self.clock())
+        result = HardwareDiagnosticProbe().collect(kind, cancellation=cancellation, budget=remaining)
+        facts = result.facts
+        problems = []
+        if kind == "audio":
+            for service in ("pipewire", "wireplumber"):
+                state = facts.get(f"{service}_state")
+                if state is not None and state != "active":
+                    problems.append(f"{service.title()} is {state}.")
+            volume = facts.get("output_volume")
+            if volume is not None and (volume["muted"] or volume["level"] == 0):
+                problems.append("The default output is muted or its volume is zero.")
+            guidance = "Open Sound Settings, choose the intended output, and test playback. Run this check again after changing settings."
+        else:
+            if facts.get("service_state") not in {None, "active"}:
+                problems.append("The Bluetooth service is not active.")
+            adapter = facts.get("adapter")
+            if adapter is not None and not adapter["powered"]:
+                problems.append("The Bluetooth adapter is powered off.")
+            radio = facts.get("radio")
+            if radio is not None:
+                if radio["adapter_count"] == 0:
+                    problems.append("No Bluetooth radio was reported.")
+                elif radio["soft_blocked"] or radio["hard_blocked"]:
+                    problems.append("The Bluetooth radio is blocked.")
+            guidance = "Open Bluetooth Settings and review the adapter and paired devices. Run this check again after changing settings."
+        findings: tuple[TroubleshootingFinding, ...] = ()
+        if result.state in {"completed", "partial"}:
+            findings = (self._finding(
+                session, source_id=source_id, finding_type=f"{kind}-observations",
+                category=kind, severity="attention" if problems else "info",
+                title="Sound check observations" if kind == "audio" else "Bluetooth check observations",
+                summary=" ".join(problems) if problems else "The available metadata was checked. Confirm playback or device connectivity yourself.",
+                evidence=facts, resources=(f"hardware:{kind}",),
+                next_step=NextStep.manual(guidance, reason_code=f"review-{kind}-settings"),
+                evidence_quality="limited" if result.state == "partial" else "supported",
+            ),)
+        return adapt_structured_source(
+            profile_id=session.profile_id, variant=session.variant, source_id=source_id,
+            state=result.state, started_at=started_at, completed_at=self.clock(),
+            facts=facts if result.state != "unavailable" else None, findings=findings,
+            reason_code=result.reason_code,
+            message="Some device observations are unknown. No device settings were changed." if result.reason_code else "",
         )
 
     def _system_check(
@@ -773,10 +827,24 @@ class TroubleshootingService:
             started_at=source_started,
             cancellation=cancellation,
         )
-        deadline = self.monotonic() + budget.timeout_seconds
+        # Hardware profiles reserve one second for composition and persistence.
+        # Their inner commands also share a 14-second deadline; late workers
+        # cannot turn the exact 15-second session budget into a composition error.
+        collection_timeout = (
+            max(0.0, min(14.0, session.started_at + 14.0 - source_started))
+            if budget.source_id in {"audio-state", "bluetooth-state"}
+            else budget.timeout_seconds
+        )
+        deadline = self.monotonic() + collection_timeout
         try:
             while not future.done():
                 if cancellation.is_cancelled():
+                    if budget.source_id in {"audio-state", "bluetooth-state"}:
+                        # Cooperative hardware probes retain already-read observations.
+                        try:
+                            return future.result(timeout=max(0.0, min(2.1, deadline - self.monotonic())))
+                        except FutureTimeoutError:
+                            pass
                     future.cancel()
                     return adapt_structured_source(
                         profile_id=session.profile_id,
@@ -798,7 +866,7 @@ class TroubleshootingService:
                         started_at=source_started,
                         completed_at=max(
                             self.clock(),
-                            source_started + budget.timeout_seconds,
+                            source_started + collection_timeout,
                         ),
                         reason_code="source-timeout",
                         message="The source exceeded its bounded timeout.",

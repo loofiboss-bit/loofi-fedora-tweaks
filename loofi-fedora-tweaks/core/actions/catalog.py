@@ -25,6 +25,13 @@ _TRIMMED_PATTERN = re.compile(r"^\s*\S.*:\s+.+(?:trimmed|bytes?)", re.IGNORECASE
 ACTIVE_ACTION_IDS = frozenset(
     {
         "activate-kwin-tweak",
+        "remove-installed-flatpak",
+        "set-gnome-mouse-left-handed",
+        "restore-gnome-mouse-left-handed",
+        "set-gnome-mouse-acceleration",
+        "restore-gnome-mouse-acceleration",
+        "set-gnome-keyboard-repeat",
+        "restore-gnome-keyboard-repeat",
         "set-kde-dolphin-editable-location",
         "restore-kde-dolphin-editable-location",
         "set-kde-dolphin-remember-tabs",
@@ -379,12 +386,13 @@ class ActionCatalog:
     def __init__(self, definitions: Sequence[ActionDefinition] | None = None):
         if definitions is None:
             from core.actions.assurance import assurance_definitions
+            from core.actions.installed_applications import installed_application_definitions
             from core.actions.metadata import with_haven_metadata
             from core.actions.tweaks import tweak_action_definitions
 
             selected = [
                 with_haven_metadata(definition)
-                for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions()]
+                for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions(), *installed_application_definitions()]
                 if definition.id in ACTIVE_ACTION_IDS
             ]
         else:

@@ -132,7 +132,7 @@ class FlatpakManager:
             return 0
 
     @staticmethod
-    def get_flatpak_permissions(app_id: str) -> FlatpakAppPermissions:
+    def get_flatpak_permissions(app_id: str, *, installation: str | None = None, strict: bool = False) -> FlatpakAppPermissions:
         """Get permissions granted to a specific Flatpak app.
 
         Args:
@@ -141,19 +141,27 @@ class FlatpakManager:
         Returns:
             FlatpakAppPermissions with all granted permissions.
         """
+        scope = []
+        if installation is not None:
+            from services.software.installed_applications import installation_flag
+            scope = [installation_flag(installation)]
         permissions: List[FlatpakPermission] = []
         name = app_id
 
         if not FlatpakManager.is_available():
+            if strict:
+                raise ValueError("Flatpak is not available for permission inspection.")
             return FlatpakAppPermissions(app_id=app_id, name=name, permissions=[])
 
         try:
             result = subprocess.run(
-                ["flatpak", "info", "--show-permissions", app_id],
+                ["flatpak", "info", *scope, "--show-permissions", app_id],
                 capture_output=True,
                 text=True,
                 timeout=15,
             )
+            if strict and result.returncode != 0:
+                raise ValueError("Permissions could not be read from this installation.")
             if result.returncode == 0:
                 current_category = ""
                 for line in result.stdout.strip().splitlines():
@@ -176,7 +184,7 @@ class FlatpakManager:
                                 )
 
             info_result = subprocess.run(
-                ["flatpak", "info", app_id],
+                ["flatpak", "info", *scope, app_id],
                 capture_output=True,
                 text=True,
                 timeout=15,
@@ -189,6 +197,8 @@ class FlatpakManager:
 
         except (subprocess.TimeoutExpired, OSError) as e:
             logger.error("Failed to get permissions for %s: %s", app_id, e)
+            if strict:
+                raise ValueError("Permission inspection failed.") from e
 
         return FlatpakAppPermissions(app_id=app_id, name=name, permissions=permissions)
 

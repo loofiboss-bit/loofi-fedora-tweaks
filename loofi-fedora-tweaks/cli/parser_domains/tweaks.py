@@ -42,3 +42,18 @@ def register_tweaks_command(subparsers: Subparsers) -> None:
     restore_p.add_argument("tweak_id", help="Setting identifier")
     restore_p.add_argument("--yes", action="store_true", help="Confirm execution without interactive prompt")
     restore_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
+
+    profile_p = tweaks_sub.add_parser("profile", help="Export, review and apply portable user settings")
+    profile_sub = profile_p.add_subparsers(dest="profile_action", required=True)
+    export_p = profile_sub.add_parser("export", help="Save current supported user settings")
+    export_p.add_argument("path", help="Destination JSON file")
+    export_p.add_argument("--name", default="My settings", help="Profile name")
+    export_p.add_argument("--ids", nargs="+", help="Export only these setting identifiers")
+    export_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+    for operation in ("preview", "apply"):
+        operation_p = profile_sub.add_parser(operation, help="Review profile values" if operation == "preview" else "Apply reviewed profile settings")
+        operation_p.add_argument("path", help="Profile JSON file")
+        operation_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+        if operation == "apply":
+            operation_p.add_argument("--ids", nargs="+", help="Select only these available changed entries")
+            operation_p.add_argument("--yes", action="store_true", help="Confirm the displayed profile changes")

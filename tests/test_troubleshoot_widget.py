@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 from types import SimpleNamespace
+from unittest.mock import patch
 
 from PyQt6.QtCore import QObject, Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QFont
@@ -125,6 +126,21 @@ class TestTroubleshootWidget(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.app = QApplication.instance() or QApplication([])
+
+    @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
+    def test_device_symptoms_use_dedicated_profiles_and_native_cards(self, refresh):
+        widget = TroubleshootWidget(history=_History())
+        for profile_id in ("sound_not_working", "bluetooth_not_working"):
+            index = widget.profile_selector.findData(profile_id)
+            widget.profile_selector.setCurrentIndex(index)
+            self.assertEqual(widget.selected_profile_id(), profile_id)
+            self.assertFalse(widget.device_settings_cards[profile_id].isHidden())
+            other = "bluetooth_not_working" if profile_id == "sound_not_working" else "sound_not_working"
+            self.assertTrue(widget.device_settings_cards[other].isHidden())
+            self.assertIn("15 seconds", widget.technical_budget_label.text())
+        self.assertEqual(refresh.call_count, 2)
+        widget.cleanup()
+        widget.deleteLater()
 
     def test_page_uses_one_scaffold_one_switcher_and_one_primary_action(self):
         factory_calls = []

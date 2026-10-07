@@ -118,7 +118,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         )
         self.safety_notice.setObjectName("troubleshootSafety")
         self.scaffold.add_widget(self.safety_notice)
-
+        self._build_device_settings()
         view_row = QHBoxLayout()
         self.view_label = QLabel(self.tr("View"))
         self.view_label.setAccessibleName(self.tr("Troubleshoot view"))
@@ -383,6 +383,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
     def _profile_changed(self, *_args: Any) -> None:
         self._update_symptom_cards()
         profile = require_profile(self.selected_profile_id())
+        self._show_device_settings(profile.id)
         checked_areas = []
         technical_lines = []
         for budget in profile.source_budgets:
@@ -588,6 +589,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         persistence_reason_code: str,
     ) -> None:
         profile = require_profile(session.profile_id)
+        self._show_device_settings(profile.id)
         state_text, kind = SESSION_STATUS.get(
             session.state,
             ("Status unavailable", "neutral"),
@@ -697,6 +699,8 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
 
     def _session_message(self, session: TroubleshootingSession) -> str:
         if session.state == "completed":
+            if session.profile_id in self.device_settings_cards:
+                return self.tr("Device metadata was checked. Confirm actual playback or connectivity yourself.")
             return (
                 self.tr("%1 finding(s) need review.").replace(
                     "%1", str(len(session.findings))
@@ -740,7 +744,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
             return
         finding = session.findings[row]
         self._selected_finding = finding
-        kind = "error" if finding.severity == "critical" else "warning"
+        kind = "error" if finding.severity == "critical" else "info" if finding.severity == "info" else "warning"
         confidence = {
             "confirmed": self.tr("High"),
             "supported": self.tr("Medium"),

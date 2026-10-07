@@ -4,6 +4,8 @@ from typing import Any
 
 from PyQt6.QtWidgets import QGridLayout
 
+from core.catalog_models import NativeHandoffId
+from ui.native_handoff_card import NativeHandoffCard
 from ui.components import ClickableCard
 
 
@@ -54,3 +56,24 @@ class HealthSymptomCardsMixin:
             )
             card.style().unpolish(card)
             card.style().polish(card)
+
+    def _build_device_settings(self: Any) -> None:
+        self.device_settings_cards = {}
+        for profile_id, handoff, title in (
+            ("sound_not_working", NativeHandoffId.AUDIO_SETTINGS, "Sound Settings"),
+            ("bluetooth_not_working", NativeHandoffId.BLUETOOTH_SETTINGS, "Bluetooth Settings"),
+        ):
+            card = NativeHandoffCard(
+                handoff, title=self.tr(title),
+                description=self.tr("Review device settings, test the result yourself, then run this check again."),
+                button_text=self.tr("Open settings"), parent=self,
+            )
+            card.hide()
+            self.device_settings_cards[profile_id] = card
+            self.scaffold.add_widget(card)
+
+    def _show_device_settings(self: Any, profile_id: str) -> None:
+        for candidate, card in self.device_settings_cards.items():
+            card.setVisible(candidate == profile_id)
+            if candidate == profile_id:
+                card.refresh_availability()

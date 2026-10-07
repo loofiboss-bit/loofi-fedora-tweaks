@@ -151,3 +151,20 @@ DESIGN.md is the presentation contract. ThemeManager selects the Loofi light
 or dark palette in system mode and retains explicit themes and high contrast.
 All maintained pages share semantic colors, system typography, controls, and
 feedback, without adding a second action execution boundary.
+
+## Everyday workflow extensions
+
+`core/tasks/tweak_profiles.py` defines strict portable profiles, immutable reviews,
+and sequential results. Review does not allocate persisted plans; each selected
+entry is prepared and revalidated just before Action Center execution.
+`services/software/update_recovery.py` hydrates saved observations and durable run
+identities without executing updates. `core/tasks/next_steps.py` projects recorded
+dashboard observations into at most three navigation suggestions.
+
+Installed applications use source, installation, and full ref as identity.
+`core/actions/installed_applications.py` owns reviewed Flatpak removal and independent
+inventory verification. `services/hardware/diagnostic_probes.py` implements bounded,
+read-only sound/Bluetooth observations with unknown states and cancellation.
+Window-owned operation workers and installed-page samplers participate in deferred
+shutdown; no worker is destroyed while running. Existing plan/run schemas remain
+unchanged. Portable profiles do not reactivate retired profile stacks.

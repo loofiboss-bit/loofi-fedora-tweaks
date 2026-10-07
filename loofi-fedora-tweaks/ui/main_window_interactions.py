@@ -590,6 +590,13 @@ class MainWindowInteractionMixin:
             monitor = get_real_widget()
         if monitor is not None and callable(getattr(monitor, "request_stop", None)):
             resources.append(monitor)
+        for entry in attributes.get("_sidebar_index", {}).values():
+            page = getattr(entry, "page_widget", None)
+            resolve = getattr(page, "get_real_widget", None)
+            if callable(resolve):
+                page = resolve()
+            if page is not None and callable(getattr(page, "refresh_installed_applications", None)) and callable(getattr(page, "request_stop", None)):
+                resources.append(page)
         return tuple(resources)
 
     def _runtime_sampling_busy(self: typing.Any) -> bool:

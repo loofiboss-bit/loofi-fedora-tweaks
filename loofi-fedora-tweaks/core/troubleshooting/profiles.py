@@ -120,6 +120,14 @@ _ATOMIC: frozenset[SupportedVariant] = frozenset({"atomic"})
 
 _PROFILES = (
     TroubleshootingProfile(
+        "sound_not_working", "Sound is not working",
+        (SourceBudget("audio-state", 15.0),), 15.0,
+    ),
+    TroubleshootingProfile(
+        "bluetooth_not_working", "Bluetooth is not working",
+        (SourceBudget("bluetooth-state", 15.0),), 15.0,
+    ),
+    TroubleshootingProfile(
         "system_slow",
         "System feels slow",
         (

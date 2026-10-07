@@ -11,6 +11,7 @@ from PyQt6.QtWidgets import QLabel, QVBoxLayout, QWidget
 
 from ui.components import Card, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
 from ui.components.layout import AdaptiveGrid
+from ui.components.actions import QuietButton
 
 
 class UpdateWorkflowPage(QWidget):
@@ -30,6 +31,7 @@ class UpdateWorkflowPage(QWidget):
         self.service = service or UpdateOverviewService()
         self._check_worker: Any | None = None
         self._checking_source: str | None = None
+        self._loading_saved = False
         self._cards: dict[str, tuple[Card, StatusBadge, QLabel, PrimaryButton]] = {}
         self.setObjectName("updateWorkflowPage")
         self.setAccessibleName(self.tr("Update Fedora"))
@@ -53,6 +55,7 @@ class UpdateWorkflowPage(QWidget):
         self.source_grid.setObjectName("updateSourceGrid")
         self.scaffold.add_widget(self.source_grid)
         self._checked_labels: dict[str, QLabel] = {}
+        self._check_again_buttons: dict[str, QuietButton] = {}
         for source in UPDATE_SOURCES:
             self._add_source_card(source)
         self.scaffold.content_layout.addStretch()
@@ -88,6 +91,10 @@ class UpdateWorkflowPage(QWidget):
         button.setObjectName(f"update{source.title()}Button")
         button.clicked.connect(lambda _checked=False, selected=source: self._request_source(selected))
         card.add_widget(button)
+        again = QuietButton(self.tr("Check again"), description=self.tr("Read fresh update candidates without restarting the previous update."))
+        again.clicked.connect(lambda _checked=False, selected=source: self.sourceActionRequested.emit(selected, "check"))
+        card.add_widget(again)
+        self._check_again_buttons[source] = again
         self.source_grid.add_card(card)
         self._cards[source] = (card, status, details, button)
 
@@ -97,7 +104,24 @@ class UpdateWorkflowPage(QWidget):
 
     def set_snapshot(self, snapshot: object) -> None:
         """Project one read-only overview snapshot into the compact cards."""
-        self.set_state(UpdateOverviewState.from_snapshot(snapshot))
+        incoming = UpdateOverviewState.from_snapshot(snapshot)
+        for previous in self.state.sources:
+            if previous.run_id and (previous.status in {"awaiting_reboot", "verifying", "preparing"}
+                                    or previous.source != self._checking_source and previous.metadata.get("recovery_required")):
+                incoming = incoming.replace_source(previous)
+        self.set_state(incoming)
+
+    def set_loading(self, loading: bool) -> None:
+        self._loading_saved = loading
+        self._render_state()
+
+    def restore_saved_state(self, state: UpdateOverviewState) -> None:
+        self.set_state(state)
+        problems = [item for item in state.sources if item.metadata.get("recovery_required")]
+        if problems:
+            self.set_notice("warning", "Saved update needs review", problems[0].message)
+        else:
+            self.state_notice.hide()
 
     def set_source(self, source: UpdateSourceState) -> None:
         self.set_state(self.state.replace_source(source))
@@ -121,11 +145,14 @@ class UpdateWorkflowPage(QWidget):
         if callable(reset_cancel):
             reset_cancel()
         current = self.source_state(source)
+        if self._loading_saved or current.status in {"verifying", "awaiting_reboot", "preparing"}:
+            return False
         self.set_source(
             current.with_status(
                 "checking",
                 stale=True,
                 message=self.tr("Reading this source without applying changes."),
+                metadata={**current.metadata, "recovery_required": False},
             )
         )
         self.set_notice("info", "Checking", f"Checking {source} updates without changing the system.")
@@ -202,6 +229,7 @@ class UpdateWorkflowPage(QWidget):
                 run_id=run_id or current.run_id,
                 reboot_required=next_status == "awaiting_reboot",
                 message=message,
+                metadata={**current.metadata, "recovery_required": next_status == "verification_failed"},
             )
         )
         self.set_notice(kind, title, message)
@@ -260,7 +288,7 @@ class UpdateWorkflowPage(QWidget):
             elif state.status in {"error", "failed", "cancelled", "stale"}:
                 summary = self.tr("Check this source again before applying changes.")
             elif state.status == "verification_failed":
-                summary = self.tr("Verify the resulting state before another update.")
+                summary = self.tr("Review the failed verification in Activity before another update.")
             elif state.status in {"missing_tool", "unsupported"}:
                 summary = self.tr("This source is unavailable on this system.")
             elif state.status == "available":
@@ -277,7 +305,10 @@ class UpdateWorkflowPage(QWidget):
             button.setToolTip(self.tr(cta.reason or cta.label))
             button.setProperty("sourceAction", cta.action)
             button.setProperty("sourceState", state.status)
-            button.setEnabled(cta.enabled)
+            button.setEnabled(cta.enabled and not self._loading_saved)
+            again = self._check_again_buttons[source]
+            again.setVisible(bool(state.run_id) and cta.action == "recovery" and state.status in {"failed", "verification_failed", "cancelled"})
+            again.setEnabled(not self._loading_saved)
 
     def cleanup(self) -> None:
         """Stop a source check without destroying a running Qt thread."""

@@ -5,11 +5,12 @@ from collections import deque
 from datetime import datetime
 import math
 
-from PyQt6.QtCore import QPointF, Qt, pyqtSignal
+from PyQt6.QtCore import QPointF, QTimer, Qt, pyqtSignal
 from PyQt6.QtGui import QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget
 
 from core.plugins.interface import PluginInterface
+from core.tasks.next_steps import next_steps
 from core.product_catalog import plugin_metadata_for_module
 from ui.components.actions import QuietButton, SecondaryButton
 from ui.components.cards import Card
@@ -44,12 +45,17 @@ class MetricGraph(QWidget):
         scale = 100 if self.unit == "%" else max(max(values), 1)
         path = QPainterPath()
         connected = False
+        slots = max(self.points.maxlen or 60, 2)
+        step = self.width() / (slots - 1)
+        count = len(self.points)
         for index, value in enumerate(self.points):
             if value is None:
                 connected = False
                 continue
-            point = QPointF(index * self.width() / max(len(self.points) - 1, 1),
-                            self.height() - 8 - min(value / scale, 1) * (self.height() - 16))
+            offset = count - 1 - index
+            x = max(0.0, self.width() - offset * step)
+            y = self.height() - 8 - min(max(value, 0.0) / scale, 1.0) * (self.height() - 16)
+            point = QPointF(x, y)
             if connected:
                 path.lineTo(point)
             else:
@@ -181,6 +187,13 @@ class OverviewPage(QWidget, PluginInterface):
         root.addLayout(header)
         self.notice = InlineNotice(self.tr("Collecting system information"), self.tr("Measurements run while this page is visible."))
         root.addWidget(self.notice)
+        self.next_steps_card = Card(self.tr("Next steps"), parent=self)
+        self.next_steps_empty = QLabel(self.tr("Suggestions appear after the first measurement."))
+        self.next_steps_empty.setWordWrap(True)
+        self.next_steps_card.add_widget(self.next_steps_empty)
+        self._next_step_rows = []
+        self._last_next_steps = None
+        root.addWidget(self.next_steps_card)
         self.main_grid = QGridLayout()
         self.main_grid.setSpacing(16)
         root.addLayout(self.main_grid)
@@ -203,7 +216,7 @@ class OverviewPage(QWidget, PluginInterface):
         root.addLayout(self.maintenance_grid)
         self._maintenance = {}
         for key, title, route in (("updates", self.tr("Updates"), "maintenance:updates"), ("health", self.tr("Health"), "maintenance:health-timeline"),
-                                  ("activity", self.tr("Recent activity"), "changes")):
+                                  ("activity", self.tr("Recent activity"), "activity")):
             card = Card(title)
             label = QLabel(self.tr("No recorded result yet"))
             label.setWordWrap(True)
@@ -256,6 +269,8 @@ class OverviewPage(QWidget, PluginInterface):
             self.notice.set_notice("neutral", self.tr("Measurements paused"), self.tr("Displayed values are the last recorded measurements."))
 
     def _refresh(self):
+        self.refresh_button.setEnabled(False)
+        QTimer.singleShot(800, lambda: self.refresh_button.setEnabled(not self._paused))
         self.refreshRequested.emit()
         if self._controller is not None:
             self._controller.refresh()
@@ -272,6 +287,8 @@ class OverviewPage(QWidget, PluginInterface):
         maintenance = getattr(snapshot, "maintenance", None)
         if maintenance:
             self.set_maintenance(**{key: maintenance[key] for key in ("updates", "health", "activity") if key in maintenance})
+        now = snapshot.collected_at.timestamp() if isinstance(snapshot.collected_at, datetime) else snapshot.collected_at
+        self._show_next_steps(next_steps(maintenance or {}, snapshot.metrics, now=now))
         identity_keys = ("hostname", "os", "desktop", "deployment", "cpu", "kernel")
         self.identity.setText(" · ".join(str(snapshot.identity[key]) for key in identity_keys if snapshot.identity.get(key)))
         self.notice.set_notice("info", self.tr("Last measured: %1").replace("%1", _format_time(snapshot.collected_at)),
@@ -297,6 +314,63 @@ class OverviewPage(QWidget, PluginInterface):
         for group, label in self._empty.items():
             label.setVisible(group not in groups)
             label.setText(self.tr("No available data source"))
+        has_battery = any(
+            reading.group == "battery" and reading.id != "battery.none" and reading.status != "unavailable"
+            for reading in snapshot.metrics
+        )
+        battery_card = self._cards.get("battery")
+        if battery_card is not None:
+            if not has_battery and not battery_card.isHidden():
+                battery_card.hide()
+                self._columns = 0
+                self._reflow(self.width())
+            elif has_battery and battery_card.isHidden():
+                battery_card.show()
+                self._columns = 0
+                self._reflow(self.width())
+
+    def _show_next_steps(self, suggestions):
+        if suggestions == self._last_next_steps:
+            return
+        previous = self._last_next_steps or ()
+        self._last_next_steps = suggestions
+        if [(step.id, step.route) for step in suggestions] == [(step.id, step.route) for step in previous]:
+            for row, step in zip(self._next_step_rows, suggestions):
+                detail = self.tr(step.reason)
+                if step.sampled_at is not None:
+                    detail += " · " + _format_time(step.sampled_at)
+                row.layout().itemAt(0).widget().setText(self.tr(step.title))
+                row.layout().itemAt(1).widget().setText(detail)
+                row.layout().itemAt(2).widget().setAccessibleDescription(detail)
+            return
+        for row in self._next_step_rows:
+            self.next_steps_card.body.removeWidget(row)
+            row.setParent(None)
+            row.deleteLater()
+        self._next_step_rows = []
+        self.next_steps_empty.setText(self.tr("No next steps from the recorded observations."))
+        self.next_steps_empty.setVisible(not suggestions)
+        for step in suggestions:
+            row = QWidget(self.next_steps_card)
+            layout = QVBoxLayout(row)
+            layout.setContentsMargins(0, 0, 0, 0)
+            label = QLabel(self.tr(step.title))
+            label.setWordWrap(True)
+            label.setTextFormat(Qt.TextFormat.PlainText)
+            detail = self.tr(step.reason)
+            if step.sampled_at is not None:
+                detail += " · " + _format_time(step.sampled_at)
+            reason = QLabel(detail)
+            reason.setWordWrap(True)
+            reason.setTextFormat(Qt.TextFormat.PlainText)
+            reason.setObjectName("cardDescription")
+            button = QuietButton(self.tr(step.button), description=detail)
+            button.clicked.connect(lambda checked=False, destination=step.route: self.routeRequested.emit(destination))
+            layout.addWidget(label)
+            layout.addWidget(reason)
+            layout.addWidget(button)
+            self.next_steps_card.add_widget(row)
+            self._next_step_rows.append(row)
 
     def set_maintenance(self, updates=None, health=None, activity=None):
         """Present caller-supplied real cached results; never initiate checks."""
@@ -346,7 +420,9 @@ class OverviewPage(QWidget, PluginInterface):
         for index, group in enumerate(("cpu", "memory", "gpu", "storage")):
             self.main_grid.addWidget(self._cards[group], index // columns, index % columns)
         details = min(columns, 2)
-        for index, group in enumerate(("network", "disk", "temperature", "battery")):
+        visible_details = [group for group in ("network", "disk", "temperature", "battery")
+                           if not self._cards[group].isHidden()]
+        for index, group in enumerate(visible_details):
             self.detail_grid.addWidget(self._cards[group], index // details, index % details)
         for index, (card, label) in enumerate(self._maintenance.values()):
             self.maintenance_grid.addWidget(card, index // details, index % details)

@@ -88,7 +88,7 @@ lint:
 
 # Type check with mypy
 typecheck:
-    if [ -x .venv/bin/mypy ]; then .venv/bin/mypy {{src_root}}/ --ignore-missing-imports --no-error-summary; else mypy {{src_root}}/ --ignore-missing-imports --no-error-summary; fi
+    if [ -x .venv/bin/mypy ]; then MYPYPATH={{src_root}} .venv/bin/mypy {{src_root}}/ --ignore-missing-imports --no-error-summary; else MYPYPATH={{src_root}} mypy {{src_root}}/ --ignore-missing-imports --no-error-summary; fi
 
 # Run pre-commit hooks on all files
 pre-commit:

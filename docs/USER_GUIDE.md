@@ -254,3 +254,43 @@ scale must be between 0.5 and 3; KDE animation duration must be finite and
 nonnegative; KDE double-click interval must be an integer between 100 and
 2000 ms. These custom values come only from verified saved evidence, not
 arbitrary caller input. Invalid or unreadable values block modification.
+
+## Everyday workflows
+
+Overview shows up to three next steps, prioritizing pending or failed operations,
+critical Health findings, and fresh available updates. Old or missing observations
+lead to a check. These links never start a system change.
+
+Updates loads saved observations and Action Center runs when opened. Continue and
+Verify resume verification only. Interrupted or failed verification links to Activity;
+a fresh check is deliberate. Corrupt history is a read error, never an empty success.
+
+Tweaks offers **Save current settings…** and **Load profile…**. Select settings to
+include or change, review current and desired values, and confirm the immutable
+review. Identical, unsupported, and unavailable entries are skipped or disabled.
+Changes stop on cancellation, changed baseline, or failed verification. Restore
+supported changes from local verified Activity history. See [profile details](TWEAK_PROFILES.md).
+
+Apps includes **Installed** with Flatpak source, installation, ref, version, and
+reported size. The same app in two installations appears twice. Inspect permissions
+or review removal of exactly one installation. Running apps must be closed first;
+removal preserves their data. RPM removal opens the desktop software manager.
+
+Health has separate **Sound is not working** and **Bluetooth is not working**
+profiles. Each has a 15-second budget and cancellation. Missing tools, partial
+responses, and timeouts remain unknown or unavailable. Open the native sound or
+Bluetooth settings, make changes there, then recheck. Only the user can confirm
+that sound plays or a device connects.
+
+CLI equivalents use the same services and action authority:
+
+```bash
+loofi tweaks profile export --help
+loofi tweaks profile preview --help
+loofi tweaks profile apply --help
+loofi apps installed --help
+loofi apps remove --help
+```
+
+Profile apply requires confirmation. Flatpak removal requires an explicit
+installation and confirmation; consult command help for exact arguments.

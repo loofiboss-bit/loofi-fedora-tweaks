@@ -105,6 +105,7 @@ class ApplicationContext:
     capabilities: frozenset[str] = frozenset()
     installed_ids: frozenset[str] = frozenset()
     online: bool | None = None
+    unknown_sources: frozenset[str] = frozenset()
 
     @classmethod
     def from_task_context(
@@ -282,6 +283,8 @@ class ApplicationCatalog:
             return ApplicationEligibility(record, "available", "Ready for review.")
         if record.id in context.installed_ids or record.package_id in context.installed_ids:
             return ApplicationEligibility(record, "installed", "Already installed.")
+        if record.source in context.unknown_sources:
+            return ApplicationEligibility(record, "unavailable", "Installation status could not be checked. Refresh before installing.")
         if context.online is False:
             return ApplicationEligibility(record, "offline", "An online connection is required to install this application.")
         if context.variant is FedoraVariant.UNKNOWN:

@@ -35,7 +35,7 @@ NEW_IDS = (
 class TestWayfinderCatalog(unittest.TestCase):
     @patch("core.tasks.tweaks.kde_capability_error", return_value="")
     def test_defaults_commands_choices_and_metadata(self, _capability):
-        self.assertEqual(len(TWEAKS), 73)
+        self.assertEqual(len(TWEAKS), 76)
         expected_defaults = ("false", "true", "false", "true", "true", "1", "false", "simple")
         for tweak_id, default in zip(NEW_IDS, expected_defaults):
             tweak = BY_ID[tweak_id]

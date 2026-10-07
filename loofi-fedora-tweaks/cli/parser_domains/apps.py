@@ -25,3 +25,11 @@ def register_apps_command(subparsers: Subparsers) -> None:
     install_p.add_argument("app_id", help="Application identifier (e.g. flatseal, vlc, code)")
     install_p.add_argument("--yes", action="store_true", help="Confirm execution without interactive prompt")
     install_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
+
+    installed_p = apps_sub.add_parser("installed", help="List installed Flatpak applications and curated RPMs")
+    installed_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
+    remove_p = apps_sub.add_parser("remove", help="Review removal of one exact installed Flatpak ref")
+    remove_p.add_argument("ref", help="Full app/id/architecture/branch ref")
+    remove_p.add_argument("--installation", required=True, help="Explicit user, system, or named installation")
+    remove_p.add_argument("--yes", action="store_true", help="Confirm removal while preserving application data")
+    remove_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")

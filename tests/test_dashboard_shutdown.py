@@ -70,6 +70,20 @@ class TestReaderShutdownDeferral(unittest.TestCase):
         window._runtime.shutdown.assert_called_once()
         self.assertNotIn(window, _PENDING_SHUTDOWN_WINDOWS)
 
+    def test_installed_app_workers_defer_window_destruction(self):
+        apps = reader()
+        apps.refresh_installed_applications = MagicMock()
+        lazy = SimpleNamespace(get_real_widget=lambda: apps)
+        window = _Harness()
+        window._sidebar_index["install"] = SimpleNamespace(page_widget=lazy)
+        self.assertFalse(window._request_runtime_shutdown(action="close"))
+        apps.request_stop.assert_called_once()
+        window._runtime.shutdown.assert_not_called()
+        apps.busy = False
+        apps.stopped.emit()
+        window.close.assert_called_once()
+        window._runtime.shutdown.assert_called_once()
+
     @patch.object(QApplication, "quit")
     def test_quit_takes_precedence_and_finished_signal_is_connected_once(self, quit_app):
         dashboard = reader()

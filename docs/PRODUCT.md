@@ -16,10 +16,10 @@ KDE, and DNF alongside applications, updates, health, and verified history.
 
 | Job | What the user does |
 |---|---|
-| **Overview** (start page) | Read current resources and hardware data, then open the appropriate tool |
-| **Tweaks** | Search and change a setting, see it verified, restore its previous value when supported |
-| **Apps** | Find and install trusted applications |
-| **Updates** | Update system packages, Flatpaks, and firmware |
+| **Overview** (start page) | Read current resources and up to three relevant next steps, then open the appropriate tool |
+| **Tweaks** | Search and change a setting, share a same-desktop profile, verify and restore supported values |
+| **Apps** | Find and install trusted applications; inspect installed apps and remove an exact Flatpak installation |
+| **Updates** | Update system packages, Flatpaks, and firmware; resume pending verification |
 | **Health** | Start from a symptom, inspect evidence, apply one reviewed fix |
 
 **Activity** is a primary destination for recorded changes, independent
@@ -59,3 +59,13 @@ a plugin marketplace, and release-evidence screens in the user interface.
 
 [Design](../DESIGN.md) defines the Loofi palette, geometry, navigation, component
 states, and qualification requirements for every reachable GUI surface.
+
+## Everyday workflows
+
+Profiles use [a separate portable format](TWEAK_PROFILES.md) and include supported
+user settings only. Import approval binds the reviewed values and action definitions;
+changes run sequentially through Action Center and stop on drift or verification failure.
+Installed Flatpaks remain distinct by installation and full ref. Removal preserves
+app data and requires successful independent inventory verification. RPM removal
+opens the desktop software manager. Sound and Bluetooth checks report observations
+without changing services, devices, volume, or connections.

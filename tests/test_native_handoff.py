@@ -18,10 +18,10 @@ from ui.native_handoff_card import NativeHandoffCard
 
 
 class TestNativeHandoffService(unittest.TestCase):
-    def test_allowlist_covers_exactly_five_opaque_ids(self):
+    def test_allowlist_covers_exactly_seven_opaque_ids(self):
         targets = NativeHandoffService.targets()
 
-        self.assertEqual(len(targets), 5)
+        self.assertEqual(len(targets), 7)
         self.assertEqual(
             {target.handoff_id for target in targets},
             set(NativeHandoffId),

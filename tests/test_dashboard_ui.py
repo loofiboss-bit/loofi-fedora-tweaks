@@ -97,7 +97,29 @@ class TestDashboardUi(unittest.TestCase):
         page.routeRequested.connect(routes.append)
         for card, label in page._maintenance.values():
             card.body.itemAt(card.body.count() - 1).widget().click()
-        self.assertEqual(routes, ["maintenance:updates", "maintenance:health-timeline", "changes"])
+        self.assertEqual(routes, ["maintenance:updates", "maintenance:health-timeline", "activity"])
+
+    def test_next_steps_show_routes_and_preserve_keyboard_focus_targets(self):
+        page = OverviewPage()
+        sample = snapshot(20, "ready")
+        sample.maintenance = {"activity": {"status": "awaiting_reboot", "detail": "update-fedora-system",
+                                            "sampled_at": sample.collected_at}}
+        page.set_snapshot(sample)
+        self.assertEqual(len(page._next_step_rows), 3)
+        routes = []
+        page.routeRequested.connect(routes.append)
+        rows = list(page._next_step_rows)
+        for row in rows:
+            button = row.layout().itemAt(2).widget()
+            self.assertTrue(button.accessibleName())
+            button.click()
+        self.assertEqual(routes, ["maintenance:updates", "health", "maintenance:updates"])
+        page.set_snapshot(sample)
+        self.assertEqual(page._next_step_rows, rows)
+        sample.maintenance["activity"]["sampled_at"] += timedelta(seconds=5)
+        page.set_snapshot(sample)
+        self.assertEqual(page._next_step_rows, rows)
+        page.cleanup()
 
     def test_paused_view_ignores_updates_from_other_consumer(self):
         page = OverviewPage()
@@ -114,6 +136,39 @@ class TestDashboardUi(unittest.TestCase):
         graph.add_sample(None)
         self.assertEqual(len(graph.points), 60)
         self.assertIsNone(graph.points[-1])
+
+    def test_battery_card_hides_when_unavailable_and_reflows(self):
+        page = OverviewPage()
+        page.resize(900, 650)
+        sample = snapshot(20.0, "ready")
+        sample.metrics = (*sample.metrics, SimpleNamespace(
+            id="battery.none", group="battery", label="Battery", value=None,
+            unit="%", status="unavailable", source="/sys/class/power_supply",
+            sampled_at=None, reason="No battery detected", detail="", high=None, critical=None
+        ))
+        page.set_snapshot(sample)
+        self.assertTrue(page._cards["battery"].isHidden())
+
+        sample_with_bat = snapshot(20.0, "ready")
+        sample_with_bat.metrics = (*sample_with_bat.metrics, SimpleNamespace(
+            id="battery:BAT0", group="battery", label="BAT0", value=85.0,
+            unit="%", status="ready", source="/sys/class/power_supply",
+            sampled_at=sample.collected_at, reason="", detail="", high=None, critical=None
+        ))
+        page.set_snapshot(sample_with_bat)
+        self.assertFalse(page._cards["battery"].isHidden())
+        page.cleanup()
+
+    def test_refresh_button_debounce(self):
+        page = OverviewPage()
+        controller = MagicMock()
+        controller.latest_snapshot = None
+        page.set_controller(controller)
+        self.assertTrue(page.refresh_button.isEnabled())
+        page._refresh()
+        self.assertFalse(page.refresh_button.isEnabled())
+        controller.refresh.assert_called_once()
+        page.cleanup()
 
 
 class _Service:

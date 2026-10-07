@@ -9,12 +9,14 @@ from core.troubleshooting.profiles import all_profiles, require_profile
 
 
 class TestTroubleshootingProfiles(unittest.TestCase):
-    def test_catalog_contains_only_the_six_locked_profiles(self):
+    def test_catalog_contains_the_closed_symptom_profiles(self):
         profiles = all_profiles()
 
         self.assertEqual(
             tuple(profile.id for profile in profiles),
             (
+                "sound_not_working",
+                "bluetooth_not_working",
                 "system_slow",
                 "updates_failed",
                 "application_failed",
