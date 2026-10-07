@@ -63,6 +63,9 @@ second registry or expose retired product surfaces.
 Use panels for related information and divided rows for individual settings.
 Avoid decorative gradients, unnecessary nested cards, duplicated page titles,
 and nested vertical scrolling. Every page has one main scroll owner.
+Scrollable cards and content columns may shrink to their wrapped-text height
+at the available width. Hidden Health views must not reserve vertical space
+in the active workflow or push maintenance below an empty scroll region.
 
 ## Interaction and truth
 

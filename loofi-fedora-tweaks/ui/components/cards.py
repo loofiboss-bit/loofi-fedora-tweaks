@@ -30,7 +30,9 @@ class Card(QFrame):
         super().__init__(parent)
         self.setObjectName("componentCard")
         self.setProperty("componentCard", True)
-        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
+        # Wrapped copy must shrink to its height at the assigned width. Minimum
+        # treats the narrow size hint as a hard floor, creating empty scroll space.
+        self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Preferred)
         self.body = QVBoxLayout(self)
         self.body.setContentsMargins(14, 12, 14, 12)
         self.body.setSpacing(10)

@@ -160,7 +160,10 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                             install.view_filter.setCurrentIndex(install.view_filter.findData("installed"))
                         for area in window.findChildren(QScrollArea):
                             area.verticalScrollBar().setValue(0)
-                        app.processEvents()
+                        # State-backed controls replace editors and reveal wrapped
+                        # values; let their queued parent layouts settle as on route entry.
+                        for _ in range(8):
+                            app.processEvents()
                         name = f"{route.replace(':', '-')}-{theme}-{width}x{height}"
                         window.grab().save(str(out / f"{name}.png"))
                         entry = window._sidebar_index.get(window._active_plugin_id)

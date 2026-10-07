@@ -73,6 +73,23 @@ LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks
 LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen PYTHONPATH=loofi-fedora-tweaks python3 scripts/capture_control_center_screenshots.py /tmp/everyday-large --scale 1 --large-text --installed-view
 ```
 
+## Scroll-spacing regression follow-up
+
+The supplied KDE recording exposed oversized empty regions in Tweaks and
+Health. Cards and content columns now allow vertical shrinkage at the assigned
+width. Health lays out only its visible workflow view, so hidden Results no
+longer pushes maintenance below empty space.
+
+Regression coverage checks Tweaks filtering and resize transitions at 900×650,
+1280×800, and 1600×900, plus Health view switching and active-view height.
+Rendering captures wait for queued layouts after replacing state-backed
+editors, matching the existing settling period after route activation.
+The final follow-up gate passed 4,825 tests and 1,945 subtests, with 33
+skipped tests and 85.19% coverage. All four repeated rendering matrices
+(900 views total) report zero clipped text, stale table colors, or horizontal
+overflow. Packaging checks and the RPM build passed. Physical confirmation
+of this follow-up remains `unverified`.
+
 ## Physical qualification pending
 
 | Surface | Status / required evidence |

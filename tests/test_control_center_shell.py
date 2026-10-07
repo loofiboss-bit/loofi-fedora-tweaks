@@ -75,6 +75,57 @@ class TestControlCenterShell(unittest.TestCase):
         self.assertTrue(window.switch_to_route("home"))
         self.assertEqual(window._active_route_id, "utility:tune")
 
+    def test_tweaks_scroll_height_tracks_visible_content_after_filter_and_resize(self):
+        window, _, _, _ = self.build_window()
+        window.resize(1600, 900)
+        window.show()
+        window.switch_to_route("utility:tune")
+        for _ in range(10):
+            self.app.processEvents()
+        scroll = window.content_area.currentWidget()
+        page = scroll.widget().get_real_widget()
+        toolbar = page.search_input.parentWidget().parentWidget()
+        self.assertLess(toolbar.height(), 250)
+        self.assertLess(scroll.verticalScrollBar().maximum(), 2000)
+
+        page.category_filter.setCurrentIndex(page.category_filter.findData("Privacy"))
+        for _ in range(10):
+            self.app.processEvents()
+        self.assertEqual(scroll.verticalScrollBar().maximum(), 0)
+        page.search_input.setText("no matching setting")
+        for _ in range(10):
+            self.app.processEvents()
+        self.assertEqual(scroll.verticalScrollBar().maximum(), 0)
+
+        page.clear_filters_button.click()
+        for size in ((900, 650), (1280, 800), (1600, 900)):
+            window.resize(*size)
+            for _ in range(10):
+                self.app.processEvents()
+            content = page.scaffold.content
+            expected = content.heightForWidth(content.width())
+            self.assertLessEqual(content.height(), max(expected, scroll.viewport().height()) + 32)
+
+    def test_health_hidden_results_do_not_push_maintenance_below_empty_space(self):
+        window, _, _, _ = self.build_window()
+        window.resize(1600, 900)
+        window.show()
+        with patch("ui.troubleshoot_widget._DefaultSessionHistory.latest", return_value=(None, "")):
+            window.switch_to_route("utility:fix")
+        for _ in range(10):
+            self.app.processEvents()
+        scroll = window.content_area.currentWidget()
+        page = scroll.widget().get_real_widget()
+        guided = page.stack.currentWidget()
+        self.assertLessEqual(page.stack.height(), guided.heightForWidth(guided.width()) + 32)
+        self.assertLess(scroll.verticalScrollBar().maximum(), 500)
+        for index in (1, 0):
+            page.stack.setCurrentIndex(index)
+            for _ in range(10):
+                self.app.processEvents()
+            current = page.stack.currentWidget()
+            self.assertLessEqual(page.stack.height(), max(current.heightForWidth(current.width()), current.minimumSizeHint().height()) + 32)
+
     def test_saved_atlas_links_use_live_tweak_workflow(self):
         window, _, _, _ = self.build_window(restore_last_tab=True, last_route_id="atlas_dashboard")
         self.assertEqual(window._active_route_id, "utility:tune")

@@ -13,7 +13,6 @@ from PyQt6.QtWidgets import (
     QLabel,
     QLineEdit,
     QListWidget,
-    QStackedWidget,
     QVBoxLayout,
     QWidget,
 )
@@ -41,6 +40,7 @@ from ui.components import (
     SectionHeader,
     StatusBadge,
 )
+from ui.components.layout import CurrentPageStack
 from ui.health_symptoms import HealthSymptomCardsMixin
 from ui.troubleshoot_presentation import (
     SESSION_STATUS,
@@ -143,7 +143,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         view_row.addWidget(self.view_switcher, 1)
         self.scaffold.add_layout(view_row)
 
-        self.stack = QStackedWidget()
+        self.stack = CurrentPageStack()
         self.stack.setObjectName("troubleshootViewStack")
         self.stack.addWidget(self._guided_page())
         self.stack.addWidget(self._results_page())

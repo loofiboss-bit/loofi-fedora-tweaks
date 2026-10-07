@@ -194,6 +194,41 @@ class PageHeader(QFrame):
         self._reflow_title()
 
 
+class CurrentPageStack(QWidget):
+    """Keep hidden workflow views out of scroll-area height calculations."""
+
+    def __init__(self, parent: QWidget | None = None) -> None:
+        super().__init__(parent)
+        self._pages: list[QWidget] = []
+        self._current_index = -1
+        self._body = QVBoxLayout(self)
+        self._body.setContentsMargins(0, 0, 0, 0)
+        self._body.setSpacing(0)
+
+    def addWidget(self, page: QWidget) -> int:
+        index = len(self._pages)
+        self._pages.append(page)
+        self._body.addWidget(page)
+        page.setVisible(index == 0)
+        if index == 0:
+            self._current_index = 0
+        return index
+
+    def currentIndex(self) -> int:
+        return self._current_index
+
+    def currentWidget(self) -> QWidget | None:
+        return self._pages[self._current_index] if self._current_index >= 0 else None
+
+    def setCurrentIndex(self, index: int) -> None:
+        if not 0 <= index < len(self._pages):
+            return
+        self._current_index = index
+        for position, page in enumerate(self._pages):
+            page.setVisible(position == index)
+        self.updateGeometry()
+
+
 class ContentColumn(QWidget):
     """Centered bounded content area that never owns domain behavior."""
 
@@ -205,7 +240,7 @@ class ContentColumn(QWidget):
         # Responsive pages must be allowed to shrink below their current
         # multi-column size hint so child grids can reflow before the shared
         # vertical scroll area calculates its range.
-        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.MinimumExpanding)
+        self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Expanding)
         self.body = QVBoxLayout(self)
         self.body.setContentsMargins(tokens.space_4, tokens.space_3, tokens.space_4, tokens.space_4)
         self.body.setSpacing(tokens.space_3)
