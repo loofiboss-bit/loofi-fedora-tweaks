@@ -28,6 +28,10 @@ def register_apps_command(subparsers: Subparsers) -> None:
 
     installed_p = apps_sub.add_parser("installed", help="List installed Flatpak applications and curated RPMs")
     installed_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
+    permissions_p = apps_sub.add_parser("permissions", help="Inspect permissions declared by one installed Flatpak")
+    permissions_p.add_argument("ref", help="Full app/id/architecture/branch ref")
+    permissions_p.add_argument("--installation", required=True, help="Explicit user, system, or named installation")
+    permissions_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
     remove_p = apps_sub.add_parser("remove", help="Review removal of one exact installed Flatpak ref")
     remove_p.add_argument("ref", help="Full app/id/architecture/branch ref")
     remove_p.add_argument("--installation", required=True, help="Explicit user, system, or named installation")

@@ -17,8 +17,8 @@ KDE, and DNF alongside applications, updates, health, and verified history.
 | Job | What the user does |
 |---|---|
 | **Overview** (start page) | Read current resources and up to three relevant next steps, then open the appropriate tool |
-| **Tweaks** | Search and change a setting, share a same-desktop profile, verify and restore supported values |
-| **Apps** | Find and install trusted applications; inspect installed apps and remove an exact Flatpak installation |
+| **Tweaks** | Search and change a setting, review a desktop preset or same-desktop profile, check one current value, and restore supported values |
+| **Apps** | Find and install trusted applications; inspect installed apps and their Flatpak metadata permissions; remove an exact installation |
 | **Updates** | Update system packages, Flatpaks, and firmware; resume pending verification |
 | **Health** | Start from a symptom, inspect evidence, apply one reviewed fix |
 
@@ -65,7 +65,12 @@ states, and qualification requirements for every reachable GUI surface.
 Profiles use [a separate portable format](TWEAK_PROFILES.md) and include supported
 user settings only. Import approval binds the reviewed values and action definitions;
 changes run sequentially through Action Center and stop on drift or verification failure.
+Built-in Reduced motion and File navigation presets use the same immutable review,
+explicit selection, and per-setting verification. A focused setting check updates
+only that row and preserves the rest of the visible snapshot.
 Installed Flatpaks remain distinct by installation and full ref. Removal preserves
 app data and requires successful independent inventory verification. RPM removal
 opens the desktop software manager. Sound and Bluetooth checks report observations
 without changing services, devices, volume, or connections.
+Flatpak permission inspection reports app metadata for one exact installation; it
+does not claim to include portal grants or user overrides.

@@ -35,6 +35,7 @@ class FlatpakPermission:
     """Represents a single permission granted to a Flatpak app."""
 
     category: str
+    key: str
     value: str
 
 
@@ -45,6 +46,31 @@ class FlatpakAppPermissions:
     app_id: str
     name: str
     permissions: List[FlatpakPermission]
+    ref: str = ""
+    installation: str = ""
+    error: str = ""
+
+    def to_dict(self) -> dict[str, object]:
+        return {
+            "schema": "loofi.flatpak-permissions/v1",
+            "status": "unavailable" if self.error else "ready",
+            "app_id": self.app_id,
+            "name": self.name,
+            "ref": self.ref,
+            "installation": self.installation,
+            "permissions": [
+                {
+                    "category": item.category,
+                    "key": item.key,
+                    # Flatpak metadata may declare arbitrary environment values.
+                    # Keep them available in the parser result, but never expose
+                    # their contents through a CLI or a persisted JSON payload.
+                    "value": "[hidden]" if item.category.lower() == "environment" else item.value,
+                }
+                for item in self.permissions
+            ],
+            "error": self.error,
+        }
 
 
 class FlatpakManager:
@@ -132,75 +158,70 @@ class FlatpakManager:
             return 0
 
     @staticmethod
-    def get_flatpak_permissions(app_id: str, *, installation: str | None = None, strict: bool = False) -> FlatpakAppPermissions:
-        """Get permissions granted to a specific Flatpak app.
+    def get_flatpak_permissions(ref: str, *, installation: str, name: str = "", strict: bool = False) -> FlatpakAppPermissions:
+        """Read metadata permissions for one exact installed application ref.
 
         Args:
-            app_id: Flatpak application ID (e.g., "org.mozilla.firefox").
+            ref: Full installed application ref (e.g. app/id/arch/branch).
 
         Returns:
             FlatpakAppPermissions with all granted permissions.
         """
-        scope = []
-        if installation is not None:
-            from services.software.installed_applications import installation_flag
-            scope = [installation_flag(installation)]
+        from services.software.installed_applications import installation_flag, validate_ref
+
+        if not validate_ref(ref):
+            raise ValueError("Select a valid full Flatpak application ref.")
+        scope = [installation_flag(installation)]
+        app_id = ref.split("/", 3)[1]
         permissions: List[FlatpakPermission] = []
-        name = app_id
+        display_name = name or app_id
 
         if not FlatpakManager.is_available():
             if strict:
                 raise ValueError("Flatpak is not available for permission inspection.")
-            return FlatpakAppPermissions(app_id=app_id, name=name, permissions=[])
+            return FlatpakAppPermissions(app_id=app_id, name=display_name, permissions=[], ref=ref,
+                                         installation=installation, error="Flatpak is unavailable.")
 
         try:
             result = subprocess.run(
-                ["flatpak", "info", *scope, "--show-permissions", app_id],
+                ["flatpak", "info", *scope, "--show-permissions", ref],
                 capture_output=True,
                 text=True,
                 timeout=15,
             )
-            if strict and result.returncode != 0:
-                raise ValueError("Permissions could not be read from this installation.")
-            if result.returncode == 0:
-                current_category = ""
-                for line in result.stdout.strip().splitlines():
-                    line = line.strip()
-                    if not line:
-                        continue
-                    if line.startswith("[") and line.endswith("]"):
-                        current_category = line[1:-1].lower()
-                    elif "=" in line:
-                        key, _, value = line.partition("=")
-                        category = current_category or key.strip()
-                        for val in value.split(";"):
-                            val = val.strip()
-                            if val:
-                                permissions.append(
-                                    FlatpakPermission(
-                                        category=category,
-                                        value=val,
-                                    )
-                                )
+            if result.returncode != 0:
+                if strict:
+                    raise ValueError("Permissions could not be read from this installation.")
+                return FlatpakAppPermissions(app_id, display_name, [], ref, installation,
+                                             "Permissions could not be read.")
+            if len(result.stdout.encode("utf-8")) > 65536:
+                raise ValueError("The permission response exceeds the 64 KiB limit.")
+            current_category = "Context"
+            for line in result.stdout.strip().splitlines():
+                line = line.strip()
+                if not line:
+                    continue
+                if line.startswith("[") and line.endswith("]"):
+                    current_category = line[1:-1].strip()
+                elif "=" in line:
+                    key, _, value = line.partition("=")
+                    key = key.strip()
+                    if not key or len(key) > 128:
+                        raise ValueError("Flatpak returned an invalid permission key.")
+                    for val in value.split(";"):
+                        val = val.strip()
+                        if val:
+                            permissions.append(FlatpakPermission(current_category, key, val))
 
-            info_result = subprocess.run(
-                ["flatpak", "info", *scope, app_id],
-                capture_output=True,
-                text=True,
-                timeout=15,
-            )
-            if info_result.returncode == 0:
-                for line in info_result.stdout.splitlines():
-                    if line.strip().lower().startswith("name:"):
-                        name = line.split(":", 1)[1].strip()
-                        break
-
-        except (subprocess.TimeoutExpired, OSError) as e:
-            logger.error("Failed to get permissions for %s: %s", app_id, e)
+        except (subprocess.TimeoutExpired, OSError, ValueError) as e:
+            logger.error("Failed to inspect permissions for %s: %s", app_id, e)
             if strict:
+                if isinstance(e, ValueError):
+                    raise
                 raise ValueError("Permission inspection failed.") from e
+            return FlatpakAppPermissions(app_id, display_name, [], ref, installation, "Permission inspection failed.")
 
-        return FlatpakAppPermissions(app_id=app_id, name=name, permissions=permissions)
+        return FlatpakAppPermissions(app_id, display_name, permissions, ref, installation)
 
     @staticmethod
     def get_all_permissions() -> List[FlatpakAppPermissions]:
@@ -209,11 +230,18 @@ class FlatpakManager:
         Returns:
             List of FlatpakAppPermissions for each installed app.
         """
+        from services.software.installed_applications import InstalledApplicationService
+
+        service = InstalledApplicationService()
+        inventory = service.flatpaks()
+        if inventory.unknown_sources:
+            return []
         all_perms: List[FlatpakAppPermissions] = []
-        entries = FlatpakManager.get_flatpak_sizes()
-        for entry in entries:
-            perms = FlatpakManager.get_flatpak_permissions(entry.app_id)
-            all_perms.append(perms)
+        for app in inventory.applications:
+            try:
+                all_perms.append(service.permissions(app))
+            except (OSError, RuntimeError, TypeError, ValueError):
+                continue
         return all_perms
 
     @staticmethod

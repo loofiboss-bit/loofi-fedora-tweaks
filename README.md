@@ -26,8 +26,8 @@ recorded maintenance. Then choose the task you want to perform.
 | | |
 |---|---|
 | **Overview** | CPU, memory, GPU, storage, network, temperatures, and battery where supported. Unavailable readings explain why. |
-| **Tweaks** | Search a setting, change it, and verify it. Restore a previous value where supported. GNOME and KDE appearance, desktop, window and input settings, plus DNF options. |
-| **Apps** | Install trusted applications, inspect installed apps, and review scoped Flatpak removal. |
+| **Tweaks** | Search a setting, check its current value, review a desktop preset, change it, and verify it. Restore a previous value where supported. |
+| **Apps** | Install trusted applications, inspect installed apps and Flatpak metadata permissions, and review scoped removal. |
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
@@ -60,7 +60,11 @@ PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 
 ```bash
 loofi-fedora-tweaks --cli tweaks list
+loofi-fedora-tweaks --cli tweaks preset list
+loofi-fedora-tweaks --cli tweaks preset preview reduced-motion
+loofi-fedora-tweaks --cli tweaks preset apply file-navigation --yes
 loofi-fedora-tweaks --cli apps list
+loofi-fedora-tweaks --cli apps permissions app/org.mozilla.firefox/x86_64/stable --installation user
 loofi-fedora-tweaks --cli updates check
 ```
 
@@ -97,10 +101,11 @@ See [CONTRIBUTING](CONTRIBUTING.md), [ARCHITECTURE](ARCHITECTURE.md), and the
 
 MIT
 
-### Everyday workflows (local candidate)
+### Everyday workflows
 
 Overview prioritizes recorded next steps. Updates restores pending verification
-after reopening without repeating an update. Tweaks supports [portable profiles](docs/TWEAK_PROFILES.md)
-within the same desktop environment. Apps lists installed Flatpaks by installation
-and preserves app data when removing them. Health provides read-only sound and
-Bluetooth diagnostics. See [qualification](docs/EVERYDAY_VERIFICATION.md).
+after reopening without repeating an update. Tweaks supports [portable profiles](docs/TWEAK_PROFILES.md),
+reviewed desktop presets, and a focused check for one setting. Apps lists installed
+Flatpaks by installation, shows metadata permissions, and preserves app data when
+reviewing removal. Health provides read-only sound and Bluetooth diagnostics. See
+[qualification](docs/EVERYDAY_VERIFICATION.md) for separately dated local evidence.

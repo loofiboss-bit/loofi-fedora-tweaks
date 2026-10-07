@@ -8,7 +8,7 @@ from typing import Callable, Sequence
 
 from core.executor.action_result import ActionResult
 from core.tasks.applications import ApplicationCatalog
-from services.software.flatpak import FlatpakManager
+from services.software.flatpak import FlatpakAppPermissions, FlatpakManager
 
 _REF = re.compile(r"^app/[A-Za-z0-9][A-Za-z0-9._-]{1,255}/[A-Za-z0-9_-]+/[A-Za-z0-9._-]+$")
 _INSTALLATION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
@@ -128,7 +128,11 @@ class InstalledApplicationService:
                 unknown.add("fedora")
         return InstalledInventory(tuple(apps), tuple(errors), frozenset(unknown))
 
-    def permissions(self, app: InstalledApplication) -> object:
+    def permissions(self, app: InstalledApplication) -> FlatpakAppPermissions:
         if app.source != "flatpak":
             raise ValueError("Permission inspection is only available for Flatpak applications.")
-        return FlatpakManager.get_flatpak_permissions(app.ref, installation=app.installation, strict=True)
+        if not validate_ref(app.ref) or app.ref.split("/")[1] != app.app_id:
+            raise ValueError("The selected Flatpak identity is invalid.")
+        return FlatpakManager.get_flatpak_permissions(
+            app.ref, installation=app.installation, name=app.name, strict=True,
+        )

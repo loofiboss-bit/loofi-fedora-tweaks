@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for v32.2.0 "Coherence".
+> Active architecture reference for v32.3.0 "Clarity".
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -12,7 +12,7 @@ system-wide DNF setting, alongside app installation, updates, and diagnostics.
 Missing applications, schemas, or host tools produce an unavailable state
 with an explanation.
 
-The current tweak catalog contains 73 controls: 43 GNOME-only, 28 KDE-only,
+The current tweak catalog contains 76 controls: 46 GNOME-only, 28 KDE-only,
 and two shared controls. The GUI and CLI project the controls supported by the
 detected Fedora desktop and deployment backend.
 
@@ -26,11 +26,12 @@ The supported distribution package is one RPM built from
 | Concern | Active source |
 | --- | --- |
 | Tweak IDs, labels, choices, and desktop scope | `loofi-fedora-tweaks/core/tasks/tweaks.py` |
+| Built-in reviewed desktop presets | `loofi-fedora-tweaks/core/tasks/tweak_presets.py` |
 | GNOME schemas, KDE keys, command shapes, and value validation | `loofi-fedora-tweaks/core/tweak_commands.py` |
 | Set and restore actions, preflight, and independent verification | `loofi-fedora-tweaks/core/actions/tweaks.py` |
 | Explicit active action allowlist | `loofi-fedora-tweaks/core/actions/catalog.py` |
-| GUI rows, search, changed-only filter, reset, and restore controls | `loofi-fedora-tweaks/ui/tweaks_page.py` |
-| CLI list, get, set, and restore | `loofi-fedora-tweaks/cli/commands/tweaks_commands.py` |
+| GUI rows, search, one-setting inspection, reset, and restore controls | `loofi-fedora-tweaks/ui/tweaks_page.py` |
+| CLI list, get, set, restore, and presets | `loofi-fedora-tweaks/cli/commands/tweaks_commands.py` |
 | Generated catalog reference | `docs/TWEAKS.md`, from `scripts/gen_tweaks_doc.py` |
 
 Add a setting to the declarative catalog and its closed command metadata. The
@@ -157,6 +158,10 @@ feedback, without adding a second action execution boundary.
 `core/tasks/tweak_profiles.py` defines strict portable profiles, immutable reviews,
 and sequential results. Review does not allocate persisted plans; each selected
 entry is prepared and revalidated just before Action Center execution.
+`core/tasks/tweak_presets.py` maps the closed Reduced motion and File navigation
+presets into those same profile reviews. `core/tasks/tweaks.py::inspect_one` reads
+one selected setting and its restore offer within an eight-second shared budget;
+the owning window routes this through its existing operation worker.
 `services/software/update_recovery.py` hydrates saved observations and durable run
 identities without executing updates. `core/tasks/next_steps.py` projects recorded
 dashboard observations into at most three navigation suggestions.
@@ -165,6 +170,9 @@ Installed applications use source, installation, and full ref as identity.
 `core/actions/installed_applications.py` owns reviewed Flatpak removal and independent
 inventory verification. `services/hardware/diagnostic_probes.py` implements bounded,
 read-only sound/Bluetooth observations with unknown states and cancellation.
+Flatpak metadata permissions are read for one inventory-verified ref and installation.
+The parser retains category, key, and value; UI and JSON output redact environment
+values and identify the result as metadata rather than effective access.
 Window-owned operation workers and installed-page samplers participate in deferred
 shutdown; no worker is destroyed while running. Existing plan/run schemas remain
 unchanged. Portable profiles do not reactivate retired profile stacks.

@@ -7,6 +7,7 @@ from typing import Any
 from core.tasks.tweaks import TweakState, default_for, visible_tweaks
 from core.tweak_commands import values_equal
 from PyQt6.QtCore import QEvent, QTimer, Qt, pyqtSignal
+from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QButtonGroup, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu, QPushButton, QToolButton, QVBoxLayout, QWidget, QWidgetAction
 
 from ui.components import Card, PageScaffold
@@ -25,7 +26,9 @@ class TweaksPage(QWidget, PluginInterface):
 
     saveProfileRequested = pyqtSignal()
     loadProfileRequested = pyqtSignal()
+    choosePresetRequested = pyqtSignal()
     refreshRequested = pyqtSignal()
+    inspectRequested = pyqtSignal(str)
     changeRequested = pyqtSignal(str, str)
     restoreRequested = pyqtSignal(str, str)
     cancelSnapshotRequested = pyqtSignal()
@@ -101,6 +104,11 @@ class TweaksPage(QWidget, PluginInterface):
         self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
         self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
         search_row.addWidget(self.load_profile_button)
+
+        self.preset_button = QPushButton(self.tr("Choose preset…"))
+        self.preset_button.setAccessibleName(self.tr("Choose and review a desktop settings preset"))
+        self.preset_button.clicked.connect(self.choosePresetRequested.emit)
+        search_row.addWidget(self.preset_button)
 
         intro.add_widget(self._wrap(search_row))
         filters = QGridLayout()
@@ -206,6 +214,10 @@ class TweaksPage(QWidget, PluginInterface):
             menu_button.setMenu(menu)
             actions.addWidget(menu_button)
             row.control_layout.addLayout(actions)
+            inspect_action = QAction(self.tr("Check current value"), menu)
+            inspect_action.triggered.connect(lambda _checked=False, item=tweak.id: self.inspectRequested.emit(item))
+            menu.addAction(inspect_action)
+            menu.addSeparator()
             self._restore_buttons[tweak.id] = restore
             reset = QPushButton(self.tr("Use Loofi standard value"))
             reset.setObjectName(f"tweakReset_{tweak.id}")
@@ -371,6 +383,7 @@ class TweaksPage(QWidget, PluginInterface):
         self._reading = busy and cancellable
         self.save_profile_button.setEnabled(not busy)
         self.load_profile_button.setEnabled(not busy)
+        self.preset_button.setEnabled(not busy)
         self.cancel_snapshot_button.setText(self.tr("Cancel check"))
         self.refresh_button.setEnabled(not busy)
         self.cancel_snapshot_button.setVisible(self._reading)
@@ -490,6 +503,31 @@ class TweaksPage(QWidget, PluginInterface):
             self.restore_selection(tweak_id)
             row.set_feedback(message or self.tr("The change was not verified."), kind="error")
         self.status_label.setText(message or self.tr("Refreshing current settings…"))
+
+    def set_check_error(self, tweak_id: str, message: str) -> None:
+        """Mark one stale row unknown after its requested check fails."""
+        pair = self._rows.get(tweak_id)
+        self.set_busy(False, message)
+        if pair is None:
+            return
+        row, control = pair
+        self._last_changes.pop(tweak_id, None)
+        control.setProperty("ready", False)
+        control.setEnabled(False)
+        self._restore_buttons[tweak_id].setProperty("ready", False)
+        self._restore_buttons[tweak_id].setProperty("sourceRunId", "")
+        self._restore_buttons[tweak_id].setEnabled(False)
+        self._restore_buttons[tweak_id].setVisible(False)
+        self._restore_notices[tweak_id].clear()
+        self._restore_notices[tweak_id].hide()
+        self._reset_buttons[tweak_id].setProperty("ready", False)
+        self._reset_buttons[tweak_id].setEnabled(False)
+        self._reset_buttons[tweak_id].hide()
+        row.value_label.setText(self.tr("Current value unavailable"))
+        row.set_feedback(message, kind="error")
+        self._unavailable.add(tweak_id)
+        self._changed.discard(tweak_id)
+        self._filter_rows(self.search_input.text())
 
     def set_restore_error(self, tweak_id: str, message: str) -> None:
         """Invalidate one restoration offer without misreporting other rows."""

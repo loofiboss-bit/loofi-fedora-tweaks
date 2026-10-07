@@ -43,6 +43,50 @@ def handle_apps(
                     print_fn(error)
             return 1 if inventory.errors else 0
 
+    if action == "permissions":
+        service = InstalledApplicationService()
+        inventory = service.flatpaks()
+
+        def report_permission_error(message: str) -> None:
+            if json_output:
+                output_json({
+                    "schema": "loofi.flatpak-permissions/v1",
+                    "status": "unavailable",
+                    "ref": args.ref,
+                    "installation": args.installation,
+                    "permissions": [],
+                    "error": message,
+                })
+            else:
+                print_fn(message)
+
+        if inventory.unknown_sources:
+            report_permission_error("Flatpak installation inventory could not be read.")
+            return 1
+        selected = next((app for app in inventory.applications
+                         if app.ref == args.ref and app.installation == args.installation), None)
+        if selected is None:
+            report_permission_error("The selected Flatpak ref is not installed in this installation.")
+            return 1
+        try:
+            permissions = service.permissions(selected)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            report_permission_error("Permissions could not be read from this installation.")
+            return 1
+        if json_output:
+            output_json(permissions.to_dict())
+        else:
+            print_fn(f"Permissions requested by {permissions.name}")
+            print_fn(f"Ref: {permissions.ref}")
+            print_fn(f"Installation: {permissions.installation}")
+            for item in permissions.permissions:
+                value = "[hidden]" if item.category.lower() == "environment" else item.value
+                print_fn(f"[{item.category}] {item.key}: {value}")
+            if not permissions.permissions:
+                print_fn("No permissions were reported by the app metadata.")
+            print_fn("User overrides and desktop portals can change actual access.")
+        return 0
+
     if action == "remove":
         controller = OperationController(orchestrator=ActionCenterOrchestrator(catalog=ActionCatalog(), runtime=runtime))
         ticket = controller.prepare("remove-installed-flatpak", {"ref": args.ref, "installation": args.installation})

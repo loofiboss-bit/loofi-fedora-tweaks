@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
+> Current release: 32.3.0 "Clarity". The personalization and app-inspection work in the current checkout is an unreleased local candidate; physical desktop and assistive-technology validation remains unverified.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -126,7 +126,7 @@ permits restoration. KWin changes also request a session
 reconfigure and compare runtime values. A session warning preserves the saved
 change and its restoration offer.
 
-The catalog has 73 controls grouped as Appearance, Desktop, Files, Interaction,
+The catalog has 76 controls grouped as Appearance, Desktop, Files, Interaction,
 Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
 offers click behavior and default folder view; KDE adds Dolphin's full-path
 setting, editable location bar, session tabs, external folder tabs, and close-tab
@@ -134,6 +134,17 @@ confirmation. KWin offers maximized-titlebar, edge tiling, and focus prevention.
 Files also offers an editable location bar and simple/detailed dates. Missing Files schemas or Dolphin
 are reported as unavailable. See
 [TWEAKS.md](TWEAKS.md) for the complete generated list with Loofi standard values.
+
+Choose **Choose preset…** to review **Reduced motion** or **File navigation**
+for the detected desktop. Each supported setting shows its current and proposed
+value. Unavailable settings explain why; identical values are skipped. Uncheck
+any change you do not want, then confirm to apply the remaining changes one at a
+time. A failed verification stops the rest; completed changes remain in Activity.
+
+Use **Check current value** in a row's action menu to reread only that setting
+and its restoration offer. The check has an eight-second shared limit. If it
+fails or is cancelled, the row is marked unavailable until its next successful
+check; the other rows and filters remain as they were.
 
 Use **Use Loofi standard value** on a row whose value differs from that
 reference, or turn on **Changed** to list those rows. Resetting runs through the
@@ -272,9 +283,13 @@ Changes stop on cancellation, changed baseline, or failed verification. Restore
 supported changes from local verified Activity history. See [profile details](TWEAK_PROFILES.md).
 
 Apps includes **Installed** with Flatpak source, installation, ref, version, and
-reported size. The same app in two installations appears twice. Inspect permissions
-or review removal of exactly one installation. Running apps must be closed first;
-removal preserves their data. RPM removal opens the desktop software manager.
+reported size. The same app in two installations appears twice. **Show permissions**
+opens a read-only, installation-bound view of permissions declared by that app's
+metadata, grouped by network, files, audio, devices, display, and D-Bus. Environment
+values are hidden; unknown keys remain under **Technical details**. Portals and
+user overrides can change actual access.
+**Review removal** always targets exactly one installation. Running apps must be
+closed first; removal preserves their data. RPM removal opens the desktop software manager.
 
 Health has separate **Sound is not working** and **Bluetooth is not working**
 profiles. Each has a 15-second budget and cancellation. Missing tools, partial
@@ -288,9 +303,14 @@ CLI equivalents use the same services and action authority:
 loofi tweaks profile export --help
 loofi tweaks profile preview --help
 loofi tweaks profile apply --help
+loofi tweaks preset list
+loofi tweaks preset preview reduced-motion
+loofi tweaks preset apply file-navigation --yes
 loofi apps installed --help
+loofi apps permissions app/org.mozilla.firefox/x86_64/stable --installation user
 loofi apps remove --help
 ```
 
-Profile apply requires confirmation. Flatpak removal requires an explicit
-installation and confirmation; consult command help for exact arguments.
+Profile and preset apply require `--yes` to change settings. Flatpak permission
+inspection and removal require an explicit installation; removal also requires
+confirmation. Permission JSON hides environment values.

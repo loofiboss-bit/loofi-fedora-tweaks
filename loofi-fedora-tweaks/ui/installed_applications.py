@@ -2,13 +2,89 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QLabel, QPushButton, QLayout
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QPushButton, QLayout, QPlainTextEdit, QVBoxLayout
 
 from core.catalog_models import NativeHandoffId
 from services.software.installed_applications import InstalledApplication, InstalledInventory
 from ui.components import Card
 from ui.operation_worker import OperationControllerQtAdapter
 from ui.native_handoff_card import NativeHandoffCard
+
+
+class FlatpakPermissionsDialog(QDialog):
+    """Readable, read-only view of one installation's app metadata grants."""
+
+    def __init__(self, app: InstalledApplication, permissions: object, parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("Flatpak permissions"))
+        self.setAccessibleName(self.tr("Flatpak permissions for %1").replace("%1", app.name))
+        self.resize(760, 560)
+        layout = QVBoxLayout(self)
+        identity = QLabel(
+            self.tr("%1\nRef: %2\nInstallation: %3")
+            .replace("%1", app.name).replace("%2", app.ref).replace("%3", app.installation)
+        )
+        identity.setWordWrap(True)
+        layout.addWidget(identity)
+        explanation = QLabel(self.tr(
+            "These permissions come from the app metadata. User overrides and desktop portals can change actual access."
+        ))
+        explanation.setWordWrap(True)
+        layout.addWidget(explanation)
+
+        grouped: dict[str, list[str]] = {}
+        for permission in getattr(permissions, "permissions", ()):
+            category = str(permission.category).strip()
+            key = str(permission.key).strip()
+            value = str(permission.value).strip()
+            group, detail = self._describe(category, key, value)
+            shown_value = self.tr("Value hidden for privacy") if category.lower() == "environment" else value
+            line = self.tr("%1: %2").replace("%1", key).replace("%2", shown_value)
+            if detail:
+                line += self.tr(" — %1").replace("%1", detail)
+            if group == self.tr("Technical details"):
+                line = self.tr("%1 / %2: %3").replace("%1", category).replace("%2", key).replace("%3", shown_value)
+            grouped.setdefault(group, []).append(line)
+
+        details = QPlainTextEdit()
+        details.setReadOnly(True)
+        details.setAccessibleName(self.tr("Grouped app permissions"))
+        if grouped:
+            blocks = [f"{group}\n" + "\n".join(f"  {line}" for line in entries)
+                      for group, entries in grouped.items()]
+            details.setPlainText("\n\n".join(blocks))
+        else:
+            details.setPlainText(self.tr("No permissions were reported by the app metadata."))
+        layout.addWidget(details, 1)
+        close = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        close.rejected.connect(self.reject)
+        close.accepted.connect(self.accept)
+        layout.addWidget(close)
+
+    def _describe(self, category: str, key: str, value: str) -> tuple[str, str]:
+        normalized_category = category.lower()
+        normalized_key = key.lower()
+        if "bus" in normalized_category:
+            return self.tr("D-Bus"), self.tr("Access to named desktop services")
+        if normalized_category == "environment":
+            return self.tr("Environment"), self.tr("Values are hidden for privacy")
+        if normalized_category == "context":
+            if normalized_key == "filesystems":
+                if value.startswith("!"):
+                    return self.tr("Files"), self.tr("Access denied")
+                mode = self.tr("read-only") if value.endswith(":ro") else self.tr("read/write")
+                return self.tr("Files"), mode
+            if normalized_key == "shared" and value == "network":
+                return self.tr("Network"), self.tr("Network access")
+            if normalized_key == "sockets" and value in {"pulseaudio", "pipewire", "alsa"}:
+                return self.tr("Audio"), self.tr("Audio service access")
+            if normalized_key == "sockets" and value in {"wayland", "x11", "fallback-x11"}:
+                return self.tr("Display"), self.tr("Display server access")
+            if normalized_key == "devices":
+                return self.tr("Devices"), self.tr("Device access")
+            if normalized_key in {"sockets", "shared", "features", "filesystems"}:
+                return self.tr("Desktop and system access"), ""
+        return self.tr("Technical details"), ""
 
 
 class _InstalledApplicationRow(Card):
@@ -44,6 +120,10 @@ class InstalledApplicationsCard(Card):
         self.software_handoff.hide()
         self.add_widget(self.software_handoff)
         self._rows = []
+        self._permission_generation = 0
+        self._active_permission_request = None
+        self._pending_permission_request = None
+        self._permission_dialogs = {}
         self._adapter = OperationControllerQtAdapter(parent=self)
         self._adapter.finished.connect(self.apply_inventory)
         self._adapter.failed.connect(self._failed)
@@ -52,7 +132,8 @@ class InstalledApplicationsCard(Card):
         self._adapter.stopped.connect(self._notify_stopped)
         self._permissions_adapter.stopped.connect(self._notify_stopped)
         self._permissions_adapter.finished.connect(self._permissions_result)
-        self._permissions_adapter.failed.connect(lambda _message: self.status.setText(self.tr("Permissions could not be read.")))
+        self._permissions_adapter.failed.connect(self._permissions_failed)
+        self._permissions_adapter.stopped.connect(self._start_pending_permission)
         self.refresh_button.setEnabled(service is not None)
 
     @property
@@ -60,6 +141,9 @@ class InstalledApplicationsCard(Card):
         return self._adapter.busy or self._permissions_adapter.busy
 
     def request_stop(self):
+        self._permission_generation += 1
+        self._pending_permission_request = None
+        self._close_permission_dialogs()
         self._adapter.cancel()
         self._permissions_adapter.cancel()
 
@@ -115,10 +199,47 @@ class InstalledApplicationsCard(Card):
         self.inventoryUpdated.emit(inventory)
 
     def show_permissions(self, app: InstalledApplication):
-        if self.service is not None and not self._permissions_adapter.busy:
-            self.status.setText(self.tr("Reading permissions…"))
-            self._permissions_adapter.start(lambda: self.service.permissions(app))
+        if self.service is None or app.source != "flatpak":
+            return
+        self._close_permission_dialogs()
+        self._permission_generation += 1
+        self._pending_permission_request = (app, self._permission_generation)
+        if self._permissions_adapter.busy:
+            self._permissions_adapter.cancel()
+            self.status.setText(self.tr("Switching permission details to the selected application…"))
+            return
+        self._start_pending_permission()
+
+    def _close_permission_dialogs(self):
+        for dialog in tuple(self._permission_dialogs.values()):
+            dialog.close()
+        self._permission_dialogs.clear()
 
     def _permissions_result(self, permissions):
-        values = getattr(permissions, "permissions", ())
-        self.status.setText("\n".join(f"{item.category}: {item.value}" for item in values) or self.tr("No permissions were reported. Check Flatpak details if access is unexpected."))
+        request = self._active_permission_request
+        if request is None:
+            return
+        app, generation = request
+        if generation != self._permission_generation:
+            return
+        dialog = FlatpakPermissionsDialog(app, permissions, self)
+        self._permission_dialogs[generation] = dialog
+        dialog.finished.connect(lambda _result, key=generation: self._permission_dialogs.pop(key, None))
+        dialog.open()
+        self.status.setText(self.tr("Showing metadata permissions for %1.").replace("%1", app.name))
+
+    def _permissions_failed(self, _message):
+        request = self._active_permission_request
+        if request is not None and request[1] == self._permission_generation:
+            self.status.setText(self.tr("Permissions could not be read from this installation."))
+
+    def _start_pending_permission(self):
+        if self._permissions_adapter.busy or self._pending_permission_request is None:
+            return
+        app, generation = self._pending_permission_request
+        self._pending_permission_request = None
+        self._active_permission_request = (app, generation)
+        self.status.setText(self.tr("Reading permissions for %1…").replace("%1", app.name))
+        if not self._permissions_adapter.start(lambda: self.service.permissions(app)):
+            self._active_permission_request = None
+            self.status.setText(self.tr("Permission inspection could not be started."))

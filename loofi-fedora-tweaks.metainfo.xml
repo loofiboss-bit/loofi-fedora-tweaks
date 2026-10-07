@@ -17,7 +17,8 @@
     <ul>
       <li>Home, Apps, Tweaks, Health, and Updates task-oriented destinations</li>
       <li>Curated Flatpak and Fedora RPM application selection with per-item results</li>
-      <li>Searchable GNOME, KDE, and power settings with current values and verified results</li>
+      <li>Searchable GNOME, KDE, and power settings with focused current-value checks, verified results, and reviewed desktop presets</li>
+      <li>Installation-bound, read-only Flatpak permission details from app metadata</li>
       <li>Symptom-first diagnostics with one verified repair or explicit handoff</li>
       <li>Independent System, Flatpak, and Firmware update cards</li>
       <li>Reviewed system changes with native authorization and independent verification</li>

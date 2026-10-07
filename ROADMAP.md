@@ -44,7 +44,27 @@ scaling, and Atomic workflows remain unverified for this release. A KDE
 Dolphin setting was changed, read back, and restored on the development host;
 this does not qualify every setting or the full interface.
 
-## Local candidate — Control center redesign
+## Completed — v32.3.0 "Clarity"
+
+- [x] Modernize the control center's visual presentation and responsive layout
+- [x] Improve application icon and desktop-file integration
+- [x] Keep the current tweak catalog at 76 verified controls
+
+Physical desktop and assistive-technology qualification remains separate from
+automated and rendering evidence.
+
+## Local candidate — Personalization and app insight
+
+- [x] Add Reduced motion and File navigation presets through existing profile review and Action Center execution
+- [x] Add an eight-second, one-setting inspection and refresh after a single change or restore
+- [x] Show installation-bound Flatpak metadata permissions in the GUI and CLI
+- [x] Complete full automated, packaging, and responsive rendering verification
+- [ ] Physical KDE, GNOME, and assistive-technology qualification
+
+The candidate does not change the 32.3.0 release version. Publication and
+installation remain outside this local implementation.
+
+## Prior local work — Control center redesign
 
 - [x] Loofi design system and system-selected light/dark presentation
 - [x] Overview start route, Activity navigation, and explicit Tools disclosure
@@ -56,7 +76,7 @@ this does not qualify every setting or the full interface.
 No public release or local installation is implied. Physical desktop,
 assistive-technology, and unavailable hardware evidence remain separate.
 
-## Local candidate — Everyday
+## Prior local work — Everyday
 
 - [x] Prioritized Overview next steps from recorded observations
 - [x] Restore pending update verification after application or computer restart

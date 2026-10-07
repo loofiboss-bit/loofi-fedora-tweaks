@@ -177,6 +177,10 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
             )
             tweaks_page.saveProfileRequested.connect(lambda owner=tweaks_page: self._start_tweak_profile_export(owner))
             tweaks_page.loadProfileRequested.connect(lambda owner=tweaks_page: self._start_tweak_profile_import(owner))
+            tweaks_page.choosePresetRequested.connect(lambda owner=tweaks_page: self._start_tweak_preset(owner))
+            tweaks_page.inspectRequested.connect(
+                lambda tweak_id, owner=tweaks_page: self._start_tweak_inspection(owner, tweak_id)
+            )
             return cast(QWidget, tweaks_page)
         if destination_id == "fix":
             from ui.fix_workflow import FixWorkflowPage
@@ -278,6 +282,31 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
             page.set_busy(False, self.tr("Setting inspection could not be started. Refresh to try again."))
         return bool(started)
 
+    def _start_tweak_inspection(self: Any, page: Any, tweak_id: str) -> bool:
+        """Refresh one row without replacing the rest of the visible snapshot."""
+        from core.actions.operation_controller import OperationController
+        from core.tasks.tweaks import inspect_one
+
+        if tweak_id not in page._rows:
+            page.set_error(self.tr("The requested setting is unavailable."))
+            return False
+        if self._utility_operation_adapter is not None:
+            page.set_error(self.tr("Another operation is in progress. Check this setting when it finishes."))
+            return False
+        controller = self._utility_operation_controller
+        if controller is None:
+            controller = OperationController()
+        runtime = controller.orchestrator.runtime
+        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter.finished.connect(lambda state: page.set_states((state,)))
+        adapter.failed.connect(lambda message: page.set_check_error(tweak_id, str(message)))
+        adapter.cancelled.connect(lambda: page.set_check_error(tweak_id, self.tr("Setting inspection cancelled. Its previous value is not current.")))
+        page.set_busy(True, self.tr("Checking %1…").replace("%1", self.tr(page._tweaks[tweak_id].title)), cancellable=True)
+        started = adapter.start(lambda: inspect_one(tweak_id, page.profile, runtime, is_cancelled=lambda: adapter.cancel_requested))
+        if not started:
+            page.set_busy(False, self.tr("Setting inspection could not be started."))
+        return bool(started)
+
     def _cancel_tweak_snapshot(self: Any, page: Any) -> bool:
         """Request cooperative cancellation of the active read-only snapshot."""
         adapter = getattr(self, "_utility_operation_adapter", None)
@@ -337,7 +366,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
         adapter.finished.connect(completed)
         adapter.failed.connect(lambda message: page.set_error(str(message)))
         adapter.cancelled.connect(lambda: page.set_error(self.tr("The operation was cancelled. Refresh to see the current value.")))
-        adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
+        adapter.stopped.connect(lambda: self._start_tweak_inspection(page, tweak_id))
         return bool(adapter.start(operation))
 
     def _start_tweak_restore(self: Any, page: Any, tweak_id: str, source_id: str) -> bool:
@@ -364,7 +393,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
 
         if ticket.blocked:
             page.set_restore_error(tweak_id, str(ticket.plan.policy_decision.explanation))
-            adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
+            adapter.stopped.connect(lambda: self._start_tweak_inspection(page, tweak_id))
             return
         facts = ticket.plan.policy_decision.facts
         answer = QMessageBox.question(
@@ -412,7 +441,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
         adapter.finished.connect(completed)
         adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
         adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, cast(Any, self).tr("Restoration was cancelled. Refresh to see the current value.")))
-        adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
+        adapter.stopped.connect(lambda: self._start_tweak_inspection(page, tweak_id))
         return bool(adapter.start(operation))
 
     def _set_review_notice(self: Any, page: Any, kind: str, title: str, message: str) -> None:

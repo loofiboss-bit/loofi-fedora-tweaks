@@ -369,6 +369,7 @@ def snapshot(
     profile: object,
     runtime: ActionRuntime,
     *,
+    tweak_ids: Sequence[str] | None = None,
     budget_seconds: float = 20.0,
     is_cancelled: Callable[[], bool] | None = None,
     on_progress: Callable[[int, int], None] | None = None,
@@ -378,7 +379,16 @@ def snapshot(
     from core.tasks.tweak_history import restoration_for, read_tweak_runs
 
     runs, history_error = read_tweak_runs(runtime)
-    tweaks = visible_tweaks(profile)
+    visible = visible_tweaks(profile)
+    if tweak_ids is None:
+        tweaks = visible
+    else:
+        requested = tuple(dict.fromkeys(str(item) for item in tweak_ids))
+        available = {tweak.id: tweak for tweak in visible}
+        unknown = set(requested) - set(available)
+        if unknown:
+            raise ValueError("The requested setting is unavailable on this desktop.")
+        tweaks = tuple(available[tweak_id] for tweak_id in requested)
     states: list[TweakState] = []
     requested_budget = float(budget_seconds)
     limit_seconds = min(_SNAPSHOT_BUDGET_SECONDS, max(0.0, requested_budget)) if math.isfinite(requested_budget) else 0.0
@@ -420,3 +430,46 @@ def snapshot(
     if not tweaks and on_progress is not None:
         on_progress(0, 0)
     return tuple(states)
+
+
+def inspect_one(
+    tweak_id: str,
+    profile: object,
+    runtime: ActionRuntime,
+    *,
+    budget_seconds: float = 8.0,
+    is_cancelled: Callable[[], bool] | None = None,
+    clock: Callable[[], float] = time.monotonic,
+) -> TweakState:
+    """Inspect one setting and its restore offer within one shared budget."""
+    from core.tasks.tweak_history import read_tweak_runs, restoration_for
+
+    tweak = BY_ID.get(str(tweak_id))
+    if tweak is None:
+        raise ValueError("Unknown tweak setting.")
+    started = clock()
+    budget = min(8.0, max(0.0, float(budget_seconds)))
+    deadline = started + budget
+    cancelled = is_cancelled or (lambda: False)
+
+    def bounded_reader(vector: list[str], *, action_id: str, timeout: int = 8) -> ActionResult:
+        if cancelled():
+            return ActionResult.fail("Setting inspection cancelled.")
+        remaining = deadline - clock()
+        if remaining <= 0:
+            return ActionResult.fail("The 8-second setting inspection time limit was reached.")
+        return runtime.execute_read_only(vector, action_id=action_id, timeout=min(float(timeout), remaining))
+
+    runs, history_error = read_tweak_runs(runtime)
+    if cancelled():
+        return TweakState(tweak, "unavailable", message="Setting inspection cancelled.")
+    if clock() >= deadline:
+        return TweakState(tweak, "unavailable", message="The 8-second setting inspection time limit was reached.")
+    state = read_tweak(tweak, profile, bounded_reader)
+    offer = restoration_for(tweak, state, runs)
+    if cancelled():
+        return TweakState(tweak, "unavailable", message="Setting inspection cancelled.")
+    if clock() > deadline:
+        return TweakState(tweak, "unavailable", message="The 8-second setting inspection time limit was reached.")
+    return replace(state, restore_run_id=offer.source_run_id, restore_value=offer.before,
+                   restore_message=history_error or offer.message)

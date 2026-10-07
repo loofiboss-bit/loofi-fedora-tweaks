@@ -97,28 +97,30 @@ class TestFlatpakPermissions(unittest.TestCase):
     @patch("services.software.flatpak.cached_which", return_value="/usr/bin/flatpak")
     @patch("services.software.flatpak.subprocess.run")
     def test_get_permissions(self, mock_run, mock_which):
-        mock_run.side_effect = [
-            # flatpak info --show-permissions
-            MagicMock(
-                returncode=0,
-                stdout=("[Context]\nshared=network;ipc;\nsockets=x11;wayland;pulseaudio;\nfilesystems=home:ro;/tmp;\n"),
-            ),
-            # flatpak info (for name)
-            MagicMock(returncode=0, stdout="Name: Firefox\n"),
-        ]
-        result = FlatpakManager.get_flatpak_permissions("org.mozilla.firefox")
+        ref = "app/org.mozilla.firefox/x86_64/stable"
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout=("[Context]\nshared=network;ipc;\nsockets=x11;wayland;pulseaudio;\nfilesystems=home:ro;/tmp;\n"
+                    "[Environment]\nAPI_TOKEN=super-secret-value\n"),
+        )
+        result = FlatpakManager.get_flatpak_permissions(ref, installation="user", name="Firefox", strict=True)
         self.assertEqual(result.app_id, "org.mozilla.firefox")
         self.assertEqual(result.name, "Firefox")
         self.assertGreater(len(result.permissions), 0)
-
-        # Check specific permissions
-        categories = {p.category for p in result.permissions}
-        self.assertIn("context", categories)
+        self.assertEqual(result.ref, ref)
+        self.assertEqual(result.installation, "user")
+        self.assertTrue(any(item.key == "filesystems" and item.value == "home:ro" for item in result.permissions))
+        self.assertTrue(any(item.key == "filesystems" and item.value == "/tmp" for item in result.permissions))
+        self.assertTrue(any(item.key == "sockets" and item.value == "wayland" for item in result.permissions))
+        self.assertNotIn("super-secret-value", str(result.to_dict()))
+        self.assertEqual(mock_run.call_count, 1)
+        self.assertEqual(mock_run.call_args.args[0], ["flatpak", "info", "--user", "--show-permissions", ref])
 
     @patch("services.software.flatpak.cached_which", return_value=None)
     def test_get_permissions_no_flatpak(self, mock_which):
-        result = FlatpakManager.get_flatpak_permissions("org.test")
+        result = FlatpakManager.get_flatpak_permissions("app/org.test.App/x86_64/stable", installation="system")
         self.assertEqual(len(result.permissions), 0)
+        self.assertTrue(result.error)
 
     @patch("services.software.flatpak.cached_which", return_value="/usr/bin/flatpak")
     @patch("services.software.flatpak.subprocess.run")
@@ -126,8 +128,19 @@ class TestFlatpakPermissions(unittest.TestCase):
         import subprocess
 
         mock_run.side_effect = subprocess.TimeoutExpired(cmd="flatpak", timeout=15)
-        result = FlatpakManager.get_flatpak_permissions("org.test")
+        result = FlatpakManager.get_flatpak_permissions("app/org.test.App/x86_64/stable", installation="system")
         self.assertEqual(len(result.permissions), 0)
+
+    @patch("services.software.flatpak.cached_which", return_value="/usr/bin/flatpak")
+    @patch("services.software.flatpak.subprocess.run")
+    def test_permissions_reject_large_or_failed_response(self, run, _which):
+        ref = "app/org.test.App/x86_64/stable"
+        run.return_value = MagicMock(returncode=0, stdout="x" * 65537)
+        with self.assertRaisesRegex(ValueError, "64 KiB"):
+            FlatpakManager.get_flatpak_permissions(ref, installation="work", strict=True)
+        run.return_value = MagicMock(returncode=2, stdout="")
+        with self.assertRaisesRegex(ValueError, "could not be read"):
+            FlatpakManager.get_flatpak_permissions(ref, installation="work", strict=True)
 
 
 class TestOrphanDetection(unittest.TestCase):

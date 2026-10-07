@@ -1,5 +1,5 @@
 .\" Man page for loofi-fedora-tweaks
-.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-02" "30.2.1" "Loofi Fedora Tweaks Manual"
+.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-07" "32.3.0" "Loofi Fedora Tweaks Manual"
 .SH NAME
 loofi\-fedora\-tweaks \- reviewed Fedora maintenance for desktop users
 .SH SYNOPSIS
@@ -51,6 +51,19 @@ KEY=VALUE\fR values and requires explicit \fB\-\-yes\fR confirmation.
 .B activity \fBlist\fR|\fBshow\fR|\fBrelated\fR|\fBrecover\fR|\fBexport\fR
 Inspect the Trusted Change Journal and create reviewed recovery plans without
 an automatic rollback.
+.TP
+.B tweaks preset \fBlist\fR|\fBpreview\fR|\fBapply\fR
+List or review the Reduced motion and File navigation desktop presets. Applying
+requires B--yesR; individual settings may be selected with B--idsR.
+.TP
+.B tweaks get \fIID\fR
+Inspect one setting and its verified restoration offer within an eight-second
+read budget.
+.TP
+.B apps permissions \fIREF\fR B--installationR ISCOPER
+Read metadata-declared permissions for one exact installed Flatpak ref and
+installation. Environment values are redacted. The result does not include all
+effective access from user overrides or desktop portals.
 .TP
 .B doctor
 Check dependencies, platform detection, state integrity, and authorization
