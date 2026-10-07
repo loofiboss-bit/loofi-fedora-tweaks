@@ -46,7 +46,14 @@ class MainWindowShellMixin:
             finally:
                 self._selecting_destination = False
             self.destination_host.clear_explanation()
-            self.destination_host.hide()
+            from core.navigation.routes import advanced_shell_route_for
+            tool = advanced_shell_route_for(route_id)
+            placement = placement_for_route(route_id)
+            destination = get_destination(placement.destination_id) if placement is not None else None
+            if tool is not None and destination is not None:
+                self.destination_host.set_destination(destination, self._navigation_context, route_id, allowed_route_ids=tool.route_ids)
+            else:
+                self.destination_host.hide()
             self._active_destination_id = utility_destination_id
             return
 
@@ -121,6 +128,13 @@ class MainWindowShellMixin:
             page_name = route.label
             description = route.description
 
+        if route and bool(getattr(self, "_utility_shell_ready", False)):
+            from core.navigation.routes import advanced_shell_route_for
+            tool = advanced_shell_route_for(route.id)
+            if tool is not None:
+                category = tool.label
+            elif route.id == "overview":
+                category = "Overview"
         category = visible_label(category)
         page_name = visible_label(page_name)
         if route and route.plugin_id in {"utility_tune", "utility_install", "utility_update", "utility_fix"}:
@@ -155,6 +169,13 @@ class MainWindowShellMixin:
                 if destination
                 else (area.label if area else route.category)
             )
+        if utility_ready:
+            from core.navigation.routes import advanced_shell_route_for
+            tool = advanced_shell_route_for(route.id)
+            if tool is not None:
+                category = tool.label
+            elif route.id == "overview":
+                category = "Overview"
         category = visible_label(category)
         page_name = visible_label("Advanced" if route.id == "settings:application" else ("History & Undo" if route.id == "activity" else route.label))
         if route.plugin_id in {"utility_tune", "utility_install", "utility_update", "utility_fix"}:

@@ -17,9 +17,18 @@ from core.tasks import (
 )
 from PyQt6.QtCore import QEvent, QObject, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyle, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyleOptionViewItem, QStyledItemDelegate, QVBoxLayout, QWidget
 
 from ui.components import Card, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
+from ui.icon_pack import get_qicon
+
+
+class ApplicationRowDelegate(QStyledItemDelegate):
+    """The rich row checkbox is the only visible selection affordance."""
+
+    def initStyleOption(self, option, index) -> None:
+        super().initStyleOption(option, index)
+        option.features &= ~QStyleOptionViewItem.ViewItemFeature.HasCheckIndicator
 
 
 class InstallWorkflowPage(QWidget):
@@ -71,6 +80,9 @@ class InstallWorkflowPage(QWidget):
         root.addWidget(self.body_scroll, 1)
 
         self.intro = Card()
+        self.intro.setProperty("surfaceRole", "toolbar")
+        self.intro.body.setContentsMargins(0, 0, 0, 8)
+        self.intro.body.setSpacing(8)
         self.scaffold.add_widget(self.intro)
         self.search_input = QLineEdit()
         self.search_input.setObjectName("installApplicationSearch")
@@ -78,7 +90,9 @@ class InstallWorkflowPage(QWidget):
         self.search_input.setAccessibleName(self.tr("Search applications"))
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._refresh_rows)
-        self.intro.add_widget(self.search_input)
+        filter_row = QHBoxLayout()
+        filter_row.setSpacing(8)
+        filter_row.addWidget(self.search_input, 1)
         self.category_filter = QComboBox()
         self.category_filter.setObjectName("installCategoryFilter")
         self.category_filter.setAccessibleName(self.tr("Application category"))
@@ -86,7 +100,8 @@ class InstallWorkflowPage(QWidget):
         for category in self.catalog.categories():
             self.category_filter.addItem(category, category)
         self.category_filter.currentIndexChanged.connect(self._refresh_rows)
-        self.intro.add_widget(self.category_filter)
+        filter_row.addWidget(self.category_filter)
+        self.intro.body.addLayout(filter_row)
 
         self.flathub_status_card = Card(
             self.tr("Flathub source status"),
@@ -94,9 +109,11 @@ class InstallWorkflowPage(QWidget):
         )
         self.flathub_status_card.setObjectName("installFlathubStatus")
         self.flathub_system_status = QLabel(self.tr("System scope: Status not checked yet"))
+        self.flathub_system_status.setWordWrap(True)
         self.flathub_system_status.setObjectName("installFlathubSystemStatus")
         self.flathub_system_status.setAccessibleName(self.tr("Flathub system scope status"))
         self.flathub_user_status = QLabel(self.tr("User scope: Status not checked yet"))
+        self.flathub_user_status.setWordWrap(True)
         self.flathub_user_status.setObjectName("installFlathubUserStatus")
         self.flathub_user_status.setAccessibleName(self.tr("Flathub user scope status"))
         self.flathub_status_card.add_widget(self.flathub_system_status)
@@ -127,8 +144,12 @@ class InstallWorkflowPage(QWidget):
         self.intro.add_widget(self.match_summary)
 
         self.application_list = QListWidget()
+        self.application_list.setItemDelegate(ApplicationRowDelegate(self.application_list))
         self.application_list.setObjectName("installApplicationList")
         self.application_list.setAccessibleName(self.tr("Curated application catalog"))
+        self.application_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.application_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.application_list.setSizeAdjustPolicy(QListWidget.SizeAdjustPolicy.AdjustToContents)
         self.application_list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
         self.application_list.itemChanged.connect(self._on_item_changed)
         viewport = self.application_list.viewport()
@@ -160,6 +181,8 @@ class InstallWorkflowPage(QWidget):
         self.results_list = QListWidget()
         self.results_list.setObjectName("installResultsList")
         self.results_list.setAccessibleName(self.tr("Application install results"))
+        self.results_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.results_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.results_card.add_widget(self.results_list)
         self.results_card.hide()
         self.scaffold.add_widget(self.results_card)
@@ -321,9 +344,8 @@ class InstallWorkflowPage(QWidget):
         layout.addWidget(check)
         icon = QLabel()
         app_icon = QIcon.fromTheme(record.package_id, QIcon.fromTheme(record.id))
-        style = self.style()
-        if app_icon.isNull() and style is not None:
-            app_icon = style.standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        if app_icon.isNull():
+            app_icon = get_qicon("packages-software", size=32)
         icon.setPixmap(app_icon.pixmap(32, 32))
         layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignTop)
         copy = QVBoxLayout()
@@ -339,6 +361,10 @@ class InstallWorkflowPage(QWidget):
         source = StatusBadge(self.tr(record.source_label), kind="info")
         source.setObjectName("applicationSourceBadge")
         badges.addWidget(source)
+        scope = QLabel(self.tr("Configured Flatpak scope") if record.source == "flatpak" else self.tr("System scope"))
+        scope.setObjectName("applicationRowScope")
+        scope.setWordWrap(True)
+        badges.addWidget(scope)
         status = QLabel(self._state_label(eligibility.state))
         status.setObjectName("applicationStatusLabel")
         status.setWordWrap(True)
@@ -366,12 +392,19 @@ class InstallWorkflowPage(QWidget):
         if viewport is None:
             return
         width = max(1, viewport.width())
+        total_height = 0
         for _record, _eligibility, item in self._rows.values():
             row = self.application_list.itemWidget(item)
             layout = row.layout() if row is not None else None
             if row is not None and layout is not None:
                 height = layout.totalHeightForWidth(width)
-                item.setSizeHint(QSize(0, max(row.sizeHint().height(), height)))
+                row_height = max(row.sizeHint().height(), height)
+                item.setSizeHint(QSize(0, row_height))
+                total_height += row_height
+        # Only the body scrolls; the catalog grows to its complete content.
+        target_height = max(36, total_height + self.application_list.frameWidth() * 2)
+        if self.application_list.minimumHeight() != target_height:
+            self.application_list.setFixedHeight(target_height)
 
     def _update_review_summary(self) -> None:
         selected = self.selected_application_ids()
@@ -420,6 +453,9 @@ class InstallWorkflowPage(QWidget):
             return False
         item = row[2]
         self.application_list.setCurrentItem(item)
+        widget = self.application_list.itemWidget(item)
+        if widget is not None:
+            self.body_scroll.ensureWidgetVisible(widget)
         self.application_list.setFocus()
         return True
 
@@ -466,6 +502,7 @@ class InstallWorkflowPage(QWidget):
             message = str(getattr(item, "message", ""))
             row = QListWidgetItem(f"{title} · {label}: {message}", self.results_list)
             row.setData(Qt.ItemDataRole.UserRole, str(getattr(item, "item_id", "")))
+        self.results_list.setFixedHeight(max(36, sum(self.results_list.sizeHintForRow(index) for index in range(self.results_list.count())) + 4))
         self.results_card.setVisible(bool(items))
         self.resultUpdated.emit(outcome)
 

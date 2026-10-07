@@ -29,6 +29,7 @@ class TemperatureSensor:
     high: float  # High threshold in Celsius (0 if unknown)
     critical: float  # Critical threshold in Celsius (0 if unknown)
     sensor_type: str  # One of "cpu", "gpu", "disk", "other"
+    source: str = ""  # Exact hwmon input file for stable presentation IDs
 
 
 def _classify_sensor(hwmon_name: str) -> str:
@@ -69,7 +70,7 @@ def _read_sysfs_value(path: str) -> Optional[str]:
         return None
 
 
-def _read_millidegree(path: str) -> float:
+def _read_millidegree(path: str) -> Optional[float]:
     """
     Read a millidegree Celsius value from sysfs and convert to degrees.
 
@@ -79,15 +80,15 @@ def _read_millidegree(path: str) -> float:
         path: Absolute path to a ``temp*_input``, ``temp*_max``, or ``temp*_crit`` file.
 
     Returns:
-        Temperature in degrees Celsius, or ``0.0`` on any error.
+        Temperature in degrees Celsius, or ``None`` on any error.
     """
     raw = _read_sysfs_value(path)
     if raw is None:
-        return 0.0
+        return None
     try:
         return int(raw) / 1000.0
     except (ValueError, TypeError):
-        return 0.0
+        return None
 
 
 class TemperatureManager:
@@ -137,6 +138,10 @@ class TemperatureManager:
                 continue
 
             sensor_type = _classify_sensor(hwmon_name)
+            if sensor_type == "gpu" and _read_sysfs_value(
+                os.path.join(hwmon_dir, "device", "power", "runtime_status")
+            ) != "active":
+                continue
 
             # Find all temp*_input files in this hwmon device
             try:
@@ -152,6 +157,8 @@ class TemperatureManager:
 
                 # Read the current temperature
                 current = _read_millidegree(input_path)
+                if current is None:
+                    continue
 
                 # Read the optional label (falls back to hwmon name + index)
                 label_path = os.path.join(hwmon_dir, f"{prefix}_label")
@@ -168,9 +175,10 @@ class TemperatureManager:
                         name=hwmon_name,
                         label=label,
                         current=current,
-                        high=high,
-                        critical=critical,
+                        high=high if high is not None else 0.0,
+                        critical=critical if critical is not None else 0.0,
                         sensor_type=sensor_type,
+                        source=input_path,
                     )
                 )
 

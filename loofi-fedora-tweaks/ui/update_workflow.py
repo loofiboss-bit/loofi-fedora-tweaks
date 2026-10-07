@@ -67,6 +67,7 @@ class UpdateWorkflowPage(QWidget):
         title, description = labels[source]
         card = Card(self.tr(title), self.tr(description))
         card.setObjectName(f"update{source.title()}Card")
+        card.setProperty("surfaceRole", "source")
         status = StatusBadge(self.tr("Not checked"), kind="neutral")
         status.setObjectName(f"update{source.title()}Status")
         card.add_widget(status)
@@ -77,6 +78,7 @@ class UpdateWorkflowPage(QWidget):
         checked = QLabel()
         checked.setObjectName(f"update{source.title()}CheckedAt")
         checked.setWordWrap(True)
+        checked.setProperty("supportingText", True)
         card.add_widget(checked)
         self._checked_labels[source] = checked
         button = PrimaryButton(

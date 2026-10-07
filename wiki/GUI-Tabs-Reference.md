@@ -1,20 +1,43 @@
 # GUI Reference — v32.2.0 "Coherence"
 
-Loofi Fedora Tweaks opens on **Tweaks**. Four everyday jobs live in the sidebar;
-selecting a destination or search result only navigates, and any change starts
-from a reviewable task on its owning page.
+Loofi Fedora Tweaks opens on **Overview**, unless reopening the last page is
+enabled. Six primary destinations are always available. Selecting a destination
+or search result navigates without applying a change.
 
 ```text
-Sidebar: [Search Ctrl+K]
-├── Tweaks   (start page)
+Header: [Search Ctrl+K]
+Sidebar:
+├── Overview   (default start page)
+├── Tweaks
 ├── Apps
 ├── Updates
-└── Health
-Header: [Activity & Recovery] [Settings]
+├── Health
+├── Activity
+├── Tools      (collapsed group)
+│   ├── System
+│   ├── Storage
+│   ├── Network
+│   ├── Security
+│   └── Logs
+└── Settings   (footer)
 ```
 
-Advanced pages (System, Storage, Network, Security, Logs) appear only after you
-turn on **Show advanced tools** in Settings.
+Expand **Tools** to inspect advanced pages. Existing advanced-tools preferences
+are retained. Settings stays at the bottom of the sidebar.
+
+## Overview
+
+A read-only dashboard shows computer information, CPU, memory, GPU, storage,
+network/disk activity, temperatures, battery, and recorded maintenance results.
+Each reading identifies its source, time, and state. **Collecting**,
+**Unavailable**, **Read failed**, and **Last known value** distinguish pending,
+unsupported, failed, and old evidence. Missing readings are not zero values.
+
+Measurements refresh every two seconds, sensors every five seconds, with up to
+60 samples per graph. **Pause** retains the last values and **Resume** establishes
+a fresh baseline. Collection pauses when neither Overview nor System Monitor
+is visible or the window is hidden/minimized. Sleeping GPUs are not queried
+automatically; the dashboard installs no tools or drivers.
 
 ## Tweaks
 
@@ -38,7 +61,9 @@ Sound, Power, System & Packaging). The full list with Loofi standard values is g
 
 ## Apps
 
-A curated, searchable catalog with installed state and source labels. Flatpak is
+A curated, searchable catalog with availability, source, and installation scope.
+Selected apps remain in the fixed review summary while the catalog scrolls or
+filters change. Flatpak is
 preferred for GUI applications; RPM is used for trusted CLI and system tools.
 
 ![Apps](images/apps.png)
@@ -57,9 +82,19 @@ supported operation or instruction. There is no **Fix all**.
 
 ![Health](images/health.png)
 
+## Activity
+
+Inspect **Needs you**, **In progress**, or **History**, then select a change for
+its recorded before/after evidence, verification, and available recovery.
+**Restore previous value** recovers eligible recorded evidence; **Use Loofi
+standard value** applies the curated reference. Both use reviewed, verified
+operations.
+
 ## Settings and accessibility
 
-Settings is opened from the header and holds the **Show advanced tools** switch.
-Search uses `Ctrl+K` and never executes from the result list.
+Settings is opened from the sidebar footer. **Follow system theme** uses Loofi
+light or dark colors according to the desktop mode; explicit dark, light, and
+high-contrast choices remain available. Search uses `Ctrl+K` and never executes
+from the result list.
 
 ![Settings](images/settings.png)

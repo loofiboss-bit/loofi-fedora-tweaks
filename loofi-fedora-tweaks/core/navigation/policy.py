@@ -20,7 +20,7 @@ from .models import (
     RoutePlacement,
 )
 
-_HOME_ROUTE_ID = "atlas_dashboard"
+_HOME_ROUTE_ID = "overview"
 
 
 def _result(

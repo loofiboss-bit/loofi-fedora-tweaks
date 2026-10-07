@@ -19,12 +19,13 @@ class SettingRow(QFrame):
     ) -> None:
         super().__init__(parent)
         self.setObjectName("settingRow")
+        self.setProperty("settingRow", True)
         self._description = description
         self.control = control
 
         layout = QVBoxLayout(self)
-        layout.setContentsMargins(12, 10, 12, 10)
-        layout.setSpacing(6)
+        layout.setContentsMargins(0, 12, 0, 12)
+        layout.setSpacing(4)
 
         self.content_layout = QBoxLayout(QBoxLayout.Direction.TopToBottom)
         self.content_layout.setContentsMargins(0, 0, 0, 0)
@@ -52,7 +53,7 @@ class SettingRow(QFrame):
         self.control_panel.setSizePolicy(QSizePolicy.Policy.Preferred, QSizePolicy.Policy.Preferred)
         self.control_layout = QVBoxLayout(self.control_panel)
         self.control_layout.setContentsMargins(0, 0, 0, 0)
-        self.control_layout.setSpacing(6)
+        self.control_layout.setSpacing(4)
         self.control_layout.addWidget(control)
         self.content_layout.addWidget(self.control_panel, 2)
         layout.addLayout(self.content_layout)

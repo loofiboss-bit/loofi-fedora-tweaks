@@ -133,6 +133,14 @@ class InlineNotice(QFrame):
         self.set_notice(kind, title, message)
 
 
+class _WrappedMessageLabel(QLabel):
+    """Reserve wrapped text height after the label receives its actual width."""
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self.setMinimumHeight(max(1, self.heightForWidth(max(1, self.width()))))
+
+
 class _MessageState(QFrame):
     """Common accessible title and message presentation."""
 
@@ -143,7 +151,8 @@ class _MessageState(QFrame):
         self.body.setSpacing(8)
         self.title_label = QLabel(title)
         self.title_label.setObjectName("stateTitle")
-        self.message_label = QLabel(message)
+        self.title_label.setWordWrap(True)
+        self.message_label = _WrappedMessageLabel(message)
         self.message_label.setObjectName("stateMessage")
         self.message_label.setWordWrap(True)
         self.body.addWidget(self.title_label)

@@ -179,7 +179,7 @@ class SettingsTab(QWidget, PluginInterface):
     def _build_appearance_tab(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
 
         self.theme_combo = QComboBox()
         self.theme_combo.setAccessibleName(self.tr("Theme selector"))
@@ -199,7 +199,7 @@ class SettingsTab(QWidget, PluginInterface):
         self.follow_system_cb.toggled.connect(self._on_follow_system_toggled)
         self._setting_rows["follow_system_theme"] = SettingRow(
             self.tr("System theme"),
-            self.tr("Use the desktop color scheme and disable the manual theme selector."),
+            self.tr("Follow the desktop light or dark mode with Loofi colors."),
             self.follow_system_cb,
         )
         layout.addWidget(self._setting_rows["follow_system_theme"])
@@ -221,7 +221,7 @@ class SettingsTab(QWidget, PluginInterface):
     def _build_behavior_tab(self) -> QWidget:
         page = QWidget()
         layout = QVBoxLayout(page)
-        layout.setSpacing(10)
+        layout.setSpacing(8)
 
         self._build_execution_settings(layout)
 

@@ -26,6 +26,42 @@ def _traditional_context(*, mode=NavigationMode.STANDARD, **kwargs):
 
 
 class TestGlobalSearchModel(unittest.TestCase):
+    def test_primary_page_names_open_the_matching_shell_page_once(self):
+        for mode in (NavigationMode.STANDARD, NavigationMode.ADVANCED):
+            model = GlobalSearchModel(_traditional_context(mode=mode))
+            for label, route_id in (
+                ("Overview", "overview"), ("Tweaks", "utility:tune"),
+                ("Apps", "utility:install"), ("Updates", "utility:update"),
+                ("Health", "utility:fix"), ("Activity", "activity"),
+            ):
+                with self.subTest(label=label, mode=mode):
+                    matching = [result for result in model.all_results() if result.label == label and not result.task_id]
+                    self.assertEqual(len(matching), 1)
+                    self.assertEqual(matching[0].route_id, route_id)
+                    self.assertEqual(model.search(label)[0], matching[0])
+            self.assertNotIn("atlas_dashboard", {result.route_id for result in model.all_results()})
+            self.assertFalse(any(result.label == "Home" for result in model.all_results()))
+
+    def test_tools_obey_manifest_policy_without_treating_collapse_as_denial(self):
+        standard = GlobalSearchModel(_traditional_context())
+        self.assertEqual(standard.search("System")[0].route_id, "system_info")
+        self.assertEqual(standard.search("Logs")[0].route_id, "diagnostics:watchtower")
+        advanced = GlobalSearchModel(_traditional_context(mode=NavigationMode.ADVANCED))
+        self.assertEqual(advanced.search("System")[0].route_id, "system_info")
+        incompatible = GlobalSearchModel(_traditional_context(mode=NavigationMode.ADVANCED, incompatible_plugin_ids=frozenset({"system_info", "software"})))
+        self.assertNotIn("route:system_info", {result.id for result in incompatible.all_results()})
+        self.assertNotIn("route:utility:install", {result.id for result in incompatible.all_results()})
+        no_core = GlobalSearchModel(_traditional_context(installed_components=frozenset()))
+        self.assertFalse(any(result.id == "route:utility:tune" for result in no_core.all_results()))
+
+    def test_legacy_atlas_suggestion_and_status_task_have_truthful_targets(self):
+        model = GlobalSearchModel(_traditional_context(), configured_quick_actions=[{"id": "home", "route_id": "atlas"}])
+        suggestion = next(result for result in model.all_results() if result.id == "configured-action:home")
+        self.assertEqual((suggestion.label, suggestion.route_id), ("Tweaks", "utility:tune"))
+        task = next(result for result in model.task_results() if result.task_id == "home:status")
+        self.assertEqual((task.destination_label, task.route_id), ("Overview", "overview"))
+        self.assertFalse(any(callable(value) for value in suggestion.__dict__.values()))
+
     def test_combines_routes_settings_and_actions(self):
         model = GlobalSearchModel(
             _traditional_context(),

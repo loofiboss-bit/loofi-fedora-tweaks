@@ -55,10 +55,8 @@ class TestIsPartition(unittest.TestCase):
     def test_sda1_partition(self):
         self.assertTrue(_is_partition("sda1"))
 
-    def test_nvme_whole_disk_treated_as_partition(self):
-        # Note: _is_partition treats nvme0n1 as partition (ends in digit)
-        # This is a known limitation of the function
-        self.assertTrue(_is_partition("nvme0n1"))
+    def test_nvme_whole_disk(self):
+        self.assertFalse(_is_partition("nvme0n1"))
 
     def test_nvme_partition(self):
         self.assertTrue(_is_partition("nvme0n1p1"))
@@ -181,9 +179,7 @@ class TestReadProcNetDev(unittest.TestCase):
 
     @patch('builtins.open', side_effect=FileNotFoundError)
     def test_handles_missing(self, _):
-        recv, sent = PerformanceCollector._read_proc_net_dev()
-        self.assertEqual(recv, 0)
-        self.assertEqual(sent, 0)
+        self.assertIsNone(PerformanceCollector._read_proc_net_dev())
 
 
 class TestReadProcDiskstats(unittest.TestCase):
@@ -191,19 +187,15 @@ class TestReadProcDiskstats(unittest.TestCase):
     @patch('builtins.open', mock_open(read_data=PROC_DISKSTATS))
     def test_sums_whole_disks_only(self):
         read_b, write_b = PerformanceCollector._read_proc_diskstats()
-        # Only sda is counted (doesn't end in digit, not loop/ram/dm-)
-        # nvme0n1 ends in digit → treated as partition by _is_partition
-        # Skips: sda1, loop0, dm-0, nvme0n1, nvme0n1p1
-        expected_read = 2000 * 512
-        expected_write = 1000 * 512
+        # Count whole SATA and NVMe disks without their partitions.
+        expected_read = (2000 + 4000) * 512
+        expected_write = (1000 + 2000) * 512
         self.assertEqual(read_b, expected_read)
         self.assertEqual(write_b, expected_write)
 
     @patch('builtins.open', side_effect=OSError)
     def test_handles_error(self, _):
-        read_b, write_b = PerformanceCollector._read_proc_diskstats()
-        self.assertEqual(read_b, 0)
-        self.assertEqual(write_b, 0)
+        self.assertIsNone(PerformanceCollector._read_proc_diskstats())
 
 
 # ── Collection methods ─────────────────────────────────────────────

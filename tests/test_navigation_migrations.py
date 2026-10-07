@@ -41,6 +41,12 @@ class TestModeMigration(unittest.TestCase):
                 )
 
 class TestRouteMigration(unittest.TestCase):
+    def test_control_center_routes_survive_settings_round_trip(self):
+        for route in ("overview", "utility:tune", "utility:install", "utility:update", "utility:fix", "changes"):
+            with self.subTest(route=route):
+                self.assertEqual(migrate_settings({"last_route_id": route})[0]["last_route_id"], route)
+
+
     def test_aliases_become_canonical_routes(self):
         self.assertEqual(
             canonical_persisted_route("Updates"),
@@ -52,8 +58,8 @@ class TestRouteMigration(unittest.TestCase):
         self.assertEqual(migrate_last_route("dashboard"), "system_info")
 
     def test_invalid_last_route_falls_back_to_home(self):
-        self.assertEqual(migrate_last_route("missing-route"), "atlas_dashboard")
-        self.assertEqual(migrate_last_route(None), "atlas_dashboard")
+        self.assertEqual(migrate_last_route("missing-route"), "overview")
+        self.assertEqual(migrate_last_route(None), "overview")
 
     def test_route_collections_deduplicate_and_preserve_unknown_state(self):
         migrated = migrate_route_references(

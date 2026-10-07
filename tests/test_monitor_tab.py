@@ -133,6 +133,7 @@ def _install_monitor_import_stubs():
         ItemDataRole=types.SimpleNamespace(UserRole=0x0100),
     )
     qt_core.QTimer = _Dummy
+    qt_core.pyqtSignal = lambda *args: MagicMock()
 
     # -- PyQt6.QtGui --
     qt_gui = types.ModuleType("PyQt6.QtGui")

@@ -37,7 +37,7 @@ class TestNavigationPolicyCompatibility(unittest.TestCase):
 
         self.assertEqual(result.decision, NavigationDecision.UNAVAILABLE)
         self.assertIsNone(result.route_id)
-        self.assertEqual(result.fallback_route_id, "atlas_dashboard")
+        self.assertEqual(result.fallback_route_id, "overview")
         self.assertFalse(result.search_visible)
         self.assertEqual(result.direct_link_behavior, DirectLinkBehavior.EXPLAIN)
 
@@ -85,7 +85,7 @@ class TestNavigationPolicyCompatibility(unittest.TestCase):
 
         self.assertEqual(result.route_id, "system_info")
         self.assertEqual(result.decision, NavigationDecision.UNAVAILABLE)
-        self.assertEqual(result.fallback_route_id, "atlas_dashboard")
+        self.assertEqual(result.fallback_route_id, "overview")
 
 
 class TestNavigationPolicySafety(unittest.TestCase):
@@ -131,7 +131,7 @@ class TestNavigationPolicySafety(unittest.TestCase):
 
         self.assertEqual(result.decision, NavigationDecision.UNAVAILABLE)
         self.assertEqual(result.required_component, "core")
-        self.assertEqual(result.fallback_route_id, "atlas_dashboard")
+        self.assertEqual(result.fallback_route_id, "overview")
         self.assertFalse(result.search_visible)
 
     def test_incompatible_plugin_is_unavailable_even_when_favorited(self):
@@ -212,7 +212,7 @@ class TestNavigationPolicyCoverage(unittest.TestCase):
                     self.assertIsInstance(result.decision, NavigationDecision)
                     outcomes += 1
 
-        self.assertEqual(outcomes, 43 * 4)
+        self.assertEqual(outcomes, len(all_routes()) * len(contexts))
         self.assertEqual(validate_navigation_policy(), [])
 
     def test_standard_mode_never_exposes_advanced_routes_through_favorites(self):

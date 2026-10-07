@@ -16,21 +16,21 @@ from core.navigation.routes import (
 
 
 class TestShellRoutes(unittest.TestCase):
-    def test_simple_mode_shows_four_jobs_with_tweaks_first(self):
+    def test_standard_mode_shows_overview_tasks_and_activity(self):
         labels = [route.label for route in visible_shell_routes(False)]
-        self.assertEqual(labels, ["Tweaks", "Apps", "Updates", "Health"])
+        self.assertEqual(labels, ["Overview", "Tweaks", "Apps", "Updates", "Health", "Activity"])
 
     def test_advanced_mode_adds_only_advanced_rows_after_core_jobs(self):
         routes = visible_shell_routes(True)
         self.assertEqual(
             [route.label for route in routes],
-            ["Tweaks", "Apps", "Updates", "Health", "System", "Storage", "Network", "Security", "Logs"],
+            ["Overview", "Tweaks", "Apps", "Updates", "Health", "Activity", "System", "Storage", "Network", "Security", "Logs"],
         )
-        self.assertTrue(all(route.advanced for route in routes[4:]))
-        self.assertFalse(any(route.advanced for route in routes[:4]))
+        self.assertTrue(all(route.advanced for route in routes[6:]))
+        self.assertFalse(any(route.advanced for route in routes[:6]))
 
-    def test_start_route_is_the_tweaks_page(self):
-        self.assertEqual(START_ROUTE_ID, "utility:tune")
+    def test_start_route_is_overview(self):
+        self.assertEqual(START_ROUTE_ID, "overview")
         self.assertEqual(visible_shell_routes(False)[0].default_route_id, START_ROUTE_ID)
 
     def test_ids_are_unique(self):
@@ -61,7 +61,7 @@ class TestShellRoutes(unittest.TestCase):
     def test_legacy_aliases_target_known_destinations(self):
         for alias, target in LEGACY_ALIASES.items():
             self.assertTrue(target.startswith("utility:"), alias)
-        self.assertEqual(LEGACY_ALIASES["home"], START_ROUTE_ID)
+        self.assertEqual(LEGACY_ALIASES["home"], "utility:tune")
 
 
 if __name__ == "__main__":

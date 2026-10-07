@@ -158,7 +158,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
         self.scaffold = PageScaffold(
-            self.tr("History & Undo"),
+            self.tr("Activity"),
             self.tr("Review trusted local change history and prepare only supported recovery actions."),
         )
         root.addWidget(self.scaffold)
@@ -166,8 +166,8 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         notice = InlineNotice(
             self.tr("Verified recovery"),
             self.tr(
-                "Loofi reads local records only when you ask. Recovery is offered only when "
-                "the current system state can be checked again in the supported workflow."
+                "Load local history to inspect changes. Available recovery actions check "
+                "the current state before you review them."
             ),
             kind="info",
         )

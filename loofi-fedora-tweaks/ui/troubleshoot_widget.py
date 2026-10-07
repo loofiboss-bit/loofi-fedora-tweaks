@@ -109,10 +109,10 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         root.addWidget(self.scaffold)
 
         self.safety_notice = InlineNotice(
-            self.tr("Read-only and explicit"),
+            self.tr("Check before changing"),
             self.tr(
-                "Checks start only when you choose Start. Troubleshoot never applies "
-                "a change, confirms a plan, or restarts the system."
+                "Choose a symptom and start a read-only check. Review any suggested "
+                "change before applying it."
             ),
             kind="info",
         )
@@ -160,6 +160,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
             self.tr("Start from the symptom you can observe."),
         )
         choose.setObjectName("troubleshootProfileCard")
+        choose.setProperty("surfaceRole", "workflow")
         self.profile_label = QLabel(self.tr("What is going wrong?"))
         self.profile_selector = QComboBox()
         self.profile_selector.setObjectName("troubleshootProfileSelector")
@@ -189,6 +190,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
             self.tr("Review the system areas included in this read-only check."),
         )
         checks.setObjectName("troubleshootChecksCard")
+        checks.setProperty("surfaceRole", "workflow")
         self.checks_label = QLabel()
         self.checks_label.setWordWrap(True)
         self.checks_label.setObjectName("troubleshootChecks")

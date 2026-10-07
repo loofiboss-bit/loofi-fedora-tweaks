@@ -1,6 +1,7 @@
 """Route-aware application shell with lazy destination navigation."""
 
 import logging
+from pathlib import Path
 from typing import TYPE_CHECKING
 
 from core.navigation import (
@@ -55,6 +56,7 @@ if TYPE_CHECKING:
     from PyQt6.QtWidgets import QSystemTrayIcon
     from ui.notification_toast import NotificationToast
     from utils.pulse import PulseThread, SystemPulse
+    from ui.dashboard_controller import DashboardController
 
 logger = get_logger(__name__)
 
@@ -158,6 +160,7 @@ class MainWindow(
         self.pulse_thread: PulseThread | None = None
         self.tray_icon: QSystemTrayIcon | None = None
         self._status_timer = None
+        self._dashboard_controller: DashboardController | None = None
         self.notif_panel = None
         self._toast_widget: NotificationToast | None = None
         self._post_render_services_scheduled = False
@@ -188,7 +191,18 @@ class MainWindow(
         sidebar_chrome = QHBoxLayout()
         sidebar_chrome.setContentsMargins(0, 0, 0, 0)
         sidebar_chrome.setSpacing(6)
-        sidebar_chrome.addStretch()
+        self._brand_icon = QLabel()
+        self._brand_icon.setObjectName("sidebarBrandIcon")
+        self._brand_icon.setAccessibleName(self.tr("Loofi Fedora Tweaks logo"))
+        from PyQt6.QtGui import QIcon
+        logo = Path(__file__).resolve().parents[1] / "assets" / "loofi-fedora-tweaks.png"
+        self._brand_icon.setPixmap(QIcon(str(logo)).pixmap(32, 32))
+        sidebar_chrome.addWidget(self._brand_icon)
+        self._brand_title = QLabel(self.tr("Loofi\nFedora Tweaks"))
+        self._brand_title.setObjectName("sidebarBrandTitle")
+        self._brand_title.setWordWrap(True)
+        self._brand_title.setToolTip(self.tr("Loofi Fedora Tweaks"))
+        sidebar_chrome.addWidget(self._brand_title, 1)
         self._sidebar_toggle = QToolButton()
         self._sidebar_toggle.setObjectName("sidebarToggle")
         self._sidebar_toggle.setFixedHeight(36)
@@ -202,7 +216,6 @@ class MainWindow(
         self._global_search_button.setAccessibleName(self.tr("Search routes, settings, and actions"))
         self._global_search_button.setToolTip(self.tr("Search routes, settings, and actions (Ctrl+K)"))
         self._global_search_button.clicked.connect(lambda: self._show_global_search(actions_only=False))
-        sidebar_layout.addWidget(self._global_search_button)
 
         self._sidebar_container = sidebar_container
         self._sidebar_expanded_width = sidebar_width
@@ -213,9 +226,18 @@ class MainWindow(
         self.sidebar = DestinationSidebar()
         self.sidebar.setAccessibleName(self.tr("Navigation destinations"))
         self.sidebar.destinationActivated.connect(self._activate_destination)
+        self.sidebar.toolsToggled.connect(self._remember_tools_expansion)
         self.sidebar.currentItemChanged.connect(self._on_sidebar_selection_changed)
         self.sidebar.setItemDelegate(SidebarItemDelegate(self.sidebar))
         sidebar_layout.addWidget(self.sidebar)
+        self._sidebar_settings = QPushButton(self.tr("Settings"))
+        self._sidebar_settings.setObjectName("sidebarSettings")
+        self._sidebar_settings.setIcon(get_qicon("settings", size=20))
+        self._sidebar_settings.setMinimumHeight(44)
+        self._sidebar_settings.setAccessibleName(self.tr("Application settings"))
+        self._sidebar_settings.setToolTip(self.tr("Application settings"))
+        self._sidebar_settings.clicked.connect(lambda: self.switch_to_route("settings"))
+        sidebar_layout.addWidget(self._sidebar_settings)
 
         main_layout.addWidget(sidebar_container)
 
@@ -253,6 +275,11 @@ class MainWindow(
         settings_clicked = getattr(settings_button, "clicked", None)
         if settings_clicked is not None:
             settings_clicked.connect(lambda: self.switch_to_route("settings"))
+        if activity_button is not None:
+            activity_button.hide()
+        if settings_button is not None:
+            settings_button.hide()
+        self._breadcrumb_frame.actions_layout.addWidget(self._global_search_button)
         right_side.addWidget(self._breadcrumb_frame)
 
     def _build_destination_stack(self, right_side: QVBoxLayout) -> None:
@@ -282,6 +309,7 @@ class MainWindow(
         self._status_label = QLabel("")
         self._status_label.setObjectName("statusText")
         self._status_label.setAccessibleName(self.tr("Activity status"))
+        self._status_label.setWordWrap(True)
         sb_layout.addWidget(self._status_label)
 
         self._undo_btn = QPushButton(self.tr("Undo"))
@@ -292,6 +320,9 @@ class MainWindow(
         sb_layout.addWidget(self._undo_btn)
 
         sb_layout.addStretch()
+        self._activity_status_button = QPushButton(self.tr("Open activity"))
+        self._activity_status_button.clicked.connect(lambda: self.switch_to_route("activity"))
+        sb_layout.addWidget(self._activity_status_button)
         self._status_frame.setVisible(False)
         right_side.addWidget(self._status_frame)
 
@@ -323,8 +354,13 @@ class MainWindow(
         except (TypeError, ValueError, AttributeError):
             initial_shell_width = 1180
         self._apply_responsive_shell(initial_shell_width)
-        if self.sidebar.topLevelItemCount() > 0:
-            self.sidebar.setCurrentItem(self.sidebar.topLevelItem(0))
+        from core.navigation.routes import START_ROUTE_ID
+        from utils.settings import SettingsManager
+        settings = SettingsManager.instance()
+        self._navigation_settings = settings
+        requested = str(settings.get("last_route_id")) if settings.get("restore_last_tab") else START_ROUTE_ID
+        if not self.switch_to_route(requested, record_history=False):
+            self.switch_to_route(START_ROUTE_ID, record_history=False)
 
     def _initialize_post_navigation_behaviors(self) -> None:
         """Restore conditional services, shortcuts, and first-run state in order."""
@@ -332,6 +368,19 @@ class MainWindow(
         self._setup_command_palette_shortcut()
         self._setup_keyboard_shortcuts()
         self._check_first_run()
+        from PyQt6.QtWidgets import QApplication
+        application = QApplication.instance()
+        if isinstance(application, QApplication):
+            hints = application.styleHints()
+            if hints is not None:
+                hints.colorSchemeChanged.connect(self._desktop_scheme_changed)
+
+    def _desktop_scheme_changed(self, _scheme) -> None:
+        """Keep system-selected colors current without replacing explicit themes."""
+        from PyQt6.QtWidgets import QApplication
+        application = QApplication.instance()
+        if isinstance(application, QApplication) and application.property("loofiTheme") == "system":
+            self.load_theme("system")
 
     def _register_runtime_shutdown(self) -> None:
         """Register main-window shutdown hooks with the process runtime."""
@@ -476,6 +525,14 @@ class MainWindow(
         )
         if not isinstance(widget, QWidget):
             raise TypeError(f"Plugin {plugin_id!r} did not create a QWidget")
+        if plugin_id in {"overview", "monitor"}:
+            setter = getattr(widget, "set_controller" if plugin_id == "overview" else "set_dashboard_controller", None)
+            if callable(setter):
+                from ui.dashboard_controller import DashboardController
+                if self._dashboard_controller is None:
+                    self._dashboard_controller = DashboardController(parent=self)
+                    self._dashboard_controller.set_suspended(not self.isVisible() or self.isMinimized())
+                setter(self._dashboard_controller)
         action_request = getattr(widget, "actionCenterRequested", None)
         if action_request is not None and hasattr(action_request, "connect"):
             action_request.connect(self._open_action_center_request)
@@ -488,7 +545,7 @@ class MainWindow(
         route_request = getattr(widget, "routeRequested", None)
         if route_request is not None and hasattr(route_request, "connect"):
             route_request.connect(self._open_route_request)
-        if plugin_id == "atlas_dashboard":
+        if plugin_id in {"overview", "atlas_dashboard"}:
             self._schedule_post_render_services()
         return widget
 

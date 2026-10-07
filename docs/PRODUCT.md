@@ -1,9 +1,9 @@
 # Product definition
 
-**Loofi Fedora Tweaks is the fastest way to make Fedora feel like your computer.**
-Search, change, and verify desktop and system settings for GNOME, KDE, and DNF
-from one place. Apps, updates, and health checks exist to support that job;
-tweaks are the point.
+**Loofi Fedora Tweaks is a control center for understanding and personalizing Fedora.**
+Overview combines live resources, available hardware readings, and recorded
+maintenance. Search, change, and verify desktop and system settings for GNOME,
+KDE, and DNF alongside applications, updates, health, and verified history.
 
 ## Who it is for
 
@@ -12,29 +12,33 @@ tweaks are the point.
 - **Power users** who want more controls in one place. Advanced tools are
   available behind an explicit switch, never in the way by default.
 
-## The four jobs
+## The main destinations
 
 | Job | What the user does |
 |---|---|
-| **Tweaks** (start page) | Search and change a setting, see it verified, restore its previous value when supported |
+| **Overview** (start page) | Read current resources and hardware data, then open the appropriate tool |
+| **Tweaks** | Search and change a setting, see it verified, restore its previous value when supported |
 | **Apps** | Find and install trusted applications |
 | **Updates** | Update system packages, Flatpaks, and firmware |
 | **Health** | Start from a symptom, inspect evidence, apply one reviewed fix |
 
-A history panel (**History & Undo**) is reachable from anywhere.
+**Activity** is a primary destination for recorded changes, independent
+verification, previous values, and action-specific recovery guidance.
 
 ## Advanced mode
 
-Enabled in Settings (*Show advanced tools*). Adds **System**, **Storage**,
-**Network**, **Security**, and **Logs**. Nothing outside this list is added
+The **Tools** disclosure shows **System**, **Storage**,
+**Network**, **Security**, and **Logs**. Its expansion is saved using the existing
+Show advanced tools preference. Nothing outside this list is added
 without changing this document first.
 
 ## Principles
 
-1. **Tweaks first.** Every new feature must strengthen tweaks or justify why it
-   belongs to one of the four jobs.
-2. **One navigation model.** Routes are defined once in
-   `core/navigation/routes.py`. No parallel catalogs.
+1. **Understand, then act.** Overview reports actual resource and maintenance
+   observations; the task pages provide deliberate, reviewed actions.
+2. **One catalog authority.** Canonical product records define available
+   functionality; `core/navigation/routes.py` projects those records into
+   control-center destinations and documented compatibility links.
 3. **Plain language.** Everyday mode avoids jargon; technical detail is behind
    "Show details".
 4. **Verified with clear recovery.** Every change is checked after it is
@@ -48,5 +52,10 @@ without changing this document first.
 
 ## Non-goals
 
-System monitoring as a headline feature, mesh/network sharing, AI features,
+Background monitoring while views are hidden, mesh/network sharing, AI features,
 a plugin marketplace, and release-evidence screens in the user interface.
+
+## Presentation system
+
+[Design](../DESIGN.md) defines the Loofi palette, geometry, navigation, component
+states, and qualification requirements for every reachable GUI surface.

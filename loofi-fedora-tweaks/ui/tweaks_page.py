@@ -7,7 +7,7 @@ from typing import Any
 from core.tasks.tweaks import TweakState, default_for, visible_tweaks
 from core.tweak_commands import values_equal
 from PyQt6.QtCore import QEvent, QTimer, pyqtSignal
-from PyQt6.QtWidgets import QButtonGroup, QComboBox, QHBoxLayout, QLabel, QLineEdit, QMenu, QPushButton, QToolButton, QVBoxLayout, QWidget, QWidgetAction
+from PyQt6.QtWidgets import QButtonGroup, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu, QPushButton, QToolButton, QVBoxLayout, QWidget, QWidgetAction
 
 from ui.components import Card, PageScaffold
 from ui.components.settings import SettingRow
@@ -63,6 +63,9 @@ class TweaksPage(QWidget, PluginInterface):
 
         intro = Card()
         intro.setObjectName("tweaksFilters")
+        intro.setProperty("surfaceRole", "toolbar")
+        intro.body.setContentsMargins(0, 0, 0, 8)
+        intro.body.setSpacing(8)
         self.scaffold.add_widget(intro)
         search_row = QHBoxLayout()
         self.search_input = QLineEdit()
@@ -83,14 +86,16 @@ class TweaksPage(QWidget, PluginInterface):
         self.cancel_snapshot_button.hide()
         search_row.addWidget(self.cancel_snapshot_button)
         intro.add_widget(self._wrap(search_row))
-        filters = QHBoxLayout()
+        filters = QGridLayout()
+        self._filter_layout = filters
         self.category_filter = QComboBox()
         self.category_filter.setAccessibleName(self.tr("Setting category"))
         self.category_filter.addItem(self.tr("All categories"), "")
         for name in dict.fromkeys(tweak.group for tweak in self._tweaks.values()):
             self.category_filter.addItem(self.tr(name), name)
         self.category_filter.currentIndexChanged.connect(lambda _index: self._filter_rows(self.search_input.text()))
-        filters.addWidget(self.category_filter)
+        self.category_filter.setMinimumWidth(max(self.category_filter.fontMetrics().horizontalAdvance(self.category_filter.itemText(i)) for i in range(self.category_filter.count())) + 48)
+        filters.addWidget(self.category_filter, 0, 0)
         self._view_group = QButtonGroup(self)
         self._view_buttons: dict[str, QPushButton] = {}
         for name, label in (("all", "All"), ("favorites", "Favorites"), ("changed", "Changed"), ("unavailable", "Unavailable")):
@@ -104,10 +109,10 @@ class TweaksPage(QWidget, PluginInterface):
             self._view_group.addButton(button)
             self._view_buttons[name] = button
             button.toggled.connect(lambda _checked: self._filter_rows(self.search_input.text()))
-            filters.addWidget(button)
+            filters.addWidget(button, 0, len(self._view_buttons))
         self._view_buttons["all"].setChecked(True)
         self.changed_only = self._view_buttons["changed"]
-        filters.addStretch()
+        filters.setColumnStretch(5, 1)
         intro.add_widget(self._wrap(filters))
         self.results_label = QLabel()
         self.results_label.setObjectName("tweaksResults")
@@ -131,6 +136,8 @@ class TweaksPage(QWidget, PluginInterface):
             if group is None:
                 group = Card(self.tr(tweak.group))
                 group.setObjectName(f"tweaksGroup{tweak.group}")
+                group.setProperty("surfaceRole", "settings")
+                group.body.setSpacing(0)
                 self._groups[tweak.group] = group
                 self._group_rows[tweak.group] = []
                 self.scaffold.add_widget(group)
@@ -206,7 +213,7 @@ class TweaksPage(QWidget, PluginInterface):
         self._refresh_favorite_icons()
 
     @staticmethod
-    def _wrap(layout: QHBoxLayout) -> QWidget:
+    def _wrap(layout: QHBoxLayout | QGridLayout) -> QWidget:
         widget = QWidget()
         widget.setLayout(layout)
         return widget
@@ -235,6 +242,22 @@ class TweaksPage(QWidget, PluginInterface):
         favorite = self._favorite_buttons[tweak_id]
         favorite.setToolTip(self.tr("Remove from favorites") if favorite.isChecked() else self.tr("Add to favorites"))
         self._filter_rows(self.search_input.text())
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        if not hasattr(self, "_filter_layout"):
+            return
+        controls = (self.category_filter, *self._view_buttons.values())
+        available = max(1, self.width() - 64)
+        row, column, occupied = 0, 0, 0
+        for control in controls:
+            needed = max(control.minimumWidth(), control.sizeHint().width()) + 12
+            if occupied and occupied + needed > available:
+                row, column, occupied = row + 1, 0, 0
+            self._filter_layout.removeWidget(control)
+            self._filter_layout.addWidget(control, row, column)
+            column += 1
+            occupied += needed
 
     def clear_filters(self) -> None:
         self.search_input.clear()

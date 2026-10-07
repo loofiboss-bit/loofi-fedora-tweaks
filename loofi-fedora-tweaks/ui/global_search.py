@@ -10,6 +10,7 @@ from core.navigation import (
     SearchResult,
     SearchResultKind,
 )
+from core.navigation.routes import advanced_shell_route_for, all_shell_routes
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QKeyEvent
 from PyQt6.QtWidgets import (
@@ -26,6 +27,7 @@ from PyQt6.QtWidgets import (
 _MAX_RESULTS = 12
 _UTILITY_SEARCH_ROUTES = frozenset(
     {
+        "overview",
         "atlas_dashboard",
         "install",
         "tune",
@@ -33,7 +35,7 @@ _UTILITY_SEARCH_ROUTES = frozenset(
         "update",
         "activity",
         "settings",
-    }
+    } | {route.default_route_id for route in all_shell_routes()}
 )
 
 
@@ -137,6 +139,7 @@ class GlobalSearchDialog(QDialog):
                     result.task_id is not None
                     or result.route_id in _UTILITY_SEARCH_ROUTES
                     or result.route_id.startswith("settings:")
+                    or advanced_shell_route_for(result.route_id) is not None
                 )
             )
         self._visible_results = tuple(results[:_MAX_RESULTS])

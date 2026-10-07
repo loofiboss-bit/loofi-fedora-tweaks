@@ -15,11 +15,12 @@ import typing
 import getpass
 import os
 from collections import deque
+from time import monotonic
 
 from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
-from PyQt6.QtCore import Qt, QTimer
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtGui import QBrush, QColor, QLinearGradient, QPainter, QPainterPath, QPen
 from PyQt6.QtWidgets import (
     QComboBox,
@@ -43,6 +44,7 @@ from services.system import ProcessManager
 from utils.log import get_logger
 from utils.performance import PerformanceCollector
 
+from ui.monitor_sampling import PerformanceSamplingMixin, ProcessSamplingMixin
 from ui.components.layout import PageScaffold
 from ui.shared_states import ResultBanner
 from ui.design import semantic_qcolor
@@ -335,7 +337,7 @@ class _CoreBar(QWidget):
 # ---------------------------------------------------------------------------
 
 
-class _PerformanceSubTab(QWidget):
+class _PerformanceSubTab(QWidget, PerformanceSamplingMixin):
     """Sub-tab with live performance graphs.
 
     Preserves every feature from the original PerformanceTab:
@@ -346,8 +348,13 @@ class _PerformanceSubTab(QWidget):
     - 1-second QTimer refresh cycle
     """
 
+    workerStopped = pyqtSignal()
+
     def __init__(self: typing.Any) -> None:
         super().__init__()
+        self._dashboard_controller = None
+        self._stopping = False
+        self._shared_times: dict[str, float | None] = {}
         self.collector = PerformanceCollector()
         self._slow_worker = None
         self._slow_action_link = None
@@ -358,7 +365,16 @@ class _PerformanceSubTab(QWidget):
         self.refresh_timer.timeout.connect(self._on_tick)
         self._has_baseline = False
 
+    @staticmethod
+    def _bytes_to_human(value):
+        return PerformanceCollector.bytes_to_human(value)
+
     def set_active(self: typing.Any, active: bool) -> None:
+        controller = self.__dict__.get("_dashboard_controller")
+        if controller is not None:
+            self.refresh_timer.stop()
+            controller.set_consumer_active("monitor", active)
+            return
         if active:
             if not self._has_baseline:
                 self.collector.collect_all()
@@ -425,7 +441,7 @@ class _PerformanceSubTab(QWidget):
         layout.addStretch()
 
     def _analyze_slow_system(self: typing.Any) -> None:
-        if self._slow_worker is not None:
+        if self._slow_worker is not None or self.__dict__.get("_stopping", False):
             return
         from PyQt6.QtCore import QThread, pyqtSignal
         from core.workflows import SlowSystemService
@@ -486,9 +502,10 @@ class _PerformanceSubTab(QWidget):
     def _clear_slow_worker(self: typing.Any) -> None:
         worker = self._slow_worker
         self._slow_worker = None
-        self.slow_analyze_button.setEnabled(True)
+        self.slow_analyze_button.setEnabled(not self.__dict__.get("_stopping", False))
         if worker is not None:
             worker.deleteLater()
+        self.workerStopped.emit()
 
     def _open_slow_action(self: typing.Any) -> None:
         link = self._slow_action_link
@@ -518,6 +535,7 @@ class _PerformanceSubTab(QWidget):
         card_layout = QVBoxLayout(card)
 
         self.cpu_graph = MiniGraph("success")
+        self.cpu_graph.setAccessibleName(self.tr("CPU history in percent"))
         self.cpu_graph.set_max_value(100.0)
         card_layout.addWidget(self.cpu_graph)
 
@@ -539,6 +557,7 @@ class _PerformanceSubTab(QWidget):
         card_layout = QVBoxLayout(card)
 
         self.mem_graph = MiniGraph("accent")
+        self.mem_graph.setAccessibleName(self.tr("Memory history in percent"))
         self.mem_graph.set_max_value(100.0)
         card_layout.addWidget(self.mem_graph)
 
@@ -623,6 +642,8 @@ class _PerformanceSubTab(QWidget):
 
     def _on_tick(self: typing.Any) -> typing.Any:
         """Called every second to collect metrics and update graphs."""
+        if self.__dict__.get("_dashboard_controller") is not None:
+            return
         results = self.collector.collect_all()
 
         # --- CPU ---
@@ -666,7 +687,7 @@ class _PerformanceSubTab(QWidget):
 # ---------------------------------------------------------------------------
 
 
-class _ProcessesSubTab(QWidget):
+class _ProcessesSubTab(QWidget, ProcessSamplingMixin):
     """Sub-tab with real-time process table and management controls.
 
     Preserves every feature from the original ProcessesTab:
@@ -679,27 +700,30 @@ class _ProcessesSubTab(QWidget):
     - Catppuccin Mocha colour coding (zombies red, high-CPU yellow)
     """
 
+    workerStopped = pyqtSignal()
+
     def __init__(self: typing.Any) -> None:
         super().__init__()
+        self._async_refresh = True
+        self._active = False
+        self._closed = False
+        self._generation = 0
+        self._process_worker = None
+        self._process_baseline = False
+        self._cached_processes = None
         self._show_all = True  # True = all processes, False = my only
         self._current_sort = "cpu"
         self._current_user = self._get_current_username()
         self.init_ui()
 
         # Auto-refresh timer (3 seconds)
-        self.refresh_timer = QTimer()
+        self.refresh_timer = QTimer(self)
         self.refresh_timer.timeout.connect(self.refresh_processes)
         self._has_loaded = False
 
-    def set_active(self: typing.Any, active: bool) -> None:
-        if active:
-            if not self._has_loaded:
-                self._has_loaded = True
-                QTimer.singleShot(0, self.refresh_processes)
-            if not self.refresh_timer.isActive():
-                self.refresh_timer.start(3000)
-        elif self.refresh_timer.isActive():
-            self.refresh_timer.stop()
+    @staticmethod
+    def _process_manager():
+        return ProcessManager
 
     @staticmethod
     def _get_current_username() -> str:
@@ -740,7 +764,7 @@ class _ProcessesSubTab(QWidget):
         summary_layout = QHBoxLayout(self.summary_frame)
         summary_layout.setContentsMargins(15, 8, 15, 8)
 
-        self.lbl_summary = QLabel(self.tr("Total: 0 | Running: 0 | Sleeping: 0 | Zombie: 0"))
+        self.lbl_summary = QLabel(self.tr("Waiting for process measurements"))
         self.lbl_summary.setObjectName("monitorSummaryLabel")
         summary_layout.addWidget(self.lbl_summary)
         summary_layout.addStretch()
@@ -802,20 +826,19 @@ class _ProcessesSubTab(QWidget):
         self.process_tree.setContextMenuPolicy(Qt.ContextMenuPolicy.CustomContextMenu)
         self.process_tree.customContextMenuRequested.connect(self._show_context_menu)
 
-        # Column widths
-        self.process_tree.setColumnWidth(0, 70)  # PID
-        self.process_tree.setColumnWidth(1, 200)  # Name
-        self.process_tree.setColumnWidth(2, 100)  # User
-        self.process_tree.setColumnWidth(3, 70)  # CPU%
-        self.process_tree.setColumnWidth(4, 80)  # Memory%
-        self.process_tree.setColumnWidth(5, 90)  # Memory
-        self.process_tree.setColumnWidth(6, 60)  # State
-        self.process_tree.setColumnWidth(7, 50)  # Nice
-
-        # Stretch the Name column
+        # Technical columns size from the current font and content. The table
+        # owns horizontal scrolling so translated headers are never clipped.
         tree_header = self.process_tree.header()
         tree_header.setStretchLastSection(False)
-        tree_header.setSectionResizeMode(1, QHeaderView.ResizeMode.Stretch)
+        tree_header.setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
+        self.process_tree.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        header_item = self.process_tree.headerItem()
+        for column, description in enumerate((
+            self.tr("Process ID"), self.tr("Process name"), self.tr("User"),
+            self.tr("CPU usage in percent"), self.tr("Memory usage in percent"),
+            self.tr("Memory used"), self.tr("Process state"), self.tr("Scheduling priority"),
+        )):
+            header_item.setToolTip(column, description)
 
         self.process_tree.setObjectName("monitorProcessTree")
 
@@ -826,7 +849,12 @@ class _ProcessesSubTab(QWidget):
     def _on_sort_changed(self: typing.Any, index: int) -> typing.Any:
         """Handle sort dropdown change."""
         self._current_sort = self.sort_combo.currentData()
-        self.refresh_processes()
+        cached = self.__dict__.get("_cached_processes")
+        if cached is not None:
+            counts, processes, baseline = cached
+            self._render_processes(counts, list(processes), baseline)
+        else:
+            self.refresh_processes()
 
     def _on_filter_toggled(self: typing.Any, checked: bool) -> typing.Any:
         """Handle the Show All / My Processes toggle."""
@@ -835,23 +863,21 @@ class _ProcessesSubTab(QWidget):
             self.btn_toggle_filter.setText(self.tr("My Processes"))
         else:
             self.btn_toggle_filter.setText(self.tr("My Processes"))
-        self.refresh_processes()
+        cached = self.__dict__.get("_cached_processes")
+        if cached is not None:
+            counts, processes, baseline = cached
+            self._render_processes(counts, list(processes), baseline)
+        else:
+            self.refresh_processes()
 
     # -- Data refresh ------------------------------------------------------
 
-    def refresh_processes(self: typing.Any) -> typing.Any:
-        """Refresh the process list and summary bar."""
-        counts = ProcessManager.get_process_count()
+    def _render_processes(self, counts, processes, cpu_ready=True):
         self.lbl_summary.setText(
-            self.tr("Total: {total} | Running: {running} | Sleeping: {sleeping} | Zombie: {zombie}").format(
-                total=counts["total"],
-                running=counts["running"],
-                sleeping=counts["sleeping"],
-                zombie=counts["zombie"],
-            )
+            self.tr("Total: {total} | Running: {running} | Sleeping: {sleeping} | Zombie: {zombie}").format(**counts)
         )
-
-        processes = ProcessManager.get_all_processes()
+        if not cpu_ready:
+            self.lbl_summary.setText(self.lbl_summary.text() + " · " + self.tr("Collecting CPU baseline"))
 
         # Filter if "My Processes" is toggled
         if not self._show_all:
@@ -893,7 +919,7 @@ class _ProcessesSubTab(QWidget):
                     str(proc.pid),
                     proc.name,
                     proc.user,
-                    f"{proc.cpu_percent:.1f}",
+                    f"{proc.cpu_percent:.1f}" if cpu_ready else self.tr("Collecting"),
                     f"{proc.memory_percent:.1f}",
                     memory_human,
                     proc.state,
@@ -1026,6 +1052,8 @@ class MonitorTab(QWidget, PluginInterface):
     cycles rather than the CommandRunner pattern.
     """
 
+    stopped = pyqtSignal()
+
     _METADATA = plugin_metadata_for_module(__name__)
 
     def metadata(self: typing.Any) -> PluginMetadata:
@@ -1047,6 +1075,12 @@ class MonitorTab(QWidget, PluginInterface):
         self.pages.addWidget(self._processes_tab)
         self.pages.currentChanged.connect(self._sync_timer_lifecycle)
         self._route_active = False
+        self._suspended = False
+        self._dashboard_controller = None
+        self._stopping = False
+        self._stop_notified = False
+        self._processes_tab.workerStopped.connect(self._notify_stopped)
+        self._performance_tab.workerStopped.connect(self._notify_stopped)
 
         layout.addWidget(self.pages)
 
@@ -1060,9 +1094,66 @@ class MonitorTab(QWidget, PluginInterface):
         self._sync_timer_lifecycle(index)
         return True
 
+    def set_dashboard_controller(self, controller):
+        if self._dashboard_controller is controller:
+            return
+        self._dashboard_controller = controller
+        self._performance_tab.set_dashboard_controller(controller)
+        parent = controller.parent()
+        if isinstance(parent, QWidget):
+            parent.installEventFilter(self)
+        self._sync_timer_lifecycle(self.pages.currentIndex())
+
+    def set_suspended(self, suspended):
+        self._suspended = suspended
+        self._sync_timer_lifecycle(self.pages.currentIndex())
+
+    def eventFilter(self, watched, event):
+        from PyQt6.QtCore import QEvent
+        if isinstance(watched, QWidget):
+            if event.type() == QEvent.Type.Hide:
+                self.set_suspended(True)
+            elif event.type() in (QEvent.Type.Show, QEvent.Type.WindowStateChange):
+                self.set_suspended(watched.isMinimized())
+        return super().eventFilter(watched, event)
+
     def _sync_timer_lifecycle(self: typing.Any, index: int) -> None:
-        self._performance_tab.set_active(self._route_active and index == 0)
-        self._processes_tab.set_active(self._route_active and index == 1)
+        active = self._route_active and not self._suspended and not self._stopping
+        self._performance_tab.set_active(active and index == 0)
+        self._processes_tab.set_active(active and index == 1)
+
+    @property
+    def sampling_busy(self) -> bool:
+        return self._processes_tab.sampling_busy or self._performance_tab._slow_worker is not None
+
+    def request_stop(self) -> None:
+        """Leave owners alive until every reader emits its finished callback."""
+        self._stopping = True
+        self._performance_tab._stopping = True
+        self._performance_tab.slow_analyze_button.setEnabled(False)
+        self.on_deactivate()
+        self._processes_tab.request_stop()
+        self._performance_tab.refresh_timer.stop()
+        worker = self._performance_tab._slow_worker
+        if worker is not None:
+            worker.requestInterruption()
+        QTimer.singleShot(0, self._notify_stopped)
+
+    def _notify_stopped(self) -> None:
+        if self._stopping and not self.sampling_busy and not self._stop_notified:
+            self._stop_notified = True
+            self.stopped.emit()
+
+    def wait_for_stop(self, timeout_ms: int) -> bool:
+        deadline = monotonic() + max(0, int(timeout_ms)) / 1000
+        if not self._processes_tab.wait_for_stop(max(0, int((deadline - monotonic()) * 1000))):
+            return False
+        worker = self._performance_tab._slow_worker
+        return worker is None or worker.wait(max(0, int((deadline - monotonic()) * 1000)))
+
+    def cleanup(self, timeout_ms: int = 5000) -> bool:
+        self.request_stop()
+        return self.wait_for_stop(timeout_ms)
 
     def on_activate(self: typing.Any) -> None:
         self._route_active = True

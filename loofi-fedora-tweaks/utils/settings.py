@@ -55,7 +55,7 @@ class AppSettings:
     favorite_routes: list = field(default_factory=list)
     favorite_tweaks: list = field(default_factory=list)
     hidden_routes: list = field(default_factory=list)
-    last_route_id: str = "atlas_dashboard"
+    last_route_id: str = "overview"
     window_geometry: dict = field(default_factory=dict)
 
     # Version tracking

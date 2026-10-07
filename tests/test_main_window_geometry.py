@@ -37,6 +37,12 @@ class TestMainWindowGeometry(unittest.TestCase):
     def setUp(self):
         if not isinstance(QApplication.instance(), QApplication):
             raise unittest.SkipTest("QApplication unavailable for QWidget tests")
+        # Geometry owns no hardware reads; sampling has dedicated lifecycle tests.
+        sampler_patch = patch("ui.dashboard_controller.DashboardController")
+        sampler_class = sampler_patch.start()
+        self.addCleanup(sampler_patch.stop)
+        sampler_class.return_value.latest_snapshot = None
+        sampler_class.return_value.busy = False
 
     def test_central_widget_starts_in_client_area(self):
         mod = importlib.import_module("ui.main_window")

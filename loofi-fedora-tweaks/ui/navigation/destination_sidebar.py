@@ -5,7 +5,7 @@ from __future__ import annotations
 from collections.abc import Iterable
 
 from core.navigation.models import Destination
-from core.navigation.routes import ShellRoute, visible_shell_routes
+from core.navigation.routes import ShellRoute, all_shell_routes, visible_shell_routes
 from PyQt6.QtCore import QEvent, QSize, Qt, pyqtSignal
 from PyQt6.QtWidgets import QTreeWidget, QTreeWidgetItem
 
@@ -37,10 +37,12 @@ class DestinationSidebar(QTreeWidget):
     """Keyboard-accessible flat list of stable shell destinations."""
 
     destinationActivated = pyqtSignal(str)
+    toolsToggled = pyqtSignal(bool)
 
     def __init__(self, parent=None) -> None:
         super().__init__(parent)
         self._collapsed = False
+        self._tools_item: QTreeWidgetItem | None = None
         self.setObjectName("destinationSidebar")
         self.setHeaderHidden(True)
         self.setRootIsDecorated(False)
@@ -52,6 +54,9 @@ class DestinationSidebar(QTreeWidget):
         self.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         self.setAccessibleName(self.tr("Primary navigation"))
         self.currentItemChanged.connect(self._emit_destination)
+        self.itemClicked.connect(self._toggle_tools_item)
+        self.itemExpanded.connect(self._tools_expanded)
+        self.itemCollapsed.connect(self._tools_collapsed)
 
     def set_destinations(self, destinations: Iterable[Destination]) -> None:
         """Replace rows with the supplied destination definitions."""
@@ -96,52 +101,85 @@ class DestinationSidebar(QTreeWidget):
         self,
         destinations: Iterable[UtilityDestination] = UTILITY_DESTINATIONS,
     ) -> None:
-        """Render the primary shell rows (four jobs, plus advanced rows when given).
-
-        ``set_destinations`` remains available for callers that need the
-        canonical core destination projection (and for compatibility tests).
-        The utility projection has no nested section rows, so it cannot grow
-        into another miniature settings tree.
-        """
+        """Render primary destinations and one explicit expandable Tools group."""
+        definitions = tuple(destinations)
         selected = self.current_destination_id()
-        self.clear()
-        minimum_height = max(40, int(self.fontMetrics().height() * 2.35))
-        previous_advanced = False
-        for destination in tuple(destinations):
-            item = QTreeWidgetItem(self)
-            group = self.tr("Advanced") if destination.advanced else self.tr("Main tasks")
-            item.setData(0, DESTINATION_ID_ROLE, destination.id)
-            item.setData(0, DESTINATION_LABEL_ROLE, destination.label)
-            item.setData(0, DESTINATION_ICON_ROLE, destination.icon)
-            item.setData(0, DESTINATION_GROUP_ROLE, group)
-            item.setData(
-                0,
-                Qt.ItemDataRole.AccessibleTextRole,
-                destination.label,
-            )
-            item.setData(
-                0,
-                Qt.ItemDataRole.AccessibleDescriptionRole,
-                destination.description or destination.label,
-            )
-            item.setText(0, "" if self._collapsed else destination.label)
-            item.setToolTip(
-                0,
-                destination.description or destination.label,
-            )
-            group_spacing = 12 if destination.advanced and not previous_advanced and self.topLevelItemCount() > 1 else 0
-            item.setSizeHint(0, QSize(0, minimum_height + group_spacing))
-            previous_advanced = destination.advanced
-            item.setIcon(
-                0,
-                get_qicon(
-                    destination.icon,
-                    size=20,
-                    tint=icon_tint_variant(destination.icon, selected=False),
-                ),
-            )
-        if selected:
-            self.select_destination(selected)
+        expanded = any(route.advanced for route in definitions)
+        was_blocked = self.blockSignals(True)
+        try:
+            self.clear()
+            self._tools_item = None
+            self.setIndentation(12)
+            for destination in definitions:
+                if not destination.advanced:
+                    self._add_utility_item(destination, self)
+            tools = QTreeWidgetItem(self)
+            self._tools_item = tools
+            tools.setData(0, DESTINATION_LABEL_ROLE, self.tr("Tools"))
+            tools.setData(0, DESTINATION_ICON_ROLE, "developer-tools")
+            tools.setData(0, Qt.ItemDataRole.AccessibleTextRole, self.tr("Tools"))
+            tools.setToolTip(0, self.tr("Expand or collapse System, Storage, Network, Security, and Logs"))
+            tools.setSizeHint(0, QSize(0, max(44, self.fontMetrics().height() * 2)))
+            tools.setIcon(0, get_qicon("developer-tools", size=20))
+            tools.setText(0, "" if self._collapsed else self.tr("Tools") + ("  ▾" if expanded else "  ▸"))
+            for route in all_shell_routes():
+                if route.advanced:
+                    self._add_utility_item(route, tools)
+            tools.setExpanded(expanded)
+            if selected:
+                for item in self._destination_items():
+                    if item.data(0, DESTINATION_ID_ROLE) == selected and (item.parent() is None or expanded):
+                        self.setCurrentItem(item)
+                        break
+        finally:
+            self.blockSignals(was_blocked)
+
+    def _add_utility_item(self, route: UtilityDestination, parent) -> None:
+        item = QTreeWidgetItem(parent)
+        item.setData(0, DESTINATION_ID_ROLE, route.id)
+        item.setData(0, DESTINATION_LABEL_ROLE, self.tr(route.label))
+        item.setData(0, DESTINATION_ICON_ROLE, route.icon)
+        item.setData(0, DESTINATION_GROUP_ROLE, self.tr("Tools") if route.advanced else self.tr("Main tasks"))
+        item.setData(0, Qt.ItemDataRole.AccessibleTextRole, self.tr(route.label))
+        item.setData(0, Qt.ItemDataRole.AccessibleDescriptionRole, self.tr(route.description))
+        item.setText(0, "" if self._collapsed else self.tr(route.label))
+        item.setToolTip(0, self.tr(route.label))
+        item.setSizeHint(0, QSize(0, max(44, int(self.fontMetrics().height() * 2.35))))
+        item.setIcon(0, get_qicon(route.icon, size=20, tint=icon_tint_variant(route.icon, selected=False)))
+
+    def _destination_items(self):
+        for index in range(self.topLevelItemCount()):
+            item = self.topLevelItem(index)
+            if item is None:
+                continue
+            yield item
+            for child_index in range(item.childCount()):
+                child = item.child(child_index)
+                if child is not None:
+                    yield child
+
+    def _toggle_tools_item(self, item, _column: int) -> None:
+        if item is self._tools_item:
+            item.setExpanded(not item.isExpanded())
+
+    def _tools_expanded(self, item) -> None:
+        if item is self._tools_item:
+            item.setText(0, "" if self._collapsed else self.tr("Tools") + "  ▾")
+            item.setData(0, Qt.ItemDataRole.AccessibleDescriptionRole, self.tr("Tools expanded. Press Space to collapse."))
+            self.toolsToggled.emit(True)
+
+    def _tools_collapsed(self, item) -> None:
+        if item is self._tools_item:
+            item.setText(0, "" if self._collapsed else self.tr("Tools") + "  ▸")
+            item.setData(0, Qt.ItemDataRole.AccessibleDescriptionRole, self.tr("Tools collapsed. Press Space to expand."))
+            self.toolsToggled.emit(False)
+
+    def keyPressEvent(self, event) -> None:
+        if self.currentItem() is self._tools_item and event.key() in (Qt.Key.Key_Space, Qt.Key.Key_Return, Qt.Key.Key_Enter):
+            self._toggle_tools_item(self._tools_item, 0)
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
     def changeEvent(self, event) -> None:
         if event is not None and event.type() == QEvent.Type.FontChange:
@@ -149,13 +187,11 @@ class DestinationSidebar(QTreeWidget):
         super().changeEvent(event)
 
     def destination_ids(self) -> tuple[str, ...]:
-        """Return displayed destination IDs in visual order."""
-        destination_ids: list[str] = []
-        for index in range(self.topLevelItemCount()):
-            item = self.topLevelItem(index)
-            if item is not None:
-                destination_ids.append(str(item.data(0, DESTINATION_ID_ROLE)))
-        return tuple(destination_ids)
+        """Return visible destinations, excluding the Tools disclosure itself."""
+        return tuple(
+            str(item.data(0, DESTINATION_ID_ROLE)) for item in self._destination_items()
+            if item.data(0, DESTINATION_ID_ROLE) and (item.parent() is None or item.parent().isExpanded())
+        )
 
     def current_destination_id(self) -> str:
         item = self.currentItem()
@@ -166,9 +202,8 @@ class DestinationSidebar(QTreeWidget):
     def presentation_groups(self) -> tuple[tuple[str, tuple[str, ...]], ...]:
         """Return visual grouping without creating navigation identifiers."""
         groups: list[tuple[str, list[str]]] = []
-        for index in range(self.topLevelItemCount()):
-            item = self.topLevelItem(index)
-            if item is None:
+        for item in self._destination_items():
+            if not item.data(0, DESTINATION_ID_ROLE) or (item.parent() is not None and not item.parent().isExpanded()):
                 continue
             group = str(item.data(0, DESTINATION_GROUP_ROLE) or "")
             destination_id = str(item.data(0, DESTINATION_ID_ROLE) or "")
@@ -179,9 +214,10 @@ class DestinationSidebar(QTreeWidget):
 
     def select_destination(self, destination_id: str) -> bool:
         """Select a destination by stable ID."""
-        for index in range(self.topLevelItemCount()):
-            item = self.topLevelItem(index)
-            if item is not None and item.data(0, DESTINATION_ID_ROLE) == destination_id:
+        for item in self._destination_items():
+            if item.data(0, DESTINATION_ID_ROLE) == destination_id:
+                if item.parent() is not None:
+                    item.parent().setExpanded(True)
                 self.setCurrentItem(item)
                 return True
         return False
@@ -190,11 +226,10 @@ class DestinationSidebar(QTreeWidget):
         """Render icon-only rows while preserving labels as tooltips."""
         self._collapsed = bool(collapsed)
         self.setProperty("collapsed", self._collapsed)
-        for index in range(self.topLevelItemCount()):
-            item = self.topLevelItem(index)
-            if item is None:
-                continue
+        for item in self._destination_items():
             label = str(item.data(0, DESTINATION_LABEL_ROLE) or "")
+            if item is self._tools_item:
+                label += "  ▾" if item.isExpanded() else "  ▸"
             item.setText(0, "" if self._collapsed else label)
             item.setToolTip(0, label)
         style = self.style()
@@ -204,18 +239,14 @@ class DestinationSidebar(QTreeWidget):
 
     def _refresh_row_sizes(self) -> None:
         minimum_height = max(44, int(self.fontMetrics().height() * 2.35))
-        for index in range(self.topLevelItemCount()):
-            item = self.topLevelItem(index)
+        for item in self._destination_items():
             if item is not None:
                 item.setSizeHint(0, QSize(0, minimum_height))
 
     def refresh_icon_tints(self) -> None:
         """Rebuild icon colours after a live semantic theme change."""
         selected = self.current_destination_id()
-        for index in range(self.topLevelItemCount()):
-            item = self.topLevelItem(index)
-            if item is None:
-                continue
+        for item in self._destination_items():
             icon_name = str(item.data(0, DESTINATION_ICON_ROLE) or "")
             if not icon_name:
                 continue

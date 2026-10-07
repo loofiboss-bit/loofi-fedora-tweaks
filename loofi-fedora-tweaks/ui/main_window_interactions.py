@@ -8,6 +8,7 @@ import typing
 
 import logging
 import os
+from time import monotonic
 from dataclasses import dataclass, field, replace
 from typing import TYPE_CHECKING
 
@@ -79,6 +80,10 @@ if TYPE_CHECKING:
 
 logger = get_logger(__name__)
 
+# Qt parent ownership alone does not retain Python wrappers after an ignored
+# close event. Keep pending windows alive until every worker is terminal.
+_PENDING_SHUTDOWN_WINDOWS: set[object] = set()
+
 # Custom data roles for sidebar items
 _ROLE_DESC = Qt.ItemDataRole.UserRole + 1  # Tab description string
 _ROLE_BADGE = Qt.ItemDataRole.UserRole + 2  # "recommended" | "advanced" | ""
@@ -147,9 +152,14 @@ class MainWindowInteractionMixin:
     def _activate_global_search_result(self: typing.Any, result: typing.Any) -> bool:
         """Navigate to a result and focus a goal without executing it."""
         route_id = str(getattr(result, "route_id", "") or "")
-        if not route_id or not self.switch_to_route(route_id):
-            return False
         task_id = str(getattr(result, "task_id", "") or "")
+        action_id = str(getattr(result, "action_id", "") or "")
+        if action_id and not task_id and route_id == "maintenance:action-center":
+            navigated = self._switch_to_internal_action_route()
+        else:
+            navigated = bool(route_id) and self.switch_to_route(route_id)
+        if not navigated:
+            return False
         if task_id:
             self._focus_utility_task(task_id, route_id)
             return True
@@ -234,9 +244,8 @@ class MainWindowInteractionMixin:
                 if collapsed
                 else tool_button_style.ToolButtonTextBesideIcon
             )
-        self._sidebar_toggle.setFixedWidth(
-            36 if collapsed else max(104, int(self._line_height * 6.5))
-        )
+        self._sidebar_toggle.setText("")
+        self._sidebar_toggle.setFixedWidth(36)
         style = self.style()
         if style is not None:
             self._sidebar_toggle.setIcon(style.standardIcon(standard_icon))
@@ -251,6 +260,9 @@ class MainWindowInteractionMixin:
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(False)
             self._global_search_button.setText(self.tr("Search  Ctrl+K"))
+            self._brand_title.show()
+            self._brand_icon.show()
+            self._sidebar_settings.setText(self.tr("Settings"))
             self._set_sidebar_toggle_state(False)
             self._sidebar_collapsed = False
         else:
@@ -259,7 +271,10 @@ class MainWindowInteractionMixin:
             self._sidebar_layout.setContentsMargins(8, 14, 8, 10)
             self.sidebar.setVisible(True)
             self._set_sidebar_icon_only(True)
-            self._global_search_button.setText("")
+            self._global_search_button.setText(self.tr("Search  Ctrl+K"))
+            self._brand_title.hide()
+            self._brand_icon.hide()
+            self._sidebar_settings.setText("")
             self._set_sidebar_toggle_state(True)
             self._sidebar_collapsed = True
 
@@ -356,8 +371,8 @@ class MainWindowInteractionMixin:
 
     def _setup_keyboard_shortcuts(self: typing.Any) -> typing.Any:
         """Register destination-aware shell navigation shortcuts."""
-        # Ctrl+1 through Ctrl+5 select the five stable destinations.
-        for i in range(1, 6):
+        # Ctrl+1 through Ctrl+6 select the six primary routes.
+        for i in range(1, 7):
             shortcut = QShortcut(QKeySequence(f"Ctrl+{i}"), self)
             shortcut.activated.connect(lambda idx=i - 1: self._select_category(idx))
 
@@ -419,10 +434,10 @@ class MainWindowInteractionMixin:
         """Show keyboard shortcuts help dialog."""
         from PyQt6.QtWidgets import QMessageBox
 
-        shortcuts = (
+        shortcuts = self.tr(
             "Ctrl+K — Search routes, settings, and actions\n"
             "Ctrl+Shift+K — Search actions\n"
-            "Ctrl+1..5 — Switch destination\n"
+            "Ctrl+1..6 — Overview, Tweaks, Apps, Updates, Health, Activity\n"
             "Ctrl+Tab — Next destination\n"
             "Ctrl+Shift+Tab — Previous destination\n"
             "Alt+Left/Right — Route history\n"
@@ -561,6 +576,37 @@ class MainWindowInteractionMixin:
 
             QApplication.quit()
 
+    def _runtime_samplers(self: typing.Any) -> tuple[typing.Any, ...]:
+        """Return owned samplers without loading any unvisited page."""
+        attributes = getattr(self, "__dict__", {})
+        resources = []
+        dashboard = attributes.get("_dashboard_controller")
+        if dashboard is not None:
+            resources.append(dashboard)
+        entry = attributes.get("_sidebar_index", {}).get("monitor")
+        monitor = getattr(entry, "page_widget", None)
+        get_real_widget = getattr(monitor, "get_real_widget", None)
+        if callable(get_real_widget):
+            monitor = get_real_widget()
+        if monitor is not None and callable(getattr(monitor, "request_stop", None)):
+            resources.append(monitor)
+        return tuple(resources)
+
+    def _runtime_sampling_busy(self: typing.Any) -> bool:
+        return any(getattr(resource, "busy", False) is True or
+                   getattr(resource, "sampling_busy", False) is True for resource in self._runtime_samplers())
+
+    def _request_sampler_stop(self: typing.Any) -> None:
+        connected = self.__dict__.setdefault("_runtime_sampler_connections", set())
+        for resource in self._runtime_samplers():
+            if id(resource) not in connected:
+                stopped = getattr(resource, "stopped", None)
+                connect = getattr(stopped, "connect", None)
+                if callable(connect):
+                    connect(self._resume_deferred_runtime_shutdown)
+                    connected.add(id(resource))
+            resource.request_stop()
+
     def _request_runtime_shutdown(self: typing.Any, *, action: str = "close") -> bool:
         """Defer teardown until a durable operation has reached its terminal state."""
         adapter = getattr(self, "_utility_operation_adapter", None)
@@ -568,18 +614,22 @@ class MainWindowInteractionMixin:
             getattr(adapter, "busy", False) is True
             or getattr(adapter, "running", False) is True
         )
-        if adapter is not None and adapter_busy:
+        sampling_busy = self._runtime_sampling_busy()
+        if adapter_busy or sampling_busy:
+            _PENDING_SHUTDOWN_WINDOWS.add(self)
             current = getattr(self, "_pending_runtime_shutdown", None)
             if current != "quit":
                 self._pending_runtime_shutdown = "quit" if action == "quit" else "close"
+            self._request_sampler_stop()
             cancel = getattr(adapter, "cancel", None)
-            if callable(cancel):
+            if adapter_busy and callable(cancel):
                 cancel()
             status_frame = getattr(self, "_status_frame", None)
             status_label = getattr(self, "_status_label", None)
             if status_frame is not None and status_label is not None:
                 status_label.setText(
                     self.tr("Finishing the current system change and recording its result before closing.")
+                    if adapter_busy else self.tr("Waiting for system readers to stop before closing.")
                 )
                 status_frame.show()
             return False
@@ -591,12 +641,19 @@ class MainWindowInteractionMixin:
             # thread before ApplicationRuntime invokes its bounded hooks.
             self._request_runtime_stop()
             shutdown()
+            _PENDING_SHUTDOWN_WINDOWS.discard(self)
             return True
         self._cleanup_runtime(5.0)
+        _PENDING_SHUTDOWN_WINDOWS.discard(self)
         return True
 
     def _resume_deferred_runtime_shutdown(self: typing.Any) -> None:
-        """Finish a close or quit request after the utility worker has stopped."""
+        """Finish only after every durable operation and reader is idle."""
+        adapter = getattr(self, "_utility_operation_adapter", None)
+        if adapter is not None and (getattr(adapter, "busy", False) is True or getattr(adapter, "running", False) is True):
+            return
+        if self._runtime_sampling_busy():
+            return
         action = getattr(self, "_pending_runtime_shutdown", None)
         if action not in {"close", "quit"}:
             return
@@ -622,6 +679,7 @@ class MainWindowInteractionMixin:
             return
         self._runtime_cleaned = True
         utility_adapter = getattr(self, "_utility_operation_adapter", None)
+        self._request_sampler_stop()
         close_utility = getattr(utility_adapter, "close", None)
         if callable(close_utility):
             try:
@@ -646,25 +704,28 @@ class MainWindowInteractionMixin:
             status_timer.stop()
             self._status_timer = None
 
-        registry = PluginRegistry.instance()
-        list_all: typing.Callable[[], typing.Iterable[typing.Any]] = getattr(
-            registry,
-            "list_all",
-            lambda: [],
-        )
-        plugins = list(list_all())
+        # Window-owned pages take precedence over the global registry: it may
+        # retain wrappers from a previously closed window.
+        plugins = [entry.page_widget for entry in getattr(self, "_sidebar_index", {}).values()]
         if not plugins:
-            plugins = [
-                entry.page_widget
-                for entry in getattr(self, "_sidebar_index", {}).values()
-            ]
+            registry = PluginRegistry.instance()
+            list_all: typing.Callable[[], typing.Iterable[typing.Any]] = getattr(registry, "list_all", lambda: [])
+            plugins = list(list_all())
+        samplers = self._runtime_samplers()
         for plugin in plugins:
-            cleanup = getattr(plugin, "cleanup", None)
-            if callable(cleanup):
-                try:
+            try:
+                if isinstance(plugin, LazyWidget):
+                    plugin = plugin.get_real_widget()
+                if plugin is None:
+                    continue
+                if any(plugin is sampler for sampler in samplers):
+                    plugin.request_stop()
+                    continue
+                cleanup = getattr(plugin, "cleanup", None)
+                if callable(cleanup):
                     cleanup()
-                except (RuntimeError, OSError, TypeError, ValueError) as exc:
-                    logger.debug("Failed to cleanup page on close: %s", exc)
+            except (RuntimeError, OSError, TypeError, ValueError) as exc:
+                logger.debug("Failed to cleanup page on close: %s", exc)
 
         pulse_thread = getattr(self, "pulse_thread", None)
         if pulse_thread:
@@ -678,16 +739,18 @@ class MainWindowInteractionMixin:
             tray_icon.hide()
 
     def _wait_for_runtime_stop(self: typing.Any, timeout: float) -> bool:
-        """Wait within the runtime's remaining budget for the Pulse thread."""
+        """Share one bounded budget across window-owned readers and Pulse."""
+        deadline = monotonic() + max(0.0, min(5.0, timeout))
+        stopped = True
+        for resource in self._runtime_samplers():
+            wait = getattr(resource, "wait_for_stop", None)
+            if callable(wait):
+                stopped = wait(max(0, int((deadline - monotonic()) * 1000))) is not False and stopped
         pulse_thread = getattr(self, "pulse_thread", None)
-        if not pulse_thread:
-            return True
-        timeout_ms = max(0, min(5000, int(timeout * 1000)))
         wait_for_thread = getattr(pulse_thread, "wait", None)
-        if not callable(wait_for_thread):
-            return True
-        stopped = wait_for_thread(timeout_ms)
-        return stopped is not False
+        if callable(wait_for_thread):
+            stopped = wait_for_thread(max(0, int((deadline - monotonic()) * 1000))) is not False and stopped
+        return stopped
 
     def closeEvent(self: typing.Any, event: typing.Any) -> typing.Any:
         tray_icon = getattr(self, "tray_icon", None)
@@ -727,7 +790,7 @@ class MainWindowInteractionMixin:
         """
         Apply invariant component structure with the requested semantic palette.
 
-        System mode derives colours from ``QPalette`` while retaining the same
+        System mode selects Loofi colours from the desktop colour scheme while retaining the same
         card, state, navigation, control, and focus geometry as explicit themes.
         """
         from PyQt6.QtWidgets import QApplication

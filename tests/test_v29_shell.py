@@ -108,6 +108,7 @@ class TestV29MainWindowShell(unittest.TestCase):
             lambda _self: None,
         ):
             self.window = MainWindow()
+        self.window.apply_advanced_tools(False)
         self.app.processEvents()
         return self.window
 
@@ -124,12 +125,12 @@ class TestV29MainWindowShell(unittest.TestCase):
                 window.sidebar.topLevelItem(index).text(0)
                 for index in range(window.sidebar.topLevelItemCount())
             ],
-            ["Tweaks", "Apps", "Updates", "Health"],
+            ["Overview", "Tweaks", "Apps", "Updates", "Health", "Activity", "Tools  ▸"],
         )
         self.assertTrue(
             all(
                 window.sidebar.topLevelItem(index).childCount() == 0
-                for index in range(window.sidebar.topLevelItemCount())
+                for index in range(window.sidebar.topLevelItemCount() - 1)
             )
         )
 
@@ -153,8 +154,8 @@ class TestV29MainWindowShell(unittest.TestCase):
         names = ("install", "tune", "fix", "update")
         entries = [window._sidebar_index[f"utility_{name}"] for name in names]
 
-        # In v32, Tweaks (tune) is the start page and is realized on launch
-        self.assertIsNotNone(entries[1].page_widget.get_real_widget())
+        # Overview is realized on launch; workflow pages remain lazy.
+        self.assertIsNone(entries[1].page_widget.get_real_widget())
         # The other utility pages are still lazily loaded
         self.assertIsNone(entries[0].page_widget.get_real_widget())
         self.assertIsNone(entries[2].page_widget.get_real_widget())
@@ -192,7 +193,7 @@ class TestV29MainWindowShell(unittest.TestCase):
 
         self.assertTrue(window.switch_to_route("changes"))
         self.assertEqual(window._active_route_id, "activity")
-        self.assertEqual(window._active_destination_id, "")
+        self.assertEqual(window._active_destination_id, "activity")
         self.assertTrue(window.switch_to_route("settings"))
         self.assertEqual(window._active_destination_id, "")
 

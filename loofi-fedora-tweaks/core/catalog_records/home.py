@@ -51,3 +51,34 @@ RECORDS: Final[dict[str, Any]] = {'plugins': ({'id': 'atlas_dashboard',
                  'default_route_id': 'atlas_dashboard',
                  'route_ids': ('atlas_dashboard',),
                  'advanced_only': False}}
+
+# Overview is a separate route: saved Atlas links retain their Tweaks meaning.
+RECORDS["plugins"] += ({
+    "id": "overview", "name": "Overview",
+    "description": "Live resources, hardware readings, and recent maintenance.",
+    "icon": "overview-dashboard", "destination_id": "home",
+    "module": "ui.overview_page", "class_name": "OverviewPage",
+    "component": "core", "visibility": "standard", "compat": {},
+    "category": "System", "badge": "", "order": -10,
+},)
+RECORDS["routes"] += ({
+    "id": "overview", "label": "Overview", "plugin_id": "overview",
+    "category": "System", "icon": "overview-dashboard",
+    "description": "Live resource use, hardware readings, and recent maintenance.",
+    "aliases": ("resource-overview",),
+    "keywords": ("overview", "cpu", "ram", "gpu", "battery", "temperature", "resources"),
+    "risk": "none", "visibility": "beginner", "subroute": "",
+},)
+RECORDS["placements"] += ({
+    "route_id": "overview", "destination_id": "home", "section_id": "live_status",
+    "advanced_only": False, "component_id": "core", "required_capabilities": (),
+    "allowed_variants": ("traditional", "atomic"), "redirect_route_id": None,
+    "discoverable": True,
+},)
+RECORDS["sections"] += ({
+    "id": "live_status", "destination_id": "home", "label": "Overview",
+    "icon": "overview-dashboard", "order": 0, "default_route_id": "overview",
+    "description": "Resource and hardware readings while the page is visible.",
+},)
+RECORDS["destination"]["default_route_id"] = "overview"
+RECORDS["destination"]["route_ids"] = ("overview", "atlas_dashboard")

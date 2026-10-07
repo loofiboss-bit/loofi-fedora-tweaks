@@ -37,6 +37,16 @@ class TestWayfinderApplications(unittest.TestCase):
         self.assertFalse(self.page._row_checks["firefox"].isChecked())
         self.assertFalse(self.page.review_button.isEnabled())
 
+    def test_catalog_uses_body_scroll_and_discloses_actual_scope(self):
+        self.assertEqual(self.page.application_list.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.assertEqual(self.page.application_list.minimumHeight(), self.page.application_list.maximumHeight())
+        record, _eligibility, item = self.page._rows["git"]
+        row = self.page.application_list.itemWidget(item)
+        self.assertEqual(row.findChild(QLabel, "applicationRowScope").text(), "System scope")
+        flatpak_item = next(row[2] for row in self.page._rows.values() if row[0].source == "flatpak")
+        flatpak_row = self.page.application_list.itemWidget(flatpak_item)
+        self.assertEqual(flatpak_row.findChild(QLabel, "applicationRowScope").text(), "Configured Flatpak scope")
+
     def test_bundle_results_show_application_names_and_independent_failure(self):
         self.page._row_checks["firefox"].click()
         self.page._row_checks["git"].click()

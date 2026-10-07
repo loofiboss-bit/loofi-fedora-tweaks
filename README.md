@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Make Fedora feel like your computer.</strong><br>
-  Search, change, verify, and restore supported desktop and system settings for GNOME, KDE, and DNF.
+  Understand your system, change supported settings, and verify results for GNOME, KDE, and DNF.
 </p>
 
 <p align="center">
@@ -16,20 +16,22 @@
   <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-blue?style=flat-square" alt="MIT License"/></a>
 </p>
 
-![Loofi Fedora Tweaks — Tweaks](docs/images/wayfinder/tweaks-1280x800.png)
+![Loofi Fedora Tweaks — Overview](docs/images/control-center/overview-dark-1280x800.png)
 
 ## What it does
 
-Tweaks come first. Everything else exists to support them.
+Start with **Overview** for live resources, available hardware readings, and
+recorded maintenance. Then choose the task you want to perform.
 
 | | |
 |---|---|
+| **Overview** | CPU, memory, GPU, storage, network, temperatures, and battery where supported. Unavailable readings explain why. |
 | **Tweaks** | Search a setting, change it, and verify it. Restore a previous value where supported. GNOME and KDE appearance, desktop, window and input settings, plus DNF options. |
 | **Apps** | Find trusted applications and install several at once, with a result for each. |
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
-Need more? Turn on **Show advanced tools** in Settings for System, Storage,
+Open **Tools** in the sidebar for System, Storage,
 Network, Security, and Logs. See the [product definition](docs/PRODUCT.md) for
 what is, and is not, in scope.
 
@@ -82,7 +84,8 @@ just typecheck   # mypy
 just verify      # all of the above plus coverage
 ```
 
-See [CONTRIBUTING](CONTRIBUTING.md) and [ARCHITECTURE](ARCHITECTURE.md).
+See [CONTRIBUTING](CONTRIBUTING.md), [ARCHITECTURE](ARCHITECTURE.md), and the
+[design system](DESIGN.md).
 
 ## Documentation
 

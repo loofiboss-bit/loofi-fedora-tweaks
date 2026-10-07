@@ -15,6 +15,8 @@ and is not.
 
 ## Contribute
 
+- [Control-center qualification](CONTROL_CENTER_VERIFICATION.md) — automated results and remaining physical checks
+- [Design system](../DESIGN.md) — control-center structure, states, and measurement contract
 - [Contributing](CONTRIBUTING.md)
 - [Release checklist](RELEASE_CHECKLIST.md)
 

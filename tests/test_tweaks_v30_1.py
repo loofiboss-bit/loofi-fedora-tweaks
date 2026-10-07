@@ -273,6 +273,7 @@ class TestTweakPage(unittest.TestCase):
 
     def test_health_requires_separate_no_rollback_acceptance(self, _capability) -> None:
         parent = QWidget()
+        parent._record_global_operation_result = Mock()
         parent._run_reviewed_health_action = Mock()  # type: ignore[attr-defined]
         page = SimpleNamespace(set_health_notice=Mock())
         adapter = SimpleNamespace(stopped=SimpleNamespace(connect=Mock()))

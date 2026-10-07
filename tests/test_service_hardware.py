@@ -384,13 +384,13 @@ class TestReadMillidegree(unittest.TestCase):
     def test_read_millidegree_none(self, mock_read):
         """Read millidegree handles None result."""
         result = _read_millidegree("/sys/test/temp1_input")
-        self.assertEqual(result, 0.0)
+        self.assertIsNone(result)
 
     @patch('services.hardware.temperature._read_sysfs_value', return_value="invalid")
     def test_read_millidegree_invalid(self, mock_read):
         """Read millidegree handles invalid value."""
         result = _read_millidegree("/sys/test/temp1_input")
-        self.assertEqual(result, 0.0)
+        self.assertIsNone(result)
 
 
 class TestGetAllSensors(unittest.TestCase):

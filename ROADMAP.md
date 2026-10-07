@@ -44,6 +44,18 @@ scaling, and Atomic workflows remain unverified for this release. A KDE
 Dolphin setting was changed, read back, and restored on the development host;
 this does not qualify every setting or the full interface.
 
+## Local candidate — Control center redesign
+
+- [x] Loofi design system and system-selected light/dark presentation
+- [x] Overview start route, Activity navigation, and explicit Tools disclosure
+- [x] Shared asynchronous resource and hardware snapshots with honest availability
+- [x] Unified task pages, controls, and operation feedback
+- [x] Complete automated, rendering, and packaging qualification
+- [ ] Physical KDE, then GNOME and assistive-technology qualification
+
+No public release or local installation is implied. Physical desktop,
+assistive-technology, and unavailable hardware evidence remain separate.
+
 ## Later
 
 - Additional DNF configuration after a specific user need and safe verification
@@ -54,5 +66,5 @@ this does not qualify every setting or the full interface.
 
 ## Not planned
 
-System monitoring as a headline feature, mesh/network sharing, AI features,
+Background monitoring while views are hidden, mesh/network sharing, AI features,
 and a plugin marketplace.

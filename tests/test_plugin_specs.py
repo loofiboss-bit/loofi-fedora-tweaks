@@ -16,8 +16,10 @@ class TestPluginSpec(unittest.TestCase):
     def test_builtin_specs_are_complete_unique_and_data_only(self):
         ids = [spec.id for spec in BUILTIN_PLUGIN_SPECS]
 
-        self.assertEqual(len(ids), 16)
+        self.assertEqual(len(ids), 17)
         self.assertEqual(len(ids), len(set(ids)))
+        self.assertIn("overview", ids)
+        self.assertLess(ids.index("overview"), ids.index("atlas_dashboard"))
         self.assertNotIn("dashboard", ids)
         self.assertNotIn("ui.dashboard_tab", {spec.module for spec in BUILTIN_PLUGIN_SPECS})
         self.assertTrue(all(spec.module.startswith("ui.") for spec in BUILTIN_PLUGIN_SPECS))
@@ -30,7 +32,7 @@ class TestPluginSpec(unittest.TestCase):
         self.assertTrue(all(spec.icon in icon_ids for spec in BUILTIN_PLUGIN_SPECS))
 
     def test_metadata_adapter_preserves_shell_fields(self):
-        spec = BUILTIN_PLUGIN_SPECS[0]
+        spec = next(item for item in BUILTIN_PLUGIN_SPECS if item.id == "overview")
 
         metadata = spec.metadata()
 
@@ -62,16 +64,22 @@ class TestPluginSpec(unittest.TestCase):
                 projected = False
                 for node in tree.body:
                     if isinstance(node, ast.ClassDef) and node.name == spec.class_name:
+                        candidates = []
                         for statement in node.body:
-                            if not isinstance(statement, ast.Assign) or len(statement.targets) != 1:
-                                continue
-                            if not isinstance(statement.targets[0], ast.Name) or statement.targets[0].id != "_METADATA":
-                                continue
-                            projected = (
-                                isinstance(statement.value, ast.Call)
-                                and isinstance(statement.value.func, ast.Name)
-                                and statement.value.func.id == "plugin_metadata_for_module"
-                            )
+                            if (isinstance(statement, ast.Assign) and len(statement.targets) == 1
+                                    and isinstance(statement.targets[0], ast.Name) and statement.targets[0].id == "_METADATA"):
+                                candidates.append(statement.value)
+                            elif isinstance(statement, ast.FunctionDef) and statement.name == "metadata":
+                                candidates.extend(item.value for item in statement.body if isinstance(item, ast.Return))
+                        projected = any(
+                            isinstance(value, ast.Call)
+                            and isinstance(value.func, ast.Name)
+                            and value.func.id == "plugin_metadata_for_module"
+                            and len(value.args) == 1
+                            and isinstance(value.args[0], ast.Name)
+                            and value.args[0].id == "__name__"
+                            for value in candidates
+                        )
                 self.assertTrue(projected)
 
 
@@ -92,14 +100,14 @@ class TestPluginSpecRegistry(unittest.TestCase):
         self.assertEqual(specialist_modules.intersection(sys.modules), before)
 
     def test_register_specs_is_idempotent(self):
-        self.assertEqual(len(self.loader.register_builtin_specs()), 16)
+        self.assertEqual(len(self.loader.register_builtin_specs()), 17)
         self.assertEqual(self.loader.register_builtin_specs(), [])
 
     @patch("core.plugins.loader.PluginLoader._import_plugin")
     def test_load_builtin_imports_one_spec_and_reuses_instance(self, mock_import):
         self.loader.register_builtin_specs()
         plugin = MagicMock()
-        plugin.metadata.return_value = BUILTIN_PLUGIN_SPECS[0].metadata()
+        plugin.metadata.return_value = next(item for item in BUILTIN_PLUGIN_SPECS if item.id == "atlas_dashboard").metadata()
         mock_import.return_value = plugin
 
         first = self.loader.load_builtin("atlas_dashboard", context={"main_window": object()})
@@ -115,7 +123,7 @@ class TestPluginSpecRegistry(unittest.TestCase):
     def test_runtime_id_mismatch_is_not_cached(self, mock_import):
         self.loader.register_builtin_specs()
         plugin = MagicMock()
-        plugin.metadata.return_value = BUILTIN_PLUGIN_SPECS[1].metadata()
+        plugin.metadata.return_value = next(item for item in BUILTIN_PLUGIN_SPECS if item.id == "overview").metadata()
         mock_import.return_value = plugin
 
         with self.assertRaises(ValueError):

@@ -41,26 +41,6 @@ def contrast_ratio(foreground: str, background: str) -> float:
     return (lighter + 0.05) / (darker + 0.05)
 
 
-def _mix(start: str, end: str, amount: float) -> str:
-    start_rgb = _rgb(start)
-    end_rgb = _rgb(end)
-    channels = [round(a + ((b - a) * amount)) for a, b in zip(start_rgb, end_rgb)]
-    return "#" + "".join(f"{channel:02x}" for channel in channels)
-
-
-def _ensure_contrast(foreground: str, background: str, minimum: float) -> str:
-    if contrast_ratio(foreground, background) >= minimum:
-        return foreground.lower()
-    black_ratio = contrast_ratio("#000000", background)
-    white_ratio = contrast_ratio("#ffffff", background)
-    target = "#000000" if black_ratio >= white_ratio else "#ffffff"
-    for step in range(1, 21):
-        candidate = _mix(foreground, target, step / 20.0)
-        if contrast_ratio(candidate, background) >= minimum:
-            return candidate
-    return target
-
-
 @dataclass(frozen=True)
 class SemanticPalette:
     """Complete semantic colour contract consumed by ``base.qss``."""
@@ -114,17 +94,17 @@ class SemanticPalette:
 
 
 _DARK = SemanticPalette(
-    window="#12161d",
-    surface="#181d26",
-    surface_raised="#202734",
-    text="#f0f3f7",
-    text_muted="#b7c0cc",
-    border="#526073",
-    hover="#252d39",
-    selected="#183f61",
-    accent="#79c1ff",
-    accent_text="#07131f",
-    focus="#8dcbff",
+    window="#141823",
+    surface="#1d2331",
+    surface_raised="#283145",
+    text="#f2f5fc",
+    text_muted="#b0bdd2",
+    border="#62728d",
+    hover="#283145",
+    selected="#30304f",
+    accent="#a59aff",
+    accent_text="#141823",
+    focus="#83b9ff",
     disabled_surface="#242a33",
     disabled_text="#8995a5",
     success="#63d99b",
@@ -139,17 +119,17 @@ _DARK = SemanticPalette(
 )
 
 _LIGHT = SemanticPalette(
-    window="#f5f7fa",
+    window="#f4f6fb",
     surface="#ffffff",
-    surface_raised="#eef2f7",
-    text="#17212d",
-    text_muted="#4b5a6c",
-    border="#8a98a9",
-    hover="#e2e9f1",
-    selected="#d8eafb",
-    accent="#075f9d",
+    surface_raised="#e9edf7",
+    text="#182034",
+    text_muted="#556178",
+    border="#7b89a0",
+    hover="#e9edf7",
+    selected="#e6e2ff",
+    accent="#5b4fd6",
     accent_text="#ffffff",
-    focus="#075f9d",
+    focus="#3f6ae0",
     disabled_surface="#e5e9ee",
     disabled_text="#657386",
     success="#197541",
@@ -260,61 +240,21 @@ class ThemeManager:
 
     @classmethod
     def system_palette(cls, qt_palette: Any) -> SemanticPalette:
-        """Build system semantics from Qt palette roles with contrast guards."""
+        """Select the Loofi palette from the desktop's light or dark mode.
+
+        Desktop palette colours determine brightness only. Keeping the complete
+        Loofi palette makes all application surfaces and states consistent even
+        when the desktop uses custom accent or low-contrast colours.
+        """
         if qt_palette is None:
             return _DARK
         try:
             from PyQt6.QtGui import QPalette
 
-            role = QPalette.ColorRole
-            window = cls._qt_colour(qt_palette, role.Window, _DARK.window)
-            surface = cls._qt_colour(qt_palette, role.Base, window)
-            surface_raised = cls._qt_colour(qt_palette, role.AlternateBase, surface)
-            text = cls._qt_colour(qt_palette, role.WindowText, _DARK.text)
-            text_muted = cls._qt_colour(qt_palette, role.PlaceholderText, text)
-            border = cls._qt_colour(qt_palette, role.Mid, _DARK.border)
-            hover = cls._qt_colour(qt_palette, role.Button, surface_raised)
-            selected = cls._qt_colour(qt_palette, role.Highlight, _DARK.selected)
-            accent = cls._qt_colour(qt_palette, role.Link, selected)
-            accent_text = cls._qt_colour(qt_palette, role.HighlightedText, text)
-            disabled_text = cls._qt_colour(qt_palette, role.PlaceholderText, text_muted)
+            window = cls._qt_colour(qt_palette, QPalette.ColorRole.Window, _DARK.window)
         except (ImportError, AttributeError):
             return _DARK
-
-        dark = _relative_luminance(window) < 0.35
-        statuses = _DARK if dark else _LIGHT
-        text = _ensure_contrast(text, window, 4.5)
-        text_muted = _ensure_contrast(text_muted, window, 4.5)
-        accent = _ensure_contrast(accent, selected, 3.0)
-        focus = _ensure_contrast(accent, window, 3.0)
-        accent_text = _ensure_contrast(accent_text, accent, 4.5)
-        border = _ensure_contrast(border, window, 3.0)
-        disabled_surface = _mix(surface, window, 0.45)
-
-        return SemanticPalette(
-            window=window,
-            surface=surface,
-            surface_raised=surface_raised,
-            text=text,
-            text_muted=text_muted,
-            border=border,
-            hover=hover,
-            selected=selected,
-            accent=accent,
-            accent_text=accent_text,
-            focus=focus,
-            disabled_surface=disabled_surface,
-            disabled_text=_ensure_contrast(disabled_text, disabled_surface, 3.0),
-            success=statuses.success,
-            success_surface=statuses.success_surface,
-            success_text=statuses.success_text,
-            warning=statuses.warning,
-            warning_surface=statuses.warning_surface,
-            warning_text=statuses.warning_text,
-            error=statuses.error,
-            error_surface=statuses.error_surface,
-            error_text=statuses.error_text,
-        )
+        return _DARK if _relative_luminance(window) < 0.35 else _LIGHT
 
     def palette_for(self, name: str, qt_palette: Any = None) -> SemanticPalette:
         normalized = name if name in self.SUPPORTED_THEMES else "dark"
@@ -332,8 +272,23 @@ class ThemeManager:
     def apply(self, application: Any, name: str) -> bool:
         """Apply a theme to a QApplication-like object without changing its font."""
         qt_palette = application.palette() if name == "system" and hasattr(application, "palette") else None
+        if hasattr(application, "property") and hasattr(application, "setProperty"):
+            native_palette = application.property("loofiDesktopPalette")
+            if native_palette is None and hasattr(application, "palette"):
+                native_palette = application.palette()
+                application.setProperty("loofiDesktopPalette", native_palette)
+            if name == "system" and native_palette is not None:
+                qt_palette = native_palette
         try:
             palette = self.palette_for(name, qt_palette)
+            if name == "system" and hasattr(application, "styleHints"):
+                from PyQt6.QtCore import Qt
+                hints = application.styleHints()
+                scheme = hints.colorScheme() if hints is not None else Qt.ColorScheme.Unknown
+                if scheme == Qt.ColorScheme.Dark:
+                    palette = _DARK
+                elif scheme == Qt.ColorScheme.Light:
+                    palette = _LIGHT
             template = Template(self.base_qss_path.read_text(encoding="utf-8"))
             values = self.tokens.qss_values()
             values.update(palette.qss_values())

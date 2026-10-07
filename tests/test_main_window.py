@@ -447,7 +447,7 @@ class _DummyHBoxLayout:
     def __init__(self, *args, **kwargs):
         self._widgets = []
 
-    def addWidget(self, w):
+    def addWidget(self, w, *args):
         self._widgets.append(w)
 
     def addLayout(self, layout):
@@ -786,6 +786,8 @@ def _install_stubs():
             self.description = _DummyLabel()
             self.actions = []
             self.settings_button = _DummyToolButton()
+            self.activity_button = _DummyToolButton()
+            self.actions_layout = _DummyHBoxLayout()
 
         def set_content(self, area, title, description=""):
             self.eyebrow.setText(area)
@@ -827,6 +829,7 @@ def _install_stubs():
         def __init__(self, *args, **kwargs):
             super().__init__(*args, **kwargs)
             self.destinationActivated = _DummySignal()
+            self.toolsToggled = _DummySignal()
 
         def set_destinations(self, destinations):
             self.clear()
@@ -1116,6 +1119,12 @@ def _install_stubs():
     sys.modules["core.plugins.loader"] = loader_mod
 
     # -- utils modules --
+    settings_mod = types.ModuleType("utils.settings")
+    settings_mod.SettingsManager = MagicMock()
+    settings_mod.SettingsManager.instance.return_value.get.side_effect = lambda key, default=None: default
+    settings_mod.SettingsManager.instance.return_value.save.return_value = True
+    sys.modules["utils.settings"] = settings_mod
+
     config_mod = types.ModuleType("utils.config_manager")
     config_mod.ConfigManager = MagicMock()
     config_mod.ConfigManager.load_config = MagicMock(return_value=None)
@@ -1230,6 +1239,7 @@ _MODULE_KEYS = [
     "core.plugins.compat",
     "core.plugins.loader",
     "utils.config_manager",
+    "utils.settings",
     "utils.favorites",
     "utils.focus_mode",
     "utils.history",
@@ -1731,7 +1741,7 @@ class TestGlobalSearchConsolidation(unittest.TestCase):
 
         self.assertTrue(self.win._activate_global_search_result(result))
 
-        self.win.switch_to_route.assert_called_once_with("maintenance:action-center")
+        self.win.switch_to_route.assert_called_once_with("maintenance:action-center", record_history=True)
         self.win._preselect_action_center.assert_called_once_with("fstrim-all")
 
     def test_failed_navigation_does_not_preselect(self):
@@ -1768,7 +1778,7 @@ class TestToggleSidebar(unittest.TestCase):
         self.win._sidebar_collapsed = True
         self.win._toggle_sidebar()
         self.assertFalse(self.win._sidebar_collapsed)
-        self.assertEqual(self.win._sidebar_toggle._text, "Collapse")
+        self.assertEqual(self.win._sidebar_toggle._text, "")
 
     def test_toggle_round_trip(self):
         """Double toggle returns to original state."""
