@@ -185,6 +185,18 @@ def main(argv: list[str] | None = None):
 
         try:
             app = QApplication(sys.argv)
+            app.setApplicationName("loofi-fedora-tweaks")
+            app.setDesktopFileName("loofi-fedora-tweaks")
+            from PyQt6.QtGui import QIcon
+
+            icon = QIcon.fromTheme("loofi-fedora-tweaks")
+            if icon.isNull():
+                asset_icon = os.path.join(os.path.dirname(os.path.abspath(__file__)), "assets", "loofi-fedora-tweaks.png")
+                if os.path.exists(asset_icon):
+                    icon = QIcon(asset_icon)
+            if not icon.isNull():
+                app.setWindowIcon(icon)
+
             runtime = ApplicationRuntime()
             event_bus = EventBus()
             runtime.register(

@@ -136,6 +136,10 @@ QFrame#hwCard {
     border-radius: $radius_card;
 }
 
+QFrame#dashboardCard:hover,
+QFrame#monitorCard:hover,
+QFrame#hwCard:hover,
+QFrame#profileCard:hover,
 QFrame#routeCard:hover,
 QFrame[routeCard="true"]:hover {
     background-color: $color_hover;
@@ -497,6 +501,11 @@ QFrame[componentCard="true"] {
     border-radius: $radius_card;
 }
 
+QFrame#componentCard:hover,
+QFrame[componentCard="true"]:hover {
+    border-color: $color_accent;
+}
+
 QFrame#clickableCard:hover,
 QFrame[clickableCard="true"]:hover {
     background-color: $color_hover;
@@ -821,9 +830,7 @@ QToolButton#tweakRowActions {
     min-height: $control_min_height;
 }
 QFrame#tweaksFilters QPushButton:checked,
-QToolButton#tweakFavorite:checked,
-QPushButton#tweakSegment:checked,
-QFrame#healthSymptomCard[selected="true"] {
+QToolButton#tweakFavorite:checked {
     background-color: $color_accent;
     color: $color_accent_text;
     border-color: $color_accent;
@@ -835,9 +842,19 @@ QFrame#healthSymptomCard {
 }
 QFrame#healthSymptomCard:hover {
     background-color: $color_hover;
+    border-color: $color_accent;
 }
 QFrame#healthSymptomCard:focus {
+    border: $focus_width solid $color_focus;
+}
+QFrame#healthSymptomCard[selected="true"] {
+    background-color: $color_selected;
+    color: $color_accent;
     border: $focus_width solid $color_accent;
+}
+QFrame#healthSymptomCard[selected="true"] QLabel {
+    color: $color_accent;
+    font-weight: $section_title_weight;
 }
 QLabel#applicationSourceBadge {
     background-color: $color_surface_raised;
@@ -851,14 +868,26 @@ QFrame#installReviewCard {
     border-top: $border_width solid $color_border;
 }
 QPushButton#tweakSegment {
-    padding: $space_1 $space_2;
+    min-height: $control_min_height;
+    padding: $space_1 $space_3;
+    border-radius: $radius_control;
+    background-color: $color_surface;
+    border: $border_width solid $color_border;
+    color: $color_text_muted;
+}
+QPushButton#tweakSegment:hover {
+    background-color: $color_hover;
+    color: $color_text;
+    border-color: $color_accent;
+}
+QPushButton#tweakSegment:checked {
+    background-color: $color_selected;
+    color: $color_accent;
+    border: $focus_width solid $color_accent;
+    font-weight: $control_weight;
 }
 QCheckBox#tweakSwitch:disabled {
     color: $color_disabled_text;
-}
-
-QFrame#healthSymptomCard[selected="true"] QLabel {
-    color: $color_accent_text;
 }
 
 /* Reading surfaces use hierarchy rather than a frame around every row. */
@@ -879,6 +908,7 @@ QFrame[settingRow="true"] {
     border: none;
     border-bottom: $border_width solid $color_border;
     border-radius: 0;
+    padding: 2px 0;
 }
 QLabel#settingRowFeedback[feedbackKind="saved"] {
     color: $color_success;
@@ -942,6 +972,26 @@ QToolButton#sidebarSettings:checked {
 QLabel#dashboardMetricValue {
     color: $color_accent;
     font-weight: $page_title_weight;
+}
+QLabel#dashboardMetricHeroValue {
+    color: $color_text;
+    font-weight: $page_title_weight;
+}
+QProgressBar#metricProgressBar {
+    background-color: $color_surface_raised;
+    border: none;
+    border-radius: 2px;
+    max-height: 4px;
+}
+QProgressBar#metricProgressBar::chunk {
+    background-color: $color_accent;
+    border-radius: 2px;
+}
+QFrame#overviewNotice {
+    background-color: $color_surface;
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+    padding: $space_2 $space_3;
 }
 QFrame#pageHeader {
     background-color: $color_window;
@@ -1012,16 +1062,16 @@ QCheckBox::indicator:disabled {
     border-color: $color_disabled_text;
 }
 QScrollBar:vertical {
-    background-color: $color_window;
-    width: 12px;
+    background-color: transparent;
+    width: 8px;
     margin: 0;
     border: none;
 }
 QScrollBar::handle:vertical {
     background-color: $color_border;
-    min-height: $space_8;
-    border-radius: $radius_control;
-    margin: 2px;
+    min-height: $space_6;
+    border-radius: 4px;
+    margin: 1px;
 }
 QScrollBar::handle:vertical:hover {
     background-color: $color_accent;
@@ -1033,6 +1083,30 @@ QScrollBar::sub-line:vertical {
 }
 QScrollBar::add-page:vertical,
 QScrollBar::sub-page:vertical {
+    background-color: transparent;
+}
+QScrollBar:horizontal {
+    background-color: transparent;
+    height: 8px;
+    margin: 0;
+    border: none;
+}
+QScrollBar::handle:horizontal {
+    background-color: $color_border;
+    min-width: $space_6;
+    border-radius: 4px;
+    margin: 1px;
+}
+QScrollBar::handle:horizontal:hover {
+    background-color: $color_accent;
+}
+QScrollBar::add-line:horizontal,
+QScrollBar::sub-line:horizontal {
+    width: 0;
+    border: none;
+}
+QScrollBar::add-page:horizontal,
+QScrollBar::sub-page:horizontal {
     background-color: transparent;
 }
 

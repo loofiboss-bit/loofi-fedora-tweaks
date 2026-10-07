@@ -207,8 +207,8 @@ class ContentColumn(QWidget):
         # vertical scroll area calculates its range.
         self.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.MinimumExpanding)
         self.body = QVBoxLayout(self)
-        self.body.setContentsMargins(tokens.space_6, tokens.space_6, tokens.space_6, tokens.space_8)
-        self.body.setSpacing(tokens.space_4)
+        self.body.setContentsMargins(tokens.space_4, tokens.space_3, tokens.space_4, tokens.space_4)
+        self.body.setSpacing(tokens.space_3)
         self.setAccessibleName(self.tr("Page content"))
 
     def add_widget(self, widget: QWidget, stretch: int = 0) -> None:

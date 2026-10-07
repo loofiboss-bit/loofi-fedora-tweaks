@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.2.0
+Version:        32.3.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -76,7 +76,12 @@ desktop-file-install \
     --dir=%{buildroot}%{_datadir}/applications \
     %{name}.desktop
 
+install -d %{buildroot}%{_datadir}/icons/hicolor/128x128/apps
+install -d %{buildroot}%{_datadir}/icons/hicolor/512x512/apps
+install -d %{buildroot}%{_datadir}/pixmaps
 install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/
+install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/
+install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/pixmaps/
 install -Dm 644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
 install -Dm 644 %{name}.1 %{buildroot}%{_mandir}/man1/%{name}.1
 install -m 644 %{name}.metainfo.xml %{buildroot}%{_datadir}/metainfo/%{name}.metainfo.xml
@@ -93,10 +98,18 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %attr(755,root,root) %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
+%{_datadir}/icons/hicolor/512x512/apps/loofi-fedora-tweaks.png
+%{_datadir}/pixmaps/loofi-fedora-tweaks.png
 %{_datadir}/metainfo/%{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Wed Oct 07 2026 Loofi <loofi@example.com> - 32.3.0-1
+- Clarity: Modern, compact UI layout, zero-scroll navigation, and Wayland desktop icon.
+- Add desktop file name and explicit icon bindings for Wayland compositor window pairing.
+- Optimize Overview metrics and compact temperature grid for sub-800px display viewports.
+- Streamline Tweaks toolbar, filter pills, and setting row padding.
+
 * Mon Oct 05 2026 Loofi <loofi@example.com> - 32.2.0-1
 - Coherence: clarify recovery and Loofi standard values, and bound Tweaks snapshots.
 - Show Flathub status and install scope in Apps; improve cancellation and partial results.
