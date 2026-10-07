@@ -7,6 +7,7 @@ ROOT = Path(__file__).resolve().parent.parent
 CI_WORKFLOW = ROOT / ".github" / "workflows" / "ci.yml"
 AUTO_RELEASE_WORKFLOW = ROOT / ".github" / "workflows" / "auto-release.yml"
 COPR_WORKFLOW = ROOT / ".github" / "workflows" / "copr-publish.yml"
+SPEC = ROOT / "loofi-fedora-tweaks.spec"
 
 
 def _read_text(path: Path) -> str:
@@ -114,6 +115,15 @@ def test_ci_and_release_typecheck_the_full_source_tree():
         text = _read_text(workflow)
         assert "mypy loofi-fedora-tweaks/ --ignore-missing-imports --no-error-summary" in text
         assert "mypy loofi-fedora-tweaks/services/security" not in text
+
+
+def test_rpm_build_installs_runtime_imports_used_by_spec_check():
+    spec = _read_text(SPEC)
+    assert "BuildRequires:  python3-defusedxml" in spec
+
+    for workflow in (CI_WORKFLOW, AUTO_RELEASE_WORKFLOW):
+        text = _read_text(workflow)
+        assert "python3-defusedxml" in text
 
 
 def test_copr_workflows_wait_for_exact_fedora_44_success():
