@@ -6,8 +6,8 @@ from datetime import datetime
 import math
 
 from PyQt6.QtCore import QPointF, QTimer, Qt, pyqtSignal
-from PyQt6.QtGui import QPainter, QPainterPath, QPen
-from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QVBoxLayout, QWidget
+from PyQt6.QtGui import QFont, QLinearGradient, QPainter, QPainterPath, QPen
+from PyQt6.QtWidgets import QGridLayout, QHBoxLayout, QLabel, QProgressBar, QVBoxLayout, QWidget
 
 from core.plugins.interface import PluginInterface
 from core.tasks.next_steps import next_steps
@@ -25,7 +25,7 @@ class MetricGraph(QWidget):
         super().__init__(parent)
         self.label, self.unit = label, unit
         self.points: deque[float | None] = deque(maxlen=60)
-        self.setMinimumHeight(56)
+        self.setMinimumHeight(64)
         self.setAccessibleName(label)
         self.setAccessibleDescription(self.tr("Recent measurements in %1").replace("%1", unit))
 
@@ -37,32 +37,56 @@ class MetricGraph(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        painter.setPen(QPen(semantic_qcolor("border"), 1))
-        painter.drawLine(0, self.height() - 8, self.width(), self.height() - 8)
+        baseline_y = self.height() - 8
+        painter.setPen(QPen(semantic_qcolor("border", 50), 1))
+        painter.drawLine(0, baseline_y, self.width(), baseline_y)
+
         values = [value for value in self.points if value is not None]
         if not values or len(self.points) < 2:
             return
-        scale = 100 if self.unit == "%" else max(max(values), 1)
-        path = QPainterPath()
+
+        scale = 100.0 if self.unit == "%" else max(max(values), 1.0)
+        line_path = QPainterPath()
         connected = False
-        slots = max(self.points.maxlen or 60, 2)
-        step = self.width() / (slots - 1)
         count = len(self.points)
+        step = self.width() / max(count - 1, 1)
+        first_point = None
+        last_point = None
+
         for index, value in enumerate(self.points):
             if value is None:
                 connected = False
                 continue
-            offset = count - 1 - index
-            x = max(0.0, self.width() - offset * step)
-            y = self.height() - 8 - min(max(value, 0.0) / scale, 1.0) * (self.height() - 16)
+            x = index * step
+            norm_val = min(max(value, 0.0) / scale, 1.0)
+            y = baseline_y - norm_val * (self.height() - 16)
             point = QPointF(x, y)
             if connected:
-                path.lineTo(point)
+                line_path.lineTo(point)
             else:
-                path.moveTo(point)
+                line_path.moveTo(point)
+                first_point = point
             connected = True
+            last_point = point
+
+        if first_point is not None and last_point is not None:
+            area_path = QPainterPath(line_path)
+            area_path.lineTo(last_point.x(), baseline_y)
+            area_path.lineTo(first_point.x(), baseline_y)
+            area_path.closeSubpath()
+
+            grad = QLinearGradient(0, 0, 0, baseline_y)
+            grad.setColorAt(0.0, semantic_qcolor("accent", 45))
+            grad.setColorAt(1.0, semantic_qcolor("accent", 0))
+            painter.fillPath(area_path, grad)
+
         painter.setPen(QPen(semantic_qcolor("accent"), 2))
-        painter.drawPath(path)
+        painter.drawPath(line_path)
+
+        if last_point is not None:
+            painter.setPen(QPen(semantic_qcolor("window"), 1.5))
+            painter.setBrush(semantic_qcolor("accent"))
+            painter.drawEllipse(last_point, 3.0, 3.0)
 
 
 class _MetricRow(QWidget):
@@ -76,17 +100,33 @@ class _MetricRow(QWidget):
         self.label.setWordWrap(True)
         self.label.setTextFormat(Qt.TextFormat.PlainText)
         self.label.setObjectName("definitionLabel")
+
         self.value = QLabel()
         self.value.setWordWrap(True)
         self.value.setTextFormat(Qt.TextFormat.PlainText)
-        self.value.setObjectName("definitionValue")
+        self.value.setObjectName("dashboardMetricHeroValue")
+        value_font = QFont(self.font())
+        value_font.setPointSizeF(max(10.0, value_font.pointSizeF()) * 1.45)
+        value_font.setWeight(QFont.Weight.DemiBold)
+        self.value.setFont(value_font)
+
+        self.progress = QProgressBar(self)
+        self.progress.setRange(0, 100)
+        self.progress.setTextVisible(False)
+        self.progress.setFixedHeight(4)
+        self.progress.setObjectName("metricProgressBar")
+        self.progress.hide()
+
         self.reason = QLabel()
         self.reason.setWordWrap(True)
         self.reason.setTextFormat(Qt.TextFormat.PlainText)
         self.reason.setObjectName("cardDescription")
+
         self.badge = StatusBadge(self.tr("Collecting"))
+
         layout.addWidget(self.label)
         layout.addWidget(self.value)
+        layout.addWidget(self.progress)
         layout.addWidget(self.badge, alignment=Qt.AlignmentFlag.AlignLeft)
         layout.addWidget(self.reason)
         self.graph = MetricGraph(reading.label, reading.unit, self)
@@ -98,6 +138,11 @@ class _MetricRow(QWidget):
         valid = status in ("ready", "ok", "valid", "available")
         stale = status == "stale"
         self.label.setText(self.tr(reading.label))
+        if reading.label.strip().lower() == reading.group.strip().lower():
+            self.label.hide()
+        else:
+            self.label.show()
+
         value = reading.value
         if isinstance(value, float):
             text = f"{value:,.1f}"
@@ -117,6 +162,13 @@ class _MetricRow(QWidget):
             elif reading.unit:
                 text += " " + reading.unit
         self.value.setText(text)
+
+        if reading.unit == "%" and isinstance(value, (int, float)) and valid:
+            self.progress.setValue(int(min(max(value, 0.0), 100.0)))
+            self.progress.show()
+        else:
+            self.progress.hide()
+
         reason = " · ".join(self.tr(part) for part in (reading.reason, reading.detail) if part)
         self.reason.setText(reason)
         self.reason.setVisible(bool(reason))
@@ -134,6 +186,8 @@ class _MetricRow(QWidget):
         elif status in ("loading", "sampling"):
             kind, caption = "info", self.tr("Collecting")
         self.badge.set_status(caption, kind=kind, description=reason)
+        self.badge.setVisible(not (valid and caption == self.tr("Measured")))
+
         stamp = reading.sampled_at
         timestamp = _format_time(stamp)
         self.setToolTip(self.tr("Source: %1\nMeasured: %2").replace("%1", reading.source).replace("%2", timestamp))
@@ -186,6 +240,7 @@ class OverviewPage(QWidget, PluginInterface):
         header.addWidget(self.refresh_button)
         root.addLayout(header)
         self.notice = InlineNotice(self.tr("Collecting system information"), self.tr("Measurements run while this page is visible."))
+        self.notice.setObjectName("overviewNotice")
         root.addWidget(self.notice)
         self.next_steps_card = Card(self.tr("Next steps"), parent=self)
         self.next_steps_empty = QLabel(self.tr("Suggestions appear after the first measurement."))
