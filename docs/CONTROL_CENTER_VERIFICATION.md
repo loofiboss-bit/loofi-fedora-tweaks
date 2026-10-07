@@ -29,7 +29,7 @@ sources, multiple batteries and GPUs, counter reset baselines, bounded NVIDIA
 queries, sleeping devices, worker pause/resume, and deferred window destruction.
 
 The locally built RPM is `rpmbuild/RPMS/noarch/loofi-fedora-tweaks-32.2.0-1.fc44.noarch.rpm`.
-Its SHA-256 is `ec1af12ad0622aa7c61b36e470634968f367ec9b5ecaf307e8b036e28d77d7ca`.
+Its SHA-256 is `052c517a9fde289524b1f6bda2a0f05228dafe2d37c1b3e05455fec3d83ea248`.
 This is build evidence, not installation or repository signature verification.
 
 ## Rendering and keyboard evidence
@@ -98,3 +98,7 @@ No application process was running during replacement.
 The local command-line package transaction skipped OpenPGP checks. Its SHA-256
 was checked against the qualified build; this is not repository signature
 verification. Physical desktop qualification remains separate.
+
+The PR follow-up added explicit optional-item guards for the CI Qt stubs.
+Mypy 2.4.0 with PyQt6-stubs 20250824 and 52 focused navigation tests passed;
+the RPM was rebuilt and the installed payload updated to include these guards.

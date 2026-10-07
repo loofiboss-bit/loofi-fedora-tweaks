@@ -159,17 +159,17 @@ class DestinationSidebar(QTreeWidget):
                     yield child
 
     def _toggle_tools_item(self, item, _column: int) -> None:
-        if item is self._tools_item:
+        if item is self._tools_item and item is not None:
             item.setExpanded(not item.isExpanded())
 
     def _tools_expanded(self, item) -> None:
-        if item is self._tools_item:
+        if item is self._tools_item and item is not None:
             item.setText(0, "" if self._collapsed else self.tr("Tools") + "  ▾")
             item.setData(0, Qt.ItemDataRole.AccessibleDescriptionRole, self.tr("Tools expanded. Press Space to collapse."))
             self.toolsToggled.emit(True)
 
     def _tools_collapsed(self, item) -> None:
-        if item is self._tools_item:
+        if item is self._tools_item and item is not None:
             item.setText(0, "" if self._collapsed else self.tr("Tools") + "  ▸")
             item.setData(0, Qt.ItemDataRole.AccessibleDescriptionRole, self.tr("Tools collapsed. Press Space to expand."))
             self.toolsToggled.emit(False)
@@ -228,7 +228,7 @@ class DestinationSidebar(QTreeWidget):
         self.setProperty("collapsed", self._collapsed)
         for item in self._destination_items():
             label = str(item.data(0, DESTINATION_LABEL_ROLE) or "")
-            if item is self._tools_item:
+            if item is self._tools_item and item is not None:
                 label += "  ▾" if item.isExpanded() else "  ▸"
             item.setText(0, "" if self._collapsed else label)
             item.setToolTip(0, label)
