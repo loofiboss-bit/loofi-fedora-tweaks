@@ -239,6 +239,21 @@ class TestContentComponents(unittest.TestCase):
         header.set_content("Software & Updates", "Updates", "Review available updates")
         self.assertFalse(header.eyebrow.isHidden())
 
+    def test_long_header_moves_title_below_actions(self) -> None:
+        header = PageHeader()
+        title_font = header.title.font()
+        title_font.setPointSizeF(28)
+        header.title.setFont(title_font)
+        header.set_content("Network", "Monitoring with a longer translated title", "Inspect traffic")
+        header.add_action(SecondaryButton("Search Ctrl+K"))
+        header.resize(760, 180)
+        header.show()
+        self.app.processEvents()
+        self.assertIs(header._header_grid.itemAtPosition(1, 0).widget(), header.title)
+        self.assertGreater(header.title.geometry().top(), header.eyebrow.geometry().bottom())
+        self.assertTrue(header.title.wordWrap())
+        header.close()
+
     def test_action_bar_clear_restores_caller_ownership_and_allows_reuse(self) -> None:
         owner = QWidget()
         action = SecondaryButton("Export", parent=owner)
@@ -263,6 +278,44 @@ class TestContentComponents(unittest.TestCase):
         self.assertEqual(grid._columns, 2)
         grid._reflow(900)
         self.assertEqual(grid._columns, 4)
+
+    def test_header_actions_reflow_with_breadcrumb_at_large_font(self) -> None:
+        header = PageHeader()
+        font = header.font()
+        font.setPointSizeF(22)
+        header.setFont(font)
+        header.set_content("System", "System Info", "Hardware and operating system details")
+        for text in ("Markdown", "Search Ctrl+K", "Export Report"):
+            header.add_action(SecondaryButton(text))
+        combined_width = header.eyebrow.sizeHint().width() + sum(
+            button.sizeHint().width() + 8 for button in header.action_bar.findChildren(QPushButton))
+        header.resize(max(300, combined_width - 20), 280)
+        header.show()
+        self.app.processEvents()
+        self.assertIs(header._header_grid.itemAtPosition(2, 0).widget(), header.action_bar)
+        for button in header.action_bar.findChildren(QPushButton):
+            self.assertGreaterEqual(button.width(), button.minimumSizeHint().width())
+        header.close()
+
+    def test_empty_message_reserves_height_at_enlarged_font(self) -> None:
+        state = components.EmptyState("Activity", "Choose Load activity to read supported local history.")
+        font = state.font()
+        font.setPointSizeF(22)
+        state.setFont(font)
+        state.resize(320, 180)
+        state.show()
+        self.app.processEvents()
+        self.assertGreaterEqual(state.message_label.height(), state.message_label.heightForWidth(state.message_label.width()))
+        state.close()
+
+    def test_definition_rows_reserve_wrapped_value_height(self) -> None:
+        definitions = DefinitionList("System properties")
+        row = definitions.add_row("CPU", "Example processor with a deliberately longer model name", copyable=True)
+        definitions.resize(310, 180)
+        definitions.show()
+        self.app.processEvents()
+        self.assertGreaterEqual(row.value.height(), row.value.heightForWidth(row.value.width()))
+        definitions.close()
 
     def test_definition_rows_keep_labels_near_selectable_values(self) -> None:
         definitions = DefinitionList("System properties")

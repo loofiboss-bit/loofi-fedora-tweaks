@@ -8,23 +8,26 @@ This guide covers the supported GUI and CLI. For a short first run, see
 
 ## Product scope
 
-Loofi is a curated Fedora utility that opens on **Tweaks** and keeps four everyday
-jobs in the sidebar:
+Loofi is a curated Fedora control panel that opens on **Overview** and keeps
+six primary destinations in the sidebar:
 
 | Destination | Purpose |
 | --- | --- |
-| **Tweaks** | Searchable GNOME and KDE settings with current values, verified changes, and recovery when supported |
-| **Apps** | Curated application search, category filters, source labels, and multi-select review |
-| **Updates** | Independent System, Flatpak, and Firmware state cards |
+| **Overview** | Read-only computer information, hardware measurements, and recent maintenance |
+| **Tweaks** | Searchable GNOME and KDE settings with current values, verified changes, and supported recovery |
+| **Apps** | Curated application search, category filters, source/scope labels, and multi-select review |
+| **Updates** | Independent System, Flatpak, and Firmware status sections |
 | **Health** | Symptom-first diagnostics, maintenance, and one supported next step |
+| **Activity** | Recorded changes, verification results, recovery, and reboot follow-up |
 
-System, Storage, Network, Security, and Logs are advanced pages. They appear only
-after you enable **Show advanced tools** in Settings.
+Expand **Tools** for System, Storage, Network, Security, and Logs. It starts
+collapsed and retains an existing advanced-tools preference. **Settings** sits
+at the bottom of the sidebar. Search is in the header and opens with `Ctrl+K`.
+The option to reopen the last page remains available in Settings.
 
-History & Undo and Settings are secondary header surfaces. The product
-has no background daemon, web API, arbitrary shell execution, or unattended
-automation. Unknown desktop or deployment detection remains unavailable rather
-than falling back to a Traditional Fedora assumption.
+The product has no background daemon, web API, arbitrary shell execution, or
+unattended automation. Unknown desktop or deployment detection remains
+unavailable rather than falling back to a Traditional Fedora assumption.
 
 ## Install and launch
 
@@ -43,11 +46,45 @@ python -m pip install -e '.[dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
 
+## Overview
+
+Overview shows computer information and grouped CPU, memory, GPU, and storage
+measurements, followed by network/disk activity, temperatures, and battery.
+Separate GPUs and batteries keep their own readings. Root and home storage
+are combined when they share a filesystem. A missing battery or unsupported
+GPU measurement is explained; it is not displayed as zero.
+
+Live CPU, memory, network, and disk measurements refresh every two seconds;
+hardware sensors refresh every five seconds. Each reading includes its unit,
+source, timestamp, and an explicit status. Hover a metric to inspect its source
+and measurement time.
+
+- **Collecting** means a measurement or initial rate baseline is pending.
+- **Measured** means the displayed value was read successfully.
+- **Unavailable** explains a missing device, unsupported field, or missing tool.
+- **Read failed** identifies a measurement that could not be read.
+- **Last known value** marks retained evidence that is no longer current.
+- **High** or **Critical** uses a reported sensor threshold when one exists.
+
+Graphs retain at most 60 measurements in memory and leave gaps for unavailable
+readings. **Pause** holds the last recorded values; **Resume** starts a fresh
+rate baseline. Overview and System Monitor share collection, which stops
+scheduling measurements when neither view is visible or the window is hidden
+or minimized. Sleeping GPUs are not queried automatically. No drivers or
+monitoring tools are installed by opening the dashboard.
+
+Recent maintenance reports recorded update and Health results with timestamps,
+plus recent changes. A missing result remains unchecked; opening Overview does
+not fabricate a successful check or run a repair. Existing startup-check
+preferences still control startup checks.
+
 ## Apps
 
 Apps is a curated catalog rather than an unrestricted package browser.
 Search by application name or goal, filter by category, and select several
-items. Every row shows its source and availability.
+items. Every row shows its source, installation scope, and availability.
+The selected-app summary and **Review selected applications** stay visible below
+the scrolling catalog, including selections hidden by filters.
 
 Flatpak is preferred for ordinary GUI applications. Fedora RPM is used for
 trusted system-integrated and command-line tools on Traditional Fedora. Atomic
@@ -77,6 +114,8 @@ favorites never change desktop values. Choose one supported value. Each row show
 value, explanation, availability, and independently verified saved result.
 Missing tools or unreadable values explain why the change is unavailable.
 A pending choice appears beside the last verified value until readback finishes.
+An interrupted or failed change returns the control to the verified value and
+shows its outcome on the row.
 The current-state check has a shared 20-second limit. Progress reports how many
 settings have been checked; cancelling or reaching the limit keeps completed
 results and leaves unchecked values explicitly unknown.
@@ -142,10 +181,15 @@ availability, count, details, and exactly one primary action:
 Missing tools, remotes, authorization, or supported backends remain explicit.
 A source that could not be checked is never presented as up to date.
 
-## History & Undo
+## Activity
 
 Date filters accept ISO dates or finite Unix timestamps. Invalid dates or a
 reversed interval stop loading and preserve the previously displayed result.
+
+Select a change to inspect its recorded before/after evidence, verification,
+and supported recovery guidance. **Restore previous value** and **Use Loofi
+standard value** remain separate actions; recovery always requires a fresh
+review.
 
 Activity groups **Needs you**, **In progress**, and **History**. It carries
 verification failures, reboot follow-up, and recovery guidance only where the
@@ -173,9 +217,21 @@ Use `--json` before the command for machine-readable output. `changes` remains
 a compatibility alias during v29 for Activity list/detail and explicit saved
 plan completion. The CLI accepts registered commands and typed parameters only.
 
+## Settings and appearance
+
+Open **Settings** at the bottom of the sidebar. Appearance, Behavior, Advanced,
+Repair Loofi, and About keep related settings together. Saved or failed changes
+are reported next to the affected setting. Favorites, history, and existing
+user preferences are preserved.
+
+**Follow system theme** selects Loofi's light or dark palette from the desktop
+color mode. Turning it off enables the explicit dark, light, or high-contrast
+choice. The application keeps the system font and uses the same control
+geometry in all themes.
+
 ## Keyboard and accessibility
 
-- `Ctrl+K` opens goal-based search.
+- `Ctrl+K` opens the header search. Results navigate and focus a control; they do not execute changes.
 - `F1` opens shortcut help.
 - `Esc` closes transient panels and dialogs.
 
@@ -198,3 +254,43 @@ scale must be between 0.5 and 3; KDE animation duration must be finite and
 nonnegative; KDE double-click interval must be an integer between 100 and
 2000 ms. These custom values come only from verified saved evidence, not
 arbitrary caller input. Invalid or unreadable values block modification.
+
+## Everyday workflows
+
+Overview shows up to three next steps, prioritizing pending or failed operations,
+critical Health findings, and fresh available updates. Old or missing observations
+lead to a check. These links never start a system change.
+
+Updates loads saved observations and Action Center runs when opened. Continue and
+Verify resume verification only. Interrupted or failed verification links to Activity;
+a fresh check is deliberate. Corrupt history is a read error, never an empty success.
+
+Tweaks offers **Save current settings…** and **Load profile…**. Select settings to
+include or change, review current and desired values, and confirm the immutable
+review. Identical, unsupported, and unavailable entries are skipped or disabled.
+Changes stop on cancellation, changed baseline, or failed verification. Restore
+supported changes from local verified Activity history. See [profile details](TWEAK_PROFILES.md).
+
+Apps includes **Installed** with Flatpak source, installation, ref, version, and
+reported size. The same app in two installations appears twice. Inspect permissions
+or review removal of exactly one installation. Running apps must be closed first;
+removal preserves their data. RPM removal opens the desktop software manager.
+
+Health has separate **Sound is not working** and **Bluetooth is not working**
+profiles. Each has a 15-second budget and cancellation. Missing tools, partial
+responses, and timeouts remain unknown or unavailable. Open the native sound or
+Bluetooth settings, make changes there, then recheck. Only the user can confirm
+that sound plays or a device connects.
+
+CLI equivalents use the same services and action authority:
+
+```bash
+loofi tweaks profile export --help
+loofi tweaks profile preview --help
+loofi tweaks profile apply --help
+loofi apps installed --help
+loofi apps remove --help
+```
+
+Profile apply requires confirmation. Flatpak removal requires an explicit
+installation and confirmation; consult command help for exact arguments.

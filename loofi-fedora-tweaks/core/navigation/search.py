@@ -13,6 +13,7 @@ from enum import Enum
 from .destinations import get_destination
 from .manifest import NavigationRoute, all_routes, resolve
 from .models import FedoraVariant, NavigationContext, NavigationDecision
+from .routes import all_shell_routes
 from .policy import NavigationPolicy
 from core.actions.catalog import ActionCatalog
 from core.tasks import TaskArea, TaskCatalog, TaskContext, TaskExecutionMode
@@ -55,6 +56,16 @@ class SearchResult:
     task_id: str | None = None
     availability: str = ""
     manual_only: bool = False
+
+
+# Synthetic shell pages inherit their maintained manifest entry's visibility.
+# The atlas page is a compatibility input for Tweaks, not a hardware overview.
+_SHELL_POLICY_ROUTES = {
+    "tune": "atlas_dashboard",
+    "install": "software:apps",
+    "update": "maintenance:updates",
+    "fix": "health",
+}
 
 
 _ACTION_ALIASES: dict[str, tuple[str, ...]] = {
@@ -150,12 +161,12 @@ class GlobalSearchModel:
         catalog = TaskCatalog()
         context = TaskContext.from_navigation_context(self._context)
         destination_labels = {
-            "home": "Home",
-            "install": "Install",
-            "tune": "Tune",
-            "fix": "Fix",
-            "update": "Update",
-            "activity": "Activity & Recovery",
+            "home": "Overview",
+            "install": "Apps",
+            "tune": "Tweaks",
+            "fix": "Health",
+            "update": "Updates",
+            "activity": "Activity",
         }
         results: list[SearchResult] = []
         for descriptor in catalog.all():
@@ -188,7 +199,7 @@ class GlobalSearchModel:
                     label=descriptor.title,
                     description=description,
                     kind=kind,
-                    route_id=descriptor.route_id,
+                    route_id="overview" if descriptor.id == "home:status" else descriptor.route_id,
                     destination_id=area_value,
                     destination_label=destination_labels.get(
                         area_value,
@@ -213,7 +224,33 @@ class GlobalSearchModel:
         return self._task_results
 
     def _route_results(self) -> Iterable[SearchResult]:
+        shell_backing_ids: set[str] = set()
+        for shell in all_shell_routes():
+            backing_id = _SHELL_POLICY_ROUTES.get(shell.id, shell.default_route_id)
+            shell_backing_ids.add(backing_id)
+            policy = NavigationPolicy.evaluate(backing_id, self._context)
+            if policy.decision is not NavigationDecision.VISIBLE or not policy.search_visible:
+                continue
+            backing = resolve(backing_id)
+            if backing is None:
+                continue
+            yield SearchResult(
+                id=f"route:{shell.default_route_id}",
+                label=shell.label,
+                description=shell.description,
+                kind=SearchResultKind.ROUTE,
+                route_id=shell.default_route_id,
+                destination_id=shell.id,
+                destination_label=shell.label,
+                keywords=(shell.id, *backing.keywords, *backing.aliases),
+                risk=backing.risk,
+                pinned=policy.is_favorite or shell.default_route_id in self._context.favorite_route_ids,
+            )
         for route in all_routes():
+            # A single shell entry supplies the current label and activation
+            # target. Deep links remain individually indexed and focused.
+            if route.id in shell_backing_ids:
+                continue
             policy = NavigationPolicy.evaluate(route.id, self._context)
             if (
                 policy.decision is not NavigationDecision.VISIBLE
@@ -331,6 +368,15 @@ class GlobalSearchModel:
         suggested: bool = False,
     ) -> SearchResult:
         policy = NavigationPolicy.evaluate(route.id, self._context)
+        if route.id == "atlas_dashboard":
+            shell = next(item for item in all_shell_routes() if item.id == "tune")
+            return SearchResult(
+                id=result_id, label=shell.label, description=shell.description,
+                kind=kind, route_id=shell.default_route_id,
+                destination_id=shell.id, destination_label=shell.label,
+                keywords=keywords, risk=risk, action_id=action_id,
+                pinned=pinned, suggested=suggested,
+            )
         destination = get_destination(policy.destination_id)
         return SearchResult(
             id=result_id,

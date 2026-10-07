@@ -6,6 +6,7 @@ and is not.
 ## Use Loofi
 
 - [Getting started](BEGINNER_QUICK_GUIDE.md) — install, first run, common tasks
+- [Tweak profiles](TWEAK_PROFILES.md) — share supported settings within GNOME or KDE
 - [User guide](USER_GUIDE.md) — complete GUI and CLI usage
 - [Troubleshooting](TROUBLESHOOTING.md) — application and source diagnostics
 - [Verified operations](VERIFIED_MAINTENANCE.md) — how changes are authorized, verified, and recovered
@@ -15,6 +16,9 @@ and is not.
 
 ## Contribute
 
+- [Everyday qualification](EVERYDAY_VERIFICATION.md) — feature, CLI, rendering and packaging evidence
+- [Control-center qualification](CONTROL_CENTER_VERIFICATION.md) — automated results and remaining physical checks
+- [Design system](../DESIGN.md) — control-center structure, states, and measurement contract
 - [Contributing](CONTRIBUTING.md)
 - [Release checklist](RELEASE_CHECKLIST.md)
 

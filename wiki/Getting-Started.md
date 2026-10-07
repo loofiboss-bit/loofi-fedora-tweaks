@@ -14,29 +14,40 @@ pkexec dnf install loofi-fedora-tweaks
 loofi-fedora-tweaks
 ```
 
-The first launch opens Tweaks. Browsing a page does not modify the host. Loofi
+The first launch opens **Overview**, a read-only system dashboard. If reopening
+the last page is enabled, later launches return to that page. Browsing a page
+does not modify the host. Loofi
 checks availability before it offers an executable operation, and unknown
 deployment backends remain unavailable.
 
-## 2) Learn the four destinations
+## 2) Learn the six destinations
 
-1. **Tweaks** — search settings, choose a value, and see the verified result
-   on the same row. Use **Restore previous value** for a verified recovery
-   when available, or **Use Loofi standard value** to apply Loofi's curated
-   reference value.
-2. **Apps** — search the curated application catalog, filter by category,
-   select several applications, and review each source.
-3. **Updates** — check System, Flatpak, and Firmware independently and follow
-   the single action shown on each card.
-4. **Health** — choose the symptom you recognise, inspect the findings, and use
+1. **Overview** — view computer information, CPU, memory, GPU, storage,
+   network/disk activity, temperatures, battery, and recent maintenance.
+2. **Tweaks** — search settings, choose a value, and see the verified result
+   on the same row. **Restore previous value** recovers an eligible recorded
+   value; **Use Loofi standard value** applies Loofi's curated reference.
+3. **Apps** — search the curated application catalog, filter by category,
+   select several applications, and review each source and installation scope.
+4. **Updates** — check System, Flatpak, and Firmware independently and follow
+   the single action shown in each section.
+5. **Health** — choose the symptom you recognise, inspect findings, and review
    one supported repair, instruction, or native-settings handoff.
+6. **Activity** — inspect recorded changes, verification results, and available
+   recovery or reboot follow-up.
 
-Need more? Turn on **Show advanced tools** in Settings to add System, Storage,
-Network, Security, and Logs.
+Expand **Tools** in the sidebar for System, Storage, Network, Security, and
+Logs. The group starts collapsed; an existing advanced-tools preference is
+retained. **Settings** is at the bottom of the sidebar. Global search is in the
+header; `Ctrl+K` opens it and selecting a result navigates without applying a
+change.
 
-Activity & Recovery and Settings are opened from the header. The internal
-execution engine is not a destination and is not required terminology for
-normal work.
+Overview explains **Collecting**, **Unavailable**, **Read failed**, and **Last
+known value** instead of reporting missing measurements as zero. Hover a metric
+for its source and measurement time. Measurements pause when no measurement
+page is visible or the window is hidden/minimized. **Pause** keeps the last
+measurements visible; **Resume** starts a fresh sampling baseline. Missing
+hardware, including a battery, is stated explicitly.
 
 ## 3) Complete common jobs
 
@@ -68,8 +79,8 @@ shows findings before offering one next step. There is no global **Fix all**.
 ### Update Fedora
 
 Open **Updates**. Each source shows one button: **Check**, **Update**,
-**Continue**, or **Verify**. A reboot-required result stays in Activity &
-Recovery until you return and verify it.
+**Continue**, or **Verify**. A reboot-required result stays in
+Activity until you return and verify it.
 
 ## 4) Optional CLI
 

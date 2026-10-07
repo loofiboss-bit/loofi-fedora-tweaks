@@ -28,6 +28,7 @@ from core.navigation.routes import (
 )
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtWidgets import QTreeWidgetItem, QWidget
+from ui.tweak_profiles import TweakProfilesMixin
 
 
 _UTILITY_ROUTE_ALIASES = LEGACY_ALIASES
@@ -54,7 +55,7 @@ class SidebarEntry:
     visible_in_sidebar: bool = field(default=True)
 
 
-class MainWindowUtilityMixin:
+class MainWindowUtilityMixin(TweakProfilesMixin):
     """Own v29 landing pages and compatibility-aware route navigation."""
 
     _pending_runtime_shutdown: str | None
@@ -143,15 +144,20 @@ class MainWindowUtilityMixin:
         if destination_id == "install":
             from ui.install_workflow import InstallWorkflowPage
             from services.software.source_status import SoftwareSourceStatusService
+            from services.software.installed_applications import InstalledApplicationService
 
             install_page: Any = InstallWorkflowPage(
                 context=application_context,
                 source_status_service=SoftwareSourceStatusService(),
+                installed_service=InstalledApplicationService(),
             )
             install_page.bundleReviewRequested.connect(
                 lambda selection, owner=install_page: self._review_utility_bundle(owner, selection)
             )
             install_page.routeRequested.connect(self._open_route_request)
+            install_page.actionReviewRequested.connect(
+                lambda action_id, parameters, owner=install_page: self._review_health_action(owner, action_id, parameters)
+            )
             return cast(QWidget, install_page)
         if destination_id == "tune":
             from ui.tweaks_page import TweaksPage
@@ -169,6 +175,8 @@ class MainWindowUtilityMixin:
             tweaks_page.restoreRequested.connect(
                 lambda tweak_id, source_id, owner=tweaks_page: self._start_tweak_restore(owner, tweak_id, source_id)
             )
+            tweaks_page.saveProfileRequested.connect(lambda owner=tweaks_page: self._start_tweak_profile_export(owner))
+            tweaks_page.loadProfileRequested.connect(lambda owner=tweaks_page: self._start_tweak_profile_import(owner))
             return cast(QWidget, tweaks_page)
         if destination_id == "fix":
             from ui.fix_workflow import FixWorkflowPage
@@ -189,10 +197,27 @@ class MainWindowUtilityMixin:
             update_page.sourceActionRequested.connect(
                 lambda source, action, owner=update_page: self._handle_update_source_action(owner, source, action)
             )
+            self._restore_saved_updates(update_page)
             return cast(QWidget, update_page)
         raise ValueError(f"Unknown utility workflow destination: {destination_id}")
 
-    def _new_utility_operation_adapter(self: Any) -> Any:
+    def _restore_saved_updates(self: Any, page: Any) -> None:
+        """Hydrate saved observations on a worker without executing a change."""
+        from services.software.update_recovery import UpdateRecoveryService
+
+        current = self._utility_operation_adapter
+        if current is not None:
+            current.stopped.connect(lambda: self._restore_saved_updates(page))
+            return
+        page.set_notice("info", "Loading saved results", "Reading update observations and saved verification tasks.")
+        page.set_loading(True)
+        adapter = self._new_utility_operation_adapter()
+        adapter.finished.connect(page.restore_saved_state)
+        adapter.failed.connect(lambda _message: page.set_notice("error", "Saved results unavailable", "Saved update history could not be read. Review Activity before updating."))
+        adapter.stopped.connect(lambda: page.set_loading(False))
+        adapter.start(UpdateRecoveryService().load)
+
+    def _new_utility_operation_adapter(self: Any, *, phase: str = "inspection") -> Any:
         """Create the single window-owned worker adapter for a reviewed change."""
         from ui.operation_worker import OperationControllerQtAdapter
 
@@ -201,7 +226,29 @@ class MainWindowUtilityMixin:
             lambda selected=adapter: self._utility_operation_adapter_stopped(selected)
         )
         self._utility_operation_adapter = adapter
+        status = getattr(self, "_status_label", None)
+        if status is not None:
+            status.setText(self.tr("Working — the current operation remains active when you change pages."))
+            self._status_frame.show()
+            adapter.finished.connect(lambda result: self._record_global_operation_result(result, phase=phase))
+            adapter.failed.connect(lambda message: self._record_global_operation_result(None, message))
+            adapter.cancelled.connect(lambda: self._record_global_operation_result(None, self.tr("Operation cancelled. Check current values before continuing.") if phase == "change" else self.tr("Inspection cancelled. No change was started.")))
         return adapter
+
+    def _record_global_operation_result(self: Any, result: Any, message: str = "", *, phase: str = "inspection") -> None:
+        """Project existing results into the shell; never infer verification."""
+        status = getattr(self, "_status_label", None)
+        if status is None:
+            return
+        outcome = result[0] if isinstance(result, tuple) and result else result
+        fallback = self.tr("Inspection finished. No change was started.")
+        if phase == "review":
+            fallback = self.tr("Review ready. No change was started.")
+        elif phase == "change":
+            fallback = self.tr("Operation finished. Check its detailed result.")
+        detail = message or str(getattr(outcome, "message", "") or fallback)
+        status.setText(detail)
+        self._status_frame.show()
 
     def _start_tweak_snapshot(self: Any, page: Any) -> bool:
         """Read current settings on the window-owned worker, without UI blocking."""
@@ -212,7 +259,7 @@ class MainWindowUtilityMixin:
         from core.executor.command_facade import CommandFacade
         from core.tasks.tweaks import snapshot
 
-        adapter = self._new_utility_operation_adapter()
+        adapter = self._new_utility_operation_adapter(phase="inspection")
         adapter.finished.connect(page.set_states)
         adapter.failed.connect(page.set_error)
         adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Setting inspection cancelled. Refresh to try again.")))
@@ -274,7 +321,7 @@ class MainWindowUtilityMixin:
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
         page.set_busy(True, self.tr("Applying and verifying %1…").replace("%1", self.tr(tweak.title)))
-        adapter = self._new_utility_operation_adapter()
+        adapter = self._new_utility_operation_adapter(phase="change")
         page.set_pending(tweak_id, value)
 
         def completed(result: Any) -> None:
@@ -305,7 +352,7 @@ class MainWindowUtilityMixin:
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
         page.set_busy(True, self.tr("Checking the saved change and current value…"))
-        adapter = self._new_utility_operation_adapter()
+        adapter = self._new_utility_operation_adapter(phase="review")
         adapter.finished.connect(lambda ticket: self._show_tweak_restore_review(page, tweak_id, ticket, adapter))
         adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
         adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, self.tr("Restore preparation was cancelled. Refresh to retry.")))
@@ -332,6 +379,7 @@ class MainWindowUtilityMixin:
         )
         if answer != QMessageBox.StandardButton.Yes:
             page.set_busy(False, self.tr("Restore cancelled. No change was made."))
+            self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
             return
         adapter.stopped.connect(lambda: self._run_tweak_restore(page, tweak_id, ticket))
 
@@ -359,13 +407,21 @@ class MainWindowUtilityMixin:
 
         target = str(ticket.plan.policy_decision.facts["requested"])
         page.set_busy(True, cast(Any, self).tr("Restoring and verifying the previous value…"))
-        adapter = self._new_utility_operation_adapter()
+        adapter = self._new_utility_operation_adapter(phase="change")
         page.set_pending(tweak_id, target)
         adapter.finished.connect(completed)
         adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
         adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, cast(Any, self).tr("Restoration was cancelled. Refresh to see the current value.")))
         adapter.stopped.connect(lambda: self._start_tweak_snapshot(page))
         return bool(adapter.start(operation))
+
+    def _set_review_notice(self: Any, page: Any, kind: str, title: str, message: str) -> None:
+        """Present shared reviewed-operation feedback on Health and Apps."""
+        setter = getattr(page, "set_health_notice", None) or getattr(page, "set_notice", None)
+        if callable(setter):
+            setter(kind, title, message)
+        else:
+            self._set_utility_notice(page, kind, title, message)
 
     def _review_health_action(self: Any, page: Any, action_id: str, parameters: Any) -> bool:
         """Prepare one Health action before asking for explicit user approval."""
@@ -375,18 +431,18 @@ class MainWindowUtilityMixin:
         definition = ActionCatalog().get(str(action_id))
         if definition is None or definition.operation_class == "manual_only":
             guidance = getattr(definition, "recovery_guidance", "") if definition is not None else ""
-            page.set_health_notice("warning", self.tr("Manual step"), guidance or self.tr("This repair needs manual guidance; no change was started."))
+            self._set_review_notice(page, "warning", self.tr("Manual step"), guidance or self.tr("This repair needs manual guidance; no change was started."))
             return False
         if self._utility_operation_adapter is not None:
-            page.set_health_notice("warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
+            self._set_review_notice(page, "warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
             return False
         if self._utility_operation_controller is None:
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
-        page.set_health_notice("info", self.tr("Checking"), self.tr("Preparing the exact scope of this change."))
-        adapter = self._new_utility_operation_adapter()
+        self._set_review_notice(page, "info", self.tr("Checking"), self.tr("Preparing the exact scope of this change."))
+        adapter = self._new_utility_operation_adapter(phase="review")
         adapter.finished.connect(lambda ticket: self._show_health_review(page, ticket, adapter))
-        adapter.failed.connect(lambda message: page.set_health_notice("error", self.tr("Unavailable"), str(message)))
+        adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Unavailable"), str(message)))
         return bool(adapter.start(lambda: controller.prepare(str(action_id), dict(parameters or {}))))
 
     def _review_health_finding(self: Any, page: Any, action_id: str, context: Any) -> bool:
@@ -394,16 +450,16 @@ class MainWindowUtilityMixin:
         from core.actions.operation_controller import OperationController, OperationTicket
 
         if self._utility_operation_adapter is not None:
-            page.set_health_notice("warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
+            self._set_review_notice(page, "warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
             return False
         if self._utility_operation_controller is None:
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
         evidence = dict(context or {})
-        page.set_health_notice("info", self.tr("Checking"), self.tr("Rechecking the saved finding before review."))
-        adapter = self._new_utility_operation_adapter()
+        self._set_review_notice(page, "info", self.tr("Checking"), self.tr("Rechecking the saved finding before review."))
+        adapter = self._new_utility_operation_adapter(phase="review")
         adapter.finished.connect(lambda plan: self._show_health_review(page, OperationTicket(plan), adapter))
-        adapter.failed.connect(lambda message: page.set_health_notice("error", self.tr("Finding unavailable"), str(message)))
+        adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Finding unavailable"), str(message)))
         return bool(adapter.start(lambda: controller.orchestrator.plan_from_finding(
             check_result_id=str(evidence.get("check_result_id", "")),
             finding_fingerprint=str(evidence.get("finding_fingerprint", "")),
@@ -416,7 +472,7 @@ class MainWindowUtilityMixin:
 
         if ticket.blocked:
             decision = ticket.plan.policy_decision
-            page.set_health_notice("warning", self.tr("Unavailable"), " ".join(part for part in (decision.explanation, decision.alternative) if part))
+            self._set_review_notice(page, "warning", self.tr("Unavailable"), " ".join(part for part in (decision.explanation, decision.alternative) if part))
             return
         dialog = QMessageBox(self)
         dialog.setIcon(QMessageBox.Icon.Warning)
@@ -427,7 +483,8 @@ class MainWindowUtilityMixin:
         dialog.setStandardButtons(QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok)
         dialog.setDefaultButton(QMessageBox.StandardButton.Cancel)
         if dialog.exec() != QMessageBox.StandardButton.Ok:
-            page.set_health_notice("neutral", self.tr("Cancelled"), self.tr("No change was made."))
+            self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
+            self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
             return
         accept_no_rollback = False
         if ticket.plan.risk_level in {"medium", "high"} and not ticket.plan.rollback_supported:
@@ -439,7 +496,8 @@ class MainWindowUtilityMixin:
                 QMessageBox.StandardButton.No,
             )
             if answer != QMessageBox.StandardButton.Yes:
-                page.set_health_notice("neutral", self.tr("Cancelled"), self.tr("No change was made."))
+                self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
+                self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
                 return
             accept_no_rollback = True
         adapter.stopped.connect(lambda: self._run_reviewed_health_action(page, ticket, accept_no_rollback))
@@ -447,7 +505,7 @@ class MainWindowUtilityMixin:
     def _run_reviewed_health_action(self: Any, page: Any, ticket: Any, accept_no_rollback: bool = False) -> bool:
         controller = self._utility_operation_controller
         if controller is None or self._utility_operation_adapter is not None:
-            page.set_health_notice("warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
+            self._set_review_notice(page, "warning", self.tr("Operation in progress"), self.tr("Wait for the current operation to finish."))
             return False
 
         def operation() -> Any:
@@ -457,16 +515,20 @@ class MainWindowUtilityMixin:
             running = controller.run(prepared)
             return controller.verify(running) if running.status == "verifying" else running
 
-        page.set_health_notice("info", self.tr("Running"), self.tr("The change is running and will be checked afterward."))
-        adapter = self._new_utility_operation_adapter()
+        self._set_review_notice(page, "info", self.tr("Running"), self.tr("The change is running and will be checked afterward."))
+        adapter = self._new_utility_operation_adapter(phase="change")
         adapter.finished.connect(
-            lambda outcome: page.set_health_notice(
+            lambda outcome: self._set_review_notice(
+                page,
                 "success" if outcome.success else "warning",
                 self.tr("Verified") if outcome.success else self.tr("Needs attention"),
                 " ".join(part for part in (str(outcome.message), str(outcome.recovery_guidance) if not outcome.success else "") if part),
             )
         )
-        adapter.failed.connect(lambda message: page.set_health_notice("error", self.tr("Failed"), str(message)))
+        adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Failed"), str(message)))
+        refresh = getattr(page, "refresh_installed_applications", None)
+        if callable(refresh):
+            adapter.stopped.connect(refresh)
         return bool(adapter.start(operation))
 
     def _utility_operation_adapter_stopped(self: Any, adapter: Any) -> None:
@@ -536,7 +598,7 @@ class MainWindowUtilityMixin:
             return False
         if self._utility_operation_controller is None:
             self._utility_operation_controller = OperationController()
-        adapter = self._new_utility_operation_adapter()
+        adapter = self._new_utility_operation_adapter(phase="change")
         self._set_utility_notice(page, "info", "Running", "The reviewed operations are running and will be verified individually.")
         adapter.started.connect(
             lambda: self._set_utility_notice(page, "info", "Running", "The reviewed operations are running and will be verified individually.")
@@ -576,6 +638,9 @@ class MainWindowUtilityMixin:
         """Run one compact Update-card action through the shared controller."""
         source = str(source)
         action = str(action)
+        if action == "recovery":
+            self.switch_to_route("activity")
+            return
         if action == "check":
             start_check = getattr(page, "start_check", None)
             if callable(start_check) and start_check(source):
@@ -667,7 +732,7 @@ class MainWindowUtilityMixin:
         setter = getattr(page, "set_notice", None)
         if callable(setter):
             setter("info", "Preparing", "The source is being preflighted before execution.")
-        new_adapter = self._new_utility_operation_adapter()
+        new_adapter = self._new_utility_operation_adapter(phase="change")
         new_adapter.started.connect(
             lambda: setter("info", "Running", "The reviewed source operation is running and will be verified.")
             if callable(setter)
@@ -734,15 +799,14 @@ class MainWindowUtilityMixin:
             return normalized_id.removeprefix("utility:")
         if route is None:
             return ""
-        if route.id in {"activity", "settings"} or route.plugin_id in {
-            "activity",
-            "settings",
-        }:
+        if route.plugin_id in {"overview", "activity"}:
+            return route.plugin_id
+        if route.plugin_id == "settings":
             return ""
 
         advanced = advanced_shell_route_for(route.id)
         if advanced is not None:
-            return advanced.id if self._advanced_tools_enabled() else ""
+            return advanced.id
         placement = placement_for_route(route.id)
         destination_id = placement.destination_id if placement is not None else ""
         if destination_id == "home" or route.plugin_id == "atlas_dashboard":
@@ -796,6 +860,33 @@ class MainWindowUtilityMixin:
         self._active_destination_id = ""
         if active:
             self._sync_destination_shell(active)
+
+    def _remember_tools_expansion(self: Any, enabled: bool) -> None:
+        """Persist an explicit Tools disclosure without rebuilding its items."""
+        from utils.settings import SettingsManager
+        settings = getattr(self, "_navigation_settings", None) or SettingsManager.instance()
+        previous = bool(settings.get("show_advanced_tools"))
+        settings.set("show_advanced_tools", bool(enabled))
+        if not settings.save():
+            settings.set("show_advanced_tools", previous)
+            self.apply_advanced_tools(previous)
+            self._status_label.setText(self.tr("Could not save the Tools preference. The previous view has been restored."))
+            self._status_frame.show()
+            return
+        self._advanced_tools_override = bool(enabled)
+
+    def _remember_active_route(self: Any, route_id: str) -> None:
+        """Store successful navigation through the existing settings contract."""
+        from utils.settings import SettingsManager
+        settings = getattr(self, "_navigation_settings", None) or SettingsManager.instance()
+        previous = settings.get("last_route_id")
+        if previous == route_id:
+            return
+        settings.set("last_route_id", route_id)
+        if not settings.save():
+            settings.set("last_route_id", previous)
+            self._status_label.setText(self.tr("Could not save the last page. Your previous startup preference is unchanged."))
+            self._status_frame.show()
 
     def _utility_default_route(self: Any, destination_id: str) -> str:
         """Return the stable landing route for a visible utility destination."""
@@ -852,6 +943,9 @@ class MainWindowUtilityMixin:
         self._update_header_for_route(route, entry)
         if record_history:
             self._record_route_history(route.id)
+        remember = getattr(self, "_remember_active_route", None)
+        if callable(remember):
+            remember(route.id)
         return True
 
     def _switch_to_internal_action_route(self: Any, *, record_history: bool = True) -> bool:
@@ -936,4 +1030,7 @@ class MainWindowUtilityMixin:
                 )
         if record_history:
             self._record_route_history(route.id)
+        remember = getattr(self, "_remember_active_route", None)
+        if callable(remember):
+            remember(route.id)
         return True

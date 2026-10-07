@@ -42,8 +42,9 @@ class SystemInfoTab(QWidget, PluginInterface):
         root.addWidget(self.scaffold)
 
         self.fact_grid = AdaptiveGrid(
-            min_column_width=300,
-            column_breakpoints=((0, 1), (760, 2), (1040, 3)),
+            min_column_width=max(300, self.fontMetrics().height() * 18),
+            column_breakpoints=((0, 1), (max(760, self.fontMetrics().height() * 45), 2),
+                                (max(1040, self.fontMetrics().height() * 60), 3)),
         )
         self.fact_grid.setObjectName("systemInfoFactGrid")
         self.labels: dict[str, QLabel] = {}

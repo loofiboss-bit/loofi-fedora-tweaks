@@ -7,6 +7,7 @@ the shared operation controller owned by the application shell.
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, cast
 
 from core.tasks import (
@@ -17,9 +18,18 @@ from core.tasks import (
 )
 from PyQt6.QtCore import QEvent, QObject, QSize, Qt, pyqtSignal
 from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyle, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyleOptionViewItem, QStyledItemDelegate, QVBoxLayout, QWidget
 
 from ui.components import Card, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
+from ui.icon_pack import get_qicon
+
+
+class ApplicationRowDelegate(QStyledItemDelegate):
+    """The rich row checkbox is the only visible selection affordance."""
+
+    def initStyleOption(self, option, index) -> None:
+        super().initStyleOption(option, index)
+        option.features &= ~QStyleOptionViewItem.ViewItemFeature.HasCheckIndicator
 
 
 class InstallWorkflowPage(QWidget):
@@ -27,6 +37,9 @@ class InstallWorkflowPage(QWidget):
 
     bundleReviewRequested = pyqtSignal(object)
     resultUpdated = pyqtSignal(object)
+    actionReviewRequested = pyqtSignal(str, object)
+    nativeSettingsRequested = pyqtSignal(object)
+    stopped = pyqtSignal()
     # Compatibility signal for older route adapters.  It is never rendered as
     # a normal CTA; the visible review button always owns this page's primary
     # action.
@@ -38,11 +51,12 @@ class InstallWorkflowPage(QWidget):
         catalog: ApplicationCatalog | None = None,
         context: ApplicationContext | None = None,
         source_status_service: Any | None = None,
+        installed_service: Any | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.catalog = catalog or ApplicationCatalog()
-        self.context = context
+        self.context = replace(context, unknown_sources=frozenset({"flatpak", "fedora"})) if context is not None and installed_service is not None else context
         self._source_status_service = source_status_service
         self._source_status_adapter: Any | None = None
         self._rows: dict[str, tuple[ApplicationRecord, ApplicationEligibility, QListWidgetItem]] = {}
@@ -71,6 +85,9 @@ class InstallWorkflowPage(QWidget):
         root.addWidget(self.body_scroll, 1)
 
         self.intro = Card()
+        self.intro.setProperty("surfaceRole", "toolbar")
+        self.intro.body.setContentsMargins(0, 0, 0, 8)
+        self.intro.body.setSpacing(8)
         self.scaffold.add_widget(self.intro)
         self.search_input = QLineEdit()
         self.search_input.setObjectName("installApplicationSearch")
@@ -78,7 +95,9 @@ class InstallWorkflowPage(QWidget):
         self.search_input.setAccessibleName(self.tr("Search applications"))
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._refresh_rows)
-        self.intro.add_widget(self.search_input)
+        filter_row = QHBoxLayout()
+        filter_row.setSpacing(8)
+        filter_row.addWidget(self.search_input, 1)
         self.category_filter = QComboBox()
         self.category_filter.setObjectName("installCategoryFilter")
         self.category_filter.setAccessibleName(self.tr("Application category"))
@@ -86,7 +105,13 @@ class InstallWorkflowPage(QWidget):
         for category in self.catalog.categories():
             self.category_filter.addItem(category, category)
         self.category_filter.currentIndexChanged.connect(self._refresh_rows)
-        self.intro.add_widget(self.category_filter)
+        filter_row.addWidget(self.category_filter)
+        self.intro.body.addLayout(filter_row)
+        self.view_filter = QComboBox()
+        self.view_filter.setAccessibleName(self.tr("Application view"))
+        self.view_filter.addItem(self.tr("Catalog"), "catalog")
+        self.view_filter.addItem(self.tr("Installed"), "installed")
+        self.intro.add_widget(self.view_filter)
 
         self.flathub_status_card = Card(
             self.tr("Flathub source status"),
@@ -94,9 +119,11 @@ class InstallWorkflowPage(QWidget):
         )
         self.flathub_status_card.setObjectName("installFlathubStatus")
         self.flathub_system_status = QLabel(self.tr("System scope: Status not checked yet"))
+        self.flathub_system_status.setWordWrap(True)
         self.flathub_system_status.setObjectName("installFlathubSystemStatus")
         self.flathub_system_status.setAccessibleName(self.tr("Flathub system scope status"))
         self.flathub_user_status = QLabel(self.tr("User scope: Status not checked yet"))
+        self.flathub_user_status.setWordWrap(True)
         self.flathub_user_status.setObjectName("installFlathubUserStatus")
         self.flathub_user_status.setAccessibleName(self.tr("Flathub user scope status"))
         self.flathub_status_card.add_widget(self.flathub_system_status)
@@ -127,8 +154,12 @@ class InstallWorkflowPage(QWidget):
         self.intro.add_widget(self.match_summary)
 
         self.application_list = QListWidget()
+        self.application_list.setItemDelegate(ApplicationRowDelegate(self.application_list))
         self.application_list.setObjectName("installApplicationList")
         self.application_list.setAccessibleName(self.tr("Curated application catalog"))
+        self.application_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.application_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.application_list.setSizeAdjustPolicy(QListWidget.SizeAdjustPolicy.AdjustToContents)
         self.application_list.setSelectionMode(QListWidget.SelectionMode.NoSelection)
         self.application_list.itemChanged.connect(self._on_item_changed)
         viewport = self.application_list.viewport()
@@ -136,6 +167,14 @@ class InstallWorkflowPage(QWidget):
             viewport.installEventFilter(self)
 
         self.scaffold.add_widget(self.application_list, 1)
+        from ui.installed_applications import InstalledApplicationsCard
+        self.installed_card = InstalledApplicationsCard(service=installed_service, parent=self)
+        self.installed_card.actionReviewRequested.connect(self.actionReviewRequested.emit)
+        self.installed_card.nativeSettingsRequested.connect(self.nativeSettingsRequested.emit)
+        self.installed_card.inventoryUpdated.connect(self._apply_installed_inventory)
+        self.installed_card.stopped.connect(self._notify_stopped)
+        self.installed_card.hide()
+        self.scaffold.add_widget(self.installed_card)
 
         self.review_card = Card()
         self.review_card.setObjectName("installReviewCard")
@@ -160,13 +199,55 @@ class InstallWorkflowPage(QWidget):
         self.results_list = QListWidget()
         self.results_list.setObjectName("installResultsList")
         self.results_list.setAccessibleName(self.tr("Application install results"))
+        self.results_list.setVerticalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.results_list.setHorizontalScrollBarPolicy(Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
         self.results_card.add_widget(self.results_list)
         self.results_card.hide()
         self.scaffold.add_widget(self.results_card)
         self.scaffold.content_layout.addStretch()
+        self.view_filter.currentIndexChanged.connect(self._set_application_view)
         self._refresh_rows()
+        if installed_service is not None:
+            self.installed_card.refresh()
         if self._source_status_service is not None:
             self.refresh_flathub_status()
+
+    @property
+    def busy(self) -> bool:
+        return self.installed_card.busy or (self._source_status_adapter is not None and self._source_status_adapter.busy)
+
+    def request_stop(self) -> None:
+        self.installed_card.request_stop()
+        if self._source_status_adapter is not None:
+            self._source_status_adapter.cancel()
+
+    def _notify_stopped(self) -> None:
+        if not self.busy:
+            self.stopped.emit()
+
+    def cleanup(self, timeout_ms: int = 1000) -> bool:
+        self.request_stop()
+        installed_stopped = self.installed_card.cleanup(timeout_ms)
+        source_stopped = self._source_status_adapter is None or self._source_status_adapter.close(timeout_ms)
+        return installed_stopped and source_stopped
+
+    def _set_application_view(self, *_args: Any) -> None:
+        installed = self.view_filter.currentData() == "installed"
+        self.installed_card.setVisible(installed)
+        self.flathub_status_card.setVisible(not installed)
+        self.application_list.setVisible(not installed)
+        self.review_card.setVisible(not installed)
+        self.search_input.setVisible(not installed)
+        self.category_filter.setVisible(not installed)
+        self.match_summary.setVisible(not installed)
+
+    def _apply_installed_inventory(self, inventory: object) -> None:
+        if self.context is not None:
+            self.context = replace(self.context, installed_ids=getattr(inventory, "installed_ids", frozenset()), unknown_sources=getattr(inventory, "unknown_sources", frozenset()))
+            self._refresh_rows()
+
+    def refresh_installed_applications(self) -> None:
+        self.installed_card.refresh()
 
     def refresh_flathub_status(self) -> None:
         """Read local Flathub scopes on a worker and keep failures explicit."""
@@ -179,6 +260,7 @@ class InstallWorkflowPage(QWidget):
             self._source_status_adapter.finished.connect(self._apply_flathub_statuses)
             self._source_status_adapter.failed.connect(self._flathub_status_failed)
             self._source_status_adapter.stopped.connect(lambda: self.flathub_refresh_button.setEnabled(True))
+            self._source_status_adapter.stopped.connect(self._notify_stopped)
         if self._source_status_adapter.busy:
             return
         self.flathub_refresh_button.setEnabled(False)
@@ -256,6 +338,9 @@ class InstallWorkflowPage(QWidget):
 
     def set_context(self, context: ApplicationContext | None) -> None:
         self.context = context
+        if self.context is not None and self.installed_card.service is not None:
+            inventory = self.installed_card.inventory
+            self.context = replace(self.context, installed_ids=inventory.installed_ids, unknown_sources=inventory.unknown_sources)
         self._refresh_rows()
 
     def selected_application_ids(self) -> tuple[str, ...]:
@@ -321,9 +406,8 @@ class InstallWorkflowPage(QWidget):
         layout.addWidget(check)
         icon = QLabel()
         app_icon = QIcon.fromTheme(record.package_id, QIcon.fromTheme(record.id))
-        style = self.style()
-        if app_icon.isNull() and style is not None:
-            app_icon = style.standardIcon(QStyle.StandardPixmap.SP_ComputerIcon)
+        if app_icon.isNull():
+            app_icon = get_qicon("packages-software", size=32)
         icon.setPixmap(app_icon.pixmap(32, 32))
         layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignTop)
         copy = QVBoxLayout()
@@ -339,6 +423,10 @@ class InstallWorkflowPage(QWidget):
         source = StatusBadge(self.tr(record.source_label), kind="info")
         source.setObjectName("applicationSourceBadge")
         badges.addWidget(source)
+        scope = QLabel(self.tr("Configured Flatpak scope") if record.source == "flatpak" else self.tr("System scope"))
+        scope.setObjectName("applicationRowScope")
+        scope.setWordWrap(True)
+        badges.addWidget(scope)
         status = QLabel(self._state_label(eligibility.state))
         status.setObjectName("applicationStatusLabel")
         status.setWordWrap(True)
@@ -366,12 +454,19 @@ class InstallWorkflowPage(QWidget):
         if viewport is None:
             return
         width = max(1, viewport.width())
+        total_height = 0
         for _record, _eligibility, item in self._rows.values():
             row = self.application_list.itemWidget(item)
             layout = row.layout() if row is not None else None
             if row is not None and layout is not None:
                 height = layout.totalHeightForWidth(width)
-                item.setSizeHint(QSize(0, max(row.sizeHint().height(), height)))
+                row_height = max(row.sizeHint().height(), height)
+                item.setSizeHint(QSize(0, row_height))
+                total_height += row_height
+        # Only the body scrolls; the catalog grows to its complete content.
+        target_height = max(36, total_height + self.application_list.frameWidth() * 2)
+        if self.application_list.minimumHeight() != target_height:
+            self.application_list.setFixedHeight(target_height)
 
     def _update_review_summary(self) -> None:
         selected = self.selected_application_ids()
@@ -420,6 +515,9 @@ class InstallWorkflowPage(QWidget):
             return False
         item = row[2]
         self.application_list.setCurrentItem(item)
+        widget = self.application_list.itemWidget(item)
+        if widget is not None:
+            self.body_scroll.ensureWidgetVisible(widget)
         self.application_list.setFocus()
         return True
 
@@ -466,8 +564,10 @@ class InstallWorkflowPage(QWidget):
             message = str(getattr(item, "message", ""))
             row = QListWidgetItem(f"{title} · {label}: {message}", self.results_list)
             row.setData(Qt.ItemDataRole.UserRole, str(getattr(item, "item_id", "")))
+        self.results_list.setFixedHeight(max(36, sum(self.results_list.sizeHintForRow(index) for index in range(self.results_list.count())) + 4))
         self.results_card.setVisible(bool(items))
         self.resultUpdated.emit(outcome)
+        self.refresh_installed_applications()
 
 
 # Naming aliases used by adapters that call the surface a widget or tab.

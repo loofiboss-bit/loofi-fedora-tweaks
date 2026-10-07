@@ -130,8 +130,7 @@ QFrame[routeCard="true"],
 QFrame#homeState,
 QFrame#profileCard,
 QFrame#monitorCard,
-QFrame#hwCard,
-QFrame#settingRow {
+QFrame#hwCard {
     background-color: $color_surface;
     border: $border_width solid $color_border;
     border-radius: $radius_card;
@@ -553,19 +552,23 @@ QWidget#definitionRow {
     border-bottom: $border_width solid $color_border;
 }
 
+QPushButton[buttonRole="primary"],
 QPushButton#componentButton[buttonRole="primary"] {
     background-color: $color_accent;
     color: $color_accent_text;
     border-color: $color_accent;
 }
 
+QPushButton[buttonRole="secondary"],
 QPushButton#componentButton[buttonRole="secondary"] {
     background-color: $color_surface_raised;
     color: $color_text;
     border-color: $color_border;
 }
 
+QPushButton[buttonRole="ghost"],
 QPushButton#componentButton[buttonRole="ghost"],
+QPushButton[buttonRole="quiet"],
 QPushButton#componentButton[buttonRole="quiet"],
 QToolButton[buttonRole="ghost"] {
     background-color: transparent;
@@ -573,17 +576,24 @@ QToolButton[buttonRole="ghost"] {
     border-color: transparent;
 }
 
+QPushButton[buttonRole="danger"],
 QPushButton#componentButton[buttonRole="danger"],
+QPushButton[buttonRole="destructive"],
 QPushButton#componentButton[buttonRole="destructive"] {
     background-color: $color_error_surface;
     color: $color_error_text;
     border-color: $color_error;
 }
 
+QPushButton[buttonRole="primary"]:hover,
 QPushButton#componentButton[buttonRole="primary"]:hover,
+QPushButton[buttonRole="secondary"]:hover,
 QPushButton#componentButton[buttonRole="secondary"]:hover,
+QPushButton[buttonRole="ghost"]:hover,
 QPushButton#componentButton[buttonRole="ghost"]:hover,
+QPushButton[buttonRole="quiet"]:hover,
 QPushButton#componentButton[buttonRole="quiet"]:hover,
+QPushButton[buttonRole="retry"]:hover,
 QPushButton#componentButton[buttonRole="retry"]:hover,
 QToolButton[buttonRole="ghost"]:hover {
     background-color: $color_hover;
@@ -591,24 +601,29 @@ QToolButton[buttonRole="ghost"]:hover {
     border-color: $color_accent;
 }
 
+QPushButton[buttonRole="danger"]:hover,
 QPushButton#componentButton[buttonRole="danger"]:hover,
+QPushButton[buttonRole="destructive"]:hover,
 QPushButton#componentButton[buttonRole="destructive"]:hover {
     background-color: $color_error_surface;
     color: $color_error_text;
 }
 
+QPushButton[interactionState="loading"],
 QPushButton#componentButton[interactionState="loading"] {
     background-color: $color_disabled_surface;
     color: $color_disabled_text;
     border-color: $color_border;
 }
 
+QPushButton[interactionState="error"],
 QPushButton#componentButton[interactionState="error"] {
     background-color: $color_error_surface;
     color: $color_error_text;
     border-color: $color_error;
 }
 
+QPushButton[interactionState="success"],
 QPushButton#componentButton[interactionState="success"] {
     background-color: $color_success_surface;
     color: $color_success_text;
@@ -792,7 +807,7 @@ QToolButton#disclosureButton {
 }
 
 
-/* Wayfinder: native palette, compact setting controls and purposeful cards. */
+/* Loofi control panel: quiet surfaces and compact divided settings. */
 QLabel#settingRowValue,
 QLabel#tweaksResults,
 QLabel#installMatchSummary,
@@ -844,4 +859,198 @@ QCheckBox#tweakSwitch:disabled {
 
 QFrame#healthSymptomCard[selected="true"] QLabel {
     color: $color_accent_text;
+}
+
+/* Reading surfaces use hierarchy rather than a frame around every row. */
+QFrame#componentCard[surfaceRole="toolbar"],
+QFrame#tweaksFilters,
+QFrame[componentCard="true"][surfaceRole="toolbar"] {
+    background-color: transparent;
+    border: none;
+    border-radius: 0;
+}
+QFrame[componentCard="true"][surfaceRole="settings"] {
+    background-color: $color_surface;
+    border: none;
+    border-radius: $radius_card;
+}
+QFrame[settingRow="true"] {
+    background-color: transparent;
+    border: none;
+    border-bottom: $border_width solid $color_border;
+    border-radius: 0;
+}
+QLabel#settingRowFeedback[feedbackKind="saved"] {
+    color: $color_success;
+}
+QLabel#settingRowFeedback[feedbackKind="changed"],
+QLabel#settingRowFeedback[feedbackKind="restart"] {
+    color: $color_warning;
+}
+QLabel#settingRowFeedback[feedbackKind="error"] {
+    color: $color_error;
+}
+QWidget#applicationRow {
+    background-color: $color_surface;
+    border-bottom: $border_width solid $color_border;
+}
+QListWidget#installApplicationList {
+    border: none;
+    background-color: $color_surface;
+    outline: none;
+}
+QListWidget#installApplicationList::item {
+    padding: 0;
+    border: none;
+}
+QLabel#applicationRowScope,
+QLabel#applicationRowIdentifier {
+    color: $color_text_muted;
+}
+QFrame#installReviewCard {
+    border: none;
+    border-top: $border_width solid $color_border;
+    border-radius: 0;
+}
+QLabel#sidebarBrandTitle {
+    color: $color_text;
+    font-weight: $page_title_weight;
+}
+QToolButton#sidebarToolsToggle,
+QPushButton#sidebarToolsToggle,
+QPushButton#sidebarSettings,
+QToolButton#sidebarSettings {
+    min-height: $navigation_row_min_height;
+    background-color: transparent;
+    color: $color_text_muted;
+    border-color: transparent;
+    text-align: left;
+}
+QToolButton#sidebarToolsToggle:hover,
+QPushButton#sidebarToolsToggle:hover,
+QPushButton#sidebarSettings:hover,
+QToolButton#sidebarSettings:hover {
+    background-color: $color_hover;
+    color: $color_text;
+}
+QPushButton#sidebarSettings:checked,
+QToolButton#sidebarSettings:checked {
+    background-color: $color_selected;
+    color: $color_accent;
+    border-left: $focus_width solid $color_accent;
+}
+QLabel#dashboardMetricValue {
+    color: $color_accent;
+    font-weight: $page_title_weight;
+}
+QFrame#pageHeader {
+    background-color: $color_window;
+    border: none;
+}
+QFrame#statusBar {
+    background-color: $color_surface;
+    border: none;
+    border-top: $border_width solid $color_border;
+}
+QTreeWidget#destinationSidebar::branch {
+    background-color: transparent;
+}
+QMenu::item {
+    min-height: $control_min_height;
+    padding: 0 $space_4;
+}
+QMenu::item:selected {
+    background-color: $color_selected;
+    color: $color_accent;
+}
+QHeaderView::section {
+    background-color: $color_surface_raised;
+    color: $color_text_muted;
+    padding: $space_2 $space_3;
+    border: none;
+    border-bottom: $border_width solid $color_border;
+}
+QGroupBox {
+    border: $border_width solid $color_border;
+    border-radius: $radius_card;
+    margin-top: $space_6;
+    padding: $space_4;
+}
+QGroupBox::title {
+    color: $color_text;
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 $space_2;
+}
+
+QFrame[componentCard="true"][surfaceRole="source"] {
+    border: none;
+    border-top: $focus_width solid $color_accent;
+}
+QFrame[componentCard="true"][surfaceRole="workflow"] {
+    border: none;
+    border-left: $focus_width solid $color_accent;
+}
+QLabel[supportingText="true"] {
+    color: $color_text_muted;
+    font-weight: $supporting_weight;
+}
+
+QCheckBox, QRadioButton {
+    min-height: $control_min_height;
+    spacing: $space_2;
+}
+QCheckBox::indicator:unchecked {
+    width: 20px;
+    height: 20px;
+    background-color: $color_surface_raised;
+    border: $border_width solid $color_border;
+    border-radius: $space_1;
+}
+QCheckBox::indicator:disabled {
+    background-color: $color_disabled_surface;
+    border-color: $color_disabled_text;
+}
+QScrollBar:vertical {
+    background-color: $color_window;
+    width: 12px;
+    margin: 0;
+    border: none;
+}
+QScrollBar::handle:vertical {
+    background-color: $color_border;
+    min-height: $space_8;
+    border-radius: $radius_control;
+    margin: 2px;
+}
+QScrollBar::handle:vertical:hover {
+    background-color: $color_accent;
+}
+QScrollBar::add-line:vertical,
+QScrollBar::sub-line:vertical {
+    height: 0;
+    border: none;
+}
+QScrollBar::add-page:vertical,
+QScrollBar::sub-page:vertical {
+    background-color: transparent;
+}
+
+/* Caller-assigned control IDs retain role-specific keyboard and run states. */
+QPushButton[buttonRole="primary"]:pressed {
+    background-color: $color_selected;
+    color: $color_text;
+}
+QPushButton[buttonRole="danger"]:pressed,
+QPushButton[buttonRole="destructive"]:pressed {
+    background-color: $color_error;
+    color: $color_window;
+}
+QPushButton[buttonRole]:focus {
+    border: $focus_width solid $color_focus;
+}
+QPushButton[buttonRole]:disabled {
+    background-color: $color_disabled_surface;
+    color: $color_disabled_text;
+    border-color: $color_border;
 }

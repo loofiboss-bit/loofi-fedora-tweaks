@@ -8,6 +8,9 @@ from decimal import Decimal, InvalidOperation
 from typing import Sequence, Literal
 
 GNOME_KEYS = {
+    "gnome-mouse-left-handed": "left-handed",
+    "gnome-mouse-acceleration": "accel-profile",
+    "gnome-keyboard-repeat": "repeat",
     "gnome-color": "color-scheme",
     "gnome-animations": "enable-animations",
     "gnome-text-scale": "text-scaling-factor",
@@ -53,6 +56,9 @@ GNOME_KEYS = {
     "gnome-files-default-folder-view": "default-folder-viewer",
 }
 GNOME_SCHEMAS = {
+    "gnome-mouse-left-handed": "org.gnome.desktop.peripherals.mouse",
+    "gnome-mouse-acceleration": "org.gnome.desktop.peripherals.mouse",
+    "gnome-keyboard-repeat": "org.gnome.desktop.peripherals.keyboard",
     "gnome-button-layout": "org.gnome.desktop.wm.preferences",
     "gnome-tap-to-click": "org.gnome.desktop.peripherals.touchpad",
     "gnome-night-light": "org.gnome.settings-daemon.plugins.color",
@@ -122,6 +128,7 @@ KDE_KEYS = {item: (spec[2], spec[3]) for item, spec in KDE_SPECS.items()}
 SCHEME_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
 _NUMERIC = re.compile(r"[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\Z")
 _ENUMS = {
+    "gnome-mouse-acceleration": frozenset({"default", "flat", "adaptive"}),
     "gnome-color": frozenset({"default", "prefer-light", "prefer-dark"}),
     "gnome-clock-format": frozenset({"12h", "24h"}),
     "gnome-button-layout": frozenset({":appmenu,close", ":minimize,maximize,close", "close,minimize,maximize:"}),

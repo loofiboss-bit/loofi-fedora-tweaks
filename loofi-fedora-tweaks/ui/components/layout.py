@@ -7,6 +7,7 @@ from dataclasses import dataclass
 from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont, QFontMetrics
 from PyQt6.QtWidgets import (
+    QBoxLayout,
     QFrame,
     QGridLayout,
     QHBoxLayout,
@@ -48,9 +49,9 @@ class LayoutMetrics:
             line_height = 16
         return cls(
             line_height=line_height,
-            spacing_small=max(6, int(line_height * 0.45)),
-            spacing_medium=max(10, int(line_height * 0.75)),
-            spacing_large=max(18, int(line_height * 1.3)),
+            spacing_small=max(8, ((int(line_height * 0.45) + 3) // 4) * 4),
+            spacing_medium=max(12, ((int(line_height * 0.75) + 3) // 4) * 4),
+            spacing_large=max(20, ((int(line_height * 1.3) + 3) // 4) * 4),
             page_margin=max(24, int(line_height * 1.8)),
             sidebar_width=min(272, max(248, int(line_height * 17))),
             sidebar_collapsed_width=min(72, max(64, int(line_height * 4))),
@@ -69,7 +70,8 @@ class PageHeader(QFrame):
         layout.setContentsMargins(24, 16, 24, 16)
         layout.setSpacing(4)
 
-        top_row = QHBoxLayout()
+        top_row = QGridLayout()
+        self._header_grid = top_row
         top_row.setContentsMargins(0, 0, 0, 0)
         top_row.setSpacing(12)
         top_row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
@@ -80,12 +82,21 @@ class PageHeader(QFrame):
         self.eyebrow.setCursor(Qt.CursorShape.PointingHandCursor)
         self.eyebrow.setMinimumSize(36, 36)
         self.eyebrow.setVisible(False)
-        top_row.addWidget(self.eyebrow)
-        top_row.addStretch()
+        top_row.addWidget(self.eyebrow, 0, 0)
+        self.title = QLabel("")
+        self.title.setObjectName("pageHeaderTitle")
+        self.title.setWordWrap(True)
+        self.title.setSizePolicy(QSizePolicy.Policy.Ignored, QSizePolicy.Policy.Preferred)
+        title_font = QFont(self.font())
+        title_font.setPointSizeF(max(10.0, title_font.pointSizeF()) * DesignTokens().typography.page_title_scale)
+        title_font.setWeight(QFont.Weight.DemiBold)
+        self.title.setFont(title_font)
+        top_row.addWidget(self.title, 0, 1)
+        top_row.setColumnStretch(1, 1)
         self.action_bar = ActionBar(self)
         self.action_bar.setAccessibleName(self.tr("Page actions"))
         self.actions_layout = self.action_bar.row_layout
-        top_row.addWidget(self.action_bar)
+        top_row.addWidget(self.action_bar, 0, 2)
 
         self.activity_button = QToolButton(self)
         self.activity_button.setObjectName("pageHeaderActivityButton")
@@ -94,7 +105,7 @@ class PageHeader(QFrame):
         self.activity_button.setIcon(get_qicon("history", size=20, tint=semantic_color("text")))
         self.activity_button.setAccessibleName(self.tr("History and undo"))
         self.activity_button.setToolTip(self.tr("History & Undo"))
-        top_row.addWidget(self.activity_button)
+        top_row.addWidget(self.activity_button, 0, 3)
 
         self.settings_button = QToolButton(self)
         self.settings_button.setObjectName("pageHeaderSettingsButton")
@@ -103,15 +114,8 @@ class PageHeader(QFrame):
         self.settings_button.setIcon(get_qicon("settings", size=20, tint=semantic_color("text")))
         self.settings_button.setAccessibleName(self.tr("Application settings"))
         self.settings_button.setToolTip(self.tr("Settings"))
-        top_row.addWidget(self.settings_button)
+        top_row.addWidget(self.settings_button, 0, 4)
 
-        self.title = QLabel("")
-        self.title.setObjectName("pageHeaderTitle")
-        self.title.setWordWrap(True)
-        title_font = QFont(self.font())
-        title_font.setPointSizeF(max(10.0, title_font.pointSizeF()) * 1.6)
-        title_font.setWeight(QFont.Weight.DemiBold)
-        self.title.setFont(title_font)
         self.description = QLabel("")
         self.description.setObjectName("pageHeaderDescription")
         self.description.setWordWrap(True)
@@ -121,10 +125,41 @@ class PageHeader(QFrame):
         self.status.setVisible(False)
 
         layout.addLayout(top_row)
-        layout.addWidget(self.title)
         layout.addWidget(self.description)
         layout.addWidget(self.status, 0, Qt.AlignmentFlag.AlignLeft)
         self.setAccessibleName(self.tr("Page header"))
+
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._reflow_title()
+
+    def _reflow_title(self) -> None:
+        """Reflow titles and actions before enlarged controls become clipped."""
+        controls = (self.eyebrow, self.action_bar, self.activity_button, self.settings_button)
+        action_width = 0
+        for index in range(self.actions_layout.count()):
+            item = self.actions_layout.itemAt(index)
+            action_widget = item.widget() if item is not None else None
+            if action_widget is not None and not action_widget.isHidden():
+                action_width += action_widget.sizeHint().width() + 8
+        adjacent_width = sum(control.sizeHint().width() + 12 for control in
+                             (self.eyebrow, self.activity_button, self.settings_button) if not control.isHidden())
+        vertical_actions = action_width + adjacent_width + 48 > self.width()
+        stack_actions = action_width + 48 > self.width()
+        self.actions_layout.setDirection(QBoxLayout.Direction.TopToBottom if stack_actions else QBoxLayout.Direction.LeftToRight)
+        required = QFontMetrics(self.title.font()).horizontalAdvance(self.title.text())
+        for widget in controls:
+            if not widget.isHidden():
+                required += widget.sizeHint().width() + 12
+        compact = vertical_actions or required + 48 > self.width()
+        for layout_widget in (self.title, *controls):
+            self._header_grid.removeWidget(layout_widget)
+        self._header_grid.addWidget(self.eyebrow, 0, 0)
+        self._header_grid.addWidget(self.title, 1 if compact else 0, 0 if compact else 1, 1, 5 if compact else 1)
+        self._header_grid.addWidget(self.action_bar, 2 if vertical_actions else 0, 0 if vertical_actions else 2, 1, 5 if vertical_actions else 1)
+        self._header_grid.addWidget(self.activity_button, 0, 3)
+        self._header_grid.addWidget(self.settings_button, 0, 4)
+        self.title.setMinimumHeight(max(1, self.title.heightForWidth(max(1, self.width() - 48 if compact else self.title.width()))))
 
     def set_content(self, area: str, title: str, description: str = "") -> None:
         area_text = visible_label(area)
@@ -137,6 +172,7 @@ class PageHeader(QFrame):
             bool(normalized_area) and normalized_area != normalized_title
         )
         self.title.setText(title_text)
+        self._reflow_title()
         self.description.setText(description)
         self.description.setVisible(bool(description))
         self.setAccessibleName(title_text or self.tr("Page header"))
@@ -150,10 +186,12 @@ class PageHeader(QFrame):
 
     def add_action(self, widget: QWidget, *, primary: bool = False) -> None:
         self.action_bar.add_action(widget, primary=primary)
+        self._reflow_title()
 
     def clear_actions(self) -> None:
         """Detach route-owned actions before the shell changes page."""
         self.action_bar.clear_actions()
+        self._reflow_title()
 
 
 class ContentColumn(QWidget):
@@ -198,9 +236,13 @@ class SectionHeader(QFrame):
         row.setSpacing(12)
         copy = QVBoxLayout()
         copy.setContentsMargins(0, 0, 0, 0)
-        copy.setSpacing(3)
+        copy.setSpacing(4)
         self.title_label = QLabel(title)
         self.title_label.setObjectName("sectionHeaderTitle")
+        section_font = QFont(self.font())
+        section_font.setPointSizeF(max(10.0, section_font.pointSizeF()) * DesignTokens().typography.section_title_scale)
+        section_font.setWeight(QFont.Weight.DemiBold)
+        self.title_label.setFont(section_font)
         self.title_label.setWordWrap(True)
         self.description_label = QLabel(description)
         self.description_label.setObjectName("sectionHeaderDescription")

@@ -58,6 +58,14 @@ _TARGETS: Mapping[NativeHandoffId, NativeHandoffTarget] = MappingProxyType(
             "Software Center",
             "plasma-discover",
         ),
+        NativeHandoffId.AUDIO_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.AUDIO_SETTINGS, "Sound Settings", "kcmshell6",
+            ("kcm_pulseaudio",), "kcm_pulseaudio",
+        ),
+        NativeHandoffId.BLUETOOTH_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.BLUETOOTH_SETTINGS, "Bluetooth Settings", "kcmshell6",
+            ("kcm_bluetooth",), "kcm_bluetooth",
+        ),
         NativeHandoffId.NETWORK_SETTINGS: NativeHandoffTarget(
             NativeHandoffId.NETWORK_SETTINGS,
             "Network Settings",
@@ -155,6 +163,9 @@ class NativeHandoffService:
                         CapabilityState.UNAVAILABLE,
                         "No supported native software center was detected for this desktop.",
                     )
+            elif normalized in {NativeHandoffId.AUDIO_SETTINGS, NativeHandoffId.BLUETOOTH_SETTINGS} and desktop is DesktopEnvironment.GNOME:
+                panel = "sound" if normalized is NativeHandoffId.AUDIO_SETTINGS else "bluetooth"
+                target = NativeHandoffTarget(normalized, target.label, "gnome-control-center", (panel,))
             elif normalized is not NativeHandoffId.SOFTWARE_CENTER and desktop is not DesktopEnvironment.KDE:
                 return NativeHandoffAvailability(
                     target,
@@ -197,7 +208,7 @@ class NativeHandoffService:
         return NativeHandoffAvailability(
             target,
             CapabilityState.NATIVE_HANDOFF,
-            f"Open {target.label} in the native Plasma interface.",
+            f"Open {target.label} in the native desktop interface.",
         )
 
     def prepare_launch(

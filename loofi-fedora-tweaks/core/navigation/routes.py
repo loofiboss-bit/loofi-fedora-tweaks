@@ -1,6 +1,6 @@
 """The single, PyQt-free definition of what the application shell shows.
 
-Everyday mode shows four jobs, with Tweaks as the start page.  Advanced mode
+Everyday mode shows Overview and the four jobs, plus Activity. Advanced mode
 adds a small set of tools for people who want them.  Deeper plugin routes still
 resolve through the route manifest; this module only decides which of them own
 a row in the primary navigation, and which row a given route belongs to.
@@ -24,9 +24,13 @@ class ShellRoute:
     route_ids: tuple[str, ...] = ()
 
 
-START_ROUTE_ID = "utility:tune"
+START_ROUTE_ID = "overview"
 
 _SHELL_ROUTES: tuple[ShellRoute, ...] = (
+    ShellRoute(
+        "overview", "Overview", "overview-dashboard", "overview",
+        "Live resource use, hardware readings, and recent maintenance.",
+    ),
     ShellRoute(
         "tune",
         "Tweaks",
@@ -56,13 +60,17 @@ _SHELL_ROUTES: tuple[ShellRoute, ...] = (
         "Diagnose a symptom and run reviewed maintenance.",
     ),
     ShellRoute(
+        "activity", "Activity", "history", "activity",
+        "Verified changes, previous values, and recovery guidance.",
+    ),
+    ShellRoute(
         "system",
         "System",
         "hardware-performance",
         "system_info",
         "System details, monitoring, and hardware.",
         advanced=True,
-        route_ids=("system_info", "dashboard", "monitor", "hardware"),
+        route_ids=("system_info", "dashboard", "monitor", "system-monitor:performance", "system-monitor:processes", "hardware"),
     ),
     ShellRoute(
         "storage",
@@ -80,7 +88,7 @@ _SHELL_ROUTES: tuple[ShellRoute, ...] = (
         "network",
         "Connections, DNS, and network privacy.",
         advanced=True,
-        route_ids=("network",),
+        route_ids=("network", "network:connections", "network:dns", "network:privacy", "network:monitoring"),
     ),
     ShellRoute(
         "security",
@@ -89,22 +97,26 @@ _SHELL_ROUTES: tuple[ShellRoute, ...] = (
         "security",
         "Firewall, privacy, and exposed ports.",
         advanced=True,
-        route_ids=("security",),
+        route_ids=("security", "security:overview", "security:firewall", "security:privacy", "security:ports"),
     ),
     ShellRoute(
         "logs",
         "Logs",
         "logs",
-        "logs",
+        "diagnostics:watchtower",
         "System and application logs.",
         advanced=True,
-        route_ids=("logs", "diagnostics:watchtower"),
+        route_ids=("logs", "diagnostics:watchtower", "diagnostics:boot"),
     ),
 )
 
 # Compatibility inputs from deep links, search, and saved settings.
 LEGACY_ALIASES: dict[str, str] = {
-    "home": START_ROUTE_ID,
+    "home": "utility:tune",
+    "atlas_dashboard": "utility:tune",
+    "atlas": "utility:tune",
+    "atlas-home": "utility:tune",
+    "fedora-control-center": "utility:tune",
     "tune": "utility:tune",
     "tweaks": "utility:tune",
     "install": "utility:install",

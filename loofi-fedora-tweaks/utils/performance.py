@@ -84,6 +84,23 @@ class PerformanceCollector:
 
         self._prev_disk_bytes: Optional[Tuple[int, int]] = None
         self._prev_disk_timestamp: float = 0.0
+        self._sample_status: Dict[str, str] = {}
+
+    def reset_baselines(self) -> None:
+        """Discard differential baselines after a paused collection session."""
+        self._prev_cpu_times = None
+        self._prev_net_bytes = None
+        self._prev_disk_bytes = None
+        self._sample_status.clear()
+
+    def sample_status(self, group: str) -> str:
+        """Distinguish baseline collection from read failure and measured data."""
+        return self._sample_status.get(group, "sampling")
+
+    def has_baseline(self, group: str) -> bool:
+        """Whether the next sample can report a measured differential value."""
+        return {"cpu": self._prev_cpu_times, "network": self._prev_net_bytes,
+                "disk": self._prev_disk_bytes}.get(group) is not None
 
     # ==================== STATIC HELPERS ====================
 
@@ -168,7 +185,7 @@ class PerformanceCollector:
         return meminfo
 
     @staticmethod
-    def _read_proc_net_dev() -> Tuple[int, int]:
+    def _read_proc_net_dev() -> Optional[Tuple[int, int]]:
         """
         Read network byte counters from /proc/net/dev.
         Sums all non-loopback interfaces.
@@ -201,10 +218,11 @@ class PerformanceCollector:
                         total_sent += int(fields[8])  # bytes transmitted
         except (OSError, IOError, ValueError) as e:
             logger.debug("Failed to read /proc/net/dev: %s", e)
+            return None
         return total_recv, total_sent
 
     @staticmethod
-    def _read_proc_diskstats() -> Tuple[int, int]:
+    def _read_proc_diskstats() -> Optional[Tuple[int, int]]:
         """
         Read disk I/O counters from /proc/diskstats.
         Sums all real block devices (skips loop, ram, dm- devices).
@@ -236,6 +254,7 @@ class PerformanceCollector:
                     total_write += sectors_written * PerformanceCollector.SECTOR_SIZE
         except (OSError, IOError, ValueError) as e:
             logger.debug("Failed to read /proc/diskstats: %s", e)
+            return None
         return total_read, total_write
 
     # ==================== COLLECTION METHODS ====================
@@ -250,10 +269,12 @@ class PerformanceCollector:
         Returns:
             CpuSample stored in the ring buffer, or None on error.
         """
+        self._sample_status["cpu"] = "error"
         try:
             now = time.monotonic()
             current_times = self._read_proc_stat()
             if not current_times:
+                self._prev_cpu_times = None
                 return None
 
             if self._prev_cpu_times is None:
@@ -267,7 +288,17 @@ class PerformanceCollector:
                     per_core=[0.0] * core_count,
                 )
                 self._cpu_history.append(sample)
+                self._sample_status["cpu"] = "sampling"
                 return sample
+
+            if (len(current_times) != len(self._prev_cpu_times)
+                    or any(len(current) != len(previous)
+                           or any(value < prior for value, prior in zip(current, previous))
+                           for current, previous in zip(current_times, self._prev_cpu_times))):
+                self._prev_cpu_times = current_times
+                self._prev_cpu_timestamp = now
+                self._sample_status["cpu"] = "sampling"
+                return None
 
             # Calculate overall CPU usage (index 0 is aggregate)
             overall = self._calc_cpu_percent(self._prev_cpu_times[0], current_times[0])
@@ -294,6 +325,7 @@ class PerformanceCollector:
             self._prev_cpu_times = current_times
             self._prev_cpu_timestamp = now
 
+            self._sample_status["cpu"] = "ready"
             return sample
         except (OSError, ValueError, TypeError) as e:
             logger.debug("Failed to collect CPU sample: %s", e)
@@ -312,7 +344,7 @@ class PerformanceCollector:
 
             total = meminfo.get("MemTotal", 0)
             available = meminfo.get("MemAvailable", 0)
-            if total <= 0:
+            if total <= 0 or "MemAvailable" not in meminfo or not 0 <= available <= total:
                 return None
 
             used = total - available
@@ -340,9 +372,14 @@ class PerformanceCollector:
         Returns:
             NetworkSample stored in the ring buffer, or None on error.
         """
+        self._sample_status["network"] = "error"
         try:
             now = time.monotonic()
-            recv, sent = self._read_proc_net_dev()
+            counters = self._read_proc_net_dev()
+            if counters is None:
+                self._prev_net_bytes = None
+                return None
+            recv, sent = counters
 
             if self._prev_net_bytes is None:
                 # First reading: baseline
@@ -356,7 +393,14 @@ class PerformanceCollector:
                     recv_rate=0.0,
                 )
                 self._network_history.append(sample)
+                self._sample_status["network"] = "sampling"
                 return sample
+
+            if recv < self._prev_net_bytes[0] or sent < self._prev_net_bytes[1]:
+                self._prev_net_bytes = (recv, sent)
+                self._prev_net_timestamp = now
+                self._sample_status["network"] = "sampling"
+                return None
 
             elapsed = now - self._prev_net_timestamp
             if elapsed <= 0:
@@ -378,6 +422,7 @@ class PerformanceCollector:
             self._prev_net_bytes = (recv, sent)
             self._prev_net_timestamp = now
 
+            self._sample_status["network"] = "ready"
             return sample
         except (ValueError, TypeError) as e:
             logger.debug("Failed to collect network sample: %s", e)
@@ -393,9 +438,14 @@ class PerformanceCollector:
         Returns:
             DiskIOSample stored in the ring buffer, or None on error.
         """
+        self._sample_status["disk"] = "error"
         try:
             now = time.monotonic()
-            read_bytes, write_bytes = self._read_proc_diskstats()
+            counters = self._read_proc_diskstats()
+            if counters is None:
+                self._prev_disk_bytes = None
+                return None
+            read_bytes, write_bytes = counters
 
             if self._prev_disk_bytes is None:
                 # First reading: baseline
@@ -409,7 +459,14 @@ class PerformanceCollector:
                     write_rate=0.0,
                 )
                 self._disk_io_history.append(sample)
+                self._sample_status["disk"] = "sampling"
                 return sample
+
+            if read_bytes < self._prev_disk_bytes[0] or write_bytes < self._prev_disk_bytes[1]:
+                self._prev_disk_bytes = (read_bytes, write_bytes)
+                self._prev_disk_timestamp = now
+                self._sample_status["disk"] = "sampling"
+                return None
 
             elapsed = now - self._prev_disk_timestamp
             if elapsed <= 0:
@@ -431,6 +488,7 @@ class PerformanceCollector:
             self._prev_disk_bytes = (read_bytes, write_bytes)
             self._prev_disk_timestamp = now
 
+            self._sample_status["disk"] = "ready"
             return sample
         except (ValueError, TypeError) as e:
             logger.debug("Failed to collect disk I/O sample: %s", e)
@@ -481,12 +539,12 @@ def _is_partition(device: str) -> bool:
         vda -> False, vda1 -> True
     """
     # NVMe partitions: nvme0n1p1, nvme0n1p2, ...
-    if "nvme" in device and "p" in device:
+    if device.startswith(("nvme", "mmcblk")):
         # Split on 'p' after 'n' portion: nvme0n1 vs nvme0n1p1
         # A partition has a 'p' followed by digits after the namespace number
         import re
 
-        if re.match(r"^nvme\d+n\d+p\d+$", device):
+        if re.match(r"^(nvme\d+n\d+|mmcblk\d+)p\d+$", device):
             return True
         return False
 

@@ -3,7 +3,7 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtGui import QKeyEvent, QMouseEvent
+from PyQt6.QtGui import QFont, QKeyEvent, QMouseEvent
 from PyQt6.QtWidgets import (
     QAbstractButton,
     QFrame,
@@ -15,6 +15,7 @@ from PyQt6.QtWidgets import (
 )
 
 from ui.components.actions import GhostButton
+from ui.design import DesignTokens
 
 
 class Card(QFrame):
@@ -36,6 +37,10 @@ class Card(QFrame):
 
         self.title_label = QLabel(title)
         self.title_label.setObjectName("cardTitle")
+        title_font = QFont(self.font())
+        title_font.setPointSizeF(max(10.0, title_font.pointSizeF()) * DesignTokens().typography.section_title_scale)
+        title_font.setWeight(QFont.Weight.DemiBold)
+        self.title_label.setFont(title_font)
         self.title_label.setWordWrap(True)
         self.title_label.setVisible(bool(title))
         self.description_label = QLabel(description)
@@ -175,7 +180,6 @@ class DefinitionRow(QWidget):
         row = QHBoxLayout(self)
         row.setContentsMargins(0, 8, 0, 8)
         row.setSpacing(12)
-        row.setAlignment(Qt.AlignmentFlag.AlignVCenter)
 
         self.label = QLabel(label)
         self.label.setObjectName("definitionLabel")
@@ -197,9 +201,24 @@ class DefinitionRow(QWidget):
         self.setAccessibleName(label)
         self.setAccessibleDescription(description or value)
 
+    def resizeEvent(self, event) -> None:
+        super().resizeEvent(event)
+        self._fit_text_height()
+
+    def _fit_text_height(self) -> None:
+        """Reserve the complete wrapped value instead of cropping its last line."""
+        self.label.setMinimumHeight(max(1, self.label.heightForWidth(max(1, self.label.width()))))
+        self.value.setMinimumHeight(max(1, self.value.heightForWidth(max(1, self.value.width()))))
+        self.copy_button.setMinimumWidth(self.copy_button.sizeHint().width())
+        height = max(self.label.heightForWidth(max(1, self.label.width())),
+                     self.value.heightForWidth(max(1, self.value.width())),
+                     self.copy_button.sizeHint().height() if self.copy_button.isVisible() else 0)
+        self.setMinimumHeight(max(36, height) + 16)
+
     def set_value(self, value: str) -> None:
         self._value = value
         self.value.setText(value)
+        self._fit_text_height()
         self.setAccessibleDescription(value)
 
 

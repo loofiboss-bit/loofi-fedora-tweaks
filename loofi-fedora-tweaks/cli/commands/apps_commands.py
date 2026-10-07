@@ -2,10 +2,13 @@
 
 from __future__ import annotations
 
+from dataclasses import replace
 from typing import Any, Callable
 
 from core.actions import ActionCatalog, ActionCenterOrchestrator
 from core.actions.catalog import SystemActionRuntime
+from core.actions.operation_controller import OperationController
+from services.software.installed_applications import InstalledApplicationService
 from core.executor.command_facade import CommandFacade
 from core.platform import detect_platform_profile
 from core.tasks.applications import ApplicationCatalog, ApplicationContext
@@ -27,12 +30,52 @@ def handle_apps(
     app_context = ApplicationContext.from_task_context(task_context)
     catalog = ApplicationCatalog()
 
+    if action in {"list", "installed"}:
+        inventory = InstalledApplicationService().snapshot()
+        app_context = replace(app_context, installed_ids=inventory.installed_ids, unknown_sources=inventory.unknown_sources)
+        if action == "installed":
+            if json_output:
+                output_json(inventory.to_dict())
+            else:
+                for installed_app in inventory.applications:
+                    print_fn(f"{installed_app.name} · {installed_app.source} · {installed_app.installation} · {installed_app.version} · {installed_app.size} · {installed_app.ref}")
+                for error in inventory.errors:
+                    print_fn(error)
+            return 1 if inventory.errors else 0
+
+    if action == "remove":
+        controller = OperationController(orchestrator=ActionCenterOrchestrator(catalog=ActionCatalog(), runtime=runtime))
+        ticket = controller.prepare("remove-installed-flatpak", {"ref": args.ref, "installation": args.installation})
+        if not ticket.plan.policy_decision.allowed:
+            print_fn(ticket.plan.policy_decision.explanation)
+            return 1
+        if dry_run or not getattr(args, "yes", False):
+            if json_output:
+                output_json(ticket.plan.to_dict())
+            else:
+                print_fn(f"Remove {args.ref} from {args.installation}. Application data is preserved.")
+                print_fn("Pass --yes to confirm execution.")
+            return 0
+        confirmed = controller.confirm(ticket, confirmed=True, accept_no_rollback=True)
+        if confirmed.status != "prepared":
+            print_fn(confirmed.message)
+            return 1
+        outcome = controller.run(confirmed)
+        if outcome.status == "verifying":
+            outcome = controller.verify(outcome)
+        if json_output:
+            output_json(outcome.to_dict())
+        else:
+            print_fn(outcome.message)
+        return 0 if outcome.status == "succeeded" else 1
+
     if action == "list":
         category_filter = getattr(args, "category", None)
         apps_with_eligibility = catalog.search(category=category_filter, context=app_context)
         if json_output:
             output_json({
                 "schema_version": 1,
+                "inventory_errors": list(inventory.errors),
                 "applications": [
                     {
                         "id": app.id,

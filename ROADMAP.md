@@ -44,15 +44,39 @@ scaling, and Atomic workflows remain unverified for this release. A KDE
 Dolphin setting was changed, read back, and restored on the development host;
 this does not qualify every setting or the full interface.
 
+## Local candidate — Control center redesign
+
+- [x] Loofi design system and system-selected light/dark presentation
+- [x] Overview start route, Activity navigation, and explicit Tools disclosure
+- [x] Shared asynchronous resource and hardware snapshots with honest availability
+- [x] Unified task pages, controls, and operation feedback
+- [x] Complete automated, rendering, and packaging qualification
+- [ ] Physical KDE, then GNOME and assistive-technology qualification
+
+No public release or local installation is implied. Physical desktop,
+assistive-technology, and unavailable hardware evidence remain separate.
+
+## Local candidate — Everyday
+
+- [x] Prioritized Overview next steps from recorded observations
+- [x] Restore pending update verification after application or computer restart
+- [x] Same-desktop, file-based tweak profiles with immutable sequential review
+- [x] Three additional GNOME controls (76 catalog settings)
+- [x] Scoped installed Flatpak inventory and reviewed removal preserving data
+- [x] Dedicated read-only sound and Bluetooth diagnostics
+- [x] GUI and CLI entry points with shared operation authority
+- [ ] Physical KDE, GNOME, and assistive-technology qualification
+
+See [Everyday qualification](docs/EVERYDAY_VERIFICATION.md) for local evidence.
+No publication or installation is implied.
+
 ## Later
 
 - Additional DNF configuration after a specific user need and safe verification
   contract are established.
-- Shareable tweak profiles (export and re-apply), pending a separate product
-  scope decision.
 - Additional Fedora spins and Atomic desktops, as qualification allows
 
 ## Not planned
 
-System monitoring as a headline feature, mesh/network sharing, AI features,
+Background monitoring while views are hidden, mesh/network sharing, AI features,
 and a plugin marketplace.

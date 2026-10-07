@@ -6,7 +6,8 @@
 ## Product boundary
 
 Loofi Fedora Tweaks is a Fedora desktop utility with a PyQt6 GUI and a small
-CLI. It presents curated per-user settings for GNOME and KDE, plus one
+CLI. Overview is the default GUI route. Its read-only dashboard and System Monitor
+share a window-owned asynchronous collector. It presents curated per-user settings for GNOME and KDE, plus one
 system-wide DNF setting, alongside app installation, updates, and diagnostics.
 Missing applications, schemas, or host tools produce an unavailable state
 with an explanation.
@@ -125,3 +126,45 @@ shared GUI worker/CLI adapter for a separate `activate-kwin-tweak` action.
 Only the fixed KWin reconfigure call is allowed; supportInformation must match
 the requested runtime value. Failed activation is a session warning, preserves
 the saved change and restoration offer, and never restarts KWin or rolls back.
+
+## Control center presentation
+
+`overview` is a canonical built-in route and plugin in the product catalog.
+Older Atlas links continue to open Tweaks; persisted valid last-route and theme
+preferences are preserved. Tools is a disclosure of the five maintained tool
+groups, not an additional route authority.
+
+`services/system/dashboard.py` owns Qt-free snapshots with source, units,
+timestamp, and availability for each reading. It reuses PerformanceCollector
+and TemperatureManager and reads saved update, health, and action observations
+without starting maintenance checks. Missing or malformed readings cannot
+become healthy zeroes. GPU queries are read-only, bounded, and limited to
+active devices. No optional tools or drivers are installed.
+
+The window owns DashboardController. Overview and Monitor consume its immutable
+snapshots; the worker never collects on the UI thread. Fast readings refresh
+every two seconds, sensors every five, only while a consumer is visible.
+Hiding or minimizing suspends collection; resuming resets differential
+baselines. Shutdown joins pending work before Qt objects are destroyed.
+
+DESIGN.md is the presentation contract. ThemeManager selects the Loofi light
+or dark palette in system mode and retains explicit themes and high contrast.
+All maintained pages share semantic colors, system typography, controls, and
+feedback, without adding a second action execution boundary.
+
+## Everyday workflow extensions
+
+`core/tasks/tweak_profiles.py` defines strict portable profiles, immutable reviews,
+and sequential results. Review does not allocate persisted plans; each selected
+entry is prepared and revalidated just before Action Center execution.
+`services/software/update_recovery.py` hydrates saved observations and durable run
+identities without executing updates. `core/tasks/next_steps.py` projects recorded
+dashboard observations into at most three navigation suggestions.
+
+Installed applications use source, installation, and full ref as identity.
+`core/actions/installed_applications.py` owns reviewed Flatpak removal and independent
+inventory verification. `services/hardware/diagnostic_probes.py` implements bounded,
+read-only sound/Bluetooth observations with unknown states and cancellation.
+Window-owned operation workers and installed-page samplers participate in deferred
+shutdown; no worker is destroyed while running. Existing plan/run schemas remain
+unchanged. Portable profiles do not reactivate retired profile stacks.

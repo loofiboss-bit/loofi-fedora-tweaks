@@ -8,8 +8,9 @@ from typing import Any
 from .destinations import placement_for_route
 from .manifest import resolve
 from .models import NavigationMode
+from .routes import all_shell_routes
 
-_DEFAULT_ROUTE_ID = "atlas_dashboard"
+_DEFAULT_ROUTE_ID = "overview"
 _RETIRED_ROUTE_IDS = frozenset(
     {
         "maintenance:smart-updates",
@@ -42,6 +43,8 @@ def canonical_persisted_route(
 ) -> str | None:
     """Normalize a route/alias and apply compatibility redirects for storage."""
     text = str(value or "").strip()
+    if any(route.default_route_id == text for route in all_shell_routes()):
+        return text
     route = resolve(text)
     if route is None:
         if preserve_unknown and text:

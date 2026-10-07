@@ -22,6 +22,7 @@ from core.executor.action_result import ActionResult
 from core.platform.profile import DeploymentBackend, PlatformProfile
 from core.state.atomic_io import advisory_lock, atomic_write_json
 from core.state.paths import StatePaths
+from core.tasks.update_flow import STALE_SECONDS
 
 Source = Literal["system", "flatpak", "firmware"]
 Status = Literal["unchecked", "up_to_date", "available", "missing_tool", "unsupported", "error"]
@@ -29,7 +30,6 @@ SOURCES: tuple[Source, ...] = ("system", "flatpak", "firmware")
 STATUSES = {"unchecked", "up_to_date", "available", "missing_tool", "unsupported", "error"}
 MAX_ITEMS = 5000
 MAX_BYTES = 4 * 1024 * 1024
-STALE_SECONDS = 24 * 60 * 60
 
 
 @dataclass(frozen=True)

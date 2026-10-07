@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 from typing import Any, Callable
+from subprocess import TimeoutExpired
 
 from core.actions import ActionCatalog, ActionCenterOrchestrator, OperationController
 from core.actions.catalog import SystemActionRuntime
@@ -24,6 +25,9 @@ def handle_tweaks(
     action = getattr(args, "tweaks_action", "list") or "list"
     profile = detect_platform_profile()
     runtime = SystemActionRuntime(CommandFacade())
+
+    if action == "profile":
+        return _handle_profile(args, json_output, output_json, print_fn, profile, runtime, dry_run=dry_run)
 
     if action == "list":
         states = snapshot(profile, runtime)
@@ -177,3 +181,51 @@ def handle_tweaks(
         return 1
 
     return 0
+
+
+def _handle_profile(args: Any, json_output: bool, output_json: Callable[[Any], None], print_fn: Callable[[str], None],
+                    profile: object, runtime: Any, *, dry_run: bool) -> int:
+    from pathlib import Path
+    from core.tasks.tweak_profiles import apply_profile, export_profile, load_profile, review_profile, save_profile
+
+    operation = args.profile_action
+    try:
+        if operation == "export":
+            exported = export_profile(args.name, profile, runtime, getattr(args, "ids", None))
+            if not dry_run:
+                save_profile(Path(args.path), exported.profile)
+            payload = exported.to_dict()
+            payload["saved"] = not dry_run
+            if json_output:
+                output_json(payload)
+            else:
+                print_fn(f"{'Would save' if dry_run else 'Saved'} {len(exported.profile.settings)} settings to {args.path}")
+                for key, reason in exported.omitted:
+                    print_fn(f"Omitted {key}: {reason}")
+            return 0
+        controller = OperationController(orchestrator=ActionCenterOrchestrator(catalog=ActionCatalog(), runtime=runtime), facade=runtime.facade)
+        review = review_profile(load_profile(Path(args.path)), controller)
+        if operation == "apply" and getattr(args, "yes", False) and not dry_run:
+            result = apply_profile(review, controller, confirmed=True, selected_ids=getattr(args, "ids", None))
+            if json_output:
+                output_json(result.to_dict())
+            else:
+                for item in result.entries:
+                    print_fn(f"{item.id}: {item.status} — {item.message}")
+                print_fn(result.message)
+            return 0 if result.success else 1
+        if json_output:
+            output_json(review.to_dict())
+        else:
+            print_fn(f"Profile: {review.name} [{review.desktop}]")
+            for entry in review.entries:
+                print_fn(f"{entry.id}: {entry.before or '?'} -> {entry.value} [{entry.status}] {entry.message}")
+            if operation == "apply":
+                print_fn("Pass --yes to confirm execution." if not dry_run else "[dry-run] No settings changed.")
+        return 0
+    except (OSError, RuntimeError, TypeError, ValueError, TimeoutExpired) as exc:
+        if json_output:
+            output_json({"schema": "loofi.tweak-profile-result/v1", "status": "failed", "message": str(exc), "entries": []})
+        else:
+            print_fn(f"Profile operation failed: {exc}")
+        return 1

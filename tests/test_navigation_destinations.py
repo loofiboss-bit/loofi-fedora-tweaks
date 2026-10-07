@@ -69,9 +69,9 @@ class TestRoutePlacements(unittest.TestCase):
         routes = all_routes()
         placements = [placement_for_route(route.id) for route in routes]
 
-        self.assertEqual(len(routes), 43)
+        self.assertEqual(len(routes), 44)
         self.assertTrue(all(placement is not None for placement in placements))
-        self.assertEqual(len({placement.route_id for placement in placements}), 43)
+        self.assertEqual(len({placement.route_id for placement in placements}), 44)
         self.assertEqual(validate_destinations(), [])
 
     def test_every_placement_has_explicit_section_metadata(self):
@@ -81,7 +81,7 @@ class TestRoutePlacements(unittest.TestCase):
             for section in sections_for_destination(destination.id)
         ]
 
-        self.assertEqual(len(sections), 32)
+        self.assertEqual(len(sections), 33)
         for route in all_routes():
             placement = placement_for_route(route.id)
             with self.subTest(route_id=route.id):

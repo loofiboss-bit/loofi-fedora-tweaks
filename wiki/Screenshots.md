@@ -1,8 +1,14 @@
-# Visual Interface Gallery — v32.0.0 "Refocus"
+# Control Center Interface Gallery
 
-Static offscreen captures of the shipped interface. They verify rendering and
-navigation but are not physical desktop, keyboard, scaling or assistive-technology
-qualification. Regenerate with `scripts/capture_v32_screenshots.py`.
+Local redesign candidate using deterministic offscreen example data. These
+captures show the actual PyQt interface; they do not qualify a physical KDE or
+GNOME session or assistive technology. No release or installation is implied.
+
+Regenerate with `scripts/capture_control_center_screenshots.py`.
+
+## Overview
+
+![Overview](images/overview.png)
 
 ## Tweaks
 
@@ -20,6 +26,14 @@ qualification. Regenerate with `scripts/capture_v32_screenshots.py`.
 
 ![Health](images/health.png)
 
+## Activity
+
+![Activity](images/activity.png)
+
 ## Settings
 
 ![Settings](images/settings.png)
+
+## Tools: System
+
+![System information](images/tools.png)

@@ -11,6 +11,7 @@ sys.path.insert(
     os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"),
 )
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QFont
 from PyQt6.QtWidgets import QApplication, QToolButton, QWidget
 
@@ -81,6 +82,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
             package_manager_command="dnf5",
         )
 
+    @patch("ui.main_window.MainWindow._advanced_tools_enabled", return_value=False)
     @patch("ui.main_window.MainWindow._check_first_run")
     @patch("ui.main_window.MainWindow._initialize_background_services")
     @patch("ui.main_window.MainWindow._start_tweak_snapshot", return_value=True)
@@ -99,10 +101,11 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         mock_snapshot,
         mock_background,
         mock_first_run,
+        mock_tools,
         *,
         mode=NavigationMode.STANDARD,
     ) -> MainWindow:
-        del mock_favorites, mock_atomic, mock_snapshot, mock_background, mock_first_run
+        del mock_favorites, mock_atomic, mock_snapshot, mock_background, mock_first_run, mock_tools
         PluginRegistry.reset()
         mock_mode.return_value = mode
         mock_compat.return_value = CompatStatus(compatible=True)
@@ -126,23 +129,25 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_standard_shell_is_flat_and_has_no_duplicate_chrome(self):
         window = self._build_window()
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
         self.assertEqual(
             window.sidebar.destination_ids(),
             (
+                "overview",
                 "tune",
                 "install",
                 "update",
                 "fix",
+                "activity",
             ),
         )
-        self.assertTrue(
-            all(
-                window.sidebar.topLevelItem(index).childCount() == 0
-                for index in range(window.sidebar.topLevelItemCount())
-            )
-        )
-        self.assertFalse(hasattr(window, "sidebar_footer"))
+        self.assertTrue(all(window.sidebar.topLevelItem(index).childCount() == 0 for index in range(6)))
+        tools = window.sidebar.topLevelItem(6)
+        self.assertEqual(tools.childCount(), 5)
+        self.assertFalse(tools.isExpanded())
+        self.assertEqual(tools.data(0, Qt.ItemDataRole.AccessibleTextRole), "Tools")
+        self.assertEqual(window._active_route_id, "overview")
+        self.assertIsNotNone(window.findChild(QWidget, "sidebarSettings"))
         object_names = {
             widget.objectName() for widget in window.findChildren(QWidget)
         }
@@ -153,13 +158,13 @@ class TestPhase3MainWindowShell(unittest.TestCase):
     def test_unified_mode_keeps_specialist_tools_out_of_primary_navigation(self):
         window = self._build_window(mode=NavigationMode.ADVANCED)
 
-        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
 
         opened = window.switch_to_route("diagnostics:boot")
 
         self.assertTrue(opened)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
 
     def test_mode_refresh_preserves_lazy_pages_and_six_primary_destinations(self):
         window = self._build_window(mode=NavigationMode.STANDARD)
@@ -170,8 +175,14 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         load_calls_before = window._plugin_loader.load_builtin_widget.call_count
 
         window.apply_advanced_tools(True)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 9)
+        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
         self.assertNotIn("advanced", window.sidebar.destination_ids())
+        tools = window.sidebar.topLevelItem(6)
+        self.assertTrue(tools.isExpanded())
+        self.assertEqual(window.sidebar.destination_ids(), (
+            "overview", "tune", "install", "update", "fix", "activity",
+            "system", "storage", "network", "security", "logs",
+        ))
         self.assertEqual(
             pages_before,
             {plugin_id: entry.page_widget for plugin_id, entry in window._sidebar_index.items()},
@@ -179,13 +190,12 @@ class TestPhase3MainWindowShell(unittest.TestCase):
         self.assertEqual(window._plugin_loader.load_builtin_widget.call_count, load_calls_before)
 
         window.apply_advanced_tools(False)
-        self.assertEqual(window.sidebar.topLevelItemCount(), 4)
-        self.assertTrue(
-            all(
-                window.sidebar.topLevelItem(index).childCount() == 0
-                for index in range(window.sidebar.topLevelItemCount())
-            )
-        )
+        self.assertEqual(window.sidebar.topLevelItemCount(), 7)
+        self.assertTrue(all(window.sidebar.topLevelItem(index).childCount() == 0 for index in range(6)))
+        tools = window.sidebar.topLevelItem(6)
+        self.assertEqual(tools.childCount(), 5)
+        self.assertFalse(tools.isExpanded())
+        self.assertEqual(tools.data(0, Qt.ItemDataRole.AccessibleTextRole), "Tools")
 
     def test_action_center_compatibility_route_opens_activity(self):
         window = self._build_window()
@@ -194,7 +204,7 @@ class TestPhase3MainWindowShell(unittest.TestCase):
 
         self.assertTrue(opened)
         self.assertEqual(window._active_route_id, "activity")
-        self.assertEqual(window._active_destination_id, "")
+        self.assertEqual(window._active_destination_id, "activity")
 
     def test_standard_deep_link_to_advanced_route_shows_gate_without_loading(self):
         window = self._build_window()
@@ -256,8 +266,9 @@ class TestPhase3MainWindowShell(unittest.TestCase):
                 window.destination_host.navigator.selector.count()
             )
         ]
-        self.assertEqual(labels, [])
-        self.assertFalse(window.destination_host.isVisible())
+        self.assertEqual(labels, ["System Information", "Performance", "Processes", "Hardware status"])
+        self.assertTrue(window.destination_host.isVisible())
+        self.assertEqual(window._active_route_id, "system_info")
 
         window.resize(1180, 720)
         self.app.processEvents()

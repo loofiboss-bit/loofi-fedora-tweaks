@@ -559,6 +559,7 @@ class TestComfortRestorePresentation(unittest.TestCase):
         from ui.main_window_utility import MainWindowUtilityMixin
         from ui.tweaks_page import TweaksPage
         parent = QWidget()
+        parent._record_global_operation_result = Mock()
         parent._start_tweak_snapshot = Mock()
         page = TweaksPage(profile("gnome"))
         runtime = HistoryRuntime()
@@ -586,6 +587,7 @@ class TestComfortRestorePresentation(unittest.TestCase):
         from PyQt6.QtWidgets import QMessageBox, QWidget
         from ui.main_window_utility import MainWindowUtilityMixin
         parent = QWidget()
+        parent._record_global_operation_result = Mock()
         parent._run_tweak_restore = Mock()
         page = SimpleNamespace(set_error=Mock(), set_busy=Mock())
         adapter = SimpleNamespace(stopped=SimpleNamespace(connect=Mock()))

@@ -86,7 +86,7 @@ class TestSemanticPalettes(unittest.TestCase):
         self.assertEqual(contrast_ratio("#000000", "#ffffff"), 21.0)
         self.assertAlmostEqual(contrast_ratio("#ffffff", "#ffffff"), 1.0)
 
-    def test_system_palette_uses_qpalette_roles(self) -> None:
+    def test_system_palette_selects_loofi_light_from_desktop_brightness(self) -> None:
         qt_palette = QPalette()
         qt_palette.setColor(QPalette.ColorRole.Window, QColor("#f7f8fa"))
         qt_palette.setColor(QPalette.ColorRole.Base, QColor("#ffffff"))
@@ -101,11 +101,19 @@ class TestSemanticPalettes(unittest.TestCase):
 
         palette = ThemeManager.system_palette(qt_palette)
 
-        self.assertEqual(palette.window, "#f7f8fa")
+        self.assertEqual(palette.window, "#f4f6fb")
         self.assertEqual(palette.surface, "#ffffff")
-        self.assertEqual(palette.surface_raised, "#eef1f5")
-        self.assertEqual(palette.accent, "#005ea8")
+        self.assertEqual(palette.surface_raised, "#e9edf7")
+        self.assertEqual(palette.accent, "#5b4fd6")
         self.assertEqual(palette.contrast_failures(), {})
+
+    def test_system_dark_ignores_desktop_accent_and_explicit_light_wins(self) -> None:
+        qt_palette = QPalette()
+        qt_palette.setColor(QPalette.ColorRole.Window, QColor("#121212"))
+        qt_palette.setColor(QPalette.ColorRole.Highlight, QColor("#ff0000"))
+        manager = ThemeManager()
+        self.assertEqual(manager.palette_for("system", qt_palette), manager.explicit_palette("dark"))
+        self.assertEqual(manager.palette_for("light", qt_palette), manager.explicit_palette("light"))
 
 
 class TestThemeManager(unittest.TestCase):

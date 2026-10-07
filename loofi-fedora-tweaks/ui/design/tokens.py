@@ -9,6 +9,10 @@ from dataclasses import asdict, dataclass, field
 class TypographyRoles:
     """Font-family-neutral roles that preserve the desktop system font."""
 
+    page_title_scale: float = 1.6
+    section_title_scale: float = 1.15
+    body_scale: float = 1.0
+    supporting_scale: float = 0.95
     page_title_weight: int = 650
     section_title_weight: int = 600
     body_weight: int = 400

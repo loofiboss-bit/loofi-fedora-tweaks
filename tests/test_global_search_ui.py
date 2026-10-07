@@ -29,6 +29,32 @@ class TestGlobalSearchDialog(unittest.TestCase):
             )
         )
 
+    def test_primary_search_activation_returns_canonical_navigation_descriptor(self):
+        callback = MagicMock()
+        dialog = GlobalSearchDialog(self._model(), callback)
+        self.addCleanup(dialog.close)
+        for label, target in (("Tweaks", "utility:tune"), ("Apps", "utility:install"), ("Health", "utility:fix"), ("Activity", "activity")):
+            with self.subTest(page=label):
+                callback.reset_mock()
+                dialog.search_input.setText(label)
+                item = dialog.results_list.item(0)
+                result = item.data(Qt.ItemDataRole.UserRole)
+                self.assertEqual((result.label, result.route_id), (label, target))
+                dialog._activate_item(item)
+                callback.assert_called_once_with(result)
+
+    def test_search_navigation_keeps_task_focus_without_starting_operations(self):
+        from ui.main_window_interactions import MainWindowInteractionMixin
+
+        host = MagicMock()
+        host.switch_to_route.return_value = True
+        result = next(item for item in self._model().task_results() if item.task_id == "install:flatpaks")
+        self.assertTrue(MainWindowInteractionMixin._activate_global_search_result(host, result))
+        host.switch_to_route.assert_called_once_with("install")
+        host._focus_utility_task.assert_called_once_with("install:flatpaks", "install")
+        host._preselect_action_center.assert_not_called()
+        host._start_utility_operation.assert_not_called()
+
     def test_actions_filter_uses_same_dialog_and_model(self):
         dialog = GlobalSearchDialog(
             self._model(),

@@ -10,14 +10,14 @@ from core.catalog_models import CapabilityState, NativeHandoffId
 from core.product_catalog import CATALOG_DATA, catalog_entry, catalog_routes
 
 
-_V27_PROJECTION_HASHES = {
-    "plugins": "5430324e6308c4a9df55c6de31ec55b50e50c554d09e0e5e1a723ed75264f02a",
-    "routes": "20a61c20d052c1bcdc4d1e8a0e25ee66085a341a3c0a7201e1897ed34db14a04",
-    "placements": "d19ac8d8cd69510db2223a3bf2a40aaf156e6d0803b00252b57094fe3384d33e",
-    "sections": "a7fd8ff688f87dba87201765345872aa7a307e90938d027db111ea191130bff5",
-    "destinations": "19a577b070261a149179fe36dcec7ec015f1cb1fe6b25568cc40007180a31f05",
+_CONTROL_CENTER_PROJECTION_HASHES = {
+    "plugins": "429a9fa0e28102ca6807a5ab9a603c2838c5f5eb91b40c22de2e0bd0bf35a142",
+    "routes": "98edb6a54ab33d69366ba3e19cf36217bef073e7a79fc11a360556415f5e5e57",
+    "placements": "f24a7d014468701104a87ef53b7924ac7bc3b3a2dc00ec6a4e7df21ee3729995",
+    "sections": "99e0ce7f4c5200bda40e9aaac7fdeb7a8fba6cad589d1bf1bc10ed965b957d4d",
+    "destinations": "ae763154940059012b92e64ae54039a75e99ad292fae70e4933f008288142a06",
 }
-_V27_ROUTE_ORDER_HASH = "f9b57f8cfe572e80e0207fe0158f9745f4846c6f9bb846f245964a13f3c5b178"
+_CONTROL_CENTER_ROUTE_ORDER_HASH = "692c167357b9a4ca8c94c7d64f885db0a187d3cb204ae0afdde38ab077d8fcce"
 
 
 def _serialized_hash(records) -> str:
@@ -27,16 +27,16 @@ def _serialized_hash(records) -> str:
 
 class TestDestinationOwnedCatalogRecords(unittest.TestCase):
     def test_serialized_projections_remain_exact(self):
-        for key, expected_hash in _V27_PROJECTION_HASHES.items():
+        for key, expected_hash in _CONTROL_CENTER_PROJECTION_HASHES.items():
             with self.subTest(projection=key):
                 self.assertEqual(_serialized_hash(CATALOG_DATA[key]), expected_hash)
 
     def test_route_order_and_identity_remain_exact(self):
         route_ids = tuple(route.id for route in catalog_routes())
 
-        self.assertEqual(len(route_ids), 43)
-        self.assertEqual(len(set(route_ids)), 43)
-        self.assertEqual(_serialized_hash(route_ids), _V27_ROUTE_ORDER_HASH)
+        self.assertEqual(len(route_ids), 44)
+        self.assertEqual(len(set(route_ids)), 44)
+        self.assertEqual(_serialized_hash(route_ids), _CONTROL_CENTER_ROUTE_ORDER_HASH)
 
     def test_application_settings_uses_current_plain_language(self):
         route = next(

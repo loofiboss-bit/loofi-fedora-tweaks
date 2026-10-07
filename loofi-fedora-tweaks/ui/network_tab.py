@@ -155,7 +155,7 @@ class NetworkTab(BaseTab):
                 self.tr("MAC"),
             ]
         )
-        self.iface_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.iface_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.iface_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.iface_table)
         self._set_table_visible_rows(self.iface_table, visible_rows=3)
@@ -184,7 +184,7 @@ class NetworkTab(BaseTab):
                 self.tr("Status"),
             ]
         )
-        self.wifi_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.wifi_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.wifi_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.wifi_table)
         self._set_table_visible_rows(self.wifi_table, visible_rows=3)
@@ -222,7 +222,7 @@ class NetworkTab(BaseTab):
                 self.tr("Status"),
             ]
         )
-        self.vpn_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.vpn_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.vpn_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.vpn_table)
         self._set_table_visible_rows(self.vpn_table, visible_rows=3)
@@ -252,7 +252,7 @@ class NetworkTab(BaseTab):
         dns_group = QGroupBox(self.tr("DNS Switcher"))
         dns_layout = QVBoxLayout(dns_group)
 
-        dns_desc = QLabel(self.tr("Change DNS for the current active connection. Applies instantly via NetworkManager."))
+        dns_desc = QLabel(self.tr("Change DNS for the current active connection. Review each change before applying it through NetworkManager."))
         dns_desc.setWordWrap(True)
         dns_layout.addWidget(dns_desc)
 
@@ -411,7 +411,7 @@ class NetworkTab(BaseTab):
                 self.tr("Download Rate"),
             ]
         )
-        self.traffic_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.traffic_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.traffic_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.traffic_table)
         self._set_table_visible_rows(self.traffic_table, visible_rows=4)
@@ -434,7 +434,7 @@ class NetworkTab(BaseTab):
                 self.tr("Process"),
             ]
         )
-        self.conn_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.Stretch)
+        self.conn_table.horizontalHeader().setSectionResizeMode(QHeaderView.ResizeMode.ResizeToContents)
         self.conn_table.setEditTriggers(QTableWidget.EditTrigger.NoEditTriggers)
         BaseTab.configure_table(self.conn_table)
         self._set_table_visible_rows(self.conn_table, visible_rows=4)

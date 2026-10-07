@@ -93,9 +93,9 @@ class FakeRuntime:
 @patch("core.tasks.tweaks.kde_capability_error", return_value="")
 class TestTweakCatalog(unittest.TestCase):
     def test_catalog_controls_are_desktop_scoped_on_both_backends(self, _capability) -> None:
-        self.assertEqual(len(TWEAKS), 73)
+        self.assertEqual(len(TWEAKS), 76)
         for backend in ("dnf5", "rpm_ostree"):
-            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 45)
+            self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 48)
             self.assertEqual(len(visible_tweaks(profile("kde", backend))), 30)
         self.assertEqual(visible_tweaks(profile("unknown")), ())
         self.assertEqual(visible_tweaks(profile("kde", "bootc")), ())
@@ -273,6 +273,8 @@ class TestTweakPage(unittest.TestCase):
 
     def test_health_requires_separate_no_rollback_acceptance(self, _capability) -> None:
         parent = QWidget()
+        parent._record_global_operation_result = Mock()
+        parent._set_review_notice = lambda *args: MainWindowUtilityMixin._set_review_notice(parent, *args)
         parent._run_reviewed_health_action = Mock()  # type: ignore[attr-defined]
         page = SimpleNamespace(set_health_notice=Mock())
         adapter = SimpleNamespace(stopped=SimpleNamespace(connect=Mock()))

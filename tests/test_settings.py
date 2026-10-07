@@ -64,7 +64,7 @@ class TestDefaults(unittest.TestCase):
         self.assertEqual(defaults.favorite_routes, [])
         self.assertEqual(defaults.hidden_routes, [])
         self.assertEqual(defaults.navigation_mode, "standard")
-        self.assertEqual(defaults.last_route_id, "atlas_dashboard")
+        self.assertEqual(defaults.last_route_id, "overview")
         self.assertEqual(defaults.window_geometry, {})
         self.assertEqual(defaults.state_schema_version, STATE_SCHEMA_VERSION)
 

@@ -35,6 +35,7 @@ class SecondaryRoute:
 def secondary_routes_for_destination(
     destination: Destination,
     context: NavigationContext,
+    allowed_route_ids: tuple[str, ...] | None = None,
 ) -> tuple[SecondaryRoute, ...]:
     """Return one visible canonical route per destination section."""
     routes: list[SecondaryRoute] = []
@@ -47,6 +48,8 @@ def secondary_routes_for_destination(
         )
         visible_route_id = ""
         for route_id in route_ids:
+            if allowed_route_ids is not None and route_id not in allowed_route_ids:
+                continue
             result = NavigationPolicy.evaluate(route_id, context)
             if result.decision is NavigationDecision.VISIBLE:
                 visible_route_id = route_id
@@ -107,10 +110,12 @@ class DestinationHost(QFrame):
         destination: Destination,
         context: NavigationContext,
         active_route_id: str = "",
+        *,
+        allowed_route_ids: tuple[str, ...] | None = None,
     ) -> None:
         """Populate the shared section bar from policy-approved routes."""
         self._suppress_signal = True
-        self._routes = secondary_routes_for_destination(destination, context)
+        self._routes = secondary_routes_for_destination(destination, context, allowed_route_ids)
         self.navigator.set_filtering_enabled(destination.id == "advanced")
         self.navigator.set_sections(
             [

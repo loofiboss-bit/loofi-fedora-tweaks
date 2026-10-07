@@ -198,7 +198,7 @@ class TestV29VerticalWorkflowWidgets(unittest.TestCase):
         page.set_source(UpdateSourceState("system", "awaiting_reboot", 2, stale=False, reboot_required=True))
         self.assertEqual(page.source_button("system").text(), "Continue")
         page.set_source(UpdateSourceState("system", "verification_failed", 2, stale=False))
-        self.assertEqual(page.source_button("system").text(), "Verify")
+        self.assertEqual(page.source_button("system").text(), "Review")
         page.set_source(UpdateSourceState("system", "unsupported"))
         self.assertFalse(page.source_button("system").isEnabled())
         before = len(requests)

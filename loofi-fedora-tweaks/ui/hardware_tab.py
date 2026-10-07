@@ -16,11 +16,11 @@ from core.plugins.interface import PluginInterface
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
 from PyQt6.QtCore import QTimer, pyqtSignal
-from PyQt6.QtWidgets import QGroupBox, QHBoxLayout, QLabel, QPushButton, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QGroupBox, QLabel, QPushButton, QVBoxLayout, QWidget
 from services.hardware import BluetoothManager
 from utils.log import get_logger
 
-from ui.components.layout import PageScaffold
+from ui.components.layout import AdaptiveGrid, PageScaffold
 
 logger = get_logger(__name__)
 
@@ -72,11 +72,11 @@ class HardwareTab(QWidget, PluginInterface):
         summary_layout.addWidget(self.lbl_platform)
         layout.addWidget(summary)
 
-        device_row = QHBoxLayout()
-        device_row.addWidget(self.create_audio_card())
-        device_row.addWidget(self.create_fingerprint_card())
-        device_row.addWidget(self.create_bluetooth_card())
-        layout.addLayout(device_row)
+        device_row = AdaptiveGrid(min_column_width=max(300, self.fontMetrics().height() * 18))
+        device_row.add_card(self.create_audio_card())
+        device_row.add_card(self.create_fingerprint_card())
+        device_row.add_card(self.create_bluetooth_card())
+        layout.addWidget(device_row)
 
         self.lbl_status = QLabel(self.tr("Status checks run when this page is active."))
         self.lbl_status.setObjectName("hwStatus")
@@ -128,13 +128,14 @@ class HardwareTab(QWidget, PluginInterface):
         layout = QVBoxLayout(card)
         self.lbl_bt_status = QLabel(self.tr("Bluetooth: detecting..."))
         self.lbl_bt_status.setObjectName("hwBtStatus")
+        self.lbl_bt_status.setWordWrap(True)
         layout.addWidget(self.lbl_bt_status)
         self.lbl_bt_devices = QLabel(self.tr("Paired devices: —"))
         self.lbl_bt_devices.setObjectName("hwBtDevices")
         self.lbl_bt_devices.setWordWrap(True)
         layout.addWidget(self.lbl_bt_devices)
 
-        buttons = QHBoxLayout()
+        buttons = QVBoxLayout()
         for label, action, accessible in (
             (self.tr("Review power on"), "power-on", self.tr("Review Bluetooth power on")),
             (self.tr("Review power off"), "power-off", self.tr("Review Bluetooth power off")),
