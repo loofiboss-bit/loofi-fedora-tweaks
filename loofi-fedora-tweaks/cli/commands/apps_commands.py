@@ -3,12 +3,12 @@
 from __future__ import annotations
 
 from dataclasses import replace
-from typing import Any, Callable
+from typing import Any, Callable, cast
 
 from core.actions import ActionCatalog, ActionCenterOrchestrator
 from core.actions.catalog import SystemActionRuntime
 from core.actions.operation_controller import OperationController
-from services.software.installed_applications import InstalledApplicationService
+from services.software.installed_applications import InstalledApplicationService, installation_flag, validate_ref
 from core.executor.command_facade import CommandFacade
 from core.platform import detect_platform_profile
 from core.tasks.applications import ApplicationCatalog, ApplicationContext
@@ -42,6 +42,81 @@ def handle_apps(
                 for error in inventory.errors:
                     print_fn(error)
             return 1 if inventory.errors else 0
+
+    if action in {"details", "unused", "cleanup"}:
+        from services.software.flatpak_maintenance import FlatpakMaintenanceService, UnusedSnapshot, REF_PATTERN
+
+        def report_metadata_error(message: str) -> int:
+            if json_output:
+                output_json({"available": False, "status": "unavailable", "error": message})
+            else:
+                print_fn(message)
+            return 1
+
+        try:
+            installation_flag(args.installation)
+            if action == "details" and not validate_ref(args.ref):
+                return report_metadata_error("Select one full installed application ref.")
+            if action == "cleanup":
+                refs = getattr(args, "refs", ())
+                if (not refs or len(refs) > 256 or len(refs) != len(set(refs))
+                        or any(not isinstance(ref, str) or not REF_PATTERN.fullmatch(ref) or not ref.startswith("runtime/") for ref in refs)):
+                    return report_metadata_error("Select one or more distinct full runtime refs for cleanup.")
+        except (TypeError, ValueError):
+            return report_metadata_error("Select a valid Flatpak installation identifier.")
+        maintenance = FlatpakMaintenanceService()
+        try:
+            result = maintenance.details(args.ref, args.installation) if action == "details" else maintenance.unused(args.installation)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return report_metadata_error("Local Flatpak metadata could not be read.")
+        if action != "cleanup" or not result.available:
+            if json_output:
+                output_json(result.to_dict())
+            else:
+                for key, value in result.to_dict().items():
+                    print_fn(f"{key}: {value}")
+                if action == "details" and result.available:
+                    print_fn("No local EOL warning does not guarantee continued support.")
+            return 0 if result.available else 1
+        parameters = {"installation": args.installation, "refs": args.refs, "snapshot_digest": cast(UnusedSnapshot, result).digest}
+        controller = OperationController(orchestrator=ActionCenterOrchestrator(catalog=ActionCatalog(), runtime=runtime))
+        try:
+            ticket = controller.prepare("remove-unused-flatpaks", parameters)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return report_metadata_error("Runtime cleanup could not be prepared. Inspect the installation again.")
+        if not ticket.plan.policy_decision.allowed:
+            if json_output:
+                output_json(ticket.plan.to_dict())
+            else:
+                print_fn(ticket.plan.policy_decision.explanation)
+            return 1
+        if dry_run or not getattr(args, "yes", False):
+            if json_output:
+                output_json(ticket.plan.to_dict())
+            else:
+                print_fn(f"Review runtimes in {args.installation}: {', '.join(args.refs)}")
+                if args.installation != "user":
+                    print_fn("Shared installation: other users' private app inventories have not been inspected.")
+                print_fn("Reported sizes do not predict freed space. App data is preserved. Recovery is manual reinstallation; there is no automatic rollback. Pass --yes to accept and confirm exact runtime removal.")
+            return 0
+        try:
+            confirmed = controller.confirm(ticket, confirmed=True, accept_no_rollback=True)
+        except (OSError, RuntimeError, TypeError, ValueError):
+            return report_metadata_error("Runtime cleanup review could not be confirmed. Inspect the installation again.")
+        if confirmed.status != "prepared":
+            if json_output:
+                output_json(confirmed.to_dict())
+            else:
+                print_fn(confirmed.message)
+            return 1
+        outcome = controller.run(confirmed)
+        if outcome.status == "verifying":
+            outcome = controller.verify(outcome)
+        if json_output:
+            output_json(outcome.to_dict())
+        else:
+            print_fn(outcome.message)
+        return 0 if outcome.status == "succeeded" else 1
 
     if action == "permissions":
         service = InstalledApplicationService()

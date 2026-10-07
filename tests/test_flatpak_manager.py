@@ -146,40 +146,30 @@ class TestFlatpakPermissions(unittest.TestCase):
 class TestOrphanDetection(unittest.TestCase):
     """Tests for FlatpakManager.find_orphan_runtimes()."""
 
-    @patch("services.software.flatpak.cached_which", return_value="/usr/bin/flatpak")
-    @patch("services.software.flatpak.subprocess.run")
-    def test_find_orphans(self, mock_run, mock_which):
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout=("org.freedesktop.Platform/x86_64/22.08\norg.gnome.Platform/x86_64/44\n"),
-        )
+    @patch("services.software.flatpak_maintenance.FlatpakMaintenanceService")
+    def test_find_orphans(self, service):
+        service.return_value.unused.return_value = MagicMock(available=True, refs=[
+            MagicMock(ref="runtime/org.freedesktop.Platform/x86_64/22.08"), MagicMock(ref="runtime/org.gnome.Platform/x86_64/44")])
         result = FlatpakManager.find_orphan_runtimes()
         self.assertEqual(len(result), 2)
 
-    @patch("services.software.flatpak.cached_which", return_value="/usr/bin/flatpak")
-    @patch("services.software.flatpak.subprocess.run")
-    def test_find_no_orphans(self, mock_run, mock_which):
-        mock_run.return_value = MagicMock(
-            returncode=0,
-            stdout="Nothing unused to uninstall\n",
-        )
+    @patch("services.software.flatpak_maintenance.FlatpakMaintenanceService")
+    def test_find_no_orphans(self, service):
+        service.return_value.unused.return_value = MagicMock(available=True, refs=[])
         result = FlatpakManager.find_orphan_runtimes()
         self.assertEqual(len(result), 0)
 
-    @patch("services.software.flatpak.cached_which", return_value=None)
-    def test_find_orphans_no_flatpak(self, mock_which):
-        result = FlatpakManager.find_orphan_runtimes()
-        self.assertEqual(len(result), 0)
+    @patch("services.software.flatpak_maintenance.FlatpakMaintenanceService")
+    def test_find_orphans_no_flatpak(self, service):
+        service.return_value.unused.return_value = MagicMock(available=False, error="Unavailable")
+        self.assertRaises(RuntimeError, FlatpakManager.find_orphan_runtimes)
 
 
 class TestCleanup(unittest.TestCase):
     """Tests for FlatpakManager.cleanup_unused()."""
 
     def test_cleanup_command(self):
-        binary, args, desc = FlatpakManager.cleanup_unused()
-        self.assertEqual(binary, "flatpak")
-        self.assertIn("uninstall", args)
-        self.assertIn("--unused", args)
+        self.assertRaises(RuntimeError, FlatpakManager.cleanup_unused)
 
 
 class TestTotalSize(unittest.TestCase):

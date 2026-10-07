@@ -1,9 +1,8 @@
 #!/usr/bin/env python3
 """Generate the runtime requirements file from pyproject metadata.
 
-The file is consumed by source checkouts and CI.  Optional integrations are no
-longer part of the product surface, so only the application's core runtime
-dependencies are mirrored here.  Development tools stay in the ``dev`` extra
+The file is consumed by source checkouts and CI.  Only the application's core runtime dependencies are mirrored here. Optional
+Flatpak introspection remains in its explicit extra.  Development tools stay in the ``dev`` extra
 and are installed explicitly by the relevant workflow.
 """
 

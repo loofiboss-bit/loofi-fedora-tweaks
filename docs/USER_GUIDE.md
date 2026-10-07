@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Current release: 32.3.0 "Clarity". The personalization and app-inspection work in the current checkout is an unreleased local candidate; physical desktop and assistive-technology validation remains unverified.
+> Current checkout: 32.4.0 "Care", an unreleased local candidate. Physical desktop and assistive-technology validation remains unverified.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -290,6 +290,65 @@ values are hidden; unknown keys remain under **Technical details**. Portals and
 user overrides can change actual access.
 **Review removal** always targets exactly one installation. Running apps must be
 closed first; removal preserves their data. RPM removal opens the desktop software manager.
+
+### Care app details and runtime maintenance
+
+In **Installed**, combine search with source and installation filters. Choose
+**Largest first** to sort the reported logical sizes; missing sizes remain unknown
+and sort last. Filtering and sorting do not start a new inventory probe.
+
+**App details** reads the exact Flatpak ref and installation. It shows the source
+remote name, runtime, reported size, and locally recorded app/runtime end-of-life
+warnings or replacement refs. No recorded warning is not a continued-support
+guarantee. Permission metadata remains available through **Show permissions**.
+Source URLs and private environment values are not displayed.
+
+In **Unused Flatpak runtimes**, choose user, system, or a named installation.
+**Refresh installations** explicitly discovers named installations; you may also
+enter their name. **Inspect unused runtimes** reads local libflatpak evidence,
+then lets you select exact refs for **Review runtime cleanup**. The reviewed
+snapshot binds candidates, commits, pinning and visible dependency evidence.
+Changes to it require a new review. The operation preserves app data and checks
+the selected and remaining refs independently. A partial or interrupted removal
+keeps its observed refs in Activity; recovery is manual reinstallation.
+
+System and named installations are shared. The invoking user's dependency
+evidence can be inspected, but other users' private app inventories are not.
+Reported ref sizes include shared objects and are not a promise of freed space.
+Missing optional PyGObject/libflatpak support is unavailable; Loofi never
+installs these dependencies automatically.
+
+CLI examples (replace refs and installation names with inspected values):
+
+```bash
+loofi-fedora-tweaks --cli apps details app/org.mozilla.firefox/x86_64/stable --installation user
+loofi-fedora-tweaks --cli apps unused --installation user
+loofi-fedora-tweaks --cli apps cleanup --installation user --ref runtime/org.example.Unused/x86_64/stable
+```
+
+The cleanup command previews without `--yes`. Adding `--yes` explicitly accepts
+the exact reviewed runtime removal and manual reinstallation without rollback.
+Repeat `--ref` to select more runtimes. Global `--dry-run` never starts removal.
+
+### Diagnose one update source
+
+Failed check, update and verification cards offer **Diagnose**. The link opens
+Health with the source and exact recorded run selected, without running a check.
+Choose **Run diagnostics** explicitly. System uses existing package/deployment
+checks; Flatpak inspects local inventories, remotes and runtimes; Firmware
+inspects fwupd service and device availability. Failed or malformed evidence
+remains partial or unavailable. These checks do not update, repair or retry.
+
+```bash
+loofi-fedora-tweaks --cli --json updates check
+loofi-fedora-tweaks --cli --json updates diagnose --source flatpak
+loofi-fedora-tweaks --cli updates diagnose --source firmware --run-id RECORDED_RUN_ID
+```
+
+CLI and GUI update discovery share source observations. CLI returns a nonzero
+status when a source fails or cannot be checked, preserving useful source results.
+An exact run must belong to the selected source; missing or mismatched history
+does not select a different operation.
 
 Health has separate **Sound is not working** and **Bluetooth is not working**
 profiles. Each has a 15-second budget and cancellation. Missing tools, partial

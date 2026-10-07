@@ -1,5 +1,5 @@
 .\" Man page for loofi-fedora-tweaks
-.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-07" "32.3.0" "Loofi Fedora Tweaks Manual"
+.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-07" "32.4.0" "Loofi Fedora Tweaks Manual"
 .SH NAME
 loofi\-fedora\-tweaks \- reviewed Fedora maintenance for desktop users
 .SH SYNOPSIS
@@ -12,9 +12,8 @@ is a small PyQt6 desktop application for desktop\-neutral Fedora maintenance.
 It separates read\-only inspection from reviewed system changes and shows the
 result of each change independently.
 .PP
-When launched without options, the graphical interface opens.  Its five
-destinations are Home, Apps, Tweaks, Health, and Updates. Activity & Recovery
-and Settings are secondary header surfaces. The application has no background service, local web API, or
+When launched without options, the graphical interface opens.  Its primary destinations are Overview, Apps, Tweaks, Health, Updates, and Activity.
+Settings is available from the header. The application has no background service, local web API, or
 Flatpak application distribution.
 .SH OPTIONS
 .TP
@@ -34,10 +33,11 @@ Show local system and platform information.
 Run and persist the explicit read\-only System Check.  The target is selected
 from the supported Fedora readiness profiles.
 .TP
-.B updates \fBcheck\fR|\fBconflicts\fR|\fBhistory\fR
+.B updates \fBcheck\fR|\fBconflicts\fR|\fBhistory\fR|\fBdiagnose\fR
 Inspect package update availability, dependency conflicts, or recorded update
 history.  Flatpak and firmware are separate update sources in the GUI and are
-reported as unavailable when their host tools are missing.
+reported as unavailable when their host tools are missing. The CLI check uses
+the same source observations as the GUI; partial failures return a nonzero status.
 .TP
 .B troubleshoot \fBprofiles\fR|\fBrun\fR|\fBshow\fR|\fBlatest\fR|\fBcompare\fR|\fBexport\fR
 Run or inspect a bounded, read\-only troubleshooting session and export its
@@ -54,16 +54,34 @@ an automatic rollback.
 .TP
 .B tweaks preset \fBlist\fR|\fBpreview\fR|\fBapply\fR
 List or review the Reduced motion and File navigation desktop presets. Applying
-requires B--yesR; individual settings may be selected with B--idsR.
+requires \fB--yes\fR; individual settings may be selected with \fB--ids\fR.
 .TP
 .B tweaks get \fIID\fR
 Inspect one setting and its verified restoration offer within an eight-second
 read budget.
 .TP
-.B apps permissions \fIREF\fR B--installationR ISCOPER
+.B apps permissions \fIREF\fR \fB--installation\fR \fISCOPE\fR
 Read metadata-declared permissions for one exact installed Flatpak ref and
 installation. Environment values are redacted. The result does not include all
 effective access from user overrides or desktop portals.
+.TP
+.B apps details \fIREF\fR \fB--installation\fR \fINAME\fR
+Inspect one exact application installation, its source, runtime, reported size,
+and locally recorded end-of-life information. Missing optional libflatpak support
+is reported explicitly.
+.TP
+.B apps unused \fB--installation\fR \fINAME\fR
+Inspect unused runtimes for user, system, or a named installation. Reported
+sizes are not a promise of reclaimed disk space.
+.TP
+.B apps cleanup \fB--installation\fR \fINAME\fR \fB--ref\fR \fIREF\fR [\fB--ref\fR \fIREF\fR ...] [\fB--yes\fR]
+Review and remove only selected unused runtime refs through Action Center.
+The reviewed inventory is checked again before execution. Application data is
+preserved; shared installations may affect other users. There is no automatic rollback.
+.TP
+.B updates diagnose \fB--source\fR \fIsystem|flatpak|firmware\fR
+Run bounded source-specific read-only diagnostics. An optional \fB--run-id\fR
+follows the exact operation recorded for that source without rerunning it.
 .TP
 .B doctor
 Check dependencies, platform detection, state integrity, and authorization

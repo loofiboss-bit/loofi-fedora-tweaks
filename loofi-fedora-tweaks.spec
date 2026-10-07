@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.3.0
+Version:        32.4.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -26,6 +26,8 @@ Requires:       mesa-libEGL
 # definitions; the desktop's standard agent handles authorization.
 Requires:       polkit
 Requires:       hicolor-icon-theme
+Recommends:     python3-gobject-base
+Recommends:     flatpak-libs
 
 # Version renormalization: 50.0.0 → 1:1.0.0
 Obsoletes:      loofi-fedora-tweaks < 1:1.0.0
@@ -71,6 +73,7 @@ export PYTHONPATH="${APP_DIR}${PYTHONPATH:+:$PYTHONPATH}"
 exec python3 "${APP_DIR}/main.py" "$@" 2>>"${LOG_DIR}/startup.log"
 EOF
 chmod 0755 %{buildroot}%{_bindir}/%{name}
+install -m 0755 scripts/loofi-flatpak-maintenance %{buildroot}%{_bindir}/loofi-flatpak-maintenance
 
 desktop-file-install \
     --dir=%{buildroot}%{_datadir}/applications \
@@ -96,6 +99,7 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %doc README.md
 %{_prefix}/lib/%{name}
 %attr(755,root,root) %{_bindir}/%{name}
+%attr(755,root,root) %{_bindir}/loofi-flatpak-maintenance
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
 %{_datadir}/icons/hicolor/512x512/apps/loofi-fedora-tweaks.png
@@ -104,6 +108,10 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Wed Oct 07 2026 Loofi <loofi@example.com> - 32.4.0-1
+- Care: installation-scoped app insight, reviewed runtime cleanup, and update diagnostics.
+- Recommend optional libflatpak introspection without installing tools at runtime.
+
 * Wed Oct 07 2026 Loofi <loofi@example.com> - 32.3.0-1
 - Clarity: Modern, compact UI layout, zero-scroll navigation, and Wayland desktop icon.
 - Add desktop file name and explicit icon bindings for Wayland compositor window pairing.

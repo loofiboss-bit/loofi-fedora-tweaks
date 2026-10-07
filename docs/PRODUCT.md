@@ -89,6 +89,28 @@ without changing services, devices, volume, or connections.
 Flatpak permission inspection reports app metadata for one exact installation; it
 does not claim to include portal grants or user overrides.
 
+### Care application and maintenance workflows
+
+Installed application filters and sorting use the captured inventory. App details
+bind origin, runtime, logical installed size, and locally recorded end-of-life
+warnings to the exact ref and installation. No recorded warning is not a support
+guarantee. A missing optional libflatpak capability stays unavailable.
+
+Unused-runtime inspection and removal target one explicit Flatpak installation.
+The selected set, installed commits, and pinning are rechecked after review;
+drift requires a new review. Only approved uninstall operations may run. The
+remaining inventory is independently verified and app data is preserved.
+System and named installations are shared; Loofi does not inspect other users'
+private inventories or promise that runtime removal cannot affect them. Reported
+ref sizes do not promise recovered disk space. Recovery is manual reinstallation,
+without an automatic rollback.
+
+Failed update sources link to source-specific Health diagnostics and the exact
+recorded operation. Opening Health does not start a check. An explicit diagnostic
+run collects bounded read-only observations and offers a relevant next step.
+GUI and CLI update discovery share source statuses; unavailable evidence cannot
+become an up-to-date result.
+
 ## Preferences and status
 
 The Loofi release check is off by default and can be enabled in Settings. When

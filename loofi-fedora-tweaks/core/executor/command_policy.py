@@ -91,11 +91,18 @@ def _validate_executable(command: str, *, allow_wrapper: bool = False) -> str:
 def validate_command(command: str, args: Sequence[str] | None = None) -> None:
     """Validate an executor command before preview or execution."""
     args = list(args or [])
+    from services.software.flatpak_maintenance import trusted_helpers, validate_helper_args
+    if command in trusted_helpers():
+        if not validate_helper_args(args):
+            _reject("Flatpak maintenance requires an exact reviewed command shape")
+        return
     executable = _validate_executable(command, allow_wrapper=True)
 
     if executable == "pkexec":
         if not args:
             _reject("pkexec requires a wrapped command")
+        if args[0] in trusted_helpers():
+            _reject("Flatpak maintenance must use native authorization as the invoking user")
         validate_command(args[0], args[1:])
         return
 

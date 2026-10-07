@@ -75,9 +75,10 @@ class OverviewRuntime(SystemActionRuntime):
         ("fwupdmgr", "get-updates", "--json"),
     }
 
-    def __init__(self, facade, system_manager=None, *, cancelled: Event | None = None):
+    def __init__(self, facade, system_manager=None, *, cancelled: Event | None = None, output_limit: int = MAX_BYTES):
         super().__init__(facade, system_manager)
         self.cancelled = cancelled or Event()
+        self.output_limit = max(1, min(output_limit, MAX_BYTES))
 
     def _check_cancelled(self) -> None:
         if self.cancelled.is_set():
@@ -105,7 +106,7 @@ class OverviewRuntime(SystemActionRuntime):
                     if remaining <= 0:
                         raise subprocess.TimeoutExpired(vector, timeout)
                     for key, _ in selector.select(min(remaining, 0.2)):
-                        limit = MAX_BYTES if key.data == "stdout" else 65536
+                        limit = self.output_limit if key.data == "stdout" else 65536
                         chunk = os.read(key.fd, min(65536, limit - len(output[key.data]) + 1))
                         if not chunk:
                             selector.unregister(key.fileobj)

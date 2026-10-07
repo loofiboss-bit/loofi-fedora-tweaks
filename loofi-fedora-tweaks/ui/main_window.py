@@ -567,6 +567,9 @@ class MainWindow(
 
     def _open_route_request(self, route_id: str, _preselection=None) -> None:
         """Navigate through the canonical manifest; metadata remains inert."""
+        if route_id == "software:apps" and isinstance(_preselection, dict) and _preselection.get("section") == "unused-runtimes":
+            self._open_apps_unused_runtimes(_preselection)
+            return
         self.switch_to_route(route_id)
 
     def _open_action_center_run(self, run_id: str) -> None:

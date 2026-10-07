@@ -41,6 +41,11 @@
   </provides>
 
   <releases>
+    <release version="32.4.0" date="2026-10-07" type="development">
+      <description>
+        <p>Care local candidate: installation-scoped application insight, reported-size filters, reviewed unused runtime removal, and source-specific update diagnostics. Physical desktop qualification and publication remain separate.</p>
+      </description>
+    </release>
     <release version="32.0.2" date="2026-10-03" type="stable">
       <description>
         <p>v32.0.2 "Refocus": Tweaks-first navigation, simple and advanced modes, and 61 declarative GNOME and KDE controls with reset-to-default.</p>

@@ -53,7 +53,20 @@ this does not qualify every setting or the full interface.
 Physical desktop and assistive-technology qualification remains separate from
 automated and rendering evidence.
 
-## Local candidate — Personalization and app insight
+## Local candidate — v32.4.0 "Care"
+
+- Installation-scoped app details, reported-size sorting, and source/installation filters
+- Optional libflatpak app/runtime support warnings and exact unused-runtime inspection
+- Reviewed runtime cleanup through Action Center with drift checks and independent inventory verification
+- Source-specific update diagnostics and shared GUI/CLI update observations
+- Include the existing personalization, permission, trust, search, accessibility, and scroll-region improvements from PR #56
+- Evidence is recorded in [Care qualification](docs/CARE_VERIFICATION.md)
+- Physical KDE, GNOME, assistive-technology, and real-session Polkit qualification remains separate
+
+This checkout is a 32.4.0 candidate. Local verification does not publish it or
+authorize installation on the user's computer.
+
+## Included candidate work — Personalization and app insight
 
 - [x] Add Reduced motion and File navigation presets through existing profile review and Action Center execution
 - [x] Add an eight-second, one-setting inspection and refresh after a single change or restore
@@ -61,8 +74,7 @@ automated and rendering evidence.
 - [x] Complete full automated, packaging, and responsive rendering verification
 - [ ] Physical KDE, GNOME, and assistive-technology qualification
 
-The candidate does not change the 32.3.0 release version. Publication and
-installation remain outside this local implementation.
+Included in Care. Publication and installation remain outside this local implementation.
 
 ## Prior local work — Control center redesign
 

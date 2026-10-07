@@ -365,7 +365,7 @@ class ActionCenterHistorySource:
                         "run_id": run.run_id,
                         "action_id": run.action_id,
                         "execution": _safe_result(run.execution_result),
-                        "verification": _safe_result(run.verification_result),
+                        "verification": _safe_result(run.verification_result, action_id=run.action_id),
                         "recovery": {
                             "status": run.recovery_status,
                             "rollback_supported": bool(plan.rollback_supported) if plan else False,
@@ -418,7 +418,7 @@ class ActionCenterHistorySource:
                 "run_id": run.run_id,
                 "action_id": run.action_id,
                 "execution": _safe_result(run.execution_result),
-                "verification": _safe_result(run.verification_result),
+                "verification": _safe_result(run.verification_result, action_id=run.action_id),
                 "recovery": {
                     "status": run.recovery_status,
                     "rollback_supported": bool(plan.rollback_supported) if plan else False,
@@ -429,15 +429,29 @@ class ActionCenterHistorySource:
         )
 
 
-def _safe_result(result: Mapping[str, Any] | None) -> dict[str, Any]:
+def _safe_result(result: Mapping[str, Any] | None, *, action_id: str = "") -> dict[str, Any]:
     """Keep journal evidence typed while excluding raw output and vectors."""
     if not isinstance(result, Mapping):
         return {}
-    return {
+    safe = {
         key: result[key]
         for key in ("success", "message", "exit_code", "needs_reboot", "verification_state")
         if key in result
     }
+    if action_id == "remove-unused-flatpaks":
+        from services.software.flatpak_maintenance import REF_PATTERN, INSTALLATION_PATTERN
+        data = result.get("data", {})
+        if isinstance(data, Mapping):
+            for key in ("removed_refs", "remaining_refs", "unexpected_missing_refs"):
+                refs = data.get(key)
+                if isinstance(refs, list) and len(refs) <= 256 and all(
+                    isinstance(ref, str) and REF_PATTERN.fullmatch(ref) and ref.startswith("runtime/") for ref in refs
+                ):
+                    safe[key] = refs
+            installation = data.get("installation")
+            if isinstance(installation, str) and INSTALLATION_PATTERN.fullmatch(installation):
+                safe["installation"] = installation
+    return safe
 
 
 class LoofiHistorySource:

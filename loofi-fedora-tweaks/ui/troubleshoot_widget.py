@@ -92,6 +92,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.worker_factory = worker_factory
         self.history = history or _DefaultSessionHistory()
         self._worker: Any | None = None
+        self._update_run_id = ""
         self._closing = False
         self._current_session: TroubleshootingSession | None = None
         self._comparison: TroubleshootingComparison | None = None
@@ -179,6 +180,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.application_input.setPlaceholderText(self.tr("Application command, for example firefox"))
         self.application_input.hide()
         choose.add_widget(self.application_input)
+        self._build_update_choices(choose)
         self.profile_limitation = InlineNotice("", "", kind="warning")
         self.profile_limitation.setObjectName("troubleshootProfileLimitation")
         self.profile_limitation.hide()
@@ -203,6 +205,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
             | Qt.TextInteractionFlag.TextSelectableByMouse
         )
         checks.add_widget(self.checks_label)
+        self._build_runtime_link(checks)
         self.technical_disclosure = DetailsDisclosure(
             summary=self.tr("Show technical details")
         )
@@ -384,8 +387,12 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
 
     def _profile_changed(self, *_args: Any) -> None:
         self._update_symptom_cards()
+        is_updates = self._selected_symptom()[2] == "updates_failed"
+        self.update_source_selector.setVisible(is_updates)
+        self.update_run_context.setVisible(is_updates and bool(self._update_run_id))
         profile = require_profile(self.selected_profile_id())
         self._show_device_settings(profile.id)
+        self.unused_runtimes_link.setVisible(profile.id == "storage_pressure")
         checked_areas = []
         technical_lines = []
         for budget in profile.source_budgets:
@@ -437,22 +444,14 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         else:
             self.profile_limitation.hide()
 
-    def selected_profile_id(self) -> str:
-        return self._selected_symptom()[2]
-
-    def _selected_symptom(self) -> tuple[str, str, str, str]:
-        symptom_id = str(self.profile_selector.currentData() or self._SYMPTOMS[0][0])
-        return next(
-            (symptom for symptom in self._SYMPTOMS if symptom[0] == symptom_id),
-            self._SYMPTOMS[0],
-        )
-
     def start_session(self) -> None:
         """Create the worker only after direct user activation."""
         if self._worker is not None and self._worker.isRunning():
             return
         profile = require_profile(self.selected_profile_id())
         parameters: dict[str, Any] = {}
+        if self._update_run_id and "run_id" in dict(profile.parameter_schema):
+            parameters["run_id"] = self._update_run_id
         if dict(profile.parameter_schema).get("application_id") is not None:
             application_id = self.application_input.text().strip()
             if not application_id:

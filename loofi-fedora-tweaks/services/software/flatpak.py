@@ -251,26 +251,11 @@ class FlatpakManager:
         Returns:
             List of runtime refs that can be safely removed.
         """
-        orphans: List[str] = []
-        if not FlatpakManager.is_available():
-            return orphans
-
-        try:
-            result = subprocess.run(
-                ["flatpak", "uninstall", "--unused", "--assumeyes", "--dry-run"],
-                capture_output=True,
-                text=True,
-                timeout=30,
-            )
-            if result.returncode == 0:
-                for line in result.stdout.strip().splitlines():
-                    line = line.strip()
-                    if line and not line.startswith("Nothing") and not line.startswith("Info"):
-                        if "/" in line:
-                            orphans.append(line)
-        except (subprocess.TimeoutExpired, OSError) as e:
-            logger.error("Failed to find orphan runtimes: %s", e)
-        return orphans
+        from services.software.flatpak_maintenance import FlatpakMaintenanceService
+        snapshot = FlatpakMaintenanceService().unused("user")
+        if not snapshot.available:
+            raise RuntimeError(snapshot.error)
+        return [item.ref for item in snapshot.refs]
 
     @staticmethod
     def cleanup_unused() -> CommandTuple:
@@ -279,7 +264,7 @@ class FlatpakManager:
         Returns:
             CommandTuple for the cleanup operation.
         """
-        return ("flatpak", ["uninstall", "--unused", "--assumeyes"], "Removing unused Flatpak runtimes...")
+        raise RuntimeError("Review exact unused runtimes in Apps and use the remove-unused-flatpaks Action Center workflow.")
 
     @staticmethod
     def get_total_size() -> str:

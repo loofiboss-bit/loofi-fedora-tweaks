@@ -1,5 +1,15 @@
 # Changelog
 
+## [32.4.0] - Unreleased - "Care"
+
+- Add installation-scoped app details with origin, runtime, reported size, and locally recorded end-of-life warnings.
+- Filter installed applications by source and installation and sort by name or reported size without repeating system probes.
+- Review and remove an exact set of unused Flatpak runtimes through Action Center, preserving application data and verifying the remaining inventory.
+- Replace unsupported Flatpak cleanup discovery with optional libflatpak introspection; unavailable support stays explicit.
+- Diagnose failed updates by source and follow the exact recorded operation; GUI and CLI share read-only update observations.
+- Retain the candidate's reviewed desktop presets, permission details, trust, search, accessibility, and scroll-region fixes.
+- Keep host installation, remote publication, and physical desktop qualification separate from local implementation.
+
 ## [32.3.0] - 2026-10-07 - "Clarity"
 
 - Modernize visual styling with crisp typography, smooth gradient area sparklines, and sleek scrollbars.

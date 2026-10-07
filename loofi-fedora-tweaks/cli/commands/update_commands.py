@@ -76,29 +76,41 @@ def handle_self_update(args, json_output, output_json, print_fn, system_manager_
 
 def handle_updates(args, json_output, output_json, print_fn, run_operation, update_manager_cls):
     """Handle smart updates subcommand."""
-    if args.action == "check":
-        updates = update_manager_cls.check_updates()
+    if args.action == "diagnose":
+        from services.software.update_diagnostics import UpdateDiagnosticsService
+
+        outcome = UpdateDiagnosticsService().diagnose(args.source, run_id=getattr(args, "run_id", None))
+        payload = outcome.session.to_dict()
+        payload["persistence_reason_code"] = outcome.persistence_reason_code
         if json_output:
-            output_json(
-                [
-                    {
-                        "name": u.name,
-                        "old": u.old_version,
-                        "new": u.new_version,
-                        "source": u.source,
-                    }
-                    for u in updates
-                ]
-            )
+            output_json(payload)
         else:
-            print_fn("═══════════════════════════════════════════")
-            print_fn("   Available Updates")
-            print_fn("═══════════════════════════════════════════")
-            if not updates:
-                print_fn("  System is up to date.")
-            for u in updates:
-                print_fn(f"  {u.name}: {u.old_version} → {u.new_version} ({u.source})")
-        return 0
+            print_fn(f"Update diagnosis: {args.source} ({outcome.session.state})")
+            for result in outcome.session.source_results:
+                print_fn(f"  {result.source_id}: {result.state} — {result.message or result.reason_code}")
+                print_fn(f"    Collected: {result.completed_at}")
+                for key, value in result.to_dict()["facts"].items():
+                    print_fn(f"    {key}: {value}")
+            for finding in outcome.session.findings:
+                print_fn(f"  {finding.title}: {finding.summary}")
+                step = finding.next_step
+                print_fn(f"    Next step: {step.guidance or step.target_id or step.reason_code}")
+        return 0 if outcome.session.state == "completed" else 1
+
+    if args.action == "check":
+        from dataclasses import asdict
+        from services.software.update_overview import UpdateOverviewService
+
+        snapshot = UpdateOverviewService().check()
+        success = all(source.status in {"up_to_date", "available"} for source in snapshot.sources)
+        if json_output:
+            output_json({"success": success, **asdict(snapshot)})
+        else:
+            for source in snapshot.sources:
+                print_fn(f"  {source.source}: {source.status}" + (f" ({source.error_code})" if source.error_code else ""))
+                for item in source.items:
+                    print_fn(f"    {item.name}: {item.old_version} → {item.version}")
+        return 0 if success else 1
 
     elif args.action == "conflicts":
         conflicts = update_manager_cls.preview_conflicts()

@@ -113,6 +113,10 @@ class DefaultEvidenceCollector:
             return self._observability(session, started_at)
         if source_id == "change-journal":
             return self._change_journal(session, started_at)
+        if source_id in {"flatpak-update-health", "firmware-update-health"}:
+            from services.software.update_diagnostics import collect_update_health
+
+            return collect_update_health(self, source_id, session, started_at, cancellation)
         if source_id == "action-center":
             return self._action_center(session, started_at)
         if source_id == "package-health":
@@ -258,8 +262,28 @@ class DefaultEvidenceCollector:
     ) -> SourceEvidence:
         from core.actions.stores import ActionPlanStore, ActionRunStore
 
+        from core.tasks.update_flow import UPDATE_ACTION_SOURCES
+        from services.software.update_diagnostics import PROFILE_SOURCES
+
+        source = PROFILE_SOURCES.get(session.profile_id)
         plans = ActionPlanStore().list_read_only(limit=25)
-        runs = ActionRunStore().list_read_only(limit=25)
+        if source:
+            plans = [plan for plan in plans if UPDATE_ACTION_SOURCES.get(plan.action_id) == source]
+        requested_run = dict(session.profile_parameters).get("run_id")
+        runs = ActionRunStore().list_read_only(limit=None if requested_run else 25)
+        if requested_run:
+            matched = next((run for run in runs if run.run_id == requested_run), None)
+            source = PROFILE_SOURCES.get(session.profile_id, "system")
+            if matched is None or UPDATE_ACTION_SOURCES.get(matched.action_id) != source:
+                return self._state(
+                    "action-center", session, "unavailable", started_at,
+                    reason_code="requested-update-run-unavailable",
+                    message="The requested run is missing or belongs to another update source.",
+                )
+            runs = [matched]
+            plans = [plan for plan in plans if plan.plan_id == matched.plan_id]
+        elif source:
+            runs = [run for run in runs if UPDATE_ACTION_SOURCES.get(run.action_id) == source]
         return adapt_action_center(
             plans,
             runs,

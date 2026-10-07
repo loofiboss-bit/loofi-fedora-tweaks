@@ -2,10 +2,10 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QLabel, QPushButton, QLayout, QVBoxLayout
+from PyQt6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QPushButton, QLayout, QVBoxLayout
 
 from core.catalog_models import NativeHandoffId
-from services.software.installed_applications import InstalledApplication, InstalledInventory
+from services.software.installed_applications import InstalledApplication, InstalledInventory, filter_installed_applications
 from ui.components import Card, DetailsDisclosure
 from ui.operation_worker import OperationControllerQtAdapter
 from ui.native_handoff_card import NativeHandoffCard
@@ -154,6 +154,24 @@ class InstalledApplicationsCard(Card):
         self.software_handoff = NativeHandoffCard(NativeHandoffId.SOFTWARE_CENTER, title=self.tr("Manage Fedora RPM applications"), description=self.tr("Review RPM removal in your desktop software manager."), button_text=self.tr("Open software manager"), parent=self)
         self.software_handoff.hide()
         self.add_widget(self.software_handoff)
+        self.source_filter = QComboBox()
+        self.source_filter.setAccessibleName(self.tr("Installed application source"))
+        self.source_filter.addItem(self.tr("All sources"), "")
+        self.source_filter.addItem(self.tr("Flatpak"), "flatpak")
+        self.source_filter.addItem(self.tr("Fedora RPM"), "fedora")
+        self.installation_filter = QComboBox()
+        self.installation_filter.setAccessibleName(self.tr("Installed application installation"))
+        self.installation_filter.addItem(self.tr("All installations"), "")
+        self.sort_order = QComboBox()
+        self.sort_order.setAccessibleName(self.tr("Sort installed applications"))
+        self.sort_order.addItem(self.tr("Name"), "name")
+        self.sort_order.addItem(self.tr("Largest reported size"), "size")
+        for control in (self.source_filter, self.installation_filter, self.sort_order):
+            control.currentIndexChanged.connect(self._apply_search)
+            self.add_widget(control)
+        size_notice = QLabel(self.tr("Reported installation sizes include shared Flatpak objects and do not predict space freed by removal. Unknown sizes are listed last."))
+        size_notice.setWordWrap(True)
+        self.add_widget(size_notice)
         self._rows = []
         self._application_rows: list[tuple[InstalledApplication, _InstalledApplicationRow]] = []
         self._search_query = ""
@@ -171,16 +189,22 @@ class InstalledApplicationsCard(Card):
         self._permissions_adapter.finished.connect(self._permissions_result)
         self._permissions_adapter.failed.connect(self._permissions_failed)
         self._permissions_adapter.stopped.connect(self._start_pending_permission)
+        from ui.flatpak_insights import FlatpakInsightsCard
+        self.insights = FlatpakInsightsCard(service=service, parent=self)
+        self.insights.actionReviewRequested.connect(self.actionReviewRequested.emit)
+        self.insights.stopped.connect(self._notify_stopped)
+        self.add_widget(self.insights)
         self.refresh_button.setEnabled(service is not None)
 
     @property
     def busy(self):
-        return self._adapter.busy or self._permissions_adapter.busy
+        return self._adapter.busy or self._permissions_adapter.busy or self.insights.busy
 
     def request_stop(self):
         self._permission_generation += 1
         self._pending_permission_request = None
         self._close_permission_dialogs()
+        self.insights.request_stop()
         self._adapter.cancel()
         self._permissions_adapter.cancel()
 
@@ -192,7 +216,7 @@ class InstalledApplicationsCard(Card):
         self.request_stop()
         inventory_stopped = self._adapter.close(timeout_ms)
         permissions_stopped = self._permissions_adapter.close(timeout_ms)
-        return inventory_stopped and permissions_stopped
+        return self.insights.cleanup(timeout_ms) and inventory_stopped and permissions_stopped
 
     def open_software_manager(self):
         self.software_handoff.show()
@@ -214,6 +238,16 @@ class InstalledApplicationsCard(Card):
             self._failed("")
             return
         self.inventory = inventory
+        self.insights.set_installations(app.installation for app in inventory.applications if app.source == "flatpak")
+        previous_installation = self.installation_filter.currentData()
+        self.installation_filter.blockSignals(True)
+        self.installation_filter.clear()
+        self.installation_filter.addItem(self.tr("All installations"), "")
+        for installation in sorted({app.installation for app in inventory.applications}):
+            self.installation_filter.addItem(installation, installation)
+        index = self.installation_filter.findData(previous_installation)
+        self.installation_filter.setCurrentIndex(max(0, index))
+        self.installation_filter.blockSignals(False)
         for row in self._rows:
             self.body.removeWidget(row)
             row.deleteLater()
@@ -228,6 +262,9 @@ class InstalledApplicationsCard(Card):
             details.set_details(self.tr("Application ID: %1\nReference: %2\nSource: %3\nInstallation: %4\nSize: %5").replace("%1", app.app_id).replace("%2", app.ref).replace("%3", app.source).replace("%4", app.installation).replace("%5", app.size or self.tr("Not reported")))
             row.add_widget(details)
             if app.source == "flatpak":
+                app_details = QPushButton(self.tr("App details"))
+                app_details.clicked.connect(lambda _checked=False, item=app: self.show_details(item))
+                row.add_widget(app_details)
                 permissions = QPushButton(self.tr("Show permissions"))
                 permissions.clicked.connect(lambda _checked=False, item=app: self.show_permissions(item))
                 row.add_widget(permissions)
@@ -249,12 +286,19 @@ class InstalledApplicationsCard(Card):
 
     def _apply_search(self) -> None:
         query = self._search_query
-        matches = 0
+        projected = filter_installed_applications(
+            self.inventory, query=query, source=self.source_filter.currentData() or "",
+            installation=self.installation_filter.currentData() or "", sort=self.sort_order.currentData() or "name",
+        )
+        identities = {(app.installation, app.ref) for app in projected}
+        rows = {(app.installation, app.ref): row for app, row in self._application_rows}
         for app, row in self._application_rows:
-            searchable = " ".join((app.name, app.app_id, app.source, app.installation, app.ref, app.version)).casefold()
-            visible = not query or query in searchable
-            row.setVisible(visible)
-            matches += int(visible)
+            row.setVisible((app.installation, app.ref) in identities)
+        for app in projected:
+            row = rows[(app.installation, app.ref)]
+            self.body.removeWidget(row)
+            self.body.addWidget(row)
+        matches = len(projected)
         if self.inventory.errors:
             self.search_summary.setText(self.tr("Some installation sources could not be checked. Listed applications may be incomplete."))
         elif query and matches == 0:
@@ -262,9 +306,19 @@ class InstalledApplicationsCard(Card):
         else:
             self.search_summary.setText(self.tr("Showing %1 of %2 installed applications.").replace("%1", str(matches)).replace("%2", str(len(self._application_rows))))
 
+    def show_details(self, app: InstalledApplication):
+        if self.service is None or app.source != "flatpak":
+            return
+        self._permission_generation += 1
+        self._pending_permission_request = None
+        self._close_permission_dialogs()
+        self._permissions_adapter.cancel()
+        self.insights.show_details(app)
+
     def show_permissions(self, app: InstalledApplication):
         if self.service is None or app.source != "flatpak":
             return
+        self.insights.request_stop()
         self._close_permission_dialogs()
         self._permission_generation += 1
         self._pending_permission_request = (app, self._permission_generation)

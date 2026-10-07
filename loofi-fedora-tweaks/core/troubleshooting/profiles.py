@@ -11,6 +11,7 @@ from core.troubleshooting.validation import (
     thaw,
     validate_application_identifier,
     validate_identifier,
+    validate_resource_identifier,
 )
 
 
@@ -100,12 +101,18 @@ class TroubleshootingProfile:
         if unknown:
             raise ValueError(f"Unknown troubleshooting parameters: {', '.join(unknown)}.")
         for name, kind in schema.items():
+            if name not in payload and kind == "optional_run_id":
+                continue
             if name not in payload:
                 raise ValueError(f"Missing required troubleshooting parameter: {name}.")
             if kind == "application_id":
                 if not isinstance(payload[name], str):
                     raise ValueError("application_id must be a string.")
                 payload[name] = validate_application_identifier(payload[name])
+            elif kind == "optional_run_id":
+                payload[name] = validate_resource_identifier(payload[name])
+                if "/" in payload[name]:
+                    raise ValueError("run_id cannot contain a path.")
             else:
                 raise ValueError(f"Unsupported troubleshooting parameter type: {kind}.")
         return freeze_mapping(payload, field="profile_parameters", max_items=MAX_PARAMETERS)
@@ -148,6 +155,17 @@ _PROFILES = (
             SourceBudget("action-center", 10.0),
         ),
         65.0,
+        parameter_schema=(("run_id", "optional_run_id"),),
+    ),
+    TroubleshootingProfile(
+        "flatpak_updates_failed", "Flatpak updates failed",
+        (SourceBudget("flatpak-update-health", 15.0), SourceBudget("action-center", 10.0)),
+        25.0, parameter_schema=(("run_id", "optional_run_id"),),
+    ),
+    TroubleshootingProfile(
+        "firmware_updates_failed", "Firmware updates failed",
+        (SourceBudget("firmware-update-health", 15.0), SourceBudget("action-center", 10.0)),
+        25.0, parameter_schema=(("run_id", "optional_run_id"),),
     ),
     TroubleshootingProfile(
         "application_failed",

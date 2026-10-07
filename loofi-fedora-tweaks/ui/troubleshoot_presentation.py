@@ -2,6 +2,8 @@
 
 SOURCE_LABELS = {
     "system-check": "System Check",
+    "flatpak-update-health": "Flatpak inventory, local remotes and runtimes",
+    "firmware-update-health": "Firmware tool, service and devices",
     "audio-state": "Audio services, default output and volume",
     "bluetooth-state": "Bluetooth service, adapter, radio and paired devices",
     "observability": "Saved resource trends",

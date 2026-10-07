@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for v32.3.0 "Clarity".
+> Active architecture reference for the v32.4.0 "Care" local candidate.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -154,6 +154,33 @@ All maintained pages share semantic colors, system typography, controls, and
 feedback, without adding a second action execution boundary.
 
 ## Everyday workflow extensions
+
+### Care local metadata and maintenance
+
+`FlatpakMaintenanceService` isolates optional GI/libflatpak in a fixed helper
+process. Inspection reads at most 1 MiB within 15 seconds and lazy capability
+loading never imports GI on application startup. The helper is shipped as
+`loofi-flatpak-maintenance`; wheel and RPM launchers resolve a specific trusted
+entry point. Executor policy accepts only its closed inspection/application
+shapes, without allowing arbitrary Python code or script paths.
+
+Unused snapshots bind installation, installed commits, unused refs, pinning and
+visible cross-installation dependency evidence. The existing
+`remove-unused-flatpaks` ID has an executable Action Center definition. Its
+preflight rejects drift; transaction `ready` verifies the exact uninstall set.
+Automatic dependencies, related operations and pruning are disabled. The
+non-root child uses native Flatpak/Polkit authorization for shared installations
+and normalizes its shared-transaction umask. No app data or permission store is
+deleted. Failure/interruption triggers bounded readback stored on the original
+run without rewriting its failure state; Activity projects only validated ref
+observations. Other users' private installations are not scanned.
+
+Installed-view filters operate only on the captured inventory. Existing
+window-owned workers reject obsolete app-detail and permission requests and
+participate in shutdown. Source-specific update diagnostics reuse closed
+Health profiles and existing session storage; exact run IDs must match the
+selected update action. CLI discovery uses the same update overview service as
+the GUI. Existing plan/run formats are retained.
 
 `core/tasks/tweak_profiles.py` defines strict portable profiles, immutable reviews,
 and sequential results. Review does not allocate persisted plans; each selected

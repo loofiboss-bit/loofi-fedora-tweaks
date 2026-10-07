@@ -387,12 +387,13 @@ class ActionCatalog:
         if definitions is None:
             from core.actions.assurance import assurance_definitions
             from core.actions.installed_applications import installed_application_definitions
+            from core.actions.flatpak_cleanup import flatpak_cleanup_definitions
             from core.actions.metadata import with_haven_metadata
             from core.actions.tweaks import tweak_action_definitions
 
             selected = [
                 with_haven_metadata(definition)
-                for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions(), *installed_application_definitions()]
+                for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions(), *installed_application_definitions(), *flatpak_cleanup_definitions()]
                 if definition.id in ACTIVE_ACTION_IDS
             ]
         else:

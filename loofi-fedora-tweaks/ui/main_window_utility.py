@@ -29,6 +29,7 @@ from core.navigation.routes import (
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtWidgets import QTreeWidgetItem, QWidget
 from ui.tweak_profiles import TweakProfilesMixin
+from ui.care_navigation import CareNavigationMixin
 
 
 _UTILITY_ROUTE_ALIASES = LEGACY_ALIASES
@@ -55,7 +56,7 @@ class SidebarEntry:
     visible_in_sidebar: bool = field(default=True)
 
 
-class MainWindowUtilityMixin(TweakProfilesMixin):
+class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
     """Own v29 landing pages and compatibility-aware route navigation."""
 
     _pending_runtime_shutdown: str | None
@@ -201,25 +202,10 @@ class MainWindowUtilityMixin(TweakProfilesMixin):
             update_page.sourceActionRequested.connect(
                 lambda source, action, owner=update_page: self._handle_update_source_action(owner, source, action)
             )
+            update_page.diagnosisRequested.connect(self._open_update_diagnosis)
             self._restore_saved_updates(update_page)
             return cast(QWidget, update_page)
         raise ValueError(f"Unknown utility workflow destination: {destination_id}")
-
-    def _restore_saved_updates(self: Any, page: Any) -> None:
-        """Hydrate saved observations on a worker without executing a change."""
-        from services.software.update_recovery import UpdateRecoveryService
-
-        current = self._utility_operation_adapter
-        if current is not None:
-            current.stopped.connect(lambda: self._restore_saved_updates(page))
-            return
-        page.set_notice("info", "Loading saved results", "Reading update observations and saved verification tasks.")
-        page.set_loading(True)
-        adapter = self._new_utility_operation_adapter()
-        adapter.finished.connect(page.restore_saved_state)
-        adapter.failed.connect(lambda _message: page.set_notice("error", "Saved results unavailable", "Saved update history could not be read. Review Activity before updating."))
-        adapter.stopped.connect(lambda: page.set_loading(False))
-        adapter.start(UpdateRecoveryService().load)
 
     def _new_utility_operation_adapter(self: Any, *, phase: str = "inspection") -> Any:
         """Create the single window-owned worker adapter for a reviewed change."""

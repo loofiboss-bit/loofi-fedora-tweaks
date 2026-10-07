@@ -3,6 +3,7 @@ include README.md
 include loofi-fedora-tweaks.desktop
 include loofi-fedora-tweaks.metainfo.xml
 include loofi-fedora-tweaks.1
+include scripts/loofi-flatpak-maintenance
 recursive-include loofi-fedora-tweaks/assets *
 recursive-include loofi-fedora-tweaks/config *
 recursive-include loofi-fedora-tweaks/resources *

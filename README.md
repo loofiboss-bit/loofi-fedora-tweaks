@@ -65,7 +65,10 @@ loofi-fedora-tweaks --cli tweaks preset preview reduced-motion
 loofi-fedora-tweaks --cli tweaks preset apply file-navigation --yes
 loofi-fedora-tweaks --cli apps list
 loofi-fedora-tweaks --cli apps permissions app/org.mozilla.firefox/x86_64/stable --installation user
+loofi-fedora-tweaks --cli apps details app/org.mozilla.firefox/x86_64/stable --installation user
+loofi-fedora-tweaks --cli apps unused --installation user
 loofi-fedora-tweaks --cli updates check
+loofi-fedora-tweaks --cli updates diagnose --source flatpak
 ```
 
 Add `--json` before a command for machine-readable output.

@@ -18,6 +18,7 @@ class UpdateWorkflowPage(QWidget):
     """Render System, Flatpak, and Firmware as independent source cards."""
 
     sourceActionRequested = pyqtSignal(str, str)
+    diagnosisRequested = pyqtSignal(str, str)
 
     def __init__(
         self,
@@ -56,6 +57,7 @@ class UpdateWorkflowPage(QWidget):
         self.scaffold.add_widget(self.source_grid)
         self._checked_labels: dict[str, QLabel] = {}
         self._check_again_buttons: dict[str, QuietButton] = {}
+        self._diagnose_buttons: dict[str, QuietButton] = {}
         for source in UPDATE_SOURCES:
             self._add_source_card(source)
         self.scaffold.content_layout.addStretch()
@@ -95,6 +97,11 @@ class UpdateWorkflowPage(QWidget):
         again.clicked.connect(lambda _checked=False, selected=source: self.sourceActionRequested.emit(selected, "check"))
         card.add_widget(again)
         self._check_again_buttons[source] = again
+        diagnose = QuietButton(self.tr("Diagnose"), description=self.tr("Open read-only Health checks for this source and its recorded run."))
+        diagnose.setObjectName(f"update{source.title()}Diagnose")
+        diagnose.clicked.connect(lambda _checked=False, selected=source: self.diagnosisRequested.emit(selected, self.state.source(selected).run_id))
+        card.add_widget(diagnose)
+        self._diagnose_buttons[source] = diagnose
         self.source_grid.add_card(card)
         self._cards[source] = (card, status, details, button)
 
@@ -310,6 +317,9 @@ class UpdateWorkflowPage(QWidget):
             again = self._check_again_buttons[source]
             again.setVisible(bool(state.run_id) and cta.action == "recovery" and state.status in {"failed", "verification_failed", "cancelled"})
             again.setEnabled(not self._loading_saved)
+            diagnose = self._diagnose_buttons[source]
+            diagnose.setVisible(state.status in {"error", "failed", "verification_failed", "missing_tool", "unsupported"})
+            diagnose.setEnabled(not self._loading_saved)
 
     def cleanup(self) -> None:
         """Stop a source check without destroying a running Qt thread."""

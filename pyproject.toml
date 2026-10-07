@@ -4,7 +4,7 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "loofi_fedora_tweaks"
-version = "32.3.0"
+version = "32.4.0"
 description = "A Fedora maintenance and desktop control center with GUI and CLI modes"
 readme = "README.md"
 requires-python = ">=3.12"
@@ -29,6 +29,7 @@ dependencies = [
 ]
 
 [project.optional-dependencies]
+flatpak = ["PyGObject>=3.46"]
 dev = ["pytest>=8.0", "flake8>=7.0", "mypy>=1.10", "pytest-cov>=5.0", "pytest-timeout>=2.3", "build>=1.2"]
 
 [project.urls]
@@ -39,6 +40,7 @@ Documentation = "https://github.com/loofiboss-bit/loofi-fedora-tweaks/tree/maste
 
 [project.scripts]
 loofi-fedora-tweaks = "main:main"
+loofi-flatpak-maintenance = "services.software.flatpak_maintenance_helper:main"
 
 [tool.setuptools]
 package-dir = { "" = "loofi-fedora-tweaks" }

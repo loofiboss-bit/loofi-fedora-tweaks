@@ -158,6 +158,13 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                             install = window.findChild(InstallWorkflowPage)
                             install.installed_card.apply_inventory(installed)
                             install.view_filter.setCurrentIndex(install.view_filter.findData("installed"))
+                            from services.software.flatpak_maintenance import RefRecord, UnusedSnapshot
+                            insights = install.installed_card.insights
+                            insights.set_installations(("user", "system", "office"))
+                            runtime = RefRecord("runtime/org.example.OldPlatform/x86_64/1", "a" * 64, 120000000)
+                            insights._result(("unused", insights._generation, None, UnusedSnapshot(
+                                "user", True, refs=(runtime,), installed=(runtime,), digest="b" * 64,
+                            )))
                         for area in window.findChildren(QScrollArea):
                             area.verticalScrollBar().setValue(0)
                         # State-backed controls replace editors and reveal wrapped
