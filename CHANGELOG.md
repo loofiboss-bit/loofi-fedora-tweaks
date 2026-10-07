@@ -1,5 +1,13 @@
 # Changelog
 
+## [32.3.0] - 2026-10-07 - "Clarity"
+
+- Modernize visual styling with crisp typography, smooth gradient area sparklines, and sleek scrollbars.
+- Configure Wayland desktop file name binding (`app.setDesktopFileName("loofi-fedora-tweaks")`) and fallback window icons, ensuring correct icon display on KDE Plasma KWin, GNOME Shell Mutter, and application docks.
+- Install high-resolution application icons to `/usr/share/pixmaps/` and `/usr/share/icons/hicolor/512x512/apps/` for universal launcher and file manager visibility.
+- Redesign Overview page for zero-scroll navigation on standard 1280x800+ screens: compact 2-column sensor grid, streamlined 44px metric sparklines, and automatic reclamation of empty status cards.
+- Streamline Tweaks page toolbar with compact action row, category selector, filter pills, and responsive non-wrapping setting rows.
+
 ## [32.2.0] - 2026-10-05 - "Coherence"
 
 - Show Flathub system and user status before application review, with direct

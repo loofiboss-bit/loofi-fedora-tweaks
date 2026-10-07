@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.2.0
+Version:        32.3.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -104,6 +104,12 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Wed Oct 07 2026 Loofi <loofi@example.com> - 32.3.0-1
+- Clarity: Modern, compact UI layout, zero-scroll navigation, and Wayland desktop icon.
+- Add desktop file name and explicit icon bindings for Wayland compositor window pairing.
+- Optimize Overview metrics and compact temperature grid for sub-800px display viewports.
+- Streamline Tweaks toolbar, filter pills, and setting row padding.
+
 * Mon Oct 05 2026 Loofi <loofi@example.com> - 32.2.0-1
 - Coherence: clarify recovery and Loofi standard values, and bound Tweaks snapshots.
 - Show Flathub status and install scope in Apps; improve cancellation and partial results.
