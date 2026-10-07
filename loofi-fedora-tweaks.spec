@@ -76,7 +76,12 @@ desktop-file-install \
     --dir=%{buildroot}%{_datadir}/applications \
     %{name}.desktop
 
+install -d %{buildroot}%{_datadir}/icons/hicolor/128x128/apps
+install -d %{buildroot}%{_datadir}/icons/hicolor/512x512/apps
+install -d %{buildroot}%{_datadir}/pixmaps
 install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/128x128/apps/
+install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/icons/hicolor/512x512/apps/
+install -m 644 loofi-fedora-tweaks/assets/loofi-fedora-tweaks.png %{buildroot}%{_datadir}/pixmaps/
 install -Dm 644 LICENSE %{buildroot}%{_licensedir}/%{name}/LICENSE
 install -Dm 644 %{name}.1 %{buildroot}%{_mandir}/man1/%{name}.1
 install -m 644 %{name}.metainfo.xml %{buildroot}%{_datadir}/metainfo/%{name}.metainfo.xml
@@ -93,6 +98,8 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %attr(755,root,root) %{_bindir}/%{name}
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
+%{_datadir}/icons/hicolor/512x512/apps/loofi-fedora-tweaks.png
+%{_datadir}/pixmaps/loofi-fedora-tweaks.png
 %{_datadir}/metainfo/%{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 

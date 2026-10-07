@@ -150,6 +150,10 @@ class MainWindow(
         self.setWindowTitle(self.tr("Loofi Fedora Tweaks"))
         self.setAccessibleName(self.tr("Loofi Fedora Tweaks"))
         self.setAccessibleDescription(self.tr("Fedora tweaks, applications, health, and updates"))
+        from PyQt6.QtWidgets import QApplication
+        app_inst = QApplication.instance()
+        if isinstance(app_inst, QApplication) and not app_inst.windowIcon().isNull():
+            self.setWindowIcon(app_inst.windowIcon())
         self._metrics = LayoutMetrics.from_widget(self)
         self._line_height = self._metrics.line_height
         self._apply_initial_geometry()

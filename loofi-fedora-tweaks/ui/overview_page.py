@@ -25,7 +25,7 @@ class MetricGraph(QWidget):
         super().__init__(parent)
         self.label, self.unit = label, unit
         self.points: deque[float | None] = deque(maxlen=60)
-        self.setMinimumHeight(64)
+        self.setMinimumHeight(44)
         self.setAccessibleName(label)
         self.setAccessibleDescription(self.tr("Recent measurements in %1").replace("%1", unit))
 
@@ -37,7 +37,7 @@ class MetricGraph(QWidget):
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.RenderHint.Antialiasing)
-        baseline_y = self.height() - 8
+        baseline_y = self.height() - 6
         painter.setPen(QPen(semantic_qcolor("border", 50), 1))
         painter.drawLine(0, baseline_y, self.width(), baseline_y)
 
@@ -59,7 +59,7 @@ class MetricGraph(QWidget):
                 continue
             x = index * step
             norm_val = min(max(value, 0.0) / scale, 1.0)
-            y = baseline_y - norm_val * (self.height() - 16)
+            y = baseline_y - norm_val * (self.height() - 12)
             point = QPointF(x, y)
             if connected:
                 line_path.lineTo(point)
@@ -93,21 +93,21 @@ class _MetricRow(QWidget):
     def __init__(self, reading, parent=None):
         super().__init__(parent)
         self.last_sample = None
-        layout = QVBoxLayout(self)
-        layout.setContentsMargins(0, 4, 0, 4)
-        layout.setSpacing(4)
+        self.is_compact = reading.group == "temperature"
+
         self.label = QLabel()
-        self.label.setWordWrap(True)
         self.label.setTextFormat(Qt.TextFormat.PlainText)
         self.label.setObjectName("definitionLabel")
 
         self.value = QLabel()
-        self.value.setWordWrap(True)
         self.value.setTextFormat(Qt.TextFormat.PlainText)
-        self.value.setObjectName("dashboardMetricHeroValue")
+        self.value.setObjectName("dashboardMetricValue" if self.is_compact else "dashboardMetricHeroValue")
         value_font = QFont(self.font())
-        value_font.setPointSizeF(max(10.0, value_font.pointSizeF()) * 1.45)
-        value_font.setWeight(QFont.Weight.DemiBold)
+        if self.is_compact:
+            value_font.setWeight(QFont.Weight.DemiBold)
+        else:
+            value_font.setPointSizeF(max(10.0, value_font.pointSizeF()) * 1.35)
+            value_font.setWeight(QFont.Weight.DemiBold)
         self.value.setFont(value_font)
 
         self.progress = QProgressBar(self)
@@ -118,30 +118,55 @@ class _MetricRow(QWidget):
         self.progress.hide()
 
         self.reason = QLabel()
-        self.reason.setWordWrap(True)
         self.reason.setTextFormat(Qt.TextFormat.PlainText)
         self.reason.setObjectName("cardDescription")
 
         self.badge = StatusBadge(self.tr("Collecting"))
-
-        layout.addWidget(self.label)
-        layout.addWidget(self.value)
-        layout.addWidget(self.progress)
-        layout.addWidget(self.badge, alignment=Qt.AlignmentFlag.AlignLeft)
-        layout.addWidget(self.reason)
         self.graph = MetricGraph(reading.label, reading.unit, self)
-        layout.addWidget(self.graph)
+
+        if self.is_compact:
+            layout = QHBoxLayout(self)
+            layout.setContentsMargins(2, 2, 2, 2)
+            layout.setSpacing(6)
+            self.label.setWordWrap(False)
+            self.value.setWordWrap(False)
+            self.reason.hide()
+            self.graph.hide()
+            layout.addWidget(self.label, 1)
+            layout.addWidget(self.value, 0)
+            layout.addWidget(self.badge, 0)
+        else:
+            layout = QVBoxLayout(self)
+            layout.setContentsMargins(0, 2, 0, 2)
+            layout.setSpacing(2)
+            self.label.setWordWrap(True)
+            self.value.setWordWrap(True)
+            self.reason.setWordWrap(True)
+            layout.addWidget(self.label)
+            layout.addWidget(self.value)
+            layout.addWidget(self.progress)
+            layout.addWidget(self.badge, alignment=Qt.AlignmentFlag.AlignLeft)
+            layout.addWidget(self.reason)
+            layout.addWidget(self.graph)
+
         self.update_reading(reading)
 
     def update_reading(self, reading):
         status = getattr(reading.status, "value", reading.status)
         valid = status in ("ready", "ok", "valid", "available")
         stale = status == "stale"
-        self.label.setText(self.tr(reading.label))
-        if reading.label.strip().lower() == reading.group.strip().lower():
-            self.label.hide()
-        else:
+        if self.is_compact:
+            display_label = reading.label
+            if reading.detail and reading.detail.lower() not in reading.label.lower():
+                display_label = f"{reading.detail} · {reading.label}"
+            self.label.setText(self.tr(display_label))
             self.label.show()
+        else:
+            self.label.setText(self.tr(reading.label))
+            if reading.label.strip().lower() == reading.group.strip().lower():
+                self.label.hide()
+            else:
+                self.label.show()
 
         value = reading.value
         if isinstance(value, float):
@@ -163,7 +188,7 @@ class _MetricRow(QWidget):
                 text += " " + reading.unit
         self.value.setText(text)
 
-        if reading.unit == "%" and isinstance(value, (int, float)) and valid:
+        if not self.is_compact and reading.unit == "%" and isinstance(value, (int, float)) and valid:
             self.progress.setValue(int(min(max(value, 0.0), 100.0)))
             self.progress.show()
         else:
@@ -171,7 +196,8 @@ class _MetricRow(QWidget):
 
         reason = " · ".join(self.tr(part) for part in (reading.reason, reading.detail) if part)
         self.reason.setText(reason)
-        self.reason.setVisible(bool(reason))
+        if not self.is_compact:
+            self.reason.setVisible(bool(reason))
         kind, caption = "neutral", self.tr("Unavailable")
         if valid:
             kind, caption = "success", self.tr("Measured")
@@ -193,11 +219,12 @@ class _MetricRow(QWidget):
         self.setToolTip(self.tr("Source: %1\nMeasured: %2").replace("%1", reading.source).replace("%2", timestamp))
         self.setAccessibleName(self.tr(reading.label))
         self.setAccessibleDescription(" · ".join((text, caption, reason, timestamp)))
-        graphable = reading.group in ("cpu", "memory", "network", "disk") and reading.unit in ("%", "B/s", "bytes/s")
-        self.graph.setVisible(graphable)
-        if stamp != self.last_sample:
-            self.graph.add_sample(value if valid else None)
-            self.last_sample = stamp
+        if not self.is_compact:
+            graphable = reading.group in ("cpu", "memory", "network", "disk") and reading.unit in ("%", "B/s", "bytes/s")
+            self.graph.setVisible(graphable)
+            if stamp != self.last_sample:
+                self.graph.add_sample(value if valid else None)
+                self.last_sample = stamp
 
 
 def _format_time(value):
@@ -224,8 +251,8 @@ class OverviewPage(QWidget, PluginInterface):
         self._cards = {}
         self._empty = {}
         root = QVBoxLayout(self)
-        root.setContentsMargins(24, 16, 24, 16)
-        root.setSpacing(16)
+        root.setContentsMargins(20, 12, 20, 12)
+        root.setSpacing(12)
         header = QHBoxLayout()
         self.identity = QLabel(self.tr("System information will appear after the first measurement."))
         self.identity.setWordWrap(True)
@@ -246,14 +273,15 @@ class OverviewPage(QWidget, PluginInterface):
         self.next_steps_empty = QLabel(self.tr("Suggestions appear after the first measurement."))
         self.next_steps_empty.setWordWrap(True)
         self.next_steps_card.add_widget(self.next_steps_empty)
+        self.next_steps_card.hide()
         self._next_step_rows = []
         self._last_next_steps = None
         root.addWidget(self.next_steps_card)
         self.main_grid = QGridLayout()
-        self.main_grid.setSpacing(16)
+        self.main_grid.setSpacing(12)
         root.addLayout(self.main_grid)
         self.detail_grid = QGridLayout()
-        self.detail_grid.setSpacing(16)
+        self.detail_grid.setSpacing(12)
         root.addLayout(self.detail_grid)
         groups = (("cpu", self.tr("CPU")), ("memory", self.tr("RAM")), ("gpu", self.tr("GPU")),
                   ("storage", self.tr("Storage")), ("network", self.tr("Network activity")),
@@ -266,8 +294,14 @@ class OverviewPage(QWidget, PluginInterface):
             card.add_widget(empty)
             self._cards[group] = card
             self._empty[group] = empty
+        self._temp_container = QWidget(self._cards["temperature"])
+        self._temp_grid = QGridLayout(self._temp_container)
+        self._temp_grid.setContentsMargins(0, 0, 0, 0)
+        self._temp_grid.setHorizontalSpacing(16)
+        self._temp_grid.setVerticalSpacing(2)
+        self._cards["temperature"].add_widget(self._temp_container)
         self.maintenance_grid = QGridLayout()
-        self.maintenance_grid.setSpacing(16)
+        self.maintenance_grid.setSpacing(12)
         root.addLayout(self.maintenance_grid)
         self._maintenance = {}
         for key, title, route in (("updates", self.tr("Updates"), "maintenance:updates"), ("health", self.tr("Health"), "maintenance:health-timeline"),
@@ -349,19 +383,33 @@ class OverviewPage(QWidget, PluginInterface):
         self.notice.set_notice("info", self.tr("Last measured: %1").replace("%1", _format_time(snapshot.collected_at)),
                                self.tr("Live measurements refresh every two seconds; sensors every five seconds."))
         present = set()
+        temp_rows = []
         for reading in snapshot.metrics:
             if reading.group not in self._cards:
                 continue
             present.add(reading.id)
             if reading.id not in self._rows:
                 row = _MetricRow(reading, self._cards[reading.group])
-                self._cards[reading.group].add_widget(row)
+                if reading.group != "temperature":
+                    self._cards[reading.group].add_widget(row)
                 self._rows[reading.id] = row
             else:
                 self._rows[reading.id].update_reading(reading)
             self._rows[reading.id].show()
+            if reading.group == "temperature":
+                temp_rows.append(self._rows[reading.id])
+
+        for idx, row in enumerate(temp_rows):
+            r, c = divmod(idx, 2)
+            if self._temp_grid.indexOf(row) != -1:
+                self._temp_grid.removeWidget(row)
+            self._temp_grid.addWidget(row, r, c)
+        self._temp_container.setVisible(bool(temp_rows))
+
         for key, row in list(self._rows.items()):
             if key not in present:
+                if self._temp_grid.indexOf(row) != -1:
+                    self._temp_grid.removeWidget(row)
                 row.setParent(None)
                 row.deleteLater()
                 del self._rows[key]
@@ -385,6 +433,15 @@ class OverviewPage(QWidget, PluginInterface):
                 self._reflow(self.width())
 
     def _show_next_steps(self, suggestions):
+        self.next_steps_card.setVisible(bool(suggestions))
+        if not suggestions:
+            for row in self._next_step_rows:
+                self.next_steps_card.body.removeWidget(row)
+                row.setParent(None)
+                row.deleteLater()
+            self._next_step_rows = []
+            self._last_next_steps = ()
+            return
         if suggestions == self._last_next_steps:
             return
         previous = self._last_next_steps or ()

@@ -6,7 +6,7 @@ from typing import Any
 
 from core.tasks.tweaks import TweakState, default_for, visible_tweaks
 from core.tweak_commands import values_equal
-from PyQt6.QtCore import QEvent, QTimer, pyqtSignal
+from PyQt6.QtCore import QEvent, QTimer, Qt, pyqtSignal
 from PyQt6.QtWidgets import QButtonGroup, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu, QPushButton, QToolButton, QVBoxLayout, QWidget, QWidgetAction
 
 from ui.components import Card, PageScaffold
@@ -66,10 +66,12 @@ class TweaksPage(QWidget, PluginInterface):
         intro = Card()
         intro.setObjectName("tweaksFilters")
         intro.setProperty("surfaceRole", "toolbar")
-        intro.body.setContentsMargins(0, 0, 0, 8)
-        intro.body.setSpacing(8)
+        intro.body.setContentsMargins(0, 0, 0, 4)
+        intro.body.setSpacing(4)
         self.scaffold.add_widget(intro)
         search_row = QHBoxLayout()
+        search_row.setContentsMargins(0, 0, 0, 0)
+        search_row.setSpacing(6)
         self.search_input = QLineEdit()
         self.search_input.setObjectName("tweaksSearch")
         self.search_input.setPlaceholderText(self.tr("Search settings…"))
@@ -77,27 +79,29 @@ class TweaksPage(QWidget, PluginInterface):
         self.search_input.setClearButtonEnabled(True)
         self.search_input.textChanged.connect(self._filter_rows)
         search_row.addWidget(self.search_input, 1)
-        self.save_profile_button = QPushButton(self.tr("Save current settings…"))
-        self.save_profile_button.setAccessibleName(self.tr("Save current settings as a portable profile"))
-        self.save_profile_button.clicked.connect(self.saveProfileRequested.emit)
-        self.load_profile_button = QPushButton(self.tr("Load profile…"))
-        self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
-        self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
-        profile_row = QHBoxLayout()
-        profile_row.addWidget(self.save_profile_button)
-        profile_row.addWidget(self.load_profile_button)
-        profile_row.addStretch()
-        intro.add_widget(self._wrap(profile_row))
+
         self.refresh_button = QPushButton(self.tr("Refresh"))
         self.refresh_button.setObjectName("tweaksRefresh")
         self.refresh_button.clicked.connect(self.refreshRequested.emit)
         search_row.addWidget(self.refresh_button)
+
         self.cancel_snapshot_button = QPushButton(self.tr("Cancel check"))
         self.cancel_snapshot_button.setObjectName("tweaksCancelCheck")
         self.cancel_snapshot_button.setAccessibleName(self.tr("Cancel reading current settings"))
         self.cancel_snapshot_button.clicked.connect(self.cancelSnapshotRequested.emit)
         self.cancel_snapshot_button.hide()
         search_row.addWidget(self.cancel_snapshot_button)
+
+        self.save_profile_button = QPushButton(self.tr("Save profile…"))
+        self.save_profile_button.setAccessibleName(self.tr("Save current settings as a portable profile"))
+        self.save_profile_button.clicked.connect(self.saveProfileRequested.emit)
+        search_row.addWidget(self.save_profile_button)
+
+        self.load_profile_button = QPushButton(self.tr("Load profile…"))
+        self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
+        self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
+        search_row.addWidget(self.load_profile_button)
+
         intro.add_widget(self._wrap(search_row))
         filters = QGridLayout()
         self._filter_layout = filters
@@ -127,10 +131,22 @@ class TweaksPage(QWidget, PluginInterface):
         self.changed_only = self._view_buttons["changed"]
         filters.setColumnStretch(5, 1)
         intro.add_widget(self._wrap(filters))
+
+        status_row = QHBoxLayout()
+        status_row.setContentsMargins(0, 0, 0, 0)
+        status_row.setSpacing(8)
         self.results_label = QLabel()
         self.results_label.setObjectName("tweaksResults")
         self.results_label.setWordWrap(True)
-        intro.add_widget(self.results_label)
+        status_row.addWidget(self.results_label, 1)
+
+        self.status_label = QLabel(self.tr("Reading current settings…"))
+        self.status_label.setObjectName("tweaksStatus")
+        self.status_label.setWordWrap(True)
+        self.status_label.setAlignment(Qt.AlignmentFlag.AlignRight | Qt.AlignmentFlag.AlignVCenter)
+        status_row.addWidget(self.status_label, 1)
+        intro.add_widget(self._wrap(status_row))
+
         self.empty_state = Card(self.tr("No settings found"), self.tr("Try another search or clear your filters."))
         self.empty_state.setObjectName("tweaksEmpty")
         self.clear_filters_button = QPushButton(self.tr("Clear filters"))
@@ -138,10 +154,6 @@ class TweaksPage(QWidget, PluginInterface):
         self.empty_state.add_widget(self.clear_filters_button)
         self.empty_state.hide()
         self.scaffold.add_widget(self.empty_state)
-        self.status_label = QLabel(self.tr("Reading current settings…"))
-        self.status_label.setObjectName("tweaksStatus")
-        self.status_label.setWordWrap(True)
-        intro.add_widget(self.status_label)
         self.snapshotProgress.connect(self.set_snapshot_progress)
 
         for tweak in visible_tweaks(profile):
@@ -150,6 +162,7 @@ class TweaksPage(QWidget, PluginInterface):
                 group = Card(self.tr(tweak.group))
                 group.setObjectName(f"tweaksGroup{tweak.group}")
                 group.setProperty("surfaceRole", "settings")
+                group.body.setContentsMargins(14, 6, 14, 6)
                 group.body.setSpacing(0)
                 self._groups[tweak.group] = group
                 self._group_rows[tweak.group] = []

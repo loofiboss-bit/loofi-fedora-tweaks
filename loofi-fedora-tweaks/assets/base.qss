@@ -908,6 +908,7 @@ QFrame[settingRow="true"] {
     border: none;
     border-bottom: $border_width solid $color_border;
     border-radius: 0;
+    padding: 2px 0;
 }
 QLabel#settingRowFeedback[feedbackKind="saved"] {
     color: $color_success;

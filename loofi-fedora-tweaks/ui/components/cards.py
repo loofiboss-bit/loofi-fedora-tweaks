@@ -32,8 +32,8 @@ class Card(QFrame):
         self.setProperty("componentCard", True)
         self.setSizePolicy(QSizePolicy.Policy.Expanding, QSizePolicy.Policy.Minimum)
         self.body = QVBoxLayout(self)
-        self.body.setContentsMargins(16, 16, 16, 16)
-        self.body.setSpacing(12)
+        self.body.setContentsMargins(14, 12, 14, 12)
+        self.body.setSpacing(10)
 
         self.title_label = QLabel(title)
         self.title_label.setObjectName("cardTitle")
