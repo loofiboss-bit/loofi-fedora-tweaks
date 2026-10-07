@@ -63,8 +63,9 @@ automated and rendering evidence.
 - Evidence is recorded in [Care qualification](docs/CARE_VERIFICATION.md)
 - Physical KDE, GNOME, assistive-technology, and real-session Polkit qualification remains separate
 
-This checkout is a 32.4.0 candidate. Local verification does not publish it or
-authorize installation on the user's computer.
+This checkout is a 32.4.0 candidate. Local verification does not publish it.
+The RPM was installed locally after a separate user request; merge and
+publication remain outstanding.
 
 ## Included candidate work — Personalization and app insight
 
@@ -74,7 +75,8 @@ authorize installation on the user's computer.
 - [x] Complete full automated, packaging, and responsive rendering verification
 - [ ] Physical KDE, GNOME, and assistive-technology qualification
 
-Included in Care. Publication and installation remain outside this local implementation.
+Included in Care. The separately requested local RPM installation is recorded
+in the qualification evidence. Merge and publication remain outstanding.
 
 ## Prior local work — Control center redesign
 

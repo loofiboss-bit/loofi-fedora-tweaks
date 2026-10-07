@@ -32,4 +32,5 @@ reported as up to date.
 See [Care qualification](../CARE_VERIFICATION.md) for dated automated, isolated
 integration, rendering, and packaging evidence. Physical KDE/GNOME behavior,
 screen-reader use, and real-session Polkit prompts require separate verification.
-This candidate has not been published or installed on the user's computer.
+The built RPM has been installed locally. This candidate has not been merged or
+published; physical desktop and assistive-technology qualification remains open.

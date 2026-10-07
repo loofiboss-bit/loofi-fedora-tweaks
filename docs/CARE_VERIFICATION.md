@@ -1,8 +1,8 @@
 # Care qualification
 
 Verification record for the local v32.4.0 "Care" candidate, dated 2026-10-07.
-This checkout and its RPM are local build outputs; this record does not indicate
-that the candidate was installed on the host or published.
+The v32.4.0 RPM was installed on the host from a target-only DNF5 transaction.
+The change is on open PR #56; it has not been merged or published.
 
 ## Automated checks
 
@@ -49,5 +49,5 @@ service and preserve source and run identity.
 
 Physical KDE/GNOME behavior, screen-reader use, hardware input, and interactive
 Polkit prompts remain unverified. The render matrix is not a substitute for
-those checks. Host installation, push, merge, and publication remain outside
-this local implementation.
+those checks. The RPM installation and PR push were completed separately;
+merge and publication remain outstanding.

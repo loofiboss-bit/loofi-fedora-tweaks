@@ -8,7 +8,7 @@
 - Replace unsupported Flatpak cleanup discovery with optional libflatpak introspection; unavailable support stays explicit.
 - Diagnose failed updates by source and follow the exact recorded operation; GUI and CLI share read-only update observations.
 - Retain the candidate's reviewed desktop presets, permission details, trust, search, accessibility, and scroll-region fixes.
-- Keep host installation, remote publication, and physical desktop qualification separate from local implementation.
+- Record the separately requested local RPM installation; merge, publication, and physical desktop qualification remain separate release steps.
 
 ## [32.3.0] - 2026-10-07 - "Clarity"
 
