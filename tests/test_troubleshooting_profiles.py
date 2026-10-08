@@ -17,6 +17,7 @@ class TestTroubleshootingProfiles(unittest.TestCase):
             (
                 "sound_not_working",
                 "bluetooth_not_working",
+                "screen_sharing_not_working",
                 "system_slow",
                 "updates_failed",
                 "flatpak_updates_failed",

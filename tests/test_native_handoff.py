@@ -18,10 +18,10 @@ from ui.native_handoff_card import NativeHandoffCard
 
 
 class TestNativeHandoffService(unittest.TestCase):
-    def test_allowlist_covers_exactly_seven_opaque_ids(self):
+    def test_allowlist_covers_all_opaque_ids(self):
         targets = NativeHandoffService.targets()
 
-        self.assertEqual(len(targets), 7)
+        self.assertEqual(len(targets), len(NativeHandoffId))
         self.assertEqual(
             {target.handoff_id for target in targets},
             set(NativeHandoffId),
@@ -65,6 +65,22 @@ class TestNativeHandoffService(unittest.TestCase):
             check=False,
             timeout=3.0,
         )
+
+    def test_flatpak_permissions_uses_current_plasma_module(self):
+        runner = MagicMock(return_value=subprocess.CompletedProcess(
+            ["/usr/bin/kcmshell6", "--list"], 0,
+            "kcm_app-permissions - Application Permissions\n",
+        ))
+        service = NativeHandoffService(which=lambda _name: "/usr/bin/kcmshell6", runner=runner)
+        availability = service.availability(NativeHandoffId.FLATPAK_PERMISSIONS)
+        self.assertTrue(availability.available)
+        self.assertEqual(availability.target.kcm_id, "kcm_app-permissions")
+        launch = service.prepare_launch(NativeHandoffId.FLATPAK_PERMISSIONS)
+        self.assertIsNotNone(launch)
+        self.assertEqual(launch.arguments, ("kcm_app-permissions",))
+        self.assertEqual(launch.program, "/usr/bin/kcmshell6")
+        runner.return_value.stdout = "kcm_app-permissions-extra - Similar module\n"
+        self.assertIsNone(service.prepare_launch(NativeHandoffId.FLATPAK_PERMISSIONS))
 
     def test_similarly_named_kcm_is_truthfully_unavailable(self):
         result = subprocess.CompletedProcess(

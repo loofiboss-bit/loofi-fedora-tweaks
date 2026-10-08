@@ -6,7 +6,7 @@ from pathlib import Path
 from typing import Any, cast
 
 from PyQt6.QtCore import Qt
-from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QInputDialog, QLabel, QListWidget, QListWidgetItem, QMessageBox, QVBoxLayout
+from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QFileDialog, QInputDialog, QLabel, QListWidget, QListWidgetItem, QMessageBox, QPushButton, QHBoxLayout, QVBoxLayout
 
 from core.actions.operation_controller import OperationController
 from core.tasks.tweaks import BY_ID, snapshot
@@ -60,6 +60,62 @@ class ProfileSelectionDialog(QDialog):
         return tuple(selected)
 
 
+class ProfileLibraryDialog(QDialog):
+    """Select a stored profile without applying or deleting it implicitly."""
+
+    def __init__(self, entries: Any, parent: Any = None) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("My profile library"))
+        self.resize(720, 480)
+        self.operation = "review"
+        layout = QVBoxLayout(self)
+        label = QLabel(self.tr("Built-in profiles are read-only. Review exact settings before applying. Use Load profile to import a portable file."))
+        label.setWordWrap(True)
+        layout.addWidget(label)
+        self.entries = QListWidget()
+        self.entries.setAccessibleName(self.tr("Built-in and personal profiles"))
+        self.entries.setWordWrap(True)
+        for entry in entries:
+            kind = self.tr("Built-in") if entry.builtin else self.tr("Personal")
+            name = self.tr(entry.profile.name) if entry.builtin else entry.profile.name
+            description = self.tr(entry.description) if entry.builtin else ""
+            item = QListWidgetItem(f"{name} [{entry.profile.desktop}] — {kind}\n{description}")
+            item.setData(Qt.ItemDataRole.UserRole, entry)
+            self.entries.addItem(item)
+        layout.addWidget(self.entries)
+        actions = QHBoxLayout()
+        self.review_button = QPushButton(self.tr("Review selected profile…"))
+        self.export_button = QPushButton(self.tr("Export…"))
+        self.remove_button = QPushButton(self.tr("Remove from library"))
+        cancel = QPushButton(self.tr("Cancel"))
+        cancel.setDefault(True)
+        for button, operation in ((self.review_button, "review"), (self.export_button, "export"), (self.remove_button, "remove")):
+            button.setAutoDefault(False)
+            button.clicked.connect(lambda _checked=False, chosen=operation: self._choose(chosen))
+            actions.addWidget(button)
+        cancel.clicked.connect(self.reject)
+        actions.addWidget(cancel)
+        layout.addLayout(actions)
+        self.entries.currentRowChanged.connect(self._selection_changed)
+        if self.entries.count():
+            self.entries.setCurrentRow(0)
+        self._selection_changed()
+
+    def selected_entry(self) -> Any:
+        item = self.entries.currentItem()
+        return item.data(Qt.ItemDataRole.UserRole) if item else None
+
+    def _selection_changed(self, _row: int = -1) -> None:
+        entry = self.selected_entry()
+        self.review_button.setEnabled(entry is not None)
+        self.export_button.setEnabled(entry is not None)
+        self.remove_button.setEnabled(entry is not None and not entry.builtin)
+
+    def _choose(self, operation: str) -> None:
+        self.operation = operation
+        self.accept()
+
+
 class TweakProfilesMixin:
     """Use the shell's sole operation adapter; no parallel mutation workers."""
 
@@ -78,49 +134,72 @@ class TweakProfilesMixin:
 
     def _start_tweak_preset(self: Any, page: Any, preset_id: str | None = None) -> bool:
         """Review and apply a built-in preset through portable profile actions."""
-        from core.tasks.tweak_presets import PRESETS, profile_for_preset
+        from core.tasks.tweak_library import ProfileLibrary
+        from core.tasks.tweak_presets import profile_for_preset
 
         if not self._profile_idle(page):
             return False
-        # PlatformProfile exposes a desktop identity through the shared helper;
-        # resolve availability by attempting the closed preset mapping.
-        available = []
-        for preset in PRESETS:
-            try:
-                profile_for_preset(preset.id, page.profile)
-            except ValueError:
-                continue
-            available.append(preset)
-        if preset_id is not None:
-            available = [preset for preset in available if preset.id == preset_id]
-        if not available:
-            page.set_error(self.tr("No presets are available for this desktop."))
-            return False
         if preset_id is None:
-            from PyQt6.QtWidgets import QInputDialog
-
-            names = [self.tr(preset.name) for preset in available]
-            chosen, accepted = QInputDialog.getItem(page, self.tr("Choose a desktop preset"),
-                                                    self.tr("Choose a preset to review:"), names, 0, False)
-            if not accepted:
-                return False
-            preset = available[names.index(chosen)]
-        else:
-            preset = available[0]
+            adapter = self._new_utility_operation_adapter(phase="inspection")
+            results: list[Any] = []
+            adapter.finished.connect(results.append)
+            adapter.failed.connect(page.set_error)
+            adapter.stopped.connect(lambda: self._show_tweak_library(page, results[0]) if results else None)
+            page.set_busy(True, self.tr("Reading profile library…"))
+            return bool(adapter.start(lambda: ProfileLibrary().list(page.profile)))
         try:
-            profile = profile_for_preset(preset.id, page.profile)
+            profile = profile_for_preset(preset_id, page.profile)
         except ValueError as exc:
             page.set_error(str(exc))
             return False
+        return bool(self._review_library_profile(page, profile, builtin=True))
+
+    def _review_library_profile(self: Any, page: Any, profile: Any, *, builtin: bool = False) -> bool:
         controller = self._profile_controller()
         adapter = self._new_utility_operation_adapter(phase="review")
         results: list[ProfileReview] = []
         adapter.finished.connect(results.append)
         adapter.failed.connect(page.set_error)
-        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Preset review cancelled.")))
-        adapter.stopped.connect(lambda: self._review_tweak_profile_import(page, results[0], preset.name) if results else None)
-        page.set_busy(True, self.tr("Reviewing preset settings…"), cancellable=True)
+        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Profile review cancelled.")))
+        adapter.stopped.connect(lambda: self._review_tweak_profile_import(page, results[0], profile.name if builtin else None) if results else None)
+        page.set_busy(True, self.tr("Reviewing profile settings…"), cancellable=True)
         return bool(adapter.start(lambda: review_profile(profile, controller, is_cancelled=lambda: adapter.cancel_requested)))
+
+    def _show_tweak_library(self: Any, page: Any, entries: Any) -> None:
+        from core.tasks.tweak_library import ProfileLibrary
+
+        page.set_busy(False, self.tr("Choose a profile to review or share."))
+        dialog = ProfileLibraryDialog(entries, page)
+        if dialog.exec() != QDialog.DialogCode.Accepted:
+            return
+        entry = dialog.selected_entry()
+        if entry is None:
+            return
+        if dialog.operation == "review":
+            self._review_library_profile(page, entry.profile, builtin=entry.builtin)
+            return
+        if dialog.operation == "remove":
+            if entry.builtin:
+                return
+            if QMessageBox.question(page, self.tr("Remove local profile"), self.tr("Remove this profile from your library?")) != QMessageBox.StandardButton.Yes:
+                return
+
+            def operation() -> None:
+                ProfileLibrary().remove(entry.id)
+        else:
+            filename, _filter = QFileDialog.getSaveFileName(page, self.tr("Export profile"), "settings.json", self.tr("JSON profiles (*.json)"))
+            if not filename:
+                return
+
+            def operation() -> None:
+                save_profile(Path(filename), entry.profile)
+        if not self._profile_idle(page):
+            return
+        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter.failed.connect(page.set_error)
+        adapter.finished.connect(lambda _result: page.set_busy(False, self.tr("Profile library operation completed.")))
+        page.set_busy(True, self.tr("Updating profile library…"))
+        adapter.start(operation)
 
     def _start_tweak_profile_export(self: Any, page: Any) -> bool:
         if not self._profile_idle(page):
@@ -149,9 +228,17 @@ class TweakProfilesMixin:
         if not selected:
             page.set_busy(False, self.tr("No settings selected."))
             return
-        filename, _filter = QFileDialog.getSaveFileName(page, self.tr("Save tweak profile"), "settings.json", self.tr("JSON profiles (*.json)"))
-        if not filename:
+        destination, accepted = QInputDialog.getItem(
+            page, self.tr("Save profile"), self.tr("Save destination:"),
+            [self.tr("My profile library"), self.tr("Portable JSON file")], 0, False,
+        )
+        if not accepted:
             return
+        filename = ""
+        if destination == self.tr("Portable JSON file"):
+            filename, _filter = QFileDialog.getSaveFileName(page, self.tr("Save tweak profile"), "settings.json", self.tr("JSON profiles (*.json)"))
+            if not filename:
+                return
         chosen = replace(exported.profile, settings=tuple(row for row in exported.profile.settings if row[0] in selected))
         if not self._profile_idle(page):
             return
@@ -159,7 +246,9 @@ class TweakProfilesMixin:
         adapter.failed.connect(page.set_error)
         adapter.finished.connect(lambda _result: page.set_busy(False, self.tr("Profile saved with %1 settings.").replace("%1", str(len(chosen.settings)))))
         page.set_busy(True, self.tr("Saving profile…"))
-        adapter.start(lambda: save_profile(Path(filename), chosen))
+        from core.tasks.tweak_library import ProfileLibrary
+
+        adapter.start(lambda: save_profile(Path(filename), chosen) if filename else ProfileLibrary().add(chosen))
 
     def _start_tweak_profile_import(self: Any, page: Any) -> bool:
         if not self._profile_idle(page):
@@ -175,7 +264,17 @@ class TweakProfilesMixin:
         adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Profile review cancelled.")))
         adapter.stopped.connect(lambda: self._review_tweak_profile_import(page, results[0]) if results else None)
         page.set_busy(True, self.tr("Reading and reviewing profile…"), cancellable=True)
-        return bool(adapter.start(lambda: review_profile(load_profile(Path(filename)), controller, is_cancelled=lambda: adapter.cancel_requested)))
+
+        def import_and_review() -> ProfileReview:
+            from core.tasks.tweak_library import ProfileLibrary
+
+            profile = load_profile(Path(filename))
+            review = review_profile(profile, controller, is_cancelled=lambda: adapter.cancel_requested)
+            if not adapter.cancel_requested:
+                ProfileLibrary().add(profile)
+            return review
+
+        return bool(adapter.start(import_and_review))
 
     def _review_tweak_profile_import(self: Any, page: Any, review: ProfileReview, preset_name: str | None = None) -> None:
         page.set_busy(False, self.tr("Review the profile changes before applying them."))

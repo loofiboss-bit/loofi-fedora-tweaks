@@ -31,7 +31,7 @@ class TweakPresetTests(unittest.TestCase):
             {"kde-single-click": "false", "kde-dolphin-editable-location": "true",
              "kde-dolphin-show-full-path": "true"},
         )
-        self.assertEqual({item.id for item in list_presets()}, {"reduced-motion", "file-navigation"})
+        self.assertEqual({item.id for item in list_presets()}, {"reduced-motion", "file-navigation", "focus", "privacy-basics", "touchpad-comfort"})
         with self.assertRaises(TypeError):
             list_presets()[0].settings["gnome"]["gnome-animations"] = "true"
 

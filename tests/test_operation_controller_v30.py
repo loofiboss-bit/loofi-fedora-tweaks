@@ -554,6 +554,38 @@ class TestOperationControllerQtAdapter(unittest.TestCase):
         adapter.deleteLater()
         self.app.processEvents()
 
+    def test_completed_workers_are_destroyed_on_the_gui_thread(self) -> None:
+        for fails in (False, True):
+            with self.subTest(fails=fails):
+                entered = threading.Event()
+                release = threading.Event()
+                destroyed_on: list[QThread] = []
+                adapter = OperationControllerQtAdapter()
+
+                def operation():
+                    entered.set()
+                    release.wait(2)
+                    if fails:
+                        raise RuntimeError("test failure")
+                    return "done"
+
+                self.assertTrue(adapter.start(operation))
+                self.assertTrue(entered.wait(1))
+                worker = adapter._worker
+                self.assertIsNotNone(worker)
+                worker.destroyed.connect(
+                    lambda: destroyed_on.append(QThread.currentThread()),
+                    Qt.ConnectionType.DirectConnection,
+                )
+                release.set()
+                self.assertTrue(adapter.wait(3000))
+                self.assertEqual(worker.thread(), self.app.thread())
+                self.assertEqual(destroyed_on, [])
+                self._wait_for_stopped(adapter)
+                self.assertEqual(destroyed_on, [self.app.thread()])
+                adapter.deleteLater()
+                self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
     def test_thirty_worker_cycles_release_qthreads_and_owned_objects(self) -> None:
         parent = QObject()
         adapter = OperationControllerQtAdapter(parent=parent)

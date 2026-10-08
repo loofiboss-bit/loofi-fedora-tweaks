@@ -105,8 +105,8 @@ class TweaksPage(QWidget, PluginInterface):
         self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
         self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
 
-        self.preset_button = QPushButton(self.tr("Choose preset…"))
-        self.preset_button.setAccessibleName(self.tr("Choose and review a desktop settings preset"))
+        self.preset_button = QPushButton(self.tr("My profile library…"))
+        self.preset_button.setAccessibleName(self.tr("Review, export or remove local desktop profiles"))
         self.preset_button.clicked.connect(self.choosePresetRequested.emit)
         self.profile_menu_button = QToolButton()
         self.profile_menu_button.setText(self.tr("Profiles"))
@@ -114,7 +114,7 @@ class TweaksPage(QWidget, PluginInterface):
         self.profile_menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         profile_menu = QMenu(self.profile_menu_button)
         self.profile_menu_button.setMenu(profile_menu)
-        for label, signal in (("Save profile…", self.saveProfileRequested), ("Load profile…", self.loadProfileRequested), ("Choose preset…", self.choosePresetRequested)):
+        for label, signal in (("Save profile…", self.saveProfileRequested), ("Load profile…", self.loadProfileRequested), ("My profile library…", self.choosePresetRequested)):
             action = QAction(self.tr(label), profile_menu)
             profile_menu.addAction(action)
             action.triggered.connect(signal.emit)

@@ -49,6 +49,8 @@ class NativeHandoffId(str, Enum):
     APPEARANCE_SETTINGS = "desktop.appearance"
     DISPLAY_SETTINGS = "desktop.display"
     WINDOW_MANAGEMENT = "desktop.window_management"
+    FLATPAK_PERMISSIONS = "apps.flatpak_permissions"
+    FLATSEAL = "apps.flatseal"
 
     # Compatibility aliases for state written by earlier releases.  They do
     # not create additional targets or imply that Plasma is required.

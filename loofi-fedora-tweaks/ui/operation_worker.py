@@ -32,10 +32,12 @@ class OperationWorker(QObject):
     failed = pyqtSignal(str)
     cancelled = pyqtSignal()
 
-    def __init__(self, operation: OperationCallable, *, parent: QObject | None = None) -> None:
+    def __init__(self, operation: OperationCallable, *, parent: QObject | None = None,
+                 completion_thread: QThread | None = None) -> None:
         super().__init__(parent)
         self._operation = operation
         self._cancel_requested = Event()
+        self._completion_thread = completion_thread
 
     @property
     def cancel_requested(self) -> bool:
@@ -50,6 +52,16 @@ class OperationWorker(QObject):
         self._cancel_requested.set()
 
     def run(self) -> None:
+        try:
+            self._run_operation()
+        finally:
+            # Delete Python-owned workers on the adapter's thread. Destroying
+            # signal proxies on a worker thread can hold Qt's connection mutex
+            # while waiting for the GIL held by a GUI constructing widgets.
+            if self._completion_thread is not None:
+                self.moveToThread(self._completion_thread)
+
+    def _run_operation(self) -> None:
         if self.cancel_requested:
             self.cancelled.emit()
             return
@@ -100,7 +112,7 @@ class OperationControllerQtAdapter(QObject):
         if self._thread is not None:
             return False
         thread = QThread()
-        worker = OperationWorker(operation)
+        worker = OperationWorker(operation, completion_thread=self.thread())
         live = (thread, worker)
         _LIVE_OPERATIONS.add(live)
         worker.moveToThread(thread)

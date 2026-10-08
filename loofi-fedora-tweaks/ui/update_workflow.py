@@ -19,6 +19,7 @@ class UpdateWorkflowPage(QWidget):
 
     sourceActionRequested = pyqtSignal(str, str)
     diagnosisRequested = pyqtSignal(str, str)
+    stopped = pyqtSignal()
 
     def __init__(
         self,
@@ -60,6 +61,11 @@ class UpdateWorkflowPage(QWidget):
         self._diagnose_buttons: dict[str, QuietButton] = {}
         for source in UPDATE_SOURCES:
             self._add_source_card(source)
+        from ui.upgrade_preparation import UpgradePreparationCard
+
+        self.preparation = UpgradePreparationCard(parent=self)
+        self.preparation.stopped.connect(self._notify_stopped)
+        self.scaffold.add_widget(self.preparation)
         self.scaffold.content_layout.addStretch()
         self._render_state()
 
@@ -199,6 +205,7 @@ class UpdateWorkflowPage(QWidget):
     def _on_check_finished(self) -> None:
         self._check_worker = None
         self._checking_source = None
+        self._notify_stopped()
 
     def apply_outcome(self, source: str, outcome: object) -> None:
         """Render a verified controller outcome back into its source card."""
@@ -250,6 +257,9 @@ class UpdateWorkflowPage(QWidget):
     def focus_task(self, task_id: str) -> bool:
         """Focus one update source card after goal-based search."""
         source = str(task_id or "").strip()
+        if source == "update:prepare-upgrade":
+            self.preparation.check_button.setFocus()
+            return True
         if source.startswith("update:"):
             source = source.removeprefix("update:")
             if source == "overview":
@@ -321,15 +331,32 @@ class UpdateWorkflowPage(QWidget):
             diagnose.setVisible(state.status in {"error", "failed", "verification_failed", "missing_tool", "unsupported"})
             diagnose.setEnabled(not self._loading_saved)
 
-    def cleanup(self) -> None:
-        """Stop a source check without destroying a running Qt thread."""
+    @property
+    def busy(self) -> bool:
+        # Keep the source check owned until its terminal GUI callback arrives.
+        return self._check_worker is not None or self.preparation.busy
+
+    def _notify_stopped(self) -> None:
+        if not self.busy:
+            self.stopped.emit()
+
+    def request_stop(self) -> None:
+        self.cancel_check()
+        self.preparation.request_stop()
+
+    def cleanup(self, timeout_ms: int = 1000) -> bool:
+        """Retain a source worker when it cannot finish within the wait budget."""
+        self.request_stop()
+        preparation_stopped = self.preparation.cleanup(timeout_ms)
         worker = self._check_worker
         if worker is None:
-            return
-        self.service.cancel()
-        if worker.isRunning():
-            worker.wait(1000)
+            return preparation_stopped
+        if worker.isRunning() and not worker.wait(timeout_ms):
+            return False
         self._check_worker = None
+        self._checking_source = None
+        self._notify_stopped()
+        return preparation_stopped
 
     def _request_source(self, source: str) -> None:
         cta = update_cta(self.state.source(source))

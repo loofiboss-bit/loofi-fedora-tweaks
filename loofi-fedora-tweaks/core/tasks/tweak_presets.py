@@ -33,6 +33,18 @@ class TweakPreset:
 
 
 PRESETS: tuple[TweakPreset, ...] = (
+    TweakPreset("focus", "Focus", "Use click focus and reduce distracting window motion.", {
+        "kde": {"kde-focus-policy": "ClickToFocus", "kde-focus-stealing-prevention": "2", "kde-wobbly-windows": "false"},
+        "gnome": {"gnome-focus-mode": "click", "gnome-auto-raise": "false", "gnome-animations": "false"},
+    }),
+    TweakPreset("privacy-basics", "Privacy basics", "Enable supported automatic locking controls.", {
+        "kde": {"kde-autolock": "true", "kde-lock-on-resume": "true"},
+        "gnome": {"gnome-lock-enabled": "true"},
+    }),
+    TweakPreset("touchpad-comfort", "Touchpad comfort", "Enable tap-to-click and double-click file opening.", {
+        "kde": {"kde-tap-to-click": "true", "kde-single-click": "false"},
+        "gnome": {"gnome-tap-to-click": "true", "gnome-files-click-policy": "double"},
+    }),
     TweakPreset(
         "reduced-motion",
         "Reduced motion",

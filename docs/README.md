@@ -16,6 +16,7 @@ and is not.
 
 ## Contribute
 
+- [Companion qualification](COMPANION_VERIFICATION.md) — local candidate checks and physical evidence limits
 - [Care qualification](CARE_VERIFICATION.md) — candidate app insight, runtime cleanup, and update diagnostics
 - [Everyday qualification](EVERYDAY_VERIFICATION.md) — feature, CLI, rendering and packaging evidence
 - [Control-center qualification](CONTROL_CENTER_VERIFICATION.md) — automated results and remaining physical checks

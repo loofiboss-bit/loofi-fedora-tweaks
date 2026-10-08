@@ -734,19 +734,13 @@ class MainWindowInteractionMixin:
         dashboard = attributes.get("_dashboard_controller")
         if dashboard is not None:
             resources.append(dashboard)
-        entry = attributes.get("_sidebar_index", {}).get("monitor")
-        monitor = getattr(entry, "page_widget", None)
-        get_real_widget = getattr(monitor, "get_real_widget", None)
-        if callable(get_real_widget):
-            monitor = get_real_widget()
-        if monitor is not None and callable(getattr(monitor, "request_stop", None)):
-            resources.append(monitor)
         for entry in attributes.get("_sidebar_index", {}).values():
             page = getattr(entry, "page_widget", None)
             resolve = getattr(page, "get_real_widget", None)
             if callable(resolve):
                 page = resolve()
-            if page is not None and callable(getattr(page, "refresh_installed_applications", None)) and callable(getattr(page, "request_stop", None)):
+            if (page is not None and callable(getattr(page, "request_stop", None))
+                    and not any(page is resource for resource in resources)):
                 resources.append(page)
         return tuple(resources)
 

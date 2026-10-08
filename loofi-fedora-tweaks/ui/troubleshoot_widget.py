@@ -6,7 +6,7 @@ from collections.abc import Callable
 from datetime import datetime
 from typing import Any, Protocol
 
-from PyQt6.QtCore import Qt, pyqtSignal
+from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QComboBox,
     QHBoxLayout,
@@ -42,6 +42,7 @@ from ui.components import (
 )
 from ui.components.layout import CurrentPageStack
 from ui.health_symptoms import HealthSymptomCardsMixin
+from ui.companion_health import CompanionHealthMixin
 from ui.troubleshoot_presentation import (
     SESSION_STATUS,
     SOURCE_LABELS,
@@ -58,6 +59,11 @@ class _SessionHistory(Protocol):
 class _DefaultSessionHistory:
     """Read the existing bounded store without collecting or writing."""
 
+    def sessions(self) -> tuple[TroubleshootingSession, ...]:
+        from core.troubleshooting.inspection import TroubleshootingInspectionService
+
+        return TroubleshootingInspectionService().sessions()
+
     def latest(self) -> tuple[TroubleshootingSession | None, str]:
         from core.troubleshooting.storage import TroubleshootingSessionStore
 
@@ -71,9 +77,10 @@ class _DefaultSessionHistory:
         )
 
 
-class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
+class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget):
     """One guided surface over the closed Compass profiles."""
 
+    stopped = pyqtSignal()
     actionCenterRequested = pyqtSignal(str, object)
     routeRequested = pyqtSignal(str, object)
 
@@ -94,11 +101,13 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self._worker: Any | None = None
         self._update_run_id = ""
         self._closing = False
+        self._stop_timer: QTimer | None = None
         self._current_session: TroubleshootingSession | None = None
         self._comparison: TroubleshootingComparison | None = None
         self._selected_finding: TroubleshootingFinding | None = None
         self._setup_ui()
         self._load_latest_session()
+        self._refresh_saved_sessions()
 
     def _setup_ui(self) -> None:
         root = QVBoxLayout(self)
@@ -368,6 +377,8 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
         self.related_card.hide()
         layout.addWidget(self.related_card)
 
+        self._build_companion_health(layout)
+
         self.comparison_card = Card(
             self.tr("Follow-up comparison"),
             self.tr(
@@ -446,7 +457,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
 
     def start_session(self) -> None:
         """Create the worker only after direct user activation."""
-        if self._worker is not None and self._worker.isRunning():
+        if self._closing or (self._worker is not None and self._worker.isRunning()):
             return
         profile = require_profile(self.selected_profile_id())
         parameters: dict[str, Any] = {}
@@ -523,6 +534,7 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
             self._comparison,
             str(getattr(outcome, "persistence_reason_code", "") or ""),
         )
+        self._refresh_saved_sessions()
         self.view_switcher.set_active_view("results")
         self._select_view("results")
 
@@ -700,6 +712,8 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
 
     def _session_message(self, session: TroubleshootingSession) -> str:
         if session.state == "completed":
+            if session.profile_id == "screen_sharing_not_working":
+                return self.tr("Existing services and advertised ScreenCast support were checked. Test actual screen sharing in your application yourself.")
             if session.profile_id in self.device_settings_cards:
                 return self.tr("Device metadata was checked. Confirm actual playback or connectivity yourself.")
             return (
@@ -845,52 +859,5 @@ class TroubleshootWidget(HealthSymptomCardsMixin, QWidget):
             self.view_switcher.set_active_view("guided")
             self._select_view("guided")
 
-    def _render_comparison(
-        self,
-        comparison: TroubleshootingComparison | None,
-    ) -> None:
-        if comparison is None:
-            self.comparison_card.hide()
-            return
-        counts = {
-            "resolved": 0,
-            "unchanged": 0,
-            "worsened": 0,
-            "not_comparable": 0,
-        }
-        for outcome in comparison.outcomes:
-            counts[outcome.state] += 1
-        self.comparison_label.setText(
-            self.tr(
-                "Resolved: %1 · Unchanged: %2 · Worsened: %3 · "
-                "Not comparable: %4\nOverall: %5"
-            )
-            .replace("%1", str(counts["resolved"]))
-            .replace("%2", str(counts["unchanged"]))
-            .replace("%3", str(counts["worsened"]))
-            .replace("%4", str(counts["not_comparable"]))
-            .replace(
-                "%5",
-                self.tr("Comparable")
-                if comparison.comparable
-                else self.tr("Not fully comparable"),
-            )
-        )
-        self.comparison_card.show()
-
     def _select_view(self, view_id: str) -> None:
         self.stack.setCurrentIndex(1 if view_id == "results" else 0)
-
-    def cleanup(self) -> None:
-        self._closing = True
-        worker = self._worker
-        if worker is None:
-            return
-        if worker.isRunning():
-            worker.cancel()
-            worker.wait(1000)
-        if not worker.isRunning():
-            worker.deleteLater()
-        else:
-            worker.setParent(None)
-        self._worker = None

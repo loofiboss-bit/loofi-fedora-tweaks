@@ -71,7 +71,7 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
             ],
         )
 
-    def test_troubleshoot_starts_from_eight_plain_language_symptoms(self):
+    def test_troubleshoot_starts_from_nine_plain_language_symptoms(self):
         widget = TroubleshootWidget(history=SimpleNamespace(latest=lambda: (None, "")))
         self.addCleanup(widget.deleteLater)
 
@@ -85,6 +85,7 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
                 "No internet",
                 "Sound is not working",
                 "Bluetooth is not working",
+                "Screen sharing is not working",
                 "Updates failed",
                 "An app will not start",
                 "The system feels slow",

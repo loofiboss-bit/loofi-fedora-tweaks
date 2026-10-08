@@ -58,6 +58,16 @@ def register_tweaks_command(subparsers: Subparsers) -> None:
             operation_p.add_argument("--ids", nargs="+", help="Select only these available changed entries")
             operation_p.add_argument("--yes", action="store_true", help="Confirm the displayed profile changes")
 
+    library_p = profile_sub.add_parser("library", help="Manage built-in and personal profiles")
+    library_sub = library_p.add_subparsers(dest="library_action", required=True)
+    for operation in ("list", "add", "remove"):
+        library_op = library_sub.add_parser(operation, help=f"{operation.capitalize()} local profiles")
+        library_op.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
+        if operation == "add":
+            library_op.add_argument("path", help="Portable profile JSON file")
+        elif operation == "remove":
+            library_op.add_argument("profile_id", help="Custom library profile identifier")
+
     preset_p = tweaks_sub.add_parser("preset", help="Review and apply curated desktop settings presets")
     preset_sub = preset_p.add_subparsers(dest="preset_action", required=True)
     preset_list_p = preset_sub.add_parser("list", help="List presets for GNOME and KDE Plasma")

@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.4.0
+Version:        32.5.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -109,6 +109,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Thu Oct 08 2026 Loofi <loofi@example.com> - 32.5.0-1
+- Companion: local profiles, app access, Health comparisons, and upgrade preparation.
+
 * Thu Oct 08 2026 Loofi <loofi@example.com> - 32.4.0-1
 - Care: installation-scoped app insight, reviewed runtime cleanup, and update diagnostics.
 - Recommend optional libflatpak introspection without installing tools at runtime.

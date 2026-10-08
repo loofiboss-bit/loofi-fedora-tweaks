@@ -190,6 +190,32 @@ def _handle_profile(args: Any, json_output: bool, output_json: Callable[[Any], N
 
     operation = args.profile_action
     try:
+        if operation == "library":
+            from core.tasks.tweak_library import ProfileLibrary
+
+            library = ProfileLibrary()
+            library_action = args.library_action
+            payload: dict[str, Any]
+            if library_action == "list":
+                payload = {"schema": "loofi.tweak-library/v1", "profiles": [entry.to_dict() for entry in library.list(profile)]}
+            elif library_action == "add":
+                imported = load_profile(Path(args.path))
+                payload = {"schema": "loofi.tweak-library/v1", "saved": not dry_run, "profile": imported.to_dict()}
+                if not dry_run:
+                    payload["entry"] = library.add(imported).to_dict()
+            else:
+                library._path(args.profile_id)
+                if not dry_run:
+                    library.remove(args.profile_id)
+                payload = {"schema": "loofi.tweak-library/v1", "removed": not dry_run, "id": args.profile_id}
+            if json_output:
+                output_json(payload)
+            elif library_action == "list":
+                for library_entry in payload["profiles"]:
+                    print_fn(f"{library_entry['id']}: {library_entry['profile']['name']} [{library_entry['profile']['desktop']}] {'built-in' if library_entry['builtin'] else 'custom'}")
+            else:
+                print_fn("[dry-run] Library unchanged." if dry_run else "Profile library updated.")
+            return 0
         if operation == "export":
             exported = export_profile(args.name, profile, runtime, getattr(args, "ids", None))
             if not dry_run:

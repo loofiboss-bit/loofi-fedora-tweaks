@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the v32.4.0 "Care" local candidate.
+> Active architecture reference for the v32.5.0 "Companion" local candidate.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -154,6 +154,29 @@ All maintained pages share semantic colors, system typography, controls, and
 feedback, without adding a second action execution boundary.
 
 ## Everyday workflow extensions
+
+### Companion personal workflows
+
+The local profile library stores bounded validated portable profiles under the
+user's XDG data directory. It does not create a second setting registry or
+host mutation authority; reviewed application uses `review_profile` and
+`apply_profile`. Built-in presets are immutable and share the same review.
+
+Flatpak access reports keep metadata and override layers separate, bind exact
+ref and installation, mask private values, and identify app-ID override scope.
+Native handoffs use closed command vectors and capability checks; no permission
+editing or portal grant mutation is added to Loofi.
+
+Health comparison projects the existing compatible-session model. Support
+question export uses saved sessions and shared privacy helpers; it never
+starts a collector. The closed screen-sharing profile inspects user service
+states and advertised ScreenCast properties without activating capture.
+
+Upgrade preparation is a Qt-free bounded read-only service shared by the CLI
+and an asynchronous Updates card. Its separate report schema does not migrate
+action plans, runs, or troubleshooting sessions. Unknown restart evidence is
+not converted to a successful result. Page-owned workers join the window's
+deferred shutdown contract.
 
 ### Care local metadata and maintenance
 
