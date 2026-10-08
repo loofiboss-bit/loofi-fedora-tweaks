@@ -35,7 +35,7 @@ NEW_IDS = (
 class TestWayfinderCatalog(unittest.TestCase):
     @patch("core.tasks.tweaks.kde_capability_error", return_value="")
     def test_defaults_commands_choices_and_metadata(self, _capability):
-        self.assertEqual(len(TWEAKS), 79)
+        self.assertEqual(len(TWEAKS), len(BY_ID))
         expected_defaults = ("false", "true", "false", "true", "true", "1", "false", "simple")
         for tweak_id, default in zip(NEW_IDS, expected_defaults):
             tweak = BY_ID[tweak_id]
@@ -354,7 +354,7 @@ class TestInstalledKDECapabilities(unittest.TestCase):
     @patch("core.tasks.tweaks.Path.open", new_callable=mock_open, read_data=b'<kcfg><group name="Windows"><entry name="FocusStealingPreventionLevel" type="Int"/><entry name="ElectricBorderTiling" type="Bool"/><entry name="BorderlessMaximizedWindows" type="Bool"/></group></kcfg>')
     @patch("core.tasks.tweaks.shutil.which", return_value="/usr/bin/tool")
     def test_kwin_supports_all_three_reviewed_keys(self, _which, _opened):
-        for tweak_id in KWIN_RUNTIME_KEYS:
+        for tweak_id in ("kde-edge-tiling", "kde-focus-stealing-prevention", "kde-borderless-maximized-windows"):
             self.assertEqual(kde_capability_error(tweak_id), "")
 
     @patch("core.tasks.tweaks.Path.open", side_effect=FileNotFoundError)

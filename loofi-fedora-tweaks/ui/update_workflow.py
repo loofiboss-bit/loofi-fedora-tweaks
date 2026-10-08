@@ -19,6 +19,7 @@ class UpdateWorkflowPage(QWidget):
 
     sourceActionRequested = pyqtSignal(str, str)
     diagnosisRequested = pyqtSignal(str, str)
+    sourcesRequested = pyqtSignal()
     stopped = pyqtSignal()
 
     def __init__(
@@ -45,6 +46,9 @@ class UpdateWorkflowPage(QWidget):
             self.tr("Review each source independently. Loofi never reboots automatically."),
         )
         root.addWidget(self.scaffold)
+        self.sources_button = QuietButton(self.tr("View package sources"), description=self.tr("Inspect locally configured DNF sources in Apps."))
+        self.sources_button.clicked.connect(self.sourcesRequested.emit)
+        self.scaffold.add_widget(self.sources_button)
         self.state_notice = InlineNotice(
             self.tr("Choose an update source"),
             self.tr("Each source is checked, reviewed, updated, and verified independently."),

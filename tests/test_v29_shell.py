@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import sys
+import time
 import unittest
 from typing import cast
 from unittest.mock import patch
@@ -15,6 +16,7 @@ sys.path.insert(
 )
 
 from PyQt6.QtCore import QEvent, QObject, QThread
+from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QPushButton
 
 from core.platform.profile import (
@@ -25,6 +27,8 @@ from core.platform.profile import (
 )
 from core.plugins.registry import PluginRegistry
 from services.system import SystemManager
+from services.software.installed_applications import InstalledInventory
+from services.software.source_status import DnfSourceSnapshot
 from ui.activity_recovery_tab import ActivityRecoveryTab
 from ui.main_window import MainWindow
 from ui.navigation import UTILITY_DESTINATIONS
@@ -149,7 +153,9 @@ class TestV29MainWindowShell(unittest.TestCase):
 
         self.assertEqual(opened, ["software:apps"])
 
-    def test_utility_workflows_load_once_when_opened(self) -> None:
+    @patch("services.software.installed_applications.InstalledApplicationService.snapshot", return_value=InstalledInventory())
+    @patch("services.software.source_status.SoftwareSourceStatusService.combined_snapshot", return_value=(DnfSourceSnapshot("fixture"), ()))
+    def test_utility_workflows_load_once_when_opened(self, _sources, _inventory) -> None:
         window = self._build()
         names = ("install", "tune", "fix", "update")
         entries = [window._sidebar_index[f"utility_{name}"] for name in names]
@@ -173,6 +179,12 @@ class TestV29MainWindowShell(unittest.TestCase):
             pages[name] = window._real_widget_for_entry(entry)
             self.assertIs(pages[name], entry.page_widget.get_real_widget())
 
+        # Initial async inventories legitimately add/remove child widgets. Let
+        # deterministic readers finish before measuring navigation ownership.
+        deadline = time.monotonic() + 3.0
+        while install_page.busy and time.monotonic() < deadline:
+            QTest.qWait(1)
+        self.assertFalse(install_page.busy, "Initial workflow readers did not stop.")
         self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
         self.app.processEvents()
         child_counts = []
@@ -186,7 +198,9 @@ class TestV29MainWindowShell(unittest.TestCase):
             self.assertEqual(window.findChildren(QThread), [])
             child_counts.append(len(window.findChildren(QObject)))
 
-        self.assertEqual(len(set(child_counts)), 1)
+        self.assertEqual(len(set(child_counts)), 1, child_counts)
+        _inventory.assert_called_once_with()
+        _sources.assert_called_once_with()
 
     def test_legacy_change_routes_open_activity_and_secondary_routes_clear_primary(self) -> None:
         window = self._build()

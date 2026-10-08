@@ -16,6 +16,7 @@ and is not.
 
 ## Contribute
 
+- [Personal qualification](PERSONAL_VERIFICATION.md) — RPM discovery, profile authoring, source observations, and KDE window workflows
 - [Companion qualification](COMPANION_VERIFICATION.md) — local candidate checks and physical evidence limits
 - [Care qualification](CARE_VERIFICATION.md) — candidate app insight, runtime cleanup, and update diagnostics
 - [Everyday qualification](EVERYDAY_VERIFICATION.md) — feature, CLI, rendering and packaging evidence

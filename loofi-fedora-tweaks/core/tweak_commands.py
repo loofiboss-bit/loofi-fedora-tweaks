@@ -99,7 +99,14 @@ CURSOR_TWEAK_IDS = frozenset({"kde-cursor-theme", "kde-cursor-size"})
 THEME_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
 CURSOR_NOTIFY = ("dbus-send", "--session", "--type=signal", "/KGlobalSettings", "org.kde.KGlobalSettings.notifyChange", "int32:5", "int32:0")
 
+SNAP_TWEAK_IDS = frozenset({"kde-border-snap-zone", "kde-window-snap-zone"})
+# Reviewed KWin enum order; validate it against the installed schema before use.
+KWIN_PLACEMENT_VALUES = ("NoPlacement", "Default", "Unknown", "Random", "Smart", "Centered", "ZeroCornered", "UnderMouse", "OnMainWindow", "Maximizing")
+
 KDE_SPECS = {
+    "kde-window-placement": ("kwinrc", "Windows", "Placement", "Centered"),
+    "kde-border-snap-zone": ("kwinrc", "Windows", "BorderSnapZone", "10"),
+    "kde-window-snap-zone": ("kwinrc", "Windows", "WindowSnapZone", "10"),
     "kde-cursor-theme": ("kcminputrc", "Mouse", "cursorTheme", ""),
     "kde-cursor-size": ("kcminputrc", "Mouse", "cursorSize", "24"),
     "kde-plasma-style": ("plasmarc", "Theme", "name", "default"),
@@ -135,6 +142,7 @@ KDE_KEYS = {item: (spec[2], spec[3]) for item, spec in KDE_SPECS.items()}
 SCHEME_PATTERN = re.compile(r"^[A-Za-z0-9](?:[A-Za-z0-9._ -]{0,126}[A-Za-z0-9])?$")
 _NUMERIC = re.compile(r"[0-9]+(?:\.[0-9]+)?(?:[eE][+-]?[0-9]+)?\Z")
 _ENUMS = {
+    "kde-window-placement": frozenset(KWIN_PLACEMENT_VALUES),
     "gnome-mouse-acceleration": frozenset({"default", "flat", "adaptive"}),
     "gnome-color": frozenset({"default", "prefer-light", "prefer-dark"}),
     "gnome-clock-format": frozenset({"12h", "24h"}),
@@ -158,7 +166,7 @@ _ENUMS = {
     "kde-key-repeat": frozenset({"repeat", "accent", "nothing"}),
     "kde-login-mode": frozenset({"restorePreviousLogout", "restoreSavedSession", "emptySession"}),
 }
-NUMERIC_TWEAKS = frozenset({"gnome-text-scale", "kde-animation", "kde-double-click-interval", "kde-cursor-size"})
+NUMERIC_TWEAKS = frozenset({"gnome-text-scale", "kde-animation", "kde-double-click-interval", "kde-cursor-size"}) | SNAP_TWEAK_IDS
 
 
 def valid_value(tweak_id: str, value: str) -> bool:
@@ -180,6 +188,8 @@ def valid_value(tweak_id: str, value: str) -> bool:
                 return False
             if tweak_id == "gnome-text-scale":
                 return Decimal("0.5") <= number <= Decimal("3")
+            if tweak_id in SNAP_TWEAK_IDS:
+                return value.isascii() and value.isdigit() and 0 <= number <= 1000
             if tweak_id == "kde-cursor-size":
                 return value.isascii() and value.isdigit() and 0 <= number <= 512
             if tweak_id == "kde-double-click-interval":
@@ -247,13 +257,16 @@ def tweak_command_class(binary: str, args: Sequence[str]) -> Literal["read_only"
 
 
 def custom_numeric_tweak(binary: str, args: Sequence[str]) -> str:
-    """Identify valid numeric writes outside the catalog's ordinary choices."""
+    """Identify safe custom writes requiring a matching restore authority."""
     vector = tuple(args)
     numeric_choices = {
         "gnome-text-scale": {"1.0", "1.25", "1.5"},
         "kde-animation": {"0", "0.5", "1"},
         "kde-double-click-interval": {"200", "400", "600", "800"},
         "kde-cursor-size": {"24", "32", "48", "64"},
+        "kde-border-snap-zone": {"0", "10", "20", "30"},
+        "kde-window-snap-zone": {"0", "10", "20", "30"},
+        "kde-window-placement": {"Smart", "Centered", "UnderMouse"},
     }
     if tweak_command_class(binary, vector) != "session":
         return ""
@@ -268,6 +281,9 @@ def custom_numeric_tweak(binary: str, args: Sequence[str]) -> str:
 KWIN_RECONFIGURE = ("dbus-send", "--session", "--type=method_call", "--dest=org.kde.KWin", "/KWin", "org.kde.KWin.reconfigure")
 KWIN_SUPPORT = ("gdbus", "call", "--session", "--dest", "org.kde.KWin", "--object-path", "/KWin", "--method", "org.kde.KWin.supportInformation")
 KWIN_RUNTIME_KEYS = {
+    "kde-window-placement": "placement",
+    "kde-border-snap-zone": "borderSnapZone",
+    "kde-window-snap-zone": "windowSnapZone",
     "kde-edge-tiling": "electricBorderTiling",
     "kde-focus-stealing-prevention": "focusStealingPreventionLevel",
     "kde-borderless-maximized-windows": "borderlessMaximizedWindows",

@@ -187,6 +187,7 @@ def _preflight_activation(parameters: Mapping[str, Any], runtime: ActionRuntime)
 def _verify_activation(_run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
     import ast
     from core.tweak_commands import KWIN_RUNTIME_KEYS, KWIN_SUPPORT
+    from core.tasks.tweaks import normalize_kwin_runtime_value
 
     try:
         tweak, target = _activation_source(plan.parameters, runtime)
@@ -206,9 +207,10 @@ def _verify_activation(_run: ActionRun, plan: ActionPlan, runtime: ActionRuntime
         if not isinstance(payload, tuple) or len(payload) != 1 or not isinstance(payload[0], str):
             return VerificationDecision.failed("KWin runtime information has an unsupported format.")
         matches = re.findall(rf"(?m)^\s*{re.escape(KWIN_RUNTIME_KEYS[tweak.id])}:\s*([^\s]+)\s*$", payload[0])
-        if len(matches) != 1 or not valid_value(tweak.id, matches[0]):
+        active = normalize_kwin_runtime_value(tweak.id, matches[0]) if len(matches) == 1 else ""
+        if not valid_value(tweak.id, active):
             return VerificationDecision.failed("KWin's active setting could not be read safely.")
-        if values_equal(tweak.id, matches[0], target):
+        if values_equal(tweak.id, active, target):
             return VerificationDecision.succeeded("Saved and verified; applied and verified in the current Plasma session.", session_verified=True, tweak_id=tweak.id, value=target, source_run_id=plan.parameters["source_run_id"])
         if attempt == 2 or time.monotonic() + 0.1 >= deadline:
             break

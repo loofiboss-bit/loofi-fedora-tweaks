@@ -6,10 +6,35 @@ import json
 import re
 from dataclasses import dataclass
 from pathlib import Path
+from typing import Iterable
 
 from core.state.paths import StatePaths
 from core.tasks.tweak_presets import list_presets, profile_for_preset
 from core.tasks.tweak_profiles import TweakProfile, load_profile, parse_profile, save_profile
+from core.tasks.tweaks import BY_ID, TweakState, allowed_value
+
+
+def edit_profile(source: TweakProfile, name: str, settings: Iterable[tuple[str, str]],
+                 states: Iterable[TweakState]) -> TweakProfile:
+    """Create a portable copy, retaining opaque original rows without coercion.
+
+    Inspection authorizes editor choices only, never host changes. Original
+    unavailable or custom targets may be kept verbatim or explicitly removed.
+    """
+    result = parse_profile(json.dumps(TweakProfile(name, source.desktop, tuple(settings)).to_dict()).encode("utf-8"))
+    original = dict(source.settings)
+    inspected = {state.tweak.id: state for state in states}
+    for key, value in result.settings:
+        if original.get(key) == value:
+            continue
+        tweak = BY_ID.get(key)
+        state = inspected.get(key)
+        if (tweak is None or tweak.desktop != source.desktop or tweak.system_wide or tweak.privileged
+                or state is None or state.status != "ready"):
+            raise ValueError(f"Setting {key} is unavailable; retain its original value or remove it.")
+        if not allowed_value(tweak, value, state.choices):
+            raise ValueError(f"Setting {key} requires a currently supported target value.")
+    return result
 
 
 @dataclass(frozen=True)

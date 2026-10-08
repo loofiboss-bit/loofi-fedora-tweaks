@@ -3,7 +3,21 @@
 Direction is set by the [product definition](docs/PRODUCT.md). Completed work
 is recorded in the [changelog](CHANGELOG.md).
 
-## Local candidate — v32.5.0 "Companion"
+## Local candidate — v32.6.0 "Personal"
+
+Build on Companion with KDE/DNF-first everyday application and profile workflows.
+
+- Discover visible RPM-owned desktop applications beyond the curated catalog
+- Edit a copy of a built-in or personal profile and save a new library version
+- Search all locally configured DNF5 sources using the same observation as source status
+- Review new-window placement and screen/window snap distances through Action Center
+- Open checked native KDE default-app, autostart, and icon settings
+
+Local automated, packaging, rendering, and runtime qualification is tracked in
+[Personal qualification](docs/PERSONAL_VERIFICATION.md). Physical human interaction,
+GNOME, and Atomic qualification remain separate. This is not a published release.
+
+## Included baseline — v32.5.0 "Companion"
 
 KDE and DNF5 are the primary target, with optional GNOME counterparts and
 explicitly limited Atomic observations.

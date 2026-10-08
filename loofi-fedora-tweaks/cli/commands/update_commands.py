@@ -76,6 +76,25 @@ def handle_self_update(args, json_output, output_json, print_fn, system_manager_
 
 def handle_updates(args, json_output, output_json, print_fn, run_operation, update_manager_cls):
     """Handle smart updates subcommand."""
+    if args.action == "sources":
+        from services.software.source_status import SoftwareSourceStatusService
+
+        snapshot = SoftwareSourceStatusService().sources_snapshot()
+        payload = snapshot.to_dict()
+        if json_output:
+            output_json(payload)
+        else:
+            print_fn(f"Source configuration observed: {snapshot.observed_at}")
+            print_fn("Local configuration only; network availability was not checked.")
+            if not snapshot.success:
+                print_fn(f"Could not inspect sources: {payload['reason']}")
+            elif not snapshot.repositories:
+                print_fn("No configured DNF sources.")
+            for repository in payload["repositories"]:
+                state = "Enabled" if repository["enabled"] else "Disabled"
+                print_fn(f"  {repository['id']}: {repository['name']} ({state})")
+        return 0 if snapshot.success else 1
+
     if args.action == "prepare-upgrade":
         from services.software.upgrade_preparation import UpgradePreparationService
 

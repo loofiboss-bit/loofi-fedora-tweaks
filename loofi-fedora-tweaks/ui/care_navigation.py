@@ -5,6 +5,21 @@ from typing import Any
 
 
 class CareNavigationMixin:
+    def _open_package_sources(self: Any) -> None:
+        """Reveal the single source overview on the existing Apps route."""
+        self._activate_destination("install")
+        entry = self._sidebar_index.get("utility_install")
+        if entry is not None:
+            page = entry.page_widget
+            loader = getattr(page, "ensure_loaded", None)
+            if callable(loader):
+                loaded = loader()
+                if loaded is not None:
+                    page = loaded
+            focus = getattr(page, "focus_sources", None)
+            if callable(focus):
+                focus()
+
     def _open_apps_unused_runtimes(self: Any, preselection: dict) -> bool:
         """Focus existing runtime inspection; never inspect on navigation."""
         from services.software.flatpak_maintenance import INSTALLATION_PATTERN

@@ -52,7 +52,7 @@ class TestSoftwareSourceStatusService(unittest.TestCase):
             ],
         )
         run.assert_called_once_with(
-            ["dnf5", "--cacheonly", "repolist", "--all", "--json"],
+            ["dnf5", "--cacheonly", "repo", "list", "--all", "--json"],
             capture_output=True,
             text=True,
             check=False,
@@ -182,6 +182,17 @@ class TestSoftwareSourceStatusService(unittest.TestCase):
         from services.software.source_status import SourceStatus
 
         return SourceStatus("flathub", scope, SourceState.DISABLED)
+
+
+class TestLegacyDnfParser(unittest.TestCase):
+    def test_name_is_optional_in_legacy_id_state_parser(self):
+        from services.software.source_status import _parse_dnf_repositories
+        self.assertEqual(_parse_dnf_repositories('[{"id":"Fedora","is_enabled":true}]'), {"fedora": True})
+
+    def test_duplicate_fields_fail_closed_in_legacy_parser(self):
+        from services.software.source_status import _parse_dnf_repositories
+        with self.assertRaises(ValueError):
+            _parse_dnf_repositories('[{"id":"fedora","is_enabled":true,"is_enabled":false}]')
 
 
 class TestSystemManagerFlathubProbe(unittest.TestCase):

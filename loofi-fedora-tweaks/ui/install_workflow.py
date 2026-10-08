@@ -111,6 +111,7 @@ class InstallWorkflowPage(QWidget):
         self.view_filter.setAccessibleName(self.tr("Application view"))
         self.view_filter.addItem(self.tr("Catalog"), "catalog")
         self.view_filter.addItem(self.tr("Installed"), "installed")
+        self.view_filter.addItem(self.tr("Package sources"), "sources")
         self.intro.add_widget(self.view_filter)
 
         self.flathub_status_card = Card(
@@ -181,6 +182,29 @@ class InstallWorkflowPage(QWidget):
         self.installed_card.stopped.connect(self._notify_stopped)
         self.installed_card.hide()
         self.scaffold.add_widget(self.installed_card)
+        from ui.software_sources import SoftwareSourcesWidget
+        from services.software.source_status import SoftwareSourceStatusService
+        from ui.native_handoff_card import ManagedNativeHandoffCard
+        from core.catalog_models import NativeHandoffId
+
+        self.sources_widget = SoftwareSourcesWidget(service=source_status_service if isinstance(source_status_service, SoftwareSourceStatusService) else None, parent=self)
+        self.sources_widget.hide()
+        if source_status_service is not None:
+            self.sources_widget.refresh_button.clicked.disconnect()
+            self.sources_widget.refresh_button.clicked.connect(self.refresh_flathub_status)
+        self.sources_widget.snapshotChanged.connect(self._apply_dnf_source_badges)
+        self.sources_widget.stopped.connect(self._notify_stopped)
+        self.scaffold.add_widget(self.sources_widget)
+        self.dnf_source_status = QLabel(self.tr("DNF source status has not been checked."))
+        self.dnf_source_status.setWordWrap(True)
+        self.flathub_details.add_widget(self.dnf_source_status)
+        self.default_apps_handoff = ManagedNativeHandoffCard(
+            NativeHandoffId.DEFAULT_APPLICATIONS, title=self.tr("Default applications"),
+            description=self.tr("Choose default applications in KDE System Settings."),
+            button_text=self.tr("Open default applications"), parent=self,
+        )
+        self.default_apps_handoff.stopped.connect(self._notify_stopped)
+        self.scaffold.add_widget(self.default_apps_handoff)
 
         self.review_card = Card()
         self.review_card.setObjectName("installReviewCard")
@@ -220,10 +244,13 @@ class InstallWorkflowPage(QWidget):
 
     @property
     def busy(self) -> bool:
-        return self.installed_card.busy or (self._source_status_adapter is not None and self._source_status_adapter.busy)
+        return (self.installed_card.busy or self.sources_widget.busy or self.default_apps_handoff.busy
+                or (self._source_status_adapter is not None and self._source_status_adapter.busy))
 
     def request_stop(self) -> None:
         self.installed_card.request_stop()
+        self.sources_widget.request_stop()
+        self.default_apps_handoff.request_stop()
         if self._source_status_adapter is not None:
             self._source_status_adapter.cancel()
 
@@ -235,20 +262,54 @@ class InstallWorkflowPage(QWidget):
         self.request_stop()
         installed_stopped = self.installed_card.cleanup(timeout_ms)
         source_stopped = self._source_status_adapter is None or self._source_status_adapter.close(timeout_ms)
-        return installed_stopped and source_stopped
+        sources_stopped = self.sources_widget.cleanup(timeout_ms)
+        handoff_stopped = self.default_apps_handoff.cleanup(timeout_ms)
+        return installed_stopped and source_stopped and sources_stopped and handoff_stopped
 
     def _set_application_view(self, *_args: Any) -> None:
         installed = self.view_filter.currentData() == "installed"
+        sources = self.view_filter.currentData() == "sources"
         self.installed_card.setVisible(installed)
-        self.flathub_status_card.setVisible(not installed)
-        self.application_list.setVisible(not installed)
-        self.review_card.setVisible(not installed)
-        self.search_input.setVisible(True)
+        self.sources_widget.setVisible(sources)
+        self.default_apps_handoff.setVisible(not sources)
+        self.flathub_status_card.setVisible(not installed and not sources)
+        self.application_list.setVisible(not installed and not sources)
+        self.review_card.setVisible(not installed and not sources)
+        self.search_input.setVisible(not sources)
         self.search_input.setPlaceholderText(self.tr("Search installed applications…") if installed else self.tr("Search applications…"))
-        self.category_filter.setVisible(not installed)
-        self.match_summary.setVisible(not installed)
+        self.category_filter.setVisible(not installed and not sources)
+        self.match_summary.setVisible(not installed and not sources)
         if installed:
             self.installed_card.set_search(self.search_input.text())
+        if sources and self.sources_widget.snapshot is None and not (self._source_status_adapter and self._source_status_adapter.busy):
+            if self._source_status_service is None:
+                self.sources_widget.refresh()
+            else:
+                self.refresh_flathub_status()
+
+    def focus_sources(self) -> None:
+        self.view_filter.setCurrentIndex(self.view_filter.findData("sources"))
+        self.sources_widget.search.setFocus()
+
+    def _apply_dnf_source_badges(self, snapshot: object) -> None:
+        from services.software.source_status import DnfSourceSnapshot, SoftwareSourceStatusService
+
+        if not isinstance(snapshot, DnfSourceSnapshot):
+            return
+        labels = {"rpmfusion-free": self.tr("RPM Fusion Free"), "rpmfusion-nonfree": self.tr("RPM Fusion Nonfree"), "loofi-copr": self.tr("Loofi COPR")}
+        states = {"enabled": self.tr("Enabled"), "disabled": self.tr("Not enabled"), "unknown": self.tr("Unknown")}
+        self.dnf_source_status.setText("\n".join(
+            f"{labels[status.source_id]}: {states[status.state.value]}" for status in SoftwareSourceStatusService.badges_from_sources(snapshot)
+        ) + "\n" + self.tr("Observed: %1").replace("%1", snapshot.observed_at))
+
+    def _apply_source_observation(self, observation: object) -> None:
+        from services.software.source_status import DnfSourceSnapshot
+
+        if isinstance(observation, tuple) and len(observation) == 2 and isinstance(observation[0], DnfSourceSnapshot):
+            self.sources_widget.set_snapshot(observation[0])
+            self._apply_flathub_statuses(observation[1])
+        else:
+            self._apply_flathub_statuses(observation)
 
     def _apply_installed_inventory(self, inventory: object) -> None:
         if self.context is not None:
@@ -266,17 +327,21 @@ class InstallWorkflowPage(QWidget):
             from ui.operation_worker import OperationControllerQtAdapter
 
             self._source_status_adapter = OperationControllerQtAdapter(parent=self)
-            self._source_status_adapter.finished.connect(self._apply_flathub_statuses)
+            self._source_status_adapter.finished.connect(self._apply_source_observation)
             self._source_status_adapter.failed.connect(self._flathub_status_failed)
             self._source_status_adapter.stopped.connect(lambda: self.flathub_refresh_button.setEnabled(True))
+            self._source_status_adapter.stopped.connect(lambda: self.sources_widget.refresh_button.setEnabled(True))
             self._source_status_adapter.stopped.connect(self._notify_stopped)
         if self._source_status_adapter.busy:
             return
         self.flathub_refresh_button.setEnabled(False)
+        self.sources_widget.refresh_button.setEnabled(False)
         self.flathub_system_status.setText(self.tr("System scope: Checking…"))
         self.flathub_user_status.setText(self.tr("User scope: Checking…"))
         self.flathub_guidance_button.hide()
-        self._source_status_adapter.start(self._source_status_service.snapshot)
+        from services.software.source_status import SoftwareSourceStatusService
+        reader = self._source_status_service.combined_snapshot if isinstance(self._source_status_service, SoftwareSourceStatusService) else self._source_status_service.snapshot
+        self._source_status_adapter.start(reader)
 
     def _apply_flathub_statuses(self, statuses: object) -> None:
         """Render system and user remote state without conflating unknown and disabled."""
@@ -325,7 +390,9 @@ class InstallWorkflowPage(QWidget):
 
     def _flathub_status_failed(self, _message: str) -> None:
         """Keep an adapter failure distinct from a disabled source."""
-        from services.software.source_status import SourceScope, SourceState, SourceStatus, SourceStatusReason
+        from services.software.source_status import DnfSourceSnapshot, SourceScope, SourceState, SourceStatus, SourceStatusReason
+
+        self.sources_widget.set_snapshot(DnfSourceSnapshot("", reason=SourceStatusReason.PROBE_FAILED))
 
         self._apply_flathub_statuses((
             SourceStatus("flathub", SourceScope.SYSTEM, SourceState.UNKNOWN, SourceStatusReason.PROBE_FAILED),

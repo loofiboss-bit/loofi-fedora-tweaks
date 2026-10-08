@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the v32.5.0 "Companion" local candidate.
+> Active architecture reference for the v32.6.0 "Personal" local candidate.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -12,7 +12,7 @@ system-wide DNF setting, alongside app installation, updates, and diagnostics.
 Missing applications, schemas, or host tools produce an unavailable state
 with an explanation.
 
-The current tweak catalog contains 79 controls: 46 GNOME-only, 31 KDE-only,
+The current tweak catalog contains 82 controls: 46 GNOME-only, 34 KDE-only,
 and two shared controls. The GUI and CLI project the controls supported by the
 detected Fedora desktop and deployment backend.
 
@@ -58,6 +58,31 @@ the existing schema-v4 run record; no migration is needed for catalog-only
 settings. Restore accepts a verified `source_run_id`, checks that the setting
 has not drifted or been superseded, and records a separate verified action.
 There is no generic undo, bulk restore, or automatic rollback.
+
+## Personal application and authoring workflows
+
+Installed RPM inventory discovers visible system desktop entries, reads their
+RPM owners in bounded batches, and joins them to the installed package snapshot.
+Rows represent package names, not individual launchers; sizes sum installed
+package instances and distinct versions are retained. Curated RPM apps remain
+fallbacks. The stable `fedora` source token is retained for existing consumers,
+but the presentation calls these installations RPM and does not assert origin
+or trust. Desktop `Exec` values are never executed.
+
+The profile editor validates new targets against the current catalog snapshot
+and preserves original unavailable values until the user removes them. Save
+adds a content-addressed library entry; it does not execute actions or replace
+the original. A later apply obtains a fresh immutable review through the
+existing controller. Profile and action-history schemas are unchanged.
+
+SoftwareSourceStatusService supplies one complete local DNF source observation
+and derives existing badges from it. Apps owns the searchable source view;
+Updates links to that owner, and `updates sources` uses the same service.
+Source status describes configured activation, never remote reachability.
+
+The new native cards prepare fixed launch vectors asynchronously and revalidate
+immediately before a deliberate launch. Their route owns cancellation and
+shutdown; a late reader result cannot launch a window after shutdown begins.
 
 GNOME and KDE settings are per-user and do not require administrator
 authorization. The DNF parallel-download setting is system-wide and requires

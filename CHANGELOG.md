@@ -1,5 +1,14 @@
 # Changelog
 
+## [32.6.0] - Unreleased - "Personal"
+
+- Discover visible RPM-owned desktop applications outside the curated catalog, grouping launchers and installed package architectures without running desktop commands.
+- Keep partial ownership evidence explicit and distinguish unowned desktop files from failed RPM reads.
+- Edit profile copies with supported setting controls and save new versions without changing computer settings or overwriting the original.
+- Inspect all configured DNF5 package sources in Apps and the CLI, with a direct link from Updates and shared source-status observations.
+- Add reviewed KDE new-window placement and screen/window snap-distance controls with independent session verification and exact supported restoration.
+- Add asynchronous, revalidated native KDE links for default applications, autostart, and icon themes.
+
 ## [32.5.0] - Unreleased - "Companion"
 
 - Add a local personal profile library and Focus, Privacy basics, and Touchpad comfort presets using existing reviewed settings.

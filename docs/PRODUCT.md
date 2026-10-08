@@ -150,6 +150,29 @@ Local observations do not certify the future release's transaction, source
 availability, or sufficient disk space. Missing or malformed restart advice
 remains unknown. Loofi does not download, perform, or reboot for a major upgrade.
 
+## Personal everyday workflows
+
+Apps includes visible RPM-owned desktop applications outside the curated
+catalog. Several launchers and installed architectures of one RPM package
+share one row. RPM is an installation format, not a promise about package
+origin or trust; recommended catalog entries retain their explicit curation.
+Removal stays in the native software manager. Partial reads remain visible.
+
+Profile library entries can be edited as copies: change the name, inclusion,
+and supported target values, then save a new version locally. Original
+unknown or unavailable values remain until deliberately removed. Saving does
+not change computer settings; applying requires a fresh existing review.
+
+The Package sources view in Apps searches configured DNF5 source IDs, names,
+and enabled/disabled state with an observation time. Updates links to that
+view. It does not refresh metadata, assess remote availability, or change
+repository configuration. Unsupported backends and failed reads stay unknown.
+
+Three additional KDE controls manage placement of new windows and snap
+distances to screen borders and other windows. Saved-value readback and KWin
+session activation retain separate results. Default applications in Apps and
+autostart/icon settings in Tweaks use checked native KDE handoffs.
+
 ## Preferences and status
 
 The Loofi release check is off by default and can be enabled in Settings. When

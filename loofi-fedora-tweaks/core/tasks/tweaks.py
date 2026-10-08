@@ -17,7 +17,7 @@ from typing import Callable, Sequence
 
 from core.actions.contracts import ActionRuntime
 from core.executor.action_result import ActionResult
-from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector, gnome_schema, KDE_SPECS, KWIN_RUNTIME_KEYS, CURSOR_TWEAK_IDS, THEME_PATTERN
+from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector, gnome_schema, KDE_SPECS, KWIN_RUNTIME_KEYS, CURSOR_TWEAK_IDS, THEME_PATTERN, SNAP_TWEAK_IDS, KWIN_PLACEMENT_VALUES
 
 
 _SCHEME = SCHEME_PATTERN
@@ -108,6 +108,9 @@ TWEAKS: tuple[Tweak, ...] = (
     Tweak("gnome-power-button", "Power button action", "Choose what pressing the power button does.", "Power", "gnome", "set-gnome-power-button", (("suspend", "Suspend"), ("hibernate", "Hibernate"), ("interactive", "Ask"), ("nothing", "Nothing"),)),
     Tweak("gnome-files-click-policy", "Open files and folders", "Choose whether a single or double click opens files and folders in GNOME Files.", "Files", "gnome", "set-gnome-files-click-policy", (("single", "Single click"), ("double", "Double click"))),
     Tweak("gnome-files-default-folder-view", "Default folder view", "Choose the view used for folders in GNOME Files.", "Files", "gnome", "set-gnome-files-default-folder-view", (("icon-view", "Icons"), ("list-view", "List"))),
+    Tweak("kde-window-placement", "New window placement", "Choose where new windows open in Plasma.", "Windows", "kde", "set-kde-window-placement", (("Smart", "Smart"), ("Centered", "Centered"), ("UnderMouse", "Under pointer"))),
+    Tweak("kde-border-snap-zone", "Screen edge snap distance", "Choose how close a window must be to snap to a screen edge.", "Windows", "kde", "set-kde-border-snap-zone", (("0", "Off"), ("10", "10 px"), ("20", "20 px"), ("30", "30 px"))),
+    Tweak("kde-window-snap-zone", "Window snap distance", "Choose how close a window must be to snap to another window.", "Windows", "kde", "set-kde-window-snap-zone", (("0", "Off"), ("10", "10 px"), ("20", "20 px"), ("30", "30 px"))),
     Tweak("kde-focus-policy", "Window focus", "Choose how windows receive keyboard focus in Plasma.", "Windows", "kde", "set-kde-focus-policy", (("ClickToFocus", "Click to focus"), ("FocusFollowsMouse", "Focus follows mouse"), ("FocusUnderMouse", "Focus under mouse"),)),
     Tweak("kde-titlebar-double-click", "Titlebar double-click", "Choose what double-clicking a titlebar does.", "Windows", "kde", "set-kde-titlebar-double-click", (("Maximize", "Maximize"), ("Minimize", "Minimize"), ("Shade", "Roll up"), ("Lower", "Lower"), ("Nothing", "Nothing"),)),
     Tweak("kde-blur", "Background blur", "Blur the background behind translucent windows.", "Appearance", "kde", "set-kde-blur", (("true", "On"), ("false", "Off"),)),
@@ -323,15 +326,35 @@ def kde_capability_error(tweak_id: str, *, schema_cache: _KDESchemaCache | None 
     if root is None:
         return f"The installed {application} settings schema could not be read safely."
     _file, group, key, _default = KDE_SPECS[tweak_id]
-    expected_type = "String" if tweak_id == "kde-cursor-theme" else "Int" if tweak_id in {"kde-focus-stealing-prevention", "kde-cursor-size"} else "Bool"
+    expected_type = "Enum" if tweak_id == "kde-window-placement" else "String" if tweak_id == "kde-cursor-theme" else "Int" if tweak_id in {"kde-focus-stealing-prevention", "kde-cursor-size"} | SNAP_TWEAK_IDS else "Bool"
     entries = [entry for section in root.findall(".//{*}group") if section.get("name") == group
                for entry in section.findall("{*}entry") if entry.get("key", entry.get("name")) == key]
     if len(entries) != 1 or entries[0].get("type") != expected_type:
         return f"The installed {application} schema does not support {group}/{key}."
+    if tweak_id == "kde-window-placement":
+        choices = entries[0].findall("{*}choices/{*}choice")
+        values = tuple(choice.get("value", choice.get("name", "")) for choice in choices)
+        if values != KWIN_PLACEMENT_VALUES:
+            return "The installed KWin placement enum is unsupported."
     if tweak_id in CURSOR_TWEAK_IDS:
         defaults = entries[0].findall("{*}default")
         if len(defaults) != 1 or not valid_value(tweak_id, defaults[0].text or ""):
             return f"The installed pointer schema has an unsupported default for {key}."
+    return ""
+
+
+def normalize_kwin_runtime_value(tweak_id: str, value: str) -> str:
+    """Translate only reviewed, installed KWin enum indexes to saved literals."""
+    if tweak_id != "kde-window-placement":
+        return value
+    if kde_capability_error(tweak_id):
+        return ""
+    if value in KWIN_PLACEMENT_VALUES:
+        return value
+    if value.isascii() and value.isdigit() and len(value) <= 2:
+        index = int(value)
+        if index < len(KWIN_PLACEMENT_VALUES):
+            return KWIN_PLACEMENT_VALUES[index]
     return ""
 
 

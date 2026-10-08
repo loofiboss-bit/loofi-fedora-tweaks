@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.5.0
+Version:        32.6.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -109,6 +109,9 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Fri Oct 09 2026 Loofi <loofi@example.com> - 32.6.0-1
+- Personal: RPM app discovery, editable profile copies, DNF sources, and KDE window controls.
+
 * Thu Oct 08 2026 Loofi <loofi@example.com> - 32.5.0-1
 - Companion: local profiles, app access, Health comparisons, and upgrade preparation.
 

@@ -102,6 +102,18 @@ _TARGETS: Mapping[NativeHandoffId, NativeHandoffTarget] = MappingProxyType(
             ("kcm_cursortheme",),
             "kcm_cursortheme",
         ),
+        NativeHandoffId.DEFAULT_APPLICATIONS: NativeHandoffTarget(
+            NativeHandoffId.DEFAULT_APPLICATIONS, "Default Applications", "kcmshell6",
+            ("kcm_componentchooser",), "kcm_componentchooser",
+        ),
+        NativeHandoffId.AUTOSTART_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.AUTOSTART_SETTINGS, "Autostart Settings", "kcmshell6",
+            ("kcm_autostart",), "kcm_autostart",
+        ),
+        NativeHandoffId.ICON_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.ICON_SETTINGS, "Icon Settings", "kcmshell6",
+            ("kcm_icons",), "kcm_icons",
+        ),
         NativeHandoffId.WINDOW_MANAGEMENT: NativeHandoffTarget(
             NativeHandoffId.WINDOW_MANAGEMENT,
             "Window Management",
