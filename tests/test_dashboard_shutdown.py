@@ -136,6 +136,19 @@ class TestReaderShutdownDeferral(unittest.TestCase):
         self.assertGreater(budgets[0], budgets[1])
         self.assertGreater(budgets[1], budgets[2])
 
+    def test_realized_companion_pages_are_retained_without_duplicate_aliases(self):
+        monitor, health, updates = reader(), reader(), reader()
+        window = _Harness(monitor=monitor)
+        window._sidebar_index.update({
+            "monitor-alias": SimpleNamespace(page_widget=monitor),
+            "utility_fix": SimpleNamespace(page_widget=health),
+            "utility_update": SimpleNamespace(page_widget=updates),
+        })
+        self.assertEqual(window._runtime_samplers(), (monitor, health, updates))
+        self.assertFalse(window._request_runtime_shutdown())
+        for resource in (monitor, health, updates):
+            resource.request_stop.assert_called_once()
+
 
 class _Window(MainWindowInteractionMixin, QWidget):
     def __init__(self, service):

@@ -153,7 +153,7 @@ class TestTroubleshootWidget(unittest.TestCase):
         self.assertEqual(len(widget.findChildren(PageScaffold)), 1)
         self.assertEqual(len(widget.findChildren(LocalViewSwitcher)), 1)
         self.assertEqual(len(widget.findChildren(PrimaryButton)), 1)
-        self.assertEqual(widget.profile_selector.count(), 8)
+        self.assertEqual(widget.profile_selector.count(), 9)
         self.assertEqual(widget.profile_label.text(), "What is going wrong?")
         self.assertEqual(widget.profile_label.buddy(), widget.profile_selector)
         self.assertEqual(factory_calls, [])

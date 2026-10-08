@@ -43,6 +43,24 @@ def handle_apps(
                     print_fn(error)
             return 1 if inventory.errors else 0
 
+    if action == "access":
+        from services.software.flatpak_access import FlatpakAccessService
+        report = FlatpakAccessService().inspect(args.ref, args.installation)
+        if json_output:
+            output_json(report.to_dict())
+        else:
+            print_fn(f"Ref: {report.ref} · Installation: {report.installation} · Status: {report.status}")
+            print_fn(report.notice)
+            if report.error:
+                print_fn(report.error)
+            for layer in report.layers:
+                print_fn(f"{layer.kind} ({layer.installation}): {layer.status}")
+                if layer.error:
+                    print_fn(layer.error)
+                for entry in layer.entries:
+                    print_fn(f"[{entry.category}] {entry.key}: {entry.value} — {entry.explanation}")
+        return 0 if report.status == "available" else 1
+
     if action in {"details", "unused", "cleanup"}:
         from services.software.flatpak_maintenance import FlatpakMaintenanceService, UnusedSnapshot, REF_PATTERN
 

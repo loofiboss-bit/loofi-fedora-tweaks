@@ -9,9 +9,9 @@ from functools import partial
 from typing import Any, Mapping
 
 from core.actions.contracts import ActionDefinition, ActionPlan, ActionRun, ActionRuntime, PolicyDecision, VerificationDecision
-from core.tasks.tweaks import TWEAKS, Tweak, allowed_value, command_for, read_tweak
+from core.tasks.tweaks import TWEAKS, Tweak, allowed_value, command_for, read_tweak, read_cursor_config
 from core.tasks.tweak_history import TweakRestoreOffer, read_tweak_runs, restoration_for
-from core.tweak_commands import values_equal, valid_value
+from core.tweak_commands import CURSOR_TWEAK_IDS, values_equal, valid_value
 
 _RUN_ID = re.compile(r"[A-Za-z0-9._:-]{1,128}\Z")
 
@@ -50,7 +50,14 @@ def _preflight(tweak: Tweak, parameters: Mapping[str, Any], runtime: ActionRunti
     value = _requested(parameters)
     if not allowed_value(tweak, value, state.choices):
         return PolicyDecision(False, "invalid_choice", "The selected value is not available on this system.")
-    return PolicyDecision(True, "tweak_ready", "The current setting and requested value were checked.", facts={"current": state.value, "requested": value})
+    facts = {"current": state.value, "requested": value}
+    if tweak.id in CURSOR_TWEAK_IDS:
+        values, error = read_cursor_config(runtime.platform_profile(), runtime.execute_read_only)
+        if error or values.get(tweak.id) != state.value:
+            return PolicyDecision(False, "cursor_read_unavailable", error or "The pointer settings changed during inspection.")
+        counterpart = next(item for item in CURSOR_TWEAK_IDS if item != tweak.id)
+        facts.update({"counterpart_id": counterpart, "counterpart_value": values[counterpart]})
+    return PolicyDecision(True, "tweak_ready", "The current setting and requested value were checked.", facts=facts)
 
 
 def _preflight_restore(tweak: Tweak, parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
@@ -58,9 +65,14 @@ def _preflight_restore(tweak: Tweak, parameters: Mapping[str, Any], runtime: Act
         offer = _restore_offer(tweak, parameters, runtime)
     except ValueError as exc:
         return PolicyDecision(False, "restore_unavailable", str(exc))
-    return PolicyDecision(True, "restore_ready", "The saved change and current setting were checked.", facts={
-        "current": offer.after, "requested": offer.before, "source_run_id": offer.source_run_id,
-    })
+    facts = {"current": offer.after, "requested": offer.before, "source_run_id": offer.source_run_id}
+    if tweak.id in CURSOR_TWEAK_IDS:
+        values, error = read_cursor_config(runtime.platform_profile(), runtime.execute_read_only)
+        if error or values.get(tweak.id) != offer.after:
+            return PolicyDecision(False, "cursor_read_unavailable", error or "The pointer settings changed during inspection.")
+        counterpart = next(item for item in CURSOR_TWEAK_IDS if item != tweak.id)
+        facts.update({"counterpart_id": counterpart, "counterpart_value": values[counterpart]})
+    return PolicyDecision(True, "restore_ready", "The saved change and current setting were checked.", facts=facts)
 
 
 def _verify(tweak: Tweak, run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
@@ -69,6 +81,14 @@ def _verify(tweak: Tweak, run: ActionRun, plan: ActionPlan, runtime: ActionRunti
     target = str(plan.policy_decision.facts.get("requested", "")) if restoring else str(plan.parameters.get("value", ""))
     if state.status != "ready" or not values_equal(tweak.id, state.value, target):
         return VerificationDecision.failed(state.message or "The setting did not match the requested value after applying it.")
+    if tweak.id in CURSOR_TWEAK_IDS:
+        values, error = read_cursor_config(runtime.platform_profile(), runtime.execute_read_only)
+        counterpart = next(item for item in CURSOR_TWEAK_IDS if item != tweak.id)
+        facts = plan.policy_decision.facts
+        if error or not values_equal(tweak.id, values.get(tweak.id, ""), target):
+            return VerificationDecision.failed(error or "The pointer setting changed during verification.")
+        if facts.get("counterpart_id") != counterpart or values.get(counterpart) != facts.get("counterpart_value"):
+            return VerificationDecision.failed("The other pointer setting changed unexpectedly; the saved change could not be verified.")
     record = {
         "version": 1,
         "kind": "restore" if restoring else "change",
@@ -104,6 +124,7 @@ def tweak_action_definitions() -> list[ActionDefinition]:
                 interaction_policy="confirm" if (restoring or tweak.privileged) else "automatic",
             ))
     definitions.append(kwin_activation_definition())
+    definitions.append(cursor_notification_definition())
     return definitions
 
 
@@ -206,4 +227,84 @@ def kwin_activation_definition() -> ActionDefinition:
         recovery_guidance="The saved setting remains verified and can still be restored through its original change history.",
         rollback_supported=False, command_renderer=_render_activation, preflight_checker=_preflight_activation,
         verifier=_verify_activation, operation_class="session", affected_resources=("session:kwin-configuration",),
+    )
+
+
+def _cursor_notification_source(parameters: Mapping[str, Any], runtime: ActionRuntime) -> tuple[Tweak, str]:
+    """Require the latest successful saved change, including an explicit restore."""
+    from core.tasks.tweaks import BY_ID
+
+    if set(parameters) != {"tweak_id", "source_run_id"}:
+        raise ValueError("Pointer notification requires only a tweak ID and source run ID.")
+    tweak_id, source_id = parameters.get("tweak_id"), parameters.get("source_run_id")
+    if not isinstance(tweak_id, str) or tweak_id not in CURSOR_TWEAK_IDS or not isinstance(source_id, str) or not _RUN_ID.fullmatch(source_id):
+        raise ValueError("Unsupported pointer notification source.")
+    tweak = BY_ID[tweak_id]
+    runs, error = read_tweak_runs(runtime)
+    relevant = [run for run in runs if run.action_id in {tweak.action_id, f"restore-{tweak.id}"} or f"tweak:{tweak.id}" in run.affected_resources]
+    if error or not relevant:
+        raise ValueError(error or "No verified pointer setting change is available for notification.")
+    latest = relevant[-1]
+    data = (latest.verification_result or {}).get("data", {})
+    record = data.get("tweak_change") if isinstance(data, dict) else None
+    restoring = latest.action_id == f"restore-{tweak.id}"
+    if (latest.run_id != source_id or latest.state != "succeeded" or latest.action_id not in {tweak.action_id, f"restore-{tweak.id}"}
+            or (latest.execution_result or {}).get("success") is not True or (latest.verification_result or {}).get("success") is not True
+            or not isinstance(record, dict) or type(record.get("version")) is not int or record["version"] != 1
+            or record.get("tweak_id") != tweak.id or record.get("kind") != ("restore" if restoring else "change")):
+        raise ValueError("The source is not the latest verified pointer setting change.")
+    target, before = record.get("after"), record.get("before")
+    if not isinstance(target, str) or not isinstance(before, str) or not valid_value(tweak.id, target) or not valid_value(tweak.id, before):
+        raise ValueError("The source pointer setting values are invalid.")
+    if not restoring and not values_equal(tweak.id, target, str(latest.parameters.get("value", ""))):
+        raise ValueError("The source does not match its requested pointer setting.")
+    restore_source = latest.parameters.get("source_run_id")
+    if restoring and (not isinstance(restore_source, str) or not _RUN_ID.fullmatch(restore_source) or record.get("source_run_id") != restore_source):
+        raise ValueError("The source pointer restoration record is inconsistent.")
+    state = read_tweak(tweak, runtime.platform_profile(), runtime.execute_read_only)
+    if state.status != "ready" or not values_equal(tweak.id, state.value, target):
+        raise ValueError("The saved pointer setting changed after verification; notification is unavailable.")
+    return tweak, target
+
+
+def _render_cursor_notification(parameters: Mapping[str, Any], runtime: ActionRuntime) -> list[str]:
+    from core.tweak_commands import CURSOR_NOTIFY
+
+    _cursor_notification_source(parameters, runtime)
+    return list(CURSOR_NOTIFY)
+
+
+def _preflight_cursor_notification(parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
+    try:
+        tweak, target = _cursor_notification_source(parameters, runtime)
+    except ValueError as exc:
+        return PolicyDecision(False, "cursor_notification_source_unavailable", str(exc))
+    if not shutil.which("dbus-send"):
+        return PolicyDecision(False, "cursor_notification_tools_unavailable", "Saved and verified; pointer notification could not be sent because dbus-send is unavailable. Visual effect is unverified.")
+    return PolicyDecision(True, "cursor_notification_ready", "The saved pointer setting and verified source run were checked.",
+                          facts={"tweak_id": tweak.id, "requested": target})
+
+
+def _verify_cursor_notification(run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
+    if (run.execution_result or {}).get("success") is not True:
+        return VerificationDecision.failed("Saved and verified; pointer notification was not sent. Visual effect is unverified.")
+    try:
+        tweak, target = _cursor_notification_source(plan.parameters, runtime)
+    except ValueError as exc:
+        return VerificationDecision.failed(str(exc))
+    return VerificationDecision.succeeded(
+        "Saved and verified; pointer change notification sent. Visual effect is unverified.",
+        notification_sent=True, tweak_id=tweak.id, value=target, source_run_id=plan.parameters["source_run_id"],
+    )
+
+
+def cursor_notification_definition() -> ActionDefinition:
+    return ActionDefinition(
+        id="notify-kde-cursor-change", capability_id="tweaks.cursor-session", title="Notify verified pointer change",
+        description="Send Plasma's pointer change signal after independently verifying the saved setting. Visual effect is unverified.",
+        parameter_schema={"tweak_id": {"type": "string", "required": True}, "source_run_id": {"type": "string", "required": True}},
+        risk_level="low", privileged=False, confirmation_policy="explicit", interaction_policy="automatic",
+        recovery_guidance="The saved setting remains verified and can still be restored through its original change history.",
+        rollback_supported=False, command_renderer=_render_cursor_notification, preflight_checker=_preflight_cursor_notification,
+        verifier=_verify_cursor_notification, operation_class="session", affected_resources=("session:cursor-notification",),
     )

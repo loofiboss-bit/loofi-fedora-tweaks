@@ -33,6 +33,7 @@ class TweaksPage(QWidget, PluginInterface):
     restoreRequested = pyqtSignal(str, str)
     cancelSnapshotRequested = pyqtSignal()
     snapshotProgress = pyqtSignal(int, int)
+    cursor_settings_requested = pyqtSignal()
 
     def __init__(self, profile: object = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -40,6 +41,13 @@ class TweaksPage(QWidget, PluginInterface):
         self._shown_once = False
         self._busy = False
         self._rows: dict[str, tuple[SettingRow, TweakControl]] = {}
+        self.cursor_settings_buttons: dict[str, QPushButton] = {}
+        self.cursor_settings_status: dict[str, QLabel] = {}
+        self._cursor_settings_available = False
+        self._cursor_manual_handoff = (
+            getattr(getattr(profile, "desktop", None), "value", "") == "kde"
+            and getattr(getattr(profile, "session_type", None), "value", "") == "x11"
+        )
         self._groups: dict[str, Card] = {}
         self._group_rows: dict[str, list[SettingRow]] = {}
         self._last_changes: dict[str, tuple[str, bool, str, bool]] = {}
@@ -105,8 +113,8 @@ class TweaksPage(QWidget, PluginInterface):
         self.load_profile_button.setAccessibleName(self.tr("Load and review a tweak profile"))
         self.load_profile_button.clicked.connect(self.loadProfileRequested.emit)
 
-        self.preset_button = QPushButton(self.tr("Choose preset…"))
-        self.preset_button.setAccessibleName(self.tr("Choose and review a desktop settings preset"))
+        self.preset_button = QPushButton(self.tr("My profile library…"))
+        self.preset_button.setAccessibleName(self.tr("Review, export or remove local desktop profiles"))
         self.preset_button.clicked.connect(self.choosePresetRequested.emit)
         self.profile_menu_button = QToolButton()
         self.profile_menu_button.setText(self.tr("Profiles"))
@@ -114,7 +122,7 @@ class TweaksPage(QWidget, PluginInterface):
         self.profile_menu_button.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
         profile_menu = QMenu(self.profile_menu_button)
         self.profile_menu_button.setMenu(profile_menu)
-        for label, signal in (("Save profile…", self.saveProfileRequested), ("Load profile…", self.loadProfileRequested), ("Choose preset…", self.choosePresetRequested)):
+        for label, signal in (("Save profile…", self.saveProfileRequested), ("Load profile…", self.loadProfileRequested), ("My profile library…", self.choosePresetRequested)):
             action = QAction(self.tr(label), profile_menu)
             profile_menu.addAction(action)
             action.triggered.connect(signal.emit)
@@ -256,6 +264,19 @@ class TweaksPage(QWidget, PluginInterface):
             row_layout = row.layout()
             assert row_layout is not None
             row_layout.addWidget(notice)
+            if tweak.id in {"kde-cursor-theme", "kde-cursor-size"} and self._cursor_manual_handoff:
+                handoff_status = QLabel(self.tr("Checking availability of KDE Cursor Settings…"))
+                handoff_status.setObjectName(f"cursorSettingsStatus_{tweak.id}")
+                handoff_status.setWordWrap(True)
+                handoff_button = QPushButton(self.tr("Open KDE Cursor Settings"))
+                handoff_button.setObjectName(f"cursorSettingsButton_{tweak.id}")
+                handoff_button.setAccessibleDescription(self.tr("Change cursor settings manually in KDE on X11."))
+                handoff_button.setEnabled(False)
+                handoff_button.clicked.connect(self.cursor_settings_requested.emit)
+                row_layout.addWidget(handoff_status)
+                row_layout.addWidget(handoff_button)
+                self.cursor_settings_status[tweak.id] = handoff_status
+                self.cursor_settings_buttons[tweak.id] = handoff_button
             self._restore_notices[tweak.id] = notice
             control.activated.connect(lambda _index, item=tweak.id: self._selected(item))
         if not self._rows:
@@ -400,6 +421,15 @@ class TweaksPage(QWidget, PluginInterface):
         self._activation_messages[tweak_id] = message
         self._rows[tweak_id][0].set_feedback(message, kind="saved")
 
+    def set_cursor_settings_availability(self, available: bool, detail: str) -> None:
+        """Present the owner's asynchronous native-handoff availability result."""
+        self._cursor_settings_available = available
+        for label in self.cursor_settings_status.values():
+            label.setText(detail)
+            label.setAccessibleName(detail)
+        for button in self.cursor_settings_buttons.values():
+            button.setEnabled(available and not self._busy)
+
     def _selected(self, tweak_id: str) -> None:
         if self._busy:
             return
@@ -436,6 +466,8 @@ class TweaksPage(QWidget, PluginInterface):
     def set_busy(self, busy: bool, message: str = "", *, cancellable: bool = False) -> None:
         self._busy = busy
         self._reading = busy and cancellable
+        for button in self.cursor_settings_buttons.values():
+            button.setEnabled(self._cursor_settings_available and not busy)
         self.save_profile_button.setEnabled(not busy)
         self.load_profile_button.setEnabled(not busy)
         self.preset_button.setEnabled(not busy)

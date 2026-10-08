@@ -76,6 +76,24 @@ def handle_self_update(args, json_output, output_json, print_fn, system_manager_
 
 def handle_updates(args, json_output, output_json, print_fn, run_operation, update_manager_cls):
     """Handle smart updates subcommand."""
+    if args.action == "prepare-upgrade":
+        from services.software.upgrade_preparation import UpgradePreparationService
+
+        report = UpgradePreparationService().prepare(getattr(args, "target", None))
+        if json_output:
+            output_json(report.to_dict())
+        else:
+            print_fn(f"Fedora target: {report.target} ({report.target_state})")
+            print_fn(f"Package database: {report.package_database}")
+            print_fn(f"Source configuration: {report.sources}")
+            for disk in report.disks:
+                print_fn(f"  Free space: {disk}")
+            print_fn(f"Reboot hint: {report.reboot}")
+            print_fn(report.backup)
+            print_fn(report.limitation)
+            print_fn(f"Instructions: {report.documentation}")
+        return 0 if report.state == "completed" else 1
+
     if args.action == "diagnose":
         from services.software.update_diagnostics import UpdateDiagnosticsService
 

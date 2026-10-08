@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Current release: 32.4.0 "Care". Physical desktop and assistive-technology validation remains unverified.
+> Current local candidate: 32.5.0 "Companion". Physical desktop and assistive-technology qualification is recorded separately.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -45,6 +45,73 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
+
+## Companion workflows
+
+### Keep your own desktop profiles
+
+In Tweaks, open **My profile library**. Built-in profiles include Focus,
+Privacy basics, Touchpad comfort, Reduced motion, and File navigation.
+Review one profile to see current and requested values before selecting changes.
+Save selected supported settings as a personal profile, import a shared JSON
+profile, or export a local profile for another computer using the same desktop.
+Built-in profiles cannot be removed. Removing a personal profile removes only
+the local saved file; it does not revert desktop settings.
+
+```bash
+loofi-fedora-tweaks --cli tweaks profile library list
+loofi-fedora-tweaks --cli tweaks profile library add my-settings.json
+loofi-fedora-tweaks --cli tweaks profile library remove PROFILE_ID
+loofi-fedora-tweaks --cli tweaks preset preview focus
+```
+
+### Understand an application's access
+
+Select an installed Flatpak in Apps and inspect its access. Metadata and
+global/application overrides remain separate. Overrides apply to an app ID
+and can affect more than one installed branch. Portal grants and one-time
+launch arguments are outside this report; it does not guarantee actual access.
+Use the offered installed permission tool to make a change, then explicitly
+refresh the observation. Loofi does not change app permissions itself.
+
+```bash
+loofi-fedora-tweaks --cli apps access app/org.mozilla.firefox/x86_64/stable --installation user
+```
+
+### Compare a symptom and prepare a support question
+
+In Health, select a symptom and deliberately run its check. Select an earlier
+saved session as a baseline to compare findings after a follow-up check.
+An incomplete or incompatible source remains **Not comparable**. A resolved
+finding means compatible evidence no longer contains it, not that every part
+of the problem has been physically tested.
+
+For screen-sharing problems, the check observes the session, PipeWire,
+WirePlumber, and portal support. It does not capture your screen or restart
+services. Test sharing in your application yourself after following guidance.
+
+Choose **Prepare a support question**, select the saved session, and describe
+the problem and reproduction steps. Review and edit the masked preview before
+exporting Markdown or ZIP. Exports stay local and do not run another check.
+Review the file yourself before sharing: masking is not full anonymization.
+
+### Prepare for a Fedora version upgrade
+
+In Updates, choose **Prepare for a Fedora upgrade**, select a policy-defined
+target, and run the local inspection. Read the package database, source,
+storage, and reboot observations independently. Confirm the backup checklist
+only after checking your own backup and recovery arrangements.
+
+```bash
+loofi-fedora-tweaks --cli updates prepare-upgrade --target 44
+```
+
+Use a newer target offered by the installed policy; the example may be the
+current version on your computer. Preview targets are explicitly labeled.
+Local observations do not certify that the target transaction will work or
+that free space is sufficient. Missing DNF restart-hint support is **Unknown**.
+Follow the official upgrade documentation to perform the actual version change.
+Atomic deployments receive limited observations and manual guidance.
 
 ## Overview
 
@@ -126,7 +193,7 @@ permits restoration. KWin changes also request a session
 reconfigure and compare runtime values. A session warning preserves the saved
 change and its restoration offer.
 
-The catalog has 76 controls grouped as Appearance, Desktop, Files, Interaction,
+The catalog has 79 controls grouped as Appearance, Desktop, Files, Interaction,
 Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
 offers click behavior and default folder view; KDE adds Dolphin's full-path
 setting, editable location bar, session tabs, external folder tabs, and close-tab
@@ -373,3 +440,24 @@ loofi apps remove --help
 Profile and preset apply require `--yes` to change settings. Flatpak permission
 inspection and removal require an explicit installation; removal also requires
 confirmation. Permission JSON hides environment values.
+
+### KDE appearance and pointers
+
+Under **Tweaks → Appearance**, choose an installed pointer theme, a requested
+pointer size (24, 32, 48 or 64), or an installed Plasma style for panels and
+widgets. Pointer controls require KDE Wayland; KDE X11 instead offers an
+explicit **Open Cursor Settings** button after the native module is checked.
+Plasma style is separate from the existing color scheme. Themes are not
+downloaded or installed by these controls.
+
+Changing a pointer theme preserves its saved size; changing the size preserves
+the theme. Loofi reads both values back and then sends KDE's pointer-change
+notification. A verified saved value and a sent notification do not prove how
+every application renders the pointer. Themes may use a nearby size, and
+already-open applications may need reopening. If notification fails, the saved
+change remains verified and restorable; a profile stops before further changes.
+
+Pointer size resets to Loofi's standard of 24. Theme controls have no Loofi
+reset standard. A previous theme can be restored only while it remains installed.
+Supported custom sizes from 0 to 512 are preserved exactly for readback and
+history-based restoration; they are not offered as arbitrary new settings.

@@ -25,6 +25,13 @@ _TRIMMED_PATTERN = re.compile(r"^\s*\S.*:\s+.+(?:trimmed|bytes?)", re.IGNORECASE
 ACTIVE_ACTION_IDS = frozenset(
     {
         "activate-kwin-tweak",
+        "notify-kde-cursor-change",
+        "set-kde-cursor-theme",
+        "restore-kde-cursor-theme",
+        "set-kde-cursor-size",
+        "restore-kde-cursor-size",
+        "set-kde-plasma-style",
+        "restore-kde-plasma-style",
         "remove-installed-flatpak",
         "set-gnome-mouse-left-handed",
         "restore-gnome-mouse-left-handed",

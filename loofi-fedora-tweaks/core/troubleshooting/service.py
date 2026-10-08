@@ -105,6 +105,8 @@ class DefaultEvidenceCollector:
     ) -> SourceEvidence:
         if cancellation.is_cancelled():
             return self._state(source_id, session, "cancelled", started_at)
+        if source_id == "screen-sharing-state":
+            return self._screen_sharing(session, started_at, cancellation)
         if source_id in {"audio-state", "bluetooth-state"}:
             return self._hardware(source_id, session, started_at, cancellation)
         if source_id == "system-check":
@@ -146,6 +148,38 @@ class DefaultEvidenceCollector:
             started_at,
             reason_code="collector-unavailable",
             message="This bounded evidence source is unavailable on the current host.",
+        )
+
+    def _screen_sharing(self, session: TroubleshootingSession, started_at: float,
+                        cancellation: CancellationSignal) -> SourceEvidence:
+        from services.hardware.screen_sharing_diagnostics import ScreenSharingDiagnosticProbe
+
+        remaining = max(0.0, session.started_at + 14.0 - self.clock())
+        result = ScreenSharingDiagnosticProbe().collect(cancellation=cancellation, budget=remaining)
+        findings = []
+        if result.state in {"completed", "partial"}:
+            for service in ("pipewire", "wireplumber", "xdg-desktop-portal"):
+                state = result.facts.get(f"{service}_state")
+                if state is not None and state != "active":
+                    findings.append(self._finding(
+                        session, source_id="screen-sharing-state", finding_type=f"{service}-inactive",
+                        category="screen-sharing", severity="attention", title="Screen-sharing service needs review",
+                        summary=f"{service} is {state}.", evidence={"state": state}, resources=(f"service:{service}",),
+                        next_step=NextStep.manual("Review the desktop portal and audio service setup. Test screen sharing in the application yourself.", reason_code="review-screen-sharing"),
+                    ))
+            sources = result.facts.get("available_source_types")
+            if sources == 0:
+                findings.append(self._finding(
+                    session, source_id="screen-sharing-state", finding_type="screencast-sources-unavailable",
+                    category="screen-sharing", severity="attention", title="No ScreenCast source types advertised",
+                    summary="The running portal advertises no screen-sharing source types.", evidence={"available_source_types": sources},
+                    resources=("portal:screencast",), next_step=NextStep.manual("Review the desktop portal backend and test screen sharing in the application yourself.", reason_code="review-screen-sharing"),
+                ))
+        return adapt_structured_source(
+            profile_id=session.profile_id, variant=session.variant, source_id="screen-sharing-state",
+            state=result.state, started_at=started_at, completed_at=self.clock(), facts=result.facts,
+            findings=tuple(findings), reason_code=result.reason_code,
+            message="Some screen-sharing observations are unknown; no capture was started." if result.reason_code else "",
         )
 
     def _hardware(
@@ -856,14 +890,14 @@ class TroubleshootingService:
         # cannot turn the exact 15-second session budget into a composition error.
         collection_timeout = (
             max(0.0, min(14.0, session.started_at + 14.0 - source_started))
-            if budget.source_id in {"audio-state", "bluetooth-state"}
+            if budget.source_id in {"audio-state", "bluetooth-state", "screen-sharing-state"}
             else budget.timeout_seconds
         )
         deadline = self.monotonic() + collection_timeout
         try:
             while not future.done():
                 if cancellation.is_cancelled():
-                    if budget.source_id in {"audio-state", "bluetooth-state"}:
+                    if budget.source_id in {"audio-state", "bluetooth-state", "screen-sharing-state"}:
                         # Cooperative hardware probes retain already-read observations.
                         try:
                             return future.result(timeout=max(0.0, min(2.1, deadline - self.monotonic())))

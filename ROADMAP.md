@@ -3,6 +3,24 @@
 Direction is set by the [product definition](docs/PRODUCT.md). Completed work
 is recorded in the [changelog](CHANGELOG.md).
 
+## Local candidate — v32.5.0 "Companion"
+
+KDE and DNF5 are the primary target, with optional GNOME counterparts and
+explicitly limited Atomic observations.
+
+- Local built-in/personal profile library with same-desktop review and sharing
+- Installed KDE pointer themes, pointer size, and Plasma styles with verified saved values and separate pointer notifications
+- Focus, Privacy basics, and Touchpad comfort presets through existing Action Center authority
+- Separate Flatpak metadata and override layers with installed permission-tool handoffs
+- Saved Health baseline comparison with honest incomplete-source results
+- Bounded read-only screen-sharing infrastructure diagnostics
+- Editable masked support questions with local Markdown and ZIP export
+- Local Fedora upgrade preparation, manual backup checklist, and optional DNF reboot advice
+
+Qualification and remaining physical checks are recorded in
+[Companion qualification](docs/COMPANION_VERIFICATION.md). This candidate does
+not imply installation, publication, or a broadened Atomic support promise.
+
 ## Completed — v32 "Refocus" (released as v32.0.2)
 
 Give the application a clear purpose: tweaks first.

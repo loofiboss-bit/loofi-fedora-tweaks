@@ -63,3 +63,63 @@ def activate_verified_tweak(controller: OperationController, outcome: OperationO
         return activation_result(outcome, activated)
     except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError, TimeoutExpired) as exc:
         return TweakActivationResult(True, False, ACTIVATION_WARNING + " " + str(exc))
+
+
+CURSOR_NOTIFICATION_ACTION_ID = "notify-kde-cursor-change"
+CURSOR_NOTIFICATION_WARNING = "Saved and verified; pointer notification was not sent. Visual effect is unverified."
+
+
+@dataclass(frozen=True)
+class CursorNotificationResult:
+    saved_verified: bool
+    notification_sent: bool
+    message: str
+    outcome: OperationOutcome | None = None
+
+
+def cursor_notification_parameters(outcome: OperationOutcome) -> dict[str, str] | None:
+    """Bind a pointer follow-up to a successful saved write or restoration."""
+    from core.tweak_commands import CURSOR_TWEAK_IDS
+
+    action_id = getattr(outcome, "action_id", "")
+    if action_id not in {f"{kind}-{tweak_id}" for kind in ("set", "restore") for tweak_id in CURSOR_TWEAK_IDS}:
+        return None
+    if not outcome.success or not outcome.run_id:
+        return None
+    tweak_id = action_id.removeprefix("set-").removeprefix("restore-")
+    return {"tweak_id": tweak_id, "source_run_id": outcome.run_id}
+
+
+def cursor_notification_result(source_outcome: OperationOutcome, notification_outcome: OperationOutcome | None) -> CursorNotificationResult:
+    """Sending a signal establishes delivery only; never claim visible effect."""
+    verification = (notification_outcome.run.verification_result or {}) if notification_outcome and notification_outcome.run else {}
+    data = verification.get("data", {})
+    sent = bool(notification_outcome and notification_outcome.success and isinstance(data, dict) and data.get("notification_sent") is True)
+    message = "Saved and verified; pointer change notification sent. Visual effect is unverified." if sent else CURSOR_NOTIFICATION_WARNING
+    if not source_outcome.success:
+        message = source_outcome.message
+        sent = False
+    elif notification_outcome and not sent:
+        reason = (notification_outcome.result.message if notification_outcome.result else "") or str(verification.get("message", "")) or notification_outcome.message
+        if reason:
+            message += " " + reason
+    return CursorNotificationResult(source_outcome.success, sent, message, notification_outcome)
+
+
+def notify_verified_cursor_change(controller: OperationController, outcome: OperationOutcome) -> CursorNotificationResult:
+    """CLI/profile adapter; GUI can perform the same follow-up asynchronously."""
+    parameters = cursor_notification_parameters(outcome)
+    if parameters is None:
+        return CursorNotificationResult(outcome.success, False, outcome.message)
+    try:
+        ticket = controller.prepare(CURSOR_NOTIFICATION_ACTION_ID, parameters)
+        if ticket.blocked:
+            return CursorNotificationResult(True, False, CURSOR_NOTIFICATION_WARNING + " " + ticket.plan.policy_decision.explanation)
+        notified = controller.confirm(ticket, confirmed=True)
+        if notified.status == "prepared":
+            notified = controller.run(notified, timeout=8)
+            if notified.status == "verifying":
+                notified = controller.verify(notified)
+        return cursor_notification_result(outcome, notified)
+    except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError, TimeoutExpired) as exc:
+        return CursorNotificationResult(True, False, CURSOR_NOTIFICATION_WARNING + " " + str(exc))

@@ -296,7 +296,7 @@ class TestV29VerticalWorkflowWidgets(unittest.TestCase):
         page = FixWorkflowPage(history=SimpleNamespace(latest=lambda: (None, "")))
         self.addCleanup(self._dispose, page)
         self.assertEqual(page.objectName(), "fixWorkflowPage")
-        self.assertEqual(page.profile_selector.count(), 8)
+        self.assertEqual(page.profile_selector.count(), 9)
         self.assertEqual(page.next_step_button.text(), "Open safe next step")
         self.assertTrue(page.focus_task("fix:system-slow"))
         self.assertTrue(page.focus_task("fix"))

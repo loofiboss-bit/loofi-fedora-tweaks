@@ -46,6 +46,8 @@ COMMAND_ALLOWLIST: FrozenSet[str] = frozenset(
         "nmcli",
         "powerprofilesctl",
         "plasma-apply-colorscheme",
+        "plasma-apply-cursortheme",
+        "plasma-apply-desktoptheme",
         "rpm",
         "rpm-ostree",
         "sensors",
@@ -126,7 +128,7 @@ def validate_command(command: str, args: Sequence[str] | None = None) -> None:
         if not valid_scope or not valid_ref or args[2:5] != ["--assumeyes", "--noninteractive", "--no-related"]:
             _reject("Installed Flatpak removal requires one exact ref and explicit installation, preserving data")
 
-    if executable in {"gsettings", "kreadconfig6", "kwriteconfig6", "dbus-send", "gdbus"} and tweak_command_class(executable, args) is None:
+    if executable in {"gsettings", "kreadconfig6", "kwriteconfig6", "dbus-send", "gdbus", "plasma-apply-cursortheme", "plasma-apply-desktoptheme"} and tweak_command_class(executable, args) is None:
         _reject("Setting command is outside the reviewed keys, shapes, and value types")
     if executable == "plasma-apply-colorscheme" and tuple(args) != ("--list-schemes",):
         if len(args) != 1 or not _SCHEME_PATTERN.fullmatch(args[0]):

@@ -53,6 +53,14 @@ class NativeHandoffLaunch:
 
 _TARGETS: Mapping[NativeHandoffId, NativeHandoffTarget] = MappingProxyType(
     {
+        NativeHandoffId.FLATPAK_PERMISSIONS: NativeHandoffTarget(
+            NativeHandoffId.FLATPAK_PERMISSIONS, "Flatpak Permissions", "kcmshell6",
+            ("kcm_app-permissions",), "kcm_app-permissions",
+        ),
+        NativeHandoffId.FLATSEAL: NativeHandoffTarget(
+            NativeHandoffId.FLATSEAL, "Flatseal", "flatpak",
+            ("run", "--user", "com.github.tchx84.Flatseal"),
+        ),
         NativeHandoffId.SOFTWARE_CENTER: NativeHandoffTarget(
             NativeHandoffId.SOFTWARE_CENTER,
             "Software Center",
@@ -86,6 +94,13 @@ _TARGETS: Mapping[NativeHandoffId, NativeHandoffTarget] = MappingProxyType(
             "kcmshell6",
             ("kcm_kscreen",),
             "kcm_kscreen",
+        ),
+        NativeHandoffId.CURSOR_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.CURSOR_SETTINGS,
+            "Cursor Settings",
+            "kcmshell6",
+            ("kcm_cursortheme",),
+            "kcm_cursortheme",
         ),
         NativeHandoffId.WINDOW_MANAGEMENT: NativeHandoffTarget(
             NativeHandoffId.WINDOW_MANAGEMENT,
@@ -166,7 +181,7 @@ class NativeHandoffService:
             elif normalized in {NativeHandoffId.AUDIO_SETTINGS, NativeHandoffId.BLUETOOTH_SETTINGS} and desktop is DesktopEnvironment.GNOME:
                 panel = "sound" if normalized is NativeHandoffId.AUDIO_SETTINGS else "bluetooth"
                 target = NativeHandoffTarget(normalized, target.label, "gnome-control-center", (panel,))
-            elif normalized is not NativeHandoffId.SOFTWARE_CENTER and desktop is not DesktopEnvironment.KDE:
+            elif normalized not in {NativeHandoffId.SOFTWARE_CENTER, NativeHandoffId.FLATSEAL} and desktop is not DesktopEnvironment.KDE:
                 return NativeHandoffAvailability(
                     target,
                     CapabilityState.UNAVAILABLE,
@@ -180,6 +195,27 @@ class NativeHandoffService:
                 CapabilityState.UNAVAILABLE,
                 f"{target.label} is not installed on this system.",
             )
+
+        if normalized is NativeHandoffId.FLATSEAL:
+            # Resolve only the current user's or default shared installation.
+            found = None
+            for scope in ("--user", "--system"):
+                try:
+                    result = self._runner(
+                        [resolved, "list", scope, "--app", "--columns=application"],
+                        capture_output=True, text=True, check=False, timeout=self._probe_timeout,
+                    )
+                except (OSError, subprocess.SubprocessError):
+                    continue
+                if result.returncode == 0 and len(result.stdout) <= 65536 and "com.github.tchx84.Flatseal" in result.stdout.splitlines():
+                    found = scope
+                    break
+            if found is None:
+                return NativeHandoffAvailability(
+                    target, CapabilityState.UNAVAILABLE,
+                    "Flatseal was not found in the user or system installation. Use your desktop permission settings or inspect Flatpak overrides manually.",
+                )
+            target = NativeHandoffTarget(normalized, "Flatseal", "flatpak", ("run", found, "com.github.tchx84.Flatseal"))
 
         if target.kcm_id is not None:
             try:

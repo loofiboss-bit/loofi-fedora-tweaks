@@ -1,6 +1,7 @@
 """Closed presentation vocabulary for the Compass troubleshooting journey."""
 
 SOURCE_LABELS = {
+    "screen-sharing-state": "Session, PipeWire, WirePlumber and advertised ScreenCast support",
     "system-check": "System Check",
     "flatpak-update-health": "Flatpak inventory, local remotes and runtimes",
     "firmware-update-health": "Firmware tool, service and devices",
@@ -47,6 +48,8 @@ SYMPTOMS = (
         "bluetooth_not_working",
         "This check reads local Bluetooth metadata without scanning or pairing. Confirm device connectivity yourself.",
     ),
+    ("screen_sharing_not_working", "Screen sharing is not working", "screen_sharing_not_working",
+     "This check reads existing services and advertised portal support. It does not record the screen. Test sharing in your application yourself."),
     ("updates_failed", "Updates failed", "updates_failed", ""),
     ("app_wont_start", "An app will not start", "application_failed", ""),
     ("system_slow", "The system feels slow", "system_slow", ""),

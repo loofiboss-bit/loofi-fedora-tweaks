@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the v32.4.0 "Care" local candidate.
+> Active architecture reference for the v32.5.0 "Companion" local candidate.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -12,7 +12,7 @@ system-wide DNF setting, alongside app installation, updates, and diagnostics.
 Missing applications, schemas, or host tools produce an unavailable state
 with an explanation.
 
-The current tweak catalog contains 76 controls: 46 GNOME-only, 28 KDE-only,
+The current tweak catalog contains 79 controls: 46 GNOME-only, 31 KDE-only,
 and two shared controls. The GUI and CLI project the controls supported by the
 detected Fedora desktop and deployment backend.
 
@@ -155,6 +155,29 @@ feedback, without adding a second action execution boundary.
 
 ## Everyday workflow extensions
 
+### Companion personal workflows
+
+The local profile library stores bounded validated portable profiles under the
+user's XDG data directory. It does not create a second setting registry or
+host mutation authority; reviewed application uses `review_profile` and
+`apply_profile`. Built-in presets are immutable and share the same review.
+
+Flatpak access reports keep metadata and override layers separate, bind exact
+ref and installation, mask private values, and identify app-ID override scope.
+Native handoffs use closed command vectors and capability checks; no permission
+editing or portal grant mutation is added to Loofi.
+
+Health comparison projects the existing compatible-session model. Support
+question export uses saved sessions and shared privacy helpers; it never
+starts a collector. The closed screen-sharing profile inspects user service
+states and advertised ScreenCast properties without activating capture.
+
+Upgrade preparation is a Qt-free bounded read-only service shared by the CLI
+and an asynchronous Updates card. Its separate report schema does not migrate
+action plans, runs, or troubleshooting sessions. Unknown restart evidence is
+not converted to a successful result. Page-owned workers join the window's
+deferred shutdown contract.
+
 ### Care local metadata and maintenance
 
 `FlatpakMaintenanceService` isolates optional GI/libflatpak in a fixed helper
@@ -217,3 +240,21 @@ values and identify the result as metadata rather than effective access.
 Window-owned operation workers and installed-page samplers participate in deferred
 shutdown; no worker is destroyed while running. Existing plan/run schemas remain
 unchanged. Portable profiles do not reactivate retired profile stacks.
+
+### Companion KDE appearance controls
+
+Pointer theme and size are independent KDE Wayland settings. Installed cursor
+schema defaults resolve missing keys; exact single-key writes preserve the other
+value, which is also independently checked after execution. A separate
+`notify-kde-cursor-change` action binds a successful saved change or restoration
+and sends the fixed KDE pointer change signal. Its `notification_sent` result
+does not assert runtime or visual verification and does not invalidate the
+original setting's restoration history. GUI, CLI and profiles share this adapter;
+a failed notification stops a profile while preserving its successful saved run.
+KDE X11 offers a capability-checked, asynchronous native Cursor Settings handoff.
+
+Installed pointer and Plasma style IDs are checked again before execution.
+Plasma style uses the native apply tool and separate `plasmarc` readback. Theme
+controls have no Loofi reset standard; pointer size offers 24, 32, 48 and 64,
+with exact custom values from 0 to 512 readable and restorable from history.
+Portable profiles and schema-v4 action records retain their existing formats.

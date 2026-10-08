@@ -135,6 +135,10 @@ _PROFILES = (
         (SourceBudget("bluetooth-state", 15.0),), 15.0,
     ),
     TroubleshootingProfile(
+        "screen_sharing_not_working", "Screen sharing is not working",
+        (SourceBudget("screen-sharing-state", 15.0),), 15.0,
+    ),
+    TroubleshootingProfile(
         "system_slow",
         "System feels slow",
         (

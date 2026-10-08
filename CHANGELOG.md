@@ -1,5 +1,17 @@
 # Changelog
 
+## [32.5.0] - Unreleased - "Companion"
+
+- Add a local personal profile library and Focus, Privacy basics, and Touchpad comfort presets using existing reviewed settings.
+- Separate Flatpak metadata and local override layers with privacy-safe explanations and installed permission-tool handoffs.
+- Compare saved symptom sessions from Health and preserve unavailable evidence as not comparable.
+- Diagnose screen-sharing infrastructure without capture or service changes.
+- Prepare editable, redacted support questions from exact saved sessions for local Markdown and ZIP export.
+- Inspect local Fedora upgrade preparation and DNF reboot advice without downloading, upgrading, or rebooting.
+- Prioritize KDE and DNF5; keep GNOME and Atomic qualification limits explicit.
+- Add installed KDE pointer themes, pointer size, and Plasma styles to the shared 79-control catalog, with profile/CLI support and independently verified restoration.
+- Preserve the other pointer value during changes and separate saved verification from source-bound notification delivery; provide native Cursor Settings on X11.
+
 ## [32.4.0] - 2026-10-08 - "Care"
 
 - Add installation-scoped app details with origin, runtime, reported size, and locally recorded end-of-life warnings.

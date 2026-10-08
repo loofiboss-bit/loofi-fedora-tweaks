@@ -8,6 +8,7 @@ from subprocess import TimeoutExpired
 from core.actions import ActionCatalog, ActionCenterOrchestrator, OperationController
 from core.actions.catalog import SystemActionRuntime
 from core.actions.tweak_operations import activate_verified_tweak, activation_parameters
+from core.actions.tweak_operations import cursor_notification_parameters, notify_verified_cursor_change
 from core.executor.command_facade import CommandFacade
 from core.platform import detect_platform_profile
 from core.tasks.tweak_history import read_tweak_runs, restoration_for
@@ -131,6 +132,15 @@ def handle_tweaks(
         if outcome.status == "verifying":
             outcome = controller.verify(outcome)
         if outcome.success:
+            if cursor_notification_parameters(outcome):
+                notification = notify_verified_cursor_change(controller, outcome)
+                if json_output:
+                    output_json({"tweak_id": tweak_id, "value": value, "run_id": outcome.run_id,
+                                 "saved_verified": notification.saved_verified, "notification_sent": notification.notification_sent,
+                                 "message": notification.message})
+                else:
+                    print_fn(notification.message)
+                return 0 if notification.notification_sent else 1
             if activation_parameters(outcome):
                 print_fn(activate_verified_tweak(controller, outcome).message)
             print_fn(f"Successfully applied {tweak.title}: {value}")
@@ -173,6 +183,15 @@ def handle_tweaks(
         if outcome.status == "verifying":
             outcome = controller.verify(outcome)
         if outcome.success:
+            if cursor_notification_parameters(outcome):
+                notification = notify_verified_cursor_change(controller, outcome)
+                if json_output:
+                    output_json({"tweak_id": tweak_id, "value": offer.before, "run_id": outcome.run_id,
+                                 "saved_verified": notification.saved_verified, "notification_sent": notification.notification_sent,
+                                 "message": notification.message})
+                else:
+                    print_fn(notification.message)
+                return 0 if notification.notification_sent else 1
             if activation_parameters(outcome):
                 print_fn(activate_verified_tweak(controller, outcome).message)
             print_fn(f"Successfully restored {tweak.title}: {offer.before}")
@@ -190,6 +209,32 @@ def _handle_profile(args: Any, json_output: bool, output_json: Callable[[Any], N
 
     operation = args.profile_action
     try:
+        if operation == "library":
+            from core.tasks.tweak_library import ProfileLibrary
+
+            library = ProfileLibrary()
+            library_action = args.library_action
+            payload: dict[str, Any]
+            if library_action == "list":
+                payload = {"schema": "loofi.tweak-library/v1", "profiles": [entry.to_dict() for entry in library.list(profile)]}
+            elif library_action == "add":
+                imported = load_profile(Path(args.path))
+                payload = {"schema": "loofi.tweak-library/v1", "saved": not dry_run, "profile": imported.to_dict()}
+                if not dry_run:
+                    payload["entry"] = library.add(imported).to_dict()
+            else:
+                library._path(args.profile_id)
+                if not dry_run:
+                    library.remove(args.profile_id)
+                payload = {"schema": "loofi.tweak-library/v1", "removed": not dry_run, "id": args.profile_id}
+            if json_output:
+                output_json(payload)
+            elif library_action == "list":
+                for library_entry in payload["profiles"]:
+                    print_fn(f"{library_entry['id']}: {library_entry['profile']['name']} [{library_entry['profile']['desktop']}] {'built-in' if library_entry['builtin'] else 'custom'}")
+            else:
+                print_fn("[dry-run] Library unchanged." if dry_run else "Profile library updated.")
+            return 0
         if operation == "export":
             exported = export_profile(args.name, profile, runtime, getattr(args, "ids", None))
             if not dry_run:

@@ -151,8 +151,16 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                                 overview.set_snapshot(replace(sample, metrics=readings, collected_at=sample.collected_at + step * 2))
                         if route == "tweaks":
                             page = window.findChild(TweaksPage)
-                            page.set_states(tuple(TweakState(tweak, "ready", value=default_for(tweak) or tweak.choices[0][0], choices=tweak.choices)
-                                                  for tweak in visible_tweaks(profile) if tweak.choices))
+                            appearance_choices = {
+                                "kde-cursor-theme": (("breeze_cursors", "Breeze Dark"), ("custom-pointer", "Custom pointer theme")),
+                                "kde-plasma-style": (("default", "Breeze"), ("custom.desktop", "Custom Plasma style")),
+                            }
+                            fixture_states = []
+                            for tweak in visible_tweaks(profile):
+                                choices = appearance_choices.get(tweak.id, tweak.choices)
+                                if choices:
+                                    fixture_states.append(TweakState(tweak, "ready", value=default_for(tweak) or choices[0][0], choices=choices))
+                            page.set_states(tuple(fixture_states))
                         if route == "apps" and installed_view:
                             from ui.install_workflow import InstallWorkflowPage
                             install = window.findChild(InstallWorkflowPage)

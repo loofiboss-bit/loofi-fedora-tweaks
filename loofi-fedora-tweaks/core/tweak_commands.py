@@ -95,7 +95,14 @@ def gnome_schema(tweak_id: str) -> str:
     return GNOME_SCHEMAS.get(tweak_id, "org.gnome.desktop.interface")
 
 
+CURSOR_TWEAK_IDS = frozenset({"kde-cursor-theme", "kde-cursor-size"})
+THEME_PATTERN = re.compile(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}")
+CURSOR_NOTIFY = ("dbus-send", "--session", "--type=signal", "/KGlobalSettings", "org.kde.KGlobalSettings.notifyChange", "int32:5", "int32:0")
+
 KDE_SPECS = {
+    "kde-cursor-theme": ("kcminputrc", "Mouse", "cursorTheme", ""),
+    "kde-cursor-size": ("kcminputrc", "Mouse", "cursorSize", "24"),
+    "kde-plasma-style": ("plasmarc", "Theme", "name", "default"),
     "kde-animation": ("kdeglobals", "KDE", "AnimationDurationFactor", "1"),
     "kde-single-click": ("kdeglobals", "KDE", "SingleClick", "false"),
     "kde-double-click-interval": ("kdeglobals", "KDE", "DoubleClickInterval", "400"),
@@ -151,7 +158,7 @@ _ENUMS = {
     "kde-key-repeat": frozenset({"repeat", "accent", "nothing"}),
     "kde-login-mode": frozenset({"restorePreviousLogout", "restoreSavedSession", "emptySession"}),
 }
-NUMERIC_TWEAKS = frozenset({"gnome-text-scale", "kde-animation", "kde-double-click-interval"})
+NUMERIC_TWEAKS = frozenset({"gnome-text-scale", "kde-animation", "kde-double-click-interval", "kde-cursor-size"})
 
 
 def valid_value(tweak_id: str, value: str) -> bool:
@@ -160,6 +167,8 @@ def valid_value(tweak_id: str, value: str) -> bool:
         return False
     if tweak_id in _ENUMS:
         return value in _ENUMS[tweak_id]
+    if tweak_id in {"kde-cursor-theme", "kde-plasma-style"}:
+        return THEME_PATTERN.fullmatch(value) is not None
     if tweak_id == "kde-color":
         return SCHEME_PATTERN.fullmatch(value) is not None
     if tweak_id in NUMERIC_TWEAKS:
@@ -171,6 +180,8 @@ def valid_value(tweak_id: str, value: str) -> bool:
                 return False
             if tweak_id == "gnome-text-scale":
                 return Decimal("0.5") <= number <= Decimal("3")
+            if tweak_id == "kde-cursor-size":
+                return value.isascii() and value.isdigit() and 0 <= number <= 512
             if tweak_id == "kde-double-click-interval":
                 return value.isascii() and value.isdigit() and 100 <= number <= 2000
             return number >= 0
@@ -192,7 +203,8 @@ def values_equal(tweak_id: str, first: str, second: str) -> bool:
 
 def kde_read_vector(tweak_id: str) -> list[str]:
     file, group, key, default = KDE_SPECS[tweak_id]
-    return ["kreadconfig6", "--file", file, "--group", group, "--key", key, "--default", default]
+    vector = ["kreadconfig6", "--file", file, "--group", group, "--key", key]
+    return vector if tweak_id in CURSOR_TWEAK_IDS else vector + ["--default", default]
 
 
 def kde_write_vector(tweak_id: str, value: str) -> list[str]:
@@ -203,10 +215,15 @@ def kde_write_vector(tweak_id: str, value: str) -> list[str]:
 def tweak_command_class(binary: str, args: Sequence[str]) -> Literal["read_only", "session"] | None:
     """Recognize exact reviewed GNOME/KDE vectors; unknown shapes fail closed."""
     vector = tuple(args)
-    if binary == "dbus-send" and vector == KWIN_RECONFIGURE[1:]:
+    if binary == "dbus-send" and vector in {KWIN_RECONFIGURE[1:], CURSOR_NOTIFY[1:]}:
         return "session"
     if binary == "gdbus" and vector == KWIN_SUPPORT[1:]:
         return "read_only"
+    if binary in {"plasma-apply-cursortheme", "plasma-apply-desktoptheme"}:
+        if vector == ("--list-themes",):
+            return "read_only"
+        if binary == "plasma-apply-desktoptheme" and len(vector) == 1 and valid_value("kde-plasma-style", vector[0]):
+            return "session"
     if binary == "gsettings" and len(vector) in {3, 4}:
         schema = vector[1]
         key = vector[2]
@@ -222,6 +239,8 @@ def tweak_command_class(binary: str, args: Sequence[str]) -> Literal["read_only"
             return "read_only"
     if binary == "kwriteconfig6" and len(vector) == 8:
         for item in KDE_KEYS:
+            if item == "kde-plasma-style":
+                continue
             if vector[:-1] == tuple(kde_write_vector(item, "")[1:-1]) and valid_value(item, vector[-1]):
                 return "session"
     return None
@@ -234,6 +253,7 @@ def custom_numeric_tweak(binary: str, args: Sequence[str]) -> str:
         "gnome-text-scale": {"1.0", "1.25", "1.5"},
         "kde-animation": {"0", "0.5", "1"},
         "kde-double-click-interval": {"200", "400", "600", "800"},
+        "kde-cursor-size": {"24", "32", "48", "64"},
     }
     if tweak_command_class(binary, vector) != "session":
         return ""

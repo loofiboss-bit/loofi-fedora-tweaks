@@ -67,7 +67,8 @@ class TestComfortValues(unittest.TestCase):
                 for tweak in TWEAKS:
                     state = read_tweak(tweak, runtime.platform_profile(), runtime.execute_read_only)
                     with self.subTest(backend=backend, desktop=desktop, tweak=tweak.id):
-                        self.assertEqual(state.status, "ready" if tweak.desktop in {desktop, "all"} else "unavailable")
+                        expected = "ready" if tweak.desktop in {desktop, "all"} and tweak.id not in {"kde-cursor-theme", "kde-cursor-size"} else "unavailable"
+                        self.assertEqual(state.status, expected)
                         for value, _label in state.choices:
                             validate_command_vector(command_for(tweak, value))
 
@@ -75,6 +76,8 @@ class TestComfortValues(unittest.TestCase):
         for tweak in TWEAKS:
             runtime = FakeRuntime("kde" if tweak.desktop == "kde" else "gnome")
             runtime.output[tweak.id] = "not-a-setting\n"
+            if tweak.id == "kde-plasma-style":
+                runtime.output[tweak.id] = "../not-a-style\n"
             if tweak.id == "kde-color":
                 runtime.kde_color_current = ""
             with self.subTest(tweak=tweak.id):
@@ -134,6 +137,9 @@ class TestComfortValues(unittest.TestCase):
         for tweak in TWEAKS:
             runtime = FakeRuntime("kde" if tweak.desktop == "kde" else "gnome")
             state = read_tweak(tweak, runtime.platform_profile(), runtime.execute_read_only)
+            if tweak.id in {"kde-cursor-theme", "kde-cursor-size"}:
+                self.assertEqual(state.status, "unavailable")
+                continue
             target = state.choices[0][0]
             definition = catalog.get(tweak.action_id)
             plan = SimpleNamespace(parameters={"value": target}, policy_decision=SimpleNamespace(facts={"current": state.value}))

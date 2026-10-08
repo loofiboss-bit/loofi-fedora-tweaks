@@ -176,7 +176,7 @@ class TestTroubleshootingCli(unittest.TestCase):
         self.assertEqual(payload["schema_id"], "loofi.troubleshooting")
         self.assertEqual(payload["schema_version"], 1)
         self.assertEqual(payload["command"], "profiles")
-        self.assertEqual(payload["data"]["count"], 10)
+        self.assertEqual(payload["data"]["count"], 11)
 
     def test_run_passes_a_cooperative_cancellation_signal(self):
         service = MagicMock()

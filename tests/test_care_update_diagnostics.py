@@ -168,6 +168,7 @@ class UpdateDiagnosisUiTests(unittest.TestCase):
 
         history = Mock()
         history.latest.return_value = (None, "")
+        history.sessions.return_value = ()
         factory = Mock()
         page = TroubleshootWidget(history=history, worker_factory=factory)
         self.addCleanup(page.close)
@@ -198,6 +199,7 @@ class UpdateDiagnosisUiTests(unittest.TestCase):
 
         history = Mock()
         history.latest.return_value = (None, "")
+        history.sessions.return_value = ()
         page = TroubleshootWidget(history=history, worker_factory=Mock())
         self.addCleanup(page.close)
         receiver = Mock()

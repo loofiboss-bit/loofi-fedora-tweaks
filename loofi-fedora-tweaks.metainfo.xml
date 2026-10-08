@@ -41,6 +41,11 @@
   </provides>
 
   <releases>
+    <release version="32.5.0" date="2026-10-08" type="development">
+      <description>
+        <p>Companion local candidate: personal profile library, explained Flatpak access, saved Health comparisons, screen-sharing diagnostics, local support questions, and Fedora upgrade preparation. KDE and DNF5 first; not published.</p>
+      </description>
+    </release>
     <release version="32.4.0" date="2026-10-08" type="stable">
       <description>
         <p>Care: installation-scoped application insight, reported-size filters, reviewed unused runtime removal, and source-specific update diagnostics.</p>

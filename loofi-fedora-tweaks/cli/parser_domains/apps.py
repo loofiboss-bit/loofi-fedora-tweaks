@@ -38,6 +38,11 @@ def register_apps_command(subparsers: Subparsers) -> None:
     remove_p.add_argument("--yes", action="store_true", help="Confirm removal while preserving application data")
     remove_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
 
+    access_p = apps_sub.add_parser("access", help="Inspect declarations and scoped Flatpak override layers")
+    access_p.add_argument("ref", help="Full app/id/architecture/branch ref")
+    access_p.add_argument("--installation", required=True, help="Explicit user, system, or named installation")
+    access_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
+
     details_p = apps_sub.add_parser("details", help="Inspect local app and runtime metadata")
     details_p.add_argument("ref", help="Full app/id/architecture/branch ref")
     details_p.add_argument("--installation", required=True, help="Explicit user, system, or named installation")

@@ -111,6 +111,45 @@ run collects bounded read-only observations and offers a relevant next step.
 GUI and CLI update discovery share source statuses; unavailable evidence cannot
 become an up-to-date result.
 
+## Companion personal workflows
+
+Companion prioritizes KDE on traditional Fedora with DNF5. GNOME provides
+corresponding controls where supported; physical GNOME qualification is tracked
+separately. Atomic retains explicitly limited observations and manual guidance.
+
+Tweaks includes a local library of built-in and personal profiles. Focus,
+Privacy basics, and Touchpad comfort use existing supported controls. Personal
+profiles preserve the portable `loofi.tweak-profile/v1` format and can be
+imported, exported, and removed locally. Built-in entries are read-only.
+Review compares supported values on the same desktop before the user selects
+changes; existing Action Center authority, drift checks, and verification apply.
+
+Apps separates declared Flatpak metadata from global and application overrides
+for the selected installation and current user. Overrides identify an app ID,
+not one branch. Explanations do not claim effective runtime access: portals and
+launch arguments are additional factors. Environment values and private paths
+are masked. Permission changes are handed to installed native tools, with
+manual guidance when unavailable.
+
+Health can compare compatible saved symptom sessions without collecting again.
+Unavailable follow-up sources remain not comparable, never resolved. Screen
+sharing diagnostics inspect the session, user services, and advertised portal
+support without capturing the screen or restarting services. Advertised support
+is not proof that sharing works in a particular application.
+
+Preparing a support question uses one explicitly selected saved session,
+problem description, and reproduction steps. A redacted, editable preview can
+be exported locally as Markdown or a ZIP. Export does not collect new evidence
+or post to a website; edited text is masked again before saving.
+
+Updates offers local preparation for a manual Fedora version upgrade. Release
+policy, package database observations, source configuration, free space, and
+available DNF restart hints retain their own availability and timestamps.
+Backup checklist selections are user confirmations, not verified backups.
+Local observations do not certify the future release's transaction, source
+availability, or sufficient disk space. Missing or malformed restart advice
+remains unknown. Loofi does not download, perform, or reboot for a major upgrade.
+
 ## Preferences and status
 
 The Loofi release check is off by default and can be enabled in Settings. When
@@ -129,3 +168,13 @@ shown as zero ports or as a numeric score. Update review shows up to 100
 observed candidates per source, their reported old and new versions, the check
 time, and any omitted or retained candidates. A reviewed candidate list is an
 observation; the eventual package transaction can differ.
+
+### Companion KDE appearance extension
+
+The shared catalog includes installed pointer themes, requested pointer sizes
+and installed Plasma styles. KDE Wayland pointer changes independently verify
+both keys, preserving the value that was not selected. Source-bound pointer
+notification delivery remains separate from saved verification and visual
+effect. Native Cursor Settings is the explicit alternative on KDE X11.
+Profiles retain independent setting commands and existing review/restore
+authority; failed notification stops the profile without undoing saved changes.
