@@ -99,10 +99,10 @@ class FakeRuntime:
 @patch("core.tasks.tweaks.kde_capability_error", return_value="")
 class TestTweakCatalog(unittest.TestCase):
     def test_catalog_controls_are_desktop_scoped_on_both_backends(self, _capability) -> None:
-        self.assertEqual(len(TWEAKS), 79)
+        self.assertEqual(len(TWEAKS), 82)
         for backend in ("dnf5", "rpm_ostree"):
             self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 48)
-            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 33)
+            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 36)
         self.assertEqual(visible_tweaks(profile("unknown")), ())
         self.assertEqual(visible_tweaks(profile("kde", "bootc")), ())
 

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Current local candidate: 32.5.0 "Companion". Physical desktop and assistive-technology qualification is recorded separately.
+> Current local candidate: 32.6.0 "Personal". Physical desktop and assistive-technology qualification is recorded separately.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -45,6 +45,36 @@ source .venv/bin/activate
 python -m pip install -e '.[dev]'
 PYTHONPATH=loofi-fedora-tweaks python3 loofi-fedora-tweaks/main.py
 ```
+
+## Personal everyday workflows
+
+In Apps, choose **Installed** to search Flatpaks and visible RPM-owned desktop
+applications, including RPM apps outside the curated catalog. Several launchers
+and installed architectures of one RPM package share a row; reported size sums
+those installed package instances. RPM identifies a package format, not its
+origin or trust. The curated catalog remains separate. RPM management opens
+the desktop software manager; partial reads say which source is incomplete.
+
+In **My profile library**, select **Edit a copy…** to change the name, included
+settings, and supported target values. **Save new version** preserves the original
+and changes no computer settings. Unknown/unavailable originals are retained
+until you clear their inclusion box. Review the saved copy separately to apply it.
+
+In Apps, choose **Package sources** to search all locally configured DNF5 sources
+by ID, name, and activation status. **View package sources** in Updates opens the
+same view. Observation time describes when configuration was read; it does not
+prove network availability. Refresh reads configuration without downloading metadata.
+
+```bash
+loofi-fedora-tweaks --cli updates sources
+loofi-fedora-tweaks --cli --json updates sources
+```
+
+Tweaks adds **New window placement**, **Snap distance to screen edges**, and
+**Snap distance to other windows** on supported KDE installations. Saved-value
+verification is separate from activation in the current KWin session. Restore
+supported previous values from Activity. Apps also opens KDE default applications;
+Tweaks opens autostart and icon settings after checking the requested native module.
 
 ## Companion workflows
 
@@ -193,7 +223,7 @@ permits restoration. KWin changes also request a session
 reconfigure and compare runtime values. A session warning preserves the saved
 change and its restoration offer.
 
-The catalog has 79 controls grouped as Appearance, Desktop, Files, Interaction,
+The catalog has 82 controls grouped as Appearance, Desktop, Files, Interaction,
 Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
 offers click behavior and default folder view; KDE adds Dolphin's full-path
 setting, editable location bar, session tabs, external folder tabs, and close-tab

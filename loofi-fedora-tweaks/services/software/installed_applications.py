@@ -2,7 +2,10 @@
 from __future__ import annotations
 
 import re
+import os
 import subprocess
+import time
+from pathlib import Path
 from dataclasses import asdict, dataclass
 from typing import Callable, Sequence
 
@@ -87,17 +90,22 @@ def parse_flatpak_inventory(output: str) -> tuple[InstalledApplication, ...]:
 
 
 class InstalledApplicationService:
-    """Inventory all Flatpak installations and only curated RPM applications."""
+    """Inventory Flatpaks and visible RPM apps, retaining curated fallbacks."""
     FLATPAK_VECTOR = ("flatpak", "list", "--app", "--columns=name,application,ref,version,size,installation")
 
-    def __init__(self, *, probe: Probe | None = None, catalog: ApplicationCatalog | None = None) -> None:
+    def __init__(self, *, probe: Probe | None = None, catalog: ApplicationCatalog | None = None,
+                 desktop_roots: tuple[Path, ...] | None = None, clock: Callable[[], float] = time.monotonic) -> None:
         self.probe = probe or self._probe
+        self._custom_probe = probe
         self.catalog = catalog or ApplicationCatalog()
+        self.desktop_roots = desktop_roots
+        self.clock = clock
 
     @staticmethod
-    def _probe(vector: Sequence[str]) -> ActionResult:
+    def _probe(vector: Sequence[str], *, timeout: float = 15) -> ActionResult:
         try:
-            result = subprocess.run(list(vector), capture_output=True, text=True, timeout=15)
+            environment = {**os.environ, "LC_ALL": "C"} if tuple(vector[:2]) == ("rpm", "-qf") else None
+            result = subprocess.run(list(vector), capture_output=True, text=True, timeout=timeout, env=environment)
             return ActionResult(result.returncode == 0, "Inventory read", exit_code=result.returncode, stdout=result.stdout)
         except (OSError, subprocess.TimeoutExpired):
             return ActionResult(False, "The installation inventory could not be read.")
@@ -113,8 +121,11 @@ class InstalledApplicationService:
 
     def snapshot(self) -> InstalledInventory:
         flatpaks = self.flatpaks()
+        deadline = self.clock() + 20.0
         rpms = tuple(item for item in self.catalog.all() if item.source == "fedora")
-        result = self.probe(("rpm", "-qa", "--qf", "%{NAME}\\t%{VERSION}-%{RELEASE}\\t%{SIZE}\\n"))
+        vector = ("rpm", "-qa", "--qf", "%{NAME}\\t%{VERSION}-%{RELEASE}\\t%{SIZE}\\n")
+        remaining = deadline - self.clock()
+        result = (self._custom_probe(vector) if self._custom_probe else self._probe(vector, timeout=min(15, remaining))) if remaining > 0 else ActionResult(False, "RPM inventory time limit reached.")
         apps = list(flatpaks.applications)
         errors = list(flatpaks.errors)
         unknown = set(flatpaks.unknown_sources)
@@ -124,13 +135,29 @@ class InstalledApplicationService:
         else:
             records = {item.package_id: item for item in rpms}
             try:
+                installed: dict[str, list[tuple[str, int]]] = {}
                 for line in result.stdout.splitlines():
                     fields = line.split("\t")
                     if len(fields) != 3 or not fields[0] or not fields[2].isdigit():
                         raise ValueError("RPM returned an invalid installation inventory.")
                     package, version, size = fields
-                    if package in records:
-                        apps.append(InstalledApplication(records[package].name, package, "fedora", "system", package, version, f"{size} B"))
+                    installed.setdefault(package, []).append((version, int(size)))
+                from services.software.rpm_desktop_applications import discover_rpm_desktop_applications
+
+                def ownership_probe(vector: Sequence[str], timeout: float) -> ActionResult:
+                    return self._custom_probe(vector) if self._custom_probe else self._probe(vector, timeout=timeout)
+
+                desktop_apps = discover_rpm_desktop_applications(ownership_probe, deadline=deadline, clock=self.clock, roots=self.desktop_roots)
+                errors.extend(desktop_apps.errors)
+                if desktop_apps.errors:
+                    unknown.add("fedora")
+                for package in sorted(installed):
+                    if package not in records and package not in desktop_apps.names:
+                        continue
+                    name = records[package].name if package in records else desktop_apps.names[package]
+                    versions = ", ".join(sorted({version for version, _size in installed[package]}))
+                    size_bytes = sum(size for _version, size in installed[package])
+                    apps.append(InstalledApplication(name, package, "fedora", "system", package, versions, f"{size_bytes} B"))
             except ValueError as exc:
                 apps = list(flatpaks.applications)
                 errors.append(str(exc))

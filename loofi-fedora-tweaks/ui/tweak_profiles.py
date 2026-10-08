@@ -69,7 +69,7 @@ class ProfileLibraryDialog(QDialog):
         self.resize(720, 480)
         self.operation = "review"
         layout = QVBoxLayout(self)
-        label = QLabel(self.tr("Built-in profiles are read-only. Review exact settings before applying. Use Load profile to import a portable file."))
+        label = QLabel(self.tr("Edit a copy of any profile and save a new version. Review exact settings before applying. Use Load profile to import a portable file."))
         label.setWordWrap(True)
         layout.addWidget(label)
         self.entries = QListWidget()
@@ -83,18 +83,21 @@ class ProfileLibraryDialog(QDialog):
             item.setData(Qt.ItemDataRole.UserRole, entry)
             self.entries.addItem(item)
         layout.addWidget(self.entries)
+        primary_actions = QHBoxLayout()
         actions = QHBoxLayout()
         self.review_button = QPushButton(self.tr("Review selected profile…"))
+        self.edit_button = QPushButton(self.tr("Edit a copy…"))
         self.export_button = QPushButton(self.tr("Export…"))
         self.remove_button = QPushButton(self.tr("Remove from library"))
         cancel = QPushButton(self.tr("Cancel"))
         cancel.setDefault(True)
-        for button, operation in ((self.review_button, "review"), (self.export_button, "export"), (self.remove_button, "remove")):
+        for button, operation in ((self.review_button, "review"), (self.edit_button, "edit"), (self.export_button, "export"), (self.remove_button, "remove")):
             button.setAutoDefault(False)
             button.clicked.connect(lambda _checked=False, chosen=operation: self._choose(chosen))
-            actions.addWidget(button)
+            (primary_actions if operation in ("review", "edit") else actions).addWidget(button)
         cancel.clicked.connect(self.reject)
         actions.addWidget(cancel)
+        layout.addLayout(primary_actions)
         layout.addLayout(actions)
         self.entries.currentRowChanged.connect(self._selection_changed)
         if self.entries.count():
@@ -108,6 +111,7 @@ class ProfileLibraryDialog(QDialog):
     def _selection_changed(self, _row: int = -1) -> None:
         entry = self.selected_entry()
         self.review_button.setEnabled(entry is not None)
+        self.edit_button.setEnabled(entry is not None)
         self.export_button.setEnabled(entry is not None)
         self.remove_button.setEnabled(entry is not None and not entry.builtin)
 
@@ -178,6 +182,9 @@ class TweakProfilesMixin:
         if dialog.operation == "review":
             self._review_library_profile(page, entry.profile, builtin=entry.builtin)
             return
+        if dialog.operation == "edit":
+            self._start_tweak_profile_editor(page, entry.profile)
+            return
         if dialog.operation == "remove":
             if entry.builtin:
                 return
@@ -200,6 +207,37 @@ class TweakProfilesMixin:
         adapter.finished.connect(lambda _result: page.set_busy(False, self.tr("Profile library operation completed.")))
         page.set_busy(True, self.tr("Updating profile library…"))
         adapter.start(operation)
+
+    def _start_tweak_profile_editor(self: Any, page: Any, profile: Any) -> bool:
+        """Inspect editor choices on the window-owned read-only worker."""
+        if not self._profile_idle(page):
+            return False
+        controller = self._profile_controller()
+        adapter = self._new_utility_operation_adapter(phase="inspection")
+        results: list[Any] = []
+        adapter.finished.connect(results.append)
+        adapter.failed.connect(page.set_error)
+        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Profile editor inspection cancelled.")))
+        adapter.stopped.connect(lambda: self._show_tweak_profile_editor(page, profile, results[0]) if results and not adapter.cancel_requested else None)
+        page.set_busy(True, self.tr("Reading supported profile choices…"), cancellable=True)
+        return bool(adapter.start(lambda: snapshot(page.profile, controller.orchestrator.runtime, is_cancelled=lambda: adapter.cancel_requested)))
+
+    def _show_tweak_profile_editor(self: Any, page: Any, profile: Any, states: Any) -> None:
+        from core.tasks.tweak_library import ProfileLibrary
+        from ui.tweak_profile_editor import ProfileEditorDialog
+
+        page.set_busy(False, self.tr("Edit a local copy; computer settings change only after a separate review."))
+        dialog = ProfileEditorDialog(profile, states, page)
+        if dialog.exec() != QDialog.DialogCode.Accepted or dialog.saved_profile is None:
+            return
+        if not self._profile_idle(page):
+            return
+        chosen = dialog.saved_profile
+        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter.failed.connect(page.set_error)
+        adapter.finished.connect(lambda _entry: page.set_busy(False, self.tr("New profile version saved. Open My profile library to review and apply it.")))
+        page.set_busy(True, self.tr("Saving new profile version…"))
+        adapter.start(lambda: ProfileLibrary().add(chosen))
 
     def _start_tweak_profile_export(self: Any, page: Any) -> bool:
         if not self._profile_idle(page):

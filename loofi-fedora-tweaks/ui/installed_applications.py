@@ -138,7 +138,7 @@ class InstalledApplicationsCard(Card):
     stopped = pyqtSignal()
 
     def __init__(self, *, service=None, parent=None):
-        super().__init__(self.tr("Installed"), self.tr("Installed Flatpak applications and curated Fedora RPMs."))
+        super().__init__(self.tr("Installed"), self.tr("Installed Flatpaks and RPM applications with visible desktop entries, plus curated RPM applications."))
         self.service = service
         self.inventory = InstalledInventory(unknown_sources=frozenset({"flatpak", "fedora"}))
         self.refresh_button = QPushButton(self.tr("Refresh installed applications"))
@@ -151,14 +151,14 @@ class InstalledApplicationsCard(Card):
         self.search_summary.setObjectName("installedSearchSummary")
         self.search_summary.setWordWrap(True)
         self.add_widget(self.search_summary)
-        self.software_handoff = NativeHandoffCard(NativeHandoffId.SOFTWARE_CENTER, title=self.tr("Manage Fedora RPM applications"), description=self.tr("Review RPM removal in your desktop software manager."), button_text=self.tr("Open software manager"), parent=self)
+        self.software_handoff = NativeHandoffCard(NativeHandoffId.SOFTWARE_CENTER, title=self.tr("Manage RPM applications"), description=self.tr("Review RPM removal in your desktop software manager."), button_text=self.tr("Open software manager"), parent=self)
         self.software_handoff.hide()
         self.add_widget(self.software_handoff)
         self.source_filter = QComboBox()
         self.source_filter.setAccessibleName(self.tr("Installed application source"))
         self.source_filter.addItem(self.tr("All sources"), "")
         self.source_filter.addItem(self.tr("Flatpak"), "flatpak")
-        self.source_filter.addItem(self.tr("Fedora RPM"), "fedora")
+        self.source_filter.addItem(self.tr("RPM"), "fedora")
         self.installation_filter = QComboBox()
         self.installation_filter.setAccessibleName(self.tr("Installed application installation"))
         self.installation_filter.addItem(self.tr("All installations"), "")
@@ -257,9 +257,10 @@ class InstalledApplicationsCard(Card):
         for app in inventory.applications:
             installation = self.tr("System") if app.installation == "system" else self.tr("User") if app.installation == "user" else self.tr("Named installation")
             version = app.version or self.tr("Version not reported")
-            row = _InstalledApplicationRow(app.name, self.tr("%1 · %2 installation · %3").replace("%1", version).replace("%2", installation).replace("%3", app.source.title()))
+            source_label = self.tr("RPM") if app.source == "fedora" else self.tr("Flatpak")
+            row = _InstalledApplicationRow(app.name, self.tr("%1 · %2 installation · %3").replace("%1", version).replace("%2", installation).replace("%3", source_label))
             details = DetailsDisclosure(summary=self.tr("Show installation details"))
-            details.set_details(self.tr("Application ID: %1\nReference: %2\nSource: %3\nInstallation: %4\nSize: %5").replace("%1", app.app_id).replace("%2", app.ref).replace("%3", app.source).replace("%4", app.installation).replace("%5", app.size or self.tr("Not reported")))
+            details.set_details(self.tr("Application ID: %1\nReference: %2\nSource: %3\nInstallation: %4\nSize: %5").replace("%1", app.app_id).replace("%2", app.ref).replace("%3", source_label).replace("%4", app.installation).replace("%5", app.size or self.tr("Not reported")))
             row.add_widget(details)
             if app.source == "flatpak":
                 app_details = QPushButton(self.tr("App details"))

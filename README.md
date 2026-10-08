@@ -31,7 +31,13 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
-The **32.5.0 Companion local candidate** adds a personal profile library,
+The **32.6.0 Personal local candidate** adds broader RPM application discovery,
+editable profile copies, a searchable local DNF source overview, and three
+reviewed KDE window controls. Native KDE links open default applications,
+autostart, and icon settings after checking their availability. See
+[Personal qualification](docs/PERSONAL_VERIFICATION.md).
+
+Its Companion baseline adds a personal profile library,
 explained Flatpak access, saved Health comparisons, screen-sharing diagnostics,
 local support-question export, and preparation for a manual Fedora upgrade.
 KDE and DNF5 are the primary qualification target; GNOME and Atomic limitations
@@ -74,6 +80,7 @@ loofi-fedora-tweaks --cli apps permissions app/org.mozilla.firefox/x86_64/stable
 loofi-fedora-tweaks --cli apps details app/org.mozilla.firefox/x86_64/stable --installation user
 loofi-fedora-tweaks --cli apps unused --installation user
 loofi-fedora-tweaks --cli updates check
+loofi-fedora-tweaks --cli updates sources
 loofi-fedora-tweaks --cli updates diagnose --source flatpak
 loofi-fedora-tweaks --cli tweaks profile library list
 loofi-fedora-tweaks --cli apps access app/org.mozilla.firefox/x86_64/stable --installation user

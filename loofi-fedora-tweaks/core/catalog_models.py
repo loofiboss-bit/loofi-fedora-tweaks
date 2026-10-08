@@ -50,6 +50,9 @@ class NativeHandoffId(str, Enum):
     CURSOR_SETTINGS = "desktop.cursor"
     DISPLAY_SETTINGS = "desktop.display"
     WINDOW_MANAGEMENT = "desktop.window_management"
+    DEFAULT_APPLICATIONS = "apps.default_applications"
+    AUTOSTART_SETTINGS = "desktop.autostart"
+    ICON_SETTINGS = "desktop.icons"
     FLATPAK_PERMISSIONS = "apps.flatpak_permissions"
     FLATSEAL = "apps.flatseal"
 

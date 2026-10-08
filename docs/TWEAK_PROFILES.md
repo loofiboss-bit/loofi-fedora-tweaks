@@ -30,6 +30,23 @@ Values use the stable setting identifiers and string literals in the
 [Tweak catalog](TWEAKS.md). Export includes only current supported choices.
 Profiles contain no commands, credentials, or restoration history.
 
+## Edit personal profiles
+
+Open **Tweaks → My profile library → Edit a copy…** to use a built-in or personal
+profile as a starting point. Edit the name, inclusion boxes and target values
+using the same controls as the tweak catalog. Installed dynamic choices are
+read independently before editing. Unknown or unavailable original settings
+remain included with their exact values; clear their boxes to remove them.
+Original custom targets can also be retained without coercion.
+
+**Save new version** writes only to the local profile library and keeps the
+original profile. Change the name or settings to create a new content identity;
+identical content is deduplicated by the library. Saving never applies settings.
+Open the saved entry and choose **Review selected profile…** for a fresh review
+with the existing drift checks, sequential application and verification.
+Validation and file write failures are shown without changing computer settings.
+The portable v1 format and restoration history remain unchanged.
+
 ## CLI
 
 ```bash
@@ -38,6 +55,7 @@ loofi-fedora-tweaks --cli tweaks profile export input.json --ids gnome-mouse-lef
 loofi-fedora-tweaks --cli tweaks profile preview settings.json --json
 loofi-fedora-tweaks --cli tweaks profile apply settings.json
 loofi-fedora-tweaks --cli tweaks profile apply settings.json --yes
+loofi-fedora-tweaks --cli tweaks profile library add settings.json
 ```
 
 Without `--yes`, apply prints a fresh review and does not change settings.

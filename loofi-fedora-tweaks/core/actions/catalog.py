@@ -25,6 +25,12 @@ _TRIMMED_PATTERN = re.compile(r"^\s*\S.*:\s+.+(?:trimmed|bytes?)", re.IGNORECASE
 ACTIVE_ACTION_IDS = frozenset(
     {
         "activate-kwin-tweak",
+        "set-kde-window-placement",
+        "restore-kde-window-placement",
+        "set-kde-border-snap-zone",
+        "restore-kde-border-snap-zone",
+        "set-kde-window-snap-zone",
+        "restore-kde-window-snap-zone",
         "notify-kde-cursor-change",
         "set-kde-cursor-theme",
         "restore-kde-cursor-theme",

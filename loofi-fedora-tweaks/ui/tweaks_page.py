@@ -34,6 +34,7 @@ class TweaksPage(QWidget, PluginInterface):
     cancelSnapshotRequested = pyqtSignal()
     snapshotProgress = pyqtSignal(int, int)
     cursor_settings_requested = pyqtSignal()
+    stopped = pyqtSignal()
 
     def __init__(self, profile: object = None, parent: QWidget | None = None) -> None:
         super().__init__(parent)
@@ -49,6 +50,8 @@ class TweaksPage(QWidget, PluginInterface):
             and getattr(getattr(profile, "session_type", None), "value", "") == "x11"
         )
         self._groups: dict[str, Card] = {}
+        self.native_cards: dict[str, Any] = {}
+        self._native_group: Card | None = None
         self._group_rows: dict[str, list[SettingRow]] = {}
         self._last_changes: dict[str, tuple[str, bool, str, bool]] = {}
         self._restore_buttons: dict[str, QPushButton] = {}
@@ -281,9 +284,39 @@ class TweaksPage(QWidget, PluginInterface):
             control.activated.connect(lambda _index, item=tweak.id: self._selected(item))
         if not self._rows:
             self.status_label.setText(self.tr("Tweak controls are unavailable until a supported Fedora desktop is detected."))
+        if getattr(getattr(profile, "desktop", None), "value", "") == "kde":
+            from core.catalog_models import NativeHandoffId
+            from ui.native_handoff_card import ManagedNativeHandoffCard
+
+            self._native_group = Card(self.tr("More KDE settings"), self.tr("Open the native settings for desktop features managed by KDE."))
+            for key, handoff, title, description, button_label in (
+                ("autostart", NativeHandoffId.AUTOSTART_SETTINGS, "Autostart applications", "Manage applications started when you log in.", "Open autostart settings"),
+                ("icons", NativeHandoffId.ICON_SETTINGS, "Icon theme", "Choose an installed icon theme in KDE System Settings.", "Open icon settings"),
+            ):
+                card = ManagedNativeHandoffCard(handoff, title=self.tr(title), description=self.tr(description), button_text=self.tr(button_label), parent=self)
+                card.stopped.connect(self._notify_native_stopped)
+                self.native_cards[key] = card
+                self._native_group.add_widget(card)
+            self.scaffold.add_widget(self._native_group)
         self.scaffold.content_layout.addStretch()
         self._filter_rows("")
         self._refresh_favorite_icons()
+
+    @property
+    def busy(self) -> bool:
+        return any(card.busy for card in self.native_cards.values())
+
+    def request_stop(self) -> None:
+        for card in self.native_cards.values():
+            card.request_stop()
+
+    def cleanup(self, timeout_ms: int = 1000) -> bool:
+        results = [card.cleanup(timeout_ms) for card in self.native_cards.values()]
+        return all(results)
+
+    def _notify_native_stopped(self) -> None:
+        if not self.busy:
+            self.stopped.emit()
 
     @staticmethod
     def _wrap(layout: QHBoxLayout | QGridLayout | QVBoxLayout) -> QWidget:
@@ -396,9 +429,14 @@ class TweaksPage(QWidget, PluginInterface):
             count += int(matches)
         for group_name, rows in self._group_rows.items():
             self._groups[group_name].setVisible(any(not row.isHidden() for row in rows))
+        for key, card in self.native_cards.items():
+            text = f"{key} {card.title_label.text()} {card.description_label.text()}".casefold()
+            card.setVisible(view == "all" and (not needle or needle in text) and (not category or (key == "icons" and category == "Appearance")))
+        if self._native_group is not None:
+            self._native_group.setVisible(any(not card.isHidden() for card in self.native_cards.values()))
         if hasattr(self, "results_label"):
             self.results_label.setText(self.tr("%1 of %2 settings").replace("%1", str(count)).replace("%2", str(len(self._rows))))
-            self.empty_state.setVisible(count == 0 and bool(self._rows))
+            self.empty_state.setVisible(count == 0 and bool(self._rows) and not any(not card.isHidden() for card in self.native_cards.values()))
 
     def changeEvent(self, event: Any) -> None:
         super().changeEvent(event)

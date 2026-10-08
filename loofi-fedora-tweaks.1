@@ -1,5 +1,5 @@
 .\" Man page for loofi-fedora-tweaks
-.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-08" "32.4.0" "Loofi Fedora Tweaks Manual"
+.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-09" "32.6.0" "Loofi Fedora Tweaks Manual"
 .SH NAME
 loofi\-fedora\-tweaks \- reviewed Fedora maintenance for desktop users
 .SH SYNOPSIS
@@ -33,11 +33,16 @@ Show local system and platform information.
 Run and persist the explicit read\-only System Check.  The target is selected
 from the supported Fedora readiness profiles.
 .TP
-.B updates \fBcheck\fR|\fBconflicts\fR|\fBhistory\fR|\fBdiagnose\fR
+.B updates \fBcheck\fR|\fBconflicts\fR|\fBhistory\fR|\fBdiagnose\fR|\fBsources\fR
 Inspect package update availability, dependency conflicts, or recorded update
 history.  Flatpak and firmware are separate update sources in the GUI and are
 reported as unavailable when their host tools are missing. The CLI check uses
 the same source observations as the GUI; partial failures return a nonzero status.
+.PP
+\fBupdates sources\fR lists every configured DNF5 repository with its ID, name,
+enabled state and observation time. It reads local cached configuration only.
+Unavailable tools, timeouts and invalid responses remain unknown; no repository
+is enabled or disabled. Use the global \fB--json\fR flag for structured output.
 .TP
 .B troubleshoot \fBprofiles\fR|\fBrun\fR|\fBshow\fR|\fBlatest\fR|\fBcompare\fR|\fBexport\fR
 Run or inspect a bounded, read\-only troubleshooting session and export its
