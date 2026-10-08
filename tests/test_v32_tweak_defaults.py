@@ -34,7 +34,7 @@ class TestV32TweakCatalog(unittest.TestCase):
     def test_defaults_are_valid_curated_choices(self) -> None:
         for tweak in TWEAKS:
             default = default_for(tweak)
-            if tweak.id == "kde-color":
+            if tweak.id in {"kde-color", "kde-cursor-theme", "kde-plasma-style"}:
                 self.assertEqual(default, "")
                 continue
             with self.subTest(tweak=tweak.id):

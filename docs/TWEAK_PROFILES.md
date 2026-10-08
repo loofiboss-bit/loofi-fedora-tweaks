@@ -60,3 +60,14 @@ previous value** uses that local verified history. KDE window settings also
 verify application in the active Plasma session; a failure there preserves
 the verified saved setting and stops remaining changes with a clear message.
 Cancellation waits for the current operation and verification to finish.
+
+## KDE appearance entries
+
+Profiles can include `kde-cursor-theme`, `kde-cursor-size` and
+`kde-plasma-style` without changing the portable format. Themes must be
+installed on the destination. Pointer controls require KDE Wayland; theme and
+size can appear in either order and preserve each other's current saved value.
+After each verified pointer write Loofi sends a separately recorded notification.
+Notification failure stops remaining profile changes, while the original saved
+change remains verified and available for eligible restoration in Activity.
+Notification success does not qualify visual effect in the running desktop.

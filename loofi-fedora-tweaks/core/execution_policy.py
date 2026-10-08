@@ -118,7 +118,7 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
     first = vector[0] if vector else ""
     if privileged:
         return "host"
-    if binary in {"gsettings", "kreadconfig6", "kwriteconfig6", "dbus-send", "gdbus"}:
+    if binary in {"gsettings", "kreadconfig6", "kwriteconfig6", "dbus-send", "gdbus", "plasma-apply-cursortheme", "plasma-apply-desktoptheme"}:
         return tweak_command_class(binary, vector) or "manual_only"
     if binary in _SESSION_COMMANDS:
         return "session"

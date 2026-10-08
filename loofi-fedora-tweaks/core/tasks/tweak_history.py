@@ -60,6 +60,6 @@ def restoration_for(tweak: Tweak, state: TweakState, runs: Sequence[ActionRun]) 
         return TweakRestoreOffer(message="Read the current setting successfully before restoring it.")
     if not values_equal(tweak.id, state.value, after):
         return TweakRestoreOffer(message="This setting changed outside Loofi. Restore is blocked to preserve its current value.")
-    if tweak.id in {"kde-color", "power-profile"} and before not in {value for value, _label in state.choices}:
-        return TweakRestoreOffer(message="The previous color scheme or power profile is no longer available.")
+    if tweak.id in {"kde-color", "power-profile", "kde-cursor-theme", "kde-plasma-style"} and before not in {value for value, _label in state.choices}:
+        return TweakRestoreOffer(message="The previous theme, color scheme or power profile is no longer available.")
     return TweakRestoreOffer(latest.run_id, before, after)

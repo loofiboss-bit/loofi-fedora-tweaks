@@ -232,7 +232,9 @@ class TestGlobalSearchModel(unittest.TestCase):
         self.assertEqual(kde_animation.route_id, "tune")
         self.assertEqual(kde_animation.kind, SearchResultKind.SETTING)
         self.assertTrue(dolphin.tweak_id.startswith("kde-dolphin-"))
-        self.assertIn(cursor.tweak_id, {"kde-focus-policy", "kde-tap-to-click"})
+        self.assertIn(cursor.tweak_id, {"kde-cursor-theme", "kde-cursor-size"})
+        self.assertTrue({"kde-cursor-theme", "kde-cursor-size"}.issubset({result.tweak_id for result in kde.search("cursor")}))
+        self.assertFalse(any(result.tweak_id in {"kde-cursor-theme", "kde-cursor-size"} for result in gnome.search("cursor")))
         self.assertTrue(any(result.tweak_id == "gnome-animations" for result in gnome.search("animation")))
         self.assertFalse(any(result.tweak_id and result.tweak_id.startswith("gnome-") for result in kde.search("animation")))
 

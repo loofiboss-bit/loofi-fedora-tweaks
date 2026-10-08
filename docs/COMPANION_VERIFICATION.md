@@ -10,11 +10,11 @@ The final integrated checks passed on the Fedora 44 development host:
 
 | Check | Result |
 | --- | --- |
-| `LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify` | Passed: lint, mypy, architecture, product catalog/version, 4,940 tests, 1,965 subtests; 33 skipped; coverage 85.32% |
+| `LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify` | Passed: lint, mypy, architecture, product catalog/version, 4,988 tests, 1,997 subtests; 33 skipped; coverage 85.35% |
 | `just check-packaging` | Passed: synchronized dependencies and built wheel/sdist manifest |
 | `just build-rpm` | Passed: `1:32.5.0-1.fc44.noarch`; new Companion modules confirmed in RPM payload |
 | `git diff --check` | Passed |
-| Independent focused review | 76 tests passed; no remaining concrete findings |
+| Independent focused review | Passed; notifier-tool dependency and late native-launch race corrected; no remaining concrete findings |
 
 Focused and integrated tests cover malformed/cross-desktop profiles, drift,
 cancellation and restoration, exact Flatpak identities and override scopes,
@@ -32,7 +32,7 @@ were visually inspected. This matrix does not qualify external settings tools.
 
 ## Local read-only runtime evidence
 
-- Source Tweaks, Health, and Updates components were exposed on the actual
+- Before the appearance extension, source Tweaks, Health, and Updates components were exposed on the actual
   KDE/Wayland compositor with isolated application state. Captures were inspected.
   Programmatic focus traversal was exercised; physical keyboard use remains
   unverified, and the standalone Updates component did not provide named focus
@@ -54,6 +54,8 @@ unavailable in this task, so human interaction and external-window qualification
 remain separate. Automated/offscreen tests do not prove these interactions.
 
 - KDE profile change and restoration: unverified.
+- New pointer theme/size and Plasma style changes, restoration, and visible effects: unverified.
+- Real X11 native Cursor Settings launch: unverified.
 - Physical keyboard, scaling, and permission-tool handoff workflows: unverified.
 - Real screen sharing in a target application: unverified.
 - Assistive technology: unverified.
@@ -71,3 +73,44 @@ remain separate. Automated/offscreen tests do not prove these interactions.
 - Backup checklist choices are manual confirmations, not backup verification.
 - These qualification checks perform no installation, merge, or publication.
   Git commits and a draft pull request are handled separately from qualification.
+
+## KDE appearance extension — 2026-10-08
+
+The catalog now contains 79 controls. Added pointer theme, requested pointer
+size, and Plasma style share GUI search/favorites, portable profiles, CLI and
+Action Center restoration. The final full verification above includes 48 new
+regression tests. Profile tests use the real controller and temporary run/plan
+stores, exercising both pointer-setting orders, exact custom-size restoration,
+removed prior themes, later independent changes, notification failures and CLI
+JSON evidence. Native owner tests cover asynchronous discovery/revalidation and
+shutdown before or during a launch probe.
+
+The two renewed full rendering matrices cover 450 views and 9,000 focus
+traversals at 100% scale and at 200% scale with large text, across three themes
+and three sizes. No wrapped-label/control-text clipping, table theme issue or
+outer horizontal overflow was reported. Twelve additional focused pointer/X11
+views exercised long names, native handoff controls and 360 focus traversals;
+wrapped labels fit and horizontal overflow was absent. Pointer, X11 handoff
+and separate Plasma-style captures were visually inspected. The complete long
+selected pointer name remains readable in its saved-value label even when the
+closed dropdown cannot display its entire text. These are fixture/offscreen
+checks, not physical keyboard, external-window or assistive-technology proof.
+
+Read-only source runtime inspection on the actual KDE Wayland host found all
+three new controls ready: four installed pointer themes, current requested
+pointer size 32, and eight installed Plasma styles. No setting change or pointer
+signal was performed. A read-only missing-key check confirmed empty successful
+`kreadconfig6` output, allowing the validated installed cursor schema defaults.
+The RPM payload contains the new native owner module and updated domain modules;
+all 15 changed production Python files match their source bytes exactly.
+
+Saved configuration and notification delivery are separate results. Missing
+`dbus-send` does not disable saved readback or restoration; failed notification
+stops the profile but leaves successful saved runs eligible for restoration.
+Pointer theme and size remain separate history resources. Prior dynamic themes
+are restorable only while KDE's validated theme list includes their identifier;
+an installed alias omitted by that list requires manual native recovery.
+Pointer mutation is limited to KDE Wayland. X11 uses a checked native handoff.
+Plasma style changes do not apply a global theme or install theme packages.
+Portable profile and action-history formats are unchanged. Physical effects
+and real changes/restoration remain explicitly unverified.

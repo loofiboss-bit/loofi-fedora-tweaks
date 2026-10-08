@@ -95,6 +95,13 @@ _TARGETS: Mapping[NativeHandoffId, NativeHandoffTarget] = MappingProxyType(
             ("kcm_kscreen",),
             "kcm_kscreen",
         ),
+        NativeHandoffId.CURSOR_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.CURSOR_SETTINGS,
+            "Cursor Settings",
+            "kcmshell6",
+            ("kcm_cursortheme",),
+            "kcm_cursortheme",
+        ),
         NativeHandoffId.WINDOW_MANAGEMENT: NativeHandoffTarget(
             NativeHandoffId.WINDOW_MANAGEMENT,
             "Window Management",

@@ -49,6 +49,8 @@ READ_OUTPUTS = {
     "kde-smooth-scroll": "true\n",
     "kde-scrollbar-click": "false\n",
     "kde-color": " * BreezeDark\n * CustomTheme (current color scheme)\n * BreezeLight\n",
+    "kde-cursor-theme": "breeze_cursors\n",
+    "kde-plasma-style": "default\n",
     "kde-animation": "0.70710678\n",
     "kde-tap-to-click": "true\n",
     "kde-night-color": "false\n",
@@ -83,6 +85,10 @@ class FakeRuntime:
             return ActionResult.ok("Listed", stdout="  performance:\n* balanced:\n  power-saver:\n", action_id=action_id)
         if tuple(vector) == ("kreadconfig6", "--file", "kdeglobals", "--group", "General", "--key", "ColorScheme"):
             return ActionResult.ok("Read", stdout=self.kde_color_current, action_id=action_id)
+        if tuple(vector) == ("plasma-apply-cursortheme", "--list-themes"):
+            return ActionResult.ok("Listed", stdout=" * Breeze Dark [breeze_cursors]\n", action_id=action_id)
+        if tuple(vector) == ("plasma-apply-desktoptheme", "--list-themes"):
+            return ActionResult.ok("Listed", stdout=" * default\n * custom.desktop\n", action_id=action_id)
         tweak_id = action_id.removesuffix("-read")
         for tweak in TWEAKS:
             if tweak.action_id == tweak_id:
@@ -93,10 +99,10 @@ class FakeRuntime:
 @patch("core.tasks.tweaks.kde_capability_error", return_value="")
 class TestTweakCatalog(unittest.TestCase):
     def test_catalog_controls_are_desktop_scoped_on_both_backends(self, _capability) -> None:
-        self.assertEqual(len(TWEAKS), 76)
+        self.assertEqual(len(TWEAKS), 79)
         for backend in ("dnf5", "rpm_ostree"):
             self.assertEqual(len(visible_tweaks(profile("gnome", backend))), 48)
-            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 30)
+            self.assertEqual(len(visible_tweaks(profile("kde", backend))), 33)
         self.assertEqual(visible_tweaks(profile("unknown")), ())
         self.assertEqual(visible_tweaks(profile("kde", "bootc")), ())
 
@@ -107,6 +113,10 @@ class TestTweakCatalog(unittest.TestCase):
             for tweak in visible_tweaks(runtime.platform_profile()):
                 with self.subTest(tweak=tweak.id):
                     state = read_tweak(tweak, runtime.platform_profile(), runtime.execute_read_only)
+                    if tweak.id in {"kde-cursor-theme", "kde-cursor-size"}:
+                        # This legacy fixture has no observed session protocol.
+                        self.assertEqual(state.status, "unavailable")
+                        continue
                     self.assertEqual(state.status, "ready")
                     self.assertTrue(state.value)
                     self.assertTrue(state.choices)

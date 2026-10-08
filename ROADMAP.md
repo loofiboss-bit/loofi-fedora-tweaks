@@ -9,6 +9,7 @@ KDE and DNF5 are the primary target, with optional GNOME counterparts and
 explicitly limited Atomic observations.
 
 - Local built-in/personal profile library with same-desktop review and sharing
+- Installed KDE pointer themes, pointer size, and Plasma styles with verified saved values and separate pointer notifications
 - Focus, Privacy basics, and Touchpad comfort presets through existing Action Center authority
 - Separate Flatpak metadata and override layers with installed permission-tool handoffs
 - Saved Health baseline comparison with honest incomplete-source results

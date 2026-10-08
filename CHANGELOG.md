@@ -9,6 +9,8 @@
 - Prepare editable, redacted support questions from exact saved sessions for local Markdown and ZIP export.
 - Inspect local Fedora upgrade preparation and DNF reboot advice without downloading, upgrading, or rebooting.
 - Prioritize KDE and DNF5; keep GNOME and Atomic qualification limits explicit.
+- Add installed KDE pointer themes, pointer size, and Plasma styles to the shared 79-control catalog, with profile/CLI support and independently verified restoration.
+- Preserve the other pointer value during changes and separate saved verification from source-bound notification delivery; provide native Cursor Settings on X11.
 
 ## [32.4.0] - 2026-10-08 - "Care"
 

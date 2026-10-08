@@ -8,6 +8,7 @@ from subprocess import TimeoutExpired
 from core.actions import ActionCatalog, ActionCenterOrchestrator, OperationController
 from core.actions.catalog import SystemActionRuntime
 from core.actions.tweak_operations import activate_verified_tweak, activation_parameters
+from core.actions.tweak_operations import cursor_notification_parameters, notify_verified_cursor_change
 from core.executor.command_facade import CommandFacade
 from core.platform import detect_platform_profile
 from core.tasks.tweak_history import read_tweak_runs, restoration_for
@@ -131,6 +132,15 @@ def handle_tweaks(
         if outcome.status == "verifying":
             outcome = controller.verify(outcome)
         if outcome.success:
+            if cursor_notification_parameters(outcome):
+                notification = notify_verified_cursor_change(controller, outcome)
+                if json_output:
+                    output_json({"tweak_id": tweak_id, "value": value, "run_id": outcome.run_id,
+                                 "saved_verified": notification.saved_verified, "notification_sent": notification.notification_sent,
+                                 "message": notification.message})
+                else:
+                    print_fn(notification.message)
+                return 0 if notification.notification_sent else 1
             if activation_parameters(outcome):
                 print_fn(activate_verified_tweak(controller, outcome).message)
             print_fn(f"Successfully applied {tweak.title}: {value}")
@@ -173,6 +183,15 @@ def handle_tweaks(
         if outcome.status == "verifying":
             outcome = controller.verify(outcome)
         if outcome.success:
+            if cursor_notification_parameters(outcome):
+                notification = notify_verified_cursor_change(controller, outcome)
+                if json_output:
+                    output_json({"tweak_id": tweak_id, "value": offer.before, "run_id": outcome.run_id,
+                                 "saved_verified": notification.saved_verified, "notification_sent": notification.notification_sent,
+                                 "message": notification.message})
+                else:
+                    print_fn(notification.message)
+                return 0 if notification.notification_sent else 1
             if activation_parameters(outcome):
                 print_fn(activate_verified_tweak(controller, outcome).message)
             print_fn(f"Successfully restored {tweak.title}: {offer.before}")

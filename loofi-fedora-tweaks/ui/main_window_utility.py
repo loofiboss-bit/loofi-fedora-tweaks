@@ -30,6 +30,7 @@ from core.plugins.metadata import PluginMetadata
 from PyQt6.QtWidgets import QTreeWidgetItem, QWidget
 from ui.tweak_profiles import TweakProfilesMixin
 from ui.care_navigation import CareNavigationMixin
+from ui.kde_appearance import CursorSettingsMixin
 
 
 _UTILITY_ROUTE_ALIASES = LEGACY_ALIASES
@@ -56,7 +57,7 @@ class SidebarEntry:
     visible_in_sidebar: bool = field(default=True)
 
 
-class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
+class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNavigationMixin):
     """Own v29 landing pages and compatibility-aware route navigation."""
 
     _pending_runtime_shutdown: str | None
@@ -182,6 +183,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
             tweaks_page.inspectRequested.connect(
                 lambda tweak_id, owner=tweaks_page: self._start_tweak_inspection(owner, tweak_id)
             )
+            tweaks_page.cursor_settings_requested.connect(lambda owner=tweaks_page: self._open_cursor_settings(owner))
             return cast(QWidget, tweaks_page)
         if destination_id == "fix":
             from ui.fix_workflow import FixWorkflowPage
@@ -257,6 +259,8 @@ class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
         adapter.finished.connect(page.set_states)
         adapter.failed.connect(page.set_error)
         adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Setting inspection cancelled. Refresh to try again.")))
+        if getattr(page, "cursor_settings_buttons", {}):
+            adapter.stopped.connect(lambda: self._refresh_cursor_settings_handoff(page))
         controller = self._utility_operation_controller
         runtime = controller.orchestrator.runtime if controller is not None else SystemActionRuntime(CommandFacade())
         page.set_busy(True, self.tr("Reading current settings…"), cancellable=True)
@@ -311,7 +315,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
         """Apply one typed setting through the durable operation controller."""
         from core.actions.operation_controller import OperationController
         from core.tasks.tweaks import BY_ID
-        from core.actions.tweak_operations import activate_verified_tweak
+        from core.actions.tweak_operations import activate_verified_tweak, cursor_notification_parameters, notify_verified_cursor_change
         from PyQt6.QtWidgets import QMessageBox
 
         tweak = BY_ID.get(str(tweak_id))
@@ -351,7 +355,8 @@ class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
 
         def operation() -> Any:
             outcome = controller.execute(tweak.action_id, {"value": value}, confirmed=True)
-            return outcome, activate_verified_tweak(controller, outcome)
+            followup = notify_verified_cursor_change(controller, outcome) if cursor_notification_parameters(outcome) else activate_verified_tweak(controller, outcome)
+            return outcome, followup
 
         adapter.finished.connect(completed)
         adapter.failed.connect(lambda message: page.set_error(str(message)))
@@ -403,7 +408,7 @@ class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
         adapter.stopped.connect(lambda: self._run_tweak_restore(page, tweak_id, ticket))
 
     def _run_tweak_restore(self: Any, page: Any, tweak_id: str, ticket: Any) -> bool:
-        from core.actions.tweak_operations import activate_verified_tweak
+        from core.actions.tweak_operations import activate_verified_tweak, cursor_notification_parameters, notify_verified_cursor_change
 
         controller = self._utility_operation_controller
         if controller is None or self._utility_operation_adapter is not None:
@@ -416,7 +421,8 @@ class MainWindowUtilityMixin(TweakProfilesMixin, CareNavigationMixin):
                 return prepared, activate_verified_tweak(controller, prepared)
             running = controller.run(prepared)
             outcome = controller.verify(running) if running.status == "verifying" else running
-            return outcome, activate_verified_tweak(controller, outcome)
+            followup = notify_verified_cursor_change(controller, outcome) if cursor_notification_parameters(outcome) else activate_verified_tweak(controller, outcome)
+            return outcome, followup
 
         def completed(result: Any) -> None:
             outcome, activation = result

@@ -13,6 +13,7 @@ from typing import Callable, Iterable
 from core.actions.operation_controller import OperationController
 from core.actions.orchestrator import ActionCenterError
 from core.actions.tweak_operations import activate_verified_tweak, activation_parameters
+from core.actions.tweak_operations import cursor_notification_parameters, notify_verified_cursor_change
 from core.actions.contracts import ActionDefinition, ActionRuntime
 from core.executor.action_result import ActionResult
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
@@ -287,6 +288,12 @@ def apply_profile(review: ProfileReview, controller: OperationController, *, con
                                 if not activation.session_verified:
                                     final, stopped = "verification_failed", message
                                     entry_status = "verification_failed"
+                            if outcome.success and cursor_notification_parameters(outcome):
+                                notification = notify_verified_cursor_change(controller, outcome)
+                                message = notification.message
+                                if not notification.notification_sent:
+                                    final, stopped = "failed", message
+                                    entry_status = "failed"
                             if not outcome.success:
                                 final, stopped = outcome.status, message
                             results.append(ProfileEntryResult(entry.id, entry_status, message, outcome.run_id))

@@ -193,7 +193,7 @@ permits restoration. KWin changes also request a session
 reconfigure and compare runtime values. A session warning preserves the saved
 change and its restoration offer.
 
-The catalog has 76 controls grouped as Appearance, Desktop, Files, Interaction,
+The catalog has 79 controls grouped as Appearance, Desktop, Files, Interaction,
 Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
 offers click behavior and default folder view; KDE adds Dolphin's full-path
 setting, editable location bar, session tabs, external folder tabs, and close-tab
@@ -440,3 +440,24 @@ loofi apps remove --help
 Profile and preset apply require `--yes` to change settings. Flatpak permission
 inspection and removal require an explicit installation; removal also requires
 confirmation. Permission JSON hides environment values.
+
+### KDE appearance and pointers
+
+Under **Tweaks → Appearance**, choose an installed pointer theme, a requested
+pointer size (24, 32, 48 or 64), or an installed Plasma style for panels and
+widgets. Pointer controls require KDE Wayland; KDE X11 instead offers an
+explicit **Open Cursor Settings** button after the native module is checked.
+Plasma style is separate from the existing color scheme. Themes are not
+downloaded or installed by these controls.
+
+Changing a pointer theme preserves its saved size; changing the size preserves
+the theme. Loofi reads both values back and then sends KDE's pointer-change
+notification. A verified saved value and a sent notification do not prove how
+every application renders the pointer. Themes may use a nearby size, and
+already-open applications may need reopening. If notification fails, the saved
+change remains verified and restorable; a profile stops before further changes.
+
+Pointer size resets to Loofi's standard of 24. Theme controls have no Loofi
+reset standard. A previous theme can be restored only while it remains installed.
+Supported custom sizes from 0 to 512 are preserved exactly for readback and
+history-based restoration; they are not offered as arbitrary new settings.

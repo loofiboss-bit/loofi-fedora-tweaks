@@ -168,3 +168,13 @@ shown as zero ports or as a numeric score. Update review shows up to 100
 observed candidates per source, their reported old and new versions, the check
 time, and any omitted or retained candidates. A reviewed candidate list is an
 observation; the eventual package transaction can differ.
+
+### Companion KDE appearance extension
+
+The shared catalog includes installed pointer themes, requested pointer sizes
+and installed Plasma styles. KDE Wayland pointer changes independently verify
+both keys, preserving the value that was not selected. Source-bound pointer
+notification delivery remains separate from saved verification and visual
+effect. Native Cursor Settings is the explicit alternative on KDE X11.
+Profiles retain independent setting commands and existing review/restore
+authority; failed notification stops the profile without undoing saved changes.

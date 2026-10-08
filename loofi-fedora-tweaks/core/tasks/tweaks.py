@@ -2,7 +2,9 @@
 
 from __future__ import annotations
 
+import json
 import math
+import os
 import re
 import shutil
 import time
@@ -15,7 +17,7 @@ from typing import Callable, Sequence
 
 from core.actions.contracts import ActionRuntime
 from core.executor.action_result import ActionResult
-from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector, gnome_schema, KDE_SPECS, KWIN_RUNTIME_KEYS
+from core.tweak_commands import GNOME_KEYS, KDE_KEYS, SCHEME_PATTERN, valid_value, kde_read_vector, kde_write_vector, gnome_schema, KDE_SPECS, KWIN_RUNTIME_KEYS, CURSOR_TWEAK_IDS, THEME_PATTERN
 
 
 _SCHEME = SCHEME_PATTERN
@@ -71,6 +73,9 @@ TWEAKS: tuple[Tweak, ...] = (
     Tweak("kde-smooth-scroll", "Smooth scrolling", "Enable or disable smooth scrolling in supported KDE applications.", "Interaction", "kde", "set-kde-smooth-scroll", (("true", "On"), ("false", "Off"))),
     Tweak("kde-scrollbar-click", "Scrollbar track click", "Choose whether clicking the scrollbar track moves one page or jumps to the clicked position.", "Interaction", "kde", "set-kde-scrollbar-click", (("true", "Move one page"), ("false", "Jump to position"))),
     Tweak("kde-color", "Color scheme", "Choose an installed Plasma color scheme; custom schemes remain available.", "Appearance", "kde", "set-kde-color", ()),
+    Tweak("kde-cursor-theme", "Pointer theme", "Choose an installed pointer theme for KDE Wayland. Existing applications may render it differently.", "Appearance", "kde", "set-kde-cursor-theme", ()),
+    Tweak("kde-cursor-size", "Pointer size", "Choose a requested pointer size for KDE Wayland; the theme may render it at a different size.", "Appearance", "kde", "set-kde-cursor-size", (("24", "24"), ("32", "32"), ("48", "48"), ("64", "64"))),
+    Tweak("kde-plasma-style", "Plasma style", "Choose an installed style for Plasma panels and widgets.", "Appearance", "kde", "set-kde-plasma-style", ()),
     Tweak("kde-animation", "Animation speed", "Choose a Plasma animation speed; custom values remain untouched until changed.", "Appearance", "kde", "set-kde-animation", (("0", "Instant"), ("0.5", "Fast"), ("1", "Normal"))),
     Tweak("kde-tap-to-click", "Touchpad tap-to-click", "Tap the touchpad to click in KDE Plasma.", "Interaction", "kde", "set-kde-tap-to-click", (("true", "On"), ("false", "Off"))),
     Tweak("kde-night-color", "Night Color", "Warm display colors at night in KDE Plasma.", "Appearance", "kde", "set-kde-night-color", (("true", "On"), ("false", "Off"))),
@@ -135,8 +140,13 @@ def _presentation(tweak: Tweak) -> Tweak:
     labels = {label for _value, label in tweak.choices}
     boolean = {value for value, _label in tweak.choices} == {"true", "false"}
     kind = "switch" if boolean and all(label.startswith(("On", "Off", "Show", "Hide")) for label in labels) else "segmented" if 1 < len(tweak.choices) <= 3 else "dropdown"
-    terms = ("Dolphin", "files", "folders") if tweak.id.startswith("kde-dolphin-") else ("Files", "Nautilus", "folders") if tweak.id.startswith("gnome-files-") else ()
-    hint = "Saved settings and application in the current Plasma session are verified separately." if tweak.id in KWIN_RUNTIME_KEYS else "Reopen the file manager to apply this setting to existing windows." if terms else ""
+    terms: tuple[str, ...] = ("Dolphin", "files", "folders") if tweak.id.startswith("kde-dolphin-") else ("Files", "Nautilus", "folders") if tweak.id.startswith("gnome-files-") else ()
+    hint = "Saved pointer values and notification delivery are verified separately. Theme rendering and already-open applications may differ." if tweak.id in CURSOR_TWEAK_IDS else "Saved settings and application in the current Plasma session are verified separately." if tweak.id in KWIN_RUNTIME_KEYS else "Reopen the file manager to apply this setting to existing windows." if terms else ""
+    if tweak.id in CURSOR_TWEAK_IDS:
+        terms = ("cursor", "pointer", "mouse")
+    elif tweak.id == "kde-plasma-style":
+        terms = ("Plasma theme", "desktop style", "panels", "widgets")
+        hint = "The saved Plasma style is verified. Visible panel and widget rendering remains unverified."
     return replace(tweak, control_kind=kind, search_terms=terms, effect_hint=hint)
 
 
@@ -170,6 +180,8 @@ _DEFAULTS = {
 
 def default_for(tweak: Tweak) -> str:
     """Return the known default value for a tweak, or an empty string if none is defined."""
+    if tweak.id in {"kde-cursor-theme", "kde-plasma-style"}:
+        return ""
     if tweak.id in KDE_KEYS:
         return KDE_KEYS[tweak.id][1]
     return _DEFAULTS.get(tweak.id, "")
@@ -206,8 +218,10 @@ def command_for(tweak: Tweak, value: str, *, restoring: bool = False) -> list[st
         if not _SCHEME.fullmatch(value):
             raise ValueError("Unsupported Plasma color scheme identifier.")
         return ["plasma-apply-colorscheme", value]
+    if tweak.id == "kde-plasma-style":
+        return ["plasma-apply-desktoptheme", value]
     if tweak.id in KDE_KEYS:
-        if not (restoring or allowed_value(tweak, value)):
+        if not (restoring or tweak.id == "kde-cursor-theme" or allowed_value(tweak, value)):
             raise ValueError("Unsupported Plasma setting choice.")
         return kde_write_vector(tweak.id, value)
     if tweak.id == "power-profile":
@@ -255,6 +269,7 @@ _KDE_KCFG_DOCTYPE = b'<!DOCTYPE kcfg SYSTEM "http://www.kde.org/standards/kcfg/1
 _SNAPSHOT_BUDGET_SECONDS = 20.0
 _DOLPHIN_SCHEMA = Path("/usr/share/config.kcfg/dolphin_generalsettings.kcfg")
 _KWIN_SCHEMA = Path("/usr/share/config.kcfg/kwin.kcfg")
+_CURSOR_SCHEMA = Path("/usr/share/config.kcfg/cursorthemesettings.kcfg")
 _KDESchemaCache = dict[Path, tuple[Element | None, str]]
 
 
@@ -268,6 +283,13 @@ def kde_capability_error(tweak_id: str, *, schema_cache: _KDESchemaCache | None 
         if shutil.which("kwin_wayland") is None and shutil.which("kwin_x11") is None:
             return "KWin is not installed."
         path, application = _KWIN_SCHEMA, "KWin"
+    elif tweak_id in CURSOR_TWEAK_IDS:
+        path, application = _CURSOR_SCHEMA, "pointer"
+    elif tweak_id == "kde-plasma-style":
+        for tool in ("kreadconfig6", "plasma-apply-desktoptheme"):
+            if shutil.which(tool) is None:
+                return f"The required KDE settings tool {tool} is unavailable."
+        return ""
     else:
         return ""
     for tool in ("kreadconfig6", "kwriteconfig6"):
@@ -301,12 +323,108 @@ def kde_capability_error(tweak_id: str, *, schema_cache: _KDESchemaCache | None 
     if root is None:
         return f"The installed {application} settings schema could not be read safely."
     _file, group, key, _default = KDE_SPECS[tweak_id]
-    expected_type = "Int" if tweak_id == "kde-focus-stealing-prevention" else "Bool"
+    expected_type = "String" if tweak_id == "kde-cursor-theme" else "Int" if tweak_id in {"kde-focus-stealing-prevention", "kde-cursor-size"} else "Bool"
     entries = [entry for section in root.findall(".//{*}group") if section.get("name") == group
                for entry in section.findall("{*}entry") if entry.get("key", entry.get("name")) == key]
     if len(entries) != 1 or entries[0].get("type") != expected_type:
         return f"The installed {application} schema does not support {group}/{key}."
+    if tweak_id in CURSOR_TWEAK_IDS:
+        defaults = entries[0].findall("{*}default")
+        if len(defaults) != 1 or not valid_value(tweak_id, defaults[0].text or ""):
+            return f"The installed pointer schema has an unsupported default for {key}."
     return ""
+
+
+def _cursor_session_error(profile: object) -> str:
+    session = getattr(profile, "session_type", None)
+    if _profile_desktop(profile) != "kde" or getattr(session, "value", session) != "wayland":
+        return "Pointer changes require KDE Wayland. Open KDE System Settings → Mouse & Touchpad → Cursor on X11."
+    return ""
+
+
+def read_cursor_config(
+    profile: object,
+    execute_read_only: Callable[..., ActionResult],
+    *,
+    schema_cache: _KDESchemaCache | None = None,
+) -> tuple[dict[str, str], str]:
+    """Read both independent pointer keys using only validated installed defaults."""
+    error = _cursor_session_error(profile)
+    if error:
+        return {}, error
+    cache = schema_cache if schema_cache is not None else {}
+    for tweak_id in sorted(CURSOR_TWEAK_IDS):
+        error = kde_capability_error(tweak_id, schema_cache=cache)
+        if error:
+            return {}, error
+    root = cache.get(_CURSOR_SCHEMA, (None, ""))[0]
+    if root is None:
+        return {}, "The installed pointer settings schema is unavailable."
+    values: dict[str, str] = {}
+    for tweak_id in sorted(CURSOR_TWEAK_IDS):
+        key = KDE_SPECS[tweak_id][2]
+        entry = next(entry for group in root.findall(".//{*}group") if group.get("name") == "Mouse"
+                     for entry in group.findall("{*}entry") if entry.get("key", entry.get("name")) == key)
+        result = execute_read_only(kde_read_vector(tweak_id), action_id=f"set-{tweak_id}-read", timeout=8)
+        if not result.success:
+            return {}, result.message or "The current pointer configuration could not be read."
+        value = result.stdout.strip() or entry.findtext("{*}default", "")
+        if not valid_value(tweak_id, value):
+            return {}, "The current pointer setting is invalid or outside its supported range."
+        values[tweak_id] = value
+    return values, ""
+
+
+def _plasma_style_label(theme_id: str) -> str:
+    """Read bounded presentation metadata; only the CLI grants theme membership."""
+    roots = [Path(os.environ.get("XDG_DATA_HOME", str(Path.home() / ".local/share")))]
+    for item in os.environ.get("XDG_DATA_DIRS", "/usr/local/share:/usr/share").split(":"):
+        if len(roots) >= 16:
+            break
+        path = Path(item)
+        if item and path not in roots:
+            roots.append(path)
+    for root in roots:
+        try:
+            with (root / "plasma/desktoptheme" / theme_id / "metadata.json").open("rb") as stream:
+                data = stream.read(65537)
+            if len(data) > 65536:
+                continue
+            name = json.loads(data).get("KPlugin", {}).get("Name", "")
+            if isinstance(name, str) and name.strip() and len(name) <= 256 and not any(ord(char) < 32 for char in name):
+                return name.strip()
+        except (OSError, ValueError, TypeError, AttributeError, RecursionError):
+            continue
+    return theme_id
+
+
+def _parse_themes(output: str, *, cursor: bool) -> tuple[str, tuple[tuple[str, str], ...]]:
+    """Parse the closed Plasma CLI list format without accepting partial lists."""
+    choices: list[tuple[str, str]] = []
+    current = ""
+    seen: set[str] = set()
+    if len(output) > 256 * 1024:
+        return "", ()
+    for line in output.splitlines():
+        stripped = line.strip()
+        if not stripped.startswith("*"):
+            continue
+        match = re.fullmatch(r"\* (.+?) \[([^\[\]]+)\](?: \([^()\r\n]*\))?", stripped) if cursor else re.fullmatch(r"\* ([^ ()]+)(?: \([^()\r\n]*\))?", stripped)
+        if not match:
+            return "", ()
+        identifier = match.group(2) if cursor else match.group(1)
+        if not THEME_PATTERN.fullmatch(identifier) or identifier in seen or len(choices) >= 256:
+            return "", ()
+        label = match.group(1) if cursor else _plasma_style_label(identifier)
+        if len(label) > 256 or any(ord(char) < 32 for char in label):
+            return "", ()
+        seen.add(identifier)
+        choices.append((identifier, label))
+        if stripped.endswith(")"):
+            if current:
+                return "", ()
+            current = identifier
+    return current, tuple(choices)
 
 
 def read_tweak(
@@ -326,6 +444,35 @@ def read_tweak(
     capability_error = kde_capability_error(tweak.id, schema_cache=schema_cache) if schema_cache is not None else kde_capability_error(tweak.id)
     if capability_error:
         return TweakState(tweak, "unavailable", message=capability_error)
+    if tweak.id in CURSOR_TWEAK_IDS:
+        values, error = read_cursor_config(profile, execute_read_only, schema_cache=schema_cache)
+        if error:
+            return TweakState(tweak, "unavailable", message=error)
+        choices = tweak.choices
+        if tweak.id == "kde-cursor-theme":
+            if shutil.which("plasma-apply-cursortheme") is None:
+                return TweakState(tweak, "unavailable", value=values[tweak.id], message="The required KDE settings tool plasma-apply-cursortheme is unavailable.")
+            listed = execute_read_only(["plasma-apply-cursortheme", "--list-themes"], action_id="set-kde-cursor-theme-list", timeout=8)
+            if not listed.success:
+                return TweakState(tweak, "unavailable", message=listed.message or "Installed pointer themes could not be read.")
+            _current, choices = _parse_themes(listed.stdout, cursor=True)
+        if not choices:
+            return TweakState(tweak, "unavailable", value=values[tweak.id], message="No supported installed themes are available.")
+        return TweakState(tweak, "ready", value=values[tweak.id], choices=choices)
+    if tweak.id == "kde-plasma-style":
+        listed = execute_read_only(["plasma-apply-desktoptheme", "--list-themes"], action_id="set-kde-plasma-style-list", timeout=8)
+        if not listed.success:
+            return TweakState(tweak, "unavailable", message=listed.message or "Installed Plasma styles could not be read.")
+        _listed_current, choices = _parse_themes(listed.stdout, cursor=False)
+        configured = execute_read_only(kde_read_vector(tweak.id), action_id="set-kde-plasma-style-read", timeout=8)
+        if not configured.success:
+            return TweakState(tweak, "unavailable", message=configured.message or "The saved Plasma style could not be read.")
+        value = configured.stdout.strip()
+        if not valid_value(tweak.id, value):
+            return TweakState(tweak, "error", message="The saved Plasma style could not be validated.")
+        if not choices:
+            return TweakState(tweak, "unavailable", value=value, message="No supported installed themes are available.")
+        return TweakState(tweak, "ready", value=value, choices=choices)
     result = execute_read_only(_read_vector(tweak), action_id=f"{tweak.action_id}-read", timeout=8)
     if not result.success:
         return TweakState(tweak, "unavailable", message=result.message or "The required system tool is unavailable.")

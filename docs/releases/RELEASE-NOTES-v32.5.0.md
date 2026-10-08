@@ -16,3 +16,13 @@ target; optional GNOME counterparts and Atomic limitations remain explicit.
 
 See [qualification](../COMPANION_VERIFICATION.md) for dated automated evidence
 and physical checks. This source candidate does not imply installation or publication.
+
+## KDE appearance extension
+
+Companion adds installed pointer themes, requested pointer size, and Plasma
+styles to the 79-control catalog. They share global search, favorites, CLI,
+profiles and verified restoration. Pointer theme/size changes preserve the other
+key; a separate source-bound notification reports delivery without claiming
+visual verification. KDE X11 offers native Cursor Settings. Theme installation,
+global theme application and broader platform qualification are outside this
+extension.

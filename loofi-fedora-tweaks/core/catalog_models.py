@@ -47,6 +47,7 @@ class NativeHandoffId(str, Enum):
     AUDIO_SETTINGS = "audio.settings"
     BLUETOOTH_SETTINGS = "bluetooth.settings"
     APPEARANCE_SETTINGS = "desktop.appearance"
+    CURSOR_SETTINGS = "desktop.cursor"
     DISPLAY_SETTINGS = "desktop.display"
     WINDOW_MANAGEMENT = "desktop.window_management"
     FLATPAK_PERMISSIONS = "apps.flatpak_permissions"

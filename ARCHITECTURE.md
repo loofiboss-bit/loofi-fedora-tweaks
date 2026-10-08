@@ -12,7 +12,7 @@ system-wide DNF setting, alongside app installation, updates, and diagnostics.
 Missing applications, schemas, or host tools produce an unavailable state
 with an explanation.
 
-The current tweak catalog contains 76 controls: 46 GNOME-only, 28 KDE-only,
+The current tweak catalog contains 79 controls: 46 GNOME-only, 31 KDE-only,
 and two shared controls. The GUI and CLI project the controls supported by the
 detected Fedora desktop and deployment backend.
 
@@ -240,3 +240,21 @@ values and identify the result as metadata rather than effective access.
 Window-owned operation workers and installed-page samplers participate in deferred
 shutdown; no worker is destroyed while running. Existing plan/run schemas remain
 unchanged. Portable profiles do not reactivate retired profile stacks.
+
+### Companion KDE appearance controls
+
+Pointer theme and size are independent KDE Wayland settings. Installed cursor
+schema defaults resolve missing keys; exact single-key writes preserve the other
+value, which is also independently checked after execution. A separate
+`notify-kde-cursor-change` action binds a successful saved change or restoration
+and sends the fixed KDE pointer change signal. Its `notification_sent` result
+does not assert runtime or visual verification and does not invalidate the
+original setting's restoration history. GUI, CLI and profiles share this adapter;
+a failed notification stops a profile while preserving its successful saved run.
+KDE X11 offers a capability-checked, asynchronous native Cursor Settings handoff.
+
+Installed pointer and Plasma style IDs are checked again before execution.
+Plasma style uses the native apply tool and separate `plasmarc` readback. Theme
+controls have no Loofi reset standard; pointer size offers 24, 32, 48 and 64,
+with exact custom values from 0 to 512 readable and restorable from history.
+Portable profiles and schema-v4 action records retain their existing formats.
