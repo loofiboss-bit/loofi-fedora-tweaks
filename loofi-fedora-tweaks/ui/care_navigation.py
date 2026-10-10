@@ -5,6 +5,43 @@ from typing import Any
 
 
 class CareNavigationMixin:
+    def _open_route_request(self: Any, route_id: str, _preselection=None) -> None:
+        """Navigate through the canonical manifest; metadata remains inert."""
+        if isinstance(_preselection, dict) and _preselection and not set(_preselection) - {"run_id", "update_source", "symptom"}:
+            if any(not isinstance(value, str) for value in _preselection.values()):
+                return
+            source = _preselection.get("update_source", "")
+            run_id = _preselection.get("run_id", "")
+            symptom = _preselection.get("symptom", "")
+            if route_id == "health" and source in {"system", "flatpak", "firmware"}:
+                self._open_update_diagnosis(source, run_id)
+                return
+            if route_id == "changes" and run_id:
+                self._open_action_center_run(run_id)
+                return
+            if route_id == "maintenance:updates" and source in {"system", "flatpak", "firmware"}:
+                self._open_update_source_context(source, run_id)
+                return
+            if route_id == "health" and symptom == "storage_full":
+                if self.switch_to_route("health"):
+                    entry = self._sidebar_index.get("utility_fix")
+                    if entry is not None:
+                        focus = getattr(self._real_widget_for_entry(entry), "focus_task", None)
+                        if callable(focus):
+                            focus(symptom)
+                return
+        if route_id == "software:apps" and isinstance(_preselection, dict) and _preselection.get("section") == "unused-runtimes":
+            self._open_apps_unused_runtimes(_preselection)
+            return
+        self.switch_to_route(route_id)
+
+    def _open_update_source_context(self: Any, source: str, run_id: str = "") -> None:
+        """Select a source and offer the exact saved run without starting work."""
+        if self.switch_to_route("maintenance:updates"):
+            entry = self._sidebar_index.get("utility_update")
+            if entry is not None:
+                self._real_widget_for_entry(entry).preselect_source(source, run_id)
+
     def _open_package_sources(self: Any) -> None:
         """Reveal the single source overview on the existing Apps route."""
         self._activate_destination("install")

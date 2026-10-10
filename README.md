@@ -31,7 +31,12 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
-The **32.6.0 Personal local candidate** adds broader RPM application discovery,
+The **32.7.0 Routine local candidate** adds installation comparisons, a Health
+storage guide, manual DNF5 restart advice, precise next-step navigation and saved
+profile comparisons. It uses existing reviewed cleanup and settings workflows.
+See [Routine verification](docs/ROUTINE_VERIFICATION.md).
+
+Its Personal baseline adds broader RPM application discovery,
 editable profile copies, a searchable local DNF source overview, and three
 reviewed KDE window controls. Native KDE links open default applications,
 autostart, and icon settings after checking their availability. See
@@ -85,6 +90,9 @@ loofi-fedora-tweaks --cli updates diagnose --source flatpak
 loofi-fedora-tweaks --cli tweaks profile library list
 loofi-fedora-tweaks --cli apps access app/org.mozilla.firefox/x86_64/stable --installation user
 loofi-fedora-tweaks --cli updates prepare-upgrade --target 44
+loofi-fedora-tweaks --cli apps compare org.mozilla.firefox
+loofi-fedora-tweaks --cli updates restart-advice
+loofi-fedora-tweaks --cli tweaks profile library compare focus privacy-basics
 ```
 
 Add `--json` before a command for machine-readable output.

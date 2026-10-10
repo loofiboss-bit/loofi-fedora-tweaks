@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the v32.6.0 "Personal" local candidate.
+> Active architecture reference for the v32.7.0 "Routine" local candidate.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -103,6 +103,25 @@ may need to be reopened before a setting is visible in an already open window.
   `PlatformProfile`. Unknown or unsupported profiles fail closed.
 
 ## Runtime layers
+
+Routine installation comparisons project the captured InstalledInventory and
+catalog-declared RPM counterparts without extra probes or inferred name matches.
+Exact Flatpak refs and installation scopes remain the removal and details keys.
+Saved profile comparisons are pure projections of two validated same-desktop
+library entries, not host snapshots or new apply authority.
+
+RestartAdviceService owns a bounded cache-only DNF5 query and strict exit-code/JSON
+validation shared by Updates, CLI and upgrade preparation. Its UI observation is
+manual and retained in memory only; unknown and stale results are explicit.
+Overview NextStepContext carries inert source, run and symptom identifiers through
+CareNavigationMixin. Links select existing destinations without collecting or
+executing work, and exact saved runs use Activity's existing missing-record handling.
+
+SpaceGuideService reads three public filesystem paths (root, home, var), grouping
+shared device observations without summing them, and existing reclaim probes.
+Unknown or incomplete sizes are preserved in bounded Health source facts. The UI
+reads saved evidence and hands cleanup requests to existing reviewed actions;
+journal size is not a reclaim estimate or new mutation capability.
 
 | Layer | Owns | Must not own |
 | --- | --- | --- |

@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+import os
 import subprocess
 from collections.abc import Callable
 
@@ -41,15 +42,27 @@ class ReclaimProbeService:
         )
 
     def _package_cache_bytes(self) -> int | None:
-        result = self._runner(["du", "-sb", "/var/cache/dnf", "/var/cache/libdnf5"], 10)
-        if result is None or result.returncode not in {0, 1}:
+        paths = []
+        for path in ("/var/cache/dnf", "/var/cache/libdnf5"):
+            try:
+                os.stat(path)
+            except FileNotFoundError:
+                continue
+            except OSError:
+                return None
+            paths.append(path)
+        if not paths:
+            return 0
+        result = self._runner(["du", "-sb", *paths], 10)
+        if result is None or result.returncode != 0:
             return None
-        sizes = []
+        sizes = {}
         for line in result.stdout.splitlines():
-            token = line.split(maxsplit=1)[0] if line.split() else ""
-            if token.isdigit():
-                sizes.append(int(token))
-        return sum(sizes) if sizes else None
+            fields = line.split(maxsplit=1)
+            if len(fields) != 2 or not fields[0].isdigit() or fields[1] not in paths or fields[1] in sizes:
+                return None
+            sizes[fields[1]] = int(fields[0])
+        return sum(sizes.values()) if set(sizes) == set(paths) else None
 
     def _journal_bytes(self) -> int | None:
         result = self._runner(["journalctl", "--disk-usage", "--no-pager"], 10)
@@ -60,12 +73,12 @@ class ReclaimProbeService:
 
 def _parse_human_size(text: str) -> int | None:
     match = re.search(
-        r"(\d+(?:\.\d+)?)\s*([KMGT]?)(?:i?B|bytes?)?\b",
+        r"(\d+(?:\.\d+)?)\s*([KMGT])(?:i?B)?\b|(\d+(?:\.\d+)?)\s*(?:B|bytes?)\b",
         str(text),
         re.IGNORECASE,
     )
     if not match:
         return None
-    value = float(match.group(1))
-    factor = {"": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}[match.group(2).upper()]
+    value = float(match.group(1) or match.group(3))
+    factor = {"": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}[(match.group(2) or "").upper()]
     return int(value * factor)

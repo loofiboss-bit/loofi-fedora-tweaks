@@ -49,6 +49,51 @@ class LibraryEntry:
                 "profile": self.profile.to_dict()}
 
 
+@dataclass(frozen=True)
+class ProfileDifference:
+    id: str
+    title: str
+    status: str
+    left_value: str | None
+    right_value: str | None
+    left_label: str | None
+    right_label: str | None
+
+    def to_dict(self) -> dict:
+        return {"id": self.id, "title": self.title, "status": self.status,
+                "left_value": self.left_value, "right_value": self.right_value,
+                "left_label": self.left_label, "right_label": self.right_label}
+
+
+@dataclass(frozen=True)
+class ProfileComparison:
+    left: LibraryEntry
+    right: LibraryEntry
+    entries: tuple[ProfileDifference, ...]
+
+    def to_dict(self) -> dict:
+        return {"schema": "loofi.tweak-profile-comparison/v1", "desktop": self.left.profile.desktop,
+                "left": self.left.to_dict(), "right": self.right.to_dict(),
+                "entries": [entry.to_dict() for entry in self.entries]}
+
+
+def compare_profiles(left: LibraryEntry, right: LibraryEntry) -> ProfileComparison:
+    """Compare saved targets exactly, without inspecting the current computer."""
+    if left.profile.desktop != right.profile.desktop:
+        raise ValueError("Choose two profiles for the same desktop.")
+    before, after = dict(left.profile.settings), dict(right.profile.settings)
+    rows = []
+    for key in sorted(before.keys() | after.keys()):
+        tweak = BY_ID.get(key)
+        choices = dict(tweak.choices) if tweak else {}
+        old, new = before.get(key), after.get(key)
+        status = "added" if key not in before else "removed" if key not in after else "unchanged" if old == new else "changed"
+        rows.append(ProfileDifference(key, tweak.title if tweak else key, status, old, new,
+                                      choices.get(old, old) if old is not None else None,
+                                      choices.get(new, new) if new is not None else None))
+    return ProfileComparison(left, right, tuple(rows))
+
+
 class ProfileLibrary:
     """Store validated user profiles by content identity, never by supplied paths."""
 
@@ -79,6 +124,13 @@ class ProfileLibrary:
                     continue
                 entries.append(LibraryEntry(path.stem, profile))
         return tuple(entries)
+
+    def compare(self, left_id: str, right_id: str, platform: object) -> ProfileComparison:
+        entries = {entry.id: entry for entry in self.list(platform)}
+        for entry_id in (left_id, right_id):
+            if entry_id not in entries:
+                raise ValueError(f"Library profile not found: {entry_id}")
+        return compare_profiles(entries[left_id], entries[right_id])
 
     def add(self, profile: TweakProfile) -> LibraryEntry:
         data = json.dumps(profile.to_dict(), sort_keys=True).encode("utf-8")

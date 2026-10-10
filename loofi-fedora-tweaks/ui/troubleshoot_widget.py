@@ -307,6 +307,15 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         self.result_summary.add_widget(self.sources_disclosure)
         layout.addWidget(self.result_summary)
 
+        from ui.space_guide import SpaceGuideCard
+
+        self.space_guide = SpaceGuideCard(self)
+        self.space_guide.actionRequested.connect(self.actionCenterRequested)
+        self.space_guide.routeRequested.connect(self.routeRequested)
+        self.space_guide.recheckRequested.connect(self._recheck_storage)
+        self.space_guide.hide()
+        layout.addWidget(self.space_guide)
+
         findings = Card(
             self.tr("Current findings"),
             self.tr("Select a finding to review its evidence and one safe next step."),
@@ -602,6 +611,10 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         persistence_reason_code: str,
     ) -> None:
         profile = require_profile(session.profile_id)
+        storage = next((result for result in session.source_results if result.source_id == "storage-reclaim"), None)
+        facts = storage.to_dict().get("facts", {}) if storage is not None else {}
+        guide = facts.get("space_guide") if session.profile_id == "storage_pressure" else None
+        self.space_guide.set_observation(guide if isinstance(guide, dict) else None)
         self._show_device_settings(profile.id)
         state_text, kind = SESSION_STATUS.get(
             session.state,
@@ -709,6 +722,10 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
             self.related_card.hide()
 
         self._render_comparison(comparison)
+
+    def _recheck_storage(self) -> None:
+        self._select_symptom_card("storage_full")
+        self.start_session()
 
     def _session_message(self, session: TroubleshootingSession) -> str:
         if session.state == "completed":

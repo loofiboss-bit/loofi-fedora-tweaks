@@ -68,6 +68,7 @@ class ProfileLibraryDialog(QDialog):
         self.setWindowTitle(self.tr("My profile library"))
         self.resize(720, 480)
         self.operation = "review"
+        self.library_entries = tuple(entries)
         layout = QVBoxLayout(self)
         label = QLabel(self.tr("Edit a copy of any profile and save a new version. Review exact settings before applying. Use Load profile to import a portable file."))
         label.setWordWrap(True)
@@ -75,7 +76,7 @@ class ProfileLibraryDialog(QDialog):
         self.entries = QListWidget()
         self.entries.setAccessibleName(self.tr("Built-in and personal profiles"))
         self.entries.setWordWrap(True)
-        for entry in entries:
+        for entry in self.library_entries:
             kind = self.tr("Built-in") if entry.builtin else self.tr("Personal")
             name = self.tr(entry.profile.name) if entry.builtin else entry.profile.name
             description = self.tr(entry.description) if entry.builtin else ""
@@ -87,14 +88,15 @@ class ProfileLibraryDialog(QDialog):
         actions = QHBoxLayout()
         self.review_button = QPushButton(self.tr("Review selected profile…"))
         self.edit_button = QPushButton(self.tr("Edit a copy…"))
+        self.compare_button = QPushButton(self.tr("Compare profiles…"))
         self.export_button = QPushButton(self.tr("Export…"))
         self.remove_button = QPushButton(self.tr("Remove from library"))
         cancel = QPushButton(self.tr("Cancel"))
         cancel.setDefault(True)
-        for button, operation in ((self.review_button, "review"), (self.edit_button, "edit"), (self.export_button, "export"), (self.remove_button, "remove")):
+        for button, operation in ((self.review_button, "review"), (self.edit_button, "edit"), (self.compare_button, "compare"), (self.export_button, "export"), (self.remove_button, "remove")):
             button.setAutoDefault(False)
             button.clicked.connect(lambda _checked=False, chosen=operation: self._choose(chosen))
-            (primary_actions if operation in ("review", "edit") else actions).addWidget(button)
+            (primary_actions if operation in ("review", "edit", "compare") else actions).addWidget(button)
         cancel.clicked.connect(self.reject)
         actions.addWidget(cancel)
         layout.addLayout(primary_actions)
@@ -110,6 +112,7 @@ class ProfileLibraryDialog(QDialog):
 
     def _selection_changed(self, _row: int = -1) -> None:
         entry = self.selected_entry()
+        self.compare_button.setEnabled(entry is not None and any(other.id != entry.id and other.profile.desktop == entry.profile.desktop for other in self.library_entries))
         self.review_button.setEnabled(entry is not None)
         self.edit_button.setEnabled(entry is not None)
         self.export_button.setEnabled(entry is not None)
@@ -178,6 +181,18 @@ class TweakProfilesMixin:
             return
         entry = dialog.selected_entry()
         if entry is None:
+            return
+        if dialog.operation == "compare":
+            from ui.tweak_profile_comparison import ProfileComparisonDialog
+
+            comparison = ProfileComparisonDialog(tuple(entries), entry, page)
+            if comparison.exec() != QDialog.DialogCode.Accepted or comparison.chosen_entry is None:
+                return
+            selected = comparison.chosen_entry
+            if comparison.operation == "edit":
+                self._start_tweak_profile_editor(page, selected.profile)
+            elif comparison.operation == "review":
+                self._review_library_profile(page, selected.profile, builtin=selected.builtin)
             return
         if dialog.operation == "review":
             self._review_library_profile(page, entry.profile, builtin=entry.builtin)

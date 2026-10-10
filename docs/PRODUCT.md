@@ -173,6 +173,32 @@ distances to screen borders and other windows. Saved-value readback and KWin
 session activation retain separate results. Default applications in Apps and
 autostart/icon settings in Tweaks use checked native KDE handoffs.
 
+## Routine application and maintenance workflows
+
+Apps can compare captured installations of the same Flatpak ID and explicit RPM
+counterparts for six catalog applications. Each installation, architecture and
+branch stays separate. Similar names never establish equivalence, and comparison
+does not recommend uninstalling an application or predict recovered disk space.
+
+Health's storage guide shows root, home and var measurements, grouped where they
+share a device, together with available DNF cache and journal sizes. Failed or
+partial reads are unknown. DNF cleanup requires its existing Action Center review;
+Flatpak runtime inspection opens Apps with the chosen user/system installation.
+Named installations remain available in Apps. Journal cleanup remains manual
+guidance. Check again starts a new explicit storage-symptom session.
+
+Updates offers a manual local DNF5 restart recommendation with timestamp and
+reported packages. The observation stays in this application session, becomes
+stale after the existing freshness interval, and never restarts the computer.
+An unsupported backend, missing tool or inconsistent response remains unknown.
+Overview's suggestions select exact saved operations, update sources or the
+storage symptom without running checks on navigation.
+
+The profile library compares two saved profiles for the same desktop, showing
+added, removed, changed and unchanged target values. It never reads live computer
+settings. Unknown values remain exact. Editing a copy and applying through a
+fresh existing review are separate actions; the portable profile format is unchanged.
+
 ## Preferences and status
 
 The Loofi release check is off by default and can be enabled in Settings. When

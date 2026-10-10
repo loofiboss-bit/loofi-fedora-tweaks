@@ -371,7 +371,7 @@ class DashboardService:
                 result["activity"] = {"status": latest_run.state, "detail": latest_run.action_id,
                                       "sampled_at": latest_run.completed_at or latest_run.updated_at,
                                       "verified": bool((latest_run.verification_result or {}).get("success", False)),
-                                      "runs": tuple({"status": run.state, "action_id": run.action_id,
+                                      "runs": tuple({"status": run.state, "action_id": run.action_id, "run_id": run.run_id,
                                                      "sampled_at": run.completed_at or run.updated_at}
                                                     for run in runs)}
             else:

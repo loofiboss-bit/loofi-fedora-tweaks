@@ -217,6 +217,8 @@ def _handle_profile(args: Any, json_output: bool, output_json: Callable[[Any], N
             payload: dict[str, Any]
             if library_action == "list":
                 payload = {"schema": "loofi.tweak-library/v1", "profiles": [entry.to_dict() for entry in library.list(profile)]}
+            elif library_action == "compare":
+                payload = library.compare(args.left_id, args.right_id, profile).to_dict()
             elif library_action == "add":
                 imported = load_profile(Path(args.path))
                 payload = {"schema": "loofi.tweak-library/v1", "saved": not dry_run, "profile": imported.to_dict()}
@@ -229,6 +231,13 @@ def _handle_profile(args: Any, json_output: bool, output_json: Callable[[Any], N
                 payload = {"schema": "loofi.tweak-library/v1", "removed": not dry_run, "id": args.profile_id}
             if json_output:
                 output_json(payload)
+            elif library_action == "compare":
+                print_fn(f"Saved profiles: {payload['left']['profile']['name']} -> {payload['right']['profile']['name']} [{payload['desktop']}]")
+                print_fn("Comparison of saved targets; current computer settings were not inspected.")
+                for difference in payload["entries"]:
+                    left = difference["left_label"] if difference["left_value"] is not None else "(absent)"
+                    right = difference["right_label"] if difference["right_value"] is not None else "(absent)"
+                    print_fn(f"{difference['title']} ({difference['id']}): {left} -> {right} [{difference['status']}]")
             elif library_action == "list":
                 for library_entry in payload["profiles"]:
                     print_fn(f"{library_entry['id']}: {library_entry['profile']['name']} [{library_entry['profile']['desktop']}] {'built-in' if library_entry['builtin'] else 'custom'}")

@@ -43,6 +43,29 @@ def handle_apps(
                     print_fn(error)
             return 1 if inventory.errors else 0
 
+    if action == "compare":
+        from services.software.app_comparison import compare_installations
+        try:
+            comparison_report = compare_installations(InstalledApplicationService().snapshot(), args.app_id, catalog=catalog)
+        except ValueError as exc:
+            if json_output:
+                output_json({"available": False, "error": str(exc)})
+            else:
+                print_fn(str(exc))
+            return 1
+        if json_output:
+            output_json(comparison_report.to_dict())
+        else:
+            print_fn(f"Installations for {comparison_report.app_id}")
+            for compared_app in comparison_report.installations:
+                print_fn(f"{compared_app.source} · {compared_app.version or 'Not reported'} · {compared_app.installation} · {compared_app.ref} · {compared_app.size or 'Not reported'}")
+            for error in comparison_report.errors:
+                print_fn(error)
+            if not comparison_report.installations:
+                print_fn("No matching installations were found in the captured inventory.")
+            print_fn("Reported sizes do not predict space freed by removal.")
+        return 1 if comparison_report.errors or not comparison_report.installations else 0
+
     if action == "access":
         from services.software.flatpak_access import FlatpakAccessService
         report = FlatpakAccessService().inspect(args.ref, args.installation)

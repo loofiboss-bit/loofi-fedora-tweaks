@@ -551,21 +551,15 @@ class DefaultEvidenceCollector:
         session: TroubleshootingSession,
         started_at: float,
     ) -> SourceEvidence:
-        from services.hardware.disk import DiskManager
-        from services.storage.reclaim import ReclaimProbeService
+        from services.storage.space_guide import SpaceGuideService
 
-        usage = DiskManager.get_disk_usage("/")
-        analysis = ReclaimProbeService().analyze()
-        known_bytes = [
-            int(category.estimated_bytes)
-            for category in analysis.categories
-            if category.estimated_bytes is not None
-        ]
-        usage_percent = float(getattr(usage, "percent_used", 0.0) or 0.0)
+        guide = SpaceGuideService(clock=self.clock).collect()
+        root = next((row for row in guide.filesystems if "/" in row.paths), None)
+        usage_percent = root.percent_used if root else None
         facts = {
             "root_usage_percent": usage_percent,
-            "known_reclaim_bytes": sum(known_bytes),
-            "measured_category_count": len(known_bytes),
+            "known_reclaim_bytes": guide.package_cache_bytes,
+            "space_guide": guide.to_dict(),
         }
         findings = (
             self._finding(
@@ -583,8 +577,14 @@ class DefaultEvidenceCollector:
                     reason_code="review-storage-reclaim",
                 ),
             ),
-        ) if usage_percent >= 85.0 else ()
-        return self._completed("storage-reclaim", session, started_at, facts, findings)
+        ) if usage_percent is not None and usage_percent >= 85.0 else ()
+        return adapt_structured_source(
+            profile_id=session.profile_id, variant=session.variant, source_id="storage-reclaim",
+            state="partial" if guide.partial else "completed" if findings else "empty",
+            started_at=started_at, completed_at=self.clock(), facts=facts, findings=findings,
+            reason_code="storage-observations-incomplete" if guide.partial else "",
+            message="Some storage measurements are unavailable." if guide.partial else "",
+        )
 
     def _boot_analysis(
         self,

@@ -206,6 +206,7 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             )
             update_page.diagnosisRequested.connect(self._open_update_diagnosis)
             update_page.sourcesRequested.connect(self._open_package_sources)
+            update_page.recordRequested.connect(self._open_action_center_run)
             self._restore_saved_updates(update_page)
             return cast(QWidget, update_page)
         raise ValueError(f"Unknown utility workflow destination: {destination_id}")

@@ -214,7 +214,7 @@ class TestDashboardService(unittest.TestCase):
     def test_maintenance_reads_only_saved_observations(self, run, actions, health, updates):
         updates.return_value.load.return_value = SimpleNamespace(storage_status="ok", sources=(SimpleNamespace(source="system", status="available", items=("pkg",), checked_at="2026-10-06T12:00:00+00:00", stale=False),))
         health.return_value.load_read_only.return_value = [SimpleNamespace(timestamp=100, daily_maintenance={"system_check": {"state": "partial", "findings": [{"id": "disk"}]}}, collection_errors=["unreadable"])]
-        actions.return_value.list_read_only.return_value = [SimpleNamespace(updated_at=101, completed_at=101, action_id="set-tweak", state="failed", verification_result={"success": False})]
+        actions.return_value.list_read_only.return_value = [SimpleNamespace(run_id="saved-tweak-run", updated_at=101, completed_at=101, action_id="set-tweak", state="failed", verification_result={"success": False})]
         result = self.service._maintenance()
         self.assertEqual(result["updates"]["sources"][0]["count"], 1)
         self.assertEqual(result["health"]["status"], "partial")
@@ -223,6 +223,7 @@ class TestDashboardService(unittest.TestCase):
         self.assertEqual(result["activity"]["status"], "failed")
         self.assertFalse(result["activity"]["verified"])
         self.assertEqual(result["activity"]["runs"][0]["action_id"], "set-tweak")
+        self.assertEqual(result["activity"]["runs"][0]["run_id"], "saved-tweak-run")
         updates.return_value.load.assert_called_once_with()
         updates.return_value.check.assert_not_called()
         health.return_value.load_read_only.assert_called_once_with()

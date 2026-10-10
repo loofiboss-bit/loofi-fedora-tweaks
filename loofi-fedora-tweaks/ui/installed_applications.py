@@ -5,6 +5,7 @@ from PyQt6.QtCore import pyqtSignal
 from PyQt6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QPushButton, QLayout, QVBoxLayout
 
 from core.catalog_models import NativeHandoffId
+from services.software.app_comparison import compare_installations, comparison_id
 from services.software.installed_applications import InstalledApplication, InstalledInventory, filter_installed_applications
 from ui.components import Card, DetailsDisclosure
 from ui.operation_worker import OperationControllerQtAdapter
@@ -172,6 +173,7 @@ class InstalledApplicationsCard(Card):
         size_notice = QLabel(self.tr("Reported installation sizes include shared Flatpak objects and do not predict space freed by removal. Unknown sizes are listed last."))
         size_notice.setWordWrap(True)
         self.add_widget(size_notice)
+        self._comparison_dialogs = []
         self._rows = []
         self._application_rows: list[tuple[InstalledApplication, _InstalledApplicationRow]] = []
         self._search_query = ""
@@ -201,6 +203,7 @@ class InstalledApplicationsCard(Card):
         return self._adapter.busy or self._permissions_adapter.busy or self.insights.busy
 
     def request_stop(self):
+        self._close_comparison_dialogs()
         self._permission_generation += 1
         self._pending_permission_request = None
         self._close_permission_dialogs()
@@ -237,6 +240,7 @@ class InstalledApplicationsCard(Card):
         if not isinstance(inventory, InstalledInventory):
             self._failed("")
             return
+        self._close_comparison_dialogs()
         self.inventory = inventory
         self.insights.set_installations(app.installation for app in inventory.applications if app.source == "flatpak")
         previous_installation = self.installation_filter.currentData()
@@ -262,6 +266,11 @@ class InstalledApplicationsCard(Card):
             details = DetailsDisclosure(summary=self.tr("Show installation details"))
             details.set_details(self.tr("Application ID: %1\nReference: %2\nSource: %3\nInstallation: %4\nSize: %5").replace("%1", app.app_id).replace("%2", app.ref).replace("%3", source_label).replace("%4", app.installation).replace("%5", app.size or self.tr("Not reported")))
             row.add_widget(details)
+            app_id = comparison_id(app)
+            if app_id and len(compare_installations(inventory, app_id).installations) > 1:
+                compare = QPushButton(self.tr("Compare installations"))
+                compare.clicked.connect(lambda _checked=False, identifier=app_id: self.show_comparison(identifier))
+                row.add_widget(compare)
             if app.source == "flatpak":
                 app_details = QPushButton(self.tr("App details"))
                 app_details.clicked.connect(lambda _checked=False, item=app: self.show_details(item))
@@ -309,6 +318,21 @@ class InstalledApplicationsCard(Card):
             self.search_summary.setText(self.tr("No installed applications match this search."))
         else:
             self.search_summary.setText(self.tr("Showing %1 of %2 installed applications.").replace("%1", str(matches)).replace("%2", str(len(self._application_rows))))
+
+    def _close_comparison_dialogs(self):
+        for dialog in tuple(self._comparison_dialogs):
+            dialog.close()
+        self._comparison_dialogs.clear()
+
+    def show_comparison(self, app_id: str):
+        from ui.app_comparison import ApplicationComparisonDialog
+        dialog = ApplicationComparisonDialog(compare_installations(self.inventory, app_id), self)
+        dialog.detailsRequested.connect(self.show_details)
+        dialog.removalRequested.connect(lambda app: self.actionReviewRequested.emit("remove-installed-flatpak", {"ref": app.ref, "installation": app.installation}))
+        dialog.softwareManagerRequested.connect(self.open_software_manager)
+        self._comparison_dialogs.append(dialog)
+        dialog.finished.connect(lambda _result: self._comparison_dialogs.remove(dialog) if dialog in self._comparison_dialogs else None)
+        dialog.open()
 
     def show_details(self, app: InstalledApplication):
         if self.service is None or app.source != "flatpak":

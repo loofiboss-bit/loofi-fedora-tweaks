@@ -20,6 +20,7 @@ class UpdateWorkflowPage(QWidget):
     sourceActionRequested = pyqtSignal(str, str)
     diagnosisRequested = pyqtSignal(str, str)
     sourcesRequested = pyqtSignal()
+    recordRequested = pyqtSignal(str)
     stopped = pyqtSignal()
 
     def __init__(
@@ -57,6 +58,11 @@ class UpdateWorkflowPage(QWidget):
         self.state_notice.setObjectName("updateWorkflowState")
         self.state_notice.hide()
         self.scaffold.add_widget(self.state_notice)
+        self._selected_run_id = ""
+        self.record_button = QuietButton(self.tr("Open recorded operation"), description=self.tr("Read the exact operation in Activity without repeating it."))
+        self.record_button.clicked.connect(lambda: self.recordRequested.emit(self._selected_run_id))
+        self.record_button.hide()
+        self.scaffold.add_widget(self.record_button)
         self.source_grid = AdaptiveGrid(min_column_width=250, column_breakpoints=((820, 3),))
         self.source_grid.setObjectName("updateSourceGrid")
         self.scaffold.add_widget(self.source_grid)
@@ -65,6 +71,11 @@ class UpdateWorkflowPage(QWidget):
         self._diagnose_buttons: dict[str, QuietButton] = {}
         for source in UPDATE_SOURCES:
             self._add_source_card(source)
+        from ui.restart_advice import RestartAdviceCard
+
+        self.restart_advice = RestartAdviceCard(parent=self)
+        self.restart_advice.stopped.connect(self._notify_stopped)
+        self.scaffold.add_widget(self.restart_advice)
         from ui.upgrade_preparation import UpgradePreparationCard
 
         self.preparation = UpgradePreparationCard(parent=self)
@@ -72,6 +83,17 @@ class UpdateWorkflowPage(QWidget):
         self.scaffold.add_widget(self.preparation)
         self.scaffold.content_layout.addStretch()
         self._render_state()
+
+    def preselect_source(self, source: str, run_id: str = "") -> bool:
+        if source not in self._cards:
+            return False
+        self._selected_run_id = run_id
+        self.record_button.setVisible(bool(run_id))
+        if run_id:
+            self.state_notice.set_notice("info", self.tr("Recorded operation"), self.tr("Source: %1 · Run: %2").replace("%1", source).replace("%2", run_id))
+            self.state_notice.show()
+        self._cards[source][3].setFocus()
+        return True
 
     def _add_source_card(self, source: str) -> None:
         labels = {
@@ -338,7 +360,7 @@ class UpdateWorkflowPage(QWidget):
     @property
     def busy(self) -> bool:
         # Keep the source check owned until its terminal GUI callback arrives.
-        return self._check_worker is not None or self.preparation.busy
+        return self._check_worker is not None or self.preparation.busy or self.restart_advice.busy
 
     def _notify_stopped(self) -> None:
         if not self.busy:
@@ -347,20 +369,22 @@ class UpdateWorkflowPage(QWidget):
     def request_stop(self) -> None:
         self.cancel_check()
         self.preparation.request_stop()
+        self.restart_advice.request_stop()
 
     def cleanup(self, timeout_ms: int = 1000) -> bool:
         """Retain a source worker when it cannot finish within the wait budget."""
         self.request_stop()
         preparation_stopped = self.preparation.cleanup(timeout_ms)
+        restart_stopped = self.restart_advice.cleanup(timeout_ms)
         worker = self._check_worker
         if worker is None:
-            return preparation_stopped
+            return preparation_stopped and restart_stopped
         if worker.isRunning() and not worker.wait(timeout_ms):
             return False
         self._check_worker = None
         self._checking_source = None
         self._notify_stopped()
-        return preparation_stopped
+        return preparation_stopped and restart_stopped
 
     def _request_source(self, source: str) -> None:
         cta = update_cta(self.state.source(source))

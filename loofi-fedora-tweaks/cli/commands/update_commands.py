@@ -76,6 +76,22 @@ def handle_self_update(args, json_output, output_json, print_fn, system_manager_
 
 def handle_updates(args, json_output, output_json, print_fn, run_operation, update_manager_cls):
     """Handle smart updates subcommand."""
+    if args.action == "restart-advice":
+        from services.software.restart_advice import RestartAdviceService
+
+        advice = RestartAdviceService().check()
+        if json_output:
+            output_json(advice.to_dict())
+        else:
+            labels = {"required": "Restart recommended", "not_required": "No restart recommended", "unknown": "Restart advice unknown"}
+            print_fn(labels[advice.state])
+            print_fn(f"Checked: {advice.checked_at}")
+            if advice.packages:
+                print_fn(f"Packages updated since boot: {', '.join(advice.packages)}")
+            if advice.state == "unknown":
+                print_fn(f"Check detail: {advice.reason}")
+        return 0 if advice.state != "unknown" else 1
+
     if args.action == "sources":
         from services.software.source_status import SoftwareSourceStatusService
 

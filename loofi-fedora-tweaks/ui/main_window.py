@@ -558,19 +558,15 @@ class MainWindow(
         route_request = getattr(widget, "routeRequested", None)
         if route_request is not None and hasattr(route_request, "connect"):
             route_request.connect(self._open_route_request)
+        context_request = getattr(widget, "contextRouteRequested", None)
+        if context_request is not None:
+            context_request.connect(self._open_route_request)
         task_request = getattr(widget, "taskRequested", None)
         if task_request is not None and hasattr(task_request, "connect"):
             task_request.connect(self._open_overview_task)
         if plugin_id in {"overview", "atlas_dashboard"}:
             self._schedule_post_render_services()
         return widget
-
-    def _open_route_request(self, route_id: str, _preselection=None) -> None:
-        """Navigate through the canonical manifest; metadata remains inert."""
-        if route_id == "software:apps" and isinstance(_preselection, dict) and _preselection.get("section") == "unused-runtimes":
-            self._open_apps_unused_runtimes(_preselection)
-            return
-        self.switch_to_route(route_id)
 
     def _open_action_center_run(self, run_id: str) -> None:
         """Open a persisted maintenance run without creating or executing work."""

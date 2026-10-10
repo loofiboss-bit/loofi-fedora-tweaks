@@ -3,7 +3,21 @@
 Direction is set by the [product definition](docs/PRODUCT.md). Completed work
 is recorded in the [changelog](CHANGELOG.md).
 
-## Local candidate — v32.6.0 "Personal"
+## Local candidate — v32.7.0 "Routine"
+
+Build on Personal with clearer application and maintenance decisions.
+
+- Compare exact installed Flatpak identities and six explicitly mapped RPM counterparts
+- Review filesystem use, DNF cache and journal measurements in the Health storage guide
+- Manually inspect session-only DNF5 restart advice from Updates
+- Follow Overview suggestions to the exact source, operation or storage symptom
+- Compare saved same-desktop profiles before editing a copy or starting a fresh review
+
+Qualification is recorded in [Routine verification](docs/ROUTINE_VERIFICATION.md).
+No installation or publication is implied; physical desktop and assistive-technology
+checks remain separate from automated and rendering checks.
+
+## Included baseline — v32.6.0 "Personal"
 
 Build on Companion with KDE/DNF-first everyday application and profile workflows.
 
