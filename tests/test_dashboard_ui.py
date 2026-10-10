@@ -108,12 +108,15 @@ class TestDashboardUi(unittest.TestCase):
         self.assertEqual(len(page._next_step_rows), 3)
         routes = []
         page.routeRequested.connect(routes.append)
+        contexts = []
+        page.contextRouteRequested.connect(lambda route, context: (routes.append(route), contexts.append(context)))
         rows = list(page._next_step_rows)
         for row in rows:
             button = row.layout().itemAt(2).widget()
             self.assertTrue(button.accessibleName())
             button.click()
         self.assertEqual(routes, ["maintenance:updates", "health", "maintenance:updates"])
+        self.assertEqual(contexts, [{"update_source": "system"}])
         page.set_snapshot(sample)
         self.assertEqual(page._next_step_rows, rows)
         sample.maintenance["activity"]["sampled_at"] += timedelta(seconds=5)

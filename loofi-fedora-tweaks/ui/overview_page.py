@@ -237,6 +237,7 @@ def _format_time(value):
 
 class OverviewPage(QWidget, PluginInterface):
     routeRequested = pyqtSignal(str)
+    contextRouteRequested = pyqtSignal(str, object)
     taskRequested = pyqtSignal(str)
     refreshRequested = pyqtSignal()
 
@@ -507,7 +508,7 @@ class OverviewPage(QWidget, PluginInterface):
             return
         previous = self._last_next_steps or ()
         self._last_next_steps = suggestions
-        if [(step.id, step.route) for step in suggestions] == [(step.id, step.route) for step in previous]:
+        if [(step.id, step.route, step.context) for step in suggestions] == [(step.id, step.route, step.context) for step in previous]:
             for row, step in zip(self._next_step_rows, suggestions):
                 detail = self.tr(step.reason)
                 if step.sampled_at is not None:
@@ -538,12 +539,19 @@ class OverviewPage(QWidget, PluginInterface):
             reason.setTextFormat(Qt.TextFormat.PlainText)
             reason.setObjectName("cardDescription")
             button = QuietButton(self.tr(step.button), description=detail)
-            button.clicked.connect(lambda checked=False, destination=step.route: self.routeRequested.emit(destination))
+            context = step.context.to_dict() if step.context is not None else {}
+            button.clicked.connect(lambda checked=False, destination=step.route, preselection=context: self._request_next_step(destination, preselection))
             layout.addWidget(label)
             layout.addWidget(reason)
             layout.addWidget(button)
             self.next_steps_card.add_widget(row)
             self._next_step_rows.append(row)
+
+    def _request_next_step(self, route: str, context: dict) -> None:
+        if context:
+            self.contextRouteRequested.emit(route, context)
+        else:
+            self.routeRequested.emit(route)
 
     def set_maintenance(self, updates=None, health=None, activity=None):
         """Present caller-supplied real cached results; never initiate checks."""

@@ -491,3 +491,40 @@ Pointer size resets to Loofi's standard of 24. Theme controls have no Loofi
 reset standard. A previous theme can be restored only while it remains installed.
 Supported custom sizes from 0 to 512 are preserved exactly for readback and
 history-based restoration; they are not offered as arbitrary new settings.
+
+## Routine application and maintenance workflows
+
+In Apps, open the Installed view and choose **Compare installations** on an app
+with multiple known installations. Compare versions, format, installation scope
+and reported sizes. App details and reviewed removal act on the exact selected
+Flatpak installation and full ref. RPM management stays in the native software
+manager. A matching name alone does not establish equivalence.
+
+In Health, choose **Storage is full** and run the read-only check. Its storage
+guide shows root, home and var measurements, cache and journal sizes, and unknown
+measurements explicitly. Shared filesystem measurements are grouped rather than
+summed. Review DNF cleanup separately, or choose a Flatpak installation and open
+Apps to inspect unused runtimes. Journal retention remains manual guidance.
+Reported sizes are not guaranteed savings. After a change, choose **Check again**.
+
+In Updates, choose **Check restart advice** to read the local DNF5 recommendation.
+Missing support or an inconsistent response stays unknown. Advice is held only
+while this application runs and becomes stale after 24 hours. It does not restart
+the computer or verify a saved Loofi update. Overview links select the relevant
+source, saved operation or storage symptom; navigation never starts a check.
+
+In the profile library, choose **Compare profiles**, then select the left and
+right profiles for the same desktop. Differences describe saved target values,
+not current computer settings. Edit a copy or start a fresh apply review for
+either side through its separate button.
+
+Read-only command-line counterparts:
+
+```bash
+loofi-fedora-tweaks --cli --json apps compare org.mozilla.firefox
+loofi-fedora-tweaks --cli --json updates restart-advice
+loofi-fedora-tweaks --cli --json tweaks profile library compare focus privacy-basics
+```
+
+See [Routine qualification](ROUTINE_VERIFICATION.md) for verified and remaining
+physical checks.

@@ -12,7 +12,7 @@ def register_host_commands(subparsers: Subparsers) -> None:
     updates_parser = subparsers.add_parser("updates", help="Inspect Fedora update sources")
     updates_parser.add_argument(
         "action",
-        choices=["check", "conflicts", "history", "diagnose", "prepare-upgrade", "sources"],
+        choices=["check", "conflicts", "history", "diagnose", "prepare-upgrade", "sources", "restart-advice"],
         help="Read-only update query to perform",
     )
 

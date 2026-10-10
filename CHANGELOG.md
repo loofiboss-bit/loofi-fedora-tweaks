@@ -1,5 +1,14 @@
 # Changelog
 
+## [32.7.0] - Unreleased - "Routine"
+
+- Compare captured installations using exact Flatpak IDs and explicit RPM counterparts for Firefox, Thunderbird, VLC, GIMP, Inkscape and Kdenlive; retain installation, architecture, branch and partial source evidence.
+- Add a Health storage guide with grouped filesystem measurements, complete DNF cache measurements, journal size and links to existing reviewed cleanup owners.
+- Preserve unknown storage measurements instead of reporting healthy zeroes; exclude journal size from cleanup savings claims.
+- Share strict local DNF5 restart observations between upgrade preparation, Updates and the CLI; checks are manual, cancellable and held only in session memory.
+- Carry exact operation/source/symptom context from Overview without starting checks or changes.
+- Compare saved profiles in the library and CLI, preserving unknown targets and the existing portable format; editing and applying remain separate explicit actions.
+
 ## [32.6.0] - Unreleased - "Personal"
 
 - Discover visible RPM-owned desktop applications outside the curated catalog, grouping launchers and installed package architectures without running desktop commands.

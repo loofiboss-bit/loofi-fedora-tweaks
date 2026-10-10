@@ -134,6 +134,11 @@ class InstalledApplicationService:
             unknown.add("fedora")
         else:
             records = {item.package_id: item for item in rpms}
+            for item in self.catalog.all():
+                if item.source != "flatpak":
+                    continue
+                for package in item.metadata.get("rpm_counterparts", ()):
+                    records[package] = item
             try:
                 installed: dict[str, list[tuple[str, int]]] = {}
                 for line in result.stdout.splitlines():

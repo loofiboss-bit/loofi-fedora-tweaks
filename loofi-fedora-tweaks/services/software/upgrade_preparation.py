@@ -1,8 +1,6 @@
 """Bounded local observations for a manual Fedora release upgrade."""
 from __future__ import annotations
 
-import json
-import re
 import shutil
 import time
 from dataclasses import asdict, dataclass
@@ -18,6 +16,7 @@ from core.fedora_release_policy import FEDORA_RELEASE_POLICY, FedoraReleasePolic
 from core.platform.profile import DeploymentBackend, PlatformProfile
 from services.software.update_overview import OverviewCancelled, OverviewRuntime
 from services.software.source_status import _parse_dnf_repositories, _source_state
+from services.software.restart_advice import RESTART_QUERY, parse_restart_result
 
 UPGRADE_DOCUMENTATION = "https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/"
 ATOMIC_DOCUMENTATION = "https://fedoraproject.org/atomic-desktops/"
@@ -138,22 +137,8 @@ class UpgradePreparationService:
                                "known_sources": known, "reason": "local_configuration_only"}
                 except (ValueError, TypeError):
                     sources = {"state": "unknown", "reason": "invalid_response"}
-            result = query(("dnf5", "--cacheonly", "needs-restarting", "--json"))
-            reboot = {"state": "unknown", "reason": "tool_unavailable_or_probe_failed", "packages": []}
-            if result and result.exit_code in (0, 1):
-                try:
-                    rows = json.loads(result.stdout)
-                    if not isinstance(rows, list) or len(rows) != 1 or not isinstance(rows[0], dict):
-                        raise ValueError("Invalid reboot response")
-                    row = rows[0]
-                    required, packages = row.get("reboot_required"), row.get("packages")
-                    if row.get("type") != "reboot" or type(required) is not bool or required != (result.exit_code == 1):
-                        raise ValueError("Inconsistent reboot response")
-                    if not isinstance(packages, list) or len(packages) > 500 or any(not isinstance(p, str) or not re.fullmatch(r"[A-Za-z0-9_.+:-]{1,256}", p) for p in packages):
-                        raise ValueError("Invalid package names")
-                    reboot = {"state": "required" if required else "not_required", "packages": packages, "reason": "dnf5_local_hint"}
-                except (ValueError, TypeError):
-                    reboot = {"state": "unknown", "reason": "invalid_response", "packages": []}
+            advice = parse_restart_result(query(RESTART_QUERY))
+            reboot = {"state": advice.state, "reason": advice.reason, "packages": list(advice.packages)}
         if self._cancelled.is_set():
             raise OverviewCancelled()
         partial = any(item["state"] == "unknown" for item in (database, sources, reboot)) or any(disk["state"] == "unknown" for disk in disks)

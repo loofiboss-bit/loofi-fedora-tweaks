@@ -194,14 +194,14 @@ def _default_applications() -> tuple[ApplicationRecord, ...]:
     """
 
     return (
-        ApplicationRecord("firefox", "Firefox", "Private, standards-based web browser.", "Browser", "flatpak", "org.mozilla.firefox", keywords=("web", "browser")),
+        ApplicationRecord("firefox", "Firefox", "Private, standards-based web browser.", "Browser", "flatpak", "org.mozilla.firefox", keywords=("web", "browser"), metadata={"rpm_counterparts": ("firefox",)}),
         ApplicationRecord("chromium", "Chromium", "Open-source Chromium browser for web testing.", "Browser", "flatpak", "org.chromium.Chromium", keywords=("web", "browser")),
-        ApplicationRecord("vlc", "VLC", "Versatile media player with broad codec support.", "Media", "flatpak", "org.videolan.VLC", keywords=("video", "audio", "player")),
-        ApplicationRecord("kdenlive", "Kdenlive", "Non-linear video editor for Fedora desktops.", "Media", "flatpak", "org.kde.kdenlive", keywords=("video", "editor")),
-        ApplicationRecord("gimp", "GIMP", "Image editor for photographs and graphics.", "Graphics", "flatpak", "org.gimp.GIMP", keywords=("image", "graphics", "photo")),
-        ApplicationRecord("inkscape", "Inkscape", "Vector graphics editor for illustrations and diagrams.", "Graphics", "flatpak", "org.inkscape.Inkscape", keywords=("vector", "design")),
+        ApplicationRecord("vlc", "VLC", "Versatile media player with broad codec support.", "Media", "flatpak", "org.videolan.VLC", keywords=("video", "audio", "player"), metadata={"rpm_counterparts": ("vlc",)}),
+        ApplicationRecord("kdenlive", "Kdenlive", "Non-linear video editor for Fedora desktops.", "Media", "flatpak", "org.kde.kdenlive", keywords=("video", "editor"), metadata={"rpm_counterparts": ("kdenlive",)}),
+        ApplicationRecord("gimp", "GIMP", "Image editor for photographs and graphics.", "Graphics", "flatpak", "org.gimp.GIMP", keywords=("image", "graphics", "photo"), metadata={"rpm_counterparts": ("gimp",)}),
+        ApplicationRecord("inkscape", "Inkscape", "Vector graphics editor for illustrations and diagrams.", "Graphics", "flatpak", "org.inkscape.Inkscape", keywords=("vector", "design"), metadata={"rpm_counterparts": ("inkscape",)}),
         ApplicationRecord("libreoffice", "LibreOffice", "Full office suite for documents, spreadsheets, and presentations.", "Office", "flatpak", "org.libreoffice.LibreOffice", keywords=("documents", "office", "spreadsheet")),
-        ApplicationRecord("thunderbird", "Thunderbird", "Email and calendar client from Mozilla.", "Communication", "flatpak", "org.mozilla.Thunderbird", keywords=("email", "mail", "calendar")),
+        ApplicationRecord("thunderbird", "Thunderbird", "Email and calendar client from Mozilla.", "Communication", "flatpak", "org.mozilla.Thunderbird", keywords=("email", "mail", "calendar"), metadata={"rpm_counterparts": ("thunderbird",)}),
         ApplicationRecord("signal", "Signal", "Private messaging client with end-to-end encryption.", "Communication", "flatpak", "org.signal.Signal", keywords=("chat", "messaging", "privacy")),
         ApplicationRecord("keepassxc", "KeePassXC", "Local password manager with encrypted vaults.", "Security", "flatpak", "org.keepassxc.KeePassXC", keywords=("password", "security")),
         ApplicationRecord("code", "Visual Studio Code", "Extensible editor for software development.", "Development", "flatpak", "com.visualstudio.code", keywords=("editor", "development", "programming")),

@@ -60,11 +60,14 @@ def register_tweaks_command(subparsers: Subparsers) -> None:
 
     library_p = profile_sub.add_parser("library", help="Manage built-in and personal profiles")
     library_sub = library_p.add_subparsers(dest="library_action", required=True)
-    for operation in ("list", "add", "remove"):
+    for operation in ("list", "add", "remove", "compare"):
         library_op = library_sub.add_parser(operation, help=f"{operation.capitalize()} local profiles")
         library_op.add_argument("--json", action="store_true", default=argparse.SUPPRESS)
         if operation == "add":
             library_op.add_argument("path", help="Portable profile JSON file")
+        elif operation == "compare":
+            library_op.add_argument("left_id", help="Left library profile identifier")
+            library_op.add_argument("right_id", help="Right library profile identifier")
         elif operation == "remove":
             library_op.add_argument("profile_id", help="Custom library profile identifier")
 
