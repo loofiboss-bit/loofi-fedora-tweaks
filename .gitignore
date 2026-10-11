@@ -65,6 +65,7 @@ Thumbs.db
 
 # Test output artifacts
 test-results.xml
+test-results/e2e/
 test_output.txt
 
 # Claude Code temp directories

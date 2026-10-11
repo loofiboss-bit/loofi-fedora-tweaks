@@ -78,6 +78,19 @@ test-ci:
         --cov-fail-under={{coverage_min}} \
         --junitxml=test-results.xml
 
+# Build the current RPM and run native KDE/AT-SPI workflows in the isolated
+# Fedora VM. Host prerequisites are checked before any build or VM operation.
+test-full:
+    python3 -m e2e.vm test-full
+
+# Read-only prerequisite check for the local VM runner.
+test-full-preflight:
+    python3 -m e2e.vm preflight
+
+# Remove only the owned E2E guest and its generated disk/state files.
+test-full-reset:
+    python3 -m e2e.vm reset
+
 # ============================================================
 #  Code Quality
 # ============================================================

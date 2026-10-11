@@ -5,9 +5,10 @@ VERSION=$(python3 -c "exec(open('loofi-fedora-tweaks/version.py').read()); print
 
 echo "Building RPM for loofi-fedora-tweaks v${VERSION}"
 
-# Setup build directories in /tmp to avoid spaces in path
-BUILD_DIR="/tmp/loofi-fedora-tweaks-build"
-rm -rf "$BUILD_DIR"
+# Use a unique temporary build root so parallel builds and stale paths cannot
+# cause this script to remove data owned by another run.
+BUILD_DIR=$(mktemp -d "${TMPDIR:-/tmp}/loofi-fedora-tweaks-build.XXXXXX")
+trap 'rm -rf -- "$BUILD_DIR"' EXIT
 mkdir -p "$BUILD_DIR"/rpmbuild/{BUILD,RPMS,SOURCES,SPECS,SRPMS}
 
 # Prepare source tarball (mirrors the GitHub archive layout)
@@ -38,8 +39,16 @@ sed -i 's/\r$//' "$BUILD_DIR"/rpmbuild/SPECS/loofi-fedora-tweaks.spec
 # Build RPM
 rpmbuild --define "_topdir $BUILD_DIR/rpmbuild" -ba "$BUILD_DIR"/rpmbuild/SPECS/loofi-fedora-tweaks.spec
 
-# Copy RPM back
+# Copy only the RPM produced by this invocation back to the repository.
+shopt -s nullglob
+BUILT_RPMS=("$BUILD_DIR"/rpmbuild/RPMS/noarch/loofi-fedora-tweaks-*.rpm)
+if [[ ${#BUILT_RPMS[@]} -ne 1 ]]; then
+    echo "Expected one noarch RPM, found ${#BUILT_RPMS[@]}" >&2
+    exit 1
+fi
 mkdir -p rpmbuild/RPMS/noarch
-cp "$BUILD_DIR"/rpmbuild/RPMS/noarch/*.rpm rpmbuild/RPMS/noarch/
+RPM_PATH="$(pwd)/rpmbuild/RPMS/noarch/${BUILT_RPMS[0]##*/}"
+cp "${BUILT_RPMS[0]}" "$RPM_PATH"
 
-echo "RPM built successfully at rpmbuild/RPMS/noarch/"
+echo "RPM built successfully at $RPM_PATH"
+echo "RPM_PATH=$RPM_PATH"

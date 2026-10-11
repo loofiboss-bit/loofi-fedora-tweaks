@@ -332,7 +332,7 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             answer = QMessageBox.question(
                 self,
                 self.tr("Change system setting"),
-                self.tr("%1\nCurrent: %2\nSelected: %3\nScope: this computer, all users.\nApply and verify this change?")
+                self.tr("%1\nCurrent: %2\nSelected: %3\nScope: this computer, all users.\nAutomatic rollback is unavailable. The previous value can be restored only after a verified change.\nApply and verify this change?")
                 .replace("%1", self.tr(tweak.title))
                 .replace("%2", self.tr(dict(tweak.choices).get(str(page._rows[tweak_id][1].property("currentValue") or ""), str(page._rows[tweak_id][1].property("currentValue") or ""))))
                 .replace("%3", self.tr(dict(tweak.choices).get(value, value))),
@@ -356,7 +356,7 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
                 page.set_activation(tweak_id, activation.message)
 
         def operation() -> Any:
-            outcome = controller.execute(tweak.action_id, {"value": value}, confirmed=True)
+            outcome = controller.execute(tweak.action_id, {"value": value}, confirmed=True, accept_no_rollback=tweak.system_wide)
             followup = notify_verified_cursor_change(controller, outcome) if cursor_notification_parameters(outcome) else activate_verified_tweak(controller, outcome)
             return outcome, followup
 
@@ -399,7 +399,8 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             self.tr("Restore %1 from %2 to %3? The saved result will be verified.")
             .replace("%1", self.tr(BY_ID[tweak_id].title))
             .replace("%2", str(facts["current"]))
-            .replace("%3", str(facts["requested"])),
+            .replace("%3", str(facts["requested"]))
+            + ("\n" + self.tr("Automatic rollback is unavailable. Review the verified result before making further changes.") if BY_ID[tweak_id].system_wide else ""),
             QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
             QMessageBox.StandardButton.Cancel,
         )
@@ -418,7 +419,8 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             return False
 
         def operation() -> Any:
-            prepared = controller.confirm(ticket, confirmed=True)
+            from core.tasks.tweaks import BY_ID
+            prepared = controller.confirm(ticket, confirmed=True, accept_no_rollback=BY_ID[tweak_id].system_wide)
             if prepared.status != "prepared":
                 return prepared, activate_verified_tweak(controller, prepared)
             running = controller.run(prepared)

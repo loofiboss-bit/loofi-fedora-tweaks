@@ -284,11 +284,43 @@ jobs:
           cache-dependency-path: ${{ env.PIP_CACHE_FILES }}
       - run: pip install bandit
       - run: bandit -r loofi-fedora-tweaks/ -ll -ii --skip B103,B104,B108,B310,B404,B603,B602 -f json -o bandit-report.json
+
+  vm_e2e:
+    needs: [validate, lint, typecheck, stabilization_rules, docs_gate, test, security]
+    if: |
+      !cancelled() &&
+      (
+        github.ref == 'refs/heads/master' ||
+        startsWith(github.ref, 'refs/tags/v')
+      ) &&
+      needs.validate.result == 'success' &&
+      needs.lint.result == 'success' &&
+      needs.typecheck.result == 'success' &&
+      needs.stabilization_rules.result == 'success' &&
+      needs.docs_gate.result == 'success' &&
+      needs.test.result == 'success' &&
+      needs.security.result == 'success' &&
+      needs.validate.outputs.should_release == 'true'
+    runs-on: [self-hosted, Linux, X64, loofi-vm-e2e]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run isolated Fedora KDE GUI workflows
+        run: just test-full
+      - name: Upload VM test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-kde-e2e-${{ github.run_id }}
+          path: test-results/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
   build:
     runs-on: ubuntu-latest
     container: fedora:44
     timeout-minutes: 20
-    needs: [validate, lint, typecheck, stabilization_rules, docs_gate, test, security]
+    needs: [validate, lint, typecheck, stabilization_rules, docs_gate, test, security, vm_e2e]
     if: |
       !cancelled() &&
       needs.validate.result == 'success' &&
@@ -298,6 +330,7 @@ jobs:
       needs.test.result == 'success' &&
       needs.docs_gate.result == 'success' &&
       needs.security.result == 'success' &&
+      needs.vm_e2e.result == 'success' &&
       needs.validate.outputs.should_release == 'true'
     steps:
       - name: Bootstrap Git for checkout
