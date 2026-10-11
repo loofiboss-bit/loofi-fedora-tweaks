@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Published baseline: 32.8.0. Later stabilization changes in the working tree are unreleased; physical desktop and assistive-technology qualification is recorded separately.
+> Published baseline: v33.0.1 "Concord" (2026-10-12). See [release qualification](V33_QUALIFICATION.md) for the explicit VM E2E exception and physical desktop evidence limits.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

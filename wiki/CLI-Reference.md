@@ -1,4 +1,4 @@
-# CLI Reference — v32.0.0 "Refocus"
+# CLI Reference — v33.0.1 "Concord"
 
 The CLI is a bounded, read-first companion to the GUI. It accepts registered
 commands and typed parameters only; it never evaluates arbitrary shell text or

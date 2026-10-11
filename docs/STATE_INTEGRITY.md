@@ -1,6 +1,6 @@
 # State Integrity and Recovery
 
-Loofi Fedora Tweaks v32.2.0 "Coherence" retains application-owned state under the
+Loofi Fedora Tweaks v33.0.1 "Concord" retains application-owned state under the
 user's standard XDG config, data, cache, and runtime directories. Physical desktop validation remains unverified. State is separate from the Fedora deployment
 and is preserved when the RPM is removed.
 

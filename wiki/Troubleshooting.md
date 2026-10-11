@@ -1,4 +1,4 @@
-# Troubleshooting Runbooks — v29.0.1 "Utility"
+# Troubleshooting Runbooks — v33.0.1 "Concord"
 
 When experiencing issues with Loofi Fedora Tweaks or underlying system services, follow these diagnostic runbooks. Loofi is built to fail closed: when a capability is missing or unverified, it reports the exact reason rather than guessing.
 

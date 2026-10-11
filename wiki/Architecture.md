@@ -1,4 +1,4 @@
-# Architecture — v29.0.1 "Utility"
+# Architecture — v33.0.1 "Concord"
 
 Loofi Fedora Tweaks is structured as a layered, modular desktop application with clean boundaries between UI presentation, domain logic, system service probing, and execution authority.
 

@@ -1,4 +1,4 @@
-# GUI Reference — v32.2.0 "Coherence"
+# GUI Reference — v33.0.1 "Concord"
 
 Loofi Fedora Tweaks opens on **Overview**, unless reopening the last page is
 enabled. Six primary destinations are always available. Selecting a destination
@@ -41,7 +41,9 @@ automatically; the dashboard installs no tools or drivers.
 
 ## Tweaks
 
-Tweaks lists 73 controls across GNOME, KDE Plasma, and shared system settings,
+Use **Settings** for individual controls and **Profiles** for editable profile copies. Drafts survive switching between these views. A successful save opens review for that exact copy. Each setting exposes user/computer scope and requested/verified values.
+
+Tweaks lists 82 controls across GNOME, KDE Plasma, and shared system settings,
 grouped by theme (Appearance, Desktop, Interaction, Privacy, Input, Windows,
 Sound, Power, System & Packaging). The full list with Loofi standard values is generated in
 [docs/TWEAKS.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TWEAKS.md).
@@ -60,6 +62,8 @@ Sound, Power, System & Packaging). The full list with Loofi standard values is g
 ![Tweaks](images/tweaks.png)
 
 ## Apps
+
+Use **Catalog**, **Installed**, and **Sources** to discover applications, inspect installed identities, and review package-source context. Selected applications remain editable independently of filters.
 
 A curated, searchable catalog with availability, source, and installation scope.
 Selected apps remain in the fixed review summary while the catalog scrolls or
@@ -83,6 +87,8 @@ supported operation or instruction. There is no **Fix all**.
 ![Health](images/health.png)
 
 ## Activity
+
+Operation status retains its origin, individual outcome, and return navigation. Result links target Activity only when the operation has a real run ID.
 
 Inspect **Needs you**, **In progress**, or **History**, then select a change for
 its recorded before/after evidence, verification, and available recovery.
