@@ -16,9 +16,9 @@ from core.tasks import (
     ApplicationEligibility,
     ApplicationRecord,
 )
-from PyQt6.QtCore import QEvent, QObject, QSize, Qt, pyqtSignal
-from PyQt6.QtGui import QIcon
-from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyleOptionViewItem, QStyledItemDelegate, QVBoxLayout, QWidget
+from PyQt6.QtCore import QEvent, QObject, QSize, Qt, QTimer, pyqtSignal
+from PyQt6.QtGui import QIcon, QKeyEvent
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidget, QListWidgetItem, QLineEdit, QPushButton, QScrollArea, QStyleOptionViewItem, QStyledItemDelegate, QTabBar, QVBoxLayout, QWidget
 
 from ui.components import Card, DetailsDisclosure, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
 from ui.icon_pack import get_qicon
@@ -30,6 +30,24 @@ class ApplicationRowDelegate(QStyledItemDelegate):
     def initStyleOption(self, option, index) -> None:
         super().initStyleOption(option, index)
         option.features &= ~QStyleOptionViewItem.ViewItemFeature.HasCheckIndicator
+
+
+class ApplicationViewTabs(QTabBar):
+    """Named application tabs with the former selector's tiny data API."""
+
+    def currentData(self) -> str:
+        return str(self.tabData(self.currentIndex()) or "")
+
+    def findData(self, value: str) -> int:
+        return next((index for index in range(self.count()) if self.tabData(index) == value), -1)
+
+    def keyPressEvent(self, event: QKeyEvent | None) -> None:
+        if event is not None and event.key() in (Qt.Key.Key_Up, Qt.Key.Key_Down):
+            delta = -1 if event.key() == Qt.Key.Key_Up else 1
+            self.setCurrentIndex((self.currentIndex() + delta) % self.count())
+            event.accept()
+            return
+        super().keyPressEvent(event)
 
 
 class InstallWorkflowPage(QWidget):
@@ -63,6 +81,7 @@ class InstallWorkflowPage(QWidget):
         self._row_context: ApplicationContext | None = None
         self._catalog_rows_initialized = False
         self._selected_ids: set[str] = set()
+        self._show_selected = False
         self._row_checks: dict[str, QCheckBox] = {}
         self._last_bundle: object | None = None
         self._last_outcome: object | None = None
@@ -109,12 +128,20 @@ class InstallWorkflowPage(QWidget):
         self.category_filter.currentIndexChanged.connect(self._refresh_rows)
         filter_row.addWidget(self.category_filter)
         self.intro.body.addLayout(filter_row)
-        self.view_filter = QComboBox()
-        self.view_filter.setAccessibleName(self.tr("Application view"))
-        self.view_filter.addItem(self.tr("Catalog"), "catalog")
-        self.view_filter.addItem(self.tr("Installed"), "installed")
-        self.view_filter.addItem(self.tr("Package sources"), "sources")
-        self.intro.add_widget(self.view_filter)
+        self.view_tabs = ApplicationViewTabs()
+        self.view_tabs.setObjectName("applicationViewTabs")
+        self.view_tabs.setAccessibleName(self.tr("Application view"))
+        self.view_tabs.setExpanding(False)
+        self.view_tabs.addTab(self.tr("Catalog"))
+        self.view_tabs.addTab(self.tr("Installed"))
+        self.view_tabs.addTab(self.tr("Sources"))
+        self.view_tabs.setTabData(0, "catalog")
+        self.view_tabs.setTabData(1, "installed")
+        self.view_tabs.setTabData(2, "sources")
+        self.view_tabs.currentChanged.connect(self._set_application_view)
+        self.intro.add_widget(self.view_tabs)
+        # Compatibility alias retained for existing route adapters.
+        self.view_filter = self.view_tabs
 
         self.flathub_status_card = Card(
             self.tr("App sources"),
@@ -133,10 +160,16 @@ class InstallWorkflowPage(QWidget):
         self.flathub_summary.setObjectName("installFlathubSummary")
         self.flathub_summary.setWordWrap(True)
         self.flathub_status_card.add_widget(self.flathub_summary)
+        self.dnf_source_summary = QLabel(self.tr("DNF sources: status not checked."))
+        self.dnf_source_summary.setObjectName("installDnfSourceSummary")
+        self.dnf_source_summary.setAccessibleName(self.tr("Compact DNF package source status"))
+        self.dnf_source_summary.setWordWrap(True)
+        self.flathub_status_card.add_widget(self.dnf_source_summary)
         self.flathub_details = DetailsDisclosure(summary=self.tr("Show source setup details"))
         self.flathub_details.add_widget(self.flathub_system_status)
         self.flathub_details.add_widget(self.flathub_user_status)
-        self.flathub_status_card.add_widget(self.flathub_details)
+        # Detailed per-scope and DNF source data belongs in the Sources tab.
+        self.flathub_details.hide()
         self.flathub_refresh_button = QPushButton(self.tr("Refresh Flathub status"))
         self.flathub_refresh_button.setObjectName("installFlathubRefresh")
         self.flathub_refresh_button.setAccessibleName(self.tr("Refresh Flathub source status"))
@@ -229,6 +262,16 @@ class InstallWorkflowPage(QWidget):
         self.review_summary.setObjectName("installReviewSummary")
         self.review_summary.setWordWrap(True)
         self.review_card.add_widget(self.review_summary)
+        self.show_selected_button = QPushButton(self.tr("Show selected"))
+        self.show_selected_button.setObjectName("installShowSelected")
+        self.show_selected_button.setAccessibleName(self.tr("Show all selected applications"))
+        self.show_selected_button.setCheckable(True)
+        self.show_selected_button.toggled.connect(self._toggle_selected_view)
+        self.review_card.add_widget(self.show_selected_button)
+        self.clear_selection_button = QPushButton(self.tr("Clear selection"))
+        self.clear_selection_button.setObjectName("installClearSelection")
+        self.clear_selection_button.clicked.connect(self.clear_selection)
+        self.review_card.add_widget(self.clear_selection_button)
         self.review_button = PrimaryButton(
             self.tr("Review selected applications"),
             description=self.tr("Create a reviewable install bundle without running it."),
@@ -252,7 +295,6 @@ class InstallWorkflowPage(QWidget):
         self.results_card.hide()
         self.scaffold.add_widget(self.results_card)
         self.scaffold.content_layout.addStretch()
-        self.view_filter.currentIndexChanged.connect(self._set_application_view)
         self._refresh_rows()
         if installed_service is not None:
             self.installed_card.refresh()
@@ -288,8 +330,10 @@ class InstallWorkflowPage(QWidget):
         return installed_stopped and source_stopped and sources_stopped and handoff_stopped and empty_handoff_stopped
 
     def _set_application_view(self, *_args: Any) -> None:
-        installed = self.view_filter.currentData() == "installed"
-        sources = self.view_filter.currentData() == "sources"
+        current_view = str(self.view_tabs.tabData(self.view_tabs.currentIndex()) or "catalog")
+        installed = current_view == "installed"
+        sources = current_view == "sources"
+        selected_view = self._show_selected and not installed and not sources
         self.installed_card.setVisible(installed)
         self.sources_widget.setVisible(sources)
         self.default_apps_handoff.setVisible(not sources)
@@ -302,9 +346,13 @@ class InstallWorkflowPage(QWidget):
         self.search_input.setVisible(not sources)
         self.search_input.setPlaceholderText(self.tr("Search installed applications…") if installed else self.tr("Search applications…"))
         self.category_filter.setVisible(not installed and not sources)
-        self.match_summary.setVisible(not installed and not sources)
+        self.match_summary.setVisible(not installed and not sources and not selected_view)
         if installed:
             self.installed_card.set_search(self.search_input.text())
+        self._refresh_rows()
+        scroll_bar = self.body_scroll.verticalScrollBar()
+        if scroll_bar is not None:
+            QTimer.singleShot(0, lambda: scroll_bar.setValue(0))
         if sources and self.sources_widget.snapshot is None and not (self._source_status_adapter and self._source_status_adapter.busy):
             if self._source_status_service is None:
                 self.sources_widget.refresh()
@@ -312,7 +360,7 @@ class InstallWorkflowPage(QWidget):
                 self.refresh_flathub_status()
 
     def focus_sources(self, source_id: str = "") -> None:
-        self.view_filter.setCurrentIndex(self.view_filter.findData("sources"))
+        self._select_view("sources")
         if source_id:
             self.sources_widget.focus_source(source_id)
         else:
@@ -328,6 +376,14 @@ class InstallWorkflowPage(QWidget):
         self.dnf_source_status.setText("\n".join(
             f"{labels[status.source_id]}: {states[status.state.value]}" for status in SoftwareSourceStatusService.badges_from_sources(snapshot)
         ) + "\n" + self.tr("Observed: %1").replace("%1", snapshot.observed_at))
+        compact = " · ".join(
+            f"{labels[status.source_id]}: {states[status.state.value]}"
+            for status in SoftwareSourceStatusService.badges_from_sources(snapshot)
+        )
+        self.dnf_source_summary.setText(
+            self.tr("DNF sources: %1").replace("%1", compact or self.tr("No configured sources found."))
+        )
+        self.dnf_source_summary.setAccessibleDescription(self.dnf_source_summary.text())
 
     def _apply_source_observation(self, observation: object) -> None:
         from services.software.source_status import DnfSourceSnapshot
@@ -464,8 +520,35 @@ class InstallWorkflowPage(QWidget):
             if record.id in self._selected_ids
         )
 
+    def _select_view(self, view: str) -> None:
+        index = self.view_filter.findData(view)
+        if index >= 0:
+            self.view_tabs.setCurrentIndex(index)
+
+    def _toggle_selected_view(self, enabled: bool) -> None:
+        self._show_selected = bool(enabled)
+        self.show_selected_button.setText(self.tr("Back to catalog") if enabled else self.tr("Show selected"))
+        self._refresh_rows()
+
+    def clear_selection(self) -> None:
+        self._selected_ids.clear()
+        for application_id, check in self._row_checks.items():
+            check.blockSignals(True)
+            check.setChecked(False)
+            check.blockSignals(False)
+            row = self._rows.get(application_id)
+            if row is not None:
+                row[2].setCheckState(Qt.CheckState.Unchecked)
+        self._show_selected = False
+        self.show_selected_button.blockSignals(True)
+        self.show_selected_button.setChecked(False)
+        self.show_selected_button.blockSignals(False)
+        self.show_selected_button.setText(self.tr("Show selected"))
+        self._refresh_rows()
+
     def _refresh_rows(self, *_args: Any) -> None:
-        if self.view_filter.currentData() == "installed":
+        current_view = str(self.view_tabs.tabData(self.view_tabs.currentIndex()) or "catalog")
+        if current_view == "installed":
             self.installed_card.set_search(self.search_input.text())
             return
 
@@ -497,16 +580,19 @@ class InstallWorkflowPage(QWidget):
 
         query = self.search_input.text()
         category = str(self.category_filter.currentData() or "")
-        matches = {
+        matches = set(self._selected_ids) if self._show_selected and current_view == "catalog" else {
             record.id for record, _eligibility in self.catalog.search(query, category=category, context=self.context)
         }
         for application_id, (_record, _eligibility, item) in self._rows.items():
             item.setHidden(application_id not in matches)
         count = len(matches)
-        self.match_summary.setText(self.tr("%1 applications").replace("%1", str(count)) if count else self.tr("No applications match. Clear the search or change the category."))
+        if self._show_selected and current_view == "catalog":
+            self.match_summary.setText(self.tr("%1 selected applications").replace("%1", str(count)) if count else self.tr("No applications selected."))
+        else:
+            self.match_summary.setText(self.tr("%1 applications").replace("%1", str(count)) if count else self.tr("No applications match. Clear the search or change the category."))
         if self.catalog_empty_handoff is not None:
             self.catalog_empty_handoff.setVisible(
-                self.view_filter.currentData() == "catalog" and count == 0
+                current_view == "catalog" and count == 0 and not self._show_selected
             )
         self._resize_application_rows()
         self._update_review_summary()
@@ -605,6 +691,8 @@ class InstallWorkflowPage(QWidget):
 
     def _update_review_summary(self) -> None:
         selected = self.selected_application_ids()
+        self.clear_selection_button.setEnabled(bool(selected))
+        self.show_selected_button.setEnabled(bool(selected))
         if not selected:
             self.review_summary.setText(self.tr("No applications selected."))
             self.review_button.setEnabled(False)

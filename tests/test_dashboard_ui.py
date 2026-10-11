@@ -91,12 +91,14 @@ class TestDashboardUi(unittest.TestCase):
         self.assertIn("Two updates available", page._maintenance["updates"][1].text())
         self.assertEqual(page._maintenance["health"][1].text(), "No recorded result yet")
 
-    def test_overview_prioritizes_next_steps_and_maintenance_before_metrics(self):
+    def test_overview_prioritizes_metrics_before_guidance(self):
         page = OverviewPage()
         root = page.layout()
-        self.assertLess(root.indexOf(page.next_steps_card), root.indexOf(page.main_grid))
-        self.assertLess(root.indexOf(page.maintenance_grid), root.indexOf(page.main_grid))
-        self.assertLess(root.indexOf(page.guide_panel), root.indexOf(page.main_grid))
+        self.assertLess(root.indexOf(page.main_grid), root.indexOf(page.detail_grid))
+        self.assertLess(root.indexOf(page.detail_grid), root.indexOf(page.maintenance_card))
+        self.assertLess(root.indexOf(page.maintenance_card), root.indexOf(page.next_steps_card))
+        self.assertLess(root.indexOf(page.next_steps_card), root.indexOf(page.intro_card))
+        self.assertLess(root.indexOf(page.intro_card), root.indexOf(page.guide_panel))
 
     def test_unverified_update_sources_never_show_zero_updates(self):
         page = OverviewPage()

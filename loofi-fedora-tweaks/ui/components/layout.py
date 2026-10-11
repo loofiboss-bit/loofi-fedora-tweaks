@@ -144,7 +144,10 @@ class PageHeader(QFrame):
                 action_width += action_widget.sizeHint().width() + 8
         adjacent_width = sum(control.sizeHint().width() + 12 for control in
                              (self.eyebrow, self.activity_button, self.settings_button) if not control.isHidden())
-        vertical_actions = action_width + adjacent_width + 48 > self.width()
+        # Grid columns retain their spacing when the title spans another row.
+        # Include that space before adjacent buttons are allowed to shrink.
+        grid_spacing = max(0, self._header_grid.horizontalSpacing()) * 4
+        vertical_actions = action_width + adjacent_width + 48 + grid_spacing > self.width()
         stack_actions = action_width + 48 > self.width()
         self.actions_layout.setDirection(QBoxLayout.Direction.TopToBottom if stack_actions else QBoxLayout.Direction.LeftToRight)
         required = QFontMetrics(self.title.font()).horizontalAdvance(self.title.text())

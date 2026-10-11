@@ -16,6 +16,7 @@ and is not.
 
 ## Contribute
 
+- [v33 qualification](V33_QUALIFICATION.md) — local Concord candidate and stable Fedora KDE test contracts
 - [Guide qualification](GUIDE_VERIFICATION.md) — everyday guides, saved progress, search and installed-RPM evidence
 - [Routine qualification](ROUTINE_VERIFICATION.md) — installation/profile comparisons, storage guidance, restart advice and contextual links
 - [Personal qualification](PERSONAL_VERIFICATION.md) — RPM discovery, profile authoring, source observations, and KDE window workflows

@@ -28,9 +28,11 @@ from core.navigation.routes import (
 )
 from core.plugins.metadata import PluginMetadata
 from PyQt6.QtWidgets import QTreeWidgetItem, QWidget
+from ui.application_review import ApplicationReviewMixin
 from ui.tweak_profiles import TweakProfilesMixin
 from ui.care_navigation import CareNavigationMixin
 from ui.kde_appearance import CursorSettingsMixin
+from ui.main_window_operation_status import MainWindowOperationStatusMixin
 
 
 _UTILITY_ROUTE_ALIASES = LEGACY_ALIASES
@@ -57,7 +59,7 @@ class SidebarEntry:
     visible_in_sidebar: bool = field(default=True)
 
 
-class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNavigationMixin):
+class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMixin, CursorSettingsMixin, TweakProfilesMixin, CareNavigationMixin):
     """Own v29 landing pages and compatibility-aware route navigation."""
 
     _pending_runtime_shutdown: str | None
@@ -71,6 +73,10 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         self._utility_operation_controller: Any | None = None
         self._utility_operation_adapter: Any | None = None
         self._pending_runtime_shutdown: str | None = None
+        self._operation_origin_route_id = ""
+        self._operation_origin_label = ""
+        self._operation_name = ""
+        self._quit_after_profile_save = False
 
     def _register_utility_landing_pages(self: Any) -> None:
         """Register lightweight placeholders for the four workflow pages."""
@@ -170,6 +176,14 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             )
             tweaks_page.continueSnapshotRequested.connect(lambda owner=tweaks_page: self._continue_tweak_snapshot(owner))
             tweaks_page.activityRequested.connect(self._open_action_center_run)
+            tweaks_page.profileActionRequested.connect(
+                lambda operation, entry, owner=tweaks_page: self._handle_tweak_profile_action(owner, operation, entry)
+            )
+            tweaks_page.profileSaveCopyRequested.connect(
+                lambda profile, review_after, return_after, close_after, owner=tweaks_page: self._save_tweak_profile_copy(
+                    owner, profile, review_after, return_after, close_after=close_after
+                )
+            )
             tweaks_page.cancelSnapshotRequested.connect(
                 lambda owner=tweaks_page: self._cancel_tweak_snapshot(owner)
             )
@@ -213,43 +227,6 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             return cast(QWidget, update_page)
         raise ValueError(f"Unknown utility workflow destination: {destination_id}")
 
-    def _new_utility_operation_adapter(self: Any, *, phase: str = "inspection") -> Any:
-        """Create the single window-owned worker adapter for a reviewed change."""
-        from ui.operation_worker import OperationControllerQtAdapter
-
-        self._last_operation_run_id = ""
-        adapter = OperationControllerQtAdapter(parent=self)
-        adapter.stopped.connect(
-            lambda selected=adapter: self._utility_operation_adapter_stopped(selected)
-        )
-        self._utility_operation_adapter = adapter
-        status = getattr(self, "_status_label", None)
-        if status is not None:
-            status.setText(self.tr("Working — the current operation remains active when you change pages."))
-            self._status_frame.show()
-            adapter.finished.connect(lambda result: self._record_global_operation_result(result, phase=phase))
-            adapter.failed.connect(lambda message: self._record_global_operation_result(None, message))
-            adapter.cancelled.connect(lambda: self._record_global_operation_result(None, self.tr("Operation cancelled. Check current values before continuing.") if phase == "change" else self.tr("Inspection cancelled. No change was started.")))
-        return adapter
-
-    def _record_global_operation_result(self: Any, result: Any, message: str = "", *, phase: str = "inspection") -> None:
-        """Project existing results into the shell; never infer verification."""
-        status = getattr(self, "_status_label", None)
-        if status is None:
-            return
-        outcome = result[0] if isinstance(result, tuple) and result else result
-        run_id = str(getattr(outcome, "run_id", "") or "")
-        if run_id:
-            self._last_operation_run_id = run_id
-        fallback = self.tr("Inspection finished. No change was started.")
-        if phase == "review":
-            fallback = self.tr("Review ready. No change was started.")
-        elif phase == "change":
-            fallback = self.tr("Operation finished. Check its detailed result.")
-        detail = message or str(getattr(outcome, "message", "") or fallback)
-        status.setText(detail)
-        self._status_frame.show()
-
     def _start_tweak_snapshot(self: Any, page: Any, *, tweak_ids: tuple[str, ...] | None = None) -> bool:
         """Read current settings on the window-owned worker, without UI blocking."""
         if self._utility_operation_adapter is not None:
@@ -259,7 +236,9 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         from core.executor.command_facade import CommandFacade
         from core.tasks.tweaks import snapshot
 
-        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter = self._new_utility_operation_adapter(
+            phase="inspection", operation_name=self.tr("Checking current settings")
+        )
         adapter.finished.connect(page.set_states)
         adapter.failed.connect(page.set_error)
         adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Setting inspection cancelled. Refresh to try again.")))
@@ -300,7 +279,10 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         if controller is None:
             controller = OperationController()
         runtime = controller.orchestrator.runtime
-        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter = self._new_utility_operation_adapter(
+            phase="inspection",
+            operation_name=self.tr("Checking %1").replace("%1", self.tr(page._tweaks[tweak_id].title)),
+        )
         adapter.finished.connect(lambda state: page.set_states((state,)))
         adapter.failed.connect(lambda message: page.set_check_error(tweak_id, str(message)))
         adapter.cancelled.connect(lambda: page.set_check_error(tweak_id, self.tr("Setting inspection cancelled. Its previous value is not current.")))
@@ -348,7 +330,10 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
         page.set_busy(True, self.tr("Applying and verifying %1…").replace("%1", self.tr(tweak.title)))
-        adapter = self._new_utility_operation_adapter(phase="change")
+        adapter = self._new_utility_operation_adapter(
+            phase="change",
+            operation_name=self.tr("Applying %1").replace("%1", self.tr(tweak.title)),
+        )
         page.set_pending(tweak_id, value)
 
         def completed(result: Any) -> None:
@@ -380,7 +365,10 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
         page.set_busy(True, self.tr("Checking the saved change and current value…"))
-        adapter = self._new_utility_operation_adapter(phase="review")
+        adapter = self._new_utility_operation_adapter(
+            phase="review",
+            operation_name=self.tr("Preparing restore for %1").replace("%1", self.tr(BY_ID[tweak_id].title)),
+        )
         adapter.finished.connect(lambda ticket: self._show_tweak_restore_review(page, tweak_id, ticket, adapter))
         adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
         adapter.cancelled.connect(lambda: page.set_restore_error(tweak_id, self.tr("Restore preparation was cancelled. Refresh to retry.")))
@@ -432,7 +420,9 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
 
         target = str(ticket.plan.policy_decision.facts["requested"])
         page.set_busy(True, cast(Any, self).tr("Restoring and verifying the previous value…"))
-        adapter = self._new_utility_operation_adapter(phase="change")
+        adapter = self._new_utility_operation_adapter(
+            phase="change", operation_name=cast(Any, self).tr("Restoring and verifying previous value")
+        )
         page.set_pending(tweak_id, target)
         adapter.finished.connect(completed)
         adapter.failed.connect(lambda message: page.set_restore_error(tweak_id, str(message)))
@@ -465,7 +455,10 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
         self._set_review_notice(page, "info", self.tr("Checking"), self.tr("Preparing the exact scope of this change."))
-        adapter = self._new_utility_operation_adapter(phase="review")
+        adapter = self._new_utility_operation_adapter(
+            phase="review",
+            operation_name=self.tr("Reviewing %1").replace("%1", definition.title),
+        )
         adapter.finished.connect(lambda ticket: self._show_health_review(page, ticket, adapter))
         adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Unavailable"), str(message)))
         return bool(adapter.start(lambda: controller.prepare(str(action_id), dict(parameters or {}))))
@@ -482,7 +475,13 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         controller = self._utility_operation_controller
         evidence = dict(context or {})
         self._set_review_notice(page, "info", self.tr("Checking"), self.tr("Rechecking the saved finding before review."))
-        adapter = self._new_utility_operation_adapter(phase="review")
+        from core.actions.catalog import ActionCatalog
+
+        definition = ActionCatalog().get(str(action_id))
+        action_name = definition.title if definition is not None else str(action_id).replace("-", " ").title()
+        adapter = self._new_utility_operation_adapter(
+            phase="review", operation_name=self.tr("Rechecking %1").replace("%1", action_name)
+        )
         adapter.finished.connect(lambda plan: self._show_health_review(page, OperationTicket(plan), adapter))
         adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Finding unavailable"), str(message)))
         return bool(adapter.start(lambda: controller.orchestrator.plan_from_finding(
@@ -536,7 +535,13 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             return controller.verify(running) if running.status == "verifying" else running
 
         self._set_review_notice(page, "info", self.tr("Running"), self.tr("The change is running and will be checked afterward."))
-        adapter = self._new_utility_operation_adapter(phase="change")
+        from core.actions.catalog import ActionCatalog
+
+        definition = ActionCatalog().get(str(ticket.plan.action_id))
+        action_name = definition.title if definition is not None else str(ticket.plan.action_id).replace("-", " ").title()
+        adapter = self._new_utility_operation_adapter(
+            phase="change", operation_name=self.tr("Applying %1").replace("%1", action_name)
+        )
         adapter.finished.connect(
             lambda outcome: self._set_review_notice(
                 page,
@@ -566,99 +571,6 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         setter = getattr(notice, "set_notice", None)
         if callable(setter):
             setter(kind, title, message)
-
-    def _review_utility_bundle(self: Any, page: QWidget, selection: Any) -> bool:
-        """Ask for one explicit bundle confirmation, then start the adapter."""
-        bundle = getattr(selection, "bundle", None)
-        if bundle is None:
-            self._set_utility_notice(page, "error", "Review unavailable", "The selected change set is malformed.")
-            return False
-        adapter = getattr(self, "_utility_operation_adapter", None)
-        if adapter is not None:
-            self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish before starting another one.")
-            return False
-
-        lines: list[str] = []
-        for item in getattr(bundle, "items", ()):
-            title = str(getattr(item, "title", "") or getattr(item, "action_id", "Operation"))
-            parameters = getattr(item, "parameters", {})
-            source = str(parameters.get("source", "")) if isinstance(parameters, dict) else ""
-            package_id = str(parameters.get("package_id", "")) if isinstance(parameters, dict) else ""
-            if source and package_id:
-                lines.append(f"{title} — {source}: {package_id}")
-            else:
-                lines.append(title)
-        detail_text = "\n".join(lines) or "No operations selected."
-
-        from PyQt6.QtWidgets import QMessageBox
-
-        dialog = QMessageBox(self)
-        dialog.setIcon(QMessageBox.Icon.Information)
-        dialog.setWindowTitle(self.tr("Review selected changes"))
-        dialog.setText(str(getattr(bundle, "title", "Review selected changes")))
-        dialog.setInformativeText(
-            self.tr("Review the exact scope below. Nothing changes until you confirm.")
-        )
-        dialog.setDetailedText(detail_text)
-        dialog.setStandardButtons(
-            QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok
-        )
-        apply_button = dialog.button(QMessageBox.StandardButton.Ok)
-        if apply_button is not None:
-            apply_button.setText(
-                self.tr("Apply %1 changes").replace("%1", str(len(getattr(bundle, "items", ()))))
-            )
-        dialog.setDefaultButton(QMessageBox.StandardButton.Cancel)
-        dialog.setEscapeButton(QMessageBox.StandardButton.Cancel)
-        if dialog.exec() != QMessageBox.StandardButton.Ok:
-            self._set_utility_notice(page, "neutral", "Review cancelled", "No changes were made.")
-            return False
-        return bool(self._start_utility_bundle(page, selection))
-
-    def _start_utility_bundle(self: Any, page: QWidget, selection: Any) -> bool:
-        """Run a confirmed bundle through the shared Qt operation adapter."""
-        from core.actions.operation_controller import OperationController
-
-        if self._utility_operation_adapter is not None:
-            self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish before starting another one.")
-            return False
-        if self._utility_operation_controller is None:
-            self._utility_operation_controller = OperationController()
-        adapter = self._new_utility_operation_adapter(phase="change")
-        self._set_utility_notice(page, "info", "Running", "The reviewed operations are running and will be verified individually.")
-        adapter.started.connect(
-            lambda: self._set_utility_notice(page, "info", "Running", "The reviewed operations are running and will be verified individually.")
-        )
-        adapter.finished.connect(
-            lambda outcome: self._utility_bundle_finished(page, outcome)
-        )
-        adapter.failed.connect(
-            lambda message: self._set_utility_notice(page, "error", "Operation failed", str(message))
-        )
-        adapter.cancelled.connect(
-            lambda: self._set_utility_notice(page, "warning", "Operation cancelled", "No retry or rollback was started.")
-        )
-        started = adapter.start(
-            lambda: self._utility_operation_controller.execute_bundle(
-                selection.bundle,
-                confirmed=True,
-                accept_no_rollback=True,
-            )
-        )
-        if not started:
-            self._utility_operation_adapter = None
-            adapter.deleteLater()
-            self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish before starting another one.")
-        return bool(started)
-
-    def _utility_bundle_finished(self: Any, page: QWidget, outcome: Any) -> None:
-        """Project a terminal bundle outcome back onto its owning workflow."""
-        setter = getattr(page, "set_results", None)
-        if callable(setter):
-            setter(outcome)
-        status = str(getattr(outcome, "status", "completed")).replace("_", " ").title()
-        message = str(getattr(outcome, "message", "The reviewed operations finished."))
-        self._set_utility_notice(page, "success" if status == "Succeeded" else "warning", status, message)
 
     def _handle_update_source_action(self: Any, page: QWidget, source: str, action: str) -> None:
         """Run one compact Update-card action through the shared controller."""
@@ -773,7 +685,12 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         setter = getattr(page, "set_notice", None)
         if callable(setter):
             setter("info", "Preparing", "The source is being preflighted before execution.")
-        new_adapter = self._new_utility_operation_adapter(phase="change")
+        source_name = str(source).replace("_", " ").title()
+        operation_name = self.tr("Verifying %1 updates").replace("%1", source_name) if action == "verify" else self.tr("Applying %1 updates").replace("%1", source_name)
+        new_adapter = self._new_utility_operation_adapter(
+            phase="verification" if action == "verify" else "change",
+            operation_name=operation_name,
+        )
         new_adapter.started.connect(
             lambda: setter("info", "Running", "The reviewed source operation is running and will be verified.")
             if callable(setter)

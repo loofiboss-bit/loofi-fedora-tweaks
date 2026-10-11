@@ -332,9 +332,7 @@ class MainWindow(
         sb_layout.addWidget(self._undo_btn)
 
         sb_layout.addStretch()
-        self._activity_status_button = QPushButton(self.tr("Open Activity"))
-        self._activity_status_button.clicked.connect(self._open_activity_status_result)
-        sb_layout.addWidget(self._activity_status_button)
+        self._build_operation_status_controls(sb_layout)
         self._status_frame.setVisible(False)
         right_side.addWidget(self._status_frame)
 

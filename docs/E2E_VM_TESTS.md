@@ -27,6 +27,32 @@ does not support Kickstart installation when booted from the Live OS, so the
 first run fetches the Fedora 44 Everything installation tree over the guest's
 outbound-only network. No local ISO or manual VM setup is needed.
 
+## Stable native control contracts
+
+Application tabs use the real Qt tab-list focus and horizontal arrow keys.
+The helper verifies the selected tab after input; virtual child-tab geometry
+or a successful input call alone does not prove that the view changed.
+Guide resumption opens the accessible menu and waits for the exact named next
+step before selecting it. The native guide menu retains focus actions and
+exposes its popup as an accessible child; blind positional Home/Enter input is
+not used to infer navigation.
+The installed inventory check explicitly starts Refresh and observes its
+enabled → disabled → enabled cycle with cancellation and bounded deadlines.
+
+Setting results are scoped to the exact accessible setting-status row and
+check both Requested and Verified values, restoration status, and relevant
+session-activation guidance. Tests also read KDE or DNF configuration directly
+after a change and restoration. A successful status on another row cannot
+satisfy the check. Actions are not automatically retried on assertion failure.
+
+Completed runs print their status and report directory. Failed runs also print
+a bounded excerpt of the collected, credential-redacted pytest log, including
+the correct reboot phase when applicable. JUnit, logs, and accessibility trees
+remain the detailed evidence; guest shutdown and overlay cleanup still run on
+success, failure, or interruption. Host regressions for these helpers live in
+`tests/test_e2e_native_input.py`, `tests/test_e2e_refresh_observation.py`, and
+`tests/test_e2e_vm_contract.py`.
+
 ## Host requirements
 
 Run as the normal desktop user, never with `sudo` or `pkexec`. The runner does

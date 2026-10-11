@@ -50,12 +50,20 @@ second registry or expose retired product surfaces.
 
 ## Page families
 
-- Overview: four main resource panels, followed by network/disk activity,
-  temperature/battery readings, and recorded maintenance. Use four, two, or
-  one columns according to available width and font size.
-- Tweaks and Settings: grouped, divided settings rows; controls on the right
-  when space allows, stacked below copy when needed. Filters intersect.
-- Apps: a searchable list of source-aware choices and a fixed review summary.
+- Overview: CPU, RAM, GPU, and storage are the first four panels, followed by
+  network, disk activity, temperatures, and battery. A compact maintenance
+  section has up to three relevant next steps; introduction and guides follow
+  the system overview. Use four, two, or one columns according to available
+  width and font size. At 1280x800 with standard text, the four primary
+  resource panels are visible without scrolling.
+- Tweaks: Settings and Profiles subviews within one route. Settings use compact
+  grouped rows with an upfront user/computer scope label, requested value,
+  verified readback, and any separate session-activation result. Profiles hold
+  the library and copy editor; compare and final review remain dialogs.
+- Apps: Catalog, Installed, and Sources tabs. Catalog has source summaries and
+  a fixed selection/review area with Show selected, individual deselection,
+  and Clear selection. The shared review dialog shows exact source, package
+  identifier, and installation scope without requiring expansion.
 - Updates: independent System, Flatpak, and Firmware source sections.
 - Health: symptom, inspection, evidence, reviewed fix, verified result.
 - Activity: filterable saved results, before/after facts, and recovery details.
@@ -78,7 +86,15 @@ Persistent host changes remain exclusively owned by OperationController and
 Action Center. Pending requests and independently verified values are distinct.
 Restore previous value and Use Loofi standard value are distinct actions.
 Review dialogs default to cancellation. A global status surface survives
-navigation, including failure and cancellation.
+navigation, including operation name, origin page, return action, failure, and
+pending verification. Ordinary successful inspections report on their owning
+page. Activity links resolve only actual run IDs; no historical identity is
+synthesized for an operation that has none.
+
+Profile drafts persist while switching Tweaks subviews. Leaving the editor for
+another profile offers Save, Discard, or Cancel. Save and review chains from
+the worker's captured successful terminal result; save failure, cancellation,
+or late completion after shutdown cannot authorize a review or application.
 
 Global search projects only settings supported by the current desktop from the
 canonical catalog. Activating a setting clears view filters, scrolls to the
@@ -91,7 +107,11 @@ search results, lists, or other review content must not apply a change; Return
 on a deliberately focused, clearly named apply button remains available. The
 responsive Tweaks toolbar keeps search, refresh, and cancel visible and wraps
 them according to available width and font metrics. Profile import, export,
-and preset actions live in a keyboard-accessible menu.
+and preset actions live in the keyboard-accessible library view.
+
+All Apps tabs and Tweaks subviews expose meaningful accessible names, keyboard
+navigation, and focus return. Text remains usable at 100–200% scaling and with
+larger system fonts.
 
 Activity uses that label consistently in headings, tooltips, and accessible
 names. First visit loads the 25 latest local Loofi runs asynchronously; external

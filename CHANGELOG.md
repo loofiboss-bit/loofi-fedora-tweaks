@@ -1,11 +1,17 @@
 # Changelog
 
-## Unreleased — stabilization and everyday workflow improvements (no version assigned)
+## [33.0.0] — Local candidate (unpublished)
 
-Implemented in the current working tree; these changes are not part of a
-published release. Automated and disposable Fedora/KDE qualification status is
-tracked in `ROADMAP.md` before release scope is assigned.
+This local candidate is based on `a62f6e7`. It is not published and has no
+release date. Automated and disposable Fedora/KDE qualification status is
+tracked in `ROADMAP.md`.
 
+- Lead Overview with CPU, RAM, GPU, and storage, followed by detail readings, compact maintenance, next steps, and guides.
+- Add Settings and Profiles subviews to Tweaks. Show user-versus-computer scope, requested and verified values, and session activation on each setting. Save profile copies locally and review only the exact successfully saved copy.
+- Add Catalog, Installed, and Sources tabs to Apps, including filter-independent selection, individual deselection, and complete package/source/install scope in the shared review dialog.
+- Keep operation name, origin, result, and return navigation together across page changes, with exact Activity links only for results that have a real run ID.
+- Stabilize native Fedora KDE qualification with verified tab focus and selection, accessible guide-menu actions, exact per-setting result checks, and bounded failure diagnostics. Reset Apps scroll position when switching views and avoid a worker-completion thread-affinity race.
+- Preserve the existing route IDs, CLI/JSON contracts, portable profile format, history schema, and OperationController/Action Center execution authority.
 - Add an explicit, separately reviewed DNF5 offline reboot action and verify post-reboot updates against successful DNF5 transaction history.
 - Align settings with `StatePaths`, migrate legacy XDG settings atomically, and protect future schemas and malformed values.
 - Keep complete structured output transient and separate from bounded history/log output; treat malformed or oversized firmware and rpm-ostree evidence as unavailable.

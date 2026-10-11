@@ -144,10 +144,11 @@ class TestControlCenterShell(unittest.TestCase):
     def test_read_only_results_do_not_claim_recorded_changes(self):
         window, _, _, _ = self.build_window()
         window._record_global_operation_result((), phase="inspection")
-        self.assertIn("No change was started", window._status_label.text())
+        self.assertEqual(window._status_label.text(), "")
         window._record_global_operation_result(SimpleNamespace(plan=object()), phase="review")
         self.assertIn("Review ready", window._status_label.text())
         self.assertNotIn("Activity", window._status_label.text())
+        self.assertFalse(window._activity_status_button.isVisible())
 
     def test_operation_result_run_id_is_carried_to_activity(self):
         window, _, _, _ = self.build_window()
@@ -236,9 +237,55 @@ class TestControlCenterShell(unittest.TestCase):
         adapter = window._new_utility_operation_adapter()
         self.assertTrue(window.switch_to_route("settings"))
         adapter.finished.emit(SimpleNamespace(success=False, message="Readback mismatch"))
-        self.assertEqual(window._status_label.text(), "Readback mismatch")
+        self.assertIn("Checking settings", window._status_label.text())
+        self.assertIn("Overview", window._status_label.text())
+        self.assertIn("Readback mismatch", window._status_label.text())
         self.assertNotIn("Verified", window._status_label.text())
         window._utility_operation_adapter_stopped(adapter)
+
+    def test_global_operation_status_keeps_origin_and_exact_activity_link(self):
+        window, _, _, _ = self.build_window()
+        self.assertTrue(window.switch_to_route("utility:tune"))
+        adapter = window._new_utility_operation_adapter(
+            phase="change", operation_name="Applying single-click setting"
+        )
+        self.assertTrue(window.switch_to_route("utility:install"))
+        adapter.finished.emit(SimpleNamespace(run_id="exact-profile-run", message="Verified"))
+        self.assertIn("Applying single-click setting", window._status_label.text())
+        self.assertIn("Tweaks", window._status_label.text())
+        self.assertEqual(window._return_to_operation_button.text(), "Return to Tweaks")
+        self.assertFalse(window._activity_status_button.isHidden())
+        window._return_to_operation_button.click()
+        self.assertEqual(window._active_route_id, "utility:tune")
+        self.assertEqual(window._last_operation_run_id, "exact-profile-run")
+        window._utility_operation_adapter_stopped(adapter)
+
+    def test_close_waits_when_profile_editor_requests_save_or_cancel(self):
+        from ui.main_window_interactions import MainWindowInteractionMixin
+
+        window, _, _, _ = self.build_window()
+        for decision in ("cancel", "saving"):
+            with self.subTest(decision=decision):
+                window._profile_editor_close_decision = Mock(return_value=decision)
+                window._request_runtime_shutdown = Mock(return_value=True)
+                event = Mock()
+                MainWindowInteractionMixin.closeEvent(window, event)
+                event.ignore.assert_called_once()
+                event.accept.assert_not_called()
+                window._request_runtime_shutdown.assert_not_called()
+
+    def test_quit_waits_for_profile_save_before_quitting(self):
+        from ui.main_window_interactions import MainWindowInteractionMixin
+        from PyQt6.QtWidgets import QApplication
+
+        window, _, _, _ = self.build_window()
+        window._profile_editor_close_decision = Mock(return_value="saving")
+        window._request_runtime_shutdown = Mock(return_value=True)
+        with patch.object(QApplication, "quit") as quit_app:
+            MainWindowInteractionMixin.quit_app(window)
+        self.assertTrue(window._quit_after_profile_save)
+        window._request_runtime_shutdown.assert_not_called()
+        quit_app.assert_not_called()
 
     def test_failed_last_route_save_keeps_previous_preference(self):
         window, prefs, manager, _ = self.build_window()

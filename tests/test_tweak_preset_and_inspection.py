@@ -280,8 +280,13 @@ class FocusedInspectionUiTests(unittest.TestCase):
         try:
             page.set_profile_result(result)
             self.assertFalse(page.profile_result_card.isHidden())
-            self.assertIn("succeeded", page.profile_result_label.text())
-            page.profile_activity_button.click()
+            result_layout = page.profile_activity_links.itemAt(0).layout()
+            self.assertIsNotNone(result_layout)
+            result_label = result_layout.itemAt(0).widget()
+            self.assertIn("Battery percentage — Succeeded: Verified", result_label.text())
+            activity_button = result_layout.itemAt(1).widget()
+            self.assertEqual(activity_button.accessibleName(), "Open Activity result for Battery percentage")
+            activity_button.click()
             self.assertEqual(opened, ["run-exact"])
         finally:
             page.close()

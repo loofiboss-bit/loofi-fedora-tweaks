@@ -7,7 +7,7 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from PyQt6.QtGui import QAction
-from PyQt6.QtCore import Qt
+from PyQt6.QtCore import Qt, QTimer
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QFrame, QHBoxLayout, QMenu, QPushButton, QToolButton
 
@@ -51,6 +51,13 @@ class TestGuideShell(unittest.TestCase):
             QTest.keyClick(previous, Qt.Key.Key_Tab)
             self.assertIs(frame.focusWidget(), owner._resume_guide_button)
             self.assertEqual(owner._resume_guide_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+            self.assertEqual(owner._resume_guide_button.popupMode(), QToolButton.ToolButtonPopupMode.MenuButtonPopup)
+            shown = []
+            owner._resume_guide_menu.aboutToShow.connect(lambda: shown.append(True))
+            QTimer.singleShot(50, owner._resume_guide_menu.close)
+            QTest.keyClick(owner._resume_guide_button, Qt.Key.Key_Space)
+            self.assertEqual(shown, [True])
+            self.assertIs(frame.focusWidget(), owner._resume_guide_button)
         finally:
             frame.close()
 

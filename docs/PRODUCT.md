@@ -1,8 +1,10 @@
 # Product definition
 
 **Loofi Fedora Tweaks is a control center for understanding and personalizing Fedora.**
-Overview combines live resources, available hardware readings, and recorded
-maintenance. Search, change, and verify desktop and system settings for GNOME,
+Overview leads with CPU, memory, GPU, and storage, then shows network, disk
+activity, available hardware readings, compact maintenance status, and relevant
+next steps. Introductory content and guides follow the system overview. Search,
+change, and verify desktop and system settings for GNOME,
 KDE, and DNF alongside applications, updates, health, and verified history.
 
 Voluntary Overview guides help users understand four everyday jobs: personalizing
@@ -23,8 +25,8 @@ computer is healthy.
 | Job | What the user does |
 |---|---|
 | **Overview** (start page) | Read current resources and up to three relevant next steps, open the appropriate tool, or choose an optional everyday guide |
-| **Tweaks** | Search and change a setting, review a desktop preset or same-desktop profile, check one current value, and restore supported values |
-| **Apps** | Find and install trusted applications; inspect installed apps and their Flatpak metadata permissions; remove an exact installation |
+| **Tweaks** | Use Settings for direct per-user or reviewed computer-wide settings; use Profiles to edit and save a copy, compare profiles, or review a saved profile |
+| **Apps** | Use Catalog to select and install trusted applications, Installed to inspect or remove an exact installation, and Sources to inspect configured package sources |
 | **Updates** | Update system packages, Flatpaks, and firmware; resume pending verification |
 | **Health** | Start from a symptom, inspect evidence, apply one reviewed fix |
 
@@ -32,11 +34,13 @@ computer is healthy.
 verification, previous values, and action-specific recovery guidance.
 
 Global search includes the currently supported GNOME or KDE settings from the
-canonical tweak catalog. Selecting a setting opens Tweaks, reveals its row, and
-focuses the control or its availability explanation; search never changes a
-value. Apps keeps one search field for both the catalog and the already-read
-Installed inventory. Installed results retain separate user, system, and named
-Flatpak installations even when their application names match.
+canonical tweak catalog. Selecting a setting opens Tweaks > Settings, reveals
+its row, and focuses the control or its availability explanation; search never
+changes a value. A profile-library result opens Tweaks > Profiles. Apps keeps
+catalog and installed-inventory searches within their respective subviews.
+Installed results retain separate user, system, and named Flatpak installations
+even when their application names match. The selected-app view ignores catalog
+filters until the user returns to the previous search and category.
 
 On first opening Activity, Loofi asynchronously reads up to 25 recent local
 Loofi runs. Other recorded sources refresh only when the user asks. A link to a
@@ -201,9 +205,26 @@ origin or trust; recommended catalog entries retain their explicit curation.
 Removal stays in the native software manager. Partial reads remain visible.
 
 Profile library entries can be edited as copies: change the name, inclusion,
-and supported target values, then save a new version locally. Original
-unknown or unavailable values remain until deliberately removed. Saving does
-not change computer settings; applying requires a fresh existing review.
+and supported target values, then choose **Save copy** or **Save and review…**.
+Saving selects the persisted copy and does not change computer settings.
+Review inspects that exact saved profile with fresh current values; save errors
+or cancelled inspections never start review or application. Drafts survive
+Settings/Profiles navigation, and leaving the editor for another profile offers
+Save, Discard, or Cancel. Original unknown or unavailable values remain until
+deliberately removed.
+
+Setting rows distinguish **Applies immediately · This user** from
+**Review required · This computer** before interaction. Requested values,
+verified readback, and any session activation result are shown on that setting.
+Profile results use understandable setting names and provide a separate
+Activity link only for each actual recorded run.
+
+Apps keeps Catalog selection while search and category filters change. **Show
+selected** reveals the complete selection regardless of those filters;
+individual items can be removed or the selection cleared. The shared final
+review names each application, source, package identifier, and installation
+scope. Partial failures retain the selection and report each application's
+result independently.
 
 The Package sources view in Apps searches configured DNF5 source IDs, names,
 and enabled/disabled state with an observation time. Updates links to that

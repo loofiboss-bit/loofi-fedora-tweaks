@@ -273,14 +273,14 @@ class TestTweakPage(unittest.TestCase):
         finally:
             page.close()
 
-    def test_profile_library_guide_focuses_visible_profile_menu(self, _capability) -> None:
+    def test_profile_library_guide_opens_profiles_subview_and_focuses_library(self, _capability) -> None:
         page = TweaksPage(profile("kde"))
         try:
             page.show()
             self.app.processEvents()
-            self.assertFalse(page.profile_menu_button.isHidden())
             self.assertTrue(page.focus_task("tune:profile-library"))
-            self.assertIs(self.app.focusWidget(), page.profile_menu_button)
+            self.assertTrue(page._subview_buttons["profiles"].isChecked())
+            self.assertIs(self.app.focusWidget(), page.profile_library_view.entries)
         finally:
             page.close()
 
