@@ -74,6 +74,9 @@ before retrying. Guest-only packages such as `python3-selenium`, `python3-flask`
 - The guest test account has a randomly generated password kept in the private
   VM data directory with mode `0600`; it authenticates the serial login and exercises the guest's
   Polkit dialog and is not printed in reports.
+- Credential integrity metadata uses PBKDF2-HMAC-SHA256 with a unique 128-bit
+  salt, 600,000 iterations, and constant-time comparison. It is separate from
+  the guest account's authentication hash and never replaces guest PAM/Polkit.
 - The VM's domain UUID, memory, CPU, disk, user network, graphics binding,
   filesystem devices, and passthrough devices are checked before boot. An
   existing VM with a different identity is never stopped or replaced.

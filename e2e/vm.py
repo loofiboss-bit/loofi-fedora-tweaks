@@ -10,6 +10,7 @@ import argparse
 import base64
 import fcntl
 import hashlib
+import hmac
 import io
 import json
 import os
@@ -46,6 +47,12 @@ GUEST_USER = "loofie2e"
 GUEST_AGENT_TIMEOUT = 15
 GUEST_RUN_TIMEOUT = 45 * 60
 INSTALL_TIMEOUT = 90 * 60
+PASSWORD_ITERATIONS = 600_000
+
+
+def _credential_digest(password: str, salt: str) -> str:
+    """Derive a salted integrity verifier with a bounded password KDF."""
+    return hashlib.pbkdf2_hmac("sha256", password.encode(), bytes.fromhex(salt), PASSWORD_ITERATIONS).hex()
 
 
 class VMError(RuntimeError):
@@ -599,7 +606,8 @@ reboot
         self.password_path.write_text(password + "\n", encoding="utf-8")
         os.chmod(self.password_path, 0o600)
         password_hash = _run(["openssl", "passwd", "-6", "-stdin"], timeout=10, input_text=password + "\n").stdout.strip()
-        self._state["password_sha256"] = hashlib.sha256(password.encode()).hexdigest()
+        self._state["password_salt"] = secrets.token_hex(16)
+        self._state["password_verifier"] = _credential_digest(password, self._state["password_salt"])
         self._save_state()
 
         _run(["qemu-img", "create", "-f", "qcow2", str(install_disk), "32G"], timeout=20)
@@ -759,11 +767,20 @@ reboot
             time.sleep(5)
         raise VMError(f"Timed out waiting for the VM guest agent: {last_error}")
 
+    def _validated_password(self) -> str:
+        password = self.password_path.read_text(encoding="utf-8").strip()
+        salt = self._state.get("password_salt")
+        verifier = self._state.get("password_verifier")
+        if (not password or not isinstance(salt, str) or not re.fullmatch(r"[0-9a-f]{32}", salt)
+                or not isinstance(verifier, str) or not re.fullmatch(r"[0-9a-f]{64}", verifier)):
+            raise VMError("The private guest credential integrity metadata is missing or invalid.")
+        if not hmac.compare_digest(_credential_digest(password, salt), verifier):
+            raise VMError("The private guest credential does not match its ownership marker.")
+        return password
+
     def _guest_exec(self, path: str, args: Sequence[str], *, timeout: int = GUEST_RUN_TIMEOUT) -> tuple[int, str, str]:
         self._assert_owned_domain()
-        password = self.password_path.read_text(encoding="utf-8").strip()
-        if hashlib.sha256(password.encode()).hexdigest() != self._state.get("password_sha256"):
-            raise VMError("The private guest credential does not match its ownership marker.")
+        password = self._validated_password()
         try:
             return console_execute(LIBVIRT_URI, VM_NAME, GUEST_USER, password, [path, *args], timeout)
         except (OSError, RuntimeError) as exc:
@@ -844,9 +861,7 @@ reboot
                 bundle.add(path, arcname=path.relative_to(ROOT).as_posix())
         self._write_guest_file("/var/tmp/loofi-e2e/tests.tar.gz", archive.getvalue())
         self._write_guest_file("/var/tmp/loofi-e2e/runner.py", (ROOT / "e2e" / "guest" / "runner.py").read_bytes())
-        password = self.password_path.read_text(encoding="utf-8").strip()
-        if hashlib.sha256(password.encode()).hexdigest() != self._state.get("password_sha256"):
-            raise VMError("The private VM test credential does not match its saved integrity marker.")
+        password = self._validated_password()
         payload = json.dumps({"user": GUEST_USER, "password": password}, separators=(",", ":")).encode("utf-8")
         self._write_guest_file("/var/tmp/loofi-e2e/credentials.json", payload)
         code, stdout, stderr = self._guest_exec(
