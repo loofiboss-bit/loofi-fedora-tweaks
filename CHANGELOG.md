@@ -1,10 +1,11 @@
 # Changelog
 
-## [33.0.0] — Local candidate (unpublished)
+## [33.0.1] — Concord — release candidate (unpublished)
 
-This local candidate is based on `a62f6e7`. It is not published and has no
-release date. Automated and disposable Fedora/KDE qualification status is
-tracked in `ROADMAP.md`.
+This candidate packages the merged Concord work at `f8e3e7e`. The existing
+`v33.0.0` tag identifies the older Bastion source, so it is preserved and
+Concord uses the next patch version. Automated and disposable Fedora/KDE
+qualification status is tracked in `docs/V33_QUALIFICATION.md`.
 
 - Lead Overview with CPU, RAM, GPU, and storage, followed by detail readings, compact maintenance, next steps, and guides.
 - Add Settings and Profiles subviews to Tweaks. Show user-versus-computer scope, requested and verified values, and session activation on each setting. Save profile copies locally and review only the exact successfully saved copy.
