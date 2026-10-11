@@ -28,10 +28,12 @@ class TweaksPage(QWidget, PluginInterface):
     loadProfileRequested = pyqtSignal()
     choosePresetRequested = pyqtSignal()
     refreshRequested = pyqtSignal()
+    continueSnapshotRequested = pyqtSignal()
     inspectRequested = pyqtSignal(str)
     changeRequested = pyqtSignal(str, str)
     restoreRequested = pyqtSignal(str, str)
     cancelSnapshotRequested = pyqtSignal()
+    activityRequested = pyqtSignal(str)
     snapshotProgress = pyqtSignal(int, int)
     cursor_settings_requested = pyqtSignal()
     stopped = pyqtSignal()
@@ -42,6 +44,7 @@ class TweaksPage(QWidget, PluginInterface):
         self._shown_once = False
         self._busy = False
         self._rows: dict[str, tuple[SettingRow, TweakControl]] = {}
+        self._states: dict[str, TweakState] = {}
         self.cursor_settings_buttons: dict[str, QPushButton] = {}
         self.cursor_settings_status: dict[str, QLabel] = {}
         self._cursor_settings_available = False
@@ -100,6 +103,13 @@ class TweaksPage(QWidget, PluginInterface):
         self.refresh_button.setObjectName("tweaksRefresh")
         self.refresh_button.clicked.connect(self.refreshRequested.emit)
         search_row.addWidget(self.refresh_button, 0, 1)
+
+        self.continue_snapshot_button = QPushButton(self.tr("Check remaining settings"))
+        self.continue_snapshot_button.setObjectName("tweaksContinueCheck")
+        self.continue_snapshot_button.setAccessibleName(self.tr("Check settings whose current values are still unknown"))
+        self.continue_snapshot_button.clicked.connect(self.continueSnapshotRequested.emit)
+        self.continue_snapshot_button.hide()
+        search_row.addWidget(self.continue_snapshot_button, 1, 0, 1, 2)
 
         self.cancel_snapshot_button = QPushButton(self.tr("Cancel check"))
         self.cancel_snapshot_button.setObjectName("tweaksCancelCheck")
@@ -187,6 +197,19 @@ class TweaksPage(QWidget, PluginInterface):
         self.empty_state.add_widget(self.clear_filters_button)
         self.empty_state.hide()
         self.scaffold.add_widget(self.empty_state)
+        self.profile_result_card = Card(self.tr("Profile results"))
+        self.profile_result_card.setObjectName("tweakProfileResults")
+        self.profile_result_label = QLabel()
+        self.profile_result_label.setWordWrap(True)
+        self.profile_result_label.setTextFormat(Qt.TextFormat.PlainText)
+        self.profile_result_card.add_widget(self.profile_result_label)
+        self.profile_activity_button = QPushButton(self.tr("Open Activity"))
+        self.profile_activity_button.setObjectName("tweakProfileActivity")
+        self.profile_activity_button.clicked.connect(self._open_profile_activity)
+        self.profile_result_card.add_widget(self.profile_activity_button)
+        self.profile_result_card.hide()
+        self._profile_activity_run_id = ""
+        self.scaffold.add_widget(self.profile_result_card)
         self.snapshotProgress.connect(self.set_snapshot_progress)
 
         for tweak in visible_tweaks(profile):
@@ -514,6 +537,7 @@ class TweaksPage(QWidget, PluginInterface):
         self.refresh_button.setEnabled(not busy)
         self.cancel_snapshot_button.setVisible(self._reading)
         self.cancel_snapshot_button.setEnabled(self._reading)
+        self.continue_snapshot_button.setEnabled(not busy)
         for _row, control in self._rows.values():
             control.setEnabled(not busy and bool(control.property("ready")))
         for button in self._restore_buttons.values():
@@ -531,22 +555,30 @@ class TweaksPage(QWidget, PluginInterface):
             )
 
     def set_states(self, states: tuple[TweakState, ...]) -> None:
-        not_checked = sum(
-            state.message.startswith(("Not checked because", "Setting inspection cancelled"))
-            for state in states
+        updated_states = tuple(states)
+        for state in updated_states:
+            self._states[state.tweak.id] = state
+        remaining = self.remaining_inspection_ids()
+        not_checked = len(remaining)
+        checked = sum(
+            tweak_id in self._states
+            and self._states[tweak_id].inspection_reason not in {"budget_expired", "cancelled"}
+            for tweak_id in self._tweaks
         )
-        checked = len(states) - not_checked
         if not_checked:
             message = (
-                self.tr("%1 of %2 settings checked; %3 were not checked, so their current values remain unknown. Refresh to continue.")
+                self.tr("%1 of %2 settings checked; %3 remain unknown. Check the remaining settings to continue.")
                 .replace("%1", str(checked))
-                .replace("%2", str(len(states)))
+                .replace("%2", str(len(self._tweaks)))
                 .replace("%3", str(not_checked))
             )
         else:
-            message = self.tr("Checked %1 settings. Choose one value to change it.").replace("%1", str(checked))
+            message = self.tr("Checked %1 settings. Choose one value to change it.").replace("%1", str(len(self._states)))
         self.set_busy(False, message)
-        for state in states:
+        self.continue_snapshot_button.setVisible(bool(remaining))
+        # Partial checks must only repaint rows that were read in this result.
+        # Repainting the cache could restore a value after a failed/cancelled check.
+        for state in updated_states:
             pair = self._rows.get(state.tweak.id)
             if pair is None:
                 continue
@@ -627,6 +659,33 @@ class TweaksPage(QWidget, PluginInterface):
                 row.clear_feedback()
         self._filter_rows(self.search_input.text())
 
+    def remaining_inspection_ids(self) -> tuple[str, ...]:
+        """Return settings that are absent or were skipped by a bounded check."""
+        return tuple(
+            tweak_id for tweak_id in self._tweaks
+            if tweak_id not in self._states
+            or self._states[tweak_id].inspection_reason in {"budget_expired", "cancelled"}
+        )
+
+    def set_profile_result(self, result: object) -> None:
+        """Keep profile outcomes visible while the affected values are rechecked."""
+        entries = tuple(getattr(result, "entries", ()))
+        details = [
+            f"{getattr(entry, 'id', '')}: {getattr(entry, 'status', '')} — {getattr(entry, 'message', '')}"
+            for entry in entries
+        ]
+        self.profile_result_label.setText("\n".join((str(getattr(result, "message", "")), *details)))
+        self._profile_activity_run_id = next(
+            (str(getattr(entry, "run_id", "")) for entry in reversed(entries) if getattr(entry, "run_id", "")),
+            "",
+        )
+        self.profile_activity_button.setVisible(bool(self._profile_activity_run_id))
+        self.profile_result_card.setVisible(True)
+
+    def _open_profile_activity(self) -> None:
+        if self._profile_activity_run_id:
+            self.activityRequested.emit(self._profile_activity_run_id)
+
     def set_outcome(self, tweak_id: str, target: str, outcome: object, *, restored: bool = False) -> None:
         success = bool(getattr(outcome, "success", False))
         message = str(getattr(outcome, "message", ""))
@@ -641,8 +700,10 @@ class TweaksPage(QWidget, PluginInterface):
 
     def set_check_error(self, tweak_id: str, message: str) -> None:
         """Mark one stale row unknown after its requested check fails."""
+        self._states.pop(tweak_id, None)
         pair = self._rows.get(tweak_id)
         self.set_busy(False, message)
+        self.continue_snapshot_button.setVisible(bool(self.remaining_inspection_ids()))
         if pair is None:
             return
         row, control = pair
@@ -666,14 +727,25 @@ class TweaksPage(QWidget, PluginInterface):
 
     def set_restore_error(self, tweak_id: str, message: str) -> None:
         """Invalidate one restoration offer without misreporting other rows."""
+        self._states.pop(tweak_id, None)
         self.set_busy(False, message)
+        self.continue_snapshot_button.setVisible(bool(self.remaining_inspection_ids()))
         self._last_changes.pop(tweak_id, None)
         row, control = self._rows[tweak_id]
         control.setProperty("ready", False)
         control.setEnabled(False)
+        row.value_label.setText(self.tr("Current value unavailable"))
         button = self._restore_buttons[tweak_id]
+        button.setProperty("ready", False)
         button.setProperty("sourceRunId", "")
         button.setEnabled(False)
+        button.setVisible(False)
+        reset = self._reset_buttons[tweak_id]
+        reset.setProperty("ready", False)
+        reset.setEnabled(False)
+        reset.hide()
+        self._unavailable.add(tweak_id)
+        self._changed.discard(tweak_id)
         row.set_feedback(message, kind="error")
         notice = self._restore_notices[tweak_id]
         notice.setText(message)
@@ -681,19 +753,31 @@ class TweaksPage(QWidget, PluginInterface):
 
     def set_error(self, message: str) -> None:
         self._pending.clear()
+        self._states.clear()
+        self._unavailable.update(self._tweaks)
+        self._changed.clear()
         self.set_busy(False, self.tr("Could not read current settings: %1. Refresh to retry.").replace("%1", message))
-        for button in [*self._restore_buttons.values(), *self._reset_buttons.values()]:
+        for button in self._restore_buttons.values():
+            button.setProperty("ready", False)
+            button.setProperty("sourceRunId", "")
+            button.setEnabled(False)
+            button.hide()
+        for button in self._reset_buttons.values():
             button.setProperty("ready", False)
             button.setEnabled(False)
+            button.hide()
+        for notice in self._restore_notices.values():
+            notice.clear()
+            notice.hide()
         for tweak_id, (row, control) in self._rows.items():
-            current = str(control.property("currentValue") or "")
-            row.value_label.setText(self.tr("Verified: %1").replace("%1", self._label_for(tweak_id, current)) if current else self.tr("Current value unavailable"))
+            row.value_label.setText(self.tr("Current value unavailable"))
             control.setProperty("ready", False)
             index = control.findData(control.property("currentValue"))
             if index >= 0:
                 control.setCurrentIndex(index)
             control.setEnabled(False)
             row.set_feedback(self.tr("Current value could not be confirmed. Refresh before changing it."), kind="error")
+        self.continue_snapshot_button.setVisible(bool(self.remaining_inspection_ids()))
 
     def focus_task(self, task_id: str) -> bool:
         key = str(task_id).removeprefix("tune:")

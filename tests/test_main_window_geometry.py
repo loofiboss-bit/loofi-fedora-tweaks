@@ -89,6 +89,26 @@ class TestMainWindowGeometry(unittest.TestCase):
         window.close()
         self.app.processEvents()
 
+    def test_minimum_window_size_clamps_to_small_logical_work_area(self):
+        from PyQt6.QtCore import QRect
+        mod = importlib.import_module("ui.main_window")
+        MainWindow = mod.MainWindow
+        screen = type("Screen", (), {"availableGeometry": lambda self: QRect(0, 0, 720, 500)})()
+
+        with patch.object(MainWindow, "_start_pulse_listener", lambda self: None), \
+             patch.object(MainWindow, "setup_tray", lambda self: None), \
+             patch.object(MainWindow, "check_dependencies", lambda self: None), \
+             patch.object(MainWindow, "_check_first_run", lambda self: None), \
+             patch.object(MainWindow, "screen", return_value=screen):
+            window = MainWindow()
+
+        self.assertLessEqual(window.minimumSize().width(), 720)
+        self.assertLessEqual(window.minimumSize().height(), 500)
+        self.assertLessEqual(window.width(), 720)
+        self.assertLessEqual(window.height(), 500)
+        window.close()
+        self.app.processEvents()
+
     def test_breadcrumb_bar_height(self):
         """Verify breadcrumb bar has positive height."""
         mod = importlib.import_module("ui.main_window")

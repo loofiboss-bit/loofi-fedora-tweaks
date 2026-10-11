@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 from PyQt6.QtCore import pyqtSignal
-from PyQt6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QPushButton, QLayout, QVBoxLayout
+from PyQt6.QtWidgets import QApplication, QComboBox, QDialog, QDialogButtonBox, QLabel, QMenu, QPushButton, QLayout, QToolButton, QVBoxLayout
 
 from core.catalog_models import NativeHandoffId
 from services.software.app_comparison import compare_installations, comparison_id
 from services.software.installed_applications import InstalledApplication, InstalledInventory, filter_installed_applications
 from ui.components import Card, DetailsDisclosure
 from ui.operation_worker import OperationControllerQtAdapter
-from ui.native_handoff_card import NativeHandoffCard
+from ui.native_handoff_card import ManagedNativeHandoffCard
 
 
 class FlatpakPermissionsDialog(QDialog):
@@ -152,9 +152,20 @@ class InstalledApplicationsCard(Card):
         self.search_summary.setObjectName("installedSearchSummary")
         self.search_summary.setWordWrap(True)
         self.add_widget(self.search_summary)
-        self.software_handoff = NativeHandoffCard(NativeHandoffId.SOFTWARE_CENTER, title=self.tr("Manage RPM applications"), description=self.tr("Review RPM removal in your desktop software manager."), button_text=self.tr("Open software manager"), parent=self)
+        self.software_handoff = ManagedNativeHandoffCard(NativeHandoffId.SOFTWARE_CENTER, title=self.tr("Manage RPM applications"), description=self.tr("Review RPM removal in your desktop software manager."), button_text=self.tr("Open software manager"), parent=self)
         self.software_handoff.hide()
         self.add_widget(self.software_handoff)
+        self.software_package = QLabel()
+        self.software_package.setObjectName("softwareManagerPackage")
+        self.software_package.setWordWrap(True)
+        self.software_package.hide()
+        self.software_handoff.layout().addWidget(self.software_package)
+        self.copy_package_button = QPushButton(self.tr("Copy package name"))
+        self.copy_package_button.setObjectName("copySoftwareManagerPackage")
+        self.copy_package_button.clicked.connect(self.copy_software_manager_package)
+        self.copy_package_button.hide()
+        self.software_handoff.layout().addWidget(self.copy_package_button)
+        self._software_manager_app = None
         self.source_filter = QComboBox()
         self.source_filter.setAccessibleName(self.tr("Installed application source"))
         self.source_filter.addItem(self.tr("All sources"), "")
@@ -191,6 +202,7 @@ class InstalledApplicationsCard(Card):
         self._permissions_adapter.finished.connect(self._permissions_result)
         self._permissions_adapter.failed.connect(self._permissions_failed)
         self._permissions_adapter.stopped.connect(self._start_pending_permission)
+        self.software_handoff.stopped.connect(self._notify_stopped)
         from ui.flatpak_insights import FlatpakInsightsCard
         self.insights = FlatpakInsightsCard(service=service, parent=self)
         self.insights.actionReviewRequested.connect(self.actionReviewRequested.emit)
@@ -200,7 +212,7 @@ class InstalledApplicationsCard(Card):
 
     @property
     def busy(self):
-        return self._adapter.busy or self._permissions_adapter.busy or self.insights.busy
+        return self._adapter.busy or self._permissions_adapter.busy or self.insights.busy or self.software_handoff.busy
 
     def request_stop(self):
         self._close_comparison_dialogs()
@@ -208,6 +220,7 @@ class InstalledApplicationsCard(Card):
         self._pending_permission_request = None
         self._close_permission_dialogs()
         self.insights.request_stop()
+        self.software_handoff.request_stop()
         self._adapter.cancel()
         self._permissions_adapter.cancel()
 
@@ -219,13 +232,34 @@ class InstalledApplicationsCard(Card):
         self.request_stop()
         inventory_stopped = self._adapter.close(timeout_ms)
         permissions_stopped = self._permissions_adapter.close(timeout_ms)
-        return self.insights.cleanup(timeout_ms) and inventory_stopped and permissions_stopped
+        return self.insights.cleanup(timeout_ms) and inventory_stopped and permissions_stopped and self.software_handoff.cleanup(timeout_ms)
 
-    def open_software_manager(self):
+    def open_software_manager(self, app: InstalledApplication | None = None):
+        self._software_manager_app = app if app is not None and app.source == "fedora" else None
+        if self._software_manager_app is not None:
+            package = self._software_manager_app.ref
+            self.software_handoff.description_label.setText(
+                self.tr("Search for this exact RPM package in the software manager. Loofi does not open an app-specific page or remove it. Return to Apps and refresh installed applications to verify the result.")
+            )
+            self.software_package.setText(self.tr("Package name: %1").replace("%1", package))
+            self.software_package.show()
+            self.copy_package_button.show()
+        else:
+            self.software_handoff.description_label.setText(self.tr("Review RPM removal in your desktop software manager."))
+            self.software_package.hide()
+            self.copy_package_button.hide()
         self.software_handoff.show()
-        self.software_handoff.refresh_availability()
         if self.software_handoff.open_button.isEnabled():
             self.software_handoff.open_button.click()
+
+    def copy_software_manager_package(self):
+        app = self._software_manager_app
+        if app is None or app.source != "fedora":
+            return
+        QApplication.clipboard().setText(app.ref)
+        self.software_package.setText(
+            self.tr("Package name copied: %1. Search for it in the software manager, then return here and refresh installed applications to verify.").replace("%1", app.ref)
+        )
 
     def refresh(self):
         if self.service is not None and not self._adapter.busy:
@@ -272,20 +306,27 @@ class InstalledApplicationsCard(Card):
                 compare.clicked.connect(lambda _checked=False, identifier=app_id: self.show_comparison(identifier))
                 row.add_widget(compare)
             if app.source == "flatpak":
-                app_details = QPushButton(self.tr("App details"))
-                app_details.clicked.connect(lambda _checked=False, item=app: self.show_details(item))
-                row.add_widget(app_details)
-                access = QPushButton(self.tr("Understand app access"))
-                access.clicked.connect(lambda _checked=False, item=app: self.insights.show_access(item))
-                row.add_widget(access)
-                permissions = QPushButton(self.tr("Show permissions"))
-                permissions.clicked.connect(lambda _checked=False, item=app: self.show_permissions(item))
-                row.add_widget(permissions)
+                information = QToolButton()
+                information.setObjectName("installedAppInformation")
+                information.setText(self.tr("App details and access"))
+                information.setAccessibleName(self.tr("App details and access for %1").replace("%1", app.name))
+                information.setPopupMode(QToolButton.ToolButtonPopupMode.InstantPopup)
+                information_menu = QMenu(information)
+                information_menu.addSection(self.tr("Application details"))
+                details_action = information_menu.addAction(self.tr("App details"))
+                details_action.triggered.connect(lambda _checked=False, item=app: self.show_details(item))
+                information_menu.addSection(self.tr("Application access"))
+                access_action = information_menu.addAction(self.tr("Understand app access"))
+                access_action.triggered.connect(lambda _checked=False, item=app: self.insights.show_access(item))
+                permissions_action = information_menu.addAction(self.tr("Show declared permissions"))
+                permissions_action.triggered.connect(lambda _checked=False, item=app: self.show_permissions(item))
+                information.setMenu(information_menu)
+                row.add_widget(information)
                 remove = QPushButton(self.tr("Review removal"))
                 remove.clicked.connect(lambda _checked=False, item=app: self.actionReviewRequested.emit("remove-installed-flatpak", {"ref": item.ref, "installation": item.installation}))
             else:
                 remove = QPushButton(self.tr("Open software manager"))
-                remove.clicked.connect(self.open_software_manager)
+                remove.clicked.connect(lambda _checked=False, item=app: self.open_software_manager(item))
             row.add_widget(remove)
             self.add_widget(row)
             self._rows.append(row)

@@ -4,7 +4,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
+from PyQt6.QtWidgets import QApplication, QDialog, QWidget
 from ui.main_window_utility import MainWindowUtilityMixin
 
 
@@ -35,15 +35,20 @@ class TestSystemTweakConfirmation(unittest.TestCase):
 
     @patch("core.actions.tweak_operations.activate_verified_tweak")
     @patch("core.actions.tweak_operations.cursor_notification_parameters", return_value=None)
-    @patch("PyQt6.QtWidgets.QMessageBox.question", return_value=QMessageBox.StandardButton.Yes)
-    def test_change_discloses_recovery_and_forwards_explicit_acceptance(self, question, _cursor, _activation):
+    @patch("ui.tweak_review.ReviewedActionDialog")
+    def test_change_discloses_scope_and_recovery_and_forwards_explicit_acceptance(self, dialog_class, _cursor, _activation):
+        dialog_class.return_value.exec.return_value = QDialog.DialogCode.Accepted
+        dialog_class.return_value.accepts_no_rollback = True
         MainWindowUtilityMixin._start_tweak_change(self.parent, self.page, "dnf-parallel-downloads", "5")
-        self.assertIn("Automatic rollback is unavailable", question.call_args.args[2])
+        self.assertIn("this computer, all users", dialog_class.call_args.args[2])
+        self.assertIn("Automatic rollback is unavailable", dialog_class.call_args.args[3])
+        self.assertTrue(dialog_class.call_args.kwargs["require_no_rollback_acceptance"])
         self.controller.execute.assert_called_once_with("set-dnf-parallel-downloads", {"value": "5"},
                                                         confirmed=True, accept_no_rollback=True)
 
-    @patch("PyQt6.QtWidgets.QMessageBox.question", return_value=QMessageBox.StandardButton.Cancel)
-    def test_cancel_does_not_execute_a_system_change(self, _question):
+    @patch("ui.tweak_review.ReviewedActionDialog")
+    def test_cancel_does_not_execute_a_system_change(self, dialog_class):
+        dialog_class.return_value.exec.return_value = QDialog.DialogCode.Rejected
         self.assertFalse(MainWindowUtilityMixin._start_tweak_change(self.parent, self.page, "dnf-parallel-downloads", "5"))
         self.controller.execute.assert_not_called()
         self.adapter.start.assert_not_called()
@@ -52,5 +57,5 @@ class TestSystemTweakConfirmation(unittest.TestCase):
     def test_source_bound_restoration_forwards_prior_system_confirmation(self, _activation):
         ticket = SimpleNamespace(plan=SimpleNamespace(policy_decision=SimpleNamespace(facts={"requested": "3"})))
         self.controller.confirm.return_value = SimpleNamespace(status="blocked")
-        MainWindowUtilityMixin._run_tweak_restore(self.parent, self.page, "dnf-parallel-downloads", ticket)
+        MainWindowUtilityMixin._run_tweak_restore(self.parent, self.page, "dnf-parallel-downloads", ticket, accept_no_rollback=True)
         self.controller.confirm.assert_called_once_with(ticket, confirmed=True, accept_no_rollback=True)

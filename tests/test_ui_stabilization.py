@@ -28,7 +28,10 @@ class TestStableApplicationSelection(unittest.TestCase):
     def test_hidden_selections_remain_in_summary_and_review(self):
         self.page._rows["firefox"][2].setCheckState(Qt.CheckState.Checked)
         self.page.search_input.setText("git")
-        self.assertNotIn("firefox", self.page._rows)
+        # Catalog widgets are reused across filters; hidden rows keep their
+        # identity so selections survive filtering without rebuilding widgets.
+        self.assertTrue(self.page._rows["firefox"][2].isHidden())
+        self.assertFalse(self.page._rows["git"][2].isHidden())
         self.assertEqual(self.page.selected_application_ids(), ("firefox",))
         self.assertIn("Firefox", self.page.review_summary.text())
         self.page._rows["git"][2].setCheckState(Qt.CheckState.Checked)

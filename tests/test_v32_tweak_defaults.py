@@ -105,9 +105,9 @@ class TestV32TweakPageDefaults(unittest.TestCase):
             first, second = BY_ID["gnome-hot-corners"], BY_ID["gnome-edge-tiling"]
             page.set_states((
                 TweakState(first, "ready", value="true", choices=first.choices),
-                TweakState(second, "unavailable", message="Not checked because the 20-second setting inspection limit was reached."),
+                TweakState(second, "unavailable", inspection_reason="budget_expired"),
             ))
-            self.assertIn("1 of 2 settings checked", page.status_label.text())
+            self.assertIn(f"1 of {len(page._tweaks)} settings checked", page.status_label.text())
             self.assertIn("remain unknown", page.status_label.text())
             self.assertTrue(page.cancel_snapshot_button.isHidden())
         finally:

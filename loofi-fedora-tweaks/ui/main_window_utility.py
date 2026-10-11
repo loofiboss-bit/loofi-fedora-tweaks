@@ -168,6 +168,8 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             tweaks_page.refreshRequested.connect(
                 lambda owner=tweaks_page: self._start_tweak_snapshot(owner)
             )
+            tweaks_page.continueSnapshotRequested.connect(lambda owner=tweaks_page: self._continue_tweak_snapshot(owner))
+            tweaks_page.activityRequested.connect(self._open_action_center_run)
             tweaks_page.cancelSnapshotRequested.connect(
                 lambda owner=tweaks_page: self._cancel_tweak_snapshot(owner)
             )
@@ -248,7 +250,7 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         status.setText(detail)
         self._status_frame.show()
 
-    def _start_tweak_snapshot(self: Any, page: Any) -> bool:
+    def _start_tweak_snapshot(self: Any, page: Any, *, tweak_ids: tuple[str, ...] | None = None) -> bool:
         """Read current settings on the window-owned worker, without UI blocking."""
         if self._utility_operation_adapter is not None:
             page.set_error(self.tr("Another operation is in progress. Refresh when it finishes."))
@@ -270,6 +272,7 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             lambda: snapshot(
                 page.profile,
                 runtime,
+                tweak_ids=tweak_ids,
                 is_cancelled=lambda: adapter.cancel_requested,
                 on_progress=lambda completed, total: page.snapshotProgress.emit(completed, total),
             )
@@ -277,6 +280,10 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         if not started:
             page.set_busy(False, self.tr("Setting inspection could not be started. Refresh to try again."))
         return bool(started)
+
+    def _continue_tweak_snapshot(self: Any, page: Any) -> bool:
+        remaining = tuple(page.remaining_inspection_ids())
+        return bool(self._start_tweak_snapshot(page, tweak_ids=remaining)) if remaining else False
 
     def _start_tweak_inspection(self: Any, page: Any, tweak_id: str) -> bool:
         """Refresh one row without replacing the rest of the visible snapshot."""
@@ -318,7 +325,8 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         from core.actions.operation_controller import OperationController
         from core.tasks.tweaks import BY_ID
         from core.actions.tweak_operations import activate_verified_tweak, cursor_notification_parameters, notify_verified_cursor_change
-        from PyQt6.QtWidgets import QMessageBox
+        from PyQt6.QtWidgets import QDialog
+        from ui.tweak_review import system_tweak_review
 
         tweak = BY_ID.get(str(tweak_id))
         if tweak is None:
@@ -328,20 +336,14 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             page.restore_selection(tweak_id)
             page.set_error(self.tr("Another operation is in progress. Try again when it finishes."))
             return False
+        accept_no_rollback = False
         if tweak.system_wide:
-            answer = QMessageBox.question(
-                self,
-                self.tr("Change system setting"),
-                self.tr("%1\nCurrent: %2\nSelected: %3\nScope: this computer, all users.\nAutomatic rollback is unavailable. The previous value can be restored only after a verified change.\nApply and verify this change?")
-                .replace("%1", self.tr(tweak.title))
-                .replace("%2", self.tr(dict(tweak.choices).get(str(page._rows[tweak_id][1].property("currentValue") or ""), str(page._rows[tweak_id][1].property("currentValue") or ""))))
-                .replace("%3", self.tr(dict(tweak.choices).get(value, value))),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
-                QMessageBox.StandardButton.Cancel,
-            )
-            if answer != QMessageBox.StandardButton.Yes:
+            current_value = str(page._rows[tweak_id][1].property("currentValue") or "")
+            review = system_tweak_review(self, tweak, current_value, value, self.tr)
+            if review.exec() != QDialog.DialogCode.Accepted:
                 page.restore_selection(tweak_id)
                 return False
+            accept_no_rollback = review.accepts_no_rollback
         if self._utility_operation_controller is None:
             self._utility_operation_controller = OperationController()
         controller = self._utility_operation_controller
@@ -356,7 +358,7 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
                 page.set_activation(tweak_id, activation.message)
 
         def operation() -> Any:
-            outcome = controller.execute(tweak.action_id, {"value": value}, confirmed=True, accept_no_rollback=tweak.system_wide)
+            outcome = controller.execute(tweak.action_id, {"value": value}, confirmed=True, accept_no_rollback=accept_no_rollback)
             followup = notify_verified_cursor_change(controller, outcome) if cursor_notification_parameters(outcome) else activate_verified_tweak(controller, outcome)
             return outcome, followup
 
@@ -386,7 +388,8 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
 
     def _show_tweak_restore_review(self: Any, page: Any, tweak_id: str, ticket: Any, adapter: Any) -> None:
         from core.tasks.tweaks import BY_ID
-        from PyQt6.QtWidgets import QMessageBox
+        from PyQt6.QtWidgets import QDialog
+        from ui.tweak_review import tweak_restore_review
 
         if ticket.blocked:
             from ui.restore_conflict import restore_conflict_message
@@ -396,24 +399,15 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             adapter.stopped.connect(lambda: self._start_tweak_inspection(page, tweak_id))
             return
         facts = ticket.plan.policy_decision.facts
-        answer = QMessageBox.question(
-            self,
-            self.tr("Restore previous value"),
-            self.tr("Restore %1 from %2 to %3? The saved result will be verified.")
-            .replace("%1", self.tr(BY_ID[tweak_id].title))
-            .replace("%2", str(facts["current"]))
-            .replace("%3", str(facts["requested"]))
-            + ("\n" + self.tr("Automatic rollback is unavailable. Review the verified result before making further changes.") if BY_ID[tweak_id].system_wide else ""),
-            QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
-            QMessageBox.StandardButton.Cancel,
-        )
-        if answer != QMessageBox.StandardButton.Yes:
+        tweak = BY_ID[tweak_id]
+        review = tweak_restore_review(self, tweak, facts, str(ticket.plan.recovery_guidance), self.tr)
+        if review.exec() != QDialog.DialogCode.Accepted:
             page.set_busy(False, self.tr("Restore cancelled. No change was made."))
             self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
             return
-        adapter.stopped.connect(lambda: self._run_tweak_restore(page, tweak_id, ticket))
+        adapter.stopped.connect(lambda: self._run_tweak_restore(page, tweak_id, ticket, accept_no_rollback=review.accepts_no_rollback))
 
-    def _run_tweak_restore(self: Any, page: Any, tweak_id: str, ticket: Any) -> bool:
+    def _run_tweak_restore(self: Any, page: Any, tweak_id: str, ticket: Any, *, accept_no_rollback: bool = False) -> bool:
         from core.actions.tweak_operations import activate_verified_tweak, cursor_notification_parameters, notify_verified_cursor_change
 
         controller = self._utility_operation_controller
@@ -422,8 +416,7 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
             return False
 
         def operation() -> Any:
-            from core.tasks.tweaks import BY_ID
-            prepared = controller.confirm(ticket, confirmed=True, accept_no_rollback=BY_ID[tweak_id].system_wide)
+            prepared = controller.confirm(ticket, confirmed=True, accept_no_rollback=accept_no_rollback)
             if prepared.status != "prepared":
                 return prepared, activate_verified_tweak(controller, prepared)
             running = controller.run(prepared)
@@ -500,39 +493,33 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         )))
 
     def _show_health_review(self: Any, page: Any, ticket: Any, adapter: Any) -> None:
-        from PyQt6.QtWidgets import QMessageBox
+        from PyQt6.QtWidgets import QDialog
+        from core.actions.catalog import ActionCatalog
+        from ui.confirm_dialog import ReviewedActionDialog
 
         if ticket.blocked:
             decision = ticket.plan.policy_decision
             self._set_review_notice(page, "warning", self.tr("Unavailable"), " ".join(part for part in (decision.explanation, decision.alternative) if part))
             return
-        dialog = QMessageBox(self)
-        dialog.setIcon(QMessageBox.Icon.Warning)
-        dialog.setWindowTitle(self.tr("Review change"))
-        dialog.setText(str(ticket.plan.action_id).replace("-", " ").title())
-        dialog.setInformativeText(self.tr("Apply this exact change and verify its result?"))
-        dialog.setDetailedText("\n".join([*ticket.preview, ticket.plan.recovery_guidance]))
-        dialog.setStandardButtons(QMessageBox.StandardButton.Cancel | QMessageBox.StandardButton.Ok)
-        dialog.setDefaultButton(QMessageBox.StandardButton.Cancel)
-        dialog.setEscapeButton(QMessageBox.StandardButton.Cancel)
-        if dialog.exec() != QMessageBox.StandardButton.Ok:
+        action_id = str(ticket.plan.action_id)
+        definition = ActionCatalog().get(action_id)
+        title = definition.title if definition is not None else action_id.replace("-", " ").title()
+        description = definition.description if definition is not None else self.tr("Apply this exact change and verify its result?")
+        dialog = ReviewedActionDialog(
+            title,
+            description,
+            "\n".join(str(part) for part in ticket.preview),
+            str(ticket.plan.recovery_guidance),
+            require_no_rollback_acceptance=(
+                ticket.plan.risk_level in {"medium", "high"} and not ticket.plan.rollback_supported
+            ),
+            parent=self,
+        )
+        if dialog.exec() != QDialog.DialogCode.Accepted:
             self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
             self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
             return
-        accept_no_rollback = False
-        if ticket.plan.risk_level in {"medium", "high"} and not ticket.plan.rollback_supported:
-            answer = QMessageBox.question(
-                self,
-                self.tr("No Automatic Rollback"),
-                self.tr("This action has no supported rollback. Accept the recovery guidance and continue?"),
-                QMessageBox.StandardButton.Yes | QMessageBox.StandardButton.Cancel,
-                QMessageBox.StandardButton.Cancel,
-            )
-            if answer != QMessageBox.StandardButton.Yes:
-                self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
-                self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
-                return
-            accept_no_rollback = True
+        accept_no_rollback = dialog.accepts_no_rollback
         adapter.stopped.connect(lambda: self._run_reviewed_health_action(page, ticket, accept_no_rollback))
 
     def _run_reviewed_health_action(self: Any, page: Any, ticket: Any, accept_no_rollback: bool = False) -> bool:

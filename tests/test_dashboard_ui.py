@@ -6,7 +6,7 @@ from threading import Event, get_ident
 from time import monotonic
 from types import SimpleNamespace
 import unittest
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QWidget
@@ -91,6 +91,86 @@ class TestDashboardUi(unittest.TestCase):
         self.assertIn("Two updates available", page._maintenance["updates"][1].text())
         self.assertEqual(page._maintenance["health"][1].text(), "No recorded result yet")
 
+    def test_overview_prioritizes_next_steps_and_maintenance_before_metrics(self):
+        page = OverviewPage()
+        root = page.layout()
+        self.assertLess(root.indexOf(page.next_steps_card), root.indexOf(page.main_grid))
+        self.assertLess(root.indexOf(page.maintenance_grid), root.indexOf(page.main_grid))
+        self.assertLess(root.indexOf(page.guide_panel), root.indexOf(page.main_grid))
+
+    def test_unverified_update_sources_never_show_zero_updates(self):
+        page = OverviewPage()
+        sample = snapshot(20, "ready")
+        sample.maintenance = {"updates": {"sources": [
+            {"source": "System", "status": "unchecked", "count": 0},
+            {"source": "Flatpak", "status": "error", "count": 0},
+            {"source": "Firmware", "status": "unsupported", "count": 0},
+            {"source": "Cached", "status": "available", "count": 0, "stale": True},
+        ]}}
+        page.set_snapshot(sample)
+        text = page._maintenance["updates"][1].text()
+        self.assertNotIn("0 updates", text)
+        self.assertIn("Not checked", text)
+        self.assertIn("Check failed", text)
+        self.assertIn("Unsupported", text)
+        self.assertIn("Last known result", text)
+        page.set_maintenance(updates={"sources": [
+            {"source": "System", "status": "up_to_date", "count": 0, "stale": False}
+        ]})
+        self.assertIn("0 updates", page._maintenance["updates"][1].text())
+        page.cleanup()
+
+    def test_routine_missing_checks_keep_optional_intro_visible(self):
+        page = OverviewPage()
+        sample = snapshot(20, "ready")
+        sample.maintenance = {"health": {"status": "unchecked"}, "updates": {"status": "unchecked", "sources": []}}
+        page.set_snapshot(sample)
+        self.assertFalse(page.intro_card.isHidden())
+        self.assertEqual({step.layout().itemAt(0).widget().text() for step in page._next_step_rows},
+                         {"Check system health", "Check for updates"})
+
+        sample.maintenance["health"] = {"status": "error", "detail": "Saved health history is unreadable"}
+        page.set_snapshot(sample)
+        self.assertTrue(page.intro_card.isHidden())
+        page.cleanup()
+
+    @patch("utils.settings.SettingsManager.instance")
+    def test_dismissed_intro_can_be_reopened_without_starting_an_action(self, settings_instance):
+        class Settings:
+            def __init__(self):
+                self.values = {"overview_intro_dismissed": False}
+
+            def get(self, key, default=None):
+                return self.values.get(key, default)
+
+            def set(self, key, value):
+                self.values[key] = value
+
+            def save(self):
+                return True
+
+        settings = Settings()
+        settings_instance.return_value = settings
+        page = OverviewPage()
+        actions = []
+        page.taskRequested.connect(actions.append)
+        page.show()
+        self.app.processEvents()
+        try:
+            page.dismiss_intro_button.click()
+            self.assertTrue(page.intro_card.isHidden())
+            self.assertFalse(page.show_intro_button.isHidden())
+
+            page.show_intro_button.click()
+            self.assertFalse(page.intro_card.isHidden())
+            self.assertTrue(page.show_intro_button.isHidden())
+            self.assertFalse(settings.values["overview_intro_dismissed"])
+            self.assertEqual(actions, [])
+        finally:
+            page.cleanup()
+            page.close()
+            self.app.processEvents()
+
     def test_maintenance_buttons_request_existing_routes(self):
         page = OverviewPage()
         routes = []
@@ -98,6 +178,23 @@ class TestDashboardUi(unittest.TestCase):
         for card, label in page._maintenance.values():
             card.body.itemAt(card.body.count() - 1).widget().click()
         self.assertEqual(routes, ["maintenance:updates", "maintenance:health-timeline", "activity"])
+
+    def test_latest_diagnosis_is_separate_and_opens_exact_saved_session(self):
+        page = OverviewPage()
+        page.set_maintenance(health={
+            "status": "completed", "detail": "System Check: completed; 0 findings",
+            "latest_session": {
+                "status": "partial", "session_id": "session-exact", "title": "Audio problem", "sampled_at": 100000.0,
+            },
+        })
+        self.assertIn("System Check", page._maintenance["health"][1].text())
+        self.assertIn("Partially completed", page._maintenance["health"][1].text())
+        self.assertIn("Audio problem", page._maintenance["health"][1].text())
+        requests = []
+        page.contextRouteRequested.connect(lambda *args: requests.append(args))
+        page._maintenance["health"][0].body.itemAt(page._maintenance["health"][0].body.count() - 1).widget().click()
+        self.assertEqual(requests, [("health", {"session_id": "session-exact"})])
+        page.cleanup()
 
     def test_next_steps_show_routes_and_preserve_keyboard_focus_targets(self):
         page = OverviewPage()

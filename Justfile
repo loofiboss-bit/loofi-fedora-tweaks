@@ -157,6 +157,7 @@ validate-architecture:
 # Keep generated catalog documentation and active version sources in sync
 check-product-catalog:
     python3 scripts/gen_tweaks_doc.py --check
+    python3 scripts/check_translation_inventory.py --check
     python3 scripts/bump_version.py --check
 
 # Validate pyproject package metadata and wheel/sdist contents

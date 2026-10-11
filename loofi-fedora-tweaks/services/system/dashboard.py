@@ -365,6 +365,35 @@ class DashboardService:
         except (OSError, ValueError):
             result["health"] = {"status": "error", "detail": "Saved health results are unreadable", "sampled_at": None}
         try:
+            from core.troubleshooting.profiles import require_profile
+            from core.troubleshooting.storage import TroubleshootingSessionStore
+
+            sessions = TroubleshootingSessionStore().read()
+            terminal = tuple(
+                session for session in sessions.sessions
+                if session.state in {"completed", "partial"}
+            )
+            latest_session: dict[str, object]
+            if not sessions.writable:
+                latest_session = {"status": "unavailable", "detail": "Saved diagnosis uses a newer format"}
+            elif terminal:
+                symptom_session = max(terminal, key=lambda item: item.completed_at or item.started_at)
+                profile = require_profile(symptom_session.profile_id, symptom_session.profile_version)
+                latest_session = {
+                    "status": symptom_session.state,
+                    "session_id": symptom_session.session_id,
+                    "profile_id": symptom_session.profile_id,
+                    "title": profile.title,
+                    "sampled_at": symptom_session.completed_at or symptom_session.started_at,
+                }
+            else:
+                latest_session = {"status": "unchecked", "detail": "No saved symptom checks"}
+            result.setdefault("health", {})["latest_session"] = latest_session
+        except (OSError, ValueError, TypeError, OverflowError, RuntimeError):
+            result.setdefault("health", {})["latest_session"] = {
+                "status": "error", "detail": "Saved diagnosis history is unreadable"
+            }
+        try:
             runs = ActionRunStore().list_read_only(limit=100, strict=True)
             if runs:
                 latest_run = max(runs, key=lambda run: run.updated_at)

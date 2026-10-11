@@ -204,6 +204,67 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
         self.assertTrue(page.flathub_status_card.isHidden())
         page.deleteLater()
 
+    def test_flatpak_details_and_access_share_one_entry_while_removal_stays_separate(self):
+        from PyQt6.QtWidgets import QPushButton, QToolButton
+        from services.software.installed_applications import InstalledInventory
+        from ui.installed_applications import InstalledApplicationsCard
+
+        card = InstalledApplicationsCard(service=Mock())
+        app = parse_flatpak_inventory(ROW)[0]
+        card.show_details = Mock()
+        card.insights.show_access = Mock()
+        card.show_permissions = Mock()
+        card.apply_inventory(InstalledInventory(applications=(app,)))
+        row = card._application_rows[0][1]
+        information = row.findChild(QToolButton, "installedAppInformation")
+        self.assertIsNotNone(information)
+        labels = {action.text() for action in information.menu().actions()}
+        self.assertTrue({"App details", "Understand app access", "Show declared permissions"}.issubset(labels))
+        information.menu().actions()[1].trigger()
+        information.menu().actions()[3].trigger()
+        information.menu().actions()[4].trigger()
+        card.show_details.assert_called_once_with(app)
+        card.insights.show_access.assert_called_once_with(app)
+        card.show_permissions.assert_called_once_with(app)
+        self.assertTrue(any(button.text() == "Review removal" for button in row.findChildren(QPushButton)))
+        card.cleanup()
+        card.deleteLater()
+
+    def test_catalog_empty_state_offers_desktop_discovery_with_clear_scope(self):
+        from ui.install_workflow import InstallWorkflowPage
+        page = InstallWorkflowPage(context=ApplicationContext(variant=FedoraVariant.TRADITIONAL))
+        handoff = page.catalog_empty_handoff
+        self.assertIsNotNone(handoff)
+        self.assertTrue(handoff.isHidden())
+        page.search_input.setText("no curated app has this name")
+        self.assertFalse(handoff.isHidden())
+        self.assertIn("does not include every Fedora application", handoff.description_label.text())
+        self.assertIn("will not choose or install", handoff.description_label.text())
+        page.view_filter.setCurrentIndex(page.view_filter.findData("installed"))
+        self.assertTrue(handoff.isHidden())
+        page.view_filter.setCurrentIndex(page.view_filter.findData("catalog"))
+        self.assertFalse(handoff.isHidden())
+        page.deleteLater()
+
+    @patch("ui.native_handoff_card.ManagedNativeHandoffCard._start")
+    def test_rpm_handoff_preserves_exact_package_and_offers_copy_and_refresh_guidance(self, start):
+        from PyQt6.QtWidgets import QApplication
+        from services.software.installed_applications import InstalledApplication
+        from ui.installed_applications import InstalledApplicationsCard
+        card = InstalledApplicationsCard()
+        app = InstalledApplication("Example Editor", "example-editor", "fedora", "system", "example-editor")
+        card.open_software_manager(app)
+        start.assert_called_once_with(launch=True)
+        self.assertEqual(card.software_package.text(), "Package name: example-editor")
+        self.assertFalse(card.copy_package_button.isHidden())
+        self.assertIn("does not open an app-specific page or remove it", card.software_handoff.description_label.text())
+        self.assertIn("return to apps and refresh", card.software_handoff.description_label.text().casefold())
+        card.copy_package_button.click()
+        self.assertEqual(QApplication.clipboard().text(), "example-editor")
+        self.assertIn("refresh installed applications to verify", card.software_package.text())
+        card.cleanup()
+        card.deleteLater()
+
     def test_installed_search_filters_preserved_installation_identities(self):
         from ui.install_workflow import InstallWorkflowPage
         from services.software.installed_applications import InstalledInventory
@@ -400,15 +461,15 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
         source.close.assert_called_once_with(10)
         page.deleteLater()
 
-    @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
-    def test_rpm_removal_uses_fixed_native_handoff_card(self, refresh):
+    @patch("ui.native_handoff_card.ManagedNativeHandoffCard._start")
+    def test_rpm_removal_uses_fixed_native_handoff_card(self, start):
         from core.catalog_models import NativeHandoffId
         from ui.installed_applications import InstalledApplicationsCard
         card = InstalledApplicationsCard()
         card.software_handoff.open_button.setEnabled(False)
         card.open_software_manager()
         self.assertEqual(card.software_handoff.handoff_id, NativeHandoffId.SOFTWARE_CENTER)
-        refresh.assert_called_once()
+        start.assert_not_called()
         self.assertFalse(card.software_handoff.isHidden())
         card.deleteLater()
 

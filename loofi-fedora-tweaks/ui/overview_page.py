@@ -257,6 +257,8 @@ class OverviewPage(QWidget, PluginInterface):
         self._empty = {}
         self._has_registered_problem = False
         self._intro_dismissed = False
+        self._intro_reopened = False
+        self._latest_health_session_id = ""
         root = QVBoxLayout(self)
         root.setContentsMargins(20, 12, 20, 12)
         root.setSpacing(12)
@@ -268,8 +270,15 @@ class OverviewPage(QWidget, PluginInterface):
         header.addWidget(self.identity, 1)
         self.pause_button = QuietButton(self.tr("Pause"), description=self.tr("Pause live measurements"))
         self.pause_button.clicked.connect(self._toggle_pause)
+        self.show_intro_button = QuietButton(
+            self.tr("Show introduction"),
+            description=self.tr("Show the optional first-run guidance."),
+        )
+        self.show_intro_button.clicked.connect(self._show_intro)
+        self.show_intro_button.hide()
         self.refresh_button = SecondaryButton(self.tr("Refresh"), description=self.tr("Refresh system measurements"))
         self.refresh_button.clicked.connect(self._refresh)
+        header.addWidget(self.show_intro_button)
         header.addWidget(self.pause_button)
         header.addWidget(self.refresh_button)
         root.addLayout(header)
@@ -297,6 +306,24 @@ class OverviewPage(QWidget, PluginInterface):
         self._next_step_rows = []
         self._last_next_steps = None
         root.addWidget(self.next_steps_card)
+        self.maintenance_grid = QGridLayout()
+        self.maintenance_grid.setSpacing(12)
+        root.addLayout(self.maintenance_grid)
+        self._maintenance = {}
+        for key, title, route in (("updates", self.tr("Updates"), "maintenance:updates"), ("health", self.tr("Health"), "maintenance:health-timeline"),
+                                  ("activity", self.tr("Recent activity"), "activity")):
+            card = Card(title)
+            label = QLabel(self.tr("No recorded result yet"))
+            label.setWordWrap(True)
+            label.setTextFormat(Qt.TextFormat.PlainText)
+            card.add_widget(label)
+            button = QuietButton(self.tr("Open %1").replace("%1", title))
+            if key == "health":
+                button.clicked.connect(self._open_latest_health_session)
+            else:
+                button.clicked.connect(lambda checked=False, destination=route: self.routeRequested.emit(destination))
+            card.add_widget(button)
+            self._maintenance[key] = (card, label)
         self.guide_panel = GuidePanel(self)
         self.guide_panel.guideChanged.connect(self.guideChanged)
         self.guide_panel.targetRequested.connect(self.guideTargetRequested)
@@ -324,21 +351,6 @@ class OverviewPage(QWidget, PluginInterface):
         self._temp_grid.setHorizontalSpacing(16)
         self._temp_grid.setVerticalSpacing(2)
         self._cards["temperature"].add_widget(self._temp_container)
-        self.maintenance_grid = QGridLayout()
-        self.maintenance_grid.setSpacing(12)
-        root.addLayout(self.maintenance_grid)
-        self._maintenance = {}
-        for key, title, route in (("updates", self.tr("Updates"), "maintenance:updates"), ("health", self.tr("Health"), "maintenance:health-timeline"),
-                                  ("activity", self.tr("Recent activity"), "activity")):
-            card = Card(title)
-            label = QLabel(self.tr("No recorded result yet"))
-            label.setWordWrap(True)
-            label.setTextFormat(Qt.TextFormat.PlainText)
-            card.add_widget(label)
-            button = QuietButton(self.tr("Open %1").replace("%1", title))
-            button.clicked.connect(lambda checked=False, destination=route: self.routeRequested.emit(destination))
-            card.add_widget(button)
-            self._maintenance[key] = (card, label)
         root.addStretch()
         self._reflow(900)
 
@@ -388,12 +400,34 @@ class OverviewPage(QWidget, PluginInterface):
                 self.notice.set_notice("error", self.tr("Could not save preference"), self.tr("The introduction remains visible."))
                 return
             self._intro_dismissed = True
+            self._intro_reopened = False
             self._update_intro_visibility()
         except (ImportError, OSError, RuntimeError, TypeError, ValueError):
             self.notice.set_notice("error", self.tr("Could not save preference"), self.tr("The introduction remains visible."))
 
+    def _show_intro(self) -> None:
+        """Reopen optional guidance without starting a check or changing settings."""
+        if self._intro_dismissed:
+            try:
+                from utils.settings import SettingsManager
+
+                manager = SettingsManager.instance()
+                previous = manager.get("overview_intro_dismissed", True)
+                manager.set("overview_intro_dismissed", False)
+                if not manager.save():
+                    manager.set("overview_intro_dismissed", previous)
+                    self.notice.set_notice("error", self.tr("Could not save preference"), self.tr("The introduction is open for this session."))
+                else:
+                    self._intro_dismissed = False
+            except (ImportError, OSError, RuntimeError, TypeError, ValueError):
+                self.notice.set_notice("error", self.tr("Could not save preference"), self.tr("The introduction is open for this session."))
+        self._intro_reopened = True
+        self._update_intro_visibility()
+
     def _update_intro_visibility(self) -> None:
-        self.intro_card.setVisible(not self._intro_dismissed and not self._has_registered_problem)
+        visible = self._intro_reopened or (not self._intro_dismissed and not self._has_registered_problem)
+        self.intro_card.setVisible(visible)
+        self.show_intro_button.setVisible(not visible)
 
     def set_controller(self, controller):
         if self._controller is controller:
@@ -448,7 +482,7 @@ class OverviewPage(QWidget, PluginInterface):
         if maintenance:
             self.set_maintenance(**{key: maintenance[key] for key in ("updates", "health", "activity") if key in maintenance})
         now = snapshot.collected_at.timestamp() if isinstance(snapshot.collected_at, datetime) else snapshot.collected_at
-        self._show_next_steps(next_steps(maintenance or {}, snapshot.metrics, now=now))
+        self._show_next_steps(next_steps(maintenance or {}, snapshot.metrics, now=now), maintenance or {})
         identity_keys = ("hostname", "os", "desktop", "deployment", "cpu", "kernel")
         self.identity.setText(" · ".join(str(snapshot.identity[key]) for key in identity_keys if snapshot.identity.get(key)))
         self.notice.set_notice("info", self.tr("Last measured: %1").replace("%1", _format_time(snapshot.collected_at)),
@@ -503,8 +537,20 @@ class OverviewPage(QWidget, PluginInterface):
                 self._columns = 0
                 self._reflow(self.width())
 
-    def _show_next_steps(self, suggestions):
-        self._has_registered_problem = bool(suggestions)
+    def _show_next_steps(self, suggestions, maintenance=None):
+        maintenance = maintenance or {}
+        suggestion_ids = {step.id for step in suggestions}
+        # Missing routine checks are helpful prompts, not evidence of a system problem.
+        # An explicit failed check remains a recorded problem and should take precedence.
+        routine_only = suggestion_ids.issubset({"health-check", "update-check", "latest-diagnosis"})
+        failed_health_check = maintenance.get("health", {}).get("status") == "error"
+        updates = maintenance.get("updates", {})
+        failed_update_check = updates.get("status") == "error" or any(
+            source.get("status") == "error" for source in updates.get("sources", ())
+        )
+        self._has_registered_problem = bool(suggestions) and (
+            not routine_only or failed_health_check or failed_update_check
+        )
         self._update_intro_visibility()
         self.next_steps_card.setVisible(bool(suggestions))
         if not suggestions:
@@ -573,12 +619,50 @@ class OverviewPage(QWidget, PluginInterface):
                 detail = str(result.get("summary", result.get("detail", "")))
                 status = str(result.get("status", ""))
                 text = " · ".join(self.tr(part) for part in (status.replace("_", " "), detail) if part)
+                if key == "health":
+                    session = result.get("latest_session", {})
+                    if not isinstance(session, dict):
+                        session = {}
+                    self._latest_health_session_id = (
+                        str(session.get("session_id", ""))
+                        if session.get("status") in {"completed", "partial"}
+                        and isinstance(session.get("session_id"), str)
+                        else ""
+                    )
+                    if self._latest_health_session_id:
+                        state_label = "Completed" if session.get("status") == "completed" else "Partially completed"
+                        diagnosis = self.tr("Latest diagnosis (separate from System Check): %1 — %2")
+                        diagnosis = diagnosis.replace("%1", self.tr(str(state_label))).replace(
+                            "%2", self.tr(str(session.get("title", "Saved symptom check")))
+                        )
+                        stamp = session.get("sampled_at")
+                        if stamp:
+                            diagnosis += " · " + _format_time(stamp)
+                        text = "\n".join(part for part in (text, diagnosis) if part)
+                    else:
+                        self._latest_health_session_id = ""
                 if result.get("sources"):
                     lines = []
                     for source in result["sources"]:
-                        caption = self.tr("%1: %2 · %3 updates").replace("%1", self.tr(str(source.get("source", ""))))
-                        caption = caption.replace("%2", self.tr(str(source.get("status", "unchecked"))))
-                        caption = caption.replace("%3", str(source.get("count", 0)))
+                        source_name = self.tr(str(source.get("source", "")))
+                        source_status = str(source.get("status", "unchecked"))
+                        status_label = {
+                            "unchecked": "Not checked",
+                            "up_to_date": "No updates",
+                            "available": "Updates available",
+                            "error": "Check failed",
+                            "missing_tool": "Tool missing",
+                            "unsupported": "Unsupported",
+                            "stale": "Check required",
+                        }.get(source_status, source_status.replace("_", " "))
+                        if source.get("stale"):
+                            status_label = "Check required"
+                        caption = self.tr("%1: %2").replace("%1", source_name).replace(
+                            "%2", self.tr(status_label)
+                        )
+                        count = source.get("count")
+                        if source_status in {"available", "up_to_date"} and not source.get("stale") and isinstance(count, int) and not isinstance(count, bool) and count >= 0:
+                            caption += " · " + self.tr("%1 updates").replace("%1", str(count))
                         if source.get("stale"):
                             caption += " · " + self.tr("Last known result")
                         if source.get("sampled_at"):
@@ -591,6 +675,12 @@ class OverviewPage(QWidget, PluginInterface):
             else:
                 text = str(result)
             self._maintenance[key][1].setText(text or self.tr("No recorded result yet"))
+
+    def _open_latest_health_session(self) -> None:
+        if self._latest_health_session_id:
+            self.contextRouteRequested.emit("health", {"session_id": self._latest_health_session_id})
+        else:
+            self.routeRequested.emit("maintenance:health-timeline")
 
     def resizeEvent(self, event):
         super().resizeEvent(event)

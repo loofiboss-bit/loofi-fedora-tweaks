@@ -215,7 +215,9 @@ class TestDashboardService(unittest.TestCase):
         updates.return_value.load.return_value = SimpleNamespace(storage_status="ok", sources=(SimpleNamespace(source="system", status="available", items=("pkg",), checked_at="2026-10-06T12:00:00+00:00", stale=False),))
         health.return_value.load_read_only.return_value = [SimpleNamespace(timestamp=100, daily_maintenance={"system_check": {"state": "partial", "findings": [{"id": "disk"}]}}, collection_errors=["unreadable"])]
         actions.return_value.list_read_only.return_value = [SimpleNamespace(run_id="saved-tweak-run", updated_at=101, completed_at=101, action_id="set-tweak", state="failed", verification_result={"success": False})]
-        result = self.service._maintenance()
+        with patch("core.troubleshooting.storage.TroubleshootingSessionStore") as sessions:
+            sessions.return_value.read.return_value = SimpleNamespace(sessions=(), writable=True)
+            result = self.service._maintenance()
         self.assertEqual(result["updates"]["sources"][0]["count"], 1)
         self.assertEqual(result["health"]["status"], "partial")
         self.assertEqual(result["health"]["findings"], ({"id": "disk"},))
@@ -229,6 +231,7 @@ class TestDashboardService(unittest.TestCase):
         health.return_value.load_read_only.assert_called_once_with()
         health.return_value.collect_and_append.assert_not_called()
         actions.return_value.list_read_only.assert_called_once_with(limit=100, strict=True)
+        sessions.return_value.read.assert_called_once_with()
         actions.return_value.save.assert_not_called()
         run.assert_not_called()
 
@@ -240,8 +243,11 @@ class TestDashboardService(unittest.TestCase):
         health.return_value.load_read_only.return_value = []
         health.return_value.last_error = ""
         actions.return_value.list_read_only.return_value = []
-        result = self.service._maintenance()
+        with patch("core.troubleshooting.storage.TroubleshootingSessionStore") as sessions:
+            sessions.return_value.read.return_value = SimpleNamespace(sessions=(), writable=True)
+            result = self.service._maintenance()
         self.assertEqual(result["health"]["status"], "unchecked")
+        self.assertEqual(result["health"]["latest_session"]["status"], "unchecked")
         self.assertIsNone(result["updates"]["sampled_at"])
         self.assertEqual(result["activity"]["status"], "unchecked")
 
@@ -252,7 +258,11 @@ class TestDashboardService(unittest.TestCase):
         updates.return_value.load.side_effect = ValueError("corrupt")
         health.return_value.load_read_only.side_effect = OSError("permission")
         actions.return_value.list_read_only.side_effect = ValueError("future schema")
-        self.assertTrue(all(item["status"] == "error" for item in self.service._maintenance().values()))
+        with patch("core.troubleshooting.storage.TroubleshootingSessionStore") as sessions:
+            sessions.return_value.read.side_effect = ValueError("corrupt session history")
+            result = self.service._maintenance()
+        self.assertTrue(all(item["status"] == "error" for item in result.values()))
+        self.assertEqual(result["health"]["latest_session"]["status"], "error")
 
     @patch.object(PerformanceCollector, "_read_proc_stat", return_value=[[10, 0, 0, 90]])
     @patch.object(PerformanceCollector, "_read_proc_meminfo", return_value={"MemTotal": 1000, "MemAvailable": 500})
@@ -306,10 +316,36 @@ class TestDashboardService(unittest.TestCase):
         updates.return_value.load.return_value = UpdateOverviewSnapshot(sources=(UpdateSourceResult("system", "up_to_date", "2026-10-07T12:00:00+00:00"),))
         health.return_value.load_read_only.return_value = [HealthSnapshot(timestamp=100, app_version="test", app_codename="test", fedora_target="test", atomic=False, daily_maintenance={"system_check": {"state": "completed", "findings": []}}, action_center_summary={})]
         actions.return_value.list_read_only.return_value = [ActionRun(run_id="run", plan_id="plan", action_id="set-tweak", correlation_id="correlation", state="succeeded", updated_at=101, completed_at=101, verification_result={"success": True})]
-        result = self.service._maintenance()
+        with patch("core.troubleshooting.storage.TroubleshootingSessionStore") as sessions:
+            sessions.return_value.read.return_value = SimpleNamespace(sessions=(), writable=True)
+            result = self.service._maintenance()
         self.assertEqual(result["health"]["status"], "completed")
         self.assertEqual(result["activity"]["status"], "succeeded")
         self.assertTrue(result["activity"]["verified"])
+
+    @patch("services.system.dashboard.UpdateOverviewService")
+    @patch("services.system.dashboard.HealthTimelineStore")
+    @patch("services.system.dashboard.ActionRunStore")
+    def test_latest_saved_diagnosis_is_read_only_and_separate_from_system_check(self, actions, health, updates):
+        updates.return_value.load.return_value = SimpleNamespace(storage_status="ok", sources=())
+        health.return_value.load_read_only.return_value = []
+        health.return_value.last_error = ""
+        actions.return_value.list_read_only.return_value = []
+        session = SimpleNamespace(
+            state="partial", session_id="session-exact", profile_id="audio_problem", profile_version=1,
+            completed_at=100.0, started_at=90.0,
+        )
+        with patch("core.troubleshooting.storage.TroubleshootingSessionStore") as sessions, \
+             patch("core.troubleshooting.profiles.require_profile", return_value=SimpleNamespace(title="Audio problem")):
+            sessions.return_value.read.return_value = SimpleNamespace(sessions=(session,), writable=True)
+            result = self.service._maintenance()
+        self.assertEqual(result["health"]["status"], "unchecked")
+        self.assertEqual(result["health"]["latest_session"], {
+            "status": "partial", "session_id": "session-exact", "profile_id": "audio_problem",
+            "title": "Audio problem", "sampled_at": 100.0,
+        })
+        sessions.return_value.read.assert_called_once_with()
+        sessions.return_value.save.assert_not_called()
 
 
 class TestCollectorErrorSemantics(unittest.TestCase):

@@ -23,15 +23,98 @@ Usage::
 from PyQt6.QtWidgets import (
     QCheckBox,
     QDialog,
+    QDialogButtonBox,
     QFrame,
     QHBoxLayout,
     QLabel,
+    QPlainTextEdit,
     QPushButton,
     QTextEdit,
     QVBoxLayout,
 )
 from utils.log import get_logger
 from utils.settings import SettingsManager
+
+
+class ReviewedActionDialog(QDialog):
+    """One explicit, unsuppressible review for an already prepared action."""
+
+    def __init__(
+        self,
+        title: str,
+        description: str,
+        scope: str,
+        recovery_guidance: str,
+        *,
+        require_no_rollback_acceptance: bool = False,
+        parent=None,
+    ) -> None:
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("Review change"))
+        self.setAccessibleName(self.tr("Review change: %1").replace("%1", title))
+        self.require_no_rollback_acceptance = bool(require_no_rollback_acceptance)
+        layout = QVBoxLayout(self)
+        heading = QLabel(title)
+        heading.setObjectName("reviewedActionTitle")
+        heading.setWordWrap(True)
+        layout.addWidget(heading)
+        explanation = QLabel(description or self.tr("Apply this exact change and verify its result?"))
+        explanation.setWordWrap(True)
+        layout.addWidget(explanation)
+
+        scope_heading = QLabel(self.tr("Change scope"))
+        scope_heading.setObjectName("reviewedActionScopeHeading")
+        layout.addWidget(scope_heading)
+        self.scope_view = QPlainTextEdit(scope)
+        self.scope_view.setReadOnly(True)
+        self.scope_view.setAccessibleName(self.tr("Exact change scope"))
+        self.scope_view.setMinimumHeight(72)
+        self.scope_view.setMaximumHeight(160)
+        layout.addWidget(self.scope_view)
+
+        recovery_heading = QLabel(self.tr("Recovery guidance"))
+        recovery_heading.setObjectName("reviewedActionRecoveryHeading")
+        layout.addWidget(recovery_heading)
+        self.recovery_label = QLabel(recovery_guidance or self.tr("No automatic recovery guidance is available."))
+        self.recovery_label.setWordWrap(True)
+        layout.addWidget(self.recovery_label)
+
+        self.no_rollback_checkbox = QCheckBox(
+            self.tr("I have reviewed the recovery guidance and accept that this change has no automatic rollback.")
+        )
+        self.no_rollback_checkbox.setAccessibleName(self.tr("Accept that this action has no automatic rollback"))
+        self.no_rollback_checkbox.setVisible(self.require_no_rollback_acceptance)
+        layout.addWidget(self.no_rollback_checkbox)
+
+        self.buttons = QDialogButtonBox(
+            QDialogButtonBox.StandardButton.Cancel | QDialogButtonBox.StandardButton.Ok
+        )
+        self.cancel_button = self.buttons.button(QDialogButtonBox.StandardButton.Cancel)
+        self.accept_button = self.buttons.button(QDialogButtonBox.StandardButton.Ok)
+        assert self.cancel_button is not None
+        assert self.accept_button is not None
+        self.cancel_button.setDefault(True)
+        self.cancel_button.setAutoDefault(False)
+        self.accept_button.setDefault(False)
+        self.accept_button.setAutoDefault(False)
+        self.accept_button.setText(self.tr("Apply and verify"))
+        self.buttons.rejected.connect(self.reject)
+        self.buttons.accepted.connect(self.accept)
+        self.no_rollback_checkbox.toggled.connect(self._update_accept_enabled)
+        layout.addWidget(self.buttons)
+        self._update_accept_enabled()
+
+    @property
+    def accepts_no_rollback(self) -> bool:
+        return bool(self.require_no_rollback_acceptance and self.no_rollback_checkbox.isChecked())
+
+    def _update_accept_enabled(self, _checked: bool = False) -> None:
+        accept_button = self.accept_button
+        assert accept_button is not None
+        accept_button.setEnabled(
+            not self.require_no_rollback_acceptance or self.no_rollback_checkbox.isChecked()
+        )
+
 
 logger = get_logger(__name__)
 

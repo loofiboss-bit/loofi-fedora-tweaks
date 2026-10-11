@@ -22,6 +22,7 @@ and is not.
 - [Companion qualification](COMPANION_VERIFICATION.md) — local candidate checks and physical evidence limits
 - [Care qualification](CARE_VERIFICATION.md) — candidate app insight, runtime cleanup, and update diagnostics
 - [Everyday qualification](EVERYDAY_VERIFICATION.md) — feature, CLI, rendering and packaging evidence
+- [Everyday UX qualification (2026-10-11)](UX_QUALIFICATION_2026-10-11.md) — current candidate, Apps latency and Fedora KDE/X11 VM evidence
 - [Control-center qualification](CONTROL_CENTER_VERIFICATION.md) — automated results and remaining physical checks
 - [Design system](../DESIGN.md) — control-center structure, states, and measurement contract
 - [Contributing](CONTRIBUTING.md)

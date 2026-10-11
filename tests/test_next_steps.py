@@ -77,3 +77,25 @@ class TestNextSteps(unittest.TestCase):
         metric = SimpleNamespace(id="storage:/", status="ready", value=96, sampled_at=self.now)
         step = next_steps(self.maintenance, (metric,), now=self.now)[0]
         self.assertEqual(step.context.to_dict(), {"symptom": "storage_full"})
+
+    def test_latest_saved_diagnosis_links_exact_session_and_states_partial_result(self):
+        self.maintenance["health"]["latest_session"] = {
+            "status": "partial", "session_id": "session-exact", "title": "Audio problem", "sampled_at": self.now,
+        }
+        step = next(step for step in next_steps(self.maintenance, now=self.now) if step.id == "latest-diagnosis")
+        self.assertEqual(step.title, "Review latest diagnosis")
+        self.assertIn("Partially completed", step.reason)
+        self.assertEqual(step.context.to_dict(), {"session_id": "session-exact"})
+
+    def test_symptom_session_does_not_replace_system_check_even_with_future_timestamp(self):
+        self.maintenance["health"].update(
+            status="unchecked",
+            latest_session={
+                "status": "completed", "session_id": "session-future", "title": "Audio problem",
+                "sampled_at": self.now + 500,
+            },
+        )
+        steps = next_steps(self.maintenance, now=self.now)
+        self.assertIn("health-check", {step.id for step in steps})
+        diagnosis = next(step for step in steps if step.id == "latest-diagnosis")
+        self.assertIsNone(diagnosis.sampled_at)

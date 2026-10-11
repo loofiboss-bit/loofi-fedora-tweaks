@@ -67,6 +67,17 @@ def test_packaging_manifest_tracks_navigation_and_assets():
     assert "config/apps.json" in expected
 
 
+def test_translation_inventory_source_locations_are_current():
+    spec = importlib.util.spec_from_file_location(
+        "check_translation_inventory_test",
+        ROOT / "scripts" / "check_translation_inventory.py",
+    )
+    module = importlib.util.module_from_spec(spec)
+    assert spec.loader is not None
+    spec.loader.exec_module(module)
+    assert module.check() == []
+
+
 def test_artifact_check_rejects_retired_runtime_surfaces():
     module = _load_packaging_manifest_module()
     names = {

@@ -356,12 +356,7 @@ class TweakProfilesMixin:
 
     def _finish_tweak_profile(self: Any, page: Any, result: ProfileResult) -> None:
         page.set_busy(False, result.message)
-        dialog = QMessageBox(page)
-        dialog.setWindowTitle(self.tr("Profile results"))
-        dialog.setText(result.message)
-        dialog.setIcon(QMessageBox.Icon.Information if result.success else QMessageBox.Icon.Warning)
-        dialog.setDetailedText("\n".join(f"{entry.id}: {entry.status} — {entry.message}" for entry in result.entries))
-        dialog.exec()
+        page.set_profile_result(result)
         affected = tuple(entry.id for entry in result.entries if entry.status != "skipped")
         if not affected:
             return

@@ -141,11 +141,18 @@ def select_search(text: str) -> None:
 def choose_next_value() -> None:
     combo = wait_for_node("DNF parallel downloads", role="combo box", enabled=True)
     combo.click()
-    wait_for_node("5 (Fast)", role="list item").click()
+    wait_for_node("5 downloads", role="list item").click()
 
 
 def confirm_yes() -> None:
-    click("Yes", timeout=15)
+    # ReviewedActionDialog keeps the exact setting scope and recovery guidance
+    # beside the single approval. System-wide operations require checking the
+    # explicit no-automatic-rollback acknowledgement before applying.
+    try:
+        wait_for_node("Accept that this action has no automatic rollback", timeout=1).click()
+    except AssertionError:
+        pass
+    click("Apply and verify", timeout=15)
 
 
 def cancel_dialog() -> None:
