@@ -1,5 +1,9 @@
 # Everyday UX implementation qualification — 2026-10-11
 
+This is the initial candidate's historical report. Later work and qualification
+are recorded in the [completion report](UX_COMPLETION_2026-10-11.md); statements
+below describe the state at this initial run.
+
 This report records the local implementation candidate for the everyday UX
 roadmap. The working tree is based on `72175ef9498a1650eee0806e16cf9ddc915543e8`
 on `codex/everyday-diagnostics-32-8` and is uncommitted. The Fedora 44 RPM
