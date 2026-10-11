@@ -26,7 +26,7 @@ def compose_session(
     """Finalize one running session from source-owned, already-adapted evidence."""
     if session.state != "running":
         raise ValueError("Only a running troubleshooting session can compose evidence.")
-    profile = require_profile(session.profile_id)
+    profile = require_profile(session.profile_id, session.profile_version)
     if completed_at - session.started_at > profile.total_budget_seconds:
         raise ValueError("Evidence composition exceeded the closed profile total budget.")
     bundles = tuple(evidence)

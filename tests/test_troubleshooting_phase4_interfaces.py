@@ -141,6 +141,8 @@ class TestTroubleshootingCli(unittest.TestCase):
         commands = (
             (["troubleshoot", "profiles"], "profiles"),
             (["troubleshoot", "run", "system_slow"], "run"),
+            (["troubleshoot", "run", "application_failed", "--application-id", "app/org.kde.kate/x86_64/stable",
+              "--application-scope", "flatpak-user", "--launch-attempted"], "run"),
             (["troubleshoot", "show", SESSION_ID], "show"),
             (["troubleshoot", "latest"], "latest"),
             (
@@ -176,7 +178,7 @@ class TestTroubleshootingCli(unittest.TestCase):
         self.assertEqual(payload["schema_id"], "loofi.troubleshooting")
         self.assertEqual(payload["schema_version"], 1)
         self.assertEqual(payload["command"], "profiles")
-        self.assertEqual(payload["data"]["count"], 11)
+        self.assertEqual(payload["data"]["count"], 15)
 
     def test_run_passes_a_cooperative_cancellation_signal(self):
         service = MagicMock()
@@ -192,6 +194,25 @@ class TestTroubleshootingCli(unittest.TestCase):
         cancellation = service.run.call_args.kwargs["cancellation"]
         self.assertFalse(cancellation.is_cancelled())
         service.run.assert_called_once()
+
+    @patch("cli.commands.troubleshooting_commands.TroubleshootingService")
+    def test_application_run_passes_exact_scope_and_explicit_launch_confirmation(self, service_cls):
+        service_cls.return_value.run.return_value = TroubleshootingRun(_session())
+        args = build_parser().parse_args([
+            "troubleshoot", "run", "application_failed",
+            "--application-id", "app/org.kde.kate/x86_64/stable",
+            "--application-scope", "flatpak-installation:work-apps",
+            "--launch-attempted",
+        ])
+
+        handle_troubleshoot(args, True, MagicMock(), MagicMock(), MagicMock())
+
+        self.assertEqual(service_cls.return_value.run.call_args.args[0], "application_failed")
+        self.assertEqual(service_cls.return_value.run.call_args.kwargs["parameters"], {
+            "application_id": "app/org.kde.kate/x86_64/stable",
+            "application_scope": "flatpak-installation:work-apps",
+            "launch_attempted": True,
+        })
 
     @patch(
         "cli.commands.troubleshooting_commands."

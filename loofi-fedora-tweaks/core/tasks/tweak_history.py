@@ -16,6 +16,8 @@ class TweakRestoreOffer:
     before: str = ""
     after: str = ""
     message: str = ""
+    current: str = ""
+    reason_code: str = ""
 
 
 def read_tweak_runs(runtime: ActionRuntime) -> tuple[tuple[ActionRun, ...], str]:
@@ -39,27 +41,39 @@ def restoration_for(tweak: Tweak, state: TweakState, runs: Sequence[ActionRun]) 
         return TweakRestoreOffer()
     latest = relevant[-1]
     if latest.action_id == f"restore-{tweak.id}" and latest.state == "succeeded":
-        return TweakRestoreOffer(message="The previous change has already been restored.")
+        return TweakRestoreOffer(message="The previous change has already been restored.", reason_code="already-restored")
     if latest.action_id != tweak.action_id or latest.state != "succeeded":
-        return TweakRestoreOffer(message="Restore is unavailable after a later incomplete or unsuccessful change attempt.")
+        return TweakRestoreOffer(message="Restore is unavailable after a later incomplete or unsuccessful change attempt.", reason_code="later-change-attempt")
     verification = latest.verification_result or {}
     execution = latest.execution_result or {}
     data = verification.get("data")
     record: Any = data.get("tweak_change") if isinstance(data, dict) else None
     if execution.get("success") is not True or verification.get("success") is not True or not isinstance(record, dict):
-        return TweakRestoreOffer(message="This change has no verified restore information.")
+        return TweakRestoreOffer(message="This change has no verified restore information.", reason_code="restore-history-unverified")
     if type(record.get("version")) is not int or record["version"] != 1 or record.get("tweak_id") != tweak.id or record.get("kind") != "change":
-        return TweakRestoreOffer(message="This change has unsupported restore information.")
+        return TweakRestoreOffer(message="This change has unsupported restore information.", reason_code="restore-history-unsupported")
     before, after = record.get("before"), record.get("after")
     requested = latest.parameters.get("value")
     if not isinstance(before, str) or not isinstance(after, str) or not isinstance(requested, str) or not valid_value(tweak.id, before) or not values_equal(tweak.id, after, requested):
-        return TweakRestoreOffer(message="The saved restore values could not be validated.")
+        return TweakRestoreOffer(message="The saved restore values could not be validated.", reason_code="restore-values-invalid")
     if values_equal(tweak.id, before, after):
         return TweakRestoreOffer()
     if state.status != "ready":
-        return TweakRestoreOffer(message="Read the current setting successfully before restoring it.")
+        return TweakRestoreOffer(
+            latest.run_id, before, after,
+            "Read the current setting successfully before restoring it.",
+            reason_code="current-value-unknown",
+        )
     if not values_equal(tweak.id, state.value, after):
-        return TweakRestoreOffer(message="This setting changed outside Loofi. Restore is blocked to preserve its current value.")
+        return TweakRestoreOffer(
+            latest.run_id, before, after,
+            "This setting changed outside Loofi. Restore is blocked to preserve its current value.",
+            current=state.value, reason_code="external-change",
+        )
     if tweak.id in {"kde-color", "power-profile", "kde-cursor-theme", "kde-plasma-style"} and before not in {value for value, _label in state.choices}:
-        return TweakRestoreOffer(message="The previous theme, color scheme or power profile is no longer available.")
+        return TweakRestoreOffer(
+            latest.run_id, before, after,
+            "The previous theme, color scheme or power profile is no longer available.",
+            current=state.value, reason_code="restore-value-unavailable",
+        )
     return TweakRestoreOffer(latest.run_id, before, after)

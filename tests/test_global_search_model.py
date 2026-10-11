@@ -257,6 +257,21 @@ class TestGlobalSearchModel(unittest.TestCase):
         self.assertTrue(any(result.tweak_id == "gnome-animations" for result in gnome.search("animation")))
         self.assertFalse(any(result.tweak_id and result.tweak_id.startswith("gnome-") for result in kde.search("animation")))
 
+    def test_hardware_problem_aliases_route_to_exact_health_profiles(self):
+        model = GlobalSearchModel(_traditional_context())
+        for query, profile_id in (
+            ("charging", "battery_problem"),
+            ("docking", "display_problem"),
+            ("touchpad", "input_problem"),
+            ("print queue", "printer_problem"),
+            ("internet", "network_problem"),
+            ("app launch", "application_failed"),
+        ):
+            with self.subTest(query=query):
+                results = [result for result in model.search(query) if result.symptom_profile_id == profile_id]
+                self.assertEqual(len(results), 1)
+                self.assertEqual(results[0].route_id, "fix")
+
 
 if __name__ == "__main__":
     unittest.main()

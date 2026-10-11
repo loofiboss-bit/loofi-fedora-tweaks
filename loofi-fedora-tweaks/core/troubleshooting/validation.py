@@ -23,6 +23,9 @@ MAX_SESSION_FILE_BYTES = 512 * 1024
 _IDENTIFIER = re.compile(r"^[a-z][a-z0-9._:-]{0,127}$")
 _RESOURCE_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._:/@+-]{0,159}$")
 _APPLICATION_IDENTIFIER = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._+-]{0,127}$")
+_FLATPAK_APPLICATION_REF = re.compile(
+    r"^app/[A-Za-z0-9][A-Za-z0-9._-]{1,255}/[A-Za-z0-9_-]{1,64}/[A-Za-z0-9][A-Za-z0-9._-]{0,127}$"
+)
 _FORBIDDEN_KEYS = frozenset(
     {
         "argv",
@@ -72,11 +75,13 @@ def validate_resource_identifier(value: str) -> str:
     return candidate
 
 
-def validate_application_identifier(value: str) -> str:
+def validate_application_identifier(value: str, *, allow_flatpak_ref: bool = False) -> str:
     if not isinstance(value, str):
         raise ValueError("application_id must be a string.")
     candidate = value
-    if not _APPLICATION_IDENTIFIER.fullmatch(candidate):
+    if not _APPLICATION_IDENTIFIER.fullmatch(candidate) and not (
+        allow_flatpak_ref and _FLATPAK_APPLICATION_REF.fullmatch(candidate)
+    ):
         raise ValueError("application_id must be a package name or Flatpak application ID.")
     return candidate
 

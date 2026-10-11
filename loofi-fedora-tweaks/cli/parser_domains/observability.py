@@ -105,7 +105,17 @@ def _register_troubleshooting_command(subparsers: Subparsers) -> None:
     troubleshoot_run.add_argument("profile_id")
     troubleshoot_run.add_argument(
         "--application-id",
-        help="Package name or Flatpak application ID for application_failed",
+        help="RPM package name or exact full Flatpak ref for application_failed",
+    )
+    troubleshoot_run.add_argument(
+        "--application-scope",
+        default="rpm",
+        help="Exact installation: rpm, flatpak-user, flatpak-system, or flatpak-installation:NAME",
+    )
+    troubleshoot_run.add_argument(
+        "--launch-attempted",
+        action="store_true",
+        help="Confirm that you already tried to start the selected app before reading recent log counts",
     )
     troubleshoot_show = troubleshoot_subparsers.add_parser(
         "show",

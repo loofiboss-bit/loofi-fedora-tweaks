@@ -71,7 +71,7 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
             ],
         )
 
-    def test_troubleshoot_starts_from_nine_plain_language_symptoms(self):
+    def test_troubleshoot_starts_from_thirteen_plain_language_symptoms(self):
         widget = TroubleshootWidget(history=SimpleNamespace(latest=lambda: (None, "")))
         self.addCleanup(widget.deleteLater)
 
@@ -88,6 +88,10 @@ class TestPhase3HomeAndTroubleshoot(unittest.TestCase):
                 "Screen sharing is not working",
                 "Updates failed",
                 "An app will not start",
+                "Battery or power problem",
+                "Display or docking problem",
+                "Keyboard or touchpad problem",
+                "Printer or print queue problem",
                 "The system feels slow",
                 "Storage is full",
                 "Something else",

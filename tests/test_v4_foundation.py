@@ -11,6 +11,7 @@ from core.executor.action_model import AtlasActionRegistry, SystemAction
 from core.diagnostics.upgrade_checker import UpgradeAssistant
 from core.diagnostics.task_dashboard import TaskManager
 from core.export.support_bundle_v2 import SupportBundleV2
+from core.diagnostics.health_model import HealthResult
 
 def test_v4_integration_flow():
     # 1. Setup Registry
@@ -45,13 +46,24 @@ def test_v4_integration_flow():
     assert "health" in bundle
     assert len(bundle["health"]) == len(all_checks)
 
-def test_upgrade_assistant_audit():
+def test_upgrade_assistant_runs_the_five_registered_checks():
     registry = HealthRegistry()
     assistant = UpgradeAssistant(registry)
-    results = assistant.run_pre_upgrade_audit()
+    with patch.object(
+        registry,
+        "run_check",
+        side_effect=lambda check_id: HealthResult(check_id, "healthy", "Check passed."),
+    ) as run_check:
+        results = assistant.run_pre_upgrade_audit()
     assert len(results) == 5
-    for r in results:
-        assert r.status == "healthy" # Based on mock run_check
+    assert [result.check_id for result in results] == [
+        "upgrade-fedora-version",
+        "upgrade-kernel-status",
+        "upgrade-repo-risk",
+        "upgrade-storage-readiness",
+        "upgrade-atomic-rebase",
+    ]
+    assert run_check.call_count == 5
 
 def test_system_action_model():
     action = SystemAction(

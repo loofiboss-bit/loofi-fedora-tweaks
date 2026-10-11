@@ -8,7 +8,7 @@ import uuid
 from dataclasses import asdict, dataclass, field
 from typing import Any, Literal, Mapping, cast
 
-from core.troubleshooting.profiles import PROFILE_VERSION, require_profile
+from core.troubleshooting.profiles import require_profile
 from core.troubleshooting.validation import (
     MAX_FINDINGS,
     MAX_PARAMETERS,
@@ -616,8 +616,8 @@ class CompatibilityMetadata:
     source_versions: tuple[tuple[str, int], ...] = ()
 
     def __post_init__(self) -> None:
-        if self.profile_version != PROFILE_VERSION:
-            raise ValueError("Unsupported troubleshooting profile version.")
+        if self.profile_version < 1:
+            raise ValueError("Troubleshooting profile versions must be positive.")
         if self.variant not in {"traditional", "atomic"}:
             raise ValueError("Unsupported Fedora variant.")
         for source_id, version in self.source_versions:
@@ -669,7 +669,7 @@ class TroubleshootingSession:
 
     def __post_init__(self) -> None:
         _validate_session_id(self.session_id)
-        profile = require_profile(self.profile_id)
+        profile = require_profile(self.profile_id, self.profile_version)
         if self.profile_version != profile.version:
             raise ValueError("Session profile version does not match the closed catalog.")
         if self.variant not in {"traditional", "atomic"}:
@@ -808,11 +808,12 @@ class TroubleshootingSession:
         if any(not isinstance(item, Mapping) for item in (*source_results, *findings, *changes)):
             raise ValueError("Persisted session contains malformed result data.")
         profile_id = str(payload.get("profile_id", ""))
-        profile = require_profile(profile_id)
+        profile_version = int(payload.get("profile_version", 0))
+        profile = require_profile(profile_id, profile_version)
         session = cls(
             session_id=str(payload.get("session_id", "")),
             profile_id=profile_id,
-            profile_version=int(payload.get("profile_version", 0)),
+            profile_version=profile_version,
             variant=str(payload.get("variant", "")),  # type: ignore[arg-type]
             state=str(payload.get("state", "failed")),  # type: ignore[arg-type]
             started_at=float(payload.get("started_at", 0.0)),
@@ -901,7 +902,7 @@ class TroubleshootingComparison:
         _validate_session_id(self.after_session_id)
         if self.before_session_id == self.after_session_id:
             raise ValueError("A troubleshooting comparison requires two distinct sessions.")
-        profile = require_profile(self.profile_id)
+        profile = require_profile(self.profile_id, self.profile_version)
         if self.profile_version != profile.version:
             raise ValueError("Comparison profile version does not match the catalog.")
         if self.variant not in {"traditional", "atomic"}:

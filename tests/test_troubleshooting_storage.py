@@ -11,6 +11,8 @@ from pathlib import Path
 from core.state.inventory import StateInventory
 from core.state.paths import StatePaths
 from core.troubleshooting.lifecycle import finalize_session, new_session, start_session
+from core.troubleshooting.models import SourceResult, TroubleshootingSession
+from core.troubleshooting.profiles import require_profile
 from core.troubleshooting.storage import (
     STORE_SCHEMA_ID,
     TroubleshootingSessionStore,
@@ -58,6 +60,40 @@ class TestTroubleshootingStorage(unittest.TestCase):
         )
         payload = json.loads(self.path.read_text(encoding="utf-8"))
         self.assertEqual(payload["schema_id"], STORE_SCHEMA_ID)
+
+    def test_legacy_network_profile_session_retains_its_original_sources_and_budgets(self):
+        profile = require_profile("network_problem", 1)
+        sources = tuple(
+            SourceResult.empty(
+                source_id,
+                started_at=1.0,
+                completed_at=2.0,
+                timeout_seconds=profile.budget_for(source_id, "traditional").timeout_seconds,
+            )
+            for source_id in (
+                budget.source_id
+                for budget in profile.source_budgets
+                if "traditional" in budget.variants
+            )
+        )
+        legacy = TroubleshootingSession(
+            session_id="12345678-1234-5678-9234-567812345678",
+            profile_id=profile.id,
+            profile_version=profile.version,
+            variant="traditional",
+            state="completed",
+            started_at=1.0,
+            completed_at=2.0,
+            profile_parameters=profile.validate_parameters(None),
+            source_results=sources,
+        )
+
+        self.store.save(legacy)
+        restored = self.store.read().sessions[0]
+
+        self.assertEqual(restored, legacy)
+        self.assertEqual(tuple(item.source_id for item in restored.source_results),
+                         ("network-state", "dns-state", "change-journal"))
 
     def test_active_sessions_are_never_persisted(self):
         queued = new_session(

@@ -169,7 +169,7 @@ class TestFileAndWindowTweakUi(unittest.TestCase):
 
     def test_kde_files_row_and_previous_value_restore_control(self, _capability) -> None:
         tweak = BY_ID["kde-dolphin-show-full-path"]
-        state = TweakState(tweak, "ready", "true", tweak.choices, restore_run_id="run-123", restore_value="false")
+        state = TweakState(tweak, "ready", "true", tweak.choices, restore_run_id="run-123", restore_value="false", restore_allowed=True)
         page = TweaksPage(_profile("kde"))
         restored: list[tuple[str, str]] = []
         page.restoreRequested.connect(lambda tweak_id, source_id: restored.append((tweak_id, source_id)))

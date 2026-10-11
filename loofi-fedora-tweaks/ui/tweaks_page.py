@@ -556,10 +556,19 @@ class TweaksPage(QWidget, PluginInterface):
             restore.setProperty("sourceRunId", state.restore_run_id)
             restore.setProperty("restoreValue", state.restore_value)
             restore.setProperty("ready", state.status == "ready")
-            restore.setEnabled(state.status == "ready" and bool(state.restore_run_id) and not self._busy)
+            restore.setEnabled(state.status == "ready" and state.restore_allowed and not self._busy)
             restore.setVisible(bool(state.restore_run_id or state.restore_message))
             notice = self._restore_notices[state.tweak.id]
-            restore_text = self.tr("Previous value: %1").replace("%1", self._label_for(state.tweak.id, state.restore_value)) if state.restore_run_id else self.tr(state.restore_message)
+            if state.restore_reason_code in {"external-change", "restore-value-unavailable", "current-value-unknown"}:
+                current_label = self._label_for(state.tweak.id, state.restore_current_value) if state.restore_current_value else self.tr("Unknown")
+                restore_text = "\n".join((
+                    self.tr(state.restore_message),
+                    self.tr("Previous value: %1").replace("%1", self._label_for(state.tweak.id, state.restore_value)),
+                    self.tr("Last verified value: %1").replace("%1", self._label_for(state.tweak.id, state.restore_verified_value)),
+                    self.tr("Current value: %1").replace("%1", current_label),
+                ))
+            else:
+                restore_text = self.tr("Previous value: %1").replace("%1", self._label_for(state.tweak.id, state.restore_value)) if state.restore_run_id else self.tr(state.restore_message)
             restore.setText(self.tr("Restore %1").replace("%1", self._label_for(state.tweak.id, state.restore_value)) if state.restore_run_id else self.tr("Restore previous value"))
             notice.setText(restore_text)
             notice.setVisible(bool(restore_text))
@@ -667,7 +676,7 @@ class TweaksPage(QWidget, PluginInterface):
         button.setEnabled(False)
         row.set_feedback(message, kind="error")
         notice = self._restore_notices[tweak_id]
-        notice.setText(self.tr("Refresh this setting before trying again."))
+        notice.setText(message)
         notice.show()
 
     def set_error(self, message: str) -> None:

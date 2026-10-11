@@ -19,6 +19,8 @@ class FilesystemObservation:
     used_bytes: int | None = None
     free_bytes: int | None = None
     percent_used: float | None = None
+    free_inodes: int | None = None
+    read_only: bool | None = None
 
 
 @dataclass(frozen=True)
@@ -31,7 +33,8 @@ class SpaceGuide:
 
     @property
     def partial(self) -> bool:
-        return (any(row.state != "observed" for row in self.filesystems)
+        return (any(row.state != "observed" or row.free_inodes is None or row.read_only is None
+                    for row in self.filesystems)
                 or (not self.atomic and self.package_cache_bytes is None) or self.journal_bytes is None)
 
     def to_dict(self) -> dict:
@@ -49,7 +52,7 @@ class SpaceGuideService:
     def collect(self) -> SpaceGuide:
         rows: list[FilesystemObservation] = []
         devices: dict[int, int] = {}
-        for path in ("/", "/home", "/var"):
+        for path in ("/", "/home", "/var", "/boot"):
             try:
                 device = os.stat(path).st_dev
             except OSError:
@@ -59,16 +62,24 @@ class SpaceGuideService:
                 index = devices[device]
                 old = rows[index]
                 rows[index] = FilesystemObservation((*old.paths, path), old.state, old.total_bytes,
-                                                    old.used_bytes, old.free_bytes, old.percent_used)
+                                                    old.used_bytes, old.free_bytes, old.percent_used,
+                                                    old.free_inodes, old.read_only)
                 continue
             usage = DiskManager.get_disk_usage(path)
             if (usage is None or usage.total_bytes <= 0 or not 0 <= usage.used_bytes <= usage.total_bytes
                     or usage.free_bytes < 0 or not math.isfinite(usage.percent_used) or not 0 <= usage.percent_used <= 100):
                 rows.append(FilesystemObservation((path,), "unknown"))
                 continue
+            try:
+                inode_stats = os.statvfs(path)
+                free_inodes = inode_stats.f_favail
+                read_only = bool(inode_stats.f_flag & getattr(os, "ST_RDONLY", 1))
+            except (AttributeError, OSError):
+                free_inodes = None
+                read_only = None
             devices[device] = len(rows)
             rows.append(FilesystemObservation((path,), "observed", usage.total_bytes, usage.used_bytes,
-                                              usage.free_bytes, usage.percent_used))
+                                              usage.free_bytes, usage.percent_used, free_inodes, read_only))
         analysis = ReclaimProbeService().analyze()
         measured = {row.id: row.estimated_bytes for row in analysis.categories}
         return SpaceGuide(self.clock(), analysis.atomic, tuple(rows), measured.get("package-cache"), measured.get("journal"))

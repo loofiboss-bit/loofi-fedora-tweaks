@@ -58,15 +58,6 @@ class TestTroubleshootingComposition(unittest.TestCase):
             facts={"active_connection": False},
             findings=(self._finding(),),
         )
-        dns = adapt_structured_source(
-            profile_id="network_problem",
-            variant="traditional",
-            source_id="dns-state",
-            state="empty",
-            started_at=2.0,
-            completed_at=3.0,
-            facts={"server_count": 0},
-        )
         journal_base = adapt_structured_source(
             profile_id="network_problem",
             variant="traditional",
@@ -96,7 +87,7 @@ class TestTroubleshootingComposition(unittest.TestCase):
 
         result = compose_session(
             self._running(),
-            (journal, dns, network),
+            (journal, network),
             completed_at=5.0,
         )
 
@@ -110,7 +101,7 @@ class TestTroubleshootingComposition(unittest.TestCase):
         )
         self.assertEqual(
             tuple(item.source_id for item in result.source_results),
-            ("change-journal", "dns-state", "network-state"),
+            ("change-journal", "network-state"),
         )
 
     def test_partial_or_stale_source_cannot_produce_all_clear(self):
@@ -152,7 +143,7 @@ class TestTroubleshootingComposition(unittest.TestCase):
         )
 
         self.assertEqual(result.state, "partial")
-        self.assertEqual(result.unavailable_sources, ("change-journal", "dns-state"))
+        self.assertEqual(result.unavailable_sources, ("change-journal",))
         self.assertEqual(dict(result.compatibility.source_versions), {"network-state": 1})
 
     def test_composition_rejects_duplicate_sources_and_out_of_session_timing(self):
@@ -173,7 +164,7 @@ class TestTroubleshootingComposition(unittest.TestCase):
         early = adapt_structured_source(
             profile_id="network_problem",
             variant="traditional",
-            source_id="dns-state",
+            source_id="change-journal",
             state="empty",
             started_at=1.0,
             completed_at=2.0,

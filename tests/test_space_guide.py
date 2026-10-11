@@ -14,18 +14,48 @@ from core.troubleshooting.service import DefaultEvidenceCollector
 
 class SpaceGuideTests(unittest.TestCase):
     @patch("services.storage.space_guide.ReclaimProbeService")
+    @patch("services.storage.space_guide.os.statvfs")
     @patch("services.storage.space_guide.DiskManager.get_disk_usage")
     @patch("services.storage.space_guide.os.stat")
-    def test_shared_filesystems_grouped_separate_home_preserved(self, stat, disk, reclaim):
-        stat.side_effect = [SimpleNamespace(st_dev=1), SimpleNamespace(st_dev=2), SimpleNamespace(st_dev=1)]
-        disk.side_effect = [DiskUsage("/", 1000, 800, 200, 80), DiskUsage("/home", 2000, 200, 1800, 10)]
+    def test_shared_filesystems_grouped_separate_home_and_boot_preserved(self, stat, disk, statvfs, reclaim):
+        stat.side_effect = [SimpleNamespace(st_dev=1), SimpleNamespace(st_dev=2), SimpleNamespace(st_dev=1), SimpleNamespace(st_dev=3)]
+        statvfs.return_value = SimpleNamespace(f_favail=100, f_flag=0)
+        disk.side_effect = [DiskUsage("/", 1000, 800, 200, 80), DiskUsage("/home", 2000, 200, 1800, 10),
+                            DiskUsage("/boot", 500, 100, 400, 20)]
         reclaim.return_value.analyze.return_value = ReclaimAnalysisService.build(atomic=False, package_cache_bytes=10, journal_bytes=20)
         report = SpaceGuideService(clock=lambda: 5).collect()
         self.assertEqual(report.filesystems[0].paths, ("/", "/var"))
         self.assertEqual(report.filesystems[1].paths, ("/home",))
-        self.assertEqual(disk.call_count, 2)
+        self.assertEqual(report.filesystems[2].paths, ("/boot",))
+        self.assertEqual(disk.call_count, 3)
         self.assertFalse(report.partial)
         self.assertEqual(report.sampled_at, 5)
+
+    @patch("services.storage.space_guide.ReclaimProbeService")
+    @patch("services.storage.space_guide.os.statvfs", return_value=SimpleNamespace(f_favail=0, f_flag=1))
+    @patch("services.storage.space_guide.DiskManager.get_disk_usage", side_effect=[
+        DiskUsage("/", 1000, 500, 500, 50), DiskUsage("/home", 1000, 500, 500, 50),
+        DiskUsage("/var", 1000, 500, 500, 50), DiskUsage("/boot", 1000, 500, 500, 50)])
+    @patch("services.storage.space_guide.os.stat", side_effect=[SimpleNamespace(st_dev=1), SimpleNamespace(st_dev=2),
+                                                                  SimpleNamespace(st_dev=3), SimpleNamespace(st_dev=4)])
+    def test_reports_free_inodes_read_only_state_and_boot_mount(self, _stat, _disk, _statvfs, reclaim):
+        reclaim.return_value.analyze.return_value = ReclaimAnalysisService.build(atomic=False, package_cache_bytes=0, journal_bytes=0)
+        report = SpaceGuideService().collect()
+        self.assertEqual([row.paths for row in report.filesystems], [("/",), ("/home",), ("/var",), ("/boot",)])
+        self.assertTrue(all(row.free_inodes == 0 and row.read_only for row in report.filesystems))
+        self.assertFalse(report.partial)
+
+    @patch("services.storage.space_guide.ReclaimProbeService")
+    @patch("services.storage.space_guide.os.statvfs", side_effect=PermissionError)
+    @patch("services.storage.space_guide.DiskManager.get_disk_usage", return_value=DiskUsage("/", 1000, 500, 500, 50))
+    @patch("services.storage.space_guide.os.stat", return_value=SimpleNamespace(st_dev=1))
+    def test_unavailable_inode_or_mount_flags_make_report_partial(self, _stat, _disk, _statvfs, reclaim):
+        reclaim.return_value.analyze.return_value = ReclaimAnalysisService.build(atomic=True, package_cache_bytes=None, journal_bytes=0)
+        report = SpaceGuideService().collect()
+        self.assertTrue(report.partial)
+        self.assertEqual(report.filesystems[0].paths, ("/", "/home", "/var", "/boot"))
+        self.assertIsNone(report.filesystems[0].free_inodes)
+        self.assertIsNone(report.filesystems[0].read_only)
 
     @patch("services.storage.space_guide.ReclaimProbeService")
     @patch("services.storage.space_guide.DiskManager.get_disk_usage", return_value=None)

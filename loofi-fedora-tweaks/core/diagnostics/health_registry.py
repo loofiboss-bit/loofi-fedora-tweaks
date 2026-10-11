@@ -152,11 +152,15 @@ class HealthRegistry:
             res = executor.execute("fuser", ["/var/lib/dnf/labels.db"])
             if res.exit_code == 0:  # fuser returns 0 if file is accessed
                 return HealthResult(check_id, "unhealthy", "Another process is using DNF.", details=res.stdout)
-            return HealthResult(check_id, "healthy", "DNF is not locked.")
+            if res.exit_code == 1:
+                return HealthResult(check_id, "healthy", "DNF is not locked.")
+            return HealthResult(check_id, "unknown", "DNF lock state could not be verified.", details=res.stderr or res.message)
 
         if check_id == "failed-services":
             res = executor.execute("systemctl", ["--failed", "--no-legend"])
-            if res.success and res.stdout.strip():
+            if not res.success:
+                return HealthResult(check_id, "unknown", "Failed system services could not be checked.", details=res.stderr or res.message)
+            if res.stdout.strip():
                 lines = res.stdout.strip().splitlines()
                 failed_names = []
                 for line in lines:
@@ -175,7 +179,10 @@ class HealthRegistry:
 
         if check_id == "disk-space-root":
             import shutil
-            total, used, free = shutil.disk_usage("/")
+            try:
+                total, used, free = shutil.disk_usage("/")
+            except OSError as exc:
+                return HealthResult(check_id, "unknown", "Root filesystem space could not be checked.", details=str(exc))
             free_gb = free // (2**30)
             if free_gb < 5:
                 return HealthResult(check_id, "unhealthy", f"Low disk space: {free_gb}GB remaining.", details=f"{free_gb}GB free of {total // (2**30)}GB")
@@ -195,6 +202,8 @@ class HealthRegistry:
                 res = executor.execute(pm, ["check-update", "-q"], timeout=60)
                 if res.exit_code == 100:
                     return HealthResult(check_id, "unhealthy", "System updates are available.")
+                if not res.success or res.exit_code != 0:
+                    return HealthResult(check_id, "unknown", "System update availability could not be checked.", details=res.stderr or res.message)
                 return HealthResult(check_id, "healthy", "System is up to date.")
 
         if check_id == "atomic-pending-reboot":
@@ -272,7 +281,7 @@ class HealthRegistry:
                 if mode == "Enforcing":
                     return HealthResult(check_id, "healthy", "SELinux is Enforcing.")
                 return HealthResult(check_id, "warning", f"SELinux is in '{mode}' mode.", suggested_fix="Enable Enforcing mode for better security.")
-            return HealthResult(check_id, "error", "Failed to detect SELinux mode.")
+            return HealthResult(check_id, "unknown", "Failed to detect SELinux mode.")
 
         # 2. Generic detection if command is provided
         if check.detection_cmd:
@@ -288,13 +297,13 @@ class HealthRegistry:
                         return HealthResult(check_id, "healthy", "Check passed (output matched).")
                     else:
                         return HealthResult(check_id, "unhealthy", "Check failed (output mismatch).", details=res.stdout)
-                return HealthResult(check_id, "healthy", "Command executed successfully.")
+                return HealthResult(check_id, "unknown", "The command completed, but it did not verify a health condition.", details=res.stdout)
             else:
-                return HealthResult(check_id, "unhealthy", "Detection command failed.", details=res.stderr)
+                return HealthResult(check_id, "unknown", "The health condition could not be verified because the detection command failed.", details=res.stderr or res.message)
 
         return HealthResult(
             check_id=check_id,
-            status="healthy",
-            message=f"Check '{check.title}' verified (logic pending).",
+            status="unknown",
+            message=f"Check '{check.title}' has no verification logic yet.",
             timestamp=time.time()
         )

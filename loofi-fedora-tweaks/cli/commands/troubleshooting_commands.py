@@ -125,11 +125,13 @@ def handle_troubleshoot(
 
         if action == "run":
             application_id = getattr(args, "application_id", None)
-            parameters = (
-                {"application_id": application_id}
-                if application_id is not None
-                else None
-            )
+            parameters = None
+            if application_id is not None:
+                parameters = {
+                    "application_id": application_id,
+                    "application_scope": getattr(args, "application_scope", "rpm"),
+                    "launch_attempted": bool(getattr(args, "launch_attempted", False)),
+                }
             result = _run_with_cancellation(
                 TroubleshootingService(),
                 str(args.profile_id),

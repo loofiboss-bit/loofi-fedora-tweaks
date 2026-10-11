@@ -389,7 +389,10 @@ class MainWindowUtilityMixin(CursorSettingsMixin, TweakProfilesMixin, CareNaviga
         from PyQt6.QtWidgets import QMessageBox
 
         if ticket.blocked:
-            page.set_restore_error(tweak_id, str(ticket.plan.policy_decision.explanation))
+            from ui.restore_conflict import restore_conflict_message
+
+            message = restore_conflict_message(ticket.plan.policy_decision, self.tr)
+            page.set_restore_error(tweak_id, message)
             adapter.stopped.connect(lambda: self._start_tweak_inspection(page, tweak_id))
             return
         facts = ticket.plan.policy_decision.facts

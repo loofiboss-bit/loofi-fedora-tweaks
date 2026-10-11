@@ -32,6 +32,8 @@ def _restore_offer(tweak: Tweak, parameters: Mapping[str, Any], runtime: ActionR
     offer = restoration_for(tweak, state, runs)
     if error or not offer.source_run_id or offer.source_run_id != source_id:
         raise ValueError(error or offer.message or "The selected change is no longer the latest restorable change.")
+    if offer.message:
+        raise ValueError(offer.message)
     return offer
 
 
@@ -61,15 +63,29 @@ def _preflight(tweak: Tweak, parameters: Mapping[str, Any], runtime: ActionRunti
 
 
 def _preflight_restore(tweak: Tweak, parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
-    try:
-        offer = _restore_offer(tweak, parameters, runtime)
-    except ValueError as exc:
-        return PolicyDecision(False, "restore_unavailable", str(exc))
-    facts = {"current": offer.after, "requested": offer.before, "source_run_id": offer.source_run_id}
+    source_id = parameters.get("source_run_id")
+    if set(parameters) != {"source_run_id"} or not isinstance(source_id, str) or not _RUN_ID.fullmatch(source_id):
+        return PolicyDecision(False, "restore_unavailable", "Restore requires only a valid source run ID.")
+    state = read_tweak(tweak, runtime.platform_profile(), runtime.execute_read_only)
+    runs, error = read_tweak_runs(runtime)
+    offer = restoration_for(tweak, state, runs)
+    facts = {
+        "current": offer.current or (state.value if state.status == "ready" else ""),
+        "requested": offer.before,
+        "source_run_id": offer.source_run_id,
+        "previous": offer.before,
+        "last_verified": offer.after,
+        "restore_reason_code": offer.reason_code,
+    }
+    if error or not offer.source_run_id or offer.source_run_id != source_id or offer.message:
+        reason_code = offer.reason_code if offer.reason_code in {"external-change", "restore-value-unavailable", "current-value-unknown"} else "restore_unavailable"
+        message = error or offer.message or "The selected change is no longer the latest restorable change."
+        return PolicyDecision(False, reason_code, message, facts=facts)
     if tweak.id in CURSOR_TWEAK_IDS:
         values, error = read_cursor_config(runtime.platform_profile(), runtime.execute_read_only)
         if error or values.get(tweak.id) != offer.after:
-            return PolicyDecision(False, "cursor_read_unavailable", error or "The pointer settings changed during inspection.")
+            facts.update({"current": values.get(tweak.id, "") if not error else "", "last_verified": offer.after})
+            return PolicyDecision(False, "cursor_read_unavailable", error or "The pointer settings changed during inspection.", facts=facts)
         counterpart = next(item for item in CURSOR_TWEAK_IDS if item != tweak.id)
         facts.update({"counterpart_id": counterpart, "counterpart_value": values[counterpart]})
     return PolicyDecision(True, "restore_ready", "The saved change and current setting were checked.", facts=facts)
