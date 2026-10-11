@@ -25,7 +25,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), ".."))
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
 
-class TestCoreExecutorImports:
+class TestCoreExecutorLegacyExports:
     """Test new core.executor module imports."""
 
     def test_action_result_import(self):
@@ -57,11 +57,21 @@ class TestCoreExecutorImports:
         """Verify __all__ exports match expected public API."""
         import core.executor
 
-        expected = {"ActionResult", "BaseActionExecutor", "ActionExecutor"}
+        expected = {
+            "ActionResult",
+            "BaseActionExecutor",
+            "ActionExecutor",
+            "CommandFacade",
+            "CommandRequest",
+            "COMMAND_ALLOWLIST",
+            "CommandValidationError",
+            "validate_command",
+            "validate_command_vector",
+        }
         assert set(core.executor.__all__) == expected
 
 
-class TestCoreExecutorImports:
+class TestCoreExecutorDirectImports:
     """Test core.executor direct imports (v2.0.0 — shims removed)."""
 
     def test_core_action_result_import(self):
@@ -301,6 +311,10 @@ class TestPyQtBoundaryImports:
         hits = self._pyqt_imports(ROOT / "loofi-fedora-tweaks" / "services")
         assert hits == self.ALLOWED_SERVICE_PYQT_IMPORTS
 
+    def test_cli_does_not_import_presentation_widgets(self):
+        hits = self._pyqt_imports(ROOT / "loofi-fedora-tweaks" / "cli")
+        assert hits == set()
+
 
 class TestServicesNamespaceImports:
     """Test other services namespace imports."""
@@ -334,24 +348,46 @@ class TestImportPerformance:
     """Test that imports are fast (no expensive initialization)."""
 
     def test_executor_import_speed(self):
-        """Importing core.executor should be fast."""
-        import time
-
-        start = time.time()
-
-        duration = time.time() - start
-        # Import should take < 1 second (even on slow CI)
-        assert duration < 1.0
+        """Measure a cold core.executor import in isolated interpreters."""
+        self._assert_cold_import_median("core.executor")
 
     def test_services_import_speed(self):
-        """Importing services modules should be fast."""
-        import time
+        """Measure cold import of representative lightweight service namespaces."""
+        self._assert_cold_import_median("services.system", "services.hardware")
 
-        start = time.time()
+    @staticmethod
+    def _assert_cold_import_median(*modules: str) -> None:
+        import statistics
+        import subprocess
+        import sys
 
-        duration = time.time() - start
-        # Import should take < 1 second
-        assert duration < 1.0
+        statement = (
+            "import importlib, time; start = time.perf_counter(); "
+            f"[importlib.import_module(name) for name in {modules!r}]; "
+            "print(time.perf_counter() - start)"
+        )
+        environment = os.environ.copy()
+        source_root = str(ROOT / "loofi-fedora-tweaks")
+        existing_path = environment.get("PYTHONPATH", "")
+        environment["PYTHONPATH"] = os.pathsep.join(
+            part for part in (source_root, existing_path) if part
+        )
+        durations = []
+        for _ in range(5):
+            result = subprocess.run(
+                [sys.executable, "-c", statement],
+                cwd=ROOT,
+                capture_output=True,
+                text=True,
+                timeout=10,
+                check=True,
+                env=environment,
+            )
+            durations.append(float(result.stdout.strip()))
+
+        # The generous ceiling guards against accidental expensive startup;
+        # the median is the reported metric and is stable across one slow run.
+        assert statistics.median(durations) < 2.0
 
 
 class TestNoSystemCalls:

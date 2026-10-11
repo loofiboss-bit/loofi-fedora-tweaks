@@ -4,6 +4,9 @@ from __future__ import annotations
 
 import re
 import platform
+from copy import deepcopy
+from dataclasses import replace
+from functools import lru_cache
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Mapping, Sequence
 
@@ -399,16 +402,9 @@ class ActionCatalog:
 
     def __init__(self, definitions: Sequence[ActionDefinition] | None = None):
         if definitions is None:
-            from core.actions.assurance import assurance_definitions
-            from core.actions.installed_applications import installed_application_definitions
-            from core.actions.flatpak_cleanup import flatpak_cleanup_definitions
-            from core.actions.metadata import with_haven_metadata
-            from core.actions.tweaks import tweak_action_definitions
-
             selected = [
-                with_haven_metadata(definition)
-                for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions(), *installed_application_definitions(), *flatpak_cleanup_definitions()]
-                if definition.id in ACTIVE_ACTION_IDS
+                replace(definition, parameter_schema=deepcopy(definition.parameter_schema))
+                for definition in _default_action_definitions()
             ]
         else:
             selected = list(definitions)
@@ -429,6 +425,22 @@ class ActionCatalog:
             alternative="Review the recommendation and perform any follow-up manually.",
             facts={"action_id": action_id, "catalog": "v18-deny-by-default"},
         )
+
+
+@lru_cache(maxsize=1)
+def _default_action_definitions() -> tuple[ActionDefinition, ...]:
+    """Build static first-party definitions once; runtime probes stay uncached."""
+    from core.actions.assurance import assurance_definitions
+    from core.actions.installed_applications import installed_application_definitions
+    from core.actions.flatpak_cleanup import flatpak_cleanup_definitions
+    from core.actions.metadata import with_haven_metadata
+    from core.actions.tweaks import tweak_action_definitions
+
+    return tuple(
+        with_haven_metadata(definition)
+        for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions(), *installed_application_definitions(), *flatpak_cleanup_definitions()]
+        if definition.id in ACTIVE_ACTION_IDS
+    )
 
 
 def validate_parameters(definition: ActionDefinition, parameters: Mapping[str, Any]) -> PolicyDecision:

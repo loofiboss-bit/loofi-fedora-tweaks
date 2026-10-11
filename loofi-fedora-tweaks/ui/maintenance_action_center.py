@@ -5,7 +5,7 @@ import typing
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from core.plugins.metadata import PluginMetadata
 from core.product_catalog import plugin_metadata_for_module
-from PyQt6.QtCore import QThread, Qt, pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QHBoxLayout,
     QInputDialog,
@@ -36,6 +36,7 @@ from ui.action_center_views import (
     ActionCenterMasterPane,
 )
 from ui.action_center_worker import ActionCenterOperationWorker
+from ui.operation_worker import OperationControllerQtAdapter
 from ui.action_center_history import ActionCenterHistoryMixin
 from ui.components import PrimaryButton
 from ui.components.layout import PageScaffold
@@ -68,8 +69,14 @@ class _ActionCenterSubTab(ActionCenterHistoryMixin, DirectActionUiMixin, BaseTab
         self._interrupt_reason = None
         self._output_chunks: list[str] = []
         self._stderr_chunks: list[str] = []
+        self._operation_adapter = OperationControllerQtAdapter(parent=self)
+        # Legacy sentinel retained for mixins and callers that check for overlap.
         self._operation_thread = None
-        self._operation_worker = None
+        self._operation_success_callback = None
+        self._operation_failure_title = ""
+        self._operation_adapter.finished.connect(self._dispatch_operation_success)
+        self._operation_adapter.failed.connect(self._dispatch_operation_failure)
+        self._operation_adapter.stopped.connect(self._clear_operation_worker)
         self._requested_action_id = ""
         self._requested_parameters: dict[str, typing.Any] = {}
         self._requested_finding_context: dict[str, typing.Any] | None = None
@@ -502,43 +509,37 @@ class _ActionCenterSubTab(ActionCenterHistoryMixin, DirectActionUiMixin, BaseTab
         return False
 
     def _start_operation(self: typing.Any, operation: typing.Any, on_success: typing.Any, failure_title: str) -> None:
-        if self._operation_thread is not None:
+        if self._operation_adapter.busy:
             QMessageBox.warning(self, self.tr("Action Center Busy"), self.tr("Wait for the current Action Center operation to finish."))
             return
-        thread = QThread()
-        worker = _ActionCenterOperationWorker(operation)
-        worker.moveToThread(thread)
-        thread.started.connect(worker.run)
+        self._operation_success_callback = on_success
+        self._operation_failure_title = failure_title
+        if self._operation_adapter.start(operation):
+            self._operation_thread = self._operation_adapter
+        else:
+            self._operation_success_callback = None
 
-        def _safe_success(result: typing.Any) -> None:
+    def _dispatch_operation_success(self: typing.Any, result: typing.Any) -> None:
+        callback = self._operation_success_callback
+        if callback is not None:
             try:
-                on_success(result)
+                callback(result)
             except RuntimeError:
                 pass
-        worker.finished.connect(_safe_success)
-        worker.finished.connect(thread.quit)
-        worker.failed.connect(lambda message: QMessageBox.warning(self, failure_title, message))
-        worker.failed.connect(self._operation_failed)
-        worker.failed.connect(thread.quit)
-        thread.finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
-        thread.finished.connect(self._clear_operation_worker)
-        self._operation_thread = thread
-        self._operation_worker = worker
-        thread.start()
+
+    def _dispatch_operation_failure(self: typing.Any, message: str) -> None:
+        QMessageBox.warning(self, self._operation_failure_title, message)
+        self._operation_failed(message)
 
     def closeEvent(self, event: typing.Any) -> None:
-        if self._operation_thread is not None and self._operation_thread.isRunning():
-            self._operation_thread.quit()
-            self._operation_thread.wait(500)
+        if self._operation_adapter.busy:
+            self._operation_adapter.cancel()
         super().closeEvent(event)
 
     def __del__(self) -> None:
         try:
-            if hasattr(self, "_operation_thread") and self._operation_thread is not None:
-                if self._operation_thread.isRunning():
-                    self._operation_thread.quit()
-                    self._operation_thread.wait(200)
+            if hasattr(self, "_operation_adapter"):
+                self._operation_adapter.cancel()
         except (RuntimeError, TypeError, AttributeError, OSError):
             pass
 
@@ -553,7 +554,8 @@ class _ActionCenterSubTab(ActionCenterHistoryMixin, DirectActionUiMixin, BaseTab
 
     def _clear_operation_worker(self: typing.Any) -> None:
         self._operation_thread = None
-        self._operation_worker = None
+        self._operation_success_callback = None
+        self._operation_failure_title = ""
 
     def _selected_item(self: typing.Any) -> typing.Any:
         row = self.action_list.currentRow()

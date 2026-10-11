@@ -8,6 +8,7 @@ import os
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
 from utils.formatting import bytes_to_human, seconds_to_human, percent_bar, truncate
+from utils.formatting import bytes_to_legacy_human
 
 
 class TestBytesToHuman(unittest.TestCase):

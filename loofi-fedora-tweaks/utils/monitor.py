@@ -9,6 +9,8 @@ import subprocess
 from dataclasses import dataclass
 from typing import Optional
 
+from utils.formatting import bytes_to_legacy_human
+
 logger = logging.getLogger(__name__)
 
 
@@ -89,11 +91,7 @@ class SystemMonitor:
     @staticmethod
     def bytes_to_human(num_bytes: float) -> str:
         """Convert bytes to human-readable format."""
-        for unit in ("B", "KB", "MB", "GB", "TB"):
-            if abs(num_bytes) < 1024:
-                return f"{num_bytes:.1f} {unit}"
-            num_bytes /= 1024
-        return f"{num_bytes:.1f} PB"
+        return bytes_to_legacy_human(num_bytes)
 
     @staticmethod
     def get_memory_info() -> Optional[MemoryInfo]:

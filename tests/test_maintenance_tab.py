@@ -253,6 +253,23 @@ def _install_stubs():
     action_center_worker_mod = types.ModuleType("ui.action_center_worker")
     action_center_worker_mod.ActionCenterOperationWorker = _ActionCenterWorker
 
+    class _OperationAdapter(_Dummy):
+        def __init__(self, *args, **kwargs):
+            super().__init__(*args, **kwargs)
+            self.busy = False
+            self.finished = MagicMock()
+            self.failed = MagicMock()
+            self.stopped = MagicMock()
+            self.started_operations = []
+
+        def start(self, operation):
+            self.busy = True
+            self.started_operations.append(operation)
+            return True
+
+    operation_worker_mod = types.ModuleType("ui.operation_worker")
+    operation_worker_mod.OperationControllerQtAdapter = _OperationAdapter
+
     # --- services.system ---
     services_system_mod = types.ModuleType("services.system")
     services_system_mod.__path__ = []
@@ -337,6 +354,7 @@ def _install_stubs():
         "ui.components": components_mod,
         "ui.action_center_views": action_center_views_mod,
         "ui.action_center_worker": action_center_worker_mod,
+        "ui.operation_worker": operation_worker_mod,
         "utils.command_runner": cmd_runner_mod,
         "services.system": services_system_mod,
         "services.system.system": services_system_system_mod,
@@ -847,15 +865,19 @@ class TestActionCenterSubTab(unittest.TestCase):
         tab.verify_button.setEnabled.assert_called_with(False)
 
     @patch("core.actions.center.ActionCenterService")
-    def test_start_operation_wires_worker_thread_lifecycle(self, service_cls):
+    def test_start_operation_uses_adapter_and_dispatches_result(self, service_cls):
         service_cls.return_value.candidates_from_readiness.return_value = []
         tab = _mt._ActionCenterSubTab()
         self.operation_patcher.stop()
         tab._operation_thread = None
+        on_success = MagicMock()
 
-        tab._start_operation(lambda: "ok", MagicMock(), "failed")
+        tab._start_operation(lambda: "ok", on_success, "failed")
 
+        self.assertEqual(len(tab._operation_adapter.started_operations), 1)
         self.assertIsNotNone(tab._operation_thread)
+        tab._dispatch_operation_success("ok")
+        on_success.assert_called_once_with("ok")
         tab._clear_operation_worker()
         self.assertIsNone(tab._operation_thread)
         self.operation_patcher.start()

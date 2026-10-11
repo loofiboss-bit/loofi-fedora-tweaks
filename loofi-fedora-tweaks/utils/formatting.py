@@ -16,6 +16,15 @@ def bytes_to_human(num_bytes, suffix="B"):
     return f"{num_bytes:.1f} Ei{suffix}"
 
 
+def bytes_to_legacy_human(num_bytes: int | float) -> str:
+    """Format bytes with the long-standing labels used by system monitors."""
+    for unit in ("B", "KB", "MB", "GB", "TB"):
+        if abs(num_bytes) < 1024:
+            return f"{num_bytes:.1f} {unit}"
+        num_bytes /= 1024
+    return f"{num_bytes:.1f} PB"
+
+
 def seconds_to_human(seconds):
     """Convert seconds to human-readable duration string."""
     if seconds < 60:

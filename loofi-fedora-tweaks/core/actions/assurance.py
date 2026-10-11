@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import json
 import re
 from typing import Any, Callable, Literal, Mapping
 
@@ -16,7 +15,10 @@ from core.actions.contracts import (
 )
 from core.executor.action_result import ActionResult
 from core.local_profiles import validate_local_profile
-from core.actions.public_boundary_definitions import public_boundary_definitions
+from core.actions.public_boundary_definitions import (
+    _manual_definition as _shared_manual_definition,
+    public_boundary_definitions,
+)
 from core.actions.firmware_evidence import FIRMWARE_EVIDENCE_VERSION, candidates, history_status, valid_facts
 from core.actions.continuity_recovery import (
     _preflight_dnf5_history_undo,
@@ -33,6 +35,9 @@ from core.actions.continuity_recovery import (
     _verify_fedora_update,
     _verify_fedora_offline_activation,
     _verify_rpm_ostree_rollback,
+    _json_payload,
+    _pending_deployment,
+    _runtime_boot_id,
 )
 
 _PACKAGE_PATTERN = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+._-]{0,127}$")
@@ -226,25 +231,16 @@ def _manual_definition(
     parameter_validator: Callable[[Mapping[str, Any]], PolicyDecision] | None = None,
     reboot_policy: Literal["none", "may_require", "required"] = "none",
 ) -> ActionDefinition:
-    return ActionDefinition(
-        id=action_id,
-        capability_id=f"manual.{action_id}",
-        title=title,
-        description=description,
-        parameter_schema={name: dict(schema) for name, schema in (parameter_schema or {}).items()},
-        risk_level="medium",
-        privileged=False,
-        confirmation_policy="explicit-no-rollback",
-        recovery_guidance=recovery_guidance,
-        rollback_supported=False,
-        command_renderer=lambda _parameters, _runtime: [],
-        preflight_checker=lambda _parameters, _runtime: _blocked("manual_only", description),
-        verifier=lambda _run, _plan, _runtime: VerificationDecision.failed("Manual-only actions are never executed by Loofi."),
-        operation_class="manual_only",
-        supported_variants=frozenset({"traditional", "atomic"}),
-        reboot_policy=reboot_policy,
-        affected_resources=affected_resources,
+    return _shared_manual_definition(
+        action_id,
+        title,
+        description,
+        recovery_guidance,
+        affected_resources,
+        parameter_schema=parameter_schema,
         parameter_validator=parameter_validator,
+        reboot_policy=reboot_policy,
+        blocked_policy=_blocked,
     )
 
 
@@ -984,21 +980,6 @@ def _blocked(code: str, explanation: str) -> PolicyDecision:
     return PolicyDecision(False, code, explanation, "Review the current state and create a fresh plan.")
 
 
-def _json_payload(result: ActionResult) -> dict[str, Any] | None:
-    if not result.success:
-        return None
-    source = result.structured_output if result.structured_output is not None else result.stdout
-    try:
-        payload = json.loads(source or "{}")
-    except (json.JSONDecodeError, TypeError):
-        return None
-    if isinstance(payload, dict):
-        return payload
-    if isinstance(payload, list):
-        return {"items": payload}
-    return None
-
-
 def _lines(value: str) -> list[str]:
     return [line.strip() for line in str(value).splitlines() if line.strip()]
 
@@ -1017,21 +998,3 @@ def _human_bytes(value: str) -> int:
         return 0
     factor = {"": 1, "K": 1024, "M": 1024**2, "G": 1024**3, "T": 1024**4}[match.group(2).upper()]
     return int(float(match.group(1)) * factor)
-
-
-def _runtime_boot_id(runtime: ActionRuntime) -> str:
-    reader = getattr(runtime, "boot_id", None)
-    return str(reader() if callable(reader) else "").strip()
-
-
-def _pending_deployment(deployments: Any) -> dict[str, Any]:
-    if not isinstance(deployments, list):
-        return {}
-    for marker in ("staged", "pending"):
-        candidate = next(
-            (item for item in deployments if isinstance(item, dict) and item.get(marker) and not item.get("booted")),
-            None,
-        )
-        if candidate is not None:
-            return candidate
-    return {}

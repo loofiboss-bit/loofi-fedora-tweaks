@@ -10,7 +10,6 @@ from core.plugins.compat import CompatibilityDetector
 from core.plugins.interface import PluginInterface
 from core.plugins.registry import PluginRegistry
 from core.plugins.spec import BUILTIN_PLUGIN_SPECS, BUILTIN_SPEC_BY_ID
-from version import __version__ as APP_VERSION
 
 log = logging.getLogger(__name__)
 
@@ -36,20 +35,6 @@ class PluginLoader:
             return tuple(int(part) for part in parts if part.isdigit())
         except (ValueError, AttributeError):
             return (0,)
-
-    def _check_version_compatibility(
-        self,
-        plugin_id: str,
-        min_version: str,
-        max_version: str,
-    ) -> tuple[bool, str]:
-        """Compatibility helper retained for built-in diagnostics/tests."""
-        app_version = self._parse_version(APP_VERSION)
-        if min_version and app_version < self._parse_version(min_version):
-            return False, f"Plugin requires app version >= {min_version}, current: {APP_VERSION}"
-        if max_version and app_version > self._parse_version(max_version):
-            return False, f"Plugin supports app version <= {max_version}, current: {APP_VERSION}"
-        return True, ""
 
     def load_builtins(self, context: dict | None = None) -> list[str]:
         """Compatibility bulk loader; startup must use register_builtin_specs."""

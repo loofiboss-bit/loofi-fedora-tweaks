@@ -604,18 +604,26 @@ def _guidance_for_action(definition: object) -> TaskDescriptor:
     )
 
 
+_ACTION_GUIDANCE_CACHE: tuple[TaskDescriptor, ...] | None = None
+
+
 def _action_guidance_tasks() -> tuple[TaskDescriptor, ...]:
+    """Cache the static guidance projection; task eligibility stays per call."""
+    global _ACTION_GUIDANCE_CACHE
+    if _ACTION_GUIDANCE_CACHE is not None:
+        return _ACTION_GUIDANCE_CACHE
     try:
         from core.actions.catalog import ActionCatalog
 
         definitions = ActionCatalog().list()
     except (ImportError, OSError, RuntimeError, TypeError, ValueError):
         return ()
-    return tuple(
+    _ACTION_GUIDANCE_CACHE = tuple(
         _guidance_for_action(definition)
         for definition in definitions
         if getattr(definition, "operation_class", "host") == "manual_only"
     )
+    return _ACTION_GUIDANCE_CACHE
 
 
 class TaskCatalog:

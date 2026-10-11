@@ -10,6 +10,8 @@ from collections import deque
 from dataclasses import dataclass
 from typing import Dict, List, Optional, Tuple
 
+from utils.formatting import bytes_to_legacy_human
+
 logger = logging.getLogger(__name__)
 
 
@@ -107,11 +109,7 @@ class PerformanceCollector:
     @staticmethod
     def bytes_to_human(num_bytes: float) -> str:
         """Convert bytes to human-readable format."""
-        for unit in ("B", "KB", "MB", "GB", "TB"):
-            if abs(num_bytes) < 1024:
-                return f"{num_bytes:.1f} {unit}"
-            num_bytes /= 1024
-        return f"{num_bytes:.1f} PB"
+        return bytes_to_legacy_human(num_bytes)
 
     # ==================== /proc READERS ====================
 

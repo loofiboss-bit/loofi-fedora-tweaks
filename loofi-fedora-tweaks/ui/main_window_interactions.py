@@ -781,7 +781,7 @@ class MainWindowInteractionMixin:
             QApplication.quit()
 
     def _runtime_samplers(self: typing.Any) -> tuple[typing.Any, ...]:
-        """Return owned samplers without loading any unvisited page."""
+        """Return owned asynchronous resources without loading unvisited pages."""
         attributes = getattr(self, "__dict__", {})
         resources = []
         dashboard = attributes.get("_dashboard_controller")
@@ -795,7 +795,28 @@ class MainWindowInteractionMixin:
             if (page is not None and callable(getattr(page, "request_stop", None))
                     and not any(page is resource for resource in resources)):
                 resources.append(page)
+        for adapter in self._runtime_operation_adapters():
+            if not any(adapter is resource for resource in resources):
+                resources.append(adapter)
         return tuple(resources)
+
+    def _runtime_operation_adapters(self: typing.Any) -> tuple[typing.Any, ...]:
+        """Find active Qt operation adapters owned by this window's pages."""
+        try:
+            from ui.operation_worker import OperationControllerQtAdapter
+        except ImportError:
+            return ()
+        find_children = getattr(self, "findChildren", None)
+        adapters = list(find_children(OperationControllerQtAdapter)) if callable(find_children) else []
+        utility_adapter = getattr(self, "_utility_operation_adapter", None)
+        if utility_adapter is not None and not any(utility_adapter is item for item in adapters):
+            adapters.append(utility_adapter)
+        return tuple(
+            adapter
+            for adapter in adapters
+            if callable(getattr(adapter, "request_stop", None))
+            and callable(getattr(adapter, "wait_for_stop", None))
+        )
 
     def _runtime_sampling_busy(self: typing.Any) -> bool:
         return any(getattr(resource, "busy", False) is True or
@@ -833,8 +854,7 @@ class MainWindowInteractionMixin:
             status_label = getattr(self, "_status_label", None)
             if status_frame is not None and status_label is not None:
                 status_label.setText(
-                    self.tr("Finishing the current system change and recording its result before closing.")
-                    if adapter_busy else self.tr("Waiting for system readers to stop before closing.")
+                    self.tr("Finishing active operations and readers before closing.")
                 )
                 status_frame.show()
             return False
@@ -883,14 +903,7 @@ class MainWindowInteractionMixin:
         if attributes.get("_runtime_cleaned", False):
             return
         self._runtime_cleaned = True
-        utility_adapter = getattr(self, "_utility_operation_adapter", None)
         self._request_sampler_stop()
-        close_utility = getattr(utility_adapter, "close", None)
-        if callable(close_utility):
-            try:
-                close_utility(2000)
-            except (RuntimeError, TypeError, ValueError):
-                logger.debug("Failed to wait for utility operation during shutdown", exc_info=True)
         utility_update = getattr(self, "_sidebar_index", {}).get("utility_update")
         update_page = getattr(utility_update, "page_widget", None)
         get_real_widget = getattr(update_page, "get_real_widget", None)

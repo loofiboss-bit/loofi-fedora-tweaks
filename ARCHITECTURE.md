@@ -139,6 +139,19 @@ evidence, while page navigation remains subject to the owning route's policy.
 | `cli/` | Argument parsing, serialization, and domain calls | UI imports or arbitrary command execution |
 | `utils/` | Shared infrastructure and compatibility adapters | New feature-specific authority |
 
+Catalog records are projected into immutable product entries and lookup indexes
+once per process. The default action definitions and task guidance projection
+reuse their static metadata; each default `ActionCatalog` receives its own
+mutable parameter schemas, while caller-injected definitions retain their
+existing identity and behavior. Catalog caching never includes capability
+probes, preflight checks, or verification results.
+
+Page-owned asynchronous operations use `OperationControllerQtAdapter` for the
+Qt thread boundary. The window includes these adapters in its deferred-shutdown
+resources, requests cooperative cancellation, and waits for terminal delivery
+and thread exit before destroying the owning pages. Action Center review, apply,
+and verification remain separate domain operations.
+
 All launches begin in `loofi-fedora-tweaks/main.py`. GUI widgets request
 domain work through existing controllers and workers. CLI `tweaks list`,
 `get`, `set`, and `restore` project the same catalog and actions as the GUI.
