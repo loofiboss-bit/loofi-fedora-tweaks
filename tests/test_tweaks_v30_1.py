@@ -273,6 +273,17 @@ class TestTweakPage(unittest.TestCase):
         finally:
             page.close()
 
+    def test_profile_library_guide_focuses_visible_profile_menu(self, _capability) -> None:
+        page = TweaksPage(profile("kde"))
+        try:
+            page.show()
+            self.app.processEvents()
+            self.assertFalse(page.profile_menu_button.isHidden())
+            self.assertTrue(page.focus_task("tune:profile-library"))
+            self.assertIs(self.app.focusWidget(), page.profile_menu_button)
+        finally:
+            page.close()
+
     def test_old_maintenance_task_ids_focus_health_actions(self, _capability) -> None:
         page = FixWorkflowPage()
         try:

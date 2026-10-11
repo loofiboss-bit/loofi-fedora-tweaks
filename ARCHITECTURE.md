@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the v32.7.0 "Routine" local candidate.
+> Active architecture reference for the v32.8.0 "Guide" local candidate.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -122,6 +122,14 @@ shared device observations without summing them, and existing reclaim probes.
 Unknown or incomplete sizes are preserved in bounded Health source facts. The UI
 reads saved evidence and hands cleanup requests to existing reviewed actions;
 journal size is not a reclaim estimate or new mutation capability.
+
+`core/tasks/guides.py` owns immutable guide definitions, typed navigation targets,
+and the separate `loofi.user-guides` progress contract. It depends on neither
+Qt nor command/execution authority. `GuideProgressStore` uses the canonical state
+inventory, XDG data path, private atomic writes, and an advisory lock. The CLI
+reads the same guide contract; it cannot execute a guide sequence. The Overview
+panel persists reviewed/skipped states and exact links to existing terminal
+evidence, while page navigation remains subject to the owning route's policy.
 
 | Layer | Owns | Must not own |
 | --- | --- | --- |

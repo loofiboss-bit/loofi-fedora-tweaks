@@ -16,6 +16,7 @@ and is not.
 
 ## Contribute
 
+- [Guide qualification](GUIDE_VERIFICATION.md) — everyday guides, saved progress, search and installed-RPM evidence
 - [Routine qualification](ROUTINE_VERIFICATION.md) — installation/profile comparisons, storage guidance, restart advice and contextual links
 - [Personal qualification](PERSONAL_VERIFICATION.md) — RPM discovery, profile authoring, source observations, and KDE window workflows
 - [Companion qualification](COMPANION_VERIFICATION.md) — local candidate checks and physical evidence limits

@@ -89,6 +89,27 @@ class CompanionHealthMixin:
         self._render_session(session, None, "")
         self._refresh_baselines()
 
+    def select_saved_session(self: Any, session_id: str) -> bool:
+        """Select one exact saved check for review without collecting again."""
+        requested = str(session_id or "").strip()
+        if not requested:
+            return False
+        index = self.saved_session_selector.findData(requested)
+        if index < 0:
+            self._refresh_saved_sessions()
+            index = self.saved_session_selector.findData(requested)
+        if index < 0:
+            self.result_notice.set_notice(
+                "warning",
+                self.tr("Saved result unavailable"),
+                self.tr("The exact linked session is no longer available. No other session was selected."),
+            )
+            return False
+        self.saved_session_selector.setCurrentIndex(index)
+        self.view_switcher.set_active_view("results")
+        self._select_view("results")
+        return self._current_session is not None and self._current_session.session_id == requested
+
     def _compare_saved(self: Any) -> None:
         selected = self.baseline_selector.currentData()
         before = next((s for s in self._saved_sessions if s.session_id == selected), None)

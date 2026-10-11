@@ -2,7 +2,7 @@
 
 Loofi Fedora Tweaks is structured as a layered, modular desktop application with clean boundaries between UI presentation, domain logic, system service probing, and execution authority.
 
-The canonical architecture contract is defined in [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md) and [.workflow/specs/arch-v29.0.1.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/.workflow/specs/arch-v29.0.1.md).
+The canonical architecture contract is maintained in [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md); the active roadmap and qualification documents record the current candidate scope and evidence.
 
 ---
 

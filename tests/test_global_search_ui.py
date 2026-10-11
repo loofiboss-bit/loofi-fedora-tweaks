@@ -55,6 +55,26 @@ class TestGlobalSearchDialog(unittest.TestCase):
         host._preselect_action_center.assert_not_called()
         host._start_utility_operation.assert_not_called()
 
+    def test_guide_search_result_is_labeled_and_activates_navigation_only(self):
+        callback = MagicMock()
+        dialog = GlobalSearchDialog(self._model(), callback)
+        dialog.search_input.setText("battery")
+
+        item = next(
+            dialog.results_list.item(row)
+            for row in range(dialog.results_list.count())
+            if dialog.results_list.item(row).data(Qt.ItemDataRole.UserRole).kind is SearchResultKind.GUIDE
+        )
+        result = item.data(Qt.ItemDataRole.UserRole)
+        self.assertEqual(result.kind, SearchResultKind.GUIDE)
+        self.assertEqual((result.route_id, result.guide_id), ("overview", "solve-a-problem"))
+        self.assertIn("Guide", item.text())
+
+        dialog._activate_item(item)
+
+        callback.assert_called_once_with(result)
+        self.assertIsNone(result.action_id)
+
     def test_actions_filter_uses_same_dialog_and_model(self):
         dialog = GlobalSearchDialog(
             self._model(),

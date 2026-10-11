@@ -688,6 +688,9 @@ class TweaksPage(QWidget, PluginInterface):
 
     def focus_task(self, task_id: str) -> bool:
         key = str(task_id).removeprefix("tune:")
+        if key == "profile-library":
+            self.profile_menu_button.setFocus()
+            return True
         if key in self._rows:
             self._rows[key][1].setFocus()
             return True

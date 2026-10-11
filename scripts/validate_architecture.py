@@ -124,8 +124,58 @@ def _system_check_errors() -> list[str]:
     return errors
 
 
+def _domain_boundary_errors() -> list[str]:
+    """Keep domain modules Qt-free and guide definitions outside execution authority."""
+    errors: list[str] = []
+    qt_roots = (SOURCE / "core" / "tasks", SOURCE / "core" / "actions", SOURCE / "services")
+    legacy_ui_adapter = SOURCE / "services" / "security" / "safety.py"
+    for root in qt_roots:
+        if not root.exists():
+            continue
+        for path in sorted(root.rglob("*.py")):
+            if path == legacy_ui_adapter:
+                continue
+            tree = _tree(path)
+            imported_modules = {
+                alias.name
+                for node in ast.walk(tree)
+                if isinstance(node, ast.Import)
+                for alias in node.names
+            }
+            imported_modules.update(
+                node.module
+                for node in ast.walk(tree)
+                if isinstance(node, ast.ImportFrom) and node.module
+            )
+            if any(module.startswith(("PyQt6", "PySide6")) for module in imported_modules):
+                errors.append(f"domain module imports Qt: {path.relative_to(SOURCE)}")
+
+    guide_path = SOURCE / "core" / "tasks" / "guides.py"
+    if guide_path.exists():
+        guide_tree = _tree(guide_path)
+        forbidden_prefixes = (
+            "PyQt6", "PySide6", "subprocess", "core.executor",
+            "core.actions.operation_controller", "core.actions.orchestrator",
+        )
+        imported_modules = {
+            alias.name
+            for node in ast.walk(guide_tree)
+            if isinstance(node, ast.Import)
+            for alias in node.names
+        }
+        imported_modules.update(
+            node.module
+            for node in ast.walk(guide_tree)
+            if isinstance(node, ast.ImportFrom) and node.module
+        )
+        for module in sorted(imported_modules):
+            if module.startswith(forbidden_prefixes):
+                errors.append(f"guide domain bypasses navigation/operation authority: {module}")
+    return errors
+
+
 def validate() -> list[str]:
-    errors = _system_check_errors()
+    errors = [*_system_check_errors(), *_domain_boundary_errors()]
     files = _runtime_files()
     ranked = sorted(
         ((sum(bool(line.strip()) for line in path.read_text(encoding="utf-8").splitlines()), path) for path in files),
@@ -185,7 +235,7 @@ def main() -> int:
         for error in errors:
             print(f"[architecture] ERROR: {error}")
         return 1
-    print("[architecture] OK: catalog authority, System Check, module/function budgets, CLI main, and 85% annotations")
+    print("[architecture] OK: catalog authority, Qt-free domain modules, guide execution boundary, System Check, module/function budgets, CLI main, and 85% annotations")
     return 0
 
 

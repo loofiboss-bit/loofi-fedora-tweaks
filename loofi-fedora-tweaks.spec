@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        32.7.0
+Version:        32.8.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 

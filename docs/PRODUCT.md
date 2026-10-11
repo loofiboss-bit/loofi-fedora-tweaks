@@ -5,6 +5,12 @@ Overview combines live resources, available hardware readings, and recorded
 maintenance. Search, change, and verify desktop and system settings for GNOME,
 KDE, and DNF alongside applications, updates, health, and verified history.
 
+Voluntary Overview guides help users understand four everyday jobs: personalizing
+the desktop, choosing and managing apps, maintaining the system, and solving a
+problem. They route into existing pages and reviews. Guide progress is local
+presentation state; reviewing or completing a guide never establishes that the
+computer is healthy.
+
 ## Who it is for
 
 - **Everyday Fedora users** who want a setting changed without opening a
@@ -16,7 +22,7 @@ KDE, and DNF alongside applications, updates, health, and verified history.
 
 | Job | What the user does |
 |---|---|
-| **Overview** (start page) | Read current resources and up to three relevant next steps, then open the appropriate tool |
+| **Overview** (start page) | Read current resources and up to three relevant next steps, open the appropriate tool, or choose an optional everyday guide |
 | **Tweaks** | Search and change a setting, review a desktop preset or same-desktop profile, check one current value, and restore supported values |
 | **Apps** | Find and install trusted applications; inspect installed apps and their Flatpak metadata permissions; remove an exact installation |
 | **Updates** | Update system packages, Flatpaks, and firmware; resume pending verification |
@@ -38,6 +44,11 @@ specific operation looks up that exact run, including runs outside the recent
 page; when the record is missing, Activity says so instead of selecting a
 different run. Health places its read-only check beside the chosen symptom and
 offers a deliberate recheck after the user returns from desktop settings.
+
+Guide steps can be reviewed, skipped, or linked to one exact saved successful
+operation or completed diagnostic session where the step allows it. Missing
+evidence stays missing. Returning to a guide does not run checks, apply changes,
+install packages, or bypass the owning page's current review.
 
 ## Advanced mode
 

@@ -453,7 +453,21 @@ def _command_handlers() -> dict[str, typing.Callable[[Any], Any]]:
         "support-bundle": cmd_support_bundle,
         "tweaks": cmd_tweaks,
         "apps": cmd_apps,
+        "guides": cmd_guides,
     }
+
+
+def cmd_guides(args: Any) -> int:
+    """List or inspect local everyday-guide progress."""
+    from cli.commands.guides_commands import handle_guides
+
+    return handle_guides(
+        args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        error_fn=lambda message: print(message, file=sys.stderr),
+    )
 
 
 def main(argv: Optional[List[str]] = None) -> Any:

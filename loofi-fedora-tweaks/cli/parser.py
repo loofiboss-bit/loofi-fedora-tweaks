@@ -9,6 +9,7 @@ from cli.parser_domains import (
     register_apps_command,
     register_execution_commands,
     register_health_commands,
+    register_guides_command,
     register_host_commands,
     register_support_commands,
     register_troubleshooting_command,
@@ -51,4 +52,5 @@ def build_parser() -> argparse.ArgumentParser:
     register_support_commands(subparsers)         # doctor, support-bundle
     register_tweaks_command(subparsers)           # tweaks
     register_apps_command(subparsers)             # apps
+    register_guides_command(subparsers)            # guides
     return parser

@@ -47,11 +47,11 @@ See `ARCHITECTURE.md` for the full map. The rules that matter on almost every ta
 - `cli/main.py`: argument parsing and service calls only. Never import UI.
 - Use `loofi-fedora-tweaks/ui/base_tab.py` and `utils/command_runner.py` for async GUI command flows.
 
-Before release-scoped or workflow-scoped work, check:
-
-- `.workflow/specs/.race-lock.json`
-- `.workflow/specs/tasks-vX.Y.Z.md`
-- `.workflow/specs/arch-vX.Y.Z.md`
+Before release-scoped or workflow-scoped work, use the checked-in `ROADMAP.md`,
+`ARCHITECTURE.md`, and relevant qualification documents as the current source of
+truth. Optional `.workflow/specs/` snapshots may be absent; confirm their
+presence before relying on them, and do not create a parallel specification
+tree for routine product work.
 
 ## Critical conventions
 

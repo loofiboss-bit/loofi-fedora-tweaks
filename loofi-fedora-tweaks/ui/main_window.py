@@ -45,6 +45,7 @@ from ui.design import semantic_qcolor
 from ui.layout_primitives import LayoutMetrics, PageHeader
 from ui.lazy_widget import LazyWidget
 from ui.navigation import DestinationHost, DestinationSidebar
+from ui.main_window_guides import GuideNavigationMixin
 from ui.main_window_interactions import MainWindowInteractionMixin
 from ui.main_window_services import MainWindowServiceMixin
 from ui.main_window_shell import MainWindowShellMixin
@@ -123,6 +124,7 @@ class MainWindow(
     MainWindowUtilityMixin,
     MainWindowServiceMixin,
     MainWindowInteractionMixin,
+    GuideNavigationMixin,
     MainWindowShellMixin,
     QMainWindow,
 ):
@@ -288,6 +290,7 @@ class MainWindow(
             activity_button.hide()
         if settings_button is not None:
             settings_button.hide()
+        self._setup_guide_controls()
         self._breadcrumb_frame.actions_layout.addWidget(self._global_search_button)
         right_side.addWidget(self._breadcrumb_frame)
 
@@ -546,6 +549,7 @@ class MainWindow(
             set_profile = getattr(widget, "set_platform_profile", None)
             if callable(set_profile):
                 set_profile(self._platform_profile)
+            self._connect_guide_widget(widget)
         action_request = getattr(widget, "actionCenterRequested", None)
         if action_request is not None and hasattr(action_request, "connect"):
             action_request.connect(self._open_action_center_request)
