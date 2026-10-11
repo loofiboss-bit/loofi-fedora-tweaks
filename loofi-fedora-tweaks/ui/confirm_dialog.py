@@ -29,8 +29,10 @@ from PyQt6.QtWidgets import (
     QLabel,
     QPlainTextEdit,
     QPushButton,
+    QScrollArea,
     QTextEdit,
     QVBoxLayout,
+    QWidget,
 )
 from utils.log import get_logger
 from utils.settings import SettingsManager
@@ -53,7 +55,14 @@ class ReviewedActionDialog(QDialog):
         self.setWindowTitle(self.tr("Review change"))
         self.setAccessibleName(self.tr("Review change: %1").replace("%1", title))
         self.require_no_rollback_acceptance = bool(require_no_rollback_acceptance)
-        layout = QVBoxLayout(self)
+        root = QVBoxLayout(self)
+        self.review_scroll = QScrollArea(self)
+        self.review_scroll.setWidgetResizable(True)
+        self.review_scroll.setFrameShape(QFrame.Shape.NoFrame)
+        body = QWidget()
+        layout = QVBoxLayout(body)
+        self.review_scroll.setWidget(body)
+        root.addWidget(self.review_scroll, 1)
         heading = QLabel(title)
         heading.setObjectName("reviewedActionTitle")
         heading.setWordWrap(True)
@@ -80,9 +89,12 @@ class ReviewedActionDialog(QDialog):
         layout.addWidget(self.recovery_label)
 
         self.no_rollback_checkbox = QCheckBox(
-            self.tr("I have reviewed the recovery guidance and accept that this change has no automatic rollback.")
+            self.tr("I accept no automatic rollback.")
         )
         self.no_rollback_checkbox.setAccessibleName(self.tr("Accept that this action has no automatic rollback"))
+        self.no_rollback_checkbox.setAccessibleDescription(
+            self.tr("I have reviewed the recovery guidance and accept that this change has no automatic rollback.")
+        )
         self.no_rollback_checkbox.setVisible(self.require_no_rollback_acceptance)
         layout.addWidget(self.no_rollback_checkbox)
 
@@ -101,7 +113,11 @@ class ReviewedActionDialog(QDialog):
         self.buttons.rejected.connect(self.reject)
         self.buttons.accepted.connect(self.accept)
         self.no_rollback_checkbox.toggled.connect(self._update_accept_enabled)
-        layout.addWidget(self.buttons)
+        root.addWidget(self.buttons)
+        screen = self.screen()
+        if screen is not None:
+            available = screen.availableGeometry()
+            self.resize(min(640, available.width()), min(520, available.height()))
         self._update_accept_enabled()
 
     @property

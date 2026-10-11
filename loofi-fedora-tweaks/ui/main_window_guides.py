@@ -4,6 +4,7 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
+from PyQt6.QtCore import Qt
 from PyQt6.QtGui import QAction
 from PyQt6.QtWidgets import QMenu, QToolButton, QWidget
 
@@ -20,6 +21,7 @@ class GuideNavigationMixin:
         self._resume_guide_button = QToolButton(parent)
         self._resume_guide_button.setObjectName("resumeGuideButton")
         self._resume_guide_button.setText(self.tr("Guide"))
+        self._resume_guide_button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
         popup_mode = getattr(getattr(QToolButton, "ToolButtonPopupMode", None), "InstantPopup", None)
         if popup_mode is not None:
             self._resume_guide_button.setPopupMode(popup_mode)
