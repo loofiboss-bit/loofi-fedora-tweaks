@@ -3,7 +3,7 @@ import unittest
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
-from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
+from PyQt6.QtWidgets import QApplication, QDialog, QWidget
 
 from ui.main_window_utility import MainWindowUtilityMixin
 
@@ -25,20 +25,22 @@ class TestWayfinderShell(unittest.TestCase):
         self.page._rows = {"dnf-parallel": (Mock(), Mock())}
         self.page._rows["dnf-parallel"][1].property.return_value = "3"
 
-    @patch("PyQt6.QtWidgets.QMessageBox.question", return_value=QMessageBox.StandardButton.Cancel)
-    def test_system_confirmation_names_dnf_values_and_scope_then_restores_selection(self, question):
+    @patch("ui.tweak_review.ReviewedActionDialog")
+    def test_system_confirmation_names_dnf_values_and_scope_then_restores_selection(self, dialog_class):
+        dialog_class.return_value.exec.return_value = QDialog.DialogCode.Rejected
         from core.tasks.tweaks import TWEAKS
         tweak = next(t for t in TWEAKS if t.id.startswith("dnf"))
         self.page._rows = {tweak.id: (Mock(), Mock())}
         current, target = tweak.choices[:2]
         self.page._rows[tweak.id][1].property.return_value = current[0]
         self.assertFalse(MainWindowUtilityMixin._start_tweak_change(self.parent, self.page, tweak.id, target[0]))
-        text = question.call_args.args[2]
-        self.assertIn(tweak.title, text)
-        self.assertIn(current[1], text)
-        self.assertIn(target[1], text)
-        self.assertIn("all users", text)
-        self.assertNotIn("power profile", text.casefold())
+        review = dialog_class.call_args
+        self.assertIn(tweak.title, review.args[0])
+        self.assertIn(current[1], review.args[2])
+        self.assertIn(target[1], review.args[2])
+        self.assertIn("all users", review.args[2])
+        self.assertNotIn("power profile", " ".join(review.args).casefold())
+        self.assertTrue(review.kwargs["require_no_rollback_acceptance"])
         self.page.restore_selection.assert_called_once_with(tweak.id)
         self.adapter.start.assert_not_called()
 

@@ -14,6 +14,12 @@ on:
       - ".vscode/**"
       - ".copilot/**"
   workflow_dispatch:
+    inputs:
+      extended_qualification:
+        description: "Run fresh-disk, reboot and Plasma Wayland qualification after the standard VM gate"
+        required: false
+        type: boolean
+        default: false
 
 permissions:
   contents: read
@@ -71,6 +77,7 @@ jobs:
       - run: pip install build 'defusedxml>=0.7.1'
       - run: python3 scripts/check_packaging_manifest.py --build
       - run: python3 scripts/gen_tweaks_doc.py --check
+      - run: python3 scripts/check_translation_inventory.py --check
       - run: python3 scripts/bump_version.py --check
 
   stabilization_rules:
@@ -193,13 +200,36 @@ jobs:
     steps:
       - uses: actions/checkout@v6
       - name: Run isolated Fedora KDE GUI workflows
-        run: just test-full
+        run: python3 -m e2e.vm test-full --reboot-check
       - name: Upload VM test reports
         if: always()
         uses: actions/upload-artifact@v4
         with:
           name: fedora-kde-e2e-${{ github.run_id }}
           path: test-results/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
+  vm_extended_qualification:
+    # Never execute untrusted PR or feature-branch code on the trusted runner.
+    if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch' && inputs.extended_qualification
+    needs: vm_e2e
+    runs-on: [self-hosted, Linux, X64, loofi-vm-e2e]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+      - name: Repeat from a clean overlay
+        run: python3 -m e2e.vm test-full --reboot-check --reports-dir test-results/e2e-repeat
+      - name: Provision and qualify a separate empty disk
+        run: python3 -m e2e.vm test-full --fresh --reboot-check --reports-dir test-results/e2e-fresh
+      - name: Qualify a separate Plasma Wayland guest
+        run: python3 -m e2e.vm test-full --desktop wayland --reboot-check --reports-dir test-results/e2e-wayland
+      - name: Upload extended qualification reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-kde-extended-${{ github.run_id }}
+          path: test-results/e2e*/
           if-no-files-found: warn
           retention-days: 14
 

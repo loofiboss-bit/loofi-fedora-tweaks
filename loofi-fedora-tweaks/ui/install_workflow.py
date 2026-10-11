@@ -60,6 +60,8 @@ class InstallWorkflowPage(QWidget):
         self._source_status_service = source_status_service
         self._source_status_adapter: Any | None = None
         self._rows: dict[str, tuple[ApplicationRecord, ApplicationEligibility, QListWidgetItem]] = {}
+        self._row_context: ApplicationContext | None = None
+        self._catalog_rows_initialized = False
         self._selected_ids: set[str] = set()
         self._row_checks: dict[str, QCheckBox] = {}
         self._last_bundle: object | None = None
@@ -174,6 +176,7 @@ class InstallWorkflowPage(QWidget):
             viewport.installEventFilter(self)
 
         self.scaffold.add_widget(self.application_list, 1)
+        self.catalog_empty_handoff = None
         from ui.installed_applications import InstalledApplicationsCard
         self.installed_card = InstalledApplicationsCard(service=installed_service, parent=self)
         self.installed_card.actionReviewRequested.connect(self.actionReviewRequested.emit)
@@ -186,6 +189,20 @@ class InstallWorkflowPage(QWidget):
         from services.software.source_status import SoftwareSourceStatusService
         from ui.native_handoff_card import ManagedNativeHandoffCard
         from core.catalog_models import NativeHandoffId
+
+        self.catalog_empty_handoff = ManagedNativeHandoffCard(
+            NativeHandoffId.SOFTWARE_CENTER,
+            title=self.tr("Find more applications"),
+            description=self.tr(
+                "The curated catalog does not include every Fedora application. Browse in your desktop software manager; Loofi will not choose or install an application for you."
+            ),
+            button_text=self.tr("Open Discover or GNOME Software"),
+            parent=self,
+        )
+        self.catalog_empty_handoff.setObjectName("catalogEmptySoftwareHandoff")
+        self.catalog_empty_handoff.hide()
+        self.catalog_empty_handoff.stopped.connect(self._notify_stopped)
+        self.scaffold.add_widget(self.catalog_empty_handoff)
 
         self.sources_widget = SoftwareSourcesWidget(service=source_status_service if isinstance(source_status_service, SoftwareSourceStatusService) else None, parent=self)
         self.sources_widget.hide()
@@ -245,12 +262,15 @@ class InstallWorkflowPage(QWidget):
     @property
     def busy(self) -> bool:
         return (self.installed_card.busy or self.sources_widget.busy or self.default_apps_handoff.busy
+                or (self.catalog_empty_handoff is not None and self.catalog_empty_handoff.busy)
                 or (self._source_status_adapter is not None and self._source_status_adapter.busy))
 
     def request_stop(self) -> None:
         self.installed_card.request_stop()
         self.sources_widget.request_stop()
         self.default_apps_handoff.request_stop()
+        if self.catalog_empty_handoff is not None:
+            self.catalog_empty_handoff.request_stop()
         if self._source_status_adapter is not None:
             self._source_status_adapter.cancel()
 
@@ -264,7 +284,8 @@ class InstallWorkflowPage(QWidget):
         source_stopped = self._source_status_adapter is None or self._source_status_adapter.close(timeout_ms)
         sources_stopped = self.sources_widget.cleanup(timeout_ms)
         handoff_stopped = self.default_apps_handoff.cleanup(timeout_ms)
-        return installed_stopped and source_stopped and sources_stopped and handoff_stopped
+        empty_handoff_stopped = self.catalog_empty_handoff is None or self.catalog_empty_handoff.cleanup(timeout_ms)
+        return installed_stopped and source_stopped and sources_stopped and handoff_stopped and empty_handoff_stopped
 
     def _set_application_view(self, *_args: Any) -> None:
         installed = self.view_filter.currentData() == "installed"
@@ -272,6 +293,9 @@ class InstallWorkflowPage(QWidget):
         self.installed_card.setVisible(installed)
         self.sources_widget.setVisible(sources)
         self.default_apps_handoff.setVisible(not sources)
+        if self.catalog_empty_handoff is not None:
+            has_visible_catalog_row = any(not item.isHidden() for _record, _eligibility, item in self._rows.values())
+            self.catalog_empty_handoff.setVisible(not installed and not sources and not has_visible_catalog_row)
         self.flathub_status_card.setVisible(not installed and not sources)
         self.application_list.setVisible(not installed and not sources)
         self.review_card.setVisible(not installed and not sources)
@@ -444,31 +468,46 @@ class InstallWorkflowPage(QWidget):
         if self.view_filter.currentData() == "installed":
             self.installed_card.set_search(self.search_input.text())
             return
+
+        records = self.catalog.all(context=self.context)
         self._selected_ids.intersection_update(
-            record.id for record in self.catalog.all(context=self.context)
-            if self.catalog.eligibility(record, self.context).selectable
+            record.id for record in records if self.catalog.eligibility(record, self.context).selectable
         )
+        if not self._catalog_rows_initialized or self._row_context != self.context:
+            self.application_list.blockSignals(True)
+            self.application_list.clear()
+            self._rows.clear()
+            self._row_checks.clear()
+            for record in records:
+                eligibility = self.catalog.eligibility(record, self.context)
+                item = QListWidgetItem(self._row_text(record, eligibility), self.application_list)
+                item.setData(Qt.ItemDataRole.UserRole, record.id)
+                item.setToolTip(eligibility.reason)
+                item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
+                if eligibility.selectable:
+                    item.setCheckState(Qt.CheckState.Checked if record.id in self._selected_ids else Qt.CheckState.Unchecked)
+                else:
+                    item.setCheckState(Qt.CheckState.Unchecked)
+                    item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
+                self._rows[record.id] = (record, eligibility, item)
+                self._add_application_row(record, eligibility, item)
+            self.application_list.blockSignals(False)
+            self._row_context = self.context
+            self._catalog_rows_initialized = True
+
         query = self.search_input.text()
         category = str(self.category_filter.currentData() or "")
-        self.application_list.blockSignals(True)
-        self.application_list.clear()
-        self._rows.clear()
-        self._row_checks.clear()
-        for record, eligibility in self.catalog.search(query, category=category, context=self.context):
-            item = QListWidgetItem(self._row_text(record, eligibility), self.application_list)
-            item.setData(Qt.ItemDataRole.UserRole, record.id)
-            item.setToolTip(eligibility.reason)
-            item.setFlags(item.flags() | Qt.ItemFlag.ItemIsUserCheckable)
-            if eligibility.selectable:
-                item.setCheckState(Qt.CheckState.Checked if record.id in self._selected_ids else Qt.CheckState.Unchecked)
-            else:
-                item.setCheckState(Qt.CheckState.Unchecked)
-                item.setFlags(item.flags() & ~Qt.ItemFlag.ItemIsEnabled)
-            self._rows[record.id] = (record, eligibility, item)
-            self._add_application_row(record, eligibility, item)
-        self.application_list.blockSignals(False)
-        count = self.application_list.count()
+        matches = {
+            record.id for record, _eligibility in self.catalog.search(query, category=category, context=self.context)
+        }
+        for application_id, (_record, _eligibility, item) in self._rows.items():
+            item.setHidden(application_id not in matches)
+        count = len(matches)
         self.match_summary.setText(self.tr("%1 applications").replace("%1", str(count)) if count else self.tr("No applications match. Clear the search or change the category."))
+        if self.catalog_empty_handoff is not None:
+            self.catalog_empty_handoff.setVisible(
+                self.view_filter.currentData() == "catalog" and count == 0
+            )
         self._resize_application_rows()
         self._update_review_summary()
 
@@ -550,6 +589,8 @@ class InstallWorkflowPage(QWidget):
         width = max(1, viewport.width())
         total_height = 0
         for _record, _eligibility, item in self._rows.values():
+            if item.isHidden():
+                continue
             row = self.application_list.itemWidget(item)
             layout = row.layout() if row is not None else None
             if row is not None and layout is not None:
@@ -602,17 +643,19 @@ class InstallWorkflowPage(QWidget):
             self.search_input.setFocus()
             return index >= 0
         row = self._rows.get(key)
+        if row is not None and row[2].isHidden():
+            row = None
         if row is None and key.startswith("install:"):
             # Task search results identify the owning goal rather than a
             # particular application.  Focus the first matching source row so
             # keyboard users still land in a useful, bounded selection.
             if key == "install:flatpaks":
                 row = next(
-                    (candidate for candidate in self._rows.values() if candidate[0].source == "flatpak"),
+                    (candidate for candidate in self._rows.values() if candidate[0].source == "flatpak" and not candidate[2].isHidden()),
                     None,
                 )
             elif key == "install:applications":
-                row = next(iter(self._rows.values()), None)
+                row = next((candidate for candidate in self._rows.values() if not candidate[2].isHidden()), None)
         if row is None:
             self.search_input.setFocus()
             return key in {"install:applications", "install:flatpaks"}

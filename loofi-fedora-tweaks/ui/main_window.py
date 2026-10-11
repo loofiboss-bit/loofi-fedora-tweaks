@@ -427,10 +427,6 @@ class MainWindow(
 
     def _apply_initial_geometry(self) -> None:
         """Set a responsive initial size using available screen geometry."""
-        min_width = 860
-        min_height = 560
-        self.setMinimumSize(min_width, min_height)
-
         width = 1440
         height = 900
         try:
@@ -443,8 +439,15 @@ class MainWindow(
             width = 1440
             height = 900
 
-        target_width = max(min_width, min(int(width * 0.78), width - 80 if width > 980 else width))
-        target_height = max(min_height, min(int(height * 0.78), height - 80 if height > 720 else height))
+        width = max(1, width)
+        height = max(1, height)
+        # Qt widget coordinates are logical pixels, so clamp to the screen's
+        # available logical work area before applying the regular minimum.
+        min_width = min(860, width)
+        min_height = min(560, height)
+        self.setMinimumSize(min_width, min_height)
+        target_width = min(width, max(min_width, min(int(width * 0.78), width - 80 if width > 980 else width)))
+        target_height = min(height, max(min_height, min(int(height * 0.78), height - 80 if height > 720 else height)))
         self.resize(target_width, target_height)
 
     def _build_sidebar_from_registry(self, context: dict) -> None:

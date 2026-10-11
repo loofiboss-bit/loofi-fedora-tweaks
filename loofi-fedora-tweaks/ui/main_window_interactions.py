@@ -648,7 +648,7 @@ class MainWindowInteractionMixin:
             logger.debug("Navigation mode refresh unavailable: %s", e)
 
     def _check_first_run(self: typing.Any) -> typing.Any:
-        """Keep startup non-blocking; Home owns resumable first-run guidance."""
+        """Apply the saved navigation mode without a separate onboarding flow."""
         self.apply_navigation_mode()
 
     def setup_tray(self: typing.Any) -> bool:

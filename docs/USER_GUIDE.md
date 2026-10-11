@@ -207,10 +207,15 @@ scheduling measurements when neither view is visible or the window is hidden
 or minimized. Sleeping GPUs are not queried automatically. No drivers or
 monitoring tools are installed by opening the dashboard.
 
-Recent maintenance reports recorded update and Health results with timestamps,
-plus recent changes. A missing result remains unchecked; opening Overview does
-not fabricate a successful check or run a repair. Existing startup-check
-preferences still control startup checks.
+The first Overview section shows up to three next steps from recorded evidence,
+followed by updates, Health and recent changes. Missing checks remain **Not
+checked**; unknown update results are never shown as zero. The latest saved
+symptom diagnosis is labelled complete or partial and links to its exact Health
+session separately from System Check. Opening Overview never starts a check,
+repair or update operation. Live resource readings remain below these actions.
+The first-run card and **Guides** panel offer optional help. Dismiss the card
+when it is no longer useful, then reopen it later with **Show introduction**.
+Opening either guidance surface does not start an operation.
 
 ## Apps
 
@@ -218,7 +223,9 @@ Apps is a curated catalog rather than an unrestricted package browser.
 Search by application name or goal, filter by category, and select several
 items. Every row shows its source, installation scope, and availability.
 The selected-app summary and **Review selected applications** stay visible below
-the scrolling catalog, including selections hidden by filters.
+the scrolling catalog, including selections hidden by filters. When no curated
+result matches, use the explicit **Open Discover/GNOME Software to find more
+apps** handoff; Loofi does not invent package matches.
 
 Flatpak is preferred for ordinary GUI applications. Fedora RPM is used for
 trusted system-integrated and command-line tools on Traditional Fedora. Atomic
@@ -252,13 +259,17 @@ An interrupted or failed change returns the control to the verified value and
 shows its outcome on the row.
 The current-state check has a shared 20-second limit. Progress reports how many
 settings have been checked; cancelling or reaching the limit keeps completed
-results and leaves unchecked values explicitly unknown.
+results and leaves unchecked values explicitly unknown. **Check remaining
+settings** retries only skipped checks; **Refresh** starts a new full check.
 The row menu contains **Use Loofi standard value** and technical details. This
 curated reference may differ from the value the desktop chooses when a setting
 is unset. The previous verified value is offered separately when history
 permits restoration. KWin changes also request a session
 reconfigure and compare runtime values. A session warning preserves the saved
 change and its restoration offer.
+System-wide review shows the current and selected values, all-users scope, and
+recovery guidance in one dialog. If automatic rollback is unavailable, confirm
+that limitation there before Loofi starts the change.
 
 The catalog has 82 controls grouped as Appearance, Desktop, Files, Interaction,
 Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
@@ -269,13 +280,16 @@ Files also offers an editable location bar and simple/detailed dates. Missing Fi
 are reported as unavailable. See
 [TWEAKS.md](TWEAKS.md) for the complete generated list with Loofi standard values.
 
-Choose **Choose preset…** to review **Reduced motion**, **File navigation**, or
-the KDE-only **Folder workspace** preset for the detected desktop. Folder
+Choose **Profiles → My profile library…** to review built-in presets including
+**Reduced motion**, **File navigation**, **Focus**, **Touchpad comfort** and the
+KDE-only **Folder workspace** preset for the detected desktop. Folder
 workspace asks Dolphin to reopen folders and tabs, open external folders in a
 new tab, and confirm before closing multiple tabs. Each supported setting shows its current and proposed
 value. Unavailable settings explain why; identical values are skipped. Uncheck
 any change you do not want, then confirm to apply the remaining changes one at a
-time. A failed verification stops the rest; completed changes remain in Activity.
+time. Results stay on Tweaks while affected rows are checked again; Activity
+links preserve the exact run. A failed verification stops the rest; completed
+changes remain in Activity.
 
 Use **Check current value** in a row's action menu to reread only that setting
 and its restoration offer. The check has an eight-second shared limit. If it
@@ -293,7 +307,8 @@ configuration may require reopening affected applications; saved verification
 does not prove an immediate effect in open programs.
 
 Choose **Restore previous value** on an eligible row to review its current and
-previous values, then confirm. Loofi offers only the latest verified normal
+previous values, then confirm. Loofi's standard value is a curated reference,
+not necessarily the desktop's own default when a setting is unset. Loofi offers only the latest verified normal
 change per setting. It reads the setting again before restoring and blocks if
 it changed externally, a later change attempt exists, a scheme/profile was
 removed, or history is missing. A blocked restore shows the saved previous
@@ -459,7 +474,10 @@ metadata, grouped by network, files, audio, devices, display, and D-Bus. Environ
 values are hidden; unknown keys remain under **Technical details**. Portals and
 user overrides can change actual access.
 **Review removal** always targets exactly one installation. Running apps must be
-closed first; removal preserves their data. RPM removal opens the desktop software manager.
+closed first; removal preserves their data. RPM removal opens the desktop software
+manager. The handoff identifies the exact package, does not promise an app-specific
+page, and asks you to return and refresh the installed-app inventory. Starting the
+external manager is not reported as an installation or removal result.
 
 ### Care app details and runtime maintenance
 
@@ -467,7 +485,9 @@ In **Installed**, combine search with source and installation filters. Choose
 **Largest first** to sort the reported logical sizes; missing sizes remain unknown
 and sort last. Filtering and sorting do not start a new inventory probe.
 
-**App details** reads the exact Flatpak ref and installation. It shows the source
+The **App details and access** menu groups local app details, interpreted
+permission access and declared permission metadata into one entry. **App
+details** reads the exact Flatpak ref and installation. It shows the source
 remote name, runtime, reported size, and locally recorded app/runtime end-of-life
 warnings or replacement refs. No recorded warning is not a continued-support
 guarantee. Permission metadata remains available through **Show permissions**.

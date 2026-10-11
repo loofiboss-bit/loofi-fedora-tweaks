@@ -1,6 +1,6 @@
 # Portable tweak profiles
 
-Use **Tweaks → Save current settings…** to read and select supported user settings.
+Use **Tweaks → Profiles → Save profile…** to read and select supported user settings.
 Use **Load profile…** to review current and desired values, select changes, and
 explicitly approve their application. Profiles transfer between supported Fedora
 GNOME desktops or between supported Fedora KDE Plasma desktops. System-wide
@@ -25,6 +25,10 @@ remain visible in the import review but cannot be applied.
   ]
 }
 ```
+
+After a profile is applied, its per-setting result remains inline in Tweaks;
+the Activity link opens the exact recorded run. A read-only recheck starts
+without waiting for a result dialog to be dismissed.
 
 Values use the stable setting identifiers and string literals in the
 [Tweak catalog](TWEAKS.md). Export includes only current supported choices.

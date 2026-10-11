@@ -8,6 +8,8 @@ from unittest.mock import Mock, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
+from PyQt6.QtCore import Qt
+from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication, QToolButton
 from core.executor.action_result import ActionResult
 from core.tasks.tweak_presets import list_presets, profile_for_preset
@@ -52,6 +54,16 @@ class TweakPresetTests(unittest.TestCase):
         with self.assertRaisesRegex(ValueError, "unavailable"):
             profile_for_preset("file-navigation", profile("xfce"))
 
+    def test_everyday_search_phrases_find_existing_controls(self):
+        self.assertIn("click behavior", BY_ID["kde-single-click"].search_terms)
+        self.assertIn("tap to click", BY_ID["kde-tap-to-click"].search_terms)
+        self.assertIn("reduce motion", BY_ID["kde-animation"].search_terms)
+        self.assertEqual(
+            tuple(label for _value, label in BY_ID["dnf-parallel-downloads"].choices),
+            ("3 downloads", "5 downloads", "10 downloads", "15 downloads"),
+        )
+        self.assertIn("actual speed depends", BY_ID["dnf-parallel-downloads"].description)
+
 
 class FocusedInspectionTests(unittest.TestCase):
     @patch("core.tasks.tweaks.kde_capability_error", return_value="")
@@ -77,6 +89,26 @@ class FocusedInspectionTests(unittest.TestCase):
 
         self.assertEqual([state.tweak.id for state in result], ["gnome-battery"])
         runtime.execute_read_only.assert_called_once()
+
+    @patch("core.tasks.tweaks.kde_capability_error", return_value="")
+    def test_snapshot_marks_budget_skips_with_a_stable_retry_reason(self, _capability):
+        runtime = Mock()
+        runtime.tweak_runs.return_value = ()
+        runtime.execute_read_only.return_value = ActionResult.ok("Read", stdout="true\n")
+        clock_values = iter((0.0, 0.0, 0.0, 2.0))
+
+        result = snapshot(
+            profile("gnome"), runtime,
+            tweak_ids=("gnome-battery", "gnome-hot-corners"),
+            budget_seconds=1.0,
+            clock=lambda: next(clock_values),
+        )
+
+        self.assertEqual(result[0].status, "ready")
+        self.assertEqual(result[0].inspection_reason, "")
+        self.assertEqual(result[1].status, "unavailable")
+        self.assertEqual(result[1].inspection_reason, "budget_expired")
+        self.assertIn("Not checked because", result[1].message)
 
     def test_selected_snapshot_rejects_settings_outside_the_desktop(self):
         runtime = Mock()
@@ -173,6 +205,87 @@ class FocusedInspectionUiTests(unittest.TestCase):
             self.assertEqual(page._rows[first.id][0].value_label.text(), "Verified: Off")
         finally:
             page.close()
+
+    def test_check_remaining_settings_only_retries_unknown_rows(self):
+        skipped = BY_ID["gnome-battery"]
+        checked = BY_ID["gnome-hot-corners"]
+        page = TweaksPage(profile("gnome"))
+        requested = []
+        page.continueSnapshotRequested.connect(lambda: requested.append(page.remaining_inspection_ids()))
+        try:
+            page.show()
+            self.app.processEvents()
+            page.set_states((
+                TweakState(skipped, "unavailable", message="time budget", inspection_reason="budget_expired"),
+                TweakState(checked, "ready", value="true", choices=checked.choices),
+            ))
+            self.assertFalse(page.continue_snapshot_button.isHidden())
+            self.assertFalse(page._rows[skipped.id][1].isEnabled())
+            self.assertNotIn(checked.id, page.remaining_inspection_ids())
+            page.search_input.setFocus()
+            QTest.keyClick(page.search_input, Qt.Key.Key_Tab)
+            self.assertIs(self.app.focusWidget(), page.refresh_button)
+            QTest.keyClick(page.refresh_button, Qt.Key.Key_Tab)
+            self.assertIs(self.app.focusWidget(), page.continue_snapshot_button)
+            page.continue_snapshot_button.click()
+            self.assertEqual(len(requested), 1)
+            self.assertIn(skipped.id, requested[0])
+            self.assertNotIn(checked.id, requested[0])
+        finally:
+            page.close()
+            self.app.processEvents()
+
+    def test_partial_results_never_restore_values_invalidated_by_errors(self):
+        first = BY_ID["gnome-battery"]
+        other = BY_ID["gnome-hot-corners"]
+        page = TweaksPage(profile("gnome"))
+        try:
+            page.set_states((
+                TweakState(first, "ready", value="true", choices=first.choices),
+                TweakState(other, "ready", value="false", choices=other.choices),
+            ))
+
+            page.set_check_error(first.id, "Setting inspection failed.")
+            page.set_states((TweakState(other, "ready", value="true", choices=other.choices),))
+            self.assertFalse(page._rows[first.id][1].isEnabled())
+            self.assertEqual(page._rows[first.id][0].value_label.text(), "Current value unavailable")
+            self.assertIn(first.id, page.remaining_inspection_ids())
+
+            page.set_states((TweakState(first, "ready", value="true", choices=first.choices),))
+            page.set_restore_error(first.id, "Restore preparation failed.")
+            page.set_states((TweakState(other, "ready", value="false", choices=other.choices),))
+            self.assertFalse(page._rows[first.id][1].isEnabled())
+            self.assertEqual(page._rows[first.id][0].value_label.text(), "Current value unavailable")
+            self.assertIn(first.id, page.remaining_inspection_ids())
+
+            page.set_states((TweakState(first, "ready", value="true", choices=first.choices),))
+            page.set_error("Current settings could not be read.")
+            page.set_states((TweakState(other, "ready", value="true", choices=other.choices),))
+            self.assertFalse(page._rows[first.id][1].isEnabled())
+            self.assertEqual(page._rows[first.id][0].value_label.text(), "Current value unavailable")
+            self.assertIn(first.id, page.remaining_inspection_ids())
+        finally:
+            page.close()
+            self.app.processEvents()
+
+    def test_profile_results_remain_inline_and_open_the_exact_activity_run(self):
+        tweak = BY_ID["gnome-battery"]
+        page = TweaksPage(profile("gnome"))
+        opened = []
+        page.activityRequested.connect(opened.append)
+        result = SimpleNamespace(
+            message="One setting applied.",
+            entries=(SimpleNamespace(id=tweak.id, status="succeeded", message="Verified", run_id="run-exact"),),
+        )
+        try:
+            page.set_profile_result(result)
+            self.assertFalse(page.profile_result_card.isHidden())
+            self.assertIn("succeeded", page.profile_result_label.text())
+            page.profile_activity_button.click()
+            self.assertEqual(opened, ["run-exact"])
+        finally:
+            page.close()
+            self.app.processEvents()
 
     @patch("ui.tweak_profiles.QMessageBox")
     def test_cancelled_profile_recheck_invalidates_only_selected_rows(self, message_box):

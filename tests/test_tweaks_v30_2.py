@@ -587,27 +587,31 @@ class TestComfortRestorePresentation(unittest.TestCase):
             page.close()
             parent.close()
 
-    @patch("PyQt6.QtWidgets.QMessageBox.question")
-    def test_compact_confirmation_binds_same_ticket_only_after_acceptance(self, question, _capability):
+    @patch("ui.tweak_review.ReviewedActionDialog")
+    def test_compact_confirmation_binds_same_ticket_only_after_acceptance(self, dialog_class, _capability):
         from types import SimpleNamespace
-        from PyQt6.QtWidgets import QMessageBox, QWidget
+        from PyQt6.QtWidgets import QDialog, QWidget
         from ui.main_window_utility import MainWindowUtilityMixin
         parent = QWidget()
         parent._record_global_operation_result = Mock()
         parent._run_tweak_restore = Mock()
         page = SimpleNamespace(set_error=Mock(), set_busy=Mock())
         adapter = SimpleNamespace(stopped=SimpleNamespace(connect=Mock()))
-        ticket = SimpleNamespace(blocked=False, plan=SimpleNamespace(policy_decision=SimpleNamespace(facts={"current": "true", "requested": "false"})))
+        ticket = SimpleNamespace(blocked=False, plan=SimpleNamespace(
+            policy_decision=SimpleNamespace(facts={"current": "true", "requested": "false"}),
+            recovery_guidance="Restore the saved value.",
+        ))
         try:
-            question.return_value = QMessageBox.StandardButton.Cancel
+            dialog_class.return_value.exec.return_value = QDialog.DialogCode.Rejected
             MainWindowUtilityMixin._show_tweak_restore_review(parent, page, "gnome-battery", ticket, adapter)
             adapter.stopped.connect.assert_not_called()
-            question.return_value = QMessageBox.StandardButton.Yes
+            dialog_class.return_value.exec.return_value = QDialog.DialogCode.Accepted
+            dialog_class.return_value.accepts_no_rollback = False
             MainWindowUtilityMixin._show_tweak_restore_review(parent, page, "gnome-battery", ticket, adapter)
-            prompt = question.call_args.args[2]
-            self.assertIn("true", prompt)
-            self.assertIn("false", prompt)
+            review_scope = dialog_class.call_args.args[2]
+            self.assertIn("true", review_scope)
+            self.assertIn("false", review_scope)
             adapter.stopped.connect.call_args.args[0]()
-            parent._run_tweak_restore.assert_called_once_with(page, "gnome-battery", ticket)
+            parent._run_tweak_restore.assert_called_once_with(page, "gnome-battery", ticket, accept_no_rollback=False)
         finally:
             parent.close()

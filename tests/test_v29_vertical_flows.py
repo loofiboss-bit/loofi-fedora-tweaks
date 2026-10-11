@@ -108,15 +108,28 @@ class TestV29VerticalWorkflowWidgets(unittest.TestCase):
         page = InstallWorkflowPage(context=context)
         self.addCleanup(self._dispose, page)
         self.assertGreater(page.application_list.count(), 0)
+        firefox_item = page._rows["firefox"][2]
 
         page.search_input.setText("video")
         self.app.processEvents()
-        self.assertTrue(all("video" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold() or "vlc" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold() or "kdenlive" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold() for item in [page.application_list.item(index) for index in range(page.application_list.count())]))
+        visible_items = [page.application_list.item(index) for index in range(page.application_list.count())
+                         if not page.application_list.item(index).isHidden()]
+        self.assertTrue(visible_items)
+        self.assertTrue(all(
+            "video" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold()
+            or "vlc" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold()
+            or "kdenlive" in str(item.data(Qt.ItemDataRole.AccessibleTextRole)).casefold()
+            for item in visible_items
+        ))
         page.search_input.clear()
         page.category_filter.setCurrentText("Development")
         self.app.processEvents()
         self.assertTrue(page._rows)
-        self.assertTrue(all(record.category == "Development" for record, _eligibility, _item in page._rows.values()))
+        self.assertTrue(all(
+            record.category == "Development"
+            for record, _eligibility, item in page._rows.values() if not item.isHidden()
+        ))
+        self.assertIs(page._rows["firefox"][2], firefox_item)
         self.assertTrue(page.focus_task("install:flatpaks"))
         self.assertTrue(page.focus_task("install:applications"))
         self.assertFalse(page.focus_task("install:missing"))

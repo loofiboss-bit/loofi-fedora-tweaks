@@ -15,9 +15,11 @@ class NextStepContext:
     run_id: str = ""
     update_source: str = ""
     symptom: str = ""
+    session_id: str = ""
 
     def to_dict(self) -> dict[str, str]:
-        values = (("run_id", self.run_id), ("update_source", self.update_source), ("symptom", self.symptom))
+        values = (("run_id", self.run_id), ("update_source", self.update_source), ("symptom", self.symptom),
+                  ("session_id", self.session_id))
         return {key: value for key, value in values if value}
 
 
@@ -100,5 +102,25 @@ def next_steps(maintenance: Mapping, metrics=(), *, now: float) -> tuple[NextSte
                                                                 or source.get("status") in {"unchecked", "error"} for source in sources):
         update_check = NextStep("update-check", "Check for updates", str(updates.get("detail") or "No recent update check"),
                                 "maintenance:updates", "Check updates", _timestamp(updates.get("sampled_at")))
+    latest_session = health.get("latest_session", {})
+    if not isinstance(latest_session, Mapping):
+        latest_session = {}
+    session_id = latest_session.get("session_id", "")
+    session_state = latest_session.get("status", "")
+    if isinstance(session_id, str) and session_id and session_state in {"completed", "partial"}:
+        symptom_title = str(latest_session.get("title", "Saved symptom check"))
+        state_label = "Completed" if session_state == "completed" else "Partially completed"
+        session_stamp = _timestamp(latest_session.get("sampled_at"))
+        if session_stamp is not None and session_stamp > now:
+            session_stamp = None
+        result.append(NextStep(
+            "latest-diagnosis",
+            "Review latest diagnosis",
+            f"{state_label} symptom check: {symptom_title}",
+            "health",
+            "Review diagnosis",
+            session_stamp,
+            NextStepContext(session_id=session_id),
+        ))
     result.extend(step for step in (health_check, update_check) if step is not None)
     return tuple(result[:3])

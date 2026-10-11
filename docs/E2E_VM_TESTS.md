@@ -102,6 +102,90 @@ the saved UUID, VM disk path, network, memory, CPU, graphics binding, and
 passthrough devices before it stops a partial domain. It refuses an unmarked
 or mismatched VM and leaves its files untouched.
 
+## Additional qualification runs
+
+The default `just test-full` keeps its X11 guest and existing CI trust boundary.
+Run qualification variants sequentially; do not start multiple 5 GiB guests on
+the same host. These options add coverage and do not imply a successful run:
+
+```bash
+just test-full-reboot
+just test-full-fresh
+just test-full-wayland
+```
+
+`test-full-reboot` runs the normal suite with a before-reboot checkpoint,
+collects its reports, requests an agent-mediated reboot of the UUID/shape-validated
+disposable domain, and independently reads `/proc/sys/kernel/random/boot_id`.
+A different valid boot ID is mandatory before running the after-reboot suite.
+The tests compare saved guide data and Dolphin settings, reopen the guide,
+and restore the setting through the app with independent readback. The overlay
+remains the same across reboot and is discarded only after qualification ends.
+
+`test-full-fresh` provisions from an empty disk in a newly named domain and a
+unique `fresh-x11-<id>` data/report directory. It never replaces or resets the
+usual golden image. The runner prints both exact directories; keep them with
+the qualification report. The resulting separate base is retained as an owned
+artifact, while test changes are discarded in its overlay. Initial installation
+requires outbound Fedora access and can take up to 90 minutes.
+
+The ordinary Wayland variant uses a separate `wayland/` data directory and
+`loofi-fedora-tweaks-e2e-wayland` domain. SDDM starts Plasma Wayland; session
+socket detection and environment capture distinguish Wayland from its Xwayland
+compatibility display. Qt uses `wayland`, and native input is sent through the
+actual guest KWin process. Missing helper binaries fail with actionable output.
+KDE documents these helpers and compositor requirements in its
+[Appium automation guide](https://develop.kde.org/docs/apps/tests/appium/).
+
+During initial Wayland provisioning only, Kickstart installs Fedora development
+packages in the guest and builds the input and screenshot helpers from the same
+pinned KDE revision as the Python driver:
+`50e41aa9913b16e5d0a6fec921c963485aa125b4`. The source archive must match SHA-256
+`8e71bfbd93a5760f08b87ae437087847d2ec376bd88858bee5a4e228f1fcaba0` before
+extraction/build. Only the two helper binaries and their desktop permission
+metadata are installed; build source is removed. No build dependencies are
+installed on the host. This is additional guest infrastructure, not evidence
+that physical Wayland input or a human screen reader has been qualified.
+
+Each normal suite also stages an inert local `loofi-e2e-fixture-1.0-1.noarch`
+RPM containing only `/usr/share/loofi-e2e-fixture/probe.txt`. The fixture test
+uses the guest's graphical Polkit flow and DNF5 in cache-only mode, independently
+queries RPM identity/file verification, checks the probe payload, removes the
+fixture without automatically removing dependencies, and compares the complete
+installed RPM inventory with its original state. This qualifies the native
+package transaction; it does not prove an app store's package-removal UI.
+
+Before-reboot reports retain their ordinary names. After-reboot reports use
+`-after-reboot` before their extension (for example
+`junit-after-reboot.xml` and `pytest-after-reboot.log`). `summary.json` records
+final cleanup status, exact RPM hash, desktop and both boot IDs.
+`package-fixture.log` and `reboot-checkpoint.json` are collected when available.
+The runner removes known reports at the beginning of each run, so a previous
+successful checkpoint cannot qualify a later failure.
+
+The suite stops at its first failure and records the failing accessibility tree
+when available, avoiding secondary failures from inherited dialogs. Native input
+helpers run with Qt debug logging disabled: upstream debug output may otherwise
+include synthesized credential keystrokes. Warnings and errors remain available.
+Refresh qualification requires an observed enabled → disabled → enabled cycle
+and a known installed-app result; an already-enabled button alone is insufficient.
+App restart resolves exactly one live suite-owned process and refuses ambiguity.
+
+Reset a separate fresh artifact only with the exact printed data root, recorded
+domain name and desktop. Ownership checks still validate the UUID and device
+shape before stopping or deleting anything:
+
+```bash
+python3 -m e2e.vm reset --data-root /absolute/printed/fresh-x11-ID \
+  --vm-name loofi-fedora-tweaks-e2e-fresh-x11-ID
+python3 -m e2e.vm reset --desktop wayland
+```
+
+For a fresh Wayland artifact, supply `--desktop wayland`, its exact data root
+and its exact `--vm-name`; explicit names avoid appending another `wayland/`
+directory. Arbitrary or unmarked domains remain refused. The regular
+`just test-full-reset` continues to address only the default X11 artifact.
+
 ## What is exercised
 
 The pytest suite navigates between Tweaks and Activity, changes and restores a
@@ -145,6 +229,12 @@ code on a trusted self-hosted machine. Push and release workflows add a
 `vm_e2e` job requiring a self-hosted runner labeled
 `loofi-vm-e2e`. Configure that runner on the Fedora KDE host with the host
 requirements above and the repository checkout available to GitHub Actions.
+The CI VM job also runs the actual guest reboot checkpoint. On trusted master,
+a `workflow_dispatch` with `extended_qualification` enabled runs a second
+clean-overlay qualification, separate empty-disk provisioning and Wayland
+qualification sequentially after `vm_e2e` succeeds. These extended jobs remain
+disabled for pull requests and feature branches; their reports are uploaded
+even on failure. They require enough time and space for two independent bases.
 If no matching runner is online, the job remains queued; the auto-release RPM
 build and publication depend on its success. The workflows upload the E2E
 reports as an artifact even when the VM test fails.

@@ -114,7 +114,7 @@ Loofi Fedora Tweaks ships **82** declarative controls. Every change is checked b
 
 | Setting | Desktop | Choices | Loofi standard | Notes |
 | --- | --- | --- | --- | --- |
-| DNF parallel downloads (`dnf-parallel-downloads`) | All | 3 (Fedora default), 5 (Fast), 10 (Ultra fast - Recommended), 15 (Maximum) | 3 (Fedora default) | needs authorization |
+| DNF parallel downloads (`dnf-parallel-downloads`) | All | 3 downloads, 5 downloads, 10 downloads, 15 downloads | 3 downloads | needs authorization |
 
 ## Windows
 

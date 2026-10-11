@@ -17,7 +17,7 @@ from core.execution_policy import classify_command, execution_allowed
 from core.tasks.tweaks import BY_ID, TWEAKS, command_for, read_tweak, visible_tweaks
 from PyQt6.QtCore import Qt
 from PyQt6.QtTest import QTest
-from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget
+from PyQt6.QtWidgets import QApplication, QMessageBox, QWidget, QDialog
 from ui.main_window_utility import MainWindowUtilityMixin
 from ui.fix_workflow import FixWorkflowPage
 from ui.tweaks_page import TweaksPage
@@ -305,21 +305,69 @@ class TestTweakPage(unittest.TestCase):
             preview=("journalctl --vacuum-time=1d",),
         )
         try:
-            with patch.object(QMessageBox, "exec", return_value=QMessageBox.StandardButton.Ok), patch.object(
-                QMessageBox, "question", return_value=QMessageBox.StandardButton.No
-            ) as question:
+            with patch("ui.confirm_dialog.ReviewedActionDialog") as dialog_class:
+                dialog_class.return_value.exec.return_value = QDialog.DialogCode.Rejected
                 MainWindowUtilityMixin._show_health_review(parent, page, ticket, adapter)
-                question.assert_called_once()
                 adapter.stopped.connect.assert_not_called()
-            with patch.object(QMessageBox, "exec", return_value=QMessageBox.StandardButton.Ok), patch.object(
-                QMessageBox, "question", return_value=QMessageBox.StandardButton.Yes
-            ):
+            with patch("ui.confirm_dialog.ReviewedActionDialog") as dialog_class:
+                dialog_class.return_value.exec.return_value = QDialog.DialogCode.Accepted
+                dialog_class.return_value.accepts_no_rollback = True
                 MainWindowUtilityMixin._show_health_review(parent, page, ticket, adapter)
+                dialog_class.assert_called_once()
+                self.assertTrue(dialog_class.call_args.kwargs["require_no_rollback_acceptance"])
                 callback = adapter.stopped.connect.call_args.args[0]
                 callback()
                 parent._run_reviewed_health_action.assert_called_once_with(page, ticket, True)  # type: ignore[attr-defined]
         finally:
             parent.close()
+
+    def test_review_dialog_requires_no_rollback_acknowledgement_and_defaults_to_cancel(self, _capability) -> None:
+        from ui.confirm_dialog import ReviewedActionDialog
+
+        dialog = ReviewedActionDialog(
+            "Restart a failed service", "Restart one service.", "systemctl restart example.service",
+            "Inspect the service journal.", require_no_rollback_acceptance=True,
+        )
+        try:
+            self.assertTrue(dialog.cancel_button.isDefault())
+            self.assertFalse(dialog.accept_button.isEnabled())
+            self.assertTrue(dialog.scope_view.isReadOnly())
+            self.assertIn("systemctl restart", dialog.scope_view.toPlainText())
+            self.assertIn("journal", dialog.recovery_label.text())
+            dialog.no_rollback_checkbox.setChecked(True)
+            self.assertTrue(dialog.accept_button.isEnabled())
+            self.assertTrue(dialog.accepts_no_rollback)
+        finally:
+            dialog.close()
+
+    def test_review_dialog_scope_is_keyboard_reachable_and_return_cannot_apply(self, _capability) -> None:
+        from PyQt6.QtCore import Qt
+        from PyQt6.QtTest import QTest
+        from ui.confirm_dialog import ReviewedActionDialog
+
+        dialog = ReviewedActionDialog(
+            "Change a system setting", "Apply one value.", "Exact system scope", "Restore from recorded history.",
+            require_no_rollback_acceptance=True,
+        )
+        dialog.show()
+        self.app.processEvents()
+        dialog.scope_view.setFocus()
+        QTest.keyClick(dialog.scope_view, Qt.Key.Key_Return)
+        self.assertNotEqual(dialog.result(), QDialog.DialogCode.Accepted)
+        self.assertFalse(dialog.isVisible())
+
+        tab_dialog = ReviewedActionDialog(
+            "Change a system setting", "Apply one value.", "Exact system scope", "Restore from recorded history.",
+            require_no_rollback_acceptance=True,
+        )
+        tab_dialog.show()
+        self.app.processEvents()
+        tab_dialog.scope_view.setFocus()
+        QTest.keyClick(tab_dialog.scope_view, Qt.Key.Key_Tab)
+        self.assertIs(self.app.focusWidget(), tab_dialog.no_rollback_checkbox)
+        QTest.keyClick(tab_dialog, Qt.Key.Key_Escape)
+        self.assertEqual(tab_dialog.result(), QDialog.DialogCode.Rejected)
+        tab_dialog.close()
 
 
 if __name__ == "__main__":

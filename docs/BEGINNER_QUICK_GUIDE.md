@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
+> Everyday guide reviewed 2026-10-11; physical desktop and assistive-technology validation remains a separate qualification.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -22,8 +22,8 @@ deployment backends remain unavailable.
 
 ## 2) Learn the six destinations
 
-1. **Overview** — view computer information, CPU, memory, GPU, storage,
-   network/disk activity, temperatures, battery, and recent maintenance.
+1. **Overview** — review up to three next steps, update/Health history, and
+   recent changes before the resource measurements below them.
 2. **Tweaks** — search settings, choose a value, and see the verified result
    on the same row. **Restore previous value** recovers an eligible recorded
    value; **Use Loofi standard value** applies Loofi's curated reference.
@@ -49,6 +49,12 @@ page is visible or the window is hidden/minimized. **Pause** keeps the last
 measurements visible; **Resume** starts a fresh sampling baseline. Missing
 hardware, including a battery, is stated explicitly.
 
+The first-run card and **Guides** panel are optional. Dismiss the card when it
+is no longer useful, or reopen it later with **Show introduction**. Guide
+progress can be resumed. Missing update results are **Not checked** or
+unavailable, not a verified zero. Saved symptom diagnoses show whether
+collection was complete or partial and remain separate from System Check.
+
 ## 3) Complete common jobs
 
 ### Install several applications
@@ -56,6 +62,9 @@ hardware, including a battery, is stated explicitly.
 Open **Apps**, search or choose a category, select the applications, and
 choose **Review selected applications**. Confirm the source summary. Each item
 keeps its own result, so one failed installation does not hide the others.
+If the catalog has no match, open Discover or GNOME Software to browse there.
+For RPM apps, Loofi names the exact package before opening the native software
+manager; return and refresh the installed-app list to see the resulting state.
 
 ### Change a desktop setting
 
@@ -70,6 +79,10 @@ Use **Restore previous value** to review and confirm the latest eligible Loofi
 change. External changes, later attempts, missing history, and removed choices
 block restoration. A successful restore is separately verified and consumes
 the offer.
+The **Changed** filter compares values with Loofi's curated standard, not the
+desktop's default. After a long or cancelled current-state check, choose
+**Check remaining settings** to continue with skipped values; **Refresh** checks
+the full catalog again.
 
 ### Diagnose a problem
 

@@ -54,6 +54,7 @@ class TweakState:
     restore_current_value: str = ""
     restore_reason_code: str = ""
     restore_allowed: bool = False
+    inspection_reason: str = ""
 
 
 TWEAKS: tuple[Tweak, ...] = (
@@ -138,8 +139,24 @@ TWEAKS: tuple[Tweak, ...] = (
     Tweak("gnome-files-editable-location", "Editable location bar", "Enter a folder path directly in GNOME Files.", "Files", "gnome", "set-gnome-files-editable-location", (("true", "On"), ("false", "Off"))),
     Tweak("gnome-files-date-format", "File date display", "Choose simple or detailed dates in GNOME Files.", "Files", "gnome", "set-gnome-files-date-format", (("simple", "Simple"), ("detailed", "Detailed"))),
     Tweak("power-profile", "Power profile", "Choose an available power profile for this computer.", "Power", "all", "set-power-profile", (), True),
-    Tweak("dnf-parallel-downloads", "DNF parallel downloads", "Speed up package downloads by downloading multiple packages simultaneously.", "System & Packaging", "all", "set-dnf-parallel-downloads", (("3", "3 (Fedora default)"), ("5", "5 (Fast)"), ("10", "10 (Ultra fast - Recommended)"), ("15", "15 (Maximum)")), True, True),
+    Tweak("dnf-parallel-downloads", "DNF parallel downloads", "Choose how many package downloads DNF may run at once. Higher values may use more connections and bandwidth; actual speed depends on your network and repositories.", "System & Packaging", "all", "set-dnf-parallel-downloads", (("3", "3 downloads"), ("5", "5 downloads"), ("10", "10 downloads"), ("15", "15 downloads")), True, True),
 )
+
+
+# Everyday language that users may search for instead of an implementation
+# term. These are aliases for existing controls, not duplicate settings.
+_SEARCH_ALIASES: dict[str, tuple[str, ...]] = {
+    "kde-single-click": ("click behavior", "single click", "double click", "open files", "open folders", "file manager"),
+    "gnome-files-click-policy": ("click behavior", "single click", "double click", "open files", "open folders", "file manager"),
+    "kde-tap-to-click": ("touchpad", "tap to click", "touchpad click"),
+    "gnome-tap-to-click": ("touchpad", "tap to click", "touchpad click"),
+    "kde-animation": ("motion", "reduce motion", "animations", "effects"),
+    "gnome-animations": ("motion", "reduce motion", "animations", "effects"),
+    "kde-dolphin-editable-location": ("file handling", "type folder path", "location bar", "address bar"),
+    "gnome-files-editable-location": ("file handling", "type folder path", "location bar", "address bar"),
+    "kde-dolphin-remember-tabs": ("file handling", "reopen folders", "restore tabs", "file manager"),
+    "kde-dolphin-external-folders-new-tab": ("file handling", "new tab", "external folders", "file manager"),
+}
 
 
 # Presentation metadata is derived once from the canonical semantic choices.
@@ -154,6 +171,7 @@ def _presentation(tweak: Tweak) -> Tweak:
     elif tweak.id == "kde-plasma-style":
         terms = ("Plasma theme", "desktop style", "panels", "widgets")
         hint = "The saved Plasma style is verified. Visible panel and widget rendering remains unverified."
+    terms = tuple(dict.fromkeys((*terms, *_SEARCH_ALIASES.get(tweak.id, ()))))
     return replace(tweak, control_kind=kind, search_terms=terms, effect_hint=hint)
 
 
@@ -583,14 +601,20 @@ def snapshot(
     for index, tweak in enumerate(tweaks):
         if should_cancel():
             stop_message = "Setting inspection cancelled before this setting was checked."
+            stop_reason = "cancelled"
         elif clock() >= deadline:
             limit = f"{limit_seconds:g}"
             stop_message = f"Not checked because the {limit}-second setting inspection limit was reached."
+            stop_reason = "budget_expired"
         else:
             stop_message = ""
+            stop_reason = ""
         if stop_message:
             remaining_states = tweaks[index:]
-            states.extend(TweakState(item, "unavailable", message=stop_message) for item in remaining_states)
+            states.extend(
+                TweakState(item, "unavailable", message=stop_message, inspection_reason=stop_reason)
+                for item in remaining_states
+            )
             if on_progress is not None:
                 on_progress(processed, len(tweaks))
             break

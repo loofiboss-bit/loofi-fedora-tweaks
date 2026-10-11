@@ -42,7 +42,16 @@ def loofi_app(app_process_registry: list[subprocess.Popen[str]]) -> Iterator[sub
     app_env.pop("LOOFI_E2E_POLKIT_PASSWORD", None)
     app_env.pop("LOOFI_E2E_CREDENTIALS_PATH", None)
     server_env = app_env.copy()
-    server_env.pop("KWIN_PID", None)  # The guest uses the driver's native X11 input path.
+    # The upstream Wayland helper logs synthesized characters at qDebug level.
+    # Its child environment must never record Polkit credential key events.
+    server_env["QT_LOGGING_RULES"] = "*.debug=false"
+    if server_env.get("XDG_SESSION_TYPE") == "wayland":
+        # The pinned KDE driver uses its built guest inputsynth for Wayland;
+        # falling back to AT-SPI X11 events would silently lose native input.
+        if not server_env.get("KWIN_PID") or not server_env.get("WAYLAND_DISPLAY"):
+            raise RuntimeError("Wayland automation requires the actual guest KWin PID and display.")
+    else:
+        server_env.pop("KWIN_PID", None)  # X11 uses AT-SPI native input.
     server = None
     driver = None
     process = None
@@ -101,6 +110,7 @@ def pytest_runtest_makereport(item, call):
     outcome = yield
     report = outcome.get_result()
     if report.failed:
+        print(str(report.longrepr), flush=True)
         from helpers import _driver
         if _driver is not None:
             try:

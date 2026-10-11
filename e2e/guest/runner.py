@@ -7,6 +7,7 @@ import argparse
 import json
 import os
 import pwd
+import shutil
 import subprocess
 import sys
 import tarfile
@@ -50,6 +51,7 @@ def _run_install(rpm_path: Path, archive_path: Path, credentials_path: Path) -> 
 def _session_environment(uid: int) -> dict[str, str]:
     """Read display/session values from the logged-in Plasma processes."""
     candidates: list[dict[str, str]] = []
+    kwin_pid: str | None = None
     for entry in Path("/proc").glob("[0-9]*"):
         try:
             status = (entry / "status").read_text(encoding="utf-8", errors="replace")
@@ -57,30 +59,40 @@ def _session_environment(uid: int) -> dict[str, str]:
             if int(uid_line.split()[1]) != uid:
                 continue
             cmdline = (entry / "cmdline").read_bytes().replace(b"\0", b" ").decode("utf-8", errors="replace").lower()
-            if not any(name in cmdline for name in ("plasmashell", "kwin_x11", "startplasma-x11", "plasma-session")):
+            if not any(name in cmdline for name in ("plasmashell", "kwin_x11", "kwin_wayland", "startplasma-x11", "startplasma-wayland", "plasma-session")):
                 continue
+            if "/kwin_wayland " in cmdline or cmdline.startswith("kwin_wayland "):
+                kwin_pid = entry.name
             values: dict[str, str] = {}
             for item in (entry / "environ").read_bytes().split(b"\0"):
                 if b"=" in item:
                     key, value = item.split(b"=", 1)
                     values[key.decode("utf-8", errors="replace")] = value.decode("utf-8", errors="replace")
-            if values.get("DISPLAY") and values.get("XDG_RUNTIME_DIR"):
+            if (values.get("DISPLAY") or values.get("WAYLAND_DISPLAY")) and values.get("XDG_RUNTIME_DIR"):
                 candidates.append(values)
         except (OSError, StopIteration, ValueError):
             continue
     if not candidates:
-        raise RuntimeError("No Plasma X11 session environment was found for the test user.")
+        raise RuntimeError("No Plasma session environment was found for the test user.")
     env = candidates[0]
-    required = ("DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS")
+    wayland = env.get("XDG_SESSION_TYPE") == "wayland"
+    required = (("WAYLAND_DISPLAY",) if wayland else ("DISPLAY",)) + ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS")
     missing = [name for name in required if not env.get(name)]
     if missing:
         raise RuntimeError("Plasma session is missing: " + ", ".join(missing))
     env["QT_LINUX_ACCESSIBILITY_ALWAYS_ON"] = "1"
-    env["QT_QPA_PLATFORM"] = "xcb"
+    env["QT_LOGGING_RULES"] = "*.debug=false"
+    env["QT_QPA_PLATFORM"] = "wayland" if wayland else "xcb"
+    if wayland and kwin_pid:
+        env["KWIN_PID"] = kwin_pid
+    if wayland:
+        missing_tools = [name for name in ("selenium-webdriver-at-spi-inputsynth", "selenium-webdriver-at-spi-screenshotter") if not shutil.which(name)]
+        if missing_tools:
+            raise RuntimeError("Wayland automation requires KDE helper binaries in the guest: " + ", ".join(missing_tools))
     return env
 
 
-def _run_tests() -> int:
+def _run_tests(phase: str = "normal") -> int:
     credentials_path = WORK / "credentials.json"
     credentials = json.loads(credentials_path.read_text(encoding="utf-8"))
     user_name = str(credentials["user"])
@@ -100,9 +112,13 @@ def _run_tests() -> int:
     # Start tests in the graphical user's systemd manager, rather than the
     # serial login session, so pkexec uses KDE's actual graphical Polkit agent.
     exported = {key: env[key] for key in (
-        "DISPLAY", "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "HOME", "USER", "LOGNAME",
-        "QT_LINUX_ACCESSIBILITY_ALWAYS_ON", "QT_QPA_PLATFORM", "PYTHONUNBUFFERED",
+        "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "HOME", "USER", "LOGNAME",
+        "QT_LINUX_ACCESSIBILITY_ALWAYS_ON", "QT_QPA_PLATFORM", "QT_LOGGING_RULES", "PYTHONUNBUFFERED",
     )}
+    exported["LOOFI_E2E_PHASE"] = phase
+    for name in ("DISPLAY", "WAYLAND_DISPLAY", "XDG_SESSION_TYPE", "KWIN_PID"):
+        if session.get(name):
+            exported[name] = session[name]
     if session.get("XAUTHORITY"):
         exported["XAUTHORITY"] = session["XAUTHORITY"]
     exported["LOOFI_E2E_CREDENTIALS_PATH"] = str(credentials_path)
@@ -110,8 +126,8 @@ def _run_tests() -> int:
         "runuser", "--preserve-environment", "--user", user_name, "--",
         "systemd-run", "--user", "--wait", "--pipe", "--collect", "--quiet", "--unit=loofi-e2e-pytest",
         *[f"--setenv={key}={value}" for key, value in exported.items()],
-        "/usr/bin/python3", "-m", "pytest", str(WORK / "e2e" / "tests"),
-        "-v", "-s", "--tb=short", f"--junitxml={junit}",
+        "/usr/bin/python3", "-m", "pytest", str(WORK / "e2e" / "tests" / "test_guest_reboot.py") if phase == "after-reboot" else str(WORK / "e2e" / "tests"),
+        "-v", "-s", "--tb=short", "--maxfail=1", f"--junitxml={junit}",
     ]
     try:
         with log_path.open("w", encoding="utf-8") as log:
@@ -129,6 +145,7 @@ def main() -> int:
     parser = argparse.ArgumentParser()
     parser.add_argument("--install", nargs=3, metavar=("RPM", "TEST_ARCHIVE", "CREDENTIALS"))
     parser.add_argument("--run", action="store_true")
+    parser.add_argument("--phase", choices=("normal", "before-reboot", "after-reboot"), default="normal")
     args = parser.parse_args()
     marker = Path("/etc/loofi-e2e-guest")
     if not marker.is_file() or marker.read_text().strip() != "loofi-fedora-tweaks-e2e":
@@ -139,7 +156,7 @@ def main() -> int:
     if args.install:
         return _run_install(Path(args.install[0]), Path(args.install[1]), Path(args.install[2]))
     if args.run:
-        return _run_tests()
+        return _run_tests(args.phase)
     parser.error("choose --install or --run")
     return 2
 

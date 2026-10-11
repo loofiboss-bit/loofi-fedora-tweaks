@@ -7,7 +7,9 @@ from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QApplication, QMenu, QToolButton
+from PyQt6.QtCore import Qt
+from PyQt6.QtTest import QTest
+from PyQt6.QtWidgets import QApplication, QFrame, QHBoxLayout, QMenu, QPushButton, QToolButton
 
 from core.tasks.guides import GUIDES_BY_ID, GuideProgressSnapshot, GuideStepProgress
 from ui.main_window_guides import GuideNavigationMixin
@@ -30,6 +32,27 @@ class TestGuideShell(unittest.TestCase):
             _continue_guide_action=next_action,
             _return_to_guide_action=return_action,
         )
+
+    def test_resume_control_accepts_keyboard_and_accessibility_focus(self):
+        frame = QFrame()
+        frame.actions_layout = QHBoxLayout(frame)
+        previous = QPushButton("Previous control", frame)
+        frame.actions_layout.addWidget(previous)
+        owner = SimpleNamespace(
+            tr=lambda value: value, _breadcrumb_frame=frame,
+            _continue_guide_from_shell=Mock(), _resume_active_guide=Mock(),
+        )
+        GuideNavigationMixin._setup_guide_controls(owner)
+        try:
+            owner._resume_guide_button.show()
+            frame.show()
+            previous.setFocus()
+            self.app.processEvents()
+            QTest.keyClick(previous, Qt.Key.Key_Tab)
+            self.assertIs(frame.focusWidget(), owner._resume_guide_button)
+            self.assertEqual(owner._resume_guide_button.focusPolicy(), Qt.FocusPolicy.StrongFocus)
+        finally:
+            frame.close()
 
     def test_menu_names_the_next_unfinished_step_and_return_target(self):
         guide = GUIDES_BY_ID["make-fedora-yours"]

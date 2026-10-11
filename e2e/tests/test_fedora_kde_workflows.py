@@ -8,7 +8,6 @@ import subprocess
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
-import helpers
 
 from helpers import (
     authenticate_polkit,
@@ -16,6 +15,7 @@ from helpers import (
     choose_next_value,
     click,
     confirm_yes,
+    current_app_process,
     select_search,
     wait_for_description,
     wait_for_node,
@@ -141,7 +141,7 @@ def test_cancelled_system_confirmation_does_not_change_dnf(loofi_app) -> None:
     select_search("DNF parallel downloads")
     wait_for_node("DNF parallel downloads", role="combo box", timeout=60, enabled=True)
     choose_next_value()
-    wait_for_node("Change system setting", timeout=20)
+    wait_for_node_containing("Change system setting", role="label", timeout=20)
     cancel_dialog()
     assert dnf_parallel_downloads() == before
 
@@ -154,7 +154,7 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
     wait_for_node("DNF parallel downloads", role="combo box", timeout=60, enabled=True)
 
     choose_next_value()
-    wait_for_node("Change system setting", timeout=20)
+    wait_for_node_containing("Change system setting", role="label", timeout=20)
     confirm_yes()
     wait_for_polkit_password(timeout=30)
     cancel_dialog()
@@ -168,16 +168,16 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
     wait_for_node("DNF parallel downloads", role="combo box", timeout=60, enabled=True)
 
     choose_next_value()
-    wait_for_node("Change system setting", timeout=20)
+    wait_for_node_containing("Change system setting", role="label", timeout=20)
     confirm_yes()
     authenticate_polkit(completed=lambda: dnf_parallel_downloads() == "5")
-    wait_for_feedback("Saved — Saved setting verified: 5 (Fast)", timeout=90)
+    wait_for_feedback("Saved — Saved setting verified: 5 downloads", timeout=90)
     assert dnf_parallel_downloads() == "5"
 
     restarted_app = None
     application_log = None
     try:
-        _stop_process(loofi_app)
+        _stop_process(current_app_process(app_process_registry))
         app_env = os.environ.copy()
         app_env.pop("LOOFI_E2E_POLKIT_PASSWORD", None)
         app_env.pop("LOOFI_E2E_CREDENTIALS_PATH", None)
@@ -196,16 +196,16 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
         wait_for_node("Tweaks", role="table cell").click()
         select_search("DNF parallel downloads")
         combo = wait_for_node("DNF parallel downloads", role="combo box", timeout=60, enabled=True)
-        assert combo.element.get_dom_attribute("name") == "5 (Fast)", "reopened app did not read the saved DNF value"
+        assert combo.element.get_dom_attribute("name") == "5 downloads", "reopened app did not read the saved DNF value"
         assert dnf_parallel_downloads() == "5", "DNF value did not persist across an application restart"
 
         restore_name = "Restore previous value for DNF parallel downloads"
         wait_until(lambda: _has_node(restore_name), timeout=30, message="persisted change history did not offer restoration")
         click(restore_name)
-        wait_for_node("Restore previous value", timeout=30)
+        wait_for_node_containing("Restore previous value", role="label", timeout=30)
         confirm_yes()
         authenticate_polkit(completed=lambda: dnf_parallel_downloads() == before)
-        wait_for_feedback("Saved — Previous value restored and verified: 3 (Fedora default)", timeout=90)
+        wait_for_feedback("Saved — Previous value restored and verified: 3 downloads", timeout=90)
         assert dnf_parallel_downloads() == before, "DNF restore feedback did not match the real system state"
     finally:
         if application_log is not None:
