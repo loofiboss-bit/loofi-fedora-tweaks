@@ -268,7 +268,7 @@ def test_ci_vm_job_is_local_runner_only_and_skips_pull_requests() -> None:
     vm_job = _job(text, "vm_e2e")
     assert "if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'" in vm_job
     assert "[self-hosted, Linux, X64, loofi-vm-e2e]" in vm_job
-    assert "run: just test-full" in vm_job
+    assert "run: python3 -m e2e.vm test-full --reboot-check" in vm_job
     assert "actions/upload-artifact@v4" in vm_job
 
 
@@ -422,3 +422,69 @@ def test_success_is_reported_only_after_overlay_cleanup(tmp_path: Path) -> None:
         with pytest.raises(VMError, match="cleanup failed"):
             vm.test_full()
     assert json.loads((vm.reports_dir / "summary.json").read_text())["status"] == "failed"
+
+
+def test_separate_qualification_domain_keeps_golden_paths_and_identity(tmp_path: Path) -> None:
+    ordinary = FedoraE2E(tmp_path / "golden")
+    separate = FedoraE2E(tmp_path / "fresh", name=VM_NAME + "-fresh-x11-example")
+    assert separate.base_disk != ordinary.base_disk
+    assert separate.overlay_disk != ordinary.overlay_disk
+    xml = ET.fromstring(_domain_xml("00000000-0000-0000-0000-000000000001", separate.overlay_disk, separate.name))
+    assert xml.findtext("name") == separate.name
+    assert xml.find("./devices/interface/link").get("state") == "down"
+
+
+def test_wayland_kickstart_builds_only_guest_helpers_from_verified_source(tmp_path: Path) -> None:
+    vm = FedoraE2E(tmp_path, desktop="wayland", name=VM_NAME + "-wayland")
+    kickstart = vm._kickstart("$6$test-hash")
+    assert "Session=plasma\n" in kickstart
+    assert "sha256sum --check" in kickstart
+    assert "cmake --build" in kickstart
+    assert "--target selenium-webdriver-at-spi-inputsynth selenium-webdriver-at-spi-screenshotter" in kickstart
+    assert "/usr/share/applications/" in kickstart
+    assert "-DCMAKE_INSTALL_PREFIX=/usr/local" in kickstart
+    assert "/selenium-build/bin/selenium-webdriver-at-spi-inputsynth" in kickstart
+    assert "plasma-discover" in kickstart
+    assert "cmake --build" not in FedoraE2E(tmp_path)._kickstart("$6$test-hash")
+
+
+def test_wayland_cannot_reuse_an_x11_ownership_marker(tmp_path: Path) -> None:
+    vm = FedoraE2E(tmp_path, desktop="wayland")
+    vm.state_path.write_text(json.dumps({"name": VM_NAME, "uri": LIBVIRT_URI, "fedora_release": FEDORA_RELEASE, "uuid": "00000000-0000-0000-0000-000000000001", "provisioned": True}))
+    with pytest.raises(VMError, match="different domain"):
+        vm._load_state()
+
+
+def test_reboot_requires_domain_validation_before_request(tmp_path: Path) -> None:
+    vm = FedoraE2E(tmp_path, reboot_check=True)
+    with patch.object(vm, "_validate_domain", side_effect=VMError("foreign VM")), patch("e2e.vm._run") as run, patch.object(vm, "_guest_exec") as execute:
+        with pytest.raises(VMError, match="foreign VM"):
+            vm._reboot_guest()
+    run.assert_not_called()
+    execute.assert_not_called()
+
+
+def test_reboot_records_changed_kernel_boot_and_protects_credentials(tmp_path: Path) -> None:
+    vm = FedoraE2E(tmp_path, reboot_check=True)
+    before = "00000000-0000-0000-0000-000000000001"
+    after = "00000000-0000-0000-0000-000000000002"
+    with patch.object(vm, "_validate_domain"), patch.object(vm, "_guest_exec", side_effect=[(0, before, ""), (0, after, ""), (0, "", "")]) as execute, patch(
+        "e2e.vm._run"
+    ) as run, patch.object(vm, "_wait_for_agent"), patch.object(vm, "_wait_for_desktop"), patch.object(vm, "_validated_password", return_value="private"), patch.object(vm, "_write_guest_file"):
+        vm._reboot_guest()
+    assert vm._reboot_evidence == {"before_boot_id": before, "after_boot_id": after}
+    assert run.call_args.args[0][-4:] == ["reboot", VM_NAME, "--mode", "agent"]
+    assert "os.chmod(f,0o600)" in execute.call_args.args[1][1]
+
+
+def test_extended_qualification_remains_master_only_and_sequential() -> None:
+    text = _workflow(".github/workflows/ci.yml")
+    job = _job(text, "vm_extended_qualification")
+    assert "github.ref == 'refs/heads/master'" in job
+    assert "github.event_name == 'workflow_dispatch'" in job
+    assert "inputs.extended_qualification" in job
+    assert "needs: vm_e2e" in job
+    assert "[self-hosted, Linux, X64, loofi-vm-e2e]" in job
+    assert "--fresh --reboot-check" in job
+    assert "--desktop wayland --reboot-check" in job
+    assert job.index("Repeat from a clean overlay") < job.index("Provision and qualify a separate empty disk") < job.index("Qualify a separate Plasma Wayland guest")

@@ -24,6 +24,7 @@ import stat
 import subprocess
 import sys
 import tarfile
+import tempfile
 import time
 import uuid
 import urllib.request
@@ -157,10 +158,10 @@ def preflight(data_root: Path | None = None) -> dict[str, Any]:
     }
 
 
-def _domain_xml(uuid_value: str, disk_path: Path) -> str:
+def _domain_xml(uuid_value: str, disk_path: Path, name: str = VM_NAME) -> str:
     """Return the only supported domain shape: isolated user network, no shares."""
     return f"""<domain type='kvm'>
-  <name>{VM_NAME}</name>
+  <name>{name}</name>
   <uuid>{uuid_value}</uuid>
   <memory unit='MiB'>{MEMORY_MIB}</memory>
   <currentMemory unit='MiB'>{MEMORY_MIB}</currentMemory>
@@ -197,7 +198,12 @@ def _memory_mib(element: ET.Element | None) -> int | None:
 class FedoraE2E:
     """Own exactly one test VM in qemu:///session and its generated disks."""
 
-    def __init__(self, data_root: Path | None = None, reports_dir: Path | None = None):
+    def __init__(self, data_root: Path | None = None, reports_dir: Path | None = None, *, name: str = VM_NAME, desktop: str = "x11", reboot_check: bool = False):
+        if not re.fullmatch(r"loofi-fedora-tweaks-e2e(?:-[a-z0-9-]+)?", name) or desktop not in {"x11", "wayland"}:
+            raise VMError("Invalid dedicated E2E VM name or desktop.")
+        self.name = name
+        self.desktop = desktop
+        self.reboot_check = reboot_check
         self.data_root = (data_root or _default_data_root()).expanduser().resolve()
         self.reports_dir = (reports_dir or ROOT / "test-results" / "e2e").resolve()
         self.base_disk = self.data_root / "fedora-kde-base.qcow2"
@@ -225,6 +231,8 @@ class FedoraE2E:
             os.chmod(self.lock_path, 0o600)
             self.reports_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             report_names = ["summary.json", "runner.log", "junit.xml", "pytest.log", "guest-result.json", "install.log", "application.log", "polkit-before.xml"]
+            report_names.extend(["package-fixture.log", "reboot-checkpoint.json"])
+            report_names.extend(Path(name).stem + "-after-reboot" + Path(name).suffix for name in tuple(report_names) if name not in {"summary.json", "runner.log"})
             report_names.extend(path.name for path in self.reports_dir.glob("*-accessibility.xml"))
             for name in report_names:
                 (self.reports_dir / name).unlink(missing_ok=True)
@@ -248,14 +256,18 @@ class FedoraE2E:
                 print("Installing the local RPM and staging native GUI tests...", flush=True)
                 self._prepare_payload(rpm)
                 print("Running pytest in the guest desktop...", flush=True)
-                code = self._run_guest_tests()
+                code = self._run_guest_tests("before-reboot" if self.reboot_check else "normal")
                 self._collect_reports()
+                if code == 0 and self.reboot_check:
+                    self._reboot_guest()
+                    code = self._run_guest_tests("after-reboot")
+                    self._collect_reports(suffix="-after-reboot")
                 completed = True
                 return code
             except Exception as exc:
                 if not self._interrupted and self._may_stop and self._domain_exists():
                     try:
-                        self._collect_reports()
+                        self._collect_reports(suffix="-after-reboot" if getattr(self, "_reboot_evidence", None) else "")
                     except (VMError, OSError):
                         pass
                 self._write_failure(exc, facts)
@@ -287,7 +299,7 @@ class FedoraE2E:
         if not self._state.get("provisioned") or not self._domain_exists():
             return
         self._validate_domain(verify_overlay=False)
-        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", VM_NAME], timeout=10).stdout.strip().lower()
+        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", self.name], timeout=10).stdout.strip().lower()
         if state != "shut off":
             print("Recovering the owned disposable VM after an interrupted run.", flush=True)
             self._stop_owned_domain(force=True)
@@ -322,7 +334,7 @@ class FedoraE2E:
                 else:
                     self._validate_partial_domain()
                 self._stop_owned_domain()
-                _run(["virsh", "-c", LIBVIRT_URI, "undefine", VM_NAME], timeout=30)
+                _run(["virsh", "-c", LIBVIRT_URI, "undefine", self.name], timeout=30)
 
             for path in (
                 self.base_disk,
@@ -343,7 +355,8 @@ class FedoraE2E:
         except (OSError, json.JSONDecodeError) as exc:
             raise VMError("VM state file is invalid; refusing to reset the VM data.") from exc
         if not isinstance(state, dict) or (
-            state.get("name") != VM_NAME
+            state.get("name") != self.name
+            or state.get("desktop", "x11") != self.desktop
             or state.get("uri") != LIBVIRT_URI
             or state.get("fedora_release") != FEDORA_RELEASE
             or not isinstance(state.get("uuid"), str)
@@ -359,11 +372,11 @@ class FedoraE2E:
 
     def _validate_partial_domain(self) -> None:
         """Validate the disposable install domain before a recovery reset."""
-        domain_uuid = _run(["virsh", "-c", LIBVIRT_URI, "domuuid", VM_NAME], timeout=10).stdout.strip()
+        domain_uuid = _run(["virsh", "-c", LIBVIRT_URI, "domuuid", self.name], timeout=10).stdout.strip()
         if domain_uuid != self._state.get("uuid"):
             raise VMError("The partial VM name belongs to a different UUID; refusing to stop or remove it.")
-        xml = ET.fromstring(_run(["virsh", "-c", LIBVIRT_URI, "dumpxml", VM_NAME], timeout=10).stdout)
-        if xml.findtext("name") != VM_NAME or xml.findtext("uuid") != domain_uuid:
+        xml = ET.fromstring(_run(["virsh", "-c", LIBVIRT_URI, "dumpxml", self.name], timeout=10).stdout)
+        if xml.findtext("name") != self.name or xml.findtext("uuid") != domain_uuid:
             raise VMError("The partial VM identity does not match its saved ownership marker.")
         memory = xml.find("memory")
         current_memory = xml.find("currentMemory")
@@ -397,7 +410,8 @@ class FedoraE2E:
             if not isinstance(state, dict):
                 raise VMError(f"VM state file is invalid: {self.state_path}")
             if (
-                state.get("name") != VM_NAME
+                state.get("name") != self.name
+                or state.get("desktop", "x11") != self.desktop
                 or state.get("uri") != LIBVIRT_URI
                 or state.get("fedora_release") != FEDORA_RELEASE
                 or not isinstance(state.get("provisioned"), bool)
@@ -411,11 +425,12 @@ class FedoraE2E:
             self._state = state
             return
         if self._domain_exists():
-            raise VMError(f"A VM named {VM_NAME} already exists without this runner's ownership marker; refusing to touch it.")
+            raise VMError(f"A VM named {self.name} already exists without this runner's ownership marker; refusing to touch it.")
         if self.password_path.exists() or self.base_disk.exists() or self.overlay_disk.exists():
             raise VMError("Unregistered E2E VM data already exists; refusing to overwrite it.")
         self._state = {
-            "name": VM_NAME,
+            "name": self.name,
+            "desktop": self.desktop,
             "uri": LIBVIRT_URI,
             "uuid": str(uuid.uuid4()),
             "fedora_release": FEDORA_RELEASE,
@@ -430,7 +445,7 @@ class FedoraE2E:
         temporary.replace(self.state_path)
 
     def _domain_exists(self) -> bool:
-        result = _run(["virsh", "-c", LIBVIRT_URI, "dominfo", VM_NAME], timeout=10, check=False)
+        result = _run(["virsh", "-c", LIBVIRT_URI, "dominfo", self.name], timeout=10, check=False)
         return result.returncode == 0
 
     def _validate_domain(self, *, verify_overlay: bool = True) -> None:
@@ -438,14 +453,14 @@ class FedoraE2E:
             if self._state.get("provisioned"):
                 raise VMError("The registered E2E VM is missing from qemu:///session; refusing to recreate it implicitly.")
             return
-        domain_uuid = _run(["virsh", "-c", LIBVIRT_URI, "domuuid", VM_NAME], timeout=10).stdout.strip()
+        domain_uuid = _run(["virsh", "-c", LIBVIRT_URI, "domuuid", self.name], timeout=10).stdout.strip()
         if domain_uuid != self._state.get("uuid"):
             raise VMError("The VM name now belongs to a different UUID; refusing to stop or replace it.")
         if not self._state.get("provisioned"):
             raise VMError("A partially installed VM exists; use the documented reset command before retrying provisioning.")
-        xml = ET.fromstring(_run(["virsh", "-c", LIBVIRT_URI, "dumpxml", VM_NAME], timeout=10).stdout)
+        xml = ET.fromstring(_run(["virsh", "-c", LIBVIRT_URI, "dumpxml", self.name], timeout=10).stdout)
         name = xml.findtext("name")
-        if name != VM_NAME or xml.findtext("uuid") != domain_uuid:
+        if name != self.name or xml.findtext("uuid") != domain_uuid:
             raise VMError("The registered domain identity does not match the test VM marker.")
         memory = xml.find("memory")
         current_memory = xml.find("currentMemory")
@@ -515,12 +530,43 @@ class FedoraE2E:
         if self._domain_exists():
             self._validate_partial_domain()
             self._stop_owned_domain()
-            _run(["virsh", "-c", LIBVIRT_URI, "undefine", VM_NAME], timeout=30)
+            _run(["virsh", "-c", LIBVIRT_URI, "undefine", self.name], timeout=30)
         for path in (install_disk, self.data_root / "ks.cfg", self.password_path, self.state_path):
             path.unlink(missing_ok=True)
         print("Removed the owned incomplete Fedora E2E install; test-full can provision it again.", flush=True)
 
     def _kickstart(self, password_hash: str) -> str:
+        wayland_packages = ""
+        wayland_build = ""
+        if self.desktop == "wayland":
+            wayland_packages = """cmake
+make
+gcc-c++
+extra-cmake-modules
+qt6-qtbase-private-devel
+qt6-qtwayland-devel
+kf6-kwindowsystem-devel
+kf6-kcoreaddons-devel
+kwayland-devel
+kpipewire-devel
+plasma-wayland-protocols-devel
+wayland-devel
+libxkbcommon-devel
+curl
+"""
+            wayland_build = """# Build only guest automation helpers from the same pinned KDE source.
+curl --fail --location --max-time 180 --output /var/tmp/selenium.tar.gz https://codeload.github.com/KDE/selenium-webdriver-at-spi/tar.gz/50e41aa9913b16e5d0a6fec921c963485aa125b4
+printf '8e71bfbd93a5760f08b87ae437087847d2ec376bd88858bee5a4e228f1fcaba0  /var/tmp/selenium.tar.gz\\n' | sha256sum --check
+mkdir -p /var/tmp/selenium-source
+tar --extract --gzip --file /var/tmp/selenium.tar.gz --directory /var/tmp/selenium-source --strip-components=1
+cmake -S /var/tmp/selenium-source -B /var/tmp/selenium-build -DBUILD_TESTING=OFF -DCMAKE_BUILD_TYPE=Release -DCMAKE_INSTALL_PREFIX=/usr/local
+cmake --build /var/tmp/selenium-build --parallel 2 --target selenium-webdriver-at-spi-inputsynth selenium-webdriver-at-spi-screenshotter
+install -m 0755 /var/tmp/selenium-build/bin/selenium-webdriver-at-spi-inputsynth /usr/local/bin/
+install -m 0755 /var/tmp/selenium-build/bin/selenium-webdriver-at-spi-screenshotter /usr/local/bin/
+install -m 0644 /var/tmp/selenium-build/inputsynth/org.kde.selenium-webdriver-at-spi-inputsynth.desktop /usr/share/applications/
+install -m 0644 /var/tmp/selenium-build/screenshotter/org.kde.selenium-webdriver-at-spi-screenshotter.desktop /usr/share/applications/
+rm -rf /var/tmp/selenium-source /var/tmp/selenium-build /var/tmp/selenium.tar.gz
+"""
         return f"""text
 lang en_US.UTF-8
 keyboard us
@@ -554,16 +600,17 @@ python3-pyatspi
 python3-xlib
 qemu-guest-agent
 dolphin
+plasma-discover
 dnf5
 dnf5-plugins
-%end
+{wayland_packages}%end
 %post --interpreter=/bin/bash
 set -euo pipefail
-mkdir -p /etc/sddm.conf.d
+{wayland_build}mkdir -p /etc/sddm.conf.d
 cat > /etc/sddm.conf.d/loofi-e2e.conf <<'EOF'
 [Autologin]
 User={GUEST_USER}
-Session=plasmax11
+Session={"plasmax11" if self.desktop == "x11" else "plasma"}
 Relogin=false
 EOF
 printf 'loofi-fedora-tweaks-e2e\\n' > /etc/loofi-e2e-guest
@@ -590,9 +637,9 @@ reboot
         if install_disk.is_file() and self._domain_exists() and not self.base_disk.exists() and not self.overlay_disk.exists():
             self._validate_partial_domain()
             print("Resuming the owned Fedora installation; existing disk data is retained.", flush=True)
-            state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", VM_NAME], timeout=10).stdout.lower()
+            state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", self.name], timeout=10).stdout.lower()
             if "shut off" in state:
-                _run(["virsh", "-c", LIBVIRT_URI, "start", VM_NAME], timeout=30)
+                _run(["virsh", "-c", LIBVIRT_URI, "start", self.name], timeout=30)
             self._started_here = True
             self._may_stop = True
             self._wait_for_agent(300)
@@ -618,7 +665,7 @@ reboot
         command = [
             "virt-install",
             "--connect", LIBVIRT_URI,
-            "--name", VM_NAME,
+            "--name", self.name,
             "--uuid", self._state["uuid"],
             "--memory", str(MEMORY_MIB),
             "--vcpus", str(VCPUS),
@@ -646,14 +693,14 @@ reboot
     def _promote_base(self, install_disk: Path) -> None:
         self._validate_partial_domain()
         self._stop_owned_domain()
-        _run(["virsh", "-c", LIBVIRT_URI, "undefine", VM_NAME], timeout=30)
+        _run(["virsh", "-c", LIBVIRT_URI, "undefine", self.name], timeout=30)
         _run(["qemu-img", "convert", "-O", "qcow2", str(install_disk), str(self.base_disk)], timeout=15 * 60)
         _run(["qemu-img", "check", str(self.base_disk)], timeout=60)
         os.chmod(self.base_disk, 0o400)
         install_disk.unlink()
         self.overlay_disk.unlink(missing_ok=True)
         self._create_overlay()
-        xml = _domain_xml(self._state["uuid"], self.overlay_disk)
+        xml = _domain_xml(self._state["uuid"], self.overlay_disk, self.name)
         self.domain_xml_path.write_text(xml, encoding="utf-8")
         os.chmod(self.domain_xml_path, 0o600)
         _run(["virsh", "-c", LIBVIRT_URI, "define", str(self.domain_xml_path)], timeout=30)
@@ -673,7 +720,7 @@ reboot
     def _reset_overlay(self) -> None:
         if not self._domain_exists():
             raise VMError("The test domain is missing; refusing to recreate a disk it cannot own.")
-        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", VM_NAME], timeout=10).stdout.strip().lower()
+        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", self.name], timeout=10).stdout.strip().lower()
         if "shut off" not in state:
             raise VMError(f"Cannot reset the E2E overlay while domain state is {state!r}.")
         self._validate_domain(verify_overlay=False)
@@ -685,46 +732,46 @@ reboot
 
     def _start(self) -> None:
         self._validate_domain()
-        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", VM_NAME], timeout=10).stdout.strip().lower()
+        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", self.name], timeout=10).stdout.strip().lower()
         if "shut off" not in state:
             raise VMError(f"The E2E VM must be shut off before this run; current state is {state!r}.")
-        _run(["virsh", "-c", LIBVIRT_URI, "start", VM_NAME], timeout=30)
+        _run(["virsh", "-c", LIBVIRT_URI, "start", self.name], timeout=30)
         self._started_here = True
 
     def _stop_owned_domain(self, *, force: bool = False) -> None:
         self._assert_owned_domain()
-        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", VM_NAME], timeout=10).stdout.strip().lower()
+        state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", self.name], timeout=10).stdout.strip().lower()
         if "shut off" in state:
             self._started_here = False
             return
         if force:
-            _run(["virsh", "-c", LIBVIRT_URI, "destroy", VM_NAME], timeout=5)
+            _run(["virsh", "-c", LIBVIRT_URI, "destroy", self.name], timeout=5)
             self._started_here = False
             return
-        _run(["virsh", "-c", LIBVIRT_URI, "shutdown", VM_NAME], timeout=30, check=False)
+        _run(["virsh", "-c", LIBVIRT_URI, "shutdown", self.name], timeout=30, check=False)
         deadline = time.monotonic() + 45
         while time.monotonic() < deadline:
-            state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", VM_NAME], timeout=10, check=False).stdout.strip().lower()
+            state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", self.name], timeout=10, check=False).stdout.strip().lower()
             if "shut off" in state:
                 self._started_here = False
                 return
             time.sleep(2)
         # This hard stop is limited to the UUID-validated disposable E2E guest.
         self._assert_owned_domain()
-        _run(["virsh", "-c", LIBVIRT_URI, "destroy", VM_NAME], timeout=30)
+        _run(["virsh", "-c", LIBVIRT_URI, "destroy", self.name], timeout=30)
         self._started_here = False
 
     def _assert_owned_domain(self) -> None:
         if not self._domain_exists():
             return
-        domain_uuid = _run(["virsh", "-c", LIBVIRT_URI, "domuuid", VM_NAME], timeout=10).stdout.strip()
+        domain_uuid = _run(["virsh", "-c", LIBVIRT_URI, "domuuid", self.name], timeout=10).stdout.strip()
         if domain_uuid != self._state.get("uuid"):
             raise VMError("The VM name no longer belongs to this runner; refusing to stop it.")
 
     def _qga(self, command: dict[str, Any], *, timeout: int = GUEST_AGENT_TIMEOUT) -> Any:
         # Use stdin: file-transfer payloads include a private guest credential
         # and must not appear in the host process list.
-        request = shlex.join(["qemu-agent-command", VM_NAME, "--timeout", str(timeout), "--cmd", json.dumps(command)])
+        request = shlex.join(["qemu-agent-command", self.name, "--timeout", str(timeout), "--cmd", json.dumps(command)])
         try:
             response = _run(["virsh", "--quiet", "-c", LIBVIRT_URI], input_text=request + "\nquit\n",
                             timeout=timeout + 5, check=False)
@@ -754,13 +801,13 @@ reboot
             except VMError as exc:
                 last_error = str(exc)
             if restart_if_powered_off:
-                state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", VM_NAME], timeout=10, check=False)
+                state = _run(["virsh", "-c", LIBVIRT_URI, "domstate", self.name], timeout=10, check=False)
                 if state.returncode == 0 and "shut off" in state.stdout.strip().lower():
                     if restarted:
                         raise VMError("The Fedora installer shut down the owned VM more than once; refusing an automatic boot loop.")
                     self._validate_partial_domain()
                     print("Fedora installation powered off the owned VM; starting its installed system.", flush=True)
-                    _run(["virsh", "-c", LIBVIRT_URI, "start", VM_NAME], timeout=30)
+                    _run(["virsh", "-c", LIBVIRT_URI, "start", self.name], timeout=30)
                     self._started_here = True
                     self._may_stop = True
                     restarted = True
@@ -782,7 +829,7 @@ reboot
         self._assert_owned_domain()
         password = self._validated_password()
         try:
-            return console_execute(LIBVIRT_URI, VM_NAME, GUEST_USER, password, [path, *args], timeout)
+            return console_execute(LIBVIRT_URI, self.name, GUEST_USER, password, [path, *args], timeout)
         except (OSError, RuntimeError) as exc:
             raise VMError(str(exc)) from exc
 
@@ -822,7 +869,8 @@ reboot
                 "/usr/bin/python3",
                 [
                     "-c",
-                    "import glob,os,pwd; p=pwd.getpwnam('loofie2e'); print(os.path.exists(f'/run/user/{p.pw_uid}/bus') and bool(glob.glob('/tmp/.X11-unix/X*')))",
+                    "import glob,os,pwd; p=pwd.getpwnam('loofie2e'); print(os.path.exists(f'/run/user/{p.pw_uid}/bus') and bool(glob.glob("
+                    + ("'/tmp/.X11-unix/X*'" if self.desktop == "x11" else "f'/run/user/{p.pw_uid}/wayland-*'") + ")))",
                 ],
                 timeout=20,
             )
@@ -830,7 +878,32 @@ reboot
             if code == 0 and "True" in stdout:
                 return
             time.sleep(5)
-        raise VMError(f"Timed out waiting for the Plasma X11 auto-login: {last_status}")
+        raise VMError(f"Timed out waiting for the Plasma {self.desktop} auto-login: {last_status}")
+
+    def _build_fixture(self) -> bytes:
+        """Build an inert, dependency-free local package solely for the guest."""
+        with tempfile.TemporaryDirectory(prefix="loofi-e2e-fixture-") as directory:
+            root = Path(directory)
+            spec = root / "fixture.spec"
+            spec.write_text("""Name: loofi-e2e-fixture
+Version: 1.0
+Release: 1
+Summary: Inert disposable VM package fixture
+License: MIT
+BuildArch: noarch
+%description
+Contains a single probe file for isolated package lifecycle tests.
+%install
+mkdir -p %{buildroot}/usr/share/loofi-e2e-fixture
+printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.txt
+%files
+/usr/share/loofi-e2e-fixture/probe.txt
+""", encoding="utf-8")
+            _run(["rpmbuild", "-bb", "--define", f"_topdir {root}", str(spec)], timeout=120)
+            candidates = list((root / "RPMS" / "noarch").glob("loofi-e2e-fixture-*.rpm"))
+            if len(candidates) != 1:
+                raise VMError("Fixture RPM build did not produce exactly one inert package.")
+            return candidates[0].read_bytes()
 
     def _prepare_payload(self, rpm: Path) -> None:
         code, _, _ = self._guest_exec("/usr/bin/bash", ["-c", "mkdir -p /var/tmp/loofi-e2e && chcon -t virt_qemu_ga_log_t /var/tmp/loofi-e2e"])
@@ -855,6 +928,7 @@ reboot
                 raise VMError("The cached KDE driver did not match its checksum.")
             self._write_guest_file("/var/tmp/loofi-e2e/" + name, content)
         self._write_guest_file("/var/tmp/loofi-e2e/build.rpm", rpm.read_bytes())
+        self._write_guest_file("/var/tmp/loofi-e2e/loofi-e2e-fixture.rpm", self._build_fixture())
         archive = io.BytesIO()
         with tarfile.open(fileobj=archive, mode="w:gz") as bundle:
             for path in sorted((ROOT / "e2e" / "tests").rglob("*.py")):
@@ -874,17 +948,46 @@ reboot
         if code:
             raise VMError(f"Guest RPM installation or test staging failed with exit code {code}.")
 
-    def _run_guest_tests(self) -> int:
+    def _reboot_guest(self) -> None:
+        """Reboot only the validated disposable domain and prove a new kernel boot."""
+        self._validate_domain(verify_overlay=False)
+        code, before, _ = self._guest_exec("/usr/bin/cat", ["/proc/sys/kernel/random/boot_id"], timeout=20)
+        before = before.strip()
+        if code or not re.fullmatch(r"[0-9a-f-]{36}", before):
+            raise VMError("Could not record the guest boot identity before reboot.")
+        _run(["virsh", "-c", LIBVIRT_URI, "reboot", self.name, "--mode", "agent"], timeout=30)
+        deadline = time.monotonic() + 300
+        while time.monotonic() < deadline:
+            try:
+                code, after, _ = self._guest_exec("/usr/bin/cat", ["/proc/sys/kernel/random/boot_id"], timeout=20)
+                after = after.strip()
+                if code == 0 and re.fullmatch(r"[0-9a-f-]{36}", after) and after != before:
+                    self._wait_for_agent(300)
+                    self._wait_for_desktop(600)
+                    self._reboot_evidence = {"before_boot_id": before, "after_boot_id": after}
+                    # First phase removes its private credential after pytest.
+                    payload = json.dumps({"user": GUEST_USER, "password": self._validated_password()}).encode()
+                    self._write_guest_file("/var/tmp/loofi-e2e/credentials.json", payload)
+                    code, _, _ = self._guest_exec("/usr/bin/python3", ["-c", "import os,pwd; p=pwd.getpwnam('loofie2e'); f='/var/tmp/loofi-e2e/credentials.json'; os.chown(f,p.pw_uid,p.pw_gid); os.chmod(f,0o600)"], timeout=20)
+                    if code:
+                        raise VMError("Could not protect the restored guest test credential.")
+                    return
+            except VMError:
+                pass
+            time.sleep(5)
+        raise VMError("Guest reboot did not produce a new boot identity within 300 seconds.")
+
+    def _run_guest_tests(self, phase: str = "normal") -> int:
         code, stdout, stderr = self._guest_exec(
             "/usr/bin/python3",
-            ["/var/tmp/loofi-e2e/runner.py", "--run"],
+            ["/var/tmp/loofi-e2e/runner.py", "--run", "--phase", phase],
             timeout=GUEST_RUN_TIMEOUT,
         )
         self._runner_output = getattr(self, "_runner_output", "") + stdout + stderr
         self._runner_exit = code
         return code
 
-    def _collect_reports(self) -> None:
+    def _collect_reports(self, suffix: str = "") -> None:
         self.reports_dir.mkdir(parents=True, exist_ok=True)
         os.chmod(self.reports_dir, 0o700)
         reports = [
@@ -893,6 +996,8 @@ reboot
             ("/var/tmp/loofi-e2e/result.json", "guest-result.json"),
             ("/var/tmp/loofi-e2e/install.log", "install.log"),
             ("/var/tmp/loofi-e2e/application.log", "application.log"),
+            ("/var/tmp/loofi-e2e/package-fixture.log", "package-fixture.log"),
+            ("/var/tmp/loofi-e2e/reboot-checkpoint.json", "reboot-checkpoint.json"),
         ]
         try:
             artifacts = json.loads(self._read_guest_file("/var/tmp/loofi-e2e/failure-artifacts.json"))
@@ -907,7 +1012,7 @@ reboot
                 content = self._read_guest_file(remote)
             except VMError:
                 continue
-            target = self.reports_dir / local
+            target = self.reports_dir / (Path(local).stem + suffix + Path(local).suffix)
             password = self.password_path.read_text(encoding="utf-8").strip().encode()
             target.write_bytes(content.replace(password, b"[redacted]"))
             os.chmod(target, 0o600)
@@ -917,9 +1022,11 @@ reboot
 
     def _write_summary(self, code: int, facts: dict[str, Any]) -> None:
         summary = {
-            "vm": VM_NAME,
+            "vm": self.name,
             "libvirt_uri": LIBVIRT_URI,
             "fedora_release": FEDORA_RELEASE,
+            "desktop": self.desktop,
+            "reboot": getattr(self, "_reboot_evidence", None),
             "memory_mib": MEMORY_MIB,
             "vcpus": VCPUS,
             "exit_code": code,
@@ -939,7 +1046,7 @@ reboot
             runner_log.write_text(getattr(self, "_runner_output", ""), encoding="utf-8")
             os.chmod(runner_log, 0o600)
             target = self.reports_dir / "summary.json"
-            target.write_text(json.dumps({"vm": VM_NAME, "status": "failed", "error": str(exc), "preflight": facts}, indent=2) + "\n", encoding="utf-8")
+            target.write_text(json.dumps({"vm": self.name, "status": "failed", "error": str(exc), "preflight": facts}, indent=2) + "\n", encoding="utf-8")
             os.chmod(target, 0o600)
         except OSError:
             pass
@@ -948,6 +1055,10 @@ reboot
 def main(argv: Sequence[str] | None = None) -> int:
     parser = argparse.ArgumentParser(description="Run isolated Fedora KDE desktop end-to-end tests.")
     parser.add_argument("command", choices=("preflight", "test-full", "reset"), nargs="?", default="test-full")
+    parser.add_argument("--vm-name", default=VM_NAME, help="Explicit dedicated domain name for resetting a saved fresh artifact.")
+    parser.add_argument("--fresh", action="store_true", help="Provision a separate empty-disk qualification artifact; preserve the reusable base.")
+    parser.add_argument("--desktop", choices=("x11", "wayland"), default="x11")
+    parser.add_argument("--reboot-check", action="store_true", help="Verify checkpoint persistence across a real guest reboot.")
     parser.add_argument("--data-root", type=Path, default=_default_data_root())
     parser.add_argument("--reports-dir", type=Path, default=ROOT / "test-results" / "e2e")
     args = parser.parse_args(argv)
@@ -955,7 +1066,20 @@ def main(argv: Sequence[str] | None = None) -> int:
         if args.command == "preflight":
             print(json.dumps(preflight(args.data_root), indent=2))
             return 0
-        vm = FedoraE2E(args.data_root, args.reports_dir)
+        if args.fresh and args.command != "test-full":
+            raise VMError("--fresh is only valid with test-full.")
+        name = args.vm_name
+        if args.fresh:
+            artifact = f"fresh-{args.desktop}-{uuid.uuid4().hex[:12]}"
+            args.data_root = args.data_root / artifact
+            args.reports_dir = args.reports_dir / artifact
+            name += "-" + artifact
+            print(f"Fresh qualification data: {args.data_root}; reports: {args.reports_dir}", flush=True)
+        elif args.desktop != "x11" and args.vm_name == VM_NAME:
+            args.data_root = args.data_root / args.desktop
+            args.reports_dir = args.reports_dir / args.desktop
+            name += "-" + args.desktop
+        vm = FedoraE2E(args.data_root, args.reports_dir, name=name, desktop=args.desktop, reboot_check=args.reboot_check)
         if args.command == "reset":
             return vm.reset()
         previous = {sig: signal.signal(sig, vm._interrupt) for sig in (signal.SIGINT, signal.SIGTERM)}

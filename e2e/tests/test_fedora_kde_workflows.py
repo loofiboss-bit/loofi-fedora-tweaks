@@ -8,7 +8,6 @@ import subprocess
 from types import ModuleType, SimpleNamespace
 from unittest.mock import Mock, patch
 
-import helpers
 
 from helpers import (
     authenticate_polkit,
@@ -16,6 +15,7 @@ from helpers import (
     choose_next_value,
     click,
     confirm_yes,
+    current_app_process,
     select_search,
     wait_for_description,
     wait_for_node,
@@ -177,7 +177,7 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
     restarted_app = None
     application_log = None
     try:
-        _stop_process(loofi_app)
+        _stop_process(current_app_process(app_process_registry))
         app_env = os.environ.copy()
         app_env.pop("LOOFI_E2E_POLKIT_PASSWORD", None)
         app_env.pop("LOOFI_E2E_CREDENTIALS_PATH", None)

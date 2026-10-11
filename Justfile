@@ -83,6 +83,18 @@ test-ci:
 test-full:
     python3 -m e2e.vm test-full
 
+# Verify saved workflow state across a real reboot of the disposable guest.
+test-full-reboot:
+    python3 -m e2e.vm test-full --reboot-check --reports-dir test-results/e2e-reboot
+
+# Provision an independent empty-disk artifact, preserving the reusable base.
+test-full-fresh:
+    python3 -m e2e.vm test-full --fresh --reboot-check --reports-dir test-results/e2e-fresh
+
+# Qualify the separate Plasma Wayland guest; never reconfigure the X11 base.
+test-full-wayland:
+    python3 -m e2e.vm test-full --desktop wayland --reboot-check --reports-dir test-results/e2e-wayland
+
 # Read-only prerequisite check for the local VM runner.
 test-full-preflight:
     python3 -m e2e.vm preflight
