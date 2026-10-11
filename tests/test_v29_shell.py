@@ -199,7 +199,8 @@ class TestV29MainWindowShell(unittest.TestCase):
             child_counts.append(len(window.findChildren(QObject)))
 
         self.assertEqual(len(set(child_counts)), 1, child_counts)
-        _inventory.assert_called_once_with()
+        _inventory.assert_called_once()
+        self.assertTrue(callable(_inventory.call_args.kwargs.get("cancelled")))
         _sources.assert_called_once_with()
 
     def test_legacy_change_routes_open_activity_and_secondary_routes_clear_primary(self) -> None:

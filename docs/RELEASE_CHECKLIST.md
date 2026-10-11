@@ -30,8 +30,8 @@ statistics or adapter tools and does not create workflow scaffolding.
 - [ ] Add an accurate unreleased or dated release entry to `CHANGELOG.md`.
 - [ ] Update `ROADMAP.md` to distinguish candidate, released, and deferred work.
 - [ ] Regenerate `docs/TWEAKS.md` from the catalog.
-- [ ] Update current documentation version headings and preserve physical
-  qualification as pending or unverified until it has been performed.
+- [ ] Update current documentation headings and describe what automated
+  evidence covers and where its boundaries are.
 
 ```bash
 python3 scripts/gen_tweaks_doc.py
@@ -62,15 +62,15 @@ python3 scripts/bump_version.py --check
 python3 scripts/gen_tweaks_doc.py --check
 ```
 
-## 4. Qualify desktop behavior
+## 4. Review automated behavior coverage
 
-In a GNOME session, try all GNOME Files controls. In a KDE Plasma session,
-try the Dolphin and KWin controls, including KWin runtime readback. For each setting, verify the selected value
-by reading it back, then use its history-based restore and verify the previous
-value. Check that a missing Files schema or Dolphin installation is reported
-as unavailable. Do not infer physical desktop qualification from offscreen
-tests or package builds; record each desktop as verified, pending, or
-unverified.
+Run automated regression tests for the changed behavior, including GUI and CLI
+paths where applicable, success and failure states, independent readback, and
+restore behavior for settings. Use `just test-full` when a change affects
+Fedora KDE guest workflows covered by the isolated VM suite. Fresh-disk and
+Wayland VM runs are optional and selected according to change risk. Automated
+evidence must state its boundaries; human or manual desktop checks are not
+required for release approval and do not block it.
 
 ## 5. Understand publication triggers
 

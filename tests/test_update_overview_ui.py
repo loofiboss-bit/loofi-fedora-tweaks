@@ -128,3 +128,41 @@ class UpdateOverviewUiTests(unittest.TestCase):
         self.widget.set_snapshot(UpdateOverviewSnapshot(storage_status="future_schema"))
         self.assertEqual(self.widget.feedback.property("resultKind"), "warning")
         self.assertIn("preserved", self.widget.feedback.message_label.text())
+
+    def test_queued_partial_result_does_not_replace_cancel_feedback(self):
+        self.widget._worker = object()
+        self.widget.cancel_check()
+        partial = UpdateOverviewSnapshot(sources=(UpdateSourceResult(source="system", status="up_to_date"),))
+
+        self.widget._partial_completed(partial)
+
+        self.assertEqual(self.widget.rows["system"][0].property("sourceStatus"), "up_to_date")
+        self.assertEqual(self.widget.feedback.title_label.text(), "Check cancelled")
+        self.widget._finished()
+        self.assertEqual(self.widget._check_state, "cancelled")
+        self.assertTrue(self.widget.check_button.isEnabled())
+
+    def test_cancelled_check_resets_when_next_check_starts(self):
+        self.widget._worker = object()
+        self.widget.cancel_check()
+        self.widget._finished()
+
+        self.widget.check()
+
+        self.assertEqual(self.widget._check_state, "checking")
+        self.pump_until(lambda: self.widget._worker is None)
+        self.assertEqual(self.widget._check_state, "idle")
+
+    def test_cancelled_partial_snapshot_keeps_persistence_warning(self):
+        self.widget._worker = object()
+        self.widget.cancel_check()
+        partial = UpdateOverviewSnapshot(
+            sources=(UpdateSourceResult(source="system", status="up_to_date"),),
+            storage_status="future_schema",
+        )
+
+        self.widget._partial_completed(partial)
+
+        self.assertEqual(self.widget.feedback.title_label.text(), "Check cancelled")
+        self.assertEqual(self.widget.feedback.property("resultKind"), "warning")
+        self.assertIn("could not be saved", self.widget.feedback.message_label.text())

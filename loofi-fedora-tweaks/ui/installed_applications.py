@@ -265,7 +265,13 @@ class InstalledApplicationsCard(Card):
         if self.service is not None and not self._adapter.busy:
             self.refresh_button.setEnabled(False)
             self.status.setText(self.tr("Checking installed applications…"))
-            self._adapter.start(self.service.snapshot)
+            adapter = self._adapter
+            service = self.service
+            self._adapter.start(
+                lambda adapter=adapter, service=service: service.snapshot(
+                    cancelled=lambda adapter=adapter: adapter.cancel_requested
+                )
+            )
 
     def _failed(self, _message):
         self.apply_inventory(InstalledInventory(errors=(self.tr("Installation status could not be checked."),), unknown_sources=frozenset({"flatpak", "fedora"})))

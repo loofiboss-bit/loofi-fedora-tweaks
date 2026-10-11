@@ -12,7 +12,8 @@ from PyQt6.QtWidgets import (
 from core.export.support_question import SupportQuestionService
 from core.troubleshooting.comparison import compare_sessions
 from core.troubleshooting.models import TroubleshootingComparison, TroubleshootingSession
-from ui.components import Card, SecondaryButton
+from core.troubleshooting.storage import UnsupportedFutureSessionSchema
+from ui.components import Card, InlineNotice, SecondaryButton
 
 
 class CompanionHealthMixin:
@@ -27,6 +28,13 @@ class CompanionHealthMixin:
         self.saved_session_selector = QComboBox()
         self.saved_session_selector.setAccessibleName(self.tr("Saved troubleshooting result"))
         self.saved_session_selector.setObjectName("healthSavedSession")
+        self.saved_history_notice = InlineNotice(self.tr("Saved checks unavailable"), kind="neutral")
+        self.saved_history_notice.setObjectName("healthSavedHistoryNotice")
+        card.add_widget(self.saved_history_notice)
+        self.refresh_saved_sessions_button = SecondaryButton(self.tr("Refresh saved checks"))
+        self.refresh_saved_sessions_button.setObjectName("refreshSavedHealthChecks")
+        self.refresh_saved_sessions_button.clicked.connect(self._refresh_saved_sessions)
+        card.add_widget(self.refresh_saved_sessions_button)
         self.baseline_selector = QComboBox()
         self.baseline_selector.setAccessibleName(self.tr("Earlier comparison baseline"))
         self.baseline_selector.setObjectName("healthComparisonBaseline")
@@ -42,24 +50,77 @@ class CompanionHealthMixin:
         card.add_widget(self.support_question_button)
         layout.addWidget(card)
         self._saved_sessions = ()
+        self._saved_history_available = False
         self.saved_session_selector.currentIndexChanged.connect(self._saved_session_selected)
 
     def _refresh_saved_sessions(self: Any) -> None:
         try:
             reader = getattr(self.history, "sessions", None)
-            sessions = tuple(reader()) if callable(reader) else ()
+            if not callable(reader):
+                raise RuntimeError("Saved session history is unavailable.")
+            sessions = tuple(reader())
+        except UnsupportedFutureSessionSchema:
+            self._saved_history_available = False
+            self._set_saved_history_notice(
+                "warning",
+                self.tr("Saved checks use a newer format"),
+                self.tr("This version cannot read saved checks created by a newer version. Your last loaded list is retained; refresh after updating the application."),
+            )
+            self._set_saved_history_actions_enabled(False)
+            return
         except (OSError, RuntimeError, TypeError, ValueError):
-            sessions = ()
+            self._saved_history_available = False
+            self._set_saved_history_notice(
+                "error",
+                self.tr("Could not read saved checks"),
+                self.tr("Your last loaded list is retained. Refresh saved checks to try again."),
+            )
+            self._set_saved_history_actions_enabled(False)
+            return
+        selected_id = (
+            self._current_session.session_id
+            if self._current_session is not None
+            else self.saved_session_selector.currentData()
+        )
         self._saved_sessions = tuple(sessions)
+        self._saved_history_available = True
         self.saved_session_selector.blockSignals(True)
         self.saved_session_selector.clear()
         for session in self._saved_sessions:
             self.saved_session_selector.addItem(self._saved_session_label(session), session.session_id)
-        if self._current_session is not None:
-            index = self.saved_session_selector.findData(self._current_session.session_id)
-            self.saved_session_selector.setCurrentIndex(index)
+        index = self.saved_session_selector.findData(selected_id)
+        self.saved_session_selector.setCurrentIndex(index)
         self.saved_session_selector.blockSignals(False)
+        if self._current_session is not None:
+            self._current_session = next(
+                (session for session in self._saved_sessions if session.session_id == self._current_session.session_id),
+                None,
+            )
         self._refresh_baselines()
+        if not self._saved_sessions:
+            self._set_saved_history_notice(
+                "neutral",
+                self.tr("No saved checks"),
+                self.tr("A successful read found no saved troubleshooting checks."),
+            )
+        else:
+            self._set_saved_history_notice(
+                "success",
+                self.tr("Saved checks loaded"),
+                self.tr("Saved troubleshooting checks are available."),
+            )
+
+    def _set_saved_history_notice(self: Any, kind: str, title: str, message: str) -> None:
+        self.saved_history_notice.set_notice(kind, title, message)
+
+    def _set_saved_history_actions_enabled(self: Any, enabled: bool) -> None:
+        self.saved_session_selector.setEnabled(enabled)
+        self.baseline_selector.setEnabled(enabled)
+        self.compare_saved_button.setEnabled(enabled and self.baseline_selector.count() > 1)
+        current_is_saved = self._current_session is not None and any(
+            session.session_id == self._current_session.session_id for session in self._saved_sessions
+        )
+        self.support_question_button.setEnabled(enabled and current_is_saved)
 
     def _saved_session_label(self: Any, session: Any) -> str:
         when = datetime.fromtimestamp(session.completed_at or session.started_at).astimezone().strftime("%Y-%m-%d %H:%M:%S")
@@ -77,10 +138,11 @@ class CompanionHealthMixin:
         index = self.baseline_selector.findData(previous)
         if index >= 0:
             self.baseline_selector.setCurrentIndex(index)
-        self.compare_saved_button.setEnabled(self.baseline_selector.count() > 1)
-        self.support_question_button.setEnabled(current is not None and any(s.session_id == current.session_id for s in self._saved_sessions))
+        self._set_saved_history_actions_enabled(self._saved_history_available)
 
     def _saved_session_selected(self: Any, *_args: Any) -> None:
+        if not self._saved_history_available:
+            return
         selected = self.saved_session_selector.currentData()
         session = next((s for s in self._saved_sessions if s.session_id == selected), None)
         if session is None:
@@ -93,6 +155,15 @@ class CompanionHealthMixin:
         """Select one exact saved check for review without collecting again."""
         requested = str(session_id or "").strip()
         if not requested:
+            return False
+        if not self._saved_history_available:
+            self._refresh_saved_sessions()
+        if not self._saved_history_available:
+            self.result_notice.set_notice(
+                "warning",
+                self.tr("Saved result unavailable"),
+                self.tr("The exact linked session could not be verified because saved checks could not be read."),
+            )
             return False
         index = self.saved_session_selector.findData(requested)
         if index < 0:
@@ -111,6 +182,8 @@ class CompanionHealthMixin:
         return self._current_session is not None and self._current_session.session_id == requested
 
     def _compare_saved(self: Any) -> None:
+        if not self._saved_history_available:
+            return
         selected = self.baseline_selector.currentData()
         before = next((s for s in self._saved_sessions if s.session_id == selected), None)
         if before is None or self._current_session is None:
@@ -119,6 +192,8 @@ class CompanionHealthMixin:
         self._render_comparison(self._comparison)
 
     def _prepare_support_question(self: Any) -> None:
+        if not self._saved_history_available:
+            return
         session = self._current_session
         if session is None:
             return
