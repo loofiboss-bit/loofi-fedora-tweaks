@@ -72,7 +72,7 @@ class RpmDesktopApplicationsTests(unittest.TestCase):
 
     def test_exhausted_inventory_deadline_skips_rpm_query(self):
         probe = Mock(return_value=ActionResult(True, "flatpaks"))
-        clock = Mock(side_effect=[0, 21])
+        clock = Mock(side_effect=[0, 21, 21])
         result = InstalledApplicationService(probe=probe, desktop_roots=(), clock=clock).snapshot()
         self.assertIn("fedora", result.unknown_sources)
         self.assertEqual(probe.call_count, 1)

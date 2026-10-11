@@ -14,7 +14,7 @@ from core.troubleshooting.models import (
     TroubleshootingFinding,
     TroubleshootingSession,
 )
-from core.troubleshooting.profiles import PROFILE_VERSION, SupportedVariant, require_profile
+from core.troubleshooting.profiles import SupportedVariant, require_profile
 
 
 class CancellationSignal:
@@ -51,7 +51,7 @@ def new_session(
     return TroubleshootingSession(
         session_id=session_id or str(uuid.uuid4()),
         profile_id=profile.id,
-        profile_version=PROFILE_VERSION,
+        profile_version=profile.version,
         variant=variant,
         state="queued",
         started_at=started_at,
@@ -83,7 +83,7 @@ def finalize_session(
     """Resolve the closed success/partial/unavailable/timeout/cancellation matrix."""
     if session.state != "running":
         raise ValueError("Only a running troubleshooting session can be finalized.")
-    profile = require_profile(session.profile_id)
+    profile = require_profile(session.profile_id, session.profile_version)
     result_by_source = {result.source_id: result for result in source_results}
     expected = tuple(
         budget

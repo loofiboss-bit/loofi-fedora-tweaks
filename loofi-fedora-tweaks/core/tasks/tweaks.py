@@ -50,6 +50,10 @@ class TweakState:
     restore_run_id: str = ""
     restore_value: str = ""
     restore_message: str = ""
+    restore_verified_value: str = ""
+    restore_current_value: str = ""
+    restore_reason_code: str = ""
+    restore_allowed: bool = False
 
 
 TWEAKS: tuple[Tweak, ...] = (
@@ -593,7 +597,16 @@ def snapshot(
 
         state = read_tweak(tweak, profile, bounded_reader, schema_cache=schema_cache)
         offer = restoration_for(tweak, state, runs)
-        states.append(replace(state, restore_run_id=offer.source_run_id, restore_value=offer.before, restore_message=history_error or offer.message))
+        states.append(replace(
+            state,
+            restore_run_id=offer.source_run_id,
+            restore_value=offer.before,
+            restore_message=history_error or offer.message,
+            restore_verified_value=offer.after,
+            restore_current_value=offer.current,
+            restore_reason_code=offer.reason_code,
+            restore_allowed=bool(offer.source_run_id and not history_error and not offer.message),
+        ))
         processed += 1
         if on_progress is not None:
             on_progress(processed, len(tweaks))
@@ -641,5 +654,13 @@ def inspect_one(
         return TweakState(tweak, "unavailable", message="Setting inspection cancelled.")
     if clock() > deadline:
         return TweakState(tweak, "unavailable", message="The 8-second setting inspection time limit was reached.")
-    return replace(state, restore_run_id=offer.source_run_id, restore_value=offer.before,
-                   restore_message=history_error or offer.message)
+    return replace(
+        state,
+        restore_run_id=offer.source_run_id,
+        restore_value=offer.before,
+        restore_message=history_error or offer.message,
+        restore_verified_value=offer.after,
+        restore_current_value=offer.current,
+        restore_reason_code=offer.reason_code,
+        restore_allowed=bool(offer.source_run_id and not history_error and not offer.message),
+    )

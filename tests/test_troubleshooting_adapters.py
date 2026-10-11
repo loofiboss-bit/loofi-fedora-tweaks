@@ -72,7 +72,7 @@ class TestTroubleshootingAdapters(unittest.TestCase):
                 source_id="network-state",
                 state="completed",
                 started_at=1.0,
-                completed_at=7.0,
+                completed_at=12.0,
             )
 
     def test_system_check_adapter_retains_findings_and_variant(self):

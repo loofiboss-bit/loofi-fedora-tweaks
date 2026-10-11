@@ -2,7 +2,7 @@
 
 from typing import Any
 
-from PyQt6.QtWidgets import QComboBox, QGridLayout, QLabel
+from PyQt6.QtWidgets import QComboBox, QGridLayout, QLabel, QVBoxLayout, QWidget
 
 from core.catalog_models import NativeHandoffId
 from ui.native_handoff_card import NativeHandoffCard
@@ -59,9 +59,13 @@ class HealthSymptomCardsMixin:
 
     def _build_device_settings(self: Any) -> None:
         self.device_settings_cards = {}
+        self.device_settings_handoffs = {}
         for profile_id, handoff, title in (
             ("sound_not_working", NativeHandoffId.AUDIO_SETTINGS, "Sound Settings"),
             ("bluetooth_not_working", NativeHandoffId.BLUETOOTH_SETTINGS, "Bluetooth Settings"),
+            ("battery_problem", NativeHandoffId.ENERGY_SETTINGS, "Energy Settings"),
+            ("display_problem", NativeHandoffId.DISPLAY_SETTINGS, "Display Settings"),
+            ("printer_problem", NativeHandoffId.PRINTER_SETTINGS, "Printer Settings"),
         ):
             card = NativeHandoffCard(
                 handoff, title=self.tr(title),
@@ -70,13 +74,50 @@ class HealthSymptomCardsMixin:
             )
             card.hide()
             self.device_settings_cards[profile_id] = card
+            self.device_settings_handoffs[profile_id] = (card,)
             self.scaffold.add_widget(card)
+
+        input_settings = QWidget(self)
+        input_settings.setObjectName("inputDeviceSettings")
+        input_layout = QVBoxLayout(input_settings)
+        input_layout.setContentsMargins(0, 0, 0, 0)
+        input_layout.setSpacing(8)
+        input_cards = tuple(
+            NativeHandoffCard(
+                handoff,
+                title=self.tr(title),
+                description=self.tr("Review device settings, test the result yourself, then run this check again."),
+                button_text=self.tr("Open settings"),
+                parent=input_settings,
+            )
+            for handoff, title in (
+                (NativeHandoffId.MOUSE_SETTINGS, "Mouse Settings"),
+                (NativeHandoffId.TOUCHPAD_SETTINGS, "Touchpad Settings"),
+            )
+        )
+        for card in input_cards:
+            input_layout.addWidget(card)
+        tap_to_click = SecondaryButton(
+            self.tr("Review touchpad tweaks"),
+            description=self.tr("Open Tweaks and focus the existing tap-to-click setting."),
+            parent=input_settings,
+        )
+        tap_to_click.setObjectName("healthTapToClickTweak")
+        tap_to_click.clicked.connect(
+            lambda: self.routeRequested.emit("tune", {"tweak_id": "kde-tap-to-click"})
+        )
+        input_layout.addWidget(tap_to_click)
+        input_settings.hide()
+        self.device_settings_cards["input_problem"] = input_settings
+        self.device_settings_handoffs["input_problem"] = input_cards
+        self.scaffold.add_widget(input_settings)
 
     def _show_device_settings(self: Any, profile_id: str) -> None:
         for candidate, card in self.device_settings_cards.items():
             card.setVisible(candidate == profile_id)
             if candidate == profile_id:
-                card.refresh_availability()
+                for handoff in self.device_settings_handoffs.get(candidate, ()):
+                    handoff.refresh_availability()
 
     def _build_update_choices(self: Any, choose: Any) -> None:
         self.update_source_selector = QComboBox()

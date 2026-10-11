@@ -59,6 +59,17 @@ def test_run_check_dnf_lock_healthy(mock_is_atomic, mock_execute):
     assert "DNF is not locked" in result.message
 
 @patch("core.executor.action_executor.ActionExecutor.execute")
+@patch("services.system.system.SystemManager.is_atomic")
+def test_run_check_dnf_lock_command_error_is_unknown(mock_is_atomic, mock_execute):
+    mock_is_atomic.return_value = False
+    mock_execute.return_value = ActionResult(success=False, message="Permission denied", exit_code=2, stderr="Permission denied")
+
+    result = HealthRegistry().run_check("dnf-lock")
+
+    assert result.status == "unknown"
+    assert "could not be verified" in result.message
+
+@patch("core.executor.action_executor.ActionExecutor.execute")
 def test_run_check_failed_services(mock_execute):
     mock_execute.return_value = ActionResult(success=True, message="Failures", exit_code=0, stdout="failed-svc.service loaded failed failed My Failed Service")
     
@@ -67,6 +78,30 @@ def test_run_check_failed_services(mock_execute):
     
     assert result.status == "unhealthy"
     assert "1 failed system services detected" in result.message
+
+@patch("core.executor.action_executor.ActionExecutor.execute")
+def test_run_check_failed_services_command_error_is_unknown(mock_execute):
+    mock_execute.return_value = ActionResult(success=False, message="systemctl unavailable", exit_code=1, stderr="systemctl unavailable")
+
+    result = HealthRegistry().run_check("failed-services")
+
+    assert result.status == "unknown"
+    assert "could not be checked" in result.message
+
+@patch("core.executor.action_executor.ActionExecutor.execute")
+def test_generic_check_without_matching_output_is_not_claimed_healthy(mock_execute):
+    mock_execute.return_value = ActionResult(success=True, message="Completed", exit_code=0)
+    registry = HealthRegistry()
+    registry.register(HealthCheck("generic", "Generic", "info", "system", "No configured expected output", detection_cmd=["example"]))
+
+    result = registry.run_check("generic")
+
+    assert result.status == "unknown"
+
+def test_check_without_detection_logic_is_unknown():
+    registry = HealthRegistry()
+    registry.register(HealthCheck("pending", "Pending", "info", "system", "No detector"))
+    assert registry.run_check("pending").status == "unknown"
 
 @patch("shutil.disk_usage")
 def test_run_check_disk_space(mock_disk_usage):
@@ -78,6 +113,11 @@ def test_run_check_disk_space(mock_disk_usage):
     
     assert result.status == "unhealthy"
     assert "Low disk space" in result.message
+
+@patch("shutil.disk_usage", side_effect=PermissionError("denied"))
+def test_run_check_disk_space_read_failure_is_unknown(_mock_disk_usage):
+    result = HealthRegistry().run_check("disk-space-root")
+    assert result.status == "unknown"
 
 @patch("services.system.system.SystemManager.is_atomic")
 @patch("services.system.system.SystemManager.has_pending_deployment")

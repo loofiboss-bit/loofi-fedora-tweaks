@@ -1,13 +1,23 @@
 """Deterministic Companion preparation observations and unknown boundaries."""
 import json
+import tempfile
 import unittest
 from dataclasses import replace
+from datetime import datetime, timedelta, timezone
+from pathlib import Path
 from unittest.mock import Mock, patch
 
 from core.executor.action_result import ActionResult
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
 from core.platform.profile import DeploymentBackend, DesktopEnvironment, PlatformProfile, SessionType
 from services.software.upgrade_preparation import UpgradePreparationService
+from services.software.upgrade_checklist import (
+    SCHEMA_ID,
+    SCHEMA_VERSION,
+    UpgradePreparationChecklist,
+    UpgradePreparationChecklistStore,
+    UnsupportedFutureChecklistSchema,
+)
 
 
 def profile():
@@ -126,16 +136,62 @@ class TestPreparationCard(unittest.TestCase):
         runtime = Mock()
         runtime.execute_read_only.side_effect = results(True)
         service = UpgradePreparationService(profile=profile(), runtime=runtime)
-        card = UpgradePreparationCard(service=service)
-        card.check()
-        deadline = time.monotonic() + 2
-        while card.busy and time.monotonic() < deadline:
-            self.app.processEvents()
-        self.assertFalse(card.busy)
-        self.assertIsNotNone(card.report)
-        self.assertIn("Reboot recommended", card.details.text())
-        self.assertIn("kernel", card.details.text())
-        self.assertTrue(card.cleanup())
+        with tempfile.TemporaryDirectory() as directory:
+            store = UpgradePreparationChecklistStore(path=Path(directory) / "checklist.json")
+            card = UpgradePreparationCard(service=service, checklist_store=store)
+            card.backup_files.setChecked(True)
+            card.backup_recovery.setChecked(True)
+            card.check()
+            deadline = time.monotonic() + 2
+            while card.busy and time.monotonic() < deadline:
+                self.app.processEvents()
+            self.assertFalse(card.busy)
+            self.assertIsNotNone(card.report)
+            self.assertIn("Reboot recommended", card.details.text())
+            self.assertIn("kernel", card.details.text())
+            self.assertTrue(card.cleanup())
+            saved = store.read().checklist
+            self.assertTrue(saved.backup_files_confirmed)
+            self.assertTrue(saved.backup_recovery_confirmed)
+            self.assertEqual(saved.observation_target, FEDORA_RELEASE_POLICY.stable_target)
+            self.assertEqual(saved.observation_state, "completed")
+
+    def test_saved_checklist_resumes_confirmations_and_marks_other_target_stale(self):
+        from ui.upgrade_preparation import UpgradePreparationCard
+        from services.software.upgrade_preparation import UpgradePreparationReport
+
+        with tempfile.TemporaryDirectory() as directory:
+            store = UpgradePreparationChecklistStore(path=Path(directory) / "checklist.json")
+            now = datetime.now(timezone.utc).isoformat()
+            store.save(UpgradePreparationChecklist(
+                target=FEDORA_RELEASE_POLICY.stable_target,
+                updated_at=now,
+                observation_target=FEDORA_RELEASE_POLICY.stable_target,
+                observation_checked_at=now,
+                observation_state="completed",
+                third_party_source_ids=("rpmfusion-free",),
+                backup_files_confirmed_at=now,
+            ))
+            card = UpgradePreparationCard(service=Mock(), checklist_store=store)
+            self.assertTrue(card.backup_files.isChecked())
+            self.assertFalse(card.backup_recovery.isChecked())
+            self.assertIn("Saved observations for", card.checklist_status.text())
+            card.target.setCurrentIndex(card.target.count() - 1)
+            self.assertIn("stale", card.checklist_status.text().casefold())
+            self.assertTrue(store.read().checklist.backup_files_confirmed)
+
+            report = UpgradePreparationReport(
+                FEDORA_RELEASE_POLICY.preview_target, "preview", profile().to_dict(), {}, now,
+                {"state": "observed", "healthy": True},
+                {"state": "observed", "third_party_source_ids": ["example-repo"]},
+                (), {"state": "not_required"}, state="completed",
+            )
+            card._completed(report)
+            updated = store.read().checklist
+            self.assertTrue(updated.backup_files_confirmed)
+            self.assertEqual(updated.observation_target, FEDORA_RELEASE_POLICY.preview_target)
+            self.assertEqual(updated.third_party_source_ids, ("example-repo",))
+            card.cleanup()
 
     def test_update_page_focuses_preparation(self):
         from ui.update_workflow import UpdateWorkflowPage
@@ -169,14 +225,21 @@ class TestPreparationSourceBoundaries(unittest.TestCase):
         runtime = Mock()
         observations = results()
         observations[1] = ActionResult(True, "", 0, stdout=json.dumps([
+            {"id": "fedora", "is_enabled": True},
+            {"id": "updates", "is_enabled": True},
             {"id": "rpmfusion-free", "is_enabled": True},
             {"id": "rpmfusion-nonfree", "is_enabled": False},
+            {"id": "copr:copr.fedorainfracloud.org:example:tool", "is_enabled": True},
         ]))
         runtime.execute_read_only.side_effect = observations
         sources = UpgradePreparationService(profile=profile(), runtime=runtime).prepare().sources
-        self.assertEqual(sources["enabled_count"], 1)
+        self.assertEqual(sources["enabled_count"], 4)
         self.assertEqual(sources["known_sources"]["rpmfusion-free"], "enabled")
         self.assertEqual(sources["known_sources"]["rpmfusion-nonfree"], "disabled")
+        self.assertEqual(
+            sources["third_party_source_ids"],
+            ["copr:copr.fedorainfracloud.org:example:tool", "rpmfusion-free", "rpmfusion-nonfree"],
+        )
 
     @patch("services.software.upgrade_preparation.shutil.disk_usage")
     def test_duplicate_and_nonboolean_sources_unknown(self, disk):
@@ -191,3 +254,44 @@ class TestPreparationSourceBoundaries(unittest.TestCase):
             self.assertNotIn("enabled_count", report.sources)
             self.assertIsNone(report.package_database["healthy"])
             self.assertEqual(report.package_database["reason"], "local_check_failed")
+
+
+class TestUpgradePreparationChecklist(unittest.TestCase):
+    def test_round_trip_and_observation_freshness_do_not_clear_user_confirmation(self):
+        with tempfile.TemporaryDirectory() as directory:
+            store = UpgradePreparationChecklistStore(path=Path(directory) / "checklist.json")
+            checked = datetime(2026, 10, 1, tzinfo=timezone.utc)
+            checklist = UpgradePreparationChecklist(
+                target=FEDORA_RELEASE_POLICY.stable_target,
+                updated_at=checked.isoformat(),
+                observation_target=FEDORA_RELEASE_POLICY.stable_target,
+                observation_checked_at=checked.isoformat(),
+                observation_state="completed",
+                third_party_source_ids=("rpmfusion-free",),
+                backup_files_confirmed_at=checked.isoformat(),
+            )
+            store.save(checklist)
+            saved = store.read()
+            self.assertTrue(saved.writable)
+            self.assertEqual(saved.checklist, checklist)
+            self.assertTrue(saved.checklist.observations_are_stale(
+                selected_target=checklist.target, now=checked + timedelta(days=8)))
+            self.assertTrue(saved.checklist.backup_files_confirmed)
+            self.assertFalse(saved.checklist.observations_are_stale(
+                selected_target=checklist.target, now=checked + timedelta(days=6)))
+            self.assertTrue(saved.checklist.observations_are_stale(
+                selected_target=checklist.target, now=checked - timedelta(minutes=1)))
+
+    def test_future_schema_is_never_overwritten_and_malformed_state_fails_closed(self):
+        with tempfile.TemporaryDirectory() as directory:
+            path = Path(directory) / "checklist.json"
+            path.write_text(json.dumps({"schema_id": SCHEMA_ID, "schema_version": SCHEMA_VERSION + 1}), encoding="utf-8")
+            store = UpgradePreparationChecklistStore(path=path)
+            snapshot = store.read()
+            self.assertFalse(snapshot.writable)
+            with self.assertRaises(UnsupportedFutureChecklistSchema):
+                store.save(UpgradePreparationChecklist())
+            self.assertEqual(json.loads(path.read_text(encoding="utf-8"))["schema_version"], SCHEMA_VERSION + 1)
+            path.write_text("{broken", encoding="utf-8")
+            with self.assertRaisesRegex(ValueError, "malformed"):
+                store.read()

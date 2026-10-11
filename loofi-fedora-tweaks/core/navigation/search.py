@@ -19,6 +19,7 @@ from core.actions.catalog import ActionCatalog
 from core.tasks import TaskArea, TaskCatalog, TaskContext, TaskExecutionMode
 from core.tasks.guides import GUIDES
 from core.tasks.tweaks import TWEAKS
+from core.troubleshooting.profiles import all_profiles
 
 
 class SearchFilter(Enum):
@@ -61,6 +62,7 @@ class SearchResult:
     manual_only: bool = False
     tweak_id: str | None = None
     guide_id: str | None = None
+    symptom_profile_id: str | None = None
 
 
 # Synthetic shell pages inherit their maintained manifest entry's visibility.
@@ -105,6 +107,7 @@ class GlobalSearchModel:
         self._task_results = self._build_task_results() if context_provided else ()
         self._tweak_results = self._build_tweak_results() if context_provided else ()
         self._guide_results = self._build_guide_results() if context_provided else ()
+        self._symptom_results = self._build_symptom_results() if context_provided else ()
 
     def all_results(
         self,
@@ -120,7 +123,36 @@ class GlobalSearchModel:
         # Keep the existing route/action index intact while adding the v29
         # goal-oriented projection. Task entries use the normal route kind,
         # so older consumers that only understand routes remain compatible.
-        return (*self._results, *self._task_results, *self._tweak_results, *self._guide_results)
+        return (*self._results, *self._task_results, *self._tweak_results, *self._guide_results, *self._symptom_results)
+
+    @staticmethod
+    def _build_symptom_results() -> tuple[SearchResult, ...]:
+        """Expose each closed, read-only Health profile through ordinary search."""
+        aliases = {
+            "application_failed": ("app", "application", "launch", "start"),
+            "network_problem": ("internet", "connection", "networkmanager", "route", "dns", "resolver"),
+            "battery_problem": ("battery", "power", "energy", "charging", "ac adapter"),
+            "display_problem": ("display", "screen", "monitor", "dock", "docking", "resolution", "scale"),
+            "input_problem": ("keyboard", "mouse", "touchpad", "trackpad", "pointer"),
+            "printer_problem": ("printer", "printing", "print queue", "cups", "jobs"),
+        }
+        return tuple(
+            SearchResult(
+                id=f"symptom:{profile.id}",
+                label=profile.title,
+                description="Open Health to review this read-only check.",
+                kind=SearchResultKind.ROUTE,
+                route_id="fix",
+                destination_id="fix",
+                destination_label="Health",
+                keywords=tuple(dict.fromkeys((
+                    profile.id.replace("_", " "), "Health", "troubleshoot", "diagnose",
+                    *aliases.get(profile.id, ()),
+                ))),
+                symptom_profile_id=profile.id,
+            )
+            for profile in all_profiles()
+        )
 
     @staticmethod
     def _build_guide_results() -> tuple[SearchResult, ...]:

@@ -95,6 +95,22 @@ _TARGETS: Mapping[NativeHandoffId, NativeHandoffTarget] = MappingProxyType(
             ("kcm_kscreen",),
             "kcm_kscreen",
         ),
+        NativeHandoffId.ENERGY_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.ENERGY_SETTINGS, "Energy Settings", "kcmshell6",
+            ("kcm_powerdevilprofilesconfig",), "kcm_powerdevilprofilesconfig",
+        ),
+        NativeHandoffId.MOUSE_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.MOUSE_SETTINGS, "Mouse Settings", "kcmshell6",
+            ("kcm_mouse",), "kcm_mouse",
+        ),
+        NativeHandoffId.TOUCHPAD_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.TOUCHPAD_SETTINGS, "Touchpad Settings", "kcmshell6",
+            ("kcm_touchpad",), "kcm_touchpad",
+        ),
+        NativeHandoffId.PRINTER_SETTINGS: NativeHandoffTarget(
+            NativeHandoffId.PRINTER_SETTINGS, "Printer Settings", "kcmshell6",
+            ("kcm_printer_manager",), "kcm_printer_manager",
+        ),
         NativeHandoffId.CURSOR_SETTINGS: NativeHandoffTarget(
             NativeHandoffId.CURSOR_SETTINGS,
             "Cursor Settings",

@@ -178,10 +178,41 @@ class TestAppearanceWorkflows(unittest.TestCase):
     def test_removed_previous_theme_blocks_restore_without_write(self, *_mocks):
         changed = self.apply("set-kde-cursor-theme", {"value": "CustomPointer"})
         self.runtime.themes.remove("Breeze")
-        self.assertFalse(self.offer("kde-cursor-theme").source_run_id)
+        offer = self.offer("kde-cursor-theme")
+        self.assertEqual(offer.source_run_id, changed.run_id)
+        self.assertEqual(offer.before, "Breeze")
+        self.assertEqual(offer.after, "CustomPointer")
+        self.assertEqual(offer.current, "CustomPointer")
+        self.assertEqual(offer.reason_code, "restore-value-unavailable")
         before = len(self.runtime.calls)
         ticket = self.controller.prepare("restore-kde-cursor-theme", {"source_run_id": changed.run_id})
         self.assertTrue(ticket.blocked)
+        self.assertEqual(ticket.plan.policy_decision.reason_code, "restore-value-unavailable")
+        self.assertEqual(ticket.plan.policy_decision.facts["previous"], "Breeze")
+        self.assertEqual(ticket.plan.policy_decision.facts["last_verified"], "CustomPointer")
+        self.assertEqual(ticket.plan.policy_decision.facts["current"], "CustomPointer")
+        self.assertEqual(len(self.runtime.calls), before)
+
+    def test_external_setting_change_blocks_restore_with_three_values(self, *_mocks):
+        changed = self.apply("set-kde-cursor-theme", {"value": "CustomPointer"})
+        self.runtime.themes.add("ExternalTheme")
+        self.runtime.values["kde-cursor-theme"] = "ExternalTheme"
+
+        offer = self.offer("kde-cursor-theme")
+        self.assertEqual(offer.source_run_id, changed.run_id)
+        self.assertEqual(offer.before, "Breeze")
+        self.assertEqual(offer.after, "CustomPointer")
+        self.assertEqual(offer.current, "ExternalTheme")
+        self.assertEqual(offer.reason_code, "external-change")
+        before = len(self.runtime.calls)
+
+        ticket = self.controller.prepare("restore-kde-cursor-theme", {"source_run_id": changed.run_id})
+
+        self.assertTrue(ticket.blocked)
+        self.assertEqual(ticket.plan.policy_decision.reason_code, "external-change")
+        self.assertEqual(ticket.plan.policy_decision.facts["previous"], "Breeze")
+        self.assertEqual(ticket.plan.policy_decision.facts["last_verified"], "CustomPointer")
+        self.assertEqual(ticket.plan.policy_decision.facts["current"], "ExternalTheme")
         self.assertEqual(len(self.runtime.calls), before)
 
     @patch("cli.commands.tweaks_commands.CommandFacade")

@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import re
 from dataclasses import dataclass
 from typing import Any, Literal, Mapping
 
@@ -52,8 +53,8 @@ class TroubleshootingProfile:
 
     def __post_init__(self) -> None:
         validate_identifier(self.id, field="profile_id")
-        if self.version != PROFILE_VERSION:
-            raise ValueError("Unsupported troubleshooting profile version.")
+        if self.version < 1:
+            raise ValueError("Troubleshooting profile versions must be positive.")
         source_ids = tuple(item.source_id for item in self.source_budgets)
         if not source_ids or len(source_ids) != len(set(source_ids)):
             raise ValueError("A troubleshooting profile requires unique sources.")
@@ -101,7 +102,9 @@ class TroubleshootingProfile:
         if unknown:
             raise ValueError(f"Unknown troubleshooting parameters: {', '.join(unknown)}.")
         for name, kind in schema.items():
-            if name not in payload and kind == "optional_run_id":
+            if name not in payload and kind in {"optional_run_id", "optional_boolean"}:
+                if kind == "optional_boolean":
+                    payload[name] = False
                 continue
             if name not in payload:
                 raise ValueError(f"Missing required troubleshooting parameter: {name}.")
@@ -109,12 +112,32 @@ class TroubleshootingProfile:
                 if not isinstance(payload[name], str):
                     raise ValueError("application_id must be a string.")
                 payload[name] = validate_application_identifier(payload[name])
+            elif kind == "application_identity":
+                if not isinstance(payload[name], str):
+                    raise ValueError("application_id must be a package name or full Flatpak reference.")
+                payload[name] = validate_application_identifier(payload[name], allow_flatpak_ref=True)
+            elif kind == "application_scope":
+                scope = payload[name]
+                if not isinstance(scope, str) or (
+                    scope not in {"rpm", "flatpak-user", "flatpak-system"}
+                    and _FLATPAK_INSTALLATION.fullmatch(scope) is None
+                ):
+                    raise ValueError("application_scope must select an exact RPM or Flatpak installation.")
             elif kind == "optional_run_id":
                 payload[name] = validate_resource_identifier(payload[name])
                 if "/" in payload[name]:
                     raise ValueError("run_id cannot contain a path.")
+            elif kind == "optional_boolean":
+                if not isinstance(payload[name], bool):
+                    raise ValueError(f"{name} must be a boolean.")
             else:
                 raise ValueError(f"Unsupported troubleshooting parameter type: {kind}.")
+        if schema.get("application_id") == "application_identity":
+            identifier = payload["application_id"]
+            scope = payload["application_scope"]
+            is_flatpak_ref = identifier.startswith("app/")
+            if (scope == "rpm") == is_flatpak_ref:
+                raise ValueError("Application identity does not match the selected installation type.")
         return freeze_mapping(payload, field="profile_parameters", max_items=MAX_PARAMETERS)
 
     def parameters_dict(self, parameters: tuple[tuple[str, Any], ...]) -> dict[str, Any]:
@@ -124,6 +147,7 @@ class TroubleshootingProfile:
 _ALL_VARIANTS: frozenset[SupportedVariant] = frozenset({"traditional", "atomic"})
 _TRADITIONAL: frozenset[SupportedVariant] = frozenset({"traditional"})
 _ATOMIC: frozenset[SupportedVariant] = frozenset({"atomic"})
+_FLATPAK_INSTALLATION = re.compile(r"flatpak-installation:([A-Za-z0-9][A-Za-z0-9._-]{0,127})\Z")
 
 _PROFILES = (
     TroubleshootingProfile(
@@ -219,19 +243,75 @@ _PROFILES = (
     ),
 )
 
-_PROFILE_BY_ID = {profile.id: profile for profile in _PROFILES}
+# Existing persisted sessions are validated against the exact collector contract
+# they were created with. The active app/network profiles can evolve without
+# rewriting that contract or making saved history unreadable.
+_LEGACY_PROFILES = {
+    (profile.id, profile.version): profile
+    for profile in _PROFILES
+    if profile.id in {"application_failed", "network_problem"}
+}
+
+_ACTIVE_OVERRIDES = {
+    "application_failed": TroubleshootingProfile(
+        "application_failed",
+        "An application will not start",
+        (
+            SourceBudget("application-inventory", 20.0),
+            SourceBudget("application-journal", 15.0),
+            SourceBudget("change-journal", 15.0, required=False),
+        ),
+        50.0,
+        parameter_schema=(
+            ("application_id", "application_identity"),
+            ("application_scope", "application_scope"),
+            ("launch_attempted", "optional_boolean"),
+        ),
+        version=2,
+    ),
+    "network_problem": TroubleshootingProfile(
+        "network_problem",
+        "Network is not working correctly",
+        (
+            SourceBudget("network-state", 10.0),
+            SourceBudget("change-journal", 15.0, required=False),
+        ),
+        25.0,
+        version=2,
+    ),
+}
+
+_HARDWARE_PROFILES = (
+    TroubleshootingProfile("battery_problem", "Battery or power problem", (SourceBudget("battery-power", 15.0),), 15.0),
+    TroubleshootingProfile("display_problem", "Display or docking problem", (SourceBudget("display-state", 15.0),), 15.0),
+    TroubleshootingProfile("input_problem", "Keyboard or touchpad problem", (SourceBudget("input-state", 15.0),), 15.0),
+    TroubleshootingProfile("printer_problem", "Printer or print queue problem", (SourceBudget("printer-state", 15.0),), 15.0),
+)
+
+_ACTIVE_PROFILES = tuple(
+    _ACTIVE_OVERRIDES.get(profile.id, profile) for profile in _PROFILES
+) + _HARDWARE_PROFILES
+_ACTIVE_PROFILE_BY_ID = {profile.id: profile for profile in _ACTIVE_PROFILES}
+_VERSIONED_PROFILE_BY_KEY = {
+    **_LEGACY_PROFILES,
+    **{(profile.id, profile.version): profile for profile in _ACTIVE_PROFILES},
+}
 
 
 def all_profiles() -> tuple[TroubleshootingProfile, ...]:
-    return _PROFILES
+    return _ACTIVE_PROFILES
 
 
 def get_profile(profile_id: str) -> TroubleshootingProfile | None:
-    return _PROFILE_BY_ID.get(profile_id)
+    return _ACTIVE_PROFILE_BY_ID.get(profile_id)
 
 
-def require_profile(profile_id: str) -> TroubleshootingProfile:
-    profile = get_profile(profile_id)
+def require_profile(profile_id: str, version: int | None = None) -> TroubleshootingProfile:
+    profile = (
+        get_profile(profile_id)
+        if version is None
+        else _VERSIONED_PROFILE_BY_KEY.get((profile_id, version))
+    )
     if profile is None:
         raise ValueError(f"Unknown troubleshooting profile: {profile_id}.")
     return profile

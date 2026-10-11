@@ -162,6 +162,14 @@ class MainWindowInteractionMixin:
             navigated = bool(route_id) and self.switch_to_route(route_id)
         if not navigated:
             return False
+        symptom_profile_id = str(getattr(result, "symptom_profile_id", "") or "")
+        if symptom_profile_id:
+            entry = getattr(self, "_sidebar_index", {}).get("utility_fix")
+            if entry is None:
+                return False
+            widget = self._real_widget_for_entry(entry)
+            preselect = getattr(widget, "preselect_profile", None)
+            return bool(preselect(symptom_profile_id)) if callable(preselect) else False
         tweak_id = str(getattr(result, "tweak_id", "") or "")
         if tweak_id:
             entry = getattr(self, "_sidebar_index", {}).get("utility_tune")

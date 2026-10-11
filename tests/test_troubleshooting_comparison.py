@@ -9,6 +9,8 @@ from core.troubleshooting.comparison import compare_sessions
 from core.troubleshooting.composition import compose_session
 from core.troubleshooting.lifecycle import new_session, start_session
 from core.troubleshooting.models import NextStep, TroubleshootingFinding
+from core.troubleshooting.models import SourceResult, TroubleshootingSession
+from core.troubleshooting.profiles import require_profile
 
 
 class TestTroubleshootingComparison(unittest.TestCase):
@@ -53,7 +55,7 @@ class TestTroubleshootingComparison(unittest.TestCase):
         )
         running = start_session(queued, started_at=started_at)
         sources = []
-        for source_id in ("network-state", "dns-state", "change-journal"):
+        for source_id in ("network-state", "change-journal"):
             state = source_state if source_id == "network-state" else "empty"
             reason = "source-partial" if state == "partial" else ""
             message = "The source is partial." if state == "partial" else ""
@@ -154,6 +156,61 @@ class TestTroubleshootingComparison(unittest.TestCase):
         self.assertEqual(variant_comparison.reason_code, "fedora-variant-mismatch")
         self.assertFalse(schema_comparison.comparable)
         self.assertEqual(schema_comparison.outcomes[0].reason_code, "source-schema-mismatch")
+
+    def test_v1_and_v2_profile_contracts_are_not_compared(self):
+        old_profile = require_profile("network_problem", 1)
+        old_session = TroubleshootingSession(
+            session_id=self.BEFORE_ID,
+            profile_id=old_profile.id,
+            profile_version=old_profile.version,
+            variant="traditional",
+            state="completed",
+            started_at=1.0,
+            completed_at=2.0,
+            profile_parameters=old_profile.validate_parameters(None),
+            source_results=tuple(
+                SourceResult.empty(
+                    source_id,
+                    started_at=1.0,
+                    completed_at=2.0,
+                    timeout_seconds=old_profile.budget_for(source_id, "traditional").timeout_seconds,
+                )
+                for source_id in (
+                    budget.source_id
+                    for budget in old_profile.source_budgets
+                    if "traditional" in budget.variants
+                )
+            ),
+        )
+        current_profile = require_profile("network_problem", 2)
+        new_session = TroubleshootingSession(
+            session_id=self.AFTER_ID,
+            profile_id=current_profile.id,
+            profile_version=current_profile.version,
+            variant="traditional",
+            state="completed",
+            started_at=3.0,
+            completed_at=4.0,
+            profile_parameters=current_profile.validate_parameters(None),
+            source_results=tuple(
+                SourceResult.empty(
+                    source_id,
+                    started_at=3.0,
+                    completed_at=4.0,
+                    timeout_seconds=current_profile.budget_for(source_id, "traditional").timeout_seconds,
+                )
+                for source_id in (
+                    budget.source_id
+                    for budget in current_profile.source_budgets
+                    if "traditional" in budget.variants
+                )
+            ),
+        )
+
+        comparison = compare_sessions(old_session, new_session)
+
+        self.assertFalse(comparison.comparable)
+        self.assertEqual(comparison.reason_code, "profile-mismatch")
 
 
 if __name__ == "__main__":

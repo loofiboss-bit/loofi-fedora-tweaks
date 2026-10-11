@@ -1,31 +1,30 @@
 # Roadmap
 
-The published baseline is [v32.8.0 Guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0). The stabilization and everyday-UX work below is implemented in the current working tree and remains unreleased; no next version or release date is assigned. KDE on traditional Fedora with DNF5 is the first full qualification target; GUI, CLI, and persisted formats remain compatible.
+The published baseline is [v32.8.0 Guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0). The three-stage plan below is implemented in the current working tree and remains unreleased. No next version or release date is assigned. KDE on traditional Fedora with DNF5 is the first full qualification target. GUI, CLI, and saved-session compatibility remain part of each stage.
 
-## 1. Stabilize existing workflows — implemented locally, qualification pending
+## 1. Reliability and clearer everyday workflows
 
-- DNF5 offline updates now offer `dnf5 offline reboot` as a separately reviewed and confirmed Action Center operation. Cancelled or denied authorization preserves the prepared run; post-reboot verification checks actual DNF5 transaction history and package health.
-- Settings use `StatePaths`; custom XDG migration is atomic and retains the source file. Future schemas remain read-only, malformed values recover safely, and StateDoctor reports the issue.
-- Complete structured command output is separate from bounded history/log output. Firmware and rpm-ostree JSON is limited to 1 MiB; malformed or oversized evidence remains unavailable rather than being treated as an empty update set.
-- Atomic RPM layering is unavailable unless a supported preflight query path exists; the current UI explains that boundary.
-- Release status and user guidance identify v32.5.0–v32.8.0 as published releases and distinguish those dated checks from this unreleased working tree.
+The working tree hardens older health checks so failed commands and incomplete observations cannot become a green result. Health, CLI, and support export retain explicit source state and limitations. Restore conflicts expose the saved previous value, last verified value, current value, and whether an external change or missing appearance scheme blocks restoration. Storage observations include free inodes, read-only state, and separate `/boot` where available while grouping mounts that share a filesystem. The KDE **Folder workspace** preset uses the existing profile review and verification flow.
 
-Automated regression coverage has been added for these boundaries. On 2026-10-11, `LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify` passed: 5,153 tests passed, 33 skipped, 2,066 subtests passed, and coverage was 85.53%. This is automated evidence; final acceptance still requires a disposable KDE/Fedora pass covering setting change/restore, offline update, denied Polkit, exact Flatpak removal, and verification after app restart. Record physical results separately from automated evidence.
+DNF5 offline updates, exact app-origin inspection, and guided workflows retain their existing review and verification boundaries. Automated regression coverage is in place for denied authorization, persisted settings, and state interpretation. The current working tree still needs the disposable KDE/Fedora qualification covering denied Polkit, app restart, and verification after reboot.
 
-## 2. Improve everyday UX and app insight — implemented locally, user testing pending
+Cold-start, first-page, and search latency measurements, measured responsiveness fixes, and visual/accessibility checks at light, dark, high-contrast, keyboard-only, and 100–200% scaling remain qualification tasks. Do not treat offscreen tests as physical desktop evidence.
 
-- Overview guide cards show the goal and next step first, disclose step details, and surface relevant failed or pending work before optional progress.
-- Health leads with a concise summary, relevant observed facts, and a next action; source limitations stay in a disclosure.
-- App details expose selected installation, reported origin, runtime, access, and maintenance warnings. Exact Flatpak identity and scope persist through review; a single reported DNF repo ID opens the configured-source view filtered to that exact ID.
-- Guide results count only when verified evidence belongs to a compatible action family. Other links use neutral “Result linked” wording.
+## 2. Deeper troubleshooting and hardware guidance
 
-Validate these flows with everyday KDE users: change and restore a setting, understand an app's source, and find the next step after an update failure. This user testing remains pending. Keep GNOME and Atomic support claims within the evidence available for each workflow.
+Health and global search expose exact application-start, network, battery/energy, display/docking, input, and printer symptoms. Each check uses bounded, cancellable local observations, preserves per-field failures and missing-tool limitations, and offers the existing relevant settings or workflow destination. Application troubleshooting selects one exact RPM or Flatpak installation and reads recent error counts only after the user confirms a prior launch attempt. It never starts the selected application. Network troubleshooting separates active link, default routes, resolver configuration, and NetworkManager's reported connectivity; it sends no external test traffic. Hardware guidance reads battery/power, KScreen, input-device/KDE settings, and CUPS metadata without changing devices or queues.
 
-## 3. Add hardware guidance after qualification
+The troubleshooting CLI uses the same versioned profiles and returns text or JSON. Older app and network sessions keep their original profile contract; incompatible comparisons remain not comparable. KDE energy, mouse, touchpad, and printer handoffs check the installed module before opening.
 
-- Add read-only battery and energy observations with checked KDE settings handoff.
-- Add display and session observations with before/after comparison and existing settings links.
-- Add printer and queue diagnostics only; do not change queues or send test prints until that behavior is separately qualified.
+Automated code and compatibility checks do not qualify Wayland behavior, physical hardware, private print jobs, or real network recovery. Those checks remain pending on the target Fedora/KDE setup.
+
+## 3. Continuity, printers, and personal workflows
+
+CUPS diagnostics show service state, queue state, and the current user's pending-job count. They store no document names or printer addresses and do not print or modify queues. Existing Health sessions can be explicitly rechecked and compared; unresolved or incompatible evidence stays visible as such. Upgrade preparation now saves the selected target, dated local observations, third-party source IDs, and user-confirmed backup statements. Older observations become stale after a target change, future timestamp, or seven days; backup statements remain user attestations.
+
+The **Folder workspace** preset configures Dolphin to reopen folders and tabs, open external folders in a new tab, and confirm before closing multiple tabs. It uses the regular profile review and independent verification.
+
+Stage completion requires its automated regression suite, `just verify`, catalog and packaging checks, and RPM build. Each stage also requires its own KDE/Fedora operational qualification and visual/accessibility pass. Physical Wayland and hardware evidence is recorded separately. GNOME and Atomic support claims remain limited to individually verified workflows.
 
 ## Published releases
 
@@ -38,4 +37,4 @@ Earlier release history and qualification reports remain available in the [chang
 
 ## Product boundaries
 
-Keep background monitoring while views are hidden, mesh/network sharing, AI features, and a plugin marketplace out of scope. Expand support for Fedora spins and Atomic desktops only when the affected workflows can be qualified.
+Keep background monitoring while views are hidden, mesh/network sharing, AI features, and a plugin marketplace out of scope. Direct battery charge-limit control, display changes, driver replacement, automatic repair, and unattended troubleshooting are also out of scope. Expand GNOME and Atomic support only when the affected workflows can be qualified.

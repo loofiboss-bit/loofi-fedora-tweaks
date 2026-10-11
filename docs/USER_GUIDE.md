@@ -160,8 +160,14 @@ Review the file yourself before sharing: masking is not full anonymization.
 
 In Updates, choose **Prepare for a Fedora upgrade**, select a policy-defined
 target, and run the local inspection. Read the package database, source,
-storage, and reboot observations independently. Confirm the backup checklist
-only after checking your own backup and recovery arrangements.
+storage, and reboot observations independently. The selected target, the date
+and state of the latest observations, detected third-party source IDs, and your
+backup confirmations are saved locally so you can return to the checklist.
+Observations are marked stale when you choose another target, the saved date is
+in the future, or more than seven days have passed. Backup confirmation dates
+remain saved, but are your statements and are never verified by Loofi. Confirm
+the backup checklist only after checking your own backup and recovery
+arrangements.
 
 ```bash
 loofi-fedora-tweaks --cli updates prepare-upgrade --target 44
@@ -263,8 +269,10 @@ Files also offers an editable location bar and simple/detailed dates. Missing Fi
 are reported as unavailable. See
 [TWEAKS.md](TWEAKS.md) for the complete generated list with Loofi standard values.
 
-Choose **Choose preset…** to review **Reduced motion** or **File navigation**
-for the detected desktop. Each supported setting shows its current and proposed
+Choose **Choose preset…** to review **Reduced motion**, **File navigation**, or
+the KDE-only **Folder workspace** preset for the detected desktop. Folder
+workspace asks Dolphin to reopen folders and tabs, open external folders in a
+new tab, and confirm before closing multiple tabs. Each supported setting shows its current and proposed
 value. Unavailable settings explain why; identical values are skipped. Uncheck
 any change you do not want, then confirm to apply the remaining changes one at a
 time. A failed verification stops the rest; completed changes remain in Activity.
@@ -288,7 +296,9 @@ Choose **Restore previous value** on an eligible row to review its current and
 previous values, then confirm. Loofi offers only the latest verified normal
 change per setting. It reads the setting again before restoring and blocks if
 it changed externally, a later change attempt exists, a scheme/profile was
-removed, or history is missing. Older runs without restoration metadata and
+removed, or history is missing. A blocked restore shows the saved previous
+value, last verified value, and current value, with the reason for the conflict.
+Older runs without restoration metadata and
 pruned history cannot be restored. Successful restoration consumes the offer;
 a new normal change creates a new offer. Restoration records a separate run
 and verifies it independently. There is no automatic rollback, bulk restore,
@@ -297,8 +307,9 @@ saved result.
 
 ## Health
 
-Health begins with a symptom such as a slow system, network trouble, storage
-pressure, or boot/deployment concern. The diagnostic phase is read-only and
+Health begins with a symptom such as an app that will not start, network trouble,
+battery or power, display or docking, input devices, printers, storage pressure,
+or a boot/deployment concern. The diagnostic phase is read-only and
 presents findings before it offers one safe next step. Depending on the
 evidence, the next step is a supported verified operation, instructions, or a
 native system-settings handoff. Storage trim and package cache cleanup are
@@ -306,6 +317,29 @@ available here. There is no **Fix all** action.
 
 Failed or unavailable probes remain explicit. A partial System Check preserves
 useful findings alongside source errors; missing evidence never proves health.
+Each hardware profile shows its available fields and per-field read limitations.
+Battery readings do not change charge limits. Display checks read available
+KScreen state without changing layouts. Input checks report detected device
+metadata and the observed KDE touchpad setting; no keystrokes or pointer
+movement are recorded. Input guidance can open the installed KDE Mouse or
+Touchpad module, or focus the existing tap-to-click control in Tweaks. Printer
+checks report CUPS service and queue state plus the current user's pending-job
+count. They do not save document names or printer addresses, send test prints,
+or change queues. A native KDE handoff opens only when the requested settings
+module is present.
+
+For **An app will not start**, use **Load installed applications** and select
+the exact RPM package or Flatpak ref and installation. This only reads the
+inventory; it does not start the app. If you already tried to start it, confirm
+that before collecting recent user-journal error counts. Raw log messages are
+not retained. A missing app installation and an unavailable inventory are
+reported separately.
+
+The network check keeps active link, IPv4/IPv6 default routes, resolver
+configuration, and NetworkManager's last reported connectivity as separate
+observations. A connected link alone does not prove internet access. No external
+traffic test is sent. Recheck explicitly after following the suggested next step;
+incompatible or incomplete session comparisons remain **Not comparable**.
 
 ## Updates
 
@@ -346,6 +380,9 @@ loofi check
 loofi updates check
 loofi troubleshoot profiles
 loofi troubleshoot run system_slow
+loofi troubleshoot run printer_problem
+loofi troubleshoot run application_failed --application-id org.mozilla.firefox --application-scope rpm
+loofi troubleshoot run application_failed --application-id app/org.mozilla.firefox/x86_64/stable --application-scope flatpak-user --launch-attempted
 loofi activity list
 loofi activity show EVENT_ID
 loofi doctor
@@ -355,6 +392,11 @@ loofi support-bundle
 Use `--json` before the command for machine-readable output. `changes` remains
 a compatibility alias during v29 for Activity list/detail and explicit saved
 plan completion. The CLI accepts registered commands and typed parameters only.
+Application troubleshooting requires `--application-id` and an exact scope:
+`rpm`, `flatpak-user`, `flatpak-system`, or
+`flatpak-installation:NAME`. Pass `--launch-attempted` only after manually
+trying to start that app; without it, no journal query is requested. Hardware
+profiles use the same bounded collectors as Health.
 
 ## Settings and appearance
 
@@ -532,7 +574,8 @@ Flatpak installation and full ref. RPM management stays in the native software
 manager. A matching name alone does not establish equivalence.
 
 In Health, choose **Storage is full** and run the read-only check. Its storage
-guide shows root, home and var measurements, cache and journal sizes, and unknown
+guide shows root, home and var measurements, free inodes, read-only state, a
+separate `/boot` where applicable, cache and journal sizes, and unknown
 measurements explicitly. Shared filesystem measurements are grouped rather than
 summed. Review DNF cleanup separately, or choose a Flatpak installation and open
 Apps to inspect unused runtimes. Journal retention remains manual guidance.

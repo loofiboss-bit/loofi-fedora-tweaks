@@ -11,6 +11,7 @@ from PyQt6.QtGui import QFont
 from PyQt6.QtTest import QTest
 from PyQt6.QtWidgets import QApplication
 
+from core.catalog_models import NativeHandoffId
 from core.troubleshooting.adapters import adapt_structured_source
 from core.troubleshooting.composition import compose_session
 from core.troubleshooting.lifecycle import new_session, start_session
@@ -20,6 +21,7 @@ from ui.components import (
     LocalViewSwitcher,
     PageScaffold,
     PrimaryButton,
+    SecondaryButton,
 )
 from ui.design.theme_manager import ThemeManager
 from ui.troubleshoot_widget import TroubleshootWidget
@@ -105,14 +107,6 @@ def _session():
         adapt_structured_source(
             profile_id="network_problem",
             variant="traditional",
-            source_id="dns-state",
-            state="empty",
-            started_at=1.0,
-            completed_at=2.0,
-        ),
-        adapt_structured_source(
-            profile_id="network_problem",
-            variant="traditional",
             source_id="change-journal",
             state="empty",
             started_at=1.0,
@@ -130,7 +124,7 @@ class TestTroubleshootWidget(unittest.TestCase):
     @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
     def test_device_symptoms_use_dedicated_profiles_and_native_cards(self, refresh):
         widget = TroubleshootWidget(history=_History())
-        for profile_id in ("sound_not_working", "bluetooth_not_working"):
+        for profile_id in ("sound_not_working", "bluetooth_not_working", "input_problem"):
             index = widget.profile_selector.findData(profile_id)
             widget.profile_selector.setCurrentIndex(index)
             self.assertEqual(widget.selected_profile_id(), profile_id)
@@ -138,7 +132,18 @@ class TestTroubleshootWidget(unittest.TestCase):
             other = "bluetooth_not_working" if profile_id == "sound_not_working" else "sound_not_working"
             self.assertTrue(widget.device_settings_cards[other].isHidden())
             self.assertIn("15 seconds", widget.technical_budget_label.text())
-        self.assertEqual(refresh.call_count, 2)
+        input_widget = widget.device_settings_cards["input_problem"]
+        self.assertEqual(
+            {card.handoff_id for card in widget.device_settings_handoffs["input_problem"]},
+            {NativeHandoffId.MOUSE_SETTINGS, NativeHandoffId.TOUCHPAD_SETTINGS},
+        )
+        tap_button = input_widget.findChild(SecondaryButton, "healthTapToClickTweak")
+        self.assertIsNotNone(tap_button)
+        emitted = []
+        widget.routeRequested.connect(lambda route, context: emitted.append((route, context)))
+        tap_button.click()
+        self.assertEqual(emitted, [("tune", {"tweak_id": "kde-tap-to-click"})])
+        self.assertEqual(refresh.call_count, 4)
         widget.cleanup()
         widget.deleteLater()
 
@@ -153,7 +158,7 @@ class TestTroubleshootWidget(unittest.TestCase):
         self.assertEqual(len(widget.findChildren(PageScaffold)), 1)
         self.assertEqual(len(widget.findChildren(LocalViewSwitcher)), 1)
         self.assertEqual(len(widget.findChildren(PrimaryButton)), 1)
-        self.assertEqual(widget.profile_selector.count(), 9)
+        self.assertEqual(widget.profile_selector.count(), 13)
         self.assertEqual(widget.profile_label.text(), "What is going wrong?")
         self.assertEqual(widget.profile_label.buddy(), widget.profile_selector)
         self.assertEqual(factory_calls, [])
@@ -198,6 +203,34 @@ class TestTroubleshootWidget(unittest.TestCase):
 
         self.assertEqual(calls, [])
         self.assertFalse(widget.start_notice.isHidden())
+
+    def test_exact_inventory_selection_preserves_named_flatpak_scope(self):
+        from services.software.installed_applications import InstalledApplication, InstalledInventory
+
+        widget = TroubleshootWidget(history=_History())
+        self.addCleanup(widget.deleteLater)
+        widget.profile_selector.setCurrentIndex(widget.profile_selector.findData("app_wont_start"))
+        widget._application_inventory_loaded(InstalledInventory((InstalledApplication(
+            "KWrite", "org.kde.kwrite", "flatpak", "work-apps",
+            "app/org.kde.kwrite/x86_64/stable",
+        ),)))
+
+        widget.application_selection.setCurrentIndex(1)
+
+        self.assertEqual(widget.application_input.text(), "app/org.kde.kwrite/x86_64/stable")
+        self.assertEqual(widget.application_scope.currentData(), "flatpak-installation:work-apps")
+        widget._manual_application_edited("manual-package")
+        self.assertEqual(widget.application_scope.currentData(), "rpm")
+        self.assertEqual(widget.application_selection.currentIndex(), 0)
+
+    def test_all_hardware_symptoms_are_preselected_without_starting(self):
+        widget = TroubleshootWidget(history=_History())
+        self.addCleanup(widget.deleteLater)
+        for profile_id in ("battery_problem", "display_problem", "input_problem", "printer_problem"):
+            with self.subTest(profile=profile_id):
+                self.assertTrue(widget.preselect_profile(profile_id))
+                self.assertEqual(widget.selected_profile_id(), profile_id)
+                self.assertFalse(widget.progress.isVisible())
 
     def test_rendered_finding_emits_inert_route_and_preselection(self):
         session = _session()

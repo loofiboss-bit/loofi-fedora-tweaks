@@ -14,6 +14,7 @@ from helpers import (
     select_search,
     wait_for_description,
     wait_for_node,
+    wait_for_node_containing,
     wait_for_polkit_password,
     wait_until,
 )
@@ -129,3 +130,23 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app) -> None:
     authenticate_polkit(allow_cached=True)
     wait_for_feedback("Saved — Previous value restored and verified: 3 (Fedora default)", timeout=90)
     assert dnf_parallel_downloads() == before
+
+
+def test_device_troubleshooting_profiles_are_reachable_from_health_and_search(loofi_app) -> None:
+    wait_for_node("Health", role="table cell").click()
+    profiles = (
+        ("charging", "Battery or power problem", "Battery charge, AC power, and energy profile"),
+        ("docking", "Display or docking problem", "Connected displays, active modes, and scale"),
+        ("touchpad", "Keyboard or touchpad problem", "Keyboard, pointer, and touchpad metadata"),
+        ("print queue", "Printer or print queue problem", "CUPS service, queue state, and current-user jobs"),
+    )
+    for _query, symptom, _check_label in profiles:
+        wait_for_node(symptom, role="panel")
+    for query, symptom, check_label in profiles:
+        click("Search routes, settings, and actions")
+        search = wait_for_node("Global search", role="text")
+        search.element.send_keys(query)
+        wait_for_node_containing(symptom, role="list item").click()
+        selected = wait_for_node(symptom, role="panel")
+        assert "Selected symptom" in selected.description
+        wait_for_node_containing(check_label, role="label")

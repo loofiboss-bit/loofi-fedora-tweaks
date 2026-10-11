@@ -64,13 +64,12 @@ class TestTroubleshootingLifecycle(unittest.TestCase):
             completed_at=4.0,
             source_results=(
                 self._completed("network-state"),
-                self._completed("dns-state"),
                 self._completed("change-journal"),
             ),
         )
 
         self.assertEqual(result.state, "completed")
-        self.assertEqual(len(result.completed_sources), 3)
+        self.assertEqual(len(result.completed_sources), 2)
 
     def test_partial_preserves_unavailable_and_failed_sources(self):
         result = finalize_session(
@@ -78,19 +77,11 @@ class TestTroubleshootingLifecycle(unittest.TestCase):
             completed_at=4.0,
             source_results=(
                 self._completed("network-state"),
-                SourceResult.unavailable(
-                    "dns-state",
-                    at=3.0,
-                    timeout_seconds=5.0,
-                    reason_code="networkmanager-unavailable",
-                    message="NetworkManager state is unavailable.",
-                ),
                 self._failed("change-journal"),
             ),
         )
 
         self.assertEqual(result.state, "partial")
-        self.assertEqual(result.unavailable_sources, ("dns-state",))
         self.assertEqual(result.failed_sources, ("change-journal",))
 
     def test_missing_sources_become_explicitly_unavailable(self):
@@ -103,23 +94,27 @@ class TestTroubleshootingLifecycle(unittest.TestCase):
         self.assertEqual(result.state, "partial")
         self.assertEqual(
             result.unavailable_sources,
-            ("change-journal", "dns-state", "network-state"),
+            ("change-journal", "network-state"),
         )
 
     def test_timeout_is_bounded_and_never_becomes_all_clear(self):
+        budget = require_profile("network_problem").budget_for(
+            "network-state", "traditional"
+        )
+        self.assertIsNotNone(budget)
         timed_out = SourceResult(
             "network-state",
             "timed_out",
             2.0,
-            7.0,
-            5.0,
+            12.0,
+            budget.timeout_seconds,
             reason_code="source-timeout",
             message="Network state collection reached its timeout.",
         )
         result = finalize_session(
             self._running(),
-            completed_at=7.0,
-            source_results=(timed_out, self._completed("dns-state")),
+            completed_at=12.0,
+            source_results=(timed_out, self._completed("change-journal")),
         )
 
         self.assertEqual(result.state, "partial")
@@ -131,7 +126,6 @@ class TestTroubleshootingLifecycle(unittest.TestCase):
             completed_at=4.0,
             source_results=(
                 self._failed("network-state"),
-                self._failed("dns-state"),
                 self._failed("change-journal"),
             ),
         )
@@ -159,7 +153,7 @@ class TestTroubleshootingLifecycle(unittest.TestCase):
                 for item in result.source_results
                 if item.state == "cancelled"
             ),
-            ("change-journal", "dns-state"),
+            ("change-journal",),
         )
 
     def test_malformed_transition_and_unknown_source_fail_closed(self):

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import shutil
 import time
+import re
 from dataclasses import asdict, dataclass
 from datetime import datetime, timezone
 from threading import Event
@@ -21,6 +22,18 @@ from services.software.restart_advice import RESTART_QUERY, parse_restart_result
 UPGRADE_DOCUMENTATION = "https://docs.fedoraproject.org/en-US/quick-docs/upgrading-fedora-offline/"
 ATOMIC_DOCUMENTATION = "https://fedoraproject.org/atomic-desktops/"
 LIMITATION = "Local observations do not predict the next release transaction. No upgrade is downloaded or applied."
+_FEDORA_REPOSITORY_ID = re.compile(r"(?:fedora|updates)(?:-[a-z0-9_.-]+)?\Z", re.IGNORECASE)
+
+
+def _potential_third_party_source_ids(repositories: dict[str, bool]) -> list[str]:
+    """Return bounded repository IDs outside Fedora's standard repository names."""
+    source_ids = [
+        repository_id
+        for repository_id in repositories
+        if not _FEDORA_REPOSITORY_ID.fullmatch(repository_id)
+        and re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9_.:+-]{0,127}", repository_id)
+    ]
+    return sorted(source_ids, key=str.casefold)[:256]
 
 
 class UpgradePreparationRuntime(OverviewRuntime):
@@ -134,7 +147,8 @@ class UpgradePreparationService:
                         repositories.get("loofi-fedora-tweaks", False))
                     known["loofi-copr"] = "enabled" if loofi_enabled else "disabled"
                     sources = {"state": "observed", "enabled_count": sum(repositories.values()),
-                               "known_sources": known, "reason": "local_configuration_only"}
+                               "known_sources": known, "third_party_source_ids": _potential_third_party_source_ids(repositories),
+                               "reason": "local_configuration_only"}
                 except (ValueError, TypeError):
                     sources = {"state": "unknown", "reason": "invalid_response"}
             advice = parse_restart_result(query(RESTART_QUERY))

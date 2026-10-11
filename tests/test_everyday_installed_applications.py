@@ -1,5 +1,6 @@
 """Exact installation inventory and fail-closed removal regressions."""
 import unittest
+import sys
 from types import SimpleNamespace
 from unittest.mock import Mock, patch
 
@@ -13,6 +14,38 @@ ROW = "Firefox\torg.mozilla.firefox\tapp/org.mozilla.firefox/x86_64/stable\t1\t2
 
 
 class InstalledApplicationTests(unittest.TestCase):
+    def test_default_inventory_reader_caps_output_and_honors_cancellation(self):
+        oversized = InstalledApplicationService._probe(
+            [sys.executable, "-c", "import sys; sys.stdout.write('x' * 2000000)"],
+            timeout=2,
+        )
+        self.assertFalse(oversized.success)
+        self.assertIn("output limit", oversized.message.casefold())
+        self.assertEqual(oversized.stdout, "")
+
+        cancelled = InstalledApplicationService._probe(
+            [sys.executable, "-c", "import time; time.sleep(2)"],
+            timeout=2,
+            cancelled=lambda: True,
+        )
+        self.assertFalse(cancelled.success)
+        self.assertIn("cancelled", cancelled.message.casefold())
+
+    def test_cancelled_selection_inventory_preserves_completed_source_as_partial(self):
+        cancellation_requested = False
+
+        def probe(vector):
+            nonlocal cancellation_requested
+            if tuple(vector)[:2] == ("flatpak", "list"):
+                cancellation_requested = True
+                return ActionResult(True, "ok", stdout=ROW)
+            raise AssertionError("RPM inventory must not start after cancellation.")
+
+        inventory = InstalledApplicationService(probe=probe).snapshot(cancelled=lambda: cancellation_requested)
+        self.assertEqual(len(inventory.applications), 1)
+        self.assertIn("fedora", inventory.unknown_sources)
+        self.assertTrue(any("cancelled" in error.casefold() for error in inventory.errors))
+
     def test_flatpak_list_short_ref_is_normalized(self):
         apps = parse_flatpak_inventory(ROW.replace("app/org.mozilla", "org.mozilla"))
         self.assertEqual(apps[0].ref, "app/org.mozilla.firefox/x86_64/stable")
@@ -218,7 +251,7 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
 
     def test_permission_dialog_stays_readable_with_large_text_and_theme_palettes(self):
         from PyQt6.QtCore import Qt
-        from PyQt6.QtGui import QColor, QFont, QPalette
+        from PyQt6.QtGui import QFont, QPalette
         from PyQt6.QtTest import QTest
         from PyQt6.QtWidgets import QDialogButtonBox, QPlainTextEdit
         from ui.installed_applications import FlatpakPermissionsDialog
@@ -228,14 +261,16 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
         app = parse_flatpak_inventory(ROW)[0]
         permissions = SimpleNamespace(permissions=[FlatpakPermission("Context", "shared", "network")])
         original_palette = self.app.palette()
+        original_stylesheet = self.app.styleSheet()
+        original_theme = self.app.property("loofiTheme")
         try:
-            for base, text in (("#ffffff", "#111111"), ("#202124", "#f1f3f4")):
-                palette = QPalette(original_palette)
-                palette.setColor(QPalette.ColorRole.Base, QColor(base))
-                palette.setColor(QPalette.ColorRole.Text, QColor(text))
-                palette.setColor(QPalette.ColorRole.Window, QColor(base))
-                palette.setColor(QPalette.ColorRole.WindowText, QColor(text))
-                self.app.setPalette(palette)
+            from ui.design.theme_manager import ThemeManager
+
+            manager = ThemeManager()
+            for theme_name in ("light", "dark", "highcontrast"):
+                self.assertTrue(manager.apply(self.app, theme_name))
+                self.assertEqual(self.app.property("loofiTheme"), theme_name)
+                self.assertEqual(manager.palette_for(theme_name).contrast_failures(), {})
                 dialog = FlatpakPermissionsDialog(app, permissions)
                 font = QFont(dialog.font())
                 font.setPointSize(20)
@@ -246,7 +281,7 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
                 details = dialog.findChild(QPlainTextEdit)
                 self.assertTrue(details.isReadOnly())
                 self.assertGreater(details.height(), 0)
-                self.assertEqual(details.palette().color(QPalette.ColorRole.Base).name(), base)
+                self.assertIn("network", details.toPlainText().casefold())
                 close = dialog.findChild(QDialogButtonBox).button(QDialogButtonBox.StandardButton.Close)
                 close.setFocus()
                 QTest.keyClick(close, Qt.Key.Key_Return)
@@ -254,7 +289,9 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
                 self.assertFalse(dialog.isVisible())
                 dialog.deleteLater()
         finally:
+            self.app.setStyleSheet(original_stylesheet)
             self.app.setPalette(original_palette)
+            self.app.setProperty("loofiTheme", original_theme)
 
     def test_profile_selection_dialog_supports_keyboard_and_large_text(self):
         from PyQt6.QtCore import Qt

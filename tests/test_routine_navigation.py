@@ -51,6 +51,25 @@ class RoutineNavigationTests(unittest.TestCase):
         owner.switch_to_route.assert_not_called()
         owner._open_action_center_request.assert_not_called()
 
+    def test_touchpad_tweak_context_focuses_existing_setting(self):
+        owner = MagicMock()
+        owner.switch_to_route.return_value = True
+        entry = object()
+        owner._sidebar_index = {"utility_tune": entry}
+
+        MainWindow._open_route_request(owner, "tune", {"tweak_id": "kde-tap-to-click"})
+
+        owner.switch_to_route.assert_called_once_with("tune")
+        owner._real_widget_for_entry.assert_called_once_with(entry)
+        owner._real_widget_for_entry.return_value.focus_tweak.assert_called_once_with("kde-tap-to-click")
+
+    def test_unknown_tweak_preselection_does_not_open_route(self):
+        owner = MagicMock()
+
+        MainWindow._open_route_request(owner, "tune", {"tweak_id": "other-setting"})
+
+        owner.switch_to_route.assert_not_called()
+
     def test_guide_search_loads_only_overview_and_opens_the_requested_guide(self):
         owner = MagicMock()
         overview_entry = object()

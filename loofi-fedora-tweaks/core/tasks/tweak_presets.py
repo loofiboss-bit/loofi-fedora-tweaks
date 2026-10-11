@@ -71,6 +71,18 @@ PRESETS: tuple[TweakPreset, ...] = (
             },
         },
     ),
+    TweakPreset(
+        "folder-workspace",
+        "Folder workspace",
+        "Reopen Dolphin folders and tabs, open external folders in a new tab, and confirm before closing multiple tabs.",
+        {
+            "kde": {
+                "kde-dolphin-remember-tabs": "true",
+                "kde-dolphin-external-folders-new-tab": "true",
+                "kde-dolphin-confirm-close-tabs": "true",
+            },
+        },
+    ),
 )
 BY_PRESET_ID = {preset.id: preset for preset in PRESETS}
 

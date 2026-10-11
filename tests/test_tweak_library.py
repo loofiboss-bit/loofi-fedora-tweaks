@@ -59,7 +59,7 @@ class ProfileLibraryTests(unittest.TestCase):
         glob.return_value = [Path('/test/profiles/' + 'a' * 64 + '.json')]
         load.side_effect = ValueError('bad JSON')
         entries = self.library.list(profile('kde'))
-        self.assertEqual(len(entries), 5)
+        self.assertEqual(len(entries), 6)
         self.assertTrue(all(entry.builtin for entry in entries))
 
     def test_companion_presets_use_current_supported_choices(self):

@@ -3,22 +3,21 @@
 from __future__ import annotations
 
 from collections.abc import Callable
-from datetime import datetime
+import time
 from typing import Any, Protocol
 
 from PyQt6.QtCore import Qt, QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
+    QCheckBox,
     QComboBox,
     QHBoxLayout,
     QLabel,
     QLineEdit,
-    QListWidget,
     QVBoxLayout,
     QWidget,
 )
 
 from core.troubleshooting.models import (
-    NextStep,
     TroubleshootingComparison,
     TroubleshootingFinding,
     TroubleshootingSession,
@@ -29,7 +28,6 @@ from ui.components import (
     ActionProgress,
     Card,
     DetailsDisclosure,
-    EmptyState,
     GhostButton,
     InlineNotice,
     LocalViewItem,
@@ -37,14 +35,13 @@ from ui.components import (
     PageScaffold,
     PrimaryButton,
     SecondaryButton,
-    SectionHeader,
-    StatusBadge,
 )
 from ui.components.layout import CurrentPageStack
 from ui.health_symptoms import HealthSymptomCardsMixin
 from ui.companion_health import CompanionHealthMixin
+from ui.operation_worker import OperationControllerQtAdapter
+from ui.troubleshoot_results import TroubleshootResultsMixin
 from ui.troubleshoot_presentation import (
-    SESSION_STATUS,
     SOURCE_LABELS,
     STATE_LABELS,
     SYMPTOMS,
@@ -77,7 +74,7 @@ class _DefaultSessionHistory:
         )
 
 
-class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget):
+class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, TroubleshootResultsMixin, QWidget):
     """One guided surface over the closed Compass profiles."""
 
     stopped = pyqtSignal()
@@ -93,14 +90,22 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         *,
         worker_factory: Callable[[str, dict[str, Any], QWidget], Any] | None = None,
         history: _SessionHistory | None = None,
+        application_inventory_service: Any | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
         self.worker_factory = worker_factory
         self.history = history or _DefaultSessionHistory()
+        self.application_inventory_service = application_inventory_service
+        self._application_inventory: Any | None = None
+        self.application_inventory_adapter = OperationControllerQtAdapter(parent=self)
+        self.application_inventory_adapter.finished.connect(self._application_inventory_loaded)
+        self.application_inventory_adapter.failed.connect(self._application_inventory_failed)
+        self.application_inventory_adapter.stopped.connect(self._application_inventory_stopped)
         self._worker: Any | None = None
         self._update_run_id = ""
         self._closing = False
+        self._stop_emitted = False
         self._stop_timer: QTimer | None = None
         self._current_session: TroubleshootingSession | None = None
         self._comparison: TroubleshootingComparison | None = None
@@ -183,12 +188,42 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         # Keep the closed selector as the single source for routing and profile IDs.
         self.profile_selector.hide()
         self._build_symptom_cards(choose)
+        self.application_selection = QComboBox()
+        self.application_selection.setObjectName("troubleshootApplicationSelection")
+        self.application_selection.setAccessibleName(self.tr("Select an installed application and exact installation"))
+        self.application_selection.addItem(self.tr("Select an installed application (load inventory first)"), None)
+        self.application_selection.currentIndexChanged.connect(self._select_inventory_application)
+        self.application_selection.hide()
+        choose.add_widget(self.application_selection)
+        self.application_inventory_refresh = SecondaryButton(self.tr("Load installed applications"))
+        self.application_inventory_refresh.setObjectName("troubleshootApplicationInventoryRefresh")
+        self.application_inventory_refresh.clicked.connect(self.refresh_application_inventory)
+        self.application_inventory_refresh.hide()
+        choose.add_widget(self.application_inventory_refresh)
+        self.application_inventory_status = QLabel(self.tr("Loading the inventory is optional and will not start an application."))
+        self.application_inventory_status.setObjectName("troubleshootApplicationInventoryStatus")
+        self.application_inventory_status.setWordWrap(True)
+        self.application_inventory_status.hide()
+        choose.add_widget(self.application_inventory_status)
         self.application_input = QLineEdit()
         self.application_input.setObjectName("troubleshootApplicationId")
-        self.application_input.setAccessibleName(self.tr("Application command"))
-        self.application_input.setPlaceholderText(self.tr("Application command, for example firefox"))
+        self.application_input.setAccessibleName(self.tr("Exact RPM package name or full Flatpak ref"))
+        self.application_input.setPlaceholderText(self.tr("RPM package name or full app/ID/architecture/branch ref"))
+        self.application_input.textEdited.connect(self._manual_application_edited)
         self.application_input.hide()
         choose.add_widget(self.application_input)
+        self.application_scope = QComboBox()
+        self.application_scope.setObjectName("troubleshootApplicationScope")
+        self.application_scope.setAccessibleName(self.tr("Application installation"))
+        for scope, label in (("rpm", "RPM package"), ("flatpak-user", "Flatpak user installation"), ("flatpak-system", "Flatpak system installation")):
+            self.application_scope.addItem(self.tr(label), scope)
+        self.application_scope.hide()
+        choose.add_widget(self.application_scope)
+        self.application_launch_attempted = QCheckBox(self.tr("I have already tried to start this app"))
+        self.application_launch_attempted.setObjectName("troubleshootApplicationLaunchAttempted")
+        self.application_launch_attempted.setAccessibleDescription(self.tr("If selected, read a bounded recent log summary. Raw log text is discarded."))
+        self.application_launch_attempted.hide()
+        choose.add_widget(self.application_launch_attempted)
         self._build_update_choices(choose)
         self.profile_limitation = InlineNotice("", "", kind="warning")
         self.profile_limitation.setObjectName("troubleshootProfileLimitation")
@@ -265,146 +300,6 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         self._profile_changed()
         return page
 
-    def _results_page(self) -> QWidget:
-        page = QWidget()
-        layout = QVBoxLayout(page)
-        layout.setContentsMargins(0, 0, 0, 0)
-        layout.setSpacing(16)
-        layout.addWidget(
-            SectionHeader(
-                self.tr("3. Results"),
-                self.tr("Review what completed, what did not, and the safest next step."),
-            )
-        )
-        self.result_notice = InlineNotice(
-            self.tr("No troubleshooting session yet"),
-            self.tr("Choose a problem and start an explicit read-only check."),
-            kind="neutral",
-        )
-        self.result_notice.setObjectName("troubleshootResultNotice")
-        layout.addWidget(self.result_notice)
-
-        self.result_summary = Card(self.tr("Session summary"))
-        self.result_summary.setObjectName("troubleshootSessionSummary")
-        self.result_badge = StatusBadge(self.tr("No session"), kind="neutral")
-        self.result_summary.add_widget(self.result_badge)
-        self.result_meta = QLabel()
-        self.result_meta.setObjectName("troubleshootResultMeta")
-        self.result_meta.setWordWrap(True)
-        self.result_summary.add_widget(self.result_meta)
-        self.partial_warning = InlineNotice("", "", kind="warning")
-        self.partial_warning.setObjectName("troubleshootPartialWarning")
-        self.partial_warning.hide()
-        self.result_summary.add_widget(self.partial_warning)
-        self.result_checked = QLabel()
-        self.result_checked.setObjectName("troubleshootCheckedSummary")
-        self.result_checked.setWordWrap(True)
-        self.result_summary.add_widget(self.result_checked)
-        self.sources_disclosure = DetailsDisclosure(
-            summary=self.tr("Show technical details")
-        )
-        self.sources_disclosure.setObjectName("troubleshootSourceDisclosure")
-        self.result_summary.add_widget(self.sources_disclosure)
-        layout.addWidget(self.result_summary)
-
-        from ui.space_guide import SpaceGuideCard
-
-        self.space_guide = SpaceGuideCard(self)
-        self.space_guide.actionRequested.connect(self.actionCenterRequested)
-        self.space_guide.routeRequested.connect(self.routeRequested)
-        self.space_guide.recheckRequested.connect(self._recheck_storage)
-        self.space_guide.hide()
-        layout.addWidget(self.space_guide)
-
-        findings = Card(
-            self.tr("Current findings"),
-            self.tr("Select a finding to review its evidence and one safe next step."),
-        )
-        findings.setObjectName("troubleshootFindingsCard")
-        self.finding_list = QListWidget()
-        self.finding_list.setObjectName("troubleshootFindingList")
-        self.finding_list.setAccessibleName(self.tr("Troubleshooting findings"))
-        self.finding_list.currentRowChanged.connect(self._finding_selected)
-        findings.add_widget(self.finding_list)
-        self.finding_empty = EmptyState(
-            self.tr("No current findings"),
-            self.tr(
-                "No issue was found by the checks that completed. "
-                "Review incomplete checks before treating this as an all-clear."
-            ),
-        )
-        self.finding_empty.setObjectName("troubleshootFindingEmpty")
-        findings.add_widget(self.finding_empty)
-        layout.addWidget(findings)
-
-        self.finding_detail = Card(self.tr("Selected finding"))
-        self.finding_detail.setObjectName("troubleshootFindingDetail")
-        self.finding_status = StatusBadge(self.tr("No finding selected"), kind="neutral")
-        self.finding_detail.add_widget(self.finding_status)
-        self.finding_summary = QLabel()
-        self.finding_summary.setWordWrap(True)
-        self.finding_summary.setObjectName("troubleshootFindingSummary")
-        self.finding_detail.add_widget(self.finding_summary)
-        self.evidence_disclosure = DetailsDisclosure(
-            summary=self.tr("Show technical evidence")
-        )
-        self.evidence_disclosure.setObjectName("troubleshootEvidenceDisclosure")
-        self.finding_detail.add_widget(self.evidence_disclosure)
-        self.next_step_label = QLabel()
-        self.next_step_label.setWordWrap(True)
-        self.next_step_label.setObjectName("troubleshootNextStepLabel")
-        self.finding_detail.add_widget(self.next_step_label)
-        self.next_step_button = SecondaryButton(
-            self.tr("Open safe next step"),
-            description=self.tr(
-                "Open the existing supported workflow or settings handoff. "
-                "No change is applied automatically."
-            ),
-        )
-        self.next_step_button.setObjectName("troubleshootNextStep")
-        self.next_step_button.clicked.connect(self._activate_next_step)
-        self.finding_detail.add_widget(self.next_step_button)
-        self.recheck_button = SecondaryButton(self.tr("Recheck after returning"), description=self.tr("Run the read-only symptom check again only when you choose."))
-        self.recheck_button.setObjectName("troubleshootRecheck")
-        self.recheck_button.clicked.connect(self.start_session)
-        self.recheck_button.hide()
-        self.finding_detail.add_widget(self.recheck_button)
-        self.finding_detail.hide()
-        layout.addWidget(self.finding_detail)
-
-        self.related_card = Card(
-            self.tr("Possibly related"),
-            self.tr(
-                "These changes happened nearby in time or affect the same component. "
-                "They are not presented as proven causes."
-            ),
-        )
-        self.related_card.setObjectName("troubleshootRelatedChanges")
-        self.related_label = QLabel()
-        self.related_label.setWordWrap(True)
-        self.related_card.add_widget(self.related_label)
-        self.related_card.hide()
-        layout.addWidget(self.related_card)
-
-        self._build_companion_health(layout)
-
-        self.comparison_card = Card(
-            self.tr("Follow-up comparison"),
-            self.tr(
-                "A later compatible session can show whether each original finding "
-                "is resolved, unchanged, worsened, or not comparable."
-            ),
-        )
-        self.comparison_card.setObjectName("troubleshootComparison")
-        self.comparison_label = QLabel()
-        self.comparison_label.setWordWrap(True)
-        self.comparison_card.add_widget(self.comparison_label)
-        self.comparison_card.hide()
-        layout.addWidget(self.comparison_card)
-
-        layout.addStretch()
-        return page
-
     def _profile_changed(self, *_args: Any) -> None:
         self._update_symptom_cards()
         is_updates = self._selected_symptom()[2] == "updates_failed"
@@ -437,6 +332,11 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         self.technical_budget_label.setText("\n".join(technical_lines))
         requires_application = dict(profile.parameter_schema).get("application_id") is not None
         self.application_input.setVisible(requires_application)
+        self.application_scope.setVisible(requires_application and "application_scope" in dict(profile.parameter_schema))
+        self.application_launch_attempted.setVisible(requires_application and "launch_attempted" in dict(profile.parameter_schema))
+        self.application_selection.setVisible(requires_application and profile.version >= 2)
+        self.application_inventory_refresh.setVisible(requires_application and profile.version >= 2)
+        self.application_inventory_status.setVisible(requires_application and profile.version >= 2)
         symptom_limitation = self._selected_symptom()[3]
         if symptom_limitation:
             message = self.tr(symptom_limitation)
@@ -478,12 +378,27 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
                 self.start_notice.set_notice(
                     "warning",
                     self.tr("Application is required"),
-                    self.tr("Enter the application command before starting this profile."),
+                    self.tr("Select an installed application or enter its exact RPM package name or full Flatpak reference."),
                 )
                 self.start_notice.show()
                 self.application_input.setFocus()
                 return
             parameters["application_id"] = application_id
+            if "application_scope" in dict(profile.parameter_schema):
+                parameters["application_scope"] = str(self.application_scope.currentData())
+            if "launch_attempted" in dict(profile.parameter_schema):
+                parameters["launch_attempted"] = self.application_launch_attempted.isChecked()
+            try:
+                profile.validate_parameters(parameters)
+            except ValueError as exc:
+                self.start_notice.set_notice(
+                    "warning",
+                    self.tr("Application selection needs review"),
+                    self.tr("Use a package name for RPM or a full app/ID/architecture/branch reference for Flatpak. %1").replace("%1", str(exc)),
+                )
+                self.start_notice.show()
+                self.application_input.setFocus()
+                return
 
         if self.worker_factory is None:
             from core.workers.troubleshooting_worker import TroubleshootingWorker
@@ -508,6 +423,101 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         worker.error.connect(self._on_error)
         worker.start()
 
+    def refresh_application_inventory(self) -> None:
+        """Read the existing RPM and Flatpak inventory only after explicit activation."""
+        if self.application_inventory_adapter.busy:
+            return
+        if self.application_inventory_service is None:
+            from services.software.installed_applications import InstalledApplicationService
+
+            self.application_inventory_service = InstalledApplicationService()
+        self.application_inventory_refresh.setEnabled(False)
+        self.application_inventory_status.setText(self.tr("Reading installed RPM and Flatpak application identities…"))
+        reader = getattr(self.application_inventory_service, "snapshot_for_troubleshooting", None)
+        operation = (lambda: reader(cancelled=lambda: self.application_inventory_adapter.cancel_requested)) if callable(reader) else self.application_inventory_service.snapshot
+        if not self.application_inventory_adapter.start(operation):
+            self.application_inventory_refresh.setEnabled(True)
+            self.application_inventory_status.setText(self.tr("Application inventory could not be started."))
+
+    def _application_inventory_loaded(self, inventory: Any) -> None:
+        from services.software.installed_applications import InstalledInventory
+
+        if not isinstance(inventory, InstalledInventory):
+            self.application_inventory_status.setText(self.tr("Application inventory returned an unknown result."))
+            return
+        self._application_inventory = inventory
+        self.application_selection.blockSignals(True)
+        self.application_selection.clear()
+        self.application_selection.addItem(self.tr("Select an installed application"), None)
+        applications = sorted(inventory.applications, key=lambda app: (app.name.casefold(), app.installation, app.ref))[:2048]
+        for app in applications:
+            if app.source == "fedora":
+                identifier, scope, source_label = app.app_id, "rpm", self.tr("RPM")
+            else:
+                identifier = app.ref
+                source_label = self.tr("Flatpak")
+                scope = f"flatpak-{app.installation}" if app.installation in {"user", "system"} else f"flatpak-installation:{app.installation}"
+            label = self.tr("%1 · %2 · %3").replace("%1", app.name).replace("%2", source_label).replace("%3", app.installation)
+            self.application_selection.addItem(label, {"identifier": identifier, "scope": scope})
+        self.application_selection.blockSignals(False)
+        limitations = [self.tr("Some installation sources could not be checked: %1").replace("%1", ", ".join(sorted(inventory.unknown_sources)))] if inventory.unknown_sources else []
+        if any("cancelled" in error.casefold() for error in inventory.errors):
+            limitations.append(self.tr("The inventory read was cancelled; any displayed installations are partial. No app was started."))
+        if len(inventory.applications) > len(applications):
+            limitations.append(self.tr("The displayed selection is limited to the first 2,048 inventory entries."))
+        if not applications:
+            limitations.append(self.tr("No installed application was reported. Enter an exact package name or Flatpak ref to check for a missing installation."))
+        if not limitations:
+            limitations.append(self.tr("Select one exact installation. This inventory read did not start any app."))
+        self.application_inventory_status.setText("\n".join(limitations))
+
+    def _application_inventory_failed(self, _message: str) -> None:
+        self._application_inventory = None
+        self.application_inventory_status.setText(self.tr("Installed application inventory could not be read. You can still enter an exact package name or Flatpak ref."))
+
+    def _application_inventory_stopped(self) -> None:
+        if hasattr(self, "application_inventory_refresh"):
+            self.application_inventory_refresh.setEnabled(True)
+        self._emit_stopped_if_ready()
+
+    def _select_inventory_application(self, index: int) -> None:
+        selection = self.application_selection.itemData(index)
+        if not isinstance(selection, dict):
+            return
+        self.application_input.setText(str(selection.get("identifier", "")))
+        scope = str(selection.get("scope", ""))
+        scope_index = self.application_scope.findData(scope)
+        if scope_index < 0 and scope.startswith("flatpak-installation:"):
+            installation = scope.partition(":")[2]
+            self.application_scope.addItem(self.tr("Flatpak named installation: %1").replace("%1", installation), scope)
+            scope_index = self.application_scope.findData(scope)
+        if scope_index >= 0:
+            self.application_scope.setCurrentIndex(scope_index)
+
+    def _manual_application_edited(self, _text: str) -> None:
+        if self.application_selection.currentIndex() > 0:
+            self.application_selection.blockSignals(True)
+            self.application_selection.setCurrentIndex(0)
+            self.application_selection.blockSignals(False)
+            self.application_scope.setCurrentIndex(self.application_scope.findData("rpm"))
+
+    def preselect_profile(self, profile_id: str) -> bool:
+        """Select one exact symptom for review without starting collection."""
+        symptom = next(
+            (item for item in self._SYMPTOMS if item[2] == profile_id),
+            None,
+        )
+        if symptom is None:
+            return False
+        index = self.profile_selector.findData(symptom[0])
+        if index < 0:
+            return False
+        self.profile_selector.setCurrentIndex(index)
+        self.view_switcher.set_active_view("guided")
+        self._select_view("guided")
+        self.start_button.setFocus()
+        return True
+
     def cancel_session(self) -> None:
         worker = self._worker
         if worker is None or not worker.isRunning():
@@ -515,6 +525,43 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         self.cancel_button.setEnabled(False)
         self.progress.set_busy(self.tr("Cancelling and preserving the previous session…"))
         worker.cancel()
+
+    @property
+    def busy(self) -> bool:
+        """Keep the owning window alive while either bounded reader is running."""
+        worker = self._worker
+        return bool((worker is not None and worker.isRunning()) or self.application_inventory_adapter.busy)
+
+    def request_stop(self) -> None:
+        """Cooperatively stop this page's workers during application shutdown."""
+        if not self._closing:
+            self._stop_emitted = False
+        self._closing = True
+        self.application_inventory_adapter.request_stop()
+        self.cancel_session()
+        self._emit_stopped_if_ready()
+
+    def wait_for_stop(self, timeout_ms: int = 5000) -> bool:
+        """Share a bounded wait across the troubleshooting and inventory readers."""
+        deadline = time.monotonic() + max(0, int(timeout_ms)) / 1000
+        worker = self._worker
+        if worker is not None and worker.isRunning():
+            if not worker.wait(max(0, int((deadline - time.monotonic()) * 1000))):
+                return False
+        remaining = max(0, int((deadline - time.monotonic()) * 1000))
+        stopped = self.application_inventory_adapter.wait_for_stop(remaining)
+        self._emit_stopped_if_ready()
+        return stopped and not self.busy
+
+    def cleanup(self) -> None:
+        """Stop readers without allowing a live QThread to outlive its owner."""
+        self.request_stop()
+        self.wait_for_stop(1000)
+
+    def _emit_stopped_if_ready(self) -> None:
+        if self._closing and not self.busy and not self._stop_emitted:
+            self._stop_emitted = True
+            self.stopped.emit()
 
     def _on_progress(self, progress: Any) -> None:
         if self._closing:
@@ -534,6 +581,7 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
 
     def _on_finished(self, outcome: Any) -> None:
         if self._closing:
+            self._finish_worker()
             return
         self._current_session = outcome.session
         self._comparison = getattr(outcome, "comparison", None)
@@ -549,6 +597,7 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
 
     def _on_error(self, _message: str) -> None:
         if self._closing:
+            self._finish_worker()
             return
         self._finish_worker()
         self.start_notice.set_notice(
@@ -575,283 +624,7 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
         if worker is not None:
             worker.wait(1000)
             worker.deleteLater()
-
-    def _load_latest_session(self) -> None:
-        session, reason_code = self.history.latest()
-        if session is None:
-            if reason_code:
-                self.result_notice.set_notice(
-                    "warning",
-                    self.tr("Previous sessions are unavailable"),
-                    self.tr(
-                        "The session store could not be read safely. "
-                        "Starting a check will not overwrite an unknown future schema."
-                    ),
-                )
-            return
-        self._current_session = session
-        self._render_session(session, None, reason_code)
-        self.start_button.setText(self.tr("Check again"))
-        symptom_id = next(
-            (
-                symptom[0]
-                for symptom in self._SYMPTOMS
-                if symptom[2] == session.profile_id
-            ),
-            "",
-        )
-        index = self.profile_selector.findData(symptom_id)
-        if index >= 0:
-            self.profile_selector.setCurrentIndex(index)
-
-    def _render_session(
-        self,
-        session: TroubleshootingSession,
-        comparison: TroubleshootingComparison | None,
-        persistence_reason_code: str,
-    ) -> None:
-        profile = require_profile(session.profile_id)
-        storage = next((result for result in session.source_results if result.source_id == "storage-reclaim"), None)
-        facts = storage.to_dict().get("facts", {}) if storage is not None else {}
-        guide = facts.get("space_guide") if session.profile_id == "storage_pressure" else None
-        self.space_guide.set_observation(guide if isinstance(guide, dict) else None)
-        self._show_device_settings(profile.id)
-        state_text, kind = SESSION_STATUS.get(
-            session.state,
-            ("Status unavailable", "neutral"),
-        )
-        state_label = self.tr(state_text)
-        self.result_notice.set_notice(
-            kind,
-            state_label,
-            self._session_message(session),
-        )
-        self.result_badge.set_status(
-            self.tr("%1 · %2")
-            .replace("%1", self.tr(profile.title))
-            .replace("%2", state_label),
-            kind=kind,
-        )
-        completed = (
-            datetime.fromtimestamp(session.completed_at).astimezone().strftime("%Y-%m-%d %H:%M")
-            if session.completed_at is not None
-            else self.tr("Not completed")
-        )
-        variant = self.tr("Atomic Fedora") if session.variant == "atomic" else self.tr("Traditional Fedora")
-        self.result_meta.setText(
-            self.tr("Fedora variant: %1 · Completed: %2 · Findings: %3")
-            .replace("%1", variant)
-            .replace("%2", completed)
-            .replace("%3", str(len(session.findings)))
-        )
-        checked = [
-            self.tr(self._SOURCE_LABELS.get(result.source_id, result.source_id))
-            for result in session.source_results
-        ]
-        self.result_checked.setText(
-            self.tr("Checked: %1").replace(
-                "%1",
-                ", ".join(checked) if checked else self.tr("No checks completed"),
-            )
-        )
-        if persistence_reason_code:
-            self.partial_warning.set_notice(
-                "warning",
-                self.tr("Session history is read-only"),
-                self.tr("This result could not be added to writable session history."),
-            )
-            self.partial_warning.show()
-        else:
-            self.partial_warning.hide()
-        self.sources_disclosure.set_details(self._source_details(session))
-
-        self.finding_list.clear()
-        for finding in session.findings:
-            self.finding_list.addItem(
-                self.tr("%1 · %2")
-                .replace("%1", self.tr(finding.title))
-                .replace("%2", self.tr(finding.severity.title()))
-            )
-        self.finding_empty.setVisible(not session.findings)
-        self.finding_list.setVisible(bool(session.findings))
-        self.finding_detail.setVisible(bool(session.findings))
-        if session.findings:
-            self.finding_list.setCurrentRow(0)
-        else:
-            self._selected_finding = None
-
-        if session.related_changes:
-            lines = []
-            for change in session.related_changes:
-                when = datetime.fromtimestamp(change.occurred_at).astimezone().strftime("%Y-%m-%d %H:%M")
-                reasons = ", ".join(
-                    self.tr(reason.replace("_", " "))
-                    for reason in sorted(change.match_reasons)
-                )
-                lines.append(
-                    self.tr("Possibly related · %1 · %2 · %3")
-                    .replace("%1", when)
-                    .replace("%2", reasons)
-                    .replace("%3", ", ".join(change.affected_resources))
-                )
-            self.related_label.setText("\n".join(lines))
-            self.related_card.show()
-        else:
-            self.related_card.hide()
-
-        self._render_comparison(comparison)
-
-    def _recheck_storage(self) -> None:
-        self._select_symptom_card("storage_full")
-        self.start_session()
-
-    def _session_message(self, session: TroubleshootingSession) -> str:
-        if session.state == "completed":
-            if session.profile_id == "screen_sharing_not_working":
-                return self.tr("Existing services and advertised ScreenCast support were checked. Test actual screen sharing in your application yourself.")
-            if session.profile_id in self.device_settings_cards:
-                return self.tr("Device metadata was checked. Confirm actual playback or connectivity yourself.")
-            return (
-                self.tr("%1 finding(s) need review.").replace(
-                    "%1", str(len(session.findings))
-                )
-                if session.findings
-                else self.tr("All applicable sources completed without a current finding.")
-            )
-        if session.state == "partial":
-            return self.tr(
-                "Some checks were incomplete. Review the available findings and source details before treating this as complete."
-            )
-        if session.state == "cancelled":
-            return self.tr(
-                "The session was cancelled. The previous completed session was preserved."
-            )
-        return self.tr(
-            "The check failed without enough usable results for a conclusion."
-        )
-
-    def _source_details(self, session: TroubleshootingSession) -> str:
-        lines = []
-        for result in session.source_results:
-            label = self.tr(self._SOURCE_LABELS.get(result.source_id, result.source_id))
-            state = self.tr(self._STATE_LABELS.get(result.state, result.state.title()))
-            completed = datetime.fromtimestamp(result.completed_at).astimezone().strftime("%Y-%m-%d %H:%M:%S")
-            lines.append(
-                self.tr("%1\nState: %2\nCollected: %3\nFreshness/readiness reason: %4")
-                .replace("%1", label)
-                .replace("%2", state)
-                .replace("%3", completed)
-                .replace("%4", result.reason_code or self.tr("current"))
-            )
-        return "\n\n".join(lines)
-
-    def _finding_selected(self, row: int) -> None:
-        session = self._current_session
-        if session is None or not 0 <= row < len(session.findings):
-            self._selected_finding = None
-            self.finding_detail.hide()
-            return
-        finding = session.findings[row]
-        self._selected_finding = finding
-        kind = "error" if finding.severity == "critical" else "info" if finding.severity == "info" else "warning"
-        confidence = {
-            "confirmed": self.tr("High"),
-            "supported": self.tr("Medium"),
-            "limited": self.tr("Limited"),
-        }.get(finding.evidence_quality, self.tr("Limited"))
-        self.finding_status.set_status(
-            self.tr("%1 · Confidence: %2")
-            .replace("%1", self.tr(finding.severity.title()))
-            .replace("%2", confidence),
-            kind=kind,
-        )
-        self.finding_summary.setText(
-            self.tr("Found: %1\nConfidence: %2")
-            .replace("%1", self.tr(finding.summary))
-            .replace("%2", confidence)
-        )
-        facts = "\n".join(
-            f"{key}: {value}"
-            for key, value in sorted(finding.evidence_dict().items())
-        )
-        self.evidence_disclosure.set_details(
-            self.tr(
-                "Source: %1\nEvidence quality: %2\nFreshness: %3\n"
-                "Why this is shown: %4\nAffected resources: %5\nCollected: %6\n%7"
-            )
-            .replace(
-                "%1",
-                self.tr(self._SOURCE_LABELS.get(finding.source_id, finding.source_id)),
-            )
-            .replace("%2", self.tr(finding.evidence_quality.title()))
-            .replace("%3", self.tr(finding.freshness.title()))
-            .replace("%4", self.tr(finding.evidence_explanation))
-            .replace("%5", ", ".join(finding.affected_resources))
-            .replace(
-                "%6",
-                datetime.fromtimestamp(finding.collected_at).astimezone().strftime(
-                    "%Y-%m-%d %H:%M:%S"
-                ),
-            )
-            .replace("%7", facts)
-        )
-        label, enabled = self._next_step_presentation(finding.next_step)
-        self.next_step_label.setText(label)
-        self.next_step_button.setVisible(enabled)
-        self.finding_detail.show()
-
-    def _next_step_presentation(self, step: NextStep) -> tuple[str, bool]:
-        if step.kind == "action":
-            return (
-                self.tr(
-                    "Next step: review the suggested change before applying it. "
-                    "Nothing runs automatically."
-                ),
-                True,
-            )
-        if step.kind == "navigation":
-            return (
-                self.tr("Next step: open the relevant settings. Nothing changes automatically."),
-                True,
-            )
-        if step.kind == "collect":
-            return (
-                self.tr("Next safe step: collect the named additional read-only source."),
-                True,
-            )
-        if step.kind == "manual":
-            return (
-                self.tr("Manual guidance: %1").replace("%1", self.tr(step.guidance)),
-                False,
-            )
-        return (
-            self.tr(
-                "No safe automated next step is available. Review the evidence manually."
-            ),
-            False,
-        )
-
-    def _activate_next_step(self) -> None:
-        finding = self._selected_finding
-        if finding is None:
-            return
-        step = finding.next_step
-        if step.kind == "action":
-            self.actionCenterRequested.emit(step.target_id, step.parameters_dict())
-        elif step.kind == "navigation":
-            self.recheck_button.show()
-            self.routeRequested.emit(step.target_id, step.parameters_dict())
-        elif step.kind == "collect":
-            self.start_notice.set_notice(
-                "info",
-                self.tr("Additional evidence remains explicit"),
-                self.tr(
-                    "Start the compatible profile again to collect the bounded source."
-                ),
-            )
-            self.start_notice.show()
-            self.view_switcher.set_active_view("guided")
-            self._select_view("guided")
+        self._emit_stopped_if_ready()
 
     def _select_view(self, view_id: str) -> None:
         self.stack.setCurrentIndex(1 if view_id == "results" else 0)

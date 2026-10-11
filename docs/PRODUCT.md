@@ -45,6 +45,13 @@ page; when the record is missing, Activity says so instead of selecting a
 different run. Health places its read-only check beside the chosen symptom and
 offers a deliberate recheck after the user returns from desktop settings.
 
+Health and global search share closed symptom entries for application launch,
+network, battery and power, displays and docking, input devices, printers, and
+the existing maintenance checks. Navigation only selects a symptom. The user
+starts each bounded read-only collection explicitly. Failed, cancelled, missing,
+and partial observations retain their own state; none is interpreted as a
+healthy result.
+
 Guide steps can be reviewed, skipped, or linked to one exact saved successful
 operation or completed diagnostic session where the step allows it. Missing
 evidence stays missing. Returning to a guide does not run checks, apply changes,
@@ -93,6 +100,10 @@ changes run sequentially through Action Center and stop on drift or verification
 Built-in Reduced motion and File navigation presets use the same immutable review,
 explicit selection, and per-setting verification. A focused setting check updates
 only that row and preserves the rest of the visible snapshot.
+The KDE-only Folder workspace preset uses the same review to set Dolphin to
+reopen folders and tabs, open external folders in a new tab, and confirm before
+closing multiple tabs. Health's input guidance links separately to verified KDE
+mouse and touchpad modules and can focus the existing tap-to-click tweak.
 Installed Flatpaks remain distinct by installation and full ref. Removal preserves
 app data and requires successful independent inventory verification. RPM removal
 opens the desktop software manager. Sound and Bluetooth checks report observations
@@ -121,6 +132,22 @@ recorded operation. Opening Health does not start a check. An explicit diagnosti
 run collects bounded read-only observations and offers a relevant next step.
 GUI and CLI update discovery share source statuses; unavailable evidence cannot
 become an up-to-date result.
+
+Application-start troubleshooting binds one exact RPM package or Flatpak ref to
+its selected installation. It reports installation inventory separately from
+recent journal counts. The log query runs only after the user confirms a launch
+attempt, returns bounded counts rather than raw messages, and never starts an
+application. Network troubleshooting reports active link, IPv4/IPv6 default
+routes, resolver configuration, and NetworkManager's own connectivity status
+separately. It sends no external probe traffic.
+
+Battery and power, display/docking, input, and printer checks report only fields
+available from bounded local sources. KScreen's unknown values remain unknown.
+Input guidance reads detected device metadata and the observed KDE touchpad
+setting without recording input events. Printer guidance reports CUPS service,
+queue state, and the current user's pending-job count; it stores no document
+names or printer addresses, and never sends a test print or changes a queue.
+Native settings handoffs check the requested KDE module before opening it.
 
 ## Companion personal workflows
 
@@ -160,6 +187,10 @@ Backup checklist selections are user confirmations, not verified backups.
 Local observations do not certify the future release's transaction, source
 availability, or sufficient disk space. Missing or malformed restart advice
 remains unknown. Loofi does not download, perform, or reboot for a major upgrade.
+The target, observation date and state, detected third-party source IDs, and
+dated backup confirmations persist locally. Observations become stale when the
+target changes, the saved timestamp is in the future, or more than seven days
+have passed; backup confirmations remain user attestations across rechecks.
 
 ## Personal everyday workflows
 
@@ -193,7 +224,8 @@ does not recommend uninstalling an application or predict recovered disk space.
 
 Health's storage guide shows root, home and var measurements, grouped where they
 share a device, together with available DNF cache and journal sizes. Failed or
-partial reads are unknown. DNF cleanup requires its existing Action Center review;
+partial reads are unknown. Mount observations also include free inodes, read-only
+state, and a separate `/boot` measurement where applicable. DNF cleanup requires its existing Action Center review;
 Flatpak runtime inspection opens Apps with the chosen user/system installation.
 Named installations remain available in Apps. Journal cleanup remains manual
 guidance. Check again starts a new explicit storage-symptom session.
@@ -204,6 +236,11 @@ stale after the existing freshness interval, and never restarts the computer.
 An unsupported backend, missing tool or inconsistent response remains unknown.
 Overview's suggestions select exact saved operations, update sources or the
 storage symptom without running checks on navigation.
+
+Troubleshooting sessions are versioned against the source contract that created
+them. Older saved app and network sessions remain readable with their original
+profile version; comparisons across incompatible source contracts are marked
+not comparable. Session export masks data before local support-bundle creation.
 
 The profile library compares two saved profiles for the same desktop, showing
 added, removed, changed and unchanged target values. It never reads live computer

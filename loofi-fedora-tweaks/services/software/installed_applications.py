@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import re
 import os
+import selectors
 import subprocess
 import time
 from pathlib import Path
@@ -15,6 +16,8 @@ from services.software.flatpak import FlatpakAppPermissions, FlatpakManager
 
 _REF = re.compile(r"^app/[A-Za-z0-9][A-Za-z0-9._-]{1,255}/[A-Za-z0-9_-]+/[A-Za-z0-9._-]+$")
 _INSTALLATION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+MAX_INVENTORY_OUTPUT_BYTES = 1024 * 1024
+MAX_INVENTORY_ROWS = 10000
 Probe = Callable[[Sequence[str]], ActionResult]
 
 
@@ -68,7 +71,10 @@ class InstalledInventory:
 def parse_flatpak_inventory(output: str) -> tuple[InstalledApplication, ...]:
     apps = []
     identities = set()
-    for line in output.splitlines():
+    lines = output.splitlines()
+    if len(lines) > MAX_INVENTORY_ROWS:
+        raise ValueError("Flatpak installation inventory exceeded its row limit.")
+    for line in lines:
         if not line.strip():
             continue
         fields = line.split("\t")
@@ -102,16 +108,66 @@ class InstalledApplicationService:
         self.clock = clock
 
     @staticmethod
-    def _probe(vector: Sequence[str], *, timeout: float = 15) -> ActionResult:
+    def _probe(vector: Sequence[str], *, timeout: float = 15,
+               cancelled: Callable[[], bool] = lambda: False) -> ActionResult:
+        process = None
+        selector = None
         try:
             environment = {**os.environ, "LC_ALL": "C"} if tuple(vector[:2]) == ("rpm", "-qf") else None
-            result = subprocess.run(list(vector), capture_output=True, text=True, timeout=timeout, env=environment)
-            return ActionResult(result.returncode == 0, "Inventory read", exit_code=result.returncode, stdout=result.stdout)
-        except (OSError, subprocess.TimeoutExpired):
+            process = subprocess.Popen(list(vector), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL, env=environment)
+            if process.stdout is None:
+                return ActionResult(False, "The installation inventory could not be read.")
+            selector = selectors.DefaultSelector()
+            selector.register(process.stdout, selectors.EVENT_READ)
+            output = bytearray()
+            deadline = time.monotonic() + max(0.0, timeout)
+            while selector.get_map():
+                if cancelled():
+                    process.kill()
+                    process.wait()
+                    return ActionResult(False, "The installation inventory read was cancelled.", exit_code=-1)
+                remaining = deadline - time.monotonic()
+                if remaining <= 0:
+                    process.kill()
+                    process.wait()
+                    return ActionResult(False, "The installation inventory read timed out.", exit_code=-1)
+                ready = selector.select(min(remaining, 0.05))
+                if not ready:
+                    continue
+                chunk = os.read(process.stdout.fileno(), min(8192, MAX_INVENTORY_OUTPUT_BYTES + 1 - len(output)))
+                if not chunk:
+                    selector.unregister(process.stdout)
+                    break
+                output.extend(chunk)
+                if len(output) > MAX_INVENTORY_OUTPUT_BYTES:
+                    process.kill()
+                    process.wait()
+                    return ActionResult(False, "The installation inventory exceeded its output limit.", exit_code=-1)
+            returncode = process.wait(timeout=max(0.01, deadline - time.monotonic()))
+            stdout = output.decode("utf-8", errors="replace")
+            return ActionResult(returncode == 0, "Inventory read" if returncode == 0 else "The installation inventory could not be read.", exit_code=returncode, stdout=stdout)
+        except (OSError, subprocess.SubprocessError):
+            if process is not None and process.poll() is None:
+                process.kill()
+                process.wait()
             return ActionResult(False, "The installation inventory could not be read.")
+        finally:
+            if selector is not None:
+                selector.close()
+            if process is not None and process.stdout is not None:
+                process.stdout.close()
 
-    def flatpaks(self) -> InstalledInventory:
-        result = self.probe(self.FLATPAK_VECTOR)
+    def _read_probe(self, vector: Sequence[str], *, timeout: float,
+                    cancelled: Callable[[], bool]) -> ActionResult:
+        if cancelled():
+            return ActionResult(False, "The installation inventory read was cancelled.", exit_code=-1)
+        if self._custom_probe:
+            return self._custom_probe(vector)
+        return self._probe(vector, timeout=timeout, cancelled=cancelled)
+
+    def flatpaks(self, *, timeout: float = 8.0,
+                 cancelled: Callable[[], bool] = lambda: False) -> InstalledInventory:
+        result = self._read_probe(self.FLATPAK_VECTOR, timeout=max(0.0, timeout), cancelled=cancelled)
         if not result.success:
             return InstalledInventory(errors=("Flatpak installation inventory could not be read.",), unknown_sources=frozenset({"flatpak"}))
         try:
@@ -119,13 +175,17 @@ class InstalledApplicationService:
         except ValueError as exc:
             return InstalledInventory(errors=(str(exc),), unknown_sources=frozenset({"flatpak"}))
 
-    def snapshot(self) -> InstalledInventory:
-        flatpaks = self.flatpaks()
+    def snapshot(self, *, cancelled: Callable[[], bool] = lambda: False) -> InstalledInventory:
         deadline = self.clock() + 20.0
+        flatpak_budget = max(0.0, min(8.0, deadline - self.clock()))
+        flatpaks = self.flatpaks(timeout=flatpak_budget, cancelled=cancelled)
+        if cancelled():
+            return InstalledInventory(flatpaks.applications, flatpaks.errors + ("Application inventory read was cancelled.",),
+                                      flatpaks.unknown_sources | frozenset({"fedora"}))
         rpms = tuple(item for item in self.catalog.all() if item.source == "fedora")
         vector = ("rpm", "-qa", "--qf", "%{NAME}\\t%{VERSION}-%{RELEASE}\\t%{SIZE}\\n")
         remaining = deadline - self.clock()
-        result = (self._custom_probe(vector) if self._custom_probe else self._probe(vector, timeout=min(15, remaining))) if remaining > 0 else ActionResult(False, "RPM inventory time limit reached.")
+        result = self._read_probe(vector, timeout=min(remaining, 12.0), cancelled=cancelled) if remaining > 0 else ActionResult(False, "RPM inventory time limit reached.")
         apps = list(flatpaks.applications)
         errors = list(flatpaks.errors)
         unknown = set(flatpaks.unknown_sources)
@@ -141,7 +201,10 @@ class InstalledApplicationService:
                     records[package] = item
             try:
                 installed: dict[str, list[tuple[str, int]]] = {}
-                for line in result.stdout.splitlines():
+                rows = result.stdout.splitlines()
+                if len(rows) > MAX_INVENTORY_ROWS:
+                    raise ValueError("RPM installation inventory exceeded its row limit.")
+                for line in rows:
                     fields = line.split("\t")
                     if len(fields) != 3 or not fields[0] or not fields[2].isdigit():
                         raise ValueError("RPM returned an invalid installation inventory.")
@@ -150,7 +213,7 @@ class InstalledApplicationService:
                 from services.software.rpm_desktop_applications import discover_rpm_desktop_applications
 
                 def ownership_probe(vector: Sequence[str], timeout: float) -> ActionResult:
-                    return self._custom_probe(vector) if self._custom_probe else self._probe(vector, timeout=timeout)
+                    return self._read_probe(vector, timeout=min(timeout, max(0.0, deadline - self.clock())), cancelled=cancelled)
 
                 desktop_apps = discover_rpm_desktop_applications(ownership_probe, deadline=deadline, clock=self.clock, roots=self.desktop_roots)
                 errors.extend(desktop_apps.errors)
@@ -168,6 +231,10 @@ class InstalledApplicationService:
                 errors.append(str(exc))
                 unknown.add("fedora")
         return InstalledInventory(tuple(apps), tuple(errors), frozenset(unknown))
+
+    def snapshot_for_troubleshooting(self, *, cancelled: Callable[[], bool]) -> InstalledInventory:
+        """Expose the existing exact inventory through a cancellable bounded read."""
+        return self.snapshot(cancelled=cancelled)
 
     def details(self, app: InstalledApplication):
         if app.source != "flatpak":

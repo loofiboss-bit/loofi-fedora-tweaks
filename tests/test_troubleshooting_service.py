@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import unittest
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from core.troubleshooting.adapters import adapt_structured_source
@@ -73,19 +74,21 @@ class _Collector:
 
 
 class TestTroubleshootingService(unittest.TestCase):
-    @patch(
-        "core.troubleshooting.service.shutil.which",
-        return_value="/usr/bin/firefox",
-    )
-    def test_application_inventory_uses_a_command_free_fact_contract(
-        self,
-        _which,
-    ):
+    @patch("services.troubleshooting.application_network.ApplicationNetworkProbe")
+    def test_application_inventory_uses_a_command_free_fact_contract(self, probe):
         session = new_session(
             "application_failed",
             "traditional",
             started_at=1.0,
-            parameters={"application_id": "firefox"},
+            parameters={
+                "application_id": "firefox",
+                "application_scope": "rpm",
+                "launch_attempted": False,
+            },
+        )
+        probe.return_value.collect_application.return_value = SimpleNamespace(
+            facts={"installed": True}, availability={"installed": "available"}, errors={},
+            state="completed", reason_code="",
         )
 
         evidence = DefaultEvidenceCollector(clock=lambda: 1.1).collect(
@@ -97,9 +100,10 @@ class TestTroubleshootingService(unittest.TestCase):
         facts = evidence.result.to_dict()["facts"]
 
         self.assertEqual(evidence.result.state, "empty")
-        self.assertEqual(facts["application_id"], "firefox")
-        self.assertTrue(facts["application_available"])
+        self.assertTrue(facts["installed"])
         self.assertNotIn("command_available", facts)
+        probe.return_value.collect_application.assert_called_once()
+        self.assertFalse(probe.return_value.collect_application.call_args.kwargs["launch_attempted"])
 
     def test_construction_does_not_collect_read_or_write(self):
         collector = _Collector()
@@ -132,13 +136,13 @@ class TestTroubleshootingService(unittest.TestCase):
 
         self.assertEqual(
             collector.calls,
-            ["network-state", "dns-state", "change-journal"],
+            ["network-state", "change-journal"],
         )
         self.assertEqual(outcome.session.state, "completed")
         self.assertEqual(len(store.saved), 1)
         self.assertEqual(
             tuple(result.source_id for result in outcome.session.source_results),
-            ("change-journal", "dns-state", "network-state"),
+            ("change-journal", "network-state"),
         )
         self.assertEqual(progress[-1].percentage, 100)
 
@@ -160,7 +164,7 @@ class TestTroubleshootingService(unittest.TestCase):
         self.assertEqual(outcome.session.state, "cancelled")
         self.assertEqual(
             outcome.session.cancelled_sources,
-            ("change-journal", "dns-state", "network-state"),
+            ("change-journal", "network-state"),
         )
         self.assertEqual(store.saved, [outcome.session])
 

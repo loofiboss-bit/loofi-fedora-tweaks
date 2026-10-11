@@ -89,6 +89,21 @@ def wait_for_node(name: str, *, role: str | None = None, timeout: float = 20, en
     raise AssertionError(f"AT-SPI node {name!r} was not found: {last_error}")
 
 
+def wait_for_node_containing(fragment: str, *, role: str, timeout: float = 20):
+    """Find one visible native control whose accessible name contains text."""
+    tag = role.replace(" ", "_")
+    selector = f"//{tag}[contains(@name,{_literal(fragment)}) and contains(@states, 'showing')]"
+    deadline = time.monotonic() + timeout
+    last_error = None
+    while time.monotonic() < deadline:
+        try:
+            return Accessible(_driver.find_element(By.XPATH, selector), selector)
+        except Exception as exc:
+            last_error = exc
+            time.sleep(0.25)
+    raise AssertionError(f"AT-SPI node containing {fragment!r} was not found: {last_error}")
+
+
 def click(name: str, *, timeout: float = 20):
     node = wait_for_node(name, timeout=timeout)
     node.click()
