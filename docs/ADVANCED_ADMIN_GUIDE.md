@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
+> Published v33.0.1 "Concord"; physical desktop and assistive-technology validation remains unverified.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.

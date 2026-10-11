@@ -1,4 +1,4 @@
-# Contributing Guide — v28.0.2 "Ease"
+# Contributing Guide — v33.0.1 "Concord"
 
 Thank you for contributing to Loofi Fedora Tweaks! This project prioritizes stability, verifiable operations, and defensive security.
 
@@ -45,7 +45,8 @@ LOOFI_IPC_MODE=disabled QT_QPA_PLATFORM=offscreen just verify
 
 # Validate RPM packaging and release docs
 just check-packaging
-python3 scripts/check_release_docs.py
+python3 scripts/bump_version.py --check
+python3 scripts/gen_tweaks_doc.py --check
 python3 scripts/sync_wiki_docs.py --check
 ```
 

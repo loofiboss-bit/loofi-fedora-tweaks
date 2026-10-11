@@ -1,4 +1,4 @@
-# Installation Guide — v28.0.2 "Ease"
+# Installation Guide — v33.0.1 "Concord"
 
 Loofi Fedora Tweaks is distributed as an audited RPM package built specifically for Fedora Linux. The primary supported package channel is the official Fedora COPR repository.
 

@@ -1,4 +1,4 @@
-# Security & Safety Architecture — v29.0.1 "Utility"
+# Security & Safety Architecture — v33.0.1 "Concord"
 
 Loofi Fedora Tweaks is built with a defensive security architecture designed to prevent unintended modifications, privilege escalation exploits, and system instability.
 

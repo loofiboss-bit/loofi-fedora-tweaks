@@ -1,6 +1,6 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v32.8.0 retains one internal orchestrator as the
+Loofi Fedora Tweaks v33.0.1 retains one internal orchestrator as the
 trust boundary for persistent system changes from both GUI and CLI. Apps,
 Tweaks, Health, and Updates use the same controller while Activity & Recovery keeps
 saved outcomes and follow-up state. Physical desktop validation remains pending.

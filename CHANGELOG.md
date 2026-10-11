@@ -1,8 +1,8 @@
 # Changelog
 
-## [33.0.1] — Concord — release candidate (unpublished)
+## [33.0.1] - 2026-10-12 - "Concord" — published
 
-This candidate packages the merged Concord work at `f8e3e7e`. The existing
+This release packages the merged Concord work at `f8e3e7e`. The existing
 `v33.0.0` tag identifies the older Bastion source, so it is preserved and
 Concord uses the next patch version. Automated and disposable Fedora/KDE
 qualification status is tracked in `docs/V33_QUALIFICATION.md`.
@@ -18,6 +18,8 @@ qualification status is tracked in `docs/V33_QUALIFICATION.md`.
 - Keep complete structured output transient and separate from bounded history/log output; treat malformed or oversized firmware and rpm-ostree evidence as unavailable.
 - Keep Atomic RPM layering unavailable until preflight can verify a supported rpm-ostree query path.
 - Improve Overview guide priority, Health summaries, app-source insight, exact DNF repository navigation, and evidence-compatible guide result links.
+
+- Published on GitHub and COPR (build 11109761); all release gates passed except the explicitly waived VM E2E gate. The guest Qt6Gui crash remains unresolved. See [publication evidence](docs/reports/V33.0.1_RELEASE_PUBLICATION.md).
 
 ## [32.8.0] - 2026-10-11 - "Guide" — published
 
@@ -231,7 +233,7 @@ Focused patch release for the battery-service review fixes from PR #40.
 
 Public release completed through the canonical tag-driven workflow. Exact tag,
 assets, attestations, COPR package, and wiki readback are recorded in the
-[v28.0.2 public release evidence](docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+[v28.0.2 public release evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2).
 
 - Advertise only the implemented standard sysfs battery backend; remove the
   unused HP BIOS support path.
@@ -247,7 +249,7 @@ assets, attestations, COPR package, and wiki readback are recorded in the
 
 Public release completed through the canonical publication workflow. Exact
 tag, assets, attestations, COPR package, and wiki readback are recorded in
-the [public release evidence](docs/reports/V28_RELEASE_PUBLICATION.md).
+the [public release evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.1).
 
 - Centralize Fedora release support and typed DNF, rpm-ostree, bootc, and
   unknown backend decisions.

@@ -3,8 +3,9 @@
 The Concord implementation was merged in PR #68 at `f8e3e7e`. Its product
 behavior was qualified as the v33.0.0 candidate; the release package version
 is 33.0.1 because the existing v33.0.0 tag names the older Bastion source.
-The version-only package change is checked by the release candidate's
-packaging gates. Historical tag lineage is preserved.
+The version-only package change passed packaging gates. v33.0.1 was published
+on 2026-10-12; [publication evidence](reports/V33.0.1_RELEASE_PUBLICATION.md)
+records exact lineage and the explicit VM qualification exception.
 
 ## Delivered behavior
 
@@ -93,8 +94,9 @@ Both runs used the protected reusable Fedora 44 KDE/X11 base, offline
 networking, 5 GiB RAM, and 2 vCPUs. They qualify disposable-overlay execution,
 not a new installation of the base image. `just build-rpm` passed for
 33.0.1-1.fc44. The GitHub release pipeline rebuilds, smokes, and reviews the
-exact release RPM; its public asset checksum will be recorded after
-publication.
+exact release RPM. Canonical release run 38183736156 passed all other gates
+with VM E2E explicitly waived. The public RPM SHA-256 is
+`3db7b7871cf64e36e7b32e7d34b68325b9d82eb31cc25821778ce9e18c04e7d6`.
 
 Physical hardware, human screen-reader use, Wayland input, GNOME, and Atomic
 workflows are not qualified by these results. Offscreen rendering and Qt

@@ -6,6 +6,8 @@ and storage readings; brings Settings and Profiles together in Tweaks; and
 organizes application discovery, installed applications, and package sources
 under Apps.
 
+Published on 2026-10-12 (Europe/Stockholm). [Publication evidence](../reports/V33.0.1_RELEASE_PUBLICATION.md) records the exact tag, public assets, attestation, and successful COPR build 11109761.
+
 ## Highlights
 
 - Preserve profile drafts while moving between settings and profiles. Show

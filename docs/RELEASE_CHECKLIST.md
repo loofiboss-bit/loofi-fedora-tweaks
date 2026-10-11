@@ -94,3 +94,12 @@ exact package transaction. Install only after the simulation succeeds. Read
 back NEVRA, package integrity, CLI behavior, settings checksum, and package
 consistency. Preserve user settings and do not infer physical qualification
 from generated screenshots.
+
+## v33.0.1 manual VM exception
+
+The default-off `waive_v33_vm_e2e` workflow_dispatch input applies only to
+33.0.1 and was explicitly authorized for publication after failed runs
+38178492268 and 38178492259. It skips VM E2E while preserving all other release
+gates. Document the exception and unresolved crash in release notes; do not
+report the skipped job as passed. Later versions retain the normal VM gate.
+See [v33.0.1 publication evidence](reports/V33.0.1_RELEASE_PUBLICATION.md).

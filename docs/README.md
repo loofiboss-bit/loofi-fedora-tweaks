@@ -16,8 +16,10 @@ and is not.
 
 ## Contribute
 
-- [v33.0.1 Concord release candidate](releases/RELEASE-NOTES-v33.0.1.md)
-- [v33 qualification](V33_QUALIFICATION.md) — Concord feature and package qualification, including stable Fedora KDE test contracts
+- [v33.0.1 publication evidence](reports/V33.0.1_RELEASE_PUBLICATION.md) — exact tag, release workflow, assets, checksums, attestation, and COPR build
+
+- [v33.0.1 Concord release notes](releases/RELEASE-NOTES-v33.0.1.md)
+- [v33 qualification](V33_QUALIFICATION.md) — Concord feature and package qualification, including failed exact-version VM runs and the manual publication exception
 - [Guide qualification](GUIDE_VERIFICATION.md) — everyday guides, saved progress, search and installed-RPM evidence
 - [Routine qualification](ROUTINE_VERIFICATION.md) — installation/profile comparisons, storage guidance, restart advice and contextual links
 - [Personal qualification](PERSONAL_VERIFICATION.md) — RPM discovery, profile authoring, source observations, and KDE window workflows

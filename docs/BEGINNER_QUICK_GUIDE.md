@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> Everyday guide reviewed 2026-10-11; physical desktop and assistive-technology validation remains a separate qualification.
+> v33.0.1 Concord guide updated 2026-10-12; physical desktop and assistive-technology validation remains a separate qualification.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -22,12 +22,12 @@ deployment backends remain unavailable.
 
 ## 2) Learn the six destinations
 
-1. **Overview** — review up to three next steps, update/Health history, and
-   recent changes before the resource measurements below them.
-2. **Tweaks** — search settings, choose a value, and see the verified result
+1. **Overview** — start with CPU, RAM, GPU, and storage, then review recorded
+   next steps, update/Health history, guides, and recent changes.
+2. **Tweaks** — use Settings or Profiles, search a setting, choose a value, and see the verified result
    on the same row. **Restore previous value** recovers an eligible recorded
    value; **Use Loofi standard value** applies Loofi's curated reference.
-3. **Apps** — search the curated application catalog, filter by category,
+3. **Apps** — use Catalog, Installed, or Sources; search the curated catalog, filter by category,
    select several applications, and review each source and installation scope.
 4. **Updates** — check System, Flatpak, and Firmware independently and follow
    the single action shown in each section.

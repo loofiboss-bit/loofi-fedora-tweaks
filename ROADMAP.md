@@ -1,10 +1,10 @@
 # Roadmap
 
-The latest published release remains [v32.8.0 Guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0). The v33.0.1 Concord candidate is based on merged commit `f8e3e7e`; v33.0.0 is a historical Bastion tag and remains unchanged. KDE on traditional Fedora with DNF5 is the first qualification target. GUI, CLI, profile, and saved-session compatibility remain part of each change.
+The latest published release is [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1), published on 2026-10-12 with COPR build 11109761. Its release tag resolves to `68da040ca5fd85f7feae4442c8ffb9049815cdcd`; v33.0.0 remains the historical Bastion tag. See [publication evidence](docs/reports/V33.0.1_RELEASE_PUBLICATION.md) for passed gates and the explicit VM exception. KDE on traditional Fedora with DNF5 is the first target; public CLI, profile, and saved-session compatibility remain supported.
 
-## Completed work awaiting a release decision
+## Completed work delivered in Concord
 
-The three stages below are complete and merged. Their qualification reports are dated evidence for the tested candidate and do not themselves publish a release.
+The three stages below are complete and included in v33.0.1. Their qualification reports retain the version and environment actually tested.
 
 ## 1. Reliability and clearer everyday workflows
 
@@ -32,19 +32,23 @@ Stage completion requires its relevant automated regressions, `just verify`, cat
 
 ## v33.0.1 Concord — clearer, more connected interface
 
-Implementation is complete in the merged release candidate. Overview leads with CPU, RAM, GPU, and storage before details, maintenance, next steps, guides, and introductory content. Tweaks combines Settings and Profiles, labels each setting's scope and verification state, preserves an editable profile draft across subview changes, and only reviews a successfully saved copy. Apps uses Catalog, Installed, and Sources tabs, with a filter-independent selected-app view and exact scope in the shared review dialog. Operations retain their name, origin, and return path across navigation; completed results keep their own status and link to Activity only when a real run ID exists.
+Implementation is published in v33.0.1. Overview leads with CPU, RAM, GPU, and storage before details, maintenance, next steps, guides, and introductory content. Tweaks combines Settings and Profiles, labels each setting's scope and verification state, preserves an editable profile draft across subview changes, and only reviews a successfully saved copy. Apps uses Catalog, Installed, and Sources tabs, with a filter-independent selected-app view and exact scope in the shared review dialog. Operations retain their name, origin, and return path across navigation; completed results keep their own status and link to Activity only when a real run ID exists.
 
 Compatibility boundaries remain unchanged: route IDs, CLI/JSON contracts, portable profile format, history schema, and OperationController/Action Center execution ownership. Automated qualification is recorded below and in [the v33 qualification report](docs/V33_QUALIFICATION.md). The package version advances to 33.0.1 because the historical v33.0.0 tag names Bastion.
 
 ### v33 qualification record
 
 - Focused UI and workflow regressions: passed; stable native control and runner contracts have regression coverage.
-- `just verify`: passed, 5,382 tests and 2,154 subtests, 33 skipped, 85.50% coverage. Package manifest checks and RPM build passed.
-- Fedora 44 KDE/X11 VM `just test-full`: passed, 9 tests and 2 intentionally skipped reboot checkpoints. A second clean-overlay `just test-full-reboot` passed 10 tests before reboot and 1 afterward, each with 1 intentional phase skip. Guest boot IDs changed, persisted settings/guide state survived, and restoration was independently checked; owned guest stopped and overlay restored.
+- `just verify`: passed, 5,382 tests and 2,154 subtests, 33 skipped, 85.49% coverage. Package manifest checks and RPM build passed.
+- Historical v33.0.0 candidate Fedora 44 KDE/X11 VM `just test-full`: passed, 9 tests and 2 intentionally skipped reboot checkpoints. A second clean-overlay `just test-full-reboot` passed 10 tests before reboot and 1 afterward, each with 1 intentional phase skip. Guest boot IDs changed, persisted settings/guide state survived, and restoration was independently checked; owned guest stopped and overlay restored.
 - Layout, theme, scaling: 1,008 captures passed with active guide controls. Search p95: 45.37 ms for 500 rows. Twenty paired startup measurements: median −5.63% against `a62f6e7`, with no reproducible regression above 10%.
 - Physical desktop hardware and human screen-reader use: not run; not inferred from automated evidence.
 
+- Exact v33.0.1 VM runs 38178492268 and 38178492259 failed; the latter recorded a guest Qt6Gui crash. Publication used a maintainer-authorized VM exception. All other canonical release jobs passed; the crash remains unresolved.
+
 ## Published releases
+
+- **v33.0.1 Concord** — connected Overview, Tweaks, Apps, and operation context. [Release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1); [publication evidence](docs/reports/V33.0.1_RELEASE_PUBLICATION.md).
 
 - **v32.8.0 Guide** — resumable everyday workflows, guide discovery, saved progress, and read-only CLI inspection. [Release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0); its [qualification report](docs/GUIDE_VERIFICATION.md) is a dated record for that release, not evidence for later changes.
 - **v32.7.0 Routine** — installation comparisons, Health storage guidance, DNF5 restart advice, precise next-step navigation, and profile comparisons. [Release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.7.0).

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Published baseline: 32.8.0 "Guide". Later stabilization changes in the working tree are unreleased. Physical desktop and assistive-technology qualification is recorded separately.
+> Published baseline: v33.0.1 "Concord" (2026-10-12). See [release qualification](V33_QUALIFICATION.md) for the explicit VM E2E exception and physical desktop evidence limits.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -207,19 +207,19 @@ scheduling measurements when neither view is visible or the window is hidden
 or minimized. Sleeping GPUs are not queried automatically. No drivers or
 monitoring tools are installed by opening the dashboard.
 
-The first Overview section shows up to three next steps from recorded evidence,
+Below the CPU, RAM, GPU, and storage readings, Overview shows up to three next steps from recorded evidence,
 followed by updates, Health and recent changes. Missing checks remain **Not
 checked**; unknown update results are never shown as zero. The latest saved
 symptom diagnosis is labelled complete or partial and links to its exact Health
 session separately from System Check. Opening Overview never starts a check,
-repair or update operation. Live resource readings remain below these actions.
+repair or update operation. Core resource readings lead the page; guidance and recorded actions follow.
 The first-run card and **Guides** panel offer optional help. Dismiss the card
 when it is no longer useful, then reopen it later with **Show introduction**.
 Opening either guidance surface does not start an operation.
 
 ## Apps
 
-Apps is a curated catalog rather than an unrestricted package browser.
+Apps has **Catalog**, **Installed**, and **Sources** tabs. Catalog provides curated discovery; Installed inspects exact installed app identities, and Sources shows their package-source context.
 Search by application name or goal, filter by category, and select several
 items. Every row shows its source, installation scope, and availability.
 The selected-app summary and **Review selected applications** stay visible below
@@ -247,6 +247,8 @@ independently and keep separate terminal outcomes. The bundle never retries,
 rolls back, or reboots automatically.
 
 ## Tweaks
+
+Use **Settings** to search and change individual controls and **Profiles** to inspect, edit, save, and review a profile. Profile drafts survive subview changes. Only a successfully saved exact copy opens review; saving never applies it. Each setting shows its user or computer scope and separate requested and verified values.
 
 Combine All, Favorites, Changed, or Unavailable with a category and search.
 Search includes application names such as Dolphin, Files, and Nautilus. Use
@@ -370,6 +372,8 @@ Missing tools, remotes, authorization, or supported backends remain explicit.
 A source that could not be checked is never presented as up to date.
 
 ## Activity
+
+Operation status keeps its name, origin, outcome, and return navigation when you change pages. A completed result links to Activity only when it has a recorded run ID.
 
 Date filters accept ISO dates or finite Unix timestamps. Invalid dates or a
 reversed interval stop loading and preserve the previously displayed result.

@@ -31,19 +31,22 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
-The published **32.8.0 Guide** release adds four resumable everyday workflows,
-searchable guide discovery, saved progress and read-only CLI inspection. Each
-guide opens existing review and verification flows; opening a step never starts
-a check or change. See the [32.8.0 release notes](docs/releases/RELEASE-NOTES-v32.8.0.md).
+The published **[v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1)** release puts CPU, RAM, GPU,
+and storage first in Overview; combines Settings and Profiles in Tweaks;
+separates Catalog, Installed, and Sources in Apps; and retains each operation's
+origin, result, and return path across navigation. Four resumable guides keep
+saved progress and open existing review and verification flows.
 
-The current working tree contains the **v33.0.1 Concord release candidate**.
-Overview puts core resource readings first; Tweaks groups Settings and Profiles; Apps
-separates Catalog, Installed, and Sources; and operation results remain linked
-to their origin across navigation. The candidate is unpublished and has no
-release date. Version 33.0.0 remains assigned to the historical Bastion tag.
-KDE on traditional Fedora with DNF5 is the first qualification target; GNOME
-and Atomic support remains limited to workflows with evidence. See the
-[roadmap](ROADMAP.md) for verification status and evidence boundaries.
+Published on 2026-10-12 (Europe/Stockholm), with a Fedora 44 package available
+from COPR. Version 33.0.0 remains assigned to the historical Bastion tag.
+The maintainer authorized a VM E2E exception after two failed candidate runs,
+including an unresolved guest Qt6Gui crash. All other release gates passed.
+See the [release notes](docs/releases/RELEASE-NOTES-v33.0.1.md),
+[public publication evidence](docs/reports/V33.0.1_RELEASE_PUBLICATION.md), and
+[qualification report](docs/V33_QUALIFICATION.md) for exact results and limits.
+KDE on traditional Fedora with DNF5 is the first target; GNOME, Atomic,
+physical hardware, and human screen-reader behavior retain their documented
+evidence limits.
 
 The release builds on Routine's installation comparisons, Health storage guide,
 manual DNF5 restart advice and saved profile comparisons; Personal's broader

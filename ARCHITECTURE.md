@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the v32.8.0 "Guide" local candidate.
+> Active architecture reference for the published v33.0.1 "Concord" release.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary

@@ -1,5 +1,18 @@
 # Changelog
 
+## v33.0.1 — Concord (2026-10-12)
+
+- Published on GitHub and Fedora 44 COPR (build 11109761).
+- Put core resource readings first; combine Settings and Profiles; organize Apps as Catalog, Installed, and Sources.
+- Preserve operation origin, exact result and return navigation; retain public CLI/profile/state contracts.
+- Document the explicitly waived VM E2E gate and unresolved guest Qt6Gui crash.
+- [Complete current release history](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/CHANGELOG.md) and [publication evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V33.0.1_RELEASE_PUBLICATION.md).
+
+## v32.8.0 — Guide (2026-10-11)
+
+- Resumable everyday guides, saved progress, searchable discovery, and read-only CLI inspection.
+
+
 ## v30.2.0 — Comfort (2026-10-01)
 
 - Add four KDE click/scroll settings and two GNOME clock settings, for fourteen catalog controls.
@@ -25,7 +38,7 @@
 
 - Added direct in-page system and Flatpak updates with compact confirmation and automatic verification.
 - Synchronized schema-v4 action state and kept physical/manual qualification as explicitly recorded supplementary evidence.
-- Public release evidence: [V28.0.3_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28.0.3_RELEASE_PUBLICATION.md).
+- Public release evidence: [v28.0.3 release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.3).
 
 ## v28.0.2 — Ease (2026-09-14)
 
@@ -34,7 +47,7 @@
 - Route service cleanup through validated `PrivilegedCommand` builders for disablement, unit removal, daemon reload, and failed-state reset.
 - Fail closed on non-zero command results, timeouts, and operating-system errors, with regression coverage for each branch and command validation.
 - Local deterministic verification records 4,804 passed, 73 skipped, and 830 subtests passed with 86.64% repository-wide coverage against the maintained 85% gate.
-- Public release evidence: [V28.0.2_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28.0.2_RELEASE_PUBLICATION.md).
+- Public release evidence: [v28.0.2 release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2).
 
 ## v28.0.1 — Ease (2026-09-14)
 
@@ -44,7 +57,7 @@
 - Make fresh update sources open a direct review path and build action search from the active Action Center catalog with order-independent task language.
 - Add plain-language checked-result and next-step facts and isolate the test suite from user XDG state.
 - Local deterministic verification records 4,790 passed and 73 skipped tests with 87% repository-wide coverage.
-- Public release evidence: [V28_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V28_RELEASE_PUBLICATION.md).
+- Public release evidence: [v28.0.1 release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.1).
 
 ## v27.0.1 — Core (2026-09-13)
 
