@@ -84,7 +84,6 @@ class GuideStep:
             "target": self.target.to_dict(),
             "keywords": list(self.keywords),
             "evidence_kinds": list(self.evidence_kinds),
-            "evidence_action_ids": list(self.evidence_action_ids),
         }
 
 

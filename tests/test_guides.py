@@ -54,6 +54,12 @@ class TestGuideDefinitions(GuideStoreCase):
             self.assertNotIn("command", json.dumps(serialized).casefold())
             self.assertFalse(any(callable(value) for step in guide.steps for value in step.target.to_dict().values()))
 
+    def test_action_family_constraints_stay_internal_to_guide_serialization(self):
+        step = GUIDES_BY_ID["maintain-your-system"].steps[1]
+
+        self.assertIn("update-fedora-system", step.evidence_action_ids)
+        self.assertNotIn("evidence_action_ids", step.to_dict())
+
     def test_guide_state_is_registered_at_the_xdg_data_path(self):
         domain = self.inventory.get("user_guides")
         self.assertEqual(domain.path, self.paths.data / "guides.json")
