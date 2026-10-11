@@ -16,6 +16,7 @@ from typing import Optional
 from services.system import SystemManager
 from services.system.system import cached_which
 from utils.log import get_logger
+from utils.software_utils import parse_flatpak_application_list
 
 logger = get_logger(__name__)
 
@@ -198,7 +199,7 @@ flatpak remote-add --if-not-exists flathub https://flathub.org/repo/flathub.flat
                 timeout=30,
             )
             if result.returncode == 0:
-                return [a.strip() for a in result.stdout.strip().split("\n") if a.strip()]
+                return parse_flatpak_application_list(result.stdout)
             return []
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Failed to get Flatpak apps: %s", e)

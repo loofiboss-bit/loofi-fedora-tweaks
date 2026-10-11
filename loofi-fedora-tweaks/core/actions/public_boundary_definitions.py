@@ -33,6 +33,7 @@ def _manual_definition(
     parameter_schema: Mapping[str, Mapping[str, Any]] | None = None,
     parameter_validator: Callable[[Mapping[str, Any]], PolicyDecision] | None = None,
     reboot_policy: Literal["none", "may_require", "required"] = "none",
+    blocked_policy: Callable[[str, str], PolicyDecision] = _blocked,
 ) -> ActionDefinition:
     return ActionDefinition(
         id=action_id,
@@ -49,7 +50,7 @@ def _manual_definition(
         recovery_guidance=recovery_guidance,
         rollback_supported=False,
         command_renderer=lambda _parameters, _runtime: [],
-        preflight_checker=lambda _parameters, _runtime: _blocked(
+        preflight_checker=lambda _parameters, _runtime: blocked_policy(
             "manual_only",
             description,
         ),

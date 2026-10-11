@@ -13,6 +13,11 @@ from utils.log import get_logger
 logger = get_logger(__name__)
 
 
+def parse_flatpak_application_list(stdout: str) -> list[str]:
+    """Return non-empty application IDs from Flatpak's one-column listing."""
+    return [application.strip() for application in stdout.strip().split("\n") if application.strip()]
+
+
 class SoftwareUtils:
     """Static helpers for software/package checks."""
 

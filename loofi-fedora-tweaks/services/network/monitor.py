@@ -17,6 +17,8 @@ import time
 from dataclasses import dataclass
 from typing import Dict, List, Tuple
 
+from utils.formatting import bytes_to_legacy_human
+
 logger = logging.getLogger(__name__)
 
 
@@ -273,11 +275,7 @@ class NetworkMonitor:
     @staticmethod
     def bytes_to_human(num_bytes: float) -> str:
         """Convert a byte count (int or float) to a human-readable string."""
-        for unit in ("B", "KB", "MB", "GB", "TB"):
-            if abs(num_bytes) < 1024:
-                return f"{num_bytes:.1f} {unit}"
-            num_bytes /= 1024
-        return f"{num_bytes:.1f} PB"
+        return bytes_to_legacy_human(num_bytes)
 
     # ------------------------------------------------------------------ #
     #  Internal helpers

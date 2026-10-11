@@ -158,6 +158,14 @@ class OperationControllerQtAdapter(QObject):
             self.cancel()
         return self.wait(timeout_ms)
 
+    def request_stop(self) -> None:
+        """Match the window runtime's cooperative resource shutdown contract."""
+        self.cancel()
+
+    def wait_for_stop(self, timeout_ms: int = 5000) -> bool:
+        """Wait for the worker thread within the caller's shared time budget."""
+        return self.wait(timeout_ms)
+
     def _record_finished(self, result: object) -> None:
         self._terminal = ("finished", result)
 

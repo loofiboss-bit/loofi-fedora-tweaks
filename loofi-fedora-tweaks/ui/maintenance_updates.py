@@ -15,7 +15,7 @@ from services.system.system import cached_which
 
 from core.plugins.metadata import PluginMetadata
 from core.fedora_release_policy import FEDORA_RELEASE_POLICY
-from PyQt6.QtCore import QObject, QThread, QTimer, pyqtSignal
+from PyQt6.QtCore import QTimer, pyqtSignal
 from PyQt6.QtWidgets import (
     QFrame,
     QComboBox,
@@ -46,7 +46,7 @@ from ui.components import (
 from ui.components.layout import PageScaffold
 from ui.shared_states import ActionProgress, DetailsDisclosure, ResultBanner
 from ui.tooltips import MAINT_CLEANUP, MAINT_JOURNAL, MAINT_ORPHANS
-from ui.maintenance_action_center import _ActionCenterOperationWorker
+from ui.operation_worker import OperationControllerQtAdapter
 
 
 class _UpdatesSubTab(BaseTab):
@@ -104,8 +104,13 @@ class _UpdatesSubTab(BaseTab):
         from core.actions import DirectActionService
 
         self._direct_service = DirectActionService()
-        self._direct_thread: QThread | None = None
-        self._direct_worker: _ActionCenterOperationWorker | None = None
+        self._direct_adapter = OperationControllerQtAdapter(parent=self)
+        self._direct_thread: OperationControllerQtAdapter | None = None
+        self._direct_success_callback: typing.Callable[[typing.Any], None] | None = None
+        self._direct_failure_title = ""
+        self._direct_adapter.finished.connect(self._dispatch_direct_success)
+        self._direct_adapter.failed.connect(self._dispatch_direct_failure)
+        self._direct_adapter.stopped.connect(self._clear_direct_operation)
         self._pending_update: dict[str, str] | None = None
         self._prepared_update: typing.Any | None = None
         self.overview.snapshotChanged.connect(self._on_overview_snapshot)
@@ -432,7 +437,7 @@ class _UpdatesSubTab(BaseTab):
         if not hasattr(self, "_direct_service"):
             self.actionCenterRequested.emit(action_id, {})
             return
-        if getattr(self, "_direct_thread", None) is not None:
+        if self._direct_adapter.busy:
             self._set_update_state(
                 "running",
                 translate("An update is already running"),
@@ -487,33 +492,33 @@ class _UpdatesSubTab(BaseTab):
         failure_title: str,
     ) -> None:
         """Run one Action Center operation off the GUI thread."""
-        if self._direct_thread is not None:
+        if self._direct_adapter.busy:
             return
-        thread = QThread(self)
-        worker = _ActionCenterOperationWorker(operation)
-        worker.moveToThread(thread)
-        thread.started.connect(worker.run)
-
         def safe_success(result: typing.Any) -> None:
             try:
                 on_success(result)
             except (RuntimeError, TypeError, ValueError) as exc:
                 self._direct_operation_failed(str(exc), failure_title)
 
-        worker.finished.connect(safe_success)
-        worker.finished.connect(thread.quit)
-        worker.failed.connect(lambda message: self._direct_operation_failed(message, failure_title))
-        worker.failed.connect(thread.quit)
-        thread.finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
-        thread.finished.connect(self._clear_direct_operation)
-        self._direct_thread = thread
-        self._direct_worker = worker
-        thread.start()
+        self._direct_success_callback = safe_success
+        self._direct_failure_title = failure_title
+        if self._direct_adapter.start(operation):
+            self._direct_thread = self._direct_adapter
+        else:
+            self._direct_success_callback = None
+
+    def _dispatch_direct_success(self, result: typing.Any) -> None:
+        callback = self._direct_success_callback
+        if callback is not None:
+            callback(result)
+
+    def _dispatch_direct_failure(self, message: str) -> None:
+        self._direct_operation_failed(message, self._direct_failure_title)
 
     def _clear_direct_operation(self) -> None:
         self._direct_thread = None
-        self._direct_worker = None
+        self._direct_success_callback = None
+        self._direct_failure_title = ""
 
     def _accept_direct_preview(self, result: typing.Any) -> None:
         from core.actions.direct import DirectActionResult
@@ -818,11 +823,14 @@ class _CleanupSubTab(BaseTab):
         preview_layout.addWidget(self.reclaim_button)
         layout.insertWidget(0, preview_group)
         self.add_output_disclosure(layout, self.tr("Show cleanup command output"))
+        self._reclaim_adapter = OperationControllerQtAdapter(parent=self)
         self._reclaim_thread = None
-        self._reclaim_worker = None
+        self._reclaim_adapter.finished.connect(self._show_reclaim_analysis)
+        self._reclaim_adapter.failed.connect(self._show_reclaim_error)
+        self._reclaim_adapter.stopped.connect(self._clear_reclaim_worker)
 
     def _analyze_reclaim(self: typing.Any) -> None:
-        if self._reclaim_thread is not None:
+        if self._reclaim_adapter.busy:
             return
         from services.storage import ReclaimProbeService
 
@@ -832,20 +840,8 @@ class _CleanupSubTab(BaseTab):
             self.tr("Analyzing reclaimable space"),
             self.tr("Collecting bounded package-cache and journal estimates…"),
         )
-        thread = QThread(self)
-        worker = _ActionCenterOperationWorker(ReclaimProbeService().analyze)
-        worker.moveToThread(thread)
-        thread.started.connect(worker.run)
-        worker.finished.connect(self._show_reclaim_analysis)
-        worker.finished.connect(thread.quit)
-        worker.failed.connect(self._show_reclaim_error)
-        worker.failed.connect(thread.quit)
-        thread.finished.connect(worker.deleteLater)
-        thread.finished.connect(thread.deleteLater)
-        thread.finished.connect(self._clear_reclaim_worker)
-        self._reclaim_thread = thread
-        self._reclaim_worker = worker
-        thread.start()
+        if self._reclaim_adapter.start(ReclaimProbeService().analyze):
+            self._reclaim_thread = self._reclaim_adapter
 
     def _show_reclaim_analysis(self: typing.Any, analysis: typing.Any) -> None:
         lines = []
@@ -882,7 +878,6 @@ class _CleanupSubTab(BaseTab):
 
     def _clear_reclaim_worker(self: typing.Any) -> None:
         self._reclaim_thread = None
-        self._reclaim_worker = None
         self.reclaim_button.setEnabled(True)
 
     @staticmethod

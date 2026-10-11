@@ -143,6 +143,7 @@ _SECTIONS = tuple(_section(record) for record in CATALOG_DATA["sections"])
 _DESTINATIONS = tuple(_destination(record) for record in CATALOG_DATA["destinations"])
 
 _PLUGIN_BY_ID = MappingProxyType({item.id: item for item in _PLUGINS})
+_PLUGIN_BY_MODULE = MappingProxyType({item.module: item for item in _PLUGINS})
 _PLACEMENT_BY_ROUTE = MappingProxyType({item.route_id: item for item in _PLACEMENTS})
 _SECTION_BY_KEY = MappingProxyType({(item.destination_id, item.id): item for item in _SECTIONS})
 _DESTINATION_BY_ID = MappingProxyType({item.id: item for item in _DESTINATIONS})
@@ -159,7 +160,7 @@ def catalog_plugins() -> tuple[PluginSpec, ...]:
 def plugin_metadata_for_module(module_name: str) -> PluginMetadata:
     """Project legacy ``PluginMetadata`` for one catalog-owned UI module."""
     normalized = str(module_name).removeprefix("loofi-fedora-tweaks.")
-    plugin = next((item for item in _PLUGINS if item.module == normalized), None)
+    plugin = _PLUGIN_BY_MODULE.get(normalized)
     if plugin is None:
         raise LookupError(f"no product catalog plugin for module {module_name}")
     return plugin.metadata()
@@ -177,8 +178,8 @@ def catalog_destinations() -> tuple[Destination, ...]:
     return _DESTINATIONS
 
 
-def product_catalog() -> tuple[ProductCatalogEntry, ...]:
-    """Return the validated route-owned product catalog in stable order."""
+def _build_product_catalog() -> tuple[ProductCatalogEntry, ...]:
+    """Compose route-owned entries once from immutable catalog records."""
     entries: list[ProductCatalogEntry] = []
     for route in _ROUTES:
         plugin = _PLUGIN_BY_ID.get(route.plugin_id)
@@ -204,7 +205,15 @@ def product_catalog() -> tuple[ProductCatalogEntry, ...]:
     return tuple(entries)
 
 
-_ENTRY_BY_ROUTE = MappingProxyType({entry.route_id: entry for entry in product_catalog()})
+_PRODUCT_CATALOG = _build_product_catalog()
+
+
+_ENTRY_BY_ROUTE = MappingProxyType({entry.route_id: entry for entry in _PRODUCT_CATALOG})
+
+
+def product_catalog() -> tuple[ProductCatalogEntry, ...]:
+    """Return the validated route-owned product catalog in stable order."""
+    return _PRODUCT_CATALOG
 
 
 def catalog_entry(route_id: str) -> ProductCatalogEntry | None:

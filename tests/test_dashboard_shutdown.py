@@ -13,6 +13,7 @@ from PyQt6.QtWidgets import QApplication, QWidget
 
 from ui.dashboard_controller import DashboardController
 from ui.main_window_interactions import MainWindowInteractionMixin, _PENDING_SHUTDOWN_WINDOWS
+from ui.operation_worker import OperationControllerQtAdapter
 
 
 class _Signal:
@@ -46,6 +47,10 @@ class _Harness(MainWindowInteractionMixin):
         self.close = MagicMock(side_effect=lambda: self._request_runtime_shutdown(action="close"))
         self.tr = lambda text: text
         self.pulse_thread = None
+        self.operation_adapters = []
+
+    def findChildren(self, _resource_type):
+        return list(self.operation_adapters)
 
 
 class TestReaderShutdownDeferral(unittest.TestCase):
@@ -81,6 +86,20 @@ class TestReaderShutdownDeferral(unittest.TestCase):
         window._runtime.shutdown.assert_not_called()
         apps.busy = False
         apps.stopped.emit()
+        window.close.assert_called_once()
+        window._runtime.shutdown.assert_called_once()
+
+    def test_page_operation_adapter_defers_shutdown_and_is_cancelled(self):
+        operation = reader()
+        window = _Harness()
+        window.operation_adapters.append(operation)
+
+        self.assertFalse(window._request_runtime_shutdown(action="close"))
+        operation.request_stop.assert_called_once()
+        window._runtime.shutdown.assert_not_called()
+
+        operation.busy = False
+        operation.stopped.emit()
         window.close.assert_called_once()
         window._runtime.shutdown.assert_called_once()
 
@@ -201,4 +220,31 @@ class TestClosingWindowOwnership(unittest.TestCase):
         if reference() is not None:
             self.assertFalse(reference()._dashboard_controller.busy)
             reference().deleteLater()
+        self.app.processEvents()
+
+    def test_page_operation_finishes_before_window_shutdown(self):
+        entered, release = Event(), Event()
+        window = _Window(SimpleNamespace(reset_baselines=lambda: None, collect=lambda: None))
+        adapter = OperationControllerQtAdapter(parent=window)
+        results = []
+        adapter.finished.connect(results.append)
+        self.assertTrue(adapter.start(lambda: (entered.set(), release.wait(2), "verified")[-1]))
+        self.assertTrue(entered.wait(1))
+
+        self.assertFalse(window._request_runtime_shutdown(action="close"))
+        self.assertIn(window, _PENDING_SHUTDOWN_WINDOWS)
+        window._runtime.shutdown.assert_not_called()
+
+        release.set()
+        for _ in range(200):
+            self.app.processEvents()
+            if window._runtime.shutdown.called:
+                break
+            QTest.qWait(5)
+
+        self.assertEqual(results, ["verified"])
+        self.assertTrue(window._runtime.shutdown.called)
+        self.assertFalse(adapter.busy)
+        self.assertNotIn(window, _PENDING_SHUTDOWN_WINDOWS)
+        window.deleteLater()
         self.app.processEvents()
