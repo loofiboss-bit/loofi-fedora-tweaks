@@ -419,6 +419,37 @@ class InstalledApplicationsPresentationTests(unittest.TestCase):
         card.close()
         card.deleteLater()
 
+    def test_refresh_passes_worker_cancellation_to_snapshot_and_keeps_partial_results(self):
+        from ui.installed_applications import InstalledApplicationsCard
+
+        adapter = Mock(busy=False, cancel_requested=False)
+        operation = []
+        adapter.start.side_effect = lambda callback: operation.append(callback) or True
+        adapter.cancel.side_effect = lambda: setattr(adapter, "cancel_requested", True)
+
+        card = None
+
+        def probe(vector):
+            if tuple(vector)[:2] == ("flatpak", "list"):
+                card.request_stop()
+                return ActionResult(True, "ok", stdout=ROW)
+            raise AssertionError("RPM inventory must not start after cancellation.")
+
+        service = InstalledApplicationService(probe=probe)
+        card = InstalledApplicationsCard(service=service)
+        card._adapter = adapter
+        card.refresh()
+        self.assertEqual(len(operation), 1)
+
+        inventory = operation[0]()
+
+        self.assertEqual(len(inventory.applications), 1)
+        self.assertIn("fedora", inventory.unknown_sources)
+        self.assertTrue(any("cancelled" in error.casefold() for error in inventory.errors))
+        adapter.start.assert_called_once()
+        card.close()
+        card.deleteLater()
+
     def test_inventory_identity_text_stays_readable_when_scaled(self):
         from PyQt6.QtGui import QFont
         from ui.installed_applications import InstalledApplicationsCard

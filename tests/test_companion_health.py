@@ -176,6 +176,73 @@ class TestHealthSavedComparison(unittest.TestCase):
         widget.cleanup()
 
     @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
+    def test_empty_saved_history_is_distinct_from_a_read_failure(self, _refresh):
+        history = _History()
+        history.sessions = lambda: ()
+        widget = TroubleshootWidget(history=history)
+
+        self.assertEqual(widget.saved_history_notice.title_label.text(), "No saved checks")
+        self.assertIn("successful read found no saved", widget.saved_history_notice.message_label.text())
+        self.assertTrue(widget._saved_history_available)
+        self.assertFalse(widget.compare_saved_button.isEnabled())
+        self.assertFalse(widget.support_question_button.isEnabled())
+        widget.cleanup()
+
+    @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
+    def test_failed_refresh_retains_sessions_disables_actions_and_retry_restores_exact_selection(self, _refresh):
+        before = _session()
+        selected = replace(before, session_id="42345678-1234-5678-9234-567812345678", completed_at=4.0)
+        history = _History(selected)
+        history.sessions = lambda: (selected, before)
+        widget = TroubleshootWidget(history=history)
+        self.assertTrue(widget.select_saved_session(before.session_id))
+        retained = widget._saved_sessions
+
+        history.sessions = Mock(side_effect=OSError("temporary read failure"))
+        widget.refresh_saved_sessions_button.click()
+
+        self.assertEqual(widget.saved_history_notice.title_label.text(), "Could not read saved checks")
+        self.assertEqual(widget._saved_sessions, retained)
+        self.assertEqual(widget.saved_session_selector.currentData(), before.session_id)
+        self.assertFalse(widget._saved_history_available)
+        self.assertFalse(widget.saved_session_selector.isEnabled())
+        self.assertFalse(widget.baseline_selector.isEnabled())
+        self.assertFalse(widget.compare_saved_button.isEnabled())
+        self.assertFalse(widget.support_question_button.isEnabled())
+
+        history.sessions = lambda: (selected, before)
+        widget.refresh_saved_sessions_button.click()
+
+        self.assertEqual(widget.saved_history_notice.title_label.text(), "Saved checks loaded")
+        self.assertTrue(widget._saved_history_available)
+        self.assertEqual(widget.saved_session_selector.currentData(), before.session_id)
+        self.assertEqual(widget._current_session.session_id, before.session_id)
+        self.assertTrue(widget.saved_session_selector.isEnabled())
+        self.assertTrue(widget.support_question_button.isEnabled())
+        widget.cleanup()
+
+    @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
+    def test_future_schema_has_distinct_status_and_blocks_saved_actions(self, _refresh):
+        from core.troubleshooting.storage import UnsupportedFutureSessionSchema
+
+        session = _session()
+        history = _History(session)
+        widget = TroubleshootWidget(history=history)
+        widget.select_saved_session(session.session_id)
+        retained = widget._saved_sessions
+        history.sessions = Mock(side_effect=UnsupportedFutureSessionSchema("future"))
+
+        widget.refresh_saved_sessions_button.click()
+
+        self.assertEqual(widget.saved_history_notice.title_label.text(), "Saved checks use a newer format")
+        self.assertEqual(widget._saved_sessions, retained)
+        self.assertFalse(widget._saved_history_available)
+        self.assertFalse(widget.saved_session_selector.isEnabled())
+        self.assertFalse(widget.compare_saved_button.isEnabled())
+        self.assertFalse(widget.support_question_button.isEnabled())
+        widget.cleanup()
+
+    @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
     def test_shutdown_retains_running_worker_until_it_stops(self, _refresh):
         from test_troubleshoot_widget import _Worker
 

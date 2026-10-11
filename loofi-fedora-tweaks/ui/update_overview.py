@@ -82,6 +82,7 @@ class UpdateOverviewWidget(QWidget):
         self._worker: UpdateCheckWorker | None = None
         self._checking_source: str | None = None
         self._accept_results = True
+        self._check_state = "idle"
         self.setObjectName("updateOverview")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -126,6 +127,7 @@ class UpdateOverviewWidget(QWidget):
         if callable(reset_cancel):
             reset_cancel()
         self._accept_results = True
+        self._check_state = "checking"
         self._checking_source = source
         self.check_button.setEnabled(False)
         self.cancel_button.setEnabled(True)
@@ -147,12 +149,9 @@ class UpdateOverviewWidget(QWidget):
     def cancel_check(self) -> None:
         if self._worker is None:
             return
+        self._check_state = "cancelling"
         self.service.cancel()
-        self.feedback.set_result(
-            "warning",
-            self.tr("Check cancelled"),
-            self.tr("Completed source results remain visible. Check again to refresh the remaining sources."),
-        )
+        self._show_check_feedback()
 
     @pyqtSlot(object)
     def _partial_completed(self, snapshot: object) -> None:
@@ -167,16 +166,21 @@ class UpdateOverviewWidget(QWidget):
     @pyqtSlot(str)
     def _failed(self, _error: str) -> None:
         if self._accept_results:
-            self.feedback.set_result("warning", self.tr("Could not finish the check"), self.tr("Saved results may be out of date. Check again when the source is available."))
+            if self._check_state != "cancelling":
+                self._check_state = "error"
+            self._show_check_feedback()
 
     @pyqtSlot()
     def _finished(self) -> None:
+        was_cancelled = self._check_state == "cancelling"
         self._worker = None
         self._checking_source = None
+        self._check_state = "cancelled" if was_cancelled else "idle" if self._check_state == "checking" else self._check_state
         self.check_button.setEnabled(True)
         self.cancel_button.setEnabled(False)
         for retry in self.retry_buttons.values():
             retry.setEnabled(True)
+        self._show_check_feedback()
 
     def hideEvent(self, event) -> None:
         self._accept_results = False
@@ -224,10 +228,27 @@ class UpdateOverviewWidget(QWidget):
                 lines.append(self.tr("Check detail: %1").replace("%1", result.error_code))
             details.set_details("\n".join(lines))
             self.retry_buttons[result.source].setEnabled(self._worker is None)
-        warning = snapshot.storage_status != "ok" or any(item.status == "error" for item in snapshot.sources)
-        self.feedback.set_result(
-            "warning" if warning else "info",
-            self.tr("Some results need attention") if warning else self.tr("Update overview"),
-            self.tr("Results could not be saved. Existing saved data was preserved; run a new check when storage is available.") if snapshot.storage_status != "ok" else self.tr("Choose an update source below. Action Center prepares, runs, and verifies it here."),
-        )
+        self._show_check_feedback()
         self.snapshotChanged.emit(snapshot)
+
+    def _show_check_feedback(self) -> None:
+        storage_warning = self.snapshot.storage_status != "ok"
+        source_warning = any(item.status == "error" for item in self.snapshot.sources)
+        if self._check_state in {"cancelling", "cancelled"}:
+            message = self.tr("Completed source results remain visible. Check again to refresh the remaining sources.")
+            if storage_warning:
+                message += " " + self.tr("Results could not be saved. Existing saved data was preserved.")
+            self.feedback.set_result("warning", self.tr("Check cancelled"), message)
+        elif self._check_state == "checking":
+            message = self.tr("Reading System, Flatpak and Firmware. Existing results remain visible until the check finishes.")
+            if storage_warning:
+                message += " " + self.tr("Results could not be saved. Existing saved data was preserved.")
+            self.feedback.set_result("info", self.tr("Checking for updates"), message)
+        elif self._check_state == "error":
+            self.feedback.set_result("warning", self.tr("Could not finish the check"), self.tr("Saved results may be out of date. Check again when the source is available."))
+        elif storage_warning:
+            self.feedback.set_result("warning", self.tr("Some results need attention"), self.tr("Results could not be saved. Existing saved data was preserved; run a new check when storage is available."))
+        elif source_warning:
+            self.feedback.set_result("warning", self.tr("Some results need attention"), self.tr("Choose an update source below. Action Center prepares, runs, and verifies it here."))
+        else:
+            self.feedback.set_result("info", self.tr("Update overview"), self.tr("Choose an update source below. Action Center prepares, runs, and verifies it here."))

@@ -2,8 +2,9 @@
 
 The maintained GUI is a native PyQt6 control center. Overview is the default
 start page; desktop settings, software, maintenance, and Activity use one
-consistent presentation system. KDE is the first manual qualification
-platform. GNOME shares the same system and capability-aware behavior.
+consistent presentation system. KDE is the first platform targeted by
+automated qualification. GNOME shares the same system and capability-aware
+behavior.
 
 ## Identity and themes
 
@@ -105,8 +106,10 @@ maintenance timestamps describe actual observations, never a new check.
 
 ## Qualification
 
-Exercise all reachable main and tool views at 900x650, 1280x800, and 1600x900,
-with 100%, 150%, and 200% Qt scaling, in light, dark, and high contrast. Include
-keyboard focus, larger text, long translations, unavailable data, and workers
-finishing during navigation/shutdown. Offscreen evidence is not physical KDE,
-GNOME, assistive-technology, or GPU qualification.
+Automated rendering and interaction checks should cover reachable main and
+tool views at 900x650, 1280x800, and 1600x900, with 100%, 150%, and 200% Qt
+scaling, in light, dark, and high contrast. Include keyboard focus, larger text,
+long translations, unavailable data, and workers finishing during
+navigation/shutdown. Report the boundary of offscreen or VM evidence clearly;
+physical KDE, GNOME, assistive technology, and GPU behavior are not manual
+acceptance requirements.

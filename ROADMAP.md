@@ -1,6 +1,10 @@
 # Roadmap
 
-The published baseline is [v32.8.0 Guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0). The three-stage plan below is implemented in the current working tree and remains unreleased. No next version or release date is assigned. KDE on traditional Fedora with DNF5 is the first full qualification target. GUI, CLI, and saved-session compatibility remain part of each stage.
+The latest published release is [v32.8.0 Guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0). Its follow-up everyday UX and diagnostic work is implemented and merged to `master` through PR #66; it has not been assigned a new release version. No next version or release date is assigned. KDE on traditional Fedora with DNF5 remains the first automated qualification target. GUI, CLI, and saved-session compatibility remain part of each change.
+
+## Completed work awaiting a release decision
+
+The three stages below are complete and merged. Their qualification reports are dated evidence for the tested candidate and do not themselves publish a release. The next implementation stage is the stabilization work below.
 
 ## 1. Reliability and clearer everyday workflows
 
@@ -16,7 +20,7 @@ Health and global search expose exact application-start, network, battery/energy
 
 The troubleshooting CLI uses the same versioned profiles and returns text or JSON. Older app and network sessions keep their original profile contract; incompatible comparisons remain not comparable. KDE energy, mouse, touchpad, and printer handoffs check the installed module before opening.
 
-Automated code and compatibility checks do not qualify Wayland behavior, physical hardware, private print jobs, or real network recovery. Those checks remain pending on the target Fedora/KDE setup.
+The automated evidence is bounded to its fixtures and data sources. It does not establish behavior on every Wayland setup, physical device, private print job, or real network condition. These are evidence limitations, not required manual checks or release blockers.
 
 ## 3. Continuity, printers, and personal workflows
 
@@ -24,7 +28,14 @@ CUPS diagnostics show service state, queue state, and the current user's pending
 
 The **Folder workspace** preset configures Dolphin to reopen folders and tabs, open external folders in a new tab, and confirm before closing multiple tabs. It uses the regular profile review and independent verification.
 
-Stage completion requires its automated regression suite, `just verify`, catalog and packaging checks, and RPM build. Each stage also requires its own KDE/Fedora operational qualification and visual/accessibility pass. Physical Wayland and hardware evidence is recorded separately. GNOME and Atomic support claims remain limited to individually verified workflows.
+Stage completion requires its relevant automated regressions, `just verify`, catalog and packaging checks, and RPM build. Use the isolated Fedora KDE VM suite when a change affects behavior it covers. Fresh-disk and Wayland VM runs remain optional automated checks selected according to change risk. Claims for GNOME, Atomic, physical hardware, and assistive technology are limited to the automated evidence available; no manual qualification is required for completion or release.
+
+## Next: interaction and history reliability
+
+- Connect Apps inventory cancellation to the existing cooperative worker callback and preserve completed source results.
+- Distinguish empty saved Health history from read failures and unsupported future schemas; let users retry locally.
+- Preserve Updates cancellation status when queued partial source results arrive, then restore controls when the worker finishes.
+- Add automated regressions for these cases. Keep persisted sessions, CLI output, and Action Center authority unchanged.
 
 ## Published releases
 
