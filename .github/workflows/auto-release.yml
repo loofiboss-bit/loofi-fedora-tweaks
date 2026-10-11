@@ -11,6 +11,10 @@ on:
       version:
         description: "Version without v prefix (example: 25.0.1). Required for manual release runs."
         required: false
+      waive_v33_vm_e2e:
+        description: "Explicit v33.0.1 release exception: acknowledge failed VM runs 38178492268 and 38178492259."
+        type: boolean
+        default: false
       dry_run:
         description: "Dry run (validate/build only, skip tag/release publish)."
         type: boolean
@@ -300,7 +304,8 @@ jobs:
       needs.docs_gate.result == 'success' &&
       needs.test.result == 'success' &&
       needs.security.result == 'success' &&
-      needs.validate.outputs.should_release == 'true'
+      needs.validate.outputs.should_release == 'true' &&
+      !(github.event_name == 'workflow_dispatch' && inputs.waive_v33_vm_e2e && needs.validate.outputs.version == '33.0.1')
     runs-on: [self-hosted, Linux, X64, loofi-vm-e2e]
     timeout-minutes: 180
     steps:
@@ -330,12 +335,19 @@ jobs:
       needs.test.result == 'success' &&
       needs.docs_gate.result == 'success' &&
       needs.security.result == 'success' &&
-      needs.vm_e2e.result == 'success' &&
+      (needs.vm_e2e.result == 'success' ||
+       (needs.vm_e2e.result == 'skipped' && github.event_name == 'workflow_dispatch' &&
+        inputs.waive_v33_vm_e2e && needs.validate.outputs.version == '33.0.1')) &&
       needs.validate.outputs.should_release == 'true'
     steps:
       - name: Bootstrap Git for checkout
         run: dnf install -y git
       - uses: actions/checkout@v6
+      - name: Record explicit v33 VM qualification exception
+        if: github.event_name == 'workflow_dispatch' && inputs.waive_v33_vm_e2e && needs.validate.outputs.version == '33.0.1'
+        run: |
+          echo "::warning::User-authorized v33.0.1 VM E2E exception; failed runs 38178492268 and 38178492259."
+          echo "VM E2E qualification waived for this manual v33.0.1 release. Failed runs 38178492268 and 38178492259; all other release gates remain required." >> "$GITHUB_STEP_SUMMARY"
       - name: Install build deps
         run: dnf install -y rpm-build python3 python3-devel python3-defusedxml desktop-file-utils libappstream-glib systemd-rpm-macros
       - name: Build RPM

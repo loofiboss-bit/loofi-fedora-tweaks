@@ -99,3 +99,14 @@ publication.
 Physical hardware, human screen-reader use, Wayland input, GNOME, and Atomic
 workflows are not qualified by these results. Offscreen rendering and Qt
 keyboard checks do not establish physical desktop or screen-reader behavior.
+
+## Manual v33.0.1 publication exception
+
+On 2026-10-12 the maintainer authorized completing GitHub and COPR publication
+without further VM E2E investigation. Exact candidate CI run 38178492268 failed
+with an AT-SPI/WebDriver timeout (5 passed, 1 failed); release run 38178492259
+failed after a guest Python general protection fault in libQt6Gui.so.6.10.2
+(4 passed, 1 failed). Both runners stopped the guest and discarded test changes.
+The crash root cause is unresolved. These results do not qualify the exact
+33.0.1 GUI payload. The manual workflow exception is restricted to 33.0.1
+and preserves every other build, review, test, evidence, and publication gate.
