@@ -1258,6 +1258,7 @@ _MODULE_KEYS = [
     "services.hardware.disk",
     "version",
     "ui.main_window_interactions",
+    "ui.main_window_guides",
     "ui.main_window_services",
     "ui.main_window_shell",
     "ui.main_window",
@@ -1273,6 +1274,7 @@ def setUpModule():
     _install_stubs()
     # Force re-import so stubs are used
     sys.modules.pop("ui.main_window_interactions", None)
+    sys.modules.pop("ui.main_window_guides", None)
     sys.modules.pop("ui.main_window_services", None)
     sys.modules.pop("ui.main_window_shell", None)
     sys.modules.pop("ui.main_window", None)

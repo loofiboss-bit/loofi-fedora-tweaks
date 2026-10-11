@@ -24,6 +24,7 @@ class TestLazyPluginShell(unittest.TestCase):
         window._plugin_loader = MagicMock()
         window._plugin_context = {"main_window": window}
         window.tr = lambda value: value
+        window._connect_guide_widget = MagicMock()
         window._schedule_post_render_services = MagicMock()
         window._load_plugin_widget = MethodType(MainWindow._load_plugin_widget, window)
         return window

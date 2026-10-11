@@ -589,6 +589,15 @@ class InstallWorkflowPage(QWidget):
     def focus_task(self, task_id: str) -> bool:
         """Focus one application row after a goal-based search result."""
         key = str(task_id or "").strip()
+        if key == "install:repositories":
+            self.focus_sources()
+            return True
+        if key == "install:installed":
+            index = self.view_filter.findData("installed")
+            if index >= 0:
+                self.view_filter.setCurrentIndex(index)
+            self.search_input.setFocus()
+            return index >= 0
         row = self._rows.get(key)
         if row is None and key.startswith("install:"):
             # Task search results identify the owning goal rather than a
@@ -603,7 +612,7 @@ class InstallWorkflowPage(QWidget):
                 row = next(iter(self._rows.values()), None)
         if row is None:
             self.search_input.setFocus()
-            return False
+            return key in {"install:applications", "install:flatpaks"}
         item = row[2]
         self.application_list.setCurrentItem(item)
         widget = self.application_list.itemWidget(item)

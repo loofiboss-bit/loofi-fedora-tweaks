@@ -171,6 +171,14 @@ class MainWindowInteractionMixin:
                 page_widget = real_widget()
             focus = getattr(page_widget, "focus_tweak", None)
             return bool(focus(tweak_id)) if callable(focus) else False
+        guide_id = str(getattr(result, "guide_id", "") or "")
+        if guide_id:
+            entry = getattr(self, "_sidebar_index", {}).get("overview")
+            if entry is None:
+                return False
+            page = self._real_widget_for_entry(entry)
+            open_guide = getattr(page, "open_guide", None)
+            return bool(open_guide(guide_id)) if callable(open_guide) else False
         if task_id:
             self._focus_utility_task(task_id, route_id)
             return True
@@ -188,7 +196,7 @@ class MainWindowInteractionMixin:
         entry = getattr(self, "_sidebar_index", {}).get(plugin_id)
         if entry is None:
             return False
-        widget = entry.page_widget
+        widget = self._real_widget_for_entry(entry)
         focus = getattr(widget, "focus_task", None)
         return bool(focus(task_id)) if callable(focus) else False
 

@@ -37,6 +37,7 @@ def capture(output: Path, scale: str) -> None:
         from ui.tweak_profile_comparison import ProfileComparisonDialog
         from ui.update_workflow import UpdateWorkflowPage
         from ui.overview_page import OverviewPage
+        from ui.guide_panel import GuidePanel
         from ui.troubleshoot_widget import TroubleshootWidget
         stamp = time.time()
         apps = InstalledInventory((
@@ -72,6 +73,8 @@ def capture(output: Path, scale: str) -> None:
                     updates.restart_advice.refresh_display()
                     updates.preselect_source("system", "12345678-1234-5678-9234-567812345678")
                     overview = OverviewPage()
+                    guides = GuidePanel()
+                    guides.open_guide("maintain-your-system")
                     overview._show_next_steps((NextStep("failed", "Review unsuccessful changes", "Flatpak update needs review", "health", "Review changes",
                                                         stamp, NextStepContext(run_id="exact-run", update_source="flatpak")),))
                     history = Mock()
@@ -83,7 +86,8 @@ def capture(output: Path, scale: str) -> None:
                     health._render_session(session, None, "")
                     health._select_view("results")
                     for name, widget in (("app-comparison", app_dialog), ("profile-comparison", profile_dialog),
-                                         ("updates", updates), ("overview-context", overview), ("health-storage", health)):
+                                         ("updates", updates), ("overview-context", overview), ("health-storage", health),
+                                         ("guide-flow", guides)):
                         if isinstance(widget, QDialog):
                             surface = widget
                         else:

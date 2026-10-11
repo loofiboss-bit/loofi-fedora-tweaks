@@ -31,10 +31,14 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
-The **32.7.0 Routine local candidate** adds installation comparisons, a Health
-storage guide, manual DNF5 restart advice, precise next-step navigation and saved
-profile comparisons. It uses existing reviewed cleanup and settings workflows.
-See [Routine verification](docs/ROUTINE_VERIFICATION.md).
+The **32.8.0 Guide local candidate** adds four resumable everyday workflows,
+searchable guide discovery, saved progress and read-only CLI inspection. Each
+guide opens the existing review and verification flows; it never runs a check
+or change just because a step was opened. See [Guide verification](docs/GUIDE_VERIFICATION.md).
+
+Its Routine baseline adds installation comparisons, a Health storage guide,
+manual DNF5 restart advice, precise next-step navigation and saved profile
+comparisons. See [Routine verification](docs/ROUTINE_VERIFICATION.md).
 
 Its Personal baseline adds broader RPM application discovery,
 editable profile copies, a searchable local DNF source overview, and three

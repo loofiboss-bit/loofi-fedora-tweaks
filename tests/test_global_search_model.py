@@ -82,6 +82,7 @@ class TestGlobalSearchModel(unittest.TestCase):
                 SearchResultKind.ROUTE,
                 SearchResultKind.SETTING,
                 SearchResultKind.ACTION,
+                SearchResultKind.GUIDE,
             },
         )
 
@@ -119,6 +120,24 @@ class TestGlobalSearchModel(unittest.TestCase):
 
         self.assertNotIn("dnf-clean-all", {result.action_id for result in results})
         self.assertIn("fstrim-all", {result.action_id for result in results})
+
+    def test_everyday_terms_find_guides_as_navigation_results(self):
+        model = GlobalSearchModel(_traditional_context())
+        searches = {
+            "battery": "solve-a-problem",
+            "choose apps": "choose-and-manage-apps",
+            "free space": "maintain-your-system",
+        }
+        for query, guide_id in searches.items():
+            with self.subTest(query=query):
+                matching = [result for result in model.search(query) if result.guide_id == guide_id]
+                self.assertTrue(matching)
+                self.assertTrue(all(result.route_id == "overview" for result in matching))
+                self.assertFalse(any(callable(value) for result in matching for value in result.__dict__.values()))
+
+    def test_guides_do_not_enter_the_action_only_search(self):
+        results = GlobalSearchModel(_traditional_context()).all_results(SearchFilter.ACTIONS)
+        self.assertFalse(any(result.kind is SearchResultKind.GUIDE for result in results))
 
     def test_action_filter_contains_only_navigation_descriptors(self):
         results = GlobalSearchModel(_traditional_context()).all_results(SearchFilter.ACTIONS)

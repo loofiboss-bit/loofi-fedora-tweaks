@@ -17,6 +17,7 @@ from .routes import all_shell_routes
 from .policy import NavigationPolicy
 from core.actions.catalog import ActionCatalog
 from core.tasks import TaskArea, TaskCatalog, TaskContext, TaskExecutionMode
+from core.tasks.guides import GUIDES
 from core.tasks.tweaks import TWEAKS
 
 
@@ -33,6 +34,7 @@ class SearchResultKind(Enum):
     ROUTE = "route"
     SETTING = "setting"
     ACTION = "action"
+    GUIDE = "guide"
 
 
 @dataclass(frozen=True)
@@ -58,6 +60,7 @@ class SearchResult:
     availability: str = ""
     manual_only: bool = False
     tweak_id: str | None = None
+    guide_id: str | None = None
 
 
 # Synthetic shell pages inherit their maintained manifest entry's visibility.
@@ -101,6 +104,7 @@ class GlobalSearchModel:
         self._results = self._build_results()
         self._task_results = self._build_task_results() if context_provided else ()
         self._tweak_results = self._build_tweak_results() if context_provided else ()
+        self._guide_results = self._build_guide_results() if context_provided else ()
 
     def all_results(
         self,
@@ -116,7 +120,30 @@ class GlobalSearchModel:
         # Keep the existing route/action index intact while adding the v29
         # goal-oriented projection. Task entries use the normal route kind,
         # so older consumers that only understand routes remain compatible.
-        return (*self._results, *self._task_results, *self._tweak_results)
+        return (*self._results, *self._task_results, *self._tweak_results, *self._guide_results)
+
+    @staticmethod
+    def _build_guide_results() -> tuple[SearchResult, ...]:
+        """Index curated guides and their steps as navigation-only results."""
+        return tuple(
+            SearchResult(
+                id=f"guide:{guide.id}",
+                label=guide.title,
+                description=guide.description,
+                kind=SearchResultKind.GUIDE,
+                route_id="overview",
+                destination_id="overview",
+                destination_label="Overview",
+                keywords=tuple(dict.fromkeys((
+                    guide.id,
+                    *guide.keywords,
+                    *(keyword for step in guide.steps for keyword in step.keywords),
+                    *(step.title for step in guide.steps),
+                ))),
+                guide_id=guide.id,
+            )
+            for guide in GUIDES
+        )
 
     def _build_tweak_results(self) -> tuple[SearchResult, ...]:
         """Index platform-visible catalog settings without inspecting the system."""

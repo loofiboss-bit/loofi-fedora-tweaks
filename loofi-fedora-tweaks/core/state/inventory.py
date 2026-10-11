@@ -63,6 +63,7 @@ class StateInventory:
                 "20 sessions",
                 "last-known-good",
             ),
+            ("user_guides", "guides", p.data / "guides.json", "loofi.user-guides", 1, "private", "until cleared by the user", "last-known-good"),
             ("audit_log", "audit", p.config / "audit.jsonl", "loofi.audit-log", 1, "sensitive", "bounded", "archive-corrupt"),
             ("plugin_state", "plugins", p.config / "plugins.json", "loofi.plugin-state", 1, "private", "indefinite", "last-known-good"),
             ("auth_state", "api", p.config / "auth.json", "loofi.auth-state", 1, "secret", "indefinite", "manual"),

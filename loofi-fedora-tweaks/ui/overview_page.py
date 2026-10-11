@@ -16,6 +16,7 @@ from ui.components.actions import QuietButton, SecondaryButton
 from ui.components.cards import Card
 from ui.components.feedback import InlineNotice, StatusBadge
 from ui.design import semantic_qcolor
+from ui.guide_panel import GuidePanel
 
 
 class MetricGraph(QWidget):
@@ -239,6 +240,8 @@ class OverviewPage(QWidget, PluginInterface):
     routeRequested = pyqtSignal(str)
     contextRouteRequested = pyqtSignal(str, object)
     taskRequested = pyqtSignal(str)
+    guideChanged = pyqtSignal(str)
+    guideTargetRequested = pyqtSignal(object)
     refreshRequested = pyqtSignal()
 
     def __init__(self, profile=None, parent=None):
@@ -286,6 +289,10 @@ class OverviewPage(QWidget, PluginInterface):
         self.dismiss_intro_button.clicked.connect(self._dismiss_intro)
         self.intro_card.add_widget(self.dismiss_intro_button)
         root.addWidget(self.intro_card)
+        self.guide_panel = GuidePanel(self)
+        self.guide_panel.guideChanged.connect(self.guideChanged)
+        self.guide_panel.targetRequested.connect(self.guideTargetRequested)
+        root.addWidget(self.guide_panel)
         self.next_steps_card = Card(self.tr("Next steps"), parent=self)
         self.next_steps_empty = QLabel(self.tr("Suggestions appear after the first measurement."))
         self.next_steps_empty.setWordWrap(True)
@@ -337,6 +344,10 @@ class OverviewPage(QWidget, PluginInterface):
 
     def metadata(self):
         return plugin_metadata_for_module(__name__)
+
+    def open_guide(self, guide_id: str) -> bool:
+        """Reveal and focus one guide requested by global discovery or the shell."""
+        return bool(self.guide_panel.open_guide(guide_id))
 
     def create_widget(self):
         return self

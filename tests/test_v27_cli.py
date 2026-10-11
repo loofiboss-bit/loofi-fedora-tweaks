@@ -24,6 +24,7 @@ class TestV27CliParser:
         "support-bundle",
         "tweaks",
         "apps",
+        "guides",
     }
 
     DECOMMISSIONED_COMMANDS = [
@@ -60,6 +61,8 @@ class TestV27CliParser:
             args = parser.parse_args(["tweaks", "list"])
         elif cmd == "apps":
             args = parser.parse_args(["apps", "list"])
+        elif cmd == "guides":
+            args = parser.parse_args(["guides", "list"])
         else:
             args = parser.parse_args([cmd])
         assert args.command == cmd

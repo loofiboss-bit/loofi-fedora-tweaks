@@ -32,8 +32,51 @@ def _doctor(healthy=False):
     }
 
 
+def _guides_list():
+    return {
+        "schema_id": "loofi.user-guides", "schema_version": 1, "active_guide": "",
+        "writable": True, "reason_code": "",
+        "guides": [{"id": "make-fedora-yours", "title": "Make Fedora yours", "active": False, "completed_steps": 0, "step_count": 4}],
+    }
+
+
+def _guides_show():
+    return {
+        "schema_id": "loofi.user-guide", "schema_version": 1, "progress_revision": 0,
+        "id": "make-fedora-yours", "title": "Make Fedora yours", "description": "A guide.",
+        "active": False, "writable": True, "reason_code": "",
+        "steps": [{
+            "id": "make-fedora-yours:find-settings", "title": "Find a setting or preset", "description": "Review controls.",
+            "target": {"route_id": "tune", "task_id": "tune:tweaks", "tweak_id": "", "context": {}},
+            "keywords": ["appearance"], "evidence_kinds": [], "status": "not_started", "updated_at": None,
+            "evidence_kind": "", "evidence_id": "", "evidence_available": False,
+        }],
+    }
+
+
+def _profile_library():
+    return {
+        "schema": "loofi.tweak-library/v1",
+        "profiles": [{
+            "id": "focus", "builtin": True, "description": "Use click focus.",
+            "profile": {"schema": "loofi.tweak-profile/v1", "name": "Focus", "desktop": "kde", "settings": [{"id": "kde-focus-policy", "value": "ClickToFocus"}]},
+        }],
+    }
+
+
+def _preset_list():
+    return {"schema": "loofi.tweak-presets/v1", "presets": [{"id": "focus", "name": "Focus", "description": "Use click focus.", "desktops": ["kde"]}]}
+
+
 def _responses(healthy=False):
-    return [subprocess.CompletedProcess([], 0, json.dumps(_info()), ""), subprocess.CompletedProcess([], 0 if healthy else 1, json.dumps(_doctor(healthy)), "")]
+    return [
+        subprocess.CompletedProcess([], 0, json.dumps(_info()), ""),
+        subprocess.CompletedProcess([], 0 if healthy else 1, json.dumps(_doctor(healthy)), ""),
+        subprocess.CompletedProcess([], 0, json.dumps(_guides_list()), ""),
+        subprocess.CompletedProcess([], 0, json.dumps(_guides_show()), ""),
+        subprocess.CompletedProcess([], 0, json.dumps(_profile_library()), ""),
+        subprocess.CompletedProcess([], 0, json.dumps(_preset_list()), ""),
+    ]
 
 
 class TestPackageSmoke(unittest.TestCase):
@@ -85,6 +128,27 @@ class TestPackageSmoke(unittest.TestCase):
             with self.subTest(command=command, status=status), self.assertRaises(ValueError):
                 smoke.validate_payload(command, json.dumps(payload), status)
 
+    def test_installed_guide_list_and_show_json_contracts_are_bounded(self):
+        self.assertEqual(smoke.validate_payload("guides list", json.dumps(_guides_list()), 0), _guides_list())
+        self.assertEqual(smoke.validate_payload("guides show make-fedora-yours", json.dumps(_guides_show()), 0), _guides_show())
+        malformed = _guides_show()
+        malformed["steps"][0]["target"]["command"] = ["dnf", "install"]
+        with self.assertRaises(ValueError):
+            smoke.validate_payload("guides show make-fedora-yours", json.dumps(malformed), 0)
+
+    def test_installed_profile_and_preset_lists_are_read_only_catalog_contracts(self):
+        self.assertEqual(smoke.validate_payload("tweaks profile library list", json.dumps(_profile_library()), 0), _profile_library())
+        self.assertEqual(smoke.validate_payload("tweaks preset list", json.dumps(_preset_list()), 0), _preset_list())
+        # The installed-RPM smoke runs headless, where no desktop-specific
+        # built-in profile is applicable. The static preset catalog is checked
+        # independently and remains non-empty.
+        empty_library = {"schema": "loofi.tweak-library/v1", "profiles": []}
+        self.assertEqual(smoke.validate_payload("tweaks profile library list", json.dumps(empty_library), 0), empty_library)
+        malformed = _profile_library()
+        malformed["profiles"][0]["profile"]["settings"][0]["command"] = ["dnf", "install"]
+        with self.assertRaises(ValueError):
+            smoke.validate_payload("tweaks profile library list", json.dumps(malformed), 0)
+
     @patch.dict(smoke.os.environ, {"PYTHONPATH": "/checkout/source", "PYTHONHOME": "/fixture/python", "DBUS_SESSION_BUS_ADDRESS": "fixture"})
     @patch.object(smoke.shutil, "which", return_value="/usr/bin/loofi-fedora-tweaks")
     @patch.object(smoke.subprocess, "run")
@@ -96,7 +160,11 @@ class TestPackageSmoke(unittest.TestCase):
             root = kwargs["cwd"]
             captured_roots.append(root)
             self.assertTrue(root.is_dir())
-            self.assertEqual(arguments, ["/usr/bin/loofi-fedora-tweaks", "--cli", "--json", "--timeout", "15", arguments[-1]])
+            self.assertEqual(arguments[:5], ["/usr/bin/loofi-fedora-tweaks", "--cli", "--json", "--timeout", "15"])
+            self.assertIn(arguments[5:], [
+                ["info"], ["doctor"], ["guides", "list"], ["guides", "show", "make-fedora-yours"],
+                ["tweaks", "profile", "library", "list"], ["tweaks", "preset", "list"],
+            ])
             self.assertEqual(kwargs["timeout"], 15)
             self.assertFalse(kwargs["check"])
             self.assertTrue(kwargs["capture_output"])
@@ -111,14 +179,22 @@ class TestPackageSmoke(unittest.TestCase):
                 path = Path(environment[variable])
                 self.assertEqual(path.parent, root)
                 self.assertEqual(path.stat().st_mode & 0o777, 0o700)
-            return _responses()[0 if arguments[-1] == "info" else 1]
+            index = {
+                ("info",): 0, ("doctor",): 1, ("guides", "list"): 2,
+                ("guides", "show", "make-fedora-yours"): 3,
+                ("tweaks", "profile", "library", "list"): 4, ("tweaks", "preset", "list"): 5,
+            }[tuple(arguments[5:])]
+            return _responses()[index]
 
         run.side_effect = inspect_command
         results = smoke.run_smoke("loofi-fedora-tweaks", 15)
 
-        self.assertEqual(tuple(results), ("info", "doctor"))
-        self.assertEqual(run.call_count, 2)
-        self.assertEqual(captured_roots[0], captured_roots[1])
+        self.assertEqual(tuple(results), (
+            "info", "doctor", "guides list", "guides show make-fedora-yours",
+            "tweaks profile library list", "tweaks preset list",
+        ))
+        self.assertEqual(run.call_count, 6)
+        self.assertTrue(all(root == captured_roots[0] for root in captured_roots))
         self.assertFalse(captured_roots[0].exists())
         self.assertEqual(os.environ["PYTHONPATH"], "/checkout/source")
 
@@ -147,6 +223,7 @@ class TestPackageSmoke(unittest.TestCase):
     def test_main_accepts_expected_unavailable_doctor_and_passes_arguments(self, run, which, stdout):
         self.assertEqual(smoke.main(["--launcher", "/usr/bin/loofi-fedora-tweaks", "--timeout", "12"]), 0)
         which.assert_called_once_with("/usr/bin/loofi-fedora-tweaks")
+        self.assertEqual(run.call_count, 6)
         self.assertEqual(run.call_args.kwargs["timeout"], 12)
         self.assertIn("doctor unavailable", stdout.getvalue())
 

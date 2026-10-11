@@ -7,12 +7,21 @@ from typing import Any
 class CareNavigationMixin:
     def _open_route_request(self: Any, route_id: str, _preselection=None) -> None:
         """Navigate through the canonical manifest; metadata remains inert."""
-        if isinstance(_preselection, dict) and _preselection and not set(_preselection) - {"run_id", "update_source", "symptom"}:
+        if isinstance(_preselection, dict) and _preselection and not set(_preselection) - {"run_id", "session_id", "update_source", "symptom"}:
             if any(not isinstance(value, str) for value in _preselection.values()):
                 return
             source = _preselection.get("update_source", "")
             run_id = _preselection.get("run_id", "")
+            session_id = _preselection.get("session_id", "")
             symptom = _preselection.get("symptom", "")
+            if route_id == "health" and session_id:
+                if self.switch_to_route("health"):
+                    entry = self._sidebar_index.get("utility_fix")
+                    if entry is not None:
+                        select_session = getattr(self._real_widget_for_entry(entry), "select_saved_session", None)
+                        if callable(select_session):
+                            select_session(session_id)
+                return
             if route_id == "health" and source in {"system", "flatpak", "firmware"}:
                 self._open_update_diagnosis(source, run_id)
                 return

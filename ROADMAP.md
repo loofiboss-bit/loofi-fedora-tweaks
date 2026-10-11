@@ -3,7 +3,38 @@
 Direction is set by the [product definition](docs/PRODUCT.md). Completed work
 is recorded in the [changelog](CHANGELOG.md).
 
-## Local candidate — v32.7.0 "Routine"
+## Local candidate — v32.8.0 "Guide"
+
+Build on Routine so a Fedora user can move through an existing task with clear
+choices, explicit review, and honest evidence.
+
+- Offer Make Fedora yours, Choose and manage apps, Maintain your system, and Solve a problem from Overview.
+- Resume local progress across pages and restarts; distinguish reviewed, skipped, and exact recorded results.
+- Find guides and everyday terms through global search without starting a check or change.
+- Provide read-only `guides list` and `guides show <id>` CLI inspection.
+- Keep KDE and traditional Fedora with DNF5 as the primary experience; retain the established GNOME and Atomic support boundaries.
+
+Automated, rendering, and installed-RPM qualification is recorded in
+[Guide verification](docs/GUIDE_VERIFICATION.md). Hardware diagnostics and
+app-source insight remain later product stages. Publishing and installation
+are separate actions.
+
+## Next stage — Hardware
+
+- Add read-only battery and energy observations to Health, with checked KDE energy-settings handoff.
+- Show discovered displays and session information, with existing display-settings links and before/after comparison.
+- Show local printers, queue state, and printing-service availability without test prints or queue changes.
+- Check native KDE configuration modules against the available-module list before opening them.
+
+## Following stage — App insight
+
+- Show selected DNF source details and connect a recorded repository error to that exact source.
+- Bring installation identity, reported origin, runtime, access, and maintenance warnings together for the selected app.
+- Preserve exact installation, architecture, and Flatpak ref in every review.
+- Keep reported origin separate from trust, with no automatic grades or duplicate-removal recommendations.
+- Start with read-only detail and reuse the current reviewed change flows.
+
+## Included baseline — v32.7.0 "Routine"
 
 Build on Personal with clearer application and maintenance decisions.
 
@@ -14,8 +45,6 @@ Build on Personal with clearer application and maintenance decisions.
 - Compare saved same-desktop profiles before editing a copy or starting a fresh review
 
 Qualification is recorded in [Routine verification](docs/ROUTINE_VERIFICATION.md).
-No installation or publication is implied; physical desktop and assistive-technology
-checks remain separate from automated and rendering checks.
 
 ## Included baseline — v32.6.0 "Personal"
 

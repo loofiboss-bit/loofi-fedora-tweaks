@@ -147,6 +147,35 @@ class TestHealthSavedComparison(unittest.TestCase):
         widget.cleanup()
 
     @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
+    def test_exact_guide_session_selection_is_read_only(self, _refresh):
+        before = _session()
+        latest = replace(before, session_id="32345678-1234-5678-9234-567812345678", completed_at=4.0)
+        history = _History(latest)
+        history.sessions = lambda: (latest, before)
+        widget = TroubleshootWidget(history=history)
+
+        self.assertTrue(widget.select_saved_session(before.session_id))
+
+        self.assertEqual(widget._current_session.session_id, before.session_id)
+        self.assertEqual(widget.saved_session_selector.currentData(), before.session_id)
+        self.assertEqual(widget.view_switcher.active_view_id(), "results")
+        self.assertFalse(widget.busy)
+        widget.cleanup()
+
+    @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
+    def test_missing_exact_guide_session_never_substitutes_latest(self, _refresh):
+        latest = _session()
+        widget = TroubleshootWidget(history=_History(latest))
+        original = widget._current_session.session_id
+
+        self.assertFalse(widget.select_saved_session("missing-session"))
+
+        self.assertEqual(widget._current_session.session_id, original)
+        self.assertIn("exact linked session", widget.result_notice.message_label.text())
+        self.assertFalse(widget.busy)
+        widget.cleanup()
+
+    @patch("ui.native_handoff_card.NativeHandoffCard.refresh_availability")
     def test_shutdown_retains_running_worker_until_it_stops(self, _refresh):
         from test_troubleshoot_widget import _Worker
 

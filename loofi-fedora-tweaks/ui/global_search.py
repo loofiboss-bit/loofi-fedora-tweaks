@@ -148,6 +148,7 @@ class GlobalSearchDialog(QDialog):
                 SearchResultKind.ROUTE: self.tr("Page"),
                 SearchResultKind.SETTING: self.tr("Setting"),
                 SearchResultKind.ACTION: self.tr("Action"),
+                SearchResultKind.GUIDE: self.tr("Guide"),
             }[result.kind]
             risk = (
                 self.tr(" - %1 risk").replace("%1", result.risk)

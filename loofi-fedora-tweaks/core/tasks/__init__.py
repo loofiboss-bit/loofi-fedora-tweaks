@@ -79,6 +79,19 @@ from .fix_flow import (
     RepairKind,
     all_fix_symptoms,
 )
+from .guides import (
+    GUIDES,
+    GUIDES_BY_ID,
+    GuideDefinition,
+    GuideEvidence,
+    GuideProgress,
+    GuideProgressSnapshot,
+    GuideProgressStore,
+    GuideStep,
+    GuideTarget,
+    guide_evidence,
+    guide_progress_payload,
+)
 
 __all__ = [
     "ALL_VARIANTS",
@@ -99,6 +112,15 @@ __all__ = [
     "FixPhase",
     "FixRepairOption",
     "FixSymptom",
+    "GUIDES",
+    "GUIDES_BY_ID",
+    "GuideDefinition",
+    "GuideEvidence",
+    "GuideProgress",
+    "GuideProgressSnapshot",
+    "GuideProgressStore",
+    "GuideStep",
+    "GuideTarget",
     "ParameterSpec",
     "PROFILE_SCHEMA_VERSION",
     "ProfileDescriptor",
@@ -147,6 +169,8 @@ __all__ = [
     "validate_update_overview",
     "get_task",
     "get_tune_profile",
+    "guide_evidence",
+    "guide_progress_payload",
     "search_tasks",
     "validate_task_catalog",
 ]

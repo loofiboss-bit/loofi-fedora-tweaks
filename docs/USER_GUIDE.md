@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Current local candidate: 32.6.0 "Personal". Physical desktop and assistive-technology qualification is recorded separately.
+> Current local candidate: 32.8.0 "Guide". Physical desktop and assistive-technology qualification is recorded separately.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
@@ -28,6 +28,37 @@ The option to reopen the last page remains available in Settings.
 The product has no background daemon, web API, arbitrary shell execution, or
 unattended automation. Unknown desktop or deployment detection remains
 unavailable rather than falling back to a Traditional Fedora assumption.
+
+## Everyday guides
+
+Overview offers four optional guides: **Make Fedora yours**, **Choose and
+manage apps**, **Maintain your system**, and **Solve a problem**. Each step opens
+the existing page or focuses its relevant control. Opening a step does not
+install or remove packages, change settings, or run a diagnostic. The owning
+page still asks you to start any check and review every proposed change.
+
+Mark a step **Reviewed** after inspecting it or **Skip** when it does not apply.
+Where a step supports it, link one exact successful operation or completed
+diagnostic result. A linked result records that saved result only; it does not
+mean the computer is currently healthy. Missing history is shown as unavailable.
+Guide progress is stored locally under the application data directory. It can
+be resumed after restarting Loofi, while checks and change reviews must still be
+made again when needed. The separate guide format does not alter tweak profiles
+or operation history.
+
+The header guide menu stays available while visiting other pages. It offers the
+next unfinished step and a return to the selected guide. Global search also
+finds guide titles and terms such as “battery”, “choose apps”, and “free space”.
+Search opens guidance; it does not start a check or change.
+
+The read-only CLI can list and inspect guides, including JSON for scripts:
+
+```bash
+loofi-fedora-tweaks --cli guides list
+loofi-fedora-tweaks --cli --json guides list
+loofi-fedora-tweaks --cli guides show make-fedora-yours
+loofi-fedora-tweaks --cli --json guides show solve-a-problem
+```
 
 ## Install and launch
 

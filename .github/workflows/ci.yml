@@ -118,6 +118,32 @@ jobs:
                 "cd /workspace/review-input && fedora-review -n loofi-fedora-tweaks -r -p -m fedora-44-x86_64 --no-colors"
             '
 
+  fedora_installed_smoke:
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v6
+      - name: Build and inspect the installed RPM in Fedora 44
+        run: |
+          docker run --rm \
+            -v "${GITHUB_WORKSPACE}:/workspace" \
+            -w /workspace \
+            fedora:44 \
+            /bin/bash -lc '
+              set -euo pipefail
+              dnf install -y --setopt=install_weak_deps=False \
+                --disablerepo=fedora-cisco-openh264 \
+                git rpm-build python3 python3-devel python3-defusedxml desktop-file-utils \
+                libappstream-glib systemd-rpm-macros util-linux
+              bash scripts/build_rpm.sh
+              dnf install -y util-linux ./rpmbuild/RPMS/noarch/*.rpm
+              useradd --create-home --shell /bin/bash smoke
+              su -s /bin/bash smoke -c "loofi-fedora-tweaks --version"
+              su -s /bin/bash smoke -c "loofi-fedora-tweaks --cli --version"
+              su -s /bin/bash smoke -c "loofi-fedora-tweaks --cli --help"
+              su -s /bin/bash smoke -c "python3 scripts/package_smoke.py --launcher /usr/bin/loofi-fedora-tweaks"
+            '
+
   test:
     runs-on: ubuntu-latest
     timeout-minutes: 30
