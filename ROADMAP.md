@@ -1,6 +1,6 @@
 # Roadmap
 
-The latest published release remains [v32.8.0 Guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0). The v33.0.0 implementation is a local candidate based on the post-PR #66 stabilization commit `a62f6e7`; it is not published and has no release date. KDE on traditional Fedora with DNF5 is the first qualification target. GUI, CLI, profile, and saved-session compatibility remain part of each change.
+The latest published release remains [v32.8.0 Guide](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0). The v33.0.1 Concord candidate is based on merged commit `f8e3e7e`; v33.0.0 is a historical Bastion tag and remains unchanged. KDE on traditional Fedora with DNF5 is the first qualification target. GUI, CLI, profile, and saved-session compatibility remain part of each change.
 
 ## Completed work awaiting a release decision
 
@@ -30,11 +30,11 @@ The **Folder workspace** preset configures Dolphin to reopen folders and tabs, o
 
 Stage completion requires its relevant automated regressions, `just verify`, catalog and packaging checks, and RPM build. Use the isolated Fedora KDE VM suite when a change affects behavior it covers. Fresh-disk and Wayland VM runs remain optional automated checks selected according to change risk. Claims for GNOME, Atomic, physical hardware, and assistive technology are limited to the automated evidence available; no manual qualification is required for completion or release.
 
-## v33.0.0 — clearer, more connected interface
+## v33.0.1 Concord — clearer, more connected interface
 
-Implementation is complete in the local candidate. Overview leads with CPU, RAM, GPU, and storage before details, maintenance, next steps, guides, and introductory content. Tweaks combines Settings and Profiles, labels each setting's scope and verification state, preserves an editable profile draft across subview changes, and only reviews a successfully saved copy. Apps uses Catalog, Installed, and Sources tabs, with a filter-independent selected-app view and exact scope in the shared review dialog. Operations retain their name, origin, and return path across navigation; completed results keep their own status and link to Activity only when a real run ID exists.
+Implementation is complete in the merged release candidate. Overview leads with CPU, RAM, GPU, and storage before details, maintenance, next steps, guides, and introductory content. Tweaks combines Settings and Profiles, labels each setting's scope and verification state, preserves an editable profile draft across subview changes, and only reviews a successfully saved copy. Apps uses Catalog, Installed, and Sources tabs, with a filter-independent selected-app view and exact scope in the shared review dialog. Operations retain their name, origin, and return path across navigation; completed results keep their own status and link to Activity only when a real run ID exists.
 
-Compatibility boundaries remain unchanged: route IDs, CLI/JSON contracts, portable profile format, history schema, and OperationController/Action Center execution ownership. Automated qualification is recorded below and in [the v33 qualification report](docs/V33_QUALIFICATION.md). Publication and release date are separate decisions.
+Compatibility boundaries remain unchanged: route IDs, CLI/JSON contracts, portable profile format, history schema, and OperationController/Action Center execution ownership. Automated qualification is recorded below and in [the v33 qualification report](docs/V33_QUALIFICATION.md). The package version advances to 33.0.1 because the historical v33.0.0 tag names Bastion.
 
 ### v33 qualification record
 

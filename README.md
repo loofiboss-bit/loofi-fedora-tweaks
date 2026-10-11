@@ -36,13 +36,14 @@ searchable guide discovery, saved progress and read-only CLI inspection. Each
 guide opens existing review and verification flows; opening a step never starts
 a check or change. See the [32.8.0 release notes](docs/releases/RELEASE-NOTES-v32.8.0.md).
 
-The current working tree contains the local **v33.0.0 candidate**. Overview
-puts core resource readings first; Tweaks groups Settings and Profiles; Apps
+The current working tree contains the **v33.0.1 Concord release candidate**.
+Overview puts core resource readings first; Tweaks groups Settings and Profiles; Apps
 separates Catalog, Installed, and Sources; and operation results remain linked
 to their origin across navigation. The candidate is unpublished and has no
-release date. KDE on traditional Fedora with DNF5 is the first qualification
-target; GNOME and Atomic support remains limited to workflows with evidence.
-See the [roadmap](ROADMAP.md) for verification status and evidence boundaries.
+release date. Version 33.0.0 remains assigned to the historical Bastion tag.
+KDE on traditional Fedora with DNF5 is the first qualification target; GNOME
+and Atomic support remains limited to workflows with evidence. See the
+[roadmap](ROADMAP.md) for verification status and evidence boundaries.
 
 The release builds on Routine's installation comparisons, Health storage guide,
 manual DNF5 restart advice and saved profile comparisons; Personal's broader
