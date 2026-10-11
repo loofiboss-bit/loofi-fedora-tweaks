@@ -141,6 +141,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
     """Explicitly loaded activity ledger with inert recovery metadata."""
 
     actionCenterRequested = pyqtSignal(str, object)
+    runVerificationRequested = pyqtSignal(str)
     _METADATA = plugin_metadata_for_module(__name__)
     _SOURCE_LABELS = {
         "local_loofi": "Local Loofi",
@@ -371,6 +372,13 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.review_button.setObjectName("activityReviewRecovery")
         self.review_button.clicked.connect(self._review_recovery)
         self.review_button.hide()
+        self.check_result_button = SecondaryButton(
+            self.tr("Check result"),
+            description=self.tr("Read the current state and verify the exact recorded operation. This does not apply a change."),
+        )
+        self.check_result_button.setObjectName("activityCheckResult")
+        self.check_result_button.clicked.connect(self._check_selected_result)
+        self.check_result_button.hide()
         self.detail_card.add_widget(self.detail_status)
         self.history_details = DetailsDisclosure(summary=self.tr("Show recorded details"))
         self.history_details.setObjectName("historyRecordedDetails")
@@ -379,6 +387,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.detail_card.add_widget(self.history_details)
         self.detail_card.add_widget(self.recovery_guidance)
         self.detail_card.add_widget(self.review_button)
+        self.detail_card.add_widget(self.check_result_button)
         self.scaffold.add_widget(self.detail_card)
 
     def remember_run_id(self, run_id: str) -> None:
@@ -677,6 +686,11 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         if event is None:
             return
         self._apply_presentation_state(selected_state(event))
+        self.check_result_button.setVisible(
+            event.source == "action_center"
+            and event.state in {"verifying", "awaiting_reboot"}
+            and bool(str(event.after_facts.get("run_id", "")))
+        )
         self.load_more_button.setEnabled(bool(self._next_cursor))
         self.detail_card.set_heading(event.summary, self.tr("Recorded by %1").replace(
             "%1", self._SOURCE_LABELS.get(event.source, event.source)
@@ -813,3 +827,10 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             str(event.recovery.action_id),
             dict(event.recovery.parameters),
         )
+
+    def _check_selected_result(self) -> None:
+        event = self._selected_event()
+        run_id = str(event.after_facts.get("run_id", "")) if event else ""
+        if event is None or event.source != "action_center" or event.state not in {"verifying", "awaiting_reboot"} or not run_id:
+            return
+        self.runVerificationRequested.emit(run_id)

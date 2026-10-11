@@ -135,6 +135,20 @@ class TestUpdateOverview(unittest.TestCase):
         self.assertEqual(self.service.load().sources[0], second)
         self.assertEqual(first.items, second.items)
 
+    def test_dnf_query_failure_retains_one_exact_repository_reference(self):
+        self.responses["system"] = ActionResult(
+            False,
+            "DNF metadata failed",
+            1,
+            stderr="Errors during downloading metadata for repository 'updates':\nrepo 'bad/id' unavailable",
+        )
+
+        source = self.service.check(sources=("system",)).sources[0]
+
+        self.assertEqual(source.status, "error")
+        self.assertEqual(source.repository_ids, ("updates",))
+        self.assertEqual(self.service.load().sources[0].repository_ids, ("updates",))
+
     def test_saved_results_become_stale_when_platform_identity_changes(self):
         self.runtime.platform_profile.return_value = SimpleNamespace(
             deployment_backend=DeploymentBackend.DNF5,
@@ -184,6 +198,18 @@ class TestUpdateOverview(unittest.TestCase):
                 self.responses[source].stdout = output
                 found = next(item for item in self.service.check().sources if item.source == source)
                 self.assertEqual(found.error_code, "invalid_output")
+
+    def test_oversized_json_evidence_never_means_no_firmware_updates(self):
+        self.responses["firmware"] = ActionResult.fail(
+            "Structured response exceeded limit.",
+            exit_code=-1,
+            data={"evidence_unavailable": "oversized_json"},
+        )
+
+        firmware = next(item for item in self.service.check().sources if item.source == "firmware")
+
+        self.assertEqual(firmware.status, "error")
+        self.assertEqual(firmware.error_code, "evidence_unavailable")
 
     def test_dnf_available_code_without_candidates_is_error(self):
         self.responses["system"] = ActionResult(False, "", 100)

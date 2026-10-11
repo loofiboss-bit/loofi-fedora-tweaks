@@ -84,8 +84,11 @@ def _preflight_fedora_update(_parameters: Mapping[str, Any], runtime: ActionRunt
             )
         status = runtime.execute_read_only(["rpm-ostree", "status", "--json"], action_id="update-fedora-status", timeout=30)
         payload = _json_payload(status)
-        deployments = payload.get("deployments", []) if isinstance(payload, dict) else []
+        raw_deployments = payload.get("deployments") if isinstance(payload, dict) else None
+        deployments = raw_deployments if isinstance(raw_deployments, list) else []
         booted = next((item for item in deployments if isinstance(item, dict) and item.get("booted")), {})
+        if (status.data or {}).get("evidence_unavailable") or status.success and not isinstance(raw_deployments, list):
+            return _blocked("atomic_evidence_unavailable", "Atomic deployment JSON evidence is unavailable; refresh system status.")
         if not status.success or not booted:
             return _blocked("atomic_status_unavailable", "The current Atomic deployment could not be verified.")
         return _allowed("preflight_ok", "Atomic deployment state is ready.", atomic=True, booted_checksum=str(booted.get("checksum", "")))
@@ -122,7 +125,10 @@ def _verify_fedora_update(run: ActionRun, plan: ActionPlan, runtime: ActionRunti
     facts = plan.policy_decision.facts
     if facts.get("atomic"):
         status = runtime.execute_read_only(["rpm-ostree", "status", "--json"], action_id="update-fedora-verify-status", timeout=30)
-        deployments = _json_payload(status).get("deployments", []) if status.success else []
+        payload = _json_payload(status) if status.success else None
+        if payload is None or not isinstance(payload.get("deployments"), list):
+            return VerificationDecision.failed("Atomic deployment JSON evidence is unavailable or invalid.")
+        deployments = payload["deployments"]
         booted = next((item for item in deployments if isinstance(item, dict) and item.get("booted")), {})
         pending = _pending_deployment(deployments)
         expected = str(((run.verification_result or {}).get("data") or {}).get("expected_checksum", "")) or str(pending.get("checksum", ""))
@@ -148,6 +154,17 @@ def _verify_fedora_update(run: ActionRun, plan: ActionPlan, runtime: ActionRunti
         )
 
     candidates = [str(item) for item in facts.get("candidates", [])]
+    history = _matching_fedora_history(run, candidates, runtime)
+    if history is None:
+        return VerificationDecision.failed(
+            "DNF5 transaction history could not verify the planned update after reboot.",
+            evidence_unavailable=True,
+        )
+    if not history:
+        return VerificationDecision.failed(
+            "No successful DNF5 history transaction contains the planned update after reboot.",
+            evidence_unavailable=False,
+        )
     missing = []
     for candidate in candidates:
         name = candidate.split("|", 1)[0]
@@ -163,14 +180,185 @@ def _verify_fedora_update(run: ActionRun, plan: ActionPlan, runtime: ActionRunti
         action_id="update-fedora-verify-health",
         timeout=120,
     )
-    offline_log = runtime.execute_read_only(
-        ["dnf5", "offline", "log", "--number=-1"],
-        action_id="update-fedora-verify-offline-log",
+    if missing or not health.success:
+        return VerificationDecision.failed("Fedora package verification failed.", missing_packages=sorted(set(missing)))
+    return VerificationDecision.succeeded(
+        "A successful DNF5 history transaction contains the planned packages and package health is clean.",
+        transaction_id=history,
+        verified_packages=len(candidates),
+    )
+
+
+def _render_fedora_offline_reboot(
+    _parameters: Mapping[str, Any],
+    _runtime: ActionRuntime,
+) -> list[str]:
+    return ["dnf5", "offline", "reboot"]
+
+
+def _validate_fedora_offline_activation(parameters: Mapping[str, Any]) -> PolicyDecision:
+    source_run_id = parameters.get("source_run_id")
+    if not isinstance(source_run_id, str) or not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._-]{0,127}", source_run_id):
+        return _blocked("invalid_source_run", "A valid prepared update run must be selected.")
+    return _allowed("parameters_valid", "A specific prepared update run is selected.")
+
+
+def _preflight_fedora_offline_activation(
+    parameters: Mapping[str, Any],
+    runtime: ActionRuntime,
+) -> PolicyDecision:
+    if runtime.is_atomic() or runtime.package_manager() not in {"dnf", "dnf5"}:
+        return _blocked("traditional_dnf5_required", "Offline activation is supported only for traditional Fedora with DNF5.")
+    if runtime.package_manager_busy():
+        return _blocked("package_manager_busy", "Another package operation may be active.")
+    try:
+        from core.actions.stores import ActionPlanStore, ActionRunStore
+
+        source_run_id = str(parameters["source_run_id"])
+        source_run = next(
+            (run for run in ActionRunStore().list_read_only(limit=100, strict=True) if run.run_id == source_run_id),
+            None,
+        )
+        if source_run is None or source_run.action_id != "update-fedora-system" or source_run.state != "awaiting_reboot":
+            return _blocked("prepared_update_missing", "The selected Fedora update is no longer awaiting offline activation.")
+        current_boot_id = _runtime_boot_id(runtime)
+        if not source_run.execution_boot_id or not current_boot_id or source_run.execution_boot_id != current_boot_id:
+            return _blocked("activation_already_pending", "The computer has rebooted since preparation; check the original update result in Activity.")
+        source_plan = next(
+            (plan for plan in ActionPlanStore().list_read_only() if plan.plan_id == source_run.plan_id),
+            None,
+        )
+        if source_plan is None:
+            return _blocked("prepared_update_plan_missing", "The reviewed update plan is unavailable; preserve its recorded state.")
+        facts = source_plan.policy_decision.facts
+        verification = source_run.verification_result or {}
+        verification_data = verification.get("data", {}) if isinstance(verification, Mapping) else {}
+        if facts.get("atomic") or facts.get("offline") is not True or not isinstance(verification_data, Mapping) or verification_data.get("offline_transaction") is not True:
+            return _blocked("not_a_prepared_dnf5_update", "The selected result does not contain verified DNF5 offline update evidence.")
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return _blocked("update_state_unavailable", "The selected update state could not be read safely.")
+    status = runtime.execute_read_only(
+        ["dnf5", "offline", "status"],
+        action_id="update-fedora-activate-offline-status",
+        timeout=30,
+    )
+    if not status.success or not status.stdout.strip():
+        return _blocked("offline_transaction_unavailable", "DNF5 no longer reports a prepared offline transaction.")
+    return _allowed(
+        "preflight_ok",
+        "A verified pending DNF5 update is ready for the separately confirmed reboot.",
+        source_run_id=source_run_id,
+        activation_command=["dnf5", "offline", "reboot"],
+    )
+
+
+def _verify_fedora_offline_activation(
+    run: ActionRun,
+    plan: ActionPlan,
+    runtime: ActionRuntime,
+) -> VerificationDecision:
+    if _runtime_boot_id(runtime) == run.execution_boot_id:
+        return VerificationDecision.awaiting_reboot(
+            "DNF5 accepted the separate reboot request. The original Fedora update remains pending until its transaction history is checked after restart.",
+            source_run_id=str(plan.parameters["source_run_id"]),
+        )
+    try:
+        from core.actions.stores import ActionPlanStore, ActionRunStore
+
+        source_run_id = str(plan.parameters["source_run_id"])
+        source_run = next(
+            (candidate for candidate in ActionRunStore().list_read_only(limit=100, strict=True) if candidate.run_id == source_run_id),
+            None,
+        )
+        source_plan = next(
+            (candidate for candidate in ActionPlanStore().list_read_only() if source_run and candidate.plan_id == source_run.plan_id),
+            None,
+        )
+    except (OSError, RuntimeError, TypeError, ValueError):
+        return VerificationDecision.failed("The original update run could not be read for post-reboot verification.")
+    if source_run is None or source_plan is None:
+        return VerificationDecision.failed("The original update plan is unavailable for post-reboot verification.")
+    result = _verify_fedora_update(source_run, source_plan, runtime)
+    if result.state == "succeeded":
+        return VerificationDecision.succeeded(
+            "DNF5 transaction history verifies the prepared update after reboot.",
+            source_run_id=source_run_id,
+            **dict(result.data),
+        )
+    return result
+
+
+def _matching_fedora_history(
+    run: ActionRun,
+    candidates: list[str],
+    runtime: ActionRuntime,
+) -> int | None:
+    """Return the transaction that applied every planned package, or None if unavailable."""
+    result = runtime.execute_read_only(
+        ["dnf5", "history", "list", "--json"],
+        action_id="update-fedora-verify-history-list",
         timeout=60,
     )
-    if missing or not health.success or not offline_log.success:
-        return VerificationDecision.failed("Fedora package verification failed.", missing_packages=sorted(set(missing)))
-    return VerificationDecision.succeeded("Planned Fedora packages and package health were verified.", verified_packages=len(candidates))
+    payload = _json_payload(result)
+    if not result.success or payload is None or not isinstance(payload.get("items"), list):
+        return None
+    transactions = [
+        item for item in payload["items"]
+        if isinstance(item, Mapping)
+        and isinstance(item.get("id"), int)
+        and not isinstance(item.get("id"), bool)
+        and item.get("id", 0) > 0
+        and _history_time(item.get("start_time")) >= run.started_at
+        and str(item.get("status", "")).casefold() in {"ok", "success", "succeeded"}
+    ]
+    for transaction in sorted(transactions, key=lambda item: _history_time(item.get("start_time")), reverse=True)[:20]:
+        info = runtime.execute_read_only(
+            ["dnf5", "history", "info", str(transaction["id"]), "--json"],
+            action_id="update-fedora-verify-history-info",
+            timeout=60,
+        )
+        details = _json_payload(info)
+        if not info.success or details is None or not isinstance(details.get("items"), list):
+            continue
+        record = next(
+            (
+                item for item in details["items"]
+                if isinstance(item, Mapping) and item.get("id") == transaction["id"]
+            ),
+            None,
+        )
+        if not isinstance(record, Mapping) or str(record.get("status", "")).casefold() not in {"ok", "success", "succeeded"}:
+            continue
+        packages = record.get("packages")
+        if not isinstance(packages, list):
+            continue
+        if all(_planned_package_in_transaction(candidate, packages) for candidate in candidates):
+            return int(transaction["id"])
+    return 0
+
+
+def _planned_package_in_transaction(candidate: str, packages: list[Any]) -> bool:
+    parts = candidate.split("|")
+    if len(parts) != 3:
+        return False
+    name, evr, arch = parts
+    expected = {f"{name}-{evr}.{arch}"}
+    if ":" not in evr:
+        expected.add(f"{name}-0:{evr}.{arch}")
+    return any(
+        isinstance(package, Mapping)
+        and str(package.get("action", "")).casefold().startswith(("upgrade", "install", "reinstall"))
+        and str(package.get("nevra", "")) in expected
+        for package in packages
+    )
+
+
+def _history_time(value: Any) -> float:
+    try:
+        result = float(value)
+    except (TypeError, ValueError, OverflowError):
+        return 0.0
+    return result if result >= 0 else 0.0
 
 
 def _render_dnf5_history_undo(
@@ -343,9 +531,19 @@ def _rpm_ostree_deployments(
         action_id=action_id,
         timeout=30,
     )
+    if not result.success:
+        return result, []
     payload = _json_payload(result)
-    raw = payload.get("deployments", []) if isinstance(payload, Mapping) else []
-    deployments = [item for item in raw if isinstance(item, Mapping)] if isinstance(raw, list) else []
+    raw = payload.get("deployments") if isinstance(payload, Mapping) else None
+    if not isinstance(raw, list):
+        return ActionResult(
+            False,
+            "Atomic deployment JSON evidence is unavailable or invalid.",
+            exit_code=result.exit_code,
+            action_id=action_id,
+            data={"evidence_unavailable": "invalid_json"},
+        ), []
+    deployments = [item for item in raw if isinstance(item, Mapping)]
     return result, deployments
 
 
@@ -363,6 +561,8 @@ def _preflight_rpm_ostree_rollback(
         action_id="rpm-ostree-rollback-preflight",
     )
     if not result.success:
+        if (result.data or {}).get("evidence_unavailable"):
+            return _blocked("atomic_evidence_unavailable", "Atomic deployment JSON evidence is unavailable; review the current system status.")
         return _blocked(
             "atomic_status_unavailable",
             "The current Atomic deployment could not be verified.",
@@ -410,6 +610,8 @@ def _verify_rpm_ostree_rollback(
         action_id="rpm-ostree-rollback-verify",
     )
     if not result.success:
+        if (result.data or {}).get("evidence_unavailable"):
+            return VerificationDecision.failed("Atomic deployment JSON evidence is unavailable or invalid.", evidence_unavailable=True)
         return VerificationDecision.failed(
             "Atomic deployment status could not be verified."
         )
@@ -458,14 +660,19 @@ def _blocked(code: str, explanation: str) -> PolicyDecision:
     )
 
 
-def _json_payload(result: ActionResult) -> dict[str, Any]:
+def _json_payload(result: ActionResult) -> dict[str, Any] | None:
     if not result.success:
-        return {}
+        return None
+    source = result.structured_output if result.structured_output is not None else result.stdout
     try:
-        payload = json.loads(result.stdout or "{}")
+        payload = json.loads(source or "{}")
     except (json.JSONDecodeError, TypeError):
-        return {}
-    return payload if isinstance(payload, dict) else {"items": payload}
+        return None
+    if isinstance(payload, dict):
+        return payload
+    if isinstance(payload, list):
+        return {"items": payload}
+    return None
 
 
 def _lines(value: str) -> list[str]:

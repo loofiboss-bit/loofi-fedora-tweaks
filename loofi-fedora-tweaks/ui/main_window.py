@@ -550,24 +550,19 @@ class MainWindow(
             if callable(set_profile):
                 set_profile(self._platform_profile)
             self._connect_guide_widget(widget)
-        action_request = getattr(widget, "actionCenterRequested", None)
-        if action_request is not None and hasattr(action_request, "connect"):
-            action_request.connect(self._open_action_center_request)
-        finding_request = getattr(widget, "findingActionReviewRequested", None)
-        if finding_request is not None and hasattr(finding_request, "connect"):
-            finding_request.connect(self._open_system_check_action_request)
-        check_request = getattr(widget, "systemCheckRequested", None)
-        if check_request is not None and hasattr(check_request, "connect"):
-            check_request.connect(self._start_follow_up_system_check)
-        route_request = getattr(widget, "routeRequested", None)
-        if route_request is not None and hasattr(route_request, "connect"):
-            route_request.connect(self._open_route_request)
-        context_request = getattr(widget, "contextRouteRequested", None)
-        if context_request is not None:
-            context_request.connect(self._open_route_request)
-        task_request = getattr(widget, "taskRequested", None)
-        if task_request is not None and hasattr(task_request, "connect"):
-            task_request.connect(self._open_overview_task)
+        for name, handler_name in (
+            ("actionCenterRequested", "_open_action_center_request"),
+            ("runVerificationRequested", "_verify_activity_action_run"),
+            ("findingActionReviewRequested", "_open_system_check_action_request"),
+            ("systemCheckRequested", "_start_follow_up_system_check"),
+            ("routeRequested", "_open_route_request"),
+            ("contextRouteRequested", "_open_route_request"),
+            ("taskRequested", "_open_overview_task"),
+        ):
+            request = getattr(widget, name, None)
+            handler = getattr(self, handler_name, None)
+            if request is not None and hasattr(request, "connect") and callable(handler):
+                request.connect(handler)
         if plugin_id in {"overview", "atlas_dashboard"}:
             self._schedule_post_render_services()
         return widget

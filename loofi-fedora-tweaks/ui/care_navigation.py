@@ -51,7 +51,7 @@ class CareNavigationMixin:
             if entry is not None:
                 self._real_widget_for_entry(entry).preselect_source(source, run_id)
 
-    def _open_package_sources(self: Any) -> None:
+    def _open_package_sources(self: Any, source_id: str = "") -> None:
         """Reveal the single source overview on the existing Apps route."""
         self._activate_destination("install")
         entry = self._sidebar_index.get("utility_install")
@@ -64,7 +64,7 @@ class CareNavigationMixin:
                     page = loaded
             focus = getattr(page, "focus_sources", None)
             if callable(focus):
-                focus()
+                focus(source_id)
 
     def _open_apps_unused_runtimes(self: Any, preselection: dict) -> bool:
         """Focus existing runtime inspection; never inspect on navigation."""

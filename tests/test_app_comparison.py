@@ -109,6 +109,32 @@ class AppComparisonPresentationTests(unittest.TestCase):
         dialog.close()
         dialog.deleteLater()
 
+    def test_first_level_summary_keeps_exact_installation_identity_and_scope(self):
+        from ui.app_comparison import ApplicationComparisonDialog
+        from PyQt6.QtWidgets import QLabel
+        selected = flatpak("work", branch="beta")
+        comparison = compare_installations(InstalledInventory((selected,)), selected.app_id)
+        dialog = ApplicationComparisonDialog(comparison)
+        self.assertIn(selected.app_id, dialog.findChild(QLabel, "comparisonAppIdentity").text())
+        self.assertIn("Installation: work", dialog.selected_summary.text())
+        self.assertIn(selected.ref, dialog.selected_summary.text())
+        self.assertIn("Version: 1", dialog.selected_summary.text())
+        self.assertIn("permissions", " ".join(label.text() for label in dialog.findChildren(QLabel)))
+        dialog.close()
+        dialog.deleteLater()
+
+    def test_source_failures_remain_visible_as_a_maintenance_warning(self):
+        from ui.app_comparison import ApplicationComparisonDialog
+        from PyQt6.QtWidgets import QLabel
+        comparison = compare_installations(InstalledInventory((flatpak(),), ("RPM source unavailable",), frozenset({"fedora"})), "org.mozilla.firefox")
+        dialog = ApplicationComparisonDialog(comparison)
+        warning = dialog.findChild(QLabel, "comparisonSourceWarning")
+        self.assertIsNotNone(warning)
+        self.assertIn("may be incomplete", warning.text())
+        self.assertIn("RPM source unavailable", warning.text())
+        dialog.close()
+        dialog.deleteLater()
+
     def test_card_comparison_reuses_inventory_and_closes_on_refresh(self):
         from PyQt6.QtWidgets import QPushButton
         from ui.installed_applications import InstalledApplicationsCard

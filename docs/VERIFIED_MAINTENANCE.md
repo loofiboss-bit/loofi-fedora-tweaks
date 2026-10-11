@@ -1,6 +1,6 @@
 # Verified Maintenance
 
-Loofi Fedora Tweaks v32.2.0 "Coherence" retains one internal orchestrator as the
+Loofi Fedora Tweaks v32.8.0 retains one internal orchestrator as the
 trust boundary for persistent system changes from both GUI and CLI. Apps,
 Tweaks, Health, and Updates use the same controller while Activity & Recovery keeps
 saved outcomes and follow-up state. Physical desktop validation remains pending.
@@ -47,9 +47,17 @@ Supported source-specific maintenance can include:
 - recovery-point creation or supported rollback guidance.
 
 The Install catalog prefers Flatpak for ordinary GUI applications and Fedora
-RPM for trusted system-integrated or command-line tools. Atomic RPM layering
-is advanced and reboot-aware. Loofi itself is distributed as an RPM and never
+RPM for trusted system-integrated or command-line tools. Atomic Fedora RPM
+layering remains unavailable until Loofi can verify package availability using
+a supported rpm-ostree query. Loofi itself is distributed as an RPM and never
 silently adds a remote.
+
+Traditional Fedora package updates are staged as DNF5 offline transactions.
+After the prepared result appears in Activity, a separate Action Center review
+offers the exact command `dnf5 offline reboot`. Applying that reviewed action
+requests authorization and restarts immediately; denying or cancelling
+authorization leaves the original update pending. After restart, use Check
+result on the original run to verify matching package changes in DNF5 history.
 
 ## CLI
 
@@ -63,6 +71,11 @@ loofi-fedora-tweaks --cli changes verify RUN_ID
 Use `--json` before the command for machine-readable output. `changes` is the
 v29 compatibility spelling for Activity list/detail and explicit completion of
 older saved plans. The CLI has no arbitrary shell or remote execution mode.
+For a pending offline update, first create a review-only plan with
+changes apply activate-fedora-offline-update --param source_run_id=RUN_ID
+--dry-run, inspect its exact `dnf5 offline reboot` vector, and then apply the
+plan with --yes --accept-no-rollback. After restart, verify the original
+update-fedora-system run ID.
 
 ## What never happens automatically
 

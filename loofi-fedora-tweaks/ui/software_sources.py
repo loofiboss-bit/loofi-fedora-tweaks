@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+import re
+
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QHeaderView, QLabel, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
@@ -13,6 +15,8 @@ from ui.operation_worker import OperationControllerQtAdapter
 class SoftwareSourcesWidget(QWidget):
     """Read-only overview; emits the observation for existing source badges."""
 
+    _SOURCE_ID = re.compile(r"^[A-Za-z0-9_.:+-]{1,128}$")
+
     snapshotChanged = pyqtSignal(object)
     stopped = pyqtSignal()
 
@@ -20,6 +24,7 @@ class SoftwareSourcesWidget(QWidget):
         super().__init__(parent)
         self.service = service or SoftwareSourceStatusService()
         self.snapshot: DnfSourceSnapshot | None = None
+        self._focus_source_id = ""
         self.setObjectName("softwareSources")
         layout = QVBoxLayout(self)
         layout.setContentsMargins(0, 0, 0, 0)
@@ -108,9 +113,36 @@ class SoftwareSourcesWidget(QWidget):
                 reason=reasons.get(snapshot.reason or SourceStatusReason.PROBE_FAILED, reasons[SourceStatusReason.PROBE_FAILED]), time=snapshot.observed_at or self.tr("Not available"),
             ))
         self._filter(self.search.text())
+        if self._focus_source_id:
+            self._select_exact_source(self._focus_source_id)
         self.snapshotChanged.emit(snapshot)
 
+    def focus_source(self, source_id: str) -> bool:
+        """Filter to and select one validated repository ID without probing."""
+        value = str(source_id or "").strip()
+        if not self._SOURCE_ID.fullmatch(value):
+            self._focus_source_id = ""
+            self.search.clear()
+            self.search.setFocus()
+            return False
+        self._focus_source_id = value
+        self.search.setText(value)
+        return self._select_exact_source(value)
+
+    def _select_exact_source(self, source_id: str) -> bool:
+        for index in range(self.table.topLevelItemCount()):
+            row = self.table.topLevelItem(index)
+            if row is not None and row.text(0) == source_id:
+                self.table.setCurrentItem(row)
+                self.table.scrollToItem(row)
+                self.table.setFocus()
+                return True
+        self.search.setFocus()
+        return False
+
     def _filter(self, query: str) -> None:
+        if query.strip() != self._focus_source_id:
+            self._focus_source_id = ""
         needle = query.strip().casefold()
         for index in range(self.table.topLevelItemCount()):
             row = self.table.topLevelItem(index)

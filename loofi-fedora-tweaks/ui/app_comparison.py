@@ -1,5 +1,5 @@
 """Read-only installation comparison using the existing inventory snapshot."""
-from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QComboBox, QDialog, QDialogButtonBox, QLabel, QPushButton, QTableWidget, QTableWidgetItem, QVBoxLayout
 
 from services.software.app_comparison import ApplicationComparison
@@ -17,9 +17,25 @@ class ApplicationComparisonDialog(QDialog):
         self.setAccessibleName(self.tr("Compare installations for %1").replace("%1", comparison.app_id))
         self.resize(850, 520)
         layout = QVBoxLayout(self)
-        identity = QLabel(comparison.app_id)
+        identity = QLabel(self.tr("Application ID: %1").replace("%1", comparison.app_id))
+        identity.setObjectName("comparisonAppIdentity")
+        identity.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse | Qt.TextInteractionFlag.TextSelectableByKeyboard)
         identity.setWordWrap(True)
         layout.addWidget(identity)
+        self.selected_summary = QLabel()
+        self.selected_summary.setObjectName("comparisonSelectedSummary")
+        self.selected_summary.setAccessibleName(self.tr("Selected installation summary"))
+        self.selected_summary.setWordWrap(True)
+        layout.addWidget(self.selected_summary)
+        guidance = QLabel(self.tr("Choose one exact installation to inspect. Source, installation scope, reference, and version are shown when reported. Runtime and permissions are available from App details when the source provides them."))
+        guidance.setObjectName("cardDescription")
+        guidance.setWordWrap(True)
+        layout.addWidget(guidance)
+        self.selection = QComboBox()
+        self.selection.setAccessibleName(self.tr("Choose exact installation"))
+        for app in comparison.installations:
+            self.selection.addItem(f"{app.source} · {app.installation} · {app.ref}", app)
+        layout.addWidget(self.selection)
         table = QTableWidget(5, len(comparison.installations))
         table.setAccessibleName(self.tr("Installation comparison"))
         table.setVerticalHeaderLabels([self.tr("Format"), self.tr("Version"), self.tr("Installation"), self.tr("Reference"), self.tr("Reported size")])
@@ -31,18 +47,14 @@ class ApplicationComparisonDialog(QDialog):
                 table.setItem(row, column, QTableWidgetItem(value or self.tr("Not reported")))
         table.resizeColumnsToContents()
         layout.addWidget(table, 1)
-        notice = QLabel(self.tr("Reported sizes include shared objects and do not predict space freed by removal. Choose an installation to inspect details or review removal."))
+        notice = QLabel(self.tr("Reported sizes may include shared objects and do not predict space freed by removal. Review the exact installation before removing it."))
         notice.setWordWrap(True)
         layout.addWidget(notice)
         if comparison.errors:
-            errors = QLabel(self.tr("Some sources could not be checked; this comparison may be incomplete.") + "\n" + "\n".join(comparison.errors))
+            errors = QLabel(self.tr("Some sources could not be checked; this comparison may be incomplete. Check source availability before drawing conclusions.") + "\n" + "\n".join(comparison.errors))
+            errors.setObjectName("comparisonSourceWarning")
             errors.setWordWrap(True)
             layout.addWidget(errors)
-        self.selection = QComboBox()
-        self.selection.setAccessibleName(self.tr("Choose exact installation"))
-        for app in comparison.installations:
-            self.selection.addItem(f"{app.source} · {app.installation} · {app.ref}", app)
-        layout.addWidget(self.selection)
         self.details_button = QPushButton(self.tr("App details"))
         self.details_button.clicked.connect(self._details)
         layout.addWidget(self.details_button)
@@ -58,6 +70,19 @@ class ApplicationComparisonDialog(QDialog):
     def _selected(self):
         app = self.selection.currentData()
         flatpak = app is not None and app.source == "flatpak"
+        if app is None:
+            self.selected_summary.setText(self.tr("No matching installation was found in the available sources."))
+        else:
+            source = self.tr("Flatpak") if flatpak else self.tr("Fedora package")
+            version = app.version or self.tr("Not reported")
+            self.selected_summary.setText(
+                self.tr("Selected: %1 · Source: %2 · Installation: %3 · Version: %4 · Reference: %5")
+                .replace("%1", app.name)
+                .replace("%2", source)
+                .replace("%3", app.installation)
+                .replace("%4", version)
+                .replace("%5", app.ref or self.tr("Not reported"))
+            )
         self.details_button.setEnabled(flatpak)
         self.remove_button.setEnabled(app is not None)
         self.remove_button.setText(self.tr("Review removal") if flatpak else self.tr("Open software manager"))

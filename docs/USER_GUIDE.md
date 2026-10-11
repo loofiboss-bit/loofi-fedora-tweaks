@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Current local candidate: 32.8.0 "Guide". Physical desktop and assistive-technology qualification is recorded separately.
+> Published baseline: 32.8.0 "Guide". Later stabilization changes in the working tree are unreleased. Physical desktop and assistive-technology qualification is recorded separately.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see

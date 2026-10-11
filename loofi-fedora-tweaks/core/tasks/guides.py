@@ -8,7 +8,7 @@ import re
 import time
 from dataclasses import asdict, dataclass
 from pathlib import Path
-from typing import Any, Literal, Mapping, cast
+from typing import Any, Literal, Mapping, Sequence, cast
 
 from core.state.atomic_io import advisory_lock, atomic_write_json
 from core.state.inventory import StateInventory
@@ -64,12 +64,17 @@ class GuideStep:
     target: GuideTarget
     keywords: tuple[str, ...] = ()
     evidence_kinds: tuple[EvidenceKind, ...] = ()
+    evidence_action_ids: tuple[str, ...] = ()
 
     def __post_init__(self) -> None:
         if not _IDENTIFIER.fullmatch(self.id) or not self.title.strip() or not self.description.strip():
             raise ValueError("Guide step metadata is invalid.")
         if any(kind not in {"action_run", "troubleshooting_session"} for kind in self.evidence_kinds):
             raise ValueError("Guide step evidence kind is invalid.")
+        if self.evidence_action_ids and "action_run" not in self.evidence_kinds:
+            raise ValueError("Action evidence IDs require the action_run evidence kind.")
+        if any(not _IDENTIFIER.fullmatch(action_id) for action_id in self.evidence_action_ids):
+            raise ValueError("Guide step action evidence ID is invalid.")
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -119,6 +124,7 @@ def _step(
     context: Mapping[str, str] | None = None,
     keywords: tuple[str, ...] = (),
     evidence: tuple[EvidenceKind, ...] = (),
+    action_ids: tuple[str, ...] = (),
 ) -> GuideStep:
     return GuideStep(
         id=f"{guide_id}:{step_id}",
@@ -127,6 +133,7 @@ def _step(
         target=GuideTarget(route, task, tweak, tuple(sorted((context or {}).items()))),
         keywords=keywords,
         evidence_kinds=evidence,
+        evidence_action_ids=action_ids,
     )
 
 
@@ -139,7 +146,7 @@ GUIDES: tuple[GuideDefinition, ...] = (
         (
             _step("make-fedora-yours", "find-settings", "Find a setting or preset", "Search desktop controls and inspect the available presets.", "tune", task="tune:tweaks", keywords=("find setting", "appearance", "input")),
             _step("make-fedora-yours", "review-change", "Review a desktop change", "Open a setting or preset and review its exact scope before applying it.", "tune", task="tune:tweaks", keywords=("review", "apply", "change")),
-            _step("make-fedora-yours", "verify-change", "Verify a change", "Check the saved value and its Activity record after a change.", "activity", evidence=("action_run",), keywords=("verify", "readback", "undo")),
+            _step("make-fedora-yours", "verify-change", "Verify a change", "Check the saved value and its Activity record after a change.", "activity", evidence=("action_run",), action_ids=("activate-kwin-tweak", "set-kde-window-placement", "restore-kde-window-placement", "set-kde-border-snap-zone", "restore-kde-border-snap-zone", "set-kde-window-snap-zone", "restore-kde-window-snap-zone", "set-kde-cursor-theme", "restore-kde-cursor-theme", "set-kde-cursor-size", "restore-kde-cursor-size", "set-kde-plasma-style", "restore-kde-plasma-style", "set-gnome-mouse-left-handed", "restore-gnome-mouse-left-handed", "set-gnome-mouse-acceleration", "restore-gnome-mouse-acceleration", "set-gnome-keyboard-repeat", "restore-gnome-keyboard-repeat", "set-kde-dolphin-editable-location", "restore-kde-dolphin-editable-location", "set-kde-dolphin-remember-tabs", "restore-kde-dolphin-remember-tabs", "set-kde-dolphin-external-folders-new-tab", "restore-kde-dolphin-external-folders-new-tab", "set-kde-dolphin-confirm-close-tabs", "restore-kde-dolphin-confirm-close-tabs", "set-kde-edge-tiling", "restore-kde-edge-tiling", "set-kde-focus-stealing-prevention", "restore-kde-focus-stealing-prevention", "set-gnome-files-editable-location", "restore-gnome-files-editable-location", "set-gnome-files-date-format", "restore-gnome-files-date-format"), keywords=("verify", "readback", "undo")),
             _step("make-fedora-yours", "save-profile", "Save a personal profile", "Save supported preferences as a profile for later review or sharing.", "tune", task="tune:profile-library", keywords=("save profile", "export", "share")),
         ),
     ),
@@ -151,7 +158,7 @@ GUIDES: tuple[GuideDefinition, ...] = (
         (
             _step("choose-and-manage-apps", "find-app", "Find an application", "Search the curated catalog or inspect applications already installed.", "install", task="install:applications", keywords=("search apps", "installed", "discover")),
             _step("choose-and-manage-apps", "compare-installations", "Compare installations", "Compare exact installed sources and inspect application details where available.", "install", task="install:applications", keywords=("compare", "rpm", "flatpak", "size")),
-            _step("choose-and-manage-apps", "review-app-change", "Review an app change", "Open the existing installation or exact removal review when you choose to make a change.", "install", task="install:applications", evidence=("action_run",), keywords=("install app", "remove flatpak", "review")),
+            _step("choose-and-manage-apps", "review-app-change", "Review an app change", "Open the existing installation or exact removal review when you choose to make a change.", "install", task="install:applications", evidence=("action_run",), action_ids=("install-application", "remove-application", "remove-installed-flatpak", "remove-unused-flatpaks"), keywords=("install app", "remove flatpak", "review")),
             _step("choose-and-manage-apps", "inspect-app-access", "Inspect app access", "Review declared Flatpak access and use the native permissions tool for changes.", "install", task="install:installed", keywords=("permissions", "access", "flatseal", "default app")),
         ),
     ),
@@ -162,7 +169,7 @@ GUIDES: tuple[GuideDefinition, ...] = (
         ("maintain", "updates", "dnf", "storage", "disk space", "restart", "activity"),
         (
             _step("maintain-your-system", "review-sources", "Review software sources", "Inspect locally configured DNF sources and their recorded status.", "install", task="install:repositories", keywords=("dnf sources", "repositories")),
-            _step("maintain-your-system", "review-updates", "Review updates", "Check sources explicitly, then review the exact updates before installation.", "maintenance:updates", evidence=("action_run",), keywords=("update", "upgrade packages")),
+            _step("maintain-your-system", "review-updates", "Review updates", "Check sources explicitly, then review the exact updates before installation.", "maintenance:updates", evidence=("action_run",), action_ids=("update-fedora-system", "update-flatpaks", "update-firmware"), keywords=("update", "upgrade packages")),
             _step("maintain-your-system", "restart-advice", "Check restart advice", "Read the bounded DNF5 restart recommendation; it never restarts the computer.", "maintenance:updates", keywords=("restart", "reboot")),
             _step("maintain-your-system", "storage-guide", "Review storage", "Inspect measured filesystem, cache, and journal use before choosing any cleanup.", "health", context={"symptom": "storage_full"}, keywords=("free space", "cleanup", "cache")),
             _step("maintain-your-system", "activity", "Review recorded work", "Open Activity to inspect verified results and any recovery guidance.", "activity", keywords=("history", "changes", "results")),
@@ -330,7 +337,8 @@ class GuideProgressStore:
             step = GUIDE_STEPS_BY_ID[step_id]
             if evidence_kind not in step.evidence_kinds or not _IDENTIFIER.fullmatch(evidence_id):
                 raise ValueError("A compatible exact evidence reference is required.")
-            if not guide_evidence_exists(evidence_kind, evidence_id):
+            compatible_action_ids = step.evidence_action_ids if evidence_kind == "action_run" else None
+            if not guide_evidence_exists(evidence_kind, evidence_id, action_ids=compatible_action_ids):
                 raise ValueError("The selected verified result is no longer available.")
         else:
             evidence_kind, evidence_id = "action_run", ""
@@ -381,9 +389,15 @@ class GuideEvidence:
     timestamp: float
 
 
-def guide_evidence(kind: EvidenceKind, limit: int = 30) -> tuple[GuideEvidence, ...]:
+def guide_evidence(
+    kind: EvidenceKind,
+    limit: int = 30,
+    *,
+    action_ids: Sequence[str] | None = None,
+) -> tuple[GuideEvidence, ...]:
     """List actual successful action runs or completed inspections, read-only."""
     bounded_limit = max(1, min(int(limit), 100))
+    allowed_actions = frozenset(str(item) for item in action_ids) if action_ids is not None else None
     try:
         if kind == "action_run":
             from core.actions.stores import ActionRunStore
@@ -392,7 +406,10 @@ def guide_evidence(kind: EvidenceKind, limit: int = 30) -> tuple[GuideEvidence, 
             return tuple(
                 GuideEvidence(kind, run.run_id, f"{run.action_id} · {run.state}", run.completed_at or run.started_at)
                 for run in reversed(runs)
-                if run.state == "succeeded" and run.run_id and run.completed_at is not None
+                if run.state == "succeeded"
+                and run.run_id
+                and run.completed_at is not None
+                and (allowed_actions is None or run.action_id in allowed_actions)
             )[:bounded_limit]
         if kind == "troubleshooting_session":
             from core.troubleshooting.storage import TroubleshootingSessionStore
@@ -408,11 +425,20 @@ def guide_evidence(kind: EvidenceKind, limit: int = 30) -> tuple[GuideEvidence, 
     return ()
 
 
-def guide_evidence_exists(kind: EvidenceReferenceKind, evidence_id: str) -> bool:
+def guide_evidence_exists(
+    kind: EvidenceReferenceKind,
+    evidence_id: str,
+    *,
+    action_ids: Sequence[str] | None = None,
+) -> bool:
     """Re-read exact terminal evidence before accepting a verified link."""
     if kind not in {"action_run", "troubleshooting_session"}:
         return False
-    return any(item.id == evidence_id for item in guide_evidence(cast(EvidenceKind, kind), limit=100))
+    return any(item.id == evidence_id for item in guide_evidence(
+        cast(EvidenceKind, kind),
+        limit=100,
+        action_ids=action_ids,
+    ))
 
 
 def guide_progress_payload(guide_id: str, snapshot: GuideProgressSnapshot) -> dict[str, Any]:
@@ -426,7 +452,11 @@ def guide_progress_payload(guide_id: str, snapshot: GuideProgressSnapshot) -> di
         status: str = entry.state if entry else "not_started"
         evidence_available = False
         if entry and entry.state == "verified":
-            evidence_available = guide_evidence_exists(entry.evidence_kind, entry.evidence_id)
+            evidence_available = guide_evidence_exists(
+                entry.evidence_kind,
+                entry.evidence_id,
+                action_ids=step.evidence_action_ids if entry.evidence_kind == "action_run" else None,
+            )
             if not evidence_available:
                 status = "evidence_missing"
         steps.append({

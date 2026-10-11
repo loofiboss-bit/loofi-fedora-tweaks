@@ -277,6 +277,51 @@ class MainWindowInteractionMixin:
         if callable(remember):
             remember(run_id)
 
+    def _verify_activity_action_run(self: typing.Any, run_id: str) -> None:
+        """Verify the exact selected Activity run through the shared controller."""
+        selected_run_id = str(run_id or "").strip()
+        if not selected_run_id:
+            return
+        active = getattr(self, "_utility_operation_adapter", None)
+        if active is not None and bool(getattr(active, "busy", False)):
+            self._record_global_operation_result(None, self.tr("Wait for the current operation to finish before checking this result."))
+            return
+        try:
+            from core.actions.operation_controller import OperationController
+
+            controller = getattr(self, "_utility_operation_controller", None)
+            if controller is None:
+                controller = OperationController()
+                setattr(self, "_utility_operation_controller", controller)
+            adapter = self._new_utility_operation_adapter(phase="verification")
+            adapter.finished.connect(
+                lambda _outcome, selected=selected_run_id: self._reload_activity_action_run(selected)
+            )
+            adapter.failed.connect(
+                lambda message: self._record_global_operation_result(None, str(message), phase="verification")
+            )
+            adapter.cancelled.connect(
+                lambda: self._record_global_operation_result(None, self.tr("Result check was cancelled."), phase="verification")
+            )
+            if not adapter.start(lambda: controller.verify(selected_run_id)):
+                self._utility_operation_adapter = None
+                adapter.deleteLater()
+                self._record_global_operation_result(None, self.tr("Another operation is still running."))
+        except (ImportError, OSError, RuntimeError, TypeError, ValueError) as exc:
+            self._record_global_operation_result(None, str(exc), phase="verification")
+
+    def _reload_activity_action_run(self: typing.Any, run_id: str) -> None:
+        """Return to the exact verified run after its read-only result check."""
+        if not self.switch_to_route("activity"):
+            return
+        entry = getattr(self, "_sidebar_index", {}).get("activity")
+        if entry is None:
+            return
+        widget = self._real_widget_for_entry(entry)
+        select_run = getattr(widget, "remember_run_id", None)
+        if callable(select_run):
+            select_run(run_id)
+
     def _toggle_sidebar(self: typing.Any) -> typing.Any:
         """Toggle sidebar between expanded and collapsed states."""
         self._auto_sidebar_collapsed = False

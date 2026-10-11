@@ -1,8 +1,8 @@
 # Companion qualification
 
-Local candidate: v32.5.0 "Companion", 2026-10-08.
-This document distinguishes automated checks, local read-only runtime evidence,
-and physical interaction. The candidate is not installed or published by this work.
+Published v32.5.0 Companion — local qualification record dated 2026-10-08
+"Companion". This dated record distinguishes automated checks, local read-only
+runtime evidence, and physical interaction; it does not qualify later changes.
 
 ## Automated checks
 

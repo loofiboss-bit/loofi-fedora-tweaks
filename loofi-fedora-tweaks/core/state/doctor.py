@@ -51,11 +51,15 @@ class StateDoctor:
     def _fingerprints(self) -> dict[str, tuple[int, int] | None]:
         result: dict[str, tuple[int, int] | None] = {}
         for domain in self.inventory.all():
-            try:
-                stat = domain.path.stat()
-                result[domain.id] = (stat.st_mtime_ns, stat.st_size)
-            except OSError:
-                result[domain.id] = None
+            paths = [(domain.id, domain.path)]
+            if domain.id == "settings":
+                paths.append(("settings-lkg", domain.path.with_suffix(domain.path.suffix + ".lkg")))
+            for key, path in paths:
+                try:
+                    stat = path.stat()
+                    result[key] = (stat.st_mtime_ns, stat.st_size)
+                except OSError:
+                    result[key] = None
         return result
 
     @staticmethod
@@ -87,6 +91,20 @@ class StateDoctor:
             if path.suffix == ".json":
                 payload = json.loads(path.read_text(encoding="utf-8"))
                 findings.extend(self._check_schema(domain, payload))
+                if domain.id == "settings":
+                    findings.extend(self._check_settings_values(payload, path))
+                    backup = path.with_suffix(path.suffix + ".lkg")
+                    if backup.is_file():
+                        backup_payload = json.loads(backup.read_text(encoding="utf-8"))
+                        backup_issues = self._invalid_settings(backup_payload)
+                        if backup_issues:
+                            findings.append(DoctorFinding(
+                                domain.id,
+                                "warning",
+                                "Invalid settings are preserved in the last-known-good copy",
+                                f"{backup}: {', '.join(backup_issues[:12])}",
+                                "Review the preserved values before restoring them; save corrected settings to clear this warning.",
+                            ))
             elif path.suffix == ".jsonl":
                 for number, line in enumerate(path.read_text(encoding="utf-8").splitlines(), 1):
                     if line.strip():
@@ -111,7 +129,9 @@ class StateDoctor:
         if not isinstance(payload, dict):
             return []
         version_key = "schema_version"
-        if domain.id == "action_history" and "action_center_schema_version" in payload:
+        if domain.id == "settings":
+            version_key = "state_schema_version"
+        elif domain.id == "action_history" and "action_center_schema_version" in payload:
             version_key = "action_center_schema_version"
         elif domain.id == "action_runs" and "action_run_schema_version" in payload:
             version_key = "action_run_schema_version"
@@ -119,6 +139,18 @@ class StateDoctor:
             # Several long-lived v13 JSON/JSONL formats predate an embedded
             # version. Preserve their compatibility instead of guessing v0.
             return []
+        if domain.id == "settings" and (
+            not isinstance(payload[version_key], int)
+            or isinstance(payload[version_key], bool)
+            or payload[version_key] < 0
+        ):
+            return [DoctorFinding(
+                domain.id,
+                "error",
+                "Settings schema version is invalid",
+                repr(payload[version_key]),
+                "Preserve the settings file and correct or restore it through the owning settings workflow.",
+            )]
         try:
             version = int(payload[version_key])
             self.registry.validate_version(domain.schema_id, version)
@@ -140,6 +172,9 @@ class StateDoctor:
                 "Preserve the state and use a domain-specific recovery plan.",
             )]
         if version < domain.schema_version:
+            if domain.id == "settings":
+                # Settings have their own typed, idempotent migration path.
+                return []
             try:
                 normalized = dict(payload)
                 normalized["schema_version"] = version
@@ -153,3 +188,23 @@ class StateDoctor:
                     "Keep this state read-only until a compatible migration is installed.",
                 )]
         return []
+
+    @staticmethod
+    def _invalid_settings(payload: Any) -> tuple[str, ...]:
+        from utils.settings import invalid_setting_types
+
+        return invalid_setting_types(payload)
+
+    def _check_settings_values(self, payload: Any, path: Any) -> list[DoctorFinding]:
+        if not isinstance(payload, dict):
+            return []
+        issues = self._invalid_settings(payload)
+        if not issues:
+            return []
+        return [DoctorFinding(
+            "settings",
+            "warning",
+            "Settings contain invalid value types",
+            f"{path}: {', '.join(issues[:12])}",
+            "Loofi uses safe defaults for these values. Save corrected settings or restore reviewed values from the preserved .lkg copy.",
+        )]

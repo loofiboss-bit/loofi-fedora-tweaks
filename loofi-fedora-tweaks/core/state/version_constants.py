@@ -7,3 +7,4 @@ from __future__ import annotations
 # through a second hard-coded version table.
 ACTION_PLAN_SCHEMA_VERSION = 4
 ACTION_RUN_SCHEMA_VERSION = 4
+SETTINGS_SCHEMA_VERSION = 3

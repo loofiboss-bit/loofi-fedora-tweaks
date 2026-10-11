@@ -1,6 +1,6 @@
-# Guide candidate verification
+# Guide 32.8.0 qualification record
 
-Local candidate for 32.8.0 "Guide", checked on 2026-10-11. This report covers
+Published release 32.8.0 "Guide", assessed on 2026-10-11. This report covers
 the four everyday guides, their local progress store, navigation and search,
 and the installed RPM. Hardware diagnostics and app-source insight remain
 roadmap work.
@@ -43,7 +43,7 @@ are read-only CLI views; the CLI cannot execute a guide chain.
 
 ## Startup and navigation measurement
 
-To compare the local candidate with the parent revision, the parent source was
+To compare the assessed release source with the parent revision, the parent source was
 exported from commit `fbbb938648083db3ab9b2b3b01aa52a3773cafbf`. Both versions
 ran on the same host, Python 3.14.8 and PyQt 6.11.0 environment with
 `QT_QPA_PLATFORM=offscreen` and fresh private XDG directories. Twenty paired,

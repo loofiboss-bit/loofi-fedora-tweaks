@@ -3,9 +3,10 @@
 import json
 import os
 import tempfile
+import time
 import unittest
 from pathlib import Path
-from unittest.mock import MagicMock
+from unittest.mock import MagicMock, patch
 
 import sys
 
@@ -23,6 +24,7 @@ class AssuranceRuntime:
         self.manager = "dnf"
         self.boot = "boot-a"
         self.results = {}
+        self.calls = []
 
     def is_atomic(self):
         return self.atomic
@@ -40,6 +42,7 @@ class AssuranceRuntime:
         return self.boot
 
     def execute_read_only(self, vector, *, action_id, timeout=30):
+        self.calls.append(tuple(vector))
         result = self.results.get(tuple(vector))
         if result is not None:
             return result
@@ -275,10 +278,27 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
             "installed", stdout="beta|3-1|noarch\n"
         )
         self.runtime.results[("dnf5", "check")] = ActionResult.ok("healthy")
-        self.runtime.results[("dnf5", "offline", "log", "--number=-1")] = ActionResult.ok("complete")
+        history_list = ("dnf5", "history", "list", "--json")
+        history_info = ("dnf5", "history", "info", "42", "--json")
+        self.runtime.results[history_list] = ActionResult.ok(
+            "history list",
+            stdout=json.dumps({"items": [{"id": 42, "status": "Success", "start_time": time.time() + 1}]}),
+        )
+        self.runtime.results[history_info] = ActionResult.ok(
+            "history details",
+            stdout=json.dumps({"items": [{
+                "id": 42,
+                "status": "Ok",
+                "packages": [
+                    {"action": "Upgrade", "nevra": "alpha-2-1.x86_64"},
+                    {"action": "Install", "nevra": "beta-3-1.noarch"},
+                ],
+            }]}),
+        )
         result = definition.verifier(run, plan, self.runtime)
         self.assertEqual(result.state, "succeeded")
         self.assertEqual(result.data["verified_packages"], 2)
+        self.assertEqual(result.data["transaction_id"], 42)
 
     def test_dnf5_history_undo_allows_only_verifiable_transaction_shape(self):
         definition = self.catalog.get("dnf5-history-undo")
@@ -388,6 +408,37 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
         verified = definition.verifier(run, plan, self.runtime)
         self.assertEqual(verified.state, "succeeded")
 
+    def test_invalid_rpm_ostree_json_is_evidence_unavailable(self):
+        self.runtime.atomic = True
+        status = ("rpm-ostree", "status", "--json")
+        self.runtime.results[status] = ActionResult.ok("status", stdout="not-json")
+        rollback = self.catalog.get("rpm-ostree-rollback")
+        update = self.catalog.get("update-fedora-system")
+        assert rollback is not None and update is not None
+
+        rollback_decision = rollback.preflight_checker(
+            {"expected_deployment": "a" * 64, "rollback_deployment": "b" * 64},
+            self.runtime,
+        )
+        update_decision = update.preflight_checker({}, self.runtime)
+
+        self.assertEqual(rollback_decision.reason_code, "atomic_evidence_unavailable")
+        self.assertEqual(update_decision.reason_code, "atomic_evidence_unavailable")
+
+    def test_oversized_firmware_evidence_is_not_reported_as_no_updates(self):
+        definition = self.catalog.get("update-firmware")
+        assert definition is not None
+        self.runtime.results[("fwupdmgr", "get-updates", "--json")] = ActionResult.fail(
+            "Structured response exceeded the limit.",
+            exit_code=-2,
+            data={"evidence_unavailable": "oversized_json"},
+        )
+
+        decision = definition.preflight_checker({}, self.runtime)
+
+        self.assertFalse(decision.allowed)
+        self.assertEqual(decision.reason_code, "firmware_evidence_unavailable")
+
     def test_atomic_update_stages_then_requires_the_exact_booted_deployment(self):
         definition = self.catalog.get("update-fedora-system")
         assert definition is not None
@@ -443,13 +494,136 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
             stdout=json.dumps({"Devices": [{"DeviceId": "device-1", "Guid": ["GUID-1"], "Version": "1", "Releases": [{"Version": "2", "Checksum": ["sha256:abc"]}]}]}),
         )
         decision = definition.preflight_checker({}, self.runtime)
-        self.runtime.results[("fwupdmgr", "get-history", "--json")] = ActionResult.ok("history", stdout="{}")
+        self.runtime.results[("fwupdmgr", "get-history", "--json")] = ActionResult.ok(
+            "history", stdout=json.dumps({"Devices": []})
+        )
         plan = self._plan(definition, {}, decision)
         run = self._run(definition.id)
 
         self.assertEqual(definition.verifier(run, plan, self.runtime).state, "awaiting_reboot")
         self.runtime.boot = "boot-b"
         self.assertEqual(definition.verifier(run, plan, self.runtime).state, "failed")
+
+    def test_fedora_history_absence_and_invalid_json_are_not_reported_as_success(self):
+        definition = self.catalog.get("update-fedora-system")
+        assert definition is not None
+        run = self._run(definition.id)
+        plan = self._plan(
+            definition,
+            {},
+            PolicyDecision(
+                True,
+                "preflight_ok",
+                "Ready.",
+                facts={"atomic": False, "offline": True, "candidates": ["alpha|2-1|x86_64"]},
+            ),
+        )
+        self.runtime.boot = "boot-b"
+        self.runtime.results[("dnf5", "history", "list", "--json")] = ActionResult.ok(
+            "history", stdout=json.dumps({"items": []})
+        )
+
+        no_match = definition.verifier(run, plan, self.runtime)
+        self.assertEqual(no_match.state, "failed")
+        self.assertFalse(no_match.data["evidence_unavailable"])
+
+        self.runtime.results[("dnf5", "history", "list", "--json")] = ActionResult.ok("invalid", stdout="{")
+        unavailable = definition.verifier(run, plan, self.runtime)
+        self.assertEqual(unavailable.state, "failed")
+        self.assertTrue(unavailable.data["evidence_unavailable"])
+
+    def test_offline_activation_command_is_separate_and_denial_preserves_original_pending_run(self):
+        self.runtime.manager = "dnf5"
+        self.runtime.results[("dnf5", "offline", "status")] = ActionResult.ok(
+            "prepared", stdout="Offline transaction ready.\n"
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            plans = ActionPlanStore(root / "plans.json")
+            runs = ActionRunStore(root / "runs.jsonl")
+            source_definition = self.catalog.get("update-fedora-system")
+            assert source_definition is not None
+            source_plan = self._plan(
+                source_definition,
+                {},
+                PolicyDecision(
+                    True,
+                    "preflight_ok",
+                    "Prepared.",
+                    facts={"atomic": False, "offline": True, "candidates": ["alpha|2-1|x86_64"]},
+                ),
+            )
+            source_plan.plan_id = "source-plan"
+            plans.save(source_plan)
+            source_run = ActionRun(
+                "source-run",
+                source_plan.plan_id,
+                "update-fedora-system",
+                "source-correlation",
+                state="awaiting_reboot",
+                started_at=time.time() - 10,
+                execution_boot_id=self.runtime.boot,
+                verification_result={"data": {"offline_transaction": True}},
+            )
+            runs.save(source_run)
+            facade = MagicMock()
+            facade.execute.return_value = ActionResult.fail(
+                "Authorization was cancelled.", exit_code=126, action_id="activate-fedora-offline-update"
+            )
+            orchestrator = ActionCenterOrchestrator(
+                facade=facade,
+                catalog=self.catalog,
+                plan_store=plans,
+                run_store=runs,
+                lease_path=root / "mutation",
+                runtime=self.runtime,
+                id_factory=iter(("activation-plan", "activation-run", "activation-correlation")).__next__,
+                recover_interrupted=False,
+            )
+
+            with patch("core.actions.stores.ActionPlanStore", return_value=plans), patch(
+                "core.actions.stores.ActionRunStore", return_value=runs
+            ):
+                plan = orchestrator.plan(
+                    "activate-fedora-offline-update", {"source_run_id": "source-run"}
+                )
+                self.assertTrue(plan.policy_decision.allowed)
+                self.assertEqual(plan.preview, ["dnf5", "offline", "reboot"])
+                run = orchestrator.apply(
+                    plan.plan_id, confirmed=True, accept_no_rollback=True
+                )
+
+            self.assertEqual(run.state, "cancelled")
+            self.assertEqual(tuple(facade.execute.call_args.args[0]), ("dnf5", "offline", "reboot"))
+            self.assertEqual(runs.get("source-run").state, "awaiting_reboot")
+
+    def test_atomic_rpm_install_is_unavailable_in_real_action_center_plan(self):
+        self.runtime.atomic = True
+        self.runtime.manager = "rpm-ostree"
+        self.runtime.results[("rpm", "-q", "--qf", "%{name}|%{evr}|%{arch}\\n", "demo")] = ActionResult.fail(
+            "not installed", exit_code=1
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            orchestrator = ActionCenterOrchestrator(
+                facade=MagicMock(),
+                catalog=self.catalog,
+                plan_store=ActionPlanStore(root / "plans.json"),
+                run_store=ActionRunStore(root / "runs.jsonl"),
+                lease_path=root / "mutation",
+                runtime=self.runtime,
+                recover_interrupted=False,
+            )
+
+            plan = orchestrator.plan(
+                "install-application", {"source": "fedora", "package_id": "demo"}
+            )
+
+        self.assertFalse(plan.policy_decision.allowed)
+        self.assertEqual(plan.policy_decision.reason_code, "atomic_rpm_layering_unavailable")
+        self.assertEqual(plan.preview, [])
+        unsupported = ("rpm-ostree", "repoquery", "--available", "--latest-limit", "1", "--qf", "%{name}|%{evr}|%{arch}", "demo")
+        self.assertNotIn(unsupported, self.runtime.calls)
 
     def test_application_matrix_verifies_exact_rpm_and_flatpak_state(self):
         install = self.catalog.get("install-application")

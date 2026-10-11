@@ -43,6 +43,7 @@ logger = logging.getLogger(__name__)
 # Limits
 COMMAND_TIMEOUT = 120  # seconds
 MAX_STDOUT = 4000
+MAX_STRUCTURED_JSON_BYTES = 1024 * 1024
 MAX_KWIN_SUPPORT = 1024 * 1024
 MAX_STDERR = 2000
 MAX_LOG_ENTRIES = 500
@@ -64,6 +65,31 @@ def _private_log_line(line: str) -> str:
     if isinstance(entry, dict) and isinstance(entry.get("cmd"), list) and all(isinstance(part, str) for part in entry["cmd"]):
         entry["cmd"] = redact_command(entry["cmd"])
     return json.dumps(redact_payload(entry))
+
+
+def _is_supported_structured_json_command(command: List[str]) -> bool:
+    """Recognize only the reviewed bounded JSON probes that need full output."""
+    vector = list(command)
+    while vector and Path(vector[0]).name in {"pkexec"}:
+        vector = vector[1:]
+    if vector[:2] == ["flatpak-spawn", "--host"]:
+        vector = vector[2:]
+    if not vector:
+        return False
+    binary, args = Path(vector[0]).name, vector[1:]
+    if binary == "rpm-ostree":
+        return args == ["status", "--json"]
+    if binary == "fwupdmgr":
+        return args in (["get-updates", "--json"], ["get-history", "--json"])
+    if binary == "dnf5":
+        return args == ["history", "list", "--json"] or (
+            len(args) == 4
+            and args[0] == "history"
+            and args[1] == "info"
+            and args[2].isdigit()
+            and args[3] == "--json"
+        )
+    return False
 
 
 class ActionExecutor(BaseActionExecutor):
@@ -258,24 +284,41 @@ class ActionExecutor(BaseActionExecutor):
                 env=run_env,
             )
 
-            # Only this reviewed read needs the complete DBus string tuple for
-            # runtime verification. Persistence still uses ActionResult's 4000
-            # character serialization cap; support details are never log text.
+            # Only these exact JSON probes and this KWin runtime read retain full
+            # bounded output for immediate verification. Serialization remains
+            # short and excludes structured_output entirely.
             support_read = tuple(cmd) in {KWIN_SUPPORT, ("flatpak-spawn", "--host", *KWIN_SUPPORT)}
+            structured_read = _is_supported_structured_json_command(cmd)
             raw_stdout = proc.stdout or ""
             if support_read and len(raw_stdout) > MAX_KWIN_SUPPORT:
                 return ActionResult.fail("KWin runtime information exceeded the supported size.", exit_code=-1, action_id=action_id)
+            if structured_read and len(raw_stdout.encode("utf-8")) > MAX_STRUCTURED_JSON_BYTES:
+                return ActionResult.fail(
+                    "Structured update evidence is unavailable because the JSON response exceeded 1 MiB.",
+                    exit_code=-1,
+                    stdout=raw_stdout[:MAX_STDOUT],
+                    stderr=(proc.stderr or "")[:MAX_STDERR],
+                    action_id=action_id,
+                    data={"evidence_unavailable": "oversized_json", "limit_bytes": MAX_STRUCTURED_JSON_BYTES},
+                )
             stdout = raw_stdout[:MAX_KWIN_SUPPORT if support_read else MAX_STDOUT]
             stderr = (proc.stderr or "")[:MAX_STDERR]
 
             if proc.returncode == 0:
+                if structured_read:
+                    message = "Structured JSON evidence read."
+                elif support_read:
+                    message = "KWin runtime information read."
+                else:
+                    message = stdout.strip()[:300] or "OK"
                 return ActionResult(
                     success=True,
-                    message="KWin runtime information read." if support_read else stdout.strip()[:300] or "OK",
+                    message=message,
                     exit_code=0,
                     stdout=stdout,
                     stderr=stderr,
                     action_id=action_id,
+                    structured_output=raw_stdout if structured_read else None,
                 )
             else:
                 return ActionResult(
@@ -304,6 +347,13 @@ class ActionExecutor(BaseActionExecutor):
                 f"OS error: {exc}",
                 exit_code=-1,
                 action_id=action_id,
+            )
+        except UnicodeError:
+            return ActionResult.fail(
+                "Structured command output could not be decoded safely.",
+                exit_code=-1,
+                action_id=action_id,
+                data={"evidence_unavailable": "invalid_encoding"},
             )
 
     def _log_action(self, cmd: List[str], result: ActionResult):

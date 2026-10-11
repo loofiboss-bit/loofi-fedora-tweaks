@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from typing import cast
+
 from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import QComboBox, QHBoxLayout, QInputDialog, QLabel, QListWidget, QListWidgetItem, QVBoxLayout, QWidget
 
@@ -12,11 +14,23 @@ from core.tasks.guides import (
     GuideProgressSnapshot,
     GuideStep,
     GuideProgressStore,
+    EvidenceReferenceKind,
     guide_evidence,
     guide_evidence_exists,
 )
 from ui.components.actions import QuietButton, SecondaryButton
 from ui.components.cards import Card
+from ui.components.feedback import DetailsDisclosure
+
+
+def _step_evidence_available(step: GuideStep, progress: object) -> bool:
+    raw_evidence_kind = str(getattr(progress, "evidence_kind", ""))
+    evidence_id = str(getattr(progress, "evidence_id", ""))
+    if raw_evidence_kind not in {"", "action_run", "troubleshooting_session"}:
+        return False
+    evidence_kind = cast(EvidenceReferenceKind, raw_evidence_kind)
+    action_ids = step.evidence_action_ids if evidence_kind == "action_run" else None
+    return guide_evidence_exists(evidence_kind, evidence_id, action_ids=action_ids)
 
 
 class GuidePanel(QWidget):
@@ -56,24 +70,35 @@ class GuidePanel(QWidget):
         self.guide_description.setObjectName("cardDescription")
         self.card.add_widget(self.guide_description)
 
+        self.current_step_label = QLabel(self.tr("Choose a guide to see its next step."), self.card)
+        self.current_step_label.setWordWrap(True)
+        self.current_step_label.setObjectName("guideCurrentStep")
+        self.card.add_widget(self.current_step_label)
+
+        self.open_button = SecondaryButton(self.tr("Open next step"), parent=self.card)
+        self.open_button.setAccessibleDescription(self.tr("Open the selected guide step without applying changes."))
+        self.open_button.clicked.connect(self._open_step)
+        self.card.add_widget(self.open_button)
+
+        self.details_disclosure = DetailsDisclosure(summary=self.tr("Show guide steps and progress"), parent=self.card)
+        self.details_disclosure.setObjectName("guideDetailsDisclosure")
+        self.card.add_widget(self.details_disclosure)
+
         self.step_list = QListWidget(self.card)
         self.step_list.setObjectName("guideSteps")
         self.step_list.setAccessibleName(self.tr("Guide steps"))
         self.step_list.setMaximumHeight(180)
         self.step_list.currentRowChanged.connect(self._step_selected)
-        self.card.add_widget(self.step_list)
+        self.details_disclosure.add_widget(self.step_list)
 
         self.status_label = QLabel("", self.card)
         self.status_label.setWordWrap(True)
         self.status_label.setObjectName("guideProgressStatus")
-        self.card.add_widget(self.status_label)
+        self.details_disclosure.add_widget(self.status_label)
 
         button_row = QWidget(self.card)
         buttons = QHBoxLayout(button_row)
         buttons.setContentsMargins(0, 0, 0, 0)
-        self.open_button = SecondaryButton(self.tr("Open step"), parent=self.card)
-        self.open_button.clicked.connect(self._open_step)
-        buttons.addWidget(self.open_button)
         self.review_button = QuietButton(self.tr("Mark reviewed"), parent=self.card)
         self.review_button.clicked.connect(lambda: self._set_step_state("reviewed"))
         buttons.addWidget(self.review_button)
@@ -83,7 +108,8 @@ class GuidePanel(QWidget):
         self.evidence_button = QuietButton(self.tr("Link verified result"), parent=self.card)
         self.evidence_button.clicked.connect(self._link_evidence)
         buttons.addWidget(self.evidence_button)
-        self.card.add_widget(button_row)
+        self.details_disclosure.add_widget(button_row)
+        self._current_step_expanded_text = self.tr("Next step: %1")
 
         self._load_saved_selection()
 
@@ -92,6 +118,7 @@ class GuidePanel(QWidget):
             snapshot = self.store.read()
         except (OSError, RuntimeError, TypeError, ValueError):
             self.status_label.setText(self.tr("Saved guide progress is unavailable. The file was left unchanged."))
+            self.details_disclosure.toggle_button.setChecked(True)
             self._set_controls_enabled(False)
             return
         if snapshot.active_guide:
@@ -136,6 +163,9 @@ class GuidePanel(QWidget):
             self.active_guide = ""
             self.active_step = ""
             self.step_list.clear()
+            self.current_step_label.setText(self.tr("Choose a guide to see its next step."))
+            self.open_button.setEnabled(False)
+            self.details_disclosure.toggle_button.setChecked(False)
             self._snapshot = None
             try:
                 self._snapshot = self.store.clear_active()
@@ -161,6 +191,8 @@ class GuidePanel(QWidget):
                 if not snapshot.writable
                 else ""
             )
+            if not snapshot.writable:
+                self.details_disclosure.toggle_button.setChecked(True)
             self._render_steps()
             self.guideChanged.emit(guide_id)
         except (OSError, RuntimeError, TypeError, ValueError) as exc:
@@ -185,11 +217,12 @@ class GuidePanel(QWidget):
             "reviewed": self.tr("Reviewed"),
             "skipped": self.tr("Skipped"),
             "verified": self.tr("Verified result linked"),
+            "evidence_missing": self.tr("Result linked"),
         }
         for index, step in enumerate(guide.steps):
             progress = self._snapshot.steps.get(step.id)
             state: str = progress.state if progress else "not_started"
-            if progress and progress.state == "verified" and not guide_evidence_exists(progress.evidence_kind, progress.evidence_id):
+            if progress and progress.state == "verified" and not _step_evidence_available(step, progress):
                 state = "evidence_missing"
             label = self.tr(state_labels.get(state, "Not started" if state == "not_started" else "Evidence missing"))
             item = QListWidgetItem(f"{label} · {self.tr(step.title)}")
@@ -242,7 +275,7 @@ class GuidePanel(QWidget):
         evidence_available = bool(
             progress is not None
             and progress.state == "verified"
-            and guide_evidence_exists(progress.evidence_kind, progress.evidence_id)
+            and _step_evidence_available(step, progress)
         )
         if evidence_available and progress is not None:
             if progress.evidence_kind == "action_run":
@@ -279,7 +312,14 @@ class GuidePanel(QWidget):
         step = self._current_step()
         if step is None or not step.evidence_kinds:
             return
-        candidates = [item for kind in step.evidence_kinds for item in guide_evidence(kind)]
+        candidates = [
+            item
+            for kind in step.evidence_kinds
+            for item in guide_evidence(
+                kind,
+                action_ids=step.evidence_action_ids if kind == "action_run" else None,
+            )
+        ]
         if not candidates:
             self.status_label.setText(self.tr("No compatible verified result is available yet."))
             return
@@ -311,16 +351,12 @@ class GuidePanel(QWidget):
         reviewed = sum(item is not None and item.state == "reviewed" for item in values)
         skipped = sum(item is not None and item.state == "skipped" for item in values)
         verified = sum(
-            item is not None
-            and item.state == "verified"
-            and guide_evidence_exists(item.evidence_kind, item.evidence_id)
-            for item in values
+            item is not None and item.state == "verified" and _step_evidence_available(step, item)
+            for step, item in zip(guide.steps, values)
         )
         missing = sum(
-            item is not None
-            and item.state == "verified"
-            and not guide_evidence_exists(item.evidence_kind, item.evidence_id)
-            for item in values
+            item is not None and item.state == "verified" and not _step_evidence_available(step, item)
+            for step, item in zip(guide.steps, values)
         )
         self.status_label.setText(
             self.tr("%1 reviewed · %2 skipped · %3 verified result(s) · %4 unavailable")
@@ -331,6 +367,13 @@ class GuidePanel(QWidget):
         )
         if not self._snapshot.writable:
             self.status_label.setText(self.status_label.text() + " · " + self.tr("Progress is read-only because it uses a newer format."))
+            self.details_disclosure.toggle_button.setChecked(True)
+        step = self._current_step()
+        if step is None:
+            self.current_step_label.setText(self.tr("Choose a guide to see its next step."))
+        else:
+            self.current_step_label.setText(self._current_step_expanded_text.replace("%1", self.tr(step.title)))
+        self.open_button.setEnabled(bool(self._snapshot.writable and step is not None))
 
     def _update_button_states(self) -> None:
         step = self._current_step()

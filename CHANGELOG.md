@@ -1,6 +1,24 @@
 # Changelog
 
-## [32.7.0] - Unreleased - "Routine"
+## Unreleased — stabilization and everyday workflow improvements (no version assigned)
+
+Implemented in the current working tree; these changes are not part of a
+published release. Automated and disposable Fedora/KDE qualification status is
+tracked in `ROADMAP.md` before release scope is assigned.
+
+- Add an explicit, separately reviewed DNF5 offline reboot action and verify post-reboot updates against successful DNF5 transaction history.
+- Align settings with `StatePaths`, migrate legacy XDG settings atomically, and protect future schemas and malformed values.
+- Keep complete structured output transient and separate from bounded history/log output; treat malformed or oversized firmware and rpm-ostree evidence as unavailable.
+- Keep Atomic RPM layering unavailable until preflight can verify a supported rpm-ostree query path.
+- Improve Overview guide priority, Health summaries, app-source insight, exact DNF repository navigation, and evidence-compatible guide result links.
+
+## [32.8.0] - 2026-10-11 - "Guide" — published
+
+- Add four resumable everyday workflows, searchable guide discovery, saved progress, and read-only CLI inspection.
+- Route guide steps into existing review and verification flows without starting checks or changes when a step is opened.
+- See the dated [Guide verification record](docs/GUIDE_VERIFICATION.md); it records the 32.8.0 assessment on 2026-10-11 and does not qualify later changes.
+
+## [32.7.0] - 2026-10-10 - "Routine" — published
 
 - Compare captured installations using exact Flatpak IDs and explicit RPM counterparts for Firefox, Thunderbird, VLC, GIMP, Inkscape and Kdenlive; retain installation, architecture, branch and partial source evidence.
 - Add a Health storage guide with grouped filesystem measurements, complete DNF cache measurements, journal size and links to existing reviewed cleanup owners.
@@ -9,7 +27,7 @@
 - Carry exact operation/source/symptom context from Overview without starting checks or changes.
 - Compare saved profiles in the library and CLI, preserving unknown targets and the existing portable format; editing and applying remain separate explicit actions.
 
-## [32.6.0] - Unreleased - "Personal"
+## [32.6.0] - 2026-10-08 - "Personal" — published
 
 - Discover visible RPM-owned desktop applications outside the curated catalog, grouping launchers and installed package architectures without running desktop commands.
 - Keep partial ownership evidence explicit and distinguish unowned desktop files from failed RPM reads.
@@ -18,7 +36,7 @@
 - Add reviewed KDE new-window placement and screen/window snap-distance controls with independent session verification and exact supported restoration.
 - Add asynchronous, revalidated native KDE links for default applications, autostart, and icon themes.
 
-## [32.5.0] - Unreleased - "Companion"
+## [32.5.0] - 2026-10-08 - "Companion" — published
 
 - Add a local personal profile library and Focus, Privacy basics, and Touchpad comfort presets using existing reviewed settings.
 - Separate Flatpak metadata and local override layers with privacy-safe explanations and installed permission-tool handoffs.

@@ -33,8 +33,9 @@ class TestV29InstallCatalog(unittest.TestCase):
         self.assertEqual(records[0].source, "flatpak")
         self.assertIn("Flatpak", records[0].source_label)
         rpm = catalog.eligibility("git", atomic)
-        self.assertEqual(rpm.state, "advanced")
-        self.assertTrue(rpm.requires_reboot)
+        self.assertEqual(rpm.state, "unavailable")
+        self.assertIn("rpm-ostree-supported query", rpm.reason)
+        self.assertFalse(rpm.selectable)
 
     def test_selection_is_independent_action_bundle_and_fail_closed(self) -> None:
         context = ApplicationContext(FedoraVariant.TRADITIONAL, frozenset({"fedora", "dnf5"}))

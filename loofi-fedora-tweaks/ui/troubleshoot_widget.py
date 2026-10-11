@@ -654,33 +654,11 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
                 ", ".join(checked) if checked else self.tr("No checks completed"),
             )
         )
-        incomplete = tuple(
-            result
-            for result in session.source_results
-            if result.state not in {"completed", "empty"}
-        )
-        if incomplete or persistence_reason_code:
-            messages = []
-            if incomplete:
-                messages.append(
-                    self.tr("Incomplete sources: %1").replace(
-                        "%1",
-                        ", ".join(
-                            self.tr(self._SOURCE_LABELS.get(item.source_id, item.source_id))
-                            for item in incomplete
-                        ),
-                    )
-                )
-            if persistence_reason_code:
-                messages.append(
-                    self.tr(
-                        "This result could not be added to writable session history."
-                    )
-                )
+        if persistence_reason_code:
             self.partial_warning.set_notice(
                 "warning",
-                self.tr("Result is not a complete all-clear"),
-                " ".join(messages),
+                self.tr("Session history is read-only"),
+                self.tr("This result could not be added to writable session history."),
             )
             self.partial_warning.show()
         else:
@@ -742,8 +720,7 @@ class TroubleshootWidget(CompanionHealthMixin, HealthSymptomCardsMixin, QWidget)
             )
         if session.state == "partial":
             return self.tr(
-                "Some checks were unavailable, out of date, incomplete, or timed out. "
-                "The result is not an all-clear."
+                "Some checks were incomplete. Review the available findings and source details before treating this as complete."
             )
         if session.state == "cancelled":
             return self.tr(

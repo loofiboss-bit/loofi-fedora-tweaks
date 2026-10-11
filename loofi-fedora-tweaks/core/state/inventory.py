@@ -6,7 +6,11 @@ from dataclasses import dataclass
 from pathlib import Path
 
 from core.state.paths import StatePaths
-from core.state.version_constants import ACTION_PLAN_SCHEMA_VERSION, ACTION_RUN_SCHEMA_VERSION
+from core.state.version_constants import (
+    ACTION_PLAN_SCHEMA_VERSION,
+    ACTION_RUN_SCHEMA_VERSION,
+    SETTINGS_SCHEMA_VERSION,
+)
 
 
 @dataclass(frozen=True)
@@ -45,7 +49,7 @@ class StateInventory:
     def _register_defaults(self) -> None:
         p = self.paths
         definitions = (
-            ("settings", "config", p.config / "settings.json", "loofi.settings", 1, "private", "indefinite", "last-known-good"),
+            ("settings", "config", p.config / "settings.json", "loofi.settings", SETTINGS_SCHEMA_VERSION, "private", "indefinite", "last-known-good"),
             ("home_onboarding", "home", p.config / "onboarding.json", "loofi.home-onboarding", 1, "private", "until completed or dismissed", "reset"),
             ("health_snapshots", "observability", p.data / "health_timeline_v12.json", "loofi.health-snapshots", 1, "private", "30 snapshots", "last-known-good"),
             ("metric_timeline", "observability", p.data / "health_timeline.db", "loofi.metric-timeline", 1, "private", "30 days", "sqlite-integrity"),

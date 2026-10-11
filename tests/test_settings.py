@@ -9,6 +9,7 @@ import os
 import sys
 import tempfile
 import unittest
+from dataclasses import asdict
 from pathlib import Path
 from unittest.mock import patch
 
@@ -16,6 +17,9 @@ from unittest.mock import patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
 from utils.settings import SettingsManager, AppSettings, KNOWN_KEYS, STATE_SCHEMA_VERSION, migrate_settings
+from core.state.doctor import StateDoctor
+from core.state.inventory import StateInventory
+from core.state.paths import StatePaths
 
 
 # ---------------------------------------------------------------------------
@@ -197,8 +201,8 @@ class TestSaveLoad(unittest.TestCase):
             self.assertTrue(mgr.save())
             self.assertTrue(path.exists())
 
-    @patch("pathlib.Path.write_text", side_effect=OSError("read-only"))
-    def test_save_reports_persistence_failure(self, _mock_write_text):
+    @patch("utils.settings.atomic_write_bytes", side_effect=OSError("read-only"))
+    def test_save_reports_persistence_failure(self, _mock_atomic_write):
         with tempfile.TemporaryDirectory() as tmpdir:
             path = Path(tmpdir) / "settings.json"
             mgr = SettingsManager(settings_path=path)
@@ -348,6 +352,17 @@ class TestStateMigration(unittest.TestCase):
             self.assertEqual(second["hidden_routes"], [])
             self.assertEqual(second["window_geometry"], {"x": 1, "y": 2, "width": 800, "height": 600})
 
+    def test_invalid_legacy_theme_type_does_not_break_settings_load(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "settings.json"
+            path.write_text(json.dumps({"state_schema_version": STATE_SCHEMA_VERSION, "appearance": {"theme": []}}))
+
+            manager = SettingsManager(settings_path=path)
+
+            self.assertEqual(manager.get("theme"), AppSettings().theme)
+            self.assertEqual(manager.get("follow_system_theme"), AppSettings().follow_system_theme)
+            self.assertIn("theme", manager.load_issues)
+
 
 # ---------------------------------------------------------------------------
 # TestReset - reset to defaults
@@ -376,6 +391,105 @@ class TestReset(unittest.TestCase):
             # Reload from disk
             mgr2 = SettingsManager(settings_path=path)
             self.assertEqual(mgr2.get("theme"), "dark")
+
+
+class TestSettingsStateSafety(unittest.TestCase):
+    def test_future_schema_is_read_only_and_preserved_byte_for_byte(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "settings.json"
+            original = b'{\n  "state_schema_version": 99,\n  "future_data": [1, 2, 3]\n}\n'
+            path.write_bytes(original)
+
+            manager = SettingsManager(settings_path=path)
+
+            self.assertIn("future schema", manager.read_only_reason)
+            self.assertEqual(manager.get("theme"), AppSettings().theme)
+            self.assertFalse(manager.save())
+            self.assertEqual(path.read_bytes(), original)
+
+    def test_invalid_values_use_defaults_and_doctor_reports_preserved_input(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            paths = StatePaths(root / "config", root / "data", root / "cache", root / "runtime")
+            inventory = StateInventory(paths)
+            path = inventory.get("settings").path
+            path.parent.mkdir(parents=True)
+            original = json.dumps({
+                "state_schema_version": STATE_SCHEMA_VERSION,
+                "show_notifications": "false",
+                "theme": ["light"],
+            }).encode("utf-8")
+            path.write_bytes(original)
+
+            manager = SettingsManager(settings_path=path)
+            self.assertTrue(manager.get("show_notifications"))
+            self.assertEqual(manager.get("theme"), AppSettings().theme)
+            self.assertEqual(path.read_bytes(), original)
+            findings = StateDoctor(inventory).run()["findings"]
+            self.assertIn("Settings contain invalid value types", {item["summary"] for item in findings})
+
+            self.assertTrue(manager.save())
+            self.assertEqual(path.with_suffix(".json.lkg").read_bytes(), original)
+            findings = StateDoctor(inventory).run()["findings"]
+            self.assertIn("Invalid settings are preserved in the last-known-good copy", {item["summary"] for item in findings})
+
+    def test_inventory_uses_the_settings_schema_constant(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            paths = StatePaths(root / "config", root / "data", root / "cache", root / "runtime")
+            self.assertEqual(StateInventory(paths).get("settings").schema_version, STATE_SCHEMA_VERSION)
+
+    def test_xdg_settings_migration_copies_legacy_bytes_and_keeps_original(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            home = root / "home"
+            xdg = root / "xdg-config"
+            legacy = home / ".config" / "loofi-fedora-tweaks" / "settings.json"
+            legacy.parent.mkdir(parents=True)
+            original = (json.dumps(asdict(AppSettings()), indent=2) + "\n").encode("utf-8")
+            legacy.write_bytes(original)
+            environment = {
+                "HOME": str(home),
+                "XDG_CONFIG_HOME": str(xdg),
+                "XDG_DATA_HOME": str(root / "xdg-data"),
+                "XDG_CACHE_HOME": str(root / "xdg-cache"),
+                "XDG_RUNTIME_DIR": str(root / "xdg-runtime"),
+            }
+
+            with patch.dict(os.environ, environment, clear=True):
+                manager = SettingsManager()
+                target = xdg / "loofi-fedora-tweaks" / "settings.json"
+
+            self.assertEqual(manager.get("theme"), AppSettings().theme)
+            self.assertEqual(target.read_bytes(), original)
+            self.assertEqual(legacy.read_bytes(), original)
+
+    def test_existing_xdg_settings_take_precedence_over_legacy(self):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            root = Path(tmpdir)
+            home = root / "home"
+            xdg = root / "xdg-config"
+            legacy = home / ".config" / "loofi-fedora-tweaks" / "settings.json"
+            target = xdg / "loofi-fedora-tweaks" / "settings.json"
+            legacy.parent.mkdir(parents=True)
+            target.parent.mkdir(parents=True)
+            legacy.write_text(json.dumps({**asdict(AppSettings()), "theme": "dark"}))
+            custom = (json.dumps({**asdict(AppSettings()), "theme": "light"}, indent=2) + "\n").encode("utf-8")
+            target.write_bytes(custom)
+            environment = {
+                "HOME": str(home),
+                "XDG_CONFIG_HOME": str(xdg),
+                "XDG_DATA_HOME": str(root / "xdg-data"),
+                "XDG_CACHE_HOME": str(root / "xdg-cache"),
+                "XDG_RUNTIME_DIR": str(root / "xdg-runtime"),
+            }
+
+            with patch.dict(os.environ, environment, clear=True):
+                manager = SettingsManager()
+
+            self.assertEqual(manager.get("theme"), "light")
+            self.assertEqual(target.read_bytes(), custom)
+            self.assertEqual(json.loads(legacy.read_text())["theme"], "dark")
 
 
 if __name__ == '__main__':

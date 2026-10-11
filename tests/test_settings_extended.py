@@ -87,21 +87,21 @@ class TestSetIdempotency(unittest.TestCase):
 # ---------------------------------------------------------------------------
 
 class TestTypeMismatch(unittest.TestCase):
-    """If the JSON file contains a wrong type for a key, the manager
-    should still load without crashing (it stores whatever JSON provides)."""
+    """Malformed persisted types fall back to defaults without blocking startup."""
 
     def test_string_where_bool_expected(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = _make_manager(
                 tmpdir, initial={"show_notifications": "yes"}
             )
-            # The manager doesn't enforce types -- it trusts the JSON
-            self.assertEqual(mgr.get("show_notifications"), "yes")
+            self.assertEqual(mgr.get("show_notifications"), AppSettings().show_notifications)
+            self.assertIn("show_notifications", mgr.load_issues)
 
     def test_int_where_string_expected(self):
         with tempfile.TemporaryDirectory() as tmpdir:
             mgr = _make_manager(tmpdir, initial={"theme": 42})
-            self.assertEqual(mgr.get("theme"), 42)
+            self.assertEqual(mgr.get("theme"), AppSettings().theme)
+            self.assertIn("theme", mgr.load_issues)
 
 
 # ---------------------------------------------------------------------------
@@ -145,11 +145,11 @@ class TestLargeValues(unittest.TestCase):
             path = Path(tmpdir) / "settings.json"
             mgr = SettingsManager(settings_path=path)
             big = "x" * 10_000
-            mgr.set("log_level", big)
+            mgr.set("last_seen_version", big)
             mgr.save()
 
             mgr2 = SettingsManager(settings_path=path)
-            self.assertEqual(mgr2.get("log_level"), big)
+            self.assertEqual(mgr2.get("last_seen_version"), big)
 
 
 # ---------------------------------------------------------------------------

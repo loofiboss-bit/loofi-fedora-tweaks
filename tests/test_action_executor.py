@@ -9,6 +9,7 @@ import sys
 import tempfile
 import time
 import unittest
+from pathlib import Path
 from unittest.mock import patch
 
 import pytest
@@ -80,6 +81,47 @@ class TestActionResult:
         r = ActionResult.ok("test", stdout="x" * 10000)
         d = r.to_dict()
         assert len(d["stdout"]) == ActionResult._MAX_OUTPUT
+
+    @patch("core.executor.action_executor.subprocess.run")
+    def test_structured_json_keeps_bounded_machine_output_out_of_history(self, mock_run):
+        from core.executor.action_executor import ActionExecutor
+
+        payload = json.dumps({"Devices": [], "private_marker": "SECRET-" + "x" * 5200})
+        mock_run.return_value = subprocess.CompletedProcess(
+            ["fwupdmgr", "get-updates", "--json"], 0, payload, ""
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            log = os.path.join(tmpdir, "actions.jsonl")
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), patch(
+                "core.executor.action_executor._ACTION_LOG_FILE", log
+            ):
+                result = ActionExecutor.run("fwupdmgr", ["get-updates", "--json"], action_id="firmware-test")
+
+            assert result.success is True
+            assert result.structured_output == payload
+            assert len(result.stdout) == 4000
+            assert "SECRET-" not in result.message
+            assert "structured_output" not in result.to_dict()
+            assert "SECRET-" not in Path(log).read_text(encoding="utf-8")
+
+    @patch("core.executor.action_executor.subprocess.run")
+    def test_oversized_structured_json_is_explicitly_unavailable(self, mock_run):
+        from core.executor.action_executor import ActionExecutor, MAX_STRUCTURED_JSON_BYTES
+
+        payload = json.dumps({"Devices": [], "pad": "x" * MAX_STRUCTURED_JSON_BYTES})
+        mock_run.return_value = subprocess.CompletedProcess(
+            ["rpm-ostree", "status", "--json"], 0, payload, ""
+        )
+        with tempfile.TemporaryDirectory() as tmpdir:
+            with patch("core.executor.action_executor._LOG_DIR", tmpdir), patch(
+                "core.executor.action_executor._ACTION_LOG_FILE", os.path.join(tmpdir, "actions.jsonl")
+            ):
+                result = ActionExecutor.run("rpm-ostree", ["status", "--json"], action_id="atomic-status-test")
+
+        assert result.success is False
+        assert result.data["evidence_unavailable"] == "oversized_json"
+        assert result.structured_output is None
+        assert len(result.stdout) <= 4000
 
     def test_from_dict_defaults(self):
         from core.executor.action_result import ActionResult

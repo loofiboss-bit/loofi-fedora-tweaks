@@ -6,7 +6,7 @@
 
 <p align="center">
   <strong>Make Fedora feel like your computer.</strong><br>
-  Understand your system, change supported settings, and verify results for GNOME, KDE, and DNF.
+  Understand your system, change supported settings, and verify results on Fedora.
 </p>
 
 <p align="center">
@@ -31,27 +31,24 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
-The **32.8.0 Guide local candidate** adds four resumable everyday workflows,
+The published **32.8.0 Guide** release adds four resumable everyday workflows,
 searchable guide discovery, saved progress and read-only CLI inspection. Each
-guide opens the existing review and verification flows; it never runs a check
-or change just because a step was opened. See [Guide verification](docs/GUIDE_VERIFICATION.md).
+guide opens existing review and verification flows; opening a step never starts
+a check or change. See the [32.8.0 release notes](docs/releases/RELEASE-NOTES-v32.8.0.md).
 
-Its Routine baseline adds installation comparisons, a Health storage guide,
-manual DNF5 restart advice, precise next-step navigation and saved profile
-comparisons. See [Routine verification](docs/ROUTINE_VERIFICATION.md).
+The current working tree also contains unreleased stabilization and everyday
+workflow improvements. These changes have no assigned version and are not part
+of 32.8.0. KDE on traditional Fedora with DNF5 is the first full qualification
+target; GNOME and Atomic support remains limited to workflows with evidence.
+See the [roadmap](ROADMAP.md) for automated and still-pending manual checks.
 
-Its Personal baseline adds broader RPM application discovery,
-editable profile copies, a searchable local DNF source overview, and three
-reviewed KDE window controls. Native KDE links open default applications,
-autostart, and icon settings after checking their availability. See
-[Personal qualification](docs/PERSONAL_VERIFICATION.md).
-
-Its Companion baseline adds a personal profile library,
-explained Flatpak access, saved Health comparisons, screen-sharing diagnostics,
-local support-question export, and preparation for a manual Fedora upgrade.
-KDE and DNF5 are the primary qualification target; GNOME and Atomic limitations
-remain explicit. See [Companion qualification](docs/COMPANION_VERIFICATION.md).
-
+The release builds on Routine's installation comparisons, Health storage guide,
+manual DNF5 restart advice and saved profile comparisons; Personal's broader
+RPM application discovery, editable profile copies and reviewed KDE controls;
+and Companion's profile library, explained Flatpak access, Health comparisons,
+screen-sharing diagnostics and Fedora upgrade preparation. The dated
+[qualification reports](docs/GUIDE_VERIFICATION.md) record evidence collected
+for those releases; they do not qualify later changes.
 Open **Tools** in the sidebar for System, Storage,
 Network, Security, and Logs. See the [product definition](docs/PRODUCT.md) for
 what is, and is not, in scope.

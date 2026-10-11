@@ -32,6 +32,12 @@ def register_execution_commands(subparsers: Subparsers) -> None:
     apply_p.add_argument("target", help="Action ID or Plan ID")
     apply_p.add_argument("--param", action="append", default=[], metavar="KEY=VALUE", help="Typed action parameter")
     apply_p.add_argument("--yes", action="store_true", help="Accept execution confirmation")
+    apply_p.add_argument(
+        "--accept-no-rollback",
+        dest="accept_no_rollback",
+        action="store_true",
+        help="Explicitly accept an action without supported rollback",
+    )
     apply_p.add_argument("--dry-run", action="store_true", default=argparse.SUPPRESS, help="Create plan without executing")
     apply_p.add_argument("--json", action="store_true", default=argparse.SUPPRESS, help="Output in JSON format")
     apply_p.add_argument("--timeout", type=int, default=argparse.SUPPRESS, help="Execution timeout in seconds")

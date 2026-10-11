@@ -201,6 +201,16 @@ class UpdateOverviewState:
             items = getattr(raw, "items", ())
             candidates = tuple(items) if isinstance(items, (tuple, list)) else ()
             retained = bool(getattr(raw, "items_retained", False))
+            raw_repository_ids = getattr(raw, "repository_ids", ())
+            repository_ids = tuple(
+                dict.fromkeys(
+                    item for item in raw_repository_ids
+                    if isinstance(item, str)
+                    and len(item) <= 128
+                    and item
+                    and all(character.isascii() and (character.isalnum() or character in "_.:+-") for character in item)
+                )
+            ) if isinstance(raw_repository_ids, (tuple, list)) else ()
             detail_rows = []
             for item in candidates[:MAX_VISIBLE_UPDATE_DETAILS]:
                 name = str(getattr(item, "name", "") or "Unknown package")
@@ -222,7 +232,10 @@ class UpdateOverviewState:
                 reboot_required=bool(getattr(raw, "reboot_required", False)),
                 message=str(getattr(raw, "message", "") or getattr(raw, "error_code", "") or ""),
                 details=tuple(detail_rows),
-                metadata={"backend": str(getattr(snapshot, "backend", "") or "")},
+                metadata={
+                    "backend": str(getattr(snapshot, "backend", "") or ""),
+                    "repository_ids": repository_ids,
+                },
             )
         return cls(tuple(values.get(source, UpdateSourceState(source)) for source in UPDATE_SOURCES))
 
