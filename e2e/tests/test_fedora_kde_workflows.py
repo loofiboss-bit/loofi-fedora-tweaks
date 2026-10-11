@@ -17,7 +17,7 @@ from helpers import (
     confirm_yes,
     current_app_process,
     select_search,
-    wait_for_description,
+    wait_for_setting_feedback,
     wait_for_node,
     wait_for_node_containing,
     wait_for_polkit_password,
@@ -38,10 +38,6 @@ def dnf_parallel_downloads() -> str:
         if match:
             return match.group(1)
     raise AssertionError("dnf5 --dump-main-config did not report max_parallel_downloads")
-
-
-def wait_for_feedback(name: str, timeout: int = 90) -> None:
-    wait_for_description(name, timeout=timeout)
 
 
 def _stop_process(process: subprocess.Popen[str]) -> None:
@@ -118,14 +114,14 @@ def test_navigation_user_setting_verification_and_restore(loofi_app) -> None:
     before = control.checked
     assert dolphin_full_path_enabled() == before
     control.click()
-    wait_for_feedback("Saved — Saved setting verified: " + ("Off" if before else "On"))
+    wait_for_setting_feedback("Show full path in location bar", "Off" if before else "On", session_activation=True)
     assert dolphin_full_path_enabled() != before
 
     restore_name = "Restore previous value for Show full path in location bar"
     wait_until(lambda: _has_node(restore_name), timeout=30, message="verified change did not offer restoration")
     click(restore_name)
     confirm_yes()
-    wait_for_feedback("Saved — Previous value restored and verified: " + ("On" if before else "Off"))
+    wait_for_setting_feedback("Show full path in location bar", "On" if before else "Off", restored=True)
     assert dolphin_full_path_enabled() == before
 
     wait_for_node("Activity", role="table cell").click()
@@ -171,7 +167,7 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
     wait_for_node_containing("Change system setting", role="label", timeout=20)
     confirm_yes()
     authenticate_polkit(completed=lambda: dnf_parallel_downloads() == "5")
-    wait_for_feedback("Saved — Saved setting verified: 5 downloads", timeout=90)
+    wait_for_setting_feedback("DNF parallel downloads", "5 downloads")
     assert dnf_parallel_downloads() == "5"
 
     restarted_app = None
@@ -205,7 +201,7 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
         wait_for_node_containing("Restore previous value", role="label", timeout=30)
         confirm_yes()
         authenticate_polkit(completed=lambda: dnf_parallel_downloads() == before)
-        wait_for_feedback("Saved — Previous value restored and verified: 3 downloads", timeout=90)
+        wait_for_setting_feedback("DNF parallel downloads", "3 downloads", restored=True)
         assert dnf_parallel_downloads() == before, "DNF restore feedback did not match the real system state"
     finally:
         if application_log is not None:

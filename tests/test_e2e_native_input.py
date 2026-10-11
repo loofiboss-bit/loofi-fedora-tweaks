@@ -21,6 +21,8 @@ class TestGuestNativeInput(unittest.TestCase):
         cls.helpers = importlib.util.module_from_spec(spec)
         with patch.dict(sys.modules, modules):
             spec.loader.exec_module(cls.helpers)
+        sys.modules[name] = cls.helpers
+        cls.addClassCleanup(sys.modules.pop, name, None)
 
     def setUp(self):
         self.driver = Mock()
@@ -102,3 +104,97 @@ class TestGuestNativeInput(unittest.TestCase):
         target.queryComponent.return_value.grabFocus.assert_called_once()
         target.getState.return_value.contains.assert_called_with(12)
         self.pyatspi.Registry.generateKeyboardEvent.assert_called_once_with(32, None, 2)
+
+    def configure_application_tabs(self):
+        names = ("Catalog", "Installed", "Sources")
+        elements = {}
+        for name in names:
+            element = Mock()
+            element.get_dom_attribute.side_effect = lambda key, name=name: name if key == "name" else "applicationViewTabs"
+            elements[name] = element
+        self.driver.find_element.side_effect = lambda _by, selector: next(
+            element for name, element in elements.items() if f"@name='{name}'" in selector
+        )
+
+        def select(name):
+            root = ET.Element("desktop_frame")
+            for index, tab in enumerate(names):
+                ET.SubElement(root, "page_tab", {
+                    "name": tab, "accessibility-id": "applicationViewTabs", "path": f"3 2 {index}",
+                    "states": "showing visible" + (" selected" if name == tab else ""),
+                })
+            self.driver.page_source = ET.tostring(root, encoding="unicode")
+
+        select("Catalog")
+        tab_list = Mock()
+        tab_list.queryComponent.return_value.grabFocus.return_value = True
+        tab_list.getState.return_value.contains.return_value = True
+        self.pyatspi.STATE_FOCUSED = 12
+        self.pyatspi.ROLE_PAGE_TAB_LIST = 38
+        tab_list.getRole.return_value = 38
+        self.pyatspi.Registry.getDesktop.return_value = {3: {2: tab_list}}
+        return tab_list, select
+
+    @patch.dict(sys.modules)
+    @patch("loofi_e2e_native_helpers.press_key")
+    def test_page_tab_navigation_focuses_the_tab_list_and_verifies_selection(self, press_key):
+        sys.modules["pyatspi"] = self.pyatspi
+        tab_list, select = self.configure_application_tabs()
+        press_key.side_effect = lambda key: select("Installed")
+        self.helpers.select_page_tab("Installed")
+        tab_list.queryComponent.return_value.grabFocus.assert_called_once()
+        tab_list.getState.return_value.contains.assert_called_with(12)
+        tab_list.clear_cache_single.assert_called()
+        press_key.assert_called_once_with("right")
+        self.pyatspi.Registry.generateMouseEvent.assert_not_called()
+
+    @patch.dict(sys.modules)
+    @patch("loofi_e2e_native_helpers.press_key")
+    def test_page_tab_focus_failure_never_sends_navigation_input(self, press_key):
+        sys.modules["pyatspi"] = self.pyatspi
+        tab_list, _select = self.configure_application_tabs()
+        tab_list.queryComponent.return_value.grabFocus.return_value = False
+        with self.assertRaisesRegex(AssertionError, "could not receive keyboard focus"):
+            self.helpers.select_page_tab("Installed")
+        press_key.assert_not_called()
+
+    @patch.dict(sys.modules)
+    @patch("loofi_e2e_native_helpers.press_key")
+    def test_page_tab_stale_path_never_focuses_another_control(self, press_key):
+        sys.modules["pyatspi"] = self.pyatspi
+        tab_list, _select = self.configure_application_tabs()
+        tab_list.getRole.return_value = 43
+        with self.assertRaisesRegex(AssertionError, "did not resolve the expected tab list"):
+            self.helpers.select_page_tab("Installed")
+        tab_list.queryComponent.return_value.grabFocus.assert_not_called()
+        press_key.assert_not_called()
+
+    @patch.dict(sys.modules)
+    @patch("loofi_e2e_native_helpers.wait_until")
+    @patch("loofi_e2e_native_helpers.press_key")
+    def test_page_tab_input_without_selected_state_is_a_failure(self, press_key, wait_until):
+        sys.modules["pyatspi"] = self.pyatspi
+        self.configure_application_tabs()
+        wait_until.side_effect = lambda predicate, **kwargs: self.assertTrue(predicate(), kwargs["message"])
+        with self.assertRaisesRegex(AssertionError, "did not select the Installed"):
+            self.helpers.select_page_tab("Installed")
+        press_key.assert_called_once_with("right")
+
+    @patch("loofi_e2e_native_helpers.wait_until")
+    @patch("loofi_e2e_native_helpers.wait_for_node")
+    def test_setting_feedback_requires_requested_verified_and_restored_values(self, wait_for_node, wait_until):
+        status = wait_for_node.return_value
+        status.description = "Saved — Previous value restored. Requested: Off · Verified: Off Session activation: Reopen Dolphin."
+        self.helpers.wait_for_setting_feedback("Dolphin path", "Off", restored=True, session_activation=True)
+        wait_for_node.assert_called_once_with("Dolphin path status", timeout=90)
+        predicate = wait_until.call_args.args[0]
+        self.assertTrue(predicate())
+        for description in (
+            "Saved — Requested: Off · Verified: Off Session activation: Reopen Dolphin.",
+            "Saved — Previous value restored. Requested: Off · Verified: On Session activation: Reopen Dolphin.",
+            "Saved — Previous value restored. Requested: Off · Verified: Off",
+            "Error — Previous value restored. Requested: Off · Verified: Off Session activation: Reopen Dolphin.",
+        ):
+            with self.subTest(description=description):
+                status.description = description
+                self.assertFalse(predicate())

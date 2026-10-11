@@ -167,16 +167,21 @@ def wait_until(predicate, *, timeout: float = 30, message: str = "condition did 
     raise AssertionError(message)
 
 
-def wait_for_description(description: str, *, timeout: float = 30):
-    print(f"Waiting for feedback: {description!r}", flush=True)
-    selector = f"//*[starts-with(@description,{_literal(description)}) and contains(@states, 'showing')]"
-    deadline = time.monotonic() + timeout
-    while time.monotonic() < deadline:
-        try:
-            return Accessible(_driver.find_element(By.XPATH, selector), selector)
-        except Exception:
-            time.sleep(0.25)
-    raise AssertionError(f"AT-SPI description {description!r} was not found")
+def wait_for_setting_feedback(setting: str, value: str, *, restored: bool = False,
+                              session_activation: bool = False, timeout: float = 90) -> None:
+    """Verify the requested and read-back values on one exact setting row."""
+    status = wait_for_node(setting + " status", timeout=timeout)
+
+    def matches() -> bool:
+        description = status.description
+        return (description.startswith("Saved —")
+                and f"Requested: {value} · Verified: {value}" in description
+                and (not restored or "Previous value restored." in description)
+                and (not session_activation or "Session activation:" in description))
+
+    wait_until(matches, timeout=timeout,
+               message=f"{setting} did not report requested and verified value {value!r}"
+                       + (" after restoration" if restored else ""))
 
 
 def select_search(text: str) -> None:
@@ -270,6 +275,7 @@ def activate_control(name: str) -> None:
 
     def focused():
         target.queryComponent().grabFocus()
+        target.clear_cache_single()
         return target.getState().contains(pyatspi.STATE_FOCUSED)
     wait_until(focused, timeout=10, message=f"Control did not receive keyboard focus: {name}")
     if _wayland_input():
@@ -300,13 +306,71 @@ def press_key(key: str) -> None:
     import pyatspi
     # Native popup creation follows the pointer event asynchronously.
     time.sleep(0.5)
-    values = {"home": (0xff50, "\ue011"), "end": (0xff57, "\ue010"), "down": (0xff54, "\ue015"), "enter": (0xff0d, "\ue007"), "escape": (0xff1b, "\ue00c")}
+    values = {
+        "home": (0xff50, "\ue011"), "end": (0xff57, "\ue010"),
+        "left": (0xff51, "\ue012"), "up": (0xff52, "\ue013"),
+        "right": (0xff53, "\ue014"), "down": (0xff54, "\ue015"),
+        "enter": (0xff0d, "\ue007"), "escape": (0xff1b, "\ue00c"),
+    }
     symbol, value = values[key]
     if _wayland_input():
         _driver.execute("actions", {"actions": [{"type": "key", "id": "loofi-guest-keyboard", "actions": [
             {"type": "keyDown", "value": value}, {"type": "keyUp", "value": value}]}]})
     else:
         pyatspi.Registry.generateKeyboardEvent(symbol, None, pyatspi.KEY_SYM)
+
+
+def select_page_tab(name: str, *, timeout: float = 10) -> None:
+    """Select an application page tab through focused, verified keyboard input."""
+    import pyatspi
+
+    names = ("Catalog", "Installed", "Sources")
+    if name not in names:
+        raise ValueError(f"Unsupported application tab: {name}")
+
+    def accessible_tab(tab_name: str):
+        selector = f"//page_tab[@name={_literal(tab_name)} and contains(@states, 'showing')]"
+        return _driver.find_element(By.XPATH, selector)
+
+    def tab_state(tab_name: str) -> str:
+        return Accessible(accessible_tab(tab_name), "//page_tab")._source().get("states", "")
+
+    current_name = next((tab for tab in names if "selected" in tab_state(tab)), None)
+    if current_name is None:
+        raise AssertionError("No application page tab is selected.")
+    if current_name == name:
+        return
+
+    current = Accessible(accessible_tab(current_name), "//page_tab")
+    path = current._source().get("path", "")
+    if not path:
+        raise AssertionError("Selected application tab has no stable AT-SPI path.")
+    target = pyatspi.Registry.getDesktop(0)
+    # Qt exposes each page as a focusable tab, while the focus belongs to the
+    # containing QTabBar. Focus that accessible tab list, then use its native
+    # horizontal arrow-key behavior instead of relying on child-tab bounds.
+    tab_list_path = path.rsplit(" ", 1)[0]
+    for index in tab_list_path.split():
+        target = target[int(index)]
+    if target.getRole() != pyatspi.ROLE_PAGE_TAB_LIST:
+        raise AssertionError("Application tab path did not resolve the expected tab list.")
+    if not target.queryComponent().grabFocus():
+        raise AssertionError("Application tab list could not receive keyboard focus.")
+
+    def focused() -> bool:
+        target.clear_cache_single()
+        return target.getState().contains(pyatspi.STATE_FOCUSED)
+
+    wait_until(focused, timeout=timeout, message="Application tab list did not receive keyboard focus.")
+
+    current_index = names.index(current_name)
+    target_index = names.index(name)
+    direction = "right" if target_index > current_index else "left"
+    distance = abs(target_index - current_index)
+    for _ in range(distance):
+        press_key(direction)
+    wait_until(lambda: "selected" in tab_state(name), timeout=timeout,
+               message=f"Keyboard navigation did not select the {name} application tab")
 
 
 def current_app_process(registry):

@@ -3,38 +3,56 @@ from __future__ import annotations
 
 from typing import Any
 
-from PyQt6.QtWidgets import QCheckBox, QDialog, QDialogButtonBox, QLabel, QLineEdit, QScrollArea, QVBoxLayout, QWidget
+from PyQt6.QtCore import pyqtSignal
+from PyQt6.QtWidgets import (
+    QCheckBox,
+    QDialog,
+    QHBoxLayout,
+    QLabel,
+    QLineEdit,
+    QPushButton,
+    QVBoxLayout,
+    QWidget,
+)
 
 from core.tasks.tweak_library import edit_profile
 from core.tasks.tweak_profiles import TweakProfile
 from core.tasks.tweaks import BY_ID, TweakState
 from ui.components.tweak_controls import TweakControl
+from ui.tweak_profile_views import ProfileEditorExitDialog
 
 
-class ProfileEditorDialog(QDialog):
-    """Keep every original row until its inclusion box is explicitly cleared."""
+class ProfileEditorWidget(QWidget):
+    """Editable copy whose save is persisted only by the window operation owner."""
 
-    def __init__(self, profile: TweakProfile, states: tuple[TweakState, ...], parent: Any = None) -> None:
+    saveRequested = pyqtSignal(object, bool, bool, bool)
+    exitRequested = pyqtSignal()
+
+    def __init__(self, profile: TweakProfile, states: tuple[TweakState, ...], parent: QWidget | None = None) -> None:
         super().__init__(parent)
         self.source = profile
-        self.states = states
-        self.saved_profile: TweakProfile | None = None
+        self.states = tuple(states)
         self.rows: dict[str, tuple[QCheckBox, TweakControl]] = {}
-        self.setWindowTitle(self.tr("Edit profile copy"))
-        self.resize(760, 600)
+        self._saving = False
+        self.setObjectName("profileEditorView")
         layout = QVBoxLayout(self)
-        explanation = QLabel(self.tr("Save a new version in your library. Saving changes no computer settings. Clear a setting's box to remove it; unavailable values are retained. Apply later through a fresh review."))
+        layout.setContentsMargins(0, 0, 0, 0)
+        explanation = QLabel(self.tr(
+            "Save a new version in your library. Saving changes no computer settings. "
+            "Clear a setting's box to remove it; unavailable values are retained. Apply later through a fresh review."
+        ))
         explanation.setWordWrap(True)
         layout.addWidget(explanation)
+
         name_label = QLabel(self.tr("Profile name:"))
         self.name = QLineEdit()
         self.name.setText(self.tr("%1 (copy)").replace("%1", profile.name[:100]))
+        self._initial_name = self.name.text()
         self.name.setAccessibleName(self.tr("Profile name"))
         name_label.setBuddy(self.name)
         layout.addWidget(name_label)
         layout.addWidget(self.name)
-        scroll = QScrollArea()
-        scroll.setWidgetResizable(True)
+
         body = QWidget()
         settings_layout = QVBoxLayout(body)
         original = dict(profile.settings)
@@ -51,7 +69,6 @@ class ProfileEditorDialog(QDialog):
             include = QCheckBox(title)
             include.setChecked(key in original)
             include.setAccessibleName(self.tr("Include %1").replace("%1", title))
-            # Unknown rows remain removable; unavailable absent rows cannot be added.
             include.setEnabled(key in original or editable)
             settings_layout.addWidget(include)
             control = TweakControl(tweak.control_kind if tweak else "dropdown")
@@ -70,37 +87,122 @@ class ProfileEditorDialog(QDialog):
             include.toggled.connect(lambda checked, widget=control, available=editable: widget.setEnabled(checked and available))
             settings_layout.addWidget(control)
             if not editable:
-                reason = state.message if state and state.message else self.tr("Unknown or unavailable on this desktop. Retain the original value or clear the box to remove it.")
+                reason = state.message if state and state.message else self.tr(
+                    "Unknown or unavailable on this desktop. Retain the original value or clear the box to remove it."
+                )
                 notice = QLabel(reason)
                 notice.setWordWrap(True)
                 settings_layout.addWidget(notice)
             self.rows[key] = (include, control)
         settings_layout.addStretch()
-        scroll.setWidget(body)
-        layout.addWidget(scroll)
+        layout.addWidget(body)
+
         self.error = QLabel()
         self.error.setWordWrap(True)
         self.error.setAccessibleName(self.tr("Profile validation error"))
         layout.addWidget(self.error)
-        buttons = QDialogButtonBox(QDialogButtonBox.StandardButton.Save | QDialogButtonBox.StandardButton.Cancel)
-        save = buttons.button(QDialogButtonBox.StandardButton.Save)
-        if save is not None:
-            save.setText(self.tr("Save new version"))
-            save.setAutoDefault(False)
-        cancel = buttons.button(QDialogButtonBox.StandardButton.Cancel)
-        if cancel is not None:
-            cancel.setDefault(True)
-        buttons.accepted.connect(self._save)
-        buttons.rejected.connect(self.reject)
-        layout.addWidget(buttons)
+        actions = QHBoxLayout()
+        self.save_button = QPushButton(self.tr("Save copy"))
+        self.save_button.setObjectName("profileSaveCopy")
+        self.save_button.setAccessibleName(self.tr("Save this profile as a new copy"))
+        self.review_button = QPushButton(self.tr("Save and review…"))
+        self.review_button.setObjectName("profileSaveAndReview")
+        self.review_button.setAccessibleName(self.tr("Save this profile copy and review it against current settings"))
+        for button, review in ((self.save_button, False), (self.review_button, True)):
+            button.setAutoDefault(False)
+            button.clicked.connect(lambda _checked=False, after_review=review: self.request_save(review_after=after_review))
+            actions.addWidget(button)
+        self.back_button = QPushButton(self.tr("Back to library"))
+        self.back_button.setAutoDefault(False)
+        self.back_button.clicked.connect(self.request_exit)
+        actions.addWidget(self.back_button)
+        layout.addLayout(actions)
 
-    def _save(self) -> None:
-        settings = tuple((key, str(control.currentData() or "")) for key, (include, control) in self.rows.items() if include.isChecked())
+    def profile_for_save(self) -> TweakProfile:
+        settings = tuple(
+            (key, str(control.currentData() or ""))
+            for key, (include, control) in self.rows.items()
+            if include.isChecked()
+        )
+        result = edit_profile(self.source, self.name.text(), settings, self.states)
+        if result == self.source:
+            raise ValueError(self.tr("Change the name or settings to save a new version."))
+        return result
+
+    def is_dirty(self) -> bool:
+        current = tuple(
+            (key, str(control.currentData() or ""))
+            for key, (include, control) in self.rows.items()
+            if include.isChecked()
+        )
+        return self.name.text() != self._initial_name or current != self.source.settings
+
+    def request_save(
+        self, *, review_after: bool = False, return_after: bool = False, close_after: bool = False
+    ) -> bool:
         try:
-            self.saved_profile = edit_profile(self.source, self.name.text(), settings, self.states)
-            if self.saved_profile == self.source:
-                raise ValueError(self.tr("Change the name or settings to save a new version."))
+            profile = self.profile_for_save()
         except ValueError as exc:
             self.error.setText(str(exc))
+            self.name.setFocus()
+            return False
+        self.error.clear()
+        self.saveRequested.emit(profile, bool(review_after), bool(return_after), bool(close_after))
+        return True
+
+    def request_exit(self) -> None:
+        if not self.is_dirty():
+            self.exitRequested.emit()
             return
+        choice = ProfileEditorExitDialog.choose(self)
+        if choice == "discard":
+            self.exitRequested.emit()
+        elif choice == "save":
+            self.request_save(return_after=True)
+
+    def request_close(self) -> str:
+        """Protect a dirty draft when the owning application is closing."""
+        if self._saving:
+            return "cancel"
+        if not self.is_dirty():
+            return "allow"
+        choice = ProfileEditorExitDialog.choose(self)
+        if choice == "discard":
+            return "allow"
+        if choice == "save" and self.request_save(return_after=True, close_after=True):
+            return "saving"
+        return "cancel"
+
+    def set_save_error(self, message: str) -> None:
+        self.error.setText(str(message))
+        self.save_button.setEnabled(True)
+        self.review_button.setEnabled(True)
+
+    def set_saving(self, saving: bool) -> None:
+        self._saving = bool(saving)
+        for button in (self.save_button, self.review_button, self.back_button):
+            button.setEnabled(not saving)
+
+
+class ProfileEditorDialog(QDialog):
+    """Compatibility wrapper for callers that need the former modal editor."""
+
+    def __init__(self, profile: TweakProfile, states: tuple[TweakState, ...], parent: Any = None) -> None:
+        super().__init__(parent)
+        self.saved_profile: TweakProfile | None = None
+        self.setWindowTitle(self.tr("Edit profile copy"))
+        self.resize(760, 600)
+        layout = QVBoxLayout(self)
+        self.editor = ProfileEditorWidget(profile, states, self)
+        layout.addWidget(self.editor)
+        self.rows = self.editor.rows
+        self.name = self.editor.name
+        self.error = self.editor.error
+        self.editor.saveRequested.connect(self._saved)
+
+    def _saved(self, profile: TweakProfile, _review_after: bool, _return_after: bool, _close_after: bool) -> None:
+        self.saved_profile = profile
         self.accept()
+
+    def _save(self) -> None:
+        self.editor.request_save()

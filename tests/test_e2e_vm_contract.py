@@ -125,6 +125,31 @@ def test_failure_artifacts_are_discovered_safely_and_redacted(tmp_path: Path) ->
     assert not any("../" in call.args[0] for call in fetch.call_args_list)
 
 
+def test_failed_guest_result_prints_a_bounded_collected_log_excerpt(tmp_path: Path, capsys) -> None:
+    vm = FedoraE2E(tmp_path, tmp_path / "reports")
+    vm.reports_dir.mkdir()
+    (vm.reports_dir / "pytest.log").write_text("old log line\n" * 1000 + "FAILED exact_setting_test\n")
+    vm._write_summary(1, {})
+    output = capsys.readouterr().out
+    assert "Fedora KDE E2E failed (exit 1)" in output
+    assert str(vm.reports_dir) in output
+    assert "FAILED exact_setting_test" in output
+    assert len(output.splitlines()) <= 41
+    assert json.loads((vm.reports_dir / "summary.json").read_text())["exit_code"] == 1
+
+
+def test_failed_reboot_result_prints_the_reboot_phase_log(tmp_path: Path, capsys) -> None:
+    vm = FedoraE2E(tmp_path, tmp_path / "reports")
+    vm.reports_dir.mkdir()
+    vm._reboot_evidence = {"boot_id_changed": True}
+    (vm.reports_dir / "pytest.log").write_text("PASSED before reboot\n")
+    (vm.reports_dir / "pytest-after-reboot.log").write_text("FAILED reboot_restore_test\n")
+    vm._write_summary(1, {})
+    output = capsys.readouterr().out
+    assert "FAILED reboot_restore_test" in output
+    assert "PASSED before reboot" not in output
+
+
 def _workflow(path: str) -> str:
     return (ROOT / path).read_text(encoding="utf-8")
 

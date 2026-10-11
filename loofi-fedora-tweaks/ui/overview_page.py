@@ -297,7 +297,8 @@ class OverviewPage(QWidget, PluginInterface):
         self.dismiss_intro_button = QuietButton(self.tr("Dismiss"))
         self.dismiss_intro_button.clicked.connect(self._dismiss_intro)
         self.intro_card.add_widget(self.dismiss_intro_button)
-        root.addWidget(self.intro_card)
+        # Guidance follows the system readings so the first viewport is useful
+        # immediately, while all existing task and guide routes stay intact.
         self.next_steps_card = Card(self.tr("Next steps"), parent=self)
         self.next_steps_empty = QLabel(self.tr("Suggestions appear after the first measurement."))
         self.next_steps_empty.setWordWrap(True)
@@ -305,35 +306,52 @@ class OverviewPage(QWidget, PluginInterface):
         self.next_steps_card.hide()
         self._next_step_rows = []
         self._last_next_steps = None
-        root.addWidget(self.next_steps_card)
+        # Keep the recommendation list bounded; the underlying next_steps
+        # service remains the source of ranking and routing.
+        self.maintenance_card = Card(self.tr("Maintenance"), parent=self)
+        self.maintenance_card.add_widget(QWidget(self.maintenance_card))
+        self._maintenance_body = self.maintenance_card.body.itemAt(self.maintenance_card.body.count() - 1).widget()
+        self._maintenance_layout = QHBoxLayout(self._maintenance_body)
+        self._maintenance_layout.setContentsMargins(0, 0, 0, 0)
+        self._maintenance_layout.setSpacing(12)
         self.maintenance_grid = QGridLayout()
         self.maintenance_grid.setSpacing(12)
-        root.addLayout(self.maintenance_grid)
+        self._maintenance_layout.addLayout(self.maintenance_grid)
         self._maintenance = {}
         for key, title, route in (("updates", self.tr("Updates"), "maintenance:updates"), ("health", self.tr("Health"), "maintenance:health-timeline"),
-                                  ("activity", self.tr("Recent activity"), "activity")):
-            card = Card(title)
+                                  ("activity", self.tr("Activity"), "activity")):
+            # Three compact summaries share one maintenance surface rather
+            # than repeating a full card treatment for each status.
+            card = QWidget(self.maintenance_card)
+            card.body = QVBoxLayout(card)
+            card.body.setContentsMargins(0, 0, 0, 0)
+            heading = QLabel(title)
+            heading.setObjectName("definitionLabel")
+            card.body.addWidget(heading)
             label = QLabel(self.tr("No recorded result yet"))
             label.setWordWrap(True)
             label.setTextFormat(Qt.TextFormat.PlainText)
-            card.add_widget(label)
+            card.body.addWidget(label)
             button = QuietButton(self.tr("Open %1").replace("%1", title))
             if key == "health":
                 button.clicked.connect(self._open_latest_health_session)
             else:
                 button.clicked.connect(lambda checked=False, destination=route: self.routeRequested.emit(destination))
-            card.add_widget(button)
+            card.body.addWidget(button)
             self._maintenance[key] = (card, label)
+        self.main_grid = QGridLayout()
+        self.main_grid.setSpacing(12)
+        self.detail_grid = QGridLayout()
+        self.detail_grid.setSpacing(12)
+        root.addLayout(self.main_grid)
+        root.addLayout(self.detail_grid)
+        root.addWidget(self.maintenance_card)
+        root.addWidget(self.next_steps_card)
+        root.addWidget(self.intro_card)
         self.guide_panel = GuidePanel(self)
         self.guide_panel.guideChanged.connect(self.guideChanged)
         self.guide_panel.targetRequested.connect(self.guideTargetRequested)
         root.addWidget(self.guide_panel)
-        self.main_grid = QGridLayout()
-        self.main_grid.setSpacing(12)
-        root.addLayout(self.main_grid)
-        self.detail_grid = QGridLayout()
-        self.detail_grid.setSpacing(12)
-        root.addLayout(self.detail_grid)
         groups = (("cpu", self.tr("CPU")), ("memory", self.tr("RAM")), ("gpu", self.tr("GPU")),
                   ("storage", self.tr("Storage")), ("network", self.tr("Network activity")),
                   ("disk", self.tr("Disk activity")), ("temperature", self.tr("Temperatures")), ("battery", self.tr("Battery")))
@@ -539,6 +557,7 @@ class OverviewPage(QWidget, PluginInterface):
 
     def _show_next_steps(self, suggestions, maintenance=None):
         maintenance = maintenance or {}
+        suggestions = tuple(suggestions)
         suggestion_ids = {step.id for step in suggestions}
         # Missing routine checks are helpful prompts, not evidence of a system problem.
         # An explicit failed check remains a recorded problem and should take precedence.
@@ -552,6 +571,7 @@ class OverviewPage(QWidget, PluginInterface):
             not routine_only or failed_health_check or failed_update_check
         )
         self._update_intro_visibility()
+        suggestions = suggestions[:3]
         self.next_steps_card.setVisible(bool(suggestions))
         if not suggestions:
             for row in self._next_step_rows:
@@ -707,11 +727,12 @@ class OverviewPage(QWidget, PluginInterface):
         for index, group in enumerate(visible_details):
             self.detail_grid.addWidget(self._cards[group], index // details, index % details)
         for index, (card, label) in enumerate(self._maintenance.values()):
-            self.maintenance_grid.addWidget(card, index // details, index % details)
+            self.maintenance_grid.addWidget(card, 0, index)
         for column in range(columns):
             self.main_grid.setColumnStretch(column, 1)
         for column in range(details):
             self.detail_grid.setColumnStretch(column, 1)
+        for column in range(len(self._maintenance)):
             self.maintenance_grid.setColumnStretch(column, 1)
 
     def cleanup(self):

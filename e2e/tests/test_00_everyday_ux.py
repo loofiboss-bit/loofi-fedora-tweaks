@@ -3,7 +3,7 @@ import os
 import subprocess
 import threading
 
-from helpers import observe_refresh, wait_for_node, wait_for_node_containing, wait_until
+from helpers import observe_refresh, select_page_tab, wait_for_node, wait_for_node_containing, wait_until
 from test_fedora_kde_workflows import dnf_parallel_downloads, dolphin_full_path_enabled
 
 
@@ -11,7 +11,7 @@ def test_guide_progress_survives_restart_and_resumes_without_mutation(loofi_app,
     """Real guide interaction persists skips and opens the next existing route."""
     import json
     from pathlib import Path
-    from helpers import activate_control, current_app_process, open_search_result, press_key, restart_app
+    from helpers import activate_control, current_app_process, open_search_result, restart_app
 
     before_dnf = dnf_parallel_downloads()
     before_dolphin = dolphin_full_path_enabled()
@@ -31,9 +31,9 @@ def test_guide_progress_survives_restart_and_resumes_without_mutation(loofi_app,
     restart_app(running, app_process_registry)
     # The shell restores the saved selection once Overview is constructed.
     wait_for_node("Overview", role="table cell").click()
-    wait_for_node("Active Fedora guide: Make Fedora yours", timeout=30).click()
-    press_key("home")
-    press_key("enter")
+    wait_for_node("Active Fedora guide: Make Fedora yours", timeout=30)
+    activate_control("Active Fedora guide: Make Fedora yours")
+    wait_for_node("Open next step: Review a desktop change", role="menu item", timeout=30).click()
     wait_for_node("Search tweaks", role="text", timeout=30)
     assert json.loads(progress_path.read_text())["steps"]["make-fedora-yours:find-settings"]["state"] == "skipped"
     assert dnf_parallel_downloads() == before_dnf
@@ -49,7 +49,7 @@ def _discover_pids() -> set[str]:
 def test_catalog_miss_opens_real_discover_and_returns_to_installed_apps(loofi_app) -> None:
     """A handoff starts the native store; it never claims package completion."""
     import pyatspi
-    from helpers import activate_control, open_search_result, press_key, return_to_loofi_window
+    from helpers import activate_control, open_search_result, return_to_loofi_window
     before_packages = subprocess.run(["rpm", "-qa"], capture_output=True, text=True, check=True, timeout=30).stdout.splitlines()
     assert not _discover_pids(), "Discover must not be running in the clean guest before the handoff"
     open_search_result("Install Apps", "Apps")
@@ -63,12 +63,8 @@ def test_catalog_miss_opens_real_discover_and_returns_to_installed_apps(loofi_ap
         os.kill(int(pid), 15)
     wait_until(lambda: not _discover_pids(), timeout=30, message="Discover did not close")
     return_to_loofi_window()
-    wait_for_node("Catalog", role="combo box").element.click()
-    press_key("home")
-    press_key("down")
-    press_key("enter")
-    wait_for_node("Installed", role="combo box", timeout=30)
-    wait_for_node("Installation inventory checked.", timeout=90)
+    wait_for_node("Catalog", role="page tab", timeout=30)
+    select_page_tab("Installed")
     refresh = wait_for_node("Refresh installed applications", timeout=90, enabled=True)
     target = pyatspi.Registry.getDesktop(0)
     for index in refresh._source().get("path").split():

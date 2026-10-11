@@ -6,8 +6,8 @@ import subprocess
 
 import pytest
 
-from helpers import click, open_search_result, press_key, wait_for_node
-from test_fedora_kde_workflows import dolphin_full_path_enabled, wait_for_feedback
+from helpers import activate_control, click, open_search_result, wait_for_node, wait_for_setting_feedback
+from test_fedora_kde_workflows import dolphin_full_path_enabled
 
 
 CHECKPOINT = Path("/var/tmp/loofi-e2e/reboot-checkpoint.json")
@@ -34,7 +34,7 @@ def test_prepare_real_guest_reboot_checkpoint(loofi_app) -> None:
     control = wait_for_node("Show full path in location bar", role="check box", timeout=60, enabled=True)
     assert control.checked == before
     control.click()
-    wait_for_feedback("Saved — Saved setting verified: " + ("Off" if before else "On"))
+    wait_for_setting_feedback("Show full path in location bar", "Off" if before else "On", session_activation=True)
     assert dolphin_full_path_enabled() != before
     CHECKPOINT.write_text(json.dumps({"boot_id": Path("/proc/sys/kernel/random/boot_id").read_text().strip(),
                                       "dolphin_before": before, "guides": progress}))
@@ -49,9 +49,9 @@ def test_saved_setting_and_guide_survive_actual_guest_reboot(loofi_app) -> None:
     assert dolphin_full_path_enabled() != before
     assert json.loads(guide_path().read_text()) == checkpoint["guides"], "guide state changed during reboot"
     wait_for_node("Overview", role="table cell").click()
-    wait_for_node("Active Fedora guide: Make Fedora yours", timeout=30).click()
-    press_key("home")
-    press_key("enter")
+    wait_for_node("Active Fedora guide: Make Fedora yours", timeout=30)
+    activate_control("Active Fedora guide: Make Fedora yours")
+    wait_for_node("Open next step: Review a desktop change", role="menu item", timeout=30).click()
     search = wait_for_node("Search tweaks", role="text", timeout=30)
     search.element.clear()
     search.element.send_keys("Show full path in location bar")
@@ -59,7 +59,7 @@ def test_saved_setting_and_guide_survive_actual_guest_reboot(loofi_app) -> None:
     from helpers import confirm_yes
     click("Restore previous value for Show full path in location bar")
     confirm_yes()
-    wait_for_feedback("Saved — Previous value restored and verified: " + ("On" if before else "Off"))
+    wait_for_setting_feedback("Show full path in location bar", "On" if before else "Off", restored=True)
     assert dolphin_full_path_enabled() == before
     # An independent KDE reader agrees after restoration and actual reboot.
     result = subprocess.run(["kreadconfig6", "--file", "dolphinrc", "--group", "General", "--key", "ShowFullPath", "--default", "false"],

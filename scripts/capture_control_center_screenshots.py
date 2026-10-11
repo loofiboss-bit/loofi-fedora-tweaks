@@ -47,7 +47,8 @@ def fixture_snapshot():
                              stamp, maintenance, (12.0, 30.0, 18.0, 40.0))
 
 
-def capture(out: Path, scale: str, large_text: bool, installed_view: bool = False):
+def capture(out: Path, scale: str, large_text: bool, installed_view: bool = False,
+            include_v33_subviews: bool = False):
     os.environ["QT_QPA_PLATFORM"] = "offscreen"
     os.environ["QT_SCALE_FACTOR"] = scale
     fixture_root = Path(tempfile.mkdtemp(prefix="loofi-control-center-render-"))
@@ -92,6 +93,8 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
         from ui.overview_page import OverviewPage
         from ui.tweaks_page import TweaksPage
         from core.tasks.tweaks import TweakState, default_for, visible_tweaks
+        from core.tasks.tweak_library import LibraryEntry
+        from core.tasks.tweak_profiles import TweakProfile
         from core.plugins.registry import PluginRegistry
         from utils.settings import SettingsManager
         PluginRegistry.reset()
@@ -134,12 +137,25 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
             if canonical not in seen:
                 routes.append(requested)
                 seen.add(canonical)
+        route_states = [(route, "") for route in routes]
+        if include_v33_subviews:
+            # Qualify the accessible guide menu and its shell layout together
+            # with the v33 subviews, using the isolated fixture's empty progress.
+            window._set_active_guide("make-fedora-yours")
+            route_states = []
+            for route in routes:
+                if route == "tweaks":
+                    route_states.extend(((route, "settings"), (route, "profiles")))
+                elif route == "apps":
+                    route_states.extend(((route, "catalog"), (route, "installed"), (route, "sources")))
+                else:
+                    route_states.append((route, ""))
         try:
             for theme in ("light", "dark", "highcontrast"):
                 window.load_theme(theme)
                 for width, height in ((900, 650), (1280, 800), (1600, 900)):
                     window.resize(width, height)
-                    for route in routes:
+                    for route, subview in route_states:
                         assert window.switch_to_route(route), route
                         for _ in range(8):
                             app.processEvents()
@@ -161,11 +177,31 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                                 if choices:
                                     fixture_states.append(TweakState(tweak, "ready", value=default_for(tweak) or choices[0][0], choices=choices))
                             page.set_states(tuple(fixture_states))
-                        if route == "apps" and installed_view:
+                            if subview == "profiles":
+                                sample_profile = TweakProfile(
+                                    "Example local profile", "kde", (("kde-single-click", "single"),)
+                                )
+                                page.set_profile_entries((LibraryEntry(
+                                    "render-example-profile", sample_profile, False, "Local profile copy"
+                                ),), selected_id="render-example-profile")
+                                page.set_subview("profiles", load_profiles=False)
+                        if route == "apps" and (installed_view or subview in {"catalog", "installed", "sources"}):
                             from ui.install_workflow import InstallWorkflowPage
+                            from services.software.source_status import DnfRepository, DnfSourceSnapshot
+
                             install = window.findChild(InstallWorkflowPage)
+                            source_snapshot = DnfSourceSnapshot(
+                                "2026-10-11T12:00:00Z",
+                                (DnfRepository("fedora", "Fedora", True),
+                                 DnfRepository("rpmfusion-free", "RPM Fusion Free", True),
+                                 DnfRepository("updates-testing", "Updates Testing", False)),
+                            )
+                            install.sources_widget.set_snapshot(source_snapshot)
+                            install._apply_dnf_source_badges(source_snapshot)
                             install.installed_card.apply_inventory(installed)
-                            install.view_filter.setCurrentIndex(install.view_filter.findData("installed"))
+                            selected_apps_view = subview or ("installed" if installed_view else "catalog")
+                            tab_index = {"catalog": 0, "installed": 1, "sources": 2}[selected_apps_view]
+                            install.view_tabs.setCurrentIndex(tab_index)
                             from services.software.flatpak_maintenance import RefRecord, UnusedSnapshot
                             insights = install.installed_card.insights
                             insights.set_installations(("user", "system", "office"))
@@ -179,7 +215,8 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                         # values; let their queued parent layouts settle as on route entry.
                         for _ in range(8):
                             app.processEvents()
-                        name = f"{route.replace(':', '-')}-{theme}-{width}x{height}"
+                        state_suffix = f"-{subview}" if subview else ""
+                        name = f"{route.replace(':', '-')}{state_suffix}-{theme}-{width}x{height}"
                         window.grab().save(str(out / f"{name}.png"))
                         entry = window._sidebar_index.get(window._active_plugin_id)
                         lazy = entry.page_widget if entry is not None else None
@@ -242,7 +279,7 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
                                 assert focused.isVisibleTo(window), (name, focused.objectName())
                         results.append({"capture": name, "scale": scale, "large_text": large_text,
                                         "actual_size": [window.width(), window.height()], "horizontal_ranges": horizontal, "focus_traversals": 20,
-                                        "route": route, "canonical_route": window._active_route_id,
+                                        "route": route, "subview": subview, "canonical_route": window._active_route_id,
                                         "wrapped_label_clipping": wrapped_label_clipping,
                                         "control_text_clipping": control_text_clipping,
                                         "table_theme_issues": table_theme_issues})
@@ -260,7 +297,8 @@ def capture(out: Path, scale: str, large_text: bool, installed_view: bool = Fals
             app.processEvents()
         (out / "rendering-checks.json").write_text(json.dumps(results, indent=2) + "\n")
         print(json.dumps({"captures": len(results), "scale": scale, "large_text": large_text,
-                          "routes": routes, "wrapped_label_clipping_views": sum(bool(result["wrapped_label_clipping"]) for result in results),
+                          "routes": routes, "included_v33_subviews": include_v33_subviews,
+                          "wrapped_label_clipping_views": sum(bool(result["wrapped_label_clipping"]) for result in results),
                           "control_text_clipping_views": sum(bool(result["control_text_clipping"]) for result in results),
                           "table_theme_issue_views": sum(bool(result["table_theme_issues"]) for result in results),
                           "horizontal_scroll_views": sum(bool(result["horizontal_ranges"]) for result in results)}, indent=2))
@@ -272,5 +310,7 @@ if __name__ == "__main__":
     parser.add_argument("--scale", default="1")
     parser.add_argument("--large-text", action="store_true")
     parser.add_argument("--installed-view", action="store_true", help="Capture the Installed Apps view")
+    parser.add_argument("--include-v33-subviews", action="store_true", help="Capture Tweaks Profiles and all Apps subviews")
     arguments = parser.parse_args()
-    capture(arguments.output, arguments.scale, arguments.large_text, arguments.installed_view)
+    capture(arguments.output, arguments.scale, arguments.large_text, arguments.installed_view,
+            arguments.include_v33_subviews)

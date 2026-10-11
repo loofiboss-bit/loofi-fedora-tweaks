@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from typing import Any
 
-from core.tasks.tweaks import TweakState, default_for, visible_tweaks
+from core.tasks.tweaks import BY_ID, TweakState, default_for, visible_tweaks
 from core.tweak_commands import values_equal
 from PyQt6.QtCore import QEvent, QTimer, Qt, pyqtSignal
 from PyQt6.QtGui import QAction
-from PyQt6.QtWidgets import QButtonGroup, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu, QPushButton, QToolButton, QVBoxLayout, QWidget, QWidgetAction
+from PyQt6.QtWidgets import QButtonGroup, QComboBox, QGridLayout, QHBoxLayout, QLabel, QLineEdit, QMenu, QPushButton, QStackedWidget, QToolButton, QVBoxLayout, QWidget, QWidgetAction
 
 from ui.components import Card, PageScaffold
 from ui.components.settings import SettingRow
@@ -27,6 +27,8 @@ class TweaksPage(QWidget, PluginInterface):
     saveProfileRequested = pyqtSignal()
     loadProfileRequested = pyqtSignal()
     choosePresetRequested = pyqtSignal()
+    profileActionRequested = pyqtSignal(str, object)
+    profileSaveCopyRequested = pyqtSignal(object, bool, bool, bool)
     refreshRequested = pyqtSignal()
     continueSnapshotRequested = pyqtSignal()
     inspectRequested = pyqtSignal(str)
@@ -74,11 +76,31 @@ class TweaksPage(QWidget, PluginInterface):
         self.setAccessibleName(self.tr("Fedora tweaks"))
         root = QVBoxLayout(self)
         root.setContentsMargins(0, 0, 0, 0)
+        subview_row = QHBoxLayout()
+        subview_row.setContentsMargins(0, 0, 0, 8)
+        self._subview_group = QButtonGroup(self)
+        self._subview_group.setExclusive(True)
+        self._subview_buttons: dict[str, QPushButton] = {}
+        for key, label in (("settings", "Settings"), ("profiles", "Profiles")):
+            button = QPushButton(self.tr(label))
+            button.setObjectName(f"tweaksSubview_{key}")
+            button.setCheckable(True)
+            button.setAccessibleName(self.tr("Show tweak %1").replace("%1", self.tr(label)))
+            self._subview_group.addButton(button)
+            self._subview_buttons[key] = button
+            button.clicked.connect(lambda _checked=False, selected=key: self.set_subview(selected))
+            subview_row.addWidget(button)
+        subview_row.addStretch()
+        root.addLayout(subview_row)
         self.scaffold = PageScaffold(
             self.tr("Tweaks"),
             self.tr("Change one supported setting at a time and see its verified value."),
         )
         root.addWidget(self.scaffold)
+        self._active_subview = "settings"
+        self._profile_editor_open = False
+        self._profile_focus_pending = False
+        self._profile_entries: tuple[Any, ...] = ()
 
         intro = Card()
         intro.setObjectName("tweaksFilters")
@@ -139,7 +161,7 @@ class TweaksPage(QWidget, PluginInterface):
             action = QAction(self.tr(label), profile_menu)
             profile_menu.addAction(action)
             action.triggered.connect(signal.emit)
-        search_row.addWidget(self.profile_menu_button, 0, 3)
+        self.profile_menu_button.hide()
         self.save_profile_button.hide()
         self.load_profile_button.hide()
         self.preset_button.hide()
@@ -203,13 +225,12 @@ class TweaksPage(QWidget, PluginInterface):
         self.profile_result_label.setWordWrap(True)
         self.profile_result_label.setTextFormat(Qt.TextFormat.PlainText)
         self.profile_result_card.add_widget(self.profile_result_label)
-        self.profile_activity_button = QPushButton(self.tr("Open Activity"))
-        self.profile_activity_button.setObjectName("tweakProfileActivity")
-        self.profile_activity_button.clicked.connect(self._open_profile_activity)
-        self.profile_result_card.add_widget(self.profile_activity_button)
+        self.profile_activity_links = QVBoxLayout()
+        self.profile_activity_links.setContentsMargins(0, 0, 0, 0)
+        self.profile_result_card.body.addLayout(self.profile_activity_links)
         self.profile_result_card.hide()
-        self._profile_activity_run_id = ""
         self.scaffold.add_widget(self.profile_result_card)
+        self._settings_view_widgets: list[QWidget] = [intro, self.empty_state, self.profile_result_card]
         self.snapshotProgress.connect(self.set_snapshot_progress)
 
         for tweak in visible_tweaks(profile):
@@ -223,12 +244,17 @@ class TweaksPage(QWidget, PluginInterface):
                 self._groups[tweak.group] = group
                 self._group_rows[tweak.group] = []
                 self.scaffold.add_widget(group)
+                self._settings_view_widgets.append(group)
             control = TweakControl(getattr(tweak, "control_kind", "auto"))
             control.setObjectName(f"tweakControl_{tweak.id}")
             control.setAccessibleName(self.tr(tweak.title))
             control.setEnabled(False)
             row = SettingRow(self.tr(tweak.title), self.tr(tweak.description), control)
             row.setObjectName(f"tweakRow_{tweak.id}")
+            scope = self.tr("Review required · This computer") if tweak.system_wide else self.tr("Applies immediately · This user")
+            row.description_label.setText(f"{tweak.description} · {scope}")
+            row.description_label.setAccessibleName(self.tr("Description and change scope for %1").replace("%1", self.tr(tweak.title)))
+            row.setAccessibleDescription(f"{tweak.description} · {scope}")
             group.add_widget(row)
             self._rows[tweak.id] = (row, control)
             self._group_rows[tweak.group].append(row)
@@ -321,9 +347,23 @@ class TweaksPage(QWidget, PluginInterface):
                 self.native_cards[key] = card
                 self._native_group.add_widget(card)
             self.scaffold.add_widget(self._native_group)
+            self._settings_view_widgets.append(self._native_group)
+        from ui.tweak_profile_views import ProfileLibraryView
+
+        self.profile_views = QStackedWidget()
+        self.profile_views.setObjectName("tweakProfileViews")
+        self.profile_library_view = ProfileLibraryView(self.profile_views)
+        self.profile_library_view.actionRequested.connect(self.profileActionRequested.emit)
+        self.profile_library_view.saveCurrentRequested.connect(self.saveProfileRequested.emit)
+        self.profile_library_view.loadRequested.connect(self.loadProfileRequested.emit)
+        self.profile_views.addWidget(self.profile_library_view)
+        self.profile_editor_view: Any | None = None
+        self.profile_views.hide()
+        self.scaffold.add_widget(self.profile_views)
         self.scaffold.content_layout.addStretch()
         self._filter_rows("")
         self._refresh_favorite_icons()
+        self._subview_buttons["settings"].setChecked(True)
 
     @property
     def busy(self) -> bool:
@@ -375,21 +415,19 @@ class TweaksPage(QWidget, PluginInterface):
     def resizeEvent(self, event) -> None:
         super().resizeEvent(event)
         if hasattr(self, "_toolbar_layout"):
-            toolbar_controls = (self.refresh_button, self.cancel_snapshot_button, self.profile_menu_button)
+            toolbar_controls = (self.refresh_button, self.cancel_snapshot_button)
             needed = self.search_input.minimumSizeHint().width() + sum(button.sizeHint().width() + 6 for button in toolbar_controls)
             self._toolbar_layout.removeWidget(self.search_input)
             for button in toolbar_controls:
                 self._toolbar_layout.removeWidget(button)
             if needed > max(1, self.width() - 48):
-                self._toolbar_layout.addWidget(self.search_input, 0, 0, 1, 3)
+                self._toolbar_layout.addWidget(self.search_input, 0, 0, 1, 2)
                 self._toolbar_layout.addWidget(self.refresh_button, 1, 0)
                 self._toolbar_layout.addWidget(self.cancel_snapshot_button, 1, 1)
-                self._toolbar_layout.addWidget(self.profile_menu_button, 1, 2)
             else:
                 self._toolbar_layout.addWidget(self.search_input, 0, 0)
                 self._toolbar_layout.addWidget(self.refresh_button, 0, 1)
                 self._toolbar_layout.addWidget(self.cancel_snapshot_button, 0, 2)
-                self._toolbar_layout.addWidget(self.profile_menu_button, 0, 3)
             self._toolbar_layout.setColumnStretch(0, 1)
         if not hasattr(self, "_filter_layout"):
             return
@@ -413,6 +451,7 @@ class TweaksPage(QWidget, PluginInterface):
 
     def focus_tweak(self, tweak_id: str) -> bool:
         """Reveal and focus a catalog setting without changing its value."""
+        self.set_subview("settings", load_profiles=False)
         entry = self._rows.get(str(tweak_id))
         if entry is None:
             self.status_label.setText(self.tr("This setting is not available for the current desktop."))
@@ -475,7 +514,11 @@ class TweaksPage(QWidget, PluginInterface):
         self._pending[tweak_id] = value
         self._activation_messages.pop(tweak_id, None)
         row, control = self._rows[tweak_id]
-        row.value_label.setText(self.tr("Verified: %1 · Pending: %2").replace("%1", self._label_for(tweak_id, str(control.property("currentValue") or ""))).replace("%2", self._label_for(tweak_id, value)))
+        row.value_label.setText(
+            self.tr("Verified: %1 · Requested: %2")
+            .replace("%1", self._label_for(tweak_id, str(control.property("currentValue") or "")))
+            .replace("%2", self._label_for(tweak_id, value))
+        )
         row.value_label.show()
 
     def set_activation(self, tweak_id: str, message: str) -> None:
@@ -533,6 +576,8 @@ class TweaksPage(QWidget, PluginInterface):
         self.load_profile_button.setEnabled(not busy)
         self.preset_button.setEnabled(not busy)
         self.profile_menu_button.setEnabled(not busy)
+        if hasattr(self, "profile_views"):
+            self.profile_views.setEnabled(not busy)
         self.cancel_snapshot_button.setText(self.tr("Cancel check"))
         self.refresh_button.setEnabled(not busy)
         self.cancel_snapshot_button.setVisible(self._reading)
@@ -644,13 +689,21 @@ class TweaksPage(QWidget, PluginInterface):
             elif state.tweak.id in self._last_changes:
                 target, success, message, restored = self._last_changes[state.tweak.id]
                 if success and values_equal(state.tweak.id, state.value, target):
-                    text = self.tr("Previous value restored and verified: %1") if restored else self.tr("Saved setting verified: %1")
-                    text = text.replace("%1", self._label_for(state.tweak.id, state.value))
+                    text = (
+                        self.tr("Previous value restored. Requested: %1 · Verified: %2")
+                        if restored
+                        else self.tr("Requested: %1 · Verified: %2")
+                    )
+                    text = text.replace("%1", self._label_for(state.tweak.id, target)).replace(
+                        "%2", self._label_for(state.tweak.id, state.value)
+                    )
                     effect = getattr(state.tweak, "effect_hint", "")
                     if state.tweak.id in self._activation_messages:
-                        text += " " + self._activation_messages[state.tweak.id]
+                        text += " " + self.tr("Session activation: %1").replace(
+                            "%1", self._activation_messages[state.tweak.id]
+                        )
                     elif effect:
-                        text += " " + self.tr(effect)
+                        text += " " + self.tr("Session activation: %1").replace("%1", self.tr(effect))
                     row.set_feedback(text, kind="saved")
                 else:
                     detail = message or self.tr("The change could not be verified.")
@@ -669,22 +722,45 @@ class TweaksPage(QWidget, PluginInterface):
 
     def set_profile_result(self, result: object) -> None:
         """Keep profile outcomes visible while the affected values are rechecked."""
+        while self.profile_activity_links.count():
+            item = self.profile_activity_links.takeAt(0)
+            if item is None:
+                break
+            widget = item.widget()
+            if widget is not None:
+                widget.deleteLater()
+            child_layout = item.layout()
+            if child_layout is not None:
+                while child_layout.count():
+                    child = child_layout.takeAt(0)
+                    if child is None:
+                        break
+                    child_widget = child.widget()
+                    if child_widget is not None:
+                        child_widget.deleteLater()
+                child_layout.deleteLater()
         entries = tuple(getattr(result, "entries", ()))
-        details = [
-            f"{getattr(entry, 'id', '')}: {getattr(entry, 'status', '')} — {getattr(entry, 'message', '')}"
-            for entry in entries
-        ]
-        self.profile_result_label.setText("\n".join((str(getattr(result, "message", "")), *details)))
-        self._profile_activity_run_id = next(
-            (str(getattr(entry, "run_id", "")) for entry in reversed(entries) if getattr(entry, "run_id", "")),
-            "",
-        )
-        self.profile_activity_button.setVisible(bool(self._profile_activity_run_id))
+        self.profile_result_label.setText(str(getattr(result, "message", "")))
+        for index, entry in enumerate(entries):
+            tweak_id = str(getattr(entry, "id", ""))
+            tweak = BY_ID.get(tweak_id)
+            title = self.tr(tweak.title) if tweak is not None else tweak_id
+            status = self.tr(str(getattr(entry, "status", "Unknown")).replace("_", " ").title())
+            message = str(getattr(entry, "message", ""))
+            row = QHBoxLayout()
+            label = QLabel(f"{title} — {status}" + (f": {message}" if message else ""))
+            label.setWordWrap(True)
+            label.setAccessibleName(self.tr("Profile result for %1").replace("%1", title))
+            row.addWidget(label, 1)
+            run_id = str(getattr(entry, "run_id", "") or "")
+            if run_id:
+                activity = QPushButton(self.tr("Activity"))
+                activity.setObjectName(f"tweakProfileActivity_{index}")
+                activity.setAccessibleName(self.tr("Open Activity result for %1").replace("%1", title))
+                activity.clicked.connect(lambda _checked=False, selected=run_id: self.activityRequested.emit(selected))
+                row.addWidget(activity)
+            self.profile_activity_links.addLayout(row)
         self.profile_result_card.setVisible(True)
-
-    def _open_profile_activity(self) -> None:
-        if self._profile_activity_run_id:
-            self.activityRequested.emit(self._profile_activity_run_id)
 
     def set_outcome(self, tweak_id: str, target: str, outcome: object, *, restored: bool = False) -> None:
         success = bool(getattr(outcome, "success", False))
@@ -692,10 +768,18 @@ class TweaksPage(QWidget, PluginInterface):
         self._last_changes[tweak_id] = (target, success, message, restored)
         row, _control = self._rows[tweak_id]
         if success:
-            row.set_feedback(self.tr("Saved setting verified. Refreshing its current value…"), kind="changed")
+            row.set_feedback(
+                self.tr("Requested: %1 · Verification pending").replace("%1", self._label_for(tweak_id, target)),
+                kind="changed",
+            )
         else:
             self.restore_selection(tweak_id)
-            row.set_feedback(message or self.tr("The change was not verified."), kind="error")
+            row.set_feedback(
+                self.tr("Requested: %1 · %2").replace("%1", self._label_for(tweak_id, target)).replace(
+                    "%2", message or self.tr("The change was not verified.")
+                ),
+                kind="error",
+            )
         self.status_label.setText(message or self.tr("Refreshing current settings…"))
 
     def set_check_error(self, tweak_id: str, message: str) -> None:
@@ -782,10 +866,88 @@ class TweaksPage(QWidget, PluginInterface):
     def focus_task(self, task_id: str) -> bool:
         key = str(task_id).removeprefix("tune:")
         if key == "profile-library":
-            self.profile_menu_button.setFocus()
+            self._profile_focus_pending = True
+            self.set_subview("profiles")
+            if self.profile_views.currentWidget() is self.profile_editor_view and self.profile_editor_view is not None:
+                self.profile_editor_view.name.setFocus(Qt.FocusReason.OtherFocusReason)
+            else:
+                self.profile_library_view.focus_entries()
             return True
         if key in self._rows:
+            self.set_subview("settings", load_profiles=False)
             self._rows[key][1].setFocus()
             return True
+        self.set_subview("settings", load_profiles=False)
         self.search_input.setFocus()
         return key in {"tune", "tweaks", "desktop"}
+
+    def set_subview(self, subview: str, *, load_profiles: bool = True) -> None:
+        """Switch between settings and the inline profile workspace."""
+        selected = "profiles" if subview == "profiles" else "settings"
+        if selected == self._active_subview:
+            self._subview_buttons[selected].setChecked(True)
+            if selected == "profiles" and load_profiles and not self._profile_editor_open:
+                if self._profile_entries:
+                    if self._profile_focus_pending:
+                        self.profile_library_view.focus_entries()
+                        self._profile_focus_pending = False
+                else:
+                    self.profile_views.setCurrentWidget(self.profile_library_view)
+                    self.choosePresetRequested.emit()
+            return
+        self._active_subview = selected
+        self._subview_buttons[selected].setChecked(True)
+        show_settings = selected == "settings"
+        for widget in self._settings_view_widgets:
+            widget.setVisible(show_settings)
+        self.profile_views.setVisible(not show_settings)
+        if selected == "profiles" and load_profiles and not self._profile_editor_open:
+            self.profile_views.setCurrentWidget(self.profile_library_view)
+            self.choosePresetRequested.emit()
+
+    def set_profile_entries(self, entries: Any, *, selected_id: str = "", focus: bool = False) -> None:
+        self._profile_entries = tuple(entries)
+        self.profile_library_view.set_entries(self._profile_entries, selected_id=selected_id)
+        self.profile_views.setCurrentWidget(self.profile_library_view)
+        self._profile_editor_open = False
+        self.status_label.setText(self.tr("Profile library ready."))
+        if focus or self._profile_focus_pending:
+            self.profile_library_view.focus_entries()
+        self._profile_focus_pending = False
+
+    def show_profile_editor(self, profile: Any, states: tuple[TweakState, ...]) -> None:
+        from ui.tweak_profile_editor import ProfileEditorWidget
+
+        if self.profile_editor_view is not None:
+            self.profile_views.removeWidget(self.profile_editor_view)
+            self.profile_editor_view.deleteLater()
+        editor = ProfileEditorWidget(profile, states, self.profile_views)
+        editor.saveRequested.connect(self.profileSaveCopyRequested.emit)
+        editor.exitRequested.connect(self._return_to_profile_library)
+        self.profile_editor_view = editor
+        self.profile_views.addWidget(editor)
+        self.profile_views.setCurrentWidget(editor)
+        self._profile_editor_open = True
+        self.set_subview("profiles", load_profiles=False)
+
+    def _return_to_profile_library(self) -> None:
+        self.profile_views.setCurrentWidget(self.profile_library_view)
+        self._profile_editor_open = False
+        self.set_subview("profiles", load_profiles=False)
+
+    def set_profile_notice(self, message: str, *, error: bool = False) -> None:
+        self.status_label.setText(str(message))
+        self.status_label.setProperty("feedbackKind", "error" if error else "info")
+        if error and self.profile_editor_view is not None:
+            self.profile_editor_view.set_save_error(str(message))
+
+    def set_profile_saving(self, saving: bool) -> None:
+        if self.profile_editor_view is not None:
+            self.profile_editor_view.set_saving(saving)
+
+    def request_close_for_profile(self) -> str:
+        """Ask the inline editor to save, discard, or keep a dirty draft."""
+        editor = self.profile_editor_view
+        if not self._profile_editor_open or editor is None:
+            return "allow"
+        return str(editor.request_close())

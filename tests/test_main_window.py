@@ -514,6 +514,9 @@ class _DummyShortcut:
 class _DummyToolButton:
     """Minimal QToolButton stand-in."""
 
+    class ToolButtonPopupMode:
+        MenuButtonPopup = 1
+
     def __init__(self, *args, **kwargs):
         self.clicked = _DummySignal()
         self._text = ""

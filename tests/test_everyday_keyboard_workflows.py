@@ -126,7 +126,7 @@ class EverydayKeyboardWorkflows(unittest.TestCase):
         controller.refresh.assert_not_called()
 
     @patch("ui.tweaks_page.SettingsManager.instance")
-    def test_tweaks_search_tab_refresh_and_profile_menu_keyboard_route(self, settings):
+    def test_tweaks_search_refresh_and_profiles_subview_keyboard_route(self, settings):
         settings.return_value.get.return_value = []
         profile = SimpleNamespace(is_fedora=True, desktop=SimpleNamespace(value="kde"),
                                   deployment_backend=SimpleNamespace(value="dnf5"))
@@ -140,25 +140,12 @@ class EverydayKeyboardWorkflows(unittest.TestCase):
         self.assertIs(self.app.focusWidget(), page.refresh_button)
         QTest.keyClick(page.refresh_button, Qt.Key.Key_Space)
         self.assertEqual(len(refreshed), 1)
-        self.focus(page.profile_menu_button)
-        menu = page.profile_menu_button.menu()
-        observed = []
-
-        def select_library_action():
-            observed.append(menu.isVisible())
-            for _ in range(3):
-                QTest.keyClick(menu, Qt.Key.Key_Down)
-            QTest.keyClick(menu, Qt.Key.Key_Return)
-
-        QTimer.singleShot(100, select_library_action)
-        watchdog = QTimer(menu)
-        watchdog.setSingleShot(True)
-        watchdog.timeout.connect(menu.close)
-        watchdog.start(1500)
-        QTest.keyClick(page.profile_menu_button, Qt.Key.Key_Space)
-        watchdog.stop()
-        self.assertEqual(observed, [True])
+        profiles = page._subview_buttons["profiles"]
+        self.focus(profiles)
+        QTest.keyClick(profiles, Qt.Key.Key_Space)
         self.app.processEvents()
+        self.assertEqual(page._active_subview, "profiles")
+        self.assertTrue(page.profile_library_view.isVisible())
         self.assertEqual(len(library), 1)
 
     def test_review_keyboard_acceptance_requires_acknowledgment_then_explicit_space(self):

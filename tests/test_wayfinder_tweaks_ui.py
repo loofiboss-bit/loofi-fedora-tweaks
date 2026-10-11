@@ -118,7 +118,7 @@ class TestWayfinderTweaksUi(unittest.TestCase):
         control.activated.emit(0)
         self.assertEqual(changes, [(self.tweak.id, "true")])
         self.assertIn("Verified: Off", row.value_label.text())
-        self.assertIn("Pending: On", row.value_label.text())
+        self.assertIn("Requested: On", row.value_label.text())
         self.page.restore_selection(self.tweak.id)
         self.assertEqual(control.currentData(), "false")
         self.assertNotIn("Pending", row.value_label.text())

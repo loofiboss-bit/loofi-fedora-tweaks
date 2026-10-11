@@ -1037,6 +1037,20 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
         target = self.reports_dir / "summary.json"
         target.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
         os.chmod(target, 0o600)
+        print(f"Fedora KDE E2E {summary['status']} (exit {code}). Reports: {self.reports_dir}", flush=True)
+        if code:
+            suffix = "-after-reboot" if getattr(self, "_reboot_evidence", None) else ""
+            log_path = self.reports_dir / f"pytest{suffix}.log"
+            try:
+                # Reports are credential-redacted during collection. Bound the
+                # terminal excerpt independently of the guest log's size.
+                with log_path.open("rb") as log:
+                    log.seek(0, os.SEEK_END)
+                    log.seek(max(0, log.tell() - 8192))
+                    excerpt = log.read(8192).decode("utf-8", errors="replace")
+                print("\n".join(excerpt.splitlines()[-40:]), flush=True)
+            except OSError:
+                print(f"Guest pytest log unavailable; inspect {target} and runner.log.", flush=True)
 
     def _write_failure(self, exc: Exception, facts: dict[str, Any]) -> None:
         try:

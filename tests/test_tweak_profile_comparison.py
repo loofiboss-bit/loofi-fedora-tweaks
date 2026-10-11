@@ -114,57 +114,41 @@ class ProfileComparisonDialogTests(unittest.TestCase):
 
 class ProfileComparisonRoutingTests(unittest.TestCase):
     @patch("ui.tweak_profile_comparison.ProfileComparisonDialog")
-    @patch("ui.tweak_profiles.ProfileLibraryDialog")
-    def test_review_routes_selected_side_to_fresh_review(self, library_dialog, comparison_dialog):
+    def test_review_routes_selected_side_to_fresh_review(self, comparison_dialog):
         from PyQt6.QtWidgets import QDialog
         from ui.tweak_profiles import TweakProfilesMixin
 
         left, right = entry("left"), entry("right")
-        library_dialog.return_value.exec.return_value = QDialog.DialogCode.Accepted
-        library_dialog.return_value.operation = "compare"
-        library_dialog.return_value.selected_entry.return_value = left
         comparison_dialog.return_value.exec.return_value = QDialog.DialogCode.Accepted
         comparison_dialog.return_value.operation = "review"
         comparison_dialog.return_value.chosen_entry = right
-        owner, page = Mock(), Mock()
+        owner, page = Mock(), Mock(_profile_entries=(left, right))
         owner.tr.side_effect = lambda text: text
-        TweakProfilesMixin._show_tweak_library(owner, page, (left, right))
+        TweakProfilesMixin._handle_tweak_profile_action(owner, page, "compare", left)
         owner._review_library_profile.assert_called_once_with(page, right.profile, builtin=False)
         owner._start_tweak_profile_editor.assert_not_called()
 
     @patch("ui.tweak_profile_comparison.ProfileComparisonDialog")
-    @patch("ui.tweak_profiles.ProfileLibraryDialog")
-    def test_edit_routes_to_existing_copy_editor(self, library_dialog, comparison_dialog):
+    def test_edit_routes_to_existing_copy_editor(self, comparison_dialog):
         from PyQt6.QtWidgets import QDialog
         from ui.tweak_profiles import TweakProfilesMixin
 
         left, right = entry("left"), entry("right")
-        library_dialog.return_value.exec.return_value = QDialog.DialogCode.Accepted
-        library_dialog.return_value.operation = "compare"
-        library_dialog.return_value.selected_entry.return_value = left
         comparison_dialog.return_value.exec.return_value = QDialog.DialogCode.Accepted
         comparison_dialog.return_value.operation = "edit"
         comparison_dialog.return_value.chosen_entry = left
-        owner, page = Mock(), Mock()
+        owner, page = Mock(), Mock(_profile_entries=(left, right))
         owner.tr.side_effect = lambda text: text
-        TweakProfilesMixin._show_tweak_library(owner, page, (left, right))
+        TweakProfilesMixin._handle_tweak_profile_action(owner, page, "compare", right)
         owner._start_tweak_profile_editor.assert_called_once_with(page, left.profile)
         owner._review_library_profile.assert_not_called()
 
-    @patch("ui.tweak_profile_comparison.ProfileComparisonDialog")
-    @patch("ui.tweak_profiles.ProfileLibraryDialog")
-    def test_closing_comparison_starts_no_inspection(self, library_dialog, comparison_dialog):
-        from PyQt6.QtWidgets import QDialog
+    def test_inline_library_selection_does_not_open_a_modal_dialog(self):
         from ui.tweak_profiles import TweakProfilesMixin
 
         left, right = entry("left"), entry("right")
-        library_dialog.return_value.exec.return_value = QDialog.DialogCode.Accepted
-        library_dialog.return_value.operation = "compare"
-        library_dialog.return_value.selected_entry.return_value = left
-        comparison_dialog.return_value.exec.return_value = QDialog.DialogCode.Rejected
-        owner, page = Mock(), Mock()
+        owner, page = Mock(), Mock(_profile_focus_pending=False)
         owner.tr.side_effect = lambda text: text
         TweakProfilesMixin._show_tweak_library(owner, page, (left, right))
-        owner._review_library_profile.assert_not_called()
-        owner._start_tweak_profile_editor.assert_not_called()
+        page.set_profile_entries.assert_called_once_with((left, right), focus=False)
         owner._new_utility_operation_adapter.assert_not_called()

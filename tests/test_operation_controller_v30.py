@@ -586,6 +586,33 @@ class TestOperationControllerQtAdapter(unittest.TestCase):
                 adapter.deleteLater()
                 self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
 
+    def test_terminal_signal_is_emitted_after_worker_returns_to_gui_thread(self) -> None:
+        entered = threading.Event()
+        release = threading.Event()
+        adapter = OperationControllerQtAdapter()
+        observed_threads: list[QThread] = []
+
+        def operation() -> str:
+            entered.set()
+            release.wait(2)
+            return "saved"
+
+        self.assertTrue(adapter.start(operation))
+        self.assertTrue(entered.wait(1))
+        worker = adapter._worker
+        self.assertIsNotNone(worker)
+        if worker is None:
+            return
+        worker.finished.connect(
+            lambda _result: observed_threads.append(worker.thread()),
+            Qt.ConnectionType.DirectConnection,
+        )
+        release.set()
+        self._wait_for_stopped(adapter)
+        self.assertEqual(observed_threads, [self.app.thread()])
+        adapter.deleteLater()
+        self.app.sendPostedEvents(None, QEvent.Type.DeferredDelete)
+
     def test_thirty_worker_cycles_release_qthreads_and_owned_objects(self) -> None:
         parent = QObject()
         adapter = OperationControllerQtAdapter(parent=parent)

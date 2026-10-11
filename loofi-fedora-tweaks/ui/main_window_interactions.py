@@ -301,7 +301,9 @@ class MainWindowInteractionMixin:
             if controller is None:
                 controller = OperationController()
                 setattr(self, "_utility_operation_controller", controller)
-            adapter = self._new_utility_operation_adapter(phase="verification")
+            adapter = self._new_utility_operation_adapter(
+                phase="verification", operation_name=self.tr("Verifying Activity result")
+            )
             adapter.finished.connect(
                 lambda _outcome, selected=selected_run_id: self._reload_activity_action_run(selected)
             )
@@ -783,6 +785,11 @@ class MainWindowInteractionMixin:
             )
 
     def quit_app(self: typing.Any) -> typing.Any:
+        close_decision = getattr(self, "_profile_editor_close_decision", lambda: "allow")()
+        if close_decision != "allow":
+            if close_decision == "saving":
+                self._quit_after_profile_save = True
+            return
         if self._request_runtime_shutdown(action="quit"):
             from PyQt6.QtWidgets import QApplication
 
@@ -995,6 +1002,10 @@ class MainWindowInteractionMixin:
                 )
             event.ignore()
         else:
+            close_decision = getattr(self, "_profile_editor_close_decision", lambda: "allow")()
+            if close_decision != "allow":
+                event.ignore()
+                return
             if self._request_runtime_shutdown(action="close"):
                 event.accept()
             else:

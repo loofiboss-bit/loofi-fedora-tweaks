@@ -22,9 +22,9 @@ class GuideNavigationMixin:
         self._resume_guide_button.setObjectName("resumeGuideButton")
         self._resume_guide_button.setText(self.tr("Guide"))
         self._resume_guide_button.setFocusPolicy(Qt.FocusPolicy.StrongFocus)
-        popup_mode = getattr(getattr(QToolButton, "ToolButtonPopupMode", None), "InstantPopup", None)
-        if popup_mode is not None:
-            self._resume_guide_button.setPopupMode(popup_mode)
+        # Qt exposes this mode's menu as an accessible child and retains the
+        # focus action. Keep both the main button and its arrow opening options.
+        self._resume_guide_button.setPopupMode(QToolButton.ToolButtonPopupMode.MenuButtonPopup)
         self._resume_guide_menu = QMenu(self._resume_guide_button)
         self._continue_guide_action = QAction(self.tr("Open next guide step"), self._resume_guide_menu)
         self._continue_guide_action.triggered.connect(lambda: self._continue_guide_from_shell())
@@ -34,6 +34,7 @@ class GuideNavigationMixin:
         self._return_to_guide_action.triggered.connect(lambda: self._resume_active_guide())
         self._resume_guide_menu.addAction(self._return_to_guide_action)
         self._resume_guide_button.setMenu(self._resume_guide_menu)
+        self._resume_guide_button.clicked.connect(self._resume_guide_button.showMenu)
         self._resume_guide_button.setAccessibleName(self.tr("Active Fedora guide options"))
         self._resume_guide_button.setToolTip(self.tr("Continue the active guide or return to its saved progress"))
         self._resume_guide_button.hide()

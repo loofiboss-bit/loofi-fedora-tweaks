@@ -123,7 +123,9 @@ class CareNavigationMixin:
             return
         page.set_notice("info", "Loading saved results", "Reading update observations and saved verification tasks.")
         page.set_loading(True)
-        adapter = self._new_utility_operation_adapter()
+        adapter = self._new_utility_operation_adapter(
+            operation_name=self.tr("Loading saved update results")
+        )
         adapter.finished.connect(page.restore_saved_state)
         adapter.failed.connect(lambda _message: page.set_notice("error", "Saved results unavailable", "Saved update history could not be read. Review Activity before updating."))
         adapter.stopped.connect(lambda: page.set_loading(False))

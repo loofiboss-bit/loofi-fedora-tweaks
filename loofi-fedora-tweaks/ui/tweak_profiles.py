@@ -135,7 +135,7 @@ class TweakProfilesMixin:
 
     def _profile_idle(self: Any, page: Any) -> bool:
         if self._utility_operation_adapter is not None:
-            page.set_error(self.tr("Another operation is in progress. Try again when it finishes."))
+            page.set_profile_notice(self.tr("Another operation is in progress. Try again when it finishes."), error=True)
             return False
         return True
 
@@ -147,12 +147,12 @@ class TweakProfilesMixin:
         if not self._profile_idle(page):
             return False
         if preset_id is None:
-            adapter = self._new_utility_operation_adapter(phase="inspection")
+            adapter = self._new_utility_operation_adapter(phase="inspection", operation_name=self.tr("Reading profile library"))
             results: list[Any] = []
             adapter.finished.connect(results.append)
-            adapter.failed.connect(page.set_error)
+            adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
             adapter.stopped.connect(lambda: self._show_tweak_library(page, results[0]) if results else None)
-            page.set_busy(True, self.tr("Reading profile library…"))
+            page.set_profile_notice(self.tr("Reading profile library…"))
             return bool(adapter.start(lambda: ProfileLibrary().list(page.profile)))
         try:
             profile = profile_for_preset(preset_id, page.profile)
@@ -163,7 +163,7 @@ class TweakProfilesMixin:
 
     def _review_library_profile(self: Any, page: Any, profile: Any, *, builtin: bool = False) -> bool:
         controller = self._profile_controller()
-        adapter = self._new_utility_operation_adapter(phase="review")
+        adapter = self._new_utility_operation_adapter(phase="review", operation_name=self.tr("Reviewing profile settings"))
         results: list[ProfileReview] = []
         adapter.finished.connect(results.append)
         adapter.failed.connect(page.set_error)
@@ -173,19 +173,25 @@ class TweakProfilesMixin:
         return bool(adapter.start(lambda: review_profile(profile, controller, is_cancelled=lambda: adapter.cancel_requested)))
 
     def _show_tweak_library(self: Any, page: Any, entries: Any) -> None:
+        page.set_profile_entries(entries, focus=bool(getattr(page, "_profile_focus_pending", False)))
+        page.set_profile_notice(self.tr("Choose a profile to review, compare, or edit."))
+
+    def _handle_tweak_profile_action(self: Any, page: Any, action_name: str, entry: Any) -> None:
+        """Dispatch a visible profile-library action without hiding the library."""
         from core.tasks.tweak_library import ProfileLibrary
 
-        page.set_busy(False, self.tr("Choose a profile to review or share."))
-        dialog = ProfileLibraryDialog(entries, page)
-        if dialog.exec() != QDialog.DialogCode.Accepted:
-            return
-        entry = dialog.selected_entry()
         if entry is None:
             return
-        if dialog.operation == "compare":
+        if action_name == "review":
+            self._review_library_profile(page, entry.profile, builtin=entry.builtin)
+            return
+        if action_name == "edit":
+            self._start_tweak_profile_editor(page, entry.profile)
+            return
+        if action_name == "compare":
             from ui.tweak_profile_comparison import ProfileComparisonDialog
 
-            comparison = ProfileComparisonDialog(tuple(entries), entry, page)
+            comparison = ProfileComparisonDialog(tuple(page._profile_entries), entry, page)
             if comparison.exec() != QDialog.DialogCode.Accepted or comparison.chosen_entry is None:
                 return
             selected = comparison.chosen_entry
@@ -194,13 +200,7 @@ class TweakProfilesMixin:
             elif comparison.operation == "review":
                 self._review_library_profile(page, selected.profile, builtin=selected.builtin)
             return
-        if dialog.operation == "review":
-            self._review_library_profile(page, entry.profile, builtin=entry.builtin)
-            return
-        if dialog.operation == "edit":
-            self._start_tweak_profile_editor(page, entry.profile)
-            return
-        if dialog.operation == "remove":
+        if action_name == "remove":
             if entry.builtin:
                 return
             if QMessageBox.question(page, self.tr("Remove local profile"), self.tr("Remove this profile from your library?")) != QMessageBox.StandardButton.Yes:
@@ -208,19 +208,24 @@ class TweakProfilesMixin:
 
             def operation() -> None:
                 ProfileLibrary().remove(entry.id)
-        else:
+        elif action_name == "export":
             filename, _filter = QFileDialog.getSaveFileName(page, self.tr("Export profile"), "settings.json", self.tr("JSON profiles (*.json)"))
             if not filename:
                 return
 
             def operation() -> None:
                 save_profile(Path(filename), entry.profile)
+        else:
+            return
         if not self._profile_idle(page):
             return
-        adapter = self._new_utility_operation_adapter(phase="inspection")
-        adapter.failed.connect(page.set_error)
-        adapter.finished.connect(lambda _result: page.set_busy(False, self.tr("Profile library operation completed.")))
-        page.set_busy(True, self.tr("Updating profile library…"))
+        adapter = self._new_utility_operation_adapter(phase="inspection", operation_name=self.tr("Updating profile library"))
+        adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
+        if action_name == "remove":
+            adapter.stopped.connect(lambda: self._start_tweak_preset(page))
+        else:
+            adapter.finished.connect(lambda _result: page.set_profile_notice(self.tr("Profile exported.")))
+        page.set_profile_notice(self.tr("Updating profile library…"))
         adapter.start(operation)
 
     def _start_tweak_profile_editor(self: Any, page: Any, profile: Any) -> bool:
@@ -228,31 +233,76 @@ class TweakProfilesMixin:
         if not self._profile_idle(page):
             return False
         controller = self._profile_controller()
-        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter = self._new_utility_operation_adapter(phase="inspection", operation_name=self.tr("Inspecting profile choices"))
         results: list[Any] = []
         adapter.finished.connect(results.append)
-        adapter.failed.connect(page.set_error)
-        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Profile editor inspection cancelled.")))
-        adapter.stopped.connect(lambda: self._show_tweak_profile_editor(page, profile, results[0]) if results and not adapter.cancel_requested else None)
+        adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
+        adapter.cancelled.connect(lambda: page.set_profile_notice(self.tr("Profile editor inspection cancelled.")))
+        adapter.stopped.connect(lambda: self._show_tweak_profile_editor(page, profile, results[0]) if results else None)
         page.set_busy(True, self.tr("Reading supported profile choices…"), cancellable=True)
         return bool(adapter.start(lambda: snapshot(page.profile, controller.orchestrator.runtime, is_cancelled=lambda: adapter.cancel_requested)))
 
     def _show_tweak_profile_editor(self: Any, page: Any, profile: Any, states: Any) -> None:
-        from core.tasks.tweak_library import ProfileLibrary
-        from ui.tweak_profile_editor import ProfileEditorDialog
-
         page.set_busy(False, self.tr("Edit a local copy; computer settings change only after a separate review."))
-        dialog = ProfileEditorDialog(profile, states, page)
-        if dialog.exec() != QDialog.DialogCode.Accepted or dialog.saved_profile is None:
-            return
+        page.show_profile_editor(profile, states)
+
+    def _save_tweak_profile_copy(
+        self: Any, page: Any, profile: Any, review_after: bool, return_after: bool, *, close_after: bool = False
+    ) -> bool:
+        """Persist first, then select the exact stored profile or review it fresh."""
         if not self._profile_idle(page):
-            return
-        chosen = dialog.saved_profile
-        adapter = self._new_utility_operation_adapter(phase="inspection")
-        adapter.failed.connect(page.set_error)
-        adapter.finished.connect(lambda _entry: page.set_busy(False, self.tr("New profile version saved. Open My profile library to review and apply it.")))
-        page.set_busy(True, self.tr("Saving new profile version…"))
-        adapter.start(lambda: ProfileLibrary().add(chosen))
+            return False
+        from core.tasks.tweak_library import ProfileLibrary
+
+        adapter = self._new_utility_operation_adapter(phase="inspection", operation_name=self.tr("Saving profile copy"))
+        results: list[Any] = []
+        adapter.finished.connect(results.append)
+
+        def save_failed(message: str) -> None:
+            page.set_profile_notice(str(message), error=True)
+            if close_after:
+                setattr(self, "_quit_after_profile_save", False)
+
+        def save_cancelled() -> None:
+            page.set_profile_notice(self.tr("Profile saving was cancelled."), error=True)
+            if close_after:
+                setattr(self, "_quit_after_profile_save", False)
+
+        adapter.failed.connect(save_failed)
+        adapter.cancelled.connect(save_cancelled)
+        page.set_profile_saving(True)
+        page.set_profile_notice(self.tr("Saving profile copy…"))
+
+        def finish() -> None:
+            page.set_profile_saving(False)
+            if not results:
+                if close_after:
+                    setattr(self, "_quit_after_profile_save", False)
+                return
+            saved = results[0]
+            entries = tuple(item for item in page._profile_entries if item.id != saved.id) + (saved,)
+            page.set_profile_entries(entries, selected_id=saved.id)
+            page.set_profile_notice(self.tr("Profile copy saved and selected."))
+            if review_after:
+                # The returned object is the exact validated, persisted profile.
+                self._review_library_profile(page, saved.profile, builtin=False)
+            elif not return_after:
+                page.set_profile_notice(self.tr("Profile copy saved and selected."))
+            if close_after and not review_after:
+                from PyQt6.QtCore import QTimer
+
+                quit_after_save = bool(getattr(self, "_quit_after_profile_save", False))
+                setattr(self, "_quit_after_profile_save", False)
+                QTimer.singleShot(0, self.quit_app if quit_after_save else self.close)
+
+        adapter.stopped.connect(finish)
+        started = bool(adapter.start(lambda: ProfileLibrary().add(profile)))
+        if not started:
+            page.set_profile_saving(False)
+            page.set_profile_notice(self.tr("Profile copy could not be saved; your draft is still open."), error=True)
+            if close_after:
+                setattr(self, "_quit_after_profile_save", False)
+        return started
 
     def _start_tweak_profile_export(self: Any, page: Any) -> bool:
         if not self._profile_idle(page):
@@ -261,10 +311,10 @@ class TweakProfilesMixin:
         if not accepted:
             return False
         controller = self._profile_controller()
-        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter = self._new_utility_operation_adapter(phase="inspection", operation_name=self.tr("Reading settings for profile"))
         results: list[ProfileExport] = []
         adapter.finished.connect(results.append)
-        adapter.failed.connect(page.set_error)
+        adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
         adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Profile export cancelled.")))
         adapter.stopped.connect(lambda: self._review_tweak_profile_export(page, results[0]) if results else None)
         page.set_busy(True, self.tr("Reading settings for export…"), cancellable=True)
@@ -295,10 +345,10 @@ class TweakProfilesMixin:
         chosen = replace(exported.profile, settings=tuple(row for row in exported.profile.settings if row[0] in selected))
         if not self._profile_idle(page):
             return
-        adapter = self._new_utility_operation_adapter(phase="inspection")
-        adapter.failed.connect(page.set_error)
-        adapter.finished.connect(lambda _result: page.set_busy(False, self.tr("Profile saved with %1 settings.").replace("%1", str(len(chosen.settings)))))
-        page.set_busy(True, self.tr("Saving profile…"))
+        adapter = self._new_utility_operation_adapter(phase="inspection", operation_name=self.tr("Saving profile"))
+        adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
+        adapter.finished.connect(lambda _result: page.set_profile_notice(self.tr("Profile saved with %1 settings.").replace("%1", str(len(chosen.settings)))))
+        page.set_profile_notice(self.tr("Saving profile…"))
         from core.tasks.tweak_library import ProfileLibrary
 
         adapter.start(lambda: save_profile(Path(filename), chosen) if filename else ProfileLibrary().add(chosen))
@@ -310,11 +360,11 @@ class TweakProfilesMixin:
         if not filename:
             return False
         controller = self._profile_controller()
-        adapter = self._new_utility_operation_adapter(phase="review")
+        adapter = self._new_utility_operation_adapter(phase="review", operation_name=self.tr("Reviewing imported profile"))
         results: list[ProfileReview] = []
         adapter.finished.connect(results.append)
-        adapter.failed.connect(page.set_error)
-        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Profile review cancelled.")))
+        adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
+        adapter.cancelled.connect(lambda: page.set_profile_notice(self.tr("Profile review cancelled.")))
         adapter.stopped.connect(lambda: self._review_tweak_profile_import(page, results[0]) if results else None)
         page.set_busy(True, self.tr("Reading and reviewing profile…"), cancellable=True)
 
@@ -344,11 +394,11 @@ class TweakProfilesMixin:
         if not self._profile_idle(page):
             return
         controller = self._profile_controller()
-        adapter = self._new_utility_operation_adapter(phase="change")
+        adapter = self._new_utility_operation_adapter(phase="change", operation_name=self.tr("Applying reviewed profile"))
         results: list[ProfileResult] = []
         adapter.finished.connect(results.append)
-        adapter.failed.connect(page.set_error)
-        adapter.cancelled.connect(lambda: page.set_busy(False, self.tr("Profile application cancelled before any change started.")))
+        adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
+        adapter.cancelled.connect(lambda: page.set_profile_notice(self.tr("Profile application cancelled before any change started.")))
         adapter.stopped.connect(lambda: self._finish_tweak_profile(page, results[0]) if results else None)
         page.set_busy(True, self.tr("Applying reviewed settings…"), cancellable=True)
         page.cancel_snapshot_button.setText(self.tr("Cancel remaining changes"))
@@ -361,7 +411,7 @@ class TweakProfilesMixin:
         if not affected:
             return
         controller = self._profile_controller()
-        adapter = self._new_utility_operation_adapter(phase="inspection")
+        adapter = self._new_utility_operation_adapter(phase="verification", operation_name=self.tr("Verifying profile settings"))
         adapter.finished.connect(page.set_states)
 
         def invalidate_affected(message: str) -> None:

@@ -52,28 +52,26 @@ class OperationWorker(QObject):
         self._cancel_requested.set()
 
     def run(self) -> None:
-        try:
-            self._run_operation()
-        finally:
-            # Delete Python-owned workers on the adapter's thread. Destroying
-            # signal proxies on a worker thread can hold Qt's connection mutex
-            # while waiting for the GIL held by a GUI constructing widgets.
-            if self._completion_thread is not None:
-                self.moveToThread(self._completion_thread)
-
-    def _run_operation(self) -> None:
-        if self.cancel_requested:
+        terminal, result = self._run_operation()
+        # Publish the terminal result only after returning this QObject to the
+        # adapter's thread. Emitting first lets thread.quit race this move and
+        # can deadlock while Qt and Python contend over the object's mutex/GIL.
+        if self._completion_thread is not None:
+            self.moveToThread(self._completion_thread)
+        if terminal == "finished":
+            self.finished.emit(result)
+        elif terminal == "failed":
+            self.failed.emit(str(result))
+        else:
             self.cancelled.emit()
-            return
+
+    def _run_operation(self) -> tuple[str, object]:
+        if self.cancel_requested:
+            return "cancelled", None
         try:
-            result = self._operation()
+            return "finished", self._operation()
         except Exception as exc:
-            self.failed.emit(f"{type(exc).__name__}: {exc}")
-            return
-        # Cancellation cannot interrupt an operation that has crossed the
-        # execution boundary. Its durable result takes precedence over a late
-        # shutdown request so a completed host change is never hidden.
-        self.finished.emit(result)
+            return "failed", f"{type(exc).__name__}: {exc}"
 
 
 class OperationControllerQtAdapter(QObject):

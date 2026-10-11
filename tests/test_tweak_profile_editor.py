@@ -5,7 +5,7 @@ import os
 import unittest
 from pathlib import Path
 from types import SimpleNamespace
-from unittest.mock import Mock, patch
+from unittest.mock import Mock, call, patch
 
 os.environ.setdefault("QT_QPA_PLATFORM", "offscreen")
 
@@ -128,30 +128,36 @@ class ProfileEditorDialogTests(unittest.TestCase):
 
 
 class ProfileEditorWorkerTests(unittest.TestCase):
-    @patch('ui.tweak_profile_editor.ProfileEditorDialog')
     @patch('core.tasks.tweak_library.ProfileLibrary')
-    def test_save_uses_existing_worker_and_reports_write_failure(self, library, dialog_type):
-        from PyQt6.QtWidgets import QDialog
+    def test_save_uses_existing_worker_and_reports_write_failure(self, library):
         from ui.tweak_profiles import TweakProfilesMixin
 
         edited = TweakProfile('Edited', 'kde', ())
-        dialog_type.return_value.exec.return_value = QDialog.DialogCode.Accepted
-        dialog_type.return_value.saved_profile = edited
         library.return_value.add.side_effect = OSError('Read-only directory')
-        page = Mock()
-        failed = Mock()
-        finished = Mock()
-        adapter = Mock(failed=failed, finished=finished)
+        page = Mock(_profile_entries=())
+        callbacks = {}
+        adapter = SimpleNamespace()
+        for signal in ('finished', 'failed', 'cancelled', 'stopped'):
+            setattr(adapter, signal, SimpleNamespace(connect=lambda callback, name=signal: callbacks.update({name: callback})))
+        adapter.start = Mock(return_value=True)
         owner = SimpleNamespace(tr=lambda text: text, _profile_idle=lambda _page: True,
                                 _new_utility_operation_adapter=Mock(return_value=adapter))
-        TweakProfilesMixin._show_tweak_profile_editor(owner, page, TweakProfile('Original', 'kde', ()), ())
-        owner._new_utility_operation_adapter.assert_called_once_with(phase='inspection')
+        self.assertTrue(TweakProfilesMixin._save_tweak_profile_copy(owner, page, edited, False, False))
+        owner._new_utility_operation_adapter.assert_called_once_with(
+            phase='inspection', operation_name='Saving profile copy'
+        )
         library.return_value.add.assert_not_called()
         operation = adapter.start.call_args.args[0]
         with self.assertRaisesRegex(OSError, 'Read-only'):
             operation()
         library.return_value.add.assert_called_once_with(edited)
-        failed.connect.assert_called_once_with(page.set_error)
+        callbacks['failed']('OSError: Read-only directory')
+        callbacks['stopped']()
+        page.set_profile_notice.assert_has_calls([
+            call('Saving profile copy…'),
+            call('OSError: Read-only directory', error=True),
+        ])
+        page.set_profile_entries.assert_not_called()
 
     @patch('ui.tweak_profiles.snapshot')
     def test_inspection_runs_on_worker_and_cancelled_results_do_not_open_editor(self, snapshot):
@@ -172,11 +178,11 @@ class ProfileEditorWorkerTests(unittest.TestCase):
         snapshot.assert_not_called()
         adapter.start.call_args.args[0]()
         snapshot.assert_called_once()
-        callbacks['finished'](())
-        adapter.cancel_requested = True
+        callbacks['cancelled']()
         callbacks['stopped']()
         owner._show_tweak_profile_editor.assert_not_called()
-        adapter.cancel_requested = False
+        callbacks['finished'](())
+        adapter.cancel_requested = True
         callbacks['stopped']()
         owner._show_tweak_profile_editor.assert_called_once_with(page, source, ())
 
