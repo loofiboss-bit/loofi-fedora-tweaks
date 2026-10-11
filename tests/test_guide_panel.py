@@ -55,16 +55,36 @@ class TestGuidePanel(unittest.TestCase):
         self.panel.guide_selector.setFocus()
         QTest.keyClick(self.panel.guide_selector, Qt.Key.Key_Down)
         self.assertEqual(self.panel.active_guide, guide.id)
+        self.assertIn(guide.steps[0].title, self.panel.current_step_label.text())
+        self.assertTrue(self.panel.open_button.isEnabled())
+        self.assertFalse(self.panel.step_list.isVisible())
+        self.panel.details_disclosure.toggle_button.click()
+        self.assertTrue(self.panel.step_list.isVisible())
         self.panel.step_list.setFocus()
         QTest.keyClick(self.panel.step_list, Qt.Key.Key_Down)
         self.assertEqual(self.panel.step_list.currentRow(), 1)
         QTest.keyClick(self.panel.step_list, Qt.Key.Key_Tab)
-        self.assertIs(QApplication.focusWidget(), self.panel.open_button)
+        self.assertIs(QApplication.focusWidget(), self.panel.review_button)
+        self.panel.open_button.setFocus()
         QTest.keyClick(self.panel.open_button, Qt.Key.Key_Space)
 
         self.assertEqual(requests, [guide.steps[1].target])
         self.assertEqual(self.store.read().steps[guide.steps[1].id].state, "in_progress")
         self.assertFalse(hasattr(requests[0], "command"))
+
+    def test_guide_step_list_is_progressively_disclosed_and_keyboard_openable(self):
+        guide = GUIDES_BY_ID["make-fedora-yours"]
+        self.panel.open_guide(guide.id)
+        self.assertFalse(self.panel.details_disclosure.toggle_button.isChecked())
+        self.assertFalse(self.panel.step_list.isVisible())
+        self.assertEqual(self.panel.current_step_label.text(), f"Next step: {guide.steps[0].title}")
+        targets = []
+        self.panel.targetRequested.connect(targets.append)
+        self.panel.show()
+        self.app.processEvents()
+        self.panel.open_button.setFocus()
+        QTest.keyClick(self.panel.open_button, Qt.Key.Key_Space)
+        self.assertEqual(targets, [guide.steps[0].target])
 
     def test_review_skip_and_resume_preserve_distinct_progress(self):
         guide = GUIDES_BY_ID["solve-a-problem"]
@@ -93,8 +113,34 @@ class TestGuidePanel(unittest.TestCase):
         with patch("ui.guide_panel.guide_evidence_exists", return_value=False):
             self.panel._render_steps()
             row = [index for index in range(self.panel.step_list.count()) if self.panel.step_list.item(index).data(Qt.ItemDataRole.UserRole) == step.id][0]
-        self.assertIn("Evidence missing", self.panel.step_list.item(row).text())
+        self.assertIn("Result linked", self.panel.step_list.item(row).text())
         self.assertIn("1 unavailable", self.panel.status_label.text())
+
+    def test_incompatible_action_link_is_neutral_and_never_opens_as_verified(self):
+        guide = GUIDES_BY_ID["maintain-your-system"]
+        step = guide.steps[1]
+        with patch("core.tasks.guides.guide_evidence_exists", return_value=True):
+            self.store.update_step(guide.id, step.id, "verified", evidence_kind="action_run", evidence_id="install-run")
+        requests = []
+        self.panel.targetRequested.connect(requests.append)
+        self.panel.open_guide(guide.id)
+
+        with patch("ui.guide_panel.guide_evidence_exists", return_value=False):
+            self.panel._render_steps()
+            row = next(
+                index
+                for index in range(self.panel.step_list.count())
+                if self.panel.step_list.item(index).data(Qt.ItemDataRole.UserRole) == step.id
+            )
+            self.assertIn("Result linked", self.panel.step_list.item(row).text())
+            self.assertNotIn("Verified", self.panel.step_list.item(row).text())
+            self.assertIn("0 verified", self.panel.status_label.text())
+            self.panel.step_list.setCurrentRow(row)
+            self.panel._open_step()
+
+        self.assertEqual(self.store.read().steps[step.id].state, "in_progress")
+        self.assertEqual(requests, [step.target])
+        self.assertNotEqual(requests[0].route_id, "changes")
 
     def test_reopening_verified_operation_preserves_the_exact_link_and_opens_activity_result(self):
         guide = GUIDES_BY_ID["make-fedora-yours"]

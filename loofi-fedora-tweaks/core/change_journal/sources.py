@@ -98,7 +98,10 @@ class JSONCommandSource:
                 ),
             )
         try:
-            payload = json.loads(result.stdout or "[]")
+            structured_output = getattr(result, "structured_output", None)
+            payload = json.loads(
+                structured_output if structured_output is not None else (result.stdout or "[]")
+            )
             events = tuple(
                 event
                 for event in self._parse(payload)
@@ -346,6 +349,7 @@ class ActionCenterHistorySource:
             for run in runs:
                 plan = plan_by_id.get(run.plan_id)
                 resources = tuple(plan.affected_resources) if plan else ("host-system",)
+                recovery = _pending_fedora_update_recovery(run, plan)
                 event = ChangeEvent(
                     event_id=stable_event_id("action_center", f"run:{run.run_id}"),
                     source="action_center",
@@ -373,6 +377,7 @@ class ActionCenterHistorySource:
                     },
                     state=run.state,
                     reboot_required=bool(getattr(run, "reboot_required", False)) or run.state == "awaiting_reboot",
+                    recovery=recovery,
                 )
                 if since is None or event.occurred_at >= since:
                     events.append(event)
@@ -400,6 +405,7 @@ class ActionCenterHistorySource:
         plans = self.plan_store.list_read_only()
         plan = next((candidate for candidate in plans if candidate.plan_id == run.plan_id), None)
         resources = tuple(plan.affected_resources) if plan else ("host-system",)
+        recovery = _pending_fedora_update_recovery(run, plan)
         return ChangeEvent(
             event_id=stable_event_id("action_center", f"run:{run.run_id}"),
             source="action_center",
@@ -426,7 +432,35 @@ class ActionCenterHistorySource:
             },
             state=run.state,
             reboot_required=bool(getattr(run, "reboot_required", False)) or run.state == "awaiting_reboot",
+            recovery=recovery,
         )
+
+
+def _pending_fedora_update_recovery(run: Any, plan: Any) -> RecoveryCapability:
+    """Offer DNF5 activation only for an exact verified prepared update run."""
+    if (
+        getattr(run, "action_id", "") != "update-fedora-system"
+        or getattr(run, "state", "") != "awaiting_reboot"
+        or plan is None
+    ):
+        return RecoveryCapability()
+    facts = getattr(getattr(plan, "policy_decision", None), "facts", {})
+    verification = getattr(run, "verification_result", None)
+    verification_data = verification.get("data", {}) if isinstance(verification, Mapping) else {}
+    if (
+        not isinstance(facts, Mapping)
+        or facts.get("atomic")
+        or facts.get("offline") is not True
+        or not isinstance(verification_data, Mapping)
+        or verification_data.get("offline_transaction") is not True
+    ):
+        return RecoveryCapability()
+    return RecoveryCapability(
+        "action_center",
+        "activate-fedora-offline-update",
+        {"source_run_id": str(run.run_id)},
+        "Review the exact command dnf5 offline reboot in Action Center and choose Activate separately. This restarts the computer. If authorization is cancelled or denied, the prepared update remains pending.",
+    )
 
 
 def _safe_result(result: Mapping[str, Any] | None, *, action_id: str = "") -> dict[str, Any]:

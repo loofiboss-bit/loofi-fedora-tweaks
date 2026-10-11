@@ -1,7 +1,8 @@
-# Routine 32.7.0 local qualification
+# Routine 32.7.0 qualification record
 
-Checked on 2026-10-10. This is a locally qualified candidate based on Personal,
-not a published or installed release.
+Checked on 2026-10-10 for the published 32.7.0 release, based on Personal.
+This dated record does not qualify later changes or physical desktop behavior
+that was not explicitly exercised.
 
 ## Implemented workflow contracts
 

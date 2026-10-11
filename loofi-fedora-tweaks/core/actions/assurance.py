@@ -20,14 +20,18 @@ from core.actions.public_boundary_definitions import public_boundary_definitions
 from core.actions.firmware_evidence import FIRMWARE_EVIDENCE_VERSION, candidates, history_status, valid_facts
 from core.actions.continuity_recovery import (
     _preflight_dnf5_history_undo,
+    _preflight_fedora_offline_activation,
     _preflight_fedora_update,
     _preflight_rpm_ostree_rollback,
     _render_dnf5_history_undo,
+    _render_fedora_offline_reboot,
     _render_fedora_update,
     _validate_rpm_ostree_rollback,
+    _validate_fedora_offline_activation,
     _validate_transaction_id,
     _verify_dnf5_history_undo,
     _verify_fedora_update,
+    _verify_fedora_offline_activation,
     _verify_rpm_ostree_rollback,
 )
 
@@ -54,6 +58,26 @@ def assurance_definitions() -> list[ActionDefinition]:
             interaction_policy="automatic",
             reboot_policy="required",
             affected_resources=("packages", "rpmdb", "boot-state"),
+        ),
+        ActionDefinition(
+            id="activate-fedora-offline-update",
+            capability_id="updates.fedora.activate-offline",
+            title="Activate prepared Fedora update",
+            description="Run the exact DNF5 command dnf5 offline reboot after a separate review and explicit confirmation.",
+            parameter_schema={"source_run_id": {"type": "string", "required": True}},
+            risk_level="high",
+            privileged=True,
+            confirmation_policy="explicit-no-rollback",
+            recovery_guidance="If authorization is denied or cancelled, the original prepared update remains pending. Verify its transaction history in Activity after restart.",
+            rollback_supported=False,
+            command_renderer=_render_fedora_offline_reboot,
+            preflight_checker=_preflight_fedora_offline_activation,
+            verifier=_verify_fedora_offline_activation,
+            interaction_policy="confirm",
+            supported_variants=frozenset({"traditional"}),
+            reboot_policy="required",
+            affected_resources=("packages", "rpmdb", "boot-state"),
+            parameter_validator=_validate_fedora_offline_activation,
         ),
         ActionDefinition(
             id="dnf5-history-undo",
@@ -719,10 +743,15 @@ def _verify_flatpak_update(_run: ActionRun, plan: ActionPlan, runtime: ActionRun
 
 def _preflight_firmware_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
     result = runtime.execute_read_only(["fwupdmgr", "get-updates", "--json"], action_id="update-firmware-candidates", timeout=90)
+    if (result.data or {}).get("evidence_unavailable"):
+        return _blocked("firmware_evidence_unavailable", "Firmware candidate evidence is unavailable; review fresh updates.")
     if not result.success:
         return _blocked("firmware_query_failed", "Firmware updates could not be queried.")
     try:
-        records = candidates(_json_payload(result))
+        payload = _json_payload(result)
+        if payload is None or not isinstance(payload.get("Devices"), list):
+            raise ValueError("Firmware JSON evidence is unavailable.")
+        records = candidates(payload)
     except ValueError:
         return _blocked("firmware_evidence_unavailable", "Firmware candidate evidence is incomplete; review fresh updates.")
     if not records:
@@ -740,6 +769,8 @@ def _verify_firmware_update(run: ActionRun, plan: ActionPlan, runtime: ActionRun
     if not result.success:
         return VerificationDecision.failed("Firmware history could not be queried.")
     payload = _json_payload(result)
+    if payload is None or not isinstance(payload.get("Devices"), list):
+        return VerificationDecision.failed("Firmware history evidence is unavailable or invalid.")
     statuses = [(item, history_status(item, payload, started_at=run.started_at)) for item in facts["devices"]]
     failed = [item for item, status in statuses if status == "failed"]
     if failed:
@@ -799,6 +830,11 @@ def _preflight_application(parameters: Mapping[str, Any], runtime: ActionRuntime
     )
     installed = installed_result.success
     if installing:
+        if runtime.is_atomic():
+            return _blocked(
+                "atomic_rpm_layering_unavailable",
+                "RPM installation is unavailable on Atomic Fedora until repository availability can be verified through a supported rpm-ostree query.",
+            )
         manager = runtime.package_manager()
         available = runtime.execute_read_only(
             [manager, "repoquery", "--available", "--latest-limit", "1", "--qf", "%{name}|%{evr}|%{arch}", package_id],
@@ -834,7 +870,10 @@ def _verify_application(run: ActionRun, plan: ActionPlan, runtime: ActionRuntime
         return VerificationDecision.succeeded("Flatpak application state was verified.") if verified else VerificationDecision.failed("Flatpak application state did not match the plan.")
     if runtime.is_atomic():
         status = runtime.execute_read_only(["rpm-ostree", "status", "--json"], action_id="application-verify-atomic", timeout=30)
-        deployments = _json_payload(status).get("deployments", []) if status.success else []
+        payload = _json_payload(status) if status.success else None
+        if payload is None or not isinstance(payload.get("deployments"), list):
+            return VerificationDecision.failed("Atomic deployment evidence is unavailable or invalid.")
+        deployments = payload["deployments"]
         candidate = _pending_deployment(deployments)
         booted = next((item for item in deployments if isinstance(item, dict) and item.get("booted")), {})
         expected_checksum = str((((run.verification_result or {}).get("data") or {}).get("expected_checksum", "")))
@@ -945,14 +984,19 @@ def _blocked(code: str, explanation: str) -> PolicyDecision:
     return PolicyDecision(False, code, explanation, "Review the current state and create a fresh plan.")
 
 
-def _json_payload(result: ActionResult) -> dict[str, Any]:
+def _json_payload(result: ActionResult) -> dict[str, Any] | None:
     if not result.success:
-        return {}
+        return None
+    source = result.structured_output if result.structured_output is not None else result.stdout
     try:
-        payload = json.loads(result.stdout or "{}")
+        payload = json.loads(source or "{}")
     except (json.JSONDecodeError, TypeError):
-        return {}
-    return payload if isinstance(payload, dict) else {"items": payload}
+        return None
+    if isinstance(payload, dict):
+        return payload
+    if isinstance(payload, list):
+        return {"items": payload}
+    return None
 
 
 def _lines(value: str) -> list[str]:

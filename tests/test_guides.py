@@ -85,6 +85,38 @@ class TestGuideProgressPersistence(GuideStoreCase):
         self.assertEqual(stat.S_IMODE(self.path.stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(self.path.parent.stat().st_mode), 0o700)
 
+    def test_action_run_evidence_is_filtered_to_the_guide_step_family(self):
+        from core.tasks.guides import guide_evidence
+
+        step = GUIDES_BY_ID["maintain-your-system"].steps[1]
+        matching = SimpleNamespace(
+            run_id="update-run", action_id="update-fedora-system", state="succeeded",
+            completed_at=20.0, started_at=10.0,
+        )
+        unrelated = SimpleNamespace(
+            run_id="install-run", action_id="install-application", state="succeeded",
+            completed_at=30.0, started_at=15.0,
+        )
+        with patch("core.actions.stores.ActionRunStore") as store_type:
+            store_type.return_value.list_read_only.return_value = [matching, unrelated]
+            results = guide_evidence("action_run", action_ids=step.evidence_action_ids)
+
+        self.assertEqual([item.id for item in results], ["update-run"])
+
+    def test_incompatible_action_run_cannot_be_marked_as_step_evidence(self):
+        step = GUIDES_BY_ID["maintain-your-system"].steps[1]
+        unrelated = SimpleNamespace(
+            run_id="install-run", action_id="install-application", state="succeeded",
+            completed_at=30.0, started_at=15.0,
+        )
+        with patch("core.actions.stores.ActionRunStore") as store_type:
+            store_type.return_value.list_read_only.return_value = [unrelated]
+            with self.assertRaises(ValueError):
+                self.store.update_step(
+                    "maintain-your-system", step.id, "verified",
+                    evidence_kind="action_run", evidence_id="install-run",
+                )
+
     def test_clearing_resume_pointer_keeps_step_history(self):
         step = GUIDES_BY_ID["choose-and-manage-apps"].steps[0]
         self.store.select("choose-and-manage-apps", step.id)

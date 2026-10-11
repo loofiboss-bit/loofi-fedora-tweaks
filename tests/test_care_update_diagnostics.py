@@ -163,6 +163,22 @@ class UpdateDiagnosisUiTests(unittest.TestCase):
         receiver.assert_called_once_with("flatpak", "run-exact")
         page.service.check.assert_not_called()
 
+    def test_update_failure_link_names_the_single_exact_dnf_repository(self):
+        from core.tasks import UpdateSourceState
+        from ui.update_workflow import UpdateWorkflowPage
+
+        page = UpdateWorkflowPage(service=Mock())
+        self.addCleanup(page.deleteLater)
+        page.set_source(UpdateSourceState(
+            "system", "error", message="Repository metadata could not be read.",
+            metadata={"repository_ids": ("updates",)},
+        ))
+        self.assertEqual(page.sources_button.text(), "View DNF source: updates")
+        receiver = Mock()
+        page.sourcesRequested.connect(receiver)
+        page.sources_button.click()
+        receiver.assert_called_once_with("updates")
+
     def test_health_selection_preserves_exact_context_without_starting(self):
         from ui.troubleshoot_widget import TroubleshootWidget
 

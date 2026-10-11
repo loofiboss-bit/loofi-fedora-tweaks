@@ -128,6 +128,29 @@ class TestActivityRecoveryTab(unittest.TestCase):
         )
         tab.close()
 
+    def test_check_result_requests_the_exact_selected_pending_run(self):
+        event = ChangeEvent(
+            event_id="action_center:pending-run",
+            source="action_center",
+            occurred_at=100.0,
+            actor_class="user",
+            summary="Prepared Fedora update",
+            state="awaiting_reboot",
+            after_facts={"run_id": "pending-run"},
+        )
+        tab = ActivityRecoveryTab(journal_service=SimpleNamespace())
+        requests: list[str] = []
+        tab.runVerificationRequested.connect(requests.append)
+        tab._loaded(ChangeJournalSnapshot(events=(event,), sources=(), generated_at=101.0))
+        tab.table.selectRow(0)
+        tab._render_selected()
+
+        self.assertTrue(tab.check_result_button.isVisibleTo(tab))
+        tab.check_result_button.click()
+
+        self.assertEqual(requests, ["pending-run"])
+        tab.close()
+
     def test_manual_guidance_never_exposes_recovery_button(self):
         tab = ActivityRecoveryTab(journal_service=SimpleNamespace())
         tab._loaded(

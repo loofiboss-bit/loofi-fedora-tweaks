@@ -19,7 +19,7 @@ class UpdateWorkflowPage(QWidget):
 
     sourceActionRequested = pyqtSignal(str, str)
     diagnosisRequested = pyqtSignal(str, str)
-    sourcesRequested = pyqtSignal()
+    sourcesRequested = pyqtSignal(str)
     recordRequested = pyqtSignal(str)
     stopped = pyqtSignal()
 
@@ -48,7 +48,7 @@ class UpdateWorkflowPage(QWidget):
         )
         root.addWidget(self.scaffold)
         self.sources_button = QuietButton(self.tr("View package sources"), description=self.tr("Inspect locally configured DNF sources in Apps."))
-        self.sources_button.clicked.connect(self.sourcesRequested.emit)
+        self.sources_button.clicked.connect(self._request_package_sources)
         self.scaffold.add_widget(self.sources_button)
         self.state_notice = InlineNotice(
             self.tr("Choose an update source"),
@@ -280,6 +280,11 @@ class UpdateWorkflowPage(QWidget):
     def source_button(self, source: str) -> PrimaryButton:
         return self._cards[str(source)][3]
 
+    def _request_package_sources(self) -> None:
+        repository_ids = self.state.source("system").metadata.get("repository_ids", ())
+        source_id = repository_ids[0] if isinstance(repository_ids, (tuple, list)) and len(repository_ids) == 1 else ""
+        self.sourcesRequested.emit(str(source_id))
+
     def focus_task(self, task_id: str) -> bool:
         """Focus one update source card after goal-based search."""
         source = str(task_id or "").strip()
@@ -356,6 +361,12 @@ class UpdateWorkflowPage(QWidget):
             diagnose = self._diagnose_buttons[source]
             diagnose.setVisible(state.status in {"error", "failed", "verification_failed", "missing_tool", "unsupported"})
             diagnose.setEnabled(not self._loading_saved)
+        repository_ids = self.state.source("system").metadata.get("repository_ids", ())
+        exact_source = repository_ids[0] if isinstance(repository_ids, (tuple, list)) and len(repository_ids) == 1 else ""
+        self.sources_button.setText(
+            self.tr("View DNF source: %1").replace("%1", str(exact_source))
+            if exact_source else self.tr("View package sources")
+        )
 
     @property
     def busy(self) -> bool:

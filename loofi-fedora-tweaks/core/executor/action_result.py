@@ -26,6 +26,8 @@ class ActionResult:
         needs_reboot: True if a reboot is required to apply changes.
         timestamp: Unix timestamp of result creation.
         action_id: Optional identifier linking to the action definition.
+        structured_output: Complete bounded machine-readable output for the
+            immediate verifier. This field is intentionally never serialized.
     """
 
     success: bool
@@ -38,6 +40,7 @@ class ActionResult:
     needs_reboot: bool = False
     timestamp: float = field(default_factory=time.time)
     action_id: str = ""
+    structured_output: Optional[str] = field(default=None, repr=False, compare=False)
 
     # Truncation limits for serialization safety
     _MAX_OUTPUT = 4000
@@ -70,6 +73,7 @@ class ActionResult:
             needs_reboot=d.get("needs_reboot", False),
             timestamp=d.get("timestamp", 0.0),
             action_id=d.get("action_id", ""),
+            structured_output=None,
         )
 
     @classmethod

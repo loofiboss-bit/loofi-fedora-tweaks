@@ -1,4 +1,7 @@
-# Companion 32.5.0 — local candidate
+# Companion 32.5.0 — published
+
+Loofi Fedora Tweaks 32.5.0 “Companion” is a published release. This page
+describes that release and does not qualify subsequent working-tree changes.
 
 Companion brings personal configuration, application access explanations, and
 Fedora guidance into the existing control center. KDE on DNF5 is the primary
@@ -14,8 +17,8 @@ target; optional GNOME counterparts and Atomic limitations remain explicit.
 - Review local package health, sources, storage, reboot advice, and a manual
   backup checklist before following the official Fedora upgrade instructions.
 
-See [qualification](../COMPANION_VERIFICATION.md) for dated automated evidence
-and physical checks. This source candidate does not imply installation or publication.
+See [qualification](../COMPANION_VERIFICATION.md) for the dated automated
+assessment and its physical-check boundaries.
 
 ## KDE appearance extension
 

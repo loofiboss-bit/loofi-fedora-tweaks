@@ -292,10 +292,8 @@ class ApplicationCatalog:
         if record.source == "fedora" and context.variant is FedoraVariant.ATOMIC:
             return ApplicationEligibility(
                 record,
-                "advanced",
-                "RPM layering creates a new Atomic deployment and may require a reboot.",
-                advanced=True,
-                requires_reboot=True,
+                "unavailable",
+                "RPM layering is unavailable here until repository availability can be verified through an rpm-ostree-supported query.",
             )
         if record.source == "fedora" and "dnf5" not in context.capabilities and context.variant is FedoraVariant.TRADITIONAL:
             return ApplicationEligibility(record, "unavailable", "Fedora RPM installation needs the supported dnf5 capability.")

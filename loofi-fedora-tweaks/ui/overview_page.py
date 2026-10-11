@@ -289,10 +289,6 @@ class OverviewPage(QWidget, PluginInterface):
         self.dismiss_intro_button.clicked.connect(self._dismiss_intro)
         self.intro_card.add_widget(self.dismiss_intro_button)
         root.addWidget(self.intro_card)
-        self.guide_panel = GuidePanel(self)
-        self.guide_panel.guideChanged.connect(self.guideChanged)
-        self.guide_panel.targetRequested.connect(self.guideTargetRequested)
-        root.addWidget(self.guide_panel)
         self.next_steps_card = Card(self.tr("Next steps"), parent=self)
         self.next_steps_empty = QLabel(self.tr("Suggestions appear after the first measurement."))
         self.next_steps_empty.setWordWrap(True)
@@ -301,6 +297,10 @@ class OverviewPage(QWidget, PluginInterface):
         self._next_step_rows = []
         self._last_next_steps = None
         root.addWidget(self.next_steps_card)
+        self.guide_panel = GuidePanel(self)
+        self.guide_panel.guideChanged.connect(self.guideChanged)
+        self.guide_panel.targetRequested.connect(self.guideTargetRequested)
+        root.addWidget(self.guide_panel)
         self.main_grid = QGridLayout()
         self.main_grid.setSpacing(12)
         root.addLayout(self.main_grid)

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Version 32.2.0 "Coherence"; physical desktop and assistive-technology validation remains unverified.
+> Published baseline: 32.8.0. Later stabilization changes in the working tree are unreleased; physical desktop and assistive-technology qualification is recorded separately.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,
@@ -86,9 +86,25 @@ booted.
 
 Inspect **Activity & Recovery** and use the recorded explanation. Do not run a
 second package transaction while one is active. A running or interrupted plan
-holds a bounded lease and never retries automatically. If a restart is
-required, restart the host using the normal desktop controls, then return to
-**Activity & Recovery** and run the explicit verification step.
+holds a bounded lease and never retries automatically. For a prepared
+traditional Fedora update, an ordinary restart will not start the DNF5 offline
+transaction. Select the pending update in **Activity**, choose **Review
+recovery**, and inspect the separate Action Center command `dnf5 offline reboot`.
+Choose its explicit activation only when you are ready for the computer to
+restart immediately. If authorization is cancelled or denied, the original
+update remains pending. After restart, select the original update in Activity
+and choose **Check result** to verify the actual DNF5 transaction history.
+
+The same flow is available in the CLI. Read the pending run ID from activity
+list, prepare and review the activation plan, then explicitly apply that plan:
+
+    loofi-fedora-tweaks --cli activity list --json
+    loofi-fedora-tweaks --cli changes apply activate-fedora-offline-update --param source_run_id=RUN_ID --dry-run
+    loofi-fedora-tweaks --cli changes apply PLAN_ID --yes --accept-no-rollback
+
+After restart, verify the original prepared update run, not the activation run:
+
+    loofi-fedora-tweaks --cli changes verify RUN_ID
 
 ## Flatpak-specific checks
 

@@ -65,6 +65,7 @@ ACTIVE_ACTION_IDS = frozenset(
         "restart-failed-service",
         "fstrim-all",
         "update-fedora-system",
+        "activate-fedora-offline-update",
         "dnf5-history-undo",
         "rpm-ostree-rollback",
         "update-flatpaks",

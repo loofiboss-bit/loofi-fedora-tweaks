@@ -1,8 +1,10 @@
 """Wayfinder state-backed control, filter, and favorite regression tests."""
 
 import os
+import tempfile
 import unittest
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import MagicMock, patch
 
@@ -190,13 +192,15 @@ class TestFavoriteTweakSettings(unittest.TestCase):
         self.assertEqual(values["favorite_tweaks"], ["kde-color", "gnome-clock"])
 
     @patch("utils.settings.SettingsManager._load")
-    @patch("utils.settings.Path.replace")
-    @patch("utils.settings.Path.write_text")
-    @patch("utils.settings.Path.mkdir")
-    def test_save_uses_atomic_replace(self, mkdir, write, replace_path, load):
-        manager = SettingsManager()
-        manager.set("favorite_tweaks", ["kde-color", "kde-color"])
-        self.assertTrue(manager.save())
+    @patch("utils.settings.atomic_write_bytes")
+    def test_save_delegates_to_atomic_writer(self, write, _load):
+        with tempfile.TemporaryDirectory() as tmpdir:
+            path = Path(tmpdir) / "settings.json"
+            manager = SettingsManager(settings_path=path)
+            manager.set("favorite_tweaks", ["kde-color", "kde-color"])
+
+            self.assertTrue(manager.save())
+
         self.assertEqual(manager.get("favorite_tweaks"), ["kde-color"])
-        self.assertIn('"favorite_tweaks"', write.call_args.args[0])
-        replace_path.assert_called_once()
+        self.assertEqual(write.call_args.args[0], path)
+        self.assertIn(b'"favorite_tweaks"', write.call_args.args[1])

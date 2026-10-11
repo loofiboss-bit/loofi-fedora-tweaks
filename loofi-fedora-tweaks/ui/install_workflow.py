@@ -287,9 +287,12 @@ class InstallWorkflowPage(QWidget):
             else:
                 self.refresh_flathub_status()
 
-    def focus_sources(self) -> None:
+    def focus_sources(self, source_id: str = "") -> None:
         self.view_filter.setCurrentIndex(self.view_filter.findData("sources"))
-        self.sources_widget.search.setFocus()
+        if source_id:
+            self.sources_widget.focus_source(source_id)
+        else:
+            self.sources_widget.search.setFocus()
 
     def _apply_dnf_source_badges(self, snapshot: object) -> None:
         from services.software.source_status import DnfSourceSnapshot, SoftwareSourceStatusService

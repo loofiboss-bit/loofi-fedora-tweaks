@@ -30,6 +30,9 @@ SOURCES: tuple[Source, ...] = ("system", "flatpak", "firmware")
 STATUSES = {"unchecked", "up_to_date", "available", "missing_tool", "unsupported", "error"}
 MAX_ITEMS = 5000
 MAX_BYTES = 4 * 1024 * 1024
+MAX_JSON_EVIDENCE_BYTES = 1024 * 1024
+DNF_REPOSITORY_ID_PATTERN = re.compile(r"^[A-Za-z0-9_.:+-]{1,128}$")
+DNF_REPOSITORY_MESSAGE_PATTERN = re.compile(r"\b(?:repository|repo)\s+['\"]([^'\"]{1,128})['\"]", re.IGNORECASE)
 
 
 @dataclass(frozen=True)
@@ -49,6 +52,7 @@ class UpdateSourceResult:
     error_code: str = ""
     stale: bool = True
     items_retained: bool = False
+    repository_ids: tuple[str, ...] = ()
 
 
 @dataclass(frozen=True)
@@ -107,13 +111,22 @@ class OverviewRuntime(SystemActionRuntime):
                         raise subprocess.TimeoutExpired(vector, timeout)
                     for key, _ in selector.select(min(remaining, 0.2)):
                         limit = self.output_limit if key.data == "stdout" else 65536
+                        if key.data == "stdout" and tuple(vector) == ("fwupdmgr", "get-updates", "--json"):
+                            limit = min(limit, MAX_JSON_EVIDENCE_BYTES)
                         chunk = os.read(key.fd, min(65536, limit - len(output[key.data]) + 1))
                         if not chunk:
                             selector.unregister(key.fileobj)
                         else:
                             output[key.data].extend(chunk)
                             if len(output[key.data]) > limit:
-                                return ActionResult(False, "Overview output limit exceeded", exit_code=-2, action_id=action_id)
+                                evidence_unavailable = tuple(vector) == ("fwupdmgr", "get-updates", "--json")
+                                return ActionResult(
+                                    False,
+                                    "Structured update evidence exceeded the supported size." if evidence_unavailable else "Overview output limit exceeded",
+                                    exit_code=-2,
+                                    action_id=action_id,
+                                    data={"evidence_unavailable": "oversized_json"} if evidence_unavailable else None,
+                                )
                 while True:
                     self._check_cancelled()
                     remaining = deadline - time.monotonic()
@@ -257,6 +270,11 @@ class UpdateOverviewService:
         items_retained = record.get("items_retained", False)
         if type(items_retained) is not bool:
             raise ValueError("Invalid retained candidate state")
+        repository_ids = record.get("repository_ids", [])
+        if not isinstance(repository_ids, list) or len(repository_ids) > 8:
+            raise ValueError("Invalid DNF repository references")
+        if any(not isinstance(item, str) or not DNF_REPOSITORY_ID_PATTERN.fullmatch(item) for item in repository_ids):
+            raise ValueError("Invalid DNF repository reference")
         if record["status"] == "available":
             if not parsed or items_retained:
                 raise ValueError("Inconsistent candidate status")
@@ -273,6 +291,7 @@ class UpdateOverviewService:
             error_code=error,
             stale=self._stale(checked),
             items_retained=items_retained,
+            repository_ids=tuple(dict.fromkeys(repository_ids)),
         )
 
     def _stale(self, checked: str) -> bool:
@@ -524,6 +543,9 @@ class UpdateOverviewService:
                 return replace(base, status="missing_tool", error_code="missing_tool")
             self._check_cancelled()
             result = self._runtime.execute_read_only(vector, action_id=f"update-overview-{source}", timeout=120 if source == "system" else 90)
+            evidence_error = str((result.data or {}).get("evidence_unavailable", ""))
+            if evidence_error:
+                return replace(base, status="error", error_code="evidence_unavailable")
             if result.exit_code == -2:
                 return replace(base, status="error", error_code="output_truncated")
             if len(result.stdout.encode("utf-8")) > MAX_BYTES:
@@ -536,7 +558,13 @@ class UpdateOverviewService:
                 return self._firmware(base, result)
             accepted = {0, 100} if source == "system" and backend is DeploymentBackend.DNF5 else {0}
             if result.exit_code not in accepted and not (result.exit_code is None and result.success):
-                return replace(base, status="error", error_code="timeout" if result.exit_code == -1 else "query_failed")
+                repository_ids = self._dnf_repository_ids(f"{result.stderr}\n{result.stdout}") if source == "system" and backend is DeploymentBackend.DNF5 else ()
+                return replace(
+                    base,
+                    status="error",
+                    error_code="timeout" if result.exit_code == -1 else "query_failed",
+                    repository_ids=repository_ids,
+                )
             reboot: bool | None
             if source == "flatpak":
                 items = self._flatpak(result.stdout)
@@ -576,6 +604,18 @@ class UpdateOverviewService:
                 raise ValueError("Invalid DNF candidate")
             items.append(UpdateItem(fields[0], fields[1]))
         return items
+
+    @staticmethod
+    def _dnf_repository_ids(output: str) -> tuple[str, ...]:
+        """Extract only exact, bounded repository IDs named by DNF diagnostics."""
+        values = []
+        for match in DNF_REPOSITORY_MESSAGE_PATTERN.finditer(output[:MAX_BYTES]):
+            source_id = match.group(1)
+            if DNF_REPOSITORY_ID_PATTERN.fullmatch(source_id) and source_id not in values:
+                values.append(source_id)
+                if len(values) == 8:
+                    break
+        return tuple(values)
 
     @staticmethod
     def _flatpak(output: str) -> list[UpdateItem]:
@@ -627,7 +667,8 @@ class UpdateOverviewService:
         if result.exit_code not in {0, 2, None} or (result.exit_code is None and not result.success):
             return replace(base, status="error", error_code="query_failed")
         try:
-            payload = json.loads(result.stdout)
+            structured_output = getattr(result, "structured_output", None)
+            payload = json.loads(structured_output if structured_output is not None else result.stdout)
         except ValueError:
             message = (result.stdout + "\n" + result.stderr).strip().lower().rstrip(".")
             if result.exit_code == 2 and message in {"no updates available", "no upgrades for device", "no updatable devices"}:

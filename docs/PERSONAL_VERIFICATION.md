@@ -1,8 +1,9 @@
 # Personal qualification
 
-Local candidate: v32.6.0 "Personal", 2026-10-09, built on the included Companion
-32.5 work. This document separates automated checks, read-only host observations,
-and physical interaction. No installation or publication was performed.
+Published v32.6.0 Personal — local qualification record dated 2026-10-09
+"Personal", built on Companion 32.5. This dated record separates automated
+checks, read-only host observations, and physical interaction; it does not
+qualify later changes.
 
 ## Automated checks
 
@@ -68,8 +69,8 @@ or application start commands executed by these checks.
 
 ## Remaining physical qualification
 
-Native computer-control APIs were unavailable in this task. The candidate still
-requires physical KDE checks for the three window controls: reviewed apply,
+Native computer-control APIs were unavailable during this assessment. The release
+still requires physical KDE checks for the three window controls: reviewed apply,
 visible session effect, restore including custom prior values, and failed
 activation feedback. Default Applications, Autostart and Icons handoffs require
 actual external-window checks. Physical keyboard use, 200% desktop scaling and
