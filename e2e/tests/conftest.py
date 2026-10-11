@@ -29,7 +29,12 @@ import urllib.request
 
 
 @pytest.fixture(scope="session")
-def loofi_app() -> Iterator[subprocess.Popen[str]]:
+def app_process_registry() -> list[subprocess.Popen[str]]:
+    return []
+
+
+@pytest.fixture(scope="session")
+def loofi_app(app_process_registry: list[subprocess.Popen[str]]) -> Iterator[subprocess.Popen[str]]:
     log_dir = "/var/tmp/loofi-e2e"
     os.makedirs(log_dir, mode=0o700, exist_ok=True)
     log_handle = open(os.path.join(log_dir, "application.log"), "a", encoding="utf-8")
@@ -67,6 +72,7 @@ def loofi_app() -> Iterator[subprocess.Popen[str]]:
             stdin=subprocess.DEVNULL, stdout=log_handle, stderr=subprocess.STDOUT,
             text=True, close_fds=True, env=app_env,
         )
+        app_process_registry.append(process)
         wait_for_node("Loofi Fedora Tweaks", role="frame", timeout=90)
         try:
             wait_for_node("Open Loofi", timeout=3).click()
@@ -79,7 +85,7 @@ def loofi_app() -> Iterator[subprocess.Popen[str]]:
                 driver.quit()
         finally:
             use_driver(None)
-            for child in (process, server):
+            for child in (*app_process_registry, server):
                 if child is not None and child.poll() is None:
                     child.terminate()
                     try:

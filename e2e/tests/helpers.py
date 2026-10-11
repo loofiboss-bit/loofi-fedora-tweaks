@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import os
 import json
+from collections.abc import Callable
 from pathlib import Path
 import time
 import xml.etree.ElementTree as ET
@@ -162,13 +163,23 @@ def wait_for_polkit_password(timeout: float = 30):
     raise AssertionError("The guest Polkit password field did not appear.")
 
 
-def authenticate_polkit(*, allow_cached: bool = False) -> None:
-    try:
-        field = wait_for_polkit_password(timeout=5 if allow_cached else 30)
-    except AssertionError:
-        if allow_cached:
-            return
-        raise
+def authenticate_polkit(*, completed: Callable[[], bool], timeout: float = 60) -> None:
+    """Authenticate a visible request, or accept cached auth after state readback."""
+    deadline = time.monotonic() + timeout
+    while True:
+        remaining = deadline - time.monotonic()
+        if remaining <= 0:
+            if completed():
+                return
+            raise AssertionError(
+                "The Polkit prompt did not appear and the requested system state was not verified."
+            )
+        try:
+            field = wait_for_polkit_password(timeout=min(1, remaining))
+            break
+        except AssertionError:
+            if completed():
+                return
     # WebDriver logs are not enabled; collected reports are additionally redacted.
     credential = json.loads(Path(os.environ["LOOFI_E2E_CREDENTIALS_PATH"]).read_text())
     # Protected Qt password widgets require native key events. The upstream

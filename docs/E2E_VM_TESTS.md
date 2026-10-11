@@ -107,8 +107,12 @@ or mismatched VM and leaves its files untouched.
 The pytest suite navigates between Tweaks and Activity, changes and restores a
 per-user Dolphin setting, verifies the inline success state, rejects a
 system-change confirmation, cancels a Polkit request without changing DNF,
-then authorizes a DNF change and restores its prior value. The guest is reset
-even when pytest fails. Tests and future workflows belong under `e2e/tests/`;
+then authorizes a DNF change and restarts the app. It verifies that the DNF
+value and restoration offer survived the restart, restores the prior value,
+and reads the actual DNF configuration after the change and restoration.
+When authorization is cached, the helper accepts it only after that external
+readback reaches the requested value. The guest is reset even when pytest
+fails. Tests and future workflows belong under `e2e/tests/`;
 the normal host suite remains isolated under `tests/`.
 
 Add a pytest test or module under `e2e/tests/` and use the `loofi_app` fixture
@@ -188,9 +192,11 @@ systemctl --user disable --now loofi-fedora-tweaks-ci-runner.service
 
 Validated on the Fedora 44 KDE laptop with the reusable guest:
 
-- Two unattended complete RPM/build/install/GUI/report/reset runs passed all
-  three GUI workflows. The final run used Swedish host locale, blocked host
-  external HTTP access, and the guest's disabled network link.
+- Two consecutive unattended RPM/build/install/GUI/report/reset runs passed
+  all six E2E tests after the Polkit synchronization change. Each run used the
+  offline disposable guest and reset it afterward. The DNF flow verified
+  persisted setting/history after app restart and direct system-state readback
+  after restoration.
 - An actual SIGTERM stopped the owned guest and recreated its empty overlay
   in 0.47 seconds. Recovery of an intentionally abandoned owned guest was
   exercised. A diagnostic run exposed a lost serial prompt; the permanent
