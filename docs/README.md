@@ -25,6 +25,7 @@ and is not.
 - [Control-center qualification](CONTROL_CENTER_VERIFICATION.md) — automated results and remaining physical checks
 - [Design system](../DESIGN.md) — control-center structure, states, and measurement contract
 - [Contributing](CONTRIBUTING.md)
+- [Fedora KDE VM end-to-end tests](E2E_VM_TESTS.md) — reusable local QEMU/KVM runner, guest-only system changes and CI/release gating
 - [Release checklist](RELEASE_CHECKLIST.md)
 
 The repository [README](../README.md) is the product overview. The getting

@@ -185,6 +185,24 @@ jobs:
           reporter: java-junit
           fail-on-error: false
 
+  vm_e2e:
+    # Restrict the trusted Fedora/KVM runner to master pushes and dispatches.
+    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    runs-on: [self-hosted, Linux, X64, loofi-vm-e2e]
+    timeout-minutes: 180
+    steps:
+      - uses: actions/checkout@v6
+      - name: Run isolated Fedora KDE GUI workflows
+        run: just test-full
+      - name: Upload VM test reports
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: fedora-kde-e2e-${{ github.run_id }}
+          path: test-results/e2e/
+          if-no-files-found: warn
+          retention-days: 14
+
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
