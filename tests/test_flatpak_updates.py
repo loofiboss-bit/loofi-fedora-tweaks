@@ -295,13 +295,14 @@ class TestUpdateEvidence(unittest.TestCase):
         with self.assertRaises(ValueError):
             snapshot_from_facts({"refs": [APP]})
 
+    @patch("services.software.flatpak_updates.helper_command", return_value="/usr/bin/loofi-flatpak-maintenance")
     @patch("services.software.flatpak_updates.atomic_write_json")
     @patch("services.software.flatpak_updates.advisory_lock")
     @patch("services.software.flatpak_updates.Path.exists", return_value=True)
     @patch("services.software.flatpak_updates.Path.is_symlink", return_value=False)
     @patch("services.software.flatpak_updates.Path.stat")
     @patch("services.software.flatpak_updates.Path.read_text")
-    def test_cache_preserves_corrupt_future_and_never_authorizes(self, read, stat, _symlink, _exists, _lock, write):
+    def test_cache_preserves_corrupt_future_and_never_authorizes(self, read, stat, _symlink, _exists, _lock, write, _helper):
         stat.return_value.st_size = 100
         service = FlatpakUpdatesService(probe=lambda _v: evidence(preview=False), cache_path=Path("/unused/observations.json"))
         for value in ("broken", json.dumps({"schema_version": 99, "observation": {}})):
