@@ -1,5 +1,14 @@
 # Changelog
 
+## [34.0.1] - Unreleased - "Accord"
+
+- Bind Flatpak update discovery, review, execution, and independent commit verification to exact user, system, and named installations.
+- Review selected applications together with their resolved runtime and extension operations; changed transaction evidence requires a fresh review.
+- Connect Installed applications and Updates through explicit, cancellable inspection and shared Action Center review.
+- Retain installation-specific results and link to exact Activity runs and optional existing unused-runtime maintenance.
+- Add read-only `updates flatpaks` CLI inspection with installation/ref filters while preserving existing CLI and saved-history formats.
+- Preserve the historical v34.0.0 Citadel tag; Accord uses v34.0.1. See [candidate qualification](docs/V34_QUALIFICATION.md) for actual automated evidence.
+
 ## [33.0.1] - 2026-10-12 - "Concord" — published
 
 This release packages the merged Concord work at `f8e3e7e`. The existing

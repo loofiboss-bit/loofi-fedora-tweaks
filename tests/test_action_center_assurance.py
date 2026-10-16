@@ -468,22 +468,15 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
         verified = definition.verifier(self._run(definition.id, verification_result=previous), plan, self.runtime)
         self.assertEqual(verified.state, "succeeded")
 
-    def test_flatpak_update_uses_and_verifies_exact_refs_and_commits(self):
+    def test_legacy_flatpak_update_evidence_requires_fresh_installation_review(self):
         definition = self.catalog.get("update-flatpaks")
         assert definition is not None
-        query = ("flatpak", "remote-ls", "--updates", "--columns=ref,commit")
-        self.runtime.results[query] = ActionResult.ok("updates", stdout="org.example.App\tcommit-2\n")
-        decision = definition.preflight_checker({}, self.runtime)
-
-        self.assertEqual(
-            definition.command_renderer({}, self.runtime),
-            ["flatpak", "update", "--noninteractive", "--assumeyes", "org.example.App"],
-        )
-        self.runtime.results[("flatpak", "info", "--show-commit", "org.example.App")] = ActionResult.ok(
-            "installed", stdout="commit-2\n"
-        )
+        decision = PolicyDecision(True, "preflight_ok", "Legacy observation", facts={"refs": [{"id": "org.example.App", "value": "commit-2"}]})
         result = definition.verifier(self._run(definition.id), self._plan(definition, {}, decision), self.runtime)
-        self.assertEqual(result.state, "succeeded")
+        self.assertEqual(result.state, "failed")
+        self.assertIn("Legacy", result.message)
+        with self.assertRaises(ValueError):
+            definition.evidence_renderer({}, self.runtime, decision)
 
     def test_firmware_missing_history_waits_once_then_fails_after_reboot(self):
         definition = self.catalog.get("update-firmware")

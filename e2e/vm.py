@@ -231,7 +231,7 @@ class FedoraE2E:
             os.chmod(self.lock_path, 0o600)
             self.reports_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             report_names = ["summary.json", "runner.log", "junit.xml", "pytest.log", "guest-result.json", "install.log", "application.log", "polkit-before.xml"]
-            report_names.extend(["package-fixture.log", "reboot-checkpoint.json"])
+            report_names.extend(["package-fixture.log", "reboot-checkpoint.json", "flatpak-update-evidence.json", "crash-diagnostics.json"])
             report_names.extend(Path(name).stem + "-after-reboot" + Path(name).suffix for name in tuple(report_names) if name not in {"summary.json", "runner.log"})
             report_names.extend(path.name for path in self.reports_dir.glob("*-accessibility.xml"))
             for name in report_names:
@@ -589,6 +589,10 @@ xorg-x11-drv-qxl
 sddm
 polkit-kde
 python3-pyqt6
+python3-gobject-base
+flatpak
+flatpak-libs
+gnupg2
 python3-keyring
 python3-defusedxml
 python3-pytest
@@ -997,6 +1001,8 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
             ("/var/tmp/loofi-e2e/install.log", "install.log"),
             ("/var/tmp/loofi-e2e/application.log", "application.log"),
             ("/var/tmp/loofi-e2e/package-fixture.log", "package-fixture.log"),
+            ("/var/tmp/loofi-e2e/flatpak-update-evidence.json", "flatpak-update-evidence.json"),
+            ("/var/tmp/loofi-e2e/crash-diagnostics.json", "crash-diagnostics.json"),
             ("/var/tmp/loofi-e2e/reboot-checkpoint.json", "reboot-checkpoint.json"),
         ]
         try:

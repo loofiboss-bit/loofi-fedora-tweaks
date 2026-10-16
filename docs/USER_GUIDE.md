@@ -6,6 +6,12 @@ This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
 [Advanced administration](ADVANCED_ADMIN_GUIDE.md).
 
+The local v34.0.1 Accord candidate adds [installation-bound Flatpak
+updates](FLATPAK_UPDATES.md): check a selected installed app, review one or
+several updates and required dependencies, and verify their commits in the same
+user, system, or named installation. See [candidate qualification](V34_QUALIFICATION.md)
+for actual results; v33.0.1 remains the published baseline.
+
 ## Product scope
 
 Loofi is a curated Fedora control panel that opens on **Overview** and keeps

@@ -11,10 +11,13 @@ and is not.
 - [Troubleshooting](TROUBLESHOOTING.md) — application and source diagnostics
 - [Verified operations](VERIFIED_MAINTENANCE.md) — how changes are authorized, verified, and recovered
 - [State integrity](STATE_INTEGRITY.md) — durable state, migrations, and privacy
+- [Flatpak updates](FLATPAK_UPDATES.md) — installation-bound candidate review, verification, and maintenance
 - [Fedora/KDE 44 readiness](FEDORA_KDE_44_READINESS.md)
 - [Administration](ADVANCED_ADMIN_GUIDE.md)
 
 ## Contribute
+
+- [v34 candidate qualification](V34_QUALIFICATION.md) — local Accord checks and evidence boundaries
 
 - [v33.0.1 publication evidence](reports/V33.0.1_RELEASE_PUBLICATION.md) — exact tag, release workflow, assets, checksums, attestation, and COPR build
 

@@ -2,6 +2,26 @@
 
 The latest published release is [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1), published on 2026-10-12 with COPR build 11109761. Its release tag resolves to `68da040ca5fd85f7feae4442c8ffb9049815cdcd`; v33.0.0 remains the historical Bastion tag. See [publication evidence](docs/reports/V33.0.1_RELEASE_PUBLICATION.md) for passed gates and the explicit VM exception. KDE on traditional Fedora with DNF5 is the first target; public CLI, profile, and saved-session compatibility remain supported.
 
+## v34.0.1 Accord — local candidate
+
+Connect Apps and Updates through installation-bound Flatpak discovery, selected
+application review, resolved dependencies, and independent commit verification.
+User, system, and named installations remain distinct throughout. Results link
+to exact Activity runs and optional existing unused-runtime inspection.
+
+The candidate retains existing route IDs, CLI output contracts, and plan/run
+formats. Older unscoped update evidence needs fresh review. No new RPM update
+mode, remote management, EOL sweep, automatic cleanup, or unattended operation
+is added. The historical v34.0.0 Citadel tag is preserved.
+
+Implementation and automated qualification are tracked in
+[Flatpak updates](docs/FLATPAK_UPDATES.md) and
+[v34 candidate qualification](docs/V34_QUALIFICATION.md). The published release
+remains v33.0.1; the v33-specific VM release exception does not cover v34. The
+implementation and signed Flatpak integration pass their checks, but full
+automated qualification is blocked by an independently reproduced Qt AT-SPI
+scroll-area crash; see the candidate qualification report.
+
 ## Completed work delivered in Concord
 
 The three stages below are complete and included in v33.0.1. Their qualification reports retain the version and environment actually tested.

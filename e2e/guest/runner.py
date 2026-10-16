@@ -17,6 +17,31 @@ from pathlib import Path
 WORK = Path("/var/tmp/loofi-e2e")
 
 
+def _crash_diagnostics() -> dict:
+    """Retain bounded guest crash frames, never coredump environment fields."""
+    diagnostics = {}
+    commands = {
+        "kernel": ["journalctl", "--boot", "--dmesg", "--no-pager", "--output=short-monotonic",
+                   "--grep=segfault|general protection|traps:|oom-kill|Out of memory|Killed process"],
+        "coredumps": ["coredumpctl", "--no-pager", "--since=-1h", "info"],
+    }
+    for name, command in commands.items():
+        if not shutil.which(command[0]):
+            diagnostics[name] = {"available": False}
+            continue
+        try:
+            result = subprocess.run(command, capture_output=True, text=True, timeout=30, check=False)
+            lines = result.stdout.splitlines()
+            if name == "coredumps":
+                lines = [line for line in lines if line.lstrip().startswith(
+                    ("Signal:", "Executable:", "Stack trace of thread", "#"))]
+            diagnostics[name] = {"available": True, "exit_code": result.returncode,
+                                 "text": "\n".join(lines)[-32768:]}
+        except (OSError, subprocess.TimeoutExpired):
+            diagnostics[name] = {"available": False}
+    return diagnostics
+
+
 def _run_install(rpm_path: Path, archive_path: Path, credentials_path: Path) -> int:
     log_path = WORK / "install.log"
     with log_path.open("w", encoding="utf-8") as log:
@@ -44,6 +69,11 @@ def _run_install(rpm_path: Path, archive_path: Path, credentials_path: Path) -> 
     user = pwd.getpwnam(str(credentials["user"]))
     os.chown(credentials_path, user.pw_uid, user.pw_gid)
     os.chmod(credentials_path, 0o600)
+    os.chown(WORK, user.pw_uid, user.pw_gid)
+    os.chmod(WORK, 0o700)
+    sys.path.insert(0, str(WORK / "e2e" / "tests"))
+    from flatpak_fixture import prepare
+    prepare(user.pw_name)
     print("RPM installed and E2E tests staged in the guest.")
     return 0
 
@@ -134,6 +164,7 @@ def _run_tests(phase: str = "normal") -> int:
             result = subprocess.run(command, env=env, stdout=log, stderr=subprocess.STDOUT, timeout=45 * 60, check=False)
     finally:
         credentials_path.unlink(missing_ok=True)
+    (WORK / "crash-diagnostics.json").write_text(json.dumps(_crash_diagnostics(), indent=2) + "\n")
     subprocess.run(["chcon", "-R", "-t", "virt_qemu_ga_log_t", str(WORK)], timeout=30, check=True)
     summary = {"exit_code": result.returncode, "status": "passed" if result.returncode == 0 else "failed"}
     (WORK / "result.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")

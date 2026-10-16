@@ -54,6 +54,38 @@ class InstalledApplicationTests(unittest.TestCase):
         apps = parse_flatpak_inventory(ROW + ROW.replace("\tuser\n", "\tsystem\n") + ROW.replace("\tuser\n", "\twork\n"))
         self.assertEqual([app.installation for app in apps], ["user", "system", "work"])
 
+    def test_named_installation_inventory_uses_exact_scope_ids(self):
+        scopes = ("user", "system", "loofi-e2e-fixture")
+        vectors = []
+
+        def probe(vector):
+            vectors.append(tuple(vector))
+            return ActionResult(True, "ok", stdout=ROW.rsplit("\t", 1)[0] + "\n")
+
+        result = InstalledApplicationService(
+            probe=probe, installation_reader=lambda: scopes,
+        ).flatpaks()
+
+        self.assertEqual([app.installation for app in result.applications], list(scopes))
+        self.assertEqual([vector[2] for vector in vectors], ["--user", "--system", "--installation=loofi-e2e-fixture"])
+        self.assertTrue(all(vector[1:2] == ("list",) for vector in vectors))
+        self.assertFalse(result.errors)
+
+    def test_exact_installation_inventory_does_not_trust_flatpak_display_name(self):
+        vectors = []
+
+        def probe(vector):
+            vectors.append(tuple(vector))
+            return ActionResult(True, "ok", stdout=ROW.rsplit("\t", 1)[0] + "\n")
+
+        result = InstalledApplicationService(probe=probe).flatpaks(installation="loofi-e2e-fixture")
+
+        self.assertEqual([app.installation for app in result.applications], ["loofi-e2e-fixture"])
+        self.assertEqual(vectors, [(
+            "flatpak", "list", "--installation=loofi-e2e-fixture", "--app",
+            "--columns=name,application,ref,version,size",
+        )])
+
     def test_malformed_inventory_cannot_mean_absence(self):
         service = InstalledApplicationService(probe=Mock(return_value=ActionResult(True, "ok", stdout="bad")))
         result = service.flatpaks()
@@ -116,9 +148,12 @@ class InstalledApplicationTests(unittest.TestCase):
 
     def test_verification_ignores_other_installations(self):
         runtime = Mock()
-        runtime.execute_read_only.return_value = ActionResult(True, "ok", stdout=ROW.replace("\tuser\n", "\tsystem\n"))
+        runtime.execute_read_only.return_value = ActionResult(True, "ok", stdout="")
         plan = SimpleNamespace(parameters={"ref": "app/org.mozilla.firefox/x86_64/stable", "installation": "user"})
         self.assertEqual(installed_application_definitions()[0].verifier(Mock(), plan, runtime).state, "succeeded")
+        vector = runtime.execute_read_only.call_args.args[0]
+        self.assertIn("--user", vector)
+        self.assertNotIn("--system", vector)
 
     def test_real_controller_lifecycle_verifies_exact_removal(self):
         import tempfile

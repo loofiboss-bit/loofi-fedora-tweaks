@@ -227,7 +227,7 @@ class UpdateDiagnosisUiTests(unittest.TestCase):
         receiver.assert_called_once_with("software:apps", {"section": "unused-runtimes"})
         page.worker_factory.assert_not_called()
 
-    def test_apps_runtime_navigation_validates_known_scope_without_probe(self):
+    def test_apps_runtime_navigation_validates_scope_and_carries_named_installation_without_probe(self):
         from PyQt6.QtWidgets import QComboBox
         from ui.main_window_utility import MainWindowUtilityMixin
 
@@ -245,5 +245,7 @@ class UpdateDiagnosisUiTests(unittest.TestCase):
         insights.inspect.assert_not_called()
         insights.discover_installations.assert_not_called()
         self.assertFalse(MainWindowUtilityMixin._open_apps_unused_runtimes(window, {"section": "unused-runtimes", "installation": "/tmp/private"}))
-        self.assertFalse(MainWindowUtilityMixin._open_apps_unused_runtimes(window, {"section": "unused-runtimes", "installation": "unknown"}))
-        self.assertEqual(installations.currentText(), "work")
+        self.assertTrue(MainWindowUtilityMixin._open_apps_unused_runtimes(window, {"section": "unused-runtimes", "installation": "new-named-installation"}))
+        self.assertEqual(installations.currentText(), "new-named-installation")
+        insights.inspect.assert_not_called()
+        insights.discover_installations.assert_not_called()

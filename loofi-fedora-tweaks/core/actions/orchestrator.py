@@ -196,7 +196,7 @@ class ActionCenterOrchestrator:
                     # ``atomic_manual_only``) instead of turning an
                     # unavailable backend into a generic empty-vector error.
                     if decision.allowed:
-                        preview = self._render(definition, normalized)
+                        preview = self._render(definition, normalized, decision=decision)
                 if self.release_policy.is_preview_target(target):
                     decision = PolicyDecision(
                         False,
@@ -280,7 +280,7 @@ class ActionCenterOrchestrator:
         plan = self.get_plan(plan_id)
         definition = self._definition_for(plan.action_id)
         self._assert_integrity(plan)
-        command = self._render(definition, plan.parameters)
+        command = self._render(definition, plan.parameters, decision=plan.policy_decision)
         result = self.facade.preview(command, privileged=plan.privileged, action_id=definition.id)
         result.data = {
             **(result.data or {}),
@@ -322,11 +322,21 @@ class ActionCenterOrchestrator:
                 self._block_plan(plan, parameter_decision, now=now)
                 raise ActionPlanRejectedError(parameter_decision)
             try:
-                command = self._render(definition, plan.parameters)
-                host_decision = self._host_target_decision(plan.target)
-                current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
+                if definition.evidence_renderer is not None:
+                    host_decision = self._host_target_decision(plan.target)
+                    current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
+                    if not current_decision.allowed:
+                        self._block_plan(plan, current_decision, now=now)
+                        raise ActionPlanRejectedError(current_decision)
+                    command = self._render(definition, plan.parameters, decision=current_decision)
+                else:
+                    command = self._render(definition, plan.parameters)
+                    host_decision = self._host_target_decision(plan.target)
+                    current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
                 if current_decision.allowed:
                     current_decision = self._variant_decision(definition) or current_decision
+            except ActionPlanRejectedError:
+                raise
             except (OSError, RuntimeError, TypeError, ValueError) as exc:
                 decision = PolicyDecision(False, "preflight_failed", f"Action preflight failed safely: {exc}")
                 self._block_plan(plan, decision, now=now)
@@ -424,7 +434,7 @@ class ActionCenterOrchestrator:
                 run.transition("failed", "execution-failed", at=now)
                 run.recovery_status = "manual-review-required"
             if not result.success:
-                self._observe_failed_cleanup(run)
+                self._observe_failed_mutation(run)
             self.run_store.save(run)
             return run
         finally:
@@ -440,7 +450,7 @@ class ActionCenterOrchestrator:
                 raise ActionCenterError(f"Run cannot be interrupted from state: {run.state}")
             run.transition("interrupted", reason, at=self.clock())
             run.recovery_status = "manual-review-required"
-            self._observe_failed_cleanup(run)
+            self._observe_failed_mutation(run)
             self.run_store.save(run)
             return run
         finally:
@@ -449,9 +459,9 @@ class ActionCenterOrchestrator:
             elif lease is not None:
                 lease.__exit__(None, None, None)
 
-    def _observe_failed_cleanup(self, run: ActionRun) -> None:
-        """Read back a possibly partial cleanup without changing its failure state."""
-        if run.action_id != "remove-unused-flatpaks":
+    def _observe_failed_mutation(self, run: ActionRun) -> None:
+        """Retain exact partial Flatpak readback without rewriting failure state."""
+        if run.action_id not in {"remove-unused-flatpaks", "update-flatpaks"}:
             return
         try:
             plan = self.get_plan(run.plan_id)
@@ -463,7 +473,7 @@ class ActionCenterOrchestrator:
                 observation = decision.to_result(action_id=run.action_id)
         except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError):
             observation = ActionResult.fail(
-                "The interrupted cleanup could not be inspected. Review the selected installation.",
+                "The interrupted Flatpak change could not be inspected. Review the selected installation.",
                 action_id=run.action_id,
             )
         run.verification_result = observation.to_dict()
@@ -628,8 +638,14 @@ class ActionCenterOrchestrator:
             },
         )
 
-    def _render(self, definition: ActionDefinition, parameters: Mapping[str, Any]) -> list[str]:
-        vector = [str(part) for part in definition.command_renderer(parameters, self.runtime)]
+    def _render(self, definition: ActionDefinition, parameters: Mapping[str, Any], *, decision: PolicyDecision | None = None) -> list[str]:
+        if definition.evidence_renderer is not None:
+            if decision is None or not decision.allowed:
+                raise CommandValidationError("Resolved transaction rendering requires approved policy evidence.")
+            rendered = definition.evidence_renderer(parameters, self.runtime, decision)
+        else:
+            rendered = definition.command_renderer(parameters, self.runtime)
+        vector = [str(part) for part in rendered]
         if "pkexec" in vector:
             raise CommandValidationError("Canonical Action Center vectors must not contain pkexec.")
         validate_command_vector(vector)

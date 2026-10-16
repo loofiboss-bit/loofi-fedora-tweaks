@@ -98,6 +98,20 @@ states, and qualification requirements for every reachable GUI surface.
 
 ## Everyday workflows
 
+The v34.0.1 Accord candidate adds installation-bound Flatpak updates. Apps can
+explicitly check one selected installed Flatpak; Updates supports individual or
+multiple selection within an installation. Shared review explains selected
+apps, origin, versions, scope, and resolved runtime/extension operations.
+Approval binds the complete operation set and commits. Changes require fresh
+review; execution never silently adds remotes, rebases, or removes applications.
+
+Independent readback reports each reviewed ref in the same installation,
+including partial completion and unavailable observations. Real run IDs link to
+Activity. A separate navigation link opens existing unused-runtime maintenance
+for the affected installation without checking or cleaning automatically.
+Missing optional libflatpak support is unavailable. New RPM maintenance,
+background update checks, and automatic cleanup are outside this release.
+
 Profiles use [a separate portable format](TWEAK_PROFILES.md) and include supported
 user settings only. Import approval binds the reviewed values and action definitions;
 changes run sequentially through Action Center and stop on drift or verification failure.
