@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference for the published v33.0.1 "Concord" release.
+> Active architecture reference, including local v34.0.1 "Accord" candidate work.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -103,6 +103,36 @@ may need to be reopened before a setting is visible in an already open window.
   `PlatformProfile`. Unknown or unsupported profiles fail closed.
 
 ## Runtime layers
+
+`FlatpakUpdatesService` provides Qt-free, installation-bound candidates and
+resolved transaction previews for Apps, Updates, and the read-only CLI.
+The existing optional libflatpak helper resolves operations before review,
+then validates the approved installation, origins, before/target commits, and
+complete operation digest before application. Only updates and reviewed
+dependency installs are permitted; new remotes, rebases, and removals are
+rejected. The helper runs as the invoking user with native Flatpak authorization.
+Updates resolve the remote tip without an explicit `add_update` commit override,
+which would enable downgrade mode and require root for system installations.
+The ready callback checks every resolved commit against the approved digest.
+Unsigned local `file:` sources in system installations are unavailable: native
+Flatpak's LOCAL_PULL path rereads the source without the resolved checksum.
+Both commit and summary signature verification are required for this local
+system path; the complete repository configuration is also bound to the digest.
+Signed OSTree child repositories and OCI child images retain the resolved
+content, with native verification before deployment.
+
+`update-flatpaks` retains its action ID and accepts optional installation/ref
+filters. Unfiltered review enumerates scopes explicitly and execution remains
+sequential. The verifier reads each app/dependency commit from its exact
+installation; it never guesses the installation of an older saved plan.
+Existing CLI outputs and plan/run formats remain readable. New observations
+use a separate versioned cache under `StatePaths.cache`; cache observations do
+not authorize execution. Runtime cleanup remains a separate reviewed action.
+
+The executor's closed helper argument policy distinguishes discovery/preview
+from application. UI workers own cancellation and shutdown, retain per-scope
+errors, and transfer only inert ref/installation identities during navigation.
+See [Flatpak updates](docs/FLATPAK_UPDATES.md) for user and CLI behavior.
 
 Routine installation comparisons project the captured InstalledInventory and
 catalog-declared RPM counterparts without extra probes or inferred name matches.

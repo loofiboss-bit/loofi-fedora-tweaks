@@ -17,6 +17,8 @@ from ui.components.actions import QuietButton
 class UpdateWorkflowPage(QWidget):
     """Render System, Flatpak, and Firmware as independent source cards."""
 
+    actionReviewRequested = pyqtSignal(str, object)
+    contextRouteRequested = pyqtSignal(str, object)
     sourceActionRequested = pyqtSignal(str, str)
     diagnosisRequested = pyqtSignal(str, str)
     sourcesRequested = pyqtSignal(str)
@@ -71,6 +73,12 @@ class UpdateWorkflowPage(QWidget):
         self._diagnose_buttons: dict[str, QuietButton] = {}
         for source in UPDATE_SOURCES:
             self._add_source_card(source)
+        from ui.flatpak_updates import FlatpakUpdatesCard
+        self.flatpak_updates = FlatpakUpdatesCard(parent=self)
+        self.flatpak_updates.actionReviewRequested.connect(self.actionReviewRequested.emit)
+        self.flatpak_updates.routeRequested.connect(self.contextRouteRequested.emit)
+        self.flatpak_updates.stopped.connect(self._notify_stopped)
+        self.scaffold.add_widget(self.flatpak_updates)
         from ui.restart_advice import RestartAdviceCard
 
         self.restart_advice = RestartAdviceCard(parent=self)
@@ -172,6 +180,8 @@ class UpdateWorkflowPage(QWidget):
 
     def start_check(self, source: str) -> bool:
         """Run one explicit, read-only source check on a worker thread."""
+        if source == "flatpak":
+            return bool(self.flatpak_updates.check())
         source = str(source or "").strip()
         if source not in UPDATE_SOURCES:
             return False
@@ -371,7 +381,7 @@ class UpdateWorkflowPage(QWidget):
     @property
     def busy(self) -> bool:
         # Keep the source check owned until its terminal GUI callback arrives.
-        return self._check_worker is not None or self.preparation.busy or self.restart_advice.busy
+        return self._check_worker is not None or self.preparation.busy or self.restart_advice.busy or self.flatpak_updates.busy
 
     def _notify_stopped(self) -> None:
         if not self.busy:
@@ -379,25 +389,30 @@ class UpdateWorkflowPage(QWidget):
 
     def request_stop(self) -> None:
         self.cancel_check()
+        self.flatpak_updates.request_stop()
         self.preparation.request_stop()
         self.restart_advice.request_stop()
 
     def cleanup(self, timeout_ms: int = 1000) -> bool:
         """Retain a source worker when it cannot finish within the wait budget."""
         self.request_stop()
+        flatpak_stopped = self.flatpak_updates.cleanup(timeout_ms)
         preparation_stopped = self.preparation.cleanup(timeout_ms)
         restart_stopped = self.restart_advice.cleanup(timeout_ms)
         worker = self._check_worker
         if worker is None:
-            return preparation_stopped and restart_stopped
+            return flatpak_stopped and preparation_stopped and restart_stopped
         if worker.isRunning() and not worker.wait(timeout_ms):
             return False
         self._check_worker = None
         self._checking_source = None
         self._notify_stopped()
-        return preparation_stopped and restart_stopped
+        return flatpak_stopped and preparation_stopped and restart_stopped
 
     def _request_source(self, source: str) -> None:
+        if source == "flatpak":
+            self.flatpak_updates.check()
+            return
         cta = update_cta(self.state.source(source))
         if not cta.enabled:
             return

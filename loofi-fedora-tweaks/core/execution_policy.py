@@ -114,7 +114,7 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
         from services.software.flatpak_maintenance import trusted_helpers, validate_helper_args
         if privileged or command not in trusted_helpers() or not validate_helper_args(vector):
             return "manual_only"
-        return "host" if vector[0] == "apply" else "read_only"
+        return "host" if vector[0] in {"apply", "update-apply"} else "read_only"
     first = vector[0] if vector else ""
     if privileged:
         return "host"
@@ -176,8 +176,8 @@ def execution_allowed(
     action_id: str = "",
 ) -> bool:
     binary, vector, privileged = _unwrap(command, args)
-    if binary == "loofi-flatpak-maintenance" and vector[:1] == ("apply",):
-        return (not privileged and authority == "action_center" and action_id == "remove-unused-flatpaks"
+    if binary == "loofi-flatpak-maintenance" and vector[:1] in {("apply",), ("update-apply",)}:
+        return (not privileged and authority == "action_center" and action_id == ("update-flatpaks" if vector[0] == "update-apply" else "remove-unused-flatpaks")
                 and classify_command(command, args) == "host")
     custom_tweak = custom_numeric_tweak(binary, vector)
     if custom_tweak:

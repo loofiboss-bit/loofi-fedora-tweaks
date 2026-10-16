@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        33.0.1
+Version:        34.0.1
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -109,6 +109,10 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Fri Oct 16 2026 Loofi <loofi@example.com> - 34.0.1-1
+- Accord candidate: installation-bound Flatpak updates and verified app maintenance.
+- Preserve the historical v34.0.0 Citadel tag.
+
 * Sun Oct 11 2026 Loofi <loofi@example.com> - 33.0.1-1
 - Concord: clearer, more connected everyday Fedora workflows.
 - Preserve the historical v33.0.0 Bastion tag and release Concord as 33.0.1.

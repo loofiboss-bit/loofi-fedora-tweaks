@@ -163,6 +163,7 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
                 lambda selection, owner=install_page: self._review_utility_bundle(owner, selection)
             )
             install_page.routeRequested.connect(self._open_route_request)
+            install_page.contextRouteRequested.connect(self._open_route_request)
             install_page.actionReviewRequested.connect(
                 lambda action_id, parameters, owner=install_page: self._review_health_action(owner, action_id, parameters)
             )
@@ -220,6 +221,10 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
             update_page.sourceActionRequested.connect(
                 lambda source, action, owner=update_page: self._handle_update_source_action(owner, source, action)
             )
+            update_page.actionReviewRequested.connect(
+                lambda action_id, parameters, owner=update_page: self._review_health_action(owner, action_id, parameters)
+            )
+            update_page.contextRouteRequested.connect(self._open_route_request)
             update_page.diagnosisRequested.connect(self._open_update_diagnosis)
             update_page.sourcesRequested.connect(self._open_package_sources)
             update_page.recordRequested.connect(self._open_action_center_run)
@@ -504,16 +509,25 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         definition = ActionCatalog().get(action_id)
         title = definition.title if definition is not None else action_id.replace("-", " ").title()
         description = definition.description if definition is not None else self.tr("Apply this exact change and verify its result?")
+        scope = "\n".join(str(part) for part in ticket.preview)
+        technical = ()
+        if action_id == "update-flatpaks":
+            from ui.flatpak_updates import flatpak_review_lines
+            summary, technical = flatpak_review_lines(ticket.plan, self.tr)
+            if summary:
+                scope = "\n".join(summary)
         dialog = ReviewedActionDialog(
             title,
             description,
-            "\n".join(str(part) for part in ticket.preview),
+            scope,
             str(ticket.plan.recovery_guidance),
             require_no_rollback_acceptance=(
                 ticket.plan.risk_level in {"medium", "high"} and not ticket.plan.rollback_supported
             ),
             parent=self,
         )
+        if technical:
+            dialog.add_technical_details("\n".join(technical))
         if dialog.exec() != QDialog.DialogCode.Accepted:
             self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
             self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
@@ -550,6 +564,13 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
                 " ".join(part for part in (str(outcome.message), str(outcome.recovery_guidance) if not outcome.success else "") if part),
             )
         )
+        if ticket.plan.action_id == "update-flatpaks":
+            card = getattr(page, "flatpak_updates", None)
+            if card is None:
+                card = getattr(getattr(page, "installed_card", None), "updates", None)
+            if card is not None:
+                installation = ticket.plan.parameters.get("installation")
+                adapter.finished.connect(lambda outcome, owner=card, scope=installation: owner.set_outcome(outcome, scope))
         adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Failed"), str(message)))
         refresh = getattr(page, "refresh_installed_applications", None)
         if callable(refresh):

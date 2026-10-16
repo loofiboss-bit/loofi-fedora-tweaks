@@ -61,6 +61,7 @@ class ReviewedActionDialog(QDialog):
         self.review_scroll.setFrameShape(QFrame.Shape.NoFrame)
         body = QWidget()
         layout = QVBoxLayout(body)
+        self.review_layout = layout
         self.review_scroll.setWidget(body)
         root.addWidget(self.review_scroll, 1)
         heading = QLabel(title)
@@ -119,6 +120,13 @@ class ReviewedActionDialog(QDialog):
             available = screen.availableGeometry()
             self.resize(min(640, available.width()), min(520, available.height()))
         self._update_accept_enabled()
+
+    def add_technical_details(self, text: str) -> None:
+        from ui.components import DetailsDisclosure
+
+        details = DetailsDisclosure(summary=self.tr("Show exact transaction commits"))
+        details.set_details(text)
+        self.review_layout.addWidget(details)
 
     @property
     def accepts_no_rollback(self) -> bool:

@@ -111,6 +111,10 @@ def pytest_runtest_makereport(item, call):
     report = outcome.get_result()
     if report.failed:
         print(str(report.longrepr), flush=True)
+        registry = item.funcargs.get("app_process_registry", [])
+        print("Suite-owned app process status: " + json.dumps([
+            {"pid": process.pid, "exit_code": process.poll()} for process in registry
+        ]), flush=True)
         from helpers import _driver
         if _driver is not None:
             try:

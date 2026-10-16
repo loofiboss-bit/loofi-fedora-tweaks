@@ -13,7 +13,7 @@ from core.actions.contracts import (
     PolicyDecision,
     VerificationDecision,
 )
-from core.executor.action_result import ActionResult
+from core.actions.flatpak_updates import flatpak_update_definition
 from core.local_profiles import validate_local_profile
 from core.actions.public_boundary_definitions import (
     _manual_definition as _shared_manual_definition,
@@ -127,17 +127,7 @@ def assurance_definitions() -> list[ActionDefinition]:
             affected_resources=("rpm-ostree-deployment", "boot-state"),
             parameter_validator=_validate_rpm_ostree_rollback,
         ),
-        ActionDefinition(
-            id="update-flatpaks",
-            capability_id="updates.flatpak.apply",
-            title="Update Flatpaks",
-            description="Update the exact Flatpak refs discovered during preflight.",
-            parameter_schema={}, risk_level="low", privileged=False,
-            confirmation_policy="explicit", recovery_guidance="Review Flatpak history and application data if an update regresses.",
-            rollback_supported=False, command_renderer=_render_flatpak_update,
-            preflight_checker=_preflight_flatpak_update, verifier=_verify_flatpak_update,
-            interaction_policy="automatic",
-        ),
+        flatpak_update_definition(),
         ActionDefinition(
             id="update-firmware",
             capability_id="updates.firmware.apply",
@@ -696,45 +686,6 @@ def _validate_recovery_point(parameters: Mapping[str, Any]) -> PolicyDecision:
     if not isinstance(description, str) or not _DESCRIPTION_PATTERN.fullmatch(description.strip()):
         return _blocked("invalid_snapshot_description", "Description must contain 1-80 printable characters.")
     return _allowed("parameters_valid", "Recovery-point parameters are valid.")
-
-
-def _preflight_flatpak_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
-    result, refs = _query_flatpak_updates(runtime)
-    if not result.success:
-        return _blocked("flatpak_query_failed", "Flatpak updates could not be queried.")
-    if not refs:
-        return _blocked("no_flatpak_updates", "No Flatpak updates are currently available.")
-    return _allowed("preflight_ok", f"{len(refs)} Flatpak refs are ready.", refs=refs)
-
-
-def _render_flatpak_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> list[str]:
-    result, refs = _query_flatpak_updates(runtime)
-    if not result.success or not refs:
-        raise ValueError("Flatpak update candidates are unavailable.")
-    return ["flatpak", "update", "--noninteractive", "--assumeyes", *[item["id"] for item in refs]]
-
-
-def _query_flatpak_updates(runtime: ActionRuntime) -> tuple[ActionResult, list[dict[str, str]]]:
-    result = runtime.execute_read_only(
-        ["flatpak", "remote-ls", "--updates", "--columns=ref,commit"],
-        action_id="update-flatpaks-candidates",
-        timeout=90,
-    )
-    return result, _tab_records(result.stdout)
-
-
-def _verify_flatpak_update(_run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
-    failed = []
-    for record in plan.policy_decision.facts.get("refs", []):
-        if not isinstance(record, dict):
-            continue
-        ref, expected = str(record.get("id", "")), str(record.get("value", ""))
-        result = runtime.execute_read_only(["flatpak", "info", "--show-commit", ref], action_id="update-flatpaks-verify-ref", timeout=30)
-        if not result.success or (expected and result.stdout.strip() != expected):
-            failed.append(ref)
-    if failed:
-        return VerificationDecision.failed("One or more planned Flatpak refs could not be verified.", failed_refs=failed)
-    return VerificationDecision.succeeded("All planned Flatpak refs were verified.")
 
 
 def _preflight_firmware_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:

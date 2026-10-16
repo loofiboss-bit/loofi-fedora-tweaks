@@ -76,6 +76,33 @@ def handle_self_update(args, json_output, output_json, print_fn, system_manager_
 
 def handle_updates(args, json_output, output_json, print_fn, run_operation, update_manager_cls):
     """Handle smart updates subcommand."""
+    if args.action == "flatpaks":
+        from services.software.flatpak_updates import FlatpakUpdatesService
+
+        snapshot = FlatpakUpdatesService().discover(
+            installation=getattr(args, "installation", None),
+            refs=tuple(getattr(args, "refs", ())),
+        )
+        if json_output:
+            output_json(snapshot.to_dict())
+        else:
+            print_fn(f"Flatpak updates: {snapshot.status}")
+            print_fn(f"Checked: {snapshot.checked_at}")
+            if snapshot.error:
+                print_fn(snapshot.error)
+            for installation in snapshot.installations:
+                print_fn(f"  Installation: {installation.installation}")
+                if not installation.available:
+                    print_fn(f"    Unavailable: {installation.error}")
+                elif not installation.candidates:
+                    print_fn("    No available updates observed.")
+                for candidate in installation.candidates:
+                    print_fn(f"    {candidate.name or candidate.ref}: {candidate.installed_version or candidate.installed_commit}"
+                             f" → {candidate.available_version or candidate.expected_commit}")
+                    print_fn(f"      Ref: {candidate.ref} · Source: {candidate.origin}")
+            print_fn("Observation only. Updates require a separate Action Center review.")
+        return 0 if snapshot.available and snapshot.status not in {"partial", "cancelled"} else 1
+
     if args.action == "restart-advice":
         from services.software.restart_advice import RestartAdviceService
 

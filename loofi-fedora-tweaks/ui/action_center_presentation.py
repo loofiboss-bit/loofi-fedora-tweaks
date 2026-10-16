@@ -137,6 +137,10 @@ def plan_details(plan: Any, title: str, translate: Callable[[str], object]) -> A
     reboot = restart_label(plan.reboot_policy, translate)
     validation = f"{t('Preflight')}: {plan.policy_decision.explanation} · {t('Verification required after execution')}"
     risk = t(str(plan.risk_level).replace("_", " ").title())
+    flatpak_summary, flatpak_technical = (), ()
+    if plan.action_id == "update-flatpaks":
+        from ui.flatpak_updates import flatpak_review_lines
+        flatpak_summary, flatpak_technical = flatpak_review_lines(plan, translate)
     return ActionCenterDetails(
         summary_lines=(
             f"{t('Intended outcome')}: {title}",
@@ -145,7 +149,7 @@ def plan_details(plan: Any, title: str, translate: Callable[[str], object]) -> A
             f"{t('Restart requirement')}: {reboot}",
             f"{t('Verification')}: {t('Required after execution')}",
             f"{t('Recovery guidance')}: {plan.recovery_guidance}",
-        ),
+        ) + flatpak_summary,
         technical_lines=(
             f"{t('Plan')}: {plan.plan_id}",
             f"{t('Definition')}: {plan.action_id}",
@@ -155,7 +159,7 @@ def plan_details(plan: Any, title: str, translate: Callable[[str], object]) -> A
             f"{t('Preflight')}: {plan.policy_decision.reason_code} — {plan.policy_decision.explanation}",
             f"{t('Command preview')}: {' '.join(plan.preview) if plan.preview else t('Manual-only')}",
             f"{t('Expires')}: {plan.expires_at}",
-        ),
+        ) + flatpak_technical,
         risk=risk,
         scope=resources,
         requirements=f"{privilege} · {t('Restart')}: {reboot}",

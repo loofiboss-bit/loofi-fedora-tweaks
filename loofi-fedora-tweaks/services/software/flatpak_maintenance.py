@@ -44,15 +44,42 @@ def helper_command() -> str:
 def validate_helper_args(args: Sequence[str]) -> bool:
     """Accept only closed helper modes; never paths, arbitrary options or code."""
     args = list(args)
-    if len(args) > 517 or any(not isinstance(arg, str) or len(arg) > 512 for arg in args):
+    if len(args) > 4096 or any(not isinstance(arg, str) or len(arg) > 512 for arg in args):
         return False
     if args == ["installations"]:
         return True
     if len(args) < 3 or args[1] != "--installation" or not INSTALLATION_PATTERN.fullmatch(args[2]):
         return False
+    if args[0] in {"updates", "update-preview"}:
+        refs = args[4::2]
+        return (len(args) % 2 == 1 and len(refs) <= 256 and len(set(refs)) == len(refs)
+                and all(args[index] == "--ref" for index in range(3, len(args), 2))
+                and all(REF_PATTERN.fullmatch(ref) for ref in refs))
+    if args[0] == "update-apply":
+        try:
+            index, scopes = 1, set()
+            while index < len(args):
+                if args[index] != "--installation" or not INSTALLATION_PATTERN.fullmatch(args[index + 1]) or args[index + 1] in scopes:
+                    return False
+                scopes.add(args[index + 1])
+                if args[index + 2] != "--snapshot-digest" or not DIGEST_PATTERN.fullmatch(args[index + 3]):
+                    return False
+                index += 4
+                selected_refs: set[str] = set()
+                while index < len(args) and args[index] == "--ref":
+                    ref = args[index + 1]
+                    if not REF_PATTERN.fullmatch(ref) or ref in selected_refs or args[index + 2] != "--commit" or not DIGEST_PATTERN.fullmatch(args[index + 3]):
+                        return False
+                    selected_refs.add(ref)
+                    index += 4
+                if not selected_refs or len(selected_refs) > 256:
+                    return False
+            return bool(scopes) and len(scopes) <= 64
+        except IndexError:
+            return False
     if args[0] == "unused":
         return len(args) == 3
-    if args[0] == "details":
+    if args[0] in {"details", "update-state"}:
         return len(args) == 5 and args[3] == "--ref" and bool(REF_PATTERN.fullmatch(args[4]))
     if args[0] != "apply" or len(args) < 7 or args[3] != "--snapshot-digest" or not DIGEST_PATTERN.fullmatch(args[4]):
         return False
@@ -122,21 +149,24 @@ class FlatpakMaintenanceService:
         self.probe = probe or self._probe
 
     @staticmethod
-    def _probe(vector: Sequence[str]) -> dict[str, Any]:
+    def _probe(vector: Sequence[str], *, cancelled: Callable[[], bool] | None = None) -> dict[str, Any]:
         # Read incrementally: communicate() would accumulate an unbounded child output.
         process = None
         try:
             process = subprocess.Popen(list(vector), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             assert process.stdout is not None
-            deadline = time.monotonic() + INSPECTION_TIMEOUT
+            deadline = time.monotonic() + (90 if len(vector) > 1 and vector[1] in {"updates", "update-preview"} else INSPECTION_TIMEOUT)
             output = bytearray()
             with selectors.DefaultSelector() as selector:
                 selector.register(process.stdout, selectors.EVENT_READ)
                 while selector.get_map():
+                    if cancelled and cancelled():
+                        process.terminate()
+                        return {"available": False, "cancelled": True}
                     remaining = deadline - time.monotonic()
                     if remaining <= 0:
                         raise TimeoutError
-                    for key, _ in selector.select(remaining):
+                    for key, _ in selector.select(min(remaining, 0.1)):
                         chunk = cast(io.BufferedReader, process.stdout).read1(65536)
                         if not chunk:
                             selector.unregister(key.fileobj)

@@ -195,6 +195,7 @@ class ActionRuntime(Protocol):
 
 
 CommandRenderer = Callable[[Mapping[str, Any], ActionRuntime], Sequence[str]]
+EvidenceRenderer = Callable[[Mapping[str, Any], ActionRuntime, PolicyDecision], Sequence[str]]
 PreflightChecker = Callable[[Mapping[str, Any], ActionRuntime], PolicyDecision]
 ParameterValidator = Callable[[Mapping[str, Any]], PolicyDecision]
 PrivilegeResolver = Callable[[Mapping[str, Any], ActionRuntime], bool]
@@ -267,6 +268,9 @@ class ActionDefinition:
     # keeps the historical risk-derived behaviour for actions that have not
     # opted into the compact GUI flow.
     interaction_policy: InteractionPolicy = "risk"
+    # Render a resolved transaction from the same facts the user reviewed.
+    # This runtime-only hook does not change persisted definition/plan formats.
+    evidence_renderer: EvidenceRenderer | None = field(default=None, repr=False, compare=False)
 
     def to_dict(self) -> dict[str, Any]:
         return {

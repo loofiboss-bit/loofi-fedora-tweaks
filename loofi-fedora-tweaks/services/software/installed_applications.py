@@ -68,7 +68,7 @@ class InstalledInventory:
         return {"applications": [item.to_dict() for item in self.applications], "errors": list(self.errors), "unknown_sources": sorted(self.unknown_sources)}
 
 
-def parse_flatpak_inventory(output: str) -> tuple[InstalledApplication, ...]:
+def parse_flatpak_inventory(output: str, *, installation: str | None = None) -> tuple[InstalledApplication, ...]:
     apps = []
     identities = set()
     lines = output.splitlines()
@@ -78,20 +78,28 @@ def parse_flatpak_inventory(output: str) -> tuple[InstalledApplication, ...]:
         if not line.strip():
             continue
         fields = line.split("\t")
-        if len(fields) != 6:
+        expected_lengths = {6} if installation is None else {5, 6}
+        if len(fields) not in expected_lengths:
             raise ValueError("Flatpak returned an invalid installation inventory.")
-        name, app_id, ref, version, size, installation = (part.strip() for part in fields)
-        installation_flag(installation)
+        if installation is None:
+            name, app_id, ref, version, size, scope = (part.strip() for part in fields)
+        else:
+            # A scoped query supplies the stable installation ID. The optional
+            # CLI installation column may contain a display value, so it is
+            # intentionally not used to form the application identity.
+            name, app_id, ref, version, size = (part.strip() for part in fields[:5])
+            scope = installation
+        installation_flag(scope)
         # flatpak list --app prints id/arch/branch; preserve a full app ref.
         if len(ref.split("/")) == 3:
             ref = f"app/{ref}"
         if not validate_ref(ref) or ref.split("/")[1] != app_id or not name:
             raise ValueError("Flatpak returned an invalid application identity.")
-        identity = (installation, ref)
+        identity = (scope, ref)
         if identity in identities:
             raise ValueError("Flatpak returned a duplicate installation identity.")
         identities.add(identity)
-        apps.append(InstalledApplication(name, app_id, "flatpak", installation, ref, version, size))
+        apps.append(InstalledApplication(name, app_id, "flatpak", scope, ref, version, size))
     return tuple(apps)
 
 
@@ -100,12 +108,14 @@ class InstalledApplicationService:
     FLATPAK_VECTOR = ("flatpak", "list", "--app", "--columns=name,application,ref,version,size,installation")
 
     def __init__(self, *, probe: Probe | None = None, catalog: ApplicationCatalog | None = None,
-                 desktop_roots: tuple[Path, ...] | None = None, clock: Callable[[], float] = time.monotonic) -> None:
+                 desktop_roots: tuple[Path, ...] | None = None, clock: Callable[[], float] = time.monotonic,
+                 installation_reader: Callable[[], Sequence[str]] | None = None) -> None:
         self.probe = probe or self._probe
         self._custom_probe = probe
         self.catalog = catalog or ApplicationCatalog()
         self.desktop_roots = desktop_roots
         self.clock = clock
+        self.installation_reader = installation_reader
 
     @staticmethod
     def _probe(vector: Sequence[str], *, timeout: float = 15,
@@ -165,8 +175,63 @@ class InstalledApplicationService:
             return self._custom_probe(vector)
         return self._probe(vector, timeout=timeout, cancelled=cancelled)
 
-    def flatpaks(self, *, timeout: float = 8.0,
+    def flatpaks(self, *, installation: str | None = None, timeout: float = 8.0,
                  cancelled: Callable[[], bool] = lambda: False) -> InstalledInventory:
+        if installation is not None:
+            try:
+                installation_flag(installation)
+            except (TypeError, ValueError) as exc:
+                return InstalledInventory(errors=(str(exc),), unknown_sources=frozenset({"flatpak"}))
+            scopes: tuple[str, ...] = (installation,)
+        elif self._custom_probe is not None and self.installation_reader is None:
+            # Keep the existing aggregate probe contract for reviewed executors
+            # and deterministic test doubles.
+            return self._aggregate_flatpaks(timeout=timeout, cancelled=cancelled)
+        else:
+            try:
+                if self.installation_reader is None:
+                    from services.software.flatpak_maintenance import FlatpakMaintenanceService
+                    scope_values: Sequence[str] = FlatpakMaintenanceService().installations()
+                else:
+                    scope_values = self.installation_reader()
+                scopes = tuple(dict.fromkeys(scope_values))
+            except (OSError, RuntimeError, TypeError, ValueError):
+                scopes = tuple()
+            if not scopes:
+                # Preserve the default-installation listing where optional
+                # libflatpak enumeration is unavailable. Unknown named scopes
+                # still fail closed in the aggregate parser.
+                return self._aggregate_flatpaks(timeout=timeout, cancelled=cancelled)
+
+        applications: list[InstalledApplication] = []
+        errors: list[str] = []
+        deadline = time.monotonic() + max(0.0, timeout)
+        for scope in scopes:
+            try:
+                scope_flag = installation_flag(scope)
+            except (TypeError, ValueError):
+                errors.append("Flatpak returned an invalid installation identifier.")
+                continue
+            remaining = deadline - time.monotonic()
+            if remaining <= 0 or cancelled():
+                errors.append("Flatpak installation inventory read was cancelled or exceeded its time limit.")
+                break
+            vector = ("flatpak", "list", scope_flag, "--app", "--columns=name,application,ref,version,size")
+            result = self._read_probe(vector, timeout=remaining, cancelled=cancelled)
+            if not result.success:
+                errors.append("Flatpak installation inventory could not be read for " + scope + ".")
+                continue
+            try:
+                applications.extend(parse_flatpak_inventory(result.stdout, installation=scope))
+            except ValueError as exc:
+                errors.append(str(exc))
+        return InstalledInventory(
+            tuple(applications), tuple(dict.fromkeys(errors)),
+            frozenset({"flatpak"}) if errors else frozenset(),
+        )
+
+    def _aggregate_flatpaks(self, *, timeout: float,
+                            cancelled: Callable[[], bool]) -> InstalledInventory:
         result = self._read_probe(self.FLATPAK_VECTOR, timeout=max(0.0, timeout), cancelled=cancelled)
         if not result.success:
             return InstalledInventory(errors=("Flatpak installation inventory could not be read.",), unknown_sources=frozenset({"flatpak"}))

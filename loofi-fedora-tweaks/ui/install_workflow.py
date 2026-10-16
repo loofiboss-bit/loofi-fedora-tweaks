@@ -62,6 +62,7 @@ class InstallWorkflowPage(QWidget):
     # a normal CTA; the visible review button always owns this page's primary
     # action.
     routeRequested = pyqtSignal(str)
+    contextRouteRequested = pyqtSignal(str, object)
 
     def __init__(
         self,
@@ -213,6 +214,8 @@ class InstallWorkflowPage(QWidget):
         from ui.installed_applications import InstalledApplicationsCard
         self.installed_card = InstalledApplicationsCard(service=installed_service, parent=self)
         self.installed_card.actionReviewRequested.connect(self.actionReviewRequested.emit)
+        self.installed_card.updates.checkStarted.connect(lambda: self.body_scroll.ensureWidgetVisible(self.installed_card.updates))
+        self.installed_card.routeRequested.connect(self.contextRouteRequested.emit)
         self.installed_card.nativeSettingsRequested.connect(self.nativeSettingsRequested.emit)
         self.installed_card.inventoryUpdated.connect(self._apply_installed_inventory)
         self.installed_card.stopped.connect(self._notify_stopped)
