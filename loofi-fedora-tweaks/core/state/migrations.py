@@ -37,6 +37,9 @@ def registry_for_inventory(inventory: Any) -> SchemaRegistry:
     registry = SchemaRegistry()
     for domain in inventory.all():
         registry.register(domain.schema_id, domain.schema_version)
+    if any(domain.schema_id == "loofi.user-guides" for domain in inventory.all()):
+        # v2 adds aggregate profile references; all v1 fields keep their meaning.
+        registry.add_migration("loofi.user-guides", 1, _migration_to_version(2))
     if any(domain.schema_id == "loofi.health-snapshots" for domain in inventory.all()):
         registry.add_migration(
             "loofi.health-snapshots",

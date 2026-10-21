@@ -399,14 +399,21 @@ class TweakProfilesMixin:
         adapter.finished.connect(results.append)
         adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
         adapter.cancelled.connect(lambda: page.set_profile_notice(self.tr("Profile application cancelled before any change started.")))
-        adapter.stopped.connect(lambda: self._finish_tweak_profile(page, results[0]) if results else None)
+        adapter.stopped.connect(lambda: self._finish_tweak_profile(page, results[0], review, tuple(selected)) if results else None)
         page.set_busy(True, self.tr("Applying reviewed settings…"), cancellable=True)
         page.cancel_snapshot_button.setText(self.tr("Cancel remaining changes"))
         adapter.start(lambda: apply_profile(review, controller, confirmed=True, selected_ids=selected, is_cancelled=lambda: adapter.cancel_requested))
 
-    def _finish_tweak_profile(self: Any, page: Any, result: ProfileResult) -> None:
+    def _finish_tweak_profile(self: Any, page: Any, result: ProfileResult, review: ProfileReview | None = None, selected_ids: tuple[str, ...] | None = None) -> None:
         page.set_busy(False, result.message)
         page.set_profile_result(result)
+        if result.success and review is not None and selected_ids is not None:
+            from core.tasks.guide_profile_results import GuideProfileResultStore
+
+            try:
+                GuideProfileResultStore().save(result, review, selected_ids)
+            except (OSError, RuntimeError, TypeError, ValueError):
+                page.set_profile_notice(self.tr("Settings results remain in Activity. A complete profile result reference could not be saved."), error=True)
         affected = tuple(entry.id for entry in result.entries if entry.status != "skipped")
         if not affected:
             return

@@ -353,8 +353,13 @@ class InstalledApplicationsCard(Card):
                 remove = QPushButton(self.tr("Review removal"))
                 remove.clicked.connect(lambda _checked=False, item=app: self.actionReviewRequested.emit("remove-installed-flatpak", {"ref": item.ref, "installation": item.installation}))
             else:
-                remove = QPushButton(self.tr("Open software manager"))
-                remove.clicked.connect(lambda _checked=False, item=app: self.open_software_manager(item))
+                from services.system import SystemManager
+                if SystemManager.is_atomic():
+                    remove = QPushButton(self.tr("Open software manager"))
+                    remove.clicked.connect(lambda _checked=False, item=app: self.open_software_manager(item))
+                else:
+                    remove = QPushButton(self.tr("Review removal"))
+                    remove.clicked.connect(lambda _checked=False, item=app: self.actionReviewRequested.emit("remove-application", {"source": "fedora", "package_id": item.ref}))
             row.add_widget(remove)
             self.add_widget(row)
             self._rows.append(row)

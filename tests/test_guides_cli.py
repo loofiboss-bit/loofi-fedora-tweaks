@@ -12,6 +12,7 @@ from unittest.mock import patch
 
 from cli.main import main
 from cli.parser import build_parser
+from core.tasks.guides import GUIDES_BY_ID, GuideProgressStore
 
 
 class GuideCliCase(unittest.TestCase):
@@ -54,7 +55,7 @@ class TestGuideCliGrammar(GuideCliCase):
         self.assertEqual(result, 0)
         self.assertEqual(payload["schema_id"], "loofi.user-guides")
         self.assertEqual({item["id"] for item in payload["guides"]}, {
-            "make-fedora-yours", "choose-and-manage-apps", "maintain-your-system", "solve-a-problem",
+            "get-fedora-ready", "make-fedora-yours", "choose-and-manage-apps", "maintain-your-system", "solve-a-problem",
         })
         self.assertFalse((Path(os.environ["XDG_DATA_HOME"]) / "loofi-fedora-tweaks" / "guides.json").exists())
 
@@ -75,6 +76,32 @@ class TestGuideCliGrammar(GuideCliCase):
         self.assertEqual(result, 2)
         self.assertIn("Unknown guide: missing-guide", self.stderr.getvalue())
         self.assertEqual(self.stdout.getvalue(), "")
+
+    def test_setup_review_is_acknowledgement_in_cli_json(self):
+        store = GuideProgressStore()
+        guide = GUIDES_BY_ID["get-fedora-ready"]
+        store.select(guide.id)
+        for step in guide.steps:
+            store.update_step(guide.id, step.id, "reviewed")
+        before = store.path.read_bytes()
+
+        self.assertEqual(main(["--json", "guides", "list"]), 0)
+
+        listed = next(item for item in json.loads(self.stdout.getvalue())["guides"] if item["id"] == guide.id)
+        self.assertEqual(listed["completed_steps"], 1)  # Backup acknowledgement only.
+        self.assertEqual(store.path.read_bytes(), before)
+
+    def test_setup_skips_are_complete_in_cli_json(self):
+        store = GuideProgressStore()
+        guide = GUIDES_BY_ID["get-fedora-ready"]
+        store.select(guide.id)
+        for step in guide.steps:
+            store.update_step(guide.id, step.id, "skipped")
+
+        self.assertEqual(main(["--json", "guides", "list"]), 0)
+
+        listed = next(item for item in json.loads(self.stdout.getvalue())["guides"] if item["id"] == guide.id)
+        self.assertEqual(listed["completed_steps"], len(guide.steps))
 
 
 if __name__ == "__main__":

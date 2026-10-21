@@ -65,3 +65,28 @@ def test_saved_setting_and_guide_survive_actual_guest_reboot(loofi_app) -> None:
     result = subprocess.run(["kreadconfig6", "--file", "dolphinrc", "--group", "General", "--key", "ShowFullPath", "--default", "false"],
                             check=True, capture_output=True, text=True, timeout=10)
     assert (result.stdout.strip().lower() == "true") == before
+
+
+@pytest.mark.skipif(os.environ.get("LOOFI_E2E_PHASE") != "after-reboot", reason="requires real Action Center offline activation")
+def test_signed_offline_update_was_verified_after_real_reboot() -> None:
+    evidence = json.loads(Path("/var/tmp/loofi-e2e/offline-update-evidence.json").read_text())
+    assert evidence["before_boot_id"] != evidence["after_boot_id"]
+    actions = evidence["application_actions"]
+    assert [item["action_id"] for item in actions["operations"]] == ["install-application", "remove-application", "install-application"]
+    assert all(item["status"] == "succeeded" for item in actions["operations"])
+    assert actions["stale_review"]["status"] == "blocked"
+    assert actions["unrelated_preserved"] is True and actions["data_preserved"] is True
+    assert actions["package_id"] == "loofi-e2e-offline-update-0:1.0-1.noarch"
+    assert evidence["activation_requested"] is True
+    assert evidence["stage"]["status"] == "awaiting_reboot"
+    assert evidence["verification"]["status"] == "succeeded"
+    assert evidence["unrelated_preserved"] is True
+    assert evidence["data_preserved"] is True
+    verification = evidence["verification"]["run"]["verification_result"]["data"]
+    assert verification["transaction_id"] > 0
+    assert verification["verified_packages"] == 1
+    assert len(evidence["signing_fingerprint"]) == 40
+    before = [item for item in evidence["before_packages"] if item.startswith("loofi-e2e-offline-update|")]
+    after = [item for item in evidence["after_packages"] if item.startswith("loofi-e2e-offline-update|")]
+    assert before == ["loofi-e2e-offline-update|1.0-1|noarch"]
+    assert after == ["loofi-e2e-offline-update|2.0-1|noarch"]

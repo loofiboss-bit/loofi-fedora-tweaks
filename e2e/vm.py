@@ -47,6 +47,13 @@ MIN_DISK_GIB = 40
 GUEST_USER = "loofie2e"
 GUEST_AGENT_TIMEOUT = 15
 GUEST_RUN_TIMEOUT = 45 * 60
+# Include the bounded native setup/offline work performed after desktop pytest,
+# plus time for runtime qualification and report finalization.
+GUEST_PHASE_TIMEOUTS = {
+    "normal": GUEST_RUN_TIMEOUT + 120,
+    "before-reboot": GUEST_RUN_TIMEOUT + 900 + 600 + 120,
+    "after-reboot": GUEST_RUN_TIMEOUT + 300 + 120,
+}
 INSTALL_TIMEOUT = 90 * 60
 PASSWORD_ITERATIONS = 600_000
 
@@ -195,15 +202,81 @@ def _memory_mib(element: ET.Element | None) -> int | None:
     return int(int(element.text) * multiplier) if multiplier is not None else None
 
 
+def _validate_graphics(xml: ET.Element) -> None:
+    """Allow one local Spice endpoint or an explicitly disabled listener."""
+    graphics = xml.findall("./devices/graphics")
+    if len(graphics) != 1 or graphics[0].get("type") != "spice":
+        raise VMError("The E2E VM requires exactly one isolated Spice graphics device.")
+    graphics = graphics[0]
+    listeners = graphics.findall(".//listen")
+    if len(listeners) != 1 or len(graphics.findall("./listen")) != 1:
+        raise VMError("The E2E VM graphics device must have exactly one explicit listener.")
+    listener = listeners[0]
+    local = listener.attrib == {"type": "address", "address": "127.0.0.1"}
+    disabled = listener.attrib == {"type": "none"}
+    if not (local or disabled) or "socket" in graphics.attrib or "address" in graphics.attrib or graphics.findall(".//socket"):
+        raise VMError("The E2E VM graphics endpoint must use localhost or an explicit disabled listener without a socket.")
+    if graphics.get("listen") not in (None, "127.0.0.1") or (disabled and any(
+            name in graphics.attrib for name in ("listen", "port", "tlsPort", "websocket"))):
+        raise VMError("The E2E VM graphics device has an unexpected additional endpoint.")
+    gl = graphics.findall(".//gl")
+    if len(gl) > 1 or any(node.get("enable") != "no" for node in gl):
+        raise VMError("The E2E VM graphics device must not enable GL.")
+
+
+def _qt_runtime_payload(manifest_path: Path) -> tuple[dict[str, Any], bytes, bytes]:
+    """Validate the explicit source-built runtime before any guest starts."""
+    try:
+        manifest = json.loads(manifest_path.read_text(encoding="utf-8"))
+        if not isinstance(manifest, dict):
+            raise ValueError("manifest must be an object")
+        expected_source = "5b2e00eccaf5a4d8c14134ffa0ea8dfd0a35ae1ffc7f8d87fa4305a1ed23cf22"
+        if manifest.get("passed") is not True or type(manifest.get("exit_code")) is not int or manifest["exit_code"] != 0:
+            raise ValueError("corrected runtime native regression did not pass")
+        archive = manifest_path.parent / "qtbase-everywhere-src-6.11.2.tar.xz"
+        with archive.open("rb") as source:
+            source_hash = hashlib.file_digest(source, "sha256").hexdigest()
+        patch_hash = hashlib.sha256((ROOT / "packaging/qt/qtbase-scroll-area-accessibility.patch").read_bytes()).hexdigest()
+        if source_hash != expected_source or manifest.get("source_sha256") != expected_source:
+            raise ValueError("official Qt source archive hash mismatch")
+        if manifest.get("patch_sha256") != patch_hash:
+            raise ValueError("runtime patch hash does not match the checked-in fix")
+        library = Path(manifest["runtime_path"])
+        if library.name != "libQt6Widgets.so.6.11.2" or library.stat().st_size > 32 * 1024**2:
+            raise ValueError("unexpected corrected Widgets library")
+        content = library.read_bytes()
+        if not content.startswith(b"\x7fELF") or hashlib.sha256(content).hexdigest() != manifest.get("runtime_sha256"):
+            raise ValueError("corrected Widgets library hash mismatch")
+        probe = (manifest_path.parent / "qt-scroll-probe").read_bytes()
+        if not probe.startswith(b"\x7fELF") or len(probe) > 2 * 1024**2:
+            raise ValueError("invalid native regression executable")
+        if not isinstance(manifest.get("installed_dependencies"), str):
+            raise ValueError("installed dependency package identities must be text")
+        packages = manifest["installed_dependencies"].splitlines()
+        expected_packages = [next(value for value in packages if re.fullmatch(
+            name + r"-6\.11\.2-[A-Za-z0-9.]+\.fc44\.x86_64", value)) for name in ("qt6-qtbase", "qt6-qtbase-gui")]
+        dependencies = manifest["dependency_libraries"]
+        for name in ("Core", "Gui"):
+            if dependencies[name]["path"] != f"/usr/lib64/libQt6{name}.so.6.11.2" or not re.fullmatch(
+                    r"[0-9a-f]{64}", dependencies[name]["sha256"]):
+                raise ValueError("invalid expected Core/Gui library identity")
+        return {"manifest": manifest, "expected_packages": expected_packages,
+                "probe_sha256": hashlib.sha256(probe).hexdigest()}, content, probe
+    except (OSError, ValueError, KeyError, TypeError, StopIteration) as exc:
+        raise VMError(f"Invalid corrected Qt runtime manifest: {exc}") from exc
+
+
 class FedoraE2E:
     """Own exactly one test VM in qemu:///session and its generated disks."""
 
-    def __init__(self, data_root: Path | None = None, reports_dir: Path | None = None, *, name: str = VM_NAME, desktop: str = "x11", reboot_check: bool = False):
+    def __init__(self, data_root: Path | None = None, reports_dir: Path | None = None, *, name: str = VM_NAME, desktop: str = "x11", reboot_check: bool = False, qt_runtime_manifest: Path | None = None):
         if not re.fullmatch(r"loofi-fedora-tweaks-e2e(?:-[a-z0-9-]+)?", name) or desktop not in {"x11", "wayland"}:
             raise VMError("Invalid dedicated E2E VM name or desktop.")
         self.name = name
         self.desktop = desktop
         self.reboot_check = reboot_check
+        self.qt_runtime_manifest = qt_runtime_manifest
+        self._qt_runtime = _qt_runtime_payload(qt_runtime_manifest) if qt_runtime_manifest else None
         self.data_root = (data_root or _default_data_root()).expanduser().resolve()
         self.reports_dir = (reports_dir or ROOT / "test-results" / "e2e").resolve()
         self.base_disk = self.data_root / "fedora-kde-base.qcow2"
@@ -231,7 +304,8 @@ class FedoraE2E:
             os.chmod(self.lock_path, 0o600)
             self.reports_dir.mkdir(parents=True, exist_ok=True, mode=0o700)
             report_names = ["summary.json", "runner.log", "junit.xml", "pytest.log", "guest-result.json", "install.log", "application.log", "polkit-before.xml"]
-            report_names.extend(["package-fixture.log", "reboot-checkpoint.json", "flatpak-update-evidence.json", "crash-diagnostics.json"])
+            report_names.extend(["package-fixture.log", "offline-update-evidence.json", "application-action-evidence.json", "offline-activation.log", "reboot-checkpoint.json", "flatpak-update-evidence.json", "crash-diagnostics.json", "qt-runtime-host.json", "qt-runtime-evidence.json", "qt-runtime-applications.json"])
+            report_names.extend(["setup-transactions.log", "setup-transactions-evidence.json", "flatpak-install-evidence.json"])
             report_names.extend(Path(name).stem + "-after-reboot" + Path(name).suffix for name in tuple(report_names) if name not in {"summary.json", "runner.log"})
             report_names.extend(path.name for path in self.reports_dir.glob("*-accessibility.xml"))
             for name in report_names:
@@ -245,7 +319,7 @@ class FedoraE2E:
                 self._load_state()
                 print("Building the current RPM...", flush=True)
                 rpm = self._build_rpm()
-                self._rpm_evidence = {"filename": rpm.name, "sha256": hashlib.sha256(rpm.read_bytes()).hexdigest()}
+                self._rpm_evidence = {"filename": rpm.name, "sha256": hashlib.sha256(rpm.read_bytes()).hexdigest(), "artifact_path": str(rpm)}
                 self._ensure_base()
                 self._validate_domain(verify_overlay=False)
                 self._reset_overlay()
@@ -397,9 +471,7 @@ class FedoraE2E:
             raise VMError("The install disk path is missing from the ownership marker; refusing to reset it.")
         if source is None or Path(source.get("file", "")).resolve() != Path(expected_disk).resolve():
             raise VMError("The partial VM disk does not match the owned install disk.")
-        listens = xml.findall("./devices/graphics/listen")
-        if len(listens) != 1 or listens[0].get("address") != "127.0.0.1":
-            raise VMError("The partial VM graphics endpoint is not restricted to localhost.")
+        _validate_graphics(xml)
 
     def _load_state(self) -> None:
         if self.state_path.exists():
@@ -482,9 +554,7 @@ class FedoraE2E:
             raise VMError("The existing VM disk is not the E2E overlay; refusing to boot it.")
         if xml.findall("./devices/filesystem") or xml.findall("./devices/hostdev"):
             raise VMError("The E2E VM contains a host filesystem or device passthrough; refusing to boot it.")
-        listens = xml.findall("./devices/graphics/listen")
-        if len(listens) != 1 or listens[0].get("address") != "127.0.0.1":
-            raise VMError("The E2E VM graphics endpoint is not restricted to localhost.")
+        _validate_graphics(xml)
         if len(xml.findall("./devices/channel/target[@name='org.qemu.guest_agent.0']")) != 1:
             raise VMError("The E2E VM is missing its required guest-agent channel.")
         if verify_overlay:
@@ -517,7 +587,16 @@ class FedoraE2E:
         rpm = Path(marker).resolve()
         if not rpm.is_file() or rpm.parent != (ROOT / "rpmbuild" / "RPMS" / "noarch").resolve():
             raise VMError("RPM build returned a missing or unexpected output path.")
-        return rpm
+        return self._retain_candidate(rpm)
+
+    def _retain_candidate(self, rpm: Path) -> Path:
+        """Retain the exact build while potentially lengthy provisioning runs."""
+        content = rpm.read_bytes()
+        directory = Path(tempfile.mkdtemp(prefix="candidate-", dir=self.reports_dir))
+        retained = directory / rpm.name
+        retained.write_bytes(content)
+        retained.chmod(0o400)
+        return retained
 
     def _discard_partial_install(self) -> None:
         """Remove only the incomplete install created during this invocation."""
@@ -536,6 +615,10 @@ class FedoraE2E:
         print("Removed the owned incomplete Fedora E2E install; test-full can provision it again.", flush=True)
 
     def _kickstart(self, password_hash: str) -> str:
+        updates_repository = (
+            f'repo --name=loofi-e2e-fedora-updates --metalink="https://mirrors.fedoraproject.org/metalink?repo=updates-released-f{FEDORA_RELEASE}&arch=x86_64"\n'
+            if self.qt_runtime_manifest is not None else ""
+        )
         wayland_packages = ""
         wayland_build = ""
         if self.desktop == "wayland":
@@ -582,7 +665,7 @@ user --name={GUEST_USER} --groups=wheel --password={password_hash} --iscrypted
 selinux --enforcing
 firewall --enabled
 services --enabled=NetworkManager,qemu-guest-agent,sddm
-%packages
+{updates_repository}%packages
 @^kde-desktop-environment
 plasma-workspace-x11
 xorg-x11-drv-qxl
@@ -593,6 +676,9 @@ python3-gobject-base
 flatpak
 flatpak-libs
 gnupg2
+rpm-build
+rpm-sign
+createrepo_c
 python3-keyring
 python3-defusedxml
 python3-pytest
@@ -607,6 +693,7 @@ dolphin
 plasma-discover
 dnf5
 dnf5-plugins
+python3-libdnf5
 {wayland_packages}%end
 %post --interpreter=/bin/bash
 set -euo pipefail
@@ -910,6 +997,10 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
             return candidates[0].read_bytes()
 
     def _prepare_payload(self, rpm: Path) -> None:
+        candidate = rpm.read_bytes()
+        expected = getattr(self, "_rpm_evidence", None)
+        if expected is not None and hashlib.sha256(candidate).hexdigest() != expected["sha256"]:
+            raise VMError("The retained candidate RPM changed before staging; refusing mismatched qualification evidence.")
         code, _, _ = self._guest_exec("/usr/bin/bash", ["-c", "mkdir -p /var/tmp/loofi-e2e && chcon -t virt_qemu_ga_log_t /var/tmp/loofi-e2e"])
         if code:
             raise VMError("Could not prepare the guest-only SELinux staging directory.")
@@ -931,7 +1022,7 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
             if hashlib.sha256(content).hexdigest() != digest:
                 raise VMError("The cached KDE driver did not match its checksum.")
             self._write_guest_file("/var/tmp/loofi-e2e/" + name, content)
-        self._write_guest_file("/var/tmp/loofi-e2e/build.rpm", rpm.read_bytes())
+        self._write_guest_file("/var/tmp/loofi-e2e/build.rpm", candidate)
         self._write_guest_file("/var/tmp/loofi-e2e/loofi-e2e-fixture.rpm", self._build_fixture())
         archive = io.BytesIO()
         with tarfile.open(fileobj=archive, mode="w:gz") as bundle:
@@ -942,6 +1033,8 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
         password = self._validated_password()
         payload = json.dumps({"user": GUEST_USER, "password": password}, separators=(",", ":")).encode("utf-8")
         self._write_guest_file("/var/tmp/loofi-e2e/credentials.json", payload)
+        if self._qt_runtime is not None:
+            self._stage_qt_runtime()
         code, stdout, stderr = self._guest_exec(
             "/usr/bin/python3",
             ["/var/tmp/loofi-e2e/runner.py", "--install", "/var/tmp/loofi-e2e/build.rpm", "/var/tmp/loofi-e2e/tests.tar.gz", "/var/tmp/loofi-e2e/credentials.json"],
@@ -952,6 +1045,24 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
         if code:
             raise VMError(f"Guest RPM installation or test staging failed with exit code {code}.")
 
+    def _stage_qt_runtime(self) -> None:
+        """Transfer only to the disposable guest; compatibility is checked there."""
+        assert self._qt_runtime is not None
+        payload, library, probe = self._qt_runtime
+        directory = "/var/tmp/loofi-e2e/qt-runtime"
+        code, _, _ = self._guest_exec("/usr/bin/mkdir", ["-p", directory], timeout=30)
+        if code:
+            raise VMError("Could not create the guest-only Qt runtime directory.")
+        self._write_guest_file(directory + "/libQt6Widgets.so.6.11.2", library)
+        self._write_guest_file(directory + "/qt-scroll-probe", probe)
+        self._write_guest_file("/var/tmp/loofi-e2e/qt-runtime-request.json", json.dumps(payload).encode())
+        (self.reports_dir / "qt-runtime-host.json").write_text(json.dumps(payload, indent=2) + "\n")
+        code, stdout, stderr = self._guest_exec(
+            "/usr/bin/python3", ["/var/tmp/loofi-e2e/runner.py", "--qualify-qt-runtime"], timeout=120)
+        self._runner_output = getattr(self, "_runner_output", "") + stdout + stderr
+        if code:
+            raise VMError("Corrected Qt runtime guest compatibility/regression failed; see qt-runtime-evidence.json. " + (stdout + stderr)[-2000:])
+
     def _reboot_guest(self) -> None:
         """Reboot only the validated disposable domain and prove a new kernel boot."""
         self._validate_domain(verify_overlay=False)
@@ -959,7 +1070,9 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
         before = before.strip()
         if code or not re.fullmatch(r"[0-9a-f-]{36}", before):
             raise VMError("Could not record the guest boot identity before reboot.")
-        _run(["virsh", "-c", LIBVIRT_URI, "reboot", self.name, "--mode", "agent"], timeout=30)
+        code, _, error = self._guest_exec("/usr/bin/python3", ["/var/tmp/loofi-e2e/runner.py", "--activate-offline"], timeout=30)
+        if code:
+            raise VMError(f"Could not activate the prepared update through Action Center: {error}")
         deadline = time.monotonic() + 300
         while time.monotonic() < deadline:
             try:
@@ -985,7 +1098,7 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
         code, stdout, stderr = self._guest_exec(
             "/usr/bin/python3",
             ["/var/tmp/loofi-e2e/runner.py", "--run", "--phase", phase],
-            timeout=GUEST_RUN_TIMEOUT,
+            timeout=GUEST_PHASE_TIMEOUTS[phase],
         )
         self._runner_output = getattr(self, "_runner_output", "") + stdout + stderr
         self._runner_exit = code
@@ -1002,8 +1115,16 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
             ("/var/tmp/loofi-e2e/application.log", "application.log"),
             ("/var/tmp/loofi-e2e/package-fixture.log", "package-fixture.log"),
             ("/var/tmp/loofi-e2e/flatpak-update-evidence.json", "flatpak-update-evidence.json"),
+            ("/var/tmp/loofi-e2e/flatpak-install-evidence.json", "flatpak-install-evidence.json"),
             ("/var/tmp/loofi-e2e/crash-diagnostics.json", "crash-diagnostics.json"),
+            ("/var/tmp/loofi-e2e/setup-transactions.log", "setup-transactions.log"),
+            ("/var/tmp/loofi-e2e/setup-transactions/evidence.json", "setup-transactions-evidence.json"),
+            ("/var/tmp/loofi-e2e/qt-runtime-evidence.json", "qt-runtime-evidence.json"),
+            ("/var/tmp/loofi-e2e/qt-runtime-applications.json", "qt-runtime-applications.json"),
             ("/var/tmp/loofi-e2e/reboot-checkpoint.json", "reboot-checkpoint.json"),
+            ("/var/tmp/loofi-e2e/offline-update-evidence.json", "offline-update-evidence.json"),
+            ("/var/tmp/loofi-e2e/application-action-evidence.json", "application-action-evidence.json"),
+            ("/var/tmp/loofi-e2e/offline-activation.log", "offline-activation.log"),
         ]
         try:
             artifacts = json.loads(self._read_guest_file("/var/tmp/loofi-e2e/failure-artifacts.json"))
@@ -1039,6 +1160,7 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
             "status": "passed" if code == 0 else "failed",
             "preflight": facts,
             "rpm": getattr(self, "_rpm_evidence", None),
+            "corrected_qt_runtime": self._qt_runtime[0] if self._qt_runtime else None,
         }
         target = self.reports_dir / "summary.json"
         target.write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
@@ -1066,7 +1188,9 @@ printf 'loofi-e2e-fixture\\n' > %{buildroot}/usr/share/loofi-e2e-fixture/probe.t
             runner_log.write_text(getattr(self, "_runner_output", ""), encoding="utf-8")
             os.chmod(runner_log, 0o600)
             target = self.reports_dir / "summary.json"
-            target.write_text(json.dumps({"vm": self.name, "status": "failed", "error": str(exc), "preflight": facts}, indent=2) + "\n", encoding="utf-8")
+            target.write_text(json.dumps({"vm": self.name, "status": "failed", "error": str(exc), "preflight": facts,
+                                          "corrected_qt_runtime": self._qt_runtime[0] if self._qt_runtime else None,
+                                          "rpm": getattr(self, "_rpm_evidence", None), "desktop": self.desktop}, indent=2) + "\n", encoding="utf-8")
             os.chmod(target, 0o600)
         except OSError:
             pass
@@ -1078,11 +1202,14 @@ def main(argv: Sequence[str] | None = None) -> int:
     parser.add_argument("--vm-name", default=VM_NAME, help="Explicit dedicated domain name for resetting a saved fresh artifact.")
     parser.add_argument("--fresh", action="store_true", help="Provision a separate empty-disk qualification artifact; preserve the reusable base.")
     parser.add_argument("--desktop", choices=("x11", "wayland"), default="x11")
+    parser.add_argument("--qt-runtime-manifest", type=Path, help="Explicit corrected Qt runtime manifest; disposable test-full only.")
     parser.add_argument("--reboot-check", action="store_true", help="Verify checkpoint persistence across a real guest reboot.")
     parser.add_argument("--data-root", type=Path, default=_default_data_root())
     parser.add_argument("--reports-dir", type=Path, default=ROOT / "test-results" / "e2e")
     args = parser.parse_args(argv)
     try:
+        if args.qt_runtime_manifest and args.command != "test-full":
+            raise VMError("--qt-runtime-manifest is only valid with test-full.")
         if args.command == "preflight":
             print(json.dumps(preflight(args.data_root), indent=2))
             return 0
@@ -1099,7 +1226,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             args.data_root = args.data_root / args.desktop
             args.reports_dir = args.reports_dir / args.desktop
             name += "-" + args.desktop
-        vm = FedoraE2E(args.data_root, args.reports_dir, name=name, desktop=args.desktop, reboot_check=args.reboot_check)
+        vm = FedoraE2E(args.data_root, args.reports_dir, name=name, desktop=args.desktop, reboot_check=args.reboot_check, qt_runtime_manifest=args.qt_runtime_manifest)
         if args.command == "reset":
             return vm.reset()
         previous = {sig: signal.signal(sig, vm._interrupt) for sig in (signal.SIGINT, signal.SIGTERM)}

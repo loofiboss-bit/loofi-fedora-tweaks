@@ -2,7 +2,30 @@
 
 The latest published release is [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1), published on 2026-10-12 with COPR build 11109761. Its release tag resolves to `68da040ca5fd85f7feae4442c8ffb9049815cdcd`; v33.0.0 remains the historical Bastion tag. See [publication evidence](docs/reports/V33.0.1_RELEASE_PUBLICATION.md) for passed gates and the explicit VM exception. KDE on traditional Fedora with DNF5 is the first target; public CLI, profile, and saved-session compatibility remain supported.
 
-## v34.0.1 Accord — local candidate
+## v35.0.0 Everyday — local candidate
+
+Complete everyday application workflows on traditional Fedora KDE with DNF5:
+local AppStream discovery, explicit metadata downloads, complete RPM and Flatpak
+transaction review, in-app RPM removal, optional source/codec setup, and coherent
+recovery after interruption. The existing v34 installation-bound update work is
+included. Get Fedora ready extends the existing optional resumable guides.
+
+The candidate preserves existing route IDs, CLI/JSON shapes, portable profiles,
+and history schemas. New transaction evidence is versioned and older evidence
+requires a fresh review. GNOME and Atomic retain their existing capability
+boundaries; release upgrades remain preparation and guidance.
+
+See [v35 qualification](docs/V35_QUALIFICATION.md). Source and package checks
+are separate from exact-RPM native desktop and reboot qualification. The Qt
+AT-SPI regression passes with an isolated, corrected QtWidgets build. A
+distributed corrected runtime is not yet provided by this candidate. Native
+desktop/reboot checks are complementary, risk-based evidence; they do not need
+to pass as a blanket release condition. Relevant regression checks, maintained
+coverage, catalog/version checks, packaging and RPM build remain the normal
+local quality baseline. Known defects and unverified workflows are reported
+explicitly. This policy follows the maintainer's October 21, 2026 instruction.
+
+## v34.0.1 Accord — retained implementation baseline
 
 Connect Apps and Updates through installation-bound Flatpak discovery, selected
 application review, resolved dependencies, and independent commit verification.

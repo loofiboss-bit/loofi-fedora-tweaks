@@ -335,3 +335,74 @@ the existing golden guest. This qualification covers local execution;
 GitHub workflow/release execution must be assessed separately.
 These VM tests cover Plasma X11, and do not qualify physical hardware,
 the host's Plasma Wayland session, or GNOME.
+
+## Signed DNF5 offline reboot qualification
+
+`just test-full --reboot-check` now uses a signed inert RPM upgrade through the
+installed application's `OperationController`, rather than using a generic VM
+reboot as evidence of an applied update. Use a newly provisioned base (`--fresh`)
+for the guest-only `rpm-build`, `rpm-sign`, and `createrepo_c` dependencies.
+Missing dependencies fail qualification; they are never installed on the host.
+
+After desktop tests pass, the root guest runner creates versions 1.0 and 2.0 of
+one inert package, an ephemeral signing identity, signed RPMs, and signed local
+repository metadata. Both versions remain in the signed repository. Action Center installs the exact
+1.0 NEVRA, rejects a now-stale installation review, removes 1.0, and reinstalls
+it with fresh reviews. Every operation receives independent RPM/payload,
+unrelated-package and preserved-data readback. External
+repository definitions are moved aside inside the disposable overlay. Action
+Center reviews and stages the 2.0 update; the harness confirms that staging has
+not changed the installed inventory. The separate activation action requests
+DNF5's offline reboot. No direct DNF upgrade or generic hypervisor reboot is
+used as a substitute.
+
+After the kernel boot ID changes, Action Center verifies the original durable
+run. The root harness independently checks the exact installed package, RPM
+file integrity, DNF5 history and package health, unchanged unrelated packages,
+and preserved data. The after-reboot pytest phase checks the recorded evidence.
+`application-action-evidence.json`, `offline-update-evidence.json` and
+`offline-activation.log` are collected with
+both phases' reports.
+
+Independent history validation records existing transaction IDs before staging
+and requires a new successful transaction starting at or after the staged run.
+Its separate `history info` must contain the exact target version and an inbound
+package action; the full matched details are retained. Empty, old, failed or
+mismatched history cannot pass because the product verifier succeeded.
+
+This root harness qualifies the installed application backend and real reboot
+chain. It does not exercise the desktop activation dialog; GUI authorization
+and accessibility need their own final-RPM candidate run. The new chain has
+only been checked with rootless host contracts during implementation. No VM
+pass is claimed until the full candidate has actually completed it.
+
+## Source, codec and first-install fixtures
+
+The before-reboot runner also executes `setup_transaction_fixture.py` inside
+the marked disposable QEMU guest. Source activation uses the unchanged pinned
+RPM Fusion public key and the installed OperationController/helper logic. Only
+the exact allowlisted key download is supplied from staged public bytes. The
+fixture checks review drift before confirmation and again under the helper
+lock. It does not qualify public HTTPS availability or desktop Polkit.
+It also holds the actual source lock in a separate process and verifies that
+confirmed apply fails without package or configuration changes.
+
+Codec replacement runs the installed native libdnf5/helper logic against a
+separate installroot and signed inert FFmpeg/GStreamer recipe packages. It
+checks separate removal consent, complete inventory readback and unrelated
+package/data preservation. It does not replace the guest's desktop codec stack
+or qualify media playback. Its native Base configuration is redirected before
+setup; production guards, signatures, resolution and execution stay active.
+`setup-transactions.log` and `setup-transactions-evidence.json` record the
+result separately from desktop pytest and offline reboot evidence.
+Confirmed source drift and a conflicting pair of signed fixed-recipe packages
+exercise native rejection. The latter requires the actual resolver conflict,
+rather than accepting any unavailable preview as conflict evidence.
+
+`test_02_flatpak_installs.py` follows the v34 update matrix with a distinct
+signed application that was never preinstalled. It uses the installed
+OperationController and native Flatpak/Polkit for user, system and named
+installations, checks exact commits/origins and preserved unrelated refs/data,
+and rejects a changed-source review before mutation. Evidence is collected as
+`flatpak-install-evidence.json`. These new fixtures remain unqualified until
+the exact candidate completes them in the guest.

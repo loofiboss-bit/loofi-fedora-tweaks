@@ -46,6 +46,11 @@ def validate_helper_args(args: Sequence[str]) -> bool:
     args = list(args)
     if len(args) > 4096 or any(not isinstance(arg, str) or len(arg) > 512 for arg in args):
         return False
+    if args and args[0] in {"install-preview", "install-apply"}:
+        base = (len(args) in {7, 9} and args[1] == "--installation" and INSTALLATION_PATTERN.fullmatch(args[2])
+                and args[3] == "--remote" and INSTALLATION_PATTERN.fullmatch(args[4]) and args[5] == "--ref"
+                and REF_PATTERN.fullmatch(args[6]) and args[6].startswith("app/"))
+        return bool(base and (len(args) == 7 if args[0] == "install-preview" else len(args) == 9 and args[7] == "--snapshot-digest" and DIGEST_PATTERN.fullmatch(args[8])))
     if args == ["installations"]:
         return True
     if len(args) < 3 or args[1] != "--installation" or not INSTALLATION_PATTERN.fullmatch(args[2]):
@@ -155,7 +160,7 @@ class FlatpakMaintenanceService:
         try:
             process = subprocess.Popen(list(vector), stdout=subprocess.PIPE, stderr=subprocess.DEVNULL)
             assert process.stdout is not None
-            deadline = time.monotonic() + (90 if len(vector) > 1 and vector[1] in {"updates", "update-preview"} else INSPECTION_TIMEOUT)
+            deadline = time.monotonic() + (90 if len(vector) > 1 and vector[1] in {"updates", "update-preview", "install-preview"} else INSPECTION_TIMEOUT)
             output = bytearray()
             with selectors.DefaultSelector() as selector:
                 selector.register(process.stdout, selectors.EVENT_READ)

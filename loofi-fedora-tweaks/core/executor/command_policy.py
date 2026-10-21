@@ -93,6 +93,16 @@ def _validate_executable(command: str, *, allow_wrapper: bool = False) -> str:
 def validate_command(command: str, args: Sequence[str] | None = None) -> None:
     """Validate an executor command before preview or execution."""
     args = list(args or [])
+    from services.software.rpm_transactions import HELPER as RPM_HELPER, trusted_helpers as rpm_helpers, validate_helper_args as validate_rpm_args
+    if command in rpm_helpers():
+        if not validate_rpm_args(args) or (args[0] == "apply" and command != RPM_HELPER):
+            _reject("RPM transactions require an installed helper and exact approved operation")
+        return
+    from services.software.setup_sources import INSTALLED_HELPER as SOURCE_HELPER, trusted_helpers as source_helpers, validate_helper_args as validate_source_args
+    if command in source_helpers():
+        if not validate_source_args(args) or (args[0] == "apply" and args[4] == "system" and command != SOURCE_HELPER):
+            _reject("Source activation requires an exact approved source and scope")
+        return
     from services.software.flatpak_maintenance import trusted_helpers, validate_helper_args
     if command in trusted_helpers():
         if not validate_helper_args(args):
@@ -105,6 +115,10 @@ def validate_command(command: str, args: Sequence[str] | None = None) -> None:
             _reject("pkexec requires a wrapped command")
         if args[0] in trusted_helpers():
             _reject("Flatpak maintenance must use native authorization as the invoking user")
+        if args[0] in rpm_helpers() and (args[0] != RPM_HELPER or len(args) < 2 or args[1] != "apply"):
+            _reject("Privileged RPM operations require the installed apply helper")
+        if args[0] in source_helpers() and (args[0] != SOURCE_HELPER or len(args) < 6 or args[1] != "apply" or args[5] != "system"):
+            _reject("Privileged source activation requires the installed system helper")
         validate_command(args[0], args[1:])
         return
 

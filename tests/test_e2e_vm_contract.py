@@ -291,13 +291,13 @@ def test_reset_removes_only_known_files_for_a_saved_owner(tmp_path: Path) -> Non
 def test_ci_vm_job_is_local_runner_only_and_skips_pull_requests() -> None:
     text = _workflow(".github/workflows/ci.yml")
     vm_job = _job(text, "vm_e2e")
-    assert "if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'" in vm_job
+    assert "if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch'" in vm_job
     assert "[self-hosted, Linux, X64, loofi-vm-e2e]" in vm_job
     assert "run: python3 -m e2e.vm test-full --reboot-check" in vm_job
     assert "actions/upload-artifact@v4" in vm_job
 
 
-def test_release_build_is_gated_by_successful_local_vm_tests() -> None:
+def test_release_native_checks_are_opt_in_and_skips_allow_normal_publication() -> None:
     text = _workflow(".github/workflows/auto-release.yml")
     vm_job = _job(text, "vm_e2e")
     build_job = _job(text, "build")
@@ -308,6 +308,10 @@ def test_release_build_is_gated_by_successful_local_vm_tests() -> None:
     assert "run: just test-full" in vm_job
     assert "vm_e2e" in build_job.split("needs:", 1)[1].split("if:", 1)[0]
     assert "needs.vm_e2e.result == 'success'" in build_job
+    assert "needs.vm_e2e.result == 'skipped'" in build_job
+    assert "github.event_name == 'workflow_dispatch' && inputs.run_vm_e2e" in vm_job
+    assert "run_vm_e2e:" in text and "default: false" in text
+    assert "waive_v33_vm_e2e" not in text
 
 
 def test_rpm_builder_uses_a_unique_temp_root_and_reports_exact_rpm() -> None:
@@ -493,12 +497,13 @@ def test_reboot_records_changed_kernel_boot_and_protects_credentials(tmp_path: P
     vm = FedoraE2E(tmp_path, reboot_check=True)
     before = "00000000-0000-0000-0000-000000000001"
     after = "00000000-0000-0000-0000-000000000002"
-    with patch.object(vm, "_validate_domain"), patch.object(vm, "_guest_exec", side_effect=[(0, before, ""), (0, after, ""), (0, "", "")]) as execute, patch(
+    with patch.object(vm, "_validate_domain"), patch.object(vm, "_guest_exec", side_effect=[(0, before, ""), (0, "", ""), (0, after, ""), (0, "", "")]) as execute, patch(
         "e2e.vm._run"
     ) as run, patch.object(vm, "_wait_for_agent"), patch.object(vm, "_wait_for_desktop"), patch.object(vm, "_validated_password", return_value="private"), patch.object(vm, "_write_guest_file"):
         vm._reboot_guest()
     assert vm._reboot_evidence == {"before_boot_id": before, "after_boot_id": after}
-    assert run.call_args.args[0][-4:] == ["reboot", VM_NAME, "--mode", "agent"]
+    run.assert_not_called()
+    assert execute.call_args_list[1].args == ("/usr/bin/python3", ["/var/tmp/loofi-e2e/runner.py", "--activate-offline"])
     assert "os.chmod(f,0o600)" in execute.call_args.args[1][1]
 
 

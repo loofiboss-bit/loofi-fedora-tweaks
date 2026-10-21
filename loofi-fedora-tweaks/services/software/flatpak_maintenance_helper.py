@@ -310,7 +310,7 @@ def inspect_updates(target, name: str, refs: list[str]) -> dict[str, Any]:
             "digest": update_digest(name, candidates, [], sources)}
 
 
-def update_transaction(api, gio, target, name: str, candidates: list[dict[str, Any]], expected_digest: str = "") -> dict[str, Any]:
+def update_transaction(api, gio, target, name: str, candidates: list[dict[str, Any]], expected_digest: str = "", *, installing: bool = False) -> dict[str, Any]:
     """Resolve at ready-pre-auth; apply only an identical approved operation set."""
     from services.software.flatpak_updates import update_digest
     cancellable = gio.Cancellable.new()
@@ -361,6 +361,7 @@ def update_transaction(api, gio, target, name: str, candidates: list[dict[str, A
             target.drop_caches(None)
             installed = {item.format_ref(): item for item in target.list_installed_refs(None)}
             operations = []
+            seen_refs: set[str] = set()
             for operation in current.get_operations():
                 kind = operation.get_operation_type()
                 if kind not in {api.TransactionOperationType.UPDATE, api.TransactionOperationType.INSTALL}:
@@ -368,7 +369,25 @@ def update_transaction(api, gio, target, name: str, candidates: list[dict[str, A
                 ref = operation.get_ref()
                 existing = installed.get(ref)
                 selected = approved.get(ref)
-                if selected and (existing is None or existing.get_commit() != selected["installed_commit"] or existing.get_origin() != selected["origin"]):
+                if installing:
+                    from services.software.flatpak_maintenance import DIGEST_PATTERN, INSTALLATION_PATTERN
+                    if not isinstance(ref, str) or not REF_PATTERN.fullmatch(ref) or ref in seen_refs:
+                        raise ValueError("Invalid or duplicate installation operation ref.")
+                    seen_refs.add(ref)
+                    origin = operation.get_remote()
+                    before = existing.get_commit() if existing else ""
+                    before_origin = existing.get_origin() if existing else ""
+                    if (not isinstance(origin, str) or not INSTALLATION_PATTERN.fullmatch(origin)
+                            or not isinstance(before, str) or (before and not DIGEST_PATTERN.fullmatch(before))
+                            or not isinstance(before_origin, str) or (before_origin and not INSTALLATION_PATTERN.fullmatch(before_origin))
+                            or (kind == api.TransactionOperationType.INSTALL and existing is not None)
+                            or (kind == api.TransactionOperationType.UPDATE and existing is None)):
+                        raise ValueError("Invalid previous installation operation state.")
+                    if not isinstance(operation.get_commit(), str) or not DIGEST_PATTERN.fullmatch(operation.get_commit()):
+                        raise ValueError("Invalid resolved installation commit.")
+                if selected and installing and (existing is not None or kind != api.TransactionOperationType.INSTALL or operation.get_remote() != selected["origin"]):
+                    raise ValueError("Selected first installation changed.")
+                if selected and not installing and (existing is None or existing.get_commit() != selected["installed_commit"] or existing.get_origin() != selected["origin"]):
                     raise ValueError("Selected installed state changed.")
                 operation_commit = operation.get_commit() or ""
                 if selected and operation_commit != selected["expected_commit"]:
@@ -383,6 +402,8 @@ def update_transaction(api, gio, target, name: str, candidates: list[dict[str, A
                                    "name": (existing.get_appdata_name() or existing.get_name()) if existing else ref.split("/")[1],
                                    "installed_version": existing.get_appdata_version() or "" if existing else "", "available_version": "",
                                    "operation": "update" if kind == api.TransactionOperationType.UPDATE else "install", "selected": selected is not None})
+                if installing:
+                    operations[-1]["installed_origin"] = existing.get_origin() if existing else ""
             if not set(approved).issubset({item["ref"] for item in operations}):
                 raise ValueError("Selected refs disappeared from transaction.")
             result["operations"] = sorted(operations, key=lambda item: item["ref"])
@@ -400,7 +421,10 @@ def update_transaction(api, gio, target, name: str, candidates: list[dict[str, A
             # system installations reject for unprivileged callers. Resolve
             # normally, then bind approval to get_commit() in resolved(). The
             # transaction executes that immutable resolved commit afterwards.
-            transaction.add_update(candidate["ref"], None, None)
+            if installing:
+                transaction.add_install(candidate["origin"], candidate["ref"], None)
+            else:
+                transaction.add_update(candidate["ref"], None, None)
         if candidates:
             result["success"] = bool(transaction.run(cancellable))
             if operation_errors:
@@ -492,7 +516,7 @@ def main(argv: list[str] | None = None) -> int:
     if not validate_helper_args(args):
         payload: dict[str, Any] = {"available": False, "error": "Invalid maintenance command."}
         status = 2
-    elif args[0] in {"apply", "update-apply"} and os.geteuid() == 0:
+    elif args[0] in {"apply", "update-apply", "install-apply"} and os.geteuid() == 0:
         payload = {"available": False, "error": "Cleanup must use the invoking user and native Flatpak authorization."}
         status = 2
     else:
@@ -503,6 +527,9 @@ def main(argv: list[str] | None = None) -> int:
                 payload = {"available": True, "installations": list(dict.fromkeys(names))}
             elif args[0] == "update-apply":
                 payload = apply_updates(api, gio, args)
+            elif args[0] in {"install-preview", "install-apply"}:
+                from services.software.flatpak_installation_helper import install_transaction
+                payload = install_transaction(api, gio, installation(api, args[2]), args[2], args[4], args[6], args[8] if args[0] == "install-apply" else "")
             else:
                 name = args[2]
                 target = installation(api, name)
@@ -515,7 +542,7 @@ def main(argv: list[str] | None = None) -> int:
                 elif args[0] == "update-state":
                     target.drop_caches(None)
                     item = next((item for item in target.list_installed_refs(None) if item.format_ref() == args[4]), None)
-                    payload = {"available": True, "installation": name, "ref": args[4], "commit": item.get_commit() if item else ""}
+                    payload = {"available": True, "installation": name, "ref": args[4], "commit": item.get_commit() if item else "", "origin": item.get_origin() if item else ""}
                 elif args[0] == "details":
                     payload = inspect_details(api, target, args[4], name)
                 else:

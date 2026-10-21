@@ -53,7 +53,8 @@ class TestGuidePanel(unittest.TestCase):
         self.panel.show()
         self.app.processEvents()
         self.panel.guide_selector.setFocus()
-        QTest.keyClick(self.panel.guide_selector, Qt.Key.Key_Down)
+        for _ in range(self.panel.guide_selector.findData(guide.id)):
+            QTest.keyClick(self.panel.guide_selector, Qt.Key.Key_Down)
         self.assertEqual(self.panel.active_guide, guide.id)
         self.assertIn(guide.steps[0].title, self.panel.current_step_label.text())
         self.assertTrue(self.panel.open_button.isEnabled())

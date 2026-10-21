@@ -22,6 +22,7 @@ from PyQt6.QtWidgets import QCheckBox, QComboBox, QHBoxLayout, QLabel, QListWidg
 
 from ui.components import Card, DetailsDisclosure, InlineNotice, PageScaffold, PrimaryButton, StatusBadge
 from ui.icon_pack import get_qicon
+from ui.install_workflow_catalog import ApplicationDiscoveryMixin
 
 
 class ApplicationRowDelegate(QStyledItemDelegate):
@@ -50,7 +51,7 @@ class ApplicationViewTabs(QTabBar):
         super().keyPressEvent(event)
 
 
-class InstallWorkflowPage(QWidget):
+class InstallWorkflowPage(ApplicationDiscoveryMixin, QWidget):
     """Searchable curated application selection with an explicit review step."""
 
     bundleReviewRequested = pyqtSignal(object)
@@ -71,6 +72,7 @@ class InstallWorkflowPage(QWidget):
         context: ApplicationContext | None = None,
         source_status_service: Any | None = None,
         installed_service: Any | None = None,
+        discovery_service: Any | None = None,
         parent: QWidget | None = None,
     ) -> None:
         super().__init__(parent)
@@ -245,6 +247,7 @@ class InstallWorkflowPage(QWidget):
         if source_status_service is not None:
             self.sources_widget.refresh_button.clicked.disconnect()
             self.sources_widget.refresh_button.clicked.connect(self.refresh_flathub_status)
+        self.sources_widget.actionReviewRequested.connect(self.actionReviewRequested.emit)
         self.sources_widget.snapshotChanged.connect(self._apply_dnf_source_badges)
         self.sources_widget.stopped.connect(self._notify_stopped)
         self.scaffold.add_widget(self.sources_widget)
@@ -298,6 +301,7 @@ class InstallWorkflowPage(QWidget):
         self.results_card.hide()
         self.scaffold.add_widget(self.results_card)
         self.scaffold.content_layout.addStretch()
+        self._init_discovery(discovery_service)
         self._refresh_rows()
         if installed_service is not None:
             self.installed_card.refresh()
@@ -306,11 +310,12 @@ class InstallWorkflowPage(QWidget):
 
     @property
     def busy(self) -> bool:
-        return (self.installed_card.busy or self.sources_widget.busy or self.default_apps_handoff.busy
+        return (self._discovery_adapter.busy or self.installed_card.busy or self.sources_widget.busy or self.default_apps_handoff.busy
                 or (self.catalog_empty_handoff is not None and self.catalog_empty_handoff.busy)
                 or (self._source_status_adapter is not None and self._source_status_adapter.busy))
 
     def request_stop(self) -> None:
+        self._discovery_adapter.cancel()
         self.installed_card.request_stop()
         self.sources_widget.request_stop()
         self.default_apps_handoff.request_stop()
@@ -330,7 +335,8 @@ class InstallWorkflowPage(QWidget):
         sources_stopped = self.sources_widget.cleanup(timeout_ms)
         handoff_stopped = self.default_apps_handoff.cleanup(timeout_ms)
         empty_handoff_stopped = self.catalog_empty_handoff is None or self.catalog_empty_handoff.cleanup(timeout_ms)
-        return installed_stopped and source_stopped and sources_stopped and handoff_stopped and empty_handoff_stopped
+        discovery_stopped = self._discovery_adapter.close(timeout_ms)
+        return discovery_stopped and installed_stopped and source_stopped and sources_stopped and handoff_stopped and empty_handoff_stopped
 
     def _set_application_view(self, *_args: Any) -> None:
         current_view = str(self.view_tabs.tabData(self.view_tabs.currentIndex()) or "catalog")
@@ -348,6 +354,12 @@ class InstallWorkflowPage(QWidget):
         self.review_card.setVisible(not installed and not sources)
         self.search_input.setVisible(not sources)
         self.search_input.setPlaceholderText(self.tr("Search installed applications…") if installed else self.tr("Search applications…"))
+        self.discovery_refresh_target.setVisible(not installed and not sources)
+        self.discovery_download.setVisible(not installed and not sources)
+        self.discovery_toggle.setVisible(not installed and not sources)
+        self.discovery_status.setVisible(not installed and not sources)
+        self.discovery_refresh.setVisible(not installed and not sources)
+        self.discovery_cancel.setVisible(not installed and not sources and self._discovery_adapter.busy)
         self.category_filter.setVisible(not installed and not sources)
         self.match_summary.setVisible(not installed and not sources and not selected_view)
         if installed:
@@ -400,10 +412,15 @@ class InstallWorkflowPage(QWidget):
     def _apply_installed_inventory(self, inventory: object) -> None:
         if self.context is not None:
             self.context = replace(self.context, installed_ids=getattr(inventory, "installed_ids", frozenset()), unknown_sources=getattr(inventory, "unknown_sources", frozenset()))
-            self._refresh_rows()
+            if self._discovery_snapshot is not None:
+                self._replace_discovery_catalog()
+            else:
+                self._refresh_rows()
 
     def refresh_installed_applications(self) -> None:
         self.installed_card.refresh()
+        if self.discovery_toggle.isChecked():
+            self.refresh_application_metadata()
 
     def refresh_flathub_status(self) -> None:
         """Read local Flathub scopes on a worker and keep failures explicit."""
@@ -556,8 +573,12 @@ class InstallWorkflowPage(QWidget):
             return
 
         records = self.catalog.all(context=self.context)
+        discovered_view = self.discovery_toggle.isChecked()
+        if discovered_view:
+            records = tuple(record for record, _ in self.catalog.search(self.search_input.text(), category=str(self.category_filter.currentData() or ""), context=self.context) if not self._show_selected or record.id in self._selected_ids)[:100]
+            self._catalog_rows_initialized = False
         self._selected_ids.intersection_update(
-            record.id for record in records if self.catalog.eligibility(record, self.context).selectable
+            record.id for record in self.catalog.all(context=self.context) if self.catalog.eligibility(record, self.context).selectable
         )
         if not self._catalog_rows_initialized or self._row_context != self.context:
             self.application_list.blockSignals(True)
@@ -597,6 +618,8 @@ class InstallWorkflowPage(QWidget):
             self.catalog_empty_handoff.setVisible(
                 current_view == "catalog" and count == 0 and not self._show_selected
             )
+        if discovered_view and count > 100:
+            self.match_summary.setText(self.tr("%1 matches · Showing the first 100. Refine your search.").replace("%1", str(count)))
         self._resize_application_rows()
         self._update_review_summary()
 
@@ -634,18 +657,26 @@ class InstallWorkflowPage(QWidget):
         layout.addWidget(icon, 0, Qt.AlignmentFlag.AlignTop)
         copy = QVBoxLayout()
         title = QLabel(record.name)
+        title.setTextFormat(Qt.TextFormat.PlainText)
         title.setObjectName("applicationRowTitle")
         title.setWordWrap(True)
         copy.addWidget(title)
         description = QLabel(self.tr(record.description))
+        description.setTextFormat(Qt.TextFormat.PlainText)
         description.setObjectName("applicationRowDescription")
         description.setWordWrap(True)
         copy.addWidget(description)
         badges = QHBoxLayout()
-        source = StatusBadge(self.tr(record.source_label), kind="info")
+        source_text = record.source_label
+        if not record.curated:
+            source_text = ("Flatpak · " + str(record.metadata.get("remote", ""))) if record.source == "flatpak" else ("RPM · " + str(record.metadata.get("repo_id", "")))
+        source = StatusBadge(self.tr(source_text), kind="info")
         source.setObjectName("applicationSourceBadge")
         badges.addWidget(source)
-        scope = QLabel(self.tr("Configured Flatpak scope") if record.source == "flatpak" else self.tr("System scope"))
+        scope_text = str(record.metadata.get("installation", "")) if record.source == "flatpak" and not record.curated else (self.tr("Configured Flatpak scope") if record.source == "flatpak" else self.tr("System scope"))
+        version = str(record.metadata.get("version", ""))
+        scope = QLabel(scope_text + (" · " + version if version else ""))
+        scope.setTextFormat(Qt.TextFormat.PlainText)
         scope.setObjectName("applicationRowScope")
         scope.setWordWrap(True)
         badges.addWidget(scope)

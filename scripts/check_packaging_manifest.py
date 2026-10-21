@@ -64,6 +64,8 @@ EXPECTED_SOURCE_SUFFIXES = (
 
 EXPECTED_ROOT_SUFFIXES = (
     "scripts/loofi-flatpak-maintenance",
+    "scripts/loofi-rpm-transaction",
+    "scripts/loofi-setup-sources",
     "loofi-fedora-tweaks.desktop",
     "loofi-fedora-tweaks.metainfo.xml",
     "loofi-fedora-tweaks.1",

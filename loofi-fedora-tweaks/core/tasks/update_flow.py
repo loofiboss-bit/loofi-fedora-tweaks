@@ -24,6 +24,7 @@ UpdateStatus = Literal[
     "cancelled",
     "failed",
     "verification_failed",
+    "interrupted",
 ]
 UpdateButtonLabel = Literal["Check", "Update", "Continue", "Verify", "Review"]
 
@@ -59,7 +60,7 @@ class UpdateSourceState:
         if self.status not in {
             "unchecked", "checking", "up_to_date", "available", "stale", "missing_tool",
             "unsupported", "error", "preparing", "verifying", "awaiting_reboot", "succeeded",
-            "cancelled", "failed", "verification_failed",
+            "cancelled", "failed", "verification_failed", "interrupted",
         }:
             raise ValueError(f"Unknown update status: {self.status}")
         if not isinstance(self.item_count, int) or isinstance(self.item_count, bool) or self.item_count < 0:

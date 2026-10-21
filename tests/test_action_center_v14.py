@@ -109,6 +109,9 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
                 "create-recovery-point",
                 "dnf-clean-all",
                 "install-application",
+                "enable-flathub",
+                "enable-rpm-fusion",
+                "install-multimedia-codecs",
                 "restart-failed-service",
                 "update-fedora-system",
                 "update-firmware",
@@ -120,7 +123,6 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
             {
                 "configure-network-dns",
                 "delete-recovery-point",
-                "enable-flathub",
             }.issubset({definition.id for definition in definitions if definition.operation_class == "manual_only"})
         )
         self.assertFalse({
@@ -133,7 +135,7 @@ class TestV14CatalogAndPlanning(OrchestratorFixture):
         self.assertEqual(catalog.denied("gaming-install-tools").reason_code, "manual_only")
 
     def test_catalog_manual_only_actions_create_blocked_guidance_plans(self):
-        plan = self.orchestrator.plan("enable-flathub")
+        plan = self.orchestrator.plan("configure-network-dns", {"connection": "fixture", "dns": "1.1.1.1"})
 
         self.assertEqual(plan.state, "blocked")
         self.assertEqual(plan.operation_class, "manual_only")

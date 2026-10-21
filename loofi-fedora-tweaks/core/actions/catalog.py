@@ -75,6 +75,7 @@ ACTIVE_ACTION_IDS = frozenset(
         "update-firmware",
         "install-application",
         "remove-application",
+        "refresh-application-metadata",
         "vacuum-journal",
         "autoremove-packages",
         "create-recovery-point",
@@ -435,10 +436,11 @@ def _default_action_definitions() -> tuple[ActionDefinition, ...]:
     from core.actions.flatpak_cleanup import flatpak_cleanup_definitions
     from core.actions.metadata import with_haven_metadata
     from core.actions.tweaks import tweak_action_definitions
+    from core.actions.application_metadata import metadata_refresh_definition
 
     return tuple(
         with_haven_metadata(definition)
-        for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions(), *installed_application_definitions(), *flatpak_cleanup_definitions()]
+        for definition in [*_first_party_definitions(), *assurance_definitions(), *tweak_action_definitions(), *installed_application_definitions(), *flatpak_cleanup_definitions(), metadata_refresh_definition()]
         if definition.id in ACTIVE_ACTION_IDS
     )
 

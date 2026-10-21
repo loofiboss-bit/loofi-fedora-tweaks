@@ -333,10 +333,11 @@ class UpdateWorkflowPage(QWidget):
                 "succeeded": "Updated",
                 "cancelled": "Update cancelled",
                 "failed": "Update failed",
-                "verification_failed": "Verification failed",
+                "verification_failed": "Result not verified",
+                "interrupted": "Interrupted",
             }.get(state.status, state.status)
-            kind = "success" if state.status in {"up_to_date", "succeeded"} else "warning" if state.status in {"error", "cancelled", "failed", "verification_failed", "missing_tool", "unsupported"} else "info"
-            badge.set_status(self.tr(label), kind=kind)
+            kind = "success" if state.status in {"up_to_date", "succeeded"} else "warning" if state.status in {"error", "cancelled", "failed", "interrupted", "verification_failed", "missing_tool", "unsupported"} else "info"
+            badge.set_status(self.tr(str(state.metadata.get("status_label", label))), kind=kind)
             if state.status == "unchecked":
                 summary = self.tr("Check this source to discover available updates.")
             elif state.status == "up_to_date":

@@ -28,7 +28,8 @@ and is not.
 - [Personal qualification](PERSONAL_VERIFICATION.md) — RPM discovery, profile authoring, source observations, and KDE window workflows
 - [Companion qualification](COMPANION_VERIFICATION.md) — local candidate checks and physical evidence limits
 - [Care qualification](CARE_VERIFICATION.md) — candidate app insight, runtime cleanup, and update diagnostics
-- [Everyday qualification](EVERYDAY_VERIFICATION.md) — feature, CLI, rendering and packaging evidence
+- [v35 Everyday qualification](V35_QUALIFICATION.md) — current candidate gates, corrected Qt runtime and remaining native qualification
+- [Everyday qualification](EVERYDAY_VERIFICATION.md) — historical feature, CLI, rendering and packaging evidence
 - [Everyday UX qualification (2026-10-11)](UX_QUALIFICATION_2026-10-11.md) — initial candidate, Apps latency and Fedora KDE/X11 VM evidence
 - [Everyday UX completion (2026-10-11)](UX_COMPLETION_2026-10-11.md) — follow-up baseline, accessibility and expanded guest qualification
 - [Control-center qualification](CONTROL_CENTER_VERIFICATION.md) — automated results and remaining physical checks

@@ -13,11 +13,14 @@ from pathlib import Path
 
 ROOT = Path('/var/tmp/loofi-e2e/flatpak-fixture')
 APP = 'org.loofi.E2E.Selected'
+FIRST_INSTALL = 'org.loofi.E2E.FirstInstall'
 UNRELATED = 'org.loofi.E2E.Unrelated'
 RUNTIME = 'org.loofi.E2E.Platform'
 REMOTE = 'loofi-e2e-local'
 NAMED = 'loofi-e2e-fixture'
 INSTALLATIONS = ('user', 'system', NAMED)
+EXPORTED_IDENTIFIERS = (RUNTIME, APP, UNRELATED, FIRST_INSTALL)
+INITIAL_IDENTIFIERS = (RUNTIME, APP, UNRELATED)
 SOURCE = '/usr/lib/loofi-fedora-tweaks'
 
 
@@ -84,7 +87,7 @@ def prepare(user_name: str) -> None:
     for version in ('1', '2'):
         commits[version] = {}
         commit_timestamps[version] = {}
-        for identifier in (RUNTIME, APP, UNRELATED):
+        for identifier in EXPORTED_IDENTIFIERS:
             build = ROOT / f'{identifier}-{version}'
             (build / 'files').mkdir(parents=True)
             (build / 'files' / 'version.txt').write_text(version)
@@ -109,7 +112,7 @@ def prepare(user_name: str) -> None:
                 invoke_user = user_name if installation == 'user' else None
                 command(['flatpak', scope(installation), 'remote-add', '--gpg-import=' + str(public_key), REMOTE,
                          (ROOT / 'repo').as_uri()], user=invoke_user)
-                for identifier in (RUNTIME, APP, UNRELATED):
+                for identifier in INITIAL_IDENTIFIERS:
                     command(['flatpak', scope(installation), 'install', '--noninteractive', REMOTE,
                              ref(identifier, runtime=identifier == RUNTIME)], user=invoke_user)
     for version, refs in commits.items():

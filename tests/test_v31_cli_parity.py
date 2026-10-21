@@ -313,9 +313,19 @@ class TestV31CliParity(unittest.TestCase):
         self.assertEqual(code, 1)
         self.assertIn("Unknown application", buf.getvalue())
 
-    def test_apps_install_dry_run(self, _capability) -> None:
+    @patch("services.software.rpm_transactions.RpmTransactionService.preview")
+    def test_apps_install_dry_run(self, preview, _capability) -> None:
+        from dataclasses import replace
+        from services.software.rpm_transactions import RpmTransactionPreview, evidence_digest
+        snapshot = RpmTransactionPreview(
+            available=True, error="", packages=("neovim",), installed=("unrelated-0:1-1.noarch",),
+            operations=({"action": "Install", "name": "neovim", "nevra": "neovim-0:0.10.0-1.fc44.x86_64",
+                         "repo_id": "fedora", "checksum": "a" * 64},), repository_digest="b" * 64,
+        )
+        preview.return_value = replace(snapshot, digest=evidence_digest(snapshot.to_dict()))
         buf = io.StringIO()
         with patch("sys.stdout", buf):
             code = main(["--dry-run", "apps", "install", "neovim"])
         self.assertEqual(code, 0)
         self.assertIn("[dry-run]", buf.getvalue())
+        preview.assert_called_with("install", ("neovim",), repo_id="")

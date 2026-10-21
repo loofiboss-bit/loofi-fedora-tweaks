@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference, including local v34.0.1 "Accord" candidate work.
+> Active architecture reference, including local v35.0.0 "Everyday" candidate work.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -60,6 +60,41 @@ has not drifted or been superseded, and records a separate verified action.
 There is no generic undo, bulk restore, or automatic rollback.
 
 ## Personal application and authoring workflows
+
+AppStream discovery consumes bounded local XML through defusedxml and joins RPM
+components to cache-only DNF5 repository results. RPM candidates retain exact
+EVR, architecture and repository; Flatpak candidates retain remote, full ref and
+installation. The existing curated catalog remains a separate recommendation
+authority. Discovery cannot authorize execution, and metadata download is a
+separate reviewed Action Center operation.
+
+Traditional RPM application changes use the Qt-free libdnf5 helper. Preview
+binds the full installed inventory, exact dependency operations, checksums and
+repository configuration. The installed root-owned isolated Python launcher
+accepts only closed package operations. Apply holds the native system repository
+write lock across cached resolution, digest comparison, payload signature
+verification and execution. Per-repository load failures are fatal; plugins,
+weak dependencies, automatic dependency cleanup and downgrades are disabled.
+Independent RPM inventory readback excludes only the keyring's gpg-pubkey
+pseudo-packages, matching libdnf5's package domain.
+
+Application selections are reviewed one transaction at a time. The next plan is
+prepared only after the previous operation stops, so a fresh dependency plan
+cannot inherit approval of an earlier selection summary. Flatpak first installs
+reuse native transaction ready callbacks to bind every app/dependency commit and
+source configuration, with no implicit new remote, rebase or removal.
+
+Source setup has a separate versioned trust registry and installed helper.
+Flathub scope and RPM Fusion Free/Nonfree selection are explicit. Approved keys
+are pinned by hash and fingerprint; conflicting configuration is preserved and
+blocked. RPM key import belongs to source approval, never codec installation.
+The fixed codec transaction is prepared only after source verification and may
+replace only allowlisted multimedia packages with separate removal consent.
+
+RecoveryPresentation projects persisted operation state and verified evidence
+for Updates, Activity and Overview. Hydration does not execute, retry or roll
+back anything. Partial or unavailable readback cannot turn a failed/interrupted
+operation into success.
 
 Installed RPM inventory discovers visible system desktop entries, reads their
 RPM owners in bounded batches, and joins them to the installed package snapshot.
@@ -161,6 +196,18 @@ reads the same guide contract; it cannot execute a guide sequence. The Overview
 panel persists reviewed/skipped states and exact links to existing terminal
 evidence, while page navigation remains subject to the owning route's policy.
 
+Get Fedora ready distinguishes acknowledgement from verified completion. Its
+mutation steps require independently successful saved results or an explicit
+skip; marking them reviewed does not complete them. Backup acknowledgement
+remains a user task. `guide_profile_results.py` records the exact selected
+profile settings, reviewed values and fingerprints of their successful
+ActionRuns, never an assertion about an entire profile or the current desktop.
+Its private `loofi.guide-profile-results` version-1 domain participates in state
+inventory and backup. Guides remain version 1 unless they link this new evidence
+kind, when version 2 is written; both versions can be read and restored. Older
+readers reject version 2 safely without rewriting it. Portable profile and
+ActionRun contracts are unchanged.
+
 | Layer | Owns | Must not own |
 | --- | --- | --- |
 | `core/` | Contracts, policy, action orchestration, state, command metadata | Qt widgets or host changes from presentation paths |
@@ -249,6 +296,14 @@ All maintained pages share semantic colors, system typography, controls, and
 feedback, without adding a second action execution boundary.
 
 ## Everyday workflow extensions
+
+RPM AppStream collections are package-provided data, separate from DNF's local
+repository cache. The RPM declares `appstream-data` as a runtime dependency.
+Discovery exposes missing RPM catalogs even when Flatpak results exist, and
+metadata-only refresh checks a bounded parseable AppStream catalog independently
+of DNF cache readback. The three known Fedora/RPM Fusion catalog package choices
+route to the existing reviewed `install-application` transaction adapter.
+Downloading package metadata never implicitly installs or updates a catalog RPM.
 
 ### Companion personal workflows
 

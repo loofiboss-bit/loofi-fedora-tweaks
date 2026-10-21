@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import time
 from dataclasses import dataclass
 from datetime import datetime
@@ -472,6 +473,20 @@ def _safe_result(result: Mapping[str, Any] | None, *, action_id: str = "") -> di
         for key in ("success", "message", "exit_code", "needs_reboot", "verification_state")
         if key in result
     }
+    data = result.get("data", {})
+    if isinstance(data, Mapping):
+        evidence: dict[str, Any] = {key: data[key] for key in ("partial", "evidence_unavailable") if isinstance(data.get(key), bool)}
+        if data.get("evidence_status") in ("partial", "unknown", "verified"):
+            evidence["evidence_status"] = data["evidence_status"]
+        for key in ("missing_packages", "failed_operations"):
+            values = data.get(key)
+            if isinstance(values, list) and len(values) <= 256 and all(isinstance(value, str) and len(value) <= 256 for value in values):
+                evidence[key] = values
+        code = data.get("error_code")
+        if isinstance(code, str) and re.fullmatch(r"[a-z_]{1,64}", code):
+            evidence["error_code"] = code
+        if evidence:
+            safe["data"] = evidence
     if action_id == "remove-unused-flatpaks":
         from services.software.flatpak_maintenance import REF_PATTERN, INSTALLATION_PATTERN
         data = result.get("data", {})

@@ -1,0 +1,18 @@
+#!/usr/bin/python3 -I
+"""Launch only installed trusted Python code when elevated."""
+import os
+import sys
+from pathlib import Path
+
+if os.geteuid() == 0:
+    if Path(__file__).resolve() != Path("/usr/bin/loofi-setup-sources"):
+        raise SystemExit("Elevated source setup requires the installed helper.")
+    source = Path("/usr/lib/loofi-fedora-tweaks")
+else:
+    checkout = Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks"
+    source = checkout if checkout.is_dir() else Path("/usr/lib/loofi-fedora-tweaks")
+sys.path.insert(0, str(source))
+
+from services.software.setup_sources_helper import main
+
+raise SystemExit(main())

@@ -1,4 +1,4 @@
-# Installation Guide — v33.0.1 "Concord"
+# Installation Guide — v35.0.0 "Everyday"
 
 Loofi Fedora Tweaks is distributed as an audited RPM package built specifically for Fedora Linux. The primary supported package channel is the official Fedora COPR repository.
 
@@ -36,10 +36,10 @@ loofi-fedora-tweaks
 
 ## 2. Install Release RPM Directly
 
-If you prefer to install without enabling the COPR repository, download the signed RPM directly from GitHub:
+If you prefer to install without enabling the COPR repository, download the RPM and published checksums directly from GitHub:
 
-1. Visit the [v28.0.2 Release Page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v28.0.2).
-2. Download `loofi-fedora-tweaks-28.0.2-1.fc44.noarch.rpm` (or the RPM matching your Fedora release) from the release assets.
+1. Visit the [v35.0.0 Release Page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0).
+2. Download `loofi-fedora-tweaks-35.0.0-1.fc44.noarch.rpm` (or the RPM matching your Fedora release) from the release assets.
 3. Install the downloaded RPM using DNF:
 
 ```bash

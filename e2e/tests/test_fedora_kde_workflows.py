@@ -2,7 +2,6 @@
 
 from __future__ import annotations
 
-import os
 import re
 import subprocess
 from types import ModuleType, SimpleNamespace
@@ -10,6 +9,8 @@ from unittest.mock import Mock, patch
 
 
 from helpers import (
+    application_environment,
+    record_application_runtime,
     authenticate_polkit,
     cancel_dialog,
     choose_next_value,
@@ -174,9 +175,7 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
     application_log = None
     try:
         _stop_process(current_app_process(app_process_registry))
-        app_env = os.environ.copy()
-        app_env.pop("LOOFI_E2E_POLKIT_PASSWORD", None)
-        app_env.pop("LOOFI_E2E_CREDENTIALS_PATH", None)
+        app_env = application_environment()
         application_log = open("/var/tmp/loofi-e2e/application.log", "a", encoding="utf-8")
         restarted_app = subprocess.Popen(
             ["/usr/bin/loofi-fedora-tweaks"],
@@ -189,6 +188,7 @@ def test_polkit_denial_and_authorized_change_restore(loofi_app, app_process_regi
         )
         app_process_registry.append(restarted_app)
         wait_for_node("Loofi Fedora Tweaks", role="frame", timeout=90)
+        record_application_runtime(restarted_app)
         wait_for_node("Tweaks", role="table cell").click()
         select_search("DNF parallel downloads")
         combo = wait_for_node("DNF parallel downloads", role="combo box", timeout=60, enabled=True)

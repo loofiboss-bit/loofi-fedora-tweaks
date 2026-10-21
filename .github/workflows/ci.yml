@@ -15,6 +15,10 @@ on:
       - ".copilot/**"
   workflow_dispatch:
     inputs:
+      run_vm_e2e:
+        description: "Run optional native Fedora KDE qualification"
+        type: boolean
+        default: false
       extended_qualification:
         description: "Run fresh-disk, reboot and Plasma Wayland qualification after the standard VM gate"
         required: false
@@ -193,8 +197,8 @@ jobs:
           fail-on-error: false
 
   vm_e2e:
-    # Restrict the trusted Fedora/KVM runner to master pushes and dispatches.
-    if: github.ref == 'refs/heads/master' && github.event_name != 'pull_request'
+    # Native qualification is opt-in and stays on the trusted master runner.
+    if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch' && (inputs.run_vm_e2e || inputs.extended_qualification)
     runs-on: [self-hosted, Linux, X64, loofi-vm-e2e]
     timeout-minutes: 180
     steps:

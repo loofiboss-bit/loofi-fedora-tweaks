@@ -1,6 +1,6 @@
 Name:           loofi-fedora-tweaks
 Epoch:          1
-Version:        34.0.1
+Version:        35.0.0
 Release:        1%{?dist}
 Summary:        Fedora apps, desktop tweaks, health, and updates utility
 
@@ -19,6 +19,10 @@ Requires:       python3
 Requires:       python3-pyqt6
 Requires:       python3-keyring
 Requires:       python3-defusedxml
+Requires:       appstream-data
+Requires:       python3-rpm
+Requires:       gnupg2
+Requires:       (python3-libdnf5 if dnf5)
 Requires:       qt6-qtbase-gui
 Requires:       mesa-libGL
 Requires:       mesa-libEGL
@@ -75,6 +79,8 @@ exec python3 "${APP_DIR}/main.py" "$@" 2>>"${LOG_DIR}/startup.log"
 EOF
 chmod 0755 %{buildroot}%{_bindir}/%{name}
 install -m 0755 scripts/loofi-flatpak-maintenance %{buildroot}%{_bindir}/loofi-flatpak-maintenance
+install -m 0755 scripts/loofi-rpm-transaction %{buildroot}%{_bindir}/loofi-rpm-transaction
+install -m 0755 scripts/loofi-setup-sources %{buildroot}%{_bindir}/loofi-setup-sources
 
 desktop-file-install \
     --dir=%{buildroot}%{_datadir}/applications \
@@ -101,6 +107,8 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_prefix}/lib/%{name}
 %attr(755,root,root) %{_bindir}/%{name}
 %attr(755,root,root) %{_bindir}/loofi-flatpak-maintenance
+%attr(755,root,root) %{_bindir}/loofi-rpm-transaction
+%attr(755,root,root) %{_bindir}/loofi-setup-sources
 %{_datadir}/applications/%{name}.desktop
 %{_datadir}/icons/hicolor/128x128/apps/loofi-fedora-tweaks.png
 %{_datadir}/icons/hicolor/512x512/apps/loofi-fedora-tweaks.png
@@ -109,6 +117,10 @@ appstream-util validate-relax --nonet %{name}.metainfo.xml
 %{_mandir}/man1/%{name}.1*
 
 %changelog
+* Sun Oct 18 2026 Loofi <loofi@example.com> - 35.0.0-1
+- Everyday candidate: reviewed application transactions, optional source setup, and explicit recovery.
+- Record the corrected Qt probe and remaining native desktop qualification limits.
+
 * Fri Oct 16 2026 Loofi <loofi@example.com> - 34.0.1-1
 - Accord candidate: installation-bound Flatpak updates and verified app maintenance.
 - Preserve the historical v34.0.0 Citadel tag.

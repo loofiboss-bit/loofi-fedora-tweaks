@@ -33,7 +33,8 @@ class ApplicationReviewMixin:
             source = str(parameters.get("source", "")) if isinstance(parameters, Mapping) else ""
             package_id = str(parameters.get("package_id", "")) if isinstance(parameters, Mapping) else ""
             if source == "flatpak":
-                scope = self.tr("System Flatpak installation")
+                installation = str(parameters.get("installation", "system"))
+                scope = self.tr("Flatpak installation: %1").replace("%1", installation) if "installation" in parameters else self.tr("System Flatpak installation")
                 source_label = str(metadata.get("source_label", "") or self.tr("Flathub")) if isinstance(metadata, Mapping) else self.tr("Flathub")
             elif variant in {"silverblue", "kinoite", "atomic"}:
                 scope = self.tr("System deployment via RPM-OSTree")
@@ -61,14 +62,29 @@ class ApplicationReviewMixin:
         dialog.setWindowTitle(self.tr("Review selected applications"))
         accept_button = dialog.accept_button
         if accept_button is not None:
-            accept_button.setText(self.tr("Apply %1 changes").replace("%1", str(item_count)))
+            accept_button.setText(self.tr("Review %1 transactions").replace("%1", str(item_count)) if str(getattr(bundle, "kind", "")) == "application_install" else self.tr("Apply %1 changes").replace("%1", str(item_count)))
         if dialog.exec() != QDialog.DialogCode.Accepted:
             self._set_utility_notice(page, "neutral", "Review cancelled", "No changes were made.")
             return False
         return bool(self._start_utility_bundle(page, selection))
 
     def _start_utility_bundle(self: Any, page: QWidget, selection: Any) -> bool:
-        """Run a confirmed bundle through the shared Qt operation adapter."""
+        """Prepare and review every application transaction before execution."""
+        if str(getattr(selection.bundle, "kind", "")) == "application_install":
+            if self._utility_operation_adapter is not None:
+                self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish.")
+                return False
+            try:
+                selection.bundle.assert_valid()
+            except (AttributeError, TypeError, ValueError):
+                self._set_utility_notice(page, "error", "Review unavailable", "The selected application bundle is invalid.")
+                return False
+            self._application_review_state = {"page": page, "bundle": selection.bundle, "remaining": list(selection.bundle.items), "results": [], "current": None}
+            return bool(self._continue_application_reviews(page))
+        return bool(self._start_legacy_utility_bundle(page, selection))
+
+    def _start_legacy_utility_bundle(self: Any, page: QWidget, selection: Any) -> bool:
+        """Retain the established non-application profile workflow."""
         from core.actions.operation_controller import OperationController
 
         if self._utility_operation_adapter is not None:
@@ -96,6 +112,63 @@ class ApplicationReviewMixin:
             adapter.deleteLater()
             self._set_utility_notice(page, "warning", "Operation in progress", "Wait for the current operation to finish before starting another one.")
         return bool(started)
+
+    def _continue_application_reviews(self: Any, page: QWidget) -> bool:
+        state = getattr(self, "_application_review_state", None)
+        if not state or state["page"] is not page or state["current"] is not None:
+            return False
+        if not state["remaining"]:
+            return bool(self._finish_application_reviews(page))
+        item = state["remaining"].pop(0)
+        state["current"] = item
+        started = self._review_health_action(page, item.action_id, dict(item.parameters))
+        if not started:
+            self._cancel_application_reviews(page)
+        return bool(started)
+
+    def _application_item_finished(self: Any, page: QWidget, ticket: Any, outcome: Any) -> None:
+        from core.actions.bundles import BundleItemResult
+
+        state = getattr(self, "_application_review_state", None)
+        if not state or state["page"] is not page:
+            return
+        item = state["current"]
+        if item is None or item.action_id != ticket.plan.action_id or any(ticket.plan.parameters.get(key) != value for key, value in item.parameters.items()):
+            return
+        state["results"].append(BundleItemResult(
+            item_id=item.item_id, action_id=item.action_id, status=str(outcome.status), message=str(outcome.message),
+            plan_id=str(outcome.plan_id), run_id=str(outcome.run_id), correlation_id=str(outcome.correlation_id), data=dict(outcome.data),
+        ))
+        state["current"] = None
+
+    def _cancel_application_reviews(self: Any, page: QWidget) -> None:
+        from core.actions.bundles import BundleItemResult
+
+        state = getattr(self, "_application_review_state", None)
+        if not state or state["page"] is not page:
+            return
+        pending = ([state["current"]] if state["current"] is not None else []) + state["remaining"]
+        for item in pending:
+            state["results"].append(BundleItemResult(item.item_id, item.action_id, "skipped", "No approved transaction was executed.", skipped=True))
+        state["remaining"] = []
+        state["current"] = None
+        self._finish_application_reviews(page)
+
+    def _finish_application_reviews(self: Any, page: QWidget) -> bool:
+        from core.actions.bundles import BundleOutcome
+
+        state = getattr(self, "_application_review_state", None)
+        if not state or state["page"] is not page:
+            return False
+        self._application_review_state = None
+        bundle = state["bundle"]
+        results = tuple(state["results"])
+        successes = sum(item.success for item in results)
+        status = "succeeded" if successes == len(bundle.items) else "partial_failure" if successes else "failed"
+        outcome = BundleOutcome(bundle.bundle_id, bundle.kind, bundle.execution_policy, status,
+                                f"{successes}/{len(bundle.items)} application operations completed and verified.", results, bundle.digest)
+        self._utility_bundle_finished(page, outcome)
+        return True
 
     def _utility_bundle_finished(self: Any, page: QWidget, outcome: Any) -> None:
         """Project a terminal bundle outcome back onto its owning workflow."""

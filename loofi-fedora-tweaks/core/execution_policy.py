@@ -114,7 +114,19 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
         from services.software.flatpak_maintenance import trusted_helpers, validate_helper_args
         if privileged or command not in trusted_helpers() or not validate_helper_args(vector):
             return "manual_only"
-        return "host" if vector[0] in {"apply", "update-apply"} else "read_only"
+        return "host" if vector[0] in {"apply", "update-apply", "install-apply"} else "read_only"
+    if binary == "loofi-rpm-transaction":
+        from services.software.rpm_transactions import HELPER, trusted_helpers, validate_helper_args
+        if command not in trusted_helpers() or not validate_helper_args(vector):
+            return "manual_only"
+        if vector[0] == "apply":
+            return "host" if command == HELPER else "manual_only"
+        return "read_only" if not privileged else "manual_only"
+    if binary == "loofi-setup-sources":
+        from services.software.setup_sources import trusted_helpers, validate_helper_args
+        if command not in trusted_helpers() or not validate_helper_args(vector):
+            return "manual_only"
+        return "host" if vector[0] == "apply" else "read_only" if not privileged else "manual_only"
     first = vector[0] if vector else ""
     if privileged:
         return "host"
@@ -135,6 +147,8 @@ def classify_command(command: str, args: Sequence[str]) -> ExecutionClass:
         if len(vector) == 2 and vector[0] == "set" and vector[1] in {"power-saver", "balanced", "performance"}:
             return "host"
     if binary in {"dnf", "dnf5"}:
+        if vector[:2] == ("--cacheonly", "repoquery"):
+            return "read_only"
         if first == "history" and len(vector) >= 2:
             return "read_only" if vector[1] in {"info", "list"} else "host"
         if first == "offline" and len(vector) >= 2:
@@ -176,9 +190,24 @@ def execution_allowed(
     action_id: str = "",
 ) -> bool:
     binary, vector, privileged = _unwrap(command, args)
-    if binary == "loofi-flatpak-maintenance" and vector[:1] in {("apply",), ("update-apply",)}:
-        return (not privileged and authority == "action_center" and action_id == ("update-flatpaks" if vector[0] == "update-apply" else "remove-unused-flatpaks")
+    if binary == "loofi-flatpak-maintenance" and vector[:1] in {("apply",), ("update-apply",), ("install-apply",)}:
+        expected_action = {"apply": "remove-unused-flatpaks", "update-apply": "update-flatpaks", "install-apply": "install-application"}[vector[0]]
+        return (not privileged and authority == "action_center" and action_id == expected_action
                 and classify_command(command, args) == "host")
+    if binary == "loofi-rpm-transaction" and vector[:1] == ("apply",):
+        from services.software.rpm_transactions import parse_args
+        try:
+            operation = parse_args(vector)[1]
+        except (ValueError, TypeError, IndexError):
+            return False
+        expected_action = {"install": "install-application", "remove": "remove-application", "codecs": "install-multimedia-codecs"}[operation]
+        return authority == "action_center" and action_id == expected_action and classify_command(command, args) == "host"
+    if binary == "loofi-setup-sources" and vector[:1] == ("apply",):
+        from services.software.setup_sources import validate_helper_args
+        if not validate_helper_args(vector):
+            return False
+        expected_action = "enable-flathub" if vector[2] == "flathub" else "enable-rpm-fusion"
+        return authority == "action_center" and action_id == expected_action and classify_command(command, args) == "host"
     custom_tweak = custom_numeric_tweak(binary, vector)
     if custom_tweak:
         return not privileged and authority == "action_center" and action_id == f"restore-{custom_tweak}"

@@ -31,7 +31,16 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
-The local **v34.0.1 Accord** candidate adds installation-bound Flatpak updates:
+**v35.0.0 Everyday** adds local AppStream discovery, explicit metadata refresh,
+complete RPM/Flatpak transaction review, in-app RPM removal, optional reviewed
+Flathub/RPM Fusion and codec setup, and coherent interruption recovery. The
+existing installation-bound Flatpak updates are included. See the
+[release notes](docs/releases/RELEASE-NOTES-v35.0.0.md) and
+[qualification report](docs/V35_QUALIFICATION.md) for measured checks and the known
+Qt accessibility dependency defect. Native VM matrices provide complementary,
+risk-based evidence.
+
+The retained **v34.0.1 Accord** baseline adds installation-bound Flatpak updates:
 check a selected installed application, review one or several updates with
 their required dependencies, and verify the resulting commits in the same
 installation. Result links lead to Activity and optional existing runtime

@@ -295,13 +295,15 @@ class TestTweakPage(unittest.TestCase):
     def test_health_requires_separate_no_rollback_acceptance(self, _capability) -> None:
         parent = QWidget()
         parent._record_global_operation_result = Mock()
+        parent._cancel_application_reviews = Mock()
         parent._set_review_notice = lambda *args: MainWindowUtilityMixin._set_review_notice(parent, *args)
         parent._run_reviewed_health_action = Mock()  # type: ignore[attr-defined]
         page = SimpleNamespace(set_health_notice=Mock())
         adapter = SimpleNamespace(stopped=SimpleNamespace(connect=Mock()))
         ticket = SimpleNamespace(
             blocked=False,
-            plan=SimpleNamespace(action_id="journal-vacuum", risk_level="medium", rollback_supported=False, recovery_guidance="Review recovery guidance."),
+            plan=SimpleNamespace(action_id="journal-vacuum", risk_level="medium", rollback_supported=False,
+                                 recovery_guidance="Review recovery guidance.", policy_decision=SimpleNamespace(facts={})),
             preview=("journalctl --vacuum-time=1d",),
         )
         try:

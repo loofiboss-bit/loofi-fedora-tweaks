@@ -423,6 +423,16 @@ class ActionCenterOrchestrator:
             run = self.get_run(run_id)
             if run.state != "running":
                 raise ActionCenterError(f"Run is not awaiting execution completion: {run.state}")
+            if not result.success and run.action_id in {"install-application", "remove-application", "install-multimedia-codecs"}:
+                from services.software.rpm_transactions import ERROR_MESSAGES
+                try:
+                    payload = json.loads(result.stdout)
+                    code = payload.get("error_code") if isinstance(payload, dict) else None
+                    if isinstance(code, str) and code in ERROR_MESSAGES:
+                        result.data = {**(result.data or {}), "error_code": code}
+                        result.message = ERROR_MESSAGES[code]
+                except (ValueError, TypeError):
+                    pass
             run.execution_result = result.to_dict()
             now = self.clock()
             if result.success:
@@ -460,8 +470,8 @@ class ActionCenterOrchestrator:
                 lease.__exit__(None, None, None)
 
     def _observe_failed_mutation(self, run: ActionRun) -> None:
-        """Retain exact partial Flatpak readback without rewriting failure state."""
-        if run.action_id not in {"remove-unused-flatpaks", "update-flatpaks"}:
+        """Retain exact partial readback without rewriting execution failure."""
+        if run.action_id not in {"remove-unused-flatpaks", "update-flatpaks", "install-application", "remove-application", "install-multimedia-codecs"}:
             return
         try:
             plan = self.get_plan(run.plan_id)
@@ -473,7 +483,7 @@ class ActionCenterOrchestrator:
                 observation = decision.to_result(action_id=run.action_id)
         except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError):
             observation = ActionResult.fail(
-                "The interrupted Flatpak change could not be inspected. Review the selected installation.",
+                "The interrupted change could not be inspected. Review Activity and the selected installation.",
                 action_id=run.action_id,
             )
         run.verification_result = observation.to_dict()
@@ -521,6 +531,34 @@ class ActionCenterOrchestrator:
             plan = self.get_plan(run.plan_id)
             result = definition.verifier(run, plan, self.runtime)
             return self._complete_verification_locked(run, result)
+        finally:
+            lease.__exit__(None, None, None)
+
+    def recheck_result(self, run_id: str) -> ActionRun:
+        """Observe an exact terminal run without rewriting its execution history."""
+        lease = self._acquire_lease()
+        try:
+            run = self.get_run(run_id)
+            if run.state not in {"failed", "verification_failed", "cancelled", "interrupted"}:
+                raise ActionCenterError(f"Run is not available for result recheck: {run.state}")
+            plan = self.get_plan(run.plan_id)
+            self._assert_integrity(plan)
+            if run.action_id != plan.action_id or run.parameters != plan.parameters:
+                raise ActionPlanIntegrityError("Recorded run does not match its reviewed plan.")
+            definition = self._definition_for(run.action_id)
+            try:
+                result = definition.verifier(run, plan, self.runtime)
+                observation = result if isinstance(result, ActionResult) else result.to_result(action_id=run.action_id)
+            except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError):
+                observation = ActionResult.fail(
+                    "The current state could not be inspected. Review Activity before creating a new plan.",
+                    action_id=run.action_id,
+                )
+            run.verification_result = observation.to_dict()
+            run.verification_attempts += 1
+            run.last_verified_at = self.clock()
+            self.run_store.save(run)
+            return run
         finally:
             lease.__exit__(None, None, None)
 

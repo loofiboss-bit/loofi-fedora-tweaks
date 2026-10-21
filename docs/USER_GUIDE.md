@@ -37,8 +37,8 @@ unavailable rather than falling back to a Traditional Fedora assumption.
 
 ## Everyday guides
 
-Overview offers four optional guides: **Make Fedora yours**, **Choose and
-manage apps**, **Maintain your system**, and **Solve a problem**. Each step opens
+Overview offers optional guides: **Make Fedora yours**, **Choose and
+manage apps**, **Maintain your system**, **Solve a problem**, and **Get Fedora ready**. Each step opens
 the existing page or focuses its relevant control. Opening a step does not
 install or remove packages, change settings, or run a diagnostic. The owning
 page still asks you to start any check and review every proposed change.
@@ -51,6 +51,13 @@ Guide progress is stored locally under the application data directory. It can
 be resumed after restarting Loofi, while checks and change reviews must still be
 made again when needed. The separate guide format does not alter tweak profiles
 or operation history.
+
+In **Get Fedora ready**, marking a change step Reviewed records acknowledgement;
+completion requires linking a verified saved result or choosing Skip. A profile
+result covers the selected settings that succeeded, rather than every setting
+in the profile. Backup confirmation records your acknowledgement only. Saved
+guide progress and its profile-result references are included in local state
+backups; unavailable or changed operation history invalidates the result link.
 
 The header guide menu stays available while visiting other pages. It offers the
 next unfinished step and a return to the selected guide. Global search also
@@ -89,8 +96,32 @@ In Apps, choose **Installed** to search Flatpaks and visible RPM-owned desktop
 applications, including RPM apps outside the curated catalog. Several launchers
 and installed architectures of one RPM package share a row; reported size sums
 those installed package instances. RPM identifies a package format, not its
-origin or trust. The curated catalog remains separate. RPM management opens
-the desktop software manager; partial reads say which source is incomplete.
+origin or trust. The curated catalog remains separate. On traditional Fedora
+with DNF5, **Review removal** shows the complete exact package/dependency
+transaction, rejects protected components and verifies the independent RPM
+inventory afterward. Atomic retains the desktop software-manager handoff.
+Partial reads say which source is incomplete.
+
+In **Catalog**, enable **Include applications from local AppStream metadata**
+to browse additional programs. Each RPM source/version/architecture or Flatpak
+remote/installation is a separate choice. **Reload local metadata** reads the
+existing cache only. **Review metadata download** explicitly refreshes the
+selected configured source; search never downloads metadata.
+
+RPM package-cache downloads and application-catalog packages are separate
+choices. Choose **Fedora catalog (RPM)**, **RPM Fusion Free catalog (RPM)** or
+**RPM Fusion Nonfree catalog (RPM)** to review installation or update of that
+catalog package. **Review catalog package** opens the normal complete RPM
+transaction review, including actual source and dependencies. RPM Fusion
+catalogs require their corresponding source to be configured separately.
+Nothing is preselected or installed when the choices appear. A missing or
+invalid catalog remains unavailable even if the package-cache download succeeds.
+
+In **Sources**, optional Flathub and RPM Fusion Free/Nonfree setup requires a
+separate source/scope selection and review of provider/signing trust. Existing
+conflicting configuration is preserved. After activation, refresh RPM metadata
+explicitly before reviewing the fixed FFmpeg/GStreamer codec recipe. Package
+replacement consent is separate and initially unchecked. No drivers are changed.
 
 In **My profile library**, select **Edit a copy…** to change the name, included
 settings, and supported target values. **Save new version** preserves the original
@@ -484,10 +515,10 @@ metadata, grouped by network, files, audio, devices, display, and D-Bus. Environ
 values are hidden; unknown keys remain under **Technical details**. Portals and
 user overrides can change actual access.
 **Review removal** always targets exactly one installation. Running apps must be
-closed first; removal preserves their data. RPM removal opens the desktop software
-manager. The handoff identifies the exact package, does not promise an app-specific
-page, and asks you to return and refresh the installed-app inventory. Starting the
-external manager is not reported as an installation or removal result.
+closed first; removal preserves their data. RPM removal on traditional Fedora
+with DNF5 uses complete package review and readback; Atomic retains the native
+software-manager handoff. External-manager launch is never reported as an
+installation or removal result.
 
 ### Care app details and runtime maintenance
 

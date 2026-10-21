@@ -6,6 +6,7 @@ from dataclasses import dataclass
 from datetime import datetime
 from typing import Mapping
 
+from core.actions.recovery_presentation import recovery_presentation
 from core.tasks.update_flow import STALE_SECONDS, UPDATE_ACTION_SOURCES
 
 
@@ -64,9 +65,10 @@ def next_steps(maintenance: Mapping, metrics=(), *, now: float) -> tuple[NextSte
             source = UPDATE_ACTION_SOURCES.get(str(latest.get("action_id", latest.get("detail", ""))), "")
             run_id = latest.get("run_id", "")
             context = NextStepContext(run_id=run_id if isinstance(run_id, str) else "", update_source=source)
-            if identifier == "failed" and source:
-                route = "health"
-            result.append(NextStep(identifier, title, str(latest.get("action_id", latest.get("detail", ""))),
+            if identifier == "failed":
+                route = "changes"
+            presentation = recovery_presentation(str(latest.get("status", "")), latest.get("execution"), latest.get("verification"))
+            result.append(NextStep(identifier, title, presentation.guidance,
                                    route, button, _timestamp(latest.get("sampled_at")), context))
     if activity.get("status") == "error":
         result.append(NextStep("history-error", "Review unreadable activity", str(activity.get("detail", "Saved activity is unreadable")),

@@ -20,7 +20,7 @@ if not marker.is_file() or marker.read_text().strip() != "loofi-fedora-tweaks-e2
 if subprocess.run(["systemd-detect-virt", "--vm"], capture_output=True, text=True, check=False).stdout.strip() not in {"qemu", "kvm"}:
     raise pytest.UsageError("Native GUI E2E tests require QEMU virtualization.")
 
-from helpers import wait_for_node, use_driver
+from helpers import application_environment, record_application_runtime, wait_for_node, use_driver
 from selenium import webdriver
 from selenium.webdriver.common.options import ArgOptions
 from selenium.webdriver.remote.remote_connection import RemoteConnection
@@ -42,6 +42,9 @@ def loofi_app(app_process_registry: list[subprocess.Popen[str]]) -> Iterator[sub
     app_env.pop("LOOFI_E2E_POLKIT_PASSWORD", None)
     app_env.pop("LOOFI_E2E_CREDENTIALS_PATH", None)
     server_env = app_env.copy()
+    server_env.pop("LD_LIBRARY_PATH", None)
+    server_env.pop("LD_PRELOAD", None)
+    app_env = application_environment()
     # The upstream Wayland helper logs synthesized characters at qDebug level.
     # Its child environment must never record Polkit credential key events.
     server_env["QT_LOGGING_RULES"] = "*.debug=false"
@@ -83,6 +86,7 @@ def loofi_app(app_process_registry: list[subprocess.Popen[str]]) -> Iterator[sub
         )
         app_process_registry.append(process)
         wait_for_node("Loofi Fedora Tweaks", role="frame", timeout=90)
+        record_application_runtime(process)
         try:
             wait_for_node("Open Loofi", timeout=3).click()
         except AssertionError:
