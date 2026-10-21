@@ -41,3 +41,5 @@ and is not.
 
 The repository [README](../README.md) is the product overview. The getting
 started guide is mirrored byte-for-byte to [wiki/Getting-Started](../wiki/Getting-Started.md).
+
+- [v35 publication evidence](reports/V35_RELEASE_PUBLICATION.md) — verified GitHub, COPR and wiki publication.

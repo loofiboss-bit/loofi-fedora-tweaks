@@ -8,7 +8,7 @@
 - Extend native Flatpak installation review to the complete resolved dependency operation set and exact commits without adding remotes or removing applications implicitly.
 - Add an optional Get Fedora ready guide, separately reviewed Flathub and RPM Fusion sources with pinned trust, and a fixed FFmpeg/GStreamer recipe with explicit replacement consent.
 - Share interrupted, partial, unknown and verified recovery presentation across Updates, Activity and Overview. Never resume mutations automatically.
-- Add signed RPM application/offline-update VM fixtures, real reboot verification, and a standalone Qt accessibility regression with a downstream source patch. The installed Qt runtime still reproduces the crash; this is an unqualified local candidate, not a release.
+- Add signed RPM application/offline-update VM fixtures, real reboot verification, and a standalone Qt accessibility regression with a downstream source patch. The installed Qt runtime still reproduces the crash; full native desktop qualification remains incomplete and is disclosed.
 - See [v35 qualification](docs/V35_QUALIFICATION.md) for measured checks, known limitations and risk-based release policy.
 
 ## [34.0.1] - Unreleased - "Accord"

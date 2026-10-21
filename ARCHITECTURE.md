@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference, including local v35.0.0 "Everyday" candidate work.
+> Active architecture reference, including v35.0.0 "Everyday" workflows.
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary

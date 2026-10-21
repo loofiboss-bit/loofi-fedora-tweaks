@@ -16,6 +16,10 @@ The known Qt accessibility defect remains disclosed. Native VM matrices are
 optional under the maintainer's risk-based release policy; local checks do not
 establish physical desktop qualification.
 
+Publication is verified on GitHub and Fedora 44 COPR build 11182269. See
+[publication evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V35_RELEASE_PUBLICATION.md)
+for source identity, checksums, signatures, canonical CI and repository installation.
+
 **Previous public release:** [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1).
 
 ![Loofi Fedora Tweaks Overview](images/overview.png)

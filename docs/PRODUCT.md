@@ -13,7 +13,7 @@ problem. They route into existing pages and reviews. Guide progress is local
 presentation state; reviewing or completing a guide never establishes that the
 computer is healthy.
 
-The local v35 Everyday candidate adds an optional Get Fedora ready guide using
+v35 Everyday adds an optional Get Fedora ready guide using
 the same saved progress and reviewed-action boundaries. It links to updates,
 applications, separately selected Flathub/RPM Fusion sources and codec setup,
 and desktop profiles. Nothing is preselected or applied by opening a guide.

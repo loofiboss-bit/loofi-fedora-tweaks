@@ -1,8 +1,10 @@
 # Roadmap
 
-The latest published release is [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1), published on 2026-10-12 with COPR build 11109761. Its release tag resolves to `68da040ca5fd85f7feae4442c8ffb9049815cdcd`; v33.0.0 remains the historical Bastion tag. See [publication evidence](docs/reports/V33.0.1_RELEASE_PUBLICATION.md) for passed gates and the explicit VM exception. KDE on traditional Fedora with DNF5 is the first target; public CLI, profile, and saved-session compatibility remain supported.
+The latest published release is [v35.0.0 Everyday](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0), published on 2026-10-21 with COPR build 11182269. Its annotated tag resolves to `56b07b1a41c3975bf24ec0acd2d16e2efebea18c`. See [publication evidence](docs/reports/V35_RELEASE_PUBLICATION.md) for successful canonical CI, public assets, attestation, COPR installation and wiki readback. Traditional Fedora KDE with DNF5 remains the first target; GNOME and Atomic retain their existing capability boundaries. Native matrices are complementary under the maintainer's risk-based release policy.
 
-## v35.0.0 Everyday — local candidate
+Previous public release: [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1). Historical v33.0.0 and v34.0.0 tags are preserved.
+
+## v35.0.0 Everyday — published
 
 Complete everyday application workflows on traditional Fedora KDE with DNF5:
 local AppStream discovery, explicit metadata downloads, complete RPM and Flatpak
@@ -10,7 +12,7 @@ transaction review, in-app RPM removal, optional source/codec setup, and coheren
 recovery after interruption. The existing v34 installation-bound update work is
 included. Get Fedora ready extends the existing optional resumable guides.
 
-The candidate preserves existing route IDs, CLI/JSON shapes, portable profiles,
+The release preserves existing route IDs, CLI/JSON shapes, portable profiles,
 and history schemas. New transaction evidence is versioned and older evidence
 requires a fresh review. GNOME and Atomic retain their existing capability
 boundaries; release upgrades remain preparation and guidance.
