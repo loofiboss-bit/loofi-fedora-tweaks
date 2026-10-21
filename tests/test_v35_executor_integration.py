@@ -1,9 +1,11 @@
 """Exercise real policy/facade boundaries while mocking only process execution."""
 import json
 import hashlib
+import io
 import subprocess
 import unittest
 from dataclasses import replace
+from pathlib import Path
 from types import SimpleNamespace
 from unittest.mock import patch
 
@@ -23,11 +25,16 @@ def snapshot():
 
 
 class ExecutorIntegrationTests(unittest.TestCase):
+    @patch("services.software.application_discovery.rpm_catalog_paths", return_value=(Path("/fixture/catalog.xml"),))
+    @patch("builtins.open")
     @patch("core.actions.catalog.SystemActionRuntime.package_manager", return_value="dnf5")
     @patch("core.executor.action_executor.ActionExecutor._log_action")
     @patch("core.executor.action_executor.subprocess.run")
-    def test_metadata_cache_verification_crosses_real_read_only_boundary(self, run, _log, _manager):
+    def test_metadata_cache_verification_crosses_real_read_only_boundary(self, run, _log, _manager, opener, _paths):
         from core.actions.application_metadata import _verify
+        opener.side_effect = lambda *_args, **_kwargs: io.BytesIO(
+            b'<components><component type="desktop-application"><id>org.example.Editor</id>'
+            b'<name>Editor</name><pkgname>editor</pkgname></component></components>')
         repository_digest = "b" * 64
         parameters = {"source": "fedora"}
         plan = SimpleNamespace(parameters=parameters, policy_decision=SimpleNamespace(facts={
@@ -41,6 +48,7 @@ class ExecutorIntegrationTests(unittest.TestCase):
         runtime = SystemActionRuntime(CommandFacade())
         result = _verify(None, plan, runtime)
         self.assertEqual(result.state, "succeeded")
+        opener.assert_called_once_with(Path("/fixture/catalog.xml"), "rb")
         self.assertEqual(run.call_count, 2)
         self.assertEqual(run.call_args.args[0][:3], ["dnf5", "--cacheonly", "repoquery"])
         self.assertFalse(execution_allowed("dnf5", ["--cacheonly", "install", "fixture"]))
