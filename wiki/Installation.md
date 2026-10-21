@@ -6,9 +6,9 @@ Loofi Fedora Tweaks is distributed as an audited RPM package built specifically 
 
 ## System Requirements
 
-- **Supported Distributions**: Fedora 43 and Fedora 44 (Stable); Fedora 45 (Preview).
-- **Desktop Environments**: GNOME, KDE Plasma, XFCE, Sway, and other modern desktops (Wayland and X11 supported).
-- **Architecture**: `x86_64` and `aarch64`.
+- **Primary v35 platform**: traditional Fedora 44 with KDE Plasma and DNF5.
+- **Other environments**: GNOME and Atomic retain existing feature availability boundaries; unsupported actions explain their limitations.
+- **Published COPR channel**: Fedora 44 `x86_64`. The application RPM is `noarch`; this does not qualify other architectures or desktop sessions.
 - **Runtime Dependencies**: Python 3.12 or newer, PyQt6 (automatically pulled by the RPM).
 - **Privilege Separation**: `pkexec` and a standard desktop Polkit authentication agent for executing confirmed changes.
 

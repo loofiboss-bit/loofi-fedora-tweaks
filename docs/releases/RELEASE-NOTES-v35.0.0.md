@@ -40,8 +40,8 @@ GNOME and Atomic retain existing capability boundaries. Fedora version upgrades
 remain preparation and guidance. Permission editing, automatic repair,
 unattended updates and general system recovery are outside this release.
 
-See [qualification details](../V35_QUALIFICATION.md) and the
-[changelog](../../CHANGELOG.md).
+See [qualification details](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/v35.0.0/docs/V35_QUALIFICATION.md)
+and the [changelog](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/v35.0.0/CHANGELOG.md).
 
 ## Install
 
