@@ -196,7 +196,7 @@ class ActionCenterOrchestrator:
                     # ``atomic_manual_only``) instead of turning an
                     # unavailable backend into a generic empty-vector error.
                     if decision.allowed:
-                        preview = self._render(definition, normalized)
+                        preview = self._render(definition, normalized, decision=decision)
                 if self.release_policy.is_preview_target(target):
                     decision = PolicyDecision(
                         False,
@@ -280,7 +280,7 @@ class ActionCenterOrchestrator:
         plan = self.get_plan(plan_id)
         definition = self._definition_for(plan.action_id)
         self._assert_integrity(plan)
-        command = self._render(definition, plan.parameters)
+        command = self._render(definition, plan.parameters, decision=plan.policy_decision)
         result = self.facade.preview(command, privileged=plan.privileged, action_id=definition.id)
         result.data = {
             **(result.data or {}),
@@ -322,11 +322,21 @@ class ActionCenterOrchestrator:
                 self._block_plan(plan, parameter_decision, now=now)
                 raise ActionPlanRejectedError(parameter_decision)
             try:
-                command = self._render(definition, plan.parameters)
-                host_decision = self._host_target_decision(plan.target)
-                current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
+                if definition.evidence_renderer is not None:
+                    host_decision = self._host_target_decision(plan.target)
+                    current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
+                    if not current_decision.allowed:
+                        self._block_plan(plan, current_decision, now=now)
+                        raise ActionPlanRejectedError(current_decision)
+                    command = self._render(definition, plan.parameters, decision=current_decision)
+                else:
+                    command = self._render(definition, plan.parameters)
+                    host_decision = self._host_target_decision(plan.target)
+                    current_decision = host_decision or definition.preflight_checker(plan.parameters, self.runtime)
                 if current_decision.allowed:
                     current_decision = self._variant_decision(definition) or current_decision
+            except ActionPlanRejectedError:
+                raise
             except (OSError, RuntimeError, TypeError, ValueError) as exc:
                 decision = PolicyDecision(False, "preflight_failed", f"Action preflight failed safely: {exc}")
                 self._block_plan(plan, decision, now=now)
@@ -413,6 +423,16 @@ class ActionCenterOrchestrator:
             run = self.get_run(run_id)
             if run.state != "running":
                 raise ActionCenterError(f"Run is not awaiting execution completion: {run.state}")
+            if not result.success and run.action_id in {"install-application", "remove-application", "install-multimedia-codecs"}:
+                from services.software.rpm_transactions import ERROR_MESSAGES
+                try:
+                    payload = json.loads(result.stdout)
+                    code = payload.get("error_code") if isinstance(payload, dict) else None
+                    if isinstance(code, str) and code in ERROR_MESSAGES:
+                        result.data = {**(result.data or {}), "error_code": code}
+                        result.message = ERROR_MESSAGES[code]
+                except (ValueError, TypeError):
+                    pass
             run.execution_result = result.to_dict()
             now = self.clock()
             if result.success:
@@ -424,7 +444,7 @@ class ActionCenterOrchestrator:
                 run.transition("failed", "execution-failed", at=now)
                 run.recovery_status = "manual-review-required"
             if not result.success:
-                self._observe_failed_cleanup(run)
+                self._observe_failed_mutation(run)
             self.run_store.save(run)
             return run
         finally:
@@ -440,7 +460,7 @@ class ActionCenterOrchestrator:
                 raise ActionCenterError(f"Run cannot be interrupted from state: {run.state}")
             run.transition("interrupted", reason, at=self.clock())
             run.recovery_status = "manual-review-required"
-            self._observe_failed_cleanup(run)
+            self._observe_failed_mutation(run)
             self.run_store.save(run)
             return run
         finally:
@@ -449,9 +469,9 @@ class ActionCenterOrchestrator:
             elif lease is not None:
                 lease.__exit__(None, None, None)
 
-    def _observe_failed_cleanup(self, run: ActionRun) -> None:
-        """Read back a possibly partial cleanup without changing its failure state."""
-        if run.action_id != "remove-unused-flatpaks":
+    def _observe_failed_mutation(self, run: ActionRun) -> None:
+        """Retain exact partial readback without rewriting execution failure."""
+        if run.action_id not in {"remove-unused-flatpaks", "update-flatpaks", "install-application", "remove-application", "install-multimedia-codecs"}:
             return
         try:
             plan = self.get_plan(run.plan_id)
@@ -463,7 +483,7 @@ class ActionCenterOrchestrator:
                 observation = decision.to_result(action_id=run.action_id)
         except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError):
             observation = ActionResult.fail(
-                "The interrupted cleanup could not be inspected. Review the selected installation.",
+                "The interrupted change could not be inspected. Review Activity and the selected installation.",
                 action_id=run.action_id,
             )
         run.verification_result = observation.to_dict()
@@ -511,6 +531,34 @@ class ActionCenterOrchestrator:
             plan = self.get_plan(run.plan_id)
             result = definition.verifier(run, plan, self.runtime)
             return self._complete_verification_locked(run, result)
+        finally:
+            lease.__exit__(None, None, None)
+
+    def recheck_result(self, run_id: str) -> ActionRun:
+        """Observe an exact terminal run without rewriting its execution history."""
+        lease = self._acquire_lease()
+        try:
+            run = self.get_run(run_id)
+            if run.state not in {"failed", "verification_failed", "cancelled", "interrupted"}:
+                raise ActionCenterError(f"Run is not available for result recheck: {run.state}")
+            plan = self.get_plan(run.plan_id)
+            self._assert_integrity(plan)
+            if run.action_id != plan.action_id or run.parameters != plan.parameters:
+                raise ActionPlanIntegrityError("Recorded run does not match its reviewed plan.")
+            definition = self._definition_for(run.action_id)
+            try:
+                result = definition.verifier(run, plan, self.runtime)
+                observation = result if isinstance(result, ActionResult) else result.to_result(action_id=run.action_id)
+            except (ActionCenterError, OSError, RuntimeError, TypeError, ValueError):
+                observation = ActionResult.fail(
+                    "The current state could not be inspected. Review Activity before creating a new plan.",
+                    action_id=run.action_id,
+                )
+            run.verification_result = observation.to_dict()
+            run.verification_attempts += 1
+            run.last_verified_at = self.clock()
+            self.run_store.save(run)
+            return run
         finally:
             lease.__exit__(None, None, None)
 
@@ -628,8 +676,14 @@ class ActionCenterOrchestrator:
             },
         )
 
-    def _render(self, definition: ActionDefinition, parameters: Mapping[str, Any]) -> list[str]:
-        vector = [str(part) for part in definition.command_renderer(parameters, self.runtime)]
+    def _render(self, definition: ActionDefinition, parameters: Mapping[str, Any], *, decision: PolicyDecision | None = None) -> list[str]:
+        if definition.evidence_renderer is not None:
+            if decision is None or not decision.allowed:
+                raise CommandValidationError("Resolved transaction rendering requires approved policy evidence.")
+            rendered = definition.evidence_renderer(parameters, self.runtime, decision)
+        else:
+            rendered = definition.command_renderer(parameters, self.runtime)
+        vector = [str(part) for part in rendered]
         if "pkexec" in vector:
             raise CommandValidationError("Canonical Action Center vectors must not contain pkexec.")
         validate_command_vector(vector)

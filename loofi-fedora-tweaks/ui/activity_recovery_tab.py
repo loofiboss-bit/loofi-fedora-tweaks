@@ -2,6 +2,8 @@
 
 from __future__ import annotations
 
+from core.actions.recovery_presentation import recovery_presentation
+
 import math
 from collections.abc import Iterable, Mapping
 from datetime import datetime
@@ -665,7 +667,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
                 when,
                 event.summary,
                 self._SOURCE_LABELS.get(event.source, event.source),
-                event.state.replace("_", " ").title(),
+                self.tr(recovery_presentation(event.state, event.after_facts.get("execution"), event.after_facts.get("verification")).label) if event.source == "action_center" else event.state.replace("_", " ").title(),
             )
             for column, value in enumerate(values):
                 item = QTableWidgetItem(value)
@@ -688,7 +690,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self._apply_presentation_state(selected_state(event))
         self.check_result_button.setVisible(
             event.source == "action_center"
-            and event.state in {"verifying", "awaiting_reboot"}
+            and event.state in {"verifying", "awaiting_reboot", "failed", "verification_failed", "cancelled", "interrupted"}
             and bool(str(event.after_facts.get("run_id", "")))
         )
         self.load_more_button.setEnabled(bool(self._next_cursor))
@@ -700,7 +702,7 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
             row.deleteLater()
         self.detail_definitions.rows.clear()
         self.detail_definitions.add_row(
-            self.tr("State"), event.state.replace("_", " ").title()
+            self.tr("State"), self.tr(recovery_presentation(event.state, event.after_facts.get("execution"), event.after_facts.get("verification")).label) if event.source == "action_center" else event.state.replace("_", " ").title()
         )
         self.detail_definitions.add_row(
             self.tr("Resources"),
@@ -715,6 +717,16 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
         self.detail_definitions.add_row(self.tr("After"), self._facts_text(event.after_facts))
         self.detail_definitions.add_row(self.tr("Verification"), self._facts_text(event.after_facts.get("verification")))
         self.detail_definitions.add_row(self.tr("Recovery"), self._facts_text(event.after_facts.get("recovery")))
+        if event.source == "action_center":
+            presentation = recovery_presentation(event.state, event.after_facts.get("execution"), event.after_facts.get("verification"))
+            self.detail_definitions.add_row(self.tr("Next step"), self.tr(presentation.guidance))
+            self.detail_definitions.add_row(self.tr("Verified outcome"), self.tr(presentation.outcome))
+            verification = event.after_facts.get("verification")
+            if event.state in {"failed", "verification_failed", "cancelled", "interrupted"} and isinstance(verification, dict):
+                self.detail_definitions.add_row(
+                    self.tr("Current state"),
+                    self.tr("Verified") if verification.get("success") is True else self.tr("Not verified"),
+                )
         related = len(event.correlation_ids)
         self.related_label.setText(
             self.tr("Possibly related: %1 change(s). This is a time-and-resource match, not proof of cause.")
@@ -831,6 +843,6 @@ class ActivityRecoveryTab(QWidget, PluginInterface):
     def _check_selected_result(self) -> None:
         event = self._selected_event()
         run_id = str(event.after_facts.get("run_id", "")) if event else ""
-        if event is None or event.source != "action_center" or event.state not in {"verifying", "awaiting_reboot"} or not run_id:
+        if event is None or event.source != "action_center" or event.state not in {"verifying", "awaiting_reboot", "failed", "verification_failed", "cancelled", "interrupted"} or not run_id:
             return
         self.runVerificationRequested.emit(run_id)

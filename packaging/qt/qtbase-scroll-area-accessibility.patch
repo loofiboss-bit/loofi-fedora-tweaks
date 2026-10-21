@@ -1,0 +1,14 @@
+--- a/src/widgets/accessible/complexwidgets.cpp
++++ b/src/widgets/accessible/complexwidgets.cpp
+@@ -506,7 +506,10 @@
+ 
+ QAccessibleInterface *QAccessibleAbstractScrollArea::child(int index) const
+ {
+-    return QAccessible::queryAccessibleInterface(accessibleChildren().at(index));
++    const QWidgetList children = accessibleChildren();
++    if (index < 0 || index >= children.size())
++        return nullptr;
++    return QAccessible::queryAccessibleInterface(children.at(index));
+ }
+ 
+ int QAccessibleAbstractScrollArea::childCount() const

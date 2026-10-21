@@ -110,7 +110,7 @@ class TestUxBaselineOffscreenIntegration(unittest.TestCase):
             "tweak_search_change_restore": 3,
             "profile_review_acceptance": 1,
             "flatpak_removal_review": 1,
-            "rpm_handoff_return_refresh": 2,
+            "rpm_removal_review_refresh": 2,
         }
         for name, count in expected_counts.items():
             with self.subTest(workflow=name):
@@ -119,7 +119,7 @@ class TestUxBaselineOffscreenIntegration(unittest.TestCase):
                 self.assertEqual(len(workflow["observed_actions"]), count)
                 self.assertTrue(workflow["scope"])
         self.assertIn("injected", report["workflows"]["tweak_search_change_restore"]["scope"])
-        self.assertIn("mocked", report["workflows"]["rpm_handoff_return_refresh"]["scope"])
+        self.assertIn("mocked", report["workflows"]["rpm_removal_review_refresh"]["scope"])
         self.assertEqual(set(report["measured_ms"]["first_existing_page_open"]), {"apps", "overview"})
         self.assertTrue(report["limits"])
         self.assertEqual(report["environment"]["qt_platform"], "offscreen")

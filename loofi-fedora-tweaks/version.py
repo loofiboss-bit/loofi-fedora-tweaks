@@ -3,6 +3,6 @@ Centralized version information for Loofi Fedora Tweaks.
 All version references should import from this module.
 """
 
-__version__ = "33.0.1"
-__version_codename__ = "Concord"
+__version__ = "35.0.0"
+__version_codename__ = "Everyday"
 __app_name__ = "Loofi Fedora Tweaks"

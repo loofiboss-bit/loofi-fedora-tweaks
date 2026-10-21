@@ -1,12 +1,29 @@
 """Guest session detection must preserve real desktop identity."""
 from pathlib import Path
+from types import SimpleNamespace
 from unittest import TestCase
 from unittest.mock import patch
 
-from e2e.guest.runner import _session_environment
+from e2e.guest.runner import _crash_diagnostics, _session_environment
 
 
 class TestGuestSessionEnvironment(TestCase):
+    @patch("e2e.guest.runner.shutil.which", return_value="/usr/bin/tool")
+    @patch("e2e.guest.runner.subprocess.run")
+    def test_crash_diagnostics_keep_frames_and_exclude_coredump_environment(self, run, which):
+        run.side_effect = [
+            SimpleNamespace(returncode=0, stdout="python3: general protection fault in libQt6Gui.so\n"),
+            SimpleNamespace(returncode=0, stdout=("Signal: 11 (SEGV)\nExecutable: /usr/bin/python3\n"
+                                                "Environment: TOKEN=private\nStack trace of thread 123:\n"
+                                                "#0 QAccessible::queryAccessibleInterface\n")),
+        ]
+        result = _crash_diagnostics()
+        self.assertIn("libQt6Gui", result["kernel"]["text"])
+        self.assertIn("#0 QAccessible", result["coredumps"]["text"])
+        self.assertNotIn("TOKEN", result["coredumps"]["text"])
+        self.assertNotIn("private", result["coredumps"]["text"])
+        self.assertTrue(all(call.kwargs["timeout"] == 30 for call in run.call_args_list))
+
     def _read_text(path, **kwargs):
         return "Uid:\t1000 1000 1000 1000\n"
 

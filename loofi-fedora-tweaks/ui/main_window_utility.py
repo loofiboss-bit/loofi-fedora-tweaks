@@ -163,6 +163,7 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
                 lambda selection, owner=install_page: self._review_utility_bundle(owner, selection)
             )
             install_page.routeRequested.connect(self._open_route_request)
+            install_page.contextRouteRequested.connect(self._open_route_request)
             install_page.actionReviewRequested.connect(
                 lambda action_id, parameters, owner=install_page: self._review_health_action(owner, action_id, parameters)
             )
@@ -220,6 +221,10 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
             update_page.sourceActionRequested.connect(
                 lambda source, action, owner=update_page: self._handle_update_source_action(owner, source, action)
             )
+            update_page.actionReviewRequested.connect(
+                lambda action_id, parameters, owner=update_page: self._review_health_action(owner, action_id, parameters)
+            )
+            update_page.contextRouteRequested.connect(self._open_route_request)
             update_page.diagnosisRequested.connect(self._open_update_diagnosis)
             update_page.sourcesRequested.connect(self._open_package_sources)
             update_page.recordRequested.connect(self._open_action_center_run)
@@ -461,6 +466,8 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         )
         adapter.finished.connect(lambda ticket: self._show_health_review(page, ticket, adapter))
         adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Unavailable"), str(message)))
+        adapter.failed.connect(lambda _message: self._cancel_application_reviews(page))
+        adapter.cancelled.connect(lambda: self._cancel_application_reviews(page))
         return bool(adapter.start(lambda: controller.prepare(str(action_id), dict(parameters or {}))))
 
     def _review_health_finding(self: Any, page: Any, action_id: str, context: Any) -> bool:
@@ -499,24 +506,55 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         if ticket.blocked:
             decision = ticket.plan.policy_decision
             self._set_review_notice(page, "warning", self.tr("Unavailable"), " ".join(part for part in (decision.explanation, decision.alternative) if part))
+            self._cancel_application_reviews(page)
             return
         action_id = str(ticket.plan.action_id)
         definition = ActionCatalog().get(action_id)
         title = definition.title if definition is not None else action_id.replace("-", " ").title()
         description = definition.description if definition is not None else self.tr("Apply this exact change and verify its result?")
+        scope = "\n".join(str(part) for part in ticket.preview)
+        technical: tuple[str, ...] = ()
+        facts = ticket.plan.policy_decision.facts
+        if "rpm_transaction" in facts:
+            from ui.rpm_transaction_review import rpm_review_lines
+            scope, technical = rpm_review_lines(facts["rpm_transaction"], self.tr)
+        elif "setup_source" in facts:
+            from services.software.setup_sources import preview_from_facts
+            source = preview_from_facts(facts["setup_source"])
+            definition = source.to_dict()["definition"]
+            source_lines = (definition["title"], self.tr("Provider: %1").replace("%1", definition["provider"]),
+                            self.tr("Scope: %1").replace("%1", source.scope), definition["url"],
+                            self.tr("Signing fingerprints: %1").replace("%1", ", ".join(definition["fingerprints"])))
+            scope = "\n".join(source_lines)
+        if action_id == "update-flatpaks":
+            from ui.flatpak_updates import flatpak_review_lines
+            summary, technical = flatpak_review_lines(ticket.plan, self.tr)
+            if summary:
+                scope = "\n".join(summary)
+        elif "flatpak_installation" in facts:
+            from services.software.flatpak_installation import preview_from_facts as flatpak_install_preview
+            snapshot = flatpak_install_preview(facts["flatpak_installation"])
+            lines = [self.tr("Flatpak installation: %1").replace("%1", snapshot.installation)]
+            for item in snapshot.operations:
+                lines.append(self.tr("%1: %2 — source %3 — commit %4").replace("%1", str(item["operation"]))
+                             .replace("%2", item["ref"]).replace("%3", item["origin"]).replace("%4", item["expected_commit"]))
+            scope = "\n".join(lines)
         dialog = ReviewedActionDialog(
             title,
             description,
-            "\n".join(str(part) for part in ticket.preview),
+            scope,
             str(ticket.plan.recovery_guidance),
             require_no_rollback_acceptance=(
                 ticket.plan.risk_level in {"medium", "high"} and not ticket.plan.rollback_supported
             ),
             parent=self,
         )
+        if technical:
+            dialog.add_technical_details("\n".join(technical))
         if dialog.exec() != QDialog.DialogCode.Accepted:
             self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
             self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
+            self._cancel_application_reviews(page)
             return
         accept_no_rollback = dialog.accepts_no_rollback
         adapter.stopped.connect(lambda: self._run_reviewed_health_action(page, ticket, accept_no_rollback))
@@ -550,10 +588,28 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
                 " ".join(part for part in (str(outcome.message), str(outcome.recovery_guidance) if not outcome.success else "") if part),
             )
         )
+        if ticket.plan.action_id == "update-flatpaks":
+            card = getattr(page, "flatpak_updates", None)
+            if card is None:
+                card = getattr(getattr(page, "installed_card", None), "updates", None)
+            if card is not None:
+                installation = ticket.plan.parameters.get("installation")
+                adapter.finished.connect(lambda outcome, owner=card, scope=installation: owner.set_outcome(outcome, scope))
         adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Failed"), str(message)))
+        adapter.failed.connect(lambda _message: self._cancel_application_reviews(page))
+        adapter.cancelled.connect(lambda: self._cancel_application_reviews(page))
         refresh = getattr(page, "refresh_installed_applications", None)
         if callable(refresh):
             adapter.stopped.connect(refresh)
+        if ticket.plan.action_id in {"enable-flathub", "enable-rpm-fusion", "refresh-application-metadata"}:
+            refresh_sources = getattr(page, "refresh_flathub_status", None)
+            if callable(refresh_sources):
+                adapter.stopped.connect(refresh_sources)
+            refresh_metadata = getattr(page, "refresh_application_metadata", None)
+            if callable(refresh_metadata) and not getattr(getattr(page, "discovery_toggle", None), "isChecked", lambda: False)():
+                adapter.stopped.connect(refresh_metadata)
+        adapter.finished.connect(lambda outcome: self._application_item_finished(page, ticket, outcome))
+        adapter.stopped.connect(lambda: self._continue_application_reviews(page))
         return bool(adapter.start(operation))
 
     def _utility_operation_adapter_stopped(self: Any, adapter: Any) -> None:

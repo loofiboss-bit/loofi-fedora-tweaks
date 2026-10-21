@@ -677,6 +677,20 @@ class OperationController:
             run_id=run.run_id,
             correlation_id=run.correlation_id,
         )
+        if run.state in {"failed", "verification_failed", "cancelled", "interrupted"}:
+            try:
+                observed = self.orchestrator.recheck_result(run.run_id)
+            except _OPERATION_ERRORS as exc:
+                outcome = self._outcome_from_run(run, plan=plan, prior_events=(*prior_events, event))
+                return replace(outcome, message=f"Current state could not be inspected: {exc}")
+            outcome = self._outcome_from_run(observed, plan=plan, prior_events=(*prior_events, event))
+            verification = observed.verification_result or {}
+            return replace(
+                outcome,
+                message=f"Original operation: {observed.state}. Current state: {verification.get('message', 'unverified')}",
+                data={**outcome.data, "current_state_verified": verification.get("success") is True,
+                      "original_run_state": observed.state, "read_only_recheck": True},
+            )
         try:
             verified = self.orchestrator.verify(run.run_id)
         except _OPERATION_ERRORS as exc:

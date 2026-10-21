@@ -1,20 +1,22 @@
-# Loofi Fedora Tweaks Wiki — v33.0.1 "Concord"
+# Loofi Fedora Tweaks Wiki — v35.0.0 "Everyday"
 
-Welcome to the official documentation for Loofi Fedora Tweaks, a curated
-Fedora utility for installing applications, tuning safe settings, diagnosing
-problems, and updating the system.
+Loofi Fedora Tweaks brings application management, desktop settings, maintenance
+and verified operation history together, prioritizing traditional Fedora KDE
+with DNF5.
 
-**Current public release:** [v33.0.1 "Concord"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1),
-published on 2026-10-12 with Fedora 44 COPR build 11109761. Overview leads with
-CPU, RAM, GPU, and storage; Tweaks combines Settings and Profiles; Apps separates
-Catalog, Installed, and Sources. Operation results retain their origin and return path.
+**Release:** [v35.0.0 Everyday](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0).
+Search local AppStream catalogs, review complete RPM/Flatpak transactions, remove
+RPM applications and choose optional reviewed sources/codecs in Get Fedora ready.
+Guides require verified results for change steps; interrupted work never resumes
+a mutation automatically.
 
-Publication used an explicit VM E2E exception after two failed candidate runs,
-including an unresolved guest Qt6Gui crash. All other canonical release gates
-passed. See [publication evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V33.0.1_RELEASE_PUBLICATION.md)
-and [qualification](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/V33_QUALIFICATION.md).
+See [release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v35.0.0.md)
+and [qualification](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/V35_QUALIFICATION.md).
+The known Qt accessibility defect remains disclosed. Native VM matrices are
+optional under the maintainer's risk-based release policy; local checks do not
+establish physical desktop qualification.
 
-**Previous release:** [v32.8.0 "Guide"](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v32.8.0).
+**Previous public release:** [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1).
 
 ![Loofi Fedora Tweaks Overview](images/overview.png)
 

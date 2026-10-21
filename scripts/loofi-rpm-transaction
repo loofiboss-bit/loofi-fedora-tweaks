@@ -1,0 +1,17 @@
+#!/usr/bin/python3 -I
+"""Run only the installed RPM adapter when privileged; never import user code."""
+import os
+import sys
+from pathlib import Path
+
+if os.geteuid() == 0:
+    if Path(__file__).resolve() != Path("/usr/bin/loofi-rpm-transaction"):
+        raise SystemExit("Privileged RPM operations require the installed helper.")
+    sys.path.insert(0, "/usr/lib/loofi-fedora-tweaks")
+else:
+    source = Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks"
+    sys.path.insert(0, str(source if source.is_dir() else Path("/usr/lib/loofi-fedora-tweaks")))
+
+from services.software.rpm_transaction_helper import main
+
+raise SystemExit(main())

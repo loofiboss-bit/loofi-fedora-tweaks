@@ -31,6 +31,23 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
+**v35.0.0 Everyday** adds local AppStream discovery, explicit metadata refresh,
+complete RPM/Flatpak transaction review, in-app RPM removal, optional reviewed
+Flathub/RPM Fusion and codec setup, and coherent interruption recovery. The
+existing installation-bound Flatpak updates are included. See the
+[release notes](docs/releases/RELEASE-NOTES-v35.0.0.md) and
+[qualification report](docs/V35_QUALIFICATION.md) for measured checks and the known
+Qt accessibility dependency defect. Native VM matrices provide complementary,
+risk-based evidence.
+
+The retained **v34.0.1 Accord** baseline adds installation-bound Flatpak updates:
+check a selected installed application, review one or several updates with
+their required dependencies, and verify the resulting commits in the same
+installation. Result links lead to Activity and optional existing runtime
+maintenance. See [Flatpak updates](docs/FLATPAK_UPDATES.md) and
+[candidate qualification](docs/V34_QUALIFICATION.md). This candidate is not yet
+a published release.
+
 The published **[v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1)** release puts CPU, RAM, GPU,
 and storage first in Overview; combines Settings and Profiles in Tweaks;
 separates Catalog, Installed, and Sources in Apps; and retains each operation's
@@ -93,6 +110,7 @@ loofi-fedora-tweaks --cli apps details app/org.mozilla.firefox/x86_64/stable --i
 loofi-fedora-tweaks --cli apps unused --installation user
 loofi-fedora-tweaks --cli updates check
 loofi-fedora-tweaks --cli updates sources
+loofi-fedora-tweaks --cli updates flatpaks --installation user
 loofi-fedora-tweaks --cli updates diagnose --source flatpak
 loofi-fedora-tweaks --cli tweaks profile library list
 loofi-fedora-tweaks --cli apps access app/org.mozilla.firefox/x86_64/stable --installation user

@@ -34,13 +34,15 @@ class TestV25Eligibility(unittest.TestCase):
         self.assertTrue(firmware.confirmation_required)
         self.assertEqual(firmware.risk_level, "high")
 
-    def test_normal_updates_are_direct_even_when_their_technical_risk_is_medium(self) -> None:
+    def test_system_updates_stay_direct_and_scoped_flatpak_updates_require_confirmation(self) -> None:
         catalog = ActionCatalog()
         system = classify_definition(catalog.get("update-fedora-system"))
         flatpak = classify_definition(catalog.get("update-flatpaks"))
         self.assertEqual(system.kind, "direct")
         self.assertEqual(system.risk_level, "medium")
-        self.assertEqual(flatpak.kind, "direct")
+        self.assertEqual(flatpak.kind, "confirmation")
+        self.assertTrue(flatpak.allowed)
+        self.assertTrue(flatpak.confirmation_required)
 
     def test_recovery_actions_use_one_confirmation_but_keep_high_technical_risk(self) -> None:
         catalog = ActionCatalog()

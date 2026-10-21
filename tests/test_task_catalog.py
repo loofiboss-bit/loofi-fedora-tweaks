@@ -52,7 +52,7 @@ class TestTaskDescriptor(unittest.TestCase):
 
     def test_manual_action_guidance_is_retained_but_never_runnable(self) -> None:
         catalog = TaskCatalog()
-        guidance = catalog.get("guidance:enable-flathub")
+        guidance = catalog.get("guidance:configure-network-dns")
         self.assertIsNotNone(guidance)
         assert guidance is not None
         self.assertTrue(guidance.manual_only)
@@ -153,7 +153,7 @@ class TestUtilityNavigation(unittest.TestCase):
         self.assertEqual(routes["settings"], "instruction_handoff")
         actions = action_classifications()
         self.assertIn("install-application", actions)
-        self.assertEqual(actions["enable-flathub"], "instruction_handoff")
+        self.assertEqual(actions["enable-flathub"], "active_task")
 
 
 if __name__ == "__main__":

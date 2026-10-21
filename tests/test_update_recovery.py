@@ -65,6 +65,24 @@ class TestUpdateRecovery(unittest.TestCase):
                 self.add_run(status)
                 self.assertEqual(self.service.load().cta("system").action, "recovery")
 
+    def test_unresolved_interruption_is_not_hidden_by_a_new_success_or_check(self):
+        interrupted = self.add_run("interrupted")
+        self.add_run("succeeded", identifier="later", timestamp=200)
+        result = self.service.load().source("system")
+        self.assertEqual(result.status, "interrupted")
+        self.assertEqual(result.run_id, interrupted.run_id)
+        self.assertEqual(update_cta(result).action, "recovery")
+        self.assertEqual(result.metadata["outcome"], "unknown")
+
+    def test_partial_and_unknown_verification_preserve_the_same_run(self):
+        run = self.add_run("verification_failed")
+        run.verification_result = {"success": False, "data": {"missing_packages": ["demo"]}}
+        result = self.service.load().source("system")
+        self.assertEqual(result.metadata["outcome"], "partial")
+        self.assertEqual(result.run_id, run.run_id)
+        run.verification_result["data"]["evidence_unavailable"] = True
+        self.assertEqual(self.service.load().source("system").metadata["outcome"], "unknown")
+
     def test_missing_pending_plan_goes_to_review_not_update(self):
         self.add_run("awaiting_reboot")
         self.plans.list_read_only.return_value = []

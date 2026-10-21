@@ -468,22 +468,15 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
         verified = definition.verifier(self._run(definition.id, verification_result=previous), plan, self.runtime)
         self.assertEqual(verified.state, "succeeded")
 
-    def test_flatpak_update_uses_and_verifies_exact_refs_and_commits(self):
+    def test_legacy_flatpak_update_evidence_requires_fresh_installation_review(self):
         definition = self.catalog.get("update-flatpaks")
         assert definition is not None
-        query = ("flatpak", "remote-ls", "--updates", "--columns=ref,commit")
-        self.runtime.results[query] = ActionResult.ok("updates", stdout="org.example.App\tcommit-2\n")
-        decision = definition.preflight_checker({}, self.runtime)
-
-        self.assertEqual(
-            definition.command_renderer({}, self.runtime),
-            ["flatpak", "update", "--noninteractive", "--assumeyes", "org.example.App"],
-        )
-        self.runtime.results[("flatpak", "info", "--show-commit", "org.example.App")] = ActionResult.ok(
-            "installed", stdout="commit-2\n"
-        )
+        decision = PolicyDecision(True, "preflight_ok", "Legacy observation", facts={"refs": [{"id": "org.example.App", "value": "commit-2"}]})
         result = definition.verifier(self._run(definition.id), self._plan(definition, {}, decision), self.runtime)
-        self.assertEqual(result.state, "succeeded")
+        self.assertEqual(result.state, "failed")
+        self.assertIn("Legacy", result.message)
+        with self.assertRaises(ValueError):
+            definition.evidence_renderer({}, self.runtime, decision)
 
     def test_firmware_missing_history_waits_once_then_fails_after_reboot(self):
         definition = self.catalog.get("update-firmware")
@@ -625,23 +618,30 @@ class TestAssuranceDefinitionMatrix(unittest.TestCase):
         unsupported = ("rpm-ostree", "repoquery", "--available", "--latest-limit", "1", "--qf", "%{name}|%{evr}|%{arch}", "demo")
         self.assertNotIn(unsupported, self.runtime.calls)
 
-    def test_application_matrix_verifies_exact_rpm_and_flatpak_state(self):
+    @patch("services.software.rpm_transactions.RpmTransactionService.preview")
+    def test_application_matrix_verifies_exact_rpm_and_flatpak_state(self, rpm_preview):
+        from services.software.rpm_transactions import RpmTransactionPreview, evidence_digest
+        from dataclasses import replace
+        snapshot = RpmTransactionPreview(True, "", packages=("alpha",), installed=("other-0:1-1.noarch",), repository_digest="c" * 64,
+                                         operations=({"action": "Install", "name": "alpha", "nevra": "alpha-0:2-1.x86_64", "repo_id": "fixture", "checksum": "a" * 64},))
+        snapshot = replace(snapshot, digest=evidence_digest(snapshot.to_dict()))
+        rpm_preview.return_value = snapshot
+        self.runtime.manager = "dnf5"
         install = self.catalog.get("install-application")
         remove = self.catalog.get("remove-application")
         assert install is not None and remove is not None
-        rpm_query = ("rpm", "-q", "--qf", "%{name}|%{evr}|%{arch}\\n", "alpha")
-        self.runtime.results[rpm_query] = ActionResult.fail("missing", exit_code=1)
-        available = ("dnf", "repoquery", "--available", "--latest-limit", "1", "--qf", "%{name}|%{evr}|%{arch}", "alpha")
-        self.runtime.results[available] = ActionResult.ok("available", stdout="alpha|2-1|x86_64\n")
         params = {"source": "fedora", "package_id": "alpha"}
         decision = install.preflight_checker(params, self.runtime)
-        self.runtime.results[rpm_query] = ActionResult.ok("installed", stdout="alpha|2-1|x86_64\n")
+        inventory_query = ("rpm", "-qa", "--qf", "%{NAME}|%{NAME}-%{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\\n")
+        self.runtime.results[inventory_query] = ActionResult.ok("installed", stdout="alpha|alpha-0:2-1.x86_64\nother|other-0:1-1.noarch\n")
         self.assertEqual(install.verifier(self._run(install.id), self._plan(install, params, decision), self.runtime).state, "succeeded")
 
         flatpak_params = {"source": "flatpak", "package_id": "org.example.App"}
-        self.runtime.results[("flatpak", "info", "org.example.App")] = ActionResult.ok("installed")
+        flatpak_inventory = ("flatpak", "list", "--system", "--app", "--columns=name,application,ref,version,size")
+        self.runtime.results[flatpak_inventory] = ActionResult.ok("installed", stdout="Example\torg.example.App\tapp/org.example.App/x86_64/stable\t1\t2 MB\n")
+        self.runtime.results[("flatpak", "ps", "--columns=application")] = ActionResult.ok("not running", stdout="")
         remove_decision = remove.preflight_checker(flatpak_params, self.runtime)
-        self.runtime.results[("flatpak", "info", "--show-commit", "org.example.App")] = ActionResult.fail("missing")
+        self.runtime.results[flatpak_inventory] = ActionResult.ok("removed", stdout="")
         self.assertEqual(remove.verifier(self._run(remove.id), self._plan(remove, flatpak_params, remove_decision), self.runtime).state, "succeeded")
 
     def test_cleanup_and_recovery_verify_measured_postconditions(self):

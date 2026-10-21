@@ -5,7 +5,7 @@ from __future__ import annotations
 import re
 
 from PyQt6.QtCore import Qt, pyqtSignal
-from PyQt6.QtWidgets import QHeaderView, QLabel, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
+from PyQt6.QtWidgets import QCheckBox, QComboBox, QHeaderView, QLabel, QLineEdit, QPushButton, QTreeWidget, QTreeWidgetItem, QVBoxLayout, QWidget
 
 from core.privacy import redact_text
 from services.software.source_status import DnfSourceSnapshot, SoftwareSourceStatusService, SourceStatusReason
@@ -18,6 +18,7 @@ class SoftwareSourcesWidget(QWidget):
     _SOURCE_ID = re.compile(r"^[A-Za-z0-9_.:+-]{1,128}$")
 
     snapshotChanged = pyqtSignal(object)
+    actionReviewRequested = pyqtSignal(str, object)
     stopped = pyqtSignal()
 
     def __init__(self, service: SoftwareSourceStatusService | None = None, parent: QWidget | None = None) -> None:
@@ -56,11 +57,72 @@ class SoftwareSourcesWidget(QWidget):
         self.refresh_button = QPushButton(self.tr("Refresh package sources"))
         self.refresh_button.clicked.connect(self.refresh)
         layout.addWidget(self.refresh_button)
+        setup_note = QLabel(self.tr("Optional setup: choose a source explicitly, then review its signing trust and scope. Source activation and codec installation are separate operations."))
+        setup_note.setWordWrap(True)
+        layout.addWidget(setup_note)
+        self.setup_source = QComboBox()
+        self.setup_source.setAccessibleName(self.tr("Optional software source"))
+        self.setup_source.addItem(self.tr("Choose an optional source…"), "")
+        self.setup_source.addItem(self.tr("Flathub"), "flathub")
+        self.setup_source.addItem(self.tr("RPM Fusion Free"), "rpmfusion-free")
+        self.setup_source.addItem(self.tr("RPM Fusion Nonfree"), "rpmfusion-nonfree")
+        layout.addWidget(self.setup_source)
+        self.setup_scope = QComboBox()
+        self.setup_scope.setAccessibleName(self.tr("Source installation scope"))
+        layout.addWidget(self.setup_scope)
+        self.setup_trust = QLabel()
+        self.setup_trust.setTextFormat(Qt.TextFormat.PlainText)
+        self.setup_trust.setWordWrap(True)
+        self.setup_trust.setTextInteractionFlags(Qt.TextInteractionFlag.TextSelectableByMouse)
+        layout.addWidget(self.setup_trust)
+        self.setup_review = QPushButton(self.tr("Review source activation"))
+        self.setup_review.clicked.connect(self._review_setup_source)
+        layout.addWidget(self.setup_review)
+        self.codec_help = QLabel(self.tr("Enable RPM Fusion Free, then download RPM metadata before creating a fresh codec review. The review lists every removal."))
+        self.codec_help.setWordWrap(True)
+        layout.addWidget(self.codec_help)
+        self.metadata_review = QPushButton(self.tr("Review RPM metadata download"))
+        self.metadata_review.clicked.connect(lambda: self.actionReviewRequested.emit("refresh-application-metadata", {"source": "fedora"}))
+        layout.addWidget(self.metadata_review)
+        self.codec_consent = QCheckBox(self.tr("Review predefined FFmpeg replacements"))
+        self.codec_consent.setChecked(False)
+        layout.addWidget(self.codec_consent)
+        self.codec_review = QPushButton(self.tr("Review optional FFmpeg/GStreamer codecs"))
+        self.codec_review.clicked.connect(lambda: self.actionReviewRequested.emit("install-multimedia-codecs", {"removal_consent": self.codec_consent.isChecked()}))
+        layout.addWidget(self.codec_review)
+        self.setup_source.currentIndexChanged.connect(self._setup_source_changed)
+        self.setup_scope.currentIndexChanged.connect(self._setup_scope_changed)
+        self._setup_source_changed()
         self._adapter = OperationControllerQtAdapter(parent=self)
         self._adapter.finished.connect(self.set_snapshot)
         self._adapter.failed.connect(self._failed)
         self._adapter.stopped.connect(lambda: self.refresh_button.setEnabled(True))
         self._adapter.stopped.connect(self.stopped.emit)
+
+    def _setup_source_changed(self) -> None:
+        from services.software.setup_sources import SOURCES
+
+        self.setup_scope.clear()
+        self.setup_scope.addItem(self.tr("Choose an installation scope…"), "")
+        definition = SOURCES.get(self.setup_source.currentData())
+        if definition is None:
+            self.setup_trust.setText(self.tr("No optional source is selected."))
+        else:
+            for scope in definition.scopes:
+                self.setup_scope.addItem(self.tr("This user") if scope == "user" else self.tr("Whole computer"), scope)
+            self.setup_trust.setText(self.tr("Provider: {provider}\nURL: {url}\nSigning fingerprints: {keys}\nTrust definition: {version}").format(
+                provider=definition.provider, url=definition.url, keys=" · ".join(definition.fingerprints), version=definition.to_dict()["definition_version"]))
+        self._setup_scope_changed()
+
+    def _setup_scope_changed(self) -> None:
+        self.setup_review.setEnabled(bool(self.setup_source.currentData() and self.setup_scope.currentData()))
+
+    def _review_setup_source(self) -> None:
+        source, scope = self.setup_source.currentData(), self.setup_scope.currentData()
+        if not source or not scope:
+            return
+        self.actionReviewRequested.emit("enable-flathub" if source == "flathub" else "enable-rpm-fusion",
+                                        {"scope": scope} if source == "flathub" else {"source_id": source})
 
     @property
     def busy(self) -> bool:

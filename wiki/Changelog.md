@@ -1,5 +1,14 @@
 # Changelog
 
+## v35.0.0 — Everyday (2026-10-21)
+
+- Local AppStream application search and separately reviewed catalog package updates.
+- Complete RPM installation/removal and installation-bound Flatpak transactions.
+- Optional Get Fedora ready, pinned Flathub/RPM Fusion sources and reviewed codecs.
+- Consistent saved results and read-only rechecks; no automatic mutation resume.
+- Risk-based release checks, with native matrices optional and Qt limitations disclosed.
+- [Release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v35.0.0.md).
+
 ## v33.0.1 — Concord (2026-10-12)
 
 - Published on GitHub and Fedora 44 COPR (build 11109761).

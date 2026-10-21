@@ -41,10 +41,10 @@ class GuideStoreCase(unittest.TestCase):
 
 
 class TestGuideDefinitions(GuideStoreCase):
-    def test_four_stable_guide_contracts_have_only_inert_navigation_targets(self):
+    def test_stable_guide_contracts_have_only_inert_navigation_targets(self):
         self.assertEqual(
             {guide.id for guide in GUIDES},
-            {"make-fedora-yours", "choose-and-manage-apps", "maintain-your-system", "solve-a-problem"},
+            {"get-fedora-ready", "make-fedora-yours", "choose-and-manage-apps", "maintain-your-system", "solve-a-problem"},
         )
         step_ids = [step.id for guide in GUIDES for step in guide.steps]
         self.assertEqual(len(step_ids), len(set(step_ids)))
@@ -87,7 +87,7 @@ class TestGuideProgressPersistence(GuideStoreCase):
         self.assertEqual(snapshot.steps[reviewed.id].state, "reviewed")
         self.assertEqual(snapshot.steps[verified.id].state, "verified")
         self.assertEqual((snapshot.steps[verified.id].evidence_kind, snapshot.steps[verified.id].evidence_id), ("action_run", "run-123"))
-        self.assertEqual(json.loads(self.path.read_text())["schema_version"], GUIDE_SCHEMA_VERSION)
+        self.assertEqual(json.loads(self.path.read_text())["schema_version"], 1)
         self.assertEqual(stat.S_IMODE(self.path.stat().st_mode), 0o600)
         self.assertEqual(stat.S_IMODE(self.path.parent.stat().st_mode), 0o700)
 

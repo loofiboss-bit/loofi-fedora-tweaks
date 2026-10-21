@@ -8,8 +8,8 @@ from core.tasks.guides import (
     GUIDES,
     GUIDES_BY_ID,
     GuideProgressStore,
-    guide_evidence_exists,
     guide_progress_payload,
+    guide_step_complete,
 )
 
 
@@ -38,17 +38,7 @@ def handle_guides(
                         "title": guide.title,
                         "active": snapshot.active_guide == guide.id,
                         "completed_steps": sum(
-                            snapshot.steps.get(step.id) is not None
-                            and (
-                                snapshot.steps[step.id].state == "reviewed"
-                                or (
-                                    snapshot.steps[step.id].state == "verified"
-                                    and guide_evidence_exists(
-                                        snapshot.steps[step.id].evidence_kind,
-                                        snapshot.steps[step.id].evidence_id,
-                                    )
-                                )
-                            )
+                            guide_step_complete(step, snapshot.steps.get(step.id))
                             for step in guide.steps
                         ),
                         "step_count": len(guide.steps),
@@ -76,7 +66,7 @@ def handle_guides(
     elif args.guides_action == "list":
         for guide in payload["guides"]:
             current = " · active" if guide["active"] else ""
-            print_fn(f"{guide['title']} — {guide['completed_steps']}/{guide['step_count']} reviewed{current}")
+            print_fn(f"{guide['title']} — {guide['completed_steps']}/{guide['step_count']} complete{current}")
     else:
         print_fn(payload["title"])
         print_fn(payload["description"])

@@ -342,10 +342,11 @@ class StateArchiveService:
                     raise
                 raise InvalidStateArchive("Manifest references unknown content") from exc
             declared_paths.add(entry_path)
-            # Restore never writes an older payload directly into a newer
-            # domain. Migrations operate on local state through the registered
-            # migration runner; archives must match the current schema exactly.
-            if entry.get("schema_id") != domain.schema_id or version != domain.schema_version:
+            # Guides deliberately retain v1 for legacy-only progress; their
+            # owning reader supports both v1 and v2 without rewriting either.
+            # Other domains still require an exact current schema version.
+            compatible_guide_version = domain.id == "user_guides" and domain.schema_id == "loofi.user-guides" and version in {1, 2}
+            if entry.get("schema_id") != domain.schema_id or (version != domain.schema_version and not compatible_guide_version):
                 raise InvalidStateArchive("Incompatible state schema")
             if entry.get("size", len(content)) != len(content):
                 raise InvalidStateArchive("State archive size mismatch")

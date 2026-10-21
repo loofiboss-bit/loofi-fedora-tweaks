@@ -138,7 +138,11 @@ class PersonalIntegrationTests(unittest.TestCase):
         row = page.installed_card._application_rows[0][1]
         self.assertIn("RPM", row.description_label.text())
         self.assertNotIn("Fedora", row.description_label.text())
-        self.assertTrue(any(button.text() == "Open software manager" for button in row.findChildren(QPushButton)))
+        button = next(button for button in row.findChildren(QPushButton) if button.text() == "Review removal")
+        requested = []
+        page.actionReviewRequested.connect(lambda action, params: requested.append((action, params)))
+        button.click()
+        self.assertEqual(requested, [("remove-application", {"source": "fedora", "package_id": "third-party"})])
 
 
 if __name__ == "__main__":

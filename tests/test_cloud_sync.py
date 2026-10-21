@@ -10,11 +10,26 @@ import unittest
 from pathlib import Path
 from unittest.mock import patch, MagicMock
 import urllib.error
+import pytest
 
 # Add source path to sys.path
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
 from services.storage.cloud_sync import CloudSyncManager
+
+
+@pytest.fixture(autouse=True)
+def isolated_cloud_sync_secrets():
+    """Keep sync tests independent of session tokens and the desktop keyring."""
+    keyring = patch("services.storage.cloud_sync.SecretStore._keyring", return_value=None)
+    session = patch("services.storage.cloud_sync.SecretStore._session", {})
+    keyring.start()
+    session.start()
+    try:
+        yield
+    finally:
+        session.stop()
+        keyring.stop()
 
 
 class TestCloudSyncDirectories(unittest.TestCase):
@@ -188,12 +203,14 @@ class TestSyncToGist(unittest.TestCase):
         import shutil
         shutil.rmtree(self.temp_dir, ignore_errors=True)
 
-    def test_sync_to_gist_fails_without_token(self):
+    @patch('urllib.request.urlopen')
+    def test_sync_to_gist_fails_without_token(self, urlopen):
         """sync_to_gist fails when no token is configured."""
         config = {"test": "data"}
         success, message = CloudSyncManager.sync_to_gist(config)
         self.assertFalse(success)
         self.assertIn("token", message.lower())
+        urlopen.assert_not_called()
 
     @patch('urllib.request.urlopen')
     def test_sync_to_gist_creates_new_gist(self, mock_urlopen):

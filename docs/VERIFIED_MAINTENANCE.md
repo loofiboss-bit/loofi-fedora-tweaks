@@ -32,6 +32,14 @@ restart-required runs remain visible and require an explicit follow-up.
 
 ## Capability-aware actions
 
+For the v34.0.1 candidate, Flatpak updates carry installation, full ref, origin,
+before commit, and expected commit through the complete review and verification
+path. Required dependencies are resolved and displayed before approval. A
+changed operation set needs a new review. Readback covers every approved app
+and dependency in its own installation, even after partial failure. Old runs
+remain readable but unscoped evidence cannot establish verified success.
+See [Flatpak updates](FLATPAK_UPDATES.md) for the exact workflow and CLI.
+
 An action is available only when its platform capability, risk, authorization,
 verification, and recovery contract are known. Traditional Fedora, Atomic
 Fedora, and bootc deployments have different package and restart semantics.

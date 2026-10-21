@@ -20,15 +20,15 @@ def _validate(parameters: Mapping[str, Any]) -> PolicyDecision:
     return PolicyDecision(True, "parameters_valid", "Exact installation identity is valid.")
 
 
-def _inventory(runtime: ActionRuntime):
-    return InstalledApplicationService(probe=lambda vector: runtime.execute_read_only(vector, action_id=ACTION_ID, timeout=15)).flatpaks()
+def _inventory(runtime: ActionRuntime, installation: str):
+    return InstalledApplicationService(probe=lambda vector: runtime.execute_read_only(vector, action_id=ACTION_ID, timeout=15)).flatpaks(installation=installation)
 
 
 def _preflight(parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
     validation = _validate(parameters)
     if not validation.allowed:
         return validation
-    inventory = _inventory(runtime)
+    inventory = _inventory(runtime, parameters["installation"])
     if inventory.errors:
         return PolicyDecision(False, "inventory_unknown", inventory.errors[0])
     target = next((app for app in inventory.applications if app.ref == parameters["ref"] and app.installation == parameters["installation"]), None)
@@ -52,7 +52,7 @@ def _render(parameters: Mapping[str, Any], _runtime: ActionRuntime):
 
 
 def _verify(_run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
-    inventory = _inventory(runtime)
+    inventory = _inventory(runtime, plan.parameters["installation"])
     if inventory.errors:
         return VerificationDecision.failed("Removal could not be verified: installation inventory is unreadable.")
     if any(app.ref == plan.parameters["ref"] and app.installation == plan.parameters["installation"] for app in inventory.applications):

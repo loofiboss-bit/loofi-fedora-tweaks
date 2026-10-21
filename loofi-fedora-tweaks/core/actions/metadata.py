@@ -23,7 +23,7 @@ _AFFECTED_RESOURCES: dict[str, tuple[str, ...]] = {
     "create-recovery-point": ("recovery-points",),
 }
 
-_TRADITIONAL_ACTIONS = frozenset({"dnf-clean-all", "autoremove-packages"})
+_TRADITIONAL_ACTIONS = frozenset({"dnf-clean-all", "autoremove-packages", "enable-rpm-fusion", "install-multimedia-codecs"})
 _MAY_REQUIRE_REBOOT = frozenset(
     {
         "update-fedora-system",

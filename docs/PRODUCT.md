@@ -13,6 +13,15 @@ problem. They route into existing pages and reviews. Guide progress is local
 presentation state; reviewing or completing a guide never establishes that the
 computer is healthy.
 
+The local v35 Everyday candidate adds an optional Get Fedora ready guide using
+the same saved progress and reviewed-action boundaries. It links to updates,
+applications, separately selected Flathub/RPM Fusion sources and codec setup,
+and desktop profiles. Nothing is preselected or applied by opening a guide.
+Changed-system steps require a verified saved result or an explicit skip;
+reviewing a step alone does not complete it. Profile results identify only the
+selected settings that independently succeeded. Backup acknowledgement is a
+separate user task and does not prove a working backup.
+
 ## Who it is for
 
 - **Everyday Fedora users** who want a setting changed without opening a
@@ -26,7 +35,7 @@ computer is healthy.
 |---|---|
 | **Overview** (start page) | Read current resources and up to three relevant next steps, open the appropriate tool, or choose an optional everyday guide |
 | **Tweaks** | Use Settings for direct per-user or reviewed computer-wide settings; use Profiles to edit and save a copy, compare profiles, or review a saved profile |
-| **Apps** | Use Catalog to select and install trusted applications, Installed to inspect or remove an exact installation, and Sources to inspect configured package sources |
+| **Apps** | Use curated recommendations or local AppStream discovery, review exact application transactions, inspect/remove installed applications, and explicitly review optional source setup |
 | **Updates** | Update system packages, Flatpaks, and firmware; resume pending verification |
 | **Health** | Start from a symptom, inspect evidence, apply one reviewed fix |
 
@@ -41,6 +50,12 @@ catalog and installed-inventory searches within their respective subviews.
 Installed results retain separate user, system, and named Flatpak installations
 even when their application names match. The selected-app view ignores catalog
 filters until the user returns to the previous search and category.
+
+Apps distinguishes DNF package-cache refresh from the package-provided RPM
+application catalogs. Known Fedora and RPM Fusion catalogs can be explicitly
+installed or updated through the same complete RPM transaction review. A missing
+catalog stays unavailable; Flatpak results or a successful DNF cache download
+do not establish RPM application coverage.
 
 On first opening Activity, Loofi asynchronously reads up to 25 recent local
 Loofi runs. Other recorded sources refresh only when the user asks. A link to a
@@ -98,6 +113,20 @@ states, and qualification requirements for every reachable GUI surface.
 
 ## Everyday workflows
 
+The v34.0.1 Accord candidate adds installation-bound Flatpak updates. Apps can
+explicitly check one selected installed Flatpak; Updates supports individual or
+multiple selection within an installation. Shared review explains selected
+apps, origin, versions, scope, and resolved runtime/extension operations.
+Approval binds the complete operation set and commits. Changes require fresh
+review; execution never silently adds remotes, rebases, or removes applications.
+
+Independent readback reports each reviewed ref in the same installation,
+including partial completion and unavailable observations. Real run IDs link to
+Activity. A separate navigation link opens existing unused-runtime maintenance
+for the affected installation without checking or cleaning automatically.
+Missing optional libflatpak support is unavailable. New RPM maintenance,
+background update checks, and automatic cleanup are outside this release.
+
 Profiles use [a separate portable format](TWEAK_PROFILES.md) and include supported
 user settings only. Import approval binds the reviewed values and action definitions;
 changes run sequentially through Action Center and stop on drift or verification failure.
@@ -110,7 +139,8 @@ closing multiple tabs. Health's input guidance links separately to verified KDE
 mouse and touchpad modules and can focus the existing tap-to-click tweak.
 Installed Flatpaks remain distinct by installation and full ref. Removal preserves
 app data and requires successful independent inventory verification. RPM removal
-opens the desktop software manager. Sound and Bluetooth checks report observations
+uses exact reviewed DNF5 transactions on traditional Fedora and the desktop
+software manager on Atomic. Sound and Bluetooth checks report observations
 without changing services, devices, volume, or connections.
 Flatpak permission inspection reports app metadata for one exact installation; it
 does not claim to include portal grants or user overrides.
@@ -202,7 +232,9 @@ Apps includes visible RPM-owned desktop applications outside the curated
 catalog. Several launchers and installed architectures of one RPM package
 share one row. RPM is an installation format, not a promise about package
 origin or trust; recommended catalog entries retain their explicit curation.
-Removal stays in the native software manager. Partial reads remain visible.
+On traditional Fedora with DNF5, removal uses a complete reviewed package
+transaction with protected-system checks and independent inventory readback.
+Atomic retains the native software-manager handoff. Partial reads remain visible.
 
 Profile library entries can be edited as copies: change the name, inclusion,
 and supported target values, then choose **Save copy** or **Save and review…**.

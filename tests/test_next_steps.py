@@ -63,7 +63,7 @@ class TestNextSteps(unittest.TestCase):
     def test_failed_update_retains_exact_source_and_run(self):
         self.maintenance["activity"] = {"runs": [{"status": "failed", "action_id": "update-flatpaks", "run_id": "exact-run", "sampled_at": self.now}]}
         step = next_steps(self.maintenance, now=self.now)[0]
-        self.assertEqual(step.route, "health")
+        self.assertEqual(step.route, "changes")
         self.assertEqual(step.context.to_dict(), {"run_id": "exact-run", "update_source": "flatpak"})
 
     def test_pending_and_generic_failure_preserve_run_identity(self):

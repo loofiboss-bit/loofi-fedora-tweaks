@@ -135,6 +135,7 @@ class _InstalledApplicationRow(Card):
 class InstalledApplicationsCard(Card):
     actionReviewRequested = pyqtSignal(str, object)
     nativeSettingsRequested = pyqtSignal(object)
+    routeRequested = pyqtSignal(str, object)
     inventoryUpdated = pyqtSignal(object)
     stopped = pyqtSignal()
 
@@ -208,21 +209,35 @@ class InstalledApplicationsCard(Card):
         self.insights.actionReviewRequested.connect(self.actionReviewRequested.emit)
         self.insights.stopped.connect(self._notify_stopped)
         self.add_widget(self.insights)
+        from ui.flatpak_updates import FlatpakUpdatesCard
+        self.updates = FlatpakUpdatesCard(show_updates_link=True, parent=self)
+        self.updates.hide()
+        self.updates.actionReviewRequested.connect(self.actionReviewRequested.emit)
+        self.updates.routeRequested.connect(self.routeRequested.emit)
+        self.updates.stopped.connect(self._notify_stopped)
+        self.add_widget(self.updates)
         self.refresh_button.setEnabled(service is not None)
 
     @property
     def busy(self):
-        return self._adapter.busy or self._permissions_adapter.busy or self.insights.busy or self.software_handoff.busy
+        return self._adapter.busy or self._permissions_adapter.busy or self.insights.busy or self.software_handoff.busy or self.updates.busy
 
     def request_stop(self):
         self._close_comparison_dialogs()
         self._permission_generation += 1
         self._pending_permission_request = None
         self._close_permission_dialogs()
+        self.updates.request_stop()
         self.insights.request_stop()
         self.software_handoff.request_stop()
         self._adapter.cancel()
         self._permissions_adapter.cancel()
+
+    def check_updates(self, app):
+        if app.source != "flatpak":
+            return
+        self.updates.show()
+        self.updates.check(app.installation, (app.ref,), auto_review=True)
 
     def _notify_stopped(self):
         if not self.busy:
@@ -232,7 +247,10 @@ class InstalledApplicationsCard(Card):
         self.request_stop()
         inventory_stopped = self._adapter.close(timeout_ms)
         permissions_stopped = self._permissions_adapter.close(timeout_ms)
-        return self.insights.cleanup(timeout_ms) and inventory_stopped and permissions_stopped and self.software_handoff.cleanup(timeout_ms)
+        updates_stopped = self.updates.cleanup(timeout_ms)
+        insights_stopped = self.insights.cleanup(timeout_ms)
+        handoff_stopped = self.software_handoff.cleanup(timeout_ms)
+        return updates_stopped and insights_stopped and inventory_stopped and permissions_stopped and handoff_stopped
 
     def open_software_manager(self, app: InstalledApplication | None = None):
         self._software_manager_app = app if app is not None and app.source == "fedora" else None
@@ -312,6 +330,10 @@ class InstalledApplicationsCard(Card):
                 compare.clicked.connect(lambda _checked=False, identifier=app_id: self.show_comparison(identifier))
                 row.add_widget(compare)
             if app.source == "flatpak":
+                update = QPushButton(self.tr("Check for updates"))
+                update.setAccessibleName(self.tr("Check updates for %1 in %2").replace("%1", app.name).replace("%2", app.installation))
+                update.clicked.connect(lambda _checked=False, item=app: self.check_updates(item))
+                row.add_widget(update)
                 information = QToolButton()
                 information.setObjectName("installedAppInformation")
                 information.setText(self.tr("App details and access"))
@@ -331,8 +353,13 @@ class InstalledApplicationsCard(Card):
                 remove = QPushButton(self.tr("Review removal"))
                 remove.clicked.connect(lambda _checked=False, item=app: self.actionReviewRequested.emit("remove-installed-flatpak", {"ref": item.ref, "installation": item.installation}))
             else:
-                remove = QPushButton(self.tr("Open software manager"))
-                remove.clicked.connect(lambda _checked=False, item=app: self.open_software_manager(item))
+                from services.system import SystemManager
+                if SystemManager.is_atomic():
+                    remove = QPushButton(self.tr("Open software manager"))
+                    remove.clicked.connect(lambda _checked=False, item=app: self.open_software_manager(item))
+                else:
+                    remove = QPushButton(self.tr("Review removal"))
+                    remove.clicked.connect(lambda _checked=False, item=app: self.actionReviewRequested.emit("remove-application", {"source": "fedora", "package_id": item.ref}))
             row.add_widget(remove)
             self.add_widget(row)
             self._rows.append(row)
@@ -393,6 +420,7 @@ class InstalledApplicationsCard(Card):
     def show_permissions(self, app: InstalledApplication):
         if self.service is None or app.source != "flatpak":
             return
+        self.updates.request_stop()
         self.insights.request_stop()
         self._close_permission_dialogs()
         self._permission_generation += 1

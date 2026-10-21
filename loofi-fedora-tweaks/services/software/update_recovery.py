@@ -8,6 +8,7 @@ import math
 from typing import get_args
 
 from core.actions.contracts import RunState
+from core.actions.recovery_presentation import recovery_presentation
 from core.actions.stores import ActionPlanStore, ActionRunStore
 from core.tasks.update_flow import UPDATE_ACTION_SOURCES, UPDATE_SOURCES, UpdateOverviewState
 from services.software.update_overview import UpdateOverviewService
@@ -34,7 +35,7 @@ class UpdateRecoveryService:
             runs = self.run_store.list_read_only(strict=True)
             plans = {plan.plan_id: plan for plan in self.plan_store.list_read_only()}
             for run in runs:
-                if run.state not in get_args(RunState) or not math.isfinite(run.updated_at) or run.updated_at < 0:
+                if run.state not in get_args(RunState) or isinstance(run.updated_at, bool) or not math.isfinite(run.updated_at) or run.updated_at < 0:
                     raise ValueError("Saved action history has an invalid state or timestamp.")
                 datetime.fromtimestamp(run.updated_at, timezone.utc)
                 for result in (run.verification_result, run.execution_result):
@@ -51,7 +52,7 @@ class UpdateRecoveryService:
             candidates = [run for run in runs if UPDATE_ACTION_SOURCES.get(run.action_id) == source]
             if not candidates:
                 continue
-            pending = [run for run in candidates if run.state in {"running", "verifying", "awaiting_reboot"}]
+            pending = [run for run in candidates if run.state in {"running", "verifying", "awaiting_reboot", "interrupted", "verification_failed"}]
             run = max(pending or candidates, key=lambda item: item.updated_at)
             current = state.source(source)
             # A newer deliberate source check supersedes an old terminal result,
@@ -63,22 +64,22 @@ class UpdateRecoveryService:
                     checked = 0.0
                 if checked > run.updated_at:
                     continue
-            status = run.state if run.state in {"verifying", "awaiting_reboot", "succeeded", "failed", "verification_failed", "cancelled"} else "failed"
-            recovery = run.state in {"running", "interrupted", "verification_failed"}
+            presentation = recovery_presentation(run.state, run.execution_result, run.verification_result, reopened=True)
+            status = presentation.state
+            recovery = status in {"interrupted", "verification_failed", "failed", "cancelled"}
             plan = plans.get(run.plan_id)
             if pending and (plan is None or plan.action_id != run.action_id):
                 status, recovery = "error", True
                 message = "The saved update plan is unavailable. Review Activity; no update was restarted."
-            elif recovery:
-                message = "This update needs review in Activity. No update was restarted."
             else:
                 result = run.verification_result or run.execution_result or {}
-                message = str(result.get("message", "")) or "Saved update result restored. No update was restarted."
+                recorded = str(result.get("message", ""))
+                message = " ".join(part for part in (recorded, presentation.guidance) if part)
             state = state.replace_source(replace(
                 current, status=status,  # type: ignore[arg-type]
                 run_id=run.run_id, stale=status not in {"verifying", "awaiting_reboot", "succeeded"},
                 reboot_required=status == "awaiting_reboot", message=message,
                 checked_at=current.checked_at or datetime.fromtimestamp(run.updated_at, timezone.utc).isoformat(),
-                metadata={**current.metadata, "recovery_required": recovery, "saved_run_state": run.state},
+                metadata={**current.metadata, "recovery_required": recovery, "saved_run_state": run.state, "outcome": presentation.outcome, "status_label": presentation.label},
             ))
         return state

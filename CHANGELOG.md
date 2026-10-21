@@ -1,5 +1,25 @@
 # Changelog
 
+## [35.0.0] - 2026-10-21 - "Everyday"
+
+- Discover applications from local AppStream metadata with exact RPM repository/version/architecture and Flatpak installation/remote identities. Keep curated recommendations separate and refresh metadata only after review.
+- Include the Fedora AppStream catalog dependency, report missing RPM catalogs alongside Flatpak results, and review Fedora/RPM Fusion catalog package updates separately from metadata-only downloads.
+- Review each application transaction before execution. Add dependency-bound libdnf5 installation/removal, protected component checks, signature verification, stale-review rejection, and independent complete inventory readback.
+- Extend native Flatpak installation review to the complete resolved dependency operation set and exact commits without adding remotes or removing applications implicitly.
+- Add an optional Get Fedora ready guide, separately reviewed Flathub and RPM Fusion sources with pinned trust, and a fixed FFmpeg/GStreamer recipe with explicit replacement consent.
+- Share interrupted, partial, unknown and verified recovery presentation across Updates, Activity and Overview. Never resume mutations automatically.
+- Add signed RPM application/offline-update VM fixtures, real reboot verification, and a standalone Qt accessibility regression with a downstream source patch. The installed Qt runtime still reproduces the crash; this is an unqualified local candidate, not a release.
+- See [v35 qualification](docs/V35_QUALIFICATION.md) for measured checks, known limitations and risk-based release policy.
+
+## [34.0.1] - Unreleased - "Accord"
+
+- Bind Flatpak update discovery, review, execution, and independent commit verification to exact user, system, and named installations.
+- Review selected applications together with their resolved runtime and extension operations; changed transaction evidence requires a fresh review.
+- Connect Installed applications and Updates through explicit, cancellable inspection and shared Action Center review.
+- Retain installation-specific results and link to exact Activity runs and optional existing unused-runtime maintenance.
+- Add read-only `updates flatpaks` CLI inspection with installation/ref filters while preserving existing CLI and saved-history formats.
+- Preserve the historical v34.0.0 Citadel tag; Accord uses v34.0.1. See [candidate qualification](docs/V34_QUALIFICATION.md) for actual automated evidence.
+
 ## [33.0.1] - 2026-10-12 - "Concord" — published
 
 This release packages the merged Concord work at `f8e3e7e`. The existing

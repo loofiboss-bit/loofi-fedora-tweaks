@@ -119,14 +119,12 @@ class _Actions:
         return {"input_actions": len(self.actions), "observed_actions": self.actions, "scope": scope}
 
 
-@patch("ui.native_handoff_card.QProcess.startDetached", return_value=(True, 123))
 @patch("services.system.system.SystemManager.get_platform_profile", side_effect=lambda: _platform_fixture())
-def _central_workflows(app, _profile, detached):
+def _central_workflows(app, _profile):
     from PyQt6.QtCore import Qt
     from PyQt6.QtTest import QTest
     from PyQt6.QtWidgets import QDialog, QDialogButtonBox, QPushButton
     from core.tasks.tweaks import BY_ID, TweakState
-    from services.desktop.native_handoff import NativeHandoffLaunch
     from services.software.installed_applications import InstalledApplication, InstalledInventory
     from ui.installed_applications import InstalledApplicationsCard
     from ui.tweak_profiles import ProfileSelectionDialog
@@ -186,7 +184,6 @@ def _central_workflows(app, _profile, detached):
     inventory = InstalledInventory((flatpak, rpm))
     service = Mock(snapshot=Mock(return_value=inventory))
     installed = InstalledApplicationsCard(service=service)
-    installed.software_handoff._service = Mock(prepare_launch=Mock(return_value=NativeHandoffLaunch("fixture-store", ())))
     installed.apply_inventory(inventory)
     installed.resize(1100, 800)
     installed.show()
@@ -202,22 +199,22 @@ def _central_workflows(app, _profile, detached):
                          lambda: removals == [("remove-installed-flatpak", {"ref": flatpak.ref, "installation": "user"})])
         removal = recorder.result("Preloaded exact Flatpak row to removal-review signal; no removal or app-data changes")
         rpm_button = next(button for button in installed._rows[1].findChildren(QPushButton)
-                          if button.text() == "Open software manager")
+                          if button.text() == "Review removal")
         recorder = _Actions(app)
-        recorder.deliver("Open the RPM software-manager handoff",
+        recorder.deliver("Request removal review for the exact RPM",
                          lambda: QTest.mouseClick(rpm_button, Qt.MouseButton.LeftButton),
-                         lambda: detached.call_count == 1 and installed._software_manager_app == rpm)
+                         lambda: removals[-1] == ("remove-application", {"source": "fedora", "package_id": rpm.ref}))
         recorder.deliver("Refresh the installed inventory after returning",
                          lambda: QTest.mouseClick(installed.refresh_button, Qt.MouseButton.LeftButton),
                          lambda: service.snapshot.call_count == 1 and not installed._adapter.busy)
-        handoff = recorder.result("RPM handoff input and return refresh with mocked native launch and synthetic inventory; excludes external tool interaction")
+        rpm_removal = recorder.result("Exact RPM removal-review signal and inventory refresh with mocked inventory; no package removal")
     finally:
         installed.cleanup()
         installed.close()
         installed.deleteLater()
         app.processEvents()
     return {"tweak_search_change_restore": change_restore, "profile_review_acceptance": profile_apply,
-            "flatpak_removal_review": removal, "rpm_handoff_return_refresh": handoff}
+            "flatpak_removal_review": removal, "rpm_removal_review_refresh": rpm_removal}
 
 
 @patch("subprocess.Popen", side_effect=AssertionError("GUI fixtures must not start host processes"))

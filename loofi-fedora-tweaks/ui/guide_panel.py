@@ -17,6 +17,7 @@ from core.tasks.guides import (
     EvidenceReferenceKind,
     guide_evidence,
     guide_evidence_exists,
+    guide_step_complete,
 )
 from ui.components.actions import QuietButton, SecondaryButton
 from ui.components.cards import Card
@@ -26,7 +27,7 @@ from ui.components.feedback import DetailsDisclosure
 def _step_evidence_available(step: GuideStep, progress: object) -> bool:
     raw_evidence_kind = str(getattr(progress, "evidence_kind", ""))
     evidence_id = str(getattr(progress, "evidence_id", ""))
-    if raw_evidence_kind not in {"", "action_run", "troubleshooting_session"}:
+    if raw_evidence_kind not in {"", "action_run", "troubleshooting_session", "profile_result"}:
         return False
     evidence_kind = cast(EvidenceReferenceKind, raw_evidence_kind)
     action_ids = step.evidence_action_ids if evidence_kind == "action_run" else None
@@ -224,6 +225,9 @@ class GuidePanel(QWidget):
             state: str = progress.state if progress else "not_started"
             if progress and progress.state == "verified" and not _step_evidence_available(step, progress):
                 state = "evidence_missing"
+            if progress and progress.state == "reviewed" and not guide_step_complete(step, progress):
+                state_labels["review_pending"] = self.tr("Reviewed · verified result required")
+                state = "review_pending"
             label = self.tr(state_labels.get(state, "Not started" if state == "not_started" else "Evidence missing"))
             item = QListWidgetItem(f"{label} · {self.tr(step.title)}")
             item.setData(Qt.ItemDataRole.UserRole, step.id)

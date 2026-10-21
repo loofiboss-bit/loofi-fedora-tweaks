@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import os
+import hashlib
 import json
 from collections.abc import Callable
 from pathlib import Path
@@ -373,6 +374,48 @@ def select_page_tab(name: str, *, timeout: float = 10) -> None:
                message=f"Keyboard navigation did not select the {name} application tab")
 
 
+def application_environment() -> dict[str, str]:
+    """Apply an explicitly qualified runtime to application children only."""
+    env = os.environ.copy()
+    for key in ("LOOFI_E2E_POLKIT_PASSWORD", "LOOFI_E2E_CREDENTIALS_PATH", "LD_PRELOAD", "LD_LIBRARY_PATH"):
+        env.pop(key, None)
+    directory = env.get("LOOFI_E2E_QT_RUNTIME_DIR")
+    if directory:
+        expected = Path("/var/tmp/loofi-e2e/qt-runtime")
+        evidence = json.loads((expected.parent / "qt-runtime-evidence.json").read_text())
+        if directory != str(expected) or evidence.get("passed") is not True or evidence.get("runtime_library_dir") != directory:
+            raise RuntimeError("Application corrected Qt runtime has no successful guest qualification.")
+        library = expected / "libQt6Widgets.so.6.11.2"
+        if hashlib.sha256(library.read_bytes()).hexdigest() != evidence.get("runtime_sha256"):
+            raise RuntimeError("Application corrected Qt runtime changed after qualification.")
+        env["LD_LIBRARY_PATH"] = directory
+    return env
+
+
+def record_application_runtime(process) -> None:
+    """Read actual application mappings after startup, including every restart."""
+    directory = os.environ.get("LOOFI_E2E_QT_RUNTIME_DIR")
+    if not directory:
+        return
+    work = Path("/var/tmp/loofi-e2e")
+    manifest = json.loads((work / "qt-runtime-request.json").read_text())["manifest"]
+    mappings = (Path("/proc") / str(process.pid) / "maps").read_text()
+    paths = {line.split(maxsplit=5)[5].strip() for line in mappings.splitlines() if len(line.split(maxsplit=5)) == 6}
+    expected = {"Widgets": (Path(directory) / "libQt6Widgets.so.6.11.2", manifest["runtime_sha256"])}
+    for name in ("Core", "Gui"):
+        dependency = manifest["dependency_libraries"][name]
+        expected[name] = (Path(dependency["path"]), dependency["sha256"])
+    observed = {}
+    for name, (path, checksum) in expected.items():
+        if str(path) not in paths or hashlib.sha256(path.read_bytes()).hexdigest() != checksum:
+            raise RuntimeError(f"Application did not map the expected Qt{name} library.")
+        observed[name] = {"path": str(path), "sha256": checksum}
+    target = work / "qt-runtime-applications.json"
+    records = json.loads(target.read_text()) if target.exists() else []
+    records.append({"launch": "installed RPM Bash wrapper; library path inherited by ordinary app children, cleared by pkexec", "pid": process.pid, "phase": os.environ.get("LOOFI_E2E_PHASE", "normal"), "libraries": observed})
+    target.write_text(json.dumps(records, indent=2) + "\n")
+
+
 def current_app_process(registry):
     """Refuse ambiguous ownership instead of selecting a stale fixture PID."""
     live = [process for process in registry if process.poll() is None]
@@ -390,14 +433,13 @@ def restart_app(process, registry):
         except subprocess.TimeoutExpired:
             process.kill()
             process.wait(timeout=10)
-    env = os.environ.copy()
-    env.pop("LOOFI_E2E_POLKIT_PASSWORD", None)
-    env.pop("LOOFI_E2E_CREDENTIALS_PATH", None)
+    env = application_environment()
     with open("/var/tmp/loofi-e2e/application.log", "a", encoding="utf-8") as log:
         restarted = subprocess.Popen(["/usr/bin/loofi-fedora-tweaks"], stdin=subprocess.DEVNULL,
                                      stdout=log, stderr=subprocess.STDOUT, text=True, close_fds=True, env=env)
     registry.append(restarted)
     wait_for_node("Loofi Fedora Tweaks", role="frame", timeout=90)
+    record_application_runtime(restarted)
     return restarted
 
 

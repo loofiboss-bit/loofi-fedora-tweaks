@@ -68,7 +68,7 @@ def _private_log_line(line: str) -> str:
 
 
 def _is_supported_structured_json_command(command: List[str]) -> bool:
-    """Recognize only the reviewed bounded JSON probes that need full output."""
+    """Recognize exact bounded machine-readable probes needing full output."""
     vector = list(command)
     while vector and Path(vector[0]).name in {"pkexec"}:
         vector = vector[1:]
@@ -77,6 +77,14 @@ def _is_supported_structured_json_command(command: List[str]) -> bool:
     if not vector:
         return False
     binary, args = Path(vector[0]).name, vector[1:]
+    if binary == "loofi-rpm-transaction":
+        from services.software.rpm_transactions import trusted_helpers, validate_helper_args
+        return vector[0] in trusted_helpers() and validate_helper_args(args) and args[0] in {"preview", "sources"}
+    if binary == "loofi-flatpak-maintenance":
+        from services.software.flatpak_maintenance import trusted_helpers, validate_helper_args
+        return vector[0] in trusted_helpers() and validate_helper_args(args) and args[0] in {"install-preview", "update-state"}
+    if binary == "rpm":
+        return args == ["-qa", "--qf", "%{NAME}|%{NAME}-%{EPOCHNUM}:%{VERSION}-%{RELEASE}.%{ARCH}\\n"]
     if binary == "rpm-ostree":
         return args == ["status", "--json"]
     if binary == "fwupdmgr":
@@ -306,7 +314,7 @@ class ActionExecutor(BaseActionExecutor):
 
             if proc.returncode == 0:
                 if structured_read:
-                    message = "Structured JSON evidence read."
+                    message = "Structured evidence read."
                 elif support_read:
                     message = "KWin runtime information read."
                 else:

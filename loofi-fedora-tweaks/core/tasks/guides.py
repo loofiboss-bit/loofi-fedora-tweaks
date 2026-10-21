@@ -15,13 +15,13 @@ from core.state.inventory import StateInventory
 
 
 GUIDE_SCHEMA_ID = "loofi.user-guides"
-GUIDE_SCHEMA_VERSION = 1
+GUIDE_SCHEMA_VERSION = 2
 MAX_GUIDE_FILE_BYTES = 64 * 1024
 MAX_PROGRESS_ENTRIES = 256
 _IDENTIFIER = re.compile(r"^[a-z0-9][a-z0-9._:/-]{0,127}$")
 
 ProgressStatus = Literal["in_progress", "reviewed", "skipped", "verified"]
-EvidenceKind = Literal["action_run", "troubleshooting_session"]
+EvidenceKind = Literal["action_run", "troubleshooting_session", "profile_result"]
 EvidenceReferenceKind = EvidenceKind | Literal[""]
 
 
@@ -69,7 +69,7 @@ class GuideStep:
     def __post_init__(self) -> None:
         if not _IDENTIFIER.fullmatch(self.id) or not self.title.strip() or not self.description.strip():
             raise ValueError("Guide step metadata is invalid.")
-        if any(kind not in {"action_run", "troubleshooting_session"} for kind in self.evidence_kinds):
+        if any(kind not in {"action_run", "troubleshooting_session", "profile_result"} for kind in self.evidence_kinds):
             raise ValueError("Guide step evidence kind is invalid.")
         if self.evidence_action_ids and "action_run" not in self.evidence_kinds:
             raise ValueError("Action evidence IDs require the action_run evidence kind.")
@@ -138,6 +138,20 @@ def _step(
 
 
 GUIDES: tuple[GuideDefinition, ...] = (
+    GuideDefinition(
+        "get-fedora-ready",
+        "Get Fedora ready",
+        "Choose optional setup steps, review each change, and resume whenever you want. Nothing is preselected.",
+        ("setup", "first run", "start", "fedora", "sources", "codecs", "backup", "profile"),
+        (
+            _step("get-fedora-ready", "backup", "Consider your backup", "Review your own backup before changing the system. Marking this step reviewed is your acknowledgement, not proof that a backup works.", "health", keywords=("backup", "recovery")),
+            _step("get-fedora-ready", "updates", "Review system updates", "Check available updates explicitly and review them before installing.", "maintenance:updates", evidence=("action_run",), action_ids=("update-fedora-system", "update-flatpaks")),
+            _step("get-fedora-ready", "apps", "Choose applications", "Compare available RPM and Flatpak applications and choose their exact source and installation scope.", "install", task="install:applications", evidence=("action_run",), action_ids=("install-application",)),
+            _step("get-fedora-ready", "sources", "Choose optional software sources", "Choose Flathub or one RPM Fusion source. Review its provider, signing key and scope separately; no source is preselected.", "install", task="install:repositories", evidence=("action_run",), action_ids=("enable-flathub", "enable-rpm-fusion")),
+            _step("get-fedora-ready", "codecs", "Review optional multimedia codecs", "After verifying RPM Fusion Free, create a fresh review of the FFmpeg/GStreamer recipe. Replacements require separate removal consent.", "install", task="install:repositories", evidence=("action_run",), action_ids=("install-multimedia-codecs",)),
+            _step("get-fedora-ready", "profile", "Choose a desktop profile", "Inspect profiles and their individual settings before choosing one. No profile is preselected.", "tune", task="tune:profile-library", evidence=("profile_result",)),
+        ),
+    ),
     GuideDefinition(
         "make-fedora-yours",
         "Make Fedora yours",
@@ -259,7 +273,7 @@ class GuideProgressStore:
             raise ValueError("Guide progress schema version is invalid.")
         if version > GUIDE_SCHEMA_VERSION:
             return GuideProgressSnapshot("", "", {}, 0, False, "future-schema-read-only")
-        if version != GUIDE_SCHEMA_VERSION:
+        if version not in {1, GUIDE_SCHEMA_VERSION}:
             raise ValueError("Guide progress schema version is unsupported.")
         revision = payload.get("revision")
         if isinstance(revision, bool) or not isinstance(revision, int) or revision < 0:
@@ -294,8 +308,10 @@ class GuideProgressStore:
             if not isinstance(evidence_kind, str) or not isinstance(evidence_id, str):
                 raise ValueError("Guide progress evidence reference is invalid.")
             if state == "verified":
-                if evidence_kind not in {"action_run", "troubleshooting_session"} or not _IDENTIFIER.fullmatch(evidence_id):
+                if evidence_kind not in {"action_run", "troubleshooting_session", "profile_result"} or not _IDENTIFIER.fullmatch(evidence_id):
                     raise ValueError("Guide progress verified evidence is invalid.")
+                if evidence_kind == "profile_result" and version < 2:
+                    raise ValueError("Profile result references require guide schema version 2.")
                 if evidence_kind not in GUIDE_STEPS_BY_ID[key].evidence_kinds:
                     raise ValueError("Guide progress evidence does not match its step.")
             elif evidence_kind or evidence_id:
@@ -371,7 +387,7 @@ class GuideProgressStore:
             self.path,
             {
                 "schema_id": GUIDE_SCHEMA_ID,
-                "schema_version": GUIDE_SCHEMA_VERSION,
+                "schema_version": 2 if any(entry.evidence_kind == "profile_result" for entry in entries.values()) else 1,
                 "revision": revision,
                 "active_guide": active_guide,
                 "active_step": active_step,
@@ -411,6 +427,11 @@ def guide_evidence(
                 and run.completed_at is not None
                 and (allowed_actions is None or run.action_id in allowed_actions)
             )[:bounded_limit]
+        if kind == "profile_result":
+            from core.tasks.guide_profile_results import GuideProfileResultStore
+
+            return tuple(GuideEvidence(kind, identifier, f"Selected profile settings · {count} verified setting(s)", timestamp)
+                         for identifier, timestamp, count in GuideProfileResultStore().available())[:bounded_limit]
         if kind == "troubleshooting_session":
             from core.troubleshooting.storage import TroubleshootingSessionStore
 
@@ -432,13 +453,27 @@ def guide_evidence_exists(
     action_ids: Sequence[str] | None = None,
 ) -> bool:
     """Re-read exact terminal evidence before accepting a verified link."""
-    if kind not in {"action_run", "troubleshooting_session"}:
+    if kind not in {"action_run", "troubleshooting_session", "profile_result"}:
         return False
     return any(item.id == evidence_id for item in guide_evidence(
         cast(EvidenceKind, kind),
         limit=100,
         action_ids=action_ids,
     ))
+
+
+def guide_step_complete(step: GuideStep, progress: GuideStepProgress | None) -> bool:
+    """Keep legacy review semantics; setup changes require exact result evidence."""
+    if progress is None:
+        return False
+    if progress.state == "skipped":
+        return True
+    if progress.state == "reviewed":
+        return not step.id.startswith("get-fedora-ready:") or step.id == "get-fedora-ready:backup"
+    if progress.state != "verified" or progress.evidence_kind not in step.evidence_kinds:
+        return False
+    return guide_evidence_exists(progress.evidence_kind, progress.evidence_id,
+                                 action_ids=step.evidence_action_ids if progress.evidence_kind == "action_run" else None)
 
 
 def guide_progress_payload(guide_id: str, snapshot: GuideProgressSnapshot) -> dict[str, Any]:
@@ -495,4 +530,5 @@ __all__ = [
     "guide_evidence",
     "guide_evidence_exists",
     "guide_progress_payload",
+    "guide_step_complete",
 ]

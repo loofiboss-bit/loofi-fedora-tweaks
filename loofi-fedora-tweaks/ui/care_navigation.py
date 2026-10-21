@@ -7,6 +7,9 @@ from typing import Any
 class CareNavigationMixin:
     def _open_route_request(self: Any, route_id: str, _preselection=None) -> None:
         """Navigate through the canonical manifest; metadata remains inert."""
+        if isinstance(_preselection, dict) and _preselection.get("section") in {"flatpak-updates", "installed-app"}:
+            self._open_flatpak_context(route_id, _preselection)
+            return
         if isinstance(_preselection, dict) and _preselection and not set(_preselection) - {"run_id", "session_id", "update_source", "symptom", "tweak_id"}:
             if any(not isinstance(value, str) for value in _preselection.values()):
                 return
@@ -55,6 +58,47 @@ class CareNavigationMixin:
             return
         self.switch_to_route(route_id)
 
+    def _open_flatpak_context(self: Any, route_id: str, context: dict) -> bool:
+        """Validate and focus exact Flatpak identity without initiating work."""
+        from services.software.flatpak_maintenance import INSTALLATION_PATTERN, REF_PATTERN
+
+        if set(context) - {"section", "installation", "refs"}:
+            return False
+        installation = context.get("installation", "")
+        refs = context.get("refs", [])
+        if not isinstance(installation, str) or (installation and not INSTALLATION_PATTERN.fullmatch(installation)):
+            return False
+        if not isinstance(refs, list) or len(refs) > 256 or any(not isinstance(ref, str) or not REF_PATTERN.fullmatch(ref) for ref in refs):
+            return False
+        if context["section"] == "flatpak-updates" and route_id == "maintenance:updates":
+            if not self.switch_to_route(route_id):
+                return False
+            entry = self._sidebar_index.get("utility_update")
+            if entry is None:
+                return False
+            self._real_widget_for_entry(entry).flatpak_updates.preselect(installation or None, refs)
+            return True
+        if context["section"] == "installed-app" and route_id == "software:apps" and installation and len(refs) == 1:
+            if not self.switch_to_route(route_id):
+                return False
+            entry = self._sidebar_index.get("utility_install")
+            if entry is None:
+                return False
+            page = self._real_widget_for_entry(entry)
+            card = page.installed_card
+            page.view_filter.setCurrentIndex(page.view_filter.findData("installed"))
+            index = card.installation_filter.findData(installation)
+            if index < 0:
+                card.installation_filter.addItem(installation, installation)
+                index = card.installation_filter.findData(installation)
+            card.installation_filter.setCurrentIndex(index)
+            page.search_input.setText(refs[0])
+            card.updates.show()
+            card.updates.preselect(installation, refs)
+            page.body_scroll.ensureWidgetVisible(card.updates)
+            return True
+        return False
+
     def _open_update_source_context(self: Any, source: str, run_id: str = "") -> None:
         """Select a source and offer the exact saved run without starting work."""
         if self.switch_to_route("maintenance:updates"):
@@ -96,7 +140,8 @@ class CareNavigationMixin:
         if installation is not None:
             index = insights.installation.findText(installation)
             if index < 0:
-                return False
+                insights.installation.addItem(installation)
+                index = insights.installation.findText(installation)
             insights.installation.setCurrentIndex(index)
         installed_index = page.view_filter.findData("installed")
         page.view_filter.setCurrentIndex(installed_index)

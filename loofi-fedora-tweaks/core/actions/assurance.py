@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import re
+from dataclasses import replace
 from typing import Any, Callable, Literal, Mapping
 
 from core.actions.contracts import (
@@ -13,7 +14,8 @@ from core.actions.contracts import (
     PolicyDecision,
     VerificationDecision,
 )
-from core.executor.action_result import ActionResult
+from core.actions.flatpak_updates import flatpak_update_definition
+from core.actions.setup_sources import setup_source_definitions
 from core.local_profiles import validate_local_profile
 from core.actions.public_boundary_definitions import (
     _manual_definition as _shared_manual_definition,
@@ -127,17 +129,7 @@ def assurance_definitions() -> list[ActionDefinition]:
             affected_resources=("rpm-ostree-deployment", "boot-state"),
             parameter_validator=_validate_rpm_ostree_rollback,
         ),
-        ActionDefinition(
-            id="update-flatpaks",
-            capability_id="updates.flatpak.apply",
-            title="Update Flatpaks",
-            description="Update the exact Flatpak refs discovered during preflight.",
-            parameter_schema={}, risk_level="low", privileged=False,
-            confirmation_policy="explicit", recovery_guidance="Review Flatpak history and application data if an update regresses.",
-            rollback_supported=False, command_renderer=_render_flatpak_update,
-            preflight_checker=_preflight_flatpak_update, verifier=_verify_flatpak_update,
-            interaction_policy="automatic",
-        ),
+        flatpak_update_definition(),
         ActionDefinition(
             id="update-firmware",
             capability_id="updates.firmware.apply",
@@ -188,27 +180,7 @@ def assurance_definitions() -> list[ActionDefinition]:
             preflight_checker=_preflight_recovery_point, verifier=_verify_recovery_point,
             parameter_validator=_validate_recovery_point,
         ),
-        _manual_definition(
-            "enable-rpm-fusion",
-            "Enable RPM Fusion",
-            "RPM Fusion enablement requires distribution-specific repository review.",
-            "Follow the RPM Fusion Fedora setup guide, verify repository URLs, and return to Software after completion.",
-            ("repositories", "packages"),
-        ),
-        _manual_definition(
-            "install-multimedia-codecs",
-            "Install multimedia codecs",
-            "Codec groups vary by enabled repositories and remain guided manual work.",
-            "Review the exact package groups and repository trust before installing codecs manually.",
-            ("packages", "multimedia"),
-        ),
-        _manual_definition(
-            "enable-flathub",
-            "Enable Flathub",
-            "Adding a new software trust source remains a guided manual operation.",
-            "Verify the Flathub repository URL and scope before adding the remote manually.",
-            ("flatpak-remotes",),
-        ),
+        *setup_source_definitions(),
         _manual_definition(
             "enable-loofi-copr",
             "Enable Loofi COPR",
@@ -656,13 +628,18 @@ def _application_definition(action_id: str, *, installing: bool) -> ActionDefini
         parameter_schema={
             "source": {"type": "string", "required": True},
             "package_id": {"type": "string", "required": True},
+            "repo_id": {"type": "string", "required": False},
+            "component_id": {"type": "string", "required": False},
+            "installation": {"type": "string", "required": False},
+            "remote": {"type": "string", "required": False},
         },
         risk_level="low" if installing else "medium",
         privileged=False,
         confirmation_policy="explicit" if installing else "explicit-no-rollback",
-        recovery_guidance="Remove the application again." if installing else "Reinstall the exact application if removal was unintended.",
-        rollback_supported=installing,
+        recovery_guidance="Review Activity and remove the application or reinstall previous package versions manually if needed. Application data is preserved.",
+        rollback_supported=False,
         command_renderer=lambda p, r: _render_application(p, r, installing=installing),
+        evidence_renderer=lambda p, r, d: _render_application_evidence(p, r, d, installing=installing),
         preflight_checker=lambda p, r: _preflight_application(p, r, installing=installing),
         verifier=lambda run, plan, runtime: _verify_application(run, plan, runtime, installing=installing),
         parameter_validator=_validate_application,
@@ -675,9 +652,21 @@ def _validate_application(parameters: Mapping[str, Any]) -> PolicyDecision:
     package_id = parameters.get("package_id")
     if source not in {"fedora", "flatpak"}:
         return _blocked("invalid_application_source", "Only Fedora RPM and Flatpak sources are supported.")
-    pattern = _FLATPAK_PATTERN if source == "flatpak" else _PACKAGE_PATTERN
-    if not isinstance(package_id, str) or not pattern.fullmatch(package_id) or package_id.startswith("-"):
+    from services.software.installed_applications import validate_ref, installation_flag
+    from services.software.rpm_transactions import TOKEN
+    pattern = _FLATPAK_PATTERN if source == "flatpak" else TOKEN
+    valid_identity = isinstance(package_id, str) and (bool(pattern.fullmatch(package_id)) or (source == "flatpak" and validate_ref(package_id)))
+    if not valid_identity or not isinstance(package_id, str) or package_id.startswith("-"):
         return _blocked("invalid_package_id", "The application identifier is invalid or option-like.")
+    for name in ("repo_id", "remote", "component_id"):
+        value = parameters.get(name, "")
+        if not isinstance(value, str) or (value and not re.fullmatch(r"[A-Za-z0-9][A-Za-z0-9._:-]{0,255}", value)):
+            return _blocked("invalid_application_source", "The exact application source is invalid.")
+    if "installation" in parameters:
+        try:
+            installation_flag(parameters["installation"])
+        except (ValueError, TypeError):
+            return _blocked("invalid_application_source", "The Flatpak installation is invalid.")
     return _allowed("parameters_valid", "Application parameters are valid.")
 
 
@@ -696,45 +685,6 @@ def _validate_recovery_point(parameters: Mapping[str, Any]) -> PolicyDecision:
     if not isinstance(description, str) or not _DESCRIPTION_PATTERN.fullmatch(description.strip()):
         return _blocked("invalid_snapshot_description", "Description must contain 1-80 printable characters.")
     return _allowed("parameters_valid", "Recovery-point parameters are valid.")
-
-
-def _preflight_flatpak_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
-    result, refs = _query_flatpak_updates(runtime)
-    if not result.success:
-        return _blocked("flatpak_query_failed", "Flatpak updates could not be queried.")
-    if not refs:
-        return _blocked("no_flatpak_updates", "No Flatpak updates are currently available.")
-    return _allowed("preflight_ok", f"{len(refs)} Flatpak refs are ready.", refs=refs)
-
-
-def _render_flatpak_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> list[str]:
-    result, refs = _query_flatpak_updates(runtime)
-    if not result.success or not refs:
-        raise ValueError("Flatpak update candidates are unavailable.")
-    return ["flatpak", "update", "--noninteractive", "--assumeyes", *[item["id"] for item in refs]]
-
-
-def _query_flatpak_updates(runtime: ActionRuntime) -> tuple[ActionResult, list[dict[str, str]]]:
-    result = runtime.execute_read_only(
-        ["flatpak", "remote-ls", "--updates", "--columns=ref,commit"],
-        action_id="update-flatpaks-candidates",
-        timeout=90,
-    )
-    return result, _tab_records(result.stdout)
-
-
-def _verify_flatpak_update(_run: ActionRun, plan: ActionPlan, runtime: ActionRuntime) -> VerificationDecision:
-    failed = []
-    for record in plan.policy_decision.facts.get("refs", []):
-        if not isinstance(record, dict):
-            continue
-        ref, expected = str(record.get("id", "")), str(record.get("value", ""))
-        result = runtime.execute_read_only(["flatpak", "info", "--show-commit", ref], action_id="update-flatpaks-verify-ref", timeout=30)
-        if not result.success or (expected and result.stdout.strip() != expected):
-            failed.append(ref)
-    if failed:
-        return VerificationDecision.failed("One or more planned Flatpak refs could not be verified.", failed_refs=failed)
-    return VerificationDecision.succeeded("All planned Flatpak refs were verified.")
 
 
 def _preflight_firmware_update(_parameters: Mapping[str, Any], runtime: ActionRuntime) -> PolicyDecision:
@@ -784,41 +734,64 @@ def _render_application(parameters: Mapping[str, Any], runtime: ActionRuntime, *
     if parameters["source"] == "flatpak":
         action = "install" if installing else "uninstall"
         vector = ["flatpak", action, "--noninteractive", "--assumeyes"]
+        from services.software.installed_applications import installation_flag
+        vector.append(installation_flag(str(parameters.get("installation", "system"))))
         if installing:
-            vector.append("flathub")
+            vector.append(str(parameters.get("remote", "flathub")))
         return [*vector, package_id]
     if runtime.is_atomic():
         return ["rpm-ostree", "install" if installing else "uninstall", package_id]
-    manager = runtime.package_manager()
-    return [manager if manager in {"dnf", "dnf5"} else "dnf", "install" if installing else "remove", "-y", package_id]
+    from services.software.rpm_transactions import RpmTransactionService
+    return RpmTransactionService(runtime).preview("install" if installing else "remove", (package_id,), repo_id=str(parameters.get("repo_id", ""))).apply_vector()
+
+
+def _render_application_evidence(parameters: Mapping[str, Any], runtime: ActionRuntime, decision: PolicyDecision, *, installing: bool) -> list[str]:
+    if parameters.get("source") == "flatpak":
+        if installing:
+            from services.software.flatpak_installation import preview_from_facts as flatpak_install_preview
+            return flatpak_install_preview(decision.facts.get("flatpak_installation")).apply_vector()
+        from services.software.installed_applications import installation_flag
+        return ["flatpak", "uninstall", installation_flag(decision.facts["installation"]), "--assumeyes", "--noninteractive", "--no-related", decision.facts["ref"]]
+    if runtime.is_atomic():
+        return _render_application(parameters, runtime, installing=installing)
+    from services.software.rpm_transactions import preview_from_facts as rpm_preview
+    return rpm_preview(decision.facts.get("rpm_transaction")).apply_vector()
 
 
 def _preflight_application(parameters: Mapping[str, Any], runtime: ActionRuntime, *, installing: bool) -> PolicyDecision:
     package_id, source = str(parameters["package_id"]), str(parameters["source"])
     if source == "flatpak":
-        installed = runtime.execute_read_only(["flatpak", "info", package_id], action_id="application-installed", timeout=20).success
-        target_commit = ""
+        from services.software.installed_applications import InstalledApplicationService, installation_flag, validate_ref
+        installation = str(parameters.get("installation", "system"))
+        scope = installation_flag(installation)
         if installing:
-            available = runtime.execute_read_only(
-                ["flatpak", "remote-info", "--show-commit", "flathub", package_id],
-                action_id="application-available",
-                timeout=30,
-            )
-            if not available.success:
-                return _blocked("application_unavailable", "The Flatpak application is unavailable from Flathub.")
-            target_commit = available.stdout.strip()
-        if installed == installing:
-            return _blocked("application_state_unchanged", "The application already has the requested state.")
-        return _allowed(
-            "preflight_ok",
-            "Flatpak application state is ready to change.",
-            source=source,
-            package_id=package_id,
-            installed_before=installed,
-            target_commit=target_commit,
-        )
+            from services.software.flatpak_installation import FlatpakInstallationService
+            remote = str(parameters.get("remote", "flathub"))
+            if not validate_ref(package_id):
+                resolved = runtime.execute_read_only(["flatpak", "remote-info", scope, "--show-ref", remote, package_id], action_id="application-resolve-ref", timeout=30)
+                package_id = resolved.stdout.strip() if resolved.success else ""
+                if not validate_ref(package_id):
+                    return _blocked("application_unavailable", "The selected application could not be resolved to one exact remote ref.")
+            snapshot = FlatpakInstallationService(runtime).preview(installation, remote, package_id)
+            if not snapshot.available:
+                return _blocked("flatpak_installation_unavailable", snapshot.error)
+            return _allowed("preflight_ok", "Review the selected Flatpak and every resolved dependency commit.", flatpak_installation=snapshot.review_facts())
+        inventory = InstalledApplicationService(probe=lambda vector: runtime.execute_read_only(vector, action_id="application-installed", timeout=20)).flatpaks(installation=installation)
+        matches = [app for app in inventory.applications if app.ref == package_id or app.app_id == package_id]
+        if inventory.errors or len(matches) != 1:
+            return _blocked("application_identity_unavailable", "Select one exact installed application with readable installation inventory.")
+        from core.actions.installed_applications import _preflight as removal_preflight
+        return removal_preflight({"installation": installation, "ref": matches[0].ref}, runtime)
     if runtime.package_manager_busy():
         return _blocked("package_manager_busy", "Another package operation may be active.")
+    if not runtime.is_atomic():
+        if runtime.package_manager() != "dnf5":
+            return _blocked("rpm_transaction_backend_unavailable", "Reviewed application changes require DNF5 and its Python bindings.")
+        from services.software.rpm_transactions import RpmTransactionService
+        preview = RpmTransactionService(runtime).preview("install" if installing else "remove", (package_id,), repo_id=str(parameters.get("repo_id", "")))
+        if not preview.available:
+            return _blocked("rpm_transaction_unavailable", preview.error)
+        return _allowed("preflight_ok", "Review every RPM operation and its exact source before continuing.", rpm_transaction=preview.to_dict())
     installed_result = runtime.execute_read_only(
         ["rpm", "-q", "--qf", "%{name}|%{evr}|%{arch}\\n", package_id],
         action_id="application-installed",
@@ -856,14 +829,23 @@ def _preflight_application(parameters: Mapping[str, Any], runtime: ActionRuntime
 def _verify_application(run: ActionRun, plan: ActionPlan, runtime: ActionRuntime, *, installing: bool) -> VerificationDecision:
     package_id = str(plan.parameters["package_id"])
     if plan.parameters["source"] == "flatpak":
-        result = runtime.execute_read_only(
-            ["flatpak", "info", "--show-commit", package_id],
-            action_id="application-verify",
-            timeout=20,
-        )
-        expected = str(plan.policy_decision.facts.get("target_commit", ""))
-        verified = result.success == installing and (not installing or not expected or result.stdout.strip() == expected)
-        return VerificationDecision.succeeded("Flatpak application state was verified.") if verified else VerificationDecision.failed("Flatpak application state did not match the plan.")
+        if installing:
+            from services.software.flatpak_installation import preview_from_facts as flatpak_install_preview, verify_preview as verify_installation
+            snapshot = flatpak_install_preview(plan.policy_decision.facts.get("flatpak_installation"))
+            if not snapshot.available:
+                return VerificationDecision.failed("Older Flatpak evidence requires a fresh installation-bound review.")
+            return verify_installation(snapshot, runtime)
+        from core.actions.installed_applications import _verify as verify_removal
+        facts = plan.policy_decision.facts
+        if "installation" not in facts or "ref" not in facts:
+            return VerificationDecision.failed("Older removal evidence requires a fresh exact installation review.")
+        return verify_removal(run, replace(plan, parameters={"installation": facts["installation"], "ref": facts["ref"]}), runtime)
+    if not runtime.is_atomic():
+        from services.software.rpm_transactions import preview_from_facts as rpm_preview, verify_preview
+        try:
+            return verify_preview(rpm_preview(plan.policy_decision.facts.get("rpm_transaction")), runtime)
+        except ValueError:
+            return VerificationDecision.failed("Older RPM evidence requires a fresh transaction review.")
     if runtime.is_atomic():
         status = runtime.execute_read_only(["rpm-ostree", "status", "--json"], action_id="application-verify-atomic", timeout=30)
         payload = _json_payload(status) if status.success else None

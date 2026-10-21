@@ -67,25 +67,21 @@ class GuideNavigationMixin:
             button.setText(self.tr("Guide: %1").replace("%1", title))
             button.setAccessibleName(self.tr("Active Fedora guide: %1").replace("%1", title))
             next_step = None
+            progress_unavailable = False
             try:
-                from core.tasks.guides import GuideProgressStore, guide_evidence_exists
+                from core.tasks.guides import GuideProgressStore, guide_step_complete
 
                 snapshot = GuideProgressStore().read()
                 for step in guide.steps:
                     progress = snapshot.steps.get(step.id)
-                    if progress is None or progress.state == "in_progress":
-                        next_step = step
-                        break
-                    if progress.state == "verified" and not guide_evidence_exists(progress.evidence_kind, progress.evidence_id):
-                        next_step = step
-                        break
-                    if progress.state not in {"reviewed", "skipped", "verified"}:
+                    if not guide_step_complete(step, progress):
                         next_step = step
                         break
             except (OSError, RuntimeError, TypeError, ValueError):
-                next_step = None
-            if next_step is None:
-                self._continue_guide_action.setText(self.tr("All guide steps have been reviewed"))
+                progress_unavailable = True
+            if progress_unavailable or next_step is None:
+                complete_label = self.tr("All guide steps have been reviewed") if guide.id != "get-fedora-ready" else self.tr("All setup steps have been acknowledged, verified or skipped")
+                self._continue_guide_action.setText(self.tr("Guide progress unavailable") if progress_unavailable else complete_label)
                 self._continue_guide_action.setData("")
                 self._continue_guide_action.setEnabled(False)
                 button.setToolTip(self.tr("%1 — return to saved guide progress").replace("%1", title))
