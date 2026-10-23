@@ -12,6 +12,7 @@ Migrated from utils/kwin_tiling.py in v2.0.0 "Evolution".
 import json
 import logging
 import os
+import shlex
 import subprocess
 from dataclasses import dataclass
 from pathlib import Path
@@ -399,8 +400,14 @@ class KWinManager:
                 ]
             )
 
-            for cmd in commands:
-                subprocess.run(cmd, capture_output=True, timeout=10)
+            batch_cmd = " && ".join(shlex.join(cmd) for cmd in commands)
+            subprocess.run(
+                batch_cmd,
+                shell=True,
+                capture_output=True,
+                text=True,
+                timeout=10,
+            )
 
             return Result(
                 True,
