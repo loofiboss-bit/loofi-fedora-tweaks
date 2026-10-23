@@ -13,7 +13,7 @@ from unittest.mock import MagicMock, mock_open, patch
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
 from services.hardware.battery import BatteryManager
-from services.hardware.disk import DiskManager, DiskUsage
+from services.hardware.disk import DiskManager, DiskUsage, LargeDirectory
 from services.hardware.temperature import TemperatureManager, TemperatureSensor, _classify_sensor, _read_millidegree, _read_sysfs_value
 
 # ====================================================================================
