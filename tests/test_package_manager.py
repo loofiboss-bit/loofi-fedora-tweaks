@@ -146,32 +146,46 @@ class TestInstallFlatpak(unittest.TestCase):
     @patch('utils.package_manager.subprocess.run')
     @patch('utils.package_manager.SystemManager')
     def test_install_flatpak_success(self, mock_sys, mock_run):
-        """Flatpak install succeeds."""
+        """Flatpak install succeeds in a single batched command."""
         mock_sys.is_atomic.return_value = False
         mock_sys.get_package_manager.return_value = "dnf"
         mock_run.return_value = MagicMock(returncode=0, stdout="Done", stderr="")
 
         pm = PackageManager()
-        result = pm.install(["com.spotify.Client"], use_flatpak=True)
+        result = pm.install(["com.spotify.Client", "org.videolan.VLC"], use_flatpak=True)
 
         self.assertTrue(result.success)
+        mock_run.assert_called_once_with(
+            ["flatpak", "install", "-y", "flathub", "com.spotify.Client", "org.videolan.VLC"],
+            capture_output=True, text=True, check=False, timeout=600
+        )
 
     @patch('utils.package_manager.subprocess.run')
     @patch('utils.package_manager.SystemManager')
-    def test_install_flatpak_partial_failure(self, mock_sys, mock_run):
-        """Flatpak install reports partial failure."""
+    def test_install_flatpak_failure(self, mock_sys, mock_run):
+        """Flatpak install reports failure when command returns non-zero code."""
+        mock_sys.is_atomic.return_value = False
+        mock_sys.get_package_manager.return_value = "dnf"
+        mock_run.return_value = MagicMock(returncode=1, stdout="", stderr="not found")
+
+        pm = PackageManager()
+        result = pm.install(["com.app.Bad"], use_flatpak=True)
+
+        self.assertFalse(result.success)
+        self.assertIn("Failed to install", result.message)
+
+    @patch('utils.package_manager.subprocess.run', side_effect=OSError("exec failed"))
+    @patch('utils.package_manager.SystemManager')
+    def test_install_flatpak_exception(self, mock_sys, mock_run):
+        """Flatpak install handles exception during execution."""
         mock_sys.is_atomic.return_value = False
         mock_sys.get_package_manager.return_value = "dnf"
 
-        mock_run.side_effect = [
-            MagicMock(returncode=0, stdout="OK", stderr=""),
-            MagicMock(returncode=1, stdout="", stderr="not found"),
-        ]
-
         pm = PackageManager()
-        result = pm.install(["com.app.Good", "com.app.Bad"], use_flatpak=True)
+        result = pm.install(["com.app.Test"], use_flatpak=True)
 
         self.assertFalse(result.success)
+        self.assertIn("Error: exec failed", result.message)
 
 
 # ---------------------------------------------------------------------------

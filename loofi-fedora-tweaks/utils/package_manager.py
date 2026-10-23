@@ -108,24 +108,23 @@ class PackageManager:
             return PackageResult(False, f"Error: {str(e)}")
 
     def _install_flatpak(self, packages: List[str]) -> PackageResult:
-        """Install packages using Flatpak."""
-        results = []
-        for pkg in packages:
-            # Assume flathub remote
-            cmd = ["flatpak", "install", "-y", "flathub", pkg]
-            try:
-                result = subprocess.run(
-                    cmd, capture_output=True, text=True, check=False, timeout=600
+        """Install packages using Flatpak in a single batch operation."""
+        # Assume flathub remote
+        cmd = ["flatpak", "install", "-y", "flathub"] + packages
+        try:
+            result = subprocess.run(
+                cmd, capture_output=True, text=True, check=False, timeout=600
+            )
+            if result.returncode == 0:
+                return PackageResult(
+                    True, f"Installed: {', '.join(packages)}", output=result.stdout
                 )
-                if result.returncode == 0:
-                    results.append(f"✓ {pkg}")
-                else:
-                    results.append(f"✗ {pkg}: {result.stderr[:50]}")
-            except (subprocess.SubprocessError, OSError) as e:
-                results.append(f"✗ {pkg}: {str(e)}")
-
-        success = all("✓" in r for r in results)
-        return PackageResult(success, "\n".join(results))
+            else:
+                return PackageResult(
+                    False, f"Failed to install: {result.stderr}", output=result.stderr
+                )
+        except (subprocess.SubprocessError, OSError) as e:
+            return PackageResult(False, f"Error: {str(e)}")
 
     def remove(self, packages: List[str]) -> PackageResult:
         """Remove one or more packages."""
