@@ -10,6 +10,7 @@ from unittest.mock import patch, MagicMock, mock_open
 sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-tweaks'))
 
 from services.hardware.battery import BatteryManager
+from utils.errors import CommandTimeoutError
 
 
 class TestBatteryManagerSetLimit(unittest.TestCase):
@@ -22,13 +23,23 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
     @patch('builtins.open', new_callable=mock_open)
     @patch('services.hardware.battery.os.makedirs')
     def test_set_limit_success_80(self, mock_makedirs, mock_file, mock_run):
-        """Setting limit to 80% succeeds through all steps."""
+        """Setting limit to 80% succeeds through all steps and writes correct files."""
         mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
         cmd, args = self.mgr.set_limit(80)
         self.assertEqual(cmd, "echo")
         self.assertIn("80%", args[0])
         # 4 subprocess calls: mv, daemon-reload, enable, tee
         self.assertEqual(mock_run.call_count, 4)
+
+        # Check file calls (config and systemd unit)
+        mock_file.assert_any_call(BatteryManager.CONFIG_PATH, "w")
+        mock_file.assert_any_call("/tmp/loofi-battery.service", "w")
+
+        handle = mock_file()
+        written = "".join(call.args[0] for call in handle.write.call_args_list)
+        self.assertIn("80", written)
+        self.assertIn("ConditionPathExists=", written)
+        self.assertIn("Restore Battery Charge Limit (80%)", written)
 
     @patch('services.hardware.battery.subprocess.run')
     @patch('builtins.open', new_callable=mock_open)
@@ -113,18 +124,34 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         self.assertIsNone(args)
 
     @patch('services.hardware.battery.subprocess.run')
-    @patch('builtins.open', side_effect=IOError("cannot write"))
+    @patch('builtins.open')
     @patch('services.hardware.battery.os.makedirs')
     def test_set_limit_config_write_failure_continues(self, mock_makedirs, mock_file, mock_run):
         """Config write failure logs but continues to service setup."""
-        # The open for config fails, but the service tmp open also fails
-        # since all open() calls are mocked with side_effect
-        # The function catches IOError on config, then tries to write tmp
-        # Since all opens fail, subprocess is never reached
+        tmp_handle = mock_open()()
+        mock_file.side_effect = [
+            IOError("cannot write config"),  # config write fails
+            tmp_handle,                       # tmp service file write succeeds
+        ]
+        mock_run.return_value = MagicMock(returncode=0, stdout='', stderr='')
         cmd, args = self.mgr.set_limit(80)
-        # Due to IOError on tmp file write, subprocess.run isn't called,
-        # so we end up in the except block
+        self.assertEqual(cmd, "echo")
+        self.assertIn("80%", args[0])
+        self.assertEqual(mock_run.call_count, 4)
+
+    @patch('services.hardware.battery.subprocess.run')
+    @patch('builtins.open')
+    @patch('services.hardware.battery.os.makedirs')
+    def test_set_limit_tmp_service_write_failure(self, mock_makedirs, mock_file, mock_run):
+        """Failure writing /tmp/loofi-battery.service returns None."""
+        mock_file.side_effect = [
+            mock_open()(),                 # config write succeeds
+            OSError("cannot write tmp"),   # tmp service write fails
+        ]
+        cmd, args = self.mgr.set_limit(80)
         self.assertIsNone(cmd)
+        self.assertIsNone(args)
+        mock_run.assert_not_called()
 
     @patch('services.hardware.battery.subprocess.run')
     @patch('services.hardware.battery.os.makedirs', side_effect=OSError("no dir"))
@@ -148,11 +175,18 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         )
 
     @patch("services.hardware.battery.os.path.exists")
+    def test_get_threshold_path_bat0(self, mock_exists):
+        """get_threshold_path finds BAT0 when it exists."""
+        mock_exists.side_effect = lambda p: "BAT0" in p
+        path = BatteryManager.get_threshold_path()
+        self.assertEqual(path, "/sys/class/power_supply/BAT0/charge_control_end_threshold")
+
+    @patch("services.hardware.battery.os.path.exists")
     def test_get_threshold_path_bat1(self, mock_exists):
         """get_threshold_path finds BAT1 if BAT0 does not exist."""
         mock_exists.side_effect = lambda p: "BAT1" in p
         path = BatteryManager.get_threshold_path()
-        self.assertIn("BAT1", path)
+        self.assertEqual(path, "/sys/class/power_supply/BAT1/charge_control_end_threshold")
 
     @patch("services.hardware.battery.os.path.exists")
     def test_get_threshold_path_fallback(self, mock_exists):
@@ -169,6 +203,12 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
         mock_exists.side_effect = None
         mock_exists.return_value = False
         self.assertFalse(BatteryManager.is_sysfs_supported())
+
+    @patch("services.hardware.battery.os.path.exists")
+    def test_is_sysfs_supported_bat1(self, mock_exists):
+        """is_sysfs_supported returns True when only BAT1 sysfs threshold node exists."""
+        mock_exists.side_effect = lambda p: "BAT1" in p
+        self.assertTrue(BatteryManager.is_sysfs_supported())
 
     @patch("services.hardware.battery.os.path.exists")
     def test_is_supported_ignores_unimplemented_hp_backend(self, mock_exists):
@@ -211,6 +251,22 @@ class TestBatteryManagerSetLimit(unittest.TestCase):
     def test_remove_service_subprocess_error(self, mock_execute):
         """remove_service handles SubprocessError gracefully."""
         mock_execute.side_effect = subprocess.SubprocessError("fail")
+        cmd, args = self.mgr.remove_service()
+        self.assertIsNone(cmd)
+        self.assertIsNone(args)
+
+    @patch("services.hardware.battery.PrivilegedCommand.execute_and_log")
+    def test_remove_service_timeout_error(self, mock_execute):
+        """remove_service handles CommandTimeoutError gracefully."""
+        mock_execute.side_effect = CommandTimeoutError("timed out")
+        cmd, args = self.mgr.remove_service()
+        self.assertIsNone(cmd)
+        self.assertIsNone(args)
+
+    @patch("services.hardware.battery.PrivilegedCommand.execute_and_log")
+    def test_remove_service_os_error(self, mock_execute):
+        """remove_service handles OSError gracefully."""
+        mock_execute.side_effect = OSError("permission denied")
         cmd, args = self.mgr.remove_service()
         self.assertIsNone(cmd)
         self.assertIsNone(args)
