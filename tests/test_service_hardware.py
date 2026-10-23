@@ -5,9 +5,7 @@ HardwareManager is already extensively tested in test_services_hardware_manager.
 and test_hardware_manager_deep.py.
 """
 
-import glob
 import os
-import subprocess
 import sys
 import unittest
 from unittest.mock import MagicMock, mock_open, patch
@@ -16,8 +14,7 @@ sys.path.insert(0, os.path.join(os.path.dirname(__file__), '..', 'loofi-fedora-t
 
 from services.hardware.battery import BatteryManager
 from services.hardware.disk import DiskManager, DiskUsage, LargeDirectory
-from services.hardware.temperature import TemperatureManager, TemperatureSensor, _classify_sensor, _read_sysfs_value, _read_millidegree
-
+from services.hardware.temperature import TemperatureManager, TemperatureSensor, _classify_sensor, _read_millidegree, _read_sysfs_value
 
 # ====================================================================================
 # BatteryManager Tests
@@ -516,6 +513,67 @@ class TestGetAllSensors(unittest.TestCase):
         result = TemperatureManager.get_all_sensors()
         self.assertEqual(result, [])
 
+    @patch('services.hardware.temperature._read_sysfs_value')
+    @patch('services.hardware.temperature.glob.glob')
+    def test_get_all_sensors_skips_inactive_gpu(self, mock_glob, mock_sysfs):
+        """Get all sensors skips GPU device if runtime_status is not active."""
+        mock_glob.return_value = ["/sys/class/hwmon/hwmon0"]
+        # Reads hwmon device name ("amdgpu"), then runtime status ("suspended")
+        mock_sysfs.side_effect = ["amdgpu", "suspended"]
+
+        result = TemperatureManager.get_all_sensors()
+        self.assertEqual(result, [])
+
+    @patch('services.hardware.temperature._read_sysfs_value')
+    @patch('services.hardware.temperature.glob.glob')
+    def test_get_all_sensors_handles_temp_glob_oserror(self, mock_glob, mock_sysfs):
+        """Get all sensors handles OSError when globbing temp input files."""
+        mock_glob.side_effect = [
+            ["/sys/class/hwmon/hwmon0"],
+            OSError("Permission denied")
+        ]
+        mock_sysfs.return_value = "coretemp"
+
+        result = TemperatureManager.get_all_sensors()
+        self.assertEqual(result, [])
+
+    @patch('services.hardware.temperature._read_millidegree')
+    @patch('services.hardware.temperature._read_sysfs_value')
+    @patch('services.hardware.temperature.glob.glob')
+    def test_get_all_sensors_label_fallback_and_missing_thresholds(self, mock_glob, mock_sysfs, mock_millidegree):
+        """Get all sensors falls back to default label and 0.0 thresholds when files are missing."""
+        mock_glob.side_effect = [
+            ["/sys/class/hwmon/hwmon0"],
+            ["/sys/class/hwmon/hwmon0/temp1_input"]
+        ]
+        # _read_sysfs_value called for 'name' ("coretemp"), then 'temp1_label' (None -> triggers fallback)
+        mock_sysfs.side_effect = ["coretemp", None]
+        # _read_millidegree called for 'temp1_input' (50.0), 'temp1_max' (None), 'temp1_crit' (None)
+        mock_millidegree.side_effect = [50.0, None, None]
+
+        result = TemperatureManager.get_all_sensors()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].name, "coretemp")
+        self.assertEqual(result[0].label, "coretemp temp1")
+        self.assertEqual(result[0].current, 50.0)
+        self.assertEqual(result[0].high, 0.0)
+        self.assertEqual(result[0].critical, 0.0)
+
+    @patch('services.hardware.temperature._read_millidegree')
+    @patch('services.hardware.temperature._read_sysfs_value')
+    @patch('services.hardware.temperature.glob.glob')
+    def test_get_all_sensors_skips_sensor_if_current_temp_none(self, mock_glob, mock_sysfs, mock_millidegree):
+        """Get all sensors skips temp input if _read_millidegree returns None."""
+        mock_glob.side_effect = [
+            ["/sys/class/hwmon/hwmon0"],
+            ["/sys/class/hwmon/hwmon0/temp1_input"]
+        ]
+        mock_sysfs.return_value = "coretemp"
+        mock_millidegree.return_value = None
+
+        result = TemperatureManager.get_all_sensors()
+        self.assertEqual(result, [])
+
 
 class TestGetCpuTemps(unittest.TestCase):
     """Tests for TemperatureManager.get_cpu_temps()."""
@@ -563,6 +621,115 @@ class TestGetGpuTemps(unittest.TestCase):
         mock_all.return_value = []
         result = TemperatureManager.get_gpu_temps()
         self.assertEqual(result, [])
+
+
+class TestGetDiskTemps(unittest.TestCase):
+    """Tests for TemperatureManager.get_disk_temps()."""
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_disk_temps_filters(self, mock_all):
+        """Get disk temps filters by sensor type."""
+        mock_all.return_value = [
+            TemperatureSensor(name="coretemp", label="Core 0", current=55.0, high=80.0, critical=100.0, sensor_type="cpu"),
+            TemperatureSensor(name="nvme", label="Composite", current=42.0, high=70.0, critical=80.0, sensor_type="disk"),
+            TemperatureSensor(name="drivetemp", label="Drive", current=38.0, high=60.0, critical=70.0, sensor_type="disk"),
+        ]
+        result = TemperatureManager.get_disk_temps()
+        self.assertEqual(len(result), 2)
+        self.assertEqual(result[0].sensor_type, "disk")
+        self.assertEqual(result[1].sensor_type, "disk")
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_disk_temps_empty(self, mock_all):
+        """Get disk temps handles no disk sensors."""
+        mock_all.return_value = []
+        result = TemperatureManager.get_disk_temps()
+        self.assertEqual(result, [])
+
+
+class TestGetHottest(unittest.TestCase):
+    """Tests for TemperatureManager.get_hottest()."""
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_hottest_none(self, mock_all):
+        """Get hottest returns None when no sensors are present."""
+        mock_all.return_value = []
+        result = TemperatureManager.get_hottest()
+        self.assertIsNone(result)
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_hottest_single(self, mock_all):
+        """Get hottest returns the single sensor when only one is present."""
+        sensor = TemperatureSensor(name="coretemp", label="Core 0", current=50.0, high=80.0, critical=100.0, sensor_type="cpu")
+        mock_all.return_value = [sensor]
+        result = TemperatureManager.get_hottest()
+        self.assertEqual(result, sensor)
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_hottest_multiple(self, mock_all):
+        """Get hottest returns the sensor with highest current temperature."""
+        sensor1 = TemperatureSensor(name="coretemp", label="Core 0", current=50.0, high=80.0, critical=100.0, sensor_type="cpu")
+        sensor2 = TemperatureSensor(name="amdgpu", label="GPU Edge", current=75.0, high=90.0, critical=110.0, sensor_type="gpu")
+        sensor3 = TemperatureSensor(name="nvme", label="Composite", current=42.0, high=70.0, critical=80.0, sensor_type="disk")
+        mock_all.return_value = [sensor1, sensor2, sensor3]
+        result = TemperatureManager.get_hottest()
+        self.assertEqual(result, sensor2)
+
+
+class TestGetHealthStatus(unittest.TestCase):
+    """Tests for TemperatureManager.get_health_status()."""
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_health_status_no_sensors(self, mock_all):
+        """No sensors returns ok status with appropriate message."""
+        mock_all.return_value = []
+        level, msg = TemperatureManager.get_health_status()
+        self.assertEqual(level, "ok")
+        self.assertIn("No temperature sensors detected", msg)
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_health_status_ok(self, mock_all):
+        """Normal temperatures return ok status with hottest info."""
+        mock_all.return_value = [
+            TemperatureSensor(name="coretemp", label="Core 0", current=55.0, high=80.0, critical=100.0, sensor_type="cpu"),
+            TemperatureSensor(name="amdgpu", label="GPU Edge", current=65.0, high=90.0, critical=110.0, sensor_type="gpu"),
+        ]
+        level, msg = TemperatureManager.get_health_status()
+        self.assertEqual(level, "ok")
+        self.assertIn("All temperatures normal", msg)
+        self.assertIn("GPU Edge at 65C", msg)
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_health_status_warning(self, mock_all):
+        """Sensor at or above high threshold triggers warning status."""
+        mock_all.return_value = [
+            TemperatureSensor(name="coretemp", label="Core 0", current=82.0, high=80.0, critical=100.0, sensor_type="cpu"),
+            TemperatureSensor(name="amdgpu", label="GPU Edge", current=65.0, high=90.0, critical=110.0, sensor_type="gpu"),
+        ]
+        level, msg = TemperatureManager.get_health_status()
+        self.assertEqual(level, "warning")
+        self.assertIn("High temperature on: Core 0: 82C (high: 80C)", msg)
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_health_status_critical(self, mock_all):
+        """Sensor at or above critical threshold triggers critical status."""
+        mock_all.return_value = [
+            TemperatureSensor(name="coretemp", label="Core 0", current=102.0, high=80.0, critical=100.0, sensor_type="cpu"),
+            TemperatureSensor(name="amdgpu", label="GPU Edge", current=65.0, high=90.0, critical=110.0, sensor_type="gpu"),
+        ]
+        level, msg = TemperatureManager.get_health_status()
+        self.assertEqual(level, "critical")
+        self.assertIn("Critical temperature on: Core 0: 102C (critical: 100C)", msg)
+
+    @patch('services.hardware.temperature.TemperatureManager.get_all_sensors')
+    def test_get_health_status_zero_thresholds_skipped(self, mock_all):
+        """Sensors with zero thresholds (0.0) are skipped during check."""
+        mock_all.return_value = [
+            TemperatureSensor(name="coretemp", label="Core 0", current=95.0, high=0.0, critical=0.0, sensor_type="cpu"),
+        ]
+        level, msg = TemperatureManager.get_health_status()
+        self.assertEqual(level, "ok")
+        self.assertIn("All temperatures normal", msg)
 
 
 if __name__ == '__main__':
