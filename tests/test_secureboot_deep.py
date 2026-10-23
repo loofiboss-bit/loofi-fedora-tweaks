@@ -11,6 +11,7 @@ Covers:
 """
 
 import os
+import subprocess
 import sys
 import unittest
 from unittest.mock import MagicMock, patch
@@ -66,6 +67,50 @@ class TestGetStatus(unittest.TestCase):
         status = SecureBootManager.get_status()
         self.assertFalse(status.secure_boot_enabled)
         self.assertIn("Error", status.status_message)
+
+    @patch("subprocess.run")
+    def test_list_enrolled_exception(self, mock_run):
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="SecureBoot enabled\n"),
+            OSError("failed to list enrolled MOKs"),
+            MagicMock(returncode=0, stdout=""),
+        ]
+        status = SecureBootManager.get_status()
+        self.assertTrue(status.secure_boot_enabled)
+        self.assertFalse(status.mok_enrolled)
+        self.assertFalse(status.pending_mok)
+
+    @patch("subprocess.run")
+    def test_list_new_exception(self, mock_run):
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="SecureBoot enabled\n"),
+            MagicMock(returncode=0, stdout="[key #1]\n"),
+            subprocess.SubprocessError("failed to list pending MOKs"),
+        ]
+        status = SecureBootManager.get_status()
+        self.assertTrue(status.secure_boot_enabled)
+        self.assertTrue(status.mok_enrolled)
+        self.assertFalse(status.pending_mok)
+
+    @patch("subprocess.run", side_effect=subprocess.TimeoutExpired(cmd="mokutil", timeout=15))
+    def test_timeout_expired_handling(self, mock_run):
+        status = SecureBootManager.get_status()
+        self.assertFalse(status.secure_boot_enabled)
+        self.assertFalse(status.mok_enrolled)
+        self.assertFalse(status.pending_mok)
+        self.assertIn("Error checking status", status.status_message)
+
+    @patch("subprocess.run")
+    def test_list_enrolled_and_new_nonzero_returncode(self, mock_run):
+        mock_run.side_effect = [
+            MagicMock(returncode=0, stdout="SecureBoot enabled\n"),
+            MagicMock(returncode=1, stdout="some text"),
+            MagicMock(returncode=1, stdout="some text"),
+        ]
+        status = SecureBootManager.get_status()
+        self.assertTrue(status.secure_boot_enabled)
+        self.assertFalse(status.mok_enrolled)
+        self.assertFalse(status.pending_mok)
 
 
 class TestGenerateKey(unittest.TestCase):
