@@ -11,9 +11,12 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import Callable, Mapping, Sequence
+from typing import TYPE_CHECKING, Callable, Mapping, Sequence
 
 from core.catalog_models import CapabilityState, NativeHandoffId
+
+if TYPE_CHECKING:
+    from core.platform.profile import PlatformProfile
 
 
 @dataclass(frozen=True)
@@ -167,7 +170,7 @@ class NativeHandoffService:
         self,
         handoff_id: NativeHandoffId | str,
         *,
-        profile: "PlatformProfile | None" = None,
+        profile: PlatformProfile | None = None,
     ) -> NativeHandoffAvailability:
         """Probe a target using the detected desktop capability.
 
@@ -276,7 +279,7 @@ class NativeHandoffService:
         self,
         handoff_id: NativeHandoffId | str,
         *,
-        profile: "PlatformProfile | None" = None,
+        profile: PlatformProfile | None = None,
     ) -> NativeHandoffLaunch | None:
         """Revalidate a target and return its fixed, ephemeral launch vector."""
         availability = self.availability(handoff_id, profile=profile)
