@@ -126,6 +126,29 @@ class TestBatterySetLimit(unittest.TestCase):
 # ====================================================================================
 
 
+class TestDiskDataClasses(unittest.TestCase):
+    """Tests for DiskUsage and LargeDirectory dataclasses."""
+
+    def test_disk_usage_human_properties(self):
+        """DiskUsage human-readable properties format correctly."""
+        usage = DiskUsage(
+            mount_point="/mnt",
+            total_bytes=1073741824,
+            used_bytes=536870912,
+            free_bytes=536870912,
+            percent_used=50.0,
+            filesystem="/dev/sdb1",
+        )
+        self.assertEqual(usage.total_human, "1.0 GB")
+        self.assertEqual(usage.used_human, "512.0 MB")
+        self.assertEqual(usage.free_human, "512.0 MB")
+
+    def test_large_directory_human_property(self):
+        """LargeDirectory human-readable size property formats correctly."""
+        large_dir = LargeDirectory(path="/var/log", size_bytes=1048576)
+        self.assertEqual(large_dir.size_human, "1.0 MB")
+
+
 class TestBytesToHuman(unittest.TestCase):
     """Tests for DiskManager.bytes_to_human()."""
 
@@ -148,6 +171,10 @@ class TestBytesToHuman(unittest.TestCase):
     def test_terabytes(self):
         """Terabytes display correctly."""
         self.assertEqual(DiskManager.bytes_to_human(1099511627776), "1.0 TB")
+
+    def test_petabytes(self):
+        """Petabytes display correctly for very large byte values."""
+        self.assertEqual(DiskManager.bytes_to_human(1125899906842624), "1.0 PB")
 
 
 class TestGetDiskUsage(unittest.TestCase):
@@ -209,6 +236,34 @@ class TestGetAllMountPoints(unittest.TestCase):
         # Should only include / and skip virtual filesystems
         self.assertEqual(len(result), 1)
         self.assertEqual(result[0].mount_point, "/")
+
+    @patch('services.hardware.disk.subprocess.run')
+    def test_get_all_mount_points_includes_removable_skips_boot(self, mock_run):
+        """Get all mount points includes /run/media mounts and skips /boot, /boot/efi."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Mounted on               Size  Used Avail Use% Filesystem\n"
+                   "/run/media/user/usb 64000000 32000000 32000000  50% /dev/sdb1\n"
+                   "/boot              10000000 5000000 5000000  50% /dev/sda1\n"
+                   "/boot/efi          10000000 5000000 5000000  50% /dev/sda2\n"
+        )
+        result = DiskManager.get_all_mount_points()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].mount_point, "/run/media/user/usb")
+
+    @patch('services.hardware.disk.subprocess.run')
+    def test_get_all_mount_points_invalid_formatting(self, mock_run):
+        """Get all mount points handles malformed df lines gracefully."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="Mounted on               Size  Used Avail Use% Filesystem\n"
+                   "/invalid_line_too_few_parts\n"
+                   "/mnt not_an_int 5000 5000 50% /dev/sdc1\n"
+                   "/valid                  100000000 50000000 50000000  50% /dev/sda1\n"
+        )
+        result = DiskManager.get_all_mount_points()
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].mount_point, "/valid")
 
     @patch('services.hardware.disk.subprocess.run')
     def test_get_all_mount_points_subprocess_error(self, mock_run):
@@ -302,6 +357,26 @@ class TestFindLargeDirectories(unittest.TestCase):
         mock_run.return_value = MagicMock(returncode=1, stdout="")
         result = DiskManager.find_large_directories("/root")
         self.assertEqual(result, [])
+
+    @patch('services.hardware.disk.subprocess.run')
+    def test_find_large_directories_returncode_error(self, mock_run):
+        """Find large directories handles returncodes greater than 1."""
+        mock_run.return_value = MagicMock(returncode=2, stdout="some error output")
+        result = DiskManager.find_large_directories("/home")
+        self.assertEqual(result, [])
+
+    @patch('services.hardware.disk.subprocess.run')
+    def test_find_large_directories_malformed_output(self, mock_run):
+        """Find large directories skips malformed du output lines."""
+        mock_run.return_value = MagicMock(
+            returncode=0,
+            stdout="line_without_tab\n"
+                   "invalid_size\t/home/user/invalid\n"
+                   "1000\t/home/user/valid\n"
+        )
+        result = DiskManager.find_large_directories("/home/user")
+        self.assertEqual(len(result), 1)
+        self.assertEqual(result[0].path, "/home/user/valid")
 
     @patch('services.hardware.disk.subprocess.run')
     def test_find_large_directories_excludes_root(self, mock_run):
