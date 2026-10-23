@@ -6,7 +6,6 @@ Migrated from utils/cloud_sync.py in v2.0.0 "Evolution".
 
 import json
 import logging
-import urllib.error
 import urllib.request
 from pathlib import Path
 from typing import Optional
