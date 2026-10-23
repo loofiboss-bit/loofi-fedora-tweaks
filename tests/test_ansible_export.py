@@ -207,16 +207,18 @@ class TestAnsibleExporter(unittest.TestCase):
     def test_get_gnome_settings_collects_only_successful_keys(
         self, mock_which, mock_run
     ):
-        """GNOME settings parser keeps only successful lookups."""
-        mock_run.side_effect = [
-            MagicMock(returncode=0, stdout="'Adwaita-dark'\n"),
-            MagicMock(returncode=1, stdout=""),
-            MagicMock(returncode=0, stdout="'Bibata'\n"),
-            MagicMock(returncode=1, stdout=""),
-            MagicMock(returncode=1, stdout=""),
-            MagicMock(returncode=1, stdout=""),
-            MagicMock(returncode=1, stdout=""),
-        ]
+        """GNOME settings parser keeps only requested keys found in list-recursively output."""
+        def side_effect(cmd, **kwargs):
+            schema = cmd[2]
+            if schema == "org.gnome.desktop.interface":
+                stdout = (
+                    "org.gnome.desktop.interface gtk-theme 'Adwaita-dark'\n"
+                    "org.gnome.desktop.interface cursor-theme 'Bibata'\n"
+                )
+                return MagicMock(returncode=0, stdout=stdout)
+            return MagicMock(returncode=1, stdout="")
+
+        mock_run.side_effect = side_effect
         settings = AnsibleExporter._get_gnome_settings()
         self.assertIn("org.gnome.desktop.interface/gtk-theme", settings)
         self.assertIn("org.gnome.desktop.interface/cursor-theme", settings)
@@ -231,36 +233,44 @@ class TestAnsibleExporter(unittest.TestCase):
     @patch("core.export.ansible_export.subprocess.run")
     @patch("core.export.ansible_export.cached_which", return_value="/usr/bin/gsettings")
     def test_get_gnome_settings_per_key_exception(self, mock_which, mock_run):
-        """GNOME settings skips keys that raise exceptions and continues."""
-        mock_run.side_effect = [
-            subprocess.SubprocessError("gsettings timeout"),  # gtk-theme
-            MagicMock(returncode=0, stdout="'Papirus'\n"),  # icon-theme
-            OSError("broken"),  # cursor-theme
-            MagicMock(returncode=0, stdout="'prefer-dark'\n"),  # color-scheme
-            MagicMock(returncode=1, stdout=""),  # font-name
-            MagicMock(returncode=1, stdout=""),  # monospace-font-name
-            MagicMock(returncode=1, stdout=""),  # button-layout
-        ]
+        """GNOME settings skips schemas that raise exceptions and continues."""
+        def side_effect(cmd, **kwargs):
+            schema = cmd[2]
+            if schema == "org.gnome.desktop.interface":
+                raise subprocess.SubprocessError("gsettings timeout")
+            elif schema == "org.gnome.desktop.wm.preferences":
+                stdout = "org.gnome.desktop.wm.preferences button-layout 'appmenu:close'\n"
+                return MagicMock(returncode=0, stdout=stdout)
+            return MagicMock(returncode=1, stdout="")
+
+        mock_run.side_effect = side_effect
         settings = AnsibleExporter._get_gnome_settings()
         self.assertNotIn("org.gnome.desktop.interface/gtk-theme", settings)
-        self.assertIn("org.gnome.desktop.interface/icon-theme", settings)
-        self.assertNotIn("org.gnome.desktop.interface/cursor-theme", settings)
-        self.assertIn("org.gnome.desktop.interface/color-scheme", settings)
-        self.assertEqual(len(settings), 2)
+        self.assertIn("org.gnome.desktop.wm.preferences/button-layout", settings)
+        self.assertEqual(len(settings), 1)
 
     @patch("core.export.ansible_export.subprocess.run")
     @patch("core.export.ansible_export.cached_which", return_value="/usr/bin/gsettings")
     def test_get_gnome_settings_all_keys_succeed(self, mock_which, mock_run):
-        """GNOME settings collects all 7 keys when all succeed."""
-        mock_run.side_effect = [
-            MagicMock(returncode=0, stdout="'Adwaita'\n"),
-            MagicMock(returncode=0, stdout="'Adwaita'\n"),
-            MagicMock(returncode=0, stdout="'default'\n"),
-            MagicMock(returncode=0, stdout="'default'\n"),
-            MagicMock(returncode=0, stdout="'Cantarell 11'\n"),
-            MagicMock(returncode=0, stdout="'Source Code Pro 10'\n"),
-            MagicMock(returncode=0, stdout="'appmenu:close'\n"),
-        ]
+        """GNOME settings collects all 7 keys when all succeed via batch list-recursively."""
+        def side_effect(cmd, **kwargs):
+            schema = cmd[2]
+            if schema == "org.gnome.desktop.interface":
+                stdout = (
+                    "org.gnome.desktop.interface gtk-theme 'Adwaita'\n"
+                    "org.gnome.desktop.interface icon-theme 'Adwaita'\n"
+                    "org.gnome.desktop.interface cursor-theme 'default'\n"
+                    "org.gnome.desktop.interface color-scheme 'default'\n"
+                    "org.gnome.desktop.interface font-name 'Cantarell 11'\n"
+                    "org.gnome.desktop.interface monospace-font-name 'Source Code Pro 10'\n"
+                )
+                return MagicMock(returncode=0, stdout=stdout)
+            elif schema == "org.gnome.desktop.wm.preferences":
+                stdout = "org.gnome.desktop.wm.preferences button-layout 'appmenu:close'\n"
+                return MagicMock(returncode=0, stdout=stdout)
+            return MagicMock(returncode=1, stdout="")
+
+        mock_run.side_effect = side_effect
         settings = AnsibleExporter._get_gnome_settings()
         self.assertEqual(len(settings), 7)
         self.assertIn("org.gnome.desktop.wm.preferences/button-layout", settings)
@@ -269,9 +279,14 @@ class TestAnsibleExporter(unittest.TestCase):
     @patch("core.export.ansible_export.cached_which", return_value="/usr/bin/gsettings")
     def test_get_gnome_settings_strips_quotes(self, mock_which, mock_run):
         """GNOME settings strips surrounding single quotes from values."""
-        mock_run.side_effect = [
-            MagicMock(returncode=0, stdout="'Adwaita-dark'\n"),
-        ] + [MagicMock(returncode=1, stdout="")] * 6
+        def side_effect(cmd, **kwargs):
+            schema = cmd[2]
+            if schema == "org.gnome.desktop.interface":
+                stdout = "org.gnome.desktop.interface gtk-theme 'Adwaita-dark'\n"
+                return MagicMock(returncode=0, stdout=stdout)
+            return MagicMock(returncode=1, stdout="")
+
+        mock_run.side_effect = side_effect
         settings = AnsibleExporter._get_gnome_settings()
         self.assertEqual(
             settings["org.gnome.desktop.interface/gtk-theme"], "Adwaita-dark"
