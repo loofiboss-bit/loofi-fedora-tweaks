@@ -47,6 +47,29 @@ class TestBytesToHuman(unittest.TestCase):
         self.assertEqual(ProcessManager.bytes_to_human(0), "0.0 B")
 
 
+class TestSysconf(unittest.TestCase):
+
+    @patch("os.sysconf", return_value=100)
+    def test_sysconf_success(self, mock_sysconf):
+        self.assertEqual(ProcessManager._sysconf("SC_CLK_TCK", 100), 100)
+
+    @patch("os.sysconf", side_effect=OSError)
+    def test_sysconf_os_error(self, mock_sysconf):
+        self.assertEqual(ProcessManager._sysconf("SC_CLK_TCK", 100), 100)
+
+    @patch("os.sysconf", side_effect=ValueError)
+    def test_sysconf_value_error(self, mock_sysconf):
+        self.assertEqual(ProcessManager._sysconf("SC_CLK_TCK", 100), 100)
+
+    @patch("os.sysconf", side_effect=TypeError)
+    def test_sysconf_type_error(self, mock_sysconf):
+        self.assertEqual(ProcessManager._sysconf("SC_CLK_TCK", 100), 100)
+
+    def test_sysconf_not_callable(self):
+        with patch.object(os, "sysconf", "not_a_callable"):
+            self.assertEqual(ProcessManager._sysconf("SC_CLK_TCK", 100), 100)
+
+
 class TestGetClockTicks(unittest.TestCase):
 
     @patch("os.sysconf", return_value=100)
@@ -126,6 +149,11 @@ class TestReadProcStat(unittest.TestCase):
         self.assertIsNotNone(result)
         self.assertEqual(result["name"], "name with spaces")
 
+    @patch("builtins.open", mock_open(read_data="1 (bash) S 1 1 1 0 0 0 100 0 0 0 invalid_utime 50 0 0 20 0 1 0 1000 50000 1000"))
+    def test_invalid_integer_fields(self):
+        result = ProcessManager._read_proc_stat(1)
+        self.assertIsNone(result)
+
 
 class TestReadProcStatusUid(unittest.TestCase):
 
@@ -140,6 +168,21 @@ class TestReadProcStatusUid(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data="Name:\tbash\n"))
     def test_no_uid_line(self):
+        uid = ProcessManager._read_proc_status_uid(1)
+        self.assertIsNone(uid)
+
+    @patch("builtins.open", mock_open(read_data="Uid:\tinvalid_uid\n"))
+    def test_invalid_uid_format(self):
+        uid = ProcessManager._read_proc_status_uid(1)
+        self.assertIsNone(uid)
+
+    @patch("builtins.open", side_effect=PermissionError)
+    def test_permission_error(self, mock_file):
+        uid = ProcessManager._read_proc_status_uid(1)
+        self.assertIsNone(uid)
+
+    @patch("builtins.open", side_effect=ProcessLookupError)
+    def test_process_lookup_error(self, mock_file):
         uid = ProcessManager._read_proc_status_uid(1)
         self.assertIsNone(uid)
 
@@ -159,6 +202,16 @@ class TestReadProcCmdline(unittest.TestCase):
 
     @patch("builtins.open", mock_open(read_data=b""))
     def test_empty(self):
+        cmd = ProcessManager._read_proc_cmdline(1)
+        self.assertEqual(cmd, "")
+
+    @patch("builtins.open", side_effect=PermissionError)
+    def test_permission_error(self, mock_file):
+        cmd = ProcessManager._read_proc_cmdline(1)
+        self.assertEqual(cmd, "")
+
+    @patch("builtins.open", side_effect=ProcessLookupError)
+    def test_process_lookup_error(self, mock_file):
         cmd = ProcessManager._read_proc_cmdline(1)
         self.assertEqual(cmd, "")
 
@@ -305,6 +358,104 @@ class TestGetProcessCount(unittest.TestCase):
     def test_file_not_found(self, mock_listdir, mock_open_fn):
         counts = ProcessManager.get_process_count()
         self.assertEqual(counts["total"], 0)
+
+    @patch("builtins.open")
+    @patch("os.listdir", return_value=["10", "11", "12"])
+    def test_sleeping_and_other_states(self, mock_listdir, mock_open_fn):
+        # Test D (uninterruptible sleep), I (idle) and unknown state
+        mock_open_fn.side_effect = [
+            MagicMock(__enter__=lambda s: MagicMock(read=lambda: "10 (disk) D rest..."), __exit__=MagicMock(return_value=False)),
+            MagicMock(__enter__=lambda s: MagicMock(read=lambda: "11 (idle) I rest..."), __exit__=MagicMock(return_value=False)),
+            MagicMock(__enter__=lambda s: MagicMock(read=lambda: "12 (other) T rest..."), __exit__=MagicMock(return_value=False)),
+        ]
+        counts = ProcessManager.get_process_count()
+        self.assertEqual(counts["total"], 3)
+        self.assertEqual(counts["sleeping"], 2)
+
+
+class TestGetAllProcesses(unittest.TestCase):
+
+    def setUp(self):
+        ProcessManager._prev_snapshot = {}
+        ProcessManager._prev_snapshot_time = 0.0
+
+    @patch.object(ProcessManager, "_get_clock_ticks", return_value=100)
+    @patch.object(ProcessManager, "_get_total_memory", return_value=1024 * 1024 * 100)
+    @patch.object(ProcessManager, "_get_uid_user_map", return_value={1000: "user1000"})
+    @patch("os.cpu_count", return_value=2)
+    @patch("os.listdir", return_value=["100", "200", "300", "non_pid"])
+    @patch.object(ProcessManager, "_read_proc_stat")
+    @patch.object(ProcessManager, "_read_proc_status_uid")
+    @patch.object(ProcessManager, "_read_proc_cmdline")
+    @patch("time.monotonic")
+    def test_get_all_processes_cpu_calculation_and_fallbacks(
+        self,
+        mock_time,
+        mock_cmdline,
+        mock_uid,
+        mock_stat,
+        mock_listdir,
+        mock_cpu_count,
+        mock_uid_map,
+        mock_total_mem,
+        mock_clock_ticks,
+    ):
+        # Initial call snapshot time = 100.0
+        mock_time.return_value = 100.0
+        mock_stat.side_effect = lambda pid: {
+            100: {"name": "proc100", "state": "R", "utime": 100, "stime": 100, "nice": 0, "num_threads": 1, "rss": 10},
+            200: {"name": "proc200", "state": "S", "utime": 50, "stime": 50, "nice": 5, "num_threads": 2, "rss": 20},
+            300: None,  # Test unreadable process skipped
+        }.get(pid)
+
+        mock_uid.side_effect = lambda pid: {
+            100: 1000,    # known user
+            200: 1001,    # unknown UID in map -> fallback to string "1001"
+        }.get(pid)
+
+        mock_cmdline.side_effect = lambda pid: {
+            100: "proc100 --arg",
+            200: "",      # empty cmdline -> fallback to "[proc200]"
+        }.get(pid)
+
+        procs1 = ProcessManager.get_all_processes()
+        self.assertEqual(len(procs1), 2)
+        p1 = procs1[0]
+        self.assertEqual(p1.pid, 100)
+        self.assertEqual(p1.user, "user1000")
+        self.assertEqual(p1.cpu_percent, 0.0)  # First call is 0.0
+
+        p2 = procs1[1]
+        self.assertEqual(p2.pid, 200)
+        self.assertEqual(p2.user, "1001")
+        self.assertEqual(p2.command, "[proc200]")
+        self.assertEqual(p2.cpu_percent, 0.0)
+
+        # Second call 10 seconds later
+        mock_time.return_value = 110.0
+        mock_stat.side_effect = lambda pid: {
+            100: {"name": "proc100", "state": "R", "utime": 300, "stime": 300, "nice": 0, "num_threads": 1, "rss": 10},
+            200: {"name": "proc200", "state": "S", "utime": 50, "stime": 50, "nice": 5, "num_threads": 2, "rss": 20},
+        }.get(pid)
+
+        # Process 100: delta cpu_time = (600 - 200) / 100 = 4s over 10s elapsed -> (4/10)*100 = 40.0%
+        procs2 = ProcessManager.get_all_processes()
+        p1_call2 = next(p for p in procs2 if p.pid == 100)
+        self.assertEqual(p1_call2.cpu_percent, 40.0)
+
+    @patch("os.listdir", side_effect=OSError)
+    def test_get_all_processes_os_error(self, mock_listdir):
+        procs = ProcessManager.get_all_processes()
+        self.assertEqual(procs, [])
+
+    @patch.object(ProcessManager, "_read_proc_stat")
+    @patch.object(ProcessManager, "_read_proc_status_uid", return_value=None)
+    @patch("os.listdir", return_value=["100"])
+    def test_get_all_processes_none_uid(self, mock_listdir, mock_uid, mock_stat):
+        mock_stat.return_value = {"name": "proc100", "state": "R", "utime": 100, "stime": 100, "nice": 0, "num_threads": 1, "rss": 10}
+        procs = ProcessManager.get_all_processes()
+        self.assertEqual(len(procs), 1)
+        self.assertEqual(procs[0].user, "unknown")
 
 
 class TestGetTopByMetric(unittest.TestCase):
