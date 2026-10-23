@@ -170,7 +170,7 @@ class NativeHandoffService:
         self,
         handoff_id: NativeHandoffId | str,
         *,
-        profile: "PlatformProfile | None" = None,
+        profile: PlatformProfile | None = None,
     ) -> NativeHandoffAvailability:
         """Probe a target using the detected desktop capability.
 
@@ -279,7 +279,7 @@ class NativeHandoffService:
         self,
         handoff_id: NativeHandoffId | str,
         *,
-        profile: "PlatformProfile | None" = None,
+        profile: PlatformProfile | None = None,
     ) -> NativeHandoffLaunch | None:
         """Revalidate a target and return its fixed, ephemeral launch vector."""
         availability = self.availability(handoff_id, profile=profile)
