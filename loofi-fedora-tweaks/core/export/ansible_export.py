@@ -127,19 +127,29 @@ class AnsibleExporter:
             ("org.gnome.desktop.wm.preferences", "button-layout"),
         ]
 
+        # Group keys by schema to reduce subprocess spawn overhead
+        schema_target_keys: dict[str, set[str]] = {}
         for schema, key in gsettings_keys:
+            schema_target_keys.setdefault(schema, set()).add(key)
+
+        for schema, target_keys in schema_target_keys.items():
             try:
                 result = subprocess.run(
-                    ["gsettings", "get", schema, key],
+                    ["gsettings", "list-recursively", schema],
                     capture_output=True,
                     text=True,
                     timeout=5,
                 )
                 if result.returncode == 0:
-                    value = result.stdout.strip().strip("'")
-                    settings[f"{schema}/{key}"] = value
+                    for line in result.stdout.splitlines():
+                        parts = line.split(maxsplit=2)
+                        if len(parts) == 3:
+                            line_schema, line_key, raw_val = parts
+                            if line_schema == schema and line_key in target_keys:
+                                value = raw_val.strip().strip("'")
+                                settings[f"{schema}/{line_key}"] = value
             except (subprocess.SubprocessError, OSError) as e:
-                logger.debug("Failed to read gsetting %s/%s: %s", schema, key, e)
+                logger.debug("Failed to read gsettings schema %s: %s", schema, e)
 
         return settings
 
