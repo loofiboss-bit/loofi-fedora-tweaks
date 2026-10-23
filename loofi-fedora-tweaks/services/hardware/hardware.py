@@ -380,6 +380,96 @@ done
     # ==================== AI HARDWARE ACCELERATION ====================
 
     @classmethod
+    def _check_cuda(cls, caps: dict) -> None:
+        """Check for NVIDIA CUDA hardware acceleration."""
+        if not cached_which("nvidia-smi"):
+            return
+        try:
+            result = subprocess.run(
+                ["nvidia-smi", "-L"],
+                capture_output=True,
+                text=True,
+                timeout=10
+            )
+            if result.returncode == 0 and "GPU" in result.stdout:
+                caps["cuda"] = True
+                lines = result.stdout.strip().split("\n")
+                if lines:
+                    caps["details"]["nvidia_gpu"] = lines[0].strip()
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
+            logger.debug("nvidia-smi check failed: %s", e)
+
+    @classmethod
+    def _check_rocm(cls, caps: dict) -> None:
+        """Check for AMD ROCm hardware acceleration."""
+        if cached_which("rocminfo"):
+            try:
+                result = subprocess.run(
+                    ["rocminfo"],
+                    capture_output=True,
+                    text=True,
+                    timeout=15
+                )
+                if result.returncode == 0 and "Agent" in result.stdout:
+                    caps["rocm"] = True
+                    caps["details"]["rocm_available"] = True
+            except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
+                logger.debug("rocminfo check failed: %s", e)
+
+        if not caps["rocm"] and cached_which("hipconfig"):
+            try:
+                result = subprocess.run(
+                    ["hipconfig", "--platform"],
+                    capture_output=True,
+                    text=True,
+                    timeout=10
+                )
+                if result.returncode == 0 and "amd" in result.stdout.lower():
+                    caps["rocm"] = True
+            except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
+                logger.debug("hipconfig check failed: %s", e)
+
+    @classmethod
+    def _check_intel_npu(cls, caps: dict) -> None:
+        """Check for Intel NPU acceleration."""
+        try:
+            accel_devices = glob.glob("/dev/accel/*")
+            if accel_devices:
+                caps["npu_intel"] = True
+                caps["details"]["npu_devices"] = accel_devices
+        except OSError as e:
+            logger.debug("NPU device check failed: %s", e)
+
+        npu_path = "/sys/class/misc/intel_vpu"
+        if os.path.exists(npu_path):
+            caps["npu_intel"] = True
+
+    @classmethod
+    def _check_amd_npu(cls, caps: dict) -> None:
+        """Check for AMD Ryzen AI NPU."""
+        xdna_path = "/sys/class/amdxdna"
+        if os.path.exists(xdna_path):
+            caps["npu_amd"] = True
+            caps["details"]["amd_xdna"] = True
+
+    @classmethod
+    def _check_npu_modules(cls, caps: dict) -> None:
+        """Check loaded kernel modules for NPU drivers."""
+        try:
+            result = subprocess.run(
+                ["lsmod"],
+                capture_output=True,
+                text=True,
+                timeout=5
+            )
+            if "intel_vpu" in result.stdout:
+                caps["npu_intel"] = True
+            if "amdxdna" in result.stdout:
+                caps["npu_amd"] = True
+        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
+            logger.debug("lsmod NPU check failed: %s", e)
+
+    @classmethod
     def get_ai_capabilities(cls) -> dict:
         """
         Detect hardware acceleration support for AI workloads.
@@ -399,88 +489,11 @@ done
             "details": {}
         }
 
-        # 1. Check NVIDIA CUDA
-        if cached_which("nvidia-smi"):
-            try:
-                result = subprocess.run(
-                    ["nvidia-smi", "-L"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-                if result.returncode == 0 and "GPU" in result.stdout:
-                    caps["cuda"] = True
-                    # Extract GPU name
-                    lines = result.stdout.strip().split("\n")
-                    if lines:
-                        caps["details"]["nvidia_gpu"] = lines[0].strip()
-            except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
-                logger.debug("nvidia-smi check failed: %s", e)
-
-        # 2. Check AMD ROCm
-        if cached_which("rocminfo"):
-            try:
-                result = subprocess.run(
-                    ["rocminfo"],
-                    capture_output=True,
-                    text=True,
-                    timeout=15
-                )
-                if result.returncode == 0 and "Agent" in result.stdout:
-                    caps["rocm"] = True
-                    caps["details"]["rocm_available"] = True
-            except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
-                logger.debug("rocminfo check failed: %s", e)
-
-        # Alternative AMD check via hip
-        if not caps["rocm"] and cached_which("hipconfig"):
-            try:
-                result = subprocess.run(
-                    ["hipconfig", "--platform"],
-                    capture_output=True,
-                    text=True,
-                    timeout=10
-                )
-                if result.returncode == 0 and "amd" in result.stdout.lower():
-                    caps["rocm"] = True
-            except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
-                logger.debug("hipconfig check failed: %s", e)
-
-        # 3. Check Intel NPU (Core Ultra / Meteor Lake)
-        # NPUs appear in /dev/accel/ on newer kernels (6.5+)
-        try:
-            accel_devices = glob.glob("/dev/accel/*")
-            if accel_devices:
-                caps["npu_intel"] = True
-                caps["details"]["npu_devices"] = accel_devices
-        except OSError as e:
-            logger.debug("NPU device check failed: %s", e)
-
-        # Alternative Intel NPU check via sysfs
-        npu_path = "/sys/class/misc/intel_vpu"
-        if os.path.exists(npu_path):
-            caps["npu_intel"] = True
-
-        # 4. Check AMD Ryzen AI NPU (XDNA)
-        xdna_path = "/sys/class/amdxdna"
-        if os.path.exists(xdna_path):
-            caps["npu_amd"] = True
-            caps["details"]["amd_xdna"] = True
-
-        # Check for NPU driver module
-        try:
-            result = subprocess.run(
-                ["lsmod"],
-                capture_output=True,
-                text=True,
-                timeout=5
-            )
-            if "intel_vpu" in result.stdout:
-                caps["npu_intel"] = True
-            if "amdxdna" in result.stdout:
-                caps["npu_amd"] = True
-        except (subprocess.TimeoutExpired, subprocess.SubprocessError, OSError) as e:
-            logger.debug("lsmod NPU check failed: %s", e)
+        cls._check_cuda(caps)
+        cls._check_rocm(caps)
+        cls._check_intel_npu(caps)
+        cls._check_amd_npu(caps)
+        cls._check_npu_modules(caps)
 
         return caps
 
