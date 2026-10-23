@@ -11,7 +11,20 @@ from unittest.mock import MagicMock, patch
 
 sys.path.append(os.path.join(os.path.dirname(__file__), "..", "loofi-fedora-tweaks"))
 
-from utils.ansible_export import AnsibleExporter, Result
+from utils.ansible_export import AnsibleExporter, PlaybookOptions, Result
+
+
+class TestPlaybookOptions(unittest.TestCase):
+    """Tests for PlaybookOptions dataclass."""
+
+    def test_playbook_options_defaults(self):
+        """PlaybookOptions has expected defaults."""
+        opts = PlaybookOptions()
+        self.assertTrue(opts.include_packages)
+        self.assertTrue(opts.include_flatpaks)
+        self.assertTrue(opts.include_settings)
+        self.assertTrue(opts.include_repos)
+        self.assertEqual(opts.playbook_name, "Loofi Fedora Configuration")
 
 
 class TestResult(unittest.TestCase):
@@ -435,6 +448,45 @@ class TestAnsibleExporter(unittest.TestCase):
         content = AnsibleExporter.generate_playbook(playbook_name="My Custom Setup")
         self.assertIn("My Custom Setup", content)
 
+    @patch("utils.ansible_export.AnsibleExporter._get_enabled_repos", return_value=[])
+    @patch("utils.ansible_export.AnsibleExporter._get_gnome_settings", return_value={})
+    @patch("utils.ansible_export.AnsibleExporter._get_flatpak_apps", return_value=[])
+    @patch(
+        "utils.ansible_export.AnsibleExporter._get_installed_packages", return_value=[]
+    )
+    def test_generate_playbook_with_options_object(
+        self, mock_pkgs, mock_flatpaks, mock_settings, mock_repos
+    ):
+        """Playbook accepts PlaybookOptions object directly."""
+        options = PlaybookOptions(
+            include_packages=False,
+            include_flatpaks=False,
+            include_settings=False,
+            include_repos=False,
+            playbook_name="Options Object Playbook",
+        )
+        content = AnsibleExporter.generate_playbook(options=options)
+        self.assertIn("Options Object Playbook", content)
+        mock_pkgs.assert_not_called()
+        mock_flatpaks.assert_not_called()
+        mock_settings.assert_not_called()
+
+    @patch("utils.ansible_export.AnsibleExporter._get_enabled_repos", return_value=[])
+    @patch("utils.ansible_export.AnsibleExporter._get_gnome_settings", return_value={})
+    @patch("utils.ansible_export.AnsibleExporter._get_flatpak_apps", return_value=[])
+    @patch(
+        "utils.ansible_export.AnsibleExporter._get_installed_packages", return_value=[]
+    )
+    def test_generate_playbook_options_with_kwargs_override(
+        self, mock_pkgs, mock_flatpaks, mock_settings, mock_repos
+    ):
+        """kwargs overrides fields from provided options object."""
+        options = PlaybookOptions(playbook_name="Base Name")
+        content = AnsibleExporter.generate_playbook(
+            options=options, playbook_name="Overridden Name"
+        )
+        self.assertIn("Overridden Name", content)
+
     @patch("utils.ansible_export.AnsibleExporter._get_gnome_settings", return_value={})
     @patch("utils.ansible_export.AnsibleExporter._get_flatpak_apps", return_value=[])
     @patch(
@@ -549,6 +601,19 @@ class TestAnsibleExporter(unittest.TestCase):
             self.assertTrue(result.success)
             self.assertTrue(out_path.exists())
             self.assertTrue((out_path.parent / "README.md").exists())
+
+    @patch(
+        "utils.ansible_export.AnsibleExporter.generate_playbook",
+        return_value="---\n- name: demo\n",
+    )
+    def test_save_playbook_with_options_object(self, mock_generate):
+        """Save playbook passes options object through to generate_playbook."""
+        options = PlaybookOptions(playbook_name="Custom Playbook")
+        with tempfile.TemporaryDirectory() as temp_dir:
+            out_path = Path(temp_dir) / "site.yml"
+            result = AnsibleExporter.save_playbook(path=out_path, options=options)
+            self.assertTrue(result.success)
+            mock_generate.assert_called_once_with(options=options)
 
     @patch(
         "utils.ansible_export.AnsibleExporter.generate_playbook",
@@ -686,22 +751,24 @@ class TestAnsibleExporter(unittest.TestCase):
                 self.assertFalse(result.success)
                 self.assertIn("yaml syntax error", result.message.lower())
 
-    @patch("builtins.__import__")
     @patch("core.export.ansible_export.cached_which", return_value=None)
-    def test_validate_playbook_no_yaml_no_lint(self, mock_which, mock_import):
+    def test_validate_playbook_no_yaml_no_lint(self, mock_which):
         """Without yaml AND ansible-lint, returns unable-to-validate message."""
-        original_import = __import__
+        real_import = (
+            __builtins__.__import__
+            if hasattr(__builtins__, "__import__")
+            else __import__
+        )
 
         def fake_import(name, *args, **kwargs):
             if name == "yaml":
                 raise ImportError("no yaml")
-            return original_import(name, *args, **kwargs)
+            return real_import(name, *args, **kwargs)
 
-        mock_import.side_effect = fake_import
-
-        result = AnsibleExporter.validate_playbook(Path("/tmp/site.yml"))
-        self.assertTrue(result.success)
-        self.assertIn("unable to validate", result.message.lower())
+        with patch("builtins.__import__", side_effect=fake_import):
+            result = AnsibleExporter.validate_playbook(Path("/tmp/site.yml"))
+            self.assertTrue(result.success)
+            self.assertIn("unable to validate", result.message.lower())
 
     @patch("core.export.ansible_export.subprocess.run")
     @patch("core.export.ansible_export.cached_which", return_value="/usr/bin/ansible-lint")
