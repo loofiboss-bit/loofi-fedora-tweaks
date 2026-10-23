@@ -11,12 +11,9 @@ import shutil
 import subprocess
 from dataclasses import dataclass
 from types import MappingProxyType
-from typing import TYPE_CHECKING, Callable, Mapping, Sequence
+from typing import Callable, Mapping, Sequence
 
 from core.catalog_models import CapabilityState, NativeHandoffId
-
-if TYPE_CHECKING:
-    from core.platform.profile import PlatformProfile
 
 
 @dataclass(frozen=True)
