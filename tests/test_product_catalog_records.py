@@ -11,13 +11,13 @@ from core.product_catalog import CATALOG_DATA, catalog_entry, catalog_routes
 
 
 _CONTROL_CENTER_PROJECTION_HASHES = {
-    "plugins": "429a9fa0e28102ca6807a5ab9a603c2838c5f5eb91b40c22de2e0bd0bf35a142",
-    "routes": "98edb6a54ab33d69366ba3e19cf36217bef073e7a79fc11a360556415f5e5e57",
-    "placements": "f24a7d014468701104a87ef53b7924ac7bc3b3a2dc00ec6a4e7df21ee3729995",
-    "sections": "99e0ce7f4c5200bda40e9aaac7fdeb7a8fba6cad589d1bf1bc10ed965b957d4d",
-    "destinations": "ae763154940059012b92e64ae54039a75e99ad292fae70e4933f008288142a06",
+    "plugins": "6e8074e7430b27a1249fb46181b9a3f0fc2f2e190b1a8dcd3d93cc28710115e1",
+    "routes": "7d3f231ff3e6d1fa3a51b45fc6227ad6fece7aaeb7d8931ee9d4666209a56e70",
+    "placements": "fe2beae733554d45426326feeab0a337df4a7b544e214fa02a9b9d5c674fed69",
+    "sections": "768112e0887eff728e02ac306a2ebf0495996e2b6565ba76177c05b3eab39f93",
+    "destinations": "7b3ece4a4d2f5d4b6c325424090a0afcfa3980fa9de753d75475656cd7aa5901",
 }
-_CONTROL_CENTER_ROUTE_ORDER_HASH = "692c167357b9a4ca8c94c7d64f885db0a187d3cb204ae0afdde38ab077d8fcce"
+_CONTROL_CENTER_ROUTE_ORDER_HASH = "669b82b9c80c80be0b8cc6f5e481cad61e165482dfc50a4e0fcacbaec26e75d9"
 
 
 def _serialized_hash(records) -> str:
@@ -34,8 +34,8 @@ class TestDestinationOwnedCatalogRecords(unittest.TestCase):
     def test_route_order_and_identity_remain_exact(self):
         route_ids = tuple(route.id for route in catalog_routes())
 
-        self.assertEqual(len(route_ids), 44)
-        self.assertEqual(len(set(route_ids)), 44)
+        self.assertEqual(len(route_ids), 45)
+        self.assertEqual(len(set(route_ids)), 45)
         self.assertEqual(_serialized_hash(route_ids), _CONTROL_CENTER_ROUTE_ORDER_HASH)
 
     def test_application_settings_uses_current_plain_language(self):

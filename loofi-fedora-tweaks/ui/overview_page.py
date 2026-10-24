@@ -306,6 +306,16 @@ class OverviewPage(QWidget, PluginInterface):
         self.next_steps_card.hide()
         self._next_step_rows = []
         self._last_next_steps = None
+        self.setup_card = Card(
+            self.tr("My Fedora configuration"),
+            self.tr("Save selected apps and supported desktop settings so you can compare or review them on another computer."),
+            parent=self,
+        )
+        self.setup_card.setObjectName("overviewSetupConfiguration")
+        self.setup_button = QuietButton(self.tr("Open configuration"))
+        self.setup_button.setAccessibleName(self.tr("Open My Fedora configuration"))
+        self.setup_button.clicked.connect(lambda: self.routeRequested.emit("setup"))
+        self.setup_card.add_widget(self.setup_button)
         # Keep the recommendation list bounded; the underlying next_steps
         # service remains the source of ranking and routing.
         self.maintenance_card = Card(self.tr("Maintenance"), parent=self)
@@ -347,6 +357,7 @@ class OverviewPage(QWidget, PluginInterface):
         root.addLayout(self.detail_grid)
         root.addWidget(self.maintenance_card)
         root.addWidget(self.next_steps_card)
+        root.addWidget(self.setup_card)
         root.addWidget(self.intro_card)
         self.guide_panel = GuidePanel(self)
         self.guide_panel.guideChanged.connect(self.guideChanged)

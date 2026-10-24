@@ -23,6 +23,7 @@ DESTINATION_RECORDS: Final[dict[str, dict[str, Any]]] = {
 
 PLUGIN_ORDER = (
     'overview',
+    'setup',
     'atlas_dashboard',
     'software',
     'maintenance',
@@ -43,6 +44,7 @@ PLUGIN_ORDER = (
 
 ROUTE_ORDER = (
     'overview',
+    'setup',
     'atlas_dashboard',
     'software',
     'software:apps',
@@ -92,6 +94,7 @@ PLACEMENT_ORDER = ROUTE_ORDER
 
 SECTION_ORDER = (
     ('home', 'live_status'),
+    ('home', 'setups'),
     ('home', 'overview'),
     ('software_updates', 'applications'),
     ('software_updates', 'repositories'),

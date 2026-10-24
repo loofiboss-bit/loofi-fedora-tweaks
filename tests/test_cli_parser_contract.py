@@ -20,8 +20,9 @@ EXPECTED_TOP_LEVEL_COMMANDS = (
     "tweaks",
     "apps",
     "guides",
+    "setup",
 )
-EXPECTED_PARSER_SNAPSHOT_SHA256 = "21dc90c08544a882c78c29927db6c6d0f70493cf48e6656069630e2d4f7ccd6c"
+EXPECTED_PARSER_SNAPSHOT_SHA256 = "33366d387a733f5eb3c734e61a7bbd75f2b67011cf09b5aabee123ef3722ab15"
 
 
 def _normalize(value):

@@ -454,6 +454,7 @@ def _command_handlers() -> dict[str, typing.Callable[[Any], Any]]:
         "tweaks": cmd_tweaks,
         "apps": cmd_apps,
         "guides": cmd_guides,
+        "setup": cmd_setup,
     }
 
 
@@ -462,6 +463,19 @@ def cmd_guides(args: Any) -> int:
     from cli.commands.guides_commands import handle_guides
 
     return handle_guides(
+        args,
+        json_output=_json_output,
+        output_json=_output_json,
+        print_fn=_print,
+        error_fn=lambda message: print(message, file=sys.stderr),
+    )
+
+
+def cmd_setup(args: Any) -> int:
+    """Inspect saved setup intents and current state without changing it."""
+    from cli.commands.setup_commands import handle_setup
+
+    return handle_setup(
         args,
         json_output=_json_output,
         output_json=_output_json,

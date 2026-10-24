@@ -62,6 +62,18 @@ class ProfileLibraryTests(unittest.TestCase):
         self.assertEqual(len(entries), 6)
         self.assertTrue(all(entry.builtin for entry in entries))
 
+    @patch('core.tasks.tweak_library.load_profile')
+    @patch('pathlib.Path.is_symlink', return_value=False)
+    @patch('pathlib.Path.glob')
+    @patch('pathlib.Path.exists', return_value=True)
+    def test_searches_settings_and_reports_unreadable_personal_profile(self, exists, glob, symlink, load):
+        glob.return_value = [Path('/test/profiles/' + 'a' * 64 + '.json')]
+        load.side_effect = ValueError('invalid')
+        entries, errors = self.library.list_with_errors(profile('kde'), query='open files')
+        self.assertTrue(entries)
+        self.assertTrue(all(any('kde-single-click' == key for key, _value in entry.profile.settings) for entry in entries))
+        self.assertIn('profile file could not be read', errors[0])
+
     def test_companion_presets_use_current_supported_choices(self):
         for desktop in ('kde', 'gnome'):
             for preset_id in ('focus', 'privacy-basics', 'touchpad-comfort'):

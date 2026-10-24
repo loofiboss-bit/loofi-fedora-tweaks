@@ -153,7 +153,7 @@ class TweakProfilesMixin:
             adapter.failed.connect(lambda message: page.set_profile_notice(str(message), error=True))
             adapter.stopped.connect(lambda: self._show_tweak_library(page, results[0]) if results else None)
             page.set_profile_notice(self.tr("Reading profile library…"))
-            return bool(adapter.start(lambda: ProfileLibrary().list(page.profile)))
+            return bool(adapter.start(lambda: ProfileLibrary().list_with_errors(page.profile)))
         try:
             profile = profile_for_preset(preset_id, page.profile)
         except ValueError as exc:
@@ -173,14 +173,32 @@ class TweakProfilesMixin:
         return bool(adapter.start(lambda: review_profile(profile, controller, is_cancelled=lambda: adapter.cancel_requested)))
 
     def _show_tweak_library(self: Any, page: Any, entries: Any) -> None:
-        page.set_profile_entries(entries, focus=bool(getattr(page, "_profile_focus_pending", False)))
-        page.set_profile_notice(self.tr("Choose a profile to review, compare, or edit."))
+        if (isinstance(entries, tuple) and len(entries) == 2
+                and isinstance(entries[0], (tuple, list)) and isinstance(entries[1], (tuple, list))
+                and all(isinstance(error, str) for error in entries[1])):
+            values, errors = entries
+        else:
+            values, errors = entries, ()
+        kwargs = {"focus": bool(getattr(page, "_profile_focus_pending", False))}
+        if errors:
+            kwargs["errors"] = errors
+        page.set_profile_entries(values, **kwargs)
+        page.set_profile_notice(self.tr("Choose a profile to review, compare, edit, or add to a configuration."))
 
     def _handle_tweak_profile_action(self: Any, page: Any, action_name: str, entry: Any) -> None:
         """Dispatch a visible profile-library action without hiding the library."""
         from core.tasks.tweak_library import ProfileLibrary
 
         if entry is None:
+            return
+        if action_name == "setup":
+            if self.switch_to_route("setup"):
+                setup_entry = self._sidebar_index.get("setup")
+                if setup_entry is not None:
+                    setup_page = self._real_widget_for_entry(setup_entry)
+                    setter = getattr(setup_page, "set_pending_profile", None)
+                    if callable(setter):
+                        setter(entry.profile)
             return
         if action_name == "review":
             self._review_library_profile(page, entry.profile, builtin=entry.builtin)

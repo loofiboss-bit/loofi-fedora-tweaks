@@ -905,9 +905,9 @@ class TweaksPage(QWidget, PluginInterface):
             self.profile_views.setCurrentWidget(self.profile_library_view)
             self.choosePresetRequested.emit()
 
-    def set_profile_entries(self, entries: Any, *, selected_id: str = "", focus: bool = False) -> None:
+    def set_profile_entries(self, entries: Any, *, selected_id: str = "", focus: bool = False, errors: Any = ()) -> None:
         self._profile_entries = tuple(entries)
-        self.profile_library_view.set_entries(self._profile_entries, selected_id=selected_id)
+        self.profile_library_view.set_entries(self._profile_entries, selected_id=selected_id, errors=errors)
         self.profile_views.setCurrentWidget(self.profile_library_view)
         self._profile_editor_open = False
         self.status_label.setText(self.tr("Profile library ready."))

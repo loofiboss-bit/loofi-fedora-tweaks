@@ -12,6 +12,8 @@ and is not.
 - [Verified operations](VERIFIED_MAINTENANCE.md) — how changes are authorized, verified, and recovered
 - [State integrity](STATE_INTEGRITY.md) — durable state, migrations, and privacy
 - [Flatpak updates](FLATPAK_UPDATES.md) — installation-bound candidate review, verification, and maintenance
+- [v36.1.0 Blueprint candidate](releases/RELEASE-NOTES-v36.1.0.md) — portable setup intent, review order, recovery, and verification status
+- [v36.1.0 Blueprint qualification](V36_QUALIFICATION.md) — automated checks, filter latency, Qt boundary, and Fedora KDE guest evidence
 - [Fedora/KDE 44 readiness](FEDORA_KDE_44_READINESS.md)
 - [Administration](ADVANCED_ADMIN_GUIDE.md)
 

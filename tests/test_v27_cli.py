@@ -25,6 +25,7 @@ class TestV27CliParser:
         "tweaks",
         "apps",
         "guides",
+        "setup",
     }
 
     DECOMMISSIONED_COMMANDS = [
@@ -63,6 +64,8 @@ class TestV27CliParser:
             args = parser.parse_args(["apps", "list"])
         elif cmd == "guides":
             args = parser.parse_args(["guides", "list"])
+        elif cmd == "setup":
+            args = parser.parse_args(["setup", "list"])
         else:
             args = parser.parse_args([cmd])
         assert args.command == cmd
@@ -75,7 +78,7 @@ class TestV27CliParser:
 
 
 class TestV27CliExecution:
-    """Verify execution dispatch for all 8 canonical commands."""
+    """Verify execution dispatch for canonical commands."""
 
     @patch("cli.main.cmd_info", return_value=0)
     def test_info_execution(self, mock_cmd: MagicMock):

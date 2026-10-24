@@ -31,6 +31,14 @@ recorded maintenance. Then choose the task you want to perform.
 | **Updates** | Update system packages, Flatpaks, and firmware independently. |
 | **Health** | Start from a symptom, inspect the evidence, and apply one reviewed fix. |
 
+The active **v36.1.0 Blueprint** candidate adds **My Fedora configuration**:
+save selected RPM/Flatpak apps and supported user settings as named local
+setups, export or preview-import a portable JSON file, and compare fresh local
+observations before reviewing changes. It reuses the existing app and profile
+reviews and verifies each result. Read-only `setup list`, `show`, and `compare`
+commands support `--json`. This candidate is not published; see its
+[scope and limitations](docs/releases/RELEASE-NOTES-v36.1.0.md).
+
 **v35.0.0 Everyday** adds local AppStream discovery, explicit metadata refresh,
 complete RPM/Flatpak transaction review, in-app RPM removal, optional reviewed
 Flathub/RPM Fusion and codec setup, and coherent interruption recovery. The
@@ -113,6 +121,9 @@ loofi-fedora-tweaks --cli updates sources
 loofi-fedora-tweaks --cli updates flatpaks --installation user
 loofi-fedora-tweaks --cli updates diagnose --source flatpak
 loofi-fedora-tweaks --cli tweaks profile library list
+loofi-fedora-tweaks --cli setup list
+loofi-fedora-tweaks --cli setup show SETUP_ID
+loofi-fedora-tweaks --cli setup compare SETUP_ID
 loofi-fedora-tweaks --cli apps access app/org.mozilla.firefox/x86_64/stable --installation user
 loofi-fedora-tweaks --cli updates prepare-upgrade --target 44
 loofi-fedora-tweaks --cli apps compare org.mozilla.firefox

@@ -6,7 +6,7 @@ from PyQt6.QtWidgets import QApplication, QComboBox, QDialog, QDialogButtonBox, 
 
 from core.catalog_models import NativeHandoffId
 from services.software.app_comparison import compare_installations, comparison_id
-from services.software.installed_applications import InstalledApplication, InstalledInventory, filter_installed_applications
+from services.software.installed_applications import InstalledApplication, InstalledInventory, RpmApplicationDetails, filter_installed_applications
 from ui.components import Card, DetailsDisclosure
 from ui.operation_worker import OperationControllerQtAdapter
 from ui.native_handoff_card import ManagedNativeHandoffCard
@@ -119,6 +119,33 @@ class FlatpakPermissionsDialog(QDialog):
         return ""
 
 
+class RpmApplicationDetailsDialog(QDialog):
+    """Local RPM metadata, without inferring historical repository origin."""
+
+    def __init__(self, app: InstalledApplication, rows: tuple[RpmApplicationDetails, ...], parent=None):
+        super().__init__(parent)
+        self.setWindowTitle(self.tr("RPM application details"))
+        self.setAccessibleName(self.tr("RPM application details for %1").replace("%1", app.name))
+        self.resize(700, 420)
+        layout = QVBoxLayout(self)
+        identity = QLabel(self.tr("%1\nPackage: %2").replace("%1", app.name).replace("%2", app.ref))
+        identity.setWordWrap(True)
+        layout.addWidget(identity)
+        source = QLabel(self.tr("Details come from the local RPM database. Historical installation repository is not reported here."))
+        source.setWordWrap(True)
+        layout.addWidget(source)
+        for row in rows:
+            values = (self.tr("Version"), row.version, self.tr("Architecture"), row.architecture,
+                      self.tr("Description"), row.summary or self.tr("Not provided"),
+                      self.tr("License"), row.license or self.tr("Not provided"))
+            details = DetailsDisclosure("\n".join(f"{values[index]}: {values[index + 1]}" for index in range(0, len(values), 2)),
+                                        summary=self.tr("Installed RPM instance · %1").replace("%1", row.architecture))
+            layout.addWidget(details)
+        close = QDialogButtonBox(QDialogButtonBox.StandardButton.Close)
+        close.rejected.connect(self.reject)
+        layout.addWidget(close)
+
+
 class _InstalledApplicationRow(Card):
     """Keep wrapped identity text readable inside the scrolling inventory."""
 
@@ -190,6 +217,8 @@ class InstalledApplicationsCard(Card):
         self._application_rows: list[tuple[InstalledApplication, _InstalledApplicationRow]] = []
         self._search_query = ""
         self._permission_generation = 0
+        self._rpm_details_app = None
+        self._rpm_details_dialogs = []
         self._active_permission_request = None
         self._pending_permission_request = None
         self._permission_dialogs = {}
@@ -198,6 +227,10 @@ class InstalledApplicationsCard(Card):
         self._adapter.failed.connect(self._failed)
         self._adapter.stopped.connect(lambda: self.refresh_button.setEnabled(self.service is not None))
         self._permissions_adapter = OperationControllerQtAdapter(parent=self)
+        self._details_adapter = OperationControllerQtAdapter(parent=self)
+        self._details_adapter.finished.connect(self._rpm_details_ready)
+        self._details_adapter.failed.connect(lambda _message: self.status.setText(self.tr("Local RPM details could not be read.")))
+        self._details_adapter.stopped.connect(self._notify_stopped)
         self._adapter.stopped.connect(self._notify_stopped)
         self._permissions_adapter.stopped.connect(self._notify_stopped)
         self._permissions_adapter.finished.connect(self._permissions_result)
@@ -220,7 +253,7 @@ class InstalledApplicationsCard(Card):
 
     @property
     def busy(self):
-        return self._adapter.busy or self._permissions_adapter.busy or self.insights.busy or self.software_handoff.busy or self.updates.busy
+        return self._adapter.busy or self._permissions_adapter.busy or self._details_adapter.busy or self.insights.busy or self.software_handoff.busy or self.updates.busy
 
     def request_stop(self):
         self._close_comparison_dialogs()
@@ -232,6 +265,7 @@ class InstalledApplicationsCard(Card):
         self.software_handoff.request_stop()
         self._adapter.cancel()
         self._permissions_adapter.cancel()
+        self._details_adapter.cancel()
 
     def check_updates(self, app):
         if app.source != "flatpak":
@@ -247,10 +281,11 @@ class InstalledApplicationsCard(Card):
         self.request_stop()
         inventory_stopped = self._adapter.close(timeout_ms)
         permissions_stopped = self._permissions_adapter.close(timeout_ms)
+        details_stopped = self._details_adapter.close(timeout_ms)
         updates_stopped = self.updates.cleanup(timeout_ms)
         insights_stopped = self.insights.cleanup(timeout_ms)
         handoff_stopped = self.software_handoff.cleanup(timeout_ms)
-        return updates_stopped and insights_stopped and inventory_stopped and permissions_stopped and handoff_stopped
+        return updates_stopped and insights_stopped and inventory_stopped and permissions_stopped and details_stopped and handoff_stopped
 
     def open_software_manager(self, app: InstalledApplication | None = None):
         self._software_manager_app = app if app is not None and app.source == "fedora" else None
@@ -350,6 +385,11 @@ class InstalledApplicationsCard(Card):
                 permissions_action.triggered.connect(lambda _checked=False, item=app: self.show_permissions(item))
                 information.setMenu(information_menu)
                 row.add_widget(information)
+            add_to_setup = QPushButton(self.tr("Add to configuration"))
+            add_to_setup.setAccessibleName(self.tr("Add %1 to a Fedora configuration").replace("%1", app.name))
+            add_to_setup.clicked.connect(lambda _checked=False, item=app: self.routeRequested.emit("setup", {"add_application": item.to_dict()}))
+            row.add_widget(add_to_setup)
+            if app.source == "flatpak":
                 remove = QPushButton(self.tr("Review removal"))
                 remove.clicked.connect(lambda _checked=False, item=app: self.actionReviewRequested.emit("remove-installed-flatpak", {"ref": item.ref, "installation": item.installation}))
             else:
@@ -400,22 +440,49 @@ class InstalledApplicationsCard(Card):
 
     def show_comparison(self, app_id: str):
         from ui.app_comparison import ApplicationComparisonDialog
-        dialog = ApplicationComparisonDialog(compare_installations(self.inventory, app_id), self)
+        from services.system import SystemManager
+        dialog = ApplicationComparisonDialog(compare_installations(self.inventory, app_id), rpm_review_removal=not SystemManager.is_atomic(), parent=self)
         dialog.detailsRequested.connect(self.show_details)
-        dialog.removalRequested.connect(lambda app: self.actionReviewRequested.emit("remove-installed-flatpak", {"ref": app.ref, "installation": app.installation}))
+        dialog.removalRequested.connect(self._review_comparison_removal)
         dialog.softwareManagerRequested.connect(self.open_software_manager)
         self._comparison_dialogs.append(dialog)
         dialog.finished.connect(lambda _result: self._comparison_dialogs.remove(dialog) if dialog in self._comparison_dialogs else None)
         dialog.open()
 
+    def _review_comparison_removal(self, app: InstalledApplication):
+        if app.source == "flatpak":
+            self.actionReviewRequested.emit("remove-installed-flatpak", {"ref": app.ref, "installation": app.installation})
+        elif app.source == "fedora":
+            self.actionReviewRequested.emit("remove-application", {"source": "fedora", "package_id": app.ref})
+
     def show_details(self, app: InstalledApplication):
-        if self.service is None or app.source != "flatpak":
+        if self.service is None:
+            return
+        if app.source == "fedora":
+            if self._details_adapter.busy:
+                self.status.setText(self.tr("Wait for the current detail check to finish."))
+                return
+            self._rpm_details_app = app
+            self.status.setText(self.tr("Reading installed RPM details…"))
+            if not self._details_adapter.start(lambda: self.service.details(app)):
+                self.status.setText(self.tr("Wait for the current detail check to finish."))
+            return
+        if app.source != "flatpak":
             return
         self._permission_generation += 1
         self._pending_permission_request = None
         self._close_permission_dialogs()
         self._permissions_adapter.cancel()
         self.insights.show_details(app)
+
+    def _rpm_details_ready(self, rows):
+        app = self._rpm_details_app
+        if app is None or not isinstance(rows, tuple) or not all(isinstance(row, RpmApplicationDetails) for row in rows):
+            return
+        dialog = RpmApplicationDetailsDialog(app, rows, self)
+        self._rpm_details_dialogs.append(dialog)
+        dialog.finished.connect(lambda _result: self._rpm_details_dialogs.remove(dialog) if dialog in self._rpm_details_dialogs else None)
+        dialog.open()
 
     def show_permissions(self, app: InstalledApplication):
         if self.service is None or app.source != "flatpak":

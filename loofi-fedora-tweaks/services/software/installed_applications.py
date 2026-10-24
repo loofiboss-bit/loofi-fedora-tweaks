@@ -16,6 +16,8 @@ from services.software.flatpak import FlatpakAppPermissions, FlatpakManager
 
 _REF = re.compile(r"^app/[A-Za-z0-9][A-Za-z0-9._-]{1,255}/[A-Za-z0-9_-]+/[A-Za-z0-9._-]+$")
 _INSTALLATION = re.compile(r"^[A-Za-z0-9][A-Za-z0-9._-]{0,127}$")
+_PACKAGE = re.compile(r"^[A-Za-z0-9][A-Za-z0-9+._-]{0,127}$")
+_SAFE_ARCH = re.compile(r"^[A-Za-z0-9][A-Za-z0-9_.+-]{0,63}$")
 MAX_INVENTORY_OUTPUT_BYTES = 1024 * 1024
 MAX_INVENTORY_ROWS = 10000
 Probe = Callable[[Sequence[str]], ActionResult]
@@ -66,6 +68,37 @@ class InstalledInventory:
 
     def to_dict(self) -> dict[str, object]:
         return {"applications": [item.to_dict() for item in self.applications], "errors": list(self.errors), "unknown_sources": sorted(self.unknown_sources)}
+
+
+@dataclass(frozen=True)
+class RpmApplicationDetails:
+    package_id: str
+    version: str
+    architecture: str
+    summary: str
+    license: str
+    error: str = ""
+
+
+def parse_rpm_application_details(output: str, package_id: str) -> tuple[RpmApplicationDetails, ...]:
+    """Parse bounded local RPM metadata without asserting repository history."""
+    if not _PACKAGE.fullmatch(package_id):
+        raise ValueError("The selected RPM package identity is invalid.")
+    if len(output) > MAX_INVENTORY_OUTPUT_BYTES:
+        raise ValueError("RPM application details exceeded their output limit.")
+    rows = []
+    for line in output.splitlines():
+        fields = line.split("\t")
+        if len(fields) != 5 or fields[0] != package_id or not fields[1] or not _SAFE_ARCH.fullmatch(fields[2]):
+            raise ValueError("RPM returned invalid application detail evidence.")
+        if any(len(value) > 1024 or any(ord(char) < 32 and char not in "\t" for char in value) for value in fields):
+            raise ValueError("RPM returned invalid application detail evidence.")
+        rows.append(RpmApplicationDetails(fields[0], fields[1], fields[2], fields[3], fields[4]))
+        if len(rows) > 64:
+            raise ValueError("RPM returned too many installed package instances.")
+    if not rows:
+        raise ValueError("The selected RPM package is no longer installed.")
+    return tuple(rows)
 
 
 def parse_flatpak_inventory(output: str, *, installation: str | None = None) -> tuple[InstalledApplication, ...]:
@@ -302,8 +335,16 @@ class InstalledApplicationService:
         return self.snapshot(cancelled=cancelled)
 
     def details(self, app: InstalledApplication):
+        if app.source == "fedora":
+            if not _PACKAGE.fullmatch(app.ref) or app.ref != app.app_id:
+                raise ValueError("The selected RPM package identity is invalid.")
+            query = "%{NAME}\\t%{VERSION}-%{RELEASE}\\t%{ARCH}\\t%{SUMMARY}\\t%{LICENSE}\\n"
+            result = self._read_probe(("rpm", "-q", "--qf", query, app.ref), timeout=8.0, cancelled=lambda: False)
+            if not result.success:
+                raise ValueError("Local RPM application details could not be read.")
+            return parse_rpm_application_details(result.stdout, app.ref)
         if app.source != "flatpak":
-            raise ValueError("Detailed Flatpak metadata is unavailable for RPM applications.")
+            raise ValueError("Application details are unavailable for this source.")
         if not validate_ref(app.ref):
             raise ValueError("The selected Flatpak identity is invalid.")
         from services.software.flatpak_maintenance import FlatpakMaintenanceService

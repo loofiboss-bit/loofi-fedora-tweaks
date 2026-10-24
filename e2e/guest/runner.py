@@ -230,6 +230,8 @@ def _run_tests(phase: str = "normal") -> int:
         "XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS", "HOME", "USER", "LOGNAME",
         "QT_LINUX_ACCESSIBILITY_ALWAYS_ON", "QT_QPA_PLATFORM", "QT_LOGGING_RULES", "PYTHONUNBUFFERED",
     )}
+    # Native tests import modules from the installed RPM's application tree.
+    exported["PYTHONPATH"] = "/usr/lib/loofi-fedora-tweaks"
     exported["LOOFI_E2E_PHASE"] = phase
     if qt_runtime is not None:
         exported["LOOFI_E2E_QT_RUNTIME_DIR"] = qt_runtime["runtime_library_dir"]

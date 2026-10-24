@@ -28,6 +28,7 @@ _MAX_RESULTS = 12
 _UTILITY_SEARCH_ROUTES = frozenset(
     {
         "overview",
+        "setup",
         "atlas_dashboard",
         "install",
         "tune",

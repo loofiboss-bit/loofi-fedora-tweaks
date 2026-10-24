@@ -82,3 +82,32 @@ RECORDS["sections"] += ({
 },)
 RECORDS["destination"]["default_route_id"] = "overview"
 RECORDS["destination"]["route_ids"] = ("overview", "atlas_dashboard")
+
+RECORDS["plugins"] += ({
+    "id": "setup", "name": "My Fedora configuration",
+    "description": "Save, compare, and apply selected Fedora applications and desktop settings.",
+    "icon": "settings", "destination_id": "home",
+    "module": "ui.setup_configurations", "class_name": "SetupConfigurationsPlugin",
+    "component": "core", "visibility": "standard", "compat": {},
+    "category": "System", "badge": "", "order": 10,
+},)
+RECORDS["routes"] += ({
+    "id": "setup", "label": "My Fedora configuration", "plugin_id": "setup",
+    "category": "System", "icon": "settings",
+    "description": "Save, compare, and apply selected Fedora applications and desktop settings.",
+    "aliases": ("my setup", "workstation setup", "transfer setup"),
+    "keywords": ("setup", "applications", "desktop settings", "import", "export", "installation"),
+    "risk": "none", "visibility": "beginner", "subroute": "",
+},)
+RECORDS["placements"] += ({
+    "route_id": "setup", "destination_id": "home", "section_id": "setups",
+    "advanced_only": False, "component_id": "core", "required_capabilities": (),
+    "allowed_variants": ("traditional", "atomic"), "redirect_route_id": None,
+    "discoverable": True,
+},)
+RECORDS["sections"] += ({
+    "id": "setups", "destination_id": "home", "label": "My setup",
+    "icon": "settings", "order": 5, "default_route_id": "setup",
+    "description": "Portable application and desktop settings collections.",
+},)
+RECORDS["destination"]["route_ids"] = (*RECORDS["destination"]["route_ids"], "setup")

@@ -8,12 +8,39 @@ from core.actions.installed_applications import installed_application_definition
 from core.executor.action_result import ActionResult
 from core.tasks.applications import ApplicationCatalog, ApplicationContext
 from core.catalog_models import FedoraVariant
-from services.software.installed_applications import InstalledApplicationService, parse_flatpak_inventory
+from services.software.installed_applications import (
+    InstalledApplication, InstalledApplicationService, parse_flatpak_inventory,
+    parse_rpm_application_details,
+)
 
 ROW = "Firefox\torg.mozilla.firefox\tapp/org.mozilla.firefox/x86_64/stable\t1\t20 MB\tuser\n"
 
 
 class InstalledApplicationTests(unittest.TestCase):
+    def test_rpm_details_include_version_architecture_summary_and_license(self):
+        output = "firefox\t131.0-2.fc43\tx86_64\tWeb browser\tMPL-2.0\n"
+        details = parse_rpm_application_details(output, "firefox")
+        self.assertEqual(details[0].version, "131.0-2.fc43")
+        self.assertEqual(details[0].architecture, "x86_64")
+        self.assertEqual(details[0].summary, "Web browser")
+        self.assertEqual(details[0].license, "MPL-2.0")
+
+    def test_rpm_details_reject_invalid_or_stale_local_evidence(self):
+        for output, package in (("", "firefox"), ("other\t1-1\tx86_64\tBrowser\tMIT", "firefox"),
+                                ("firefox\t1-1\t../../bad\tBrowser\tMIT", "firefox")):
+            with self.subTest(output=output), self.assertRaises(ValueError):
+                parse_rpm_application_details(output, package)
+
+    def test_rpm_detail_service_queries_only_the_selected_package(self):
+        output = ActionResult(True, "ok", stdout="firefox\t131.0-2.fc43\tx86_64\tWeb browser\tMPL-2.0\n")
+        probe = Mock(return_value=output)
+        app = InstalledApplication("Firefox", "firefox", "fedora", "system", "firefox")
+        rows = InstalledApplicationService(probe=probe).details(app)
+        vector = probe.call_args.args[0]
+        self.assertEqual(vector[:3], ("rpm", "-q", "--qf"))
+        self.assertEqual(vector[-1], "firefox")
+        self.assertEqual(len(rows), 1)
+
     def test_default_inventory_reader_caps_output_and_honors_cancellation(self):
         oversized = InstalledApplicationService._probe(
             [sys.executable, "-c", "import sys; sys.stdout.write('x' * 2000000)"],

@@ -466,8 +466,8 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         )
         adapter.finished.connect(lambda ticket: self._show_health_review(page, ticket, adapter))
         adapter.failed.connect(lambda message: self._set_review_notice(page, "error", self.tr("Unavailable"), str(message)))
-        adapter.failed.connect(lambda _message: self._cancel_application_reviews(page))
-        adapter.cancelled.connect(lambda: self._cancel_application_reviews(page))
+        adapter.failed.connect(lambda _message: self._cancel_application_reviews(page, current_status="unavailable"))
+        adapter.cancelled.connect(lambda: self._cancel_application_reviews(page, current_status="interrupted"))
         return bool(adapter.start(lambda: controller.prepare(str(action_id), dict(parameters or {}))))
 
     def _review_health_finding(self: Any, page: Any, action_id: str, context: Any) -> bool:
@@ -506,7 +506,13 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         if ticket.blocked:
             decision = ticket.plan.policy_decision
             self._set_review_notice(page, "warning", self.tr("Unavailable"), " ".join(part for part in (decision.explanation, decision.alternative) if part))
-            self._cancel_application_reviews(page)
+            self._cancel_application_reviews(page, current_status="unavailable")
+            return
+        prepared_hook = getattr(page, "on_setup_action_prepared", None)
+        if callable(prepared_hook) and prepared_hook(ticket) is False:
+            self._set_review_notice(page, "error", self.tr("Progress unavailable"),
+                                    self.tr("The exact reviewed plan could not be saved. No change was approved."))
+            self._cancel_application_reviews(page, current_status="failed")
             return
         action_id = str(ticket.plan.action_id)
         definition = ActionCatalog().get(action_id)
@@ -554,7 +560,7 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         if dialog.exec() != QDialog.DialogCode.Accepted:
             self._set_review_notice(page, "neutral", self.tr("Cancelled"), self.tr("No change was made."))
             self._record_global_operation_result(None, self.tr("Review cancelled. No change was started."))
-            self._cancel_application_reviews(page)
+            self._cancel_application_reviews(page, current_status="skipped")
             return
         accept_no_rollback = dialog.accepts_no_rollback
         adapter.stopped.connect(lambda: self._run_reviewed_health_action(page, ticket, accept_no_rollback))
