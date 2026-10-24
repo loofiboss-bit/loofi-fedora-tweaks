@@ -22,6 +22,17 @@ reviewing a step alone does not complete it. Profile results identify only the
 selected settings that independently succeeded. Backup acknowledgement is a
 separate user task and does not prove a working backup.
 
+The active v36.1.0 Blueprint candidate adds **My Fedora configuration** under
+Overview. People can save named selections of installed RPM/Flatpak desktop
+apps and supported user settings, export or preview-import portable JSON,
+compare it with fresh local observations, and review remaining work through
+existing source, application and profile flows. Imports only add data to Loofi's
+private local library. The portable document contains no commands, credentials,
+home-directory files, system clone, or previous approval. Extra installed apps
+are not removed. Progress records hold the content identity, step states, and
+exact plan/run references separately from exported intent; after a restart,
+Loofi rechecks the computer and asks for a new review.
+
 ## Who it is for
 
 - **Everyday Fedora users** who want a setting changed without opening a
@@ -33,7 +44,7 @@ separate user task and does not prove a working backup.
 
 | Job | What the user does |
 |---|---|
-| **Overview** (start page) | Read current resources and up to three relevant next steps, open the appropriate tool, or choose an optional everyday guide |
+| **Overview** (start page) | Read current resources and up to three relevant next steps, open the appropriate tool, choose an optional everyday guide, or open a saved configuration |
 | **Tweaks** | Use Settings for direct per-user or reviewed computer-wide settings; use Profiles to edit and save a copy, compare profiles, or review a saved profile |
 | **Apps** | Use curated recommendations or local AppStream discovery, review exact application transactions, inspect/remove installed applications, and explicitly review optional source setup |
 | **Updates** | Update system packages, Flatpaks, and firmware; resume pending verification |
@@ -47,6 +58,10 @@ canonical tweak catalog. Selecting a setting opens Tweaks > Settings, reveals
 its row, and focuses the control or its availability explanation; search never
 changes a value. A profile-library result opens Tweaks > Profiles. Apps keeps
 catalog and installed-inventory searches within their respective subviews.
+The **My Fedora configuration** Overview card and global search open its
+library and detail view; Apps and Tweaks can add selected items to a new
+configuration. Comparison reads are timestamped, and an unavailable step stays
+unknown until the user reviews it or explicitly skips it for that attempt.
 Installed results retain separate user, system, and named Flatpak installations
 even when their application names match. The selected-app view ignores catalog
 filters until the user returns to the previous search and category.

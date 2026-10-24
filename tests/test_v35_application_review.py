@@ -162,6 +162,31 @@ class TestApplicationQueueIntegration(unittest.TestCase):
         self.controller.confirm.assert_not_called()
 
     @patch("ui.confirm_dialog.ReviewedActionDialog")
+    def test_setup_progress_write_failure_before_review_stops_queue(self, dialog_type):
+        self.page.on_application_review_started = Mock(return_value=False)
+
+        self.assertFalse(self.host._start_utility_bundle(self.page, self.selection))
+        self.assertTrue(self.page.set_results.called)
+        self.wait_until(lambda: self.page.set_results.called and self.host._utility_operation_adapter is None)
+
+        self.controller.prepare.assert_not_called()
+        self.controller.confirm.assert_not_called()
+        dialog_type.assert_not_called()
+
+    @patch("ui.confirm_dialog.ReviewedActionDialog")
+    def test_setup_plan_reference_write_failure_prevents_approval(self, dialog_type):
+        dialog_type.return_value.exec.return_value = QDialog.DialogCode.Accepted
+        self.page.on_setup_action_prepared = Mock(return_value=False)
+
+        self.assertTrue(self.host._start_utility_bundle(self.page, self.selection))
+        self.wait_until(lambda: self.page.set_results.called and self.host._utility_operation_adapter is None)
+
+        self.assertEqual(self.controller.prepare.call_count, 1)
+        self.controller.confirm.assert_not_called()
+        self.controller.run.assert_not_called()
+        dialog_type.assert_not_called()
+
+    @patch("ui.confirm_dialog.ReviewedActionDialog")
     def test_mutation_is_not_started_until_review_worker_stops(self, dialog_type):
         dialog_type.return_value.exec.return_value = QDialog.DialogCode.Accepted
         dialog_type.return_value.accepts_no_rollback = False

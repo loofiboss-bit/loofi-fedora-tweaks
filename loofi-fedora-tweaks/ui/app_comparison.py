@@ -8,11 +8,12 @@ from services.software.app_comparison import ApplicationComparison
 class ApplicationComparisonDialog(QDialog):
     detailsRequested = pyqtSignal(object)
     removalRequested = pyqtSignal(object)
-    softwareManagerRequested = pyqtSignal()
+    softwareManagerRequested = pyqtSignal(object)
 
-    def __init__(self, comparison: ApplicationComparison, parent=None):
+    def __init__(self, comparison: ApplicationComparison, *, rpm_review_removal: bool = True, parent=None):
         super().__init__(parent)
         self.comparison = comparison
+        self.rpm_review_removal = bool(rpm_review_removal)
         self.setWindowTitle(self.tr("Compare installations"))
         self.setAccessibleName(self.tr("Compare installations for %1").replace("%1", comparison.app_id))
         self.resize(850, 520)
@@ -85,7 +86,7 @@ class ApplicationComparisonDialog(QDialog):
             )
         self.details_button.setEnabled(flatpak)
         self.remove_button.setEnabled(app is not None)
-        self.remove_button.setText(self.tr("Review removal") if flatpak else self.tr("Open software manager"))
+        self.remove_button.setText(self.tr("Review removal") if flatpak or self.rpm_review_removal else self.tr("Open software manager"))
 
     def _details(self):
         app = self.selection.currentData()
@@ -94,7 +95,9 @@ class ApplicationComparisonDialog(QDialog):
 
     def _remove(self):
         app = self.selection.currentData()
-        if app is not None and app.source == "flatpak":
+        if app is None:
+            return
+        if app.source == "flatpak" or self.rpm_review_removal:
             self.removalRequested.emit(app)
-        elif app is not None:
-            self.softwareManagerRequested.emit()
+        else:
+            self.softwareManagerRequested.emit(app)

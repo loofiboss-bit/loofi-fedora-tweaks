@@ -50,6 +50,7 @@ from ui.main_window_interactions import MainWindowInteractionMixin
 from ui.main_window_services import MainWindowServiceMixin
 from ui.main_window_shell import MainWindowShellMixin
 from ui.main_window_utility import MainWindowUtilityMixin, SidebarEntry
+from ui.main_window_setup import MainWindowSetupMixin
 
 if TYPE_CHECKING:
     from core.application_runtime import ApplicationRuntime
@@ -122,6 +123,7 @@ class DisabledPluginPage(QWidget):
 
 class MainWindow(
     MainWindowUtilityMixin,
+    MainWindowSetupMixin,
     MainWindowServiceMixin,
     MainWindowInteractionMixin,
     GuideNavigationMixin,
@@ -551,6 +553,8 @@ class MainWindow(
             if callable(set_profile):
                 set_profile(self._platform_profile)
             self._connect_guide_widget(widget)
+        if plugin_id == "setup":
+            self._connect_setup_page(widget)
         for name, handler_name in (
             ("actionCenterRequested", "_open_action_center_request"),
             ("runVerificationRequested", "_verify_activity_action_run"),

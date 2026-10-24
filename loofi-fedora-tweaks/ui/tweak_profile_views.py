@@ -7,12 +7,14 @@ from PyQt6.QtCore import Qt, pyqtSignal
 from PyQt6.QtWidgets import (
     QGridLayout,
     QLabel,
+    QLineEdit,
     QListWidget,
     QListWidgetItem,
     QPushButton,
     QVBoxLayout,
     QWidget,
 )
+from core.tasks.tweaks import BY_ID
 
 
 class ProfileLibraryView(QWidget):
@@ -33,6 +35,18 @@ class ProfileLibraryView(QWidget):
         ))
         explanation.setWordWrap(True)
         layout.addWidget(explanation)
+        self.search = QLineEdit()
+        self.search.setPlaceholderText(self.tr("Search profile names and settings…"))
+        self.search.setAccessibleName(self.tr("Search profile library"))
+        self.search.textChanged.connect(self._apply_filter)
+        layout.addWidget(self.search)
+        self.library_notice = QLabel(self.tr("Search by profile name or supported setting."))
+        self.library_notice.setWordWrap(True)
+        self.library_notice.setObjectName("profileLibraryNotice")
+        layout.addWidget(self.library_notice)
+        self._all_entries: tuple[Any, ...] = ()
+        self._read_errors: tuple[str, ...] = ()
+        self._selected_id = ""
         self.entries = QListWidget()
         self.entries.setObjectName("profileLibraryEntries")
         self.entries.setAccessibleName(self.tr("Built-in and personal profiles"))
@@ -44,9 +58,12 @@ class ProfileLibraryView(QWidget):
         self.review_button = self._button("Review selected profile…", "Review the selected profile against current settings")
         self.edit_button = self._button("Edit a copy…", "Edit a copy of the selected profile")
         self.compare_button = self._button("Compare profiles…", "Compare the selected profile with another profile")
+        self.setup_button = self._button("Add to configuration", "Add this settings profile to My Fedora configuration")
         for index, (button, action) in enumerate(((self.review_button, "review"), (self.edit_button, "edit"), (self.compare_button, "compare"))):
             button.clicked.connect(lambda _checked=False, selected=action: self._request(selected))
             primary.addWidget(button, index // 2, index % 2)
+        self.setup_button.clicked.connect(lambda: self._request("setup"))
+        primary.addWidget(self.setup_button, 1, 1)
         layout.addLayout(primary)
 
         secondary = QGridLayout()
@@ -70,26 +87,42 @@ class ProfileLibraryView(QWidget):
         button.setAutoDefault(False)
         return button
 
-    def set_entries(self, entries: Any, *, selected_id: str = "") -> None:
-        values = tuple(entries)
+    def set_entries(self, entries: Any, *, selected_id: str = "", errors: Any = ()) -> None:
+        self._all_entries = tuple(entries)
+        self._read_errors = tuple(str(item) for item in errors)
+        self.library_notice.setText(" ".join(self._read_errors) if self._read_errors else self.tr("Search by profile name or supported setting."))
+        self._selected_id = selected_id or getattr(self.selected_entry(), "id", "")
+        self._apply_filter()
+
+    def _apply_filter(self, _query: str = "") -> None:
+        values = self._all_entries
+        needle = self.search.text().strip().casefold()
+        if needle:
+            values = tuple(entry for entry in values if needle in " ".join(
+                (entry.profile.name, entry.description,
+                 *(f"{key} {BY_ID[key].title if key in BY_ID else key}" for key, _value in entry.profile.settings))
+            ).casefold())
         self.entries.blockSignals(True)
         self.entries.clear()
         for entry in values:
             kind = self.tr("Built-in") if entry.builtin else self.tr("Personal")
             name = self.tr(entry.profile.name) if entry.builtin else entry.profile.name
             description = self.tr(entry.description) if entry.builtin else self.tr("Personal copy saved on this computer.")
-            item = QListWidgetItem(f"{name} [{entry.profile.desktop}] — {kind}\n{description}")
+            setting_names = ", ".join(BY_ID[key].title if key in BY_ID else key for key, _value in entry.profile.settings)
+            item = QListWidgetItem(f"{name} [{entry.profile.desktop}] — {kind}\n{description}\n{setting_names}")
             item.setData(Qt.ItemDataRole.UserRole, entry)
             self.entries.addItem(item)
         selected_index = -1
         for index in range(self.entries.count()):
             selected_item = self.entries.item(index)
-            if selected_item is not None and getattr(selected_item.data(Qt.ItemDataRole.UserRole), "id", "") == selected_id:
+            if selected_item is not None and getattr(selected_item.data(Qt.ItemDataRole.UserRole), "id", "") == self._selected_id:
                 selected_index = index
                 break
         self.entries.setCurrentRow(selected_index if selected_index >= 0 else (0 if self.entries.count() else -1))
         self.entries.blockSignals(False)
-        self._selection_changed()
+        if not self._selected_id:
+            self._selected_id = getattr(self.selected_entry(), "id", "")
+        self._update_action_buttons()
 
     def selected_entry(self) -> Any:
         item = self.entries.currentItem()
@@ -99,16 +132,16 @@ class ProfileLibraryView(QWidget):
         self.entries.setFocus(Qt.FocusReason.OtherFocusReason)
 
     def _selection_changed(self, _row: int = -1) -> None:
+        self._selected_id = getattr(self.selected_entry(), "id", "")
+        self._update_action_buttons()
+
+    def _update_action_buttons(self) -> None:
         entry = self.selected_entry()
         same_desktop_peer = False
         if entry is not None:
-            for index in range(self.entries.count()):
-                item = self.entries.item(index)
-                candidate = item.data(Qt.ItemDataRole.UserRole) if item is not None else None
-                if candidate is not None and candidate.id != entry.id and candidate.profile.desktop == entry.profile.desktop:
-                    same_desktop_peer = True
-                    break
-        for button in (self.review_button, self.edit_button, self.export_button):
+            same_desktop_peer = any(candidate.id != entry.id and candidate.profile.desktop == entry.profile.desktop
+                                    for candidate in self._all_entries)
+        for button in (self.review_button, self.edit_button, self.export_button, self.setup_button):
             button.setEnabled(entry is not None)
         self.compare_button.setEnabled(same_desktop_peer)
         self.remove_button.setEnabled(entry is not None and not entry.builtin)

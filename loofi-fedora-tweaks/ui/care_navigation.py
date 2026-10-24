@@ -7,6 +7,15 @@ from typing import Any
 class CareNavigationMixin:
     def _open_route_request(self: Any, route_id: str, _preselection=None) -> None:
         """Navigate through the canonical manifest; metadata remains inert."""
+        if route_id == "setup" and isinstance(_preselection, dict) and set(_preselection) == {"add_application"}:
+            if self.switch_to_route("setup"):
+                entry = self._sidebar_index.get("setup")
+                if entry is not None:
+                    page = self._real_widget_for_entry(entry)
+                    setter = getattr(page, "set_pending_application", None)
+                    if callable(setter):
+                        setter(_preselection["add_application"])
+            return
         if isinstance(_preselection, dict) and _preselection.get("section") in {"flatpak-updates", "installed-app"}:
             self._open_flatpak_context(route_id, _preselection)
             return

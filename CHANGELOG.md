@@ -1,5 +1,15 @@
 # Changelog
 
+## [36.1.0] - Unreleased - "Blueprint"
+
+- Add **My Fedora configuration** for named, data-only `loofi.setup/v1` app and tweak intents, import preview, export, timestamped comparison, and local progress that requires a fresh review after interruption.
+- Route requested apps through local source selection, per-item Action Center review and independent inventory verification; apply changed settings afterward through the existing profile review and verification flow. Extra apps are never removed.
+- Add read-only `setup list`, `show`, and `compare` CLI commands with JSON output.
+- Show RPM version, architecture, summary, and license for installed desktop apps without inferring historical repository provenance; use the reviewed exact-package removal flow from app comparison.
+- Add local searchable tweak-profile names and settings, preserve selection while filtering, and report unreadable profile files.
+- Preserve the historical `v36.0.0` tag; this candidate uses `v36.1.0`. No release or publication is claimed.
+- Candidate verification and qualification are tracked in [v36.1.0 Blueprint notes](docs/releases/RELEASE-NOTES-v36.1.0.md).
+
 ## [35.0.0] - 2026-10-21 - "Everyday"
 
 - Discover applications from local AppStream metadata with exact RPM repository/version/architecture and Flatpak installation/remote identities. Keep curated recommendations separate and refresh metadata only after review.

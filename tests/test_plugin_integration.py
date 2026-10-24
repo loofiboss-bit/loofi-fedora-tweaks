@@ -20,7 +20,7 @@ class TestProductCatalogIntegration(unittest.TestCase):
         self.assertEqual(validate_product_catalog(), [])
         self.assertIn("atlas_dashboard", catalog)
         self.assertIn("maintenance:action-center", catalog)
-        self.assertEqual(len(catalog), 44)
+        self.assertEqual(len(catalog), 45)
         self.assertIn("overview", catalog)
 
     def test_static_specs_register_without_constructing_widgets(self):

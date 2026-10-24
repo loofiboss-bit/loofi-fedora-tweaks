@@ -16,7 +16,7 @@ class TestPluginSpec(unittest.TestCase):
     def test_builtin_specs_are_complete_unique_and_data_only(self):
         ids = [spec.id for spec in BUILTIN_PLUGIN_SPECS]
 
-        self.assertEqual(len(ids), 17)
+        self.assertEqual(len(ids), 18)
         self.assertEqual(len(ids), len(set(ids)))
         self.assertIn("overview", ids)
         self.assertLess(ids.index("overview"), ids.index("atlas_dashboard"))
@@ -100,7 +100,7 @@ class TestPluginSpecRegistry(unittest.TestCase):
         self.assertEqual(specialist_modules.intersection(sys.modules), before)
 
     def test_register_specs_is_idempotent(self):
-        self.assertEqual(len(self.loader.register_builtin_specs()), 17)
+        self.assertEqual(len(self.loader.register_builtin_specs()), 18)
         self.assertEqual(self.loader.register_builtin_specs(), [])
 
     @patch("core.plugins.loader.PluginLoader._import_plugin")

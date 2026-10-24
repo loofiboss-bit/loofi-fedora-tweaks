@@ -664,7 +664,7 @@ bootloader --location=mbr --boot-drive=vda
 user --name={GUEST_USER} --groups=wheel --password={password_hash} --iscrypted
 selinux --enforcing
 firewall --enabled
-services --enabled=NetworkManager,qemu-guest-agent,sddm
+services --enabled=NetworkManager,qemu-guest-agent
 {updates_repository}%packages
 @^kde-desktop-environment
 plasma-workspace-x11
@@ -714,6 +714,9 @@ printf '\nQT_LINUX_ACCESSIBILITY_ALWAYS_ON=1\n' >> /etc/environment
 systemctl --root=/ set-default graphical.target
 systemctl --root=/ disable plasmalogin.service
 systemctl --root=/ enable qemu-guest-agent.service sddm.service
+# Keep authenticated test administration available after the installer reboot.
+grubby --update-kernel=ALL --args=console=ttyS0,115200n8
+systemctl --root=/ enable serial-getty@ttyS0.service
 %end
 reboot
 """

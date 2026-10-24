@@ -12,6 +12,7 @@ from cli.parser_domains.execution import register_execution_commands
 from cli.parser_domains.support import register_support_commands
 from cli.parser_domains.tweaks import register_tweaks_command
 from cli.parser_domains.guides import register_guides_command
+from cli.parser_domains.setup import register_setup_command
 
 __all__ = [
     "register_activity_command",
@@ -24,4 +25,5 @@ __all__ = [
     "register_support_commands",
     "register_troubleshooting_command",
     "register_tweaks_command",
+    "register_setup_command",
 ]

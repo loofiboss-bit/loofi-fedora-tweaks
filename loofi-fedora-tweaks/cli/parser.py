@@ -12,6 +12,7 @@ from cli.parser_domains import (
     register_guides_command,
     register_host_commands,
     register_support_commands,
+    register_setup_command,
     register_troubleshooting_command,
     register_tweaks_command,
 )
@@ -53,4 +54,5 @@ def build_parser() -> argparse.ArgumentParser:
     register_tweaks_command(subparsers)           # tweaks
     register_apps_command(subparsers)             # apps
     register_guides_command(subparsers)            # guides
+    register_setup_command(subparsers)              # setup
     return parser

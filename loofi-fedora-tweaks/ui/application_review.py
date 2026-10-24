@@ -121,6 +121,10 @@ class ApplicationReviewMixin:
             return bool(self._finish_application_reviews(page))
         item = state["remaining"].pop(0)
         state["current"] = item
+        started_hook = getattr(page, "on_application_review_started", None)
+        if callable(started_hook) and started_hook(item) is False:
+            self._cancel_application_reviews(page, current_status="failed")
+            return False
         started = self._review_health_action(page, item.action_id, dict(item.parameters))
         if not started:
             self._cancel_application_reviews(page)
@@ -140,14 +144,27 @@ class ApplicationReviewMixin:
             plan_id=str(outcome.plan_id), run_id=str(outcome.run_id), correlation_id=str(outcome.correlation_id), data=dict(outcome.data),
         ))
         state["current"] = None
+        finished_hook = getattr(page, "on_application_item_finished", None)
+        if callable(finished_hook):
+            try:
+                continue_flow = bool(finished_hook(item, outcome))
+            except (OSError, RuntimeError, TypeError, ValueError):
+                continue_flow = False
+            if not continue_flow:
+                self._cancel_application_reviews(page, current_status="failed")
 
-    def _cancel_application_reviews(self: Any, page: QWidget) -> None:
+    def _cancel_application_reviews(self: Any, page: QWidget, *, current_status: str = "interrupted") -> None:
         from core.actions.bundles import BundleItemResult
 
         state = getattr(self, "_application_review_state", None)
         if not state or state["page"] is not page:
             return
-        pending = ([state["current"]] if state["current"] is not None else []) + state["remaining"]
+        current = state["current"]
+        if current is not None:
+            stopped_hook = getattr(page, "on_application_review_stopped", None)
+            if callable(stopped_hook):
+                stopped_hook(current, current_status)
+        pending = ([current] if current is not None else []) + state["remaining"]
         for item in pending:
             state["results"].append(BundleItemResult(item.item_id, item.action_id, "skipped", "No approved transaction was executed.", skipped=True))
         state["remaining"] = []

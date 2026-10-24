@@ -1,5 +1,5 @@
 .\" Man page for loofi-fedora-tweaks
-.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-09" "32.6.0" "Loofi Fedora Tweaks Manual"
+.TH LOOFI\-FEDORA\-TWEAKS 1 "2026-10-24" "36.1.0" "Loofi Fedora Tweaks Manual"
 .SH NAME
 loofi\-fedora\-tweaks \- reviewed Fedora maintenance for desktop users
 .SH SYNOPSIS
@@ -83,6 +83,11 @@ sizes are not a promise of reclaimed disk space.
 Review and remove only selected unused runtime refs through Action Center.
 The reviewed inventory is checked again before execution. Application data is
 preserved; shared installations may affect other users. There is no automatic rollback.
+.TP
+.B setup \fBlist\fR|\fBshow\fR|\fBcompare\fR
+List saved local configurations, inspect one portable setup, or compare it
+with fresh local app and supported-setting observations. This command is
+read-only; B--jsonR returns structured output. It cannot apply a setup.
 .TP
 .B updates diagnose \fB--source\fR \fIsystem|flatpak|firmware\fR
 Run bounded source-specific read-only diagnostics. An optional \fB--run-id\fR

@@ -79,6 +79,8 @@ class StateInventory:
             ),
             ("user_guides", "guides", p.data / "guides.json", "loofi.user-guides", 2, "private", "until cleared by the user", "last-known-good"),
             ("guide_profile_results", "guides", p.data / "guide_profile_results.json", "loofi.guide-profile-results", 1, "private", "30 results; 64 KiB", "last-known-good"),
+            ("setup_library", "setup", p.data / "setup_library.json", "loofi.setup-library", 1, "private", "50 portable setups; 1 MiB", "last-known-good"),
+            ("setup_runs", "setup", p.data / "setup_runs.json", "loofi.setup-runs", 1, "private", "30 progress records; 256 KiB", "last-known-good"),
             ("audit_log", "audit", p.config / "audit.jsonl", "loofi.audit-log", 1, "sensitive", "bounded", "archive-corrupt"),
             ("plugin_state", "plugins", p.config / "plugins.json", "loofi.plugin-state", 1, "private", "indefinite", "last-known-good"),
             ("auth_state", "api", p.config / "auth.json", "loofi.auth-state", 1, "secret", "indefinite", "manual"),

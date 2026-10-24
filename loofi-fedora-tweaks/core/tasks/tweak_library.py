@@ -105,8 +105,14 @@ class ProfileLibrary:
             raise ValueError("Only custom library profiles can be changed.")
         return self.root / f"{entry_id}.json"
 
-    def list(self, platform: object) -> tuple[LibraryEntry, ...]:
+    def list(self, platform: object, query: str = "") -> tuple[LibraryEntry, ...]:
+        entries, _errors = self.list_with_errors(platform, query)
+        return entries
+
+    def list_with_errors(self, platform: object, query: str = "") -> tuple[tuple[LibraryEntry, ...], tuple[str, ...]]:
+        """List matching profiles and report unreadable local entries safely."""
         entries = []
+        errors = []
         for preset in list_presets():
             try:
                 profile = profile_for_preset(preset.id, platform)
@@ -118,12 +124,18 @@ class ProfileLibrary:
                 try:
                     self._path(path.stem)
                     if path.is_symlink():
+                        errors.append("A symbolic-link profile was skipped.")
                         continue
                     profile = load_profile(path)
                 except (OSError, ValueError):
+                    errors.append("A profile file could not be read and was left untouched.")
                     continue
                 entries.append(LibraryEntry(path.stem, profile))
-        return tuple(entries)
+        needle = query.strip().casefold()
+        if needle:
+            entries = [entry for entry in entries if needle in " ".join((entry.profile.name, entry.description,
+                       *(f"{key} {BY_ID[key].title if key in BY_ID else key}" for key, _value in entry.profile.settings))).casefold()]
+        return tuple(entries), tuple(errors)
 
     def compare(self, left_id: str, right_id: str, platform: object) -> ProfileComparison:
         entries = {entry.id: entry for entry in self.list(platform)}

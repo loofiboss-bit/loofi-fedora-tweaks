@@ -1,5 +1,25 @@
 # Roadmap
 
+## v36.1.0 Blueprint — active candidate
+
+The implementation candidate centers on **My Fedora configuration**: save
+named selections of installed desktop apps and supported user settings, move
+data-only `loofi.setup/v1` JSON between computers, show a fresh timestamped
+comparison, then review source, app and setting changes in order. It applies no
+unrelated apps, removes no extras, and leaves imports in Loofi's local library
+until the user accepts a preview. Real plan/run references and per-step results
+are held separately in private local state. After interruption, compare again
+before offering any still-needed step for a new review.
+
+The read-only CLI provides `setup list`, `show`, and `compare`, including
+`--json`. The candidate also adds RPM package details, exact RPM removal from
+app comparison, and searchable tweak profiles. It preserves historical
+`v36.0.0`; the active package version is `36.1.0`. Traditional Fedora KDE with
+DNF5 is the first target. GNOME and Atomic retain their capability limits.
+Personal files, system cloning, arbitrary commands, credentials, and prior
+approvals stay outside the portable file. Candidate verification is in progress;
+no publication is implied by this roadmap entry.
+
 The latest published release is [v35.0.0 Everyday](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0), published on 2026-10-21 with COPR build 11182269. Its annotated tag resolves to `56b07b1a41c3975bf24ec0acd2d16e2efebea18c`. See [publication evidence](docs/reports/V35_RELEASE_PUBLICATION.md) for successful canonical CI, public assets, attestation, COPR installation and wiki readback. Traditional Fedora KDE with DNF5 remains the first target; GNOME and Atomic retain their existing capability boundaries. Native matrices are complementary under the maintainer's risk-based release policy.
 
 Previous public release: [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1). Historical v33.0.0 and v34.0.0 tags are preserved.

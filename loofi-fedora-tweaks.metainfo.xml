@@ -19,6 +19,7 @@
       <li>Curated Flatpak and Fedora RPM application selection with per-item results</li>
       <li>Searchable GNOME, KDE, and power settings with focused current-value checks, verified results, and reviewed desktop presets</li>
       <li>Installation-bound, read-only Flatpak permission details from app metadata</li>
+      <li>Named local app and desktop-setting configurations with portable JSON, timestamped comparison, and reviewed per-step application</li>
       <li>Symptom-first diagnostics with one verified repair or explicit handoff</li>
       <li>Independent System, Flatpak, and Firmware update cards</li>
       <li>Reviewed system changes with native authorization and independent verification</li>
@@ -41,6 +42,11 @@
   </provides>
 
   <releases>
+    <release version="36.1.0" date="2026-10-24" type="development">
+      <description>
+        <p>Blueprint candidate: portable app and supported desktop-setting configurations, fresh comparison, and sequential reviewed application with locally saved progress. Not published.</p>
+      </description>
+    </release>
     <release version="32.5.0" date="2026-10-08" type="development">
       <description>
         <p>Companion local candidate: personal profile library, explained Flatpak access, saved Health comparisons, screen-sharing diagnostics, local support questions, and Fedora upgrade preparation. KDE and DNF5 first; not published.</p>

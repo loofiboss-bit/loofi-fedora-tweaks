@@ -328,6 +328,12 @@ def test_guest_installs_local_rpm_without_refreshing_fedora_repositories() -> No
     assert '"dnf", "install"' not in text
 
 
+def test_guest_gui_tests_import_the_installed_application_tree() -> None:
+    text = (ROOT / "e2e" / "guest" / "runner.py").read_text(encoding="utf-8")
+
+    assert 'exported["PYTHONPATH"] = "/usr/lib/loofi-fedora-tweaks"' in text
+
+
 def test_documented_recovery_command_is_available() -> None:
     text = (ROOT / "Justfile").read_text(encoding="utf-8")
     assert "test-full-reset:" in text
@@ -340,7 +346,13 @@ def test_kickstart_skips_plasma_first_run_setup_for_test_autologin(tmp_path: Pat
     assert "touch /etc/plasma-setup-done" in kickstart
     assert "User=loofie2e\nSession=plasmax11" in kickstart
     assert "systemctl --root=/ set-default graphical.target" in kickstart
+    assert "services --enabled=NetworkManager,qemu-guest-agent,sddm" not in kickstart
+    assert kickstart.index("systemctl --root=/ disable plasmalogin.service") < kickstart.index(
+        "systemctl --root=/ enable qemu-guest-agent.service sddm.service"
+    )
     assert "systemctl --root=/ enable qemu-guest-agent.service sddm.service" in kickstart
+    assert "grubby --update-kernel=ALL --args=console=ttyS0,115200n8" in kickstart
+    assert "systemctl --root=/ enable serial-getty@ttyS0.service" in kickstart
     assert "xorg-x11-drv-qxl" in kickstart
 
 

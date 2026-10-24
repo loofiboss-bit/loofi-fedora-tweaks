@@ -92,7 +92,7 @@ class AppComparisonPresentationTests(unittest.TestCase):
         details, removals, native = [], [], []
         dialog.detailsRequested.connect(details.append)
         dialog.removalRequested.connect(removals.append)
-        dialog.softwareManagerRequested.connect(lambda: native.append(True))
+        dialog.softwareManagerRequested.connect(native.append)
         for index in range(dialog.selection.count()):
             selected = dialog.selection.itemData(index)
             dialog.selection.setCurrentIndex(index)
@@ -105,7 +105,19 @@ class AppComparisonPresentationTests(unittest.TestCase):
             else:
                 self.assertFalse(dialog.details_button.isEnabled())
                 dialog.remove_button.click()
-                self.assertTrue(native.pop())
+                self.assertEqual(removals.pop(), selected)
+        self.assertFalse(native)
+        dialog.close()
+        dialog.deleteLater()
+
+    def test_atomic_rpm_comparison_opens_manager_for_exact_selected_package(self):
+        from ui.app_comparison import ApplicationComparisonDialog
+        rpm = InstalledApplication("Firefox", "firefox", "fedora", "system", "firefox")
+        dialog = ApplicationComparisonDialog(compare_installations(InstalledInventory((rpm,)), "org.mozilla.firefox"), rpm_review_removal=False)
+        selected = []
+        dialog.softwareManagerRequested.connect(selected.append)
+        dialog.remove_button.click()
+        self.assertEqual(selected, [rpm])
         dialog.close()
         dialog.deleteLater()
 

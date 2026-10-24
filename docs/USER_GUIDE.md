@@ -1,16 +1,19 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Published baseline: v33.0.1 "Concord" (2026-10-12). See [release qualification](V33_QUALIFICATION.md) for the explicit VM E2E exception and physical desktop evidence limits.
+> Published baseline: v35.0.0 "Everyday" (2026-10-21). See [release qualification](V35_QUALIFICATION.md) for its automated evidence and native desktop limits.
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
 [Advanced administration](ADVANCED_ADMIN_GUIDE.md).
 
-The local v34.0.1 Accord candidate adds [installation-bound Flatpak
-updates](FLATPAK_UPDATES.md): check a selected installed app, review one or
-several updates and required dependencies, and verify their commits in the same
-user, system, or named installation. See [candidate qualification](V34_QUALIFICATION.md)
-for actual results; v33.0.1 remains the published baseline.
+The published v35.0.0 Everyday release adds local AppStream discovery, explicit
+metadata refresh, complete RPM/Flatpak transaction review, and verified
+interruption recovery. Its installation-bound Flatpak updates from v34.0.1 are
+included. See [release notes](releases/RELEASE-NOTES-v35.0.0.md) and
+[qualification](V35_QUALIFICATION.md) for the tested scope and evidence limits.
+
+The active **v36.1.0 Blueprint** candidate adds a portable, review-first
+configuration flow. It is not published; see [candidate notes](releases/RELEASE-NOTES-v36.1.0.md).
 
 ## Product scope
 
@@ -71,6 +74,47 @@ loofi-fedora-tweaks --cli guides list
 loofi-fedora-tweaks --cli --json guides list
 loofi-fedora-tweaks --cli guides show make-fedora-yours
 loofi-fedora-tweaks --cli --json guides show solve-a-problem
+```
+
+## My Fedora configuration
+
+Open the card on **Overview** or search globally for **My Fedora
+configuration**. Choose **Read this computer**, select the installed desktop
+apps and supported user settings to keep, give the setup a name, and save it.
+Apps and Tweaks also offer **Add to configuration** for the selected app or
+profile. Existing settings are read into a saved profile; creating a setup does
+not change the computer.
+
+Use **Export JSON** to move the portable intent to another computer. **Import
+JSON** displays the app identities, installation scopes and setting values
+before adding the document to Loofi's local library. Import does not install
+apps or apply settings. The `loofi.setup/v1` document contains no commands,
+credentials, home files, or prior approvals.
+
+Choose **Compare with this computer** for a timestamped read of app presence,
+installation scope and supported setting values. Unknown source reads and
+settings for another desktop stay unavailable. For **Review and apply**, choose
+the current local source for each missing RPM or Flatpak. A named Flatpak
+installation in an imported file is only a hint: confirm the receiving computer's
+target installation explicitly. Missing app sources can be reviewed on the
+separate Sources page. Extra installed apps are never removed.
+
+Source setup, apps, and desktop settings are handled in order. Each source or
+app operation opens its existing fresh review and is independently verified;
+settings use the profile review and independent readback. If a check cannot be
+made, choose to stop or explicitly skip that step. A skip is saved as skipped,
+never as success. Errors stop later changes. After restarting Loofi, compare
+again; already-satisfied items are left alone and any remaining change requires
+a new review. The saved progress shows its exact plan/run references where the
+action history still exists.
+
+The read-only CLI supports:
+
+```bash
+loofi-fedora-tweaks --cli setup list
+loofi-fedora-tweaks --cli setup show SETUP_ID
+loofi-fedora-tweaks --cli setup compare SETUP_ID
+loofi-fedora-tweaks --cli --json setup list
 ```
 
 ## Install and launch
@@ -443,6 +487,9 @@ loofi activity list
 loofi activity show EVENT_ID
 loofi doctor
 loofi support-bundle
+loofi setup list
+loofi setup show SETUP_ID
+loofi setup compare SETUP_ID
 ```
 
 Use `--json` before the command for machine-readable output. `changes` remains
