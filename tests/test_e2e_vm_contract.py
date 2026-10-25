@@ -288,30 +288,35 @@ def test_reset_removes_only_known_files_for_a_saved_owner(tmp_path: Path) -> Non
     assert vm.state_path.exists() is False
 
 
-def test_ci_vm_job_is_local_runner_only_and_skips_pull_requests() -> None:
+def test_ci_never_schedules_a_workstation_runner() -> None:
     text = _workflow(".github/workflows/ci.yml")
-    vm_job = _job(text, "vm_e2e")
-    assert "if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch'" in vm_job
-    assert "[self-hosted, Linux, X64, loofi-vm-e2e]" in vm_job
-    assert "run: python3 -m e2e.vm test-full --reboot-check" in vm_job
-    assert "actions/upload-artifact@v4" in vm_job
+    assert "self-hosted" not in text
+    assert "loofi-vm-e2e" not in text
+    assert "run_vm_e2e:" not in text
+    assert "vm_e2e:" not in text
+    assert "extended_qualification:" not in text
 
 
-def test_release_native_checks_are_opt_in_and_skips_allow_normal_publication() -> None:
+def test_release_cannot_wait_for_a_retired_vm_job() -> None:
     text = _workflow(".github/workflows/auto-release.yml")
-    vm_job = _job(text, "vm_e2e")
     build_job = _job(text, "build")
-    assert "github.ref == 'refs/heads/master'" in vm_job
-    assert "startsWith(github.ref, 'refs/tags/v')" in vm_job
-    assert "[self-hosted, Linux, X64, loofi-vm-e2e]" in vm_job
-    assert "needs.validate.outputs.should_release == 'true'" in vm_job
-    assert "run: just test-full" in vm_job
-    assert "vm_e2e" in build_job.split("needs:", 1)[1].split("if:", 1)[0]
-    assert "needs.vm_e2e.result == 'success'" in build_job
-    assert "needs.vm_e2e.result == 'skipped'" in build_job
-    assert "github.event_name == 'workflow_dispatch' && inputs.run_vm_e2e" in vm_job
-    assert "run_vm_e2e:" in text and "default: false" in text
-    assert "waive_v33_vm_e2e" not in text
+    assert "self-hosted" not in text
+    assert "vm_e2e" not in text
+    for required in ("validate", "lint", "typecheck", "stabilization_rules", "docs_gate", "test", "security"):
+        assert f"needs.{required}.result == 'success'" in build_job
+    assert "needs.validate.outputs.should_release == 'true'" in build_job
+
+
+def test_unit_test_execution_has_no_check_write_capability() -> None:
+    for workflow in ("ci.yml", "auto-release.yml"):
+        text = _workflow(f".github/workflows/{workflow}")
+        defaults = text.split("permissions:", 1)[1].split("concurrency:", 1)[0]
+        assert "checks: write" not in defaults
+        assert "checks: write" not in _job(text, "test")
+        report = _job(text, "test_report")
+        assert "github.event_name != 'pull_request'" in report
+        assert "checks: write" in report
+        assert "needs: test" in report
 
 
 def test_rpm_builder_uses_a_unique_temp_root_and_reports_exact_rpm() -> None:
@@ -517,16 +522,3 @@ def test_reboot_records_changed_kernel_boot_and_protects_credentials(tmp_path: P
     run.assert_not_called()
     assert execute.call_args_list[1].args == ("/usr/bin/python3", ["/var/tmp/loofi-e2e/runner.py", "--activate-offline"])
     assert "os.chmod(f,0o600)" in execute.call_args.args[1][1]
-
-
-def test_extended_qualification_remains_master_only_and_sequential() -> None:
-    text = _workflow(".github/workflows/ci.yml")
-    job = _job(text, "vm_extended_qualification")
-    assert "github.ref == 'refs/heads/master'" in job
-    assert "github.event_name == 'workflow_dispatch'" in job
-    assert "inputs.extended_qualification" in job
-    assert "needs: vm_e2e" in job
-    assert "[self-hosted, Linux, X64, loofi-vm-e2e]" in job
-    assert "--fresh --reboot-check" in job
-    assert "--desktop wayland --reboot-check" in job
-    assert job.index("Repeat from a clean overlay") < job.index("Provision and qualify a separate empty disk") < job.index("Qualify a separate Plasma Wayland guest")

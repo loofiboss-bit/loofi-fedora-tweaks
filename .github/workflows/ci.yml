@@ -14,24 +14,13 @@ on:
       - ".vscode/**"
       - ".copilot/**"
   workflow_dispatch:
-    inputs:
-      run_vm_e2e:
-        description: "Run optional native Fedora KDE qualification"
-        type: boolean
-        default: false
-      extended_qualification:
-        description: "Run fresh-disk, reboot and Plasma Wayland qualification after the standard VM gate"
-        required: false
-        type: boolean
-        default: false
 
 permissions:
   contents: read
-  checks: write
 
 concurrency:
   group: ci-${{ github.ref }}
-  cancel-in-progress: true
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
 
 env:
   PYTHON_VERSION: "3.12"
@@ -46,8 +35,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -59,8 +50,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -72,8 +65,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -88,8 +83,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
       - run: python3 scripts/check_stabilization_rules.py
@@ -100,8 +97,9 @@ jobs:
     timeout-minutes: 30
     if: github.event_name != 'pull_request'
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
         with:
+          persist-credentials: false
           fetch-depth: 0
       - name: Run Fedora review in privileged Fedora 44 container
         run: |
@@ -133,7 +131,9 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 30
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - name: Build and inspect the installed RPM in Fedora 44
         run: |
           docker run --rm \
@@ -160,13 +160,17 @@ jobs:
     timeout-minutes: 30
     env:
       QT_QPA_PLATFORM: offscreen
+    outputs:
+      junit_artifact: ${{ steps.unit_results.outputs.artifact-id }}
     steps:
-      - uses: actions/checkout@v6
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
       - name: Install system test dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y libegl1 pkg-config libdbus-1-dev libglib2.0-dev
-      - uses: actions/setup-python@v7
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -187,62 +191,49 @@ jobs:
         run: |
           PYTHONPATH=loofi-fedora-tweaks python -m coverage report \
             --fail-under=${{ env.COVERAGE_THRESHOLD }}
-      - name: Test report annotations
+      - name: Preserve unit test results
+        id: unit_results
         if: always()
-        uses: dorny/test-reporter@v3
+        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        with:
+          name: unit-test-results
+          path: test-results.xml
+          if-no-files-found: warn
+          retention-days: 7
+
+  test_report:
+    name: Test report annotations
+    if: always() && github.event_name != 'pull_request' && needs.test.outputs.junit_artifact != ''
+    needs: test
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      contents: read
+      actions: read
+      checks: write
+    steps:
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          name: unit-test-results
+      - name: Publish trusted unit test annotations
+        uses: dorny/test-reporter@d1b5dff021aa968b288b02285a8bf47471c5928a # v3
         with:
           name: Test Results
           path: test-results.xml
           reporter: java-junit
           fail-on-error: false
 
-  vm_e2e:
-    # Native qualification is opt-in and stays on the trusted master runner.
-    if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch' && (inputs.run_vm_e2e || inputs.extended_qualification)
-    runs-on: [self-hosted, Linux, X64, loofi-vm-e2e]
-    timeout-minutes: 180
-    steps:
-      - uses: actions/checkout@v6
-      - name: Run isolated Fedora KDE GUI workflows
-        run: python3 -m e2e.vm test-full --reboot-check
-      - name: Upload VM test reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fedora-kde-e2e-${{ github.run_id }}
-          path: test-results/e2e/
-          if-no-files-found: warn
-          retention-days: 14
-
-  vm_extended_qualification:
-    # Never execute untrusted PR or feature-branch code on the trusted runner.
-    if: github.ref == 'refs/heads/master' && github.event_name == 'workflow_dispatch' && inputs.extended_qualification
-    needs: vm_e2e
-    runs-on: [self-hosted, Linux, X64, loofi-vm-e2e]
-    timeout-minutes: 180
-    steps:
-      - uses: actions/checkout@v6
-      - name: Repeat from a clean overlay
-        run: python3 -m e2e.vm test-full --reboot-check --reports-dir test-results/e2e-repeat
-      - name: Provision and qualify a separate empty disk
-        run: python3 -m e2e.vm test-full --fresh --reboot-check --reports-dir test-results/e2e-fresh
-      - name: Qualify a separate Plasma Wayland guest
-        run: python3 -m e2e.vm test-full --desktop wayland --reboot-check --reports-dir test-results/e2e-wayland
-      - name: Upload extended qualification reports
-        if: always()
-        uses: actions/upload-artifact@v4
-        with:
-          name: fedora-kde-extended-${{ github.run_id }}
-          path: test-results/e2e*/
-          if-no-files-found: warn
-          retention-days: 14
-
   security:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -253,8 +244,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
@@ -266,8 +259,10 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 10
     steps:
-      - uses: actions/checkout@v6
-      - uses: actions/setup-python@v7
+      - uses: actions/checkout@d23441a48e516b6c34aea4fa41551a30e30af803 # v6
+        with:
+          persist-credentials: false
+      - uses: actions/setup-python@6d4fd22b20465ccc0f7354476588e8df7c9ca0e0 # v7
         with:
           python-version: ${{ env.PYTHON_VERSION }}
           cache: "pip"
