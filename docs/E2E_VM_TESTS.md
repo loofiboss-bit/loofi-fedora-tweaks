@@ -1,5 +1,10 @@
 # Fedora KDE VM end-to-end tests
 
+> GitHub self-hosted runner execution is retired. See
+> [manual qualification](MANUAL_VM_QUALIFICATION.md) for the trusted source handoff,
+> resource-profile distinction, and evidence requirements. The commands below
+> describe the preserved legacy controller; they are not automatic CI gates.
+
 `just test-full` builds the current RPM, installs it into a dedicated Fedora
 KDE guest, runs native desktop tests through AT-SPI, collects JUnit and log
 reports, then discards the guest overlay. The first run installs a reusable
@@ -130,7 +135,8 @@ or mismatched VM and leaves its files untouched.
 
 ## Additional qualification runs
 
-The default `just test-full` keeps its X11 guest and existing CI trust boundary.
+The legacy `just test-full` keeps its X11 guest. Hosted CI and manually
+recorded native qualification have separate trust and evidence boundaries.
 Run qualification variants sequentially; do not start multiple 5 GiB guests on
 the same host. These options add coverage and do not imply a successful run:
 
@@ -248,61 +254,18 @@ staging directory is labeled `virt_qemu_ga_log_t`, the existing agent file
 transfer type. This permits payload/report transfer without granting the
 agent desktop or system administration access.
 
-## CI and release runner
+## Hosted CI and manual native qualification
 
-Pull requests use the existing hosted CI checks and do not execute repository
-code on a trusted self-hosted machine. Push and release workflows add a
-`vm_e2e` job requiring a self-hosted runner labeled
-`loofi-vm-e2e`. Configure that runner on the Fedora KDE host with the host
-requirements above and the repository checkout available to GitHub Actions.
-The CI VM job also runs the actual guest reboot checkpoint. On trusted master,
-a `workflow_dispatch` with `extended_qualification` enabled runs a second
-clean-overlay qualification, separate empty-disk provisioning and Wayland
-qualification sequentially after `vm_e2e` succeeds. These extended jobs remain
-disabled for pull requests and feature branches; their reports are uploaded
-even on failure. They require enough time and space for two independent bases.
-If no matching runner is online, the job remains queued; the auto-release RPM
-build and publication depend on its success. The workflows upload the E2E
-reports as an artifact even when the VM test fails.
+Automated workflows use GitHub-hosted runners. The former self-hosted jobs,
+workflow inputs, and release dependencies are retired. An unavailable laptop
+cannot leave a required VM job queued. Native results are recorded separately
+using [manual qualification](MANUAL_VM_QUALIFICATION.md); hosted CI success
+never claims a native desktop, reboot, or physical test passed.
 
-The CI runner must be dedicated to trusted repository branches and releases.
-Do not add the label to a shared machine that runs untrusted pull-request code.
-
-## Approving the local CI runner
-
-The VM tests do not install a GitHub Actions runner on the host. This separate
-setup requires explicit host approval. Inspect its exact plan without changing
-anything:
-
-```bash
-python3 -m e2e.ci_runner
-```
-
-After approval, run:
-
-```bash
-python3 -m e2e.ci_runner --approve-host-change
-```
-
-The approved actions are downloading the official Linux x64 runner with size
-and SHA-256 verification, registering `loofi-fedora-tweaks-vm` for this
-repository using `gh`, and creating/enabling/starting
-`~/.config/systemd/user/loofi-fedora-tweaks-ci-runner.service`. The binary and
-CI checkout live under `~/.local/share/loofi-fedora-tweaks/ci-runner/`; GitHub's
-standard runner updates stay there. No Fedora system packages are installed.
-If a native runner dependency is missing, setup fails and reports it rather
-than executing GitHub's host dependency installer. Existing unrelated runner
-data or services are refused. Setup confirms the runner's online status.
-
-The user service is available while the user's systemd manager runs. Host
-login lingering is not enabled; offline/suspended laptops leave VM jobs queued.
-Inspect or stop the service with:
-
-```bash
-systemctl --user status loofi-fedora-tweaks-ci-runner.service
-journalctl --user -u loofi-fedora-tweaks-ci-runner.service
-systemctl --user disable --now loofi-fedora-tweaks-ci-runner.service
-```
+The historical `e2e.ci_runner` bootstrap is not part of the supported workflow.
+Do not register the desktop as a GitHub runner or re-enable its retired user
+service. The native test controller itself remains available under the legacy
+resource and trusted-source conditions documented above.
 
 ## Implementation qualification (2026-10-11)
 

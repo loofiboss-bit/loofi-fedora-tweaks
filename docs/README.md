@@ -38,6 +38,7 @@ and is not.
 - [Design system](../DESIGN.md) — control-center structure, states, and measurement contract
 - [Contributing](CONTRIBUTING.md)
 - [Refactoring report (2026-10-11)](REFACTORING_2026-10-11.md) — measured consolidation, compatibility contracts, and verification
+- [Manual native qualification](MANUAL_VM_QUALIFICATION.md) — trusted source handoff after self-hosted runner retirement
 - [Fedora KDE VM end-to-end tests](E2E_VM_TESTS.md) — reusable local QEMU/KVM runner, guest-only system changes and CI/release gating
 - [Release checklist](RELEASE_CHECKLIST.md)
 
