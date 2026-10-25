@@ -19,7 +19,7 @@ class TestV22ReleaseAttestations(unittest.TestCase):
 
         self.assertIn("id-token: write", release_job)
         self.assertIn("attestations: write", release_job)
-        self.assertIn("uses: actions/attest@v4", release_job)
+        self.assertRegex(release_job, r"uses: actions/attest@([0-9a-f]{40} # v4|v4)")
         self.assertIn("subject-path: release-assets/*", release_job)
 
     def test_attestation_precedes_publication(self):
