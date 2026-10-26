@@ -281,7 +281,7 @@ jobs:
       - name: Preserve unit test results
         id: unit_results
         if: always()
-        uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+        uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: unit-test-results
           path: test-results.xml
@@ -355,13 +355,13 @@ jobs:
         run: bash scripts/build_rpm.sh
       - name: Build commit-bound SRPM
         run: bash scripts/build_srpm.sh
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: rpm-package
           path: rpmbuild/RPMS/noarch/*.rpm
           if-no-files-found: error
           retention-days: 1
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         with:
           name: srpm-package
           path: rpmbuild/SRPMS/*.src.rpm
@@ -426,7 +426,7 @@ jobs:
         run: pip install build setuptools wheel
       - name: Build source distribution
         run: bash scripts/build_sdist.sh
-      - uses: actions/upload-artifact@ea165f8d65b6e75b540449e92b4886f43607fa02 # v4
+      - uses: actions/upload-artifact@cf430e030ddbb5b0abf93d22962f4752f3646cd9 # v7.0.2
         if: always()
         with:
           name: sdist-package
