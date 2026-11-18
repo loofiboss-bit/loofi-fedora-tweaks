@@ -4,13 +4,14 @@
 
 | Version | Support |
 |---|---|
-| 36.1.x | Current Blueprint release support |
+| 36.2.x | Current Blueprint release support |
+| 36.1.x | Previous Blueprint release support |
 | 35.0.x | Previous Everyday public release support |
 | 33.0.x | Critical security fixes only |
 | < 33 | End of life |
 
-v36.1.0 "Blueprint" is the current release line, building on v35.0.0 "Everyday"
-and v33.0.1 "Concord". Historical pre-renormalization tags belong to an earlier
+v36.2.0 "Blueprint" is the current release line, building on v36.1.0 "Blueprint",
+v35.0.0 "Everyday", and v33.0.1 "Concord". Historical pre-renormalization tags belong to an earlier
 lineage and are not part of the active release line.
 
 ## Reporting a Vulnerability

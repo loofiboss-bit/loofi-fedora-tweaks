@@ -1,0 +1,118 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 320" width="1200" height="320" role="img" aria-labelledby="title desc">
+  <title id="title">Loofi Fedora Tweaks — v36.2.0 Blueprint</title>
+  <desc id="desc">Control center for Fedora 44 and 45 across KDE Plasma 6 and GNOME with My Fedora configuration, verified tweaks, and safe updates.</desc>
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#0E1320"/>
+      <stop offset="55%" stop-color="#161D31"/>
+      <stop offset="100%" stop-color="#1E2547"/>
+    </linearGradient>
+    <radialGradient id="violetGlow" cx="85%" cy="18%" r="55%">
+      <stop offset="0%" stop-color="#6B5CE7" stop-opacity="0.34"/>
+      <stop offset="60%" stop-color="#3F6AE0" stop-opacity="0.10"/>
+      <stop offset="100%" stop-color="#141823" stop-opacity="0"/>
+    </radialGradient>
+    <radialGradient id="blueGlow" cx="14%" cy="85%" r="48%">
+      <stop offset="0%" stop-color="#3C8CE7" stop-opacity="0.24"/>
+      <stop offset="100%" stop-color="#0E1320" stop-opacity="0"/>
+    </radialGradient>
+    <linearGradient id="iconBg" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#1A2138"/>
+      <stop offset="55%" stop-color="#283568"/>
+      <stop offset="100%" stop-color="#5372E6"/>
+    </linearGradient>
+    <linearGradient id="iconBorder" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#7B74EB"/>
+      <stop offset="100%" stop-color="#6FB1FF"/>
+    </linearGradient>
+    <linearGradient id="accentRule" x1="0%" y1="0%" x2="100%" y2="0%">
+      <stop offset="0%" stop-color="#8A80F8"/>
+      <stop offset="50%" stop-color="#51A2DA"/>
+      <stop offset="100%" stop-color="#51A2DA" stop-opacity="0"/>
+    </linearGradient>
+    <clipPath id="cardClip">
+      <rect x="8" y="8" width="1184" height="304" rx="22"/>
+    </clipPath>
+  </defs>
+
+  <g clip-path="url(#cardClip)">
+    <rect x="8" y="8" width="1184" height="304" rx="22" fill="url(#bgGrad)"/>
+    <rect x="8" y="8" width="1184" height="304" rx="22" fill="url(#violetGlow)"/>
+    <rect x="8" y="8" width="1184" height="304" rx="22" fill="url(#blueGlow)"/>
+
+    <!-- Subtle Blueprint grid lines on the right -->
+    <g stroke="#83B9FF" stroke-width="1" opacity="0.08">
+      <line x1="920" y1="8" x2="920" y2="312"/>
+      <line x1="980" y1="8" x2="980" y2="312"/>
+      <line x1="1040" y1="8" x2="1040" y2="312"/>
+      <line x1="1100" y1="8" x2="1100" y2="312"/>
+      <line x1="1160" y1="8" x2="1160" y2="312"/>
+      <line x1="860" y1="72" x2="1192" y2="72"/>
+      <line x1="860" y1="132" x2="1192" y2="132"/>
+      <line x1="860" y1="192" x2="1192" y2="192"/>
+      <line x1="860" y1="252" x2="1192" y2="252"/>
+    </g>
+    <g fill="none" stroke="#A59AFF" opacity="0.18">
+      <circle cx="1045" cy="156" r="108" stroke-width="1.2" stroke-dasharray="6 6"/>
+      <circle cx="1045" cy="156" r="68" stroke-width="1"/>
+      <circle cx="1045" cy="156" r="24" stroke-width="1.2"/>
+    </g>
+  </g>
+
+  <rect x="8" y="8" width="1184" height="304" rx="22" fill="none" stroke="#2D3A58" stroke-width="1.5"/>
+
+  <!-- Brand Emblem (matching loofi-fedora-tweaks.png squircle + gear & wrench) -->
+  <g transform="translate(64, 96)">
+    <rect x="0" y="0" width="128" height="128" rx="28" fill="url(#iconBg)" stroke="url(#iconBorder)" stroke-width="2.5"/>
+    <g transform="translate(64, 64)">
+      <!-- 8-tooth precision gear centered at (0, 0) -->
+      <path d="M -8 -48 L 8 -48 L 11 -37 A 34 34 0 0 1 19 -33 L 29 -39 L 40 -28 L 34 -18 A 34 34 0 0 1 38 -10 L 48 -7 L 48 9 L 37 12 A 34 34 0 0 1 33 20 L 39 30 L 28 41 L 18 35 A 34 34 0 0 1 10 39 L 7 49 L -9 49 L -12 38 A 34 34 0 0 1 -20 34 L -30 40 L -41 29 L -35 19 A 34 34 0 0 1 -39 11 L -49 8 L -49 -8 L -38 -11 A 34 34 0 0 1 -34 -19 L -40 -29 L -29 -40 L -19 -34 A 34 34 0 0 1 -11 -38 Z" transform="scale(0.84)" fill="#F7F9FF"/>
+      <circle cx="0" cy="0" r="16" fill="#283568"/>
+      <!-- Diagonal open-end wrench overlay -->
+      <g transform="rotate(-45)">
+        <rect x="-27" y="-7.5" width="54" height="15" rx="7" fill="#1F2952"/>
+        <circle cx="-30" cy="0" r="13" fill="#1F2952"/>
+        <circle cx="30" cy="0" r="13" fill="#1F2952"/>
+        <rect x="-26" y="-5" width="52" height="10" rx="5" fill="#FFFFFF"/>
+        <circle cx="-30" cy="0" r="10.5" fill="#FFFFFF"/>
+        <circle cx="30" cy="0" r="10.5" fill="#FFFFFF"/>
+        <polygon points="-42,-6.5 -28,-4.5 -25,0 -28,4.5 -42,6.5" fill="#232E5B"/>
+        <polygon points="42,-6.5 28,-4.5 25,0 28,4.5 42,6.5" fill="#232E5B"/>
+      </g>
+    </g>
+  </g>
+
+  <!-- Eyebrow pills -->
+  <g font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="11.5" font-weight="700" letter-spacing="0.7">
+    <rect x="228" y="68" width="154" height="26" rx="13" fill="#262052" stroke="#8A80F8" stroke-width="1"/>
+    <text x="305" y="85" text-anchor="middle" fill="#D5CFFF">v36.2.0 BLUEPRINT</text>
+
+    <rect x="394" y="68" width="132" height="26" rx="13" fill="#142C4F" stroke="#51A2DA" stroke-width="1"/>
+    <text x="460" y="85" text-anchor="middle" fill="#9FD6FF">FEDORA 44 &amp; 45</text>
+
+    <rect x="538" y="68" width="184" height="26" rx="13" fill="#19243D" stroke="#4D6188" stroke-width="1"/>
+    <text x="630" y="85" text-anchor="middle" fill="#C7D4EC">KDE PLASMA 6 · GNOME</text>
+  </g>
+
+  <!-- Main Heading & Tagline -->
+  <text x="228" y="152" font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="46" font-weight="800" letter-spacing="-0.8" fill="#F4F7FF">Loofi Fedora Tweaks</text>
+  <text x="228" y="190" font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="18.5" font-weight="400" fill="#B9C6E0">Understand your system, configure supported settings, and verify every change on Fedora.</text>
+
+  <!-- Accent Rule -->
+  <line x1="228" y1="214" x2="820" y2="214" stroke="url(#accentRule)" stroke-width="2"/>
+
+  <!-- Feature Chips -->
+  <g font-family="Inter, 'Segoe UI', system-ui, -apple-system, sans-serif" font-size="12.5" font-weight="600" fill="#DCE5F8">
+    <rect x="228" y="234" width="146" height="30" rx="8" fill="#1A2237" stroke="#314166" stroke-width="1"/>
+    <text x="301" y="253" text-anchor="middle">84 Verified Tweaks</text>
+
+    <rect x="386" y="234" width="186" height="30" rx="8" fill="#1A2237" stroke="#314166" stroke-width="1"/>
+    <text x="479" y="253" text-anchor="middle">My Fedora Configuration</text>
+
+    <rect x="584" y="234" width="154" height="30" rx="8" fill="#1A2237" stroke="#314166" stroke-width="1"/>
+    <text x="661" y="253" text-anchor="middle">AppStream &amp; Flatpak</text>
+
+    <rect x="750" y="234" width="176" height="30" rx="8" fill="#1A2237" stroke="#314166" stroke-width="1"/>
+    <text x="838" y="253" text-anchor="middle">Zero Daemons · Polkit</text>
+  </g>
+</svg>

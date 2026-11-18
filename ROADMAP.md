@@ -1,39 +1,30 @@
 # Roadmap
 
-## Strategic Direction (Post-v36.1.0) — KDE Plasma & Fedora 45 Focus
+## Strategic Direction (v36.2.0 Blueprint) — KDE Plasma & Fedora 45 Focus
 
-The strategic development roadmap prioritizes **KDE Plasma and Fedora 45** as the primary reference desktop and release target while maintaining Fedora 44 compatibility and strict Action Center verification guarantees:
+Stages 1–6 of the post-v36.1.0 strategic development plan prioritized **KDE Plasma 6 and Fedora 45** alongside Fedora 44 compatibility and Action Center verification guarantees, and are shipped in **[v36.2.0 Blueprint](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v36.2.0)**:
 
-1. **Stage 1 — Stability, Security, Packaging & Release Sync (Active):** Fix `.copr/Makefile` helper staging, harden `QScrollArea` page transitions under active AT-SPI without disabling accessibility, close legacy `pkexec bash -c` / `/tmp` service / preset traversal bypasses, fix `TweaksPage.showEvent()` redundant refresh, align metadata (`SECURITY.md`, `metainfo.xml`, `wiki/`), and archive pre-epoch tags (`v37.0.0`–`v50.0.0` → `legacy/pre-epoch-*`) before the next major release.
-2. **Stage 2 — Cohesive UX & Non-Blocking Interface:** Move synchronous `Tools` probes (`System`, `Storage`, `Network`, `Security`, `Logs`) off the Qt main thread, streamline `Overview` into a 3-zone task layout, consolidate duplicate Flatpak update cards in `Updates`, simplify `Activity` before/after evidence, and standardize on `ReviewedActionDialog` while keeping the UI strictly English with clean `tr()` literals.
-3. **Stage 3 — Core Feature Integration:** Rebuild **My Fedora configuration (Blueprint)** with `ui/components` and inline target mapping inside the unified `Tweaks -> Profiles` & `Overview` workflow; fix `HealthScoreManager`, `HardwareProfiles`, and `AnsibleExporter` heuristics.
-4. **Stage 4 — Architectural Simplification ("Delete over hide"):** Retire the 10 unreferenced UI files, `core/profiles/`, `services/ipc/daemon_client.py`, and legacy `utils/` shims; relocate `core/workers/` to `ui/workers/` for a 100% Qt-free `core/` and `services/`; consolidate disk state into `StateInventory`.
-5. **Stage 5 — Selective KDE Plasma 6 & Fedora 45 Enhancements:** Promote Fedora 45 to `supported_stable_releases` in `FEDORA_RELEASE_POLICY` upon qualification, deepen verifiable KDE Plasma 6 settings, and integrate pre/post-upgrade Blueprint comparison.
-6. **Stage 6 — Real Desktop E2E Qualification:** Replace mocked/CLI shortcuts in `e2e/tests/` with real AT-SPI GUI workflows on a clean Fedora 45 KDE Plasma VM.
+1. **Stage 1 — Stability, Security, Packaging & Release Sync (Completed in `v36.2.0`):** Removed `.copr/Makefile` `%check` bypass, stabilized `QScrollArea` ownership under active Qt AT-SPI (`owns_scroll = True`), closed legacy confirmation/path bypasses, fixed `TweaksPage.showEvent()` redundant refresh, and aligned release metadata across `SECURITY.md`, `ROADMAP.md`, `loofi-fedora-tweaks.metainfo.xml`, and `wiki/`.
+2. **Stage 2 — Cohesive UX & Non-Blocking Interface (Completed in `v36.2.0`):** Moved synchronous `Tools` probes off the Qt main thread, streamlined `Overview` into a task-oriented layout with a collapsible live hardware monitor, consolidated duplicate Flatpak update prompts, surfaced inline `Activity` recovery banners, and standardized on `ReviewedActionDialog`.
+3. **Stage 3 — Core Feature Integration (Completed in `v36.2.0`):** Added side-by-side comparison summaries and quick review actions for **My Fedora configuration (Blueprint)**, current-vs-target comparison and searchable profiles in `Tweaks`, and improved `HealthScoreManager`, `HardwareProfiles`, and `AnsibleExporter` heuristics.
+4. **Stage 4 — Architectural Simplification ("Delete over hide") (Completed in `v36.2.0`):** Retired orphaned compatibility shims (`core/profiles/*`, `ui/logs_tab.py`, `ui/performance_tab.py`, `cli/action_plans.py`, `core/diagnostics/gaming_audit.py`), decomposed oversized hardware and shell modules below architectural line budgets, and cached static OS/CPU reads.
+5. **Stage 5 — Selective KDE Plasma 6 & Fedora 45 Enhancements (Completed in `v36.2.0`):** Added `FedoraReleasePolicy.fedora45_qualified()` (`supported_stable_releases=("44", "45")`) and `TARGETS["45"]`, added KDE Plasma 6 tweaks (`kde-touchpad-natural-scroll` and `kde-dolphin-browse-archives`, bringing the catalog to **84** controls), and linked pre/post-upgrade Blueprint comparison from `Updates`.
+6. **Stage 6 — Real Desktop E2E Qualification & Release Maturity (Host-verified in `v36.2.0`):** Separated mocked Polkit unit contracts from `e2e/tests/`, enforced `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` multi-route scroll checks, and added `--fedora-release {44,45}` support to `e2e/vm.py`. Host preflight passes on Fedora 45; full live QEMU VM execution (`test-full --fedora-release 45 --reboot-check`) remains optional manual qualification.
 
-## v36.1.0 Blueprint — active candidate
+### Post-v36.2.0 Focus
 
-The implementation candidate centers on **My Fedora configuration**: save
-named selections of installed desktop apps and supported user settings, move
-data-only `loofi.setup/v1` JSON between computers, show a fresh timestamped
-comparison, then review source, app and setting changes in order. It applies no
-unrelated apps, removes no extras, and leaves imports in Loofi's local library
-until the user accepts a preview. Real plan/run references and per-step results
-are held separately in private local state. After interruption, compare again
-before offering any still-needed step for a new review.
+- **Optional live Fedora 45 VM matrix:** Execute `python3 -m e2e.vm test-full --fedora-release 45 --reboot-check` on a host meeting memory/disk requirements to add end-to-end guest artifacts alongside host/CI verification.
+- **Pre-epoch tag housekeeping & localization:** Archive historical pre-epoch remote tags (`v37.0.0`–`v50.0.0`) when authorized and expand compiled `.qm` translation bundles beyond the English source inventory.
 
-The read-only CLI provides `setup list`, `show`, and `compare`, including
-`--json`. The candidate also adds RPM package details, exact RPM removal from
-app comparison, and searchable tweak profiles. It preserves historical
-`v36.0.0`; the active package version is `36.1.0`. Traditional Fedora KDE with
-DNF5 is the first target. GNOME and Atomic retain their capability limits.
-Personal files, system cloning, arbitrary commands, credentials, and prior
-approvals stay outside the portable file. Candidate verification is in progress;
-no publication is implied by this roadmap entry.
+## v36.2.0 Blueprint — published
 
-The latest published release is [v35.0.0 Everyday](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0), published on 2026-10-21 with COPR build 11182269. Its annotated tag resolves to `56b07b1a41c3975bf24ec0acd2d16e2efebea18c`. See [publication evidence](docs/reports/V35_RELEASE_PUBLICATION.md) for successful canonical CI, public assets, attestation, COPR installation and wiki readback. Traditional Fedora KDE with DNF5 remains the first target; GNOME and Atomic retain their existing capability boundaries. Native matrices are complementary under the maintainer's risk-based release policy.
+Published on 2026-11-18 from `master` commit `584d4ea` (tag `v36.2.0`, [GitHub Release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v36.2.0), [COPR build 11350161](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/build/11350161/)) for **`fedora-44-x86_64`** and **`fedora-45-x86_64`**. See [v36.2.0 release notes](docs/releases/RELEASE-NOTES-v36.2.0.md) and [publication evidence](docs/reports/V36.2.0_RELEASE_PUBLICATION.md).
 
-Previous public release: [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1). Historical v33.0.0 and v34.0.0 tags are preserved.
+## v36.1.0 Blueprint — published predecessor
+
+Published on 2026-10-24 (commit `647a8f0`, [GitHub Release](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v36.1.0), COPR build `11202457`), introducing **My Fedora configuration**: save named selections of installed desktop apps and supported user settings, move data-only `loofi.setup/v1` JSON between computers, show a fresh timestamped comparison, and review source, app, and setting changes in order. Preserves historical `v36.0.0`. Traditional Fedora KDE with DNF5 is the first target; GNOME and Atomic retain their capability limits.
+
+Previous published releases: [v35.0.0 Everyday](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0) (2026-10-21, COPR build `11182269`, [publication evidence](docs/reports/V35_RELEASE_PUBLICATION.md)) and [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1) (2026-10-12). Historical `v33.0.0`, `v34.0.0`, and `v36.0.0` tags are preserved.
 
 ## v35.0.0 Everyday — published
 

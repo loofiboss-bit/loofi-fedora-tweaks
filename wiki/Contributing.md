@@ -1,4 +1,4 @@
-# Contributing Guide — v33.0.1 "Concord"
+# Contributing Guide — v36.2.0 "Blueprint"
 
 Thank you for contributing to Loofi Fedora Tweaks! This project prioritizes stability, verifiable operations, and defensive security.
 

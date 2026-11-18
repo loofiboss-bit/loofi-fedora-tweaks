@@ -1,4 +1,4 @@
-# Testing & Quality Assurance — v33.0.1 "Concord"
+# Testing & Quality Assurance — v36.2.0 "Blueprint"
 
 Loofi Fedora Tweaks uses automated quality gates to protect system safety and
 prevent regressions before code is merged or published. Physical and manual
@@ -7,12 +7,12 @@ recorded as verified, pending, or unverified.
 
 ---
 
-## 1. Automated Test Suite Metrics (v33.0.1)
+## 1. Automated Test Suite Metrics (v36.2.0)
 
-- **Test Suite Results**: 5,382 passed, 33 skipped, and 2,154 subtests passed, 0 failures in local release qualification.
-- **Code Coverage**: 85.49% line coverage (blocking CI gate is 85%).
-- **Automated Validation**: Static typing (`mypy`), linting (`flake8`), architecture boundaries, packaging validation, and documentation link checks all pass cleanly.
-- **Evidence Boundaries**: Headless/offscreen tests prove logic, command construction, and catalog contracts. Physical display server integration, hardware controllers, Polkit agents, reboot behavior, and Atomic-host behavior are recorded separately and are not inferred from automated checks; see the release publication report for their status.
+- **Test Suite Results**: **5,864 passed, 33 skipped, and 2,460 subtests passed** (`0` failures) in `just release-prep` qualification.
+- **Code Coverage**: **85.26%** line coverage (blocking CI gate is 85%).
+- **Automated Validation**: Static typing (`mypy`), linting (`flake8`), architecture boundaries (`validate_architecture.py`), packaging manifest verification, `fedora-review` tooling checks, and `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` multi-route shell scroll tests all pass cleanly.
+- **Evidence Boundaries**: Headless/offscreen tests prove logic, command construction, scroll ownership, and catalog contracts. Live QEMU/libvirt Fedora 44/45 VM execution (`python3 -m e2e.vm preflight --fedora-release 45` / `test-full`) and physical desktop checks remain separate manual evidence; see [publication evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V36.2.0_RELEASE_PUBLICATION.md).
 
 ---
 

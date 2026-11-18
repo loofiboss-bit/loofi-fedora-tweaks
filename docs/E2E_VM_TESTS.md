@@ -7,9 +7,10 @@
 
 `just test-full` builds the current RPM, installs it into a dedicated Fedora
 KDE guest, runs native desktop tests through AT-SPI, collects JUnit and log
-reports, then discards the guest overlay. The first run installs a reusable
-Fedora 44 KDE base image; later runs reuse that image and start with a clean
-QCOW2 overlay.
+reports, then discards the guest overlay. The default target is Fedora 44, and
+`--fedora-release {44,45}` selects between a reusable Fedora 44 or Fedora 45 KDE
+base image (`python3 -m e2e.vm preflight --fedora-release 45` / `test-full --fedora-release 45`).
+Later runs reuse the corresponding base image and start with a clean QCOW2 overlay.
 
 ## Selenium AT-SPI
 

@@ -50,28 +50,31 @@ second registry or expose retired product surfaces.
 
 ## Page families
 
-- Overview: CPU, RAM, GPU, and storage are the first four panels, followed by
-  network, disk activity, temperatures, and battery. A compact maintenance
-  section has up to three relevant next steps; introduction and guides follow
-  the system overview. Use four, two, or one columns according to available
-  width and font size. At 1280x800 with standard text, the four primary
-  resource panels are visible without scrolling.
+- Overview: task-oriented start view leading with up to three relevant next steps,
+  optional guides, **My Fedora configuration**, and a collapsible live hardware
+  monitor (CPU, RAM, GPU, storage, network, disk activity, temperatures, and
+  battery). Columns adapt cleanly (`4/2/1`) to window width and font metrics.
 - Tweaks: Settings and Profiles subviews within one route. Settings use compact
   grouped rows with an upfront user/computer scope label, requested value,
-  verified readback, and any separate session-activation result. Profiles hold
-  the library and copy editor; compare and final review remain dialogs.
+  current-vs-target comparison, verified readback, and any separate
+  session-activation result. Profiles hold the library and copy editor; compare
+  and final review remain dialogs.
 - Apps: Catalog, Installed, and Sources tabs. Catalog has source summaries and
   a fixed selection/review area with Show selected, individual deselection,
   and Clear selection. The shared review dialog shows exact source, package
   identifier, and installation scope without requiring expansion.
-- Updates: independent System, Flatpak, and Firmware source sections.
+- Updates: independent System, Flatpak, and Firmware source sections with
+  upgrade preparation linking directly to **My Fedora configuration**.
 - Health: symptom, inspection, evidence, reviewed fix, verified result.
-- Activity: filterable saved results, before/after facts, and recovery details.
+- Activity: filterable saved results, inline recovery banners, before/after facts,
+  and recovery details.
 - Tools: shared scaffolding, readable tables, and explicit details.
 
 Use panels for related information and divided rows for individual settings.
 Avoid decorative gradients, unnecessary nested cards, duplicated page titles,
-and nested vertical scrolling. Every page has one main scroll owner.
+and nested vertical scrolling. Every page has one main scroll owner (using
+`owns_scroll = True` where a routed page manages its own `QScrollArea` so
+Qt/AT-SPI page transitions remain stable without disabling accessibility).
 Scrollable cards and content columns may shrink to their wrapped-text height
 at the available width. Hidden Health views must not reserve vertical space
 in the active workflow or push maintenance below an empty scroll region.

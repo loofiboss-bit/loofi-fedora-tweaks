@@ -22,8 +22,11 @@ reviewing a step alone does not complete it. Profile results identify only the
 selected settings that independently succeeded. Backup acknowledgement is a
 separate user task and does not prove a working backup.
 
-The active v36.1.0 Blueprint candidate adds **My Fedora configuration** under
-Overview. People can save named selections of installed RPM/Flatpak desktop
+The **v36.2.0 Blueprint** release (building on `v36.1.0 Blueprint`, `v35.0.0 Everyday`,
+and `v33.0.1 Concord`) makes **My Fedora configuration** a central workflow under
+Overview and connects it to Updates upgrade preparation alongside side-by-side
+diff previews, quick actions, and a collapsible Overview hardware monitor.
+People can save named selections of installed RPM/Flatpak desktop
 apps and supported user settings, export or preview-import portable JSON,
 compare it with fresh local observations, and review remaining work through
 existing source, application and profile flows. Imports only add data to Loofi's
@@ -32,6 +35,10 @@ home-directory files, system clone, or previous approval. Extra installed apps
 are not removed. Progress records hold the content identity, step states, and
 exact plan/run references separately from exported intent; after a restart,
 Loofi rechecks the computer and asks for a new review.
+
+KDE Plasma 6 on traditional **Fedora 44 and Fedora 45** with DNF5 is the primary
+target; GNOME, Fedora Atomic (`rpm-ostree`), and `bootc` retain their documented
+capability boundaries.
 
 ## Who it is for
 

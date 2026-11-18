@@ -1,19 +1,18 @@
 # Loofi Fedora Tweaks — User Guide
 
-> Published baseline: v35.0.0 "Everyday" (2026-10-21). See [release qualification](V35_QUALIFICATION.md) for its automated evidence and native desktop limits.
+> Current release: v36.2.0 "Blueprint" (2026-11-18), targeting Fedora 44 and Fedora 45 (KDE Plasma 6 primary, GNOME and Atomic supported within their documented capability boundaries). See [v36.2.0 release notes](releases/RELEASE-NOTES-v36.2.0.md) and [publication evidence](reports/V36.2.0_RELEASE_PUBLICATION.md).
 
 This guide covers the supported GUI and CLI. For a short first run, see
 [Getting Started](BEGINNER_QUICK_GUIDE.md). For operator detail, see
 [Advanced administration](ADVANCED_ADMIN_GUIDE.md).
 
-The published v35.0.0 Everyday release adds local AppStream discovery, explicit
-metadata refresh, complete RPM/Flatpak transaction review, and verified
-interruption recovery. Its installation-bound Flatpak updates from v34.0.1 are
-included. See [release notes](releases/RELEASE-NOTES-v35.0.0.md) and
-[qualification](V35_QUALIFICATION.md) for the tested scope and evidence limits.
-
-The active **v36.1.0 Blueprint** candidate adds a portable, review-first
-configuration flow. It is not published; see [candidate notes](releases/RELEASE-NOTES-v36.1.0.md).
+The **v36.2.0 Blueprint** release expands the published **v36.1.0 Blueprint**
+and **v35.0.0 Everyday** workflows with Fedora 45 readiness, KDE Plasma 6
+everyday controls (84 total tweaks), a task-first Overview with a collapsible
+hardware monitor, side-by-side **My Fedora configuration** comparisons, pre/post-upgrade
+Blueprint links in Updates, inline recovery banners in Activity, and Qt/AT-SPI
+scroll-area stabilization. See [release notes](releases/RELEASE-NOTES-v36.2.0.md)
+and [publication evidence](reports/V36.2.0_RELEASE_PUBLICATION.md).
 
 ## Product scope
 
@@ -354,11 +353,12 @@ System-wide review shows the current and selected values, all-users scope, and
 recovery guidance in one dialog. If automatic rollback is unavailable, confirm
 that limitation there before Loofi starts the change.
 
-The catalog has 82 controls grouped as Appearance, Desktop, Files, Interaction,
+The catalog has 84 controls grouped as Appearance, Desktop, Files, Interaction,
 Privacy, Input, Windows, Sound, Power, and System & Packaging. GNOME Files
-offers click behavior and default folder view; KDE adds Dolphin's full-path
-setting, editable location bar, session tabs, external folder tabs, and close-tab
-confirmation. KWin offers maximized-titlebar, edge tiling, and focus prevention.
+offers click behavior and default folder view; KDE adds Touchpad natural scroll,
+Dolphin's full-path setting, editable location bar, archive browsing (`BrowseThroughArchives`),
+session tabs, external folder tabs, and close-tab confirmation. KWin offers maximized-titlebar,
+edge tiling, and focus prevention.
 Files also offers an editable location bar and simple/detailed dates. Missing Files schemas or Dolphin
 are reported as unavailable. See
 [TWEAKS.md](TWEAKS.md) for the complete generated list with Loofi standard values.

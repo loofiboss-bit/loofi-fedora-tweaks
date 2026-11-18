@@ -1,5 +1,19 @@
 # Changelog
 
+## v36.2.0 — Blueprint (2026-11-18)
+
+- Published on GitHub and Fedora COPR ([build 11350161](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/build/11350161/)) for both `fedora-44-x86_64` and `fedora-45-x86_64`.
+- Stabilized Qt/AT-SPI scroll-area ownership (`owns_scroll = True`), removed the `.copr/Makefile` `%check` bypass, and enforced `QT_LINUX_ACCESSIBILITY_ALWAYS_ON=1` multi-route shell checks.
+- Streamlined Overview (task-first + collapsible hardware monitor), added current-vs-target comparison in Tweaks, side-by-side Blueprint diff cards, inline Activity recovery banners, and pre/post-upgrade Blueprint links in Updates.
+- Qualified Fedora 45 release policy (`FedoraReleasePolicy.fedora45_qualified()`), added KDE Touchpad Natural Scroll and Dolphin Browse Through Archives (84 controls), added `--fedora-release {44,45}` to `e2e/vm.py`, and retired orphaned compatibility shims (`core/profiles/*`, `ui/logs_tab.py`, `ui/performance_tab.py`, `cli/action_plans.py`, `core/diagnostics/gaming_audit.py`).
+- [Release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v36.2.0.md) and [publication evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V36.2.0_RELEASE_PUBLICATION.md).
+
+## v36.1.0 — Blueprint (2026-10-24)
+
+- Added **My Fedora configuration** for portable `loofi.setup/v1` app and desktop-setting setups, fresh comparison, reviewed execution order, and read-only `setup` CLI commands.
+- Added RPM installation metadata details, exact-package comparison removal, and searchable tweak profiles.
+- [Release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v36.1.0.md).
+
 ## v35.0.0 — Everyday (2026-10-21)
 
 - Local AppStream application search and separately reviewed catalog package updates.

@@ -1,8 +1,8 @@
-# Architecture — v33.0.1 "Concord"
+# Architecture — v36.2.0 "Blueprint"
 
 Loofi Fedora Tweaks is structured as a layered, modular desktop application with clean boundaries between UI presentation, domain logic, system service probing, and execution authority.
 
-The canonical architecture contract is maintained in [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md); the active roadmap and qualification documents record the current candidate scope and evidence.
+The canonical architecture contract is maintained in [ARCHITECTURE.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/ARCHITECTURE.md); the active roadmap and release publication documents record current scope and evidence.
 
 ---
 
@@ -52,7 +52,7 @@ The canonical architecture contract is maintained in [ARCHITECTURE.md](https://g
 ## 3. PlatformProfile: The Detection Authority
 
 `PlatformProfile` is the shared, immutable authority across both GUI and CLI. It queries and caches:
-- Fedora version (`43`, `44`, `45-preview`, or `unknown`).
+- Fedora version (`43`, `44`, `45`, `45-preview`, or `unknown` via `FedoraReleasePolicy`, with Fedora 44 and 45 supported in `v36.2.0`).
 - Deployment backend (`dnf5`, `rpm_ostree`, `bootc`, or `unknown`).
 - Desktop environment (`GNOME`, `KDE`, `XFCE`, `Sway`, `generic`).
 - Display server (`wayland` or `x11`).

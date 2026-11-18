@@ -1,4 +1,4 @@
-# CI/CD Automation Pipeline — v33.0.1 "Concord"
+# CI/CD Automation Pipeline — v36.2.0 "Blueprint"
 
 The Loofi Fedora Tweaks repository uses GitHub Actions for continuous integration, security scanning, packaging validation, and automated release publication.
 
@@ -8,35 +8,34 @@ The Loofi Fedora Tweaks repository uses GitHub Actions for continuous integratio
 
 | Workflow | Trigger | Responsibilities |
 | --- | --- | --- |
-| **`ci.yml`** | Push & Pull Request | Code linting, typechecking (`mypy`), unit tests, coverage verification (85% threshold), docs validation, RPM/sdist build checks |
-| **`auto-release.yml`** | Push to `master` / Tag / Manual dispatch | Automated quality validation, version consistency checks, RPM build, immutable git tag creation, GitHub Release publication, and COPR build handoff |
-| **CodeQL Analysis** | PR & Weekly Schedule | Semantic static security analysis for Python and GitHub Actions workflows |
+| **`ci.yml`** | Push & Pull Request | Code linting, typechecking (`mypy`), unit tests, coverage verification (85% threshold), docs validation, dependency audit, RPM/sdist build checks |
+| **`auto-release.yml`** | Push to `master` / Tag / Manual dispatch | Automated quality validation, version consistency checks, RPM build, Fedora review & installed smoke check, immutable git tag creation, GitHub Release publication with OIDC attestation, and COPR build handoff |
+| **CodeQL Analysis** | PR & Weekly Schedule | Semantic static security analysis for Python, C/C++, and GitHub Actions workflows |
 | **`publish-wiki.yml`** | Wiki Directory Push | Synchronizes documentation mirrors to the GitHub Wiki |
 
 ---
 
 ## 2. Release Gate Sequence
 
-The `auto-release.yml` pipeline executes a deterministic sequence of gates before creating a release:
+The `auto-release.yml` pipeline runs entirely on GitHub-hosted runners (the former self-hosted VM job is retired) and executes a deterministic sequence of gates before creating a release:
 
 ```text
-Commit to master
+Commit to master / v* tag
    │
-   ├─► 1. Documentation & Version Sync Gate (scripts/check_packaging_manifest.py)
-   ├─► 2. Static Typing & Linting (mypy, flake8)
+   ├─► 1. Documentation, Version & Manifest Gate (scripts/check_packaging_manifest.py)
+   ├─► 2. Static Typing, Architecture & Linting (mypy, validate_architecture.py, flake8)
    ├─► 3. Test Suite & Coverage Gate (pytest, min 85% coverage)
-   ├─► 4. Dedicated Fedora KDE VM E2E gate
-   ├─► 5. Package Build & Metainfo Validation (RPM spec, AppStream)
-   ├─► 6. Auto-Tagging (creates verified annotated git tag)
-   ├─► 7. GitHub Release Creation (RPM, sdist, CycloneDX SBOM, in-toto attestation)
-   └─► 8. Fedora COPR build, terminal success, and installed-version verification
+   ├─► 4. Package Build, Fedora Review & Installed RPM Smoke Test (fedora-review mock, RPM/sdist)
+   ├─► 5. Auto-Tagging (verified annotated git tag)
+   ├─► 6. GitHub Release Creation (RPM, sdist, CycloneDX SBOM, in-toto provenance, GitHub attestation)
+   └─► 7. Fedora COPR build (`fedora-44-x86_64`, `fedora-45-x86_64`) and installed-version verification
 ```
 
 ---
 
 ## 3. Public Evidence Readback
 
-Every public release records its verification evidence in `docs/reports/` (e.g. [V33.0.1_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V33.0.1_RELEASE_PUBLICATION.md)), documenting:
+Every public release records its verification evidence in `docs/reports/` (see [V36.2.0_RELEASE_PUBLICATION.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V36.2.0_RELEASE_PUBLICATION.md)), documenting:
 - Exact commit SHA and annotated tag object.
 - Test pass count and coverage percentage.
 - SHA-256 digests for all published assets (RPM, tarball, SBOM, and attestations).

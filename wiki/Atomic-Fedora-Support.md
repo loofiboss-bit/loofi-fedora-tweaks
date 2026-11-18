@@ -1,4 +1,4 @@
-# Atomic & Immutable Fedora Guide — v33.0.1 "Concord"
+# Atomic & Immutable Fedora Guide — v36.2.0 "Blueprint"
 
 Loofi Fedora Tweaks natively understands Fedora's immutable desktop variants, including **Fedora Silverblue** (GNOME), **Fedora Kinoite** (KDE Plasma), **Fedora Sericea** (Sway), **Fedora Onyx** (Budgie), and containerized **bootc** systems.
 

@@ -1,8 +1,9 @@
 # Installation-bound Flatpak updates
 
-The v34.0.1 Accord candidate connects installed applications, update review,
-independent verification, and optional runtime maintenance. It is local candidate
-work; the latest published release remains v33.0.1 Concord.
+Loofi Fedora Tweaks (`v36.2.0 "Blueprint"`, building on `v34.0.1 Accord` and
+`v35.0.0 Everyday`) connects installed applications, update review,
+independent verification, and optional runtime maintenance across user,
+default system, and named Flatpak installations.
 
 ## Choose an installation and applications
 

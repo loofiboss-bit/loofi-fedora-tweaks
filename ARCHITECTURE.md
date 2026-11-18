@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks Architecture
 
-> Active architecture reference, including v35.0.0 "Everyday" workflows.
+> Active architecture reference, updated for v36.2.0 "Blueprint" (Fedora 44 & 45).
 > Physical GNOME, KDE, and screen-reader qualification remains separately documented as unverified.
 
 ## Product boundary
@@ -12,9 +12,13 @@ system-wide DNF setting, alongside app installation, updates, and diagnostics.
 Missing applications, schemas, or host tools produce an unavailable state
 with an explanation.
 
-The current tweak catalog contains 82 controls: 46 GNOME-only, 34 KDE-only,
+The current tweak catalog contains 84 controls: 46 GNOME-only, 36 KDE-only,
 and two shared controls. The GUI and CLI project the controls supported by the
-detected Fedora desktop and deployment backend.
+detected Fedora desktop and deployment backend. `FedoraReleasePolicy.fedora45_qualified()`
+provides qualified Fedora 44/45 release policy targets alongside the default compatibility
+baseline. Legacy compatibility shims (`core/profiles/*`, `ui/logs_tab.py`,
+`ui/performance_tab.py`, `cli/action_plans.py`, and `core/diagnostics/gaming_audit.py`)
+are retired.
 
 The product has no background service, local web API, remote-control endpoint,
 unattended scheduler, automatic retry, automatic rollback, or automatic reboot.

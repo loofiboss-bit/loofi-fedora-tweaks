@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Administration Guide
 
-> Published v33.0.1 "Concord"; physical desktop and assistive-technology validation remains unverified.
+> Current release: v36.2.0 "Blueprint" (Fedora 44 and Fedora 45); physical desktop and assistive-technology validation remains separately documented.
 
 This guide is for Fedora administrators who need repeatable diagnostics and a
 clear boundary around system changes.
