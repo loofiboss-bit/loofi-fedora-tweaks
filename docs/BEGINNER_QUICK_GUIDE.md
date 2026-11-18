@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Getting Started
 
-> v33.0.1 Concord guide updated 2026-10-12; physical desktop and assistive-technology validation remains a separate qualification.
+> v36.2.0 "Blueprint" guide updated 2026-11-18 for Fedora 44 and Fedora 45; physical desktop and screen-reader validation remains separately documented.
 
 <!-- Canonical source mirrored byte-for-byte to wiki/Getting-Started.md. -->
 
@@ -9,14 +9,15 @@ Use this guide for a safe first run in under 10 minutes.
 ## 1) Install and launch
 
 ```bash
-pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
-pkexec dnf install loofi-fedora-tweaks
+sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
+sudo dnf install loofi-fedora-tweaks
 loofi-fedora-tweaks
 ```
 
-The first launch opens **Overview**, a read-only system dashboard. If reopening
-the last page is enabled, later launches return to that page. Browsing a page
-does not modify the host. Loofi
+The first launch opens **Overview**, a read-only task-oriented dashboard with
+recommended next steps, optional guides, **My Fedora configuration**, and a
+collapsible hardware monitor. If reopening the last page is enabled, later
+launches return to that page. Browsing a page does not modify the host. Loofi
 checks availability before it offers an executable operation, and unknown
 deployment backends remain unavailable.
 
@@ -103,6 +104,7 @@ alias loofi='loofi-fedora-tweaks --cli'
 loofi info
 loofi check
 loofi updates check
+loofi setup list
 loofi troubleshoot profiles
 loofi activity list
 loofi doctor

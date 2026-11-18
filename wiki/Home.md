@@ -1,26 +1,23 @@
-# Loofi Fedora Tweaks Wiki — v35.0.0 "Everyday"
+# Loofi Fedora Tweaks Wiki — v36.2.0 "Blueprint"
 
-Loofi Fedora Tweaks brings application management, desktop settings, maintenance
-and verified operation history together, prioritizing traditional Fedora KDE
-with DNF5.
+Loofi Fedora Tweaks brings application management, desktop settings, **My Fedora
+configuration**, symptom diagnostics, and verified operation history together,
+prioritizing **KDE Plasma 6** on **Fedora 44 and Fedora 45** with DNF5 while
+preserving capability-aware support for GNOME, Fedora Atomic (`rpm-ostree`),
+and `bootc`.
 
-**Release:** [v35.0.0 Everyday](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0).
-Search local AppStream catalogs, review complete RPM/Flatpak transactions, remove
-RPM applications and choose optional reviewed sources/codecs in Get Fedora ready.
-Guides require verified results for change steps; interrupted work never resumes
-a mutation automatically.
+**Current Release:** [v36.2.0 Blueprint](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v36.2.0) (published 2026-11-18).
+Save and compare portable `loofi.setup/v1` app and tweak blueprints, inspect
+84 declarative controls with current-vs-target comparison, manage RPM/Flatpak
+apps cleanly, review independent updates and upgrade preparation, and track
+verified operations and recovery banners in Activity.
 
-See [release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v35.0.0.md)
-and [qualification](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/V35_QUALIFICATION.md).
-The known Qt accessibility defect remains disclosed. Native VM matrices are
-optional under the maintainer's risk-based release policy; local checks do not
-establish physical desktop qualification.
+See [v36.2.0 release notes](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/releases/RELEASE-NOTES-v36.2.0.md)
+and [publication evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V36.2.0_RELEASE_PUBLICATION.md).
+Publication is verified on GitHub and Fedora COPR ([build 11350161](https://copr.fedorainfracloud.org/coprs/loofitheboss/loofi-fedora-tweaks/build/11350161/) for
+`fedora-44-x86_64` and `fedora-45-x86_64`).
 
-Publication is verified on GitHub and Fedora 44 COPR build 11182269. See
-[publication evidence](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/reports/V35_RELEASE_PUBLICATION.md)
-for source identity, checksums, signatures, canonical CI and repository installation.
-
-**Previous public release:** [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1).
+**Previous releases:** [v36.1.0 Blueprint](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v36.1.0), [v35.0.0 Everyday](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0), and [v33.0.1 Concord](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v33.0.1).
 
 ![Loofi Fedora Tweaks Overview](images/overview.png)
 

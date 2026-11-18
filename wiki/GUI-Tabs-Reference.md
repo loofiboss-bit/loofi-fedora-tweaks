@@ -1,4 +1,4 @@
-# GUI Reference — v33.0.1 "Concord"
+# GUI Reference — v36.2.0 "Blueprint"
 
 Loofi Fedora Tweaks opens on **Overview**, unless reopening the last page is
 enabled. Six primary destinations are always available. Selecting a destination
@@ -27,11 +27,14 @@ are retained. Settings stays at the bottom of the sidebar.
 
 ## Overview
 
-A read-only dashboard shows computer information, CPU, memory, GPU, storage,
-network/disk activity, temperatures, battery, and recorded maintenance results.
-Each reading identifies its source, time, and state. **Collecting**,
-**Unavailable**, **Read failed**, and **Last known value** distinguish pending,
-unsupported, failed, and old evidence. Missing readings are not zero values.
+A task-oriented dashboard presents recommended next steps, recent maintenance
+status, optional everyday guides, **My Fedora configuration** (portable
+`loofi.setup/v1` app and setting blueprints with side-by-side diff previews),
+and a collapsible live hardware monitor (CPU, memory, GPU, storage, network/disk
+activity, temperatures, and battery). Each reading identifies its source, time,
+and state. **Collecting**, **Unavailable**, **Read failed**, and **Last known
+value** distinguish pending, unsupported, failed, and old evidence. Missing
+readings are not zero values.
 
 Measurements refresh every two seconds, sensors every five seconds, with up to
 60 samples per graph. **Pause** retains the last values and **Resume** establishes
@@ -41,11 +44,11 @@ automatically; the dashboard installs no tools or drivers.
 
 ## Tweaks
 
-Use **Settings** for individual controls and **Profiles** for editable profile copies. Drafts survive switching between these views. A successful save opens review for that exact copy. Each setting exposes user/computer scope and requested/verified values.
+Use **Settings** for individual controls and **Profiles** for editable profile copies and comparisons. Drafts survive switching between these views. A successful save opens review for that exact copy. Each setting exposes user/computer scope, current-vs-target comparison, and requested/verified values.
 
-Tweaks lists 82 controls across GNOME, KDE Plasma, and shared system settings,
-grouped by theme (Appearance, Desktop, Interaction, Privacy, Input, Windows,
-Sound, Power, System & Packaging). The full list with Loofi standard values is generated in
+Tweaks lists **84** controls across GNOME (46), KDE Plasma (36), and shared
+system settings (2), grouped by theme (Appearance, Desktop, Files, Interaction,
+Privacy, Input, Windows, Sound, Power, System & Packaging). The full list with Loofi standard values is generated in
 [docs/TWEAKS.md](https://github.com/loofiboss-bit/loofi-fedora-tweaks/blob/master/docs/TWEAKS.md).
 
 - Each row shows the current value read from the system. Changes are checked

@@ -1,6 +1,6 @@
 # Loofi Fedora Tweaks — Troubleshooting
 
-> Published baseline: v33.0.1 "Concord" (2026-10-12). See [release qualification](V33_QUALIFICATION.md) for the explicit VM E2E exception and physical desktop evidence limits.
+> Current release: v36.2.0 "Blueprint" (2026-11-18). See [v36.2.0 release notes](releases/RELEASE-NOTES-v36.2.0.md) and [publication evidence](reports/V36.2.0_RELEASE_PUBLICATION.md); physical desktop and screen-reader validation remain separately documented.
 
 Use this guide when the application or one of its Fedora checks is unavailable.
 Loofi reports missing capabilities explicitly and does not guess a desktop,

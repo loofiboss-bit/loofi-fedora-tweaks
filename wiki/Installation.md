@@ -1,4 +1,4 @@
-# Installation Guide — v35.0.0 "Everyday"
+# Installation Guide — v36.2.0 "Blueprint"
 
 Loofi Fedora Tweaks is distributed as an audited RPM package built specifically for Fedora Linux. The primary supported package channel is the official Fedora COPR repository.
 
@@ -6,9 +6,9 @@ Loofi Fedora Tweaks is distributed as an audited RPM package built specifically 
 
 ## System Requirements
 
-- **Primary v35 platform**: traditional Fedora 44 with KDE Plasma and DNF5.
-- **Other environments**: GNOME and Atomic retain existing feature availability boundaries; unsupported actions explain their limitations.
-- **Published COPR channel**: Fedora 44 `x86_64`. The application RPM is `noarch`; this does not qualify other architectures or desktop sessions.
+- **Primary target**: Traditional **Fedora 44 and Fedora 45** with KDE Plasma 6 and DNF5.
+- **Other environments**: GNOME and Fedora Atomic (`rpm-ostree` / `bootc`) retain capability-aware boundaries; unsupported actions explain their limitations.
+- **Published COPR channels**: Fedora 44 `x86_64` (`fedora-44-x86_64`) and Fedora 45 `x86_64` (`fedora-45-x86_64`). The application RPM is `noarch`.
 - **Runtime Dependencies**: Python 3.12 or newer, PyQt6 (automatically pulled by the RPM).
 - **Privilege Separation**: `pkexec` and a standard desktop Polkit authentication agent for executing confirmed changes.
 
@@ -22,8 +22,8 @@ Loofi Fedora Tweaks is distributed as an audited RPM package built specifically 
 The easiest and most reliable way to install and receive automated updates is through the Fedora COPR repository:
 
 ```bash
-pkexec dnf copr enable loofitheboss/loofi-fedora-tweaks
-pkexec dnf install loofi-fedora-tweaks
+sudo dnf copr enable loofitheboss/loofi-fedora-tweaks
+sudo dnf install loofi-fedora-tweaks
 ```
 
 Launch Loofi from your desktop application launcher or run:
@@ -38,12 +38,12 @@ loofi-fedora-tweaks
 
 If you prefer to install without enabling the COPR repository, download the RPM and published checksums directly from GitHub:
 
-1. Visit the [v35.0.0 Release Page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v35.0.0).
-2. Download `loofi-fedora-tweaks-35.0.0-1.fc44.noarch.rpm` (or the RPM matching your Fedora release) from the release assets.
+1. Visit the [v36.2.0 Release Page](https://github.com/loofiboss-bit/loofi-fedora-tweaks/releases/tag/v36.2.0).
+2. Download `loofi-fedora-tweaks-36.2.0-1.fc45.noarch.rpm` or `loofi-fedora-tweaks-36.2.0-1.fc44.noarch.rpm` matching your Fedora release.
 3. Install the downloaded RPM using DNF:
 
 ```bash
-pkexec dnf install ./loofi-fedora-tweaks-*.noarch.rpm
+sudo dnf install ./loofi-fedora-tweaks-*.noarch.rpm
 ```
 
 ---

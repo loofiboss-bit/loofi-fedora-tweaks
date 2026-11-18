@@ -1,4 +1,4 @@
-# Built-in Provider Architecture — v33.0.1 "Concord"
+# Built-in Provider Architecture — v36.2.0 "Blueprint"
 
 To guarantee system stability, user security, and verifiable maintenance, external untyped Python plugin loaders and dynamic third-party extensions are intentionally retired. All maintenance capabilities and system providers are built-in, statically typed, and audited directly within the main repository.
 

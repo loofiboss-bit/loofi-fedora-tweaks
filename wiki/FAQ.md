@@ -1,4 +1,4 @@
-# Frequently Asked Questions (FAQ) — v33.0.1 "Concord"
+# Frequently Asked Questions (FAQ) — v36.2.0 "Blueprint"
 
 ---
 
@@ -37,7 +37,7 @@ GNOME Software and KDE Discover are full application stores. Loofi provides a sm
 ---
 
 ### Can I automate Loofi from terminal scripts?
-**Yes.** The CLI provides 8 commands (`info`, `check`, `updates`, `troubleshoot`, `changes`, `activity`, `doctor`, `support-bundle`). Passing the `--json` flag selects command-specific JSON output suitable for parsing with `jq`; inspect each command's schema before automating it.
+**Yes.** The CLI provides 12 registered commands (`info`, `check`, `updates`, `troubleshoot`, `changes`, `activity`, `doctor`, `support-bundle`, `tweaks`, `apps`, `guides`, `setup`). Passing the `--json` flag selects command-specific JSON output suitable for parsing with `jq`; inspect each command's schema before automating it.
 
 ---
 
