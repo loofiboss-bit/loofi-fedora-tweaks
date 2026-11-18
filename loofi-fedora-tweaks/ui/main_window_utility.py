@@ -961,7 +961,7 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         entry = self._sidebar_index.get(route.plugin_id)
         if entry is None or entry.content_widget is None:
             return False
-        self.content_area.setCurrentWidget(entry.content_widget)
+        self._switch_content_widget(entry.content_widget)
         self._active_route_id = route.id
         self._active_destination_id = route.id.removeprefix("utility:")
         self._set_active_plugin(route.plugin_id)
@@ -1037,7 +1037,7 @@ class MainWindowUtilityMixin(ApplicationReviewMixin, MainWindowOperationStatusMi
         if entry.tree_item is not None:
             self.sidebar.setCurrentItem(entry.tree_item)
         elif entry.content_widget is not None:
-            self.content_area.setCurrentWidget(entry.content_widget)
+            self._switch_content_widget(entry.content_widget)
         if getattr(self, "_shell_uses_destinations", False) is True:
             self._sync_destination_shell(route.id)
         self._active_route_id = route.id

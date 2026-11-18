@@ -98,6 +98,27 @@ class TestV33Overview(unittest.TestCase):
         )
         page.cleanup()
 
+    def test_identity_header_hides_deployment_and_kernel_in_tooltip(self):
+        page = OverviewPage()
+        stamp = datetime.now(timezone.utc)
+        page.set_snapshot(SimpleNamespace(
+            identity={
+                "hostname": "workstation",
+                "os": "Fedora Linux 45",
+                "desktop": "KDE Plasma",
+                "deployment": "traditional dnf5",
+                "cpu": "Ryzen 7",
+                "kernel": "6.17.0-1.fc45",
+            },
+            collected_at=stamp,
+            metrics=(),
+            maintenance={},
+        ))
+        self.assertEqual(page.identity.text(), "workstation · Fedora Linux 45 · KDE Plasma · Ryzen 7")
+        self.assertIn("traditional dnf5", page.identity.toolTip())
+        self.assertIn("6.17.0-1.fc45", page.identity.toolTip())
+        page.cleanup()
+
 
 if __name__ == "__main__":
     unittest.main()

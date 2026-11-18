@@ -56,15 +56,13 @@ class HardwareManager:
         if governor not in cls.get_available_governors():
             return False
 
-        # Create a script to set all governors
-        script = f"""
-for cpu in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; do
-    echo "{governor}" > "$cpu"
-done
-"""
+        paths = sorted(glob.glob("/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"))
+        if not paths:
+            paths = [f"{cls.CPU_GOVERNOR_PATH}/scaling_governor"]
         try:
             result = subprocess.run(
-                ["pkexec", "bash", "-c", script],
+                ["pkexec", "tee", *paths],
+                input=f"{governor}\n",
                 capture_output=True, text=True, check=False, timeout=30
             )
             return result.returncode == 0

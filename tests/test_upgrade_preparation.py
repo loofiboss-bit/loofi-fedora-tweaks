@@ -196,6 +196,10 @@ class TestPreparationCard(unittest.TestCase):
     def test_update_page_focuses_preparation(self):
         from ui.update_workflow import UpdateWorkflowPage
         page = UpdateWorkflowPage(service=Mock())
+        routes = []
+        page.contextRouteRequested.connect(lambda route, data: routes.append((route, data)))
+        page.preparation.blueprint_button.click()
+        self.assertEqual(routes, [("setup", {})])
         self.assertTrue(page.focus_task("update:prepare-upgrade"))
         self.assertFalse(page.busy)
         page.request_stop()

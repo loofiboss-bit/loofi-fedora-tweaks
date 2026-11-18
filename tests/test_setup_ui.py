@@ -267,6 +267,55 @@ class SetupUiTests(unittest.TestCase):
         self.assertFalse(page._show_import_preview(SetupDocument("Work", (), TweakProfile("Work", "kde", ()))))
         page.close()
 
+    def test_comparison_summary_card_and_profiles_navigation_bridge(self):
+        from types import SimpleNamespace
+        from ui.care_navigation import CareNavigationMixin
+
+        page = self.make_page()
+        self.assertTrue(page.comparison_card.isHidden())
+        emitted = []
+        page.routeRequested.connect(lambda route, data: emitted.append((route, data)))
+        page.profiles_button.click()
+        self.assertEqual(emitted, [("tune", {"section": "profiles"})])
+
+        comparison = SetupComparison("a" * 64, "Work", 1, (
+            SetupComparisonEntry("application", "a" * 24, "Firefox", "present", desired="fedora"),
+            SetupComparisonEntry("setting", "kde-single-click", "Single click", "differs", desired="false"),
+        ))
+
+        def close_modal():
+            for widget in QApplication.topLevelWidgets():
+                if isinstance(widget, QDialog) and widget.isVisible():
+                    widget.reject()
+
+        QTimer.singleShot(0, close_modal)
+        page.show_comparison(comparison)
+        self.assertFalse(page.comparison_card.isHidden())
+        self.assertIn("2 items compared", page.comparison_summary_label.text())
+        self.assertIn("1 differs", page.comparison_summary_label.text())
+        self.assertIn("1 present", page.comparison_summary_label.text())
+
+        focused = []
+
+        class NavHarness(CareNavigationMixin):
+            def __init__(self):
+                self._sidebar_index = {"utility_tune": object()}
+                self.switched = []
+                self.widget = SimpleNamespace(focus_task=lambda task: focused.append(task) or True)
+
+            def switch_to_route(self, route_id):
+                self.switched.append(route_id)
+                return True
+
+            def _real_widget_for_entry(self, _entry):
+                return self.widget
+
+        nav = NavHarness()
+        nav._open_route_request("tune", {"section": "profiles"})
+        self.assertEqual(nav.switched, ["tune"])
+        self.assertEqual(focused, ["profile-library"])
+        page.close()
+
 
 if __name__ == "__main__":
     unittest.main()

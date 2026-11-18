@@ -8,9 +8,11 @@ to match the workload profile. All privileged operations go through
 PrivilegedCommand so they use pkexec argument arrays — never shell strings.
 """
 
+import glob
 import json
 import logging
 import os
+import re
 import threading
 import time
 from dataclasses import asdict, dataclass
@@ -262,21 +264,17 @@ class AutoTuner:
     def apply_recommendation(rec: TuningRecommendation) -> Tuple[str, List[str], str]:
         """
         Return a PrivilegedCommand tuple that sets the CPU governor for
-        all online cores.
+        all online cores without invoking a shell.
 
         The returned tuple follows the project convention:
         ``(command, args_list, description)``.
         """
-        # Build a one-liner that iterates over all cpufreq governors
-        # We use pkexec + bash -c only because the governor must be
-        # written to *every* cpu's scaling_governor file.
-        script = (
-            f'for g in /sys/devices/system/cpu/cpu*/cpufreq/scaling_governor; '
-            f'do echo "{rec.governor}" > "$g"; done'
-        )
+        paths = sorted(glob.glob("/sys/devices/system/cpu/cpu*/cpufreq/scaling_governor"))
+        if not paths:
+            paths = ["/sys/devices/system/cpu/cpu0/cpufreq/scaling_governor"]
         return (
             "pkexec",
-            ["bash", "-c", script],
+            ["tee", *paths],
             f"Setting CPU governor to '{rec.governor}' for workload '{rec.workload}'...",
         )
 
@@ -293,20 +291,19 @@ class AutoTuner:
     def apply_io_scheduler(scheduler: str, device: str = "") -> Tuple[str, List[str], str]:
         """
         Return a PrivilegedCommand tuple that sets the I/O scheduler for
-        a block device.  If *device* is empty, the first real block device
-        found in /sys/block/ is used.
+        a block device without invoking a shell. If *device* is empty, the
+        first real block device found in /sys/block/ is used.
         """
         if not device:
             device = AutoTuner._find_first_block_device()
-        if not device:
-            logger.warning("No block device found for I/O scheduler change.")
+        if not device or not re.fullmatch(r"[A-Za-z0-9._-]+", device):
+            logger.warning("No valid block device found for I/O scheduler change.")
             return ("echo", ["No block device found"], "No device to tune.")
 
         path = f"/sys/block/{device}/queue/scheduler"
-        script = f'echo "{scheduler}" > {path}'
         return (
             "pkexec",
-            ["bash", "-c", script],
+            ["tee", path],
             f"Setting I/O scheduler to '{scheduler}' on {device}...",
         )
 
@@ -314,15 +311,14 @@ class AutoTuner:
     def apply_thp(mode: str) -> Tuple[str, List[str], str]:
         """
         Return a PrivilegedCommand tuple that sets the transparent hugepage
-        policy (always | madvise | never).
+        policy (always | madvise | never) without invoking a shell.
         """
         if mode not in ("always", "madvise", "never"):
             mode = "madvise"
         path = "/sys/kernel/mm/transparent_hugepage/enabled"
-        script = f'echo "{mode}" > {path}'
         return (
             "pkexec",
-            ["bash", "-c", script],
+            ["tee", path],
             f"Setting transparent hugepages to '{mode}'...",
         )
 

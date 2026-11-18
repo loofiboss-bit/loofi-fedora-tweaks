@@ -6,6 +6,7 @@ Handles backup and restore of all app settings.
 import json
 import logging
 import platform
+import re
 import subprocess
 from datetime import datetime
 from pathlib import Path
@@ -263,17 +264,20 @@ class ConfigManager:
 
         # Import presets
         presets = config.get("presets", [])
+        presets_root = cls.PRESETS_DIR.resolve()
         for preset in presets:
             if "name" in preset:
                 try:
-                    preset_path = (
-                        cls.PRESETS_DIR
-                        / f"{preset['name'].lower().replace(' ', '_')}.json"
-                    )
-                    with open(preset_path, "w") as f:
-                        json.dump(preset, f, indent=2)
+                    raw_name = str(preset["name"]).strip().lower()
+                    safe_name = re.sub(r"[^a-z0-9_-]", "_", raw_name).strip("._-")
+                    if not safe_name or ".." in raw_name or "/" in raw_name or "\\" in raw_name:
+                        raise ValueError("Unsafe preset name")
+                    preset_path = (cls.PRESETS_DIR / f"{safe_name}.json").resolve()
+                    if not preset_path.is_relative_to(presets_root):
+                        raise ValueError("Preset path escapes presets directory")
+                    atomic_write_json(preset_path, preset, mode=0o600)
                     applied.append(f"Preset: {preset['name']}")
-                except (OSError, json.JSONDecodeError) as e:
+                except (OSError, ValueError, TypeError, json.JSONDecodeError) as e:
                     logger.debug(
                         "Failed to import preset %s: %s",
                         preset.get("name", "unknown"),

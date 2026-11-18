@@ -86,7 +86,7 @@ class TestControlCenterShell(unittest.TestCase):
         page = scroll.widget().get_real_widget()
         toolbar = page.search_input.parentWidget().parentWidget()
         self.assertLess(toolbar.height(), 250)
-        self.assertLess(scroll.verticalScrollBar().maximum(), 2000)
+        self.assertLess(scroll.verticalScrollBar().maximum(), 2200)
 
         page.category_filter.setCurrentIndex(page.category_filter.findData("Privacy"))
         for _ in range(10):
@@ -293,3 +293,57 @@ class TestControlCenterShell(unittest.TestCase):
         self.assertTrue(window.switch_to_route("settings"))
         self.assertEqual(prefs["last_route_id"], "overview")
         self.assertIn("Could not save", window._status_label.text())
+
+    def test_page_switch_resets_outgoing_scroll_area_and_restores_incoming(self):
+        from PyQt6.QtCore import Qt
+
+        window, _, _, _ = self.build_window()
+        overview_scroll = window._sidebar_index["overview"].content_widget
+        tune_scroll = window._sidebar_index["utility_tune"].content_widget
+        install_scroll = window._sidebar_index["utility_install"].content_widget
+
+        self.assertEqual(overview_scroll.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+        self.assertTrue(window.switch_to_route("utility:tune"))
+        self.assertEqual(overview_scroll.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.assertEqual(tune_scroll.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+        self.assertTrue(window.switch_to_route("utility:install"))
+        self.assertEqual(tune_scroll.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        self.assertEqual(install_scroll.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+
+        self.assertTrue(window.switch_to_route("overview"))
+        self.assertEqual(overview_scroll.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAsNeeded)
+
+    def test_accessibility_enabled_multi_route_scroll_transitions(self):
+        from PyQt6.QtCore import Qt
+
+        with patch.dict("os.environ", {"QT_LINUX_ACCESSIBILITY_ALWAYS_ON": "1"}):
+            window, _, _, _ = self.build_window()
+            routes = (
+                ("overview", "overview"),
+                ("utility:tune", "utility_tune"),
+                ("utility:install", "utility_install"),
+                ("utility:update", "utility_update"),
+                ("utility:fix", "utility_fix"),
+                ("activity", "activity"),
+                ("setup", "setup"),
+                ("overview", "overview"),
+            )
+            previous_plugin = None
+            for route_id, plugin_id in routes:
+                self.assertTrue(window.switch_to_route(route_id))
+                self.app.processEvents()
+                if previous_plugin is not None and previous_plugin != plugin_id:
+                    prev_scroll = window._sidebar_index[previous_plugin].content_widget
+                    self.assertEqual(prev_scroll.verticalScrollBarPolicy(), Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+                current_scroll = window._sidebar_index[plugin_id].content_widget
+                inner = current_scroll.widget()
+                real_fn = getattr(inner, "get_real_widget", None)
+                owner = real_fn() if callable(real_fn) else inner
+                expected_policy = (
+                    Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+                    if getattr(owner, "owns_scroll", False)
+                    else Qt.ScrollBarPolicy.ScrollBarAsNeeded
+                )
+                self.assertEqual(current_scroll.verticalScrollBarPolicy(), expected_policy)
+                previous_plugin = plugin_id

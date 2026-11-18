@@ -106,6 +106,15 @@ class TestSharedFormatting(unittest.TestCase):
             timeout=30,
         )
 
+    @patch("core.export.kickstart.atomic_write_text")
+    @patch("core.export.kickstart.KickstartGenerator.generate_kickstart", return_value="# ks\n")
+    def test_kickstart_save_uses_atomic_writer(self, _mock_generate, mock_atomic_write):
+        result = KickstartGenerator.save_kickstart(path=Path("/tmp/example-loofi.ks"))
+        self.assertTrue(result.success)
+        mock_atomic_write.assert_called_once_with(
+            Path("/tmp/example-loofi.ks"), "# ks\n", keep_backup=False
+        )
+
 
 if __name__ == "__main__":
     unittest.main()

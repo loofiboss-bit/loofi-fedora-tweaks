@@ -44,9 +44,7 @@ class HardwareTab(QWidget, PluginInterface):
         self.refresh_timer.timeout.connect(self.refresh_status)
 
     def on_activate(self: typing.Any) -> None:
-        """Start the bounded Bluetooth status probe while the page is shown."""
-        if not self.refresh_timer.isActive():
-            self.refresh_timer.start(5000)
+        """Schedule a single bounded Bluetooth status check when opened."""
         QTimer.singleShot(0, self.refresh_status)
 
     def on_deactivate(self: typing.Any) -> None:
@@ -78,7 +76,7 @@ class HardwareTab(QWidget, PluginInterface):
         device_row.add_card(self.create_bluetooth_card())
         layout.addWidget(device_row)
 
-        self.lbl_status = QLabel(self.tr("Status checks run when this page is active."))
+        self.lbl_status = QLabel(self.tr("Status is checked when this page opens or when you refresh."))
         self.lbl_status.setObjectName("hwStatus")
         self.lbl_status.setWordWrap(True)
         layout.addWidget(self.lbl_status)
@@ -152,6 +150,10 @@ class HardwareTab(QWidget, PluginInterface):
         scan.setAccessibleName(self.tr("Review Bluetooth scan"))
         scan.clicked.connect(lambda: self.actionCenterRequested.emit("legacy-ui-manual-review", {}))
         buttons.addWidget(scan)
+        self.btn_refresh_bt = QPushButton(self.tr("Refresh status"))
+        self.btn_refresh_bt.setAccessibleName(self.tr("Refresh Bluetooth status"))
+        self.btn_refresh_bt.clicked.connect(self.refresh_status)
+        buttons.addWidget(self.btn_refresh_bt)
         layout.addLayout(buttons)
         QTimer.singleShot(0, self.refresh_status)
         return typing.cast(QGroupBox, card)
@@ -167,14 +169,20 @@ class HardwareTab(QWidget, PluginInterface):
                 return
             powered = bool(getattr(status, "powered", False))
             state = self.tr("on") if powered else self.tr("off")
-            self.lbl_bt_status.setText(self.tr("Bluetooth: {} | adapter: {}").format(state, adapter_name))
+            self.lbl_bt_status.setText(
+                self.tr("Bluetooth: %1 | adapter: %2")
+                .replace("%1", state)
+                .replace("%2", adapter_name)
+            )
             devices = BluetoothManager.list_devices(paired_only=True)
             if devices:
                 names = [
                     f"{getattr(device, 'name', '') or 'Unnamed'} ({'connected' if getattr(device, 'connected', False) else 'paired'})"
                     for device in devices[:5]
                 ]
-                self.lbl_bt_devices.setText(self.tr("Paired devices: {}").format(", ".join(names)))
+                self.lbl_bt_devices.setText(
+                    self.tr("Paired devices: %1").replace("%1", ", ".join(names))
+                )
             else:
                 self.lbl_bt_devices.setText(self.tr("Paired devices: none"))
         except (AttributeError, OSError, RuntimeError, TypeError, ValueError) as exc:

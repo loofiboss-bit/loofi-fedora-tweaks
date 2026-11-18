@@ -306,6 +306,15 @@ class TestFedora44ReadinessAggregation(unittest.TestCase):
         session = next(check for check in checks if check.id == "session-type")
         self.assertEqual(session.status, "warning")
 
+    def test_gnome_active_gdm_passes_display_manager_check(self):
+        desktop = _passing_desktop()
+        desktop.desktop = "GNOME"
+        desktop.display_manager = "GDM"
+        desktop.display_manager_active = True
+        checks = ReleaseReadiness._desktop_checks(desktop)
+        dm_check = next(check for check in checks if check.id == "display-manager")
+        self.assertEqual(dm_check.status, "pass")
+
     def test_package_risks_warn_for_copr(self):
         package = _passing_package()
         package.repo_risks = [

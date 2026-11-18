@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import unittest
 from pathlib import Path
+from types import SimpleNamespace
 from unittest.mock import patch
 
 from PyQt6.QtWidgets import QApplication, QStackedWidget, QTabWidget
@@ -60,6 +61,12 @@ class TestPhase4SystemRouteStacks(unittest.TestCase):
             [label for label in tab.findChildren(type(tab.lbl_smart_model)) if label.objectName() == "header"],
             [],
         )
+        self.assertFalse(tab.output_disclosure.details.isVisible())
+        disk = SimpleNamespace(path="/dev/nvme0n1", model="NVMe SSD", size="512G", name="nvme0n1", rm=False)
+        mount = SimpleNamespace(source="/dev/nvme0n1p2", target="/", fstype="btrfs", size="500G", used="120G", use_percent="24%")
+        tab._apply_async_snapshot(([disk], [mount]))
+        self.assertEqual(tab.disk_table.rowCount(), 1)
+        self.assertEqual(tab.mount_table.rowCount(), 1)
 
     def test_hardware_system_check_and_maintenance_use_page_scaffolds(self):
         root = Path(__file__).resolve().parents[1] / "loofi-fedora-tweaks" / "ui"

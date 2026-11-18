@@ -513,7 +513,11 @@ class OverviewPage(QWidget, PluginInterface):
         now = snapshot.collected_at.timestamp() if isinstance(snapshot.collected_at, datetime) else snapshot.collected_at
         self._show_next_steps(next_steps(maintenance or {}, snapshot.metrics, now=now), maintenance or {})
         identity_keys = ("hostname", "os", "desktop", "deployment", "cpu", "kernel")
-        self.identity.setText(" · ".join(str(snapshot.identity[key]) for key in identity_keys if snapshot.identity.get(key)))
+        primary_keys = ("hostname", "os", "desktop", "cpu")
+        full_identity = " · ".join(str(snapshot.identity[key]) for key in identity_keys if snapshot.identity.get(key))
+        primary_identity = " · ".join(str(snapshot.identity[key]) for key in primary_keys if snapshot.identity.get(key))
+        self.identity.setText(primary_identity or full_identity)
+        self.identity.setToolTip(full_identity)
         self.notice.set_notice("info", self.tr("Last measured: %1").replace("%1", _format_time(snapshot.collected_at)),
                                self.tr("Live measurements refresh every two seconds; sensors every five seconds."))
         present = set()

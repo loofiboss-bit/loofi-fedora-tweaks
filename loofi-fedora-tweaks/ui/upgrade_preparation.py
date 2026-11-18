@@ -21,6 +21,7 @@ class UpgradePreparationCard(Card):
     """Read-only observations do not authorize or run a release upgrade."""
 
     stopped = pyqtSignal()
+    routeRequested = pyqtSignal(str, object)
 
     def __init__(self, *, service: UpgradePreparationService | None = None,
                  checklist_store: UpgradePreparationChecklistStore | None = None,
@@ -72,6 +73,12 @@ class UpgradePreparationCard(Card):
         self.checklist_status.setWordWrap(True)
         self.checklist_status.setTextFormat(Qt.TextFormat.PlainText)
         self.add_widget(self.checklist_status)
+        self.blueprint_button = SecondaryButton(self.tr("Open My Fedora configuration"))
+        self.blueprint_button.setAccessibleName(
+            self.tr("Open My Fedora configuration to save or compare apps and settings")
+        )
+        self.blueprint_button.clicked.connect(lambda: self.routeRequested.emit("setup", {}))
+        self.add_widget(self.blueprint_button)
         self.docs_button = SecondaryButton(self.tr("Open official upgrade instructions"))
         self.docs_button.setEnabled(False)
         self.docs_button.clicked.connect(self.open_documentation)

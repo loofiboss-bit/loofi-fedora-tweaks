@@ -4,14 +4,14 @@
 
 | Version | Support |
 |---|---|
-| 29.0.1 | Current Utility release support |
-| 28.x | Previous public release support |
-| 27.x | Critical security fixes only |
-| < 27 | End of life |
+| 36.1.x | Current Blueprint release support |
+| 35.0.x | Previous Everyday public release support |
+| 33.0.x | Critical security fixes only |
+| < 33 | End of life |
 
-v29.0.1 "Utility" is the current release; v28.0.3 "Ease" is the previous
-public release. The historical `v29.0.0` tag belongs to an earlier lineage and
-is not the Utility Renovation release.
+v36.1.0 "Blueprint" is the current release line, building on v35.0.0 "Everyday"
+and v33.0.1 "Concord". Historical pre-renormalization tags belong to an earlier
+lineage and are not part of the active release line.
 
 ## Reporting a Vulnerability
 

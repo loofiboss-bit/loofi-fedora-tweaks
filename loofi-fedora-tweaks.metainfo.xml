@@ -42,9 +42,29 @@
   </provides>
 
   <releases>
-    <release version="36.1.0" date="2026-10-24" type="development">
+    <release version="36.2.0" date="2026-11-18" type="stable">
       <description>
-        <p>Blueprint candidate: portable app and supported desktop-setting configurations, fresh comparison, and sequential reviewed application with locally saved progress. Not published.</p>
+        <p>Blueprint 36.2.0: Fedora 45 and KDE Plasma 6 enhancements, Qt/AT-SPI scroll stabilization, unified Overview/Tweaks/Updates/Activity UX, side-by-side Blueprint diffs, and retired legacy compatibility layers.</p>
+      </description>
+    </release>
+    <release version="36.1.0" date="2026-10-24" type="stable">
+      <description>
+        <p>Blueprint candidate: portable app and supported desktop-setting configurations, fresh comparison, and sequential reviewed application with locally saved progress.</p>
+      </description>
+    </release>
+    <release version="35.0.0" date="2026-10-21" type="stable">
+      <description>
+        <p>Everyday: local AppStream discovery, explicit metadata refresh, complete RPM and Flatpak transaction review, optional source/codec setup, and coherent interruption recovery.</p>
+      </description>
+    </release>
+    <release version="34.0.1" date="2026-10-16" type="development">
+      <description>
+        <p>Accord baseline: installation-bound Flatpak update discovery, dependency review, and independent commit verification.</p>
+      </description>
+    </release>
+    <release version="33.0.1" date="2026-10-12" type="stable">
+      <description>
+        <p>Concord: connected Overview, Tweaks, Apps, and operation context with verified DNF5 offline update readback.</p>
       </description>
     </release>
     <release version="32.5.0" date="2026-10-08" type="development">

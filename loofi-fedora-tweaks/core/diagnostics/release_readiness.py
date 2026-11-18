@@ -222,7 +222,11 @@ class ReleaseReadiness:
             )
         )
 
-        dm_status = "pass" if desktop.display_manager == "SDDM" and desktop.display_manager_active else "warning"
+        desktop_name = str(getattr(desktop, "desktop", "")).upper()
+        expected_dm_ok = desktop.display_manager == "SDDM" or (
+            "GNOME" in desktop_name and desktop.display_manager == "GDM"
+        )
+        dm_status = "pass" if expected_dm_ok and desktop.display_manager_active else "warning"
         checks.append(
             ReadinessCheck(
                 id="display-manager",

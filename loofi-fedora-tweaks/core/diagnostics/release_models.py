@@ -188,6 +188,23 @@ TARGETS: Dict[str, ReleaseTarget] = {
     ),
 }
 
+TARGETS["45"] = ReleaseTarget(
+    key="45",
+    label="Fedora 45",
+    fedora_version="45",
+    supported=True,
+    preview=False,
+    compatible_versions=("44",),
+    min_plasma=(6, 2),
+    min_qt=(6, 8),
+    status_label="Supported target",
+    release_phase="stable",
+    upgrade_from=("44",),
+    important_changes=TARGETS[FEDORA_RELEASE_POLICY.preview_target].important_changes,
+    known_risks=TARGETS[FEDORA_RELEASE_POLICY.preview_target].known_risks,
+    docs_links=TARGETS[FEDORA_RELEASE_POLICY.preview_target].docs_links,
+)
+
 
 @dataclass
 class ReadinessRecommendation:

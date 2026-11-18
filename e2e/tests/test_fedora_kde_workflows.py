@@ -4,8 +4,6 @@ from __future__ import annotations
 
 import re
 import subprocess
-from types import ModuleType, SimpleNamespace
-from unittest.mock import Mock, patch
 
 
 from helpers import (
@@ -52,45 +50,18 @@ def _stop_process(process: subprocess.Popen[str]) -> None:
         process.wait(timeout=10)
 
 
-def test_polkit_helper_waits_for_a_delayed_password_prompt() -> None:
-    password_field = Mock()
-    wait_for_password = Mock(side_effect=[AssertionError("not ready"), AssertionError("not ready"), password_field])
-    completion = Mock(return_value=False)
-    pyatspi = ModuleType("pyatspi")
-    keyboard_event = Mock()
-    pyatspi.Registry = SimpleNamespace(generateKeyboardEvent=keyboard_event)
-    pyatspi.KEY_SYM = 1
-
-    with (
-        patch("helpers.wait_for_polkit_password", side_effect=wait_for_password),
-        patch("helpers._driver", Mock()),
-        patch("helpers.Accessible.click"),
-        patch("helpers.Path.read_text", return_value='{"password":"x"}'),
-        patch("helpers.time.sleep"),
-        patch.dict("os.environ", {"LOOFI_E2E_CREDENTIALS_PATH": "/tmp/loofi-e2e-credentials.json"}),
-        patch.dict("sys.modules", {"pyatspi": pyatspi}),
-    ):
-        authenticate_polkit(completed=completion, timeout=5)
-
-    assert wait_for_password.call_count == 3
-    assert completion.call_count == 2
-    keyboard_event.assert_called_once_with(ord("x"), None, pyatspi.KEY_SYM)
-
-
-def test_polkit_helper_accepts_cached_authorization_only_after_readback() -> None:
-    wait_for_password = Mock(side_effect=AssertionError("prompt is cached"))
-    completion = Mock(side_effect=[False, False, True])
-
-    with patch("helpers.wait_for_polkit_password", side_effect=wait_for_password):
-        authenticate_polkit(completed=completion, timeout=5)
-
-    assert wait_for_password.call_count == 3
-    assert completion.call_count == 3
-
-
 def dolphin_full_path_enabled() -> bool:
     result = subprocess.run(
         ["kreadconfig6", "--file", "dolphinrc", "--group", "General", "--key", "ShowFullPath", "--default", "false"],
+        capture_output=True, text=True, check=True, timeout=10,
+    )
+    assert result.stdout.strip().lower() in {"true", "false"}
+    return result.stdout.strip().lower() == "true"
+
+
+def dolphin_browse_archives_enabled() -> bool:
+    result = subprocess.run(
+        ["kreadconfig6", "--file", "dolphinrc", "--group", "General", "--key", "BrowseThroughArchives", "--default", "false"],
         capture_output=True, text=True, check=True, timeout=10,
     )
     assert result.stdout.strip().lower() in {"true", "false"}

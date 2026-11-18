@@ -119,6 +119,29 @@ class HealthScoreManager:
             logger.debug("Failed to score uptime: %s", e)
             return 50, None
 
+    _ATOMIC_HEADER_PREFIXES = (
+        "AvailableUpdate:",
+        "Commit:",
+        "StateRoot:",
+        "Deployments:",
+        "Version:",
+        "GPGSignature:",
+        "SecAdvisories:",
+        "ostree://",
+        "Timestamp:",
+    )
+
+    @staticmethod
+    def _count_atomic_update_lines(stdout: str) -> int:
+        """Count package/update rows in rpm-ostree check output without metadata headers."""
+        meaningful_lines = [
+            line.strip()
+            for line in stdout.splitlines()
+            if line.strip()
+            and not any(line.strip().startswith(prefix) for prefix in HealthScoreManager._ATOMIC_HEADER_PREFIXES)
+        ]
+        return max(1, len(meaningful_lines))
+
     @staticmethod
     def _score_updates() -> tuple:
         """Score based on pending updates count."""
@@ -133,8 +156,7 @@ class HealthScoreManager:
                     timeout=30,
                 )
                 if result.returncode == 0 and "AvailableUpdate" in result.stdout:
-                    lines = [line for line in result.stdout.strip().splitlines() if line.strip()]
-                    count = len(lines)
+                    count = HealthScoreManager._count_atomic_update_lines(result.stdout)
                     if count > 50:
                         score = 40
                         recommendation = f"{count} updates pending — run system update"

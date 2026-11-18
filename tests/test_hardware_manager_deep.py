@@ -43,6 +43,11 @@ class TestSetGovernor(unittest.TestCase):
     @patch.object(HardwareManager, "get_available_governors", return_value=["powersave", "performance"])
     def test_success(self, mock_gov, mock_run):
         self.assertTrue(HardwareManager.set_governor("performance"))
+        cmd = mock_run.call_args.args[0]
+        self.assertEqual(cmd[:2], ["pkexec", "tee"])
+        self.assertNotIn("bash", cmd)
+        self.assertNotIn("-c", cmd)
+        self.assertEqual(mock_run.call_args.kwargs.get("input"), "performance\n")
 
     @patch.object(HardwareManager, "get_available_governors", return_value=["powersave"])
     def test_invalid_governor(self, mock_gov):

@@ -128,13 +128,10 @@ def _domain_boundary_errors() -> list[str]:
     """Keep domain modules Qt-free and guide definitions outside execution authority."""
     errors: list[str] = []
     qt_roots = (SOURCE / "core" / "tasks", SOURCE / "core" / "actions", SOURCE / "services")
-    legacy_ui_adapter = SOURCE / "services" / "security" / "safety.py"
     for root in qt_roots:
         if not root.exists():
             continue
         for path in sorted(root.rglob("*.py")):
-            if path == legacy_ui_adapter:
-                continue
             tree = _tree(path)
             imported_modules = {
                 alias.name

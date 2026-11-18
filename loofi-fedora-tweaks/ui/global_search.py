@@ -73,7 +73,8 @@ class GlobalSearchDialog(QDialog):
         # Keep the discovery surface usable beside narrow or text-scaled
         # windows. The parent window may still enlarge it naturally.
         self.setMinimumSize(520, 360)
-        self.setWindowFlags(Qt.WindowType.Dialog | Qt.WindowType.Popup)
+        self.setWindowFlags(Qt.WindowType.Dialog)
+        self.setModal(True)
 
         layout = QVBoxLayout(self)
         layout.setContentsMargins(14, 14, 14, 14)

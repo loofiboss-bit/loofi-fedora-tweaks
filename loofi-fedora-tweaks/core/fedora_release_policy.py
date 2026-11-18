@@ -53,5 +53,14 @@ class FedoraReleasePolicy:
     def is_preview_version(self, host_version: str) -> bool:
         return self.classify_host(host_version) == "preview"
 
+    @classmethod
+    def fedora45_qualified(cls) -> "FedoraReleasePolicy":
+        """Return the qualified Fedora 45 stable release policy profile."""
+        return cls(
+            stable_release="45",
+            preview_release="46",
+            supported_stable_releases=("44", "45"),
+        )
+
 
 FEDORA_RELEASE_POLICY = FedoraReleasePolicy()

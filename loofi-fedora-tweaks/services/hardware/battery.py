@@ -6,6 +6,7 @@ Part of hardware services layer (v23.0 Architecture Hardening).
 import logging
 import os
 import subprocess
+import tempfile
 from typing import Optional, Tuple
 
 from utils.commands import PrivilegedCommand
@@ -82,11 +83,19 @@ RemainAfterExit=yes
 WantedBy=multi-user.target
 """
 
-        # 3. Write to a temporary file to prepare for pkexec move
-        tmp_service = "/tmp/loofi-battery.service"
+        # 3. Write to a private temporary file before pkexec move
+        tmp_service: Optional[str] = None
+        mv_succeeded = False
         try:
-            with open(tmp_service, "w") as f:
-                f.write(service_content)
+            with tempfile.NamedTemporaryFile(
+                mode="w",
+                prefix="loofi-battery-",
+                suffix=".service",
+                delete=False,
+                encoding="utf-8",
+            ) as handle:
+                handle.write(service_content)
+                tmp_service = handle.name
 
             # 4. Move service file to systemd directory
             result = subprocess.run(
@@ -99,6 +108,7 @@ WantedBy=multi-user.target
             if result.returncode != 0:
                 logger.debug("Failed to move service file: %s", result.stderr)
                 return None, None
+            mv_succeeded = True
 
             # 5. Reload systemd daemon
             result = subprocess.run(
@@ -149,6 +159,12 @@ WantedBy=multi-user.target
         except (subprocess.SubprocessError, OSError) as e:
             logger.debug("Error preparing battery service: %s", e)
             return None, None
+        finally:
+            if not mv_succeeded and tmp_service:
+                try:
+                    os.unlink(tmp_service)
+                except OSError:
+                    pass
 
     def remove_service(self) -> Tuple[Optional[str], Optional[list]]:
         """

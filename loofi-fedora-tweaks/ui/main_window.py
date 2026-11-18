@@ -797,7 +797,7 @@ class MainWindow(
 
         widget = current.data(0, Qt.ItemDataRole.UserRole)
         if widget:
-            self.content_area.setCurrentWidget(widget)
+            self._switch_content_widget(widget)
             route = resolve(str(current.data(0, _ROLE_ROUTE_ID) or current.data(0, _ROLE_NAME) or ""))
             self._active_route_id = route.id if route else ""
             if route:
@@ -1082,7 +1082,7 @@ class MainWindow(
                 self.sidebar.setCurrentItem(entry.tree_item)
                 self._active_route_id = str(entry.tree_item.data(0, _ROLE_ROUTE_ID) or entry.plugin_id)
             elif entry.content_widget is not None:
-                self.content_area.setCurrentWidget(entry.content_widget)
+                self._switch_content_widget(entry.content_widget)
                 self._active_route_id = entry.plugin_id
             self._set_active_plugin(entry.plugin_id)
             return True
@@ -1101,7 +1101,7 @@ class MainWindow(
                 else:
                     self._active_route_id = entry.plugin_id
                     if entry.content_widget is not None:
-                        self.content_area.setCurrentWidget(entry.content_widget)
+                        self._switch_content_widget(entry.content_widget)
                 self._set_active_plugin(entry.plugin_id)
                 return True
 

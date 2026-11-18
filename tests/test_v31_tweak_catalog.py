@@ -56,6 +56,8 @@ class TestV31TweakCatalog(unittest.TestCase):
         new_kde_keys = {
             "kde-tap-to-click": ("kcminputrc", "Touchpad", "TapToClick"),
             "kde-night-color": ("kwinrc", "NightColor", "Active"),
+            "kde-touchpad-natural-scroll": ("kcminputrc", "Touchpad", "NaturalScroll"),
+            "kde-dolphin-browse-archives": ("dolphinrc", "General", "BrowseThroughArchives"),
         }
         for tweak_id, (file_name, group, key) in new_kde_keys.items():
             tweak = BY_ID[tweak_id]
@@ -117,6 +119,8 @@ class TestV31TweakCatalog(unittest.TestCase):
             "gnome-font-antialiasing",
             "kde-tap-to-click",
             "kde-night-color",
+            "kde-touchpad-natural-scroll",
+            "kde-dolphin-browse-archives",
             "dnf-parallel-downloads",
         ]
         for tid in v31_tweak_ids:

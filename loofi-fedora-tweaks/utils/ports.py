@@ -1,7 +1,7 @@
 """Backward-compat shim — use services.network instead."""
 import warnings
 warnings.warn(
-    "utils.network_monitor is deprecated. Import from services.network instead.",
+    "utils.ports is deprecated. Import from services.network instead.",
     DeprecationWarning,
     stacklevel=2,
 )

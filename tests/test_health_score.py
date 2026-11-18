@@ -214,6 +214,32 @@ class TestHealthScoreManager(unittest.TestCase):
         score, rec = HealthScoreManager._score_updates()
         self.assertEqual(score, 75)
 
+    @patch('core.diagnostics.health_score.SystemManager.is_atomic', return_value=True)
+    @patch('subprocess.run')
+    def test_score_updates_atomic_ignores_metadata_headers(self, mock_run, _mock_is_atomic):
+        """Atomic update count ignores ostree metadata headers when counting updates."""
+        stdout = "\n".join([
+            "AvailableUpdate:",
+            "  Version: 45.20261118.0",
+            "  Timestamp: 2026-11-18T10:00:00Z",
+            "  Commit: abc123",
+            "  StateRoot: fedora",
+            "  SecAdvisories: none",
+            "  GPGSignature: valid",
+            "  Deployments: 1",
+            "  ostree://fedora/x86_64/kinoite",
+            "  Upgraded: mesa-dri-drivers 25.0 -> 25.1",
+            "  Added: libfoo 1.0",
+        ])
+        mock_run.return_value = MagicMock(returncode=0, stdout=stdout)
+        score, rec = HealthScoreManager._score_updates()
+        self.assertEqual(score, 85)
+        self.assertIn("2 minor updates available", rec)
+
+    def test_count_atomic_update_lines_falls_back_to_one(self):
+        """Header-only AvailableUpdate output counts as at least 1 pending update."""
+        self.assertEqual(HealthScoreManager._count_atomic_update_lines("AvailableUpdate:\n  Version: 45.1\n"), 1)
+
     @patch.object(HealthScoreManager, '_score_cpu', return_value=(90, None))
     @patch.object(HealthScoreManager, '_score_ram', return_value=(80, None))
     @patch.object(HealthScoreManager, '_score_disk', return_value=(70, None))

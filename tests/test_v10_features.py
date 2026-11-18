@@ -471,6 +471,24 @@ class TestHardwareProfiles(unittest.TestCase):
         self.assertEqual(key, "generic-laptop")
         self.assertFalse(profile["battery_limit"])
 
+    @patch('services.hardware.hardware_profiles.os.path.exists')
+    @patch('builtins.open')
+    def test_fallback_generic_laptop_detects_sysfs_threshold(self, mock_open, mock_exists):
+        """Generic laptop enables battery_limit dynamically when sysfs threshold exists."""
+        mock_open.side_effect = lambda f, *a, **kw: io.StringIO('')
+        mock_exists.side_effect = lambda p: p in {
+            '/sys/class/power_supply/BAT0',
+            '/sys/class/power_supply/BAT0/charge_control_end_threshold',
+        }
+        key, profile = detect_hardware_profile()
+        self.assertEqual(key, "generic-laptop")
+        self.assertTrue(profile["battery_limit"])
+        self.assertEqual(
+            profile["battery_path"],
+            "/sys/class/power_supply/BAT0/charge_control_end_threshold",
+        )
+        self.assertFalse(PROFILES["generic-laptop"]["battery_limit"])
+
     @patch('services.hardware.hardware_profiles.os.path.exists', return_value=False)
     @patch('builtins.open')
     def test_fallback_generic_desktop(self, mock_open, mock_exists):

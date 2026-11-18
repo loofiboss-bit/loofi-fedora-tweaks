@@ -136,6 +136,8 @@ KDE_SPECS = {
     "kde-edge-tiling": ("kwinrc", "Windows", "ElectricBorderTiling", "true"),
     "kde-focus-stealing-prevention": ("kwinrc", "Windows", "FocusStealingPreventionLevel", "1"),
     "kde-dolphin-show-full-path": ("dolphinrc", "General", "ShowFullPath", "false"),
+    "kde-dolphin-browse-archives": ("dolphinrc", "General", "BrowseThroughArchives", "false"),
+    "kde-touchpad-natural-scroll": ("kcminputrc", "Touchpad", "NaturalScroll", "false"),
     "kde-borderless-maximized-windows": ("kwinrc", "Windows", "BorderlessMaximizedWindows", "false"),
 }
 KDE_KEYS = {item: (spec[2], spec[3]) for item, spec in KDE_SPECS.items()}
